@@ -43,7 +43,7 @@ class Role(
      * Version column for optimistic locking.
      */
     @Version
-    var version: Int = -1
+    var version: Int = 0
 
     /**
      * Each role can be associated with multiple permissions. A given permission can belong to multiple roles.

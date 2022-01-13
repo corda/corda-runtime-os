@@ -3,6 +3,7 @@ package net.corda.libs.permissions.cache.impl
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import net.corda.data.permissions.Group
+import net.corda.data.permissions.Permission
 import net.corda.data.permissions.Role
 import net.corda.data.permissions.User
 import net.corda.libs.permissions.cache.PermissionCache
@@ -14,7 +15,8 @@ import net.corda.libs.permissions.cache.exception.PermissionCacheException
 internal class PermissionCacheImpl(
     _userData: ConcurrentHashMap<String, User>,
     _groupData: ConcurrentHashMap<String, Group>,
-    _roleData: ConcurrentHashMap<String, Role>
+    _roleData: ConcurrentHashMap<String, Role>,
+    _permissionsData: ConcurrentHashMap<String, Permission>
 ) : PermissionCache {
 
     override val users: ConcurrentHashMap<String, User> = _userData
@@ -28,6 +30,12 @@ internal class PermissionCacheImpl(
             return field
         }
     override val roles: ConcurrentHashMap<String, Role> = _roleData
+        get() {
+            validateCacheIsRunning()
+            return field
+        }
+
+    override val permissions: ConcurrentHashMap<String, Permission> = _permissionsData
         get() {
             validateCacheIsRunning()
             return field
@@ -51,6 +59,11 @@ internal class PermissionCacheImpl(
     override fun getRole(roleId: String): Role? {
         validateCacheIsRunning()
         return roles[roleId]
+    }
+
+    override fun getPermission(permissionId: String): Permission? {
+        validateCacheIsRunning()
+        return permissions[permissionId]
     }
 
     private fun validateCacheIsRunning() {

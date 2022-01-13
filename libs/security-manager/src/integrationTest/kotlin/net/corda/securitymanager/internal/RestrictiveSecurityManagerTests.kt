@@ -1,9 +1,9 @@
 package net.corda.securitymanager.internal
 
 import net.corda.securitymanager.SecurityManagerService
-import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.framework.FrameworkUtil
@@ -21,7 +21,7 @@ class RestrictiveSecurityManagerTests {
         // The permission to get a class's protection domain.
         private val getProtectionDomainPerm = RuntimePermission(GET_PROTECTION_DOMAIN_TARGET, null)
 
-        private val bundleLocation = FrameworkUtil.getBundle(this::class.java).location
+        private val currentBundleLocation = FrameworkUtil.getBundle(this::class.java).location
     }
 
     @InjectService(timeout = 1000)
@@ -43,7 +43,7 @@ class RestrictiveSecurityManagerTests {
 
     @Test
     fun `specific permissions can be denied`() {
-        securityManagerService.denyPermissions(bundleLocation, setOf(getEnvPerm))
+        securityManagerService.denyPermissions(currentBundleLocation, setOf(getEnvPerm))
 
         assertThrows<AccessControlException> {
             System.getenv()
@@ -52,7 +52,7 @@ class RestrictiveSecurityManagerTests {
 
     @Test
     fun `multiple permissions can be denied at once`() {
-        securityManagerService.denyPermissions(bundleLocation, setOf(getEnvPerm, getProtectionDomainPerm))
+        securityManagerService.denyPermissions(currentBundleLocation, setOf(getEnvPerm, getProtectionDomainPerm))
 
         assertThrows<AccessControlException> {
             System.getenv()
@@ -64,8 +64,8 @@ class RestrictiveSecurityManagerTests {
 
     @Test
     fun `multiple permissions can be denied in sequence`() {
-        securityManagerService.denyPermissions(bundleLocation, setOf(getEnvPerm))
-        securityManagerService.denyPermissions(bundleLocation, setOf(getProtectionDomainPerm))
+        securityManagerService.denyPermissions(currentBundleLocation, setOf(getEnvPerm))
+        securityManagerService.denyPermissions(currentBundleLocation, setOf(getProtectionDomainPerm))
 
         assertThrows<AccessControlException> {
             System.getenv()
@@ -78,8 +78,8 @@ class RestrictiveSecurityManagerTests {
     @Test
     fun `specific permissions can be granted`() {
         // We deny a permission, then re-grant it.
-        securityManagerService.denyPermissions(bundleLocation, setOf(getEnvPerm))
-        securityManagerService.grantPermissions(bundleLocation, setOf(getEnvPerm))
+        securityManagerService.denyPermissions(currentBundleLocation, setOf(getEnvPerm))
+        securityManagerService.grantPermissions(currentBundleLocation, setOf(getEnvPerm))
 
         assertDoesNotThrow {
             System.getenv()
@@ -89,8 +89,8 @@ class RestrictiveSecurityManagerTests {
     @Test
     fun `multiple permissions can be granted at once`() {
         // We deny permissions, then re-grant them.
-        securityManagerService.denyPermissions(bundleLocation, setOf(getEnvPerm, getProtectionDomainPerm))
-        securityManagerService.grantPermissions(bundleLocation, setOf(getEnvPerm, getProtectionDomainPerm))
+        securityManagerService.denyPermissions(currentBundleLocation, setOf(getEnvPerm, getProtectionDomainPerm))
+        securityManagerService.grantPermissions(currentBundleLocation, setOf(getEnvPerm, getProtectionDomainPerm))
 
         assertDoesNotThrow {
             System.getenv()
@@ -100,9 +100,9 @@ class RestrictiveSecurityManagerTests {
 
     @Test
     fun `multiple permissions can be granted in sequence`() {
-        securityManagerService.denyPermissions(bundleLocation, setOf(getEnvPerm, getProtectionDomainPerm))
-        securityManagerService.grantPermissions(bundleLocation, setOf(getEnvPerm))
-        securityManagerService.grantPermissions(bundleLocation, setOf(getProtectionDomainPerm))
+        securityManagerService.denyPermissions(currentBundleLocation, setOf(getEnvPerm, getProtectionDomainPerm))
+        securityManagerService.grantPermissions(currentBundleLocation, setOf(getEnvPerm))
+        securityManagerService.grantPermissions(currentBundleLocation, setOf(getProtectionDomainPerm))
 
         assertDoesNotThrow {
             System.getenv()
@@ -112,7 +112,7 @@ class RestrictiveSecurityManagerTests {
 
     @Test
     fun `specific permissions can be denied using wildcards`() {
-        val wildcardLocation = bundleLocation.dropLast(5) + WILDCARD
+        val wildcardLocation = currentBundleLocation.dropLast(5) + WILDCARD
 
         securityManagerService.denyPermissions(wildcardLocation, setOf(getEnvPerm))
 
@@ -123,10 +123,10 @@ class RestrictiveSecurityManagerTests {
 
     @Test
     fun `specific permissions can be granted using wildcards`() {
-        val wildcardLocation = bundleLocation.dropLast(5) + WILDCARD
+        val wildcardLocation = currentBundleLocation.dropLast(5) + WILDCARD
 
         // We deny a permission, then re-grant it.
-        securityManagerService.denyPermissions(bundleLocation, setOf(getEnvPerm))
+        securityManagerService.denyPermissions(currentBundleLocation, setOf(getEnvPerm))
         securityManagerService.grantPermissions(wildcardLocation, setOf(getEnvPerm))
 
         assertDoesNotThrow {
@@ -136,14 +136,14 @@ class RestrictiveSecurityManagerTests {
 
     @Test
     fun `later permissions overwrite earlier permissions`() {
-        securityManagerService.denyPermissions(bundleLocation, setOf(getEnvPerm))
+        securityManagerService.denyPermissions(currentBundleLocation, setOf(getEnvPerm))
 
-        securityManagerService.grantPermissions(bundleLocation, setOf(getEnvPerm))
+        securityManagerService.grantPermissions(currentBundleLocation, setOf(getEnvPerm))
         assertDoesNotThrow {
             System.getenv()
         }
 
-        securityManagerService.denyPermissions(bundleLocation, setOf(getEnvPerm))
+        securityManagerService.denyPermissions(currentBundleLocation, setOf(getEnvPerm))
         assertThrows<AccessControlException> {
             System.getenv()
         }
@@ -160,7 +160,7 @@ class RestrictiveSecurityManagerTests {
 
     @Test
     fun `granted permissions do not affect bundles not matching the filter`() {
-        securityManagerService.denyPermissions(bundleLocation, setOf(getEnvPerm))
+        securityManagerService.denyPermissions(currentBundleLocation, setOf(getEnvPerm))
         securityManagerService.grantPermissions("non-matching-filter", setOf(getEnvPerm))
 
         assertThrows<AccessControlException> {
@@ -170,7 +170,7 @@ class RestrictiveSecurityManagerTests {
 
     @Test
     fun `permissions are reset once the security manager is restarted`() {
-        securityManagerService.denyPermissions(bundleLocation, setOf(getEnvPerm))
+        securityManagerService.denyPermissions(currentBundleLocation, setOf(getEnvPerm))
 
         // This stops the existing `RestrictiveSecurityManager`, and starts a new one.
         securityManagerService.start()
@@ -182,7 +182,7 @@ class RestrictiveSecurityManagerTests {
 
     @Test
     fun `permissions are reset once the security manager is switched to the discovery security manager`() {
-        securityManagerService.denyPermissions(bundleLocation, setOf(getEnvPerm))
+        securityManagerService.denyPermissions(currentBundleLocation, setOf(getEnvPerm))
 
         // This stops the existing `RestrictiveSecurityManager`, and starts the `DiscoverySecurityManager`.
         securityManagerService.startDiscoveryMode(setOf())
@@ -193,11 +193,11 @@ class RestrictiveSecurityManagerTests {
     }
 
     @Test
-    fun `the OSGi security manager is reset when the restrictive security manager is started`() {
+    fun `the OSGi security manager is set again when the restrictive security manager is started`() {
         System.setSecurityManager(null)
 
         securityManagerService.start()
-        securityManagerService.denyPermissions(bundleLocation, setOf(getEnvPerm))
+        securityManagerService.denyPermissions(currentBundleLocation, setOf(getEnvPerm))
 
         assertThrows<AccessControlException> {
             System.getenv()

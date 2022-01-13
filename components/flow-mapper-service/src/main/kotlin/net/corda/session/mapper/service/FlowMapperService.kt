@@ -5,6 +5,7 @@ import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -21,7 +22,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.schema.Schemas.Companion.FLOW_MAPPER_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.Companion.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.Companion.MESSAGING_CONFIG
@@ -34,7 +35,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.concurrent.Executors
 
-@Component(service = [FlowMapperService::class])
+@Component(service = [FlowMapperService::class], immediate = true)
 class FlowMapperService @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
@@ -50,7 +51,6 @@ class FlowMapperService @Activate constructor(
 
     private companion object {
         private val logger = contextLogger()
-        private const val INSTANCE_ID = "instance-id"
         private const val CONSUMER_GROUP = "mapper.consumer.group"
     }
 
@@ -112,9 +112,7 @@ class FlowMapperService @Activate constructor(
         )
         stateAndEventSub = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig(consumerGroup, FLOW_MAPPER_EVENT_TOPIC, config.getInt(INSTANCE_ID)),
-            FlowMapperMessageProcessor(
-                flowMapperEventExecutorFactory
-            ),
+            FlowMapperMessageProcessor(flowMapperEventExecutorFactory),
             config,
             FlowMapperListener(scheduledTaskState!!)
         )
@@ -148,6 +146,10 @@ class FlowMapperService @Activate constructor(
 
     override fun stop() {
         coordinator.stop()
+    }
+
+    override fun close() {
+        coordinator.close()
     }
 }
 

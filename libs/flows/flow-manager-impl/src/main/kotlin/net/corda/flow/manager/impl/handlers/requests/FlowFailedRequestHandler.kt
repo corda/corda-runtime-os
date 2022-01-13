@@ -15,9 +15,9 @@ class FlowFailedRequestHandler : FlowRequestHandler<FlowIORequest.FlowFailed> {
     override val type = FlowIORequest.FlowFailed::class.java
 
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.FlowFailed): FlowEventContext<Any> {
-        val checkpoint = context.checkpoint!!
+        val checkpoint = requireCheckpoint(context)
+        checkpoint.setWaitingFor(null)
         log.info("Flow [${checkpoint.flowKey.flowId}] failed", request.exception)
-        context.setCheckpointWaitingFor(null)
         // Needs to go to a different topic, but currently sends to the flow event topic
         // The commented out code should be added + changed when this is resolved.
         // Needs to handle sending errors when there are initiated sessions.

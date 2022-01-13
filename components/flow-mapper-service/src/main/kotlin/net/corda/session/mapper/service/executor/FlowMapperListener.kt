@@ -7,7 +7,7 @@ import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
-import net.corda.schema.Schemas.Companion.FLOW_MAPPER_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
@@ -82,7 +82,10 @@ class FlowMapperListener(
         scheduledTasks[eventKey] = executorService.schedule(
             {
                 log.debug { "Clearing up mapper state for key $eventKey" }
-                publisher?.publish(listOf(Record(FLOW_MAPPER_EVENT_TOPIC, eventKey, ExecuteCleanup())))
+                publisher?.publish(listOf(Record(FLOW_MAPPER_EVENT_TOPIC, eventKey, FlowMapperEvent(
+                    MessageDirection.INBOUND,
+                    ExecuteCleanup()
+                ))))
             },
             expiryTime - clock.millis(),
             TimeUnit.MILLISECONDS

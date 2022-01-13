@@ -16,6 +16,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.permissions.manager.impl.PermissionEntityManagerImpl
 
 @Component(service = [PermissionManagerFactory::class])
 class PermissionManagerFactoryImpl @Activate constructor(
@@ -30,7 +31,8 @@ class PermissionManagerFactoryImpl @Activate constructor(
         return PermissionManagerImpl(
             PermissionUserManagerImpl(config, rpcSender, permissionCache, passwordServiceFactory.createPasswordService(SecureRandom())),
             PermissionGroupManagerImpl(config, rpcSender, permissionCache),
-            PermissionRoleManagerImpl(config, rpcSender, permissionCache)
+            PermissionRoleManagerImpl(config, rpcSender, permissionCache),
+            PermissionEntityManagerImpl(config, rpcSender, permissionCache)
         )
     }
 }

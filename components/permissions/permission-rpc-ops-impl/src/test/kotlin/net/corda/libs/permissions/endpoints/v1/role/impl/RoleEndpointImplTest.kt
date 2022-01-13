@@ -1,6 +1,5 @@
 package net.corda.libs.permissions.endpoints.v1.role.impl
 
-import java.time.Instant
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.security.RpcAuthContext
@@ -12,7 +11,6 @@ import net.corda.libs.permissions.manager.response.RoleResponseDto
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.permissions.service.PermissionServiceComponent
-import net.corda.v5.base.util.Try
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -22,13 +20,13 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.time.Instant
 
 internal class RoleEndpointImplTest {
 
     private val now = Instant.now()
     private val createRoleType = CreateRoleType("roleName", null)
 
-    private val mockTry = mock<Try<RoleResponseDto>>()
     private val roleResponseDto = RoleResponseDto("roleId", 0, now, "roleName", null, emptyList())
 
     private val lifecycleCoordinator: LifecycleCoordinator = mock()
@@ -60,8 +58,7 @@ internal class RoleEndpointImplTest {
         val createRoleDtoCapture = argumentCaptor<CreateRoleRequestDto>()
         whenever(lifecycleCoordinator.isRunning).thenReturn(true)
         whenever(permissionService.isRunning).thenReturn(true)
-        whenever(permissionManager.createRole(createRoleDtoCapture.capture())).thenReturn(mockTry)
-        whenever(mockTry.getOrThrow()).thenReturn(roleResponseDto)
+        whenever(permissionManager.createRole(createRoleDtoCapture.capture())).thenReturn(roleResponseDto)
 
         endpoint.start()
         val responseType = endpoint.createRole(createRoleType)

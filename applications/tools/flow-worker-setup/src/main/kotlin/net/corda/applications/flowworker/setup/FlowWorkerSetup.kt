@@ -2,9 +2,9 @@ package net.corda.applications.flowworker.setup
 
 import net.corda.applications.flowworker.setup.helper.getHelloWorldRPCEventRecord
 import net.corda.applications.flowworker.setup.helper.getHelloWorldScheduleCleanupEvent
-import net.corda.comp.kafka.config.write.KafkaConfigWrite
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.components.examples.publisher.CommonPublisher
+import net.corda.configuration.publish.ConfigPublishService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -20,8 +20,7 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
-import net.corda.schema.Schemas.Companion.CONFIG_TOPIC
-import net.corda.tools.setup.common.ConfigHelper
+import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.tools.setup.common.ConfigHelper.Companion.SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH
 import net.corda.tools.setup.common.ConfigHelper.Companion.getBootstrapConfig
 import net.corda.tools.setup.common.ConfigHelper.Companion.getConfigValue
@@ -46,8 +45,8 @@ class FlowWorkerSetup @Activate constructor(
     private val shutDownService: Shutdown,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = KafkaConfigWrite::class)
-    private var configWriter: KafkaConfigWrite,
+    @Reference(service = ConfigPublishService::class)
+    private var configPublish: ConfigPublishService,
     @Reference(service = KafkaTopicAdmin::class)
     private var kafkaTopicAdmin: KafkaTopicAdmin,
     @Reference(service = SmartConfigFactory::class)
@@ -141,8 +140,8 @@ class FlowWorkerSetup @Activate constructor(
         if (configurationFile != null) {
             log.info("Writing config to topic")
             consoleLogger.info("Writing config")
-            configWriter.updateConfig(
-                getConfigValue(ConfigHelper.SYSTEM_ENV_CONFIG_TOPIC_PATH, CONFIG_TOPIC),
+            configPublish.updateConfig(
+                CONFIG_TOPIC,
                 config,
                 configurationFile.readText()
             )

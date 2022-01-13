@@ -68,7 +68,7 @@ class CustomCryptoDigestTests {
      */
     @AfterEach
     private fun teardown() {
-        sandboxGroupsPerTest.forEach(sandboxCreationService::unloadSandboxGroup)
+        sandboxGroupsPerTest.forEach(service::unloadSandboxGroup)
         sandboxGroupsPerTest.clear()
         for (cpi in cpis) {
             cpi.close()

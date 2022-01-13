@@ -29,11 +29,33 @@ interface RoleEndpoint : RpcOps {
     ): RoleResponseType
 
     /**
-     * Get a role by its name in the RBAC permission system.
+     * Get a role by its identifier in the RBAC permission system.
      */
     @HttpRpcGET(description = "Get a Role by its ID", path = "")
     fun getRole(
         @HttpRpcQueryParameter(name = "id", description = "ID of the role to be returned.", required = true)
         id: String
+    ): RoleResponseType
+
+    /**
+     * Associates a role with a permission
+     */
+    @HttpRpcPOST(description = "Add a permission to a role", path = "addPermission")
+    fun addPermission(
+        @HttpRpcRequestBodyParameter(description = "Identifier for an existing role", required = true)
+        roleId: String,
+        @HttpRpcRequestBodyParameter(description = "Identifier for an existing permission", required = true)
+        permissionId: String
+    ): RoleResponseType
+
+    /**
+     * Removes Association between a role and a permission
+     */
+    @HttpRpcPOST(description = "Removes a permission from a role", path = "removePermission")
+    fun removePermission(
+        @HttpRpcRequestBodyParameter(description = "Identifier for an existing role", required = true)
+        roleId: String,
+        @HttpRpcRequestBodyParameter(description = "Identifier for an existing permission", required = true)
+        permissionId: String
     ): RoleResponseType
 }

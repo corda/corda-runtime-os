@@ -2,12 +2,13 @@ package net.corda.p2p.app.simulator
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import net.corda.data.identity.HoldingIdentity
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
-import net.corda.data.identity.HoldingIdentity
-import net.corda.p2p.schema.Schema
+import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
@@ -22,7 +23,7 @@ import java.sql.Connection
 import java.sql.DriverManager
 import java.time.Duration
 import java.time.Instant
-import java.util.Properties
+import java.util.*
 
 @Component(immediate = true)
 class AppSimulator @Activate constructor(
@@ -82,8 +83,8 @@ class AppSimulator @Activate constructor(
     }
 
     private fun runSimulator(parameters: CliParameters, kafkaServers: String) {
-        val sendTopic = parameters.sendTopic ?: Schema.P2P_OUT_TOPIC
-        val receiveTopic = parameters.receiveTopic ?: Schema.P2P_IN_TOPIC
+        val sendTopic = parameters.sendTopic ?: P2P_OUT_TOPIC
+        val receiveTopic = parameters.receiveTopic ?: P2P_IN_TOPIC
         val simulatorConfig = ConfigFactory.parseFile(parameters.simulatorConfig).withFallback(DEFAULT_CONFIG)
         val clients = simulatorConfig.getInt(PARALLEL_CLIENTS_KEY)
         val dbConnection = readDbParams(simulatorConfig)?.let { connectToDb(it) }
@@ -222,7 +223,7 @@ class CliParameters {
         names = ["--send-topic"],
         description = [
             "Topic to send the messages to. " +
-                "Defaults to ${Schema.P2P_OUT_TOPIC}, if not specified."
+                "Defaults to ${P2P_OUT_TOPIC}, if not specified."
         ]
     )
     var sendTopic: String? = null
@@ -231,7 +232,7 @@ class CliParameters {
         names = ["--receive-topic"],
         description = [
             "Topic to receive messages from. " +
-                "Defaults to ${Schema.P2P_IN_TOPIC}, if not specified."
+                "Defaults to ${P2P_IN_TOPIC}, if not specified."
         ]
     )
     var receiveTopic: String? = null

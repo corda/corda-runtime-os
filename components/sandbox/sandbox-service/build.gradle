@@ -1,9 +1,19 @@
+import aQute.bnd.gradle.Bundle
+
 plugins {
     id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'corda.common-library'
+    id 'corda.osgi-test-conventions'
 }
 
 description "Sandbox Service Component"
+
+configurations {
+    cpis {
+        canBeConsumed = false
+        transitive = false
+    }
+}
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
@@ -13,14 +23,51 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-application"
     implementation "net.corda:corda-base"
-    implementation project(":components:install:install-legacy")
+    implementation project(":components:install:install")
+    // this needs to be removed in the future, and is a choice when building the 'app'
+    implementation project(":components:install:file-based-install-service")
     implementation "net.corda:corda-packaging"
     implementation "net.corda:corda-avro-schema"
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:sandbox")
     implementation project(":libs:serialization:checkpoint-serialization-api")
     implementation "net.corda:corda-packaging"
-    implementation project(':libs:virtual-node:sandbox-group-service')
+    implementation project(':libs:virtual-node:virtual-node-info')
+    implementation project(':libs:virtual-node:sandbox-group-context')
+    implementation project(':components:virtual-node:sandbox-group-context-service')
 
     implementation "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
+
+    integrationTestCompileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
+    integrationTestCompileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+
+    integrationTestImplementation "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+    integrationTestImplementation project(":components:configuration:configuration-read-service")
+    integrationTestImplementation "net.corda:corda-application"
+    integrationTestRuntimeOnly project(':libs:sandbox-internal')
+    testImplementation project(":testing:test-utilities")
+
+    integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
+    integrationTestRuntimeOnly project(":components:install:file-based-install-service")
+    integrationTestRuntimeOnly project(":components:configuration:configuration-read-service-impl")
+    integrationTestRuntimeOnly project(':components:virtual-node:sandbox-group-context-service')
+    integrationTestRuntimeOnly project(":libs:sandbox-hooks")
+    integrationTestRuntimeOnly project(":libs:configuration:configuration-core")
+    integrationTestRuntimeOnly project(":libs:configuration:configuration-read-impl")
+    integrationTestRuntimeOnly project(":libs:configuration:file-configuration-read-impl")
+    integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
+
+    // Use custom configurations in consumer cpks to gather location of cpis to add into `resources`
+    // Note:  we define the configuration `cpiForTest` in each project's gradle script.
+    cpis project(path: 'sandbox-service-test-resources:sandbox-service-test-cpb-one', configuration: 'cpiForTest')
+    cpis project(path: 'sandbox-service-test-resources:sandbox-service-test-cpb-two', configuration: 'cpiForTest')
+    cpis project(path: 'sandbox-service-test-resources:sandbox-service-test-cpb-three', configuration: 'cpiForTest')
+}
+
+def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {
+    from configurations.cpis
+}
+
+tasks.named('testingBundle', Bundle) {
+    dependsOn integrationTestResources
 }

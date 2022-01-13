@@ -24,28 +24,3 @@ dependencies {
 
     integrationTestImplementation project(":libs:db:db-core")
 }
-
-// TODO: integrationTest/integration-test inconsistency
-sourceSets {
-    integrationTest {
-        kotlin {
-            srcDirs += "src/integrationTest/kotlin"
-        }
-        java {
-            srcDirs += "src/integrationTest/java"
-        }
-        resources {
-            srcDirs = [ "src/integrationTest/resources" ]
-        }
-        compileClasspath += main.output + test.output
-        runtimeClasspath += main.output + test.output
-    }
-}
-
-tasks.register('integrationTest', Test) {
-    description = "Runs integration tests."
-    group = "verification"
-
-    testClassesDirs = project.sourceSets["integrationTest"].output.classesDirs
-    classpath = project.sourceSets["integrationTest"].runtimeClasspath
-}

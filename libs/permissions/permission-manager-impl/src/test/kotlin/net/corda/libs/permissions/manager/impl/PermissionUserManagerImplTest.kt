@@ -1,10 +1,7 @@
 package net.corda.libs.permissions.manager.impl
 
 import com.typesafe.config.ConfigValueFactory
-import java.time.Duration
-import java.time.Instant
-import java.util.UUID
-import java.util.concurrent.CompletableFuture
+import java.lang.IllegalArgumentException
 import net.corda.data.permissions.ChangeDetails
 import net.corda.data.permissions.Property
 import net.corda.data.permissions.RoleAssociation
@@ -23,20 +20,26 @@ import net.corda.permissions.password.PasswordHash
 import net.corda.permissions.password.PasswordService
 import net.corda.v5.base.concurrent.getOrThrow
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
-
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.Duration
+import java.time.Instant
+import java.util.UUID
+import java.util.concurrent.CompletableFuture
+import net.corda.data.permissions.management.user.AddRoleToUserRequest
+import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
+import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
+import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
+import org.junit.jupiter.api.assertThrows
 
 class PermissionUserManagerImplTest {
 
@@ -99,21 +102,17 @@ class PermissionUserManagerImplTest {
         assertEquals(createUserRequestDto.passwordExpiry!!.toEpochMilli(), capturedCreateUserRequest.passwordExpiry.toEpochMilli())
         assertEquals(createUserRequestDto.parentGroup, capturedCreateUserRequest.parentGroupId)
 
-        assertTrue(result.isSuccess)
-        assertFalse(result.isFailure)
-        result.doOnSuccess {
-            assertEquals(fullName, it.fullName)
-            assertEquals(avroUser.enabled, it.enabled)
-            assertEquals(avroUser.lastChangeDetails.updateTimestamp, it.lastUpdatedTimestamp)
-            assertEquals(false, it.ssoAuth)
-            assertEquals(avroUser.parentGroupId, it.parentGroup)
-            assertEquals(1, it.properties.size)
+        assertEquals(fullName, result.fullName)
+        assertEquals(avroUser.enabled, result.enabled)
+        assertEquals(avroUser.lastChangeDetails.updateTimestamp, result.lastUpdatedTimestamp)
+        assertEquals(false, result.ssoAuth)
+        assertEquals(avroUser.parentGroupId, result.parentGroup)
+        assertEquals(1, result.properties.size)
 
-            val property = it.properties.first()
-            assertEquals(userProperty.lastChangeDetails.updateTimestamp, property.lastChangedTimestamp)
-            assertEquals(userProperty.key, property.key)
-            assertEquals(userProperty.value, property.value)
-        }
+        val property = result.properties.first()
+        assertEquals(userProperty.lastChangeDetails.updateTimestamp, property.lastChangedTimestamp)
+        assertEquals(userProperty.key, property.key)
+        assertEquals(userProperty.value, property.value)
     }
 
     @Test
@@ -141,21 +140,17 @@ class PermissionUserManagerImplTest {
         assertNull(capturedCreateUserRequest.passwordExpiry)
         assertEquals(createUserRequestDto.parentGroup, capturedCreateUserRequest.parentGroupId)
 
-        assertTrue(result.isSuccess)
-        assertFalse(result.isFailure)
-        result.doOnSuccess {
-            assertEquals(fullName, it.fullName)
-            assertEquals(avroUser.enabled, it.enabled)
-            assertEquals(avroUser.lastChangeDetails.updateTimestamp, it.lastUpdatedTimestamp)
-            assertEquals(true, it.ssoAuth)
-            assertEquals(avroUser.parentGroupId, it.parentGroup)
-            assertEquals(1, it.properties.size)
+        assertEquals(fullName, result.fullName)
+        assertEquals(avroUser.enabled, result.enabled)
+        assertEquals(avroUser.lastChangeDetails.updateTimestamp, result.lastUpdatedTimestamp)
+        assertEquals(true, result.ssoAuth)
+        assertEquals(avroUser.parentGroupId, result.parentGroup)
+        assertEquals(1, result.properties.size)
 
-            val property = it.properties.first()
-            assertEquals(userProperty.lastChangeDetails.updateTimestamp, property.lastChangedTimestamp)
-            assertEquals(userProperty.key, property.key)
-            assertEquals(userProperty.value, property.value)
-        }
+        val property = result.properties.first()
+        assertEquals(userProperty.lastChangeDetails.updateTimestamp, property.lastChangedTimestamp)
+        assertEquals(userProperty.key, property.key)
+        assertEquals(userProperty.value, property.value)
     }
 
     @Test
@@ -167,13 +162,7 @@ class PermissionUserManagerImplTest {
         val requestCaptor = argumentCaptor<PermissionManagementRequest>()
         whenever(rpcSender.sendRequest(requestCaptor.capture())).thenReturn(future)
 
-        val result = manager.createUser(createUserRequestDto)
-
-        assertTrue(result.isFailure)
-        assertFalse(result.isSuccess)
-        assertThrows(PermissionManagerException::class.java) {
-            result.getOrThrow()
-        }
+        assertThrows(PermissionManagerException::class.java) { manager.createUser(createUserRequestDto) }
     }
 
     @Test
@@ -222,7 +211,91 @@ class PermissionUserManagerImplTest {
 
         verify(future, times(1)).getOrThrow(Duration.ofMillis(12345L))
 
-        assertTrue(result.isSuccess)
-        assertEquals(avroUser.id, result.getOrThrow().id)
+        assertEquals(avroUser.id, result.id)
     }
+
+    @Test
+    fun `add role to user sends rpc request and converts result to response dto`() {
+        val future = mock<CompletableFuture<PermissionManagementResponse>>()
+        whenever(future.getOrThrow(Duration.ofSeconds(10))).thenReturn(permissionManagementResponse)
+
+        val capture = argumentCaptor<PermissionManagementRequest>()
+        whenever(rpcSender.sendRequest(capture.capture())).thenReturn(future)
+
+        val requestDto = AddRoleToUserRequestDto("requestUserId", "user-login1", "roleId1")
+        val result = manager.addRoleToUser(requestDto)
+
+        assertEquals("requestUserId", capture.firstValue.requestUserId)
+        assertNull(capture.firstValue.virtualNodeId)
+
+        val capturedRequest = capture.firstValue.request as AddRoleToUserRequest
+        assertEquals("user-login1", capturedRequest.loginName)
+        assertEquals("roleId1", capturedRequest.roleId)
+
+        assertEquals("user-login1", result.loginName)
+        assertEquals(1, result.roles.size)
+        assertEquals("roleId1", result.roles[0].roleId)
+    }
+
+    @Test
+    fun `add role to user throws if exception is returned`() {
+        val future = mock<CompletableFuture<PermissionManagementResponse>>()
+        whenever(future.getOrThrow(Duration.ofSeconds(10))).thenThrow(IllegalArgumentException("Invalid user."))
+
+        val capture = argumentCaptor<PermissionManagementRequest>()
+        whenever(rpcSender.sendRequest(capture.capture())).thenReturn(future)
+
+        val requestDto = AddRoleToUserRequestDto("requestUserId", "user-login1", "roleId1")
+
+        val e = assertThrows<IllegalArgumentException> {
+            manager.addRoleToUser(requestDto)
+        }
+
+        assertEquals("Invalid user.", e.message)
+    }
+
+    @Test
+    fun `remove role from user sends rpc request and converts result to response dto`() {
+        val avroUser = User(UUID.randomUUID().toString(), 0, ChangeDetails(userCreationTime), "user-login1", fullName, true,
+            "temp-hashed-password", "temporary-salt", userCreationTime, false, parentGroup, listOf(userProperty),
+            emptyList())
+        val permissionManagementResponse = PermissionManagementResponse(avroUser)
+
+        val future = mock<CompletableFuture<PermissionManagementResponse>>()
+        whenever(future.getOrThrow(Duration.ofSeconds(10))).thenReturn(permissionManagementResponse)
+
+        val capture = argumentCaptor<PermissionManagementRequest>()
+        whenever(rpcSender.sendRequest(capture.capture())).thenReturn(future)
+
+        val requestDto = RemoveRoleFromUserRequestDto("requestUserId", "user-login1", "roleId1")
+        val result = manager.removeRoleFromUser(requestDto)
+
+        assertEquals("requestUserId", capture.firstValue.requestUserId)
+        assertNull(capture.firstValue.virtualNodeId)
+
+        val capturedRequest = capture.firstValue.request as RemoveRoleFromUserRequest
+        assertEquals("user-login1", capturedRequest.loginName)
+        assertEquals("roleId1", capturedRequest.roleId)
+
+        assertEquals("user-login1", result.loginName)
+        assertEquals(0, result.roles.size)
+    }
+
+    @Test
+    fun `remove role from user throws if exception is returned`() {
+        val future = mock<CompletableFuture<PermissionManagementResponse>>()
+        whenever(future.getOrThrow(Duration.ofSeconds(10))).thenThrow(IllegalArgumentException("Invalid user."))
+
+        val capture = argumentCaptor<PermissionManagementRequest>()
+        whenever(rpcSender.sendRequest(capture.capture())).thenReturn(future)
+
+        val requestDto = RemoveRoleFromUserRequestDto("requestUserId", "user-login1", "roleId1")
+
+        val e = assertThrows<IllegalArgumentException> {
+            manager.removeRoleFromUser(requestDto)
+        }
+
+        assertEquals("Invalid user.", e.message)
+    }
+
 }

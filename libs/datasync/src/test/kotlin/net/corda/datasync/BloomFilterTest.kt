@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 
@@ -111,6 +112,54 @@ class BloomFilterTest {
         for(m in 0 until falsePositives.last()) {
             if(m % 2 != 0 && !falsePositives.contains(m)) {
                 assertFalse(bloomFilter.possiblyContains(m.toByteArray()))
+            }
+        }
+    }
+
+    @Test
+    fun `creating bloom filter throws exception if false positive rate is not strictly between zero and one`() {
+        val expectedItemCount = 10
+        val falsePositiveRates = setOf(-1.0, 0.0, 1.0, 2.0)
+
+        falsePositiveRates.forEach { rate ->
+            assertThrows<IllegalArgumentException> {
+                createBloomFilter(
+                    expectedItemCount, rate, 99
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `searching for an element in the bloom filter returns false when filter length is zero`() {
+        val expectedItemCount = 0
+        val falsePositiveRate = 0.5
+
+        val testElementPool = setOf(41, 149, 151, 243, 249, 253, 261, 265, 271, 287)
+
+        createBloomFilter(
+            expectedItemCount, falsePositiveRate, 99
+        ).apply {
+            assertEquals(0, this.filterLength)
+            testElementPool.forEach { testElement ->
+                assertFalse(this.possiblyContains(testElement.toByteArray()))
+            }
+        }
+    }
+
+    @Test
+    fun `searching for an element in the bloom filter returns false when number of hashes is zero`() {
+        val expectedItemCount = 0
+        val falsePositiveRate = 0.5
+
+        val testElementPool = setOf(41, 149, 151, 243, 249, 253, 261, 265, 271, 287)
+
+        createBloomFilter(
+            expectedItemCount, falsePositiveRate, 99
+        ).apply {
+            assertEquals(0, this.numberOfHashFunctions)
+            testElementPool.forEach { testElement ->
+                assertFalse(this.possiblyContains(testElement.toByteArray()))
             }
         }
     }

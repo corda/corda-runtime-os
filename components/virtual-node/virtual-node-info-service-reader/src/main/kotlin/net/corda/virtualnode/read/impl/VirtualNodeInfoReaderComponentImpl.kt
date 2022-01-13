@@ -12,9 +12,9 @@ import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.common.ConfigChangedEvent
 import net.corda.virtualnode.impl.VirtualNodeInfoProcessor
+import net.corda.virtualnode.read.VirtualNodeInfoListener
+import net.corda.virtualnode.read.VirtualNodeInfoReader
 import net.corda.virtualnode.read.VirtualNodeInfoReaderComponent
-import net.corda.virtualnode.service.VirtualNodeInfoListener
-import net.corda.virtualnode.service.VirtualNodeInfoReader
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

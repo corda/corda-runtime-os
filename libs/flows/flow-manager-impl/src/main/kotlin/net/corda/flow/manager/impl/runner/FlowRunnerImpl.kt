@@ -17,12 +17,13 @@ import net.corda.flow.fiber.factory.FlowFiberFactory
 import net.corda.flow.fiber.impl.FlowFiberImpl
 import net.corda.packaging.CPI
 import net.corda.sandbox.SandboxGroup
+import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.serialization.CheckpointSerializer
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.uncheckedCast
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.sandboxgroup.SandboxGroupContext
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -89,11 +90,11 @@ class FlowRunnerImpl @Activate constructor(
     }
 
     private fun SandboxGroupContext.getCheckpointSerializer(): CheckpointSerializer {
-        return get<CheckpointSerializer>(FlowSandboxContextTypes.CHECKPOINT_SERIALIZER)!!
+        return getObjectByKey(FlowSandboxContextTypes.CHECKPOINT_SERIALIZER)!!
     }
 
     private fun FlowFiber<*>.injectDependencies(sandbox: SandboxGroupContext) {
-        sandbox.get<FlowDependencyInjector>(FlowSandboxContextTypes.DEPENDENCY_INJECTOR)!!.injectServices(logic, this)
+        sandbox.getObjectByKey<FlowDependencyInjector>(FlowSandboxContextTypes.DEPENDENCY_INJECTOR)!!.injectServices(logic, this)
     }
 
     private fun getOrCreate(sandboxGroup: SandboxGroup, flowClassName: String, jsonArg: String?): Flow<*> {
