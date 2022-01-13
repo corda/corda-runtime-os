@@ -11,7 +11,6 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.db.DBProcessor
-import net.corda.processors.db.PermissionsDBProcessor
 import net.corda.schema.Schemas
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
@@ -26,8 +25,6 @@ import picocli.CommandLine.Option
 class DBWorker @Activate constructor(
     @Reference(service = DBProcessor::class)
     private val processor: DBProcessor,
-    @Reference(service = PermissionsDBProcessor::class)
-    private val permissionsProcessor: PermissionsDBProcessor,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
     @Reference(service = SmartConfigFactory::class)
@@ -43,7 +40,7 @@ class DBWorker @Activate constructor(
         private const val CONFIG_TOPIC_PATH = "config.topic"
     }
 
-    /** Parses the arguments, then initialises and starts the processors. */
+    /** Parses the arguments, then initialises and starts the [processor]. */
     override fun startup(args: Array<String>) {
         logger.info("DB worker starting.")
 
@@ -58,13 +55,10 @@ class DBWorker @Activate constructor(
             getBootstrapConfig(smartConfigFactory, params.defaultParams, listOf(databaseConfig, configurationTopic))
 
         processor.start(config)
-
-        permissionsProcessor.start()
     }
 
     override fun shutdown() {
         logger.info("DB worker stopping.")
-        permissionsProcessor.stop()
         processor.stop()
         healthMonitor.stop()
     }
