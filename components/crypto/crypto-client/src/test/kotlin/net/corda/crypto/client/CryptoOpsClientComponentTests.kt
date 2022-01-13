@@ -2,6 +2,8 @@ package net.corda.crypto.client
 
 import net.corda.crypto.CryptoConsts
 import net.corda.crypto.testkit.CryptoMocks
+import net.corda.crypto.testkit.generateKeyPair
+import net.corda.crypto.testkit.signData
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.config.HSMInfo
 import net.corda.data.crypto.wire.CryptoNoContentValue
@@ -29,6 +31,7 @@ import net.corda.data.crypto.wire.ops.rpc.SupportedSchemesRpcQuery
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
@@ -157,7 +160,7 @@ class CryptoOpsClientComponentTests : AbstractComponentTests<CryptoOpsClientComp
     @Test
     @Timeout(5)
     fun `Should find public key`() {
-        val keyPair = generateKeyPair(schemeMetadata)
+        val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         setupCompletedResponse {
             CryptoPublicKey(
                 ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(keyPair.public))
@@ -192,10 +195,10 @@ class CryptoOpsClientComponentTests : AbstractComponentTests<CryptoOpsClientComp
     @Timeout(5)
     fun `Should filter my keys`() {
         val myPublicKeys = listOf(
-            generateKeyPair(schemeMetadata).public,
-            generateKeyPair(schemeMetadata).public
+            generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME).public,
+            generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME).public
         )
-        val notMyKey = generateKeyPair(schemeMetadata).public
+        val notMyKey = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME).public
         setupCompletedResponse {
             CryptoPublicKeys(
                 myPublicKeys.map { ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(it)) }
@@ -220,10 +223,10 @@ class CryptoOpsClientComponentTests : AbstractComponentTests<CryptoOpsClientComp
     @Timeout(5)
     fun `Should be able to handle empty filter my keys result`() {
         val myPublicKeys = listOf(
-            generateKeyPair(schemeMetadata).public,
-            generateKeyPair(schemeMetadata).public
+            generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME).public,
+            generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME).public
         )
-        val notMyKey = generateKeyPair(schemeMetadata).public
+        val notMyKey = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME).public
         setupCompletedResponse {
             CryptoPublicKeys(emptyList())
         }
@@ -243,7 +246,7 @@ class CryptoOpsClientComponentTests : AbstractComponentTests<CryptoOpsClientComp
     @Test
     @Timeout(5)
     fun `Should generate key pair`() {
-        val keyPair = generateKeyPair(schemeMetadata)
+        val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         setupCompletedResponse {
             CryptoPublicKey(
                 ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(keyPair.public))
@@ -269,7 +272,7 @@ class CryptoOpsClientComponentTests : AbstractComponentTests<CryptoOpsClientComp
     @Test
     @Timeout(5)
     fun `Should generate fresh key without external id`() {
-        val keyPair = generateKeyPair(schemeMetadata)
+        val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         setupCompletedResponse {
             CryptoPublicKey(
                 ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(keyPair.public))
@@ -290,7 +293,7 @@ class CryptoOpsClientComponentTests : AbstractComponentTests<CryptoOpsClientComp
     @Timeout(5)
     fun `Should generate fresh key with external id`() {
         val externalId = UUID.randomUUID()
-        val keyPair = generateKeyPair(schemeMetadata)
+        val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         setupCompletedResponse {
             CryptoPublicKey(
                 ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(keyPair.public))
@@ -311,9 +314,9 @@ class CryptoOpsClientComponentTests : AbstractComponentTests<CryptoOpsClientComp
     @Test
     @Timeout(5)
     fun `Should sign by referencing public key`() {
-        val keyPair = generateKeyPair(schemeMetadata)
+        val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         val data = UUID.randomUUID().toString().toByteArray()
-        val signature = sign(schemeMetadata, keyPair.private, data)
+        val signature = signData(schemeMetadata, keyPair, data)
         setupCompletedResponse {
             CryptoSignatureWithKey(
                 ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(keyPair.public)),
@@ -337,9 +340,9 @@ class CryptoOpsClientComponentTests : AbstractComponentTests<CryptoOpsClientComp
     @Test
     @Timeout(5)
     fun `Should sign by referencing public key and using custom signature spec`() {
-        val keyPair = generateKeyPair(schemeMetadata)
+        val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         val data = UUID.randomUUID().toString().toByteArray()
-        val signature = sign(schemeMetadata, keyPair.private, data)
+        val signature = signData(schemeMetadata, keyPair, data)
         val spec = SignatureSpec("NONEwithECDSA", DigestAlgorithmName.SHA2_256)
         setupCompletedResponse {
             CryptoSignatureWithKey(
@@ -367,9 +370,9 @@ class CryptoOpsClientComponentTests : AbstractComponentTests<CryptoOpsClientComp
     @Test
     @Timeout(5)
     fun `Should sign by referencing key alias`() {
-        val keyPair = generateKeyPair(schemeMetadata)
+        val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         val data = UUID.randomUUID().toString().toByteArray()
-        val signature = sign(schemeMetadata, keyPair.private, data)
+        val signature = signData(schemeMetadata, keyPair, data)
         setupCompletedResponse {
             CryptoSignature(
                 ByteBuffer.wrap(signature)
@@ -396,10 +399,10 @@ class CryptoOpsClientComponentTests : AbstractComponentTests<CryptoOpsClientComp
     @Test
     @Timeout(5)
     fun `Should sign by referencing key alias and using custom signature spec`() {
-        val keyPair = generateKeyPair(schemeMetadata)
+        val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         val data = UUID.randomUUID().toString().toByteArray()
         val spec = SignatureSpec("NONEwithECDSA", DigestAlgorithmName.SHA2_256)
-        val signature = sign(schemeMetadata, keyPair.private, data)
+        val signature = signData(schemeMetadata, keyPair, data)
         setupCompletedResponse {
             CryptoSignature(
                 ByteBuffer.wrap(signature)
@@ -430,7 +433,7 @@ class CryptoOpsClientComponentTests : AbstractComponentTests<CryptoOpsClientComp
     @Test
     @Timeout(5)
     fun `Should find key information by referencing public key`() {
-        val keyPair = generateKeyPair(schemeMetadata)
+        val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         val expectedValue = HSMKeyDetails()
         setupCompletedResponse {
             expectedValue
@@ -448,7 +451,7 @@ class CryptoOpsClientComponentTests : AbstractComponentTests<CryptoOpsClientComp
     @Test
     @Timeout(5)
     fun `Should return null for key information when public key is not found`() {
-        val keyPair = generateKeyPair(schemeMetadata)
+        val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         setupCompletedResponse {
             CryptoNoContentValue()
         }

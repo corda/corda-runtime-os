@@ -3,6 +3,7 @@ package net.corda.crypto.service
 import net.corda.crypto.CryptoConsts
 import net.corda.crypto.impl.persistence.InMemoryKeyValuePersistenceFactory
 import net.corda.crypto.impl.stubs.CryptoServicesTestFactory
+import net.corda.crypto.service.dev.DevCryptoServiceProvider
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceContext

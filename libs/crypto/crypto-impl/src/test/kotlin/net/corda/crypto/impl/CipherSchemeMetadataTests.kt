@@ -1,8 +1,6 @@
 package net.corda.crypto.impl
 
-import net.corda.crypto.CryptoConsts
-import net.corda.crypto.SigningService
-import net.corda.crypto.impl.stubs.CryptoServicesTestFactory
+import net.corda.crypto.testkit.generateKeyPair
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.COMPOSITE_KEY_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
@@ -25,7 +23,6 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import java.security.PublicKey
-import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 
@@ -35,16 +32,12 @@ class CipherSchemeMetadataTests {
         private lateinit var schemeMetadata: CipherSchemeMetadata
         private lateinit var unknownSignatureSpec: SignatureSpec
         private lateinit var unknownScheme: SignatureScheme
-        private lateinit var factory: CryptoServicesTestFactory
-        private lateinit var services: CryptoServicesTestFactory.CryptoServices
 
         @JvmStatic
         @BeforeAll
         fun setup() {
             schemeMetadataFactory = CipherSchemeMetadataFactory()
             schemeMetadata = schemeMetadataFactory.getInstance()
-            factory = CryptoServicesTestFactory(schemeMetadata)
-            services = factory.createCryptoServices()
             unknownSignatureSpec = SignatureSpec(
                 signatureName = "na",
                 signatureOID = AlgorithmIdentifier(PKCSObjectIdentifiers.RC2_CBC, null)
@@ -64,11 +57,6 @@ class CipherSchemeMetadataTests {
 
         @JvmStatic
         fun schemes(): Array<SignatureScheme> = schemeMetadata.schemes
-
-        private fun getSigner(defaultSignatureSchemeCodeName: String): SigningService =
-            services.createSigningService(
-                schemeMetadata.findSignatureScheme(defaultSignatureSchemeCodeName)
-            )
     }
 
     @Test
@@ -192,10 +180,9 @@ class CipherSchemeMetadataTests {
         signatureScheme: SignatureScheme
     ) {
         val publicKey = if (signatureScheme.codeName == COMPOSITE_KEY_CODE_NAME) {
-            val signer = getSigner(EDDSA_ED25519_CODE_NAME)
-            val alicePublicKey = signer.generateKeyPair(CryptoConsts.CryptoCategories.LEDGER, newAlias())
-            val bobPublicKey = signer.generateKeyPair(CryptoConsts.CryptoCategories.LEDGER, newAlias())
-            val charliePublicKey = signer.generateKeyPair(CryptoConsts.CryptoCategories.LEDGER, newAlias())
+            val alicePublicKey = generateKeyPair(schemeMetadata, EDDSA_ED25519_CODE_NAME).public
+            val bobPublicKey = generateKeyPair(schemeMetadata, EDDSA_ED25519_CODE_NAME).public
+            val charliePublicKey = generateKeyPair(schemeMetadata, EDDSA_ED25519_CODE_NAME).public
             val aliceAndBob = CompositeKey.Builder()
                 .addKey(alicePublicKey, 2)
                 .addKey(bobPublicKey, 1)
@@ -205,8 +192,7 @@ class CipherSchemeMetadataTests {
                 .addKey(charliePublicKey, 2)
                 .build(threshold = 3)
         } else {
-            val signer = getSigner(signatureScheme.codeName)
-            signer.generateKeyPair(CryptoConsts.CryptoCategories.LEDGER, newAlias())
+            generateKeyPair(schemeMetadata, signatureScheme.codeName).public
         }
         val result = schemeMetadata.findSignatureScheme(publicKey)
         assertEquals(signatureScheme, result)
@@ -229,8 +215,6 @@ class CipherSchemeMetadataTests {
         val factory = schemeMetadata.findKeyFactory(signatureScheme)
         assertEquals(signatureScheme.providerName, factory.provider.name)
     }
-
-    private fun newAlias() = UUID.randomUUID().toString()
 
     class UnsupportedPublicKey : PublicKey {
         override fun getAlgorithm(): String = "MOCK"

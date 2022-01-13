@@ -7,6 +7,8 @@ import net.corda.crypto.impl.persistence.SoftCryptoKeyCache
 import net.corda.crypto.impl.persistence.SigningKeyCache
 import net.corda.crypto.impl.persistence.SigningKeyRecord
 import net.corda.crypto.impl.stubs.CryptoServicesTestFactory
+import net.corda.crypto.service.dev.DevCryptoService
+import net.corda.crypto.service.dev.DevCryptoServiceProvider
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoServiceContext
 import net.corda.v5.cipher.suite.WrappedPrivateKey

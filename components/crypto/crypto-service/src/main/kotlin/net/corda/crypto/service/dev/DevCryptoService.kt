@@ -1,6 +1,7 @@
-package net.corda.crypto.service
+package net.corda.crypto.service.dev
 
 import net.corda.crypto.SigningService
+import net.corda.crypto.service.soft.SoftCryptoService
 import net.corda.crypto.service.persistence.SigningKeyCache
 import net.corda.crypto.service.persistence.SoftCryptoKeyCache
 import net.corda.v5.base.util.contextLogger

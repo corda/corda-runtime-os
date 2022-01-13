@@ -29,19 +29,6 @@ import java.time.Instant
 import kotlin.reflect.full.memberFunctions
 import kotlin.reflect.jvm.isAccessible
 
-fun generateKeyPair(schemeMetadata: CipherSchemeMetadata): KeyPair {
-    val keyPairGenerator = KeyPairGenerator.getInstance("EC", schemeMetadata.providers["BC"])
-    keyPairGenerator.initialize(ECNamedCurveTable.getParameterSpec("secp256r1"))
-    return keyPairGenerator.generateKeyPair()
-}
-
-fun sign(schemeMetadata: CipherSchemeMetadata, privateKey: PrivateKey, data: ByteArray): ByteArray {
-    val signature = Signature.getInstance("SHA256withECDSA", schemeMetadata.providers["BC"])
-    signature.initSign(privateKey, schemeMetadata.secureRandom)
-    signature.update(data)
-    return signature.sign()
-}
-
 inline fun <reified R> Publisher.act(
     block: () -> R
 ): PublishActResult<R> {

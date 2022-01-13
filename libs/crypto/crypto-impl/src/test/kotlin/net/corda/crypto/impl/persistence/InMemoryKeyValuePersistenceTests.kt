@@ -1,4 +1,4 @@
-package net.corda.crypto.impl.dev
+package net.corda.crypto.impl.persistence
 
 import org.junit.jupiter.api.Test
 

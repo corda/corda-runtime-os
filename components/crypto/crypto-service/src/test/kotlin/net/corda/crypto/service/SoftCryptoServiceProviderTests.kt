@@ -4,6 +4,8 @@ import net.corda.crypto.CryptoConsts
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
 import net.corda.crypto.impl.persistence.InMemoryKeyValuePersistenceFactory
 import net.corda.crypto.impl.stubs.CryptoServicesTestFactory
+import net.corda.crypto.service.soft.SoftCryptoServiceConfig
+import net.corda.crypto.service.soft.SoftCryptoServiceProvider
 import net.corda.test.util.createTestCase
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService

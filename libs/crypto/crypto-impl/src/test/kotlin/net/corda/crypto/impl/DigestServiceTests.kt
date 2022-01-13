@@ -1,6 +1,5 @@
 package net.corda.crypto.impl
 
-import net.corda.crypto.impl.stubs.CryptoServicesTestFactory
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.DigestScheme
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -37,10 +36,9 @@ class DigestServiceTests {
         @JvmStatic
         @BeforeAll
         fun setup() {
-            val factory = CryptoServicesTestFactory()
-            schemeMetadata = factory.schemeMetadata
+            schemeMetadata = CipherSchemeMetadataFactory().getInstance()
             digestService = DigestServiceImpl(
-                factory.schemeMetadata,
+                schemeMetadata,
                 listOf(DoubleSHA256DigestFactory()),
                 null
             )

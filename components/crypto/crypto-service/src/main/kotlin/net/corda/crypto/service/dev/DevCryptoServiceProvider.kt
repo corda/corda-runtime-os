@@ -1,4 +1,4 @@
-package net.corda.crypto.service
+package net.corda.crypto.service.dev
 
 import net.corda.crypto.service.persistence.InMemoryKeyValuePersistenceFactory
 import net.corda.crypto.service.persistence.KeyValuePersistenceFactory

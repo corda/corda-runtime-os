@@ -1,4 +1,4 @@
-package net.corda.crypto.service
+package net.corda.crypto.service.soft
 
 import net.corda.crypto.impl.config.CryptoPersistenceConfig
 import net.corda.crypto.impl.config.defaultCryptoService
