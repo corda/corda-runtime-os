@@ -1,9 +1,9 @@
 package net.corda.crypto.service
 
 import net.corda.crypto.CryptoConsts
-import net.corda.crypto.service.persistence.SigningKeyRecord
 import net.corda.test.util.createTestCase
 import net.corda.v5.base.types.OpaqueBytes
+import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.WrappedPrivateKey
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
@@ -54,6 +54,7 @@ class CryptoOperationsTests {
     companion object {
         private lateinit var factory: CryptoServicesTestFactory
         private lateinit var services: CryptoServicesTestFactory.CryptoServices
+        private lateinit var schemeMetadata: CipherSchemeMetadata
 
         private val zeroBytes = ByteArray(100)
 
@@ -76,6 +77,7 @@ class CryptoOperationsTests {
         fun setup() {
             factory = CryptoServicesTestFactory()
             services = factory.createCryptoServices()
+            schemeMetadata = factory.getSchemeMap()
         }
 
         @JvmStatic
@@ -90,7 +92,7 @@ class CryptoOperationsTests {
 
         fun getAllCustomSignatureSpecs(scheme: SignatureScheme): List<SignatureSpec> =
             if(scheme.codeName == RSA_CODE_NAME || scheme.codeName == ECDSA_SECP256R1_CODE_NAME) {
-                factory.schemeMetadata.digests.map { digest ->
+                schemeMetadata.digests.map { digest ->
                     when (scheme.algorithmName) {
                         "RSA" -> SignatureSpec(
                                 signatureName = "RSA/NONE/PKCS1Padding",
@@ -110,19 +112,6 @@ class CryptoOperationsTests {
                 emptyList()
             }
 
-        private fun getGeneratedKeyPair(alias: String): KeyPair? {
-            val record = services.cryptoServiceCache.find(alias)
-            return if(record != null) {
-                KeyPair(record.publicKey, record.privateKey)
-            } else {
-                null
-            }
-        }
-
-        private fun getGeneratedSigningKeyRecord(publicKey: PublicKey): SigningKeyRecord? {
-            return services.signingKeyCache.find(publicKey)
-        }
-
         private fun newAlias(): String = UUID.randomUUID().toString()
 
         private fun verifyGeneratedAliasedKeyRecord(
@@ -130,7 +119,7 @@ class CryptoOperationsTests {
             alias: String?,
             signatureScheme: SignatureScheme
         ) {
-            val generatedKeyData = getGeneratedSigningKeyRecord(generatedPublicKey)
+            val generatedKeyData = services.getSigningKeyRecord(generatedPublicKey)
             assertNotNull(generatedKeyData)
             assertEquals(services.tenantId, generatedKeyData.tenantId)
             assertEquals(services.category, generatedKeyData.category)
@@ -150,7 +139,7 @@ class CryptoOperationsTests {
         }
 
         private fun verifyFreshKeyRecord(freshKey: PublicKey, uuid: UUID?, signatureScheme: SignatureScheme) {
-            val freshKeyData = getGeneratedSigningKeyRecord(freshKey)
+            val freshKeyData = services.getSigningKeyRecord(freshKey)
             assertNotNull(freshKeyData)
             assertEquals(services.tenantId, freshKeyData.tenantId)
             assertEquals(CryptoConsts.CryptoCategories.FRESH_KEYS, freshKeyData.category)
@@ -172,21 +161,22 @@ class CryptoOperationsTests {
             data: ByteArray
         ) {
             val badData = UUID.randomUUID().toString().toByteArray()
+            val verifier = factory.getSignatureVerificationService()
             assertTrue(
-                factory.verifier.isValid(publicKey, signature, data)
+                verifier.isValid(publicKey, signature, data)
             )
-            factory.verifier.verify(publicKey, signature, data)
+            verifier.verify(publicKey, signature, data)
             assertFalse(
-                factory.verifier.isValid(publicKey, signature, badData)
+                verifier.isValid(publicKey, signature, badData)
             )
             assertThrows<SignatureException> {
-                factory.verifier.verify(publicKey, signature, badData)
+                verifier.verify(publicKey, signature, badData)
             }
             assertThrows<IllegalArgumentException> {
-                factory.verifier.verify(publicKey, signature, ByteArray(0))
+                verifier.verify(publicKey, signature, ByteArray(0))
             }
             assertThrows<IllegalArgumentException> {
-                factory.verifier.verify(publicKey, ByteArray(0), data)
+                verifier.verify(publicKey, ByteArray(0), data)
             }
         }
 
@@ -197,22 +187,23 @@ class CryptoOperationsTests {
             data: ByteArray
         ) {
             val badData = UUID.randomUUID().toString().toByteArray()
+            val verifier = factory.getSignatureVerificationService()
             assertTrue(
-                factory.verifier.isValid(publicKey, signatureSpec, signature, data),
+                verifier.isValid(publicKey, signatureSpec, signature, data),
                 "Should validate with ${signatureSpec.signatureName}"
             )
-            factory.verifier.verify(publicKey, signatureSpec, signature, data)
+            verifier.verify(publicKey, signatureSpec, signature, data)
             assertFalse(
-                factory.verifier.isValid(publicKey, signatureSpec, signature, badData)
+                verifier.isValid(publicKey, signatureSpec, signature, badData)
             )
             assertThrows<SignatureException> {
-                factory.verifier.verify(publicKey, signatureSpec, signature, badData)
+                verifier.verify(publicKey, signatureSpec, signature, badData)
             }
             assertThrows<IllegalArgumentException> {
-                factory.verifier.verify(publicKey, signatureSpec, signature, ByteArray(0))
+                verifier.verify(publicKey, signatureSpec, signature, ByteArray(0))
             }
             assertThrows<IllegalArgumentException> {
-                factory.verifier.verify(publicKey, signatureSpec, ByteArray(0), data)
+                verifier.verify(publicKey, signatureSpec, ByteArray(0), data)
             }
         }
 
@@ -244,7 +235,7 @@ class CryptoOperationsTests {
     fun `All supported by SoftCryptoService schemes should be defined in cipher suite`() {
         assertTrue(services.cryptoService.supportedSchemes().isNotEmpty())
         services.cryptoService.supportedSchemes().forEach {
-            assertTrue(factory.schemeMetadata.schemes.contains(it))
+            assertTrue(schemeMetadata.schemes.contains(it))
         }
     }
 
@@ -253,7 +244,7 @@ class CryptoOperationsTests {
     fun `All supported by SoftCryptoService wrapping schemes should be defined in cipher suite`() {
         assertTrue(services.cryptoService.supportedWrappingSchemes().isNotEmpty())
         services.cryptoService.supportedWrappingSchemes().forEach {
-            assertTrue(factory.schemeMetadata.schemes.contains(it))
+            assertTrue(schemeMetadata.schemes.contains(it))
         }
     }
 
@@ -305,9 +296,9 @@ class CryptoOperationsTests {
     @Timeout(30)
     fun `Should generate deterministic signatures for EdDSA, SPHINCS-256 and RSA`() {
         listOf(
-            factory.schemeMetadata.schemes.first { it.codeName == EDDSA_ED25519_CODE_NAME },
-            factory.schemeMetadata.schemes.first { it.codeName == SPHINCS256_CODE_NAME },
-            factory.schemeMetadata.schemes.first { it.codeName == RSA_CODE_NAME }
+            schemeMetadata.schemes.first { it.codeName == EDDSA_ED25519_CODE_NAME },
+            schemeMetadata.schemes.first { it.codeName == SPHINCS256_CODE_NAME },
+            schemeMetadata.schemes.first { it.codeName == RSA_CODE_NAME }
         ).forEach { signatureScheme ->
             val testData = UUID.randomUUID().toString().toByteArray()
             val alias = newAlias()
@@ -352,8 +343,8 @@ class CryptoOperationsTests {
     @Timeout(5)
     fun `Should generate non deterministic signatures for ECDSA`() {
         listOf(
-            factory.schemeMetadata.schemes.first { it.codeName == ECDSA_SECP256K1_CODE_NAME },
-            factory.schemeMetadata.schemes.first { it.codeName == ECDSA_SECP256R1_CODE_NAME }
+            schemeMetadata.schemes.first { it.codeName == ECDSA_SECP256K1_CODE_NAME },
+            schemeMetadata.schemes.first { it.codeName == ECDSA_SECP256R1_CODE_NAME }
         ).forEach { signatureScheme ->
             val testData = UUID.randomUUID().toString().toByteArray()
             val alias = newAlias()
@@ -398,9 +389,9 @@ class CryptoOperationsTests {
     @Timeout(5)
     fun `Should generate RSA key pair`() {
         val alias = newAlias()
-        val scheme = factory.schemeMetadata.findSignatureScheme(RSA_CODE_NAME)
+        val scheme = schemeMetadata.findSignatureScheme(RSA_CODE_NAME)
         services.cryptoService.generateKeyPair(alias, scheme, EMPTY_CONTEXT)
-        val keyPair = getGeneratedKeyPair(alias)
+        val keyPair = services.getKeyPair(alias)
         assertNotNull(keyPair)
         assertEquals(keyPair.private.algorithm, "RSA")
         assertEquals(keyPair.public.algorithm, "RSA")
@@ -410,9 +401,9 @@ class CryptoOperationsTests {
     @Timeout(5)
     fun `Should generate ECDSA key pair with secp256k1 curve`() {
         val alias = newAlias()
-        val scheme = factory.schemeMetadata.findSignatureScheme(ECDSA_SECP256K1_CODE_NAME)
+        val scheme = schemeMetadata.findSignatureScheme(ECDSA_SECP256K1_CODE_NAME)
         services.cryptoService.generateKeyPair(alias, scheme, EMPTY_CONTEXT)
-        val keyPair = getGeneratedKeyPair(alias)
+        val keyPair = services.getKeyPair(alias)
         assertNotNull(keyPair)
         assertEquals(keyPair.private.algorithm, "EC")
         assertEquals((keyPair.private as ECKey).parameters, ECNamedCurveTable.getParameterSpec("secp256k1"))
@@ -424,9 +415,9 @@ class CryptoOperationsTests {
     @Timeout(5)
     fun `Should generate ECDSA key pair with secp256r1 curve`() {
         val alias = newAlias()
-        val scheme = factory.schemeMetadata.findSignatureScheme(ECDSA_SECP256R1_CODE_NAME)
+        val scheme = schemeMetadata.findSignatureScheme(ECDSA_SECP256R1_CODE_NAME)
         services.cryptoService.generateKeyPair(alias, scheme, EMPTY_CONTEXT)
-        val keyPair = getGeneratedKeyPair(alias)
+        val keyPair = services.getKeyPair(alias)
         assertNotNull(keyPair)
         assertEquals(keyPair.private.algorithm, "EC")
         assertEquals((keyPair.private as ECKey).parameters, ECNamedCurveTable.getParameterSpec("secp256r1"))
@@ -438,9 +429,9 @@ class CryptoOperationsTests {
     @Timeout(5)
     fun `Should generate EdDSA key pair with ED25519 curve`() {
         val alias = newAlias()
-        val scheme = factory.schemeMetadata.findSignatureScheme(EDDSA_ED25519_CODE_NAME)
+        val scheme = schemeMetadata.findSignatureScheme(EDDSA_ED25519_CODE_NAME)
         services.cryptoService.generateKeyPair(alias, scheme, EMPTY_CONTEXT)
-        val keyPair = getGeneratedKeyPair(alias)
+        val keyPair = services.getKeyPair(alias)
         assertNotNull(keyPair)
         assertEquals(keyPair.private.algorithm, "EdDSA")
         assertEquals((keyPair.private as EdDSAKey).params, EdDSANamedCurveTable.getByName("ED25519"))
@@ -452,9 +443,9 @@ class CryptoOperationsTests {
     @Timeout(5)
     fun `Should generate SPHINCS-256 key pair`() {
         val alias = newAlias()
-        val scheme = factory.schemeMetadata.findSignatureScheme(SPHINCS256_CODE_NAME)
+        val scheme = schemeMetadata.findSignatureScheme(SPHINCS256_CODE_NAME)
         services.cryptoService.generateKeyPair(alias, scheme, EMPTY_CONTEXT)
-        val keyPair = getGeneratedKeyPair(alias)
+        val keyPair = services.getKeyPair(alias)
         assertNotNull(keyPair)
         assertEquals(keyPair.private.algorithm, "SPHINCS-256")
         assertEquals(keyPair.public.algorithm, "SPHINCS-256")
@@ -464,9 +455,9 @@ class CryptoOperationsTests {
     @Timeout(5)
     fun `Should generate SM2 key pair`() {
         val alias = newAlias()
-        val scheme = factory.schemeMetadata.findSignatureScheme(SM2_CODE_NAME)
+        val scheme = schemeMetadata.findSignatureScheme(SM2_CODE_NAME)
         services.cryptoService.generateKeyPair(alias, scheme, EMPTY_CONTEXT)
-        val keyPair = getGeneratedKeyPair(alias)
+        val keyPair = services.getKeyPair(alias)
         assertNotNull(keyPair)
         assertEquals(keyPair.private.algorithm, "EC")
         assertEquals((keyPair.private as ECKey).parameters, ECNamedCurveTable.getParameterSpec("sm2p256v1"))
@@ -478,9 +469,9 @@ class CryptoOperationsTests {
     @Timeout(5)
     fun `Should generate GOST3410_GOST3411 key pair`() {
         val alias = newAlias()
-        val scheme = factory.schemeMetadata.findSignatureScheme(GOST3410_GOST3411_CODE_NAME)
+        val scheme = schemeMetadata.findSignatureScheme(GOST3410_GOST3411_CODE_NAME)
         services.cryptoService.generateKeyPair(alias, scheme, EMPTY_CONTEXT)
-        val keyPair = getGeneratedKeyPair(alias)
+        val keyPair = services.getKeyPair(alias)
         assertNotNull(keyPair)
         assertEquals(keyPair.private.algorithm, "GOST3410")
         assertEquals(keyPair.public.algorithm, "GOST3410")
@@ -618,7 +609,7 @@ class CryptoOperationsTests {
         val publicKey = services.cryptoService.generateKeyPair(alias, signatureScheme, EMPTY_CONTEXT)
         assertNotNull(publicKey)
         validatePublicKeyAlgorithm(signatureScheme, publicKey)
-        val keyPair = getGeneratedKeyPair(alias)
+        val keyPair = services.getKeyPair(alias)
         assertNotNull(keyPair)
         val signature = services.cryptoService.sign(alias, signatureScheme, data, EMPTY_CONTEXT)
         validateSignature(publicKey, signature, data)

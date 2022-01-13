@@ -22,8 +22,8 @@ open class CryptoCoordinator @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = CipherSuiteFactory::class)
     private val cipherSuiteFactory: CipherSuiteFactory,
-    @Reference(service = CryptoFactory::class)
-    private val cryptoFactory: CryptoFactory,
+    @Reference(service = SigningServiceFactory::class)
+    private val signingFactory: SigningServiceFactory,
     @Reference(service = SoftCryptoServiceProvider::class)
     private val softCryptoServiceProvider: SoftCryptoServiceProvider,
     @Reference(
@@ -39,6 +39,6 @@ open class CryptoCoordinator @Activate constructor(
     listOf(
         softCryptoServiceProvider,
         cipherSuiteFactory,
-        cryptoFactory,
+        signingFactory,
     ) + rpcSubs
 )

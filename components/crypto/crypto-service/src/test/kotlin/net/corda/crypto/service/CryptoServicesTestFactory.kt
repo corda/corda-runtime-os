@@ -1,13 +1,13 @@
 package net.corda.crypto.service
 
 import net.corda.crypto.CryptoConsts
-import net.corda.crypto.SigningService
 import net.corda.crypto.impl.CipherSchemeMetadataFactory
 import net.corda.crypto.impl.DigestServiceImpl
 import net.corda.crypto.impl.DoubleSHA256DigestFactory
 import net.corda.crypto.impl.SignatureVerificationServiceImpl
 import net.corda.crypto.service.persistence.InMemoryKeyValuePersistenceFactory
 import net.corda.crypto.service.persistence.SigningKeyCacheImpl
+import net.corda.crypto.service.persistence.SigningKeyRecord
 import net.corda.crypto.service.persistence.SoftCryptoKeyCache
 import net.corda.crypto.service.persistence.SoftCryptoKeyCacheImpl
 import net.corda.crypto.service.soft.SoftCryptoService
@@ -16,19 +16,21 @@ import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SignatureVerificationService
+import java.security.KeyPair
+import java.security.PublicKey
 import java.util.UUID
 
 class CryptoServicesTestFactory(
     schemeMetadataOverride: CipherSchemeMetadata? = null
 ) : CipherSuiteFactory {
-    val schemeMetadata: CipherSchemeMetadata =
+    private val schemeMetadata: CipherSchemeMetadata =
         schemeMetadataOverride ?: CipherSchemeMetadataFactory().getInstance()
 
-    val digest: DigestService by lazy {
+    private val digest: DigestService by lazy {
         DigestServiceImpl(schemeMetadata, listOf(DoubleSHA256DigestFactory()), null)
     }
 
-    val verifier: SignatureVerificationService by lazy {
+    private val verifier: SignatureVerificationService by lazy {
         SignatureVerificationServiceImpl(schemeMetadata, digest)
     }
 
@@ -46,8 +48,8 @@ class CryptoServicesTestFactory(
     class CryptoServices(
         val tenantId: String,
         val category: String,
-        val schemeMetadata: CipherSchemeMetadata,
-        val digest: DigestService
+        private val schemeMetadata: CipherSchemeMetadata,
+        digest: DigestService
     ) {
         val wrappingKeyAlias = "wrapping-key-alias"
 
@@ -55,9 +57,9 @@ class CryptoServicesTestFactory(
 
         private val salt = "SALT"
 
-        val persistenceFactory = InMemoryKeyValuePersistenceFactory()
+        private val persistenceFactory = InMemoryKeyValuePersistenceFactory()
 
-        val cryptoServiceCache: SoftCryptoKeyCache = SoftCryptoKeyCacheImpl(
+        private val cryptoServiceCache: SoftCryptoKeyCache = SoftCryptoKeyCacheImpl(
             tenantId = tenantId,
             passphrase = passphrase,
             salt = salt,
@@ -65,7 +67,7 @@ class CryptoServicesTestFactory(
             persistenceFactory = persistenceFactory
         )
 
-        val signingKeyCache = SigningKeyCacheImpl(
+        private val signingKeyCache = SigningKeyCacheImpl(
             tenantId = tenantId,
             keyEncoder = schemeMetadata,
             persistenceFactory = persistenceFactory
@@ -96,5 +98,18 @@ class CryptoServicesTestFactory(
                 },
                 schemeMetadata = schemeMetadata
             )
+
+        fun getSigningKeyRecord(publicKey: PublicKey): SigningKeyRecord? {
+            return signingKeyCache.find(publicKey)
+        }
+
+        fun getKeyPair(alias: String): KeyPair? {
+            val record = cryptoServiceCache.find(alias)
+            return if(record != null) {
+                KeyPair(record.publicKey, record.privateKey)
+            } else {
+                null
+            }
+        }
     }
 }

@@ -16,6 +16,7 @@ dependencies {
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-topic-schema"
     implementation "net.corda:corda-crypto"
     implementation "net.corda:corda-cipher-suite"
     implementation project(':libs:crypto:crypto-internal')

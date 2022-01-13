@@ -31,8 +31,8 @@ class SoftCryptoServiceProviderTests {
     fun setup() {
         factory = CryptoServicesTestFactory()
         services = factory.createCryptoServices()
-        schemeMetadata = factory.schemeMetadata
-        signatureVerifier = factory.verifier
+        schemeMetadata = factory.getSchemeMap()
+        signatureVerifier = factory.getSignatureVerificationService()
     }
 
     @Test

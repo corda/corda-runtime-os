@@ -1,6 +1,5 @@
 package net.corda.crypto.service.persistence
 
-import net.corda.crypto.SigningService
 import net.corda.crypto.impl.persistence.KeyValueMutator
 import net.corda.crypto.impl.persistence.KeyValuePersistence
 

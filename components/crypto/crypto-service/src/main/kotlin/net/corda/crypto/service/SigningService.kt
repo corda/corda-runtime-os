@@ -1,5 +1,6 @@
-package net.corda.crypto
+package net.corda.crypto.service
 
+import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
@@ -19,6 +20,11 @@ interface SigningService {
      * Tenant id (member or cluster) which the instance was created for.
      */
     val tenantId: String
+
+    /**
+     * Return an instance of the [CipherSchemeMetadata] which is used by the current instance of [SigningService]
+     */
+    val schemeMetadata: CipherSchemeMetadata
 
     /**
      * Returns the list of schemes codes which are supported by the associated HSM integration.

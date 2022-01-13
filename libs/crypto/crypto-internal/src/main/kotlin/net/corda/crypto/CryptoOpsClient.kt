@@ -13,6 +13,10 @@ import java.util.UUID
  * The crypto operations client to generate fresh keys, sign, find or filter public keys, some HSM related queries.
  */
 interface CryptoOpsClient {
+    companion object {
+        val EMPTY_CONTEXT = emptyMap<String, String>()
+    }
+
     /**
      * Returns the list of schemes codes which are supported by the associated HSM integration.
      */
@@ -53,7 +57,7 @@ interface CryptoOpsClient {
         tenantId: String,
         category: String,
         alias: String,
-        context: Map<String, String> = SigningService.EMPTY_CONTEXT
+        context: Map<String, String> = EMPTY_CONTEXT
     ): PublicKey
 
     /**
@@ -64,7 +68,7 @@ interface CryptoOpsClient {
      *
      * @return The [PublicKey] of the generated [KeyPair].
      */
-    fun freshKey(tenantId: String, context: Map<String, String> = SigningService.EMPTY_CONTEXT): PublicKey
+    fun freshKey(tenantId: String, context: Map<String, String> = EMPTY_CONTEXT): PublicKey
 
     /**
      * Generates a new random [KeyPair] and adds it to the internal key storage. Associates the public key to
@@ -79,7 +83,7 @@ interface CryptoOpsClient {
     fun freshKey(
         tenantId: String,
         externalId: UUID,
-        context: Map<String, String> = SigningService.EMPTY_CONTEXT
+        context: Map<String, String> = EMPTY_CONTEXT
     ): PublicKey
 
     /**
@@ -91,7 +95,7 @@ interface CryptoOpsClient {
         tenantId: String,
         publicKey: PublicKey,
         data: ByteArray,
-        context: Map<String, String> = SigningService.EMPTY_CONTEXT
+        context: Map<String, String> = EMPTY_CONTEXT
     ): DigitalSignature.WithKey
 
     /**
@@ -104,7 +108,7 @@ interface CryptoOpsClient {
         publicKey: PublicKey,
         signatureSpec: SignatureSpec,
         data: ByteArray,
-        context: Map<String, String> = SigningService.EMPTY_CONTEXT
+        context: Map<String, String> = EMPTY_CONTEXT
     ): DigitalSignature.WithKey
 
     /**
@@ -118,7 +122,7 @@ interface CryptoOpsClient {
         tenantId: String,
         alias: String,
         data: ByteArray,
-        context: Map<String, String> = SigningService.EMPTY_CONTEXT
+        context: Map<String, String> = EMPTY_CONTEXT
     ): ByteArray
 
     /**
@@ -133,7 +137,7 @@ interface CryptoOpsClient {
         alias: String,
         signatureSpec: SignatureSpec,
         data: ByteArray,
-        context: Map<String, String> = SigningService.EMPTY_CONTEXT
+        context: Map<String, String> = EMPTY_CONTEXT
     ): ByteArray
 
     /**

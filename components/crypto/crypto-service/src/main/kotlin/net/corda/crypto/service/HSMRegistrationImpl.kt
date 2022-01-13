@@ -1,4 +1,4 @@
-package net.corda.crypto.service.registration
+package net.corda.crypto.service
 
 import org.osgi.service.component.annotations.Component
 

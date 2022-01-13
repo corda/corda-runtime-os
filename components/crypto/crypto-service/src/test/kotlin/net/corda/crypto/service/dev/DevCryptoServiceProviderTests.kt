@@ -24,14 +24,14 @@ class DevCryptoServiceProviderTests {
     private lateinit var factory: CryptoServicesTestFactory
     private lateinit var services: CryptoServicesTestFactory.CryptoServices
     private lateinit var schemeMetadata: CipherSchemeMetadata
-    private lateinit var signatureVerifier: SignatureVerificationService
+    private lateinit var verifier: SignatureVerificationService
 
     @BeforeEach
     fun setup() {
         factory = CryptoServicesTestFactory()
         services = factory.createCryptoServices()
-        schemeMetadata = factory.schemeMetadata
-        signatureVerifier = factory.verifier
+        schemeMetadata = factory.getSchemeMap()
+        verifier = factory.getSignatureVerificationService()
     }
 
     @Test
@@ -45,8 +45,8 @@ class DevCryptoServiceProviderTests {
             val publicKey = cryptoService.generateKeyPair(alias, signatureScheme, emptyMap())
             val signature = cryptoService.sign(alias, signatureScheme, testData, emptyMap())
             assertNotNull(publicKey)
-            assertTrue(signatureVerifier.isValid(publicKey, signature, testData))
-            assertFalse(signatureVerifier.isValid(publicKey, signature, badVerifyData))
+            assertTrue(verifier.isValid(publicKey, signature, testData))
+            assertFalse(verifier.isValid(publicKey, signature, badVerifyData))
         }
     }
 
@@ -74,8 +74,8 @@ class DevCryptoServiceProviderTests {
             )
             assertNotNull(signature)
             assertTrue(signature.isNotEmpty())
-            assertTrue(signatureVerifier.isValid(wrappedKeyPair.publicKey, signature, testData))
-            assertFalse(signatureVerifier.isValid(wrappedKeyPair.publicKey, signature, badVerifyData))
+            assertTrue(verifier.isValid(wrappedKeyPair.publicKey, signature, testData))
+            assertFalse(verifier.isValid(wrappedKeyPair.publicKey, signature, badVerifyData))
         }
     }
 

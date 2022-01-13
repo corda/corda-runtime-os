@@ -32,6 +32,7 @@ class CryptoFlowOpsTransformer(
     companion object {
         const val REQUEST_OP_KEY = "req.op"
         const val RESPONSE_ERROR_KEY = "res.err"
+        val EMPTY_CONTEXT = emptyMap<String, String>()
     }
 
     /**
@@ -53,7 +54,7 @@ class CryptoFlowOpsTransformer(
      */
     fun createFreshKey(
         tenantId: String,
-        context: Map<String, String> = SigningService.EMPTY_CONTEXT
+        context: Map<String, String> = EMPTY_CONTEXT
     ): FlowOpsRequest {
         return createRequest(
             tenantId,
@@ -67,7 +68,7 @@ class CryptoFlowOpsTransformer(
     fun createFreshKey(
         tenantId: String,
         externalId: UUID,
-        context: Map<String, String> = SigningService.EMPTY_CONTEXT
+        context: Map<String, String> = EMPTY_CONTEXT
     ): FlowOpsRequest {
         return createRequest(
             tenantId,
@@ -82,7 +83,7 @@ class CryptoFlowOpsTransformer(
         tenantId: String,
         publicKey: PublicKey,
         data: ByteArray,
-        context: Map<String, String> = SigningService.EMPTY_CONTEXT
+        context: Map<String, String> = EMPTY_CONTEXT
     ): FlowOpsRequest {
         return createRequest(
             tenantId,
@@ -102,7 +103,7 @@ class CryptoFlowOpsTransformer(
         publicKey: PublicKey,
         signatureSpec: SignatureSpec,
         data: ByteArray,
-        context: Map<String, String> = SigningService.EMPTY_CONTEXT
+        context: Map<String, String> = EMPTY_CONTEXT
     ): FlowOpsRequest {
         return createRequest(
             tenantId,

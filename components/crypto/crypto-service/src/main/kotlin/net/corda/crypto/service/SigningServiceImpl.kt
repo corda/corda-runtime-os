@@ -1,7 +1,6 @@
 package net.corda.crypto.service
 
 import net.corda.crypto.CryptoConsts
-import net.corda.crypto.SigningService
 import net.corda.crypto.service.persistence.SigningKeyCache
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -18,7 +17,7 @@ import java.util.UUID
 open class SigningServiceImpl(
     private val cache: SigningKeyCache,
     private val cryptoServiceFactory: CryptoServiceFactory,
-    private val schemeMetadata: CipherSchemeMetadata,
+    override val schemeMetadata: CipherSchemeMetadata,
     override val tenantId: String
 ) : SigningService {
     companion object {

@@ -56,7 +56,7 @@ class DevCryptoServiceTests {
         private lateinit var factory: CryptoServicesTestFactory
         private lateinit var services: CryptoServicesTestFactory.CryptoServices
         private lateinit var devCryptoServiceProvider: DevCryptoServiceProvider
-        private lateinit var signatureVerifier: SignatureVerificationService
+        private lateinit var verifier: SignatureVerificationService
         private lateinit var schemeMetadata: CipherSchemeMetadata
         private lateinit var cryptoServiceCache: SoftCryptoKeyCache
         private lateinit var signingKeyCache: SigningKeyCache
@@ -67,8 +67,8 @@ class DevCryptoServiceTests {
         fun setup() {
             factory = CryptoServicesTestFactory()
             services = factory.createCryptoServices()
-            schemeMetadata = factory.schemeMetadata
-            signatureVerifier = factory.verifier
+            schemeMetadata = factory.getSchemeMap()
+            verifier = factory.getSignatureVerificationService()
             devCryptoServiceProvider = DevCryptoServiceProvider().also {
                 it.persistenceFactories = listOf(InMemoryKeyValuePersistenceFactory())
             }
@@ -135,8 +135,8 @@ class DevCryptoServiceTests {
         assertTrue(cryptoService.containsKey(alias))
         val keyPair = validateGeneratedKeySpecs(alias, true)
         val signature = cryptoService.sign(alias, signatureScheme, testData, EMPTY_CONTEXT)
-        assertTrue(signatureVerifier.isValid(keyPair.public, signature, testData))
-        assertFalse(signatureVerifier.isValid(keyPair.public, signature, badVerifyData))
+        assertTrue(verifier.isValid(keyPair.public, signature, testData))
+        assertFalse(verifier.isValid(keyPair.public, signature, badVerifyData))
     }
 
     @Test
@@ -152,8 +152,8 @@ class DevCryptoServiceTests {
         assertNotNull(publicKey)
         assertEquals(keyPair.public, publicKey)
         val signature = cryptoService.sign(alias, signatureScheme, testData, EMPTY_CONTEXT)
-        assertTrue(signatureVerifier.isValid(publicKey, signature, testData))
-        assertFalse(signatureVerifier.isValid(publicKey, signature, badVerifyData))
+        assertTrue(verifier.isValid(publicKey, signature, testData))
+        assertFalse(verifier.isValid(publicKey, signature, badVerifyData))
     }
 
     @Test
@@ -180,8 +180,8 @@ class DevCryptoServiceTests {
         assertNotNull(publicKey)
         assertEquals(keyPair.public, publicKey)
         val signature = cryptoService.sign(alias, signatureScheme, testData, EMPTY_CONTEXT)
-        assertTrue(signatureVerifier.isValid(publicKey, signature, testData))
-        assertFalse(signatureVerifier.isValid(publicKey, signature, badVerifyData))
+        assertTrue(verifier.isValid(publicKey, signature, testData))
+        assertFalse(verifier.isValid(publicKey, signature, badVerifyData))
     }
 
     @Test
@@ -217,8 +217,8 @@ class DevCryptoServiceTests {
         val alias = newAlias()
         val signature = cryptoService.sign(alias, signatureScheme, testData, EMPTY_CONTEXT)
         val keyPair = validateGeneratedKeySpecs(alias, true)
-        assertTrue(signatureVerifier.isValid(keyPair.public, signature, testData))
-        assertFalse(signatureVerifier.isValid(keyPair.public, signature, badVerifyData))
+        assertTrue(verifier.isValid(keyPair.public, signature, testData))
+        assertFalse(verifier.isValid(keyPair.public, signature, badVerifyData))
     }
 
     private fun newAlias(): String = UUID.randomUUID().toString()
@@ -282,8 +282,8 @@ class DevCryptoServiceTests {
             testData,
             EMPTY_CONTEXT
         )
-        assertTrue(signatureVerifier.isValid(wrappedKeyPair.publicKey, signature, testData))
-        assertFalse(signatureVerifier.isValid(wrappedKeyPair.publicKey, signature, badVerifyData))
+        assertTrue(verifier.isValid(wrappedKeyPair.publicKey, signature, testData))
+        assertFalse(verifier.isValid(wrappedKeyPair.publicKey, signature, badVerifyData))
     }
 
     @Test

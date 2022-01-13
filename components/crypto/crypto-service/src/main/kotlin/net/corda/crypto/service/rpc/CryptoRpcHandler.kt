@@ -1,5 +1,7 @@
 package net.corda.crypto.service.rpc
 
-interface CryptoRpcHandler<CTX, REQUEST> {
-    fun handle(context: CTX, request: REQUEST): Any
+import net.corda.data.crypto.wire.CryptoRequestContext
+
+interface CryptoRpcHandler<REQUEST> {
+    fun handle(context: CryptoRequestContext, request: REQUEST): Any
 }

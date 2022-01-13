@@ -1,6 +1,6 @@
-package net.corda.crypto.service.rpc
+package net.corda.crypto.service.rpc.ops
 
-import net.corda.crypto.service.CryptoFactory
+import net.corda.crypto.service.SigningServiceFactory
 import net.corda.data.crypto.wire.signing.WireSigningRequest
 import net.corda.data.crypto.wire.signing.WireSigningResponse
 import net.corda.messaging.api.subscription.RPCSubscription
@@ -17,16 +17,16 @@ import org.mockito.kotlin.whenever
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class SigningServiceRpcSubTests {
+class CryptoOpsRpcSubTests {
     private lateinit var sub: RPCSubscription<WireSigningRequest, WireSigningResponse>
     private lateinit var subscriptionFactory: SubscriptionFactory
-    private lateinit var cryptoFactory: CryptoFactory
+    private lateinit var signingFactory: SigningServiceFactory
 
     @BeforeEach
     fun setup() {
         sub = mock()
         subscriptionFactory = mock()
-        cryptoFactory = mock()
+        signingFactory = mock()
         whenever(
             subscriptionFactory.createRPCSubscription<WireSigningRequest, WireSigningResponse>(any(), any(), any())
         ).thenReturn(sub)
@@ -35,39 +35,39 @@ class SigningServiceRpcSubTests {
     @Test
     @Timeout(5)
     fun `Should create RPC subscription when configuration is available`() {
-        val signingRpc = SigningServiceRpcSub(
+        val opsSub = CryptoOpsRpcSub(
             subscriptionFactory,
-            cryptoFactory
+            signingFactory
         )
-        assertFalse(signingRpc.isRunning)
-        signingRpc.start()
-        assertTrue(signingRpc.isRunning)
-        signingRpc.handleConfigEvent(mock())
-        assertTrue(signingRpc.isRunning)
+        assertFalse(opsSub.isRunning)
+        opsSub.start()
+        assertTrue(opsSub.isRunning)
+        opsSub.handleConfigEvent(mock())
+        assertTrue(opsSub.isRunning)
         Mockito
             .verify(subscriptionFactory, times(1))
             .createRPCSubscription<WireSigningRequest, WireSigningResponse>(any(), any(), any())
         Mockito.verify(sub, times(1)).start()
         Mockito.verify(sub, never()).stop()
-        signingRpc.handleConfigEvent(mock())
+        opsSub.handleConfigEvent(mock())
         Mockito
             .verify(subscriptionFactory, times(2))
             .createRPCSubscription<WireSigningRequest, WireSigningResponse>(any(), any(), any())
         Mockito.verify(sub, times(2)).start()
         Mockito.verify(sub, times(1)).stop()
-        signingRpc.stop()
+        opsSub.stop()
         Mockito.verify(sub, times(2)).stop()
-        assertFalse(signingRpc.isRunning)
+        assertFalse(opsSub.isRunning)
     }
 
 
     @Test
     @Timeout(5)
-    fun `Should not fail stopping if RPC subscription never createde`() {
-        val signingRpc = SigningServiceRpcSub(
+    fun `Should not fail stopping if RPC subscription never created`() {
+        val opsSub = CryptoOpsRpcSub(
             subscriptionFactory,
-            cryptoFactory
+            signingFactory
         )
-        signingRpc.stop()
+        opsSub.stop()
     }
 }

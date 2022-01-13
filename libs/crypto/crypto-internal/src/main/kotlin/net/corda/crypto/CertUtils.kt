@@ -44,14 +44,17 @@ fun createDevCertificate(
     return v3CertGen.build(signer).toJca()
 }
 
-fun SigningService.getSigner(
+fun CryptoOpsClient.getSigner(
     schemeMetadata: CipherSchemeMetadata,
+    tenantId: String,
     alias: String,
     context: Map<String, String> = emptyMap()
 ): ContentSigner {
     return object : ContentSigner {
-        private val publicKey: PublicKey = findPublicKey(alias)
-            ?: throw CryptoServiceBadRequestException("No key found for alias $alias")
+        private val publicKey: PublicKey = findPublicKey(
+            tenantId = tenantId,
+            alias = alias
+        ) ?: throw CryptoServiceBadRequestException("No key found for alias $alias")
         private val signatureScheme: SignatureScheme = schemeMetadata.findSignatureScheme(publicKey)
         private val sigAlgID: AlgorithmIdentifier = signatureScheme.signatureSpec.signatureOID
             ?: throw CryptoServiceException(
@@ -61,7 +64,12 @@ fun SigningService.getSigner(
         private val baos = ByteArrayOutputStream()
         override fun getAlgorithmIdentifier(): AlgorithmIdentifier = sigAlgID
         override fun getOutputStream(): OutputStream = baos
-        override fun getSignature(): ByteArray = sign(alias, baos.toByteArray(), context)
+        override fun getSignature(): ByteArray = sign(
+            tenantId = tenantId,
+            alias = alias,
+            data = baos.toByteArray(),
+            context = context
+        )
     }
 }
 
