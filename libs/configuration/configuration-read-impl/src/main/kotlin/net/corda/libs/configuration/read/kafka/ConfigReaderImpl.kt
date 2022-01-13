@@ -11,7 +11,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.v5.base.util.contextLogger
+import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import java.util.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -24,10 +24,7 @@ class ConfigReaderImpl(
 ) : ConfigReader, CompactedProcessor<String, Configuration> {
 
     companion object {
-        private const val CONFIG_TOPIC_PATH = "config.topic.name"
         internal const val CONFIGURATION_READER = "CONFIGURATION_READER"
-
-        private val log = contextLogger()
     }
 
     @Volatile
@@ -48,22 +45,17 @@ class ConfigReaderImpl(
     override fun start() {
         lock.withLock {
             if (subscription == null) {
-                if (boostrapConfig.hasPath(CONFIG_TOPIC_PATH)) {
-                    subscription =
-                        subscriptionFactory.createCompactedSubscription(
-                            SubscriptionConfig(
-                                CONFIGURATION_READER,
-                                boostrapConfig.getString(CONFIG_TOPIC_PATH)
-                            ),
-                            this,
-                            boostrapConfig
-                        )
-                    subscription!!.start()
-                    stopped = false
-                } else {
-                    log.warn("'$CONFIG_TOPIC_PATH' is not available in the bootstrap configuration. " +
-                            "Subscription will not be setup.")
-                }
+                subscription =
+                    subscriptionFactory.createCompactedSubscription(
+                        SubscriptionConfig(
+                            CONFIGURATION_READER,
+                            CONFIG_TOPIC
+                        ),
+                        this,
+                        boostrapConfig
+                    )
+                subscription!!.start()
+                stopped = false
             }
         }
     }

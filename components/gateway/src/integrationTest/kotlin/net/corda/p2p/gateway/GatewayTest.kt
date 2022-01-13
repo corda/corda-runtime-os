@@ -474,6 +474,8 @@ class GatewayTest : TestBase() {
 
             val startTime = Instant.now().toEpochMilli()
             // Start the gateways and let them run until all messages have been processed
+            val lcf1 = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
+            val lcf2 = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
             val gateways = listOf(
                 Gateway(
                     createConfigurationServiceFor(
@@ -481,11 +483,11 @@ class GatewayTest : TestBase() {
                             aliceGatewayAddress.host,
                             aliceGatewayAddress.port,
                             chipSslConfig
-                        )
+                        ), lcf1
                     ),
                     alice.subscriptionFactory,
                     alice.publisherFactory,
-                    lifecycleCoordinatorFactory,
+                    lcf1,
                     nodeConfig,
                     instanceId.incrementAndGet(),
                 ),
@@ -495,11 +497,11 @@ class GatewayTest : TestBase() {
                             bobGatewayAddress.host,
                             bobGatewayAddress.port,
                             daleSslConfig
-                        )
+                        ), lcf2
                     ),
                     bob.subscriptionFactory,
                     bob.publisherFactory,
-                    lifecycleCoordinatorFactory,
+                    lcf2,
                     nodeConfig,
                     instanceId.incrementAndGet(),
                 )
