@@ -36,6 +36,8 @@ Sub Commands included:
 ## Writing Your Own Plugin
 ### Plugin Location
 
+Before you begin please see the [plugin guidelines doc](PluginGuidelines.md)
+
 The easiest place to create a plugin is in this project in the 'plugins' module. If you do not wish to create one here,
 you will have to ensure that you have gradle tasks that bundle the plugin for pf4j, more
 info [here](https://pf4j.org/doc/packaging.html)
