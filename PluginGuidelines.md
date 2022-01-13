@@ -5,23 +5,22 @@ This document will give you a run through of the things you will need to be awar
 
 ### Command Structure
 #### Syntax
-The command structure for the CLI plugin should follow the ***Noun Verb*** command syntax. Where extra information can be added to both command parts.
+The command structure for the CLI plugin should follow the ***Noun Verb*** command syntax. Where extra information is required, the information can be added as flags to both the noun and verb command parts.
 
 A basic example of this would be targeting the already connected node and shutting it down:
 `corda-cli node shutdown`
 
-or targeting an unconnected cluster and counting virtual nodes:
+Targeting an unconnected cluster and counting virtual nodes:
 `corda-cli cluster --url <example url> -u <cluster admin> -p <password> list-v-nodes --count`
 
-commands should be hyphenated not camelCase
-`list-v-nodes` vs `listVNodes`
+Commands should be hyphenated not camelCase I.E. `list-v-nodes` not `listVNodes`.
 
 #### Flags
-flags should be kept consistent with other plugins:
-`-p --password` should always be password.
-`-u --user` should always be user to auth.
-`-f --file` any file path to be used.
-`-t --target-url` should always be a target url.
+Flags should be kept consistent with other plugins:
+- `-p --password` Should always be password.
+- `-u --user` Should always be user to auth.
+- `-f --file` Should be used for any file path to be used.
+- `-t --target-url` Should always be a target url.
 
 #### Command Descriptions for Help
 Always include command descriptions via PicoCli:
@@ -32,7 +31,7 @@ Always include command descriptions via PicoCli:
 ### Development
 
 ### Branching
-please develop against the most recent version branch, not main or release branches. Follow R3's branching best practices, start with Jira ticket no, or no-tick.
+Development should be against the most recent version branch, not the main or release branches. Follow R3's branching best practices, start with Jira issue number, or no-tick.
 
 ### Tests
 Please include unit testing or the PR will be declined. You can find example tests in the template and example plugins.
