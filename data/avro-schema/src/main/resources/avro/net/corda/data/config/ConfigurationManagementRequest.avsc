@@ -6,27 +6,27 @@
     {
       "name": "section",
       "type": "string",
-      "doc": "Section of the configuration."
-    },
-    {
-      "name": "version",
-      "type": "int",
-      "doc": "Version number used for optimistic locking."
+      "doc": "Section of the configuration to update."
     },
     {
       "name": "config",
       "type": "string",
-      "doc": "Configuration in JSON or HOCON format."
+      "doc": "Updated configuration in JSON or HOCON format."
     },
     {
-      "name": "configSchemaVersion",
+      "name": "schemaVersion",
       "type": "int",
-      "doc": "Schema version of the configuration."
+      "doc": "Schema version of the updated configuration."
     },
     {
       "name": "updateActor",
       "type": "string",
-      "doc": "ID of user who invoked this request."
+      "doc": "ID of RPC user that requested the configuration update."
+    },
+    {
+      "name": "version",
+      "type": "int",
+      "doc": "Version of the configuration for optimistic locking."
     }
   ]
 }

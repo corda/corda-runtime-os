@@ -4,11 +4,37 @@
   "namespace": "net.corda.data.config",
   "fields": [
     {
-      "name": "response",
+      "name": "success",
+      "type": "boolean",
+      "doc": "Whether the request was successful."
+    },
+    {
+      "name": "exception",
       "type": [
-        "net.corda.data.config.Configuration",
+        "null",
         "net.corda.data.ExceptionEnvelope"
-      ]
+      ],
+      "doc": "The cause of failure if the request was unsuccessful."
+    },
+    {
+      "name": "section",
+      "type": "string",
+      "doc": "The configuration section for which an update was requested."
+    },
+    {
+      "name": "config",
+      "type": "string",
+      "doc": "The current configuration in JSON format for the given section."
+    },
+    {
+      "name": "schemaVersion",
+      "type": "int",
+      "doc": "The current configuration's schema version for the given section."
+    },
+    {
+      "name": "version",
+      "type": "int",
+      "doc": "The current configuration's optimistic-locking version for the given section."
     }
   ]
 }
