@@ -6,7 +6,9 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.LifecycleStatus.DOWN
+import net.corda.lifecycle.LifecycleStatus.ERROR
 import net.corda.lifecycle.LifecycleStatus.UP
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
@@ -29,7 +31,7 @@ internal class ConfigRPCOpsEventHandler(
         when (event) {
             is StartEvent -> followConfigReadServiceStatus(coordinator)
             is RegistrationStatusChangeEvent -> tryRegisteringForConfigUpdates(coordinator, event)
-            is StopEvent -> stop(coordinator)
+            is StopEvent -> stop(coordinator, DOWN)
         }
     }
 
@@ -46,18 +48,26 @@ internal class ConfigRPCOpsEventHandler(
         coordinator: LifecycleCoordinator,
         event: RegistrationStatusChangeEvent
     ) {
-        if (event.registration == configReadServiceRegistrationHandle && event.status == UP) {
-            val configHandler = ConfigRPCOpsConfigHandler(coordinator, configRPCOps)
-            configUpdateHandle?.close()
-            configUpdateHandle = configReadService.registerForUpdates(configHandler)
+        if (event.registration == configReadServiceRegistrationHandle) {
+            when (event.status) {
+                UP -> {
+                    val configHandler = ConfigRPCOpsConfigHandler(coordinator, configRPCOps)
+                    configUpdateHandle?.close()
+                    configUpdateHandle = configReadService.registerForUpdates(configHandler)
+                }
+                ERROR -> {
+                    stop(coordinator, ERROR)
+                }
+                else -> Unit
+            }
         }
     }
 
     /** Shuts down the service. */
-    private fun stop(coordinator: LifecycleCoordinator) {
+    private fun stop(coordinator: LifecycleCoordinator, status: LifecycleStatus) {
         configRPCOps.close()
         configReadServiceRegistrationHandle?.close()
         configUpdateHandle?.close()
-        coordinator.updateStatus(DOWN)
+        coordinator.updateStatus(status)
     }
 }

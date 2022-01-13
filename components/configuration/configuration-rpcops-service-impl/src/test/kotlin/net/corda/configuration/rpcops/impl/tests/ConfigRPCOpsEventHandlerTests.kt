@@ -112,6 +112,23 @@ class ConfigRPCOpsEventHandlerTests {
         verify(coordinator).updateStatus(DOWN)
     }
 
+    @Test
+    fun `closes all resources and sets status to ERROR if the configuration read service errors`() {
+        val configRPCOps = mock<ConfigRPCOpsInternal>()
+        val (configReadService, updateHandle) = getConfigReadServiceAndUpdateHandle()
+        val (coordinator, registrationHandle) = getCoordinatorAndRegistrationHandle()
+        val eventHandler = ConfigRPCOpsEventHandler(configReadService, configRPCOps)
+
+        eventHandler.processEvent(StartEvent(), coordinator)
+        eventHandler.processEvent(RegistrationStatusChangeEvent(registrationHandle, UP), coordinator)
+        eventHandler.processEvent(RegistrationStatusChangeEvent(registrationHandle, ERROR), coordinator)
+
+        verify(configRPCOps).close()
+        verify(registrationHandle).close()
+        verify(updateHandle).close()
+        verify(coordinator).updateStatus(ERROR)
+    }
+
     /** Creates a [ConfigurationReadService] that returns a static update handle for any registration for updates. */
     private fun getConfigReadServiceAndUpdateHandle(): Pair<ConfigurationReadService, AutoCloseable> {
         val updateHandle = mock<AutoCloseable>()
