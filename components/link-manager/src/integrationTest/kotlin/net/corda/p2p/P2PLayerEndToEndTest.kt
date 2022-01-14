@@ -49,6 +49,7 @@ import net.corda.p2p.linkmanager.StubNetworkMap
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
 import net.corda.p2p.test.NetworkMapEntry
+import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.TestSchema.Companion.CRYPTO_KEYS_TOPIC
@@ -73,14 +74,9 @@ class P2PLayerEndToEndTest {
         private const val TTL = 1_000_000L
         private const val SUBSYSTEM = "e2e.test.app"
         private val logger = contextLogger()
-        private const val CONFIG_TOPIC_NAME = "config.topic"
         private const val GROUP_ID = "group-1"
     }
-    private val bootstrapConfig = SmartConfigFactoryImpl().create(ConfigFactory.empty()
-        .withValue(
-            "config.topic.name",
-            ConfigValueFactory.fromAnyRef(CONFIG_TOPIC_NAME)
-        ))
+    private val bootstrapConfig = SmartConfigFactoryImpl().create(ConfigFactory.empty())
 
     private val hostA = Host("www.alice.net", 10500, "O=Alice, L=London, C=GB", "sslkeystore_alice", "truststore")
     private val hostB = Host("chip.net", 10501, "O=Chip, L=London, C=GB", "sslkeystore_chip", "truststore")
@@ -291,7 +287,7 @@ class P2PLayerEndToEndTest {
         val publisherFactory = CordaPublisherFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
         val configReadService = ConfigurationReadServiceImpl(lifecycleCoordinatorFactory, ConfigReaderFactoryImpl(subscriptionFactory, SmartConfigFactoryImpl()))
         val configPublisher = publisherFactory.createPublisher(PublisherConfig("config-writer")).let {
-            ConfigPublisherImpl(CONFIG_TOPIC_NAME, it)
+            ConfigPublisherImpl(CONFIG_TOPIC, it)
         }
         val gatewayConfig = createGatewayConfig(p2pPort, p2pAddress, sslConfig)
         val linkManagerConfig = ConfigFactory.parseString(linkManagerConfigTemplate.replace("<x500-name>", x500Name))

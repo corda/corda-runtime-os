@@ -1,5 +1,6 @@
 package net.corda.p2p.deployment.commands.simulator.db
 
+import net.corda.p2p.deployment.DockerSecrets
 import net.corda.p2p.deployment.commands.DeployPods
 import net.corda.p2p.deployment.commands.DeployYamls
 import net.corda.p2p.deployment.commands.Destroy
@@ -63,7 +64,12 @@ class StartDb : Runnable {
         delete.namespaceName = name
         delete.run()
 
-        DeployYamls(listOf(nameSpaceYaml)).run()
+        DeployYamls(
+            listOf(
+                nameSpaceYaml,
+                DockerSecrets.secret(name)
+            )
+        ).run()
         val dbDetails = DbDetails(
             dbUsername,
             dbPassword,

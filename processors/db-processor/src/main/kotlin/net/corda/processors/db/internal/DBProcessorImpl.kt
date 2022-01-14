@@ -3,6 +3,7 @@ package net.corda.processors.db.internal
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.write.ConfigWriteService
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
@@ -14,8 +15,12 @@ import net.corda.libs.configuration.datamodel.ConfigAuditEntity
 import net.corda.libs.configuration.datamodel.ConfigEntity
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
+import net.corda.permissions.cache.PermissionCacheService
+import net.corda.permissions.storage.reader.PermissionStorageReaderService
+import net.corda.permissions.storage.writer.PermissionStorageWriterService
 import net.corda.processors.db.DBProcessor
 import net.corda.processors.db.DBProcessorException
+import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -23,30 +28,65 @@ import java.sql.SQLException
 import javax.sql.DataSource
 
 /** The processor for a `DBWorker`. */
-@Suppress("Unused")
+@Suppress("Unused", "LongParameterList")
 @Component(service = [DBProcessor::class])
 class DBProcessorImpl @Activate constructor(
     @Reference(service = ConfigWriteService::class)
     private val configWriteService: ConfigWriteService,
+    @Reference(service = ConfigurationReadService::class)
+    private val configurationReadService: ConfigurationReadService,
     @Reference(service = EntityManagerFactoryFactory::class)
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
     @Reference(service = LiquibaseSchemaMigrator::class)
-    private val schemaMigrator: LiquibaseSchemaMigrator
+    private val schemaMigrator: LiquibaseSchemaMigrator,
+    @Reference(service = PermissionCacheService::class)
+    private val permissionCacheService: PermissionCacheService,
+    @Reference(service = PermissionStorageReaderService::class)
+    private val permissionStorageReaderService: PermissionStorageReaderService,
+    @Reference(service = PermissionStorageWriterService::class)
+    private val permissionStorageWriterService: PermissionStorageWriterService
 ) : DBProcessor {
+
+    companion object {
+        private val log = contextLogger()
+    }
 
     override fun start(config: SmartConfig) {
         val dataSource = createDataSource(config)
         checkDatabaseConnection(dataSource)
         migrateDatabase(dataSource)
 
+        log.info("Starting ConfigWriteService")
         configWriteService.start()
+
         val instanceId = config.getInt(CONFIG_INSTANCE_ID)
         val entityManagerFactory = createEntityManagerFactory(dataSource)
         configWriteService.startProcessing(config, instanceId, entityManagerFactory)
+
+        // At the moment `configWriteService` does not seem to be piping initial configuration to
+        // `configurationReadService`, hence have to do it manually for now.
+        // Not even message is published on the config Kafka topic.
+        // This is very likely to be related to CORE-3316.
+        log.info("Starting configuration read service with bootstrap config ${config}.")
+        configurationReadService.start()
+        configurationReadService.bootstrapConfig(config)
+
+        log.info("Starting PermissionCacheService")
+        permissionCacheService.start()
+
+        log.info("Starting PermissionStorageReaderService")
+        permissionStorageReaderService.start()
+
+        log.info("Starting PermissionStorageWriterService")
+        permissionStorageWriterService.start()
     }
 
     override fun stop() {
+        permissionStorageWriterService.stop()
+        permissionStorageReaderService.stop()
+        permissionCacheService.stop()
         configWriteService.stop()
+        configurationReadService.stop()
     }
 
     /**
@@ -66,18 +106,30 @@ class DBProcessorImpl @Activate constructor(
      * @throws DBProcessorException If the cluster database cannot be connected to.
      */
     private fun migrateDatabase(dataSource: DataSource) {
-        val migrationFileLocation = "net/corda/db/schema/config/db.changelog-master.xml"
-        val changeLogResourceFiles = setOf(DbSchema::class.java).mapTo(LinkedHashSet()) { klass ->
-            ChangeLogResourceFiles(klass.packageName, listOf(migrationFileLocation), klass.classLoader)
+        val dbChanges = listOf(
+            "net/corda/db/schema/config/db.changelog-master.xml",
+            "net/corda/db/schema/rbac/db.changelog-master.xml"
+        ).map {
+            ClassloaderChangeLog(setOf(DbSchema::class.java).mapTo(LinkedHashSet()) { klass ->
+                ChangeLogResourceFiles(
+                    klass.packageName,
+                    listOf(it),
+                    klass.classLoader
+                )
+            })
         }
-        val dbChange = ClassloaderChangeLog(changeLogResourceFiles)
 
-        try {
-            dataSource.connection.use { connection ->
-                schemaMigrator.updateDb(connection, dbChange)
+        // Applying DB Changes independently as we cannot bundle them into a single change log
+        // since there is a clash on the variables we use like `schema.name` in our Liquibase files
+        // If it is defined once by one file and cannot be re-defined by the following.
+        dbChanges.forEach { dbChange ->
+            try {
+                dataSource.connection.use { connection ->
+                    schemaMigrator.updateDb(connection, dbChange)
+                }
+            } catch (e: SQLException) {
+                throw DBProcessorException("Could not connect to cluster database.", e)
             }
-        } catch (e: SQLException) {
-            throw DBProcessorException("Could not connect to cluster database.", e)
         }
     }
 

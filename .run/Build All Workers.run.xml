@@ -1,10 +1,10 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Build HTTP RPC" type="GradleRunConfiguration" factoryName="Gradle" folderName="HTTP RPC">
+  <configuration default="false" name="Build All Workers" type="GradleRunConfiguration" factoryName="Gradle" folderName="HTTP RPC">
     <ExternalSystemSettings>
       <option name="executionName" />
       <option name="externalProjectPath" value="$PROJECT_DIR$" />
       <option name="externalSystemIdString" value="GRADLE" />
-      <option name="scriptParameters" value=":applications:http-rpc-gateway:publishOSGiImage :applications:workers:release:db-worker:publishOSGiImage" />
+      <option name="scriptParameters" value=":applications:workers:release:crypto-worker:publishOSGiImage :applications:workers:release:db-worker:publishOSGiImage :applications:workers:release:flow-worker:publishOSGiImage :applications:workers:release:rpc-worker:publishOSGiImage" />
       <option name="taskDescriptions">
         <list />
       </option>
