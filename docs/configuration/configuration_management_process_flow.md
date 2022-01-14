@@ -21,10 +21,11 @@ There are seven steps involved in updating the cluster configuration:
 7. Workers are notified of the new or updated configuration from the configuration topic on the Kafka bus using the configuration read
    service.
 
-The process uses two separate Kafka topics:
+The process uses three separate Kafka topics:
 
 1. The configuration management topic, which holds _requests_ to modify the current state of the cluster configuration
-2. The configuration topic, which holds the current state of the cluster configuration
+2. The configuration management response topic, which holds responses to requests made on the topic above
+3. The configuration topic, a compacted topic which holds the current state of the cluster configuration
 
 For simplicity, the diagram above skips over the configuration management response that the DB worker writes to the
 configuration management topic on the Kafka bus after step (5), which in turn allows the RPC worker to send a response
@@ -78,7 +79,7 @@ format, e.g.:
 }
 ```
 
-While unsuccessful requests are indicated by an error code (_5xx_).
+While unsuccessful requests are indicated by an error code (_4xx_ or _5xx_).
 
 These responses are automatically mapped from `HTTPUpdateConfigResponse` objects.
 
@@ -124,7 +125,7 @@ the `config.management.request` Kafka topic. This message uses the `Configuratio
 }
 ```
 
-The RPC worker than awaits a response on the Kafka response topic. This message uses the
+The RPC worker than awaits a response on the `config.management.request.resp` topic. This message uses the
 `ConfigurationManagementResponse` Avro schema:
 
 ```
@@ -240,13 +241,15 @@ The DB worker listens for incoming configuration management requests using an
 For each message, the DB worker creates a corresponding `ConfigEntity` and `ConfigAuditEntity`, and attempts to persist
 them to the database. The only non-technical reason the update might fail is
 [optimistic locking](https://docs.jboss.org/hibernate/orm/4.0/devguide/en-US/html/ch05.html#d0e2225). The `config`
-table contains a `version` column, and configuration update requests for which the `version` field does not match the
-current version in the database are rejected.
+table contains a `version` column, and configuration update requests for which the `version` field does not exactly 
+match the current version in the database are rejected (the database increments the `version` field for each successful 
+update automatically).
 
 ## Publication of configuration updates by the DB worker
 
-If the database tables are updated successfully, the DB worker then publishes a message to the `config` topic. This
-message follows the `Configuration` Avro schema:
+If the database tables are updated successfully, the DB worker then publishes a message to the `config` topic. The 
+message's key is the section of the configuration that is updated, and the message itself follows the `Configuration` 
+Avro schema:
 
 ```
 {
@@ -270,6 +273,6 @@ This message can then be consumed off the topic by other workers via the `Config
 the current state of the cluster configuration.
 
 If the persistence to the database and the publication to the `config` topic succeed, the DB worker responds to the RPC
-worker by publishing a `ConfigurationManagementResponse` message to the `config.management.request` response topic with
+worker by publishing a `ConfigurationManagementResponse` message to the `config.management.request.resp` topic with
 the `success` field set to `true`. Otherwise, it publishes a message with the `success` field set to `false`, with
 the `exception` field documenting the cause of the failure.
