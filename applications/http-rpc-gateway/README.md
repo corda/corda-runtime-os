@@ -13,7 +13,7 @@ Run worker(s) from separate dirs. For example:
 - From resources/node2: `java -jar corda-http-rpc-gateway-5.0.0.0-SNAPSHOT.jar --instanceId 2 --kafka kafka.properties`
 
 Command line args/system properties can be used instead of a kafka properties file
-- `java -jar -Dbootstrap.servers=localhost:9092 -Dconfig.topic.name=ConfigTopic -Dmessaging.topic.prefix=http. corda-http-rpc-gateway-5.0.0.0-SNAPSHOT.jar --instanceId 4`
+- `java -jar -Dbootstrap.servers=localhost:9092 -Dconfig.topic.name=config.topic -Dmessaging.topic.prefix=http. corda-http-rpc-gateway-5.0.0.0-SNAPSHOT.jar --instanceId 4`
 
 ## Working with Docker image
 

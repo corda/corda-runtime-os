@@ -518,7 +518,7 @@ If a kafka.properties file exists in the project root as follows:
 The file will be copied to the container and "--kafka", "/opt/pathToFile" will also be passed ot the java -jar command.
 If this file does not exist in the project and therefore is never copied ot the container properties may be passed at container run time using JAVA_TOOL_OPTIONS as described previously.
 
-    docker run -e  "JAVA_TOOL_OPTIONS=-Dconfig.topic.name=ConfigTopic,-Dmessaging.topic.prefix=http-rpc-gateway,-Dbootstrap.servers=localhost:9092"
+    docker run -e  "JAVA_TOOL_OPTIONS=-Dconfig.topic.name=config.topic,-Dmessaging.topic.prefix=http-rpc-gateway,-Dbootstrap.servers=localhost:9092"
 
 ### Running the container
 

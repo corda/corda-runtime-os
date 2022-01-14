@@ -37,12 +37,6 @@ internal class CliArguments {
     var kafkaServers = System.getenv("KAFKA_SERVERS") ?: "localhost:9092"
 
     @Option(
-        names = ["--config-topic-name"],
-        description = ["The config topic name (default: \${DEFAULT-VALUE})"]
-    )
-    var configTopicName = System.getenv("CONFIG_TOPIC") ?: "ConfigTopic"
-
-    @Option(
         names = ["--topic-prefix"],
         description = ["The topic prefix (default: \${DEFAULT-VALUE})"]
     )
@@ -61,9 +55,6 @@ internal class CliArguments {
                 ConfigValueFactory.fromAnyRef(kafkaServers)
             )
             .withValue(
-                "config.topic.name",
-                ConfigValueFactory.fromAnyRef(configTopicName)
-            ).withValue(
                 "messaging.topic.prefix",
                 ConfigValueFactory.fromAnyRef(topicPrefix)
             )

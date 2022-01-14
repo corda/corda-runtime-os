@@ -14,9 +14,6 @@ To run the application use:
 #### Common arguments:
 ```
       [@<filename>...]   One or more argument files containing options.
-      --config-topic-name=<configTopicName>
-                         The config topic name
-                           Default: ConfigTopic
   -h, --help             Display help and exit
   -k, --kafka-servers=<kafkaServers>
                          The kafka servers
@@ -128,7 +125,7 @@ To build a docker image, run:
 ### Running a container
 You can configure the image using those environment variables:
 * `KAFKA_SERVERS` - The list of Kafka server
-* `CONFIG_TOPIC` - The  name of the configuration topic (default to `ConfigTopic`)
+* `CONFIG_TOPIC` - The  name of the configuration topic (default to `config.topic`)
 * `TOPIC_PREFIX` - The topic prefix (default to empty string)
 
 You can pass the key store, the trust store and the argument file using docker `--volume` or `--mount`.

@@ -88,7 +88,7 @@ services:
       - "5005:5005"
     environment:
       JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 -DinstanceId=1 \
-        -Dbootstrap.servers=kafka:9092 -Dconfig.topic.name=ConfigTopic -Dmessaging.topic.prefix=http."
+        -Dbootstrap.servers=kafka:9092 -Dconfig.topic.name=config.topic -Dmessaging.topic.prefix=http."
     depends_on:
       init-kafka:
         condition: service_completed_successfully

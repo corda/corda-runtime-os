@@ -122,7 +122,7 @@ class KafkaConfigUploader @Activate constructor(
 class CliParameters {
     @CommandLine.Option(
         names = ["--kafka"], description = ["File containing Kafka connection properties" +
-                " OR pass in -Dbootstrap.servers and -Dconfig.topic.name"]
+                " OR pass in -Dbootstrap.servers"]
     )
     var kafkaConnection: File? = null
 

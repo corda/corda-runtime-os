@@ -4,13 +4,13 @@ configuration objects onto the newly created topic.
 The application runs via executable java jar with some added property files
 e.g. `java -jar corda-kafka-setup-5.0.0.jar --kafka kafkaPropertiesFile --topic topicTemplateFile --config typesafeConfigurationFile`
 Command line args may also be used instead of kafkaPropertiesFile
-e.g. `java -jar  -Dbootstrap.servers=localhost:9092 -Dconfig.topic.name=ConfigTopic -Dmessaging.topic.prefix=demo build/bin/corda-kafka-setup-5.0.0.0-SNAPSHOT.jar --topic topics.conf --config config.conf`
+e.g. `java -jar  -Dbootstrap.servers=localhost:9092 -Dconfig.topic.name=config.topic -Dmessaging.topic.prefix=demo build/bin/corda-kafka-setup-5.0.0.0-SNAPSHOT.jar --topic topics.conf --config config.conf`
 
 The `kafkaPropertiesFile` will contain the properties kafka needs to connect to the broker, like
 
 ```properties 
 bootstrap.servers=localhost:9092
-config.topic.name=ConfigTopic
+config.topic.name=config.topic
 messaging.topic.prefix=demo
 ```
 
@@ -19,7 +19,7 @@ The `topicTemplateFile` contains the typesafe definition for the topic you wish 
 ```text
 topics = [
     {
-        topicName = "ConfigTopic"
+        topicName = "config.topic"
         numPartitions = 1
         replicationFactor = 3
         config {
