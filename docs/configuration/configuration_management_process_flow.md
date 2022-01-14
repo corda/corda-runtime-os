@@ -6,7 +6,7 @@ To document the process for creating or updating the configuration of a Corda cl
 
 ## Overview
 
-The following diagram shows the end-to-end process for updating the configuration of a Corda cluster.
+The following diagram shows the end-to-end process for creating or updating the configuration of a Corda cluster.
 
 ![Configuration management process flow diagram](./images/configuration_management_process_flow.jpeg)
 
