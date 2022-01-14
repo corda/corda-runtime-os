@@ -2,7 +2,7 @@
 
 ## Scope
 
-To document the process for updating the configuration of a Corda cluster.
+To document the process for creating or updating the configuration of a Corda cluster.
 
 ## Overview
 
