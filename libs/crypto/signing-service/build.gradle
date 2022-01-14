@@ -1,0 +1,11 @@
+plugins {
+    id 'corda.common-library'
+}
+
+dependencies {
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+}
+
+description 'Crypto Signing Service'
+
