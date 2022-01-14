@@ -15,6 +15,7 @@ dependencies {
     implementation project(':components:gateway')
     implementation project(':libs:configuration:configuration-schema:p2p')
     implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-topic-schema"
     implementation project(":libs:configuration:configuration-core")
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation 'org.slf4j:slf4j-api'
