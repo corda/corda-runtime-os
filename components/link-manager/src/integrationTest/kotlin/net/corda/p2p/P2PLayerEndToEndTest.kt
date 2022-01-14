@@ -3,12 +3,11 @@ package net.corda.p2p
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
 import net.corda.data.identity.HoldingIdentity
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactoryImpl
 import net.corda.libs.configuration.SmartConfigImpl
-import net.corda.libs.configuration.publish.ConfigPublisher
 import net.corda.libs.configuration.publish.CordaConfigurationKey
 import net.corda.libs.configuration.publish.CordaConfigurationVersion
 import net.corda.libs.configuration.publish.impl.ConfigPublisherImpl
@@ -22,12 +21,10 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MESSAGE_REPLAY_PERIOD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.PROTOCOL_MODE_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
-import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
-import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
@@ -60,7 +57,6 @@ import net.corda.v5.base.util.seconds
 import net.corda.v5.base.util.toBase64
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.nio.ByteBuffer
@@ -78,39 +74,9 @@ class P2PLayerEndToEndTest {
     }
     private val bootstrapConfig = SmartConfigFactoryImpl().create(ConfigFactory.empty())
 
-    private val hostA = Host("www.alice.net", 10500, "O=Alice, L=London, C=GB", "sslkeystore_alice", "truststore")
-    private val hostB = Host("chip.net", 10501, "O=Chip, L=London, C=GB", "sslkeystore_chip", "truststore")
-
-    @BeforeEach
-    fun setup() {
-        hostA.configReadService.start()
-        hostA.configReadService.bootstrapConfig(bootstrapConfig)
-        hostB.configReadService.start()
-        hostB.configReadService.bootstrapConfig(bootstrapConfig)
-    }
-
-    @Test
-    @Timeout(60)
-    fun `two hosts can exchange data messages over the p2p layer successfully`() {
-        val hostALinkManager = createLinkManager(hostA.subscriptionFactory, hostA.publisherFactory, hostA.lifecycleCoordinatorFactory, hostA.configReadService)
-        val hostAGateway = Gateway(hostA.configReadService, hostA.subscriptionFactory, hostA.publisherFactory, hostA.lifecycleCoordinatorFactory, SmartConfigImpl.empty(), 1)
-        val hostBLinkManager = createLinkManager(hostB.subscriptionFactory, hostB.publisherFactory, hostB.lifecycleCoordinatorFactory, hostB.configReadService)
-        val hostBGateway = Gateway(hostB.configReadService, hostB.subscriptionFactory, hostB.publisherFactory, hostB.lifecycleCoordinatorFactory, SmartConfigImpl.empty(), 1)
-
-        hostALinkManager.start()
-        hostAGateway.start()
-        hostBLinkManager.start()
-        hostBGateway.start()
-
-        publishConfig()
-        publishNetworkMapAndKeys()
-
-        eventually(30.seconds) {
-            assertThat(hostALinkManager.isRunning).isTrue
-            assertThat(hostAGateway.isRunning).isTrue
-            assertThat(hostBLinkManager.isRunning).isTrue
-            assertThat(hostBGateway.isRunning).isTrue
-        }
+    private fun testMessagesBetweenTwoHots(hostA: Host, hostB: Host) {
+        hostA.startWith(hostB)
+        hostB.startWith(hostA)
 
         val hostAReceivedMessages = ConcurrentHashMap.newKeySet<String>()
         val hostAApplicationReader = hostA.subscriptionFactory.createDurableSubscription(
@@ -129,7 +95,14 @@ class P2PLayerEndToEndTest {
         val hostAApplicationWriter = hostA.publisherFactory.createPublisher(PublisherConfig("app-layer", 1), bootstrapConfig)
         val initialMessages = (1..10).map { index ->
             val randomId = UUID.randomUUID().toString()
-            val messageHeader = AuthenticatedMessageHeader(HoldingIdentity(hostB.x500Name, GROUP_ID), HoldingIdentity(hostA.x500Name, GROUP_ID), TTL, randomId, randomId, SUBSYSTEM)
+            val messageHeader = AuthenticatedMessageHeader(
+                HoldingIdentity(hostB.x500Name, GROUP_ID),
+                HoldingIdentity(hostA.x500Name, GROUP_ID),
+                TTL,
+                randomId,
+                randomId,
+                SUBSYSTEM
+            )
             val message = AuthenticatedMessage(messageHeader, ByteBuffer.wrap("ping ($index)".toByteArray()))
             Record(P2P_OUT_TOPIC, randomId, AppMessage(message))
         }
@@ -147,74 +120,61 @@ class P2PLayerEndToEndTest {
 
         hostAApplicationReader.stop()
         hostBApplicationReaderWriter.stop()
-
-        hostALinkManager.close()
-        hostAGateway.close()
-        hostBLinkManager.close()
-        hostBGateway.close()
     }
 
-    private fun createLinkManager(subscriptionFactory: InMemSubscriptionFactory, publisherFactory: PublisherFactory, coordinatorFactory: LifecycleCoordinatorFactory, configReadService: ConfigurationReadService): LinkManager {
-        return LinkManager(subscriptionFactory, publisherFactory, coordinatorFactory, configReadService,
-            SmartConfigImpl.empty(), 1, StubNetworkMap(coordinatorFactory, subscriptionFactory, 1, bootstrapConfig),
-            ConfigBasedLinkManagerHostingMap(configReadService, coordinatorFactory), StubCryptoService(coordinatorFactory, subscriptionFactory, 1, bootstrapConfig)
-        )
-    }
-
-    private fun publishNetworkMapAndKeys() {
-        val publisherForHostA = hostA.publisherFactory.createPublisher(PublisherConfig("test-runner-publisher", 1), bootstrapConfig)
-        val publisherForHostB = hostB.publisherFactory.createPublisher(PublisherConfig("test-runner-publisher", 1), bootstrapConfig)
-        val networkMapEntries = mapOf(
-            "${hostA.x500Name}-$GROUP_ID" to NetworkMapEntry(net.corda.data.identity.HoldingIdentity(hostA.x500Name, GROUP_ID), ByteBuffer.wrap(hostA.keyPair.public.encoded), KeyAlgorithm.ECDSA, "http://${hostA.p2pAddress}:${hostA.p2pPort}", NetworkType.CORDA_5),
-            "${hostB.x500Name}-$GROUP_ID" to NetworkMapEntry(net.corda.data.identity.HoldingIdentity(hostB.x500Name, GROUP_ID), ByteBuffer.wrap(hostB.keyPair.public.encoded), KeyAlgorithm.ECDSA, "http://${hostB.p2pAddress}:${hostB.p2pPort}", NetworkType.CORDA_5)
-        )
-        val networkMapRecords = networkMapEntries.map { Record(NETWORK_MAP_TOPIC, it.key, it.value) }
-        publisherForHostA.use { publisher ->
-            publisher.start()
-            publisher.publish(networkMapRecords).forEach { it.get() }
-            publisher.publish(listOf(
-                Record(CRYPTO_KEYS_TOPIC, "key-1", KeyPairEntry(KeyAlgorithm.ECDSA, ByteBuffer.wrap(hostA.keyPair.public.encoded), ByteBuffer.wrap(hostA.keyPair.private.encoded)))
-            )).forEach { it.get() }
-        }
-        publisherForHostB.use { publisher ->
-            publisher.start()
-            publisher.publish(networkMapRecords).forEach { it.get() }
-            publisher.publish(listOf(
-                Record(CRYPTO_KEYS_TOPIC, "key-1", KeyPairEntry(KeyAlgorithm.ECDSA, ByteBuffer.wrap(hostB.keyPair.public.encoded), ByteBuffer.wrap(hostB.keyPair.private.encoded)))
-            )).forEach { it.get() }
+    @Test
+    @Timeout(60)
+    fun `two hosts can exchange data messages over the p2p layer successfully`() {
+        Host(
+            "www.alice.net",
+            10500,
+            "O=Alice, L=London, C=GB",
+            "sslkeystore_alice",
+            "truststore",
+            bootstrapConfig,
+            true,
+        ).use { hostA ->
+            Host(
+                "chip.net",
+                10501,
+                "O=Chip, L=London, C=GB",
+                "sslkeystore_chip",
+                "truststore",
+                bootstrapConfig,
+                true,
+            ).use { hostB ->
+                testMessagesBetweenTwoHots(hostA, hostB)
+            }
         }
     }
 
-    private fun publishConfig() {
-        publishGatewayConfig(hostA.configPublisher, hostA.gatewayConfig)
-        publishLinkManagerConfig(hostA.configPublisher, hostA.linkManagerConfig)
-        publishGatewayConfig(hostB.configPublisher, hostB.gatewayConfig)
-        publishLinkManagerConfig(hostB.configPublisher, hostB.linkManagerConfig)
+    @Test
+    @Timeout(60)
+    fun `two hosts can exchange data messages with EC signature`() {
+        Host(
+            "www.receiver.net",
+            10502,
+            "O=Alice, L=London, C=GB",
+            "receiver",
+            "ec_truststore",
+            bootstrapConfig,
+            false,
+        ).use { hostA ->
+            Host(
+                "www.sender.net",
+                10503,
+                "O=Bob, L=London, C=GB",
+                "sender",
+                "ec_truststore",
+                bootstrapConfig,
+                false,
+            ).use { hostB ->
+                testMessagesBetweenTwoHots(hostA, hostB)
+            }
+        }
     }
 
-    private fun publishGatewayConfig(configPublisher: ConfigPublisher, gatewayConfig: Config) {
-        configPublisher.updateConfiguration(
-            CordaConfigurationKey(
-                "p2p-e2e-test-runner",
-                CordaConfigurationVersion("p2p", 0, 1),
-                CordaConfigurationVersion("gateway", 0, 1)
-            ),
-            gatewayConfig
-        )
-    }
-
-    private fun publishLinkManagerConfig(configPublisher: ConfigPublisher, linkManagerConfig: Config) {
-        configPublisher.updateConfiguration(
-            CordaConfigurationKey(
-                "p2p-e2e-test-runner",
-                CordaConfigurationVersion(LinkManagerConfiguration.PACKAGE_NAME, 0, 1),
-                CordaConfigurationVersion(LinkManagerConfiguration.COMPONENT_NAME, 0, 1)
-            ),
-            linkManagerConfig
-        )
-    }
-
-    private class InitiatorProcessor(val receivedMessages: ConcurrentHashMap.KeySetView<String, Boolean>): DurableProcessor<String, AppMessage> {
+    private class InitiatorProcessor(val receivedMessages: ConcurrentHashMap.KeySetView<String, Boolean>) : DurableProcessor<String, AppMessage> {
 
         override val keyClass: Class<String>
             get() = String::class.java
@@ -229,10 +189,9 @@ class P2PLayerEndToEndTest {
             }
             return emptyList()
         }
-
     }
 
-    private class ResponderProcessor: DurableProcessor<String, AppMessage> {
+    private class ResponderProcessor : DurableProcessor<String, AppMessage> {
 
         override val keyClass: Class<String>
             get() = String::class.java
@@ -251,10 +210,17 @@ class P2PLayerEndToEndTest {
                 Record(P2P_OUT_TOPIC, randomId, AppMessage(responseMessage))
             }
         }
-
     }
 
-    private class Host(val p2pAddress: String, val p2pPort: Int, val x500Name: String, keyStoreFileName: String, trustStoreFileName: String) {
+    private class Host(
+        val p2pAddress: String,
+        val p2pPort: Int,
+        val x500Name: String,
+        keyStoreFileName: String,
+        trustStoreFileName: String,
+        private val bootstrapConfig: SmartConfig,
+        private val checkRevocation: Boolean,
+    ) : AutoCloseable {
         companion object {
             private val linkManagerConfigTemplate = """
                 {
@@ -278,20 +244,22 @@ class P2PLayerEndToEndTest {
             rawKeyStore = readKeyStore(keyStoreFileName),
             trustStorePassword = "password",
             rawTrustStore = readKeyStore(trustStoreFileName),
-            revocationCheck = RevocationConfig(RevocationConfigMode.HARD_FAIL)
+            revocationCheck = RevocationConfig(if (checkRevocation) RevocationConfigMode.HARD_FAIL else RevocationConfigMode.OFF)
         )
         val keyPair = KeyPairGenerator.getInstance("EC").genKeyPair()
         val topicService = TopicServiceImpl()
         val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
         val subscriptionFactory = InMemSubscriptionFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
         val publisherFactory = CordaPublisherFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
-        val configReadService = ConfigurationReadServiceImpl(lifecycleCoordinatorFactory, ConfigReaderFactoryImpl(subscriptionFactory, SmartConfigFactoryImpl()))
+        val configReadService = ConfigurationReadServiceImpl(lifecycleCoordinatorFactory, ConfigReaderFactoryImpl(subscriptionFactory, SmartConfigFactoryImpl())).also {
+            it.start()
+            it.bootstrapConfig(bootstrapConfig)
+        }
         val configPublisher = publisherFactory.createPublisher(PublisherConfig("config-writer")).let {
             ConfigPublisherImpl(CONFIG_TOPIC, it)
         }
         val gatewayConfig = createGatewayConfig(p2pPort, p2pAddress, sslConfig)
         val linkManagerConfig = ConfigFactory.parseString(linkManagerConfigTemplate.replace("<x500-name>", x500Name))
-
 
         private fun readKeyStore(fileName: String): ByteArray {
             return javaClass.classLoader.getResource("$fileName.jks").readBytes()
@@ -307,6 +275,124 @@ class P2PLayerEndToEndTest {
                 .withValue("sslConfig.trustStore", ConfigValueFactory.fromAnyRef(sslConfig.rawTrustStore.toBase64()))
                 .withValue("sslConfig.revocationCheck.mode", ConfigValueFactory.fromAnyRef(sslConfig.revocationCheck.mode.toString()))
         }
-    }
 
+        val linkManager by lazy {
+            LinkManager(
+                subscriptionFactory,
+                publisherFactory,
+                lifecycleCoordinatorFactory,
+                configReadService,
+                SmartConfigImpl.empty(),
+                1,
+                StubNetworkMap(
+                    lifecycleCoordinatorFactory,
+                    subscriptionFactory,
+                    1,
+                    bootstrapConfig
+                ),
+                ConfigBasedLinkManagerHostingMap(
+                    configReadService,
+                    lifecycleCoordinatorFactory
+                ),
+                StubCryptoService(
+                    lifecycleCoordinatorFactory,
+                    subscriptionFactory,
+                    1,
+                    bootstrapConfig
+                )
+            )
+        }
+
+        val gateway by lazy {
+            Gateway(
+                configReadService,
+                subscriptionFactory,
+                publisherFactory,
+                lifecycleCoordinatorFactory,
+                SmartConfigImpl.empty(),
+                1,
+            )
+        }
+
+        private fun publishGatewayConfig() {
+            configPublisher.updateConfiguration(
+                CordaConfigurationKey(
+                    "p2p-e2e-test-runner",
+                    CordaConfigurationVersion("p2p", 0, 1),
+                    CordaConfigurationVersion("gateway", 0, 1)
+                ),
+                gatewayConfig
+            )
+        }
+
+        private fun publishLinkManagerConfig() {
+            configPublisher.updateConfiguration(
+                CordaConfigurationKey(
+                    "p2p-e2e-test-runner",
+                    CordaConfigurationVersion(LinkManagerConfiguration.PACKAGE_NAME, 0, 1),
+                    CordaConfigurationVersion(LinkManagerConfiguration.COMPONENT_NAME, 0, 1)
+                ),
+                linkManagerConfig
+            )
+        }
+
+        private fun publishConfig() {
+            publishGatewayConfig()
+            publishLinkManagerConfig()
+        }
+
+        private val networkMapEntry by lazy {
+            NetworkMapEntry(
+                HoldingIdentity(x500Name, GROUP_ID),
+                ByteBuffer.wrap(keyPair.public.encoded),
+                KeyAlgorithm.ECDSA,
+                "http://$p2pAddress:$p2pPort",
+                NetworkType.CORDA_5
+            )
+        }
+
+        private fun publishNetworkMapAndKeys(otherHost: Host) {
+            val publisherForHost = publisherFactory.createPublisher(PublisherConfig("test-runner-publisher", 1), bootstrapConfig)
+            val networkMapEntries = mapOf(
+                "$x500Name-$GROUP_ID" to networkMapEntry,
+                "${otherHost.x500Name}-$GROUP_ID" to otherHost.networkMapEntry
+            )
+            val networkMapRecords = networkMapEntries.map { Record(NETWORK_MAP_TOPIC, it.key, it.value) }
+            publisherForHost.use { publisher ->
+                publisher.start()
+                publisher.publish(networkMapRecords).forEach { it.get() }
+                publisher.publish(
+                    listOf(
+                        Record(
+                            CRYPTO_KEYS_TOPIC,
+                            "key-1",
+                            KeyPairEntry(
+                                KeyAlgorithm.ECDSA,
+                                ByteBuffer.wrap(keyPair.public.encoded),
+                                ByteBuffer.wrap(keyPair.private.encoded)
+                            )
+                        )
+                    )
+                ).forEach { it.get() }
+            }
+        }
+
+        fun startWith(otherHost: Host) {
+            linkManager.start()
+            gateway.start()
+
+            publishConfig()
+            publishNetworkMapAndKeys(otherHost)
+
+            eventually(30.seconds) {
+                assertThat(linkManager.isRunning).isTrue
+                assertThat(gateway.isRunning).isTrue
+            }
+        }
+
+        override fun close() {
+            linkManager.close()
+            gateway.close()
+        }
+    }
 }
