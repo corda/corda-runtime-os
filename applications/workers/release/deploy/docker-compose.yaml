@@ -90,13 +90,17 @@ services:
     container_name: crypto-worker
     # Created with `gradlew applications:workers:release:crypto:publishOSGiImage`.
     image: "corda-os-docker-dev.software.r3.com/corda-os-crypto-worker:latest-local"
+    ports:
+      - "5007:5007"
+    environment:
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5007"
     depends_on:
       init-kafka:
         condition: service_completed_successfully
     command:
-      - -m
+      - --messagingParams
       - kafka.common.bootstrap.servers=kafka:9092
-      - -i
+      - --instanceId
       - "1"
 
   db-worker:
@@ -113,28 +117,32 @@ services:
       cluster-db:
         condition: service_healthy
     command:
-      - -m
+      - --messagingParams
       - kafka.common.bootstrap.servers=kafka:9092
-      - -i
+      - --instanceId
       - "1"
-      - -d
+      - --databaseParams
       - cluster.user=user
-      - -d
+      - --databaseParams
       - cluster.pass=pass
-      - -d
+      - --databaseParams
       - cluster.jdbc.url=jdbc:postgresql://cluster-db:5432/cordacluster
 
   flow-worker:
     container_name: flow-worker
     # Created with `gradlew applications:workers:release:flow:publishOSGiImage`.
     image: "corda-os-docker-dev.software.r3.com/corda-os-flow-worker:latest-local"
+    ports:
+      - "5008:5008"
+    environment:
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5008"
     depends_on:
       init-kafka:
         condition: service_completed_successfully
     command:
-      - -m
+      - --messagingParams
       - kafka.common.bootstrap.servers=kafka:9092
-      - -i
+      - --instanceId
       - "1"
 
   rpc-worker:
@@ -150,7 +158,7 @@ services:
     environment:
       JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
     command:
-      - -m
+      - --messagingParams
       - kafka.common.bootstrap.servers=kafka:9092
-      - -i
+      - --instanceId
       - "1"
