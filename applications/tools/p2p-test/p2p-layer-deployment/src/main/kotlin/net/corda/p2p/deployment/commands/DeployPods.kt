@@ -2,10 +2,11 @@ package net.corda.p2p.deployment.commands
 
 import net.corda.p2p.deployment.DeploymentException
 import net.corda.p2p.deployment.pods.Pod
+import net.corda.p2p.deployment.pods.Yamlable
 
 class DeployPods(
     private val namespaceName: String,
-    private val pods: Collection<Pod>,
+    private val pods: Collection<Yamlable>,
 ) :
     Runnable {
     override fun run() {
@@ -13,7 +14,7 @@ class DeployPods(
         yamls.run()
 
         val runningPods = getPods()
-        pods.forEach { pod ->
+        pods.filterIsInstance<Pod>().forEach { pod ->
             pod.readyLog?.also {
                 val wait = WaitForLogs(namespaceName, pod, runningPods, it)
                 wait.run()

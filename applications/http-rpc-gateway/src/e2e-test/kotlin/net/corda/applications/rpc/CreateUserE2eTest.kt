@@ -55,7 +55,7 @@ class CreateUserE2eTest {
             // Try to create a user with the same login name again and verify that it fails
             assertThatThrownBy { proxy.createUser(createUserType.copy(fullName = "Alice")) }
                 .isInstanceOf(InternalErrorException::class.java)
-                .hasMessageContaining("Failed to create new user: $userName as they already exist")
+                .hasMessageContaining("User with login '$userName' already exists.")
         }
     }
 }

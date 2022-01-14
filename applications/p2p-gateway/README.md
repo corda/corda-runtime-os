@@ -12,8 +12,6 @@ To run the application use:
 
 ### Command arguments:
 ```
-      --config-topic-name=<configTopicName>
-               The config topic name (default: ConfigTopic)
   -h, --help   Display help and exit
   -i, --instance-id=<instanceId>
                The unique instance ID (default to random number)
@@ -47,7 +45,6 @@ To build a docker image, run:
 ### Running a container
 You can configure the image using those environment variables:
 * `KAFKA_SERVERS` - The list of Kafka server (default to `localhost:9092`)
-* `CONFIG_TOPIC` - The  name of the configuration topic (default to `ConfigTopic`)
 * `TOPIC_PREFIX` - The topic prefix (default to empty string)
 * `INSTANCE_ID` - The Gateway instance ID (default to random number)
 

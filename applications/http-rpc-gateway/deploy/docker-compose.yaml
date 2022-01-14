@@ -40,7 +40,10 @@ services:
     command: |
       "
       echo -e 'Creating kafka topics'
-      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic http.ConfigTopic --config "cleanup.policy=compact"
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic http.config.management.request
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic http.config.management.request.resp
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic http.config.topic --config "cleanup.policy=compact"
+
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic http.rpc.permissions.management
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic http.rpc.permissions.management.resp
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic http.rpc.permissions.user --config "cleanup.policy=compact"
@@ -85,13 +88,14 @@ services:
       - "5005:5005"
     environment:
       JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 -DinstanceId=1 \
-        -Dbootstrap.servers=kafka:9092 -Dconfig.topic.name=ConfigTopic -Dmessaging.topic.prefix=http."
+        -Dbootstrap.servers=kafka:9092 -Dmessaging.topic.prefix=http."
     depends_on:
       init-kafka:
         condition: service_completed_successfully
-  db-worker-proto:
-    container_name: db-worker-proto
-    image: "corda-os-docker-dev.software.r3.com/corda-os-db-worker-prototype:latest-local"
+  db-worker:
+    container_name: db-worker
+    # Created with `gradlew :applications:workers:release:db-worker:publishOSGiImage`.
+    image: "corda-os-docker-dev.software.r3.com/corda-os-db-worker:latest-local"
     depends_on:
       init-kafka:
         condition: service_completed_successfully
@@ -100,14 +104,17 @@ services:
     ports:
       - "5006:5006"
     environment:
-      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5006 -DinstanceId=1 \
-        -Dbootstrap.servers=kafka:9092 -Dconfig.topic.name=ConfigTopic -Dmessaging.topic.prefix=http."
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5006"
     command:
-      - --kafka
-      - kafka:9092
-      - --jdbc-url
-      - jdbc:postgresql://app-db:5432/dbworker
-      - --db-user
-      - user
-      - --db-password
-      - password
+      - -m
+      - kafka.common.bootstrap.servers=kafka:9092
+      - -t
+      - http.
+      - -i
+      - "1"
+      - -d
+      - cluster.user=user
+      - -d
+      - cluster.pass=password
+      - -d
+      - cluster.jdbc.url=jdbc:postgresql://app-db:5432/dbworker

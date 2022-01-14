@@ -84,7 +84,6 @@ include 'applications:examples:serialization-amqp:custom-serializer-poc:custom-s
 include 'applications:examples:serialization-amqp:custom-serializer-poc:custom-serializer-poc-example-cpk-b'
 include 'applications:examples:serialization-amqp:type-evolution-poc'
 include 'applications:examples:serialization-amqp:type-evolution-poc:evolution-example-cpk'
-include 'applications:examples:db-worker-prototype'
 include 'applications:experimental:virtual-node-cli'
 include 'applications:http-rpc-gateway'
 include 'applications:p2p-gateway'

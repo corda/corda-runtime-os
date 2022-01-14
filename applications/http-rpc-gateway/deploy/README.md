@@ -2,7 +2,7 @@
 
 The purpose of this Docker Compose cluster to run: 
 - HTTP RPC Gateway;
-- A prototype of DB Worker;
+- A DB Worker;
 - Kafka Bus;
 - Postgres SQL server;
 
@@ -13,8 +13,10 @@ locally to be able to demonstrate HTTP RPC functionality built to date including
 In order to get started it is necessary to:
 - Start Docker Desktop.
 - Build an image of HTTP RPC Gateway, please see [here](../README.md#building-the-docker-image).
-- Build an image of DB Worker prototype, please see 
-  [here](../../examples/db-worker-prototype/README.md#building-the-docker-image).
+- Build an image of DB Worker using: 
+```
+gradlew :applications:workers:release:db-worker:publishOSGiImage
+```
 
 ## Start the network
 
