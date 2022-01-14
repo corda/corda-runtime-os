@@ -48,7 +48,6 @@ class HttpRpcGatewayApp @Activate constructor(
         val log: Logger = contextLogger()
         val consoleLogger: Logger = LoggerFactory.getLogger("Console")
         const val TOPIC_PREFIX = "messaging.topic.prefix"
-        const val CONFIG_TOPIC_NAME = "config.topic.name"
         const val BOOTSTRAP_SERVERS = "bootstrap.servers"
         const val KAFKA_COMMON_BOOTSTRAP_SERVER = "messaging.kafka.common.bootstrap.servers"
 
@@ -123,10 +122,6 @@ class HttpRpcGatewayApp @Activate constructor(
         log.debug { "Config file saved to: $configFile" }
         return smartConfigFactory.create(ConfigFactory.empty()
             .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(bootstrapServer))
-            .withValue(
-                CONFIG_TOPIC_NAME,
-                ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, CONFIG_TOPIC_NAME))
-            )
             .withValue(
                 TOPIC_PREFIX,
                 ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX, ""))

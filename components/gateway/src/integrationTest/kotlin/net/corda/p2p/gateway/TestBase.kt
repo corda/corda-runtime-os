@@ -108,10 +108,6 @@ open class TestBase {
             ).also {
                 it.start()
                 val bootstrapper = ConfigFactory.empty()
-                    .withValue(
-                        "config.topic.name",
-                        ConfigValueFactory.fromAnyRef(topicName)
-                    )
                 it.bootstrapConfig(smartConfigFactory.create(bootstrapper))
             }
         }
