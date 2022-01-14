@@ -12,8 +12,8 @@ import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.createStandardTestConfig
 import net.corda.messaging.properties.ConfigProperties.Companion.PATTERN_RPC_SENDER
 import net.corda.messaging.subscription.consumer.builder.CordaConsumerBuilder
+import net.corda.test.util.eventually
 import net.corda.v5.base.concurrent.getOrThrow
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -71,7 +71,9 @@ class CordaRPCSenderImplTest {
             lifecycleCoordinatorFactory
         )
         cordaSenderImpl.start()
-        assertThat(cordaSenderImpl.isRunning).isTrue
+        eventually {
+            verify(cordaProducerBuilder).createProducer(any())
+        }
         cordaSenderImpl.close()
         verify(cordaProducer, times(1)).close()
     }
