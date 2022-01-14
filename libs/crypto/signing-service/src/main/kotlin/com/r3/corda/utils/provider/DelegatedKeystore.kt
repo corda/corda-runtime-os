@@ -3,11 +3,16 @@ package com.r3.corda.utils.provider
 import net.corda.v5.base.util.contextLogger
 import java.io.InputStream
 import java.io.OutputStream
-import java.security.*
+import java.security.Key
+import java.security.KeyStore
+import java.security.KeyStoreException
+import java.security.KeyStoreSpi
+import java.security.Security
 import java.security.cert.Certificate
 import java.security.cert.X509Certificate
 import java.util.*
 
+@Suppress("TooManyFunctions")
 class DelegatedKeystore(private val signingService: DelegatedSigningService) : KeyStoreSpi() {
     companion object {
         private val logger = contextLogger()

@@ -29,6 +29,7 @@ class DelegatedKeystoreProvider : Provider(PROVIDER_NAME, 0.1, "JCA/JCE delegate
         putService(DelegatedKeyStoreService(this, name, signingService))
     }
 
+    @Suppress("MaxLineLength")
     private class DelegatedKeyStoreService(provider: Provider, name: String, private val signingService: DelegatedSigningService) : Service(provider,
             "KeyStore", name, "DelegatedKeyStore", null, null) {
         @Throws(NoSuchAlgorithmException::class)
@@ -38,6 +39,7 @@ class DelegatedKeystoreProvider : Provider(PROVIDER_NAME, 0.1, "JCA/JCE delegate
     }
 }
 
+@Suppress("MaxLineLength")
 open class DelegatedPrivateKey(private val algorithm: String, private val format: String, private val signOp: (String, ByteArray) -> ByteArray?) : PrivateKey {
     companion object {
         fun create(algorithm: String, format: String, signOp: (String, ByteArray) -> ByteArray?): DelegatedPrivateKey {

@@ -38,6 +38,7 @@ class DelegatedSignatureProvider : Provider("DelegatedSignature", 0.1, "JCA/JCE 
         this["AlgorithmParameters.EC"] = ecAlgorithmParametersClass
     }
 
+    @Suppress("MaxLineLength")
     class DelegatedSignatureService(provider: Provider, private val sigAlgo: String) : Service(provider, "Signature", sigAlgo, DelegatedSignature::class.java.name, null,
             mapOf("SupportedKeyClasses" to DelegatedPrivateKey::class.java.name)) {
         @Throws(NoSuchAlgorithmException::class)
@@ -54,7 +55,7 @@ class DelegatedSignature(private val sigAlgo: String) : SignatureSpi() {
     override fun engineInitSign(privateKey: PrivateKey) {
         require(privateKey is DelegatedPrivateKey)
         data.reset()
-        signingKey = privateKey as DelegatedPrivateKey
+        signingKey = privateKey
     }
 
     override fun engineUpdate(b: Byte) {
