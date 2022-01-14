@@ -211,7 +211,8 @@ class DominoTile(
 
                         val childWithState = registrations?.get(event.registration)
                         if (childWithState == null) {
-                            logger.warn("Signal change status received from registration (${event.registration}) that didn't map to a component.")
+                            logger.warn("Signal change status received from registration " +
+                                    "(${event.registration}) that didn't map to a component.")
                             return
                         }
                         registrations!![event.registration] = childWithState.copy(second = statusChangeEvent.newState)
