@@ -7,29 +7,29 @@ import net.corda.crypto.service.SigningServiceFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoNoContentValue
+import net.corda.data.crypto.wire.CryptoPublicKey
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
-import net.corda.data.crypto.wire.CryptoPublicKey
-import net.corda.data.crypto.wire.WireSignature
-import net.corda.data.crypto.wire.WireSignatureSchemes
-import net.corda.data.crypto.wire.WireSignatureSpec
-import net.corda.data.crypto.wire.WireSignatureWithKey
-import net.corda.data.crypto.wire.freshkeys.WireFreshKeysFreshKey
+import net.corda.data.crypto.wire.CryptoSignature
+import net.corda.data.crypto.wire.CryptoSignatureSchemes
+import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.crypto.wire.ops.rpc.GenerateKeyPairCommand
 import net.corda.data.crypto.wire.ops.rpc.PublicKeyRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
-import net.corda.data.crypto.wire.signing.WireSigningFindPublicKey
-import net.corda.data.crypto.wire.signing.WireSigningGenerateKeyPair
-import net.corda.data.crypto.wire.signing.WireSigningGetSupportedSchemes
-import net.corda.data.crypto.wire.signing.WireSigningSign
-import net.corda.data.crypto.wire.signing.WireSigningSignWithAlias
-import net.corda.data.crypto.wire.signing.WireSigningSignWithAliasSpec
-import net.corda.data.crypto.wire.signing.WireSigningSignWithSpec
+import net.corda.data.crypto.wire.ops.rpc.SignRpcCommand
+import net.corda.data.crypto.wire.ops.rpc.SignWithAliasRpcCommand
+import net.corda.data.crypto.wire.ops.rpc.SignWithAliasSpecRpcCommand
+import net.corda.data.crypto.wire.ops.rpc.SignWithSpecRpcCommand
+import net.corda.data.crypto.wire.ops.rpc.SupportedSchemesRpcQuery
+import net.corda.data.crypto.wire.registration.hsm.AssignHSMCommand
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.SignatureSpec
+import net.corda.v5.cipher.suite.schemes.RSA_CODE_NAME
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.SignatureVerificationService
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
@@ -38,7 +38,6 @@ import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.allOf
 import org.hamcrest.Matchers.greaterThanOrEqualTo
 import org.hamcrest.Matchers.lessThanOrEqualTo
-import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -56,7 +55,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class SigningServiceRpcProcessorTests {
-    private class SigningServiceWrapper(private val impl: SigningService): SigningService by impl {
+    private class SigningServiceWrapper(private val impl: SigningService) : SigningService by impl {
         companion object {
             val recordedContexts = ConcurrentHashMap<String, Map<String, String>>()
         }
@@ -66,7 +65,7 @@ class SigningServiceRpcProcessorTests {
             alias: String,
             context: Map<String, String>
         ): PublicKey {
-            if(context.containsKey("someId")) {
+            if (context.containsKey("someId")) {
                 recordedContexts[context.getValue("someId")] = context
             }
             return impl.generateKeyPair(category, alias, context)
@@ -77,7 +76,7 @@ class SigningServiceRpcProcessorTests {
             data: ByteArray,
             context: Map<String, String>
         ): DigitalSignature.WithKey {
-            if(context.containsKey("someId")) {
+            if (context.containsKey("someId")) {
                 recordedContexts[context.getValue("someId")] = context
             }
             return impl.sign(publicKey, data, context)
@@ -89,14 +88,14 @@ class SigningServiceRpcProcessorTests {
             data: ByteArray,
             context: Map<String, String>
         ): DigitalSignature.WithKey {
-            if(context.containsKey("someId")) {
+            if (context.containsKey("someId")) {
                 recordedContexts[context.getValue("someId")] = context
             }
             return impl.sign(publicKey, signatureSpec, data, context)
         }
 
         override fun sign(alias: String, data: ByteArray, context: Map<String, String>): ByteArray {
-            if(context.containsKey("someId")) {
+            if (context.containsKey("someId")) {
                 recordedContexts[context.getValue("someId")] = context
             }
             return impl.sign(alias, data, context)
@@ -108,7 +107,7 @@ class SigningServiceRpcProcessorTests {
             data: ByteArray,
             context: Map<String, String>
         ): ByteArray {
-            if(context.containsKey("someId")) {
+            if (context.containsKey("someId")) {
                 recordedContexts[context.getValue("someId")] = context
             }
             return impl.sign(alias, signatureSpec, data, context)
@@ -144,7 +143,7 @@ class SigningServiceRpcProcessorTests {
             )
         }
 
-        private fun newAlias(): String =  UUID.randomUUID().toString()
+        private fun newAlias(): String = UUID.randomUUID().toString()
 
         private fun createRequestContext(): CryptoRequestContext = CryptoRequestContext(
             "test-component",
@@ -176,37 +175,16 @@ class SigningServiceRpcProcessorTests {
             )
         }
 
-        private fun getFullCustomSignatureSpec(): SignatureSpec {
-            val scheme = cryptoMocks.factories.defaultFreshKeySignatureScheme
-            return when (scheme.algorithmName) {
-                "RSA" -> SignatureSpec(
-                        signatureName = "RSA/NONE/PKCS1Padding",
-                        customDigestName = DigestAlgorithmName.SHA2_512
-                    )
-                "EC" -> SignatureSpec(
-                        signatureName = "NONEwithECDSA",
-                        customDigestName = DigestAlgorithmName.SHA2_512
-                    )
-                else -> SignatureSpec(
-                        signatureName = "NONEwith${scheme.algorithmName}",
-                        customDigestName = DigestAlgorithmName.SHA2_512
-                    )
-            }
-        }
+        private fun getFullCustomSignatureSpec(): SignatureSpec =
+            SignatureSpec(
+                signatureName = "NONEwithECDSA",
+                customDigestName = DigestAlgorithmName.SHA2_512
+            )
 
-        private fun getCustomSignatureSpec(): SignatureSpec? {
-            val scheme = cryptoMocks.factories.defaultFreshKeySignatureScheme
-            return when (scheme.algorithmName) {
-                "RSA" -> null
-                "EC" -> SignatureSpec(
-                    signatureName = "SHA512withECDSA"
-                )
-                else -> SignatureSpec(
-                    signatureName = "SHA512with${scheme.algorithmName}",
-                    customDigestName = DigestAlgorithmName.SHA2_512
-                )
-            }
-        }
+        private fun getCustomSignatureSpec(): SignatureSpec =
+            SignatureSpec(
+                signatureName = "SHA512withECDSA"
+            )
     }
 
     @Test
@@ -230,32 +208,7 @@ class SigningServiceRpcProcessorTests {
 
     @Test
     @Timeout(5)
-    fun `Should return public key for known key alias`() {
-        val alias = newAlias()
-        val publicKey = signingService.generateKeyPair(
-            category = CryptoConsts.CryptoCategories.LEDGER,
-            alias = alias
-        )
-        val context = createRequestContext()
-        val future = CompletableFuture<RpcOpsResponse>()
-        processor.onNext(
-            RpcOpsRequest(
-                context,
-                PublicKeyRpcQuery(alias)
-            ),
-            future
-        )
-        val result = future.get()
-        assertResponseContext(context, result.context)
-        assertNotNull(result.response)
-        assertThat(result.response, instanceOf(CryptoPublicKey::class.java))
-        val resultKey = schemeMetadata.decodePublicKey((result.response as CryptoPublicKey).key.array())
-        assertEquals(publicKey, resultKey)
-    }
-
-    @Test
-    @Timeout(5)
-    fun `Should generate key pair and be able to find and sign using default and custom schemes`() {
+    fun `Should generate key pair and be able to find and then sign using default and custom schemes`() {
         val data = UUID.randomUUID().toString().toByteArray()
         val alias = newAlias()
         // generate
@@ -268,7 +221,11 @@ class SigningServiceRpcProcessorTests {
         processor.onNext(
             RpcOpsRequest(
                 context1,
-                WireSigningGenerateKeyPair(alias, KeyValuePairList(operationContext))
+                GenerateKeyPairCommand(
+                    CryptoConsts.CryptoCategories.LEDGER,
+                    alias,
+                    KeyValuePairList(operationContext)
+                )
             ),
             future1
         )
@@ -281,16 +238,16 @@ class SigningServiceRpcProcessorTests {
         assertResponseContext(context1, result1.context)
         assertThat(result1.response, instanceOf(CryptoPublicKey::class.java))
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
-        val info = get(publicKey)
+        val info = services.getSigningKeyRecord(publicKey)
         assertNotNull(info)
-        assertEquals("$tenantId:$alias", info.alias)
+        assertEquals(alias, info.alias)
         // find
         val context2 = createRequestContext()
         val future2 = CompletableFuture<RpcOpsResponse>()
         processor.onNext(
             RpcOpsRequest(
                 context2,
-                WireSigningFindPublicKey(alias)
+                PublicKeyRpcQuery(alias)
             ),
             future2
         )
@@ -319,7 +276,11 @@ class SigningServiceRpcProcessorTests {
         processor.onNext(
             RpcOpsRequest(
                 context1,
-                WireSigningGenerateKeyPair(alias, KeyValuePairList(operationContext))
+                GenerateKeyPairCommand(
+                    CryptoConsts.CryptoCategories.LEDGER,
+                    alias,
+                    KeyValuePairList(operationContext)
+                )
             ),
             future1
         )
@@ -332,20 +293,21 @@ class SigningServiceRpcProcessorTests {
         assertResponseContext(context1, result1.context)
         assertThat(result1.response, instanceOf(CryptoPublicKey::class.java))
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
-        val info = get(publicKey)
+        val info = services.getSigningKeyRecord(publicKey)
         assertNotNull(info)
-        assertEquals("$tenantId:$alias", info.alias)
+        assertEquals(alias, info.alias)
         // sign using invalid custom scheme
         val context3 = createRequestContext()
         val future3 = CompletableFuture<RpcOpsResponse>()
         processor.onNext(
             RpcOpsRequest(
                 context3,
-                WireSigningSignWithSpec(
+                SignWithSpecRpcCommand(
                     ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
-                    WireSignatureSpec(
+                    CryptoSignatureSpec(
                         "BAD-SIGNATURE-ALGORITHM",
-                        "BAD-DIGEST-ALGORITHM"),
+                        "BAD-DIGEST-ALGORITHM"
+                    ),
                     ByteBuffer.wrap(data),
                     KeyValuePairList(emptyList())
                 )
@@ -367,28 +329,11 @@ class SigningServiceRpcProcessorTests {
         processor.onNext(
             RpcOpsRequest(
                 context,
-                WireFreshKeysFreshKey()
-            ),
-            future
-        )
-        val exception = assertThrows<ExecutionException> {
-            future.get()
-        }
-        assertNotNull(exception.cause)
-        assertThat(exception.cause, instanceOf(CryptoServiceLibraryException::class.java))
-        assertThat(exception.cause, instanceOf(CryptoServiceLibraryException::class.java))
-        assertThat(exception.cause?.cause, instanceOf(CryptoServiceBadRequestException::class.java))
-    }
-
-    @Test
-    @Timeout(5)
-    fun `Should complete future exceptionally when service category is not specified in context`() {
-        val context = getWireRequestContextWithoutCategory()
-        val future = CompletableFuture<RpcOpsResponse>()
-        processor.onNext(
-            RpcOpsRequest(
-                context,
-                WireSigningGetSupportedSchemes()
+                AssignHSMCommand(
+                    CryptoConsts.CryptoCategories.LEDGER,
+                    RSA_CODE_NAME,
+                    KeyValuePairList(emptyList())
+                )
             ),
             future
         )
@@ -409,21 +354,22 @@ class SigningServiceRpcProcessorTests {
         processor.onNext(
             RpcOpsRequest(
                 context,
-                WireSigningGetSupportedSchemes()
+                SupportedSchemesRpcQuery(
+                    CryptoConsts.CryptoCategories.LEDGER
+                )
             ),
             future
         )
         val result = future.get()
         assertResponseContext(context, result.context)
-        assertThat(result.response, instanceOf(WireSignatureSchemes::class.java))
-        val actualSchemes = result.response as WireSignatureSchemes
-        val expectedSchemes = cryptoMocks.factories.cryptoServices.getSigningService(
-            memberId = tenantId,
-            category = CryptoConsts.CryptoCategories.LEDGER
-        ).supportedSchemes
+        assertThat(result.response, instanceOf(CryptoSignatureSchemes::class.java))
+        val actualSchemes = result.response as CryptoSignatureSchemes
+        val expectedSchemes = signingService.getSupportedSchemes(
+            CryptoConsts.CryptoCategories.LEDGER
+        )
         assertEquals(expectedSchemes.size, actualSchemes.codes.size)
         expectedSchemes.forEach {
-            assertTrue(actualSchemes.codes.contains(it.codeName))
+            assertTrue(actualSchemes.codes.contains(it))
         }
     }
 
@@ -438,7 +384,7 @@ class SigningServiceRpcProcessorTests {
         processor.onNext(
             RpcOpsRequest(
                 context2,
-                WireSigningSign(
+                SignRpcCommand(
                     ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
                     ByteBuffer.wrap(data),
                     KeyValuePairList(operationContext)
@@ -453,8 +399,8 @@ class SigningServiceRpcProcessorTests {
         assertEquals(operationContext[0].value, operationContextMap["someId"])
         assertEquals(operationContext[1].value, operationContextMap["reason"])
         assertResponseContext(context2, result2.context)
-        assertThat(result2.response, instanceOf(WireSignatureWithKey::class.java))
-        val signature2 = result2.response as WireSignatureWithKey
+        assertThat(result2.response, instanceOf(CryptoSignatureWithKey::class.java))
+        val signature2 = result2.response as CryptoSignatureWithKey
         assertEquals(publicKey, schemeMetadata.decodePublicKey(signature2.publicKey.array()))
         verifier.verify(publicKey, signature2.bytes.array(), data)
         // sign using public key and full custom scheme
@@ -464,9 +410,9 @@ class SigningServiceRpcProcessorTests {
         processor.onNext(
             RpcOpsRequest(
                 context3,
-                WireSigningSignWithSpec(
+                SignWithSpecRpcCommand(
                     ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
-                    WireSignatureSpec(signatureSpec3.signatureName, signatureSpec3.customDigestName?.name),
+                    CryptoSignatureSpec(signatureSpec3.signatureName, signatureSpec3.customDigestName?.name),
                     ByteBuffer.wrap(data),
                     KeyValuePairList(emptyList())
                 )
@@ -475,21 +421,20 @@ class SigningServiceRpcProcessorTests {
         )
         val result3 = future3.get()
         assertResponseContext(context3, result3.context)
-        assertThat(result3.response, instanceOf(WireSignatureWithKey::class.java))
-        val signature3 = result3.response as WireSignatureWithKey
+        assertThat(result3.response, instanceOf(CryptoSignatureWithKey::class.java))
+        val signature3 = result3.response as CryptoSignatureWithKey
         assertEquals(publicKey, schemeMetadata.decodePublicKey(signature3.publicKey.array()))
         verifier.verify(publicKey, signatureSpec3, signature3.bytes.array(), data)
         // sign using public key and custom scheme
         val signatureSpec4 = getCustomSignatureSpec()
-        assumeTrue(signatureSpec4 != null)
         val context4 = createRequestContext()
         val future4 = CompletableFuture<RpcOpsResponse>()
         processor.onNext(
             RpcOpsRequest(
                 context4,
-                WireSigningSignWithSpec(
+                SignWithSpecRpcCommand(
                     ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
-                    WireSignatureSpec(signatureSpec4!!.signatureName, signatureSpec4.customDigestName?.name),
+                    CryptoSignatureSpec(signatureSpec4.signatureName, signatureSpec4.customDigestName?.name),
                     ByteBuffer.wrap(data),
                     KeyValuePairList(emptyList())
                 )
@@ -498,8 +443,8 @@ class SigningServiceRpcProcessorTests {
         )
         val result4 = future4.get()
         assertResponseContext(context4, result4.context)
-        assertThat(result4.response, instanceOf(WireSignatureWithKey::class.java))
-        val signature4 = result4.response as WireSignatureWithKey
+        assertThat(result4.response, instanceOf(CryptoSignatureWithKey::class.java))
+        val signature4 = result4.response as CryptoSignatureWithKey
         assertEquals(publicKey, schemeMetadata.decodePublicKey(signature3.publicKey.array()))
         verifier.verify(publicKey, signatureSpec4, signature4.bytes.array(), data)
     }
@@ -515,7 +460,7 @@ class SigningServiceRpcProcessorTests {
         processor.onNext(
             RpcOpsRequest(
                 context2,
-                WireSigningSignWithAlias(
+                SignWithAliasRpcCommand(
                     alias,
                     ByteBuffer.wrap(data),
                     KeyValuePairList(operationContext)
@@ -530,8 +475,8 @@ class SigningServiceRpcProcessorTests {
         assertEquals(operationContext[0].value, operationContextMap["someId"])
         assertEquals(operationContext[1].value, operationContextMap["reason"])
         assertResponseContext(context2, result2.context)
-        assertThat(result2.response, instanceOf(WireSignature::class.java))
-        val signature2 = result2.response as WireSignature
+        assertThat(result2.response, instanceOf(CryptoSignature::class.java))
+        val signature2 = result2.response as CryptoSignature
         verifier.verify(publicKey, signature2.bytes.array(), data)
         // sign using public key and full custom scheme
         val signatureSpec3 = getFullCustomSignatureSpec()
@@ -540,9 +485,9 @@ class SigningServiceRpcProcessorTests {
         processor.onNext(
             RpcOpsRequest(
                 context3,
-                WireSigningSignWithAliasSpec(
+                SignWithAliasSpecRpcCommand(
                     alias,
-                    WireSignatureSpec(signatureSpec3.signatureName, signatureSpec3.customDigestName?.name),
+                    CryptoSignatureSpec(signatureSpec3.signatureName, signatureSpec3.customDigestName?.name),
                     ByteBuffer.wrap(data),
                     KeyValuePairList(emptyList())
                 )
@@ -551,20 +496,19 @@ class SigningServiceRpcProcessorTests {
         )
         val result3 = future3.get()
         assertResponseContext(context3, result3.context)
-        assertThat(result3.response, instanceOf(WireSignature::class.java))
-        val signature3 = result3.response as WireSignature
+        assertThat(result3.response, instanceOf(CryptoSignature::class.java))
+        val signature3 = result3.response as CryptoSignature
         verifier.verify(publicKey, signatureSpec3, signature3.bytes.array(), data)
         // sign using public key and custom scheme
         val signatureSpec4 = getCustomSignatureSpec()
-        assumeTrue(signatureSpec4 != null)
         val context4 = createRequestContext()
         val future4 = CompletableFuture<RpcOpsResponse>()
         processor.onNext(
             RpcOpsRequest(
                 context4,
-                WireSigningSignWithAliasSpec(
+                SignWithAliasSpecRpcCommand(
                     alias,
-                    WireSignatureSpec(signatureSpec4!!.signatureName, signatureSpec4.customDigestName?.name),
+                    CryptoSignatureSpec(signatureSpec4.signatureName, signatureSpec4.customDigestName?.name),
                     ByteBuffer.wrap(data),
                     KeyValuePairList(emptyList())
                 )
@@ -573,8 +517,8 @@ class SigningServiceRpcProcessorTests {
         )
         val result4 = future4.get()
         assertResponseContext(context4, result4.context)
-        assertThat(result4.response, instanceOf(WireSignature::class.java))
-        val signature4 = result4.response as WireSignature
+        assertThat(result4.response, instanceOf(CryptoSignature::class.java))
+        val signature4 = result4.response as CryptoSignature
         verifier.verify(publicKey, signatureSpec4, signature4.bytes.array(), data)
     }
 }
