@@ -57,12 +57,12 @@ Requests to this endpoint are expected to take the form of POST requests with th
 
 Where we have:
 
-* `section`: The section of the configuration to be updated
-* `config` The updated configuration in JSON or HOCON format
-* `schemaVersion` The schema version of the configuration
-* `version` The version number used for optimistic locking. The request will fail if this version does not match the
+* `section`: The section of the configuration to be updated.
+* `config`: The updated configuration in JSON or HOCON format.
+* `schemaVersion`: The schema version of the configuration.
+* `version`: The version number used for optimistic locking. The request will fail if this version does not match the
   version stored in the database for the corresponding section, or -1 if this is a new section for which no
-  configuration has yet been stored
+  configuration has yet been stored.
 
 These requests are automatically mapped to `HTTPUpdateConfigRequest` objects for handling by `ConfigRPCOpsImpl`.
 
