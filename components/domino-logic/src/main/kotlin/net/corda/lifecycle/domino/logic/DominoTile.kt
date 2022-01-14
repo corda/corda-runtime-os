@@ -3,6 +3,7 @@ package net.corda.lifecycle.domino.logic
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.libs.configuration.SmartConfig
+import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -50,6 +51,7 @@ class DominoTile(
         StoppedDueToBadConfig,
         StoppedByParent
     }
+    private class StatusChangeEvent(val oldState: State, val newState: State): LifecycleEvent
 
     val name = LifecycleCoordinatorName(
         componentName,
@@ -91,7 +93,7 @@ class DominoTile(
     private val configResources = ResourcesHolder()
 
     @Volatile
-    private var registrations: Map<RegistrationHandle, DominoTile>? = null
+    private var registrations: MutableMap<RegistrationHandle, Pair<DominoTile, State>>? = null
 
     private val currentState = AtomicReference(State.Created)
 
@@ -154,8 +156,9 @@ class DominoTile(
             }
             withLifecycleWriteLock {
                 status?.let { coordinator.updateStatus(it) }
+                coordinator.postCustomEventToFollowers(StatusChangeEvent(oldState, newState))
             }
-            logger.info("State of $name updated to $newState")
+            logger.info("State of $name updated from $oldState to $newState")
         }
     }
 
@@ -166,21 +169,25 @@ class DominoTile(
                     gotError(event.cause)
                 }
                 is StartEvent, is StopEvent -> {
-                    // We don't do anything when the starting/stopping the coordinator
+                    // We don't do anything when starting/stopping the coordinator
                 }
                 is StopTile -> {
                     if (event.dueToError) {
                         when(state) {
                             State.StoppedDueToError -> {}
-                            else -> {
+                            // If the component is stopped due to other reasons (bad config or by parent), we change the status so that the
+                            // component will not attempt to start or process config before recovering from the error.
+                            State.Started, State.Created, State.StoppedDueToBadConfig, State.StoppedByParent -> {
                                 stopTile()
                                 updateState(State.StoppedDueToError)
                             }
                         }
                     } else {
                         when(state) {
+                            // If a component has stopped due to bad config or error, we don't change the status so that the component
+                            // will not attempt to start (if invoked by the parent) before recovering from the bad config or the error.
                             State.StoppedByParent, State.StoppedDueToBadConfig, State.StoppedDueToError -> {}
-                            else -> {
+                            State.Started, State.Created -> {
                                 stopTile()
                                 updateState(State.StoppedByParent)
                             }
@@ -196,25 +203,30 @@ class DominoTile(
                     }
                 }
                 is RegistrationStatusChangeEvent -> {
-                    val child = registrations?.get(event.registration)
-                    if (child == null) {
-                        logger.warn("Signal ${event.status} received from registration that didn't map to a component.")
-                        return
-                    }
+                    // we don't react to UP/DOWN signals, since we have our custom events that indicate every status change.
+                }
+                is CustomEvent -> {
+                    if (event.payload is StatusChangeEvent) {
+                        val statusChangeEvent = event.payload as StatusChangeEvent
 
-                    if (event.status == LifecycleStatus.UP) {
-                        logger.info("Status change: child ${child.name} went up.")
-                        handleLifecycleUp(child)
-                    } else {
-                        logger.info("Status change: child ${child.name} went down.")
-                        val erroredKids = children.filter { it.state == State.StoppedDueToError || it.state == State.StoppedDueToBadConfig }
-                        val stoppedKids = children.filter { it.state == State.StoppedByParent }
-                        if (erroredKids.isNotEmpty()) {
-                            coordinator.postEvent(StopTile(true))
-                        } else if (stoppedKids.isNotEmpty()) {
-                            stop()
-                        } else {
-                            logger.info("Ignoring down signal, since all children seem to have recovered by now.")
+                        val childWithState = registrations?.get(event.registration)
+                        if (childWithState == null) {
+                            logger.warn("Signal change status received from registration (${event.registration}) that didn't map to a component.")
+                            return
+                        }
+                        registrations!![event.registration] = childWithState.copy(second = statusChangeEvent.newState)
+                        val (child, _) = childWithState
+
+                        when(statusChangeEvent.newState) {
+                            State.Started -> {
+                                logger.info("Status change: child ${child.name} went up.")
+                                handleLifecycleUp(child)
+                            }
+                            State.StoppedDueToBadConfig, State.StoppedDueToError -> {
+                                logger.info("Status change: child ${child.name} went down (${statusChangeEvent.newState}).")
+                                coordinator.postEvent(StopTile(true))
+                            }
+                            State.Created, State.StoppedByParent -> {  }
                         }
                     }
                 }
@@ -308,16 +320,17 @@ class DominoTile(
 
     private fun handleLifecycleUp(child: DominoTile) {
         if (!isRunning) {
+            val childrenWithStatus = registrations?.values ?: emptySet()
             when {
-                children.all { it.isRunning } -> {
+                childrenWithStatus.all { it.second == State.Started } -> {
                     logger.info("Starting resources, since all children are now up.")
                     createResourcesAndStart()
                 }
-                children.any { it.state == State.StoppedDueToError || it.state == State.StoppedDueToBadConfig } -> {
+                childrenWithStatus.any { it.second == State.StoppedDueToError || it.second == State.StoppedDueToBadConfig } -> {
                     logger.info("Stopping child ${child.name} that went up, since there are other children that are in errored state.")
                     child.stop()
                 }
-                else -> { // any children that are not running have been stopped by the parent
+                else -> { // any children that are not running have been stopped by the parent.
                     logger.info("Starting other children that had been stopped by me.")
                     startDependenciesIfNeeded()
                 }
@@ -329,8 +342,8 @@ class DominoTile(
         if (registrations == null && children.isNotEmpty()) {
             registrations = children.map {
                 val dominoTileName = it.name
-                coordinator.followStatusChangesByName(setOf(dominoTileName)) to it
-            }.toMap()
+                coordinator.followStatusChangesByName(setOf(dominoTileName)) to Pair(it, it.state)
+            }.toMap().toMutableMap()
             logger.info("Created $name with ${children.map { it.name }}")
         }
         startDependenciesIfNeeded()
@@ -411,10 +424,11 @@ class DominoTile(
         }
         configReady = false
 
-        children.forEach {
-            if (!(it.state == State.StoppedDueToError || it.state == State.StoppedDueToBadConfig )) {
-                logger.info("Stopping child ${it.name}")
-                it.stop()
+        val childrenWithState = registrations?.values ?: emptySet()
+        childrenWithState.forEach {
+            if (!(it.second == State.StoppedDueToError || it.second == State.StoppedDueToBadConfig )) {
+                logger.info("Stopping child ${it.first.name}")
+                it.first.stop()
             }
         }
     }

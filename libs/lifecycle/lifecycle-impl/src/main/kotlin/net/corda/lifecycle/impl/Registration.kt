@@ -1,6 +1,7 @@
 package net.corda.lifecycle.impl
 
 import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleException
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
@@ -71,6 +72,14 @@ internal class Registration(
             val newState = currentStatus
             if (!isClosed.get() && oldState != newState) {
                 registeringCoordinator.postEvent(RegistrationStatusChangeEvent(this, newState))
+            }
+        }
+    }
+
+    fun postCustomEvent(event: LifecycleEvent) {
+        lock.withLock {
+            if (!isClosed.get()) {
+                registeringCoordinator.postEvent(event)
             }
         }
     }
