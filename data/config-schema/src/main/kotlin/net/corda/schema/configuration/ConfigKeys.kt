@@ -18,8 +18,16 @@ class ConfigKeys {
         const val RPC_CONFIG = "corda.rpc"
         const val SECRETS_CONFIG = "corda.secrets"
         const val SANDBOX_CONFIG = "corda.sandbox"
-        
+
+        // Lower level config elements
+        //  Messaging
         const val BOOTSTRAP_SERVERS = "messaging.kafka.common.bootstrap.servers"
+
+        //  RPC
         const val CONFIG_RPC_TIMEOUT_MILLIS = "timeout.millis"
+
+        // Secrets Service
+        const val SECRETS_PASSPHRASE = "passphrase"
+        const val SECRETS_SALT = "salt"
     }
 }
