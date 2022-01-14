@@ -3,6 +3,7 @@ package net.corda.libs.configuration.write.impl.tests
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.libs.configuration.datamodel.ConfigAuditEntity
 import net.corda.libs.configuration.datamodel.ConfigEntity
+import net.corda.libs.configuration.write.WrongVersionException
 import net.corda.libs.configuration.write.impl.ConfigEntityRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -23,7 +24,7 @@ class ConfigEntityRepositoryTests {
     private val config = ConfigEntity("section", "a=b", 0, Instant.MIN, "actor")
     private val configAudit = ConfigAuditEntity(config)
     private val configMgmtReq = config.run {
-        ConfigurationManagementRequest(section, version, config, schemaVersion, updateActor)
+        ConfigurationManagementRequest(section, config, schemaVersion, updateActor, version)
     }
 
     /** Creates a mock [EntityManager]. */
@@ -68,16 +69,16 @@ class ConfigEntityRepositoryTests {
     fun `throws if asked to persist request with version that does not match existent section version`() {
         val configEntityRepository = ConfigEntityRepository(getEntityManagerFactory(getEntityManagerWithConfig()))
         val badVersionConfigMgmtReq = configMgmtReq.run {
-            ConfigurationManagementRequest(section, version + 1, config, configSchemaVersion, updateActor)
+            ConfigurationManagementRequest(section, config, schemaVersion, updateActor, version + 1)
         }
-        val e = assertThrows<IllegalStateException> {
+        val e = assertThrows<WrongVersionException> {
             configEntityRepository.writeEntities(badVersionConfigMgmtReq, clock)
         }
 
         assertEquals(
-            e.message,
             "The request specified a version of ${badVersionConfigMgmtReq.version}, but the current version in the " +
-                    "database is ${config.version}. The versions must match for any update."
+                    "database is ${config.version}. These versions must match to update the cluster configuration.",
+            e.message
         )
     }
 
@@ -95,11 +96,9 @@ class ConfigEntityRepositoryTests {
         val entityManager = getEntityManagerWithConfig()
         val configEntityRepository = ConfigEntityRepository(getEntityManagerFactory(entityManager))
         val badVersionConfigMgmtReq = configMgmtReq.run {
-            ConfigurationManagementRequest(
-                section, version + 1, config, configSchemaVersion, updateActor
-            )
+            ConfigurationManagementRequest(section, config, schemaVersion, updateActor, version + 1)
         }
-        assertThrows<IllegalStateException> {
+        assertThrows<WrongVersionException> {
             configEntityRepository.writeEntities(badVersionConfigMgmtReq, clock)
         }
 
