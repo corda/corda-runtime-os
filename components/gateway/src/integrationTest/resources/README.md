@@ -143,7 +143,7 @@ keytool -keystore truststore.jks -alias ca-root -import  -trustcacerts -file cac
 This will create the trust store in `./truststore.jks`
 
 ### Create SSL key store
-1. Generate the key for <name>:
+1. Generate the key for `<name>`:
   * EC:
 ```bash
 openssl ecparam -out <name>.key -name prime256v1 -genkey
@@ -153,7 +153,7 @@ openssl ecparam -out <name>.key -name prime256v1 -genkey
 openssl genrsa -out <name>.key 2048
 ```
 
-2. Signing request for <name> with <url>:
+2. Signing request for `<name>` with `<url>`:
 ```bash
 openssl req -new -key <name>.key -out <name>.csr -subj "/C=UK/CN=<url>" -addext "subjectAltName = DNS:<url>"
 ```
@@ -163,7 +163,7 @@ openssl req -new -key alice.key -out alice.csr -subj "/C=UK/CN=www.alice.net" -a
 ```
 )
 
-3. Generate certificate for <name> with <url>
+3. Generate certificate for `<name>` with `<url>`
 ```bash
 openssl x509 -req -in <name>.csr -CA cacert.pem -CAkey ca.key -CAcreateserial -out <name>.pem -days 1024 -sha512 -extfile <(printf "subjectAltName=DNS:<url>")
 ```
@@ -171,7 +171,7 @@ openssl x509 -req -in <name>.csr -CA cacert.pem -CAkey ca.key -CAcreateserial -o
 ```bash
 openssl ca -in <name>.csr -out <name>.cer -cert cacert.pem -keyfile ca.key -passin "pass:password" -config ca.conf -batch -passin "pass:password" -md sha512
 ```
-5. Create the key store for <name>
+5. Create the key store for `<name>`
 ```bash
 cat <name>.cer <name>.key > <name>.combined.pem
 openssl pkcs12 -export -out <name>.combined.pkcs12 -in <name>.combined.pem -passin "pass:password" -passout "pass:password"
@@ -180,4 +180,4 @@ keytool -v -importkeystore -srckeystore <name>.combined.pkcs12 -srcstoretype PKC
 
 This should create a key store named `<name>.jks`
 
-Repeate the same process for every key store that uses the same trust store
+Repeat the same process for every key store that uses the same trust store
