@@ -1,29 +1,4 @@
-version: "3.9"
 services:
-  crypto-worker:
-    container_name: crypto-worker
-    # Created with `gradlew applications:workers:release:crypto:publishOSGiImage`.
-    image: "corda-os-docker-dev.software.r3.com/corda-os-crypto-worker:latest-local"
-
-  db-worker:
-    container_name: db-worker
-    # Created with `gradlew :applications:workers:release:db-worker:publishOSGiImage`.
-    image: "corda-os-docker-dev.software.r3.com/corda-os-db-worker:latest-local"
-    command: -m kafka.common.bootstrap.servers=kafka:9092 -d cluster.user=user -d cluster.pass=pass
-
-  flow-worker:
-    container_name: flow-worker
-    # Created with `gradlew applications:workers:release:flow:publishOSGiImage`.
-    image: "corda-os-docker-dev.software.r3.com/corda-os-flow-worker:latest-local"
-
-  rpc-worker:
-    container_name: rpc-worker
-    # Created with `gradlew applications:workers:release:rpc:publishOSGiImage`.
-    image: "corda-os-docker-dev.software.r3.com/corda-os-rpc-worker:latest-local"
-    command: -m kafka.common.bootstrap.servers=kafka:9092
-    ports:
-      - "8888:8888"
-
   zookeeper:
     container_name: zookeeper
     # https://hub.docker.com/r/bitnami/zookeeper
@@ -48,8 +23,40 @@ services:
       - KAFKA_CFG_LISTENERS=CLIENT://:9092,EXTERNAL://:9093
       - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://kafka:9092,EXTERNAL://localhost:9093
       - KAFKA_INTER_BROKER_LISTENER_NAME=CLIENT
+      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=false
     depends_on:
       - zookeeper
+    healthcheck:
+      test: [ "CMD-SHELL", "/opt/bitnami/kafka/bin/kafka-topics.sh --bootstrap-server 127.0.0.1:9092 --list" ]
+      interval: 5s
+      timeout: 20s
+      retries: 15
+
+  init-kafka:
+    container_name: init-kafka
+    image: "bitnami/kafka:latest"
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+    entrypoint: [ '/bin/sh', '-c' ]
+    command: |
+      "
+      echo -e 'Creating kafka topics'
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic config.management.request
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic config.management.request.resp
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic config.topic --config "cleanup.policy=compact"
+
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic rpc.permissions.management
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic rpc.permissions.management.resp
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic rpc.permissions.user --config "cleanup.policy=compact"
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic rpc.permissions.group --config "cleanup.policy=compact"
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic rpc.permissions.role --config "cleanup.policy=compact"
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic rpc.permissions.permission --config "cleanup.policy=compact"
+
+      echo -e 'Successfully created the following topics:'
+      kafka-topics.sh --bootstrap-server kafka:9092 --list
+      "
 
   kafdrop:
     container_name: kafdrop
@@ -61,7 +68,8 @@ services:
       KAFKA_BROKERCONNECT: "kafka:9092"
       JVM_OPTS: "-Xms16M -Xmx48M -Xss180K -XX:-TieredCompilation -XX:+UseStringDeduplication -noverify"
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
 
   cluster-db:
     container_name: cluster-db
@@ -72,3 +80,85 @@ services:
       POSTGRES_DB: "cordacluster"
       POSTGRES_USER: "user"
       POSTGRES_PASSWORD: "pass"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U user -d cordacluster" ]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+  crypto-worker:
+    container_name: crypto-worker
+    # Created with `gradlew applications:workers:release:crypto:publishOSGiImage`.
+    image: "corda-os-docker-dev.software.r3.com/corda-os-crypto-worker:latest-local"
+    ports:
+      - "5007:5007"
+    environment:
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5007"
+    depends_on:
+      init-kafka:
+        condition: service_completed_successfully
+    command:
+      - --messagingParams
+      - kafka.common.bootstrap.servers=kafka:9092
+      - --instanceId
+      - "1"
+
+  db-worker:
+    container_name: db-worker
+    # Created with `gradlew :applications:workers:release:db-worker:publishOSGiImage`.
+    image: "corda-os-docker-dev.software.r3.com/corda-os-db-worker:latest-local"
+    ports:
+      - "5006:5006"
+    environment:
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5006"
+    depends_on:
+      init-kafka:
+        condition: service_completed_successfully
+      cluster-db:
+        condition: service_healthy
+    command:
+      - --messagingParams
+      - kafka.common.bootstrap.servers=kafka:9092
+      - --instanceId
+      - "1"
+      - --databaseParams
+      - cluster.user=user
+      - --databaseParams
+      - cluster.pass=pass
+      - --databaseParams
+      - cluster.jdbc.url=jdbc:postgresql://cluster-db:5432/cordacluster
+
+  flow-worker:
+    container_name: flow-worker
+    # Created with `gradlew applications:workers:release:flow:publishOSGiImage`.
+    image: "corda-os-docker-dev.software.r3.com/corda-os-flow-worker:latest-local"
+    ports:
+      - "5008:5008"
+    environment:
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5008"
+    depends_on:
+      init-kafka:
+        condition: service_completed_successfully
+    command:
+      - --messagingParams
+      - kafka.common.bootstrap.servers=kafka:9092
+      - --instanceId
+      - "1"
+
+  rpc-worker:
+    container_name: rpc-worker
+    # Created with `gradlew applications:workers:release:rpc:publishOSGiImage`.
+    image: "corda-os-docker-dev.software.r3.com/corda-os-rpc-worker:latest-local"
+    depends_on:
+      init-kafka:
+        condition: service_completed_successfully
+    ports:
+      - "8888:8888"
+      - "5005:5005"
+    environment:
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
+    command:
+      - --messagingParams
+      - kafka.common.bootstrap.servers=kafka:9092
+      - --instanceId
+      - "1"
