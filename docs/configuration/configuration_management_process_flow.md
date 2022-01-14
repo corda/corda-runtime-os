@@ -10,7 +10,7 @@ The following diagram shows the end-to-end process for updating the configuratio
 
 ![Configuration management process flow diagram](./images/configuration_management_process_flow.jpeg)
 
-The golden path has seven key steps:
+There are seven steps involved in updating the cluster configuration:
 
 1. An HTTP client sends an HTTP request to update the cluster configuration to the RPC worker
 2. The RPC worker writes a configuration management request to the configuration management topic on the Kafka bus
@@ -21,16 +21,16 @@ The golden path has seven key steps:
 7. Workers can read the updated configuration from the configuration topic on the Kafka bus using the configuration read
    service
 
-Note that there are two separate Kafka topics involved in this process:
+The process uses two separate Kafka topics:
 
-1. The configuration topic, which holds the current state of the cluster configuration
-2. The configuration management topic, which holds _requests_ to modify the current state of the cluster configuration
+1. The configuration management topic, which holds _requests_ to modify the current state of the cluster configuration
+2. The configuration topic, which holds the current state of the cluster configuration
 
-For simplicity, the diagram skips over the configuration management response that the DB worker writes to the
+For simplicity, the diagram above skips over the configuration management response that the DB worker writes to the
 configuration management topic on the Kafka bus after step (5), which in turn allows the RPC worker to send a response
 to the HTTP client in step (6).
 
-The remainder of this document takes a closer look at various parts of the above process.
+The remainder of this document provides further details on the process above.
 
 ## HTTP requests for configuration updates
 
