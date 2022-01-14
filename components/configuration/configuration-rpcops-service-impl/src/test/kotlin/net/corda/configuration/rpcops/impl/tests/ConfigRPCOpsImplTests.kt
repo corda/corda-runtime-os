@@ -98,6 +98,19 @@ class ConfigRPCOpsImplTests {
     }
 
     @Test
+    fun `updateConfig throws if config is not valid JSON or HOCON`() {
+        val invalidConfig = "a=b\nc"
+
+        val (_, configRPCOps) = getConfigRPCOps(mock())
+        val e = assertThrows<HttpApiException> {
+            configRPCOps.updateConfig(req.copy(config = invalidConfig))
+        }
+
+        assertEquals("Configuration $invalidConfig could not be parsed. Valid JSON or HOCON expected.", e.message)
+        assertEquals(400, e.statusCode)
+    }
+
+    @Test
     fun `updateConfig throws HttpApiException if response is failure`() {
         val exception = ExceptionEnvelope("ErrorType", "ErrorMessage.")
         val response = req.run {
@@ -139,7 +152,7 @@ class ConfigRPCOpsImplTests {
 
         configRPCOps.setTimeout(1000)
         val e = assertThrows<ConfigRPCOpsServiceException> {
-            configRPCOps.updateConfig(mock())
+            configRPCOps.updateConfig(req)
         }
 
         assertEquals(
@@ -154,7 +167,7 @@ class ConfigRPCOpsImplTests {
 
         configRPCOps.createAndStartRPCSender(mock())
         val e = assertThrows<ConfigRPCOpsServiceException> {
-            configRPCOps.updateConfig(mock())
+            configRPCOps.updateConfig(req)
         }
 
         assertEquals(

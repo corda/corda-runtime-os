@@ -1,5 +1,7 @@
 package net.corda.configuration.rpcops.impl.v1
 
+import com.typesafe.config.ConfigException
+import com.typesafe.config.ConfigFactory
 import net.corda.configuration.rpcops.ConfigRPCOpsServiceException
 import net.corda.configuration.rpcops.impl.CLIENT_NAME_HTTP
 import net.corda.configuration.rpcops.impl.GROUP_NAME
@@ -63,6 +65,8 @@ internal class ConfigRPCOpsImpl @Activate constructor(
     }
 
     override fun updateConfig(request: HTTPUpdateConfigRequest): HTTPUpdateConfigResponse {
+        validateRequestedConfig(request.config)
+
         val actor = CURRENT_RPC_CONTEXT.get().principal
         val rpcRequest = request.run { ConfigurationManagementRequest(section, config, schemaVersion, actor, version) }
         val response = sendRequest(rpcRequest)
@@ -75,6 +79,13 @@ internal class ConfigRPCOpsImpl @Activate constructor(
             // TODO - CORE-3304 - Return richer exception (e.g. containing the config and version currently in the DB).
             throw HttpApiException("${exception.errorType}: ${exception.errorMessage}", 500)
         }
+    }
+
+    /** Validates that the [config] can be parsed into a `Config` object. */
+    private fun validateRequestedConfig(config: String) = try {
+        ConfigFactory.parseString(config)
+    } catch (e: ConfigException.Parse) {
+        throw HttpApiException("Configuration $config could not be parsed. Valid JSON or HOCON expected.", 400)
     }
 
     /**
