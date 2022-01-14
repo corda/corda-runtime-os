@@ -1,6 +1,6 @@
 package com.r3.corda.utils.provider
 
-import net.corda.core.utilities.contextLogger
+import net.corda.v5.base.util.contextLogger
 import java.io.InputStream
 import java.io.OutputStream
 import java.security.*
