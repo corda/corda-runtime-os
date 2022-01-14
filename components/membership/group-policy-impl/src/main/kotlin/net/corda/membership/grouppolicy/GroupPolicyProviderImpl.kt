@@ -16,13 +16,14 @@ import net.corda.membership.grouppolicy.factory.GroupPolicyParser
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.read.VirtualNodeInfoReader
 import net.corda.virtualnode.read.VirtualNodeInfoReaderComponent
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.concurrent.ConcurrentHashMap
 
-@Component(service = [GroupPolicyProvider::class])
+@Component(service = [GroupPolicyProviderImpl::class])
 class GroupPolicyProviderImpl @Activate constructor(
     @Reference(service = VirtualNodeInfoReaderComponent::class)
     private val virtualNodeInfoReader: VirtualNodeInfoReaderComponent,
@@ -30,7 +31,7 @@ class GroupPolicyProviderImpl @Activate constructor(
     private val cpiInfoReader: CpiInfoReadService,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
-) : Lifecycle, GroupPolicyProvider {
+) : Lifecycle {
 
     private var virtualNodeInfoCallbackHandle: AutoCloseable? = null
     private var registrationHandle: AutoCloseable? = null
@@ -44,9 +45,9 @@ class GroupPolicyProviderImpl @Activate constructor(
     private var _groupPolicies: MutableMap<HoldingIdentity, GroupPolicy>? = null
 
     private val coordinator = lifecycleCoordinatorFactory
-        .createCoordinator<GroupPolicyProvider>(::handleEvent)
+        .createCoordinator<GroupPolicyProviderImpl>(::handleEvent)
 
-    override fun getGroupPolicy(
+    fun getGroupPolicy(
         holdingIdentity: HoldingIdentity
     ) = lookupGroupPolicy(holdingIdentity) ?: parseGroupPolicy(holdingIdentity)
 
@@ -116,7 +117,7 @@ class GroupPolicyProviderImpl @Activate constructor(
 
         registrationHandle = coordinator.followStatusChangesByName(
             setOf(
-                LifecycleCoordinatorName.forComponent<VirtualNodeInfoReaderComponent>(),
+                LifecycleCoordinatorName.forComponent<VirtualNodeInfoReader>(),
                 LifecycleCoordinatorName.forComponent<CpiInfoReadService>()
             )
         )
