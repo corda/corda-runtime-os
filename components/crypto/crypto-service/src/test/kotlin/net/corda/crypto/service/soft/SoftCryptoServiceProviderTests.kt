@@ -2,8 +2,8 @@ package net.corda.crypto.service.soft
 
 import net.corda.crypto.CryptoConsts
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
-import net.corda.crypto.service.CryptoServicesTestFactory
-import net.corda.crypto.service.persistence.InMemoryKeyValuePersistenceFactory
+import net.corda.crypto.persistence.inmemory.InMemoryKeyValuePersistenceFactory
+import net.corda.crypto.service.signing.CryptoServicesTestFactory
 import net.corda.test.util.createTestCase
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService

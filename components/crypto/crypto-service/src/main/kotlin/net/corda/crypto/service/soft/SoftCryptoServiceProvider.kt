@@ -2,7 +2,7 @@ package net.corda.crypto.service.soft
 
 import net.corda.crypto.impl.config.CryptoPersistenceConfig
 import net.corda.crypto.impl.config.defaultCryptoService
-import net.corda.crypto.service.persistence.KeyValuePersistenceFactory
+import net.corda.crypto.component.persistence.KeyValuePersistenceFactory
 import net.corda.crypto.service.persistence.SoftCryptoKeyCache
 import net.corda.crypto.service.persistence.SoftCryptoKeyCacheImpl
 import net.corda.lifecycle.Lifecycle

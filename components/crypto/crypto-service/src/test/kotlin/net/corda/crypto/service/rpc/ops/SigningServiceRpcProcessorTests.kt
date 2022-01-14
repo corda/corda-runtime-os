@@ -1,9 +1,9 @@
 package net.corda.crypto.service.rpc.ops
 
 import net.corda.crypto.CryptoConsts
-import net.corda.crypto.service.CryptoServicesTestFactory
-import net.corda.crypto.service.SigningService
-import net.corda.crypto.service.SigningServiceFactory
+import net.corda.crypto.service.signing.CryptoServicesTestFactory
+import net.corda.crypto.service.signing.SigningService
+import net.corda.crypto.service.signing.SigningServiceFactory
 import net.corda.crypto.testkit.generateKeyPair
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList

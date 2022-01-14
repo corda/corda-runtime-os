@@ -1,6 +1,7 @@
 package net.corda.crypto.service
 
 import net.corda.crypto.CryptoConsts
+import net.corda.crypto.service.signing.CryptoServicesTestFactory
 import net.corda.test.util.createTestCase
 import net.corda.v5.base.types.OpaqueBytes
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -34,7 +35,6 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.security.KeyPair
 import java.security.PublicKey
 import java.security.SignatureException
 import java.util.UUID

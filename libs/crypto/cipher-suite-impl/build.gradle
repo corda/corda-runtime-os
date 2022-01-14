@@ -29,7 +29,7 @@ dependencies {
     testImplementation project(":testing:test-utilities")
 }
 
-description 'Common crypto implementation'
+description 'Default implementations of cipher suite providers'
 
 tasks.named('jar', Jar) {
     bnd """\

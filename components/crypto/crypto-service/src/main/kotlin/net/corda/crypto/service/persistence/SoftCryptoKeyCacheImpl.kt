@@ -1,5 +1,9 @@
 package net.corda.crypto.service.persistence
 
+import net.corda.crypto.component.persistence.KeyValuePersistenceFactory
+import net.corda.crypto.component.persistence.SoftCryptoKeyRecord
+import net.corda.crypto.component.persistence.SoftCryptoKeyRecordInfo
+import net.corda.crypto.component.persistence.WrappingKey
 import net.corda.crypto.impl.persistence.KeyValuePersistence
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata

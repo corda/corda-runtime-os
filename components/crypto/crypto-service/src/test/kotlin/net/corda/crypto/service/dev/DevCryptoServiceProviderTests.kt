@@ -1,19 +1,16 @@
 package net.corda.crypto.service.dev
 
 import net.corda.crypto.CryptoConsts
-import net.corda.crypto.service.CryptoServicesTestFactory
-import net.corda.crypto.service.persistence.InMemoryKeyValuePersistenceFactory
+import net.corda.crypto.persistence.inmemory.InMemoryKeyValuePersistenceFactory
+import net.corda.crypto.service.signing.CryptoServicesTestFactory
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceContext
 import net.corda.v5.cipher.suite.WrappedPrivateKey
 import net.corda.v5.crypto.SignatureVerificationService
-import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
-import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.mock
 import java.util.UUID
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -79,22 +76,11 @@ class DevCryptoServiceProviderTests {
         }
     }
 
-    @Test
-    @Timeout(30)
-    fun `Should throw unrecoverable CryptoServiceLibraryException if there is no InMemoryPersistentCacheFactory`() {
-        val provider = DevCryptoServiceProvider()
-        provider.persistenceFactories = listOf(mock())
-        val exception = assertThrows<CryptoServiceLibraryException> {
-            provider.createCryptoService(CryptoConsts.CryptoCategories.FRESH_KEYS)
-        }
-        assertFalse(exception.isRecoverable)
-    }
-
     private fun newAlias(): String = UUID.randomUUID().toString()
 
     private fun createCryptoServiceProvider(): DevCryptoServiceProvider {
         return DevCryptoServiceProvider().also {
-            it.persistenceFactories = listOf(InMemoryKeyValuePersistenceFactory())
+            it.persistenceFactory = InMemoryKeyValuePersistenceFactory()
         }
     }
 

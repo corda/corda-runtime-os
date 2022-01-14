@@ -1,7 +1,6 @@
 package net.corda.crypto.service.dev
 
-import net.corda.crypto.service.persistence.InMemoryKeyValuePersistenceFactory
-import net.corda.crypto.service.persistence.KeyValuePersistenceFactory
+import net.corda.crypto.component.persistence.KeyValuePersistenceFactory
 import net.corda.crypto.service.persistence.SigningKeyCache
 import net.corda.crypto.service.persistence.SigningKeyCacheImpl
 import net.corda.crypto.service.persistence.SoftCryptoKeyCache
@@ -10,11 +9,8 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceContext
 import net.corda.v5.cipher.suite.CryptoServiceProvider
-import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ReferenceCardinality
-import org.osgi.service.component.annotations.ReferencePolicyOption
 import org.slf4j.Logger
 import java.util.concurrent.ConcurrentHashMap
 
@@ -34,12 +30,8 @@ class DevCryptoServiceProvider : CryptoServiceProvider<DevCryptoServiceConfig>, 
         ConcurrentHashMap<String, SigningKeyCache>()
 
     @Volatile
-    @Reference(
-        service = KeyValuePersistenceFactory::class,
-        cardinality = ReferenceCardinality.AT_LEAST_ONE,
-        policyOption = ReferencePolicyOption.GREEDY
-    )
-    lateinit var persistenceFactories: List<KeyValuePersistenceFactory>
+    @Reference(service = KeyValuePersistenceFactory::class,)
+    lateinit var persistenceFactory: KeyValuePersistenceFactory
 
     override val name: String = SERVICE_NAME
 
@@ -54,12 +46,6 @@ class DevCryptoServiceProvider : CryptoServiceProvider<DevCryptoServiceConfig>, 
         )
         val cipherSuiteFactory = context.cipherSuiteFactory
         val schemeMetadata = cipherSuiteFactory.getSchemeMap()
-        val persistenceFactory = persistenceFactories.firstOrNull {
-            it.name == InMemoryKeyValuePersistenceFactory.NAME
-        } ?: throw CryptoServiceLibraryException(
-            "There is no provider with the name '${InMemoryKeyValuePersistenceFactory.NAME}'",
-            isRecoverable = false
-        )
         val cryptoServiceCache = devKeysCache.getOrPut(context.memberId) {
             SoftCryptoKeyCacheImpl(
                 tenantId = context.memberId,

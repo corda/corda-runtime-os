@@ -1,9 +1,9 @@
 package net.corda.crypto.service.rpc.ops
 
-import net.corda.crypto.service.SigningService
-import net.corda.crypto.service.SigningServiceFactory
+import net.corda.crypto.service.signing.SigningService
+import net.corda.crypto.service.signing.SigningServiceFactory
 import net.corda.crypto.service.rpc.CryptoRpcHandler
-import net.corda.crypto.service.rpc.toMap
+import net.corda.crypto.service.toMap
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
 import net.corda.data.crypto.wire.CryptoPublicKeys

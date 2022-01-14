@@ -1,6 +1,8 @@
 package net.corda.crypto.service.persistence
 
 import net.corda.crypto.CryptoConsts
+import net.corda.crypto.component.persistence.KeyValuePersistenceFactory
+import net.corda.crypto.component.persistence.SigningKeyRecord
 import net.corda.crypto.impl.closeGracefully
 import net.corda.crypto.impl.persistence.KeyValuePersistence
 import net.corda.v5.base.types.toHexString

@@ -1,6 +1,6 @@
 package net.corda.crypto.service.rpc.ops
 
-import net.corda.crypto.service.SigningServiceFactory
+import net.corda.crypto.service.signing.SigningServiceFactory
 import net.corda.crypto.service.rpc.AbstractCryptoRpcSub
 import net.corda.crypto.service.rpc.CryptoRpcSub
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest

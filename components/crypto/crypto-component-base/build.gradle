@@ -9,6 +9,9 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation "org.slf4j:slf4j-api"
+    implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
+    implementation "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion"
+    implementation "net.i2p.crypto:eddsa:$eddsaVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-config-schema"
