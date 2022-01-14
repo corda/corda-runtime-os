@@ -1,6 +1,7 @@
 package net.corda.libs.permissions.endpoints.v1.user.types
 
 import java.time.Instant
+import net.corda.libs.permissions.endpoints.v1.role.types.RoleAssociationResponseType
 
 /**
  * Response type representing a User to be returned to the caller.
@@ -38,6 +39,11 @@ data class UserResponseType(
     val enabled: Boolean,
 
     /**
+     * Whether this user uses SSO Authentication.
+     */
+    val ssoAuth: Boolean,
+
+    /**
      * If the User account used basic authentication, the time in which it expires.
      */
     val passwordExpiry: Instant?,
@@ -45,5 +51,15 @@ data class UserResponseType(
     /**
      * The group to which the User belongs.
      */
-    val parentGroup: String?
+    val parentGroup: String?,
+
+    /**
+     * User properties.
+     */
+    val properties: List<PropertyResponseType>,
+
+    /**
+     * The User's role associations.
+     */
+    val roleAssociations: List<RoleAssociationResponseType>
 )

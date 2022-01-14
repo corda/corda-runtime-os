@@ -24,7 +24,7 @@ import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpResponse
 import net.corda.p2p.gateway.messaging.http.SniCalculator
 import net.corda.p2p.gateway.messaging.toGatewayConfiguration
-import net.corda.p2p.schema.Schema
+import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.v5.base.util.debug
 import org.bouncycastle.asn1.x500.X500Name
 import org.slf4j.LoggerFactory
@@ -67,7 +67,7 @@ internal class OutboundMessageHandler(
     )
 
     private val p2pMessageSubscription = subscriptionFactory.createEventLogSubscription(
-        SubscriptionConfig("outbound-message-handler", Schema.LINK_OUT_TOPIC, instanceId),
+        SubscriptionConfig("outbound-message-handler", LINK_OUT_TOPIC, instanceId),
         this,
         nodeConfiguration,
         null

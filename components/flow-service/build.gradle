@@ -10,25 +10,27 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
     implementation project(":components:sandbox:sandbox-service")
+    implementation project(":components:virtual-node:sandbox-group-context-service")
+    implementation project(":libs:virtual-node:sandbox-group-context")
     implementation project(":components:configuration:configuration-read-service")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:configuration:configuration-core")
-
+    implementation project(':libs:configuration:configuration-schema:messaging-configuration')
     implementation project(':libs:flows:dependency-injection')
+    implementation project(":libs:flows:flow-fiber")
     implementation project(":libs:flows:flow-manager")
     implementation project(":libs:flows:flow-manager-impl")
-    implementation project(":libs:flows:statemachine")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:sandbox")
     implementation project(":libs:serialization:checkpoint-serialization-api")
     implementation "net.corda:corda-application"
     implementation "net.corda:corda-packaging"
-    implementation project(':libs:virtual-node:sandbox-group-service')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-config-schema"
+    implementation "net.corda:corda-topic-schema"
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"

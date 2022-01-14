@@ -19,7 +19,7 @@ import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.permissions.cache.PermissionCacheService
-import net.corda.rpc.schema.Schema
+import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_MGMT_REQ_TOPIC
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 
@@ -36,6 +36,7 @@ internal class PermissionManagementServiceEventHandler(
         val log = contextLogger()
         const val GROUP_NAME = "rpc.permission.management"
         const val CLIENT_NAME = "rpc.permission.manager"
+        const val RPC_CONFIG = "corda.rpc"
         const val BOOTSTRAP_CONFIG = "corda.boot"
     }
 
@@ -61,9 +62,9 @@ internal class PermissionManagementServiceEventHandler(
                 )
             }
             is NewConfigurationReceivedEvent -> {
-                log.info("Received new configuration event. Creating RPCSender.")
+                log.info("Received new configuration event. Creating and starting RPCSender and permission manager.")
                 createAndStartRpcSender(event.config)
-                createPermissionManager()
+                createPermissionManager(event.config)
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
             is RegistrationStatusChangeEvent -> {
@@ -103,21 +104,25 @@ internal class PermissionManagementServiceEventHandler(
         configSubscription?.close()
         configSubscription = configurationReadService.registerForUpdates { changedKeys: Set<String>, config: Map<String, SmartConfig> ->
             log.info("Received configuration update event, changedKeys: $changedKeys")
-            if (BOOTSTRAP_CONFIG in changedKeys) {
-                val newConfig = config[BOOTSTRAP_CONFIG]
-                coordinator.postEvent(NewConfigurationReceivedEvent(newConfig!!))
+            if (BOOTSTRAP_CONFIG in changedKeys && config.keys.contains(BOOTSTRAP_CONFIG)) {
+                val rpcConfig: SmartConfig? = config[RPC_CONFIG]
+                val bootConfig = config[BOOTSTRAP_CONFIG]!!
+                val newConfig = rpcConfig?.withFallback(bootConfig) ?: bootConfig
+                coordinator.postEvent(NewConfigurationReceivedEvent(newConfig))
+            } else if (RPC_CONFIG in changedKeys && config.keys.contains(RPC_CONFIG)) {
+                coordinator.postEvent(NewConfigurationReceivedEvent(config[RPC_CONFIG]!!))
             }
         }
     }
 
-    private fun createPermissionManager() {
+    private fun createPermissionManager(config: SmartConfig) {
         val permissionCache = permissionCacheService.permissionCache
         checkNotNull(permissionCache) {
             "Configuration received for permission manager but permission cache was null."
         }
         permissionManager?.stop()
         log.info("Creating and starting permission manager.")
-        permissionManager = permissionManagerFactory.create(rpcSender!!, permissionCache)
+        permissionManager = permissionManagerFactory.create(config, rpcSender!!, permissionCache)
             .also { it.start() }
     }
 
@@ -127,7 +132,7 @@ internal class PermissionManagementServiceEventHandler(
             RPCConfig(
                 GROUP_NAME,
                 CLIENT_NAME,
-                Schema.RPC_PERM_MGMT_REQ_TOPIC,
+                RPC_PERM_MGMT_REQ_TOPIC,
                 PermissionManagementRequest::class.java,
                 PermissionManagementResponse::class.java
             ),

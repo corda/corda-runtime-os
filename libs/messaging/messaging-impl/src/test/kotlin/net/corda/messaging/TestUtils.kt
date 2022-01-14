@@ -3,10 +3,10 @@ package net.corda.messaging
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.properties.ConfigProperties.Companion.CLIENT_ID_COUNTER
 import net.corda.messaging.properties.ConfigProperties.Companion.GROUP
-import net.corda.messaging.properties.ConfigProperties.Companion.INSTANCE_ID
 import net.corda.messaging.properties.ConfigProperties.Companion.TOPIC
 
 const val TOPIC_PREFIX = "test"

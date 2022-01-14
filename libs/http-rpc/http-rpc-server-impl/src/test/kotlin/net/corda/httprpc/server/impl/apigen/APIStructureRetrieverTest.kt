@@ -27,7 +27,7 @@ internal class APIStructureRetrieverTest {
     fun `structure withSimpleClass shouldSucceed`() {
         val retriever = APIStructureRetriever(listOf(CalendarRPCOpsImpl()))
 
-        val resources = retriever.structure.getOrThrow()
+        val resources = retriever.structure
 
         assertEquals(1, resources.size)
 
@@ -69,7 +69,7 @@ internal class APIStructureRetrieverTest {
     fun `structure withNonHTTPRPCInterface shouldIgnoreItSuccessfully`() {
         val retriever = APIStructureRetriever(listOf(TestHealthCheckAPIImpl(), TestRPCAPIImpl()))
 
-        val resources = retriever.structure.getOrThrow()
+        val resources = retriever.structure
 
         assertEquals(1, resources.size)
     }
@@ -78,7 +78,7 @@ internal class APIStructureRetrieverTest {
     fun `structure withNonHTTPRPCInterfaceThatIsAnnotated shouldIgnoreItSuccessfully`() {
         val retriever = APIStructureRetriever(listOf(TestHealthCheckAPIImpl(), TestRPCAPIAnnotatedImpl()))
 
-        val resources = retriever.structure.getOrThrow()
+        val resources = retriever.structure
 
         assertEquals(1, resources.size)
     }
@@ -87,7 +87,7 @@ internal class APIStructureRetrieverTest {
     fun `structure withDuplicateResourceName shouldThrow`() {
         val retriever = APIStructureRetriever(listOf(TestHealthCheckAPIImpl(), TestHealthCheckAPIImpl()))
         Assertions.assertThrows(IllegalArgumentException::class.java) {
-            retriever.structure.getOrThrow()
+            retriever.structure
         }
     }
 
@@ -95,15 +95,14 @@ internal class APIStructureRetrieverTest {
     fun `structure withDuplicateEndpointPathInResult shouldThrow`() {
         val retriever = APIStructureRetriever(listOf(TestDuplicateProtocolVersionAPIImpl()))
         Assertions.assertThrows(IllegalArgumentException::class.java) {
-            retriever.structure.getOrThrow()
+            retriever.structure
         }
     }
 
     @Test
-    @Suppress("ComplexMethod")
     fun `retrieve Java class should succeed`() {
         val retriever = APIStructureRetriever(listOf(TestJavaPrimitivesRPCopsImpl()))
-        val resources = retriever.structure.getOrThrow()
+        val resources = retriever.structure
         assertEquals(1, resources.size)
     }
 }

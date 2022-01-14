@@ -8,6 +8,8 @@ description 'Permission storage writer library'
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
+    api project(':libs:permissions:permission-storage-reader')
+
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-avro-schema"
 

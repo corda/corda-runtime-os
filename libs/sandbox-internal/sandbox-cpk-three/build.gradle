@@ -1,0 +1,27 @@
+plugins {
+    id 'net.corda.plugins.cordapp-cpk'
+}
+
+description 'Corda Sandbox CPK Three'
+
+group 'com.example.sandbox'
+version ''
+
+cordapp {
+    targetPlatformVersion 999 as Integer
+    workflow {
+        name 'Sandbox CPK-3'
+        versionId 1
+        vendor 'R3'
+    }
+}
+
+dependencies {
+    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation project(':libs:sandbox-internal:sandbox-cpk-library')
+    cordaProvided 'org.osgi:osgi.core'
+    cordaProvided 'net.corda:corda-application'
+    cordaProvided 'org.slf4j:slf4j-api'
+}

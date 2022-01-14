@@ -1,6 +1,7 @@
 package net.corda.messaging.subscription
 
 import com.typesafe.config.Config
+import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -13,13 +14,14 @@ import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
 import net.corda.messagebus.api.producer.CordaProducer
+import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
-import net.corda.messaging.properties.ConfigProperties.Companion.INSTANCE_ID
+import net.corda.messaging.properties.ConfigProperties.Companion.DEAD_LETTER_QUEUE_SUFFIX
 import net.corda.messaging.properties.ConfigProperties.Companion.KAFKA_CONSUMER
 import net.corda.messaging.properties.ConfigProperties.Companion.KAFKA_PRODUCER
 import net.corda.messaging.properties.ConfigProperties.Companion.TOPIC_NAME
@@ -30,6 +32,7 @@ import net.corda.messaging.utils.toCordaProducerRecords
 import net.corda.messaging.utils.toEventLogRecord
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
+import java.util.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
@@ -74,6 +77,7 @@ class EventLogSubscriptionImpl<K : Any, V : Any>(
     private val topic = config.getString(TOPIC_NAME)
     private val groupName = config.getString(CONSUMER_GROUP_ID)
     private val producerClientId: String = config.getString(PRODUCER_CLIENT_ID)
+    private lateinit var deadLetterRecords: MutableList<ByteArray>
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
             "$groupName-KafkaDurableSubscription-$topic",
@@ -156,18 +160,30 @@ class EventLogSubscriptionImpl<K : Any, V : Any>(
             attempts++
             try {
                 log.debug { "Attempt: $attempts" }
+                deadLetterRecords = mutableListOf()
                 consumer = if (partitionAssignmentListener != null) {
                     val consumerGroup = config.getString(CONSUMER_GROUP_ID)
                     val rebalanceListener =
                         ForwardingRebalanceListener(topic, consumerGroup, partitionAssignmentListener)
                     cordaConsumerBuilder.createDurableConsumer(
-                        config.getConfig(KAFKA_CONSUMER), processor.keyClass,
-                        processor.valueClass, cordaConsumerRebalanceListener = rebalanceListener
+                        config.getConfig(KAFKA_CONSUMER),
+                        processor.keyClass,
+                        processor.valueClass,
+                        { data ->
+                            log.error("Failed to deserialize record from $topic")
+                            deadLetterRecords.add(data)
+                        },
+                        cordaConsumerRebalanceListener = rebalanceListener
                     )
                 } else {
                     cordaConsumerBuilder.createDurableConsumer(
                         config.getConfig(KAFKA_CONSUMER),
-                        processor.keyClass, processor.valueClass
+                        processor.keyClass,
+                        processor.valueClass,
+                        { data ->
+                            log.error("Failed to deserialize record from $topic")
+                            deadLetterRecords.add(data)
+                        }
                     )
                 }
                 producer = cordaProducerBuilder.createProducer(config.getConfig(KAFKA_PRODUCER))
@@ -280,6 +296,15 @@ class EventLogSubscriptionImpl<K : Any, V : Any>(
         try {
             producer.beginTransaction()
             producer.sendRecords(processor.onNext(cordaConsumerRecords.map { it.toEventLogRecord() }).toCordaProducerRecords())
+            if(deadLetterRecords.isNotEmpty()) {
+                producer.sendRecords(deadLetterRecords.map {
+                    CordaProducerRecord(
+                        topic + config.getString(DEAD_LETTER_QUEUE_SUFFIX),
+                        UUID.randomUUID().toString(),
+                        it
+                    )
+                })
+            }
             producer.sendAllOffsetsToTransaction(consumer)
             producer.commitTransaction()
         } catch (ex: Exception) {

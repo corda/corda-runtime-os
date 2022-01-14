@@ -1,5 +1,7 @@
 package net.corda.internal.serialization.amqp
 
+import net.corda.internal.serialization.amqp.standard.CorDappCustomSerializer
+import net.corda.internal.serialization.amqp.standard.CustomSerializer
 import net.corda.internal.serialization.model.DefaultCacheProvider
 import net.corda.internal.serialization.model.TypeIdentifier
 import net.corda.serialization.InternalCustomSerializer

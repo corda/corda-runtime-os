@@ -1,7 +1,7 @@
 package net.corda.messagebus.kafka.producer
 
 import com.typesafe.config.Config
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.TOPIC_PREFIX
+import net.corda.libs.configuration.schema.messaging.TOPIC_PREFIX_PATH
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.kafka.consumer.CordaKafkaConsumerImpl
@@ -41,7 +41,7 @@ class CordaKafkaProducerImplTest {
     @BeforeEach
     fun setup() {
         doReturn(ConsumerGroupMetadata("")).whenever(consumer).groupMetadata()
-        doReturn("").whenever(config).getString(TOPIC_PREFIX)
+        doReturn("").whenever(config).getString(TOPIC_PREFIX_PATH)
         cordaKafkaProducer = CordaKafkaProducerImpl(config, producer)
     }
 

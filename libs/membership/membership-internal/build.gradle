@@ -10,8 +10,13 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    api project(":libs:virtual-node:virtual-node-info")
 
     implementation "net.corda:corda-membership-identity"
     implementation "net.corda:corda-membership-conversion"
     implementation "net.corda:corda-membership"
+    implementation "net.corda:corda-topic-schema"
+
+    implementation project(":libs:lifecycle:lifecycle")
+    api project(":libs:virtual-node:virtual-node-info")
 }

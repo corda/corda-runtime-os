@@ -15,5 +15,6 @@ data class UserResponseDto(
     val ssoAuth: Boolean,
     val passwordExpiry: Instant?,
     val parentGroup: String?,
-    val properties: List<PropertyResponseDto>
+    val properties: List<PropertyResponseDto>,
+    val roles: List<RoleAssociationResponseDto>
 )

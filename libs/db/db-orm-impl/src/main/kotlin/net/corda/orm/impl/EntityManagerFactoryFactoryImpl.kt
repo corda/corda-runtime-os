@@ -56,7 +56,7 @@ class EntityManagerFactoryFactoryImpl(
         classLoaders: List<ClassLoader>,
         configuration: EntityManagerConfiguration
     ): EntityManagerFactory {
-        log.info("Creating create for $persistenceUnitName")
+        log.info("Creating for $persistenceUnitName")
 
         val props = mapOf(
             "hibernate.show_sql" to configuration.showSql.toString(),

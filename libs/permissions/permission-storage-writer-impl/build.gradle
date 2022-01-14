@@ -14,9 +14,11 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-avro-schema"
 
+    implementation project(":libs:db:db-orm")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
     implementation project(':libs:permissions:permission-datamodel')
+    implementation project(':libs:permissions:permission-storage-common')
     implementation project(':libs:permissions:permission-storage-writer')
 
     implementation "javax.persistence:javax.persistence-api"

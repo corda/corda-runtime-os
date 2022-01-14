@@ -18,6 +18,7 @@ dependencies {
     implementation project(":libs:permissions:permission-password")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
+    implementation project(":libs:configuration:configuration-core")
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

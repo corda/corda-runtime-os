@@ -1,8 +1,8 @@
 package net.corda.messagebus.kafka.producer
 
 import com.typesafe.config.Config
+import net.corda.libs.configuration.schema.messaging.TOPIC_PREFIX_PATH
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CLOSE_TIMEOUT
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.TOPIC_PREFIX
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducer
@@ -45,7 +45,7 @@ class CordaKafkaProducerImpl(
     private val producer: Producer<Any, Any>
 ) : CordaProducer {
     private val closeTimeout = config.getLong(CLOSE_TIMEOUT)
-    private val topicPrefix = config.getString(TOPIC_PREFIX)
+    private val topicPrefix = config.getString(TOPIC_PREFIX_PATH)
     private val clientId = config.getString(CommonClientConfigs.CLIENT_ID_CONFIG)
     private val transactionalId = config.getStringOrNull(ProducerConfig.TRANSACTIONAL_ID_CONFIG)
 

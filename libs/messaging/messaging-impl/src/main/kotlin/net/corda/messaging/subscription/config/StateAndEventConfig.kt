@@ -1,6 +1,8 @@
 package net.corda.messaging.subscription.config
 
 import com.typesafe.config.Config
+import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
+import net.corda.libs.configuration.schema.messaging.TOPIC_PREFIX_PATH
 import net.corda.messagebus.api.configuration.ConfigProperties
 import net.corda.messaging.properties.ConfigProperties.Companion.DEAD_LETTER_QUEUE_SUFFIX
 import net.corda.messaging.properties.ConfigProperties.Companion.EVENT_CONSUMER
@@ -33,11 +35,11 @@ data class StateAndEventConfig(
 ) {
     companion object {
         fun getStateAndEventConfig(config: Config): StateAndEventConfig {
-            val topicPrefix = config.getString(ConfigProperties.TOPIC_PREFIX)
+            val topicPrefix = config.getString(TOPIC_PREFIX_PATH)
             val eventTopic = config.getString(ConfigProperties.TOPIC_NAME)
             val stateTopic = config.getString(STATE_TOPIC_NAME)
             val eventGroupID = config.getString(EVENT_GROUP_ID)
-            val instanceId = config.getString(ConfigProperties.INSTANCE_ID)
+            val instanceId = config.getString(INSTANCE_ID)
             val loggerName = "$eventGroupID.${config.getString(ConfigProperties.PRODUCER_TRANSACTIONAL_ID)}"
             val producerClientId: String = config.getString(ConfigProperties.PRODUCER_CLIENT_ID)
             val consumerThreadStopTimeout = config.getLong(EVENT_CONSUMER_THREAD_STOP_TIMEOUT)

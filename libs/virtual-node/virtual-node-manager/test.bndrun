@@ -10,8 +10,6 @@
     javax.xml.stream.events;version=1.0.0,\
     javax.xml.stream.util;version=1.0.0,\
     sun.security.x509
--runproperties: \
-    base.directory=${fileuri;${task.temporaryDir}}
 
 # Enable debugging.
 # -runjdb: 1044
@@ -21,6 +19,7 @@
     bnd.identity;id='net.corda.virtual-node-manager',\
     bnd.identity;id='net.corda.crypto-impl',\
     bnd.identity;id='net.corda.sandbox-hooks',\
+    bnd.identity;id='net.corda.sandbox-internal',\
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
     bnd.identity;id='slf4j.simple'
@@ -54,6 +53,7 @@
 	net.corda.packaging;version='[5.0.0,5.0.1)',\
 	net.corda.sandbox;version='[5.0.0,5.0.1)',\
 	net.corda.sandbox-hooks;version='[5.0.0,5.0.1)',\
+	net.corda.sandbox-internal;version='[5.0.0,5.0.1)',\
 	net.corda.serialization;version='[5.0.0,5.0.1)',\
 	net.corda.serialization-internal;version='[5.0.0,5.0.1)',\
 	net.corda.utilities;version='[5.0.0,5.0.1)',\

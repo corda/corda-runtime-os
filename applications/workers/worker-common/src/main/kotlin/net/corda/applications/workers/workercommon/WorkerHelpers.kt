@@ -1,10 +1,19 @@
 package net.corda.applications.workers.workercommon
 
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory
+import net.corda.applications.workers.workercommon.internal.CUSTOM_CONFIG_PATH
+import net.corda.applications.workers.workercommon.internal.MSG_CONFIG_PATH
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
+import net.corda.libs.configuration.schema.messaging.TOPIC_PREFIX
 import net.corda.osgi.api.Shutdown
 import org.osgi.framework.FrameworkUtil
 import picocli.CommandLine
+
+/** Associates a configuration key/value map with the path at which the configuration should be stored. */
+data class PathAndConfig(val path: String, val config: Map<String, String>)
 
 /** Helpers used across multiple workers. */
 class WorkerHelpers {
@@ -25,9 +34,29 @@ class WorkerHelpers {
             return params
         }
 
-        /** Uses [smartConfigFactory] to create a `SmartConfig` wrapping the worker's additional parameters in [params]. */
-        fun getAdditionalConfig(params: DefaultWorkerParams, smartConfigFactory: SmartConfigFactory) =
-            smartConfigFactory.create(ConfigFactory.parseMap(params.additionalParams))
+        /**
+         * Uses [smartConfigFactory] to create a `SmartConfig` containing the instance ID, topic prefix, additional
+         * params in the [defaultParams], and any [extraParams].
+         */
+        fun getBootstrapConfig(
+            smartConfigFactory: SmartConfigFactory,
+            defaultParams: DefaultWorkerParams,
+            extraParams: List<PathAndConfig> = emptyList()
+        ): SmartConfig {
+            val messagingParamsMap = defaultParams.messagingParams.mapKeys { (key, _) -> "$MSG_CONFIG_PATH.$key" }
+            val additionalParamsMap = defaultParams.additionalParams.mapKeys { (key, _) -> "$CUSTOM_CONFIG_PATH.$key" }
+            val extraParamsMap = extraParams
+                .map { (path, params) -> params.mapKeys { (key, _) -> "$path.$key" } }
+                .flatMap { map -> map.entries }
+                .associate { (key, value) -> key to value }
+
+            return smartConfigFactory.create(
+                ConfigFactory
+                    .parseMap(messagingParamsMap + additionalParamsMap + extraParamsMap)
+                    .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(defaultParams.instanceId))
+                    .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(defaultParams.topicPrefix))
+            )
+        }
 
         /** Sets up the [healthMonitor] based on the [params]. */
         fun setUpHealthMonitor(healthMonitor: HealthMonitor, params: DefaultWorkerParams) {

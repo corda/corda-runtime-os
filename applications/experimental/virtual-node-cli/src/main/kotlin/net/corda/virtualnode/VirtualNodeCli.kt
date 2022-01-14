@@ -1,9 +1,8 @@
 package net.corda.virtualnode
 
-import net.corda.applications.common.ConfigHelper
-import net.corda.comp.kafka.config.write.KafkaConfigWrite
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
-import net.corda.cpiinfo.write.CpiInfoWriterComponent
+import net.corda.configuration.publish.ConfigPublishService
+import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -13,6 +12,10 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.packaging.CPI
+import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
+import net.corda.tools.setup.common.ConfigHelper.Companion.SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH
+import net.corda.tools.setup.common.ConfigHelper.Companion.getBootstrapConfig
+import net.corda.tools.setup.common.ConfigHelper.Companion.getConfigValue
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -25,7 +28,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.File
-import java.util.Properties
+import java.util.*
 
 /**
  * Steps
@@ -44,14 +47,14 @@ class VirtualNodeCli @Activate constructor(
     private val shutDownService: Shutdown,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = CpiInfoWriterComponent::class)
-    private val cpiInfoWriterComponent: CpiInfoWriterComponent,
+    @Reference(service = CpiInfoWriteService::class)
+    private val cpiInfoWriteService: CpiInfoWriteService,
 //    @Reference(service = VirtualNodeInfoWriterComponent::class)
 //    private val virtualNodeInfoWriterComponent: VirtualNodeInfoWriterComponent,
     @Reference(service = SmartConfigFactory::class)
     private val smartConfigFactory: SmartConfigFactory,
-    @Reference(service = KafkaConfigWrite::class)
-    private val configWriter: KafkaConfigWrite,
+    @Reference(service = ConfigPublishService::class)
+    private val configPublishService: ConfigPublishService,
     @Reference(service = KafkaTopicAdmin::class)
     private var topicAdmin: KafkaTopicAdmin
 ) : Application, ConfigPublisher {
@@ -87,7 +90,7 @@ class VirtualNodeCli @Activate constructor(
         topicTemplate = parameters.topicTemplate
 
         // Get a default, hard-coded config.  tl;dr returns bootstrap.servers = localhost:9092
-        bootstrapConfig = smartConfigFactory.create(ConfigHelper.getBootstrapConfig(instanceId))
+        bootstrapConfig = smartConfigFactory.create(getBootstrapConfig(instanceId))
 
         // Start the event handler loop.
         coordinator.start()
@@ -116,7 +119,7 @@ class VirtualNodeCli @Activate constructor(
         val hash = SecureHash("Dummy", "0123456789ABCDEF".toByteArray())
         val id = CPI.Identifier.newInstance("test-cpi-name", "0.0.0", hash)
         val metadata = CPI.Metadata.newInstance(id, hash, emptyList(), "group-policy")
-        cpiInfoWriterComponent.put(metadata)
+        cpiInfoWriteService.put(metadata)
 
 //        if (thisThing) cpiInfoWriterComponent.put(cpiMetadata)
 //        if (thatThing) virtualNodeInfoWriterComponent.put(virtualNodeInfo)
@@ -131,11 +134,8 @@ class VirtualNodeCli @Activate constructor(
         if (configurationFile == null)
             return
 
-        configWriter.updateConfig(
-            ConfigHelper.getConfigValue(
-                ConfigHelper.SYSTEM_ENV_CONFIG_TOPIC_PATH,
-                ConfigHelper.DEFAULT_CONFIG_TOPIC_VALUE
-            ),
+        configPublishService.updateConfig(
+            CONFIG_TOPIC,
             config,
             configurationFile!!.readText()
         )
@@ -150,8 +150,8 @@ class VirtualNodeCli @Activate constructor(
             return
 
         val kafkaProperties = Properties().also {
-            it[ConfigHelper.SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH] =
-                ConfigHelper.getConfigValue(ConfigHelper.SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH, "localhost:9092")
+            it[SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH] =
+                getConfigValue(SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH, "localhost:9092")
         }
 
         topicAdmin.createTopics(kafkaProperties, topicTemplate!!.readText())
@@ -168,18 +168,18 @@ class VirtualNodeCli @Activate constructor(
         registrationHandle = coordinator.followStatusChangesByName(
             setOf(
 //                LifecycleCoordinatorName.forComponent<VirtualNodeInfoWriterComponent>(),
-                LifecycleCoordinatorName.forComponent<CpiInfoWriterComponent>()
+                LifecycleCoordinatorName.forComponent<CpiInfoWriteService>()
             )
         )
 
 //        virtualNodeInfoWriterComponent.start()
-        cpiInfoWriterComponent.start()
+        cpiInfoWriteService.start()
     }
 
     override fun done() {
         log.debug("Done, stopping...")
 
 //        virtualNodeInfoWriterComponent.stop()
-        cpiInfoWriterComponent.stop()
+        cpiInfoWriteService.stop()
     }
 }

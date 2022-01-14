@@ -15,10 +15,10 @@ import net.corda.packaging.converters.toCorda
  *
  * Also see https://github.com/corda/platform-eng-design/blob/mnesbit-rpc-apis/core/corda-5/corda-5.1/rpc-apis/rpc_api.md#cluster-database
  */
-data class VirtualNodeInfo(val holdingIdentity: HoldingIdentity, val cpi: CPI.Identifier)
+data class VirtualNodeInfo(val holdingIdentity: HoldingIdentity, val cpiIdentifier: CPI.Identifier)
 
 fun VirtualNodeInfo.toAvro(): net.corda.data.virtualnode.VirtualNodeInfo =
-    net.corda.data.virtualnode.VirtualNodeInfo(holdingIdentity.toAvro(), cpi.toAvro())
+    net.corda.data.virtualnode.VirtualNodeInfo(holdingIdentity.toAvro(), cpiIdentifier.toAvro())
 
 fun net.corda.data.virtualnode.VirtualNodeInfo.toCorda(): VirtualNodeInfo =
     VirtualNodeInfo(holdingIdentity.toCorda(), cpiIdentifier.toCorda())
