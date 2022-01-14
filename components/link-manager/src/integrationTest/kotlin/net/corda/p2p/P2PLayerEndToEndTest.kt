@@ -124,7 +124,7 @@ class P2PLayerEndToEndTest {
 
     @Test
     @Timeout(60)
-    fun `two hosts can exchange data messages over the p2p layer successfully`() {
+    fun `two hosts can exchange data messages over p2p using RSA keys`() {
         Host(
             "www.alice.net",
             10500,
@@ -133,6 +133,7 @@ class P2PLayerEndToEndTest {
             "truststore",
             bootstrapConfig,
             true,
+            KeyAlgorithm.RSA,
         ).use { hostA ->
             Host(
                 "chip.net",
@@ -142,6 +143,7 @@ class P2PLayerEndToEndTest {
                 "truststore",
                 bootstrapConfig,
                 true,
+                KeyAlgorithm.RSA,
             ).use { hostB ->
                 testMessagesBetweenTwoHots(hostA, hostB)
             }
@@ -150,7 +152,7 @@ class P2PLayerEndToEndTest {
 
     @Test
     @Timeout(60)
-    fun `two hosts can exchange data messages with EC signature`() {
+    fun `two hosts can exchange data messages over p2p with ECDSA keys`() {
         Host(
             "www.receiver.net",
             10502,
@@ -159,6 +161,7 @@ class P2PLayerEndToEndTest {
             "ec_truststore",
             bootstrapConfig,
             false,
+            KeyAlgorithm.ECDSA,
         ).use { hostA ->
             Host(
                 "www.sender.net",
@@ -168,6 +171,7 @@ class P2PLayerEndToEndTest {
                 "ec_truststore",
                 bootstrapConfig,
                 false,
+                KeyAlgorithm.ECDSA,
             ).use { hostB ->
                 testMessagesBetweenTwoHots(hostA, hostB)
             }
@@ -213,13 +217,14 @@ class P2PLayerEndToEndTest {
     }
 
     private class Host(
-        val p2pAddress: String,
-        val p2pPort: Int,
+        p2pAddress: String,
+        p2pPort: Int,
         val x500Name: String,
         keyStoreFileName: String,
         trustStoreFileName: String,
         private val bootstrapConfig: SmartConfig,
-        private val checkRevocation: Boolean,
+        checkRevocation: Boolean,
+        private val identitiesKeyAlgorithm: KeyAlgorithm,
     ) : AutoCloseable {
         companion object {
             private val linkManagerConfigTemplate = """
@@ -246,15 +251,12 @@ class P2PLayerEndToEndTest {
             rawTrustStore = readKeyStore(trustStoreFileName),
             revocationCheck = RevocationConfig(if (checkRevocation) RevocationConfigMode.HARD_FAIL else RevocationConfigMode.OFF)
         )
-        val keyPair = KeyPairGenerator.getInstance("EC").genKeyPair()
+        val keyPair = KeyPairGenerator.getInstance(identitiesKeyAlgorithm.generatorName).genKeyPair()
         val topicService = TopicServiceImpl()
         val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
         val subscriptionFactory = InMemSubscriptionFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
         val publisherFactory = CordaPublisherFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
-        val configReadService = ConfigurationReadServiceImpl(lifecycleCoordinatorFactory, ConfigReaderFactoryImpl(subscriptionFactory, SmartConfigFactoryImpl())).also {
-            it.start()
-            it.bootstrapConfig(bootstrapConfig)
-        }
+        val configReadService = ConfigurationReadServiceImpl(lifecycleCoordinatorFactory, ConfigReaderFactoryImpl(subscriptionFactory, SmartConfigFactoryImpl()))
         val configPublisher = publisherFactory.createPublisher(PublisherConfig("config-writer")).let {
             ConfigPublisherImpl(CONFIG_TOPIC, it)
         }
@@ -276,7 +278,7 @@ class P2PLayerEndToEndTest {
                 .withValue("sslConfig.revocationCheck.mode", ConfigValueFactory.fromAnyRef(sslConfig.revocationCheck.mode.toString()))
         }
 
-        val linkManager by lazy {
+        val linkManager =
             LinkManager(
                 subscriptionFactory,
                 publisherFactory,
@@ -301,9 +303,8 @@ class P2PLayerEndToEndTest {
                     bootstrapConfig
                 )
             )
-        }
 
-        val gateway by lazy {
+        val gateway =
             Gateway(
                 configReadService,
                 subscriptionFactory,
@@ -312,7 +313,6 @@ class P2PLayerEndToEndTest {
                 SmartConfigImpl.empty(),
                 1,
             )
-        }
 
         private fun publishGatewayConfig() {
             configPublisher.updateConfiguration(
@@ -341,15 +341,14 @@ class P2PLayerEndToEndTest {
             publishLinkManagerConfig()
         }
 
-        private val networkMapEntry by lazy {
+        private val networkMapEntry =
             NetworkMapEntry(
                 HoldingIdentity(x500Name, GROUP_ID),
                 ByteBuffer.wrap(keyPair.public.encoded),
-                KeyAlgorithm.ECDSA,
+                identitiesKeyAlgorithm,
                 "http://$p2pAddress:$p2pPort",
                 NetworkType.CORDA_5
             )
-        }
 
         private fun publishNetworkMapAndKeys(otherHost: Host) {
             val publisherForHost = publisherFactory.createPublisher(PublisherConfig("test-runner-publisher", 1), bootstrapConfig)
@@ -367,7 +366,7 @@ class P2PLayerEndToEndTest {
                             CRYPTO_KEYS_TOPIC,
                             "key-1",
                             KeyPairEntry(
-                                KeyAlgorithm.ECDSA,
+                                identitiesKeyAlgorithm,
                                 ByteBuffer.wrap(keyPair.public.encoded),
                                 ByteBuffer.wrap(keyPair.private.encoded)
                             )
@@ -378,6 +377,9 @@ class P2PLayerEndToEndTest {
         }
 
         fun startWith(otherHost: Host) {
+            configReadService.start()
+            configReadService.bootstrapConfig(bootstrapConfig)
+
             linkManager.start()
             gateway.start()
 
@@ -396,3 +398,8 @@ class P2PLayerEndToEndTest {
         }
     }
 }
+val KeyAlgorithm.generatorName
+    get() = when (this) {
+        KeyAlgorithm.ECDSA -> "EC"
+        KeyAlgorithm.RSA -> "RSA"
+    }

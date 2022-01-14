@@ -24,6 +24,9 @@ OCSP responder.
 
 # How to create new truststores and keystores
 ## With support of revocation (using tinycert)
+
+TinyCert provides CRL and OCSP endpoints and an easy way to revoke certificates via their web interface, so it can be used in scenarios where certification revocation needs to be tested. However, it provides only the option of creating RSA certificates.
+
 ### Create the CA and certificates
 
 1. Create a new CA using the tinycert dashboard.
@@ -75,7 +78,8 @@ keytool -v -importkeystore -srckeystore combined.pkcs12 -srcstoretype PKCS12 -de
 
 ```
 
-## Without support of revocation (locally only)
+## Without support of revocation using openSsl
+openssl allows for better automation of the certificate generation process without having to use third-party systems. It also allows using different algorithms (e.g. RSA and ECDSA) for the keys. However, it is not as straightforward to perform revocation of certificates.
 ### Create the CA and certificates
 1. Create a new empty directory and change dir to it:
 ```bash
@@ -163,15 +167,11 @@ openssl req -new -key alice.key -out alice.csr -subj "/C=UK/CN=www.alice.net" -a
 ```
 )
 
-3. Generate certificate for `<name>` with `<url>`
-```bash
-openssl x509 -req -in <name>.csr -CA cacert.pem -CAkey ca.key -CAcreateserial -out <name>.pem -days 1024 -sha512 -extfile <(printf "subjectAltName=DNS:<url>")
-```
-4. Trust the CA
+3. Create certificate from the request
 ```bash
 openssl ca -in <name>.csr -out <name>.cer -cert cacert.pem -keyfile ca.key -passin "pass:password" -config ca.conf -batch -passin "pass:password" -md sha512
 ```
-5. Create the key store for `<name>`
+4. Create the key store for `<name>`
 ```bash
 cat <name>.cer <name>.key > <name>.combined.pem
 openssl pkcs12 -export -out <name>.combined.pkcs12 -in <name>.combined.pem -passin "pass:password" -passout "pass:password"
