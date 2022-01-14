@@ -12,14 +12,14 @@ The following diagram shows the end-to-end process for creating or updating the 
 
 There are seven steps involved in updating the cluster configuration:
 
-1. An HTTP client sends an HTTP request to update the cluster configuration to the RPC worker
-2. The RPC worker writes a configuration management request to the configuration management topic on the Kafka bus
-3. The DB worker reads the configuration management request from the configuration management topic on the Kafka bus
-4. The DB worker updates the configuration tables in the cluster database
-5. The DB worker writes the updated configuration to the configuration topic on the Kafka bus
-6. The RPC worker notifies the HTTP client of the success of their request
-7. Workers can read the updated configuration from the configuration topic on the Kafka bus using the configuration read
-   service
+1. An HTTP client sends an HTTP request to update the cluster configuration to the RPC worker.
+2. The RPC worker writes a configuration management request to the configuration management topic on the Kafka bus.
+3. The DB worker reads the configuration management request from the configuration management topic on the Kafka bus.
+4. The DB worker updates the configuration tables in the cluster database.
+5. The DB worker writes the updated configuration to the configuration topic on the Kafka bus.
+6. The RPC worker notifies the HTTP client of the success of their request.
+7. Workers are notified of the new or updated configuration from the configuration topic on the Kafka bus using the configuration read
+   service.
 
 The process uses two separate Kafka topics:
 
