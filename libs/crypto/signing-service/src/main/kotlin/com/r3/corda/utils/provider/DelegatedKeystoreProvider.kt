@@ -1,13 +1,10 @@
 package com.r3.corda.utils.provider
 
-import net.corda.nodeapi.internal.config.CertificateStore
-import net.corda.nodeapi.internal.crypto.X509KeyStore
 import java.math.BigInteger
 import java.security.NoSuchAlgorithmException
 import java.security.PrivateKey
 import java.security.Provider
 import java.security.Security
-import java.security.cert.X509Certificate
 import java.security.interfaces.RSAKey
 
 @Suppress("DEPRECATION")    // JDK11: should replace with Provider(String name, String versionStr, String info) (since 9)
@@ -69,14 +66,4 @@ class DelegatedRSAPrivateKey(algorithm: String, format: String, signOp: (String,
     override fun getModulus(): BigInteger {
         return dummyKeySize
     }
-}
-
-fun CertificateStore.extractCertificates(): Map<String, List<X509Certificate>> {
-    return value.extractCertificates()
-}
-
-fun X509KeyStore.extractCertificates(): Map<String, List<X509Certificate>> {
-    return aliases().asSequence().map { alias ->
-        alias to getCertificateChain(alias)
-    }.toMap()
 }
