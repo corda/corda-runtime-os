@@ -14,3 +14,24 @@ internal data class BootstrapConfigProvided(val config: SmartConfig) : Lifecycle
  * The service should create its subscription to the message bus.
  */
 internal class SetupSubscription : LifecycleEvent
+
+/**
+ * New configuration has been received
+ *
+ * @param config A map of changed keys to changed configuration.
+ */
+internal data class NewConfigReceived(val config: Map<String, SmartConfig>) : LifecycleEvent
+
+/**
+ * A new configuration change handler has been added by another component
+ *
+ * @param registration The configuration registration that has been created.
+ */
+internal data class ConfigRegistrationOpen(val registration: ConfigurationChangeRegistration) : LifecycleEvent
+
+/**
+ * A configuration change handler has been removed by another component
+ *
+ * @param registration The removed registration
+ */
+internal data class ConfigRegistrationClose(val registration: ConfigurationChangeRegistration) : LifecycleEvent

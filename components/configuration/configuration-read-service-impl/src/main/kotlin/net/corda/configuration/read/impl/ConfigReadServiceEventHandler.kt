@@ -1,31 +1,40 @@
 package net.corda.configuration.read.impl
 
 import net.corda.configuration.read.ConfigurationReadException
+import net.corda.data.config.Configuration
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.read.ConfigListener
-import net.corda.libs.configuration.read.ConfigReader
-import net.corda.libs.configuration.read.factory.ConfigReaderFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.messaging.api.subscription.CompactedSubscription
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
+import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 
 internal class ConfigReadServiceEventHandler(
-    private val readServiceFactory: ConfigReaderFactory,
-    private val callbackHandles: ConfigurationHandlerStorage
+    private val subscriptionFactory: SubscriptionFactory,
+    private val smartConfigFactory: SmartConfigFactory
 ) : LifecycleEventHandler {
 
-    private var serviceUpCallback: AutoCloseable? = null
     private var bootstrapConfig: SmartConfig? = null
-    private var subscription: ConfigReader? = null
+    private var subscription: CompactedSubscription<String, Configuration>? = null
+
+    private val registrations = mutableSetOf<ConfigurationChangeRegistration>()
+    private val configuration = mutableMapOf<String, SmartConfig>()
 
     private companion object {
         private val logger = contextLogger()
+
+        private const val GROUP = "CONFIGURATION_READ"
     }
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
@@ -37,29 +46,36 @@ internal class ConfigReadServiceEventHandler(
                 }
             }
             is BootstrapConfigProvided -> {
-                if (bootstrapConfig == null) {
-                    logger.debug { "Bootstrap config received: ${event.config}" }
-                    bootstrapConfig = event.config
-                    coordinator.postEvent(SetupSubscription())
-                } else if (bootstrapConfig != event.config) {
-                    val errorString = "An attempt was made to set the bootstrap configuration twice with " +
-                            "different config. Current: $bootstrapConfig, New: ${event.config}"
-                    logger.error(errorString)
-                    throw ConfigurationReadException(errorString)
-                } else {
-                    logger.debug { "Duplicate bootstrap configuration received." }
-                }
+                handleBootstrapConfig(event.config, coordinator)
             }
             is SetupSubscription -> {
                 setupSubscription(coordinator)
             }
+            is NewConfigReceived -> {
+                for ((key, value) in event.config) {
+                    configuration[key] = value
+                }
+                registrations.forEach { it.invoke(event.config.keys, configuration) }
+            }
+            is ConfigRegistrationOpen -> {
+                registrations.add(event.registration)
+                event.registration.invoke(configuration.keys, configuration)
+            }
+            is ConfigRegistrationClose -> {
+                registrations.remove(event.registration)
+            }
+            is RegistrationStatusChangeEvent -> {
+                // Only registration is on the subscription
+                if (event.status == LifecycleStatus.UP) {
+                    coordinator.updateStatus(LifecycleStatus.UP)
+                } else {
+                    coordinator.updateStatus(LifecycleStatus.DOWN)
+                }
+            }
             is StopEvent -> {
                 logger.debug { "Configuration read service stopping." }
-                callbackHandles.removeSubscription()
-                subscription?.stop()
+                subscription?.close()
                 subscription = null
-                serviceUpCallback?.close()
-                serviceUpCallback = null
             }
             is ErrorEvent -> {
                 logger.error(
@@ -72,25 +88,35 @@ internal class ConfigReadServiceEventHandler(
 
     private fun setupSubscription(coordinator: LifecycleCoordinator) {
         val config = bootstrapConfig
-            ?: throw IllegalArgumentException("Cannot setup the subscription with no bootstrap configuration")
+            ?: throw ConfigurationReadException(
+                "Cannot setup the subscription to config topic with no bootstrap configuration"
+            )
         if (subscription != null) {
-            throw IllegalArgumentException("The subscription already exists")
+            throw ConfigurationReadException("Subscription to config topic already exists when setup requested")
         }
-        val sub = readServiceFactory.createReader(config)
+        val sub = subscriptionFactory.createCompactedSubscription(
+            SubscriptionConfig(GROUP, CONFIG_TOPIC),
+            ConfigProcessor(smartConfigFactory, coordinator),
+            config // This isn't quite right.
+        )
+        coordinator.followStatusChangesByName(setOf(sub.subscriptionName))
         subscription = sub
-        callbackHandles.addSubscription(sub)
-        serviceUpCallback = sub.registerCallback(ServiceUpHandler(coordinator))
         sub.start()
     }
 
-    internal class ServiceUpHandler(
-        private val coordinator: LifecycleCoordinator
-    ) : ConfigListener {
-        override fun onUpdate(changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, SmartConfig>) {
-            if (coordinator.status == LifecycleStatus.DOWN) {
-                coordinator.updateStatus(LifecycleStatus.UP, "Connected to configuration repository.")
-            }
+    private fun handleBootstrapConfig(config: SmartConfig, coordinator: LifecycleCoordinator) {
+        if (bootstrapConfig == null) {
+            logger.debug { "Bootstrap config received: $config" }
+            bootstrapConfig = config
+            configuration[BOOT_CONFIG] = config
+            coordinator.postEvent(SetupSubscription())
+        } else if (bootstrapConfig != config) {
+            val errorString = "An attempt was made to set the bootstrap configuration twice with " +
+                    "different config. Current: $bootstrapConfig, New: $config"
+            logger.error(errorString)
+            throw ConfigurationReadException(errorString)
+        } else {
+            logger.debug { "Duplicate bootstrap configuration received." }
         }
     }
-
 }
