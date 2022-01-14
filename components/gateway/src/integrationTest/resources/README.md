@@ -121,11 +121,11 @@ sed -i "s|REPLACE_LATER|$(pwd)|" ca.conf
 ```
 
 3. Generate the CA key:
-3.1 EC:
+  * EC:
 ```bash
 openssl ecparam -out ca.key -name prime256v1 -genkey
 ```
-3.1 RSA:
+  * RSA:
 ```bash
 openssl genrsa -out ca.key 2048
 ```
@@ -144,11 +144,11 @@ This will create the trust store in `./truststore.jks`
 
 ### Create SSL key store
 1. Generate the key for <name>:
-1.1 EC:
+  * EC:
 ```bash
 openssl ecparam -out <name>.key -name prime256v1 -genkey
 ```
-2.2 RSA:
+  * RSA:
 ```bash
 openssl genrsa -out <name>.key 2048
 ```
