@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Build All workers" type="GradleRunConfiguration" factoryName="Gradle" folderName="HTTP RPC">
+  <configuration default="false" name="Build All Workers" type="GradleRunConfiguration" factoryName="Gradle" folderName="HTTP RPC">
     <ExternalSystemSettings>
       <option name="executionName" />
       <option name="externalProjectPath" value="$PROJECT_DIR$" />
