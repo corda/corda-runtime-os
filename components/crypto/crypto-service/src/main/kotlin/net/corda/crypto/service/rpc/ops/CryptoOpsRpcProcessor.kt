@@ -59,7 +59,7 @@ class CryptoOpsRpcProcessor(
             // findHSM
         )
 
-        private val constructors = ConcurrentHashMap<Class<*>, ConstructorHolder>()
+        private val constructors = ConcurrentHashMap<Class<*>, Constructor<*>>()
     }
 
     override fun onNext(request: RpcOpsRequest, respFuture: CompletableFuture<RpcOpsResponse>) {
@@ -96,24 +96,15 @@ class CryptoOpsRpcProcessor(
         val signingService = signingFactory.getInstance(
             tenantId = request.context.tenantId
         )
-        val holder = constructors.computeIfAbsent(request.request::class.java) {
+        val constructor = constructors.computeIfAbsent(request.request::class.java) {
             val type = handlers[request.request::class.java] ?: throw CryptoServiceBadRequestException(
                 "Unknown request type ${request.request::class.java.name}"
             )
-            ConstructorHolder(
-                handler = type,
-                constructor = type.constructors.firstOrNull {
+            type.constructors.first {
                     it.parameterCount == 1 && it.parameterTypes[0] == SigningService::class.java
                 }
-            )
         }
-        if (holder.constructor == null) {
-            throw NotImplementedError(
-                "The handler ${holder.handler.name} " +
-                        "doesn't have constructor accepting only ${SigningService::class.java.name}"
-            )
-        }
-        return holder.constructor.newInstance(signingService) as CryptoRpcHandler<Any>
+        return constructor.newInstance(signingService) as CryptoRpcHandler<Any>
     }
 
     private class SupportedSchemesRpcQueryHandler(
@@ -260,9 +251,4 @@ class CryptoOpsRpcProcessor(
             return CryptoSignature(ByteBuffer.wrap(signature))
         }
     }
-
-    private class ConstructorHolder(
-        val handler: Class<*>,
-        val constructor: Constructor<*>?
-    )
 }
