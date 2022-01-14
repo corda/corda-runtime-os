@@ -107,7 +107,7 @@ class ConfigRPCOpsImplTests {
         }
 
         assertEquals("Configuration $invalidConfig could not be parsed. Valid JSON or HOCON expected.", e.message)
-        assertEquals(500, e.statusCode)
+        assertEquals(400, e.statusCode)
     }
 
     @Test

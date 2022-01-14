@@ -85,7 +85,7 @@ internal class ConfigRPCOpsImpl @Activate constructor(
     private fun validateRequestedConfig(config: String) = try {
         ConfigFactory.parseString(config)
     } catch (e: ConfigException.Parse) {
-        throw HttpApiException("Configuration $config could not be parsed. Valid JSON or HOCON expected.", 500)
+        throw HttpApiException("Configuration $config could not be parsed. Valid JSON or HOCON expected.", 400)
     }
 
     /**
