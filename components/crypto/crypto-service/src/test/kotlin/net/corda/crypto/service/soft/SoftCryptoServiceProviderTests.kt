@@ -2,7 +2,8 @@ package net.corda.crypto.service.soft
 
 import net.corda.crypto.CryptoConsts
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
-import net.corda.crypto.persistence.inmemory.InMemoryKeyValuePersistenceFactory
+import net.corda.crypto.persistence.inmemory.SigningKeysInMemoryPersistenceProvider
+import net.corda.crypto.persistence.inmemory.SoftInMemoryPersistenceProvider
 import net.corda.crypto.service.signing.CryptoServicesTestFactory
 import net.corda.test.util.createTestCase
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -10,11 +11,9 @@ import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceContext
 import net.corda.v5.cipher.suite.WrappedPrivateKey
 import net.corda.v5.crypto.SignatureVerificationService
-import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
-import org.junit.jupiter.api.assertThrows
 import java.util.UUID
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -82,26 +81,6 @@ class SoftCryptoServiceProviderTests {
 
     @Test
     @Timeout(30)
-    fun `Should throw unrecoverable CryptoServiceLibraryException if configured factory is not found`() {
-        val provider = SoftCryptoServiceProvider()
-        provider.persistenceFactories = listOf(InMemoryKeyValuePersistenceFactory())
-        provider.start()
-        provider.handleConfigEvent(
-            CryptoLibraryConfigImpl(
-                mapOf(
-                    "defaultCryptoService" to emptyMap<String, String>(),
-                    "publicKeys" to emptyMap()
-                )
-            )
-        )
-        val exception = assertThrows<CryptoServiceLibraryException> {
-            provider.createCryptoService(CryptoConsts.CryptoCategories.FRESH_KEYS)
-        }
-        assertFalse(exception.isRecoverable)
-    }
-
-    @Test
-    @Timeout(30)
     fun `Should be able to create instances concurrently`() {
         val provider = createCryptoServiceProvider()
         assertTrue(provider.isRunning)
@@ -110,7 +89,7 @@ class SoftCryptoServiceProviderTests {
                 CryptoLibraryConfigImpl(
                     mapOf(
                         "defaultCryptoService" to mapOf(
-                            "factoryName" to InMemoryKeyValuePersistenceFactory.NAME
+                            "factoryName" to SigningKeysInMemoryPersistenceProvider.NAME
                         ),
                         "publicKeys" to emptyMap()
                     )
@@ -126,13 +105,13 @@ class SoftCryptoServiceProviderTests {
 
     private fun createCryptoServiceProvider(): SoftCryptoServiceProvider {
         val provider = SoftCryptoServiceProvider()
-        provider.persistenceFactories = listOf(InMemoryKeyValuePersistenceFactory())
+        provider.persistenceFactory = SoftInMemoryPersistenceProvider()
         provider.start()
         provider.handleConfigEvent(
             CryptoLibraryConfigImpl(
                 mapOf(
                     "defaultCryptoService" to mapOf(
-                        "factoryName" to InMemoryKeyValuePersistenceFactory.NAME
+                        "factoryName" to SigningKeysInMemoryPersistenceProvider.NAME
                     ),
                     "publicKeys" to emptyMap()
                 )

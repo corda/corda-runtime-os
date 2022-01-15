@@ -1,6 +1,7 @@
 package net.corda.crypto.service.dev
 
-import net.corda.crypto.component.persistence.KeyValuePersistenceFactory
+import net.corda.crypto.component.persistence.SigningKeysPersistenceProvider
+import net.corda.crypto.component.persistence.SoftPersistenceProvider
 import net.corda.crypto.service.persistence.SigningKeyCache
 import net.corda.crypto.service.persistence.SigningKeyCacheImpl
 import net.corda.crypto.service.persistence.SoftCryptoKeyCache
@@ -30,8 +31,12 @@ class DevCryptoServiceProvider : CryptoServiceProvider<DevCryptoServiceConfig>, 
         ConcurrentHashMap<String, SigningKeyCache>()
 
     @Volatile
-    @Reference(service = KeyValuePersistenceFactory::class,)
-    lateinit var persistenceFactory: KeyValuePersistenceFactory
+    @Reference(service = SoftPersistenceProvider::class,)
+    lateinit var softPersistenceFactory: SoftPersistenceProvider
+
+    @Volatile
+    @Reference(service = SigningKeysPersistenceProvider::class,)
+    lateinit var signingPersistenceFactory: SigningKeysPersistenceProvider
 
     override val name: String = SERVICE_NAME
 
@@ -52,14 +57,14 @@ class DevCryptoServiceProvider : CryptoServiceProvider<DevCryptoServiceConfig>, 
                 passphrase = passphrase,
                 salt = salt,
                 schemeMetadata = schemeMetadata,
-                persistenceFactory = persistenceFactory
+                persistenceFactory = softPersistenceFactory
             )
         }
         val signingKeyCache = signingCache.getOrPut(context.memberId) {
             SigningKeyCacheImpl(
                 tenantId = context.memberId,
                 keyEncoder = schemeMetadata,
-                persistenceFactory = persistenceFactory
+                persistenceFactory = signingPersistenceFactory
             )
         }
         return DevCryptoService(

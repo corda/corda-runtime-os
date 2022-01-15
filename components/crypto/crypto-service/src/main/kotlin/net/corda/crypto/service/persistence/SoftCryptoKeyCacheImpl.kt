@@ -1,8 +1,8 @@
 package net.corda.crypto.service.persistence
 
-import net.corda.crypto.component.persistence.KeyValuePersistenceFactory
 import net.corda.crypto.component.persistence.SoftCryptoKeyRecord
 import net.corda.crypto.component.persistence.SoftCryptoKeyRecordInfo
+import net.corda.crypto.component.persistence.SoftPersistenceProvider
 import net.corda.crypto.component.persistence.WrappingKey
 import net.corda.crypto.impl.persistence.KeyValuePersistence
 import net.corda.v5.base.util.contextLogger
@@ -16,7 +16,7 @@ class SoftCryptoKeyCacheImpl(
     passphrase: String?,
     salt: String?,
     private val schemeMetadata: CipherSchemeMetadata,
-    persistenceFactory: KeyValuePersistenceFactory
+    persistenceFactory: SoftPersistenceProvider
 ) : SoftCryptoKeyCache, AutoCloseable {
     companion object {
         private val logger = contextLogger()
@@ -27,7 +27,7 @@ class SoftCryptoKeyCacheImpl(
     }
 
     val persistence: KeyValuePersistence<SoftCryptoKeyRecordInfo, SoftCryptoKeyRecord> =
-        persistenceFactory.createDefaultCryptoPersistence(tenantId, ::mutate)
+        persistenceFactory.getInstance(tenantId, ::mutate)
 
     private val masterKey: WrappingKey = WrappingKey.deriveMasterKey(schemeMetadata, passphrase, salt)
 

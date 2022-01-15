@@ -7,7 +7,8 @@ import net.corda.crypto.impl.DoubleSHA256DigestFactory
 import net.corda.crypto.impl.SignatureVerificationServiceImpl
 import net.corda.crypto.service.persistence.SigningKeyCacheImpl
 import net.corda.crypto.component.persistence.SigningKeyRecord
-import net.corda.crypto.persistence.inmemory.InMemoryKeyValuePersistenceFactory
+import net.corda.crypto.persistence.inmemory.SigningKeysInMemoryPersistenceProvider
+import net.corda.crypto.persistence.inmemory.SoftInMemoryPersistenceProvider
 import net.corda.crypto.service.persistence.SoftCryptoKeyCache
 import net.corda.crypto.service.persistence.SoftCryptoKeyCacheImpl
 import net.corda.crypto.service.soft.SoftCryptoService
@@ -57,20 +58,22 @@ class CryptoServicesTestFactory(
 
         private val salt = "SALT"
 
-        private val persistenceFactory = InMemoryKeyValuePersistenceFactory()
+        private val signingPersistenceFactory = SigningKeysInMemoryPersistenceProvider()
+
+        private val softPersistenceFactory = SoftInMemoryPersistenceProvider()
 
         private val cryptoServiceCache: SoftCryptoKeyCache = SoftCryptoKeyCacheImpl(
             tenantId = tenantId,
             passphrase = passphrase,
             salt = salt,
             schemeMetadata = schemeMetadata,
-            persistenceFactory = persistenceFactory
+            persistenceFactory = softPersistenceFactory
         )
 
         private val signingKeyCache = SigningKeyCacheImpl(
             tenantId = tenantId,
             keyEncoder = schemeMetadata,
-            persistenceFactory = persistenceFactory
+            persistenceFactory = signingPersistenceFactory
         )
 
         val cryptoService = SoftCryptoService(

@@ -1,8 +1,8 @@
 package net.corda.crypto.service.soft
 
+import net.corda.crypto.component.persistence.SoftPersistenceProvider
 import net.corda.crypto.impl.config.CryptoPersistenceConfig
 import net.corda.crypto.impl.config.defaultCryptoService
-import net.corda.crypto.component.persistence.KeyValuePersistenceFactory
 import net.corda.crypto.service.persistence.SoftCryptoKeyCache
 import net.corda.crypto.service.persistence.SoftCryptoKeyCacheImpl
 import net.corda.lifecycle.Lifecycle
@@ -15,11 +15,8 @@ import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
 import net.corda.v5.cipher.suite.config.CryptoServiceConfig
 import net.corda.v5.cipher.suite.lifecycle.CryptoLifecycleComponent
 import net.corda.v5.crypto.exceptions.CryptoServiceException
-import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ReferenceCardinality
-import org.osgi.service.component.annotations.ReferencePolicyOption
 import org.slf4j.Logger
 
 @Component(service = [CryptoServiceProvider::class, SoftCryptoServiceProvider::class])
@@ -32,12 +29,8 @@ open class SoftCryptoServiceProvider :
     }
 
     @Volatile
-    @Reference(
-        service = KeyValuePersistenceFactory::class,
-        cardinality = ReferenceCardinality.AT_LEAST_ONE,
-        policyOption = ReferencePolicyOption.GREEDY
-    )
-    lateinit var persistenceFactories: List<KeyValuePersistenceFactory>
+    @Reference(service = SoftPersistenceProvider::class)
+    lateinit var persistenceFactory: SoftPersistenceProvider
 
     private var impl: Impl? = null
 
@@ -60,7 +53,7 @@ open class SoftCryptoServiceProvider :
     override fun handleConfigEvent(config: CryptoLibraryConfig) {
         logger.info("Received new configuration...")
         impl = Impl(
-            persistenceFactories,
+            persistenceFactory,
             config.defaultCryptoService,
             logger
         )
@@ -71,7 +64,7 @@ open class SoftCryptoServiceProvider :
             ?: throw CryptoServiceException("Provider haven't been initialised yet.", true)
 
     private class Impl(
-        private val persistenceProviders: List<KeyValuePersistenceFactory>,
+        private val persistenceFactory: SoftPersistenceProvider,
         private val config: CryptoPersistenceConfig,
         private val logger: Logger
     ) {
@@ -94,12 +87,6 @@ open class SoftCryptoServiceProvider :
             context: CryptoServiceContext<SoftCryptoServiceConfig>,
             schemeMetadata: CipherSchemeMetadata
         ): SoftCryptoKeyCache {
-            val persistenceFactory = persistenceProviders.firstOrNull {
-                it.name == config.factoryName
-            } ?: throw CryptoServiceLibraryException(
-                "Cannot find ${config.factoryName}",
-                isRecoverable = false
-            )
             return SoftCryptoKeyCacheImpl(
                 tenantId = context.memberId,
                 passphrase = context.config.passphrase,

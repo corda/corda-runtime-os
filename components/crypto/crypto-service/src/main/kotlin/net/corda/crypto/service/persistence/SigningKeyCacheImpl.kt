@@ -1,8 +1,8 @@
 package net.corda.crypto.service.persistence
 
 import net.corda.crypto.CryptoConsts
-import net.corda.crypto.component.persistence.KeyValuePersistenceFactory
 import net.corda.crypto.component.persistence.SigningKeyRecord
+import net.corda.crypto.component.persistence.SigningKeysPersistenceProvider
 import net.corda.crypto.impl.closeGracefully
 import net.corda.crypto.impl.persistence.KeyValuePersistence
 import net.corda.v5.base.types.toHexString
@@ -16,7 +16,7 @@ import java.util.UUID
 class SigningKeyCacheImpl(
     private val tenantId: String,
     private val keyEncoder: KeyEncodingService,
-    persistenceFactory: KeyValuePersistenceFactory
+    persistenceFactory: SigningKeysPersistenceProvider
 ) : SigningKeyCache, AutoCloseable {
 
     init {
@@ -24,7 +24,7 @@ class SigningKeyCacheImpl(
     }
 
     val persistence: KeyValuePersistence<SigningKeyRecord, SigningKeyRecord> =
-        persistenceFactory.createSigningPersistence(tenantId, ::mutate)
+        persistenceFactory.getInstance(tenantId, ::mutate)
 
     override fun find(publicKey: PublicKey): SigningKeyRecord? {
         val entity = persistence.get(toKeyDerivedId(publicKey))

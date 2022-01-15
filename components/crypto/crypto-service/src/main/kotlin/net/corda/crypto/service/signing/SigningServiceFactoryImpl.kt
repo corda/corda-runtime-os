@@ -1,6 +1,6 @@
 package net.corda.crypto.service.signing
 
-import net.corda.crypto.component.persistence.KeyValuePersistenceFactory
+import net.corda.crypto.component.persistence.SigningKeysPersistenceProvider
 import net.corda.crypto.service.persistence.SigningKeyCacheImpl
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSuiteFactory
@@ -21,8 +21,8 @@ class SigningServiceFactoryImpl : SigningServiceFactory {
     lateinit var cipherSuiteFactory: CipherSuiteFactory
 
     @Volatile
-    @Reference(service = KeyValuePersistenceFactory::class)
-    lateinit var persistenceFactory: KeyValuePersistenceFactory
+    @Reference(service = SigningKeysPersistenceProvider::class)
+    lateinit var persistenceFactory: SigningKeysPersistenceProvider
 
     @Volatile
     @Reference(service = CryptoServiceFactory::class)
@@ -44,7 +44,7 @@ class SigningServiceFactoryImpl : SigningServiceFactory {
 
     private class Impl(
         private val cipherSuiteFactory: CipherSuiteFactory,
-        private val persistenceFactory: KeyValuePersistenceFactory,
+        private val persistenceFactory: SigningKeysPersistenceProvider,
         private val cryptoServiceFactory: CryptoServiceFactory
     ): SigningServiceFactory {
         private val signingServices = ConcurrentHashMap<String, SigningService>()

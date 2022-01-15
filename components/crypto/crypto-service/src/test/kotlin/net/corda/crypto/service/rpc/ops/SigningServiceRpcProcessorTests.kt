@@ -141,66 +141,6 @@ class SigningServiceRpcProcessorTests {
     }
 
     companion object {
-        private lateinit var tenantId: String
-        private lateinit var factory: CryptoServicesTestFactory
-        private lateinit var services: CryptoServicesTestFactory.CryptoServices
-        private lateinit var schemeMetadata: CipherSchemeMetadata
-        private lateinit var signingService: SigningService
-        private lateinit var signingFactory: SigningServiceFactory
-        private lateinit var verifier: SignatureVerificationService
-        private lateinit var processor: CryptoOpsRpcProcessor
-
-        @JvmStatic
-        @BeforeAll
-        fun setup() {
-            factory = CryptoServicesTestFactory()
-            services = factory.createCryptoServices()
-            tenantId = services.tenantId
-            schemeMetadata = factory.getSchemeMap()
-            signingService = services.createSigningService(
-                schemeMetadata.findSignatureScheme(ECDSA_SECP256R1_CODE_NAME)
-            )
-            verifier = factory.getSignatureVerificationService()
-            signingFactory = mock {
-                on { getInstance(tenantId) }.thenReturn(SigningServiceWrapper(signingService))
-            }
-            processor = CryptoOpsRpcProcessor(
-                signingFactory
-            )
-        }
-
-        private fun newAlias(): String = UUID.randomUUID().toString()
-
-        private fun createRequestContext(): CryptoRequestContext = CryptoRequestContext(
-            "test-component",
-            Instant.now(),
-            UUID.randomUUID().toString(),
-            tenantId,
-            KeyValuePairList(
-                listOf(
-                    KeyValuePair("key1", "value1"),
-                    KeyValuePair("key2", "value2")
-                )
-            )
-        )
-
-        private fun assertResponseContext(expected: CryptoRequestContext, actual: CryptoResponseContext) {
-            val now = Instant.now()
-            assertEquals(expected.tenantId, actual.tenantId)
-            assertEquals(expected.requestId, actual.requestId)
-            assertEquals(expected.requestingComponent, actual.requestingComponent)
-            assertEquals(expected.requestTimestamp, actual.requestTimestamp)
-            assertThat(
-                actual.responseTimestamp.epochSecond,
-                allOf(greaterThanOrEqualTo(expected.requestTimestamp.epochSecond), lessThanOrEqualTo(now.epochSecond))
-            )
-            assertTrue(
-                actual.other.items.size == expected.other.items.size &&
-                        actual.other.items.containsAll(expected.other.items) &&
-                        expected.other.items.containsAll(actual.other.items)
-            )
-        }
-
         private fun getFullCustomSignatureSpec(): SignatureSpec =
             SignatureSpec(
                 signatureName = "NONEwithECDSA",
@@ -212,10 +152,70 @@ class SigningServiceRpcProcessorTests {
                 signatureName = "SHA512withECDSA"
             )
     }
+    private lateinit var tenantId: String
+    private lateinit var factory: CryptoServicesTestFactory
+    private lateinit var services: CryptoServicesTestFactory.CryptoServices
+    private lateinit var schemeMetadata: CipherSchemeMetadata
+    private lateinit var signingService: SigningService
+    private lateinit var signingFactory: SigningServiceFactory
+    private lateinit var verifier: SignatureVerificationService
+    private lateinit var processor: CryptoOpsRpcProcessor
+
+    fun setup(category: String) {
+        factory = CryptoServicesTestFactory()
+        services = factory.createCryptoServices(
+            category = category
+        )
+        tenantId = services.tenantId
+        schemeMetadata = factory.getSchemeMap()
+        signingService = services.createSigningService(
+            schemeMetadata.findSignatureScheme(ECDSA_SECP256R1_CODE_NAME)
+        )
+        verifier = factory.getSignatureVerificationService()
+        signingFactory = mock {
+            on { getInstance(tenantId) }.thenReturn(SigningServiceWrapper(signingService))
+        }
+        processor = CryptoOpsRpcProcessor(
+            signingFactory
+        )
+    }
+
+    private fun newAlias(): String = UUID.randomUUID().toString()
+
+    private fun createRequestContext(): CryptoRequestContext = CryptoRequestContext(
+        "test-component",
+        Instant.now(),
+        UUID.randomUUID().toString(),
+        tenantId,
+        KeyValuePairList(
+            listOf(
+                KeyValuePair("key1", "value1"),
+                KeyValuePair("key2", "value2")
+            )
+        )
+    )
+
+    private fun assertResponseContext(expected: CryptoRequestContext, actual: CryptoResponseContext) {
+        val now = Instant.now()
+        assertEquals(expected.tenantId, actual.tenantId)
+        assertEquals(expected.requestId, actual.requestId)
+        assertEquals(expected.requestingComponent, actual.requestingComponent)
+        assertEquals(expected.requestTimestamp, actual.requestTimestamp)
+        assertThat(
+            actual.responseTimestamp.epochSecond,
+            allOf(greaterThanOrEqualTo(expected.requestTimestamp.epochSecond), lessThanOrEqualTo(now.epochSecond))
+        )
+        assertTrue(
+            actual.other.items.size == expected.other.items.size &&
+                    actual.other.items.containsAll(expected.other.items) &&
+                    expected.other.items.containsAll(actual.other.items)
+        )
+    }
 
     @Test
     @Timeout(5)
     fun `Should return CryptoNoContentValue for unknown key alias`() {
+        setup(category = CryptoConsts.CryptoCategories.LEDGER)
         val alias = newAlias()
         val context = createRequestContext()
         val future = CompletableFuture<RpcOpsResponse>()
@@ -235,6 +235,7 @@ class SigningServiceRpcProcessorTests {
     @Test
     @Timeout(5)
     fun `Should filer my keys`() {
+        setup(category = CryptoConsts.CryptoCategories.LEDGER)
         val context = createRequestContext()
         val future = CompletableFuture<RpcOpsResponse>()
         val candidates = listOf<PublicKey>(
@@ -262,6 +263,7 @@ class SigningServiceRpcProcessorTests {
     @Test
     @Timeout(5)
     fun `Should generate key pair and be able to find and then sign using default and custom schemes`() {
+        setup(category = CryptoConsts.CryptoCategories.LEDGER)
         val data = UUID.randomUUID().toString().toByteArray()
         val alias = newAlias()
         // generate
@@ -317,6 +319,7 @@ class SigningServiceRpcProcessorTests {
     @Test
     @Timeout(5)
     fun `Should generate fresh key pair without external id and be able to sign using default and custom schemes`() {
+        setup(category = CryptoConsts.CryptoCategories.LEDGER)
         val data = UUID.randomUUID().toString().toByteArray()
         // generate
         val context1 = createRequestContext()
@@ -355,6 +358,7 @@ class SigningServiceRpcProcessorTests {
     @Test
     @Timeout(5)
     fun `Should generate fresh key pair with external id and be able to sign using default and custom schemes`() {
+        setup(category = CryptoConsts.CryptoCategories.LEDGER)
         val data = UUID.randomUUID().toString().toByteArray()
         // generate
         val context1 = createRequestContext()
@@ -394,6 +398,7 @@ class SigningServiceRpcProcessorTests {
     @Test
     @Timeout(5)
     fun `Should complete future exceptionally in case of service failure`() {
+        setup(category = CryptoConsts.CryptoCategories.LEDGER)
         val data = UUID.randomUUID().toString().toByteArray()
         val alias = newAlias()
         // generate
@@ -454,6 +459,7 @@ class SigningServiceRpcProcessorTests {
     @Test
     @Timeout(5)
     fun `Should complete future exceptionally in case of unknown request`() {
+        setup(category = CryptoConsts.CryptoCategories.LEDGER)
         val context = createRequestContext()
         val future = CompletableFuture<RpcOpsResponse>()
         processor.onNext(
@@ -479,6 +485,7 @@ class SigningServiceRpcProcessorTests {
     @Test
     @Timeout(5)
     fun `Should return all supported scheme codes`() {
+        setup(category = CryptoConsts.CryptoCategories.LEDGER)
         val context = createRequestContext()
         val future = CompletableFuture<RpcOpsResponse>()
         processor.onNext(
@@ -486,6 +493,34 @@ class SigningServiceRpcProcessorTests {
                 context,
                 SupportedSchemesRpcQuery(
                     CryptoConsts.CryptoCategories.LEDGER
+                )
+            ),
+            future
+        )
+        val result = future.get()
+        assertResponseContext(context, result.context)
+        assertThat(result.response, instanceOf(CryptoSignatureSchemes::class.java))
+        val actualSchemes = result.response as CryptoSignatureSchemes
+        val expectedSchemes = signingService.getSupportedSchemes(
+            CryptoConsts.CryptoCategories.LEDGER
+        )
+        assertEquals(expectedSchemes.size, actualSchemes.codes.size)
+        expectedSchemes.forEach {
+            assertTrue(actualSchemes.codes.contains(it))
+        }
+    }
+
+    @Test
+    @Timeout(5)
+    fun `Should return all supported scheme codes for fresh keys`() {
+        setup(category = CryptoConsts.CryptoCategories.FRESH_KEYS)
+        val context = createRequestContext()
+        val future = CompletableFuture<RpcOpsResponse>()
+        processor.onNext(
+            RpcOpsRequest(
+                context,
+                SupportedSchemesRpcQuery(
+                    CryptoConsts.CryptoCategories.FRESH_KEYS
                 )
             ),
             future
