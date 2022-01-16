@@ -29,11 +29,11 @@ class CryptoLibraryConfigTests {
         )
         val config = CryptoLibraryConfigImpl(raw)
         assertFalse(config.isDev)
-        assertEquals(CryptoPersistenceConfig.DEFAULT_FACTORY_NAME, config.defaultCryptoService.factoryName)
-        assertEquals(90, config.defaultCryptoService.expireAfterAccessMins)
-        assertEquals(25, config.defaultCryptoService.maximumSize)
-        assertEquals(CryptoPersistenceConfig.DEFAULT_FACTORY_NAME, config.defaultCryptoService.factoryName)
-        assertEquals("keyPersistenceUrl", config.defaultCryptoService.persistenceConfig.getString("url"))
+        assertEquals(CryptoPersistenceConfig.DEFAULT_FACTORY_NAME, config.softCryptoService.factoryName)
+        assertEquals(90, config.softCryptoService.expireAfterAccessMins)
+        assertEquals(25, config.softCryptoService.maximumSize)
+        assertEquals(CryptoPersistenceConfig.DEFAULT_FACTORY_NAME, config.softCryptoService.factoryName)
+        assertEquals("keyPersistenceUrl", config.softCryptoService.persistenceConfig.getString("url"))
         assertEquals("dev", config.publicKeys.factoryName)
         assertEquals(120, config.publicKeys.expireAfterAccessMins)
         assertEquals(50, config.publicKeys.maximumSize)
@@ -67,11 +67,11 @@ class CryptoLibraryConfigTests {
     @Timeout(5)
     fun `Should use default values if the 'defaultCryptoService' path is not supplied`() {
         val config = CryptoLibraryConfigImpl(emptyMap())
-        assertEquals(CryptoPersistenceConfig.DEFAULT_FACTORY_NAME, config.defaultCryptoService.factoryName)
-        assertEquals(60, config.defaultCryptoService.expireAfterAccessMins)
-        assertEquals(100, config.defaultCryptoService.maximumSize)
-        assertEquals(CryptoPersistenceConfig.DEFAULT_FACTORY_NAME, config.defaultCryptoService.factoryName)
-        assertTrue(config.defaultCryptoService.persistenceConfig.isEmpty())    }
+        assertEquals(CryptoPersistenceConfig.DEFAULT_FACTORY_NAME, config.softCryptoService.factoryName)
+        assertEquals(60, config.softCryptoService.expireAfterAccessMins)
+        assertEquals(100, config.softCryptoService.maximumSize)
+        assertEquals(CryptoPersistenceConfig.DEFAULT_FACTORY_NAME, config.softCryptoService.factoryName)
+        assertTrue(config.softCryptoService.persistenceConfig.isEmpty())    }
 
     @Test
     @Timeout(5)

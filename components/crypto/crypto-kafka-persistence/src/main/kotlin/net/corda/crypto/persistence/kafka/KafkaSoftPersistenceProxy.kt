@@ -2,8 +2,6 @@ package net.corda.crypto.persistence.kafka
 
 import net.corda.crypto.component.persistence.SoftCryptoKeyRecord
 import net.corda.crypto.impl.closeGracefully
-import net.corda.crypto.impl.config.CryptoPersistenceConfig
-import net.corda.crypto.impl.config.DefaultConfigConsts
 import net.corda.data.crypto.persistence.DefaultCryptoKeyRecord
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher
@@ -11,8 +9,9 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
-import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.schema.Schemas
 import net.corda.v5.base.util.contextLogger
 import org.slf4j.Logger
 import java.nio.ByteBuffer
@@ -20,13 +19,14 @@ import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
-class KafkaDefaultCryptoKeyProxy(
+class KafkaSoftPersistenceProxy(
     subscriptionFactory: SubscriptionFactory,
-    publisherFactory: PublisherFactory,
-    config: CryptoPersistenceConfig
-) : CompactedProcessor<String, DefaultCryptoKeyRecord>, KafkaProxy<SoftCryptoKeyRecord> {
+    publisherFactory: PublisherFactory
+) : CompactedProcessor<String, DefaultCryptoKeyRecord>, KafkaPersistenceProxy<SoftCryptoKeyRecord> {
     companion object {
         private val logger: Logger = contextLogger()
+        const val GROUP_NAME = "crypto.key.soft"
+        const val CLIENT_ID = "crypto.key.soft"
 
         internal fun toKeyInfo(value: DefaultCryptoKeyRecord): SoftCryptoKeyRecord {
             val publicKey = value.publicKey?.array()
@@ -58,28 +58,13 @@ class KafkaDefaultCryptoKeyProxy(
 
     private var keyMap = ConcurrentHashMap<String, SoftCryptoKeyRecord>()
 
-    private val groupName: String = config.persistenceConfig.getString(
-        DefaultConfigConsts.Kafka.GROUP_NAME_KEY,
-        DefaultConfigConsts.Kafka.DefaultCryptoService.GROUP_NAME
-    )
-
-    private val topicName: String = config.persistenceConfig.getString(
-        DefaultConfigConsts.Kafka.TOPIC_NAME_KEY,
-        DefaultConfigConsts.Kafka.DefaultCryptoService.TOPIC_NAME
-    )
-
-    private val clientId: String = config.persistenceConfig.getString(
-        DefaultConfigConsts.Kafka.CLIENT_ID_KEY,
-        DefaultConfigConsts.Kafka.DefaultCryptoService.CLIENT_ID
-    )
-
     private val pub: Publisher = publisherFactory.createPublisher(
-        PublisherConfig(clientId)
+        PublisherConfig(CLIENT_ID)
     )
 
     private val sub: CompactedSubscription<String, DefaultCryptoKeyRecord> =
         subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig(groupName, topicName),
+            SubscriptionConfig(GROUP_NAME, Schemas.Crypto.SOFT_HSM_PERSISTENCE_TOPIC),
             this
         ).also { it.start() }
 
@@ -112,7 +97,7 @@ class KafkaDefaultCryptoKeyProxy(
     override fun publish(key: String, entity: SoftCryptoKeyRecord): CompletableFuture<Unit> {
         logger.debug("Publishing a record '{}' with key='{}'", valueClass.name, key)
         val record = toRecord(entity)
-        return pub.publish(listOf(Record(topicName, key, record)))[0]
+        return pub.publish(listOf(Record(Schemas.Crypto.SOFT_HSM_PERSISTENCE_TOPIC, key, record)))[0]
     }
 
     override fun getValue(tenantId: String, key: String): SoftCryptoKeyRecord? {

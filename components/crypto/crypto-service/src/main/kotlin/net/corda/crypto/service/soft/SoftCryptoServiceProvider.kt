@@ -2,7 +2,7 @@ package net.corda.crypto.service.soft
 
 import net.corda.crypto.component.persistence.SoftPersistenceProvider
 import net.corda.crypto.impl.config.CryptoPersistenceConfig
-import net.corda.crypto.impl.config.defaultCryptoService
+import net.corda.crypto.impl.config.softCryptoService
 import net.corda.crypto.service.persistence.SoftCryptoKeyCache
 import net.corda.crypto.service.persistence.SoftCryptoKeyCacheImpl
 import net.corda.lifecycle.Lifecycle
@@ -54,7 +54,7 @@ open class SoftCryptoServiceProvider :
         logger.info("Received new configuration...")
         impl = Impl(
             persistenceFactory,
-            config.defaultCryptoService,
+            config.softCryptoService,
             logger
         )
     }

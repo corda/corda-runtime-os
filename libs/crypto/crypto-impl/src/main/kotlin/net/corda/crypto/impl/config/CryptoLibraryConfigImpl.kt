@@ -10,8 +10,8 @@ class CryptoLibraryConfigImpl(
 val CryptoLibraryConfig.isDev: Boolean get() =
     CryptoConfigMap.getBoolean(this, this::isDev.name, false)
 
-val CryptoLibraryConfig.defaultCryptoService: CryptoPersistenceConfig get() =
-    CryptoPersistenceConfig(getOptionalConfig(this, this::defaultCryptoService.name) ?: emptyMap())
+val CryptoLibraryConfig.softCryptoService: CryptoPersistenceConfig get() =
+    CryptoPersistenceConfig(getOptionalConfig(this, this::softCryptoService.name) ?: emptyMap())
 
 val CryptoLibraryConfig.publicKeys: CryptoPersistenceConfig get() =
     CryptoPersistenceConfig(getOptionalConfig(this, this::publicKeys.name) ?: emptyMap())
