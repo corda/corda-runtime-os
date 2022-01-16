@@ -1,10 +1,9 @@
 package net.corda.components.rpc.internal
 
+import net.corda.components.rbac.RBACSecurityManagerService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.RpcOps
-import net.corda.httprpc.security.read.RPCSecurityManager
-import net.corda.httprpc.security.read.RPCSecurityManagerFactory
 import net.corda.httprpc.server.HttpRpcServer
 import net.corda.httprpc.server.config.models.AzureAdSettings
 import net.corda.httprpc.server.config.models.HttpRpcContext
@@ -36,7 +35,7 @@ internal class HttpRpcGatewayEventHandler(
     private val permissionServiceComponent: PermissionServiceComponent,
     private val configurationReadService: ConfigurationReadService,
     private val httpRpcServerFactory: HttpRpcServerFactory,
-    private val rpcSecurityManagerFactory: RPCSecurityManagerFactory,
+    private val rbacSecurityManagerService: RBACSecurityManagerService,
     private val sslCertReadServiceFactory: SslCertReadServiceFactory,
     private val dynamicRpcOps: List<PluggableRPCOps<out RpcOps>>,
 ) : LifecycleEventHandler {
@@ -55,81 +54,66 @@ internal class HttpRpcGatewayEventHandler(
 
     @VisibleForTesting
     internal var server: HttpRpcServer? = null
-    @VisibleForTesting
-    internal var securityManager: RPCSecurityManager? = null
+
     @VisibleForTesting
     internal var sslCertReadService: SslCertReadService? = null
+
     @VisibleForTesting
-    internal var permissionServiceRegistration: RegistrationHandle? = null
-    @VisibleForTesting
-    internal var configServiceRegistration: RegistrationHandle? = null
+    internal var registration: RegistrationHandle? = null
+
     @VisibleForTesting
     internal var sub: AutoCloseable? = null
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> {
-                log.info("Received start event, following PermissionServiceComponent and ConfigurationReadService for status updates.")
-                permissionServiceRegistration?.close()
-                permissionServiceRegistration = coordinator.followStatusChangesByName(
+                log.info("Received start event, following ConfigurationReadService, PermissionServiceComponent and " +
+                        "RBACSecurityManagerService and  for status updates.")
+
+                registration?.close()
+                registration = coordinator.followStatusChangesByName(
                     setOf(
-                        LifecycleCoordinatorName.forComponent<PermissionServiceComponent>()
-                    )
-                )
-                configServiceRegistration?.close()
-                configServiceRegistration = coordinator.followStatusChangesByName(
-                    setOf(
-                        LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+                        LifecycleCoordinatorName.forComponent<PermissionServiceComponent>(),
+                        LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                        LifecycleCoordinatorName.forComponent<RBACSecurityManagerService>()
                     )
                 )
 
+                log.info("Starting permission service and RBAC security manager.")
                 permissionServiceComponent.start()
+                rbacSecurityManagerService.start()
             }
             is RegistrationStatusChangeEvent -> {
-                when (event.registration) {
-                    // handling these registration separately allows us to start the HTTP RPC Server independently from permission service
-                    configServiceRegistration -> {
-                        log.info("Received configuration service status ${event.status}.")
-                        if (event.status == LifecycleStatus.UP) {
-                            sub = configurationReadService.registerForUpdates(::onConfigurationUpdated)
-                        } else {
-                            sub?.close()
-                        }
+                when (event.status) {
+                    LifecycleStatus.UP -> {
+                        log.info("Registration received UP status. Registering for configuration updates.")
+                        // Http RPC Server can only be created when security manager and permission service are ready.
+                        sub = configurationReadService.registerForUpdates(::onConfigurationUpdated)
+                        coordinator.updateStatus(LifecycleStatus.UP)
                     }
-                    permissionServiceRegistration -> {
-                        log.info("Received permission service component status ${event.status}.")
-                        when (event.status) {
-                            LifecycleStatus.UP -> {
-                                coordinator.updateStatus(LifecycleStatus.UP)
-                            }
-                            LifecycleStatus.DOWN -> {
-                                coordinator.updateStatus(LifecycleStatus.DOWN)
-                            }
-                            LifecycleStatus.ERROR -> {
-                                coordinator.stop()
-                                coordinator.updateStatus(LifecycleStatus.ERROR)
-                            }
-                        }
+                    LifecycleStatus.DOWN -> {
+                        log.info("Registration received DOWN status. Stopping the Http RPC Gateway.")
+                        coordinator.postEvent(StopEvent())
+                    }
+                    LifecycleStatus.ERROR -> {
+                        log.info("Registration received ERROR status. Stopping the Http RPC Gateway.")
+                        coordinator.postEvent(StopEvent(true))
                     }
                 }
             }
             is StopEvent -> {
-                log.info("Stop event received, stopping dependencies and setting status to DOWN.")
-                configServiceRegistration?.close()
-                configServiceRegistration = null
-                permissionServiceRegistration?.close()
-                permissionServiceRegistration = null
+                log.info("Stop event received, stopping dependencies.")
+                registration?.close()
+                registration = null
                 sub?.close()
                 sub = null
                 permissionServiceComponent.stop()
+                rbacSecurityManagerService.stop()
                 server?.close()
                 server = null
-                securityManager?.stop()
-                securityManager = null
                 sslCertReadService?.stop()
                 sslCertReadService = null
                 dynamicRpcOps.filterIsInstance<Lifecycle>().forEach { it.stop() }
-                coordinator.updateStatus(LifecycleStatus.DOWN)
             }
         }
     }
@@ -140,21 +124,14 @@ internal class HttpRpcGatewayEventHandler(
         if (RPC_CONFIG in changedKeys) {
             log.info("RPC config received. Recreating HTTP RPC Server.")
 
-            val rpcConfig = currentConfigurationSnapshot[RPC_CONFIG]!!
-            createAndStartHttpRpcServer(rpcConfig)
+            createAndStartHttpRpcServer(currentConfigurationSnapshot[RPC_CONFIG]!!)
         }
     }
 
     private fun createAndStartHttpRpcServer(config: SmartConfig) {
         log.info("Stopping any running HTTP RPC Server and endpoints.")
         server?.stop()
-        securityManager?.stop()
         sslCertReadService?.stop()
-
-        val securityManager = rpcSecurityManagerFactory.createRPCSecurityManager().also {
-            this.securityManager = it
-            it.start()
-        }
 
         val keyStoreInfo = sslCertReadServiceFactory.create().let {
             this.sslCertReadService = it
@@ -178,7 +155,7 @@ internal class HttpRpcGatewayEventHandler(
         log.info("Starting HTTP RPC Server.")
         server = httpRpcServerFactory.createHttpRpcServer(
             rpcOpsImpls = dynamicRpcOps.toList(),
-            rpcSecurityManager = securityManager,
+            rpcSecurityManager = rbacSecurityManagerService.securityManager,
             httpRpcSettings = httpRpcSettings,
             devMode = true
         ).also { it.start() }

@@ -10,6 +10,7 @@ import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import java.lang.reflect.Method
 import javax.security.auth.login.FailedLoginException
+import net.corda.httprpc.security.read.RPCSecurityException
 
 interface HttpRpcSecurityManager {
     fun authenticate(credential: AuthenticationCredentials): AuthorizingSubject
@@ -26,10 +27,12 @@ internal class SecurityManagerRPCImpl(private val providers: Set<AuthenticationP
         var lastException: FailedLoginException? = null
         for (provider in providers) {
             if (provider.supports(credential)) {
-                try {
+                lastException = try {
                     return provider.authenticate(credential)
+                } catch (e: RPCSecurityException) {
+                    FailedLoginException(e.message)
                 } catch (e: FailedLoginException) {
-                    lastException = e
+                    e
                 }
             }
         }
