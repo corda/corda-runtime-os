@@ -10,7 +10,7 @@ import org.osgi.service.component.annotations.Component
 import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [SoftPersistenceProvider::class])
-class SoftInMemoryPersistenceProvider : SoftPersistenceProvider {
+class InMemorySoftPersistenceProvider : SoftPersistenceProvider {
     companion object {
         const val NAME = "dev"
     }

@@ -9,7 +9,7 @@ import org.osgi.service.component.annotations.Component
 import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [SigningKeysPersistenceProvider::class])
-class SigningKeysInMemoryPersistenceProvider : SigningKeysPersistenceProvider {
+class InMemorySigningKeysPersistenceProvider : SigningKeysPersistenceProvider {
     companion object {
         const val NAME = "dev"
     }

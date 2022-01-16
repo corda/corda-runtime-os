@@ -2,8 +2,8 @@ package net.corda.crypto.service.soft
 
 import net.corda.crypto.CryptoConsts
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
-import net.corda.crypto.persistence.inmemory.SigningKeysInMemoryPersistenceProvider
-import net.corda.crypto.persistence.inmemory.SoftInMemoryPersistenceProvider
+import net.corda.crypto.persistence.inmemory.InMemorySigningKeysPersistenceProvider
+import net.corda.crypto.persistence.inmemory.InMemorySoftPersistenceProvider
 import net.corda.crypto.service.signing.CryptoServicesTestFactory
 import net.corda.test.util.createTestCase
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -89,7 +89,7 @@ class SoftCryptoServiceProviderTests {
                 CryptoLibraryConfigImpl(
                     mapOf(
                         "defaultCryptoService" to mapOf(
-                            "factoryName" to SigningKeysInMemoryPersistenceProvider.NAME
+                            "factoryName" to InMemorySigningKeysPersistenceProvider.NAME
                         ),
                         "publicKeys" to emptyMap()
                     )
@@ -105,13 +105,13 @@ class SoftCryptoServiceProviderTests {
 
     private fun createCryptoServiceProvider(): SoftCryptoServiceProvider {
         val provider = SoftCryptoServiceProvider()
-        provider.persistenceFactory = SoftInMemoryPersistenceProvider()
+        provider.persistenceFactory = InMemorySoftPersistenceProvider()
         provider.start()
         provider.handleConfigEvent(
             CryptoLibraryConfigImpl(
                 mapOf(
                     "defaultCryptoService" to mapOf(
-                        "factoryName" to SigningKeysInMemoryPersistenceProvider.NAME
+                        "factoryName" to InMemorySigningKeysPersistenceProvider.NAME
                     ),
                     "publicKeys" to emptyMap()
                 )

@@ -1,8 +1,8 @@
 package net.corda.crypto.service.dev
 
 import net.corda.crypto.CryptoConsts
-import net.corda.crypto.persistence.inmemory.SigningKeysInMemoryPersistenceProvider
-import net.corda.crypto.persistence.inmemory.SoftInMemoryPersistenceProvider
+import net.corda.crypto.persistence.inmemory.InMemorySigningKeysPersistenceProvider
+import net.corda.crypto.persistence.inmemory.InMemorySoftPersistenceProvider
 import net.corda.crypto.service.signing.CryptoServicesTestFactory
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
@@ -81,8 +81,8 @@ class DevCryptoServiceProviderTests {
 
     private fun createCryptoServiceProvider(): DevCryptoServiceProvider {
         return DevCryptoServiceProvider().also {
-            it.softPersistenceFactory = SoftInMemoryPersistenceProvider()
-            it.signingPersistenceFactory = SigningKeysInMemoryPersistenceProvider()
+            it.softPersistenceFactory = InMemorySoftPersistenceProvider()
+            it.signingPersistenceFactory = InMemorySigningKeysPersistenceProvider()
         }
     }
 

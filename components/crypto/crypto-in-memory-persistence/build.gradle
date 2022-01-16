@@ -30,7 +30,6 @@ dependencies {
     testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation project(':testing:crypto-testkit')
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":testing:test-utilities")
     testImplementation project(":libs:messaging:inmemory-messaging-impl")
