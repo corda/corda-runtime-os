@@ -1,9 +1,5 @@
-package net.corda.crypto.service.persistence
+package net.corda.crypto.persistence.kafka
 
-import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
-import net.corda.crypto.impl.config.DefaultConfigConsts
-import net.corda.crypto.impl.config.defaultCryptoService
-import net.corda.crypto.impl.config.publicKeys
 import net.corda.crypto.impl.persistence.KeyValuePersistence
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinator
@@ -20,7 +16,6 @@ import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.TopicService
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
-import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -31,59 +26,9 @@ import java.util.concurrent.TimeUnit
 import kotlin.test.fail
 
 class KafkaInfrastructure {
+
     companion object {
-        fun cryptoSvcTopicName(config: CryptoLibraryConfig) =
-            config.defaultCryptoService.persistenceConfig.getString(
-                DefaultConfigConsts.Kafka.TOPIC_NAME_KEY,
-                DefaultConfigConsts.Kafka.DefaultCryptoService.TOPIC_NAME
-            )
-        fun cryptoSvcGroupName(config: CryptoLibraryConfig) =
-            config.defaultCryptoService.persistenceConfig.getString(
-                DefaultConfigConsts.Kafka.GROUP_NAME_KEY,
-                DefaultConfigConsts.Kafka.DefaultCryptoService.GROUP_NAME
-            )
-        fun cryptoSvcClientId(config: CryptoLibraryConfig) =
-            config.defaultCryptoService.persistenceConfig.getString(
-                DefaultConfigConsts.Kafka.CLIENT_ID_KEY,
-                DefaultConfigConsts.Kafka.DefaultCryptoService.CLIENT_ID
-            )
-        fun signingTopicName(config: CryptoLibraryConfig) =
-            config.publicKeys.persistenceConfig.getString(
-                DefaultConfigConsts.Kafka.TOPIC_NAME_KEY,
-                DefaultConfigConsts.Kafka.Signing.TOPIC_NAME
-            )
-        fun signingGroupName(config: CryptoLibraryConfig) =
-            config.publicKeys.persistenceConfig.getString(
-                DefaultConfigConsts.Kafka.GROUP_NAME_KEY,
-                DefaultConfigConsts.Kafka.DefaultCryptoService.GROUP_NAME
-            )
-        fun signingClientId(config: CryptoLibraryConfig) =
-            config.publicKeys.persistenceConfig.getString(
-                DefaultConfigConsts.Kafka.CLIENT_ID_KEY,
-                DefaultConfigConsts.Kafka.DefaultCryptoService.CLIENT_ID
-            )
-        val defaultConfig: CryptoLibraryConfig = CryptoLibraryConfigImpl(emptyMap())
-        val customConfig: CryptoLibraryConfig = CryptoLibraryConfigImpl(
-            mapOf(
-                "defaultCryptoService" to mapOf(
-                    "persistenceConfig" to mapOf(
-                        DefaultConfigConsts.Kafka.GROUP_NAME_KEY to "groupName",
-                        DefaultConfigConsts.Kafka.TOPIC_NAME_KEY to "keyCacheTopic",
-                        DefaultConfigConsts.Kafka.CLIENT_ID_KEY to "clientId"
-                    )
-                ),
-                "publicKeys" to mapOf(
-                    "persistenceConfig" to mapOf(
-                        DefaultConfigConsts.Kafka.GROUP_NAME_KEY to "groupName",
-                        DefaultConfigConsts.Kafka.TOPIC_NAME_KEY to "mngCacheTopic",
-                        DefaultConfigConsts.Kafka.CLIENT_ID_KEY to "clientId"
-                    )
-
-                )
-            )
-        )
-
-        inline fun <reified V : IHaveTenantId, E : IHaveTenantId> KeyValuePersistence<V, E>.wait(
+        inline fun <reified V, E> KeyValuePersistence<V, E>.wait(
             key: String,
             timeout: Duration = Duration.ofSeconds(2),
             retryDelay: Duration = Duration.ofMillis(50),
@@ -111,15 +56,22 @@ class KafkaInfrastructure {
     val publisherFactory: PublisherFactory =
         CordaPublisherFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
 
-    fun createFactory(config: CryptoLibraryConfig, snapshot: (() -> Unit)? = null): KafkaKeyValuePersistenceFactory {
+    fun createSigningKeysPersistenceProvider(
+        snapshot: (() -> Unit)? = null
+    ): KafkaSigningKeysPersistenceProvider {
         if(snapshot != null) {
             snapshot()
         }
-        return KafkaKeyValuePersistenceFactory(
-            subscriptionFactory = subscriptionFactory,
-            publisherFactory = publisherFactory,
-            config = config
-        )
+        return KafkaSigningKeysPersistenceProvider()
+    }
+
+    fun createSoftPersistenceProvider(
+        snapshot: (() -> Unit)? = null
+    ): KafkaSoftPersistenceProvider {
+        if(snapshot != null) {
+            snapshot()
+        }
+        return KafkaSoftPersistenceProvider()
     }
 
     inline fun <reified E : Any> getRecords(
@@ -153,7 +105,7 @@ class KafkaInfrastructure {
         return records.toList()
     }
 
-    inline fun <reified V : IHaveTenantId, E : IHaveTenantId> publish(
+    inline fun <reified V, E> publish(
         clientId: String,
         persistence: KeyValuePersistence<V, E>?,
         topic: String,
