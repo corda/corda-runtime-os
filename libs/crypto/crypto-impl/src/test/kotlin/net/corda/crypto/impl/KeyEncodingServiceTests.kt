@@ -1,8 +1,6 @@
 package net.corda.crypto.impl
 
 import net.corda.crypto.createDevCertificate
-import net.corda.crypto.testkit.generateKeyPair
-import net.corda.crypto.testkit.signData
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.cipher.suite.schemes.COMPOSITE_KEY_CODE_NAME

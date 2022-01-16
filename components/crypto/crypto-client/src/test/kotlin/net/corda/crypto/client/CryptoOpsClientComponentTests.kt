@@ -1,9 +1,7 @@
 package net.corda.crypto.client
 
 import net.corda.crypto.CryptoConsts
-import net.corda.crypto.testkit.CryptoMocks
-import net.corda.crypto.testkit.generateKeyPair
-import net.corda.crypto.testkit.signData
+import net.corda.crypto.impl.CipherSchemeMetadataFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.config.HSMInfo
 import net.corda.data.crypto.wire.CryptoNoContentValue
@@ -77,8 +75,7 @@ class CryptoOpsClientComponentTests : AbstractComponentTests<CryptoOpsClientComp
             knownOperationContext = mapOf(
                 UUID.randomUUID().toString() to UUID.randomUUID().toString()
             )
-            val cryptoMocks = CryptoMocks()
-            schemeMetadata = cryptoMocks.schemeMetadata
+            schemeMetadata = CipherSchemeMetadataFactory().getInstance()
             sender = mock()
             publisherFactory = mock {
                 on { createRPCSender<RpcOpsRequest, RpcOpsResponse>(any(), any()) } doReturn sender

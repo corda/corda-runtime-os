@@ -26,7 +26,6 @@ dependencies {
     testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:test-utilities")
-    testImplementation project(":testing:crypto-testkit")
 }
 
 description 'Common crypto implementation'

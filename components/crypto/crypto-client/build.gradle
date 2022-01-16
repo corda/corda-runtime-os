@@ -6,9 +6,7 @@ plugins {
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
-
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
     implementation "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion"
@@ -18,21 +16,17 @@ dependencies {
     implementation "net.corda:corda-crypto"
     implementation "net.corda:corda-cipher-suite"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-
     implementation project(":libs:crypto:crypto-internal")
     implementation project(':libs:crypto:crypto-impl')
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":components:crypto:crypto-component-base")
     implementation project(":components:configuration:configuration-read-service")
-
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "net.corda:corda-topic-schema"
-    testImplementation project(":testing:crypto-testkit")
     testImplementation project(":libs:configuration:configuration-core")
-
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 }
 

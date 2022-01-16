@@ -1,6 +1,5 @@
 package net.corda.crypto.impl
 
-import net.corda.crypto.testkit.generateKeyPair
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.COMPOSITE_KEY_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME

@@ -1,6 +1,4 @@
-@file:JvmName("CryptoMockUtils")
-
-package net.corda.crypto.testkit
+package net.corda.crypto.impl
 
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import java.security.KeyPair

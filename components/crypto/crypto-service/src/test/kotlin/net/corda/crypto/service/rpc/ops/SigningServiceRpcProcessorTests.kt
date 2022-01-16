@@ -1,10 +1,10 @@
 package net.corda.crypto.service.rpc.ops
 
 import net.corda.crypto.CryptoConsts
+import net.corda.crypto.service.generateKeyPair
 import net.corda.crypto.service.signing.CryptoServicesTestFactory
 import net.corda.crypto.service.signing.SigningService
 import net.corda.crypto.service.signing.SigningServiceFactory
-import net.corda.crypto.testkit.generateKeyPair
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoNoContentValue
@@ -42,7 +42,6 @@ import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.allOf
 import org.hamcrest.Matchers.greaterThanOrEqualTo
 import org.hamcrest.Matchers.lessThanOrEqualTo
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows

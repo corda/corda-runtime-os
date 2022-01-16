@@ -10,7 +10,6 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.records.Record
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import org.bouncycastle.jce.ECNamedCurveTable
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.allOf
 import org.hamcrest.Matchers.greaterThanOrEqualTo
@@ -23,7 +22,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import java.security.KeyPair
 import java.security.KeyPairGenerator
-import java.security.PrivateKey
 import java.security.Signature
 import java.time.Instant
 import kotlin.reflect.full.memberFunctions
@@ -132,4 +130,29 @@ abstract class AbstractComponentTests<COMPONENT: Lifecycle> {
             )
         )
     }
+}
+fun generateKeyPair(schemeMetadata: CipherSchemeMetadata, signatureSchemeName: String): KeyPair {
+    val scheme = schemeMetadata.findSignatureScheme(signatureSchemeName)
+    val keyPairGenerator = KeyPairGenerator.getInstance(
+        scheme.algorithmName,
+        schemeMetadata.providers.getValue(scheme.providerName)
+    )
+    if (scheme.algSpec != null) {
+        keyPairGenerator.initialize(scheme.algSpec, schemeMetadata.secureRandom)
+    } else if (scheme.keySize != null) {
+        keyPairGenerator.initialize(scheme.keySize!!, schemeMetadata.secureRandom)
+    }
+    return keyPairGenerator.generateKeyPair()
+}
+
+
+fun signData(schemeMetadata: CipherSchemeMetadata, keyPair: KeyPair, data: ByteArray): ByteArray {
+    val scheme = schemeMetadata.findSignatureScheme(keyPair.public)
+    val signature = Signature.getInstance(
+        scheme.signatureSpec.signatureName,
+        schemeMetadata.providers[scheme.providerName]
+    )
+    signature.initSign(keyPair.private, schemeMetadata.secureRandom)
+    signature.update(data)
+    return signature.sign()
 }
