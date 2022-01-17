@@ -1,16 +1,16 @@
 package net.corda.configuration.rpcops.impl.tests
 
 import net.corda.configuration.rpcops.ConfigRPCOpsServiceException
-import net.corda.configuration.rpcops.impl.v1.ConfigRPCOpsInternal
 import net.corda.configuration.rpcops.impl.v1.ConfigRPCOpsImpl
-import net.corda.libs.configuration.endpoints.v1.types.HTTPUpdateConfigRequest
-import net.corda.libs.configuration.endpoints.v1.types.HTTPUpdateConfigResponse
+import net.corda.configuration.rpcops.impl.v1.ConfigRPCOpsInternal
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.httprpc.exception.HttpApiException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.security.RpcAuthContext
+import net.corda.libs.configuration.endpoints.v1.types.HTTPUpdateConfigRequest
+import net.corda.libs.configuration.endpoints.v1.types.HTTPUpdateConfigResponse
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -100,13 +100,15 @@ class ConfigRPCOpsImplTests {
     @Test
     fun `updateConfig throws if config is not valid JSON or HOCON`() {
         val invalidConfig = "a=b\nc"
+        val expectedMessage = "Configuration \"$invalidConfig\" could not be parsed. Valid JSON or HOCON expected. " +
+                "Cause: String: 2: Key 'c' may not be followed by token: end of file"
 
         val (_, configRPCOps) = getConfigRPCOps(mock())
         val e = assertThrows<HttpApiException> {
             configRPCOps.updateConfig(req.copy(config = invalidConfig))
         }
 
-        assertEquals("Configuration $invalidConfig could not be parsed. Valid JSON or HOCON expected.", e.message)
+        assertEquals(expectedMessage, e.message)
         assertEquals(400, e.statusCode)
     }
 
