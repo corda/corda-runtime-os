@@ -1,6 +1,5 @@
 package com.r3.corda.utils.provider
 
-import java.security.NoSuchAlgorithmException
 import java.security.Provider
 
 class DelegatedSignatureProvider : Provider(
@@ -8,34 +7,30 @@ class DelegatedSignatureProvider : Provider(
     "0.2",
     "JCA/JCE Delegated Signature provider"
 ) {
+    companion object {
+        const val RSA_SINGING_ALGORITHM = "RSASSA-PSS"
+    }
     init {
-        val supportedHashingAlgorithm = DelegatedSigningService.Hash.values()
-        val supportedSignatureAlgorithm = listOf("ECDSA", "RSA")
-
-        for (hashingAlgorithm in supportedHashingAlgorithm) {
-            for (signatureAlgorithm in supportedSignatureAlgorithm) {
-                this.putService(DelegatedSignatureService(this, hashingAlgorithm, "${hashingAlgorithm}with$signatureAlgorithm"))
-            }
+        putService(DelegatedSignatureService(RSA_SINGING_ALGORITHM, null))
+        DelegatedSigningService.Hash.values().forEach {
+            putService(DelegatedSignatureService(it.ecName, it))
         }
         this["AlgorithmParameters.EC"] = "sun.security.util.ECParameters"
     }
 
-    class DelegatedSignatureService(
-        provider: Provider,
-        private val hash: DelegatedSigningService.Hash,
-        private val sigAlgo: String
-        ) : Service(
-        provider,
+    private inner class DelegatedSignatureService(
+        algorithm: String,
+        private val defaultHash: DelegatedSigningService.Hash?,
+    ) : Service(
+        this@DelegatedSignatureProvider,
         "Signature",
-        sigAlgo,
+        algorithm,
         DelegatedSignature::class.java.name,
         null,
         mapOf("SupportedKeyClasses" to DelegatedPrivateKey::class.java.name)
     ) {
-        @Throws(NoSuchAlgorithmException::class)
-        override fun newInstance(var1: Any?): Any {
-            return DelegatedSignature(hash)
+        override fun newInstance(constructorParameter: Any?): Any {
+            return DelegatedSignature(defaultHash)
         }
     }
 }
-
