@@ -12,28 +12,24 @@ import net.corda.membership.identity.MemberInfoExtension.Companion.groupId
 import net.corda.membership.identity.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.identity.MemberInfoExtension.Companion.softwareVersion
 import net.corda.membership.identity.MemberInfoExtension.Companion.status
-import net.corda.membership.impl.GroupPolicyExtension.Companion.GROUP_ID
-import net.corda.membership.impl.GroupPolicyImpl
 import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.membership.registration.MembershipRequestRegistrationResultOutcome.SUBMITTED
 import net.corda.membership.registration.MembershipRequestRegistrationResultOutcome.NOT_SUBMITTED
-import net.corda.membership.staticnetwork.StaticMemberRegistrationService.Companion.DEFAULT_PLATFORM_VERSION
-import net.corda.membership.staticnetwork.StaticMemberRegistrationService.Companion.DEFAULT_SERIAL
-import net.corda.membership.staticnetwork.StaticMemberRegistrationService.Companion.DEFAULT_SOFTWARE_VERSION
-import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_PROTOCOL
-import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_URL
-import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.KEY_ALIAS
-import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.MEMBER_STATUS
-import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.NAME
-import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.STATIC_MEMBERS
-import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.STATIC_NETWORK_TEMPLATE
+import net.corda.membership.staticnetwork.TestUtils.Companion.DUMMY_GROUP_ID
+import net.corda.membership.staticnetwork.TestUtils.Companion.aliceName
+import net.corda.membership.staticnetwork.TestUtils.Companion.bobName
+import net.corda.membership.staticnetwork.TestUtils.Companion.charlieName
+import net.corda.membership.staticnetwork.TestUtils.Companion.daisyName
+import net.corda.membership.staticnetwork.TestUtils.Companion.groupPolicyWithInvalidStaticNetworkTemplate
+import net.corda.membership.staticnetwork.TestUtils.Companion.groupPolicyWithStaticNetwork
+import net.corda.membership.staticnetwork.TestUtils.Companion.groupPolicyWithoutStaticNetwork
+import net.corda.membership.staticnetwork.TestUtils.Companion.groupPolicyWithDuplicateMembers
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.membership.identity.MemberInfo
-import net.corda.v5.membership.identity.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -49,11 +45,8 @@ import kotlin.test.assertTrue
 
 class StaticMemberRegistrationServiceTest {
     companion object {
-        private const val DUMMY_GROUP_ID = "dummy_group"
         private const val ALICE_KEY = "1234"
         private const val BOB_KEY = "2345"
-        private const val TEST_ENDPOINT_PROTOCOL = "1"
-        private const val TEST_ENDPOINT_URL = "https://dummyurl.corda5.r3.com:10000"
     }
 
     private val groupPolicyProvider: GroupPolicyProvider = mock()
@@ -64,75 +57,12 @@ class StaticMemberRegistrationServiceTest {
     private val signingService: SigningService = mock()
     private lateinit var registrationService: StaticMemberRegistrationService
 
-    private val aliceName = MemberX500Name("Alice", "London", "GB")
     private val alice = HoldingIdentity(aliceName.toString(), DUMMY_GROUP_ID)
-    private val bobName = MemberX500Name("Bob", "London", "GB")
     private val bob = HoldingIdentity(bobName.toString(), DUMMY_GROUP_ID)
-    private val charlieName = MemberX500Name("Charlie", "London", "GB")
     private val charlie = HoldingIdentity(charlieName.toString(), DUMMY_GROUP_ID)
-    private val daisyName = MemberX500Name("Daisy", "London", "GB")
     private val daisy = HoldingIdentity(daisyName.toString(), DUMMY_GROUP_ID)
     private val aliceKey: PublicKey = mock()
     private val bobKey: PublicKey = mock()
-
-    private val staticMemberTemplate: List<Map<String, String>> =
-        listOf(
-            mapOf(
-                NAME to aliceName.toString(),
-                KEY_ALIAS to "alice-alias",
-                MEMBER_STATUS to MEMBER_STATUS_ACTIVE,
-                String.format(ENDPOINT_URL, 1) to TEST_ENDPOINT_URL,
-                String.format(ENDPOINT_PROTOCOL, 1) to TEST_ENDPOINT_PROTOCOL
-            ),
-            mapOf(
-                NAME to bobName.toString(),
-                MEMBER_STATUS to MEMBER_STATUS_ACTIVE,
-                String.format(ENDPOINT_URL, 1) to TEST_ENDPOINT_URL,
-                String.format(ENDPOINT_PROTOCOL, 1) to TEST_ENDPOINT_PROTOCOL
-            ),
-            mapOf(
-                NAME to charlieName.toString(),
-                MEMBER_STATUS to MEMBER_STATUS_SUSPENDED,
-                String.format(ENDPOINT_URL, 1) to TEST_ENDPOINT_URL,
-                String.format(ENDPOINT_PROTOCOL, 1) to TEST_ENDPOINT_PROTOCOL,
-                String.format(ENDPOINT_URL, 2) to TEST_ENDPOINT_URL,
-                String.format(ENDPOINT_PROTOCOL, 2) to TEST_ENDPOINT_PROTOCOL
-            )
-        )
-
-    private val staticNetworkTemplate: Map<String, Any> = mapOf(
-        GROUP_ID to DUMMY_GROUP_ID,
-        STATIC_NETWORK_TEMPLATE to mapOf(
-            STATIC_MEMBERS to staticMemberTemplate
-        )
-    )
-
-    private val invalidStaticNetworkTemplate = mapOf(
-        STATIC_NETWORK_TEMPLATE to mapOf(
-            STATIC_MEMBERS to listOf(mapOf("key" to "value"))
-        )
-    )
-
-    private val staticMemberTemplateWithDuplicateMembers: List<Map<String, String>> =
-        listOf(
-            mapOf(
-                NAME to daisyName.toString(),
-                String.format(ENDPOINT_URL, 1) to TEST_ENDPOINT_URL,
-                String.format(ENDPOINT_PROTOCOL, 1) to TEST_ENDPOINT_PROTOCOL
-            ),
-            mapOf(
-                NAME to daisyName.toString(),
-                String.format(ENDPOINT_URL, 1) to TEST_ENDPOINT_URL,
-                String.format(ENDPOINT_PROTOCOL, 1) to TEST_ENDPOINT_PROTOCOL
-            )
-        )
-
-    private val staticNetworkTemplateWithDuplicateMembers: Map<String, Any> = mapOf(
-        GROUP_ID to DUMMY_GROUP_ID,
-        STATIC_NETWORK_TEMPLATE to mapOf(
-            STATIC_MEMBERS to staticMemberTemplateWithDuplicateMembers
-        )
-    )
 
     @BeforeEach
     fun setUp() {
@@ -143,10 +73,10 @@ class StaticMemberRegistrationServiceTest {
             cryptoLibraryClientsFactory
         )
 
-        whenever(groupPolicyProvider.getGroupPolicy(alice)).thenReturn(GroupPolicyImpl(staticNetworkTemplate))
-        whenever(groupPolicyProvider.getGroupPolicy(bob)).thenReturn(GroupPolicyImpl(invalidStaticNetworkTemplate))
-        whenever(groupPolicyProvider.getGroupPolicy(charlie)).thenReturn(GroupPolicyImpl(emptyMap()))
-        whenever(groupPolicyProvider.getGroupPolicy(daisy)).thenReturn(GroupPolicyImpl(staticNetworkTemplateWithDuplicateMembers))
+        whenever(groupPolicyProvider.getGroupPolicy(alice)).thenReturn(groupPolicyWithStaticNetwork)
+        whenever(groupPolicyProvider.getGroupPolicy(bob)).thenReturn(groupPolicyWithInvalidStaticNetworkTemplate)
+        whenever(groupPolicyProvider.getGroupPolicy(charlie)).thenReturn(groupPolicyWithoutStaticNetwork)
+        whenever(groupPolicyProvider.getGroupPolicy(daisy)).thenReturn(groupPolicyWithDuplicateMembers)
 
         whenever(cryptoLibraryFactory.getKeyEncodingService()).thenReturn(keyEncodingService)
         whenever(cryptoLibraryClientsFactory.getSigningService(any())).thenReturn(signingService)
