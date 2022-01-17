@@ -8,28 +8,26 @@ To document the process for creating or updating the configuration of a Corda cl
 
 The following diagram shows the end-to-end process for creating or updating the configuration of a Corda cluster.
 
-![Configuration management process flow diagram](./images/configuration_management_process_flow.jpeg)
+![Configuration management process flow diagram](./images/configuration_management_process_flow.png)
 
-There are seven steps involved in updating the cluster configuration:
+There are nine steps involved in updating the cluster configuration:
 
-1. An HTTP client sends an HTTP request to update the cluster configuration to the RPC worker.
+1. An HTTP client sends an HTTP request to the RPC worker to update the cluster configuration.
 2. The RPC worker writes a configuration management request to the configuration management topic on the Kafka bus.
 3. The DB worker reads the configuration management request from the configuration management topic on the Kafka bus.
 4. The DB worker updates the configuration tables in the cluster database.
 5. The DB worker writes the updated configuration to the configuration topic on the Kafka bus.
-6. The RPC worker notifies the HTTP client of the success of their request.
-7. Workers are notified of the new or updated configuration from the configuration topic on the Kafka bus using the configuration read
-   service.
+6. The DB worker writes a success response to the configuration management response topic on the Kafka bus.
+7. The RPC worker reads the response from the configuration management response topic on the Kafka bus.
+8. The RPC worker notifies the HTTP client of the success of their request.
+9. Workers are notified of the new or updated configuration from the configuration topic on the Kafka bus using the
+   configuration read service.
 
 The process uses three separate Kafka topics:
 
 1. The configuration management topic, which holds _requests_ to modify the current state of the cluster configuration
 2. The configuration management response topic, which holds responses to requests made on the topic above
 3. The configuration topic, a compacted topic which holds the current state of the cluster configuration
-
-For simplicity, the diagram above skips over the configuration management response that the DB worker writes to the
-configuration management topic on the Kafka bus after step (5), which in turn allows the RPC worker to send a response
-to the HTTP client in step (6).
 
 The remainder of this document provides further details on the process above.
 
@@ -241,14 +239,14 @@ The DB worker listens for incoming configuration management requests using an
 For each message, the DB worker creates a corresponding `ConfigEntity` and `ConfigAuditEntity`, and attempts to persist
 them to the database. The only non-technical reason the update might fail is
 [optimistic locking](https://docs.jboss.org/hibernate/orm/4.0/devguide/en-US/html/ch05.html#d0e2225). The `config`
-table contains a `version` column, and configuration update requests for which the `version` field does not exactly 
-match the current version in the database are rejected (the database increments the `version` field for each successful 
+table contains a `version` column, and configuration update requests for which the `version` field does not exactly
+match the current version in the database are rejected (the database increments the `version` field for each successful
 update automatically).
 
 ## Publication of configuration updates by the DB worker
 
-If the database tables are updated successfully, the DB worker then publishes a message to the `config` topic. The 
-message's key is the section of the configuration that is updated, and the message itself follows the `Configuration` 
+If the database tables are updated successfully, the DB worker then publishes a message to the `config` topic. The
+message's key is the section of the configuration that is updated, and the message itself follows the `Configuration`
 Avro schema:
 
 ```
