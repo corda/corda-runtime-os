@@ -1,6 +1,5 @@
 package com.r3.corda.utils.provider
 
-import net.corda.v5.base.util.contextLogger
 import java.io.InputStream
 import java.io.OutputStream
 import java.security.Key
@@ -15,10 +14,6 @@ import java.util.Enumeration
 class DelegatedKeystore(
     private val signingService: DelegatedSigningService
 ) : KeyStoreSpi() {
-    companion object {
-        private val logger = contextLogger()
-    }
-
     private fun getAlias(name: String?): DelegatedSigningService.Alias? {
         return signingService.aliases.firstOrNull {
             it.name == name
@@ -36,13 +31,16 @@ class DelegatedKeystore(
         }
     }
 
-    override fun engineGetCertificate(alias: String): Certificate? = getAlias(alias)?.certificates?.firstOrNull()
+    override fun engineGetCertificate(alias: String): Certificate? = getCertificates(alias)?.firstOrNull()
 
-    override fun engineGetCertificateChain(alias: String): Array<Certificate>? = getAlias(alias)?.certificates?.toTypedArray()
+    override fun engineGetCertificateChain(alias: String): Array<Certificate>? = getCertificates(alias)?.toTypedArray()
 
-    override fun engineAliases(): Enumeration<String>? = signingService.aliases.map { it.name }.let {
-        Collections.enumeration(it)
-    }
+    override fun engineAliases(): Enumeration<String>? = signingService.aliases
+        .map {
+            it.name
+        }.let {
+            Collections.enumeration(it)
+        }
 
     override fun engineContainsAlias(alias: String): Boolean = signingService.aliases.any { it.name == alias }
 
@@ -63,33 +61,33 @@ class DelegatedKeystore(
     }
 
     // Read only keystore, write operations are not supported.
-    override fun engineSetKeyEntry(var1: String, var2: Key, var3: CharArray, var4: Array<Certificate>?) {
+    override fun engineSetKeyEntry(alias: String?, key: Key?, password: CharArray?, chain: Array<out Certificate>?) {
         throw UnsupportedOperationException()
     }
 
-    override fun engineSetKeyEntry(var1: String, var2: ByteArray, var3: Array<Certificate>) {
+    override fun engineSetKeyEntry(alias: String?, key: ByteArray?, chain: Array<out Certificate>?) {
         throw UnsupportedOperationException()
     }
 
-    override fun engineSetCertificateEntry(var1: String, var2: Certificate) {
+    override fun engineSetCertificateEntry(alias: String?, cert: Certificate?) {
         throw UnsupportedOperationException()
     }
 
-    override fun engineDeleteEntry(var1: String) {
+    override fun engineDeleteEntry(alias: String?) {
         throw UnsupportedOperationException()
     }
 
-    override fun engineIsCertificateEntry(var1: String): Boolean {
+    override fun engineIsCertificateEntry(alias: String?): Boolean {
         throw UnsupportedOperationException()
     }
 
-    override fun engineGetCertificateAlias(var1: Certificate): String? {
+    override fun engineGetCertificateAlias(cert: Certificate?): String? {
         throw UnsupportedOperationException()
     }
 
-    override fun engineStore(var1: OutputStream, var2: CharArray) {
+    override fun engineStore(stream: OutputStream?, password: CharArray?) {
         throw UnsupportedOperationException()
     }
 
-    override fun engineGetCreationDate(var1: String) = throw UnsupportedOperationException()
+    override fun engineGetCreationDate(alias: String) = throw UnsupportedOperationException()
 }

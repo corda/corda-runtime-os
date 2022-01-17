@@ -1,12 +1,11 @@
 package com.r3.corda.utils.provider
 
-import java.security.NoSuchAlgorithmException
 import java.security.Provider
 import java.security.Security
 
 class DelegatedKeystoreProvider : Provider(
     PROVIDER_NAME,
-    "0.1",
+    "0.2",
     "JCA/JCE delegated keystore provider",
 ) {
 
@@ -26,22 +25,23 @@ class DelegatedKeystoreProvider : Provider(
     }
 
     fun putService(name: String, signingService: DelegatedSigningService) {
-        putService(DelegatedKeyStoreService(this, name, signingService))
+        putService(DelegatedKeyStoreService(name, signingService))
     }
 
-    private class DelegatedKeyStoreService(
-        provider: Provider,
+    private inner class DelegatedKeyStoreService(
         name: String,
         private val signingService:
             DelegatedSigningService
     ) : Service(
-        provider,
-        "KeyStore", name, "DelegatedKeyStore", null, null
+        this@DelegatedKeystoreProvider,
+        "KeyStore",
+        name,
+        "DelegatedKeyStore",
+        null,
+        null,
     ) {
-        @Throws(NoSuchAlgorithmException::class)
-        override fun newInstance(var1: Any?): Any {
+        override fun newInstance(constructorParameter: Any?): Any {
             return DelegatedKeystore(signingService)
         }
     }
 }
-
