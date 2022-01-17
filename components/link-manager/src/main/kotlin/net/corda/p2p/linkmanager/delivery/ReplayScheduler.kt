@@ -3,6 +3,8 @@ package net.corda.p2p.linkmanager.delivery
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.BASE_REPLAY_PERIOD_KEY_POSTFIX
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.CUTOFF_KEY_POSTFIX
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.DominoTile
@@ -49,8 +51,6 @@ class ReplayScheduler<M>(
 
     companion object {
         private val logger = contextLogger()
-        const val BASE_REPLAY_PERIOD_KEY_POSTFIX = "BasePeriod"
-        const val CUT_OFF_KEY_POSTFIX = "CutOFF"
     }
 
     private fun calculateCappedBackoff(lastDelay: Duration): Duration {
@@ -98,7 +98,7 @@ class ReplayScheduler<M>(
     private fun fromConfig(config: Config): ReplaySchedulerConfig {
         return ReplaySchedulerConfig(
             config.getDuration(replaySchedulerConfigKey + BASE_REPLAY_PERIOD_KEY_POSTFIX),
-            config.getDuration(replaySchedulerConfigKey + CUT_OFF_KEY_POSTFIX)
+            config.getDuration(replaySchedulerConfigKey + CUTOFF_KEY_POSTFIX)
         )
     }
 

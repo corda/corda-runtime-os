@@ -2,7 +2,7 @@ package net.corda.p2p.linkmanager.delivery
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MESSAGE_REPLAY_PERIOD_KEY
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MESSAGE_REPLAY_KEY_PREFIX
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
@@ -53,7 +53,7 @@ class DeliveryTracker(
     private val replayScheduler = ReplayScheduler(
         coordinatorFactory,
         configReadService,
-        MESSAGE_REPLAY_PERIOD_KEY,
+        MESSAGE_REPLAY_KEY_PREFIX,
         appMessageReplayer::replayMessage,
     )
 

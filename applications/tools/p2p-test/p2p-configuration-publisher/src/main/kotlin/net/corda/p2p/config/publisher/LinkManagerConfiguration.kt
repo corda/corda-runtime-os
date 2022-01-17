@@ -41,7 +41,13 @@ class LinkManagerConfiguration : ConfigProducer() {
         names = ["--messageReplayPeriodMilliSecs"],
         description = ["message replay period in milliseconds"]
     )
-    var messageReplayPeriodMilliSecs = 2_000L
+    var messageReplayPeriodBaseMilliSecs = 2_000L
+
+    @Option(
+        names = ["--messageReplayPeriodMilliSecs"],
+        description = ["message replay period in milliseconds"]
+    )
+    var messageReplayPeriodCutoffMilliSecs = 10_000L
 
     @Option(
         names = ["--heartbeatMessagePeriodMilliSecs"],
@@ -72,27 +78,31 @@ class LinkManagerConfiguration : ConfigProducer() {
         }
         ConfigFactory.empty()
             .withValue(
-                "locallyHostedIdentities",
+                LinkManagerConfiguration.LOCALLY_HOSTED_IDENTITIES_KEY,
                 ConfigValueFactory.fromAnyRef(locallyHostedIdentities)
             )
             .withValue(
-                "maxMessageSize",
+                LinkManagerConfiguration.MAX_MESSAGE_SIZE_KEY,
                 ConfigValueFactory.fromAnyRef(maxMessageSize)
             )
             .withValue(
-                "protocolMode",
+                LinkManagerConfiguration.PROTOCOL_MODE_KEY ,
                 ConfigValueFactory.fromAnyRef(protocolModes.map { it.toString() })
             )
             .withValue(
-                "messageReplayPeriod",
-                ConfigValueFactory.fromAnyRef(messageReplayPeriodMilliSecs)
+                LinkManagerConfiguration.MESSAGE_REPLAY_KEY_PREFIX + LinkManagerConfiguration.BASE_REPLAY_PERIOD_KEY_POSTFIX,
+                ConfigValueFactory.fromAnyRef(messageReplayPeriodBaseMilliSecs)
             )
             .withValue(
-                "heartbeatMessagePeriod",
+                LinkManagerConfiguration.MESSAGE_REPLAY_KEY_PREFIX + LinkManagerConfiguration.CUTOFF_KEY_POSTFIX,
+                ConfigValueFactory.fromAnyRef(messageReplayPeriodCutoffMilliSecs)
+            )
+            .withValue(
+                LinkManagerConfiguration.HEARTBEAT_MESSAGE_PERIOD_KEY,
                 ConfigValueFactory.fromAnyRef(heartbeatMessagePeriodMilliSecs)
             )
             .withValue(
-                "sessionTimeout",
+                LinkManagerConfiguration.SESSION_TIMEOUT_KEY,
                 ConfigValueFactory.fromAnyRef(sessionTimeoutMilliSecs)
             )
     }
