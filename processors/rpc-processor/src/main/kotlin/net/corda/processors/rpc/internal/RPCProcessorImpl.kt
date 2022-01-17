@@ -52,7 +52,7 @@ class RPCProcessorImpl @Activate constructor(
             } else {
                 ""
             }
-            val configValue = "$CONFIG_HTTP_RPC\n$CONFIG_CONFIG_MGMT_REQUEST_TIMEOUT$bootstrapServersConfig"
+            val configValue = "$CONFIG_HTTP_RPC$bootstrapServersConfig"
 
             val record = Record(CONFIG_TOPIC, RPC_CONFIG, Configuration(configValue, "1"))
             publisher.publish(listOf(record)).forEach { future -> future.get() }
