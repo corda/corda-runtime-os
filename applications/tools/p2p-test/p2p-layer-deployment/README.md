@@ -91,7 +91,7 @@ telepresence connect
 ### Gateway Example:
 ```bash
 java \
--jar ./applications/tools/p2p-test/configuration-publisher/build/bin/corda-configuration-publisher-5.0.0.0-SNAPSHOT.jar \
+-jar ./applications/tools/p2p-test/p2p-configuration-publisher/build/bin/corda-configuration-publisher-5.0.0.0-SNAPSHOT.jar \
 --kafka-servers kafka-broker-1.p2p-layer:9093 \
 gateway \
 --keyStore ./components/gateway/src/integration-test/resources/sslkeystore_alice.jks \
@@ -103,7 +103,7 @@ Please note, the port number need to be 1433, the host name should be one of the
 ### Link Manager Example:
 ```bash
 java \
--jar ./applications/tools/p2p-test/configuration-publisher/build/bin/corda-configuration-publisher-5.0.0.0-SNAPSHOT.jar \
+-jar ./applications/tools/p2p-test/p2p-configuration-publisher/build/bin/corda-configuration-publisher-5.0.0.0-SNAPSHOT.jar \
 --kafka-servers kafka-broker-1.p2p-layer:9093 \
 linkmanager \
 --locallyHostedIdentity=O=Alice,L=London,C=GB:group1
