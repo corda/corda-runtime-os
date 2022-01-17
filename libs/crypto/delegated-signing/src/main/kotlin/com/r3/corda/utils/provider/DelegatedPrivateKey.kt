@@ -1,19 +1,17 @@
 package com.r3.corda.utils.provider
 
+import java.math.BigInteger
 import java.security.PrivateKey
+import java.security.interfaces.RSAPrivateKey
 
 open class DelegatedPrivateKey(
     private val algorithm: String,
     private val format: String,
     private val signOp: (String, ByteArray) -> ByteArray?,
-) : PrivateKey {
+) : PrivateKey, RSAPrivateKey {
     companion object {
-        fun create(algorithm: String, format: String, signOp: (String, ByteArray) -> ByteArray?): DelegatedPrivateKey {
-            return when (algorithm) {
-                "RSA" -> DelegatedRSAPrivateKey(algorithm, format, signOp)
-                else -> DelegatedPrivateKey(algorithm, format, signOp)
-            }
-        }
+        private val KEY_SIZE = BigInteger.valueOf(1L).shiftLeft(527)
+        private val EXPONENT = BigInteger.valueOf(1L)
     }
 
     override fun getFormat() = format
@@ -22,4 +20,6 @@ open class DelegatedPrivateKey(
     override fun getEncoded(): ByteArray {
         throw UnsupportedOperationException()
     }
+    override fun getModulus(): BigInteger = KEY_SIZE
+    override fun getPrivateExponent(): BigInteger = EXPONENT
 }

@@ -21,7 +21,7 @@ class DelegatedKeystore(private val signingService: DelegatedSigningService) : K
 
     private val privateKeys = signingService.aliases().map { alias ->
         val publicKey = signingService.certificate(alias)!!.publicKey
-        alias to DelegatedPrivateKey.create(publicKey.algorithm, publicKey.format) { sigAlgo, data ->
+        alias to DelegatedPrivateKey(publicKey.algorithm, publicKey.format) { sigAlgo, data ->
             logger.info("Signing using delegated key : $alias, algo : $sigAlgo")
             signingService.sign(alias, sigAlgo, data)
         }
