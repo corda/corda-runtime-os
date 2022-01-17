@@ -7,7 +7,7 @@ import java.security.Provider
 import java.security.Security
 import java.security.interfaces.RSAKey
 
-@Suppress("DEPRECATION")    // JDK11: should replace with Provider(String name, String versionStr, String info) (since 9)
+@Suppress("DEPRECATION") // JDK11: should replace with Provider(String name, String versionStr, String info) (since 9)
 class DelegatedKeystoreProvider : Provider(PROVIDER_NAME, 0.1, "JCA/JCE delegated keystore provider") {
 
     companion object {
@@ -29,9 +29,15 @@ class DelegatedKeystoreProvider : Provider(PROVIDER_NAME, 0.1, "JCA/JCE delegate
         putService(DelegatedKeyStoreService(this, name, signingService))
     }
 
-    @Suppress("MaxLineLength")
-    private class DelegatedKeyStoreService(provider: Provider, name: String, private val signingService: DelegatedSigningService) : Service(provider,
-            "KeyStore", name, "DelegatedKeyStore", null, null) {
+    private class DelegatedKeyStoreService(
+        provider: Provider,
+        name: String,
+        private val signingService:
+            DelegatedSigningService
+    ) : Service(
+        provider,
+        "KeyStore", name, "DelegatedKeyStore", null, null
+    ) {
         @Throws(NoSuchAlgorithmException::class)
         override fun newInstance(var1: Any?): Any {
             return DelegatedKeystore(signingService)
@@ -39,13 +45,16 @@ class DelegatedKeystoreProvider : Provider(PROVIDER_NAME, 0.1, "JCA/JCE delegate
     }
 }
 
-@Suppress("MaxLineLength")
-open class DelegatedPrivateKey(private val algorithm: String, private val format: String, private val signOp: (String, ByteArray) -> ByteArray?) : PrivateKey {
+open class DelegatedPrivateKey(
+    private val algorithm: String,
+    private val format: String,
+    private val signOp: (String, ByteArray) -> ByteArray?,
+) : PrivateKey {
     companion object {
         fun create(algorithm: String, format: String, signOp: (String, ByteArray) -> ByteArray?): DelegatedPrivateKey {
             return when (algorithm) {
-                "RSA" ->  DelegatedRSAPrivateKey(algorithm, format, signOp)
-                else  ->  DelegatedPrivateKey(algorithm, format, signOp)
+                "RSA" -> DelegatedRSAPrivateKey(algorithm, format, signOp)
+                else -> DelegatedPrivateKey(algorithm, format, signOp)
             }
         }
     }
@@ -59,7 +68,7 @@ open class DelegatedPrivateKey(private val algorithm: String, private val format
 }
 
 class DelegatedRSAPrivateKey(algorithm: String, format: String, signOp: (String, ByteArray) -> ByteArray?) :
-        DelegatedPrivateKey(algorithm, format, signOp), RSAKey {
+    DelegatedPrivateKey(algorithm, format, signOp), RSAKey {
 
     companion object {
         private val dummyKeySize = BigInteger.valueOf(1L).shiftLeft(8191)

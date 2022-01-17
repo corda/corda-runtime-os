@@ -7,7 +7,7 @@ import java.security.Provider
 import java.security.PublicKey
 import java.security.SignatureSpi
 
-@Suppress("DEPRECATION")    // JDK11: should replace with Provider(String name, String versionStr, String info) (since 9)
+@Suppress("DEPRECATION") // JDK11: should replace with Provider(String name, String versionStr, String info) (since 9)
 class DelegatedSignatureProvider : Provider("DelegatedSignature", 0.1, "JCA/JCE Delegated Signature provider") {
     companion object {
         // JDK11 has sun.security.util.ECParameters, some JDK8 distributions have also switched
@@ -19,8 +19,7 @@ class DelegatedSignatureProvider : Provider("DelegatedSignature", 0.1, "JCA/JCE 
             try {
                 this::class.java.classLoader.loadClass(ecECParametersClass)
                 ecECParametersClass
-            }
-            catch (ex: ClassNotFoundException) {
+            } catch (ex: ClassNotFoundException) {
                 this::class.java.classLoader.loadClass(utilECParametersClass)
                 utilECParametersClass
             }
@@ -38,9 +37,10 @@ class DelegatedSignatureProvider : Provider("DelegatedSignature", 0.1, "JCA/JCE 
         this["AlgorithmParameters.EC"] = ecAlgorithmParametersClass
     }
 
-    @Suppress("MaxLineLength")
-    class DelegatedSignatureService(provider: Provider, private val sigAlgo: String) : Service(provider, "Signature", sigAlgo, DelegatedSignature::class.java.name, null,
-            mapOf("SupportedKeyClasses" to DelegatedPrivateKey::class.java.name)) {
+    class DelegatedSignatureService(provider: Provider, private val sigAlgo: String) : Service(
+        provider, "Signature", sigAlgo, DelegatedSignature::class.java.name, null,
+        mapOf("SupportedKeyClasses" to DelegatedPrivateKey::class.java.name)
+    ) {
         @Throws(NoSuchAlgorithmException::class)
         override fun newInstance(var1: Any?): Any {
             return DelegatedSignature(sigAlgo)

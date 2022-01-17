@@ -10,7 +10,8 @@ import java.security.KeyStoreSpi
 import java.security.Security
 import java.security.cert.Certificate
 import java.security.cert.X509Certificate
-import java.util.*
+import java.util.Enumeration
+import java.util.Vector
 
 @Suppress("TooManyFunctions")
 class DelegatedKeystore(private val signingService: DelegatedSigningService) : KeyStoreSpi() {
@@ -62,12 +63,10 @@ class DelegatedKeystore(private val signingService: DelegatedSigningService) : K
         throw UnsupportedOperationException()
     }
 
-    @Throws(KeyStoreException::class)
     override fun engineSetCertificateEntry(var1: String, var2: Certificate) {
         throw UnsupportedOperationException()
     }
 
-    @Throws(KeyStoreException::class)
     override fun engineDeleteEntry(var1: String) {
         throw UnsupportedOperationException()
     }
@@ -84,5 +83,5 @@ class DelegatedKeystore(private val signingService: DelegatedSigningService) : K
         throw UnsupportedOperationException()
     }
 
-    override fun engineGetCreationDate(var1: String): Date? = throw UnsupportedOperationException()
+    override fun engineGetCreationDate(var1: String) = throw UnsupportedOperationException()
 }
