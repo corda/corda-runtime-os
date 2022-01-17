@@ -1,4 +1,4 @@
-package net.corda.applications.rpc.http
+package net.corda.applications.workers.rpc.http
 
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty

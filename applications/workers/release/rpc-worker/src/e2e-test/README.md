@@ -6,7 +6,7 @@ satisfied like:
 - DB Worker along with correctly setup Database;
 - Anything else HTTP RPC Gateway might need.
 
-One way to set all those dependencies up is by using Docker Compose script, as described [here](../../deploy/README.md).
+One way to set all those dependencies up is by using Docker Compose script, as described [here](../../../deploy/README.md).
 
 Then these tests communicate using HTTP protocol using published OpenAPI to trigger some actions and assert side effects
 by observing them through HTTP endpoints.

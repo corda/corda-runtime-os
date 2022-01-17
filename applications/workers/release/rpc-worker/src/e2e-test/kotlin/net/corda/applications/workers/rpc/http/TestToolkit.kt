@@ -1,4 +1,4 @@
-package net.corda.applications.rpc.http
+package net.corda.applications.workers.rpc.http
 
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.client.HttpRpcClient
