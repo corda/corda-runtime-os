@@ -33,7 +33,7 @@ open class SigningServiceImpl(
         logger.info("findPublicKey(alias={}), tenant={}", alias, tenantId)
         val publicKey = cache.find(alias)?.publicKey
         return if(publicKey != null) {
-            schemeMetadata.decodePublicKey(publicKey)
+            schemeMetadata.decodePublicKey(publicKey.array())
         } else {
             null
         }
@@ -124,7 +124,7 @@ open class SigningServiceImpl(
                     )
                 }
                 val wrappedPrivateKey = WrappedPrivateKey(
-                    keyMaterial = keyData.privateKeyMaterial!!,
+                    keyMaterial = keyData.privateKeyMaterial!!.array(),
                     masterKeyAlias = keyData.masterKeyAlias!!,
                     signatureScheme = signatureScheme,
                     encodingVersion = keyData.version

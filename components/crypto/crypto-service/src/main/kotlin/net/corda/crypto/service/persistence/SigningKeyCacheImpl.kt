@@ -1,16 +1,19 @@
 package net.corda.crypto.service.persistence
 
 import net.corda.crypto.CryptoConsts
-import net.corda.crypto.component.persistence.SigningKeyRecord
+import net.corda.crypto.component.persistence.EntityKeyInfo
+import net.corda.crypto.component.persistence.KeyValuePersistence
 import net.corda.crypto.component.persistence.SigningKeysPersistenceProvider
 import net.corda.crypto.impl.closeGracefully
-import net.corda.crypto.impl.persistence.KeyValuePersistence
+import net.corda.data.crypto.persistence.SigningKeysRecord
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.cipher.suite.WrappedKeyPair
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.crypto.sha256Bytes
+import java.nio.ByteBuffer
 import java.security.PublicKey
+import java.time.Instant
 import java.util.UUID
 
 class SigningKeyCacheImpl(
@@ -23,10 +26,10 @@ class SigningKeyCacheImpl(
         require(tenantId.isNotBlank()) { "The member id must not be blank." }
     }
 
-    val persistence: KeyValuePersistence<SigningKeyRecord, SigningKeyRecord> =
+    val persistence: KeyValuePersistence<SigningKeysRecord, SigningKeysRecord> =
         persistenceFactory.getInstance(tenantId, ::mutate)
 
-    override fun find(publicKey: PublicKey): SigningKeyRecord? {
+    override fun find(publicKey: PublicKey): SigningKeysRecord? {
         val entity = persistence.get(toKeyDerivedId(publicKey))
         return if(entity != null && entity.tenantId != tenantId) {
             null
@@ -35,7 +38,7 @@ class SigningKeyCacheImpl(
         }
     }
 
-    override fun find(alias: String): SigningKeyRecord? {
+    override fun find(alias: String): SigningKeysRecord? {
         val entity = persistence.get(toAliasDerivedId(alias))
         return if(entity != null && entity.tenantId != tenantId) {
             null
@@ -51,20 +54,24 @@ class SigningKeyCacheImpl(
         alias: String,
         hsmAlias: String
     ) {
-        val entity = SigningKeyRecord(
-            tenantId = tenantId,
-            category = category,
-            alias = alias,
-            hsmAlias = hsmAlias,
-            publicKey = keyEncoder.encodeAsByteArray(publicKey),
-            privateKeyMaterial = null,
-            schemeCodeName = scheme.codeName,
-            masterKeyAlias = null,
-            externalId = null,
-            version = 1
+        val entity = SigningKeysRecord(
+            tenantId,
+            category,
+            alias,
+            hsmAlias,
+            ByteBuffer.wrap(keyEncoder.encodeAsByteArray(publicKey)),
+            null,
+            scheme.codeName,
+            null,
+            null,
+            1,
+            Instant.now()
         )
-        persistence.put(toKeyDerivedId(publicKey), entity)
-        persistence.put(toAliasDerivedId(alias), entity)
+        persistence.put(
+            entity,
+            EntityKeyInfo(EntityKeyInfo.PUBLIC_KEY, toKeyDerivedId(publicKey)),
+            EntityKeyInfo(EntityKeyInfo.ALIAS, toAliasDerivedId(alias))
+        )
     }
 
     override fun save(
@@ -73,22 +80,26 @@ class SigningKeyCacheImpl(
         scheme: SignatureScheme,
         externalId: UUID?
     ) {
-        val entity = SigningKeyRecord(
-            tenantId = tenantId,
-            category = CryptoConsts.CryptoCategories.FRESH_KEYS,
-            alias = null,
-            hsmAlias = null,
-            publicKey = keyEncoder.encodeAsByteArray(wrappedKeyPair.publicKey),
-            privateKeyMaterial = wrappedKeyPair.keyMaterial,
-            schemeCodeName = scheme.codeName,
-            masterKeyAlias = masterKeyAlias,
-            externalId = externalId,
-            version = 1
+        val entity = SigningKeysRecord(
+            tenantId,
+            CryptoConsts.CryptoCategories.FRESH_KEYS,
+            null,
+            null,
+            ByteBuffer.wrap(keyEncoder.encodeAsByteArray(wrappedKeyPair.publicKey)),
+            ByteBuffer.wrap(wrappedKeyPair.keyMaterial),
+            scheme.codeName,
+            masterKeyAlias,
+            externalId?.toString(),
+            1,
+            Instant.now()
         )
-        persistence.put(toKeyDerivedId(wrappedKeyPair.publicKey), entity)
+        persistence.put(
+            entity,
+            EntityKeyInfo(EntityKeyInfo.PUBLIC_KEY, toKeyDerivedId(wrappedKeyPair.publicKey))
+        )
     }
 
-    private fun mutate(entity: SigningKeyRecord): SigningKeyRecord = entity
+    private fun mutate(entity: SigningKeysRecord): SigningKeysRecord = entity
 
     private fun toKeyDerivedId(publicKey: PublicKey): String =
         "$tenantId:${publicKey.sha256Bytes().toHexString()}"

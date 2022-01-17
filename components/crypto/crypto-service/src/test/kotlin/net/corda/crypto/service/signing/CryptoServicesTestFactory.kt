@@ -6,12 +6,12 @@ import net.corda.crypto.impl.DigestServiceImpl
 import net.corda.crypto.impl.DoubleSHA256DigestFactory
 import net.corda.crypto.impl.SignatureVerificationServiceImpl
 import net.corda.crypto.service.persistence.SigningKeyCacheImpl
-import net.corda.crypto.component.persistence.SigningKeyRecord
 import net.corda.crypto.persistence.inmemory.InMemorySigningKeysPersistenceProvider
 import net.corda.crypto.persistence.inmemory.InMemorySoftPersistenceProvider
 import net.corda.crypto.service.persistence.SoftCryptoKeyCache
 import net.corda.crypto.service.persistence.SoftCryptoKeyCacheImpl
 import net.corda.crypto.service.soft.SoftCryptoService
+import net.corda.data.crypto.persistence.SigningKeysRecord
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
@@ -102,7 +102,7 @@ class CryptoServicesTestFactory(
                 schemeMetadata = schemeMetadata
             )
 
-        fun getSigningKeyRecord(publicKey: PublicKey): SigningKeyRecord? {
+        fun getSigningKeyRecord(publicKey: PublicKey): SigningKeysRecord? {
             return signingKeyCache.find(publicKey)
         }
 

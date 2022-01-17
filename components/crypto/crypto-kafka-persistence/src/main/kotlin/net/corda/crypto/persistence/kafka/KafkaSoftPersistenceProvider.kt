@@ -1,12 +1,12 @@
 package net.corda.crypto.persistence.kafka
 
-import net.corda.crypto.component.persistence.SoftCryptoKeyRecord
-import net.corda.crypto.component.persistence.SoftCryptoKeyRecordInfo
+import net.corda.crypto.component.persistence.KeyValueMutator
+import net.corda.crypto.component.persistence.KeyValuePersistence
+import net.corda.crypto.component.persistence.SoftKeysRecordInfo
 import net.corda.crypto.component.persistence.SoftPersistenceProvider
 import net.corda.crypto.impl.closeGracefully
 import net.corda.crypto.impl.config.softCryptoService
-import net.corda.crypto.impl.persistence.KeyValueMutator
-import net.corda.crypto.impl.persistence.KeyValuePersistence
+import net.corda.data.crypto.persistence.SoftKeysRecord
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -64,8 +64,8 @@ class KafkaSoftPersistenceProvider : SoftPersistenceProvider, Lifecycle, CryptoL
 
     override fun getInstance(
         tenantId: String,
-        mutator: KeyValueMutator<SoftCryptoKeyRecordInfo, SoftCryptoKeyRecord>
-    ): KeyValuePersistence<SoftCryptoKeyRecordInfo, SoftCryptoKeyRecord> =
+        mutator: KeyValueMutator<SoftKeysRecordInfo, SoftKeysRecord>
+    ): KeyValuePersistence<SoftKeysRecordInfo, SoftKeysRecord> =
         impl?.getInstance(tenantId, mutator)
             ?: throw IllegalStateException("The provider haven't been initialised yet.")
 
@@ -80,19 +80,19 @@ class KafkaSoftPersistenceProvider : SoftPersistenceProvider, Lifecycle, CryptoL
         publisherFactory: PublisherFactory,
         private val config: CryptoLibraryConfig
     ) : AutoCloseable {
-        private val proxy = KafkaSoftPersistenceProxy(
+        private val processor = KafkaSoftPersistenceProcessor(
             subscriptionFactory = subscriptionFactory,
             publisherFactory = publisherFactory
         )
 
         fun getInstance(
             tenantId: String,
-            mutator: KeyValueMutator<SoftCryptoKeyRecordInfo, SoftCryptoKeyRecord>
-        ): KeyValuePersistence<SoftCryptoKeyRecordInfo, SoftCryptoKeyRecord> {
+            mutator: KeyValueMutator<SoftKeysRecordInfo, SoftKeysRecord>
+        ): KeyValuePersistence<SoftKeysRecordInfo, SoftKeysRecord> {
             logger.info("Getting Kafka persistence instance for tenant={}", tenantId)
             val cfg = config.softCryptoService
             return KafkaKeyValuePersistence(
-                proxy = proxy,
+                processor = processor,
                 tenantId = tenantId,
                 expireAfterAccessMins = cfg.expireAfterAccessMins,
                 maximumSize = cfg.maximumSize,
@@ -101,7 +101,7 @@ class KafkaSoftPersistenceProvider : SoftPersistenceProvider, Lifecycle, CryptoL
         }
 
         override fun close() {
-            proxy.closeGracefully()
+            processor.closeGracefully()
         }
     }
 }

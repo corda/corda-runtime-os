@@ -389,7 +389,7 @@ class SigningServiceRpcProcessorTests {
         val info = services.getSigningKeyRecord(publicKey)
         assertNotNull(info)
         assertNull(info.alias)
-        assertEquals(externalId, info.externalId)
+        assertEquals(externalId, UUID.fromString(info.externalId))
         // signing
         testSigningByPublicKeyLookup(publicKey, data)
     }

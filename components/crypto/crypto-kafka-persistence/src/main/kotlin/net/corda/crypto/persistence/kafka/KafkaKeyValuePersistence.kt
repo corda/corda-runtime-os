@@ -2,13 +2,13 @@ package net.corda.crypto.persistence.kafka
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
-import net.corda.crypto.impl.config.CryptoPersistenceConfig
-import net.corda.crypto.impl.persistence.KeyValueMutator
-import net.corda.crypto.impl.persistence.KeyValuePersistence
+import net.corda.crypto.component.persistence.EntityKeyInfo
+import net.corda.crypto.component.persistence.KeyValueMutator
+import net.corda.crypto.component.persistence.KeyValuePersistence
 import java.util.concurrent.TimeUnit
 
 class KafkaKeyValuePersistence<V, E>(
-    private val proxy: KafkaPersistenceProxy<E>,
+    private val processor: KafkaPersistenceProcessor<E>,
     private val tenantId: String,
     expireAfterAccessMins: Long,
     maximumSize: Long,
@@ -19,16 +19,18 @@ class KafkaKeyValuePersistence<V, E>(
         .maximumSize(maximumSize)
         .build()
 
-    override fun put(key: String, entity: E): V {
-        proxy.publish(key, entity)
+    override fun put(entity: E, vararg key: EntityKeyInfo): V {
+        processor.publish(entity, *key).forEach { it.get() }
         val cached = mutator.mutate(entity)
-        cache.put(key, cached)
+        key.forEach {
+            cache.put(it.key, cached)
+        }
         return cached!!
     }
 
     override fun get(key: String): V? {
         return cache.get(key) {
-            proxy.getValue(tenantId = tenantId, key = it)?.let { entity -> mutator.mutate(entity) }
+            processor.getValue(tenantId = tenantId, key = it)?.let { entity -> mutator.mutate(entity) }
         }
     }
 

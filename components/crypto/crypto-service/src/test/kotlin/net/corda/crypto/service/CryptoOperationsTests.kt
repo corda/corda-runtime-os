@@ -124,7 +124,7 @@ class CryptoOperationsTests {
             assertEquals(services.tenantId, generatedKeyData.tenantId)
             assertEquals(services.category, generatedKeyData.category)
             assertNull(generatedKeyData.externalId)
-            assertArrayEquals(generatedPublicKey.encoded, generatedKeyData.publicKey)
+            assertArrayEquals(generatedPublicKey.encoded, generatedKeyData.publicKey.array())
             if(alias == null) {
                 assertNull(generatedKeyData.alias)
                 assertNull(generatedKeyData.hsmAlias)
@@ -144,10 +144,10 @@ class CryptoOperationsTests {
             assertEquals(services.tenantId, freshKeyData.tenantId)
             assertEquals(CryptoConsts.CryptoCategories.FRESH_KEYS, freshKeyData.category)
             if (uuid != null)
-                assertEquals(uuid, freshKeyData.externalId)
+                assertEquals(uuid, UUID.fromString(freshKeyData.externalId))
             else
                 assertNull(freshKeyData.externalId)
-            assertArrayEquals(freshKey.encoded, freshKeyData.publicKey)
+            assertArrayEquals(freshKey.encoded, freshKeyData.publicKey.array())
             assertNull(freshKeyData.alias)
             assertNull(freshKeyData.hsmAlias)
             assertNotNull(freshKeyData.privateKeyMaterial)

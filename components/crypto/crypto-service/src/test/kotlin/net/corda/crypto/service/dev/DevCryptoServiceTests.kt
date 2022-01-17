@@ -4,10 +4,10 @@ import net.corda.crypto.CryptoConsts
 import net.corda.crypto.service.signing.CryptoServicesTestFactory
 import net.corda.crypto.service.persistence.SigningKeyCache
 import net.corda.crypto.service.persistence.SoftCryptoKeyCache
-import net.corda.crypto.component.persistence.SoftCryptoKeyRecordInfo
-import net.corda.crypto.component.persistence.SigningKeyRecord
+import net.corda.crypto.component.persistence.SoftKeysRecordInfo
 import net.corda.crypto.persistence.inmemory.InMemorySigningKeysPersistenceProvider
 import net.corda.crypto.persistence.inmemory.InMemorySoftPersistenceProvider
+import net.corda.data.crypto.persistence.SigningKeysRecord
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoServiceContext
 import net.corda.v5.cipher.suite.WrappedPrivateKey
@@ -239,7 +239,7 @@ class DevCryptoServiceTests {
         if (signingCacheShouldExists) {
             assertNotNull(signingKeyInfo)
             assertEquals(alias, signingKeyInfo.alias)
-            assertArrayEquals(schemeMetadata.encodeAsByteArray(keyPairInfo.publicKey!!), signingKeyInfo.publicKey)
+            assertArrayEquals(schemeMetadata.encodeAsByteArray(keyPairInfo.publicKey!!), signingKeyInfo.publicKey.array())
             assertEquals(services.tenantId, signingKeyInfo.tenantId)
             assertNull(signingKeyInfo.externalId)
         } else {
@@ -309,11 +309,11 @@ class DevCryptoServiceTests {
         }
     }
 
-    private fun getGeneratedKeyPair(alias: String): SoftCryptoKeyRecordInfo? {
+    private fun getGeneratedKeyPair(alias: String): SoftKeysRecordInfo? {
         return cryptoServiceCache.find(alias)
     }
 
-    private fun getSigningKeyInfo(publicKey: PublicKey): SigningKeyRecord? {
+    private fun getSigningKeyInfo(publicKey: PublicKey): SigningKeysRecord? {
         return signingKeyCache.find(publicKey)
     }
 }

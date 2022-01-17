@@ -1,5 +1,17 @@
-package net.corda.crypto.impl.persistence
+package net.corda.crypto.component.persistence
 
+/**
+ * Holds the key and description what that key means, like 'alias', 'publicKey'
+ */
+data class EntityKeyInfo(
+    val desc: String,
+    val key: String
+) {
+    companion object {
+        const val ALIAS = "alias"
+        const val PUBLIC_KEY = "publicKey"
+    }
+}
 
 /**
  * Defines a simplified caching layer on top of an *append-only* persistence.
@@ -15,7 +27,7 @@ interface KeyValuePersistence<V, E> {
      * If the underlying storage previously contained a value for the key, the behaviour is unpredictable
      * and most likely will throw an error from the underlying storage.
      */
-    fun put(key: String, entity: E): V
+    fun put(entity: E, vararg key: EntityKeyInfo): V
 
     /**
      * Returns the value associated with the key, first loading that value from the storage if necessary and mutating it

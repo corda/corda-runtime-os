@@ -1,7 +1,6 @@
 package net.corda.crypto.component.persistence
 
-import net.corda.crypto.impl.persistence.KeyValueMutator
-import net.corda.crypto.impl.persistence.KeyValuePersistence
+import net.corda.data.crypto.persistence.SoftKeysRecord
 
 /**
  * Defines a factory to get persistence implementation for soft HSM keys.
@@ -17,7 +16,7 @@ interface SoftPersistenceProvider {
      */
     fun getInstance(
         tenantId: String,
-        mutator: KeyValueMutator<SoftCryptoKeyRecordInfo, SoftCryptoKeyRecord>
-    ): KeyValuePersistence<SoftCryptoKeyRecordInfo, SoftCryptoKeyRecord>
+        mutator: KeyValueMutator<SoftKeysRecordInfo, SoftKeysRecord>
+    ): KeyValuePersistence<SoftKeysRecordInfo, SoftKeysRecord>
 }
 

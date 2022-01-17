@@ -1,10 +1,10 @@
 package net.corda.crypto.persistence.inmemory
 
-import net.corda.crypto.component.persistence.SigningKeyRecord
+import net.corda.crypto.component.persistence.EntityKeyInfo
+import net.corda.crypto.component.persistence.KeyValueMutator
+import net.corda.crypto.component.persistence.KeyValuePersistence
 import net.corda.crypto.component.persistence.SigningKeysPersistenceProvider
-import net.corda.crypto.impl.persistence.InMemoryKeyValuePersistence
-import net.corda.crypto.impl.persistence.KeyValueMutator
-import net.corda.crypto.impl.persistence.KeyValuePersistence
+import net.corda.data.crypto.persistence.SigningKeysRecord
 import org.osgi.service.component.annotations.Component
 import java.util.concurrent.ConcurrentHashMap
 
@@ -15,18 +15,39 @@ class InMemorySigningKeysPersistenceProvider : SigningKeysPersistenceProvider {
     }
 
     private val instances =
-        ConcurrentHashMap<String, InMemoryKeyValuePersistence<SigningKeyRecord, SigningKeyRecord>>()
+        ConcurrentHashMap<String, InMemoryStore>()
 
     override val name: String = NAME
 
     override fun getInstance(
         tenantId: String,
-        mutator: KeyValueMutator<SigningKeyRecord, SigningKeyRecord>
-    ): KeyValuePersistence<SigningKeyRecord, SigningKeyRecord> =
+        mutator: KeyValueMutator<SigningKeysRecord, SigningKeysRecord>
+    ): KeyValuePersistence<SigningKeysRecord, SigningKeysRecord> =
         instances.computeIfAbsent(tenantId) {
-            InMemoryKeyValuePersistence(
+            InMemoryStore(
                 mutator = mutator,
-                data = ConcurrentHashMap<String, SigningKeyRecord>()
+                data = ConcurrentHashMap<String, SigningKeysRecord>()
             )
         }
+
+    private class InMemoryStore(
+        private val data: ConcurrentHashMap<String, SigningKeysRecord>,
+        private val mutator: KeyValueMutator<SigningKeysRecord, SigningKeysRecord>
+    ) : KeyValuePersistence<SigningKeysRecord, SigningKeysRecord>, AutoCloseable {
+
+        override fun put(entity: SigningKeysRecord, vararg key: EntityKeyInfo): SigningKeysRecord {
+            val value = mutator.mutate(entity)
+            key.forEach {
+                data[it.key] = value
+            }
+            return value
+        }
+
+        override fun get(key: String): SigningKeysRecord? =
+            data[key]
+
+        override fun close() {
+            data.clear()
+        }
+    }
 }

@@ -1,7 +1,6 @@
 package net.corda.crypto.component.persistence
 
-import net.corda.crypto.impl.persistence.KeyValueMutator
-import net.corda.crypto.impl.persistence.KeyValuePersistence
+import net.corda.data.crypto.persistence.SigningKeysRecord
 
 /**
  * Defines a factory to get persistence implementation for signing keys.
@@ -17,6 +16,6 @@ interface SigningKeysPersistenceProvider {
      */
     fun getInstance(
         tenantId: String,
-        mutator: KeyValueMutator<SigningKeyRecord, SigningKeyRecord>
-    ): KeyValuePersistence<SigningKeyRecord, SigningKeyRecord>
+        mutator: KeyValueMutator<SigningKeysRecord, SigningKeysRecord>
+    ): KeyValuePersistence<SigningKeysRecord, SigningKeysRecord>
 }
