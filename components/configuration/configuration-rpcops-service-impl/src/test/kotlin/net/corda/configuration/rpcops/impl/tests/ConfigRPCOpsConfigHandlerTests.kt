@@ -8,7 +8,7 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus.ERROR
 import net.corda.lifecycle.LifecycleStatus.UP
 import net.corda.schema.configuration.ConfigKeys.Companion.BOOTSTRAP_SERVERS
-import net.corda.schema.configuration.ConfigKeys.Companion.CONFIG_RPC_TIMEOUT_MILLIS
+import net.corda.schema.configuration.ConfigKeys.Companion.RPC_ENDPOINT_TIMEOUT_MILLIS
 import net.corda.schema.configuration.ConfigKeys.Companion.RPC_CONFIG
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -39,8 +39,8 @@ class ConfigRPCOpsConfigHandlerTests {
         val timeout = 999
         val configRPCOps = mock<ConfigRPCOpsInternal>()
         val config = mock<SmartConfig>().apply {
-            whenever(hasPath(CONFIG_RPC_TIMEOUT_MILLIS)).thenReturn(true)
-            whenever(getInt(CONFIG_RPC_TIMEOUT_MILLIS)).thenReturn(timeout)
+            whenever(hasPath(RPC_ENDPOINT_TIMEOUT_MILLIS)).thenReturn(true)
+            whenever(getInt(RPC_ENDPOINT_TIMEOUT_MILLIS)).thenReturn(timeout)
         }
         val configHandler = ConfigRPCOpsConfigHandler(mock(), configRPCOps)
 

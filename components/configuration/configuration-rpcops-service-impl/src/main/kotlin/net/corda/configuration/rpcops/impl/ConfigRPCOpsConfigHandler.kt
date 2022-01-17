@@ -8,7 +8,7 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus.ERROR
 import net.corda.lifecycle.LifecycleStatus.UP
 import net.corda.schema.configuration.ConfigKeys.Companion.BOOTSTRAP_SERVERS
-import net.corda.schema.configuration.ConfigKeys.Companion.CONFIG_RPC_TIMEOUT_MILLIS
+import net.corda.schema.configuration.ConfigKeys.Companion.RPC_ENDPOINT_TIMEOUT_MILLIS
 import net.corda.schema.configuration.ConfigKeys.Companion.RPC_CONFIG
 
 /** Processes configuration changes for `ConfigRPCOpsService`. */
@@ -32,7 +32,7 @@ internal class ConfigRPCOpsConfigHandler(
     }
 
     /**
-     * If [CONFIG_RPC_TIMEOUT_MILLIS] is in [configSnapshot], updates [configRPCOps]'s request
+     * If [RPC_ENDPOINT_TIMEOUT_MILLIS] is in [configSnapshot], updates [configRPCOps]'s request
      * timeout.
      *
      * If [BOOTSTRAP_SERVERS] is in [configSnapshot], creates and starts [configRPCOps]'s RPC sender.
@@ -45,8 +45,8 @@ internal class ConfigRPCOpsConfigHandler(
             "Was notified of an update to configuration key $RPC_CONFIG, but no such configuration was found."
         )
 
-        if (config.hasPath(CONFIG_RPC_TIMEOUT_MILLIS)) {
-            val timeoutMillis = config.getInt(CONFIG_RPC_TIMEOUT_MILLIS)
+        if (config.hasPath(RPC_ENDPOINT_TIMEOUT_MILLIS)) {
+            val timeoutMillis = config.getInt(RPC_ENDPOINT_TIMEOUT_MILLIS)
             configRPCOps.setTimeout(timeoutMillis)
         }
 
