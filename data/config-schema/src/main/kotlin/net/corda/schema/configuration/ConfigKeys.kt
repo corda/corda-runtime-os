@@ -24,7 +24,7 @@ class ConfigKeys {
         const val BOOTSTRAP_SERVERS = "messaging.kafka.common.bootstrap.servers"
 
         //  RPC
-        const val CONFIG_RPC_TIMEOUT_MILLIS = "timeout.millis"
+        const val RPC_ENDPOINT_TIMEOUT_MILLIS = "rpc.endpoint.timeoutMs"
 
         // Secrets Service
         const val SECRETS_PASSPHRASE = "passphrase"
