@@ -47,15 +47,14 @@ class HttpRpcGatewayAppEventHandler(
                 coordinator.updateStatus(event.status)
 
                 if(event.status == LifecycleStatus.ERROR) {
-                    coordinator.stop()
+                    coordinator.postEvent(StopEvent(true))
                 }
             }
             is StopEvent -> {
-                consoleLogger.info("Stopping HTTP RPC Gateway")
+                consoleLogger.info("Stopping HTTP RPC Gateway application.")
                 httpRpcGateway.stop()
                 registration?.close()
                 registration = null
-                coordinator.updateStatus(LifecycleStatus.DOWN)
             }
         }
     }

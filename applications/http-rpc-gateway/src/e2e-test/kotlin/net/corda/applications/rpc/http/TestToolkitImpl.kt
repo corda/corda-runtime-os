@@ -9,6 +9,20 @@ class TestToolkitImpl(private val testCaseClass: Class<Any>, private val baseAdd
 
     private val counter = AtomicInteger()
 
+    private val uniqueNamePrefix: String = run {
+        if (testCaseClass.simpleName != "Companion") {
+            testCaseClass.simpleName
+        } else {
+            // Converts "net.corda.applications.rpc.LimitedUserAuthorizationE2eTest$Companion"
+            // Into: LimitedUserAuthorizationE2eTest
+            testCaseClass.name
+                .substringBeforeLast('$')
+                .substringAfterLast('.')
+
+        }
+        .substring(0..15) // Also need to truncate it to avoid DB errors
+    }
+
     /**
      * Good unique name will be:
      * "$testCaseClass-counter-currentTimeMillis"
@@ -16,7 +30,7 @@ class TestToolkitImpl(private val testCaseClass: Class<Any>, private val baseAdd
      * testcase run and `currentTimeMillis` will provision for re-runs of the same test without wiping the database.
      */
     override val uniqueName: String
-        get() = "${testCaseClass.simpleName}-${counter.incrementAndGet()}-${System.currentTimeMillis()}"
+        get() = "$uniqueNamePrefix-${counter.incrementAndGet()}-${System.currentTimeMillis()}"
 
     override fun <I : RpcOps> httpClientFor(rpcOpsClass: Class<I>, userName: String, password: String): HttpRpcClient<I> {
         return HttpRpcClient(

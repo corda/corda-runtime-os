@@ -1,10 +1,10 @@
 package net.corda.components.rpc
 
+import net.corda.components.rbac.RBACSecurityManagerService
 import net.corda.components.rpc.internal.HttpRpcGatewayEventHandler
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.RpcOps
-import net.corda.httprpc.security.read.RPCSecurityManagerFactory
 import net.corda.httprpc.server.factory.HttpRpcServerFactory
 import net.corda.httprpc.ssl.SslCertReadServiceFactory
 import net.corda.lifecycle.Lifecycle
@@ -25,7 +25,7 @@ class HttpRpcGateway private constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
     configurationReadService: ConfigurationReadService,
     httpRpcServerFactory: HttpRpcServerFactory,
-    rpcSecurityManagerFactory: RPCSecurityManagerFactory,
+    rbacSecurityManagerService: RBACSecurityManagerService,
     sslCertReadServiceFactory: SslCertReadServiceFactory,
     permissionServiceComponent: PermissionServiceComponent,
     dynamicRpcOps: List<PluggableRPCOps<out RpcOps>>
@@ -46,8 +46,8 @@ class HttpRpcGateway private constructor(
         configurationReadService: ConfigurationReadService,
         @Reference(service = HttpRpcServerFactory::class)
         httpRpcServerFactory: HttpRpcServerFactory,
-        @Reference(service = RPCSecurityManagerFactory::class)
-        rpcSecurityManagerFactory: RPCSecurityManagerFactory,
+        @Reference(service = RBACSecurityManagerService::class)
+        rbacSecurityManagerService: RBACSecurityManagerService,
         @Reference(service = SslCertReadServiceFactory::class)
         sslCertReadServiceFactory: SslCertReadServiceFactory,
         @Reference(service = PermissionServiceComponent::class)
@@ -56,7 +56,7 @@ class HttpRpcGateway private constructor(
         coordinatorFactory,
         configurationReadService,
         httpRpcServerFactory,
-        rpcSecurityManagerFactory,
+        rbacSecurityManagerService,
         sslCertReadServiceFactory,
         permissionServiceComponent,
         mutableListOf()
@@ -66,7 +66,7 @@ class HttpRpcGateway private constructor(
         permissionServiceComponent,
         configurationReadService,
         httpRpcServerFactory,
-        rpcSecurityManagerFactory,
+        rbacSecurityManagerService,
         sslCertReadServiceFactory,
         this.dynamicRpcOps
     )
