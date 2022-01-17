@@ -33,8 +33,6 @@ class CryptoServiceKeyCreator @Activate constructor(
     private val shutDownService: Shutdown,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
-    @Reference(service = SmartConfigFactory::class)
-    private val smartConfigFactory: SmartConfigFactory,
 ): Application {
 
     private companion object {
@@ -76,9 +74,13 @@ class CryptoServiceKeyCreator @Activate constructor(
             val keyPairs = readKeys(parameters.keysConfigFile!!) ?: return
 
             val topic = parameters.topic ?: CRYPTO_KEYS_TOPIC
-            val publisherConfig = smartConfigFactory.create(ConfigFactory.empty()
+
+            // TODO - move to common worker and pick up secrets params
+            val secretsConfig = ConfigFactory.empty()
+            val publisherConfig = SmartConfigFactory.create(secretsConfig).create(ConfigFactory.empty()
                 .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(kafkaProperties[KAFKA_BOOTSTRAP_SERVER].toString()))
                 .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("crypto-key-creator")))
+
             val publisher = publisherFactory.createPublisher(PublisherConfig("key-creator"), publisherConfig)
 
             publisher.start()

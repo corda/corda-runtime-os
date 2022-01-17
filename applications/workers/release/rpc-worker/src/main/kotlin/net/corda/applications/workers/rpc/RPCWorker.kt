@@ -7,7 +7,6 @@ import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBo
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setUpHealthMonitor
-import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.rpc.RPCProcessor
@@ -26,8 +25,6 @@ class RPCWorker @Activate constructor(
     private val processor: RPCProcessor,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
-    @Reference(service = SmartConfigFactory::class)
-    private val smartConfigFactory: SmartConfigFactory,
     @Reference(service = HealthMonitor::class)
     private val healthMonitor: HealthMonitor
 ) : Application {
@@ -46,7 +43,7 @@ class RPCWorker @Activate constructor(
         setUpHealthMonitor(healthMonitor, params.defaultParams)
 
         val rpcConfig = PathAndConfig(RPC_CONFIG_PATH, params.rpcParams)
-        val config = getBootstrapConfig(smartConfigFactory, params.defaultParams, listOf(rpcConfig))
+        val config = getBootstrapConfig(params.defaultParams, listOf(rpcConfig))
 
         processor.start(config)
     }

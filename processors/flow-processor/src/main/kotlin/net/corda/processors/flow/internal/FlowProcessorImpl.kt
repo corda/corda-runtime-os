@@ -40,10 +40,10 @@ class FlowProcessorImpl @Activate constructor(
 
     private val lifeCycleCoordinator = coordinatorFactory.createCoordinator<FlowProcessorImpl>(::eventHandler)
 
-    override fun start(config: SmartConfig) {
+    override fun start(bootConfig: SmartConfig) {
         log.info("Flow processor starting.")
         lifeCycleCoordinator.start()
-        lifeCycleCoordinator.postEvent(BootConfigEvent(config))
+        lifeCycleCoordinator.postEvent(BootConfigEvent(bootConfig))
     }
 
     override fun stop() {
