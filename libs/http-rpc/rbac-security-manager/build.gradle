@@ -13,7 +13,6 @@ dependencies {
     implementation "net.corda:corda-base"
 
     implementation project(":libs:http-rpc:http-rpc-security-read")
-    implementation project(":libs:http-rpc:http-rpc-common")
     implementation project(":libs:permissions:permission-validation")
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

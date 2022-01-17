@@ -15,7 +15,6 @@ dependencies {
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(':components:permissions:permission-cache-service')
-    implementation project(':libs:permissions:permission-password')
 
     api project(':libs:permissions:permission-validation')
 
