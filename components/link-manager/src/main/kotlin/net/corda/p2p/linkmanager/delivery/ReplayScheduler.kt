@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicReference
 class ReplayScheduler<M>(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val configReadService: ConfigurationReadService,
-    private val replayPeriodKey: String,
+    private val replaySchedulerConfigKey: String,
     private val replayMessage: (message: M) -> Unit,
     private val currentTimestamp: () -> Long = { Instant.now().toEpochMilli() },
     ) : LifecycleWithDominoTile {
@@ -39,39 +39,67 @@ class ReplayScheduler<M>(
         configurationChangeHandler = ReplaySchedulerConfigurationChangeHandler()
     )
 
-    private val replayPeriod = AtomicReference<Duration>()
+    private val replayScheulerConfig = AtomicReference<ReplaySchedulerConfig>()
+
+    data class ReplayInfo(val currentReplayPeriod: Duration, val future: ScheduledFuture<*>)
 
     @Volatile
     private lateinit var executorService: ScheduledExecutorService
-    private val replayFutures = ConcurrentHashMap<String, ScheduledFuture<*>>()
+    private val replayInfoPerId = ConcurrentHashMap<String, ReplayInfo>()
 
     companion object {
         private val logger = contextLogger()
+        const val BASE_REPLAY_PERIOD_KEY_POSTFIX = "BasePeriod"
+        const val CUT_OFF_KEY_POSTFIX = "CutOFF"
     }
 
-    inner class ReplaySchedulerConfigurationChangeHandler: ConfigurationChangeHandler<Duration>(configReadService,
+    private fun calculateCappedBackoff(lastDelay: Duration): Duration {
+        val currentConfig = replayScheulerConfig.get()
+        val delay = lastDelay.multipliedBy(2)
+        return when {
+            delay > currentConfig.cutOff -> {
+                currentConfig.cutOff
+            }
+            delay < currentConfig.baseReplayPeriod -> {
+                currentConfig.baseReplayPeriod
+            }
+            else -> {
+                delay
+            }
+        }
+    }
+
+    data class ReplaySchedulerConfig(
+        val baseReplayPeriod: Duration,
+        val cutOff: Duration
+    )
+
+    inner class ReplaySchedulerConfigurationChangeHandler: ConfigurationChangeHandler<ReplaySchedulerConfig>(configReadService,
         LinkManagerConfiguration.CONFIG_KEY,
         ::fromConfig) {
         override fun applyNewConfiguration(
-            newConfiguration: Duration,
-            oldConfiguration: Duration?,
+            newConfiguration: ReplaySchedulerConfig,
+            oldConfiguration: ReplaySchedulerConfig?,
             resources: ResourcesHolder,
         ): CompletableFuture<Unit> {
             val configUpdateResult = CompletableFuture<Unit>()
-            if (newConfiguration.isNegative) {
+            if (newConfiguration.baseReplayPeriod.isNegative || newConfiguration.cutOff.isNegative) {
                 configUpdateResult.completeExceptionally(
-                    IllegalArgumentException("The duration configuration (with key $replayPeriod) must be positive.")
+                    IllegalArgumentException("The duration configuration (with key $replaySchedulerConfigKey) must be positive.")
                 )
                 return configUpdateResult
             }
-            replayPeriod.set(newConfiguration)
+            replayScheulerConfig.set(newConfiguration)
             configUpdateResult.complete(Unit)
             return configUpdateResult
         }
     }
 
-    private fun fromConfig(config: Config): Duration {
-        return config.getDuration(replayPeriodKey)
+    private fun fromConfig(config: Config): ReplaySchedulerConfig {
+        return ReplaySchedulerConfig(
+            config.getDuration(replaySchedulerConfigKey + BASE_REPLAY_PERIOD_KEY_POSTFIX),
+            config.getDuration(replaySchedulerConfigKey + CUT_OFF_KEY_POSTFIX)
+        )
     }
 
     private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
@@ -87,19 +115,19 @@ class ReplayScheduler<M>(
             if (!isRunning) {
                 throw IllegalStateException("A message was added for replay before the ReplayScheduler was started.")
             }
-            val delay = replayPeriod.get().toMillis() + originalAttemptTimestamp - currentTimestamp()
+            val baseReplayPeriod = replayScheulerConfig.get().baseReplayPeriod
+            val delay = baseReplayPeriod.toMillis() + originalAttemptTimestamp - currentTimestamp()
             val future = executorService.schedule({ replay(message, uniqueId) }, delay, TimeUnit.MILLISECONDS)
-            replayFutures[uniqueId] = future
+            replayInfoPerId[uniqueId] = ReplayInfo(baseReplayPeriod, future)
         }
     }
 
     fun removeFromReplay(uniqueId: String) {
-        val removedFuture = replayFutures.remove(uniqueId)
-        removedFuture?.cancel(false)
+        replayInfoPerId.remove(uniqueId)?.future?.cancel(false)
     }
 
     fun removeAllMessagesFromReplay() {
-        replayFutures.keys.forEach { removeFromReplay(it) }
+        replayInfoPerId.keys.forEach { removeFromReplay(it) }
     }
 
     private fun replay(message: M, uniqueId: String) {
@@ -107,7 +135,7 @@ class ReplayScheduler<M>(
             replayMessage(message)
         } catch (exception: Exception) {
             logger.error("An exception was thrown when replaying a message. The task will be retried again in " +
-                "${replayPeriod.get().toMillis()} ms.\nException:",
+                "${replayScheulerConfig.get().baseReplayPeriod.toMillis()} ms.\nException:",
                 exception
             )
         }
@@ -115,8 +143,12 @@ class ReplayScheduler<M>(
     }
 
     private fun reschedule(message: M, uniqueId: String) {
-        replayFutures.computeIfPresent(uniqueId) { _, _ ->
-            executorService.schedule({ replay(message, uniqueId) }, replayPeriod.get().toMillis(), TimeUnit.MILLISECONDS)
+        replayInfoPerId.computeIfPresent(uniqueId) { _, oldReplayInfo ->
+            val delay = calculateCappedBackoff(oldReplayInfo.currentReplayPeriod)
+            ReplayInfo(
+                delay,
+                executorService.schedule({ replay(message, uniqueId) }, delay.toMillis(), TimeUnit.MILLISECONDS)
+            )
         }
     }
 }
