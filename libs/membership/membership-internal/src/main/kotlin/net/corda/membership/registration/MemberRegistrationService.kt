@@ -2,7 +2,7 @@ package net.corda.membership.registration
 
 import net.corda.virtualnode.HoldingIdentity
 
-enum class MembershipRequestRegistrationResult {
+enum class MembershipRequestRegistrationResultOutcome {
     /**
      * Registration request got submitted to the MGM successfully.
      */
@@ -13,6 +13,14 @@ enum class MembershipRequestRegistrationResult {
      */
     NOT_SUBMITTED
 }
+
+/**
+ * Registration result returned after calling [MemberRegistrationService.register].
+ *
+ * @property outcome Enum value representing the outcome of the registration.
+ * @property message Additional information, like reason for failed registration submission.
+ */
+data class MembershipRequestRegistrationResult(val outcome: MembershipRequestRegistrationResultOutcome, val message: String? = null)
 
 /**
  * Handles the registration process on the member side.

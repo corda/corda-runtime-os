@@ -1,13 +1,11 @@
-package net.corda.membership.staticmemberlist
+package net.corda.membership.staticnetwork
 
 import net.corda.membership.impl.GroupPolicyImpl
-import net.corda.membership.staticmemberlist.StaticMemberTemplateExtension.Companion.mgmKeyAlias
-import net.corda.membership.staticmemberlist.StaticMemberTemplateExtension.Companion.staticMembers
-import net.corda.membership.staticmemberlist.StaticMemberTemplateExtension.Companion.staticMgm
-import net.corda.membership.staticmemberlist.StaticMemberTemplateExtension.Companion.staticNetwork
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
+import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.mgmKeyAlias
+import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.staticMembers
+import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.staticMgm
+import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.staticNetwork
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import kotlin.test.assertFailsWith
 
@@ -71,39 +69,39 @@ class StaticMemberTemplateExtensionTest {
 
     @Test
     fun `static network parameters are not empty when group policy file with static network is used`() {
-        assertNotEquals(0, groupPolicyWithStaticNetwork.staticNetwork.size)
+        Assertions.assertNotEquals(0, groupPolicyWithStaticNetwork.staticNetwork.size)
         val staticMgmSize = groupPolicyWithStaticNetwork.staticMgm.size
         val staticMembersSize = groupPolicyWithStaticNetwork.staticMembers.size
-        assertNotEquals(0, staticMgmSize)
-        assertNotEquals(0, staticMembersSize)
-        assertEquals(1, staticMgmSize)
-        assertEquals(3, staticMembersSize)
+        Assertions.assertNotEquals(0, staticMgmSize)
+        Assertions.assertNotEquals(0, staticMembersSize)
+        Assertions.assertEquals(1, staticMgmSize)
+        Assertions.assertEquals(3, staticMembersSize)
     }
 
     @Test
     fun `static network parameters are empty when group policy file without static network is used`() {
-        assertEquals(0, groupPolicyWithoutStaticNetwork.staticNetwork.size)
-        assertEquals(0, groupPolicyWithoutStaticNetwork.staticMgm.size)
-        assertEquals(0, groupPolicyWithoutStaticNetwork.staticMembers.size)
+        Assertions.assertEquals(0, groupPolicyWithoutStaticNetwork.staticNetwork.size)
+        Assertions.assertEquals(0, groupPolicyWithoutStaticNetwork.staticMgm.size)
+        Assertions.assertEquals(0, groupPolicyWithoutStaticNetwork.staticMembers.size)
     }
 
     @Test
     fun `static member list parsing fails when invalid structure is used`() {
         val ex = assertFailsWith<ClassCastException> { groupPolicyWithInvalidStructure.staticMembers }
-        assertEquals("Casting failed for static members from group policy JSON.", ex.message)
+        Assertions.assertEquals("Casting failed for static members from group policy JSON.", ex.message)
     }
 
     @Test
     fun `retrieving static MGM key alias`() {
         val keyAlias = groupPolicyWithStaticNetwork.mgmKeyAlias
-        assertNotNull(keyAlias)
-        assertEquals(MGM_KEY_ALIAS, keyAlias)
+        Assertions.assertNotNull(keyAlias)
+        Assertions.assertEquals(MGM_KEY_ALIAS, keyAlias)
     }
 
     @Test
     fun `retrieving member list`() {
         val names = groupPolicyWithStaticNetwork.staticMembers.map { it.get("name") }
-        assertEquals(3, names.size)
-        assertEquals(memberNames, names)
+        Assertions.assertEquals(3, names.size)
+        Assertions.assertEquals(memberNames, names)
     }
 }

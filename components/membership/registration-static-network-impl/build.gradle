@@ -1,0 +1,28 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+description 'Registration implementation for static network'
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(":components:membership:membership-group-read-impl")
+    implementation project(":libs:configuration:configuration-core")
+    implementation project(":libs:crypto:crypto-internal")
+    implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:membership:membership-identity-impl")
+    implementation project(":libs:membership:membership-internal")
+    implementation project(":libs:messaging:messaging")
+    implementation "net.corda:corda-membership-conversion"
+    implementation "net.corda:corda-membership-identity"
+    implementation "net.corda:corda-topic-schema"
+
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation project(":libs:membership:membership-impl")
+}
