@@ -32,7 +32,7 @@ java \
 
 The `-Djdk.net.hosts.file` will overwrite the hosts file, allow the JVM to open localhost as if it was `www.alice.net`
 
-See [here](../tools/p2p-test/configuration-publisher/README.md) on how to publish the gateway configuration
+See [here](../tools/p2p-test/p2p-configuration-publisher/README.md) on how to publish the gateway configuration
 
 
 ## Docker image
