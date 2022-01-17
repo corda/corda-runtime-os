@@ -14,6 +14,7 @@
     bnd.identity;id='net.corda.configuration-read-impl',\
     bnd.identity;id='net.corda.configuration-read-service-impl',\
     bnd.identity;id='net.corda.cpi-info-read-service-impl',\
+    bnd.identity;id='net.corda.cpi-info-write-service-impl',\
     bnd.identity;id='net.corda.lifecycle-impl',\
     bnd.identity;id='${project.archivesBaseName}-tests',\
     bnd.identity;id='net.corda.inmemory-messaging-impl',\
@@ -48,6 +49,8 @@
 	net.corda.configuration-read-service-impl;version='[5.0.0,5.0.1)',\
 	net.corda.cpi-info-read-service;version='[5.0.0,5.0.1)',\
 	net.corda.cpi-info-read-service-impl;version='[5.0.0,5.0.1)',\
+	net.corda.cpi-info-write-service;version='[5.0.0,5.0.1)',\
+	net.corda.cpi-info-write-service-impl;version='[5.0.0,5.0.1)',\
 	net.corda.crypto;version='[5.0.0,5.0.1)',\
 	net.corda.group-policy-impl;version='[5.0.0,5.0.1)',\
 	net.corda.inmemory-messaging-impl;version='[5.0.0,5.0.1)',\
@@ -64,6 +67,7 @@
 	net.corda.packaging;version='[5.0.0,5.0.1)',\
 	net.corda.packaging-avro-converters;version='[5.0.0,5.0.1)',\
 	net.corda.registry;version='[5.0.0,5.0.1)',\
+	net.corda.test-utilities;version='[5.0.0,5.0.1)',\
 	net.corda.virtual-node-common;version='[5.0.0,5.0.1)',\
 	net.corda.virtual-node-info;version='[5.0.0,5.0.1)',\
 	net.corda.virtual-node-info-service-reader;version='[5.0.0,5.0.1)',\

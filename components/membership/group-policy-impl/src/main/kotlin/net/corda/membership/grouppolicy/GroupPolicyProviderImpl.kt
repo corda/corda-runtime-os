@@ -14,6 +14,8 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.membership.GroupPolicy
 import net.corda.membership.grouppolicy.factory.GroupPolicyParser
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReader
@@ -32,6 +34,10 @@ class GroupPolicyProviderImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : Lifecycle {
+
+    companion object {
+        val logger = contextLogger()
+    }
 
     private var virtualNodeInfoCallbackHandle: AutoCloseable? = null
     private var registrationHandle: AutoCloseable? = null
@@ -113,6 +119,7 @@ class GroupPolicyProviderImpl @Activate constructor(
      * this component needs to function.
      */
     private fun handleStartEvent() {
+        logger.debug { "Group policy provider starting up." }
         setStatusToUp(coordinator)
 
         registrationHandle = coordinator.followStatusChangesByName(
@@ -127,6 +134,7 @@ class GroupPolicyProviderImpl @Activate constructor(
      * Handle stopping the component. This should set the status to DOWN and also close the registration handle.
      */
     private fun handleStopEvent() {
+        logger.debug { "Group policy provider stopping." }
         setStatusToDown(coordinator)
         registrationHandle?.close()
     }
@@ -137,6 +145,7 @@ class GroupPolicyProviderImpl @Activate constructor(
      * If any of the followed services are DOWN then this service should stop.
      */
     private fun handleRegistrationChangeEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator) {
+        logger.debug { "Group policy provider handling registration change. Event status: ${event.status}" }
         when (event.status) {
             LifecycleStatus.UP -> setStatusToUp(coordinator)
             else -> setStatusToDown(coordinator)
@@ -149,6 +158,7 @@ class GroupPolicyProviderImpl @Activate constructor(
      * component status.
      */
     private fun setStatusToUp(coordinator: LifecycleCoordinator) {
+        logger.trace("Setting group policy provider status to up.")
         _groupPolicies = ConcurrentHashMap()
 
         /**
@@ -156,7 +166,11 @@ class GroupPolicyProviderImpl @Activate constructor(
          * for that holding identity will be parsed in case the virtual node change affected the group policy file.
          */
         virtualNodeInfoCallbackHandle = virtualNodeInfoReader.registerCallback { changed, snapshot ->
-            changed.forEach { parseGroupPolicy(it, virtualNodeInfo = snapshot[it]) }
+            changed.forEach {
+                if(snapshot[it] != null && isRunning) {
+                    parseGroupPolicy(it, virtualNodeInfo = snapshot[it])
+                }
+            }
         }
 
         isRunning = true
@@ -169,6 +183,7 @@ class GroupPolicyProviderImpl @Activate constructor(
      * The component is not running after it has gone down.
      */
     private fun setStatusToDown(coordinator: LifecycleCoordinator) {
+        logger.trace("Setting group policy provider status to down.")
         coordinator.updateStatus(LifecycleStatus.DOWN)
         isRunning = false
         virtualNodeInfoCallbackHandle?.close()
