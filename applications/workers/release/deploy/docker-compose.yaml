@@ -162,3 +162,8 @@ services:
       - kafka.common.bootstrap.servers=kafka:9092
       - --instanceId
       - "1"
+    healthcheck:
+      test: [ "CMD-SHELL", "curl --fail --insecure https://localhost:8888/api/v1/swagger.json || exit 1" ]
+      interval: 5s
+      timeout: 1s
+      retries: 20
