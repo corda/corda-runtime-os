@@ -154,7 +154,7 @@ To start new receivers use the command:
 ```bash
 p2p-layer-deployment simulator receiver start [-d <db-namespace>] [-r <receivers-count>] [-s <db-sink-count>] -n <namespace> 
 ```
-Where the `db-namespace` is the name of the database namespace (see above). `receivers-count` and `db-sink-count` are teh number of receivers and db sinks and `namespace` is the name of a deployed namespace.
+Where the `db-namespace` is the name of the database namespace (see above). `receivers-count` and `db-sink-count` are the number of receivers and db sinks and `namespace` is the name of a deployed namespace.
 
 #### Killing all the receivers
 To stop any running receivers run:
