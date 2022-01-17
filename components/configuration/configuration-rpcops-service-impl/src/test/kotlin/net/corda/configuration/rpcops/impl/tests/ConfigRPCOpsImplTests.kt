@@ -1,17 +1,16 @@
 package net.corda.configuration.rpcops.impl.tests
 
-import com.typesafe.config.ConfigFactory
 import net.corda.configuration.rpcops.ConfigRPCOpsServiceException
-import net.corda.configuration.rpcops.impl.v1.ConfigRPCOpsInternal
 import net.corda.configuration.rpcops.impl.v1.ConfigRPCOpsImpl
-import net.corda.libs.configuration.endpoints.v1.types.HTTPUpdateConfigRequest
-import net.corda.libs.configuration.endpoints.v1.types.HTTPUpdateConfigResponse
+import net.corda.configuration.rpcops.impl.v1.ConfigRPCOpsInternal
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.httprpc.exception.HttpApiException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.security.RpcAuthContext
+import net.corda.libs.configuration.endpoints.v1.types.HTTPUpdateConfigRequest
+import net.corda.libs.configuration.endpoints.v1.types.HTTPUpdateConfigResponse
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import org.junit.jupiter.api.Assertions.assertEquals
