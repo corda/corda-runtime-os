@@ -5,8 +5,8 @@ import java.security.PrivateKey
 import java.security.interfaces.RSAPrivateKey
 
 internal class DelegatedPrivateKey(
-    private val algorithm: String,
     private val format: String,
+    private val algorithm: String,
     val alias: DelegatedSigningService.Alias,
 ) : PrivateKey, RSAPrivateKey {
     companion object {

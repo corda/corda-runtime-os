@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway.messaging
 
+import com.r3.corda.utils.provider.JksDelegatedSigningService
 import com.typesafe.config.Config
 import net.corda.v5.base.util.base64ToByteArray
 import java.io.ByteArrayInputStream
@@ -35,7 +36,11 @@ data class SslConfiguration(
      * The key store used for TLS connections
      */
     val keyStore: KeyStore by lazy {
-        readKeyStore(rawKeyStore, keyStorePassword)
+        JksDelegatedSigningService(
+            "gateway/jks/service",
+            rawKeyStore,
+            keyStorePassword
+        ).asKeyStore()
     }
     /**
      * The trust root key store used to validate the peer certificate

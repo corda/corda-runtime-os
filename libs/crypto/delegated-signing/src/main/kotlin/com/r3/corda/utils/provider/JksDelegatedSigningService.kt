@@ -13,10 +13,7 @@ class JksDelegatedSigningService(
     name: String,
     rawData: ByteArray,
     password: String,
-) : DelegatedSigningService {
-    init {
-        DelegatedSigningService.putService(name, this)
-    }
+) : DelegatedSigningService(name) {
 
     private val originalServiceProvider by lazy {
         Security.getProviders()
@@ -48,7 +45,7 @@ class JksDelegatedSigningService(
             ?: throw SecurityException("Could not create key store service")
     }
 
-    override val aliases: Collection<DelegatedSigningService.Alias> by lazy {
+    override val aliases: Collection<Alias> by lazy {
         ByteArrayInputStream(rawData).use { data ->
             originalSpi.engineLoad(data, password.toCharArray())
         }
@@ -67,7 +64,7 @@ class JksDelegatedSigningService(
     }
 
     private val ecSignatureProviders by lazy {
-        DelegatedSigningService.Hash.values().associateWith { hash ->
+        Hash.values().associateWith { hash ->
             val provider = Security.getProviders()
                 .filter {
                     it !is DelegatedKeystoreProvider &&
@@ -104,9 +101,9 @@ class JksDelegatedSigningService(
         override val name: String,
         override val certificates: Collection<Certificate>,
         private val privateKey: PrivateKey,
-    ) : DelegatedSigningService.Alias {
+    ) : Alias {
 
-        override fun sign(hash: DelegatedSigningService.Hash, data: ByteArray): ByteArray {
+        override fun sign(hash: Hash, data: ByteArray): ByteArray {
             val provider = ecSignatureProviders[hash] ?: throw SecurityException("Could not find a signature provider for ${hash.ecName}")
             val signature = Signature.getInstance(
                 hash.ecName,
@@ -122,9 +119,9 @@ class JksDelegatedSigningService(
         override val name: String,
         override val certificates: Collection<Certificate>,
         private val privateKey: PrivateKey,
-    ) : DelegatedSigningService.Alias {
+    ) : Alias {
 
-        override fun sign(hash: DelegatedSigningService.Hash, data: ByteArray): ByteArray {
+        override fun sign(hash: Hash, data: ByteArray): ByteArray {
             val signature = Signature.getInstance(
                 RSA_SINGING_ALGORITHM,
                 rsaSignatureProvider

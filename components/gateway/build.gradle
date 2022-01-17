@@ -18,6 +18,7 @@ dependencies {
     api project(":libs:lifecycle:lifecycle")
     api project(":components:configuration:configuration-read-service")
     api project(':components:domino-logic')
+    implementation project(':libs:crypto:delegated-signing')
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "io.netty:netty-codec-http:$nettyVersion"
