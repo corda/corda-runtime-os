@@ -7,24 +7,11 @@ import java.security.Provider
 import java.security.PublicKey
 import java.security.SignatureSpi
 
-@Suppress("DEPRECATION") // JDK11: should replace with Provider(String name, String versionStr, String info) (since 9)
-class DelegatedSignatureProvider : Provider("DelegatedSignature", 0.1, "JCA/JCE Delegated Signature provider") {
-    companion object {
-        // JDK11 has sun.security.util.ECParameters, some JDK8 distributions have also switched
-        // to sun.security.util.ECParameters from update 272.
-        // Future - This dependency should be removed.
-        val ecAlgorithmParametersClass: String by lazy {
-            val ecECParametersClass = "sun.security.ec.ECParameters"
-            val utilECParametersClass = "sun.security.util.ECParameters"
-            try {
-                this::class.java.classLoader.loadClass(ecECParametersClass)
-                ecECParametersClass
-            } catch (ex: ClassNotFoundException) {
-                this::class.java.classLoader.loadClass(utilECParametersClass)
-                utilECParametersClass
-            }
-        }
-    }
+class DelegatedSignatureProvider : Provider(
+    "DelegatedSignature",
+    "0.2",
+    "JCA/JCE Delegated Signature provider"
+) {
     init {
         val supportedHashingAlgorithm = listOf("SHA512", "SHA256", "SHA1", "NONE")
         val supportedSignatureAlgorithm = listOf("ECDSA", "RSA")
@@ -34,7 +21,7 @@ class DelegatedSignatureProvider : Provider("DelegatedSignature", 0.1, "JCA/JCE 
                 this.putService(DelegatedSignatureService(this, "${hashingAlgorithm}with$signatureAlgorithm"))
             }
         }
-        this["AlgorithmParameters.EC"] = ecAlgorithmParametersClass
+        this["AlgorithmParameters.EC"] = "sun.security.util.ECParameters"
     }
 
     class DelegatedSignatureService(provider: Provider, private val sigAlgo: String) : Service(

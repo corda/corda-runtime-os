@@ -7,8 +7,11 @@ import java.security.Provider
 import java.security.Security
 import java.security.interfaces.RSAKey
 
-@Suppress("DEPRECATION") // JDK11: should replace with Provider(String name, String versionStr, String info) (since 9)
-class DelegatedKeystoreProvider : Provider(PROVIDER_NAME, 0.1, "JCA/JCE delegated keystore provider") {
+class DelegatedKeystoreProvider : Provider(
+    PROVIDER_NAME,
+    "0.1",
+    "JCA/JCE delegated keystore provider",
+) {
 
     companion object {
         private const val PROVIDER_NAME = "DelegatedKeyStore"
