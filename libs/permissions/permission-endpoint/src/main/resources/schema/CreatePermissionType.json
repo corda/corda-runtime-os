@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://corda.r3.com/CreatePermissionType.json",
+  "title": "CreatePermissionType",
+  "description": "request to create a permission",
+  "type": "object",
+  "properties": {
+    "permissionType": {
+      "description": "Defines whether this is an ALLOW or DENY type of permission.",
+      "$ref": "PermissionType.json"
+    },
+    "permissionString": {
+      "description": "Machine-parseable string representing an individual permission. It can be any arbitrary string as long as the authorization code can make use of it in the context of user permission matching.",
+      "type": "string"
+    },
+    "groupVisibility": {
+      "description": "Optional group visibility identifier of the Permission.",
+      "type": "string"
+    },
+    "virtualNode": {
+      "description": "Optional identifier of the virtual node within which the physical node permission applies to.",
+      "type": "string"
+    }
+  },
+  "required": ["permissionType", "permissionString"]
+}

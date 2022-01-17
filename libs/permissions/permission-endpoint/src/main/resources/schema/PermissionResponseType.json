@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://corda.r3.com/PermissionResponseType.json",
+  "title": "CreatePermissionType",
+  "description": "response to a request to create a permission",
+  "type": "object",
+  "properties": {
+    "id" : {
+      "description" : "Id of the permission",
+      "type" : "string"
+    },
+    "version" : {
+      "description" : "Version of the permission",
+      "type" : "integer"
+    },
+    "updateTimestamp" : {
+      "description" : "Time the permission was last updated",
+      "type" : "string",
+      "format" : "utc-millisec"
+    },
+    "groupVisibility" : {
+      "description" : "Group visibility of the permission",
+      "type" : "string"
+    },
+    "virtualNode" : {
+      "description" : "Virtual node the permission applies to",
+      "type" : "string"
+    },
+    "permissionType" : {
+      "description" : "Defines whether this is an ALLOW or DENY type of permission.",
+      "$ref" : "PermissionType.json"
+    },
+    "permissionString": {
+      "description": "Machine-parseable string representing an individual permission. It can be any arbitrary string as long as the authorization code can make use of it in the context of user permission matching.",
+      "type": "string"
+    }
+  },
+  "required": ["id", "version", "updateTimestamp", "permissionType", "permissionString"]
+}

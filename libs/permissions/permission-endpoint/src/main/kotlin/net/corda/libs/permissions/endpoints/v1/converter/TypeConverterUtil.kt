@@ -1,12 +1,12 @@
 package net.corda.libs.permissions.endpoints.v1.converter
 
-import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionAssociationResponseType
-import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionResponseType
-import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
 import net.corda.libs.permissions.endpoints.v1.role.types.RoleAssociationResponseType
 import net.corda.libs.permissions.endpoints.v1.role.types.RoleResponseType
+import net.corda.libs.permissions.endpoints.v1.schema.CreatePermissionType
+import net.corda.libs.permissions.endpoints.v1.schema.CreatePermissionType.PermissionType
+import net.corda.libs.permissions.endpoints.v1.schema.PermissionResponseType
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
 import net.corda.libs.permissions.endpoints.v1.user.types.PropertyResponseType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
@@ -122,7 +122,7 @@ fun PermissionResponseDto.convertToEndpointType(): PermissionResponseType {
     return PermissionResponseType(
         id,
         version,
-        lastUpdatedTimestamp,
+        lastUpdatedTimestamp.toEpochMilli(),
         groupVisibility,
         virtualNode,
         permissionType.toEndpointType(),
@@ -130,7 +130,7 @@ fun PermissionResponseDto.convertToEndpointType(): PermissionResponseType {
     )
 }
 
-fun PermissionType.toRequestDtoType(): InternalPermissionTypeEnum {
+fun CreatePermissionType.PermissionType.toRequestDtoType(): InternalPermissionTypeEnum {
     return when(this) {
         PermissionType.ALLOW -> InternalPermissionTypeEnum.ALLOW
         PermissionType.DENY -> InternalPermissionTypeEnum.DENY

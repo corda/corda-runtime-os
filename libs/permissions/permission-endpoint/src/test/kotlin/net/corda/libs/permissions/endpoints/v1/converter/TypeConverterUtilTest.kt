@@ -1,9 +1,9 @@
 package net.corda.libs.permissions.endpoints.v1.converter
 
-import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
-import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import java.time.Instant
 import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
+import net.corda.libs.permissions.endpoints.v1.schema.CreatePermissionType
+import net.corda.libs.permissions.endpoints.v1.schema.CreatePermissionType.PermissionType
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
 import net.corda.libs.permissions.manager.response.PermissionAssociationResponseDto
 import net.corda.libs.permissions.manager.response.PropertyResponseDto

@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://corda.r3.com/PermissionType.json",
+  "title": "PermissionType",
+  "description": "Permission type: allow or deny",
+  "enum": ["ALLOW", "DENY"]
+}

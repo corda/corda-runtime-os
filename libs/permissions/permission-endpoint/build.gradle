@@ -1,7 +1,19 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'org.jsonschema2pojo:jsonschema2pojo-gradle-plugin:1.1.1'
+    }
+}
+
 plugins {
     id 'corda.common-library'
     id 'com.r3.internal.gradle.plugins.r3Publish'
 }
+
+apply plugin: 'jsonschema2pojo'
 
 description 'Endpoint API for management of the role-based access control (RBAC) permission system.'
 
@@ -11,6 +23,8 @@ dependencies {
 
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "net.corda:corda-base"
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    implementation "com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     api project(":libs:http-rpc:http-rpc")
@@ -19,4 +33,21 @@ dependencies {
 
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}
+
+// code generation for the PRC types
+
+def generatedSchemaTypesDir = "${project.buildDir}/generated/sources/js2p/java"
+
+sourceSets.main.java.srcDirs += generatedSchemaTypesDir
+
+compileKotlin.dependsOn generateJsonSchema2Pojo
+
+jsonSchema2Pojo {
+    source = files("${sourceSets.main.output.resourcesDir}/schema")
+    targetDirectory = file(generatedSchemaTypesDir)
+    targetPackage = "net.corda.libs.permissions.endpoints.v1.schema"
+    includeConstructors = true
+    targetVersion = "11"
+    includeAdditionalProperties = false
 }
