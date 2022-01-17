@@ -193,7 +193,6 @@ internal class LifecycleProcessor(
             it.updateCoordinatorStatus(coordinator, LifecycleStatus.ERROR)
         }
         state.registrations.clear()
-        registry.removeCoordinator(coordinator.name)
         return true
     }
 

@@ -26,9 +26,13 @@ internal class ConfigProcessor(
         get() = Configuration::class.java
 
     override fun onSnapshot(currentData: Map<String, Configuration>) {
-        val config = currentData.map { Pair(it.key, it.value.toSmartConfig()) }.toMap()
-        logger.trace { "Initial config snapshot received: $config" }
-        coordinator.postEvent(NewConfigReceived(config))
+        if (currentData.isNotEmpty()) {
+            val config = currentData.map { Pair(it.key, it.value.toSmartConfig()) }.toMap()
+            logger.trace { "Initial config snapshot received: $config" }
+            coordinator.postEvent(NewConfigReceived(config))
+        } else {
+            logger.debug { "No initial data to read from configuration topic" }
+        }
     }
 
     override fun onNext(

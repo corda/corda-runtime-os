@@ -9,6 +9,7 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
@@ -27,6 +28,7 @@ internal class ConfigReadServiceEventHandler(
 
     private var bootstrapConfig: SmartConfig? = null
     private var subscription: CompactedSubscription<String, Configuration>? = null
+    private var subReg: RegistrationHandle? = null
 
     private val registrations = mutableSetOf<ConfigurationChangeRegistration>()
     private val configuration = mutableMapOf<String, SmartConfig>()
@@ -59,7 +61,9 @@ internal class ConfigReadServiceEventHandler(
             }
             is ConfigRegistrationOpen -> {
                 registrations.add(event.registration)
-                event.registration.invoke(configuration.keys, configuration)
+                if (configuration.keys.isNotEmpty()) {
+                    event.registration.invoke(configuration.keys, configuration)
+                }
             }
             is ConfigRegistrationClose -> {
                 registrations.remove(event.registration)
@@ -74,6 +78,7 @@ internal class ConfigReadServiceEventHandler(
             }
             is StopEvent -> {
                 logger.debug { "Configuration read service stopping." }
+                subReg?.close()
                 subscription?.close()
                 subscription = null
             }
@@ -99,7 +104,7 @@ internal class ConfigReadServiceEventHandler(
             ConfigProcessor(smartConfigFactory, coordinator),
             config // This isn't quite right.
         )
-        coordinator.followStatusChangesByName(setOf(sub.subscriptionName))
+        subReg = coordinator.followStatusChangesByName(setOf(sub.subscriptionName))
         subscription = sub
         sub.start()
     }
