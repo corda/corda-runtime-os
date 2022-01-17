@@ -1,7 +1,6 @@
 package net.corda.libs.configuration
 
 import com.typesafe.config.Config
-import net.corda.libs.configuration.secret.MaskedSecretsLookupService
 import net.corda.libs.configuration.secret.SecretsLookupService
 
 class SmartConfigFactoryImpl(
