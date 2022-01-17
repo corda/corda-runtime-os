@@ -7,10 +7,6 @@ import net.corda.libs.configuration.secret.SecretsLookupService
 class SmartConfigFactoryImpl(
     val secretsLookupService: SecretsLookupService
 ): SmartConfigFactory {
-    companion object{
-        private val maskedSecretsLookupService = MaskedSecretsLookupService()
-    }
-
     /**
      * Convert a regular [Config] object into a [SmartConfig] one that is able to resolve secrets
      * using the given implementation of [SecretsLookupService].

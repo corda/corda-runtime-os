@@ -23,9 +23,11 @@ class EncryptionSecretsServiceImpl(
         if(!secretConfig.hasPath(SmartConfig.SECRET_KEY))
             throw SecretsConfigurationException("secretConfig is not a valid Secret Config Section: $secretConfig")
         if(!secretConfig.hasPath("${SmartConfig.SECRET_KEY}.${EncryptionSecretsService.SECRET_KEY}"))
-            throw SecretsConfigurationException("${EncryptionSecretsService.SECRET_KEY} key is missing from $secretConfig")
+            throw SecretsConfigurationException("You are using the ${this::class.java.name} secrets service, " +
+                    "but your secret configuration does not have the expected ${EncryptionSecretsService.SECRET_KEY}. " +
+                    "Config: $secretConfig")
         val secretValue = secretConfig.getString("${SmartConfig.SECRET_KEY}.${EncryptionSecretsService.SECRET_KEY}")
-        if(secretValue !is String || secretValue.isBlank())
+        if(secretValue.isBlank())
             throw SecretsConfigurationException("The value for ${EncryptionSecretsService.SECRET_KEY} must be a non-blank string")
         return decryptor.decrypt(secretValue, salt, passphrase)
     }
