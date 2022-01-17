@@ -1,4 +1,4 @@
-package com.r3.corda.utils.provider
+package net.corda.utils.security.provider
 
 import java.security.Provider
 

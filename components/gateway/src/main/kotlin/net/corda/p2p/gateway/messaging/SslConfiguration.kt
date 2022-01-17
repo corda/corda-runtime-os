@@ -1,6 +1,6 @@
 package net.corda.p2p.gateway.messaging
 
-import com.r3.corda.utils.provider.JksDelegatedSigningService
+import net.corda.utils.security.provider.JksDelegatedSigningService
 import com.typesafe.config.Config
 import net.corda.v5.base.util.base64ToByteArray
 import java.io.ByteArrayInputStream
