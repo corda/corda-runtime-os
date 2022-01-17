@@ -1,6 +1,7 @@
 package net.corda.crypto.persistence.kafka
 
-import net.corda.crypto.impl.persistence.KeyValuePersistence
+import net.corda.crypto.component.persistence.KeyValuePersistence
+import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -16,6 +17,7 @@ import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.TopicService
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
+import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -62,7 +64,12 @@ class KafkaInfrastructure {
         if(snapshot != null) {
             snapshot()
         }
-        return KafkaSigningKeysPersistenceProvider()
+        return KafkaSigningKeysPersistenceProvider().also {
+            it.subscriptionFactory = subscriptionFactory
+            it.publisherFactory = publisherFactory
+            it.start()
+            it.handleConfigEvent(CryptoLibraryConfigImpl(emptyMap()))
+        }
     }
 
     fun createSoftPersistenceProvider(
@@ -71,7 +78,12 @@ class KafkaInfrastructure {
         if(snapshot != null) {
             snapshot()
         }
-        return KafkaSoftPersistenceProvider()
+        return KafkaSoftPersistenceProvider().also {
+            it.subscriptionFactory = subscriptionFactory
+            it.publisherFactory = publisherFactory
+            it.start()
+            it.handleConfigEvent(CryptoLibraryConfigImpl(emptyMap()))
+        }
     }
 
     inline fun <reified E : Any> getRecords(

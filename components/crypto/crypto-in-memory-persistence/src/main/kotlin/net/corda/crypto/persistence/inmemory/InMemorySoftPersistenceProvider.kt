@@ -1,6 +1,5 @@
 package net.corda.crypto.persistence.inmemory
 
-import net.corda.crypto.component.persistence.EntityKeyInfo
 import net.corda.crypto.component.persistence.KeyValueMutator
 import net.corda.crypto.component.persistence.KeyValuePersistence
 import net.corda.crypto.component.persistence.SoftKeysRecordInfo
@@ -15,7 +14,7 @@ class InMemorySoftPersistenceProvider : SoftPersistenceProvider {
         const val NAME = "dev"
     }
     private val instances =
-        ConcurrentHashMap<String, InMemoryStore>()
+        ConcurrentHashMap<String, InMemoryKeyValuePersistence<SoftKeysRecordInfo, SoftKeysRecord>>()
 
     override val name: String = NAME
 
@@ -24,30 +23,9 @@ class InMemorySoftPersistenceProvider : SoftPersistenceProvider {
         mutator: KeyValueMutator<SoftKeysRecordInfo, SoftKeysRecord>
     ): KeyValuePersistence<SoftKeysRecordInfo, SoftKeysRecord> =
         instances.computeIfAbsent(tenantId) {
-            InMemoryStore(
+            InMemoryKeyValuePersistence(
                 mutator = mutator,
                 data = ConcurrentHashMap<String, SoftKeysRecordInfo>()
             )
         }
-
-    private class InMemoryStore(
-        private val data: ConcurrentHashMap<String, SoftKeysRecordInfo>,
-        private val mutator: KeyValueMutator<SoftKeysRecordInfo, SoftKeysRecord>
-    ) : KeyValuePersistence<SoftKeysRecordInfo, SoftKeysRecord>, AutoCloseable {
-
-        override fun put(entity: SoftKeysRecord, vararg key: EntityKeyInfo): SoftKeysRecordInfo {
-            val value = mutator.mutate(entity)
-            key.forEach {
-                data[it.key] = value
-            }
-            return value
-        }
-
-        override fun get(key: String): SoftKeysRecordInfo? =
-            data[key]
-
-        override fun close() {
-            data.clear()
-        }
-    }
 }

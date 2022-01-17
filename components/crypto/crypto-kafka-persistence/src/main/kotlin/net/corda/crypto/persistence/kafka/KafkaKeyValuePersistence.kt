@@ -20,6 +20,9 @@ class KafkaKeyValuePersistence<V, E>(
         .build()
 
     override fun put(entity: E, vararg key: EntityKeyInfo): V {
+        require(key.isNotEmpty()) {
+            "There must be at least one key provided."
+        }
         processor.publish(entity, *key).forEach { it.get() }
         val cached = mutator.mutate(entity)
         key.forEach {

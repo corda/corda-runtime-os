@@ -1,6 +1,5 @@
 package net.corda.crypto.persistence.inmemory
 
-import net.corda.crypto.component.persistence.EntityKeyInfo
 import net.corda.crypto.component.persistence.KeyValueMutator
 import net.corda.crypto.component.persistence.KeyValuePersistence
 import net.corda.crypto.component.persistence.SigningKeysPersistenceProvider
@@ -15,7 +14,7 @@ class InMemorySigningKeysPersistenceProvider : SigningKeysPersistenceProvider {
     }
 
     private val instances =
-        ConcurrentHashMap<String, InMemoryStore>()
+        ConcurrentHashMap<String, InMemoryKeyValuePersistence<SigningKeysRecord, SigningKeysRecord>>()
 
     override val name: String = NAME
 
@@ -24,30 +23,9 @@ class InMemorySigningKeysPersistenceProvider : SigningKeysPersistenceProvider {
         mutator: KeyValueMutator<SigningKeysRecord, SigningKeysRecord>
     ): KeyValuePersistence<SigningKeysRecord, SigningKeysRecord> =
         instances.computeIfAbsent(tenantId) {
-            InMemoryStore(
+            InMemoryKeyValuePersistence(
                 mutator = mutator,
                 data = ConcurrentHashMap<String, SigningKeysRecord>()
             )
         }
-
-    private class InMemoryStore(
-        private val data: ConcurrentHashMap<String, SigningKeysRecord>,
-        private val mutator: KeyValueMutator<SigningKeysRecord, SigningKeysRecord>
-    ) : KeyValuePersistence<SigningKeysRecord, SigningKeysRecord>, AutoCloseable {
-
-        override fun put(entity: SigningKeysRecord, vararg key: EntityKeyInfo): SigningKeysRecord {
-            val value = mutator.mutate(entity)
-            key.forEach {
-                data[it.key] = value
-            }
-            return value
-        }
-
-        override fun get(key: String): SigningKeysRecord? =
-            data[key]
-
-        override fun close() {
-            data.clear()
-        }
-    }
 }

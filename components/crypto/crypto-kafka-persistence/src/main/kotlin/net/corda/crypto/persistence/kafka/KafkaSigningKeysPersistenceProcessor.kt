@@ -69,6 +69,9 @@ class KafkaSigningKeysPersistenceProcessor(
         entity: SigningKeysRecord,
         vararg key: EntityKeyInfo
     ): List<CompletableFuture<Unit>> {
+        require(key.isNotEmpty()) {
+            "There must be at least one key provided."
+        }
         logger.debug("Publishing a record '{}' with key='{}'", valueClass.name, key)
         val records = key.map {
             Record(Schemas.Crypto.SIGNING_KEY_PERSISTENCE_TOPIC, it.key, entity)
