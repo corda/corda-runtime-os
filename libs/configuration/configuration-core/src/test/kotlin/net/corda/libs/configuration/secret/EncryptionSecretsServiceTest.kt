@@ -124,4 +124,15 @@ class EncryptionSecretsServiceTest {
         assertThat(secretConfig1.getString("root.configSecret.encryptedSecret"))
             .isEqualTo("encrypted_secret1")
     }
+
+    @Test
+    fun `can encrypt and decrypt empty string`() {
+        // using to real Encryptor for this test
+        val service = EncryptionSecretsServiceImpl(passphrase, salt)
+
+        val secretConfig = service.createValue("")
+
+        assertThat(secretConfig.getString("configSecret.encryptedSecret")).isNotBlank
+        assertThat(service.getValue(secretConfig)).isEqualTo("")
+    }
 }

@@ -14,8 +14,6 @@ class SecretEncryptionUtil(
     override fun encrypt(plainText: String, salt: String, passphrase: String): String {
         if(salt.isBlank() || passphrase.isBlank())
             throw IllegalArgumentException("The 'salt' and 'passphrase' arguments should not be blank")
-        if(plainText.isBlank())
-            throw IllegalArgumentException("The 'plaintext' argument should not be blank")
         val bytes = getOrCreateEncryptor(passphrase, salt).encrypt(plainText.toByteArray())
         return Base64.getEncoder().encodeToString(bytes)
     }
