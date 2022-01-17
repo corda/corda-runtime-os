@@ -5,41 +5,50 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.security.Key
 import java.security.KeyStore
-import java.security.KeyStoreException
 import java.security.KeyStoreSpi
 import java.security.Security
 import java.security.cert.Certificate
-import java.security.cert.X509Certificate
+import java.util.Collections
 import java.util.Enumeration
-import java.util.Vector
 
 @Suppress("TooManyFunctions")
-class DelegatedKeystore(private val signingService: DelegatedSigningService) : KeyStoreSpi() {
+class DelegatedKeystore(
+    private val signingService: DelegatedSigningService
+) : KeyStoreSpi() {
     companion object {
         private val logger = contextLogger()
     }
 
-    private val privateKeys = signingService.aliases().map { alias ->
-        val publicKey = signingService.certificate(alias)!!.publicKey
-        alias to DelegatedPrivateKey(publicKey.algorithm, publicKey.format) { sigAlgo, data ->
-            logger.info("Signing using delegated key : $alias, algo : $sigAlgo")
-            signingService.sign(alias, sigAlgo, data)
+    private fun getAlias(name: String?): DelegatedSigningService.Alias? {
+        return signingService.aliases.firstOrNull {
+            it.name == name
         }
-    }.toMap()
+    }
 
-    override fun engineGetKey(alias: String, password: CharArray): Key? = privateKeys[alias]
+    private fun getCertificates(name: String?): Collection<Certificate>? {
+        return getAlias(name)?.certificates
+    }
 
-    override fun engineGetCertificate(alias: String): Certificate? = signingService.certificate(alias)
+    override fun engineGetKey(alias: String, password: CharArray): Key? {
+        val aliasService = getAlias(alias) ?: return null
+        return aliasService.certificates.firstOrNull()?.publicKey?.let {
+            DelegatedPrivateKey(it.format, it.algorithm, aliasService)
+        }
+    }
 
-    override fun engineGetCertificateChain(alias: String): Array<X509Certificate>? = signingService.certificates(alias)?.toTypedArray()
+    override fun engineGetCertificate(alias: String): Certificate? = getAlias(alias)?.certificates?.firstOrNull()
 
-    override fun engineAliases(): Enumeration<String>? = Vector(signingService.aliases()).elements()
+    override fun engineGetCertificateChain(alias: String): Array<Certificate>? = getAlias(alias)?.certificates?.toTypedArray()
 
-    override fun engineContainsAlias(var1: String): Boolean = signingService.aliases().contains(var1)
+    override fun engineAliases(): Enumeration<String>? = signingService.aliases.map { it.name }.let {
+        Collections.enumeration(it)
+    }
 
-    override fun engineSize(): Int = signingService.aliases().size
+    override fun engineContainsAlias(alias: String): Boolean = signingService.aliases.any { it.name == alias }
 
-    override fun engineIsKeyEntry(alias: String): Boolean = signingService.aliases().contains(alias)
+    override fun engineSize(): Int = signingService.aliases.size
+
+    override fun engineIsKeyEntry(alias: String): Boolean = engineContainsAlias(alias)
 
     override fun engineLoad(param: KeyStore.LoadStoreParameter?) {
         // Insert Delegated signature provider if its not registered with java security.
@@ -58,7 +67,6 @@ class DelegatedKeystore(private val signingService: DelegatedSigningService) : K
         throw UnsupportedOperationException()
     }
 
-    @Throws(KeyStoreException::class)
     override fun engineSetKeyEntry(var1: String, var2: ByteArray, var3: Array<Certificate>) {
         throw UnsupportedOperationException()
     }

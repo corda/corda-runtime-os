@@ -1,16 +1,34 @@
 package com.r3.corda.utils.provider
 
-import java.security.cert.X509Certificate
+import java.security.cert.Certificate
+import java.security.spec.MGF1ParameterSpec
+import java.security.spec.PSSParameterSpec
 
 interface DelegatedSigningService {
 
-    fun sign(alias: String, signatureAlgorithm: String, data: ByteArray): ByteArray?
+    val aliases: Collection<Alias>
+    enum class Hash(val hashName: String, private val saltLength: Int) {
+        SHA256("SHA-256", 32),
+        SHA384("SHA-384", 48),
+        SHA512("SHA-512", 64);
 
-    fun certificates(): Map<String, List<X509Certificate>>
+        val rsaParameter by lazy {
+            PSSParameterSpec(
+                hashName,
+                "MGF1",
+                MGF1ParameterSpec(hashName),
+                saltLength,
+                1
+            )
+        }
 
-    fun aliases(): Set<String> = certificates().keys
+        val ecName = "${name}withECDSA"
+    }
 
-    fun certificates(alias: String): List<X509Certificate>? = certificates()[alias]
+    interface Alias {
+        val name: String
+        val certificates: Collection<Certificate>
 
-    fun certificate(alias: String): X509Certificate? = certificates(alias)?.first()
+        fun sign(hash: Hash, data: ByteArray): ByteArray
+    }
 }

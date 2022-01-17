@@ -5,7 +5,7 @@ import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.SignatureSpi
 
-class DelegatedSignature(private val sigAlgo: String) : SignatureSpi() {
+class DelegatedSignature(private val hash: DelegatedSigningService.Hash) : SignatureSpi() {
     private val data = ByteArrayOutputStream()
     private var signingKey: DelegatedPrivateKey? = null
 
@@ -25,7 +25,7 @@ class DelegatedSignature(private val sigAlgo: String) : SignatureSpi() {
 
     override fun engineSign(): ByteArray? {
         return try {
-            signingKey?.sign(sigAlgo, data.toByteArray())
+            signingKey?.alias?.sign(hash, data.toByteArray())
         } finally {
             data.reset()
         }
