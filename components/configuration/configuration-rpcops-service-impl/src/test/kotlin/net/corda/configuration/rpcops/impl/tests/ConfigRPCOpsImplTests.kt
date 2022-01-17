@@ -1,5 +1,6 @@
 package net.corda.configuration.rpcops.impl.tests
 
+import com.typesafe.config.ConfigFactory
 import net.corda.configuration.rpcops.ConfigRPCOpsServiceException
 import net.corda.configuration.rpcops.impl.v1.ConfigRPCOpsInternal
 import net.corda.configuration.rpcops.impl.v1.ConfigRPCOpsImpl
@@ -100,13 +101,15 @@ class ConfigRPCOpsImplTests {
     @Test
     fun `updateConfig throws if config is not valid JSON or HOCON`() {
         val invalidConfig = "a=b\nc"
+        val expectedMessage = "Configuration \"$invalidConfig\" could not be parsed. Valid JSON or HOCON expected. " +
+                "Cause: String: 2: Key 'c' may not be followed by token: end of file"
 
         val (_, configRPCOps) = getConfigRPCOps(mock())
         val e = assertThrows<HttpApiException> {
             configRPCOps.updateConfig(req.copy(config = invalidConfig))
         }
 
-        assertEquals("Configuration $invalidConfig could not be parsed. Valid JSON or HOCON expected.", e.message)
+        assertEquals(expectedMessage, e.message)
         assertEquals(400, e.statusCode)
     }
 
