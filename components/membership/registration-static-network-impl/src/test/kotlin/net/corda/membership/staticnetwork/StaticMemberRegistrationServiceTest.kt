@@ -206,9 +206,9 @@ class StaticMemberRegistrationServiceTest {
             assertTrue { it.key.startsWith(alice.id) }
             val memberPublished = it.value as MemberInfo
             assertEquals(DUMMY_GROUP_ID, memberPublished.groupId)
-            assertEquals(DEFAULT_SOFTWARE_VERSION, memberPublished.softwareVersion)
-            assertEquals(Integer.valueOf(DEFAULT_PLATFORM_VERSION), memberPublished.platformVersion)
-            assertEquals(Integer.valueOf(DEFAULT_SERIAL).toLong(), memberPublished.serial)
+            assertNotNull(memberPublished.softwareVersion)
+            assertNotNull(memberPublished.platformVersion)
+            assertNotNull(memberPublished.serial)
             assertNotNull(memberPublished.modifiedTime)
 
             when(memberPublished.name) {
