@@ -1,10 +1,23 @@
 package com.r3.corda.utils.provider
 
+import java.security.Security
 import java.security.cert.Certificate
 import java.security.spec.MGF1ParameterSpec
 import java.security.spec.PSSParameterSpec
 
 interface DelegatedSigningService {
+    companion object {
+        @Synchronized
+        fun putService(name: String, signingService: DelegatedSigningService) {
+            val provider = Security.getProvider(DelegatedKeystoreProvider.PROVIDER_NAME)
+            val delegatedKeystoreProvider = if (provider != null) {
+                provider as DelegatedKeystoreProvider
+            } else {
+                DelegatedKeystoreProvider().apply { Security.addProvider(this) }
+            }
+            delegatedKeystoreProvider.putService(name, signingService)
+        }
+    }
 
     val aliases: Collection<Alias>
     enum class Hash(val hashName: String, private val saltLength: Int) {

@@ -2,7 +2,7 @@ package com.r3.corda.utils.provider
 
 import java.security.Provider
 
-class DelegatedSignatureProvider : Provider(
+internal class DelegatedSignatureProvider : Provider(
     "DelegatedSignature",
     "0.2",
     "JCA/JCE Delegated Signature provider"

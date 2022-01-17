@@ -4,7 +4,7 @@ import java.math.BigInteger
 import java.security.PrivateKey
 import java.security.interfaces.RSAPrivateKey
 
-open class DelegatedPrivateKey(
+internal class DelegatedPrivateKey(
     private val algorithm: String,
     private val format: String,
     val alias: DelegatedSigningService.Alias,

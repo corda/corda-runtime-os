@@ -11,7 +11,7 @@ import java.util.Collections
 import java.util.Enumeration
 
 @Suppress("TooManyFunctions")
-class DelegatedKeystore(
+internal class DelegatedKeystore(
     private val signingService: DelegatedSigningService
 ) : KeyStoreSpi() {
     private fun getAlias(name: String?): DelegatedSigningService.Alias? {
