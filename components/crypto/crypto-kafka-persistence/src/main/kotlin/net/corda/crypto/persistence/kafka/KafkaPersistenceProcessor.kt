@@ -5,5 +5,5 @@ import java.util.concurrent.CompletableFuture
 
 interface KafkaPersistenceProcessor<E> : AutoCloseable {
     fun publish(entity: E, vararg key: EntityKeyInfo) : List<CompletableFuture<Unit>>
-    fun getValue(tenantId: String, key: String): E?
+    fun getValue(key: String): E?
 }

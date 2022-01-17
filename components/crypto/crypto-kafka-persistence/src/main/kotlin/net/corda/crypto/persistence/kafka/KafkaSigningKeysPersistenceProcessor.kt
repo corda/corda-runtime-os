@@ -79,23 +79,9 @@ class KafkaSigningKeysPersistenceProcessor(
         return pub.publish(records)
     }
 
-    override fun getValue(tenantId: String, key: String): SigningKeysRecord? {
-        logger.debug("Requesting a record '{}' with key='{}' for member='{}'", valueClass.name, key, tenantId)
-        val value = keyMap[key]
-        return if (value == null || value.tenantId != tenantId) {
-            if (value != null) {
-                logger.warn(
-                    "The requested record '{}' with key='{}' for member='{}' is actually for '{}' member",
-                    valueClass.name,
-                    key,
-                    tenantId,
-                    value.tenantId
-                )
-            }
-            null
-        } else {
-            value
-        }
+    override fun getValue(key: String): SigningKeysRecord? {
+        logger.debug("Requesting a record '{}' with key='{}'", valueClass.name, key)
+        return keyMap[key]
     }
 
     override fun close() {

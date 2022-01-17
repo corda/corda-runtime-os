@@ -92,7 +92,6 @@ class KafkaSigningKeysPersistenceProvider : SigningKeysPersistenceProvider, Life
             val cfg = config.softCryptoService
             return KafkaKeyValuePersistence(
                 processor = processor,
-                tenantId = tenantId,
                 expireAfterAccessMins = cfg.expireAfterAccessMins,
                 maximumSize = cfg.maximumSize,
                 mutator = mutator

@@ -93,7 +93,6 @@ class KafkaSoftPersistenceProvider : SoftPersistenceProvider, Lifecycle, CryptoL
             val cfg = config.softCryptoService
             return KafkaKeyValuePersistence(
                 processor = processor,
-                tenantId = tenantId,
                 expireAfterAccessMins = cfg.expireAfterAccessMins,
                 maximumSize = cfg.maximumSize,
                 mutator = mutator

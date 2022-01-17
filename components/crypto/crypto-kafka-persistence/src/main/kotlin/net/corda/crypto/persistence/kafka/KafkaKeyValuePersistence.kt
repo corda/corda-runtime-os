@@ -9,7 +9,6 @@ import java.util.concurrent.TimeUnit
 
 class KafkaKeyValuePersistence<V, E>(
     private val processor: KafkaPersistenceProcessor<E>,
-    private val tenantId: String,
     expireAfterAccessMins: Long,
     maximumSize: Long,
     private val mutator: KeyValueMutator<V, E>
@@ -33,7 +32,7 @@ class KafkaKeyValuePersistence<V, E>(
 
     override fun get(key: String): V? {
         return cache.get(key) {
-            processor.getValue(tenantId = tenantId, key = it)?.let { entity -> mutator.mutate(entity) }
+            processor.getValue(it)?.let { entity -> mutator.mutate(entity) }
         }
     }
 
