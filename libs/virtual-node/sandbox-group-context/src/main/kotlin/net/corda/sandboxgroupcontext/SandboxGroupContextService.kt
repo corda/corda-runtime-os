@@ -64,7 +64,7 @@ interface SandboxGroupContextService {
     ): SandboxGroupContext
 
     /**
-     * Does the service 'contains' the cpks in its cache?
+     * Does the service 'contain' the cpks in its cache?
      *
      *     if (service.hasCpks(virtualNodeContext.cpkIdentifiers)) {
      *        service.getOrCreate(virtualNodeContext) { .... }
