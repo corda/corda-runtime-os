@@ -58,6 +58,7 @@ dependencies {
     runtimeOnly project(":libs:permissions:permission-manager-impl")
     runtimeOnly project(":libs:permissions:permission-cache-impl")
 
+    runtimeOnly project(":components:rbac-security-manager-service")
     runtimeOnly project(":components:permissions:permission-cache-service")
     runtimeOnly project(":components:permissions:permission-validation-service")
     runtimeOnly project(":components:permissions:permission-management-service")
@@ -73,6 +74,7 @@ dependencies {
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
     runtimeOnly project(":libs:http-rpc:http-rpc-server-impl")
     runtimeOnly project(':libs:http-rpc:http-rpc-stubs-impl')
+    runtimeOnly project(':libs:http-rpc:rbac-security-manager')
 
     runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
