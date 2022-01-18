@@ -42,7 +42,7 @@ class GroupPolicyProviderImpl @Activate constructor(
     private var virtualNodeInfoCallbackHandle: AutoCloseable? = null
     private var registrationHandle: AutoCloseable? = null
 
-    private val groupPolicyFactory = GroupPolicyParser()
+    private val groupPolicyParser = GroupPolicyParser()
 
     private val groupPolicies: MutableMap<HoldingIdentity, GroupPolicy>
         get() = _groupPolicies ?: throw CordaRuntimeException(
@@ -98,7 +98,7 @@ class GroupPolicyProviderImpl @Activate constructor(
         val metadata = vNodeInfo
             ?.cpiIdentifier
             ?.let { cpiInfoReader.get(it) }
-        return groupPolicyFactory
+        return groupPolicyParser
             .parse(metadata?.groupPolicy)
             .apply { storeGroupPolicy(holdingIdentity, this) }
     }
@@ -166,8 +166,8 @@ class GroupPolicyProviderImpl @Activate constructor(
          * for that holding identity will be parsed in case the virtual node change affected the group policy file.
          */
         virtualNodeInfoCallbackHandle = virtualNodeInfoReader.registerCallback { changed, snapshot ->
-            changed.forEach {
-                if(snapshot[it] != null && isRunning) {
+            if(isRunning) {
+                changed.filter { snapshot[it] != null }.forEach {
                     parseGroupPolicy(it, virtualNodeInfo = snapshot[it])
                 }
             }

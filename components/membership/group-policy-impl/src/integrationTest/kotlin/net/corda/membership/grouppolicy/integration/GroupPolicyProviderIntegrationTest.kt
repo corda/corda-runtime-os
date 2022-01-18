@@ -70,7 +70,7 @@ class GroupPolicyProviderIntegrationTest {
     private val aliceHoldingIdentity = HoldingIdentity(aliceX500Name, groupId)
     private val invalidHoldingIdentity = HoldingIdentity("", groupId)
 
-    val startableServices
+    private val startableServices
         get() = listOf(
             configurationReadService,
             groupPolicyProvider,
@@ -81,10 +81,7 @@ class GroupPolicyProviderIntegrationTest {
     @BeforeEach
     fun setUp() {
         // start all required services
-        startableServices.forEach {
-            it.start()
-            it.isStarted()
-        }
+        startableServices.forEach { it.startAndWait() }
 
         // Set basic bootstrap config
         configurationReadService.bootstrapConfig(
@@ -187,29 +184,29 @@ class GroupPolicyProviderIntegrationTest {
         assertSecondGroupPolicy(groupPolicy5, groupPolicy4)
     }
 
-    fun Lifecycle.stopAndWait() {
+    private fun Lifecycle.stopAndWait() {
         stop()
         isStopped()
     }
 
-    fun Lifecycle.isStopped() = eventually { assertFalse(isRunning) }
-
-    fun Lifecycle.startAndWait() {
+    private fun Lifecycle.startAndWait() {
         start()
         isStarted()
     }
 
-    fun Lifecycle.isStarted() = eventually { assertTrue(isRunning) }
+    private fun Lifecycle.isStopped() = eventually { assertFalse(isRunning) }
 
-    fun getGroupPolicyFails(
+    private fun Lifecycle.isStarted() = eventually { assertTrue(isRunning) }
+
+    private fun getGroupPolicyFails(
         holdingIdentity: HoldingIdentity = aliceHoldingIdentity
     ) = assertThrows<CordaRuntimeException> { getGroupPolicy(holdingIdentity) }
 
-    fun getGroupPolicy(
+    private fun getGroupPolicy(
         holdingIdentity: HoldingIdentity = aliceHoldingIdentity
     ) = groupPolicyProvider.getGroupPolicy(holdingIdentity)
 
-    fun assertGroupPolicy(new: GroupPolicy, old: GroupPolicy? = null) {
+    private fun assertGroupPolicy(new: GroupPolicy, old: GroupPolicy? = null) {
         old?.let {
             assertNotEquals(new, it)
         }
@@ -217,13 +214,13 @@ class GroupPolicyProviderIntegrationTest {
         assertEquals(6, new.keys.size)
     }
 
-    fun assertSecondGroupPolicy(new: GroupPolicy, old: GroupPolicy) {
+    private fun assertSecondGroupPolicy(new: GroupPolicy, old: GroupPolicy) {
         assertNotEquals(new, old)
         assertEquals("DEF456", new.groupId)
         assertEquals(2, new.size)
     }
 
-    fun getVirtualNodeInfo() = virtualNodeInfoReader.get(aliceHoldingIdentity)
+    private fun getVirtualNodeInfo() = virtualNodeInfoReader.get(aliceHoldingIdentity)
 
     private val bootConf = """
         instanceId=1
@@ -246,8 +243,8 @@ class GroupPolicyProviderIntegrationTest {
             }
       """
 
-    val sampleGroupPolicy1 get() = getSampleGroupPolicy("/SampleGroupPolicy.json")
-    val sampleGroupPolicy2 get() = getSampleGroupPolicy("/SampleGroupPolicy2.json")
+    private val sampleGroupPolicy1 get() = getSampleGroupPolicy("/SampleGroupPolicy.json")
+    private val sampleGroupPolicy2 get() = getSampleGroupPolicy("/SampleGroupPolicy2.json")
 
     private fun getSampleGroupPolicy(fileName: String): String {
         val url = this::class.java.getResource(fileName)
@@ -260,7 +257,7 @@ class GroupPolicyProviderIntegrationTest {
         version: String = "1.0"
     ) = CPI.Identifier.newInstance(name, version)
 
-    fun getCpiMetadata(
+    private fun getCpiMetadata(
         cpiIdentifier: CPI.Identifier = getCpiIdentifier(),
         groupPolicy: String = sampleGroupPolicy1
     ) = CPI.Metadata.newInstance(
@@ -270,7 +267,7 @@ class GroupPolicyProviderIntegrationTest {
         groupPolicy
     )
 
-    fun Publisher.publishVirtualNodeInfo(virtualNodeInfo: VirtualNodeInfo) {
+    private fun Publisher.publishVirtualNodeInfo(virtualNodeInfo: VirtualNodeInfo) {
         publish(
             listOf(
                 Record(
