@@ -1,5 +1,6 @@
 package net.corda.virtualnode
 
+import com.typesafe.config.ConfigFactory
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.configuration.publish.ConfigPublishService
 import net.corda.cpiinfo.write.CpiInfoWriteService
@@ -51,8 +52,6 @@ class VirtualNodeCli @Activate constructor(
     private val cpiInfoWriteService: CpiInfoWriteService,
 //    @Reference(service = VirtualNodeInfoWriterComponent::class)
 //    private val virtualNodeInfoWriterComponent: VirtualNodeInfoWriterComponent,
-    @Reference(service = SmartConfigFactory::class)
-    private val smartConfigFactory: SmartConfigFactory,
     @Reference(service = ConfigPublishService::class)
     private val configPublishService: ConfigPublishService,
     @Reference(service = KafkaTopicAdmin::class)
@@ -90,7 +89,9 @@ class VirtualNodeCli @Activate constructor(
         topicTemplate = parameters.topicTemplate
 
         // Get a default, hard-coded config.  tl;dr returns bootstrap.servers = localhost:9092
-        bootstrapConfig = smartConfigFactory.create(getBootstrapConfig(instanceId))
+        // TODO - pick up secrets params from startup
+        val secretsConfig = ConfigFactory.empty()
+        bootstrapConfig = SmartConfigFactory.create(secretsConfig).create(getBootstrapConfig(instanceId))
 
         // Start the event handler loop.
         coordinator.start()

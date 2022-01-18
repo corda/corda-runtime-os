@@ -23,7 +23,6 @@ import picocli.CommandLine.Option
 )
 internal class CommonArguments(
     private val configPublisherFactory: ConfigPublisherFactory,
-    internal val smartConfigFactory: SmartConfigFactory,
 ) {
     @Option(
         names = ["-h", "--help"],
@@ -56,9 +55,14 @@ internal class CommonArguments(
             )
     }
 
-    fun createPublisher(): ConfigPublisher =
-        configPublisherFactory.createPublisher(
+    fun createPublisher(): ConfigPublisher {
+        // TODO - move to common worker and pick up secrets params
+        val secretsConfig = ConfigFactory.empty()
+        val bootConfig = SmartConfigFactory.create(secretsConfig).create(kafkaNodeConfiguration)
+
+        return configPublisherFactory.createPublisher(
             CONFIG_TOPIC,
-            smartConfigFactory.create(kafkaNodeConfiguration)
+            bootConfig
         )
+    }
 }

@@ -22,14 +22,14 @@ import org.slf4j.Logger
 @Suppress("LongParameterList", "Unused")
 @Component(service = [FlowProcessor::class])
 class FlowProcessorImpl @Activate constructor(
+    @Reference(service = LifecycleCoordinatorFactory::class)
+    private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = FlowService::class)
     private val flowService: FlowService,
     @Reference(service = FlowMapperService::class)
     private val flowMapperService: FlowMapperService,
-    @Reference(service = LifecycleCoordinatorFactory::class)
-    private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = SandboxService::class)
     private val sandboxService: SandboxService
 ) : FlowProcessor {
@@ -38,22 +38,22 @@ class FlowProcessorImpl @Activate constructor(
         val log: Logger = contextLogger()
     }
 
-    private val lifeCycleCoordinator = coordinatorFactory.createCoordinator<FlowProcessorImpl>(::eventHandler)
+    private val lifecycleCoordinator = coordinatorFactory.createCoordinator<FlowProcessorImpl>(::eventHandler)
 
-    override fun start(config: SmartConfig) {
+    override fun start(bootConfig: SmartConfig) {
         log.info("Flow processor starting.")
-        lifeCycleCoordinator.start()
-        lifeCycleCoordinator.postEvent(BootConfigEvent(config))
+        lifecycleCoordinator.start()
+        lifecycleCoordinator.postEvent(BootConfigEvent(bootConfig))
     }
 
     override fun stop() {
-        log.info("Stopping application")
-        lifeCycleCoordinator.stop()
+        log.info("Flow processor stopping.")
+        lifecycleCoordinator.stop()
     }
 
     @Suppress("UNUSED_PARAMETER")
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        log.debug { "Flow Processor received: $event" }
+        log.debug { "Flow processor received event $event." }
         when (event) {
             is StartEvent -> {
                 configurationReadService.start()
@@ -74,7 +74,7 @@ class FlowProcessorImpl @Activate constructor(
                 sandboxService.stop()
             }
             else -> {
-                log.error("$event unexpected!")
+                log.error("Unexpected event $event!")
             }
         }
     }

@@ -6,8 +6,7 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactoryImpl
-import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.publish.CordaConfigurationKey
 import net.corda.libs.configuration.publish.CordaConfigurationVersion
 import net.corda.libs.configuration.publish.impl.ConfigPublisherImpl
@@ -72,7 +71,7 @@ class P2PLayerEndToEndTest {
         private val logger = contextLogger()
         private const val GROUP_ID = "group-1"
     }
-    private val bootstrapConfig = SmartConfigFactoryImpl().create(ConfigFactory.empty())
+    private val bootstrapConfig = SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
 
     private fun testMessagesBetweenTwoHots(hostA: Host, hostB: Host) {
         hostA.startWith(hostB)
@@ -256,7 +255,7 @@ class P2PLayerEndToEndTest {
         val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
         val subscriptionFactory = InMemSubscriptionFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
         val publisherFactory = CordaPublisherFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
-        val configReadService = ConfigurationReadServiceImpl(lifecycleCoordinatorFactory, ConfigReaderFactoryImpl(subscriptionFactory, SmartConfigFactoryImpl()))
+        val configReadService = ConfigurationReadServiceImpl(lifecycleCoordinatorFactory, ConfigReaderFactoryImpl(subscriptionFactory))
         val configPublisher = publisherFactory.createPublisher(PublisherConfig("config-writer")).let {
             ConfigPublisherImpl(CONFIG_TOPIC, it)
         }
@@ -284,7 +283,7 @@ class P2PLayerEndToEndTest {
                 publisherFactory,
                 lifecycleCoordinatorFactory,
                 configReadService,
-                SmartConfigImpl.empty(),
+                bootstrapConfig,
                 1,
                 StubNetworkMap(
                     lifecycleCoordinatorFactory,
@@ -310,7 +309,7 @@ class P2PLayerEndToEndTest {
                 subscriptionFactory,
                 publisherFactory,
                 lifecycleCoordinatorFactory,
-                SmartConfigImpl.empty(),
+                bootstrapConfig,
                 1,
             )
 

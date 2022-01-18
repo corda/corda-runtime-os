@@ -1,27 +1,19 @@
 package net.corda.libs.configuration
 
 import com.typesafe.config.Config
-import org.osgi.service.component.annotations.Component
+import net.corda.libs.configuration.secret.SecretsLookupService
 
-/**
- * Temporary implementation of [SmartConfigFactory]
- * to be used until we have a working implementation of [SecretsLookupService]
- * Until then, no secrets will be resolved
- *
- * @constructor Create empty Smart config factory impl
- */
-@Component(service = [SmartConfigFactory::class])
-class SmartConfigFactoryImpl : SmartConfigFactory {
-    companion object{
-        private val maskedSecretsLookupService = MaskedSecretsLookupService()
-    }
-
+class SmartConfigFactoryImpl(
+    val secretsLookupService: SecretsLookupService
+): SmartConfigFactory {
+    /**
+     * Convert a regular [Config] object into a [SmartConfig] one that is able to resolve secrets
+     * using the given implementation of [SecretsLookupService].
+     *
+     * @param config
+     * @return
+     */
     override fun create(config: Config): SmartConfig {
-        // TODO - add a real implementation of [SecretsLookupService]
-        return SmartConfigImpl(config)
-    }
-
-    override fun createSafe(config: Config): SmartConfig {
-        return SmartConfigImpl(config, maskedSecretsLookupService)
+        return SmartConfigImpl(config, this, secretsLookupService)
     }
 }

@@ -38,6 +38,9 @@ class DefaultWorkerParams {
     @Option(names = ["-m", "--messagingParams"], description = ["Messaging parameters for the worker."])
     var messagingParams = emptyMap<String, String>()
 
+    @Option(names = ["-s", "--secretsParams"], description = ["Secrets parameters for the worker."])
+    var secretsParams = emptyMap<String, String>()
+
     @Option(names = ["-c", "--additionalParams"], description = ["Additional parameters for the worker."])
     var additionalParams = emptyMap<String, String>()
 }

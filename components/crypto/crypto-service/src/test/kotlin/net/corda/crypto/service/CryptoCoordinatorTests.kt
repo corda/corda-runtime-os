@@ -3,10 +3,10 @@ package net.corda.crypto.service
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.impl.DefaultCryptoServiceProvider
 import net.corda.crypto.component.lifecycle.AbstractCryptoCoordinator
+import net.corda.crypto.impl.DefaultCryptoServiceProvider
 import net.corda.crypto.service.rpc.CryptoRpcSub
-import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -40,6 +40,7 @@ class CryptoCoordinatorTests {
     private lateinit var sub2: CryptoRpcSubStub
     private lateinit var registrationHandle: AutoCloseable
     private var coordinatorIsRunning = false
+    private val configFactory = SmartConfigFactory.create(ConfigFactory.empty())
 
     @BeforeEach
     fun setup() {
@@ -94,7 +95,7 @@ class CryptoCoordinatorTests {
                     AbstractCryptoCoordinator.CRYPTO_CONFIG
                 ),
                 mapOf(
-                    AbstractCryptoCoordinator.CRYPTO_CONFIG to SmartConfigImpl(ConfigFactory.empty())
+                    AbstractCryptoCoordinator.CRYPTO_CONFIG to configFactory.create(ConfigFactory.empty())
                 )
             )
         }
