@@ -1,7 +1,7 @@
-package net.corda.applications.rpc
+package net.corda.applications.workers.rpc
 
 import java.time.Instant
-import net.corda.applications.rpc.http.TestToolkit
+import net.corda.applications.workers.rpc.http.TestToolkit
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionResponseType

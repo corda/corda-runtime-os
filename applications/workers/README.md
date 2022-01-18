@@ -19,3 +19,5 @@ You may need to prune old containers if the configuration has changed:
 ```shell
 docker container prune
 ```
+
+For more details, please see [here](release/deploy/README.md).

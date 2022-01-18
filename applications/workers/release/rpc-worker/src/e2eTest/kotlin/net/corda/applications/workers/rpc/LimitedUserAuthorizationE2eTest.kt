@@ -1,8 +1,8 @@
-package net.corda.applications.rpc
+package net.corda.applications.workers.rpc
 
 import java.time.Instant
 import java.time.temporal.ChronoUnit.DAYS
-import net.corda.applications.rpc.http.TestToolkitProperty
+import net.corda.applications.workers.rpc.http.TestToolkitProperty
 import net.corda.httprpc.client.exceptions.PermissionException
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import org.assertj.core.api.Assertions
