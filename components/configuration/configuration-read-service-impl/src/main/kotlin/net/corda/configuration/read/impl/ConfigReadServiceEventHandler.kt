@@ -3,7 +3,6 @@ package net.corda.configuration.read.impl
 import net.corda.configuration.read.ConfigurationReadException
 import net.corda.data.config.Configuration
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
@@ -22,8 +21,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 
 internal class ConfigReadServiceEventHandler(
-    private val subscriptionFactory: SubscriptionFactory,
-    private val smartConfigFactory: SmartConfigFactory
+    private val subscriptionFactory: SubscriptionFactory
 ) : LifecycleEventHandler {
 
     private var bootstrapConfig: SmartConfig? = null
@@ -99,10 +97,11 @@ internal class ConfigReadServiceEventHandler(
         if (subscription != null) {
             throw ConfigurationReadException("Subscription to config topic already exists when setup requested")
         }
+        // TODO: The configuration passed through here might not be quite correct.
         val sub = subscriptionFactory.createCompactedSubscription(
             SubscriptionConfig(GROUP, CONFIG_TOPIC),
-            ConfigProcessor(smartConfigFactory, coordinator),
-            config // This isn't quite right.
+            ConfigProcessor(coordinator),
+            config
         )
         subReg = coordinator.followStatusChangesByName(setOf(sub.subscriptionName))
         subscription = sub

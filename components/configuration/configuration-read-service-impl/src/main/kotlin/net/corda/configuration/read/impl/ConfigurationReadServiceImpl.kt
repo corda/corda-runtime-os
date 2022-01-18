@@ -25,12 +25,10 @@ class ConfigurationReadServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = SubscriptionFactory::class)
-    private val subscriptionFactory: SubscriptionFactory,
-    @Reference(service = SmartConfigFactory::class)
-    private val smartConfigFactory: SmartConfigFactory
+    private val subscriptionFactory: SubscriptionFactory
 ) : ConfigurationReadService {
 
-    private val eventHandler = ConfigReadServiceEventHandler(subscriptionFactory, smartConfigFactory)
+    private val eventHandler = ConfigReadServiceEventHandler(subscriptionFactory)
 
     private val lifecycleCoordinator =
         lifecycleCoordinatorFactory.createCoordinator<ConfigurationReadService>(eventHandler)

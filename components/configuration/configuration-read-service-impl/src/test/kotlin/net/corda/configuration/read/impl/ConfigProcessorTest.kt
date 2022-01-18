@@ -3,7 +3,7 @@ package net.corda.configuration.read.impl
 import com.typesafe.config.ConfigFactory
 import net.corda.data.config.Configuration
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactoryImpl
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.messaging.api.records.Record
@@ -28,7 +28,7 @@ class ConfigProcessorTest {
     @Test
     fun `config is forwarded on initial snapshot`() {
         val coordinator = mock<LifecycleCoordinator>()
-        val configProcessor = ConfigProcessor(SmartConfigFactoryImpl(), coordinator)
+        val configProcessor = ConfigProcessor(coordinator)
         val config = Configuration(CONFIG_STRING, "1")
         configProcessor.onSnapshot(mapOf("BAR" to config))
         verify(coordinator).postEvent(capture(eventCaptor))
@@ -42,7 +42,7 @@ class ConfigProcessorTest {
     @Test
     fun `config is forwarded on update`() {
         val coordinator = mock<LifecycleCoordinator>()
-        val configProcessor = ConfigProcessor(SmartConfigFactoryImpl(), coordinator)
+        val configProcessor = ConfigProcessor(coordinator)
         val config = Configuration(CONFIG_STRING, "1")
         configProcessor.onNext(Record("topic", "bar", config), null, mapOf("bar" to config))
         verify(coordinator).postEvent(capture(eventCaptor))
@@ -54,6 +54,6 @@ class ConfigProcessorTest {
     }
 
     private fun smartConfigFromString(string: String): SmartConfig {
-        return SmartConfigFactoryImpl().create(ConfigFactory.parseString(string))
+        return SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.parseString(string))
     }
 }

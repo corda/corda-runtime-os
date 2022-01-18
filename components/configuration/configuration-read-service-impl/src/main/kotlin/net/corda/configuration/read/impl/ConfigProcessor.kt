@@ -12,7 +12,6 @@ import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 
 internal class ConfigProcessor(
-    private val smartConfigFactory: SmartConfigFactory,
     private val coordinator: LifecycleCoordinator
 ) : CompactedProcessor<String, Configuration> {
 
@@ -48,6 +47,9 @@ internal class ConfigProcessor(
             logger.debug { "Received config change event on key ${newRecord.key} with no configuration" }
         }
     }
+
+    // TODO: This smart config factory needs to be created from some boot configuration
+    private val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
 
     private fun Configuration.toSmartConfig(): SmartConfig {
         return smartConfigFactory.create(ConfigFactory.parseString(this.value))

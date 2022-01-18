@@ -44,25 +44,24 @@ internal class ConfigReadServiceEventHandlerTest {
 
     // Mocks
     private lateinit var subscriptionFactory: SubscriptionFactory
-    private lateinit var smartConfigFactory: SmartConfigFactory
     private lateinit var coordinator: LifecycleCoordinator
     private lateinit var compactedSubscription: CompactedSubscription<String, SmartConfig>
 
     private lateinit var configReadServiceEventHandler: ConfigReadServiceEventHandler
 
+    private val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
     private val bootConfig = smartConfigFactory.create(ConfigFactory.parseMap(mapOf("start" to 1)))
 
     @BeforeEach
     fun setUp() {
         subscriptionFactory = mock()
-        smartConfigFactory = mock()
         coordinator = mock()
         compactedSubscription = mock()
         `when`(subscriptionFactory.createCompactedSubscription<String, SmartConfig>(any(), any(), any())).thenReturn(
             compactedSubscription
         )
 
-        configReadServiceEventHandler = ConfigReadServiceEventHandler(subscriptionFactory, smartConfigFactory)
+        configReadServiceEventHandler = ConfigReadServiceEventHandler(subscriptionFactory)
     }
 
     @Test
@@ -119,7 +118,6 @@ internal class ConfigReadServiceEventHandlerTest {
         verifyNoInteractions(coordinator)
         verifyNoInteractions(subscriptionFactory)
         verifyNoInteractions(compactedSubscription)
-        verifyNoInteractions(smartConfigFactory)
     }
 
     @Test
