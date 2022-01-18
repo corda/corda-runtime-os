@@ -1,8 +1,6 @@
 package net.corda.crypto.service.soft
 
 import net.corda.crypto.component.persistence.SoftPersistenceProvider
-import net.corda.crypto.impl.config.CryptoPersistenceConfig
-import net.corda.crypto.impl.config.softCryptoService
 import net.corda.crypto.service.persistence.SoftCryptoKeyCache
 import net.corda.crypto.service.persistence.SoftCryptoKeyCacheImpl
 import net.corda.lifecycle.Lifecycle
@@ -11,9 +9,7 @@ import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceContext
 import net.corda.v5.cipher.suite.CryptoServiceProvider
-import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
 import net.corda.v5.cipher.suite.config.CryptoServiceConfig
-import net.corda.v5.cipher.suite.lifecycle.CryptoLifecycleComponent
 import net.corda.v5.crypto.exceptions.CryptoServiceException
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -22,7 +18,6 @@ import org.slf4j.Logger
 @Component(service = [CryptoServiceProvider::class, SoftCryptoServiceProvider::class])
 open class SoftCryptoServiceProvider :
     Lifecycle,
-    CryptoLifecycleComponent,
     CryptoServiceProvider<SoftCryptoServiceConfig> {
     companion object {
         private val logger: Logger = contextLogger()
@@ -42,21 +37,17 @@ open class SoftCryptoServiceProvider :
 
     override fun start() {
         logger.info("Starting...")
+        impl = Impl(
+            persistenceFactory,
+            logger
+        )
         isRunning = true
     }
 
     override fun stop() {
         logger.info("Stopping...")
+        impl = null
         isRunning = false
-    }
-
-    override fun handleConfigEvent(config: CryptoLibraryConfig) {
-        logger.info("Received new configuration...")
-        impl = Impl(
-            persistenceFactory,
-            config.softCryptoService,
-            logger
-        )
     }
 
     override fun getInstance(context: CryptoServiceContext<SoftCryptoServiceConfig>): CryptoService =
@@ -65,7 +56,6 @@ open class SoftCryptoServiceProvider :
 
     private class Impl(
         private val persistenceFactory: SoftPersistenceProvider,
-        private val config: CryptoPersistenceConfig,
         private val logger: Logger
     ) {
         fun getInstance(context: CryptoServiceContext<SoftCryptoServiceConfig>): CryptoService {

@@ -52,7 +52,11 @@ class AbstractComponentTests {
             on { createCoordinator(any(), any()) } doReturn coordinator
         }
         resourcesToAllocate = Resources()
-        testComponent = TestAbstractComponent(coordinatorFactory, resourcesToAllocate)
+        testComponent = TestAbstractComponent(resourcesToAllocate)
+        testComponent.setup(
+            coordinatorFactory,
+            LifecycleCoordinatorName.forComponent<TestAbstractComponent>()
+        )
     }
 
     @Test
@@ -124,12 +128,8 @@ class AbstractComponentTests {
     }
 
     class TestAbstractComponent(
-        coordinatorFactory: LifecycleCoordinatorFactory,
         private val resourcesToAllocate: Resources
-    ) : AbstractComponent<Resources>(
-        coordinatorFactory,
-        LifecycleCoordinatorName.forComponent<TestAbstractComponent>()
-    ) {
+    ) : AbstractComponent<Resources>() {
         override fun allocateResources(): Resources = resourcesToAllocate
         fun callCreateResources() = createResources()
     }

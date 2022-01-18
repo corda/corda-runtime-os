@@ -1,8 +1,6 @@
 package net.corda.crypto.service.soft
 
 import net.corda.crypto.CryptoConsts
-import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
-import net.corda.crypto.persistence.inmemory.InMemorySigningKeysPersistenceProvider
 import net.corda.crypto.persistence.inmemory.InMemorySoftPersistenceProvider
 import net.corda.crypto.service.signing.CryptoServicesTestFactory
 import net.corda.test.util.createTestCase
@@ -33,6 +31,27 @@ class SoftCryptoServiceProviderTests {
         schemeMetadata = factory.getSchemeMap()
         signatureVerifier = factory.getSignatureVerificationService()
     }
+
+    private fun newAlias(): String = UUID.randomUUID().toString()
+
+    private fun createCryptoServiceProvider(): SoftCryptoServiceProvider {
+        val provider = SoftCryptoServiceProvider()
+        provider.persistenceFactory = InMemorySoftPersistenceProvider()
+        provider.start()
+        return provider
+    }
+
+    private fun SoftCryptoServiceProvider.createCryptoService(category: String): CryptoService = getInstance(
+        CryptoServiceContext(
+            memberId = services.tenantId,
+            category = category,
+            cipherSuiteFactory = factory,
+            config = SoftCryptoServiceConfig(
+                passphrase = "PASSPHRASE",
+                salt = "SALT"
+            )
+        )
+    )
 
     @Test
     @Timeout(30)
@@ -85,50 +104,9 @@ class SoftCryptoServiceProviderTests {
         val provider = createCryptoServiceProvider()
         assertTrue(provider.isRunning)
         (1..100).createTestCase {
-            provider.handleConfigEvent(
-                CryptoLibraryConfigImpl(
-                    mapOf(
-                        "defaultCryptoService" to mapOf(
-                            "factoryName" to InMemorySigningKeysPersistenceProvider.NAME
-                        ),
-                        "publicKeys" to emptyMap()
-                    )
-                )
-            )
             assertNotNull(provider.createCryptoService(CryptoConsts.CryptoCategories.LEDGER))
         }.runAndValidate()
         provider.stop()
         assertFalse(provider.isRunning)
     }
-
-    private fun newAlias(): String = UUID.randomUUID().toString()
-
-    private fun createCryptoServiceProvider(): SoftCryptoServiceProvider {
-        val provider = SoftCryptoServiceProvider()
-        provider.persistenceFactory = InMemorySoftPersistenceProvider()
-        provider.start()
-        provider.handleConfigEvent(
-            CryptoLibraryConfigImpl(
-                mapOf(
-                    "defaultCryptoService" to mapOf(
-                        "factoryName" to InMemorySigningKeysPersistenceProvider.NAME
-                    ),
-                    "publicKeys" to emptyMap()
-                )
-            )
-        )
-        return provider
-    }
-
-    private fun SoftCryptoServiceProvider.createCryptoService(category: String): CryptoService = getInstance(
-        CryptoServiceContext(
-            memberId = services.tenantId,
-            category = category,
-            cipherSuiteFactory = factory,
-            config = SoftCryptoServiceConfig(
-                passphrase = "PASSPHRASE",
-                salt = "SALT"
-            )
-        )
-    )
 }

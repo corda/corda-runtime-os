@@ -16,7 +16,7 @@ abstract class AbstractComponent<RESOURCE: AutoCloseable> : Lifecycle {
 
     private lateinit var coordinator: LifecycleCoordinator
 
-    protected fun setup(
+    fun setup(
         coordinatorFactory: LifecycleCoordinatorFactory,
         coordinatorName: LifecycleCoordinatorName
     ) {
