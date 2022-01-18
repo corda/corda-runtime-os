@@ -1,7 +1,7 @@
 package net.corda.crypto.persistence.kafka
 
 import net.corda.crypto.component.persistence.KeyValuePersistence
-import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
+import net.corda.crypto.impl.config.CryptoConfigMap
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -9,8 +9,8 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
 import net.corda.messaging.emulation.rpc.RPCTopicService
 import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
@@ -68,7 +68,7 @@ class KafkaInfrastructure {
             it.subscriptionFactory = subscriptionFactory
             it.publisherFactory = publisherFactory
             it.start()
-            it.handleConfigEvent(CryptoLibraryConfigImpl(emptyMap()))
+            it.handleConfigEvent(CryptoLibraryConfigTestImpl(emptyMap()))
         }
     }
 
@@ -82,7 +82,7 @@ class KafkaInfrastructure {
             it.subscriptionFactory = subscriptionFactory
             it.publisherFactory = publisherFactory
             it.start()
-            it.handleConfigEvent(CryptoLibraryConfigImpl(emptyMap()))
+            it.handleConfigEvent(CryptoLibraryConfigTestImpl(emptyMap()))
         }
     }
 
@@ -131,4 +131,8 @@ class KafkaInfrastructure {
         persistence?.wait(key)
         pub.close()
     }
+
+    class CryptoLibraryConfigTestImpl(
+        map: Map<String, Any?>
+    ) : CryptoConfigMap(map), CryptoLibraryConfig
 }

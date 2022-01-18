@@ -3,7 +3,6 @@ package net.corda.cipher.suite.impl
 import net.corda.crypto.DigestAlgorithmFactoryProvider
 import net.corda.crypto.impl.CipherSuiteFactoryImpl
 import net.corda.crypto.impl.DoubleSHA256Digest
-import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.cipher.suite.DigestAlgorithm
 import net.corda.v5.cipher.suite.DigestAlgorithmFactory
 import net.corda.v5.cipher.suite.DigestServiceProvider

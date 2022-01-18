@@ -1,6 +1,5 @@
 package net.corda.crypto.persistence.kafka
 
-import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
 import net.corda.data.crypto.persistence.SigningKeysRecord
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher
@@ -44,7 +43,7 @@ class KafkaSigningKeysPersistenceProviderTests {
                 createPublisher(any(), any())
             }.thenReturn(pub)
         }
-        config = CryptoLibraryConfigImpl(emptyMap())
+        config = KafkaInfrastructure.CryptoLibraryConfigTestImpl(emptyMap())
         provider = KafkaSigningKeysPersistenceProvider()
         provider.publisherFactory = publisherFactory
         provider.subscriptionFactory = subscriptionFactory

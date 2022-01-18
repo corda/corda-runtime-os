@@ -36,6 +36,7 @@ import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.util.UUID
 
+@Suppress("TooManyFunctions")
 internal class CryptoOpsClientImpl(
     private val schemeMetadata: CipherSchemeMetadata,
     private val sender: RPCSender<RpcOpsRequest, RpcOpsResponse>

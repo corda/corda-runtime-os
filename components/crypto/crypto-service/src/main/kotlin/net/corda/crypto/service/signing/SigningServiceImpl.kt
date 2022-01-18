@@ -14,6 +14,7 @@ import net.corda.v5.crypto.toStringShort
 import java.security.PublicKey
 import java.util.UUID
 
+@Suppress("TooManyFunctions")
 open class SigningServiceImpl(
     private val cache: SigningKeyCache,
     private val cryptoServiceFactory: CryptoServiceFactory,

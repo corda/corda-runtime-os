@@ -3,8 +3,8 @@ package net.corda.crypto.persistence.kafka
 import net.corda.crypto.component.persistence.KeyValueMutator
 import net.corda.crypto.component.persistence.KeyValuePersistence
 import net.corda.crypto.component.persistence.SigningKeysPersistenceProvider
+import net.corda.crypto.component.persistence.config.signingPersistence
 import net.corda.crypto.impl.closeGracefully
-import net.corda.crypto.impl.config.softCryptoService
 import net.corda.data.crypto.persistence.SigningKeysRecord
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -92,7 +92,7 @@ class KafkaSigningKeysPersistenceProvider : SigningKeysPersistenceProvider, Life
             mutator: KeyValueMutator<SigningKeysRecord, SigningKeysRecord>
         ): KeyValuePersistence<SigningKeysRecord, SigningKeysRecord> {
             logger.info("Getting Kafka persistence instance for tenant={}", tenantId)
-            val cfg = config.softCryptoService
+            val cfg = config.signingPersistence
             return KafkaKeyValuePersistence(
                 processor = processor,
                 expireAfterAccessMins = cfg.expireAfterAccessMins,

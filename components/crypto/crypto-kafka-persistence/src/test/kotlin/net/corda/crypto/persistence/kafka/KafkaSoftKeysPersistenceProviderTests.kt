@@ -1,7 +1,6 @@
 package net.corda.crypto.persistence.kafka
 
 import net.corda.crypto.component.persistence.SoftKeysRecordInfo
-import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
 import net.corda.data.crypto.persistence.SoftKeysRecord
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher
@@ -45,7 +44,7 @@ class KafkaSoftKeysPersistenceProviderTests {
                 createPublisher(any(), any())
             }.thenReturn(pub)
         }
-        config = CryptoLibraryConfigImpl(emptyMap())
+        config = KafkaInfrastructure.CryptoLibraryConfigTestImpl(emptyMap())
         provider = KafkaSoftPersistenceProvider()
         provider.publisherFactory = publisherFactory
         provider.subscriptionFactory = subscriptionFactory

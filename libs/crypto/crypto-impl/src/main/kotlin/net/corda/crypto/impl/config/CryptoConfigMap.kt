@@ -93,7 +93,7 @@ open class CryptoConfigMap(
 
     fun getOptionalConfig(key: String): CryptoConfigMap? = getOptionalConfig(this, key)
 
-    fun getConfig(key: String): CryptoConfigMap = Companion.getConfig(this, key)
+    fun getConfig(key: String): CryptoConfigMap = getConfig(this, key)
 
     fun getLong(key: String): Long = getLong(this, key)
 

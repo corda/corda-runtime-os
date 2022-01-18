@@ -22,6 +22,7 @@ import org.osgi.service.component.annotations.Reference
 import java.security.PublicKey
 import java.util.UUID
 
+@Suppress("TooManyFunctions")
 @Component(service = [CryptoOpsClientComponent::class])
 class CryptoOpsClientComponentImpl :
     AbstractComponent<CryptoOpsClientComponentImpl.Resources>(),

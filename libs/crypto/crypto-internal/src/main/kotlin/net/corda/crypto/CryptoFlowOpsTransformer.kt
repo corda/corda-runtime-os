@@ -25,6 +25,7 @@ import java.util.UUID
 /**
  * The crypto operations client to generate messages for flows.
  */
+@Suppress("TooManyFunctions")
 class CryptoFlowOpsTransformer(
     private val requestingComponent: String,
     private val schemeMetadata: CipherSchemeMetadata
@@ -237,6 +238,7 @@ class CryptoFlowOpsTransformer(
      *
      * @throws [IllegalStateException] if the response contains error.
      */
+    @Suppress("ThrowsCount")
     private inline fun <reified EXPECTED> FlowOpsResponse.validateAndGet(): EXPECTED {
         if (response is CryptoNoContentValue) {
             val error = getContextValue(RESPONSE_ERROR_KEY)

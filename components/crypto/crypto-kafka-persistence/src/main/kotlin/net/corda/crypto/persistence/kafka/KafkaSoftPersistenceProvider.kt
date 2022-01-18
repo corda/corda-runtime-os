@@ -4,8 +4,8 @@ import net.corda.crypto.component.persistence.KeyValueMutator
 import net.corda.crypto.component.persistence.KeyValuePersistence
 import net.corda.crypto.component.persistence.SoftKeysRecordInfo
 import net.corda.crypto.component.persistence.SoftPersistenceProvider
+import net.corda.crypto.component.persistence.config.softPersistence
 import net.corda.crypto.impl.closeGracefully
-import net.corda.crypto.impl.config.softCryptoService
 import net.corda.data.crypto.persistence.SoftKeysRecord
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -93,7 +93,7 @@ class KafkaSoftPersistenceProvider : SoftPersistenceProvider, Lifecycle, CryptoL
             mutator: KeyValueMutator<SoftKeysRecordInfo, SoftKeysRecord>
         ): KeyValuePersistence<SoftKeysRecordInfo, SoftKeysRecord> {
             logger.info("Getting Kafka persistence instance for tenant={}", tenantId)
-            val cfg = config.softCryptoService
+            val cfg = config.softPersistence
             return KafkaKeyValuePersistence(
                 processor = processor,
                 expireAfterAccessMins = cfg.expireAfterAccessMins,

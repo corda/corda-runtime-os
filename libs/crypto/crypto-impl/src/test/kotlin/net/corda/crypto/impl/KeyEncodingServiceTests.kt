@@ -173,6 +173,7 @@ class KeyEncodingServiceTests {
         assertEquals(decoded, aliceAndBobOrCharlie)
     }
 
+    @Suppress("TooGenericExceptionThrown")
     @ParameterizedTest
     @MethodSource("signatureSchemes")
     @Timeout(30)

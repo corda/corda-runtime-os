@@ -39,6 +39,7 @@ import java.security.PublicKey
  *
  * The wrapped keys are not deterministic generated using the [SoftCryptoService] instance.
  */
+@Suppress("LongParameterList")
 class DevCryptoService(
     val tenantId: String,
     val category: String,
