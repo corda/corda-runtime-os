@@ -59,7 +59,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 class P2PLayerEndToEndTest {

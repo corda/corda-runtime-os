@@ -30,18 +30,15 @@ class ConfigurationReadServiceImplTest {
     }
 
     @InjectService(timeout = 4000)
-    lateinit var smartConfigFactory: SmartConfigFactory
-
-//    @InjectService(timeout = 4000)
-//    lateinit var configurationReadService: ConfigurationReadService
+    lateinit var configurationReadService: ConfigurationReadService
 
     @InjectService(timeout = 4000)
     lateinit var publisherFactory: PublisherFactory
 
+    private val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
+
     @Test
-    fun `config read service goes up once bootstrap config is provided`(
-        @InjectService(timeout = 4000) configurationReadService: ConfigurationReadService
-    ) {
+    fun `config read service goes up once bootstrap config is provided`() {
         val bootConfig = smartConfigFactory.create(ConfigFactory.parseString(BOOT_CONFIG_STRING))
         val latch = CountDownLatch(1)
         configurationReadService.start()
@@ -63,9 +60,7 @@ class ConfigurationReadServiceImplTest {
     }
 
     @Test
-    fun `config read service delivers configuration updates to clients`(
-        @InjectService(timeout = 4000) configurationReadService: ConfigurationReadService
-    ) {
+    fun `config read service delivers configuration updates to clients`() {
         val bootConfig = smartConfigFactory.create(ConfigFactory.parseString(BOOT_CONFIG_STRING))
         var latch = CountDownLatch(1)
         configurationReadService.start()
@@ -102,9 +97,7 @@ class ConfigurationReadServiceImplTest {
     }
 
     @Test
-    fun `when a client registers all current configuration is delivered to the client`(
-        @InjectService(timeout = 4000) configurationReadService: ConfigurationReadService
-    ) {
+    fun `when a client registers all current configuration is delivered to the client`() {
         val bootConfig = smartConfigFactory.create(ConfigFactory.parseString(BOOT_CONFIG_STRING))
         val latch = CountDownLatch(1)
         val prepareLatch = CountDownLatch(1)
