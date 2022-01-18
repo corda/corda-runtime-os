@@ -4,6 +4,7 @@ import net.corda.data.flow.FlowStackItem
 import net.corda.v5.application.flows.FlowInfo
 import net.corda.v5.application.flows.FlowSession
 import net.corda.v5.serialization.SerializedBytes
+import java.nio.ByteBuffer
 import java.time.Instant
 
 /**
@@ -88,6 +89,6 @@ interface FlowIORequest<out R> {
      * @property fiber serialized fiber state at the point of suspension.
      * @property output the IO request that caused the suspension.
      */
-    class FlowSuspended<SUSPENDRETURN>(val fiber: ByteArray, val output: FlowIORequest<SUSPENDRETURN>) :
+    class FlowSuspended<SUSPENDRETURN>(val fiber: ByteBuffer, val output: FlowIORequest<SUSPENDRETURN>) :
         FlowIORequest<Unit>
 }

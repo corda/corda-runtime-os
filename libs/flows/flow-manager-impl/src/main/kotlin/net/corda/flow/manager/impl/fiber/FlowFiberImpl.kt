@@ -14,6 +14,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.Logger
 import org.slf4j.MDC
+import java.nio.ByteBuffer
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 
@@ -93,7 +94,7 @@ class FlowFiberImpl<R>(
             parkAndSerialize { _, _ ->
                 log.info("Parking...")
                 val fiberState = getExecutionContext().checkpointSerializer.serialize(this)
-                flowCompletion.complete(FlowIORequest.FlowSuspended(fiberState, request))
+                flowCompletion.complete(FlowIORequest.FlowSuspended(ByteBuffer.wrap(fiberState), request))
                 log.info("Parked.")
             }
         }catch (e:Throwable){

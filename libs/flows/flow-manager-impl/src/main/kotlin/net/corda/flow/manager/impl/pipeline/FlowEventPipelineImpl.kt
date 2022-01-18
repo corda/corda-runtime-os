@@ -111,7 +111,7 @@ data class FlowEventPipelineImpl(
                 return copy(output = flowResult)
             }
             is FlowIORequest.FlowSuspended<*> -> {
-                context.checkpoint!!.fiber = ByteBuffer.wrap(flowResult.fiber)
+                context.checkpoint!!.fiber = flowResult.fiber
                 return copy(output = flowResult.output)
             }
             is FlowIORequest.FlowFailed -> {
