@@ -1,4 +1,4 @@
-package net.corda.membership.grouppolicy
+package net.corda.membership.impl.grouppolicy
 
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.lifecycle.LifecycleCoordinator
@@ -9,7 +9,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.GroupPolicy
-import net.corda.membership.grouppolicy.impl.GroupPolicyProviderImpl
 import net.corda.packaging.CPI
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.membership.identity.MemberX500Name

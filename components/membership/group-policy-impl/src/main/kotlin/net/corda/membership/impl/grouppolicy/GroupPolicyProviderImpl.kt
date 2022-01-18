@@ -1,4 +1,4 @@
-package net.corda.membership.grouppolicy.impl
+package net.corda.membership.impl.grouppolicy
 
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.lifecycle.LifecycleCoordinator
@@ -12,7 +12,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.GroupPolicy
 import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.membership.grouppolicy.impl.factory.GroupPolicyParser
+import net.corda.membership.impl.grouppolicy.factory.GroupPolicyParser
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -166,7 +166,7 @@ class GroupPolicyProviderImpl @Activate constructor(
          * for that holding identity will be parsed in case the virtual node change affected the group policy file.
          */
         virtualNodeInfoCallbackHandle = virtualNodeInfoReader.registerCallback { changed, snapshot ->
-            if(isRunning) {
+            if (isRunning) {
                 changed.filter { snapshot[it] != null }.forEach {
                     parseGroupPolicy(it, virtualNodeInfo = snapshot[it])
                 }

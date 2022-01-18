@@ -1,4 +1,4 @@
-package net.corda.membership.grouppolicy.integration
+package net.corda.membership.impl.grouppolicy
 
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
