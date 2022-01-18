@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "PersistentMemberInfo",
+  "namespace": "net.corda.data.membership",
+  "doc": "Avro representation of persistent MemberInfo.",
+  "fields": [
+    {
+      "name": "viewOwningMember",
+      "doc": "Holding identity of the member owning the data view.",
+      "type": "net.corda.data.identity.HoldingIdentity"
+    },
+    {
+      "name": "signedMemberInfo",
+      "doc": "Signed MemberInfo to be distributed and persisted.",
+      "type": "net.corda.data.membership.SignedMemberInfo"
+    }
+  ]
+}
