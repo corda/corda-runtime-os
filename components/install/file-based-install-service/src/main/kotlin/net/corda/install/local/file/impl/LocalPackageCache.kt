@@ -191,7 +191,6 @@ class LocalPackageCache @Activate constructor(
     }
 
     private fun scanDirectoryAndBuildCache(config: Config) {
-        logger.info("scanDirectoryAndBuildCache")
         packageCacheLock.write {
             val repositoryFolder = (
                     config.getString("cacheDir")

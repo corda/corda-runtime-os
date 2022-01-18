@@ -19,7 +19,7 @@ fun getHelloWorldRPCEventRecords(): List<Record<*, *>> {
             flowName = "net.corda.linearstatesample.flows.HelloWorldFlowInitiator",
             x500Name = "Mars",
             groupId = "123",
-            name = "Mars 1"
+            jsonArgs = "{ \"who\":\"Mars 1\"}"
         ),
         getStartRPCEventRecord(
             clientId = UUID.randomUUID().toString(),
@@ -27,7 +27,7 @@ fun getHelloWorldRPCEventRecords(): List<Record<*, *>> {
             flowName = "net.corda.linearstatesample.flows.HelloWorldFlowInitiator",
             x500Name = "Mars",
             groupId = "123",
-            name = "Mars 2"
+            jsonArgs = "{ \"who\":\"Mars 2\"}"
         ),
         getStartRPCEventRecord(
             clientId = UUID.randomUUID().toString(),
@@ -35,7 +35,7 @@ fun getHelloWorldRPCEventRecords(): List<Record<*, *>> {
             flowName = "net.corda.linearstatesample.flows.HelloWorldFlowInitiator",
             x500Name = "Earth",
             groupId = "321",
-            name = "Earth 1"
+            jsonArgs = "{ \"who\":\"Earth 1\"}"
         ),
         getStartRPCEventRecord(
             clientId = UUID.randomUUID().toString(),
@@ -43,17 +43,17 @@ fun getHelloWorldRPCEventRecords(): List<Record<*, *>> {
             flowName = "net.corda.linearstatesample.flows.HelloWorldFlowInitiator",
             x500Name = "Earth",
             groupId = "321",
-            name = "Earth 2"
+            jsonArgs = "{ \"who\":\"Earth 2\"}"
         ),
     )
 }
 
 @Suppress("LongParameterList")
-fun getStartRPCEventRecord(clientId: String, cpiId: String, flowName: String, x500Name: String, groupId: String, name: String):
+fun getStartRPCEventRecord(clientId: String, cpiId: String, flowName: String, x500Name: String, groupId: String, jsonArgs: String):
         Record<*, *> {
     val identity = HoldingIdentity(x500Name, groupId)
     val flowKey = "$clientId.$x500Name.$groupId"
-    val rpcStartFlow = StartRPCFlow(clientId, cpiId, flowName, identity, Instant.now(), "{ \"who\":\"${name}\"}")
+    val rpcStartFlow = StartRPCFlow(clientId, cpiId, flowName, identity, Instant.now(), jsonArgs)
     return Record(FLOW_MAPPER_EVENT_TOPIC, flowKey, FlowMapperEvent(MessageDirection.INBOUND, rpcStartFlow))
 }
 

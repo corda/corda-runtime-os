@@ -9,7 +9,7 @@ import org.osgi.service.component.annotations.Component
 class FlowFiberServiceImpl: FlowFiberService {
 
     override fun getExecutingFiber(): FlowFiber<*> {
-        var strand = checkNotNull(Strand.currentStrand()) { "This call should only be made from within a running fiber."}
+        val strand = checkNotNull(Strand.currentStrand()) { "This call should only be made from within a running fiber."}
         return checkNotNull(strand as FlowFiber<*>) { "The running fiber does not implement the FlowFiber interface"}
     }
 }

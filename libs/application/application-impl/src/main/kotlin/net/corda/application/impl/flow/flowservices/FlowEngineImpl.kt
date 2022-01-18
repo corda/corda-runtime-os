@@ -54,25 +54,25 @@ class FlowEngineImpl @Activate constructor(
 
     @Suspendable
     override fun <R> subFlow(subLogic: Flow<R>): R {
-        log.info("Starting subflow ('${subLogic.javaClass.name}')...")
+        log.debug("Starting subflow ('${subLogic.javaClass.name}')...")
 
         getFiberExecutionContext().sandboxDependencyInjector.injectServices(subLogic)
         getFiberExecutionContext().flowStackService.push(subLogic)
 
         try {
-            log.info("Calling sub-flow('${subLogic.javaClass.name}')...")
+            log.debug("Calling sub-flow('${subLogic.javaClass.name}')...")
             val result = subLogic.call()
-            log.info("Sub-flow('${subLogic.javaClass.name}') call completed ...")
+            log.debug("Sub-flow('${subLogic.javaClass.name}') call completed ...")
             /*
              * TODOs:
              * Once the session management has been implemented we can look at optimising this, only calling
              * suspend for flows that require session cleanup
              */
-            log.info("Suspending sub-flow('${subLogic.javaClass.name}')...")
+            log.debug("Suspending sub-flow('${subLogic.javaClass.name}')...")
             flowFiberService
                 .getExecutingFiber()
                 .suspend(FlowIORequest.SubFlowFinished(getFiberExecutionContext().flowStackService.pop()))
-            log.info("Sub-flow('${subLogic.javaClass.name}') resumed .")
+            log.debug("Sub-flow('${subLogic.javaClass.name}') resumed .")
             return result
         } catch (e: Throwable) {
             flowFiberService
