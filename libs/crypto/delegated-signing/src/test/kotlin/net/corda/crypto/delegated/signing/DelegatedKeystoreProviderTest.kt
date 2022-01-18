@@ -1,4 +1,4 @@
-package net.corda.utils.security.provider
+package net.corda.crypto.delegated.signing
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test

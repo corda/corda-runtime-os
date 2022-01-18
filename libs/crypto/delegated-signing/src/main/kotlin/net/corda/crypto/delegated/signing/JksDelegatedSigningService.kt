@@ -1,6 +1,6 @@
-package net.corda.utils.security.provider
+package net.corda.crypto.delegated.signing
 
-import net.corda.utils.security.provider.DelegatedSignatureProvider.Companion.RSA_SINGING_ALGORITHM
+import net.corda.crypto.delegated.signing.DelegatedSignatureProvider.Companion.RSA_SINGING_ALGORITHM
 import java.io.ByteArrayInputStream
 import java.security.KeyStoreSpi
 import java.security.PrivateKey

@@ -1,4 +1,4 @@
 @Export
-package net.corda.utils.security.provider;
+package net.corda.crypto.delegated.signing;
 
 import org.osgi.annotation.bundle.Export;

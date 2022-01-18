@@ -1,7 +1,7 @@
 package net.corda.p2p.gateway.messaging
 
 import com.typesafe.config.Config
-import net.corda.utils.security.provider.JksDelegatedSigningService
+import net.corda.crypto.delegated.signing.JksDelegatedSigningService
 import net.corda.v5.base.util.toBase64
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test

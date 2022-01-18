@@ -1,4 +1,4 @@
-package net.corda.utils.security.provider
+package net.corda.crypto.delegated.signing
 
 import java.security.Provider
 
@@ -19,7 +19,7 @@ internal class DelegatedKeystoreProvider : Provider(
     private inner class DelegatedKeyStoreService(
         name: String,
         private val signingService:
-            DelegatedSigningService
+        DelegatedSigningService
     ) : Service(
         this@DelegatedKeystoreProvider,
         "KeyStore",
