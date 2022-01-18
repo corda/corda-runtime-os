@@ -15,7 +15,7 @@ import net.corda.serialization.NonSerializable
  * The [VirtualNodeContext] member contains the unique key information that distinguishes a [SandboxGroupContext]
  * from another.
  */
-interface SandboxGroupContext : SandboxGroupContextData, NonSerializable {
+interface SandboxGroupContext : SandboxGroupContextData {
     /**
      * Get an object from *this* [SandboxGroupContext] instance's object cache using the given key.
      *

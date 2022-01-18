@@ -109,16 +109,16 @@ class FlowRunnerImpl @Activate constructor(
     }
 
     private fun SandboxGroupContext.getCheckpointSerializer(): CheckpointSerializer {
-        return get(
+        return checkNotNull(get(
             FlowSandboxContextTypes.CHECKPOINT_SERIALIZER,
             CheckpointSerializer::class.java
-        )!!
+        )){"Failed to find the CheckpointSerializer in the Sandbox. key='${FlowSandboxContextTypes.CHECKPOINT_SERIALIZER}'"}
     }
 
     private fun SandboxGroupContext.getDependencyInjector(): SandboxDependencyInjector {
-        return get(
+        return checkNotNull(get(
             FlowSandboxContextTypes.DEPENDENCY_INJECTOR,
             SandboxDependencyInjector::class.java
-        )!!
+        )){"Failed to find the SandboxDependencyInjector in the Sandbox. key='${FlowSandboxContextTypes.CHECKPOINT_SERIALIZER}'"}
     }
 }

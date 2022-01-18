@@ -42,7 +42,7 @@ class SandboxDependencyInjectorImpl(
     }
 
     override fun getRegisteredSingletons(): Set<SingletonSerializeAsToken> {
-        return mutableSetOf<SingletonSerializeAsToken>().apply { addAll(serviceTypeMap.values) }
+        return serviceTypeMap.values.toSet()
     }
 
     /**

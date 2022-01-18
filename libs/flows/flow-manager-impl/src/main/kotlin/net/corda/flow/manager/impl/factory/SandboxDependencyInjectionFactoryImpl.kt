@@ -1,5 +1,6 @@
 package net.corda.flow.manager.impl.factory
 
+import net.corda.flow.manager.SandboxDependencyInjector
 import net.corda.flow.manager.factory.SandboxDependencyInjectionFactory
 import net.corda.flow.manager.impl.SandboxDependencyInjectorImpl
 import net.corda.sandboxgroupcontext.SandboxGroupContext
@@ -22,7 +23,7 @@ class SandboxDependencyInjectionFactoryImpl(
     @Reference(service = SingletonSerializeAsToken::class, cardinality = ReferenceCardinality.MULTIPLE, policy = ReferencePolicy.DYNAMIC)
     private val singletons: List<SingletonSerializeAsToken> = singletons
 
-    override fun create(sandboxGroupContext: SandboxGroupContext): SandboxDependencyInjectorImpl {
+    override fun create(sandboxGroupContext: SandboxGroupContext): SandboxDependencyInjector {
         /*
         TODOs: the sandbox will be used to load CordApp types used for injection
          */
