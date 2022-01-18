@@ -21,7 +21,7 @@ class FlowMapperEventExecutorFactoryImpl : FlowMapperEventExecutorFactory {
     override fun create(eventKey: String, flowMapperEvent: FlowMapperEvent, state: FlowMapperState?):
             FlowMapperEventExecutor {
         return when (val payload = flowMapperEvent.payload) {
-            is SessionEvent -> SessionEventExecutor(eventKey, flowMapperEvent.messageDirection, payload, state)
+            is SessionEvent -> SessionEventExecutor(eventKey, payload.messageDirection, payload, state)
             is StartRPCFlow -> StartRPCFlowExecutor(eventKey, FLOW_EVENT_TOPIC, payload, state)
             is ExecuteCleanup -> ExecuteCleanupEventExecutor(eventKey)
             is ScheduleCleanup -> ScheduleCleanupEventExecutor(eventKey, payload, state)

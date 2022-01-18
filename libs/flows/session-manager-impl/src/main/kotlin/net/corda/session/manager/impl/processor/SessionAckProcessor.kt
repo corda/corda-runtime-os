@@ -8,7 +8,7 @@ import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import java.time.Clock
+import java.time.Instant
 
 /**
  * Generate a [SessionAck] for the received event.
@@ -20,7 +20,7 @@ class SessionAckProcessor(
     private val sessionState: SessionState?,
     private val sessionId: String,
     private val sequenceNum: Int,
-    private val clock: Clock = Clock.systemUTC()
+    private val instant: Instant
 ) : SessionEventProcessor {
 
     private companion object {
@@ -31,7 +31,7 @@ class SessionAckProcessor(
         return if (sessionState == null) {
             val errorMessage = "Received SessionAck on key $flowKey for sessionId $sessionId which had null state"
             logger.error(errorMessage)
-            SessionEventResult(sessionState, generateErrorEvent(sessionId, errorMessage, "SessionAck-NullState", clock))
+            SessionEventResult(sessionState, generateErrorEvent(sessionId, errorMessage, "SessionAck-NullState", instant))
         } else {
             logger.debug { "Received SessionAck on key $flowKey for seqNum $sequenceNum for session state: $sessionState" }
             val undeliveredMessages = sessionState.sentEventsState.undeliveredMessages

@@ -14,6 +14,7 @@ import net.corda.session.manager.impl.processor.SessionCloseProcessor
 import net.corda.session.manager.impl.processor.SessionDataProcessor
 import net.corda.session.manager.impl.processor.SessionErrorProcessor
 import net.corda.session.manager.impl.processor.SessionInitProcessor
+import java.time.Instant
 
 class SessionEventProcessorFactory  {
 
@@ -21,14 +22,15 @@ class SessionEventProcessorFactory  {
      * Get the correct processor for the [sessionEvent] received.
      * [flowKey] is provided for logging purposes
      * [sessionState] is provided for the given [sessionEvent]
+     * [instant] is provided for timestamps
      */
-    fun create(flowKey: FlowKey, sessionEvent: SessionEvent, sessionState: SessionState?): SessionEventProcessor {
+    fun create(flowKey: FlowKey, sessionEvent: SessionEvent, sessionState: SessionState?, instant: Instant): SessionEventProcessor {
         return when (val payload = sessionEvent.payload) {
-            is SessionInit -> SessionInitProcessor(flowKey, sessionState, sessionEvent)
-            is SessionData -> SessionDataProcessor(flowKey, sessionState, sessionEvent)
-            is SessionAck -> SessionAckProcessor(flowKey, sessionState, sessionEvent.sessionId, payload.sequenceNum)
-            is SessionClose -> SessionCloseProcessor(flowKey, sessionState, sessionEvent)
-            is SessionError -> SessionErrorProcessor(flowKey, sessionState, sessionEvent, payload.errorMessage)
+            is SessionInit -> SessionInitProcessor(flowKey, sessionState, sessionEvent, instant)
+            is SessionData -> SessionDataProcessor(flowKey, sessionState, sessionEvent, instant)
+            is SessionAck -> SessionAckProcessor(flowKey, sessionState, sessionEvent.sessionId, payload.sequenceNum, instant)
+            is SessionClose -> SessionCloseProcessor(flowKey, sessionState, sessionEvent, instant)
+            is SessionError -> SessionErrorProcessor(flowKey, sessionState, sessionEvent, payload.errorMessage, instant)
             else -> throw NotImplementedError(
                 "The session event type '${payload.javaClass.name}' is not supported.")
         }

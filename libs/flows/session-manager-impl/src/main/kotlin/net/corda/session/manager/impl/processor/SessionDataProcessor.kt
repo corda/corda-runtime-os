@@ -1,6 +1,7 @@
 package net.corda.session.manager.impl.processor
 
 import net.corda.data.flow.FlowKey
+import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
@@ -9,9 +10,10 @@ import net.corda.session.manager.SessionEventResult
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateAckRecord
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
+import net.corda.session.manager.impl.processor.helper.generateOutBoundRecord
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import java.time.Clock
+import java.time.Instant
 
 /**
  * Process a [SessionData] event.
@@ -26,7 +28,7 @@ class SessionDataProcessor(
     private val flowKey: FlowKey,
     private val sessionState: SessionState?,
     private val sessionEvent: SessionEvent,
-    private val clock: Clock = Clock.systemUTC()
+    private val instant: Instant
 ) : SessionEventProcessor {
 
     private companion object {
@@ -35,17 +37,42 @@ class SessionDataProcessor(
 
     override fun execute(): SessionEventResult {
         val sessionId = sessionEvent.sessionId
+        val messageDirection = sessionEvent.messageDirection
 
-        return if (sessionState == null) {
+        if (sessionState == null) {
             val errorMessage = "Received SessionData on key $flowKey for sessionId which was null: $sessionId"
             logger.error(errorMessage)
-            SessionEventResult(sessionState, generateErrorEvent(sessionId, errorMessage, "SessionData-NullSessionState", clock))
+            return SessionEventResult(sessionState, generateErrorEvent(sessionId, errorMessage, "SessionData-NullSessionState", instant))
+        }
+
+        return if (messageDirection == MessageDirection.OUTBOUND) {
+            getOutboundDataEventResult(sessionState, sessionId)
         } else {
-            handleDataEvent(sessionState, sessionId)
+            getInboundDataEventResult(sessionState, sessionId)
         }
     }
 
-    private fun handleDataEvent(
+    private fun getOutboundDataEventResult(
+        sessionState: SessionState,
+        sessionId: String
+    ): SessionEventResult {
+        val currentStatus = sessionState.status
+
+        if (currentStatus != SessionStateType.CONFIRMED) {
+            val errorMessage = "Received SessionData on key $flowKey for sessionId with status of : $currentStatus"
+            logger.error(errorMessage)
+            return SessionEventResult(sessionState, generateErrorEvent(sessionId, errorMessage, "SessionData-InvalidStatus", instant))
+        }
+
+        val sentEventState = sessionState.sentEventsState
+        val nextSeqNum = sentEventState.lastProcessedSequenceNum + 1
+        val undeliveredMessages = sentEventState.undeliveredMessages?.toMutableList() ?: mutableListOf()
+        sessionEvent.sequenceNum = nextSeqNum
+        undeliveredMessages.add(sessionEvent)
+        return SessionEventResult(sessionState, generateOutBoundRecord(sessionEvent, sessionId, instant))
+    }
+
+    private fun getInboundDataEventResult(
         sessionState: SessionState,
         sessionId: String
     ): SessionEventResult {
@@ -56,25 +83,20 @@ class SessionDataProcessor(
         val undeliveredMessages = receivedEventState.undeliveredMessages?.toMutableList() ?: mutableListOf()
 
         return when {
-            currentStatus == SessionStateType.ERROR -> {
-                val errorMessage ="Data message on flowKey $flowKey with sessionId $sessionId with sequence number " +
-                            "of $seqNum when status is $currentStatus. SessionState: $sessionState"
-                //Possibly only Warn here as if we are in error state we have already sent counterparty an error and this data message was
-                // sent before they have processed that error
-                logger.error(errorMessage)
-                SessionEventResult(sessionState, generateErrorEvent(sessionId, errorMessage, "SessionData-ErrorStatus", clock))
-            }
-            currentStatus == SessionStateType.CLOSED && seqNum >= expectedNextSeqNum -> {
-                val errorMessage =
-                    "Data message on flowKey $flowKey with sessionId $sessionId with sequence number of $seqNum when status" +
-                            " is ${SessionStateType.CLOSED}. SessionState: $sessionState"
-                logger.error(errorMessage)
-                SessionEventResult(sessionState, generateErrorEvent(sessionId, errorMessage, "SessionData-ClosedStatus", clock))
-            }
             seqNum >= expectedNextSeqNum -> {
-                undeliveredMessages.add(sessionEvent)
-                sessionState.receivedEventsState = updateSessionProcessState(expectedNextSeqNum + 1, undeliveredMessages)
-                SessionEventResult(sessionState, generateAckRecord(seqNum, sessionId, clock))
+                if (currentStatus != SessionStateType.CONFIRMED) {
+                    val errorMessage =
+                        "Data message on flowKey $flowKey with sessionId $sessionId with sequence number of $seqNum when status" +
+                                " is $currentStatus. SessionState: $sessionState"
+                    //Possibly only Warn here as if we are in error state we have already sent counterparty an error and this data message was
+                    // sent before they have processed that error
+                    logger.error(errorMessage)
+                    SessionEventResult(sessionState, generateErrorEvent(sessionId, errorMessage, "SessionData-InvalidStatus", instant))
+                } else {
+                    undeliveredMessages.add(sessionEvent)
+                    sessionState.receivedEventsState = updateSessionProcessState(expectedNextSeqNum + 1, undeliveredMessages)
+                    SessionEventResult(sessionState, generateAckRecord(seqNum, sessionId, instant))
+                }
             }
             else -> {
                 logger.debug {

@@ -10,15 +10,15 @@ import net.corda.session.manager.SessionManager
 import net.corda.session.manager.impl.factory.SessionEventProcessorFactory
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import org.osgi.service.component.annotations.Component
-import java.time.Clock
+import java.time.Instant
 
 @Component
 class SessionManagerImpl : SessionManager {
 
     private val sessionEventProcessorFactory = SessionEventProcessorFactory()
 
-    override fun processReceivedMessage(flowKey: FlowKey, sessionState: SessionState?, event: SessionEvent): SessionEventResult {
-        return sessionEventProcessorFactory.create(flowKey, event, sessionState).execute()
+    override fun processMessage(flowKey: FlowKey, sessionState: SessionState?, event: SessionEvent, instant: Instant): SessionEventResult {
+        return sessionEventProcessorFactory.create(flowKey, event, sessionState, instant).execute()
     }
 
     override fun getNextReceivedEvent(sessionState: SessionState?): SessionEvent? {
@@ -36,8 +36,8 @@ class SessionManagerImpl : SessionManager {
         return sessionState
     }
 
-    override fun generateSessionErrorEvent(sessionId: String, errorMessage: String, errorType: String, clock: Clock):
+    override fun generateSessionErrorEvent(sessionId: String, errorMessage: String, errorType: String, instant: Instant):
             Record<String, FlowMapperEvent> {
-        return generateErrorEvent(sessionId, errorMessage, errorType, clock)
+        return generateErrorEvent(sessionId, errorMessage, errorType, instant)
     }
 }

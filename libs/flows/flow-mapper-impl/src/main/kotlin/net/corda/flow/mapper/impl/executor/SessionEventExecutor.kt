@@ -2,9 +2,9 @@ package net.corda.flow.mapper.impl.executor
 
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
-import net.corda.data.flow.event.mapper.MessageDirection
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
@@ -57,7 +57,7 @@ class SessionEventExecutor(
 
     private fun processOtherSessionEvents(flowMapperState: FlowMapperState): FlowMapperResult {
         val (recordKey, recordValue) = if (messageDirection == MessageDirection.OUTBOUND) {
-            Pair(generateOutboundSessionId(eventKey), FlowMapperEvent(messageDirection, sessionEvent))
+            Pair(generateOutboundSessionId(eventKey), FlowMapperEvent(sessionEvent))
         } else {
             Pair(flowMapperState.flowKey, FlowEvent(flowMapperState.flowKey, sessionEvent))
         }
@@ -80,7 +80,6 @@ class SessionEventExecutor(
         } else {
             sessionInit.initiatedIdentity
         }
-
 
         val (flowKey, outputRecordKey, outputRecordValue) =
             getSessionInitOutputs(
@@ -125,7 +124,7 @@ class SessionEventExecutor(
             SessionInitOutputs(
                 tmpFLowEventKey,
                 generateOutboundSessionId(sessionKey),
-                FlowMapperEvent(MessageDirection.OUTBOUND, sessionEvent)
+                FlowMapperEvent(sessionEvent)
             )
         }
     }
