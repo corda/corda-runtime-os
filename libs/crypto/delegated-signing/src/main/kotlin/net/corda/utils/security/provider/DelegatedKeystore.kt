@@ -49,7 +49,7 @@ internal class DelegatedKeystore(
     override fun engineIsKeyEntry(alias: String): Boolean = engineContainsAlias(alias)
 
     override fun engineLoad(param: KeyStore.LoadStoreParameter?) {
-        // Insert Delegated signature provider if its not registered with java security.
+        // Insert Delegated signature provider if it's not registered with java security.
         val providers = Security.getProviders()
         if (providers.size <= 1 || providers[1] !is DelegatedSignatureProvider) {
             Security.insertProviderAt(DelegatedSignatureProvider(), 1)

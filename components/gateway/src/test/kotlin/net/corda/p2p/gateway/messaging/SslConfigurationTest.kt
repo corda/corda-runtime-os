@@ -1,14 +1,17 @@
 package net.corda.p2p.gateway.messaging
 
 import com.typesafe.config.Config
+import net.corda.utils.security.provider.JksDelegatedSigningService
 import net.corda.v5.base.util.toBase64
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito.mockConstruction
 import org.mockito.Mockito.mockStatic
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.io.InputStream
 import java.security.KeyStore
 
@@ -48,11 +51,9 @@ class SslConfigurationTest {
             RevocationConfig(RevocationConfigMode.SOFT_FAIL)
         )
         val keyStore = mock<KeyStore>()
-        mockStatic(KeyStore::class.java).use { mockStatic ->
-            mockStatic.`when`<KeyStore> {
-                KeyStore.getInstance("JKS")
-            }.doReturn(keyStore)
-
+        mockConstruction(JksDelegatedSigningService::class.java) { mock, _ ->
+            whenever(mock.asKeyStore()).doReturn(keyStore)
+        }.use {
             assertThat(config.keyStore).isSameAs(keyStore)
         }
     }
@@ -67,20 +68,11 @@ class SslConfigurationTest {
             revocationCheck =
             RevocationConfig(RevocationConfigMode.SOFT_FAIL)
         )
-        val data = argumentCaptor<InputStream>()
-        val password = argumentCaptor<CharArray>()
-        val keyStore = mock<KeyStore> {
-            on { load(data.capture(), password.capture()) } doAnswer {}
-        }
-        mockStatic(KeyStore::class.java).use { mockStatic ->
-            mockStatic.`when`<KeyStore> {
-                KeyStore.getInstance("JKS")
-            }.doReturn(keyStore)
-
+        mockConstruction(JksDelegatedSigningService::class.java) { _, context ->
+            assertThat(context.arguments()[1]).isEqualTo(byteArrayOf(1, 2, 3, 4))
+        }.use {
             config.keyStore
         }
-
-        assertThat(data.firstValue.readAllBytes()).isEqualTo(byteArrayOf(1, 2, 3, 4))
     }
 
     @Test
@@ -93,21 +85,13 @@ class SslConfigurationTest {
             revocationCheck =
             RevocationConfig(RevocationConfigMode.SOFT_FAIL)
         )
-        val data = argumentCaptor<InputStream>()
-        val password = argumentCaptor<CharArray>()
-        val keyStore = mock<KeyStore> {
-            on { load(data.capture(), password.capture()) } doAnswer {}
-        }
-        mockStatic(KeyStore::class.java).use { mockStatic ->
-            mockStatic.`when`<KeyStore> {
-                KeyStore.getInstance("JKS")
-            }.doReturn(keyStore)
-
+        mockConstruction(JksDelegatedSigningService::class.java) { _, context ->
+            assertThat(context.arguments()[2]).isEqualTo("password")
+        }.use {
             config.keyStore
         }
-
-        assertThat(password.firstValue).isEqualTo("password".toCharArray())
     }
+
     @Test
     fun `trustStore create key store`() {
         val config = SslConfiguration(
