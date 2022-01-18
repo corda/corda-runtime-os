@@ -21,46 +21,31 @@ import org.osgi.service.component.annotations.ReferencePolicy
 
 @Suppress("LongParameterList")
 @Component(service = [HttpRpcGateway::class])
-class HttpRpcGateway private constructor(
+class HttpRpcGateway @Activate constructor(
+    @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = ConfigurationReadService::class)
     configurationReadService: ConfigurationReadService,
+    @Reference(service = HttpRpcServerFactory::class)
     httpRpcServerFactory: HttpRpcServerFactory,
+    @Reference(service = RBACSecurityManagerService::class)
     rbacSecurityManagerService: RBACSecurityManagerService,
+    @Reference(service = SslCertReadServiceFactory::class)
     sslCertReadServiceFactory: SslCertReadServiceFactory,
-    permissionServiceComponent: PermissionServiceComponent,
-    dynamicRpcOps: List<PluggableRPCOps<out RpcOps>>
+    @Reference(service = PermissionServiceComponent::class)
+    permissionServiceComponent: PermissionServiceComponent
 ) : Lifecycle {
 
     private companion object {
         val log = contextLogger()
     }
 
-    @Reference(service = PluggableRPCOps::class, cardinality = ReferenceCardinality.MULTIPLE, policy = ReferencePolicy.DYNAMIC)
-    private val dynamicRpcOps: List<PluggableRPCOps<out RpcOps>> = dynamicRpcOps
-
-    @Activate
-    constructor(
-        @Reference(service = LifecycleCoordinatorFactory::class)
-        coordinatorFactory: LifecycleCoordinatorFactory,
-        @Reference(service = ConfigurationReadService::class)
-        configurationReadService: ConfigurationReadService,
-        @Reference(service = HttpRpcServerFactory::class)
-        httpRpcServerFactory: HttpRpcServerFactory,
-        @Reference(service = RBACSecurityManagerService::class)
-        rbacSecurityManagerService: RBACSecurityManagerService,
-        @Reference(service = SslCertReadServiceFactory::class)
-        sslCertReadServiceFactory: SslCertReadServiceFactory,
-        @Reference(service = PermissionServiceComponent::class)
-        permissionServiceComponent: PermissionServiceComponent,
-    ) : this(
-        coordinatorFactory,
-        configurationReadService,
-        httpRpcServerFactory,
-        rbacSecurityManagerService,
-        sslCertReadServiceFactory,
-        permissionServiceComponent,
-        mutableListOf()
+    @Reference(
+        service = PluggableRPCOps::class,
+        cardinality = ReferenceCardinality.MULTIPLE,
+        policy = ReferencePolicy.DYNAMIC
     )
+    private val dynamicRpcOps: List<PluggableRPCOps<out RpcOps>> = mutableListOf()
 
     private val handler = HttpRpcGatewayEventHandler(
         permissionServiceComponent,
