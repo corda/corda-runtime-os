@@ -8,7 +8,8 @@
     org.slf4j.simpleLogger.showThreadName=false,\
     org.slf4j.simpleLogger.showDateTime=true,\
     org.slf4j.simpleLogger.dateTimeFormat='yyyy-MM-dd HH:mm:ss:SSS Z'
-
+-runsystempackages: \
+    sun.security.x509
 -runrequires: \
     bnd.identity;id='net.corda.group-policy-impl',\
     bnd.identity;id='net.corda.configuration-read-impl',\
