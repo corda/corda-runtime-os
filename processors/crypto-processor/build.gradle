@@ -11,5 +11,8 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':libs:configuration:configuration-core')
+    implementation project(':libs:lifecycle:lifecycle')
     implementation 'net.corda:corda-base'
+
+    runtimeOnly project(':libs:lifecycle:lifecycle-impl')
 }
