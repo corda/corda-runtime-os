@@ -24,7 +24,7 @@ gradlew :applications:workers:release:crypto-worker:publishOSGiImage :applicatio
 In this folder run:
 
 ```shell
-docker compose -p "All Workers" up
+docker compose -p "All-Workers" up
 ```
 
 ### Verify everything works
