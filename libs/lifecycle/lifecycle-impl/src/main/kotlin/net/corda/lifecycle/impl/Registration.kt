@@ -2,7 +2,6 @@ package net.corda.lifecycle.impl
 
 import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.LifecycleCoordinator
-import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleException
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
