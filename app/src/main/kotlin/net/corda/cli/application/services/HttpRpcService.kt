@@ -19,7 +19,7 @@ class HttpRpcService() : HttpService {
     @CommandLine.Option(names = ["-p", "--password"], description = ["Password"], required = true)
     override var password: String? = null
 
-    @CommandLine.Option(names = ["-n", "--node-url"], description = ["The Swagger Url of the target Node."])
+    @CommandLine.Option(names = ["-t", "--target-url"], description = ["The Swagger Url of the target."])
     override var url: String? = null
 
     private val data: Map<String, Any>
