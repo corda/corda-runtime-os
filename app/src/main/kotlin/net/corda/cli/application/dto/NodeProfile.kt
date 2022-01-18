@@ -5,6 +5,6 @@ data class NodeProfile(
 )
 {
     override fun toString(): String {
-        return "url root: $urlRoot"
+        return "Node Profile Url Root: $urlRoot"
     }
 }

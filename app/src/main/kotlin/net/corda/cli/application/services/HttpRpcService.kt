@@ -99,7 +99,7 @@ class HttpRpcService() : HttpService {
 
     private fun checkUrl(): String? {
         if (!data.containsKey("url") && url.isNullOrEmpty()) {
-            println("A url must be supplied in either the profile yaml file, or as a parameter")
+            System.err.println("A url must be supplied in either the profile yaml file, or as a parameter")
             return null
         } else if (!url.isNullOrEmpty()) {
             return url

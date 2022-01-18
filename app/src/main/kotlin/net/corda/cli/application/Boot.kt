@@ -37,7 +37,7 @@ object Boot {
     fun run(vararg args: String) {
 
         //create storage dir if it doesn't exist
-        Files.cliHomeDir.mkdirs()
+        Files.cliHomeDir().mkdirs()
         Files.profile.createNewFile()
 
         //create http service
