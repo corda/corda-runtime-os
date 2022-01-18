@@ -12,6 +12,12 @@ import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.datamodel.ConfigAuditEntity
 import net.corda.libs.configuration.datamodel.ConfigEntity
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
+import net.corda.lifecycle.createCoordinator
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.permissions.cache.PermissionCacheService
@@ -20,16 +26,18 @@ import net.corda.permissions.storage.writer.PermissionStorageWriterService
 import net.corda.processors.db.DBProcessor
 import net.corda.processors.db.DBProcessorException
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.sql.SQLException
 import javax.sql.DataSource
 
-/** The processor for a `DBWorker`. */
 @Suppress("Unused", "LongParameterList")
 @Component(service = [DBProcessor::class])
 class DBProcessorImpl @Activate constructor(
+    @Reference(service = LifecycleCoordinatorFactory::class)
+    private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigWriteService::class)
     private val configWriteService: ConfigWriteService,
     @Reference(service = ConfigurationReadService::class)
@@ -50,42 +58,52 @@ class DBProcessorImpl @Activate constructor(
         private val log = contextLogger()
     }
 
+    private val lifecycleCoordinator = coordinatorFactory.createCoordinator<DBProcessorImpl>(::eventHandler)
+
     override fun start(bootConfig: SmartConfig) {
-        val dataSource = createDataSource(bootConfig)
-        checkDatabaseConnection(dataSource)
-        migrateDatabase(dataSource)
-
-        log.info("Starting ConfigWriteService")
-        configWriteService.start()
-
-        val instanceId = bootConfig.getInt(CONFIG_INSTANCE_ID)
-        val entityManagerFactory = createEntityManagerFactory(dataSource)
-        configWriteService.startProcessing(bootConfig, instanceId, entityManagerFactory)
-
-        // At the moment `configWriteService` does not seem to be piping initial configuration to
-        // `configurationReadService`, hence have to do it manually for now.
-        // Not even message is published on the config Kafka topic.
-        // This is very likely to be related to CORE-3316.
-        log.info("Starting configuration read service with bootstrap config ${bootConfig}.")
-        configurationReadService.start()
-        configurationReadService.bootstrapConfig(bootConfig)
-
-        log.info("Starting PermissionCacheService")
-        permissionCacheService.start()
-
-        log.info("Starting PermissionStorageReaderService")
-        permissionStorageReaderService.start()
-
-        log.info("Starting PermissionStorageWriterService")
-        permissionStorageWriterService.start()
+        log.info("DB processor starting.")
+        lifecycleCoordinator.start()
+        lifecycleCoordinator.postEvent(BootConfigEvent(bootConfig))
     }
 
     override fun stop() {
-        permissionStorageWriterService.stop()
-        permissionStorageReaderService.stop()
-        permissionCacheService.stop()
-        configWriteService.stop()
-        configurationReadService.stop()
+        log.info("DB processor stopping.")
+        lifecycleCoordinator.stop()
+    }
+
+    @Suppress("UNUSED_PARAMETER")
+    private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+        log.debug { "DB processor received event $event." }
+        when (event) {
+            is StartEvent -> {
+                configWriteService.start()
+                configurationReadService.start()
+                permissionCacheService.start()
+                permissionStorageReaderService.start()
+                permissionStorageWriterService.start()
+            }
+            is BootConfigEvent -> {
+                val dataSource = createDataSource(event.config)
+                checkDatabaseConnection(dataSource)
+                migrateDatabase(dataSource)
+
+                val instanceId = event.config.getInt(CONFIG_INSTANCE_ID)
+                val entityManagerFactory = createEntityManagerFactory(dataSource)
+                configWriteService.startProcessing(event.config, instanceId, entityManagerFactory)
+
+                configurationReadService.bootstrapConfig(event.config)
+            }
+            is StopEvent -> {
+                permissionStorageWriterService.stop()
+                permissionStorageReaderService.stop()
+                permissionCacheService.stop()
+                configWriteService.stop()
+                configurationReadService.stop()
+            }
+            else -> {
+                log.error("Unexpected event $event!")
+            }
+        }
     }
 
     /**
@@ -167,3 +185,5 @@ class DBProcessorImpl @Activate constructor(
     private fun getConfigStringOrNull(config: SmartConfig, path: String) =
         if (config.hasPath(path)) config.getString(path) else null
 }
+
+data class BootConfigEvent(val config: SmartConfig) : LifecycleEvent
