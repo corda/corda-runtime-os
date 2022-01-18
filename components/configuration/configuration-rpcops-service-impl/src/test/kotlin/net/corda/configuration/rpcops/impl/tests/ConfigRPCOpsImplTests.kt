@@ -14,6 +14,8 @@ import net.corda.libs.configuration.endpoints.v1.types.HTTPUpdateConfigResponse
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -190,6 +192,28 @@ class ConfigRPCOpsImplTests {
         }
 
         assertEquals("Could not publish updated configuration.", e.message)
+    }
+
+    @Test
+    fun `is not running if RPC sender is not created`() {
+        val configRPCOps = ConfigRPCOpsImpl(mock())
+        configRPCOps.setTimeout(0)
+        assertFalse(configRPCOps.isRunning)
+    }
+
+    @Test
+    fun `is not running if RPC timeout is not set`() {
+        val (_, configRPCOps) = getConfigRPCOps()
+        configRPCOps.createAndStartRPCSender(mock())
+        assertFalse(configRPCOps.isRunning)
+    }
+
+    @Test
+    fun `is running if RPC sender is created and RPC timeout is set`() {
+        val (_, configRPCOps) = getConfigRPCOps()
+        configRPCOps.createAndStartRPCSender(mock())
+        configRPCOps.setTimeout(0)
+        assertTrue(configRPCOps.isRunning)
     }
 
     /** Returns a [ConfigRPCOpsInternal] where the RPC sender returns [future] in response to any RPC requests. */

@@ -46,7 +46,7 @@ internal class ConfigRPCOpsImpl @Activate constructor(
     override val protocolVersion = 1
     private var rpcSender: RPCSender<ConfigurationManagementRequest, ConfigurationManagementResponse>? = null
     private var requestTimeout: Duration? = null
-    override val isRunning = rpcSender != null && requestTimeout != null
+    override val isRunning get() = rpcSender != null && requestTimeout != null
 
     override fun start() = Unit
 
