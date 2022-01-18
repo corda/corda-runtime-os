@@ -60,9 +60,6 @@ class GroupPolicyProviderIntegrationTest {
     @InjectService(timeout = 5000L)
     lateinit var publisherFactory: PublisherFactory
 
-    @InjectService(timeout = 5000L)
-    lateinit var smartConfigFactory: SmartConfigFactory
-
     lateinit var publisher: Publisher
 
     private val aliceX500Name = "C=GB, L=London, O=Alice"
@@ -84,9 +81,11 @@ class GroupPolicyProviderIntegrationTest {
         startableServices.forEach { it.startAndWait() }
 
         // Set basic bootstrap config
-        configurationReadService.bootstrapConfig(
-            smartConfigFactory.create(ConfigFactory.parseString(bootConf))
-        )
+        with(ConfigFactory.parseString(bootConf)) {
+            configurationReadService.bootstrapConfig(
+                SmartConfigFactory.create(this).create(this)
+            )
+        }
 
         // Create test data
         val cpiMetadata = getCpiMetadata()
