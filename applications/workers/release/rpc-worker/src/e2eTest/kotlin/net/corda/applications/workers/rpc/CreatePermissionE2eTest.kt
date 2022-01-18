@@ -3,9 +3,9 @@ package net.corda.applications.workers.rpc
 import net.corda.applications.workers.rpc.http.TestToolkitProperty
 import net.corda.httprpc.client.exceptions.MissingRequestedResourceException
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
-import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
-import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionResponseType
-import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
+import net.corda.libs.permissions.endpoints.v1.schema.CreatePermissionType
+import net.corda.libs.permissions.endpoints.v1.schema.CreatePermissionType.PermissionType
+import net.corda.libs.permissions.endpoints.v1.schema.PermissionResponseType
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.SoftAssertions.assertSoftly

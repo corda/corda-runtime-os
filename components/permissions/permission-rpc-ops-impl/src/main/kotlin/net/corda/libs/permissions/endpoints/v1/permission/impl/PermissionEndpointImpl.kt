@@ -7,8 +7,8 @@ import net.corda.libs.permissions.endpoints.common.PermissionEndpointEventHandle
 import net.corda.libs.permissions.endpoints.v1.converter.convertToDto
 import net.corda.libs.permissions.endpoints.v1.converter.convertToEndpointType
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
-import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
-import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionResponseType
+import net.corda.libs.permissions.endpoints.v1.schema.CreatePermissionType
+import net.corda.libs.permissions.endpoints.v1.schema.PermissionResponseType
 import net.corda.libs.permissions.manager.request.GetPermissionRequestDto
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory

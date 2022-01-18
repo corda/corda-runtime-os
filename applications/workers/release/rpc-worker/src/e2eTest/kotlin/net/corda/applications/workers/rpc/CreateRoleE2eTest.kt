@@ -4,10 +4,10 @@ import net.corda.applications.workers.rpc.http.TestToolkitProperty
 import net.corda.httprpc.client.exceptions.InternalErrorException
 import net.corda.httprpc.client.exceptions.MissingRequestedResourceException
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
-import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
-import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import net.corda.libs.permissions.endpoints.v1.role.RoleEndpoint
 import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
+import net.corda.libs.permissions.endpoints.v1.schema.CreatePermissionType
+import net.corda.libs.permissions.endpoints.v1.schema.CreatePermissionType.PermissionType
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.SoftAssertions.assertSoftly
@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
 import org.junit.jupiter.api.assertDoesNotThrow
+import java.time.Instant
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class CreateRoleE2eTest {
@@ -122,7 +123,7 @@ class CreateRoleE2eTest {
                     val role = proxy.getRole(roleId)
                     val permissionAssociationResponseType = role.permissions[0]
                     assertEquals(permId, permissionAssociationResponseType.id)
-                    assertTrue(permissionAssociationResponseType.createdTimestamp.isAfter(permTs))
+                    assertTrue(permissionAssociationResponseType.createdTimestamp.isAfter(Instant.ofEpochMilli(permTs)))
                 }
             }
 

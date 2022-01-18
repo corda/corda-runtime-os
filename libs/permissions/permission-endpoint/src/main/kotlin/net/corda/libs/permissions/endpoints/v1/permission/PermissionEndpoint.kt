@@ -6,8 +6,8 @@ import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
-import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
-import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionResponseType
+import net.corda.libs.permissions.endpoints.v1.schema.CreatePermissionType
+import net.corda.libs.permissions.endpoints.v1.schema.PermissionResponseType
 
 /**
  * Permission endpoint exposes HTTP endpoints for management of Permissions in the RBAC permission system.

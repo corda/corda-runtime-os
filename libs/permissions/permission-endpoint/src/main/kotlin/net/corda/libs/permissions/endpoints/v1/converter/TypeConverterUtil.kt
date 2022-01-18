@@ -130,7 +130,7 @@ fun PermissionResponseDto.convertToEndpointType(): PermissionResponseType {
     )
 }
 
-fun CreatePermissionType.PermissionType.toRequestDtoType(): InternalPermissionTypeEnum {
+fun PermissionType.toRequestDtoType(): InternalPermissionTypeEnum {
     return when(this) {
         PermissionType.ALLOW -> InternalPermissionTypeEnum.ALLOW
         PermissionType.DENY -> InternalPermissionTypeEnum.DENY
