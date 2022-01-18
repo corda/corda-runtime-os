@@ -1,4 +1,4 @@
-package net.corda.membership.grouppolicy.factory
+package net.corda.membership.grouppolicy.impl.factory
 
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory

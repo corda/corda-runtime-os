@@ -7,7 +7,7 @@ import net.corda.data.config.Configuration
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.GroupPolicy
-import net.corda.membership.grouppolicy.GroupPolicyProviderImpl
+import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -32,19 +32,21 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 
 @ExtendWith(ServiceExtension::class)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GroupPolicyProviderIntegrationTest {
     companion object {
-        val clientId = "group-policy-integration-test"
+        const val CLIENT_ID = "group-policy-integration-test"
     }
 
     @InjectService(timeout = 5000L)
-    lateinit var groupPolicyProvider: GroupPolicyProviderImpl
+    lateinit var groupPolicyProvider: GroupPolicyProvider
 
     @InjectService(timeout = 5000L)
     lateinit var virtualNodeInfoReader: VirtualNodeInfoReaderComponent
@@ -94,7 +96,7 @@ class GroupPolicyProviderIntegrationTest {
         val virtualNodeInfo = VirtualNodeInfo(aliceHoldingIdentity, cpiMetadata.id)
 
         // Publish test data
-        with(publisherFactory.createPublisher(PublisherConfig(clientId))) {
+        with(publisherFactory.createPublisher(PublisherConfig(CLIENT_ID))) {
             publishVirtualNodeInfo(virtualNodeInfo)
             publishCpiMetadata(cpiMetadata)
             publishMessagingConf()

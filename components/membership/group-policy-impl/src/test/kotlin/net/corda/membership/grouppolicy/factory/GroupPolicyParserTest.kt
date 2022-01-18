@@ -1,5 +1,6 @@
 package net.corda.membership.grouppolicy.factory
 
+import net.corda.membership.grouppolicy.impl.factory.GroupPolicyParser
 import net.corda.membership.staticmemberlist.StaticMemberTemplateExtension.Companion.mgmKeyAlias
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.uncheckedCast

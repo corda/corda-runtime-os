@@ -1,7 +1,6 @@
-package net.corda.membership.grouppolicy
+package net.corda.membership.grouppolicy.impl
 
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -12,7 +11,8 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.GroupPolicy
-import net.corda.membership.grouppolicy.factory.GroupPolicyParser
+import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.grouppolicy.impl.factory.GroupPolicyParser
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -25,7 +25,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.concurrent.ConcurrentHashMap
 
-@Component(service = [GroupPolicyProviderImpl::class])
+@Component(service = [GroupPolicyProvider::class])
 class GroupPolicyProviderImpl @Activate constructor(
     @Reference(service = VirtualNodeInfoReaderComponent::class)
     private val virtualNodeInfoReader: VirtualNodeInfoReaderComponent,
@@ -33,7 +33,7 @@ class GroupPolicyProviderImpl @Activate constructor(
     private val cpiInfoReader: CpiInfoReadService,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
-) : Lifecycle {
+) : GroupPolicyProvider {
 
     companion object {
         val logger = contextLogger()
@@ -51,9 +51,9 @@ class GroupPolicyProviderImpl @Activate constructor(
     private var _groupPolicies: MutableMap<HoldingIdentity, GroupPolicy>? = null
 
     private val coordinator = lifecycleCoordinatorFactory
-        .createCoordinator<GroupPolicyProviderImpl>(::handleEvent)
+        .createCoordinator<GroupPolicyProvider>(::handleEvent)
 
-    fun getGroupPolicy(
+    override fun getGroupPolicy(
         holdingIdentity: HoldingIdentity
     ) = lookupGroupPolicy(holdingIdentity) ?: parseGroupPolicy(holdingIdentity)
 
