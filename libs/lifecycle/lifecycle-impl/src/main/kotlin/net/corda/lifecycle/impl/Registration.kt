@@ -1,5 +1,6 @@
 package net.corda.lifecycle.impl
 
+import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleException
@@ -76,7 +77,10 @@ internal class Registration(
         }
     }
 
-    fun postCustomEvent(event: LifecycleEvent) {
+    /**
+     * Sends a custom event to this registration.
+     */
+    fun postCustomEvent(event: CustomEvent) {
         lock.withLock {
             if (!isClosed.get()) {
                 registeringCoordinator.postEvent(event)

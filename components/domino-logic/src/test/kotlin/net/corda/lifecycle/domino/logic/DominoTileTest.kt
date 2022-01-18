@@ -4,6 +4,7 @@ import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
+import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeast
+import org.mockito.kotlin.clearInvocations
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
@@ -760,48 +762,51 @@ class DominoTileTest {
         inner class StartTileTests {
             @Test
             fun `startTile will register to follow all the tiles on the first run`() {
-                val children = (1..3).map {
-                    DominoTile(
-                        "name-$it",
-                        mock {
-                            on { createCoordinator(any(), any()) } doReturn mock()
-                        }
-                    )
-                }
-                val tile = tile(children)
-
-                tile.start()
-
-                verify(coordinator).followStatusChangesByName(setOf(children[1].name))
-            }
-
-            @Test
-            fun `startTile will not register to follow any tile for the second time`() {
-                val children = (1..3).map {
-                    DominoTile(
-                        "name-$it",
-                        mock {
-                            on { createCoordinator(any(), any()) } doReturn mock()
-                        }
-                    )
-                }
-                val tile = tile(children)
-
-                tile.start()
-                tile.start()
-
-                verify(coordinator, times(1)).followStatusChangesByName(setOf(children[1].name))
-            }
-
-            @Test
-            fun `startTile will start all the children`() {
-                val children = listOf<DominoTile>(mock(), mock(), mock())
-                val tile = tile(children)
+                val children = arrayOf<Pair<StubDominoTile, RegistrationHandle>>(
+                    StubDominoTile(LifecycleCoordinatorName("component", "1")) to mock(),
+                    StubDominoTile(LifecycleCoordinatorName("component", "2")) to mock(),
+                    StubDominoTile(LifecycleCoordinatorName("component", "3")) to mock(),
+                )
+                val tile = tile(children.map { it.first.dominoTile })
 
                 tile.start()
 
                 children.forEach {
-                    verify(it, atLeast(1)).start()
+                    verify(coordinator).followStatusChangesByName(setOf(it.first.dominoTile.name))
+                }
+            }
+
+            @Test
+            fun `startTile will not register to follow any tile for the second time`() {
+                val children = arrayOf<Pair<StubDominoTile, RegistrationHandle>>(
+                    StubDominoTile(LifecycleCoordinatorName("component", "1")) to mock(),
+                    StubDominoTile(LifecycleCoordinatorName("component", "2")) to mock(),
+                    StubDominoTile(LifecycleCoordinatorName("component", "3")) to mock(),
+                )
+                val tile = tile(children.map { it.first.dominoTile })
+
+                tile.start()
+                tile.start()
+
+                children.forEach {
+                    verify(coordinator).followStatusChangesByName(setOf(it.first.dominoTile.name))
+                }
+            }
+
+            @Test
+            fun `startTile will start all the children`() {
+                val children = arrayOf<Pair<StubDominoTile, RegistrationHandle>>(
+                    StubDominoTile(LifecycleCoordinatorName("component", "1")) to mock(),
+                    StubDominoTile(LifecycleCoordinatorName("component", "2")) to mock(),
+                    StubDominoTile(LifecycleCoordinatorName("component", "3")) to mock(),
+                )
+                registerChildren(coordinator, children)
+                val tile = tile(children.map { it.first.dominoTile })
+
+                tile.start()
+
+                children.forEach {
+                    verify(it.first.dominoTile, atLeast(1)).start()
                 }
             }
         }
@@ -809,238 +814,172 @@ class DominoTileTest {
         @Nested
         inner class StartDependenciesIfNeededTests {
             @Test
-            fun `startDependenciesIfNeeded will start all if there is no error child`() {
-                val children = listOf<DominoTile>(
-                    mock {
-                        on { state } doReturn DominoTile.State.StoppedByParent
-                    },
-                    mock {
-                        on { state } doReturn DominoTile.State.Started
-                    },
-                    mock {
-                        on { state } doReturn DominoTile.State.Created
-                    },
+            fun `parent will start stopped children if errored child recovers`() {
+                val children = arrayOf<Pair<StubDominoTile, RegistrationHandle>>(
+                    StubDominoTile(LifecycleCoordinatorName("component", "1")) to mock(),
+                    StubDominoTile(LifecycleCoordinatorName("component", "2")) to mock(),
+                    StubDominoTile(LifecycleCoordinatorName("component", "3")) to mock(),
                 )
+                registerChildren(coordinator, children)
 
-                tile(children)
-                handler.lastValue.processEvent(
-                    RegistrationStatusChangeEvent(
-                        mock(),
-                        LifecycleStatus.UP
-                    ),
-                    coordinator
-                )
+                val tile = tile(children.map { it.first.dominoTile })
+                tile.start()
 
-                verify(children[0]).start()
-                verify(children[1]).start()
-                verify(children[2]).start()
+                // simulate children starting
+                children[0].first.setState(DominoTile.State.Started)
+                handler.lastValue.processEvent(CustomEvent(children[0].second,
+                    DominoTile.StatusChangeEvent(DominoTile.State.Created, DominoTile.State.Started)), coordinator)
+                children[1].first.setState(DominoTile.State.Started)
+                handler.lastValue.processEvent(CustomEvent(children[1].second,
+                    DominoTile.StatusChangeEvent(DominoTile.State.Created, DominoTile.State.Started)), coordinator)
+                children[2].first.setState(DominoTile.State.Started)
+                handler.lastValue.processEvent(CustomEvent(children[2].second,
+                    DominoTile.StatusChangeEvent(DominoTile.State.Created, DominoTile.State.Started)), coordinator)
+                // simulate child failing
+                children[2].first.setState(DominoTile.State.StoppedDueToError)
+                handler.lastValue.processEvent(CustomEvent(children[2].second,
+                    DominoTile.StatusChangeEvent(DominoTile.State.Started, DominoTile.State.StoppedDueToError)), coordinator)
+
+                // verify other children stopped
+                verify(children[0].first.dominoTile).stop()
+                verify(children[1].first.dominoTile).stop()
+                children[0].first.setState(DominoTile.State.StoppedByParent)
+                handler.lastValue.processEvent(CustomEvent(children[0].second,
+                    DominoTile.StatusChangeEvent(DominoTile.State.Started, DominoTile.State.StoppedByParent)), coordinator)
+                children[1].first.setState(DominoTile.State.StoppedByParent)
+                handler.lastValue.processEvent(CustomEvent(children[1].second,
+                    DominoTile.StatusChangeEvent(DominoTile.State.Started, DominoTile.State.StoppedByParent)), coordinator)
+
+                // simulate errored child recovering
+                children.forEach { clearInvocations(it.first.dominoTile) }
+                children[2].first.setState(DominoTile.State.Started)
+                handler.lastValue.processEvent(CustomEvent(children[2].second,
+                    DominoTile.StatusChangeEvent(DominoTile.State.StoppedDueToError, DominoTile.State.Started)), coordinator)
+
+
+                verify(children[0].first.dominoTile).start()
+                verify(children[1].first.dominoTile).start()
             }
 
             @Test
-            fun `startDependenciesIfNeeded will set status to up if all are running`() {
-                val children = listOf<DominoTile>(
-                    mock {
-                        on { state } doReturn DominoTile.State.Started
-                        on { isRunning } doReturn true
-                    },
-                    mock {
-                        on { state } doReturn DominoTile.State.Started
-                        on { isRunning } doReturn true
-                    },
-                    mock {
-                        on { state } doReturn DominoTile.State.Started
-                        on { isRunning } doReturn true
-                    },
+            fun `parent status will be set to started if all are running`() {
+                val children = arrayOf<Pair<StubDominoTile, RegistrationHandle>>(
+                    StubDominoTile(LifecycleCoordinatorName("component", "1")) to mock(),
+                    StubDominoTile(LifecycleCoordinatorName("component", "2")) to mock(),
+                    StubDominoTile(LifecycleCoordinatorName("component", "3")) to mock(),
                 )
+                registerChildren(coordinator, children)
 
-                val tile = tile(children)
-                handler.lastValue.processEvent(
-                    RegistrationStatusChangeEvent(
-                        mock(),
-                        LifecycleStatus.UP
-                    ),
-                    coordinator
-                )
+                val tile = tile(children.map { it.first.dominoTile })
+                tile.start()
+
+                // simulate children starting
+                children[0].first.setState(DominoTile.State.Started)
+                handler.lastValue.processEvent(CustomEvent(children[0].second,
+                    DominoTile.StatusChangeEvent(DominoTile.State.Created, DominoTile.State.Started)), coordinator)
+                children[1].first.setState(DominoTile.State.Started)
+                handler.lastValue.processEvent(CustomEvent(children[1].second,
+                    DominoTile.StatusChangeEvent(DominoTile.State.Created, DominoTile.State.Started)), coordinator)
+                children[2].first.setState(DominoTile.State.Started)
+                handler.lastValue.processEvent(CustomEvent(children[2].second,
+                    DominoTile.StatusChangeEvent(DominoTile.State.Created, DominoTile.State.Started)), coordinator)
 
                 assertThat(tile.isRunning).isTrue
             }
 
             @Test
-            fun `startDependenciesIfNeeded will not start any if there is error child`() {
-                val children = listOf<DominoTile>(
-                    mock {
-                        on { state } doReturn DominoTile.State.StoppedByParent
-                    },
-                    mock {
-                        on { state } doReturn DominoTile.State.Started
-                    },
-                    mock {
-                        on { state } doReturn DominoTile.State.StoppedDueToError
-                    },
-                    mock {
-                        on { state } doReturn DominoTile.State.Created
-                    },
-                    mock {
-                        on { state } doReturn DominoTile.State.StoppedDueToBadConfig
-                    },
+            fun `parent will stop a child that recovers from error if there are still errored children`() {
+                val children = arrayOf<Pair<StubDominoTile, RegistrationHandle>>(
+                    StubDominoTile(LifecycleCoordinatorName("component" , "1")) to mock(),
+                    StubDominoTile(LifecycleCoordinatorName("component" , "2")) to mock(),
+                    StubDominoTile(LifecycleCoordinatorName("component" , "3")) to mock(),
                 )
+                registerChildren(coordinator, children)
 
-                tile(children)
-                handler.lastValue.processEvent(
-                    RegistrationStatusChangeEvent(
-                        mock(),
-                        LifecycleStatus.UP
-                    ),
-                    coordinator
-                )
+                val tile = tile(children.map { it.first.dominoTile })
+                tile.start()
 
-                children.forEach {
-                    verify(it, never()).start()
-                }
+                // simulate children starting
+                children[0].first.setState(DominoTile.State.Started)
+                handler.lastValue.processEvent(CustomEvent(children[0].second,
+                    DominoTile.StatusChangeEvent(DominoTile.State.Created, DominoTile.State.Started)), coordinator)
+                children[1].first.setState(DominoTile.State.Started)
+                handler.lastValue.processEvent(CustomEvent(children[1].second,
+                    DominoTile.StatusChangeEvent(DominoTile.State.Created, DominoTile.State.Started)), coordinator)
+                children[2].first.setState(DominoTile.State.Started)
+                handler.lastValue.processEvent(CustomEvent(children[2].second,
+                    DominoTile.StatusChangeEvent(DominoTile.State.Created, DominoTile.State.Started)), coordinator)
+                // simulate two children failing
+                children[0].first.setState(DominoTile.State.StoppedDueToError)
+                handler.lastValue.processEvent(CustomEvent(children[0].second,
+                    DominoTile.StatusChangeEvent(DominoTile.State.Started, DominoTile.State.StoppedDueToError)), coordinator)
+                children[1].first.setState(DominoTile.State.StoppedDueToError)
+                handler.lastValue.processEvent(CustomEvent(children[1].second,
+                    DominoTile.StatusChangeEvent(DominoTile.State.Started, DominoTile.State.StoppedDueToError)), coordinator)
+
+
+                clearInvocations(children[0].first.dominoTile)
+                // simulate one child recovering
+                children[0].first.setState(DominoTile.State.Started)
+                handler.lastValue.processEvent(CustomEvent(children[0].second,
+                    DominoTile.StatusChangeEvent(DominoTile.State.StoppedDueToError, DominoTile.State.Started)), coordinator)
+
+                verify(children[0].first.dominoTile).stop()
             }
 
             @Test
-            fun `startDependenciesIfNeeded will stop all children which are Created or Started`() {
-                val children = listOf<DominoTile>(
-                    mock {
-                        on { state } doReturn DominoTile.State.StoppedByParent
-                    },
-                    mock {
-                        on { state } doReturn DominoTile.State.Started
-                        on { isRunning } doReturn true
-                    },
-                    mock {
-                        on { state } doReturn DominoTile.State.StoppedDueToError
-                    },
-                    mock {
-                        on { state } doReturn DominoTile.State.StoppedDueToBadConfig
-                    },
-                    mock {
-                        on { state } doReturn DominoTile.State.Created
-                    },
+            fun `parent status will be set to Started if all the children are started`() {
+                val children = arrayOf<Pair<StubDominoTile, RegistrationHandle>>(
+                    StubDominoTile(LifecycleCoordinatorName("component" , "1")) to mock(),
+                    StubDominoTile(LifecycleCoordinatorName("component" , "2")) to mock(),
+                    StubDominoTile(LifecycleCoordinatorName("component" , "3")) to mock(),
                 )
+                registerChildren(coordinator, children)
 
-                tile(children)
-                handler.lastValue.processEvent(
-                    RegistrationStatusChangeEvent(
-                        mock(),
-                        LifecycleStatus.UP
-                    ),
-                    coordinator
-                )
+                val tile = tile(children.map { it.first.dominoTile })
+                tile.start()
 
-                verify(children[0], never()).stop()
-                verify(children[1]).stop()
-                verify(children[2], never()).stop()
-                verify(children[3], never()).stop()
-                verify(children[4]).stop()
+                // simulate children starting
+                children[0].first.setState(DominoTile.State.Started)
+                handler.lastValue.processEvent(CustomEvent(children[0].second,
+                    DominoTile.StatusChangeEvent(DominoTile.State.Created, DominoTile.State.Started)), coordinator)
+                children[1].first.setState(DominoTile.State.Started)
+                handler.lastValue.processEvent(CustomEvent(children[1].second,
+                    DominoTile.StatusChangeEvent(DominoTile.State.Created, DominoTile.State.Started)), coordinator)
+                children[2].first.setState(DominoTile.State.Started)
+                handler.lastValue.processEvent(CustomEvent(children[2].second,
+                    DominoTile.StatusChangeEvent(DominoTile.State.Created, DominoTile.State.Started)), coordinator)
+
+                assertThat(tile.state).isEqualTo(DominoTile.State.Started)
             }
 
             @Test
-            fun `Tests for startKidsIfNeeded`() {
-                val children = listOf<DominoTile>(
-                    mock {
-                        on { state } doReturn DominoTile.State.StoppedByParent
-                    },
-                    mock {
-                        on { state } doReturn DominoTile.State.StoppedDueToError
-                    },
-                    mock {
-                        on { state } doReturn DominoTile.State.Created
-                    },
+            fun `parent status will not be set to Started if some children have not started yet`() {
+                val children = arrayOf<Pair<StubDominoTile, RegistrationHandle>>(
+                    StubDominoTile(LifecycleCoordinatorName("component" , "1")) to mock(),
+                    StubDominoTile(LifecycleCoordinatorName("component" , "2")) to mock(),
+                    StubDominoTile(LifecycleCoordinatorName("component" , "3")) to mock(),
                 )
+                registerChildren(coordinator, children)
 
-                tile(children)
-                handler.lastValue.processEvent(
-                    RegistrationStatusChangeEvent(
-                        mock(),
-                        LifecycleStatus.UP
-                    ),
-                    coordinator
-                )
+                val tile = tile(children.map { it.first.dominoTile })
+                tile.start()
 
-                verify(children[1], never()).start()
-            }
+                // simulate only 2 out of 3 children starting
+                children[0].first.setState(DominoTile.State.Started)
+                handler.lastValue.processEvent(CustomEvent(children[0].second,
+                    DominoTile.StatusChangeEvent(DominoTile.State.Created, DominoTile.State.Started)), coordinator)
+                children[1].first.setState(DominoTile.State.Started)
+                handler.lastValue.processEvent(CustomEvent(children[1].second,
+                    DominoTile.StatusChangeEvent(DominoTile.State.Created, DominoTile.State.Started)), coordinator)
 
-            @Test
-            fun `startKidsIfNeeded will set the status to UP if all the children are running`() {
-                val children = listOf<DominoTile>(
-                    mock {
-                        on { isRunning } doReturn true
-                    },
-                    mock {
-                        on { isRunning } doReturn true
-                    },
-                    mock {
-                        on { isRunning } doReturn true
-                    },
-                )
-
-                val tile = tile(children)
-                handler.lastValue.processEvent(
-                    RegistrationStatusChangeEvent(
-                        mock(),
-                        LifecycleStatus.UP
-                    ),
-                    coordinator
-                )
-
-                assertThat(tile.isRunning).isTrue
-            }
-            @Test
-            fun `startKidsIfNeeded will not set the status to UP if a child is not running`() {
-                val children = listOf<DominoTile>(
-                    mock {
-                        on { isRunning } doReturn true
-                    },
-                    mock {
-                        on { isRunning } doReturn false
-                    },
-                    mock {
-                        on { isRunning } doReturn true
-                    },
-                )
-
-                val tile = tile(children)
-                handler.lastValue.processEvent(
-                    RegistrationStatusChangeEvent(
-                        mock(),
-                        LifecycleStatus.UP
-                    ),
-                    coordinator
-                )
-
-                assertThat(tile.isRunning).isFalse
+                assertThat(tile.state).isEqualTo(DominoTile.State.Created)
+                assertThat(tile.isRunning).isFalse()
             }
         }
 
         @Nested
         inner class HandleEventTests {
-            @Test
-            fun `up will start the tile`() {
-                val children = listOf<DominoTile>(
-                    mock {
-                        on { isRunning } doReturn true
-                    },
-                    mock {
-                        on { isRunning } doReturn true
-                    },
-                    mock {
-                        on { isRunning } doReturn true
-                    },
-                )
-                val tileWithStartedChildren = tile(children)
-
-                handler.lastValue.processEvent(
-                    RegistrationStatusChangeEvent(
-                        mock(),
-                        LifecycleStatus.UP
-                    ),
-                    coordinator
-                )
-
-                assertThat(tileWithStartedChildren.isRunning).isEqualTo(true)
-            }
 
             @Test
             fun `other events will not throw an exception`() {
@@ -1059,58 +998,20 @@ class DominoTileTest {
             }
 
             @Test
-            fun `down without error will stop the tile`() {
-                val children = listOf(
-                    mock<DominoTile> {
-                        on { state } doReturn DominoTile.State.StoppedByParent
-                    }
+            fun `when a child goes down with error, the parent also stops due to error`() {
+                val children = arrayOf<Pair<StubDominoTile, RegistrationHandle>>(
+                    StubDominoTile(LifecycleCoordinatorName("component", "1")) to mock(),
+                    StubDominoTile(LifecycleCoordinatorName("component", "2")) to mock(),
+                    StubDominoTile(LifecycleCoordinatorName("component", "3")) to mock(),
                 )
+                registerChildren(coordinator, children)
 
-                tile(children)
-                handler.lastValue.processEvent(
-                    RegistrationStatusChangeEvent(
-                        mock(),
-                        LifecycleStatus.DOWN
-                    ),
-                    coordinator
-                )
-
-                verify(children.first()).stop()
-            }
-
-            @Test
-            fun `down with error will post error`() {
-                val children = listOf(
-                    mock {
-                        on { state } doReturn DominoTile.State.StoppedDueToError
-                        on { name } doReturn LifecycleCoordinatorName("component", "1")
-                    },
-                    mock {
-                        on { state } doReturn DominoTile.State.StoppedDueToBadConfig
-                        on { name } doReturn LifecycleCoordinatorName("component", "2")
-                    },
-                    mock<DominoTile> {
-                        on { state } doReturn DominoTile.State.StoppedByParent
-                        on { name } doReturn LifecycleCoordinatorName("component", "3")
-                    }
-                )
-                val childrenToHandles = children.map { it.name to mock<RegistrationHandle>() }.toMap()
-                children.forEach {
-                    whenever(coordinator.followStatusChangesByName(any())).thenAnswer {
-                        @Suppress("UNCHECKED_CAST")
-                        childrenToHandles[(it.arguments[0] as Set<LifecycleCoordinatorName>).first()]
-                    }
-                }
-
-                val tile = tile(children)
+                val tile = tile(children.map { it.first.dominoTile })
                 tile.start()
-                handler.lastValue.processEvent(
-                    RegistrationStatusChangeEvent(
-                        childrenToHandles[children[0].name]!!,
-                        LifecycleStatus.ERROR
-                    ),
-                    coordinator
-                )
+
+                children[0].first.setState(DominoTile.State.StoppedDueToError)
+                handler.lastValue.processEvent(CustomEvent(children[0].second,
+                    DominoTile.StatusChangeEvent(DominoTile.State.Created, DominoTile.State.StoppedDueToError)), coordinator)
 
                 assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
             }
@@ -1119,44 +1020,21 @@ class DominoTileTest {
         @Nested
         inner class StopTileTests {
             @Test
-            fun `stopTile will stop all the non error children`() {
-                val children = listOf<DominoTile>(
-                    mock {
-                        on { state } doReturn DominoTile.State.Started
-                    },
-                    mock {
-                        on { state } doReturn DominoTile.State.StoppedDueToError
-                    },
-                    mock {
-                        on { state } doReturn DominoTile.State.Created
-                    }
+            fun `stopTile will stop all the children`() {
+                val children = arrayOf<Pair<StubDominoTile, RegistrationHandle>>(
+                    StubDominoTile(LifecycleCoordinatorName("component", "1")) to mock(),
+                    StubDominoTile(LifecycleCoordinatorName("component", "2")) to mock(),
+                    StubDominoTile(LifecycleCoordinatorName("component", "3")) to mock(),
                 )
-                val tile = tile(children)
+                registerChildren(coordinator, children)
+
+                val tile = tile(children.map { it.first.dominoTile })
+                tile.start()
 
                 tile.stop()
-
-                verify(children[0]).stop()
-                verify(children[2]).stop()
-            }
-
-            @Test
-            fun `stopTile will not stop error children`() {
-                val children = listOf<DominoTile>(
-                    mock {
-                        on { state } doReturn DominoTile.State.Started
-                    },
-                    mock {
-                        on { state } doReturn DominoTile.State.StoppedDueToError
-                    },
-                    mock {
-                        on { state } doReturn DominoTile.State.Created
-                    }
-                )
-                val tile = tile(children)
-
-                tile.stop()
-
-                verify(children[1], never()).stop()
+                verify(children[0].first.dominoTile).stop()
+                verify(children[1].first.dominoTile).stop()
+                verify(children[2].first.dominoTile).stop()
             }
         }
 
@@ -1164,15 +1042,16 @@ class DominoTileTest {
         inner class CloseTests {
             @Test
             fun `close will close the registrations`() {
-                val children = listOf<DominoTile>(mock())
-                val registration = mock<RegistrationHandle>()
-                doReturn(registration).whenever(coordinator).followStatusChangesByName(any())
-                val tile = tile(children)
+                val children = arrayOf<Pair<StubDominoTile, RegistrationHandle>>(
+                    StubDominoTile(LifecycleCoordinatorName("component", "1")) to mock()
+                )
+                registerChildren(coordinator, children)
+
+                val tile = tile(children.map { it.first.dominoTile })
                 tile.start()
 
                 tile.close()
-
-                verify(registration).close()
+                verify(children[0].first.dominoTile).close()
             }
 
             @Test
@@ -1199,12 +1078,16 @@ class DominoTileTest {
 
             @Test
             fun `close will close the children`() {
-                val children = listOf<DominoTile>(mock())
-                val tile = tile(children)
+                val children = arrayOf<Pair<StubDominoTile, RegistrationHandle>>(
+                    StubDominoTile(LifecycleCoordinatorName("component", "1")) to mock()
+                )
+                registerChildren(coordinator, children)
+
+                val tile = tile(children.map { it.first.dominoTile })
+                tile.start()
 
                 tile.close()
-
-                verify(children.first()).close()
+                verify(children[0].first.dominoTile).close()
             }
 
             @Test
@@ -1212,10 +1095,14 @@ class DominoTileTest {
                 val children = listOf<DominoTile>(
                     mock {
                         on { close() } doThrow RuntimeException("")
+                        on { name } doReturn LifecycleCoordinatorName("component", "1")
                     }
                 )
+                val registration = mock<RegistrationHandle>()
+                whenever(coordinator.followStatusChangesByName(any())).thenReturn(registration)
                 val tile = tile(children)
 
+                tile.start()
                 tile.close()
             }
         }
@@ -1374,6 +1261,32 @@ class DominoTileTest {
             resourceFuture.completeExceptionally(IOException())
 
             assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
+        }
+    }
+
+    private class StubDominoTile(coordinatorName: LifecycleCoordinatorName) {
+
+        val dominoTile by lazy {
+            mock<DominoTile> {
+                on { state } doAnswer { currentState }
+                on { name } doReturn coordinatorName
+                on { isRunning } doAnswer { currentState == DominoTile.State.Started }
+            }
+        }
+        private var currentState: DominoTile.State = DominoTile.State.Created
+
+        fun setState(state: DominoTile.State) {
+            currentState = state
+        }
+
+    }
+
+    private fun registerChildren(coordinator: LifecycleCoordinator, children: Array<Pair<StubDominoTile, RegistrationHandle>>) {
+        whenever(coordinator.followStatusChangesByName(any())).thenAnswer { answer ->
+            @Suppress("UNCHECKED_CAST")
+            val name = answer.arguments[0] as Set<LifecycleCoordinatorName>
+            val registration = children.first { it.first.dominoTile.name == name.single() }.second
+            registration
         }
     }
 }

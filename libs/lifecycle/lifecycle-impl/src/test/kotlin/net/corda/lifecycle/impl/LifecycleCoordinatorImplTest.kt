@@ -1,5 +1,6 @@
 package net.corda.lifecycle.impl
 
+import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -14,6 +15,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
 import net.corda.lifecycle.impl.LifecycleProcessor.Companion.STOPPED_REASON
 import net.corda.lifecycle.impl.registry.LifecycleRegistryCoordinatorAccess
+import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -1030,6 +1032,31 @@ internal class LifecycleCoordinatorImplTest {
         val coordinator = createCoordinator { _, _ -> }
         assertThrows<LifecycleException> {
             coordinator.followStatusChanges(setOf(coordinator))
+        }
+    }
+
+    @Test
+    fun `custom events are sent to registered coordinators`() {
+        class CustomEventData(val value: String)
+        val receivedEvents = mutableListOf<LifecycleEvent>()
+
+        val trackedCoordinator = createCoordinator { _, _ -> }
+        val trackingCoordinator = createCoordinator { event, _ ->
+            receivedEvents.add(event)
+        }
+        trackedCoordinator.start()
+        trackingCoordinator.start()
+
+        trackingCoordinator.followStatusChanges(setOf(trackedCoordinator))
+
+        val eventData = "hello world"
+        eventually {
+            trackedCoordinator.postCustomEventToFollowers(CustomEventData(eventData))
+
+            val customEvents = receivedEvents.filterIsInstance<CustomEvent>()
+                .map { it.payload }.filterIsInstance<CustomEventData>()
+                .filter { it.value == eventData }
+            assertThat(customEvents).hasSizeGreaterThan(1)
         }
     }
 
