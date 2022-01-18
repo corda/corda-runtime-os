@@ -46,6 +46,9 @@ class KafkaSoftPersistenceProvider : SoftPersistenceProvider, Lifecycle, CryptoL
     }
 
     override fun handleConfigEvent(config: CryptoLibraryConfig) {
+        if(!isRunning) {
+            throw IllegalStateException("The provider haven't been started yet.")
+        }
         logger.info("Received new configuration...")
         instantiate(config)
     }

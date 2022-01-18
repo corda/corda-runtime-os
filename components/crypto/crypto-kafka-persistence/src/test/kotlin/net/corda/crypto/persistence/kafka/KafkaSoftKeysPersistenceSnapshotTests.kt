@@ -16,7 +16,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
-class KafkaDefaultCryptoKeysPersistenceSnapshotTests {
+class KafkaSoftKeysPersistenceSnapshotTests {
     private lateinit var tenantId: String
     private lateinit var alias1: String
     private lateinit var alias2: String

@@ -45,6 +45,9 @@ class KafkaSigningKeysPersistenceProvider : SigningKeysPersistenceProvider, Life
     }
 
     override fun handleConfigEvent(config: CryptoLibraryConfig) {
+        if(!isRunning) {
+            throw IllegalStateException("The provider haven't been started yet.")
+        }
         logger.info("Received new configuration...")
         instantiate(config)
     }

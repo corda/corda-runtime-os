@@ -21,7 +21,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 
-class KafkaSigningKeysPersistenceProcessorSnapshotTests {
+class KafkaSigningKeysPersistenceSnapshotTests {
     private lateinit var tenantId: String
     private lateinit var kafka: KafkaInfrastructure
     private lateinit var provider: KafkaSigningKeysPersistenceProvider

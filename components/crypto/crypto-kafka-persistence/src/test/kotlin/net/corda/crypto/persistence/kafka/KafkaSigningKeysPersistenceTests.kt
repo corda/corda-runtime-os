@@ -22,29 +22,24 @@ import kotlin.test.assertSame
 
 class KafkaSigningKeysPersistenceTests {
     private lateinit var tenantId: String
-    private lateinit var tenantId2: String
     private lateinit var alias1: String
     private lateinit var kafka: KafkaInfrastructure
     private lateinit var provider: KafkaSigningKeysPersistenceProvider
     private lateinit var signingPersistence: KeyValuePersistence<SigningKeysRecord, SigningKeysRecord>
-    private lateinit var signingPersistence2: KeyValuePersistence<SigningKeysRecord, SigningKeysRecord>
 
     @BeforeEach
     fun setup() {
         tenantId = UUID.randomUUID().toString()
-        tenantId2 = UUID.randomUUID().toString()
         alias1 = UUID.randomUUID().toString()
         kafka = KafkaInfrastructure()
         provider = kafka.createSigningKeysPersistenceProvider()
         signingPersistence = provider.getInstance(tenantId) { it }
-        signingPersistence2 = provider.getInstance(tenantId2) { it }
     }
 
     @AfterEach
     fun cleanup() {
         (provider as AutoCloseable).close()
         (signingPersistence as AutoCloseable).close()
-        (signingPersistence2 as AutoCloseable).close()
     }
 
     private fun assertRecord(
