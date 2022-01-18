@@ -117,13 +117,15 @@ class SessionEventExecutor(
         } else {
             //reusing SessionInit object for inbound and outbound traffic rather than creating a new object identical to SessionInit
             //with an extra field of flowKey. set flowkey to null to not expose it on outbound messages
+            val sessionId = generateOutboundSessionId(sessionKey)
             val tmpFLowEventKey = sessionInit.flowKey
             sessionInit.flowKey = null
             sessionEvent.payload = sessionInit
+            sessionEvent.sessionId = sessionId
 
             SessionInitOutputs(
                 tmpFLowEventKey,
-                generateOutboundSessionId(sessionKey),
+                sessionId,
                 FlowMapperEvent(sessionEvent)
             )
         }

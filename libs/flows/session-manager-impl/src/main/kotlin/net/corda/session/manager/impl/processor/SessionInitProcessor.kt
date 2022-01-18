@@ -55,8 +55,8 @@ class SessionInitProcessor(
         val newSessionState = SessionState(
             sessionId, instant.toEpochMilli(), sessionInit.initiatingIdentity,
             false,
-            SessionProcessState(seqNum, listOf(sessionEvent)),
-            SessionProcessState(seqNum - 1, emptyList()),
+            SessionProcessState(seqNum, mutableListOf(sessionEvent)),
+            SessionProcessState(seqNum - 1, mutableListOf()),
             SessionStateType.CONFIRMED
         )
         return SessionEventResult(newSessionState, generateAckRecord(seqNum, sessionId, instant))
@@ -65,15 +65,18 @@ class SessionInitProcessor(
     private fun getSessionInitOutboundResult(sessionInit: SessionInit): SessionEventResult {
         val sessionId = generateSessionId()
         val seqNum = 1
+        sessionEvent.sessionId = sessionId
+        sessionEvent.sequenceNum = seqNum
+        sessionEvent.timestamp = instant.toEpochMilli()
         val newSessionState = SessionState(
             sessionId, instant.toEpochMilli(), sessionInit.initiatingIdentity,
             true,
-            SessionProcessState(seqNum-1,listOf()),
-            SessionProcessState(seqNum, listOf(sessionEvent)),
+            SessionProcessState(seqNum-1, mutableListOf()),
+            SessionProcessState(seqNum, mutableListOf(sessionEvent)),
             SessionStateType.CREATED
         )
 
-        return SessionEventResult(newSessionState, generateOutBoundRecord(sessionInit, sessionId, instant))
+        return SessionEventResult(newSessionState, generateOutBoundRecord(sessionEvent, sessionId))
     }
 
     /**

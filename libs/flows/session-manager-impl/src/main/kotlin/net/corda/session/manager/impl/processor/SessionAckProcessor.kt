@@ -36,10 +36,15 @@ class SessionAckProcessor(
             logger.debug { "Received SessionAck on key $flowKey for seqNum $sequenceNum for session state: $sessionState" }
             val undeliveredMessages = sessionState.sentEventsState.undeliveredMessages
             undeliveredMessages.removeIf { it.sequenceNum == sequenceNum}
+
             if (sessionState.status == SessionStateType.WAIT_FOR_FINAL_ACK && undeliveredMessages.isEmpty()) {
                 logger.debug { "Updating session state to ${SessionStateType.CLOSED} for session state $sessionState" }
                 sessionState.status = SessionStateType.CLOSED
+            } else if (sessionState.status == SessionStateType.CREATED && undeliveredMessages.isEmpty()) {
+                logger.debug { "Updating session state to ${SessionStateType.CONFIRMED} for session state $sessionState" }
+                sessionState.status = SessionStateType.CONFIRMED
             }
+
             SessionEventResult(sessionState, null)
         }
     }

@@ -31,7 +31,7 @@ class SessionErrorProcessor(
     override fun execute(): SessionEventResult {
         val sessionId = sessionEvent.sessionId
         val messageDirection = sessionEvent.messageDirection
-        return if (messageDirection == MessageDirection.OUTBOUND) {
+        return if (messageDirection == MessageDirection.INBOUND) {
             getSessionErrorReceivedResult(sessionId)
         } else {
             getSendSessionErrorResult(sessionId)
@@ -50,7 +50,9 @@ class SessionErrorProcessor(
                         "Updating status from ${sessionState.status} to ${SessionStateType.ERROR}. Error message: $exceptionEnvelope"
             )
             sessionState.status = SessionStateType.ERROR
-            SessionEventResult(sessionState, generateOutBoundRecord(sessionEvent, sessionEvent.sessionId, instant))
+            sessionEvent.timestamp = instant.toEpochMilli()
+            sessionEvent.sequenceNum = null
+            SessionEventResult(sessionState, generateOutBoundRecord(sessionEvent, sessionEvent.sessionId))
         }
     }
 

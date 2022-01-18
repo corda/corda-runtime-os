@@ -20,14 +20,8 @@ fun generateAckRecord(sequenceNum: Int, sessionId: String, instant: Instant): Re
     )
 }
 
-fun generateOutBoundRecord(payload: Any, sessionId: String, instant: Instant): Record<String, FlowMapperEvent> {
-    return Record(
-        FLOW_MAPPER_EVENT_TOPIC, sessionId, FlowMapperEvent(
-            SessionEvent(
-                MessageDirection.OUTBOUND, instant.toEpochMilli(), sessionId, null, payload
-            )
-        )
-    )
+fun generateOutBoundRecord(payload: SessionEvent, sessionId: String): Record<String, FlowMapperEvent> {
+    return Record(FLOW_MAPPER_EVENT_TOPIC, sessionId, FlowMapperEvent(payload))
 }
 
 fun generateErrorEvent(sessionId: String, errorMessage: String, errorType: String, instant: Instant):

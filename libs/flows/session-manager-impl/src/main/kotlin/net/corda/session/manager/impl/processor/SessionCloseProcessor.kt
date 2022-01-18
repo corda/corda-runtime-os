@@ -53,15 +53,16 @@ class SessionCloseProcessor(
             val undeliveredMessages = sentEventState.undeliveredMessages?.toMutableList() ?: mutableListOf()
             undeliveredMessages.add(sessionEvent)
             sessionEvent.sequenceNum = nextSeqNum
+            sessionEvent.timestamp = instant.toEpochMilli()
 
             when (val currentState = sessionState.status) {
                 SessionStateType.CONFIRMED -> {
                     sessionState.status = SessionStateType.CLOSING
-                    SessionEventResult(sessionState, generateOutBoundRecord(sessionEvent, sessionId, instant))
+                    SessionEventResult(sessionState, generateOutBoundRecord(sessionEvent, sessionId))
                 }
                 SessionStateType.CLOSING -> {
                     //Doesn't go to closed until ack received
-                    SessionEventResult(sessionState, generateOutBoundRecord(sessionEvent, sessionId, instant))
+                    SessionEventResult(sessionState, generateOutBoundRecord(sessionEvent, sessionId))
                 }
                 SessionStateType.CLOSED -> {
                     //session is already completed successfully. Indicates bug.
