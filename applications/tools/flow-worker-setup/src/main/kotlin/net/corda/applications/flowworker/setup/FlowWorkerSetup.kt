@@ -49,9 +49,7 @@ class FlowWorkerSetup @Activate constructor(
     @Reference(service = ConfigPublishService::class)
     private var configPublish: ConfigPublishService,
     @Reference(service = KafkaTopicAdmin::class)
-    private var kafkaTopicAdmin: KafkaTopicAdmin,
-    @Reference(service = SmartConfigFactory::class)
-    private val smartConfigFactory: SmartConfigFactory
+    private var kafkaTopicAdmin: KafkaTopicAdmin
 ) : Application {
 
     private companion object {
