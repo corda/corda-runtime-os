@@ -8,7 +8,6 @@ import net.corda.libs.configuration.SmartConfigFactoryImpl
 import net.corda.libs.configuration.publish.CordaConfigurationKey
 import net.corda.libs.configuration.publish.CordaConfigurationVersion
 import net.corda.libs.configuration.publish.impl.ConfigPublisherImpl
-import net.corda.libs.configuration.read.kafka.factory.ConfigReaderFactoryImpl
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
@@ -30,7 +29,7 @@ import net.corda.v5.base.util.seconds
 import net.corda.v5.base.util.toBase64
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x500.X500Name
-import java.util.UUID
+import java.util.*
 
 open class TestBase {
     private fun readKeyStore(fileName: String): ByteArray {
@@ -101,10 +100,8 @@ open class TestBase {
         val readerService by lazy {
             ConfigurationReadServiceImpl(
                 coordinatorFactory!!,
-                ConfigReaderFactoryImpl(
-                    InMemSubscriptionFactory(configurationTopicService, rpcTopicService, coordinatorFactory!!),
-                    smartConfigFactory
-                ),
+                InMemSubscriptionFactory(configurationTopicService, rpcTopicService, coordinatorFactory!!),
+                smartConfigFactory,
             ).also {
                 it.start()
                 val bootstrapper = ConfigFactory.empty()

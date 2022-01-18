@@ -56,7 +56,6 @@ dependencies {
     integrationTestRuntimeOnly project(':components:virtual-node:sandbox-group-context-service')
     integrationTestRuntimeOnly project(":libs:sandbox-hooks")
     integrationTestRuntimeOnly project(":libs:configuration:configuration-core")
-    integrationTestRuntimeOnly project(":libs:configuration:configuration-read-impl")
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
     integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")
 

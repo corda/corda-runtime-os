@@ -12,7 +12,6 @@ import net.corda.libs.configuration.publish.ConfigPublisher
 import net.corda.libs.configuration.publish.CordaConfigurationKey
 import net.corda.libs.configuration.publish.CordaConfigurationVersion
 import net.corda.libs.configuration.publish.impl.ConfigPublisherImpl
-import net.corda.libs.configuration.read.kafka.factory.ConfigReaderFactoryImpl
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.HEARTBEAT_MESSAGE_PERIOD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITIES_KEY
@@ -64,7 +63,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
 class P2PLayerEndToEndTest {
@@ -289,10 +288,10 @@ class P2PLayerEndToEndTest {
         val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
         val subscriptionFactory = InMemSubscriptionFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
         val publisherFactory = CordaPublisherFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
-        val configReadService = ConfigurationReadServiceImpl(lifecycleCoordinatorFactory, ConfigReaderFactoryImpl(subscriptionFactory, SmartConfigFactoryImpl()))
-        val configPublisher = publisherFactory.createPublisher(PublisherConfig("config-writer")).let {
-            ConfigPublisherImpl(CONFIG_TOPIC_NAME, it)
-        }
+        val configReadService = ConfigurationReadServiceImpl(lifecycleCoordinatorFactory, subscriptionFactory, SmartConfigFactoryImpl())
+        val configPublisher = ConfigPublisherImpl(CONFIG_TOPIC_NAME,
+            publisherFactory.createPublisher(PublisherConfig("config-writer"))
+        )
         val gatewayConfig = createGatewayConfig(p2pPort, p2pAddress, sslConfig)
         val linkManagerConfig = ConfigFactory.parseString(linkManagerConfigTemplate.replace("<x500-name>", x500Name))
 
