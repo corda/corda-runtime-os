@@ -8,5 +8,5 @@ dependencies {
     implementation 'net.corda:corda-base'
 }
 
-description 'Crypto Signing Service'
+description 'Crypto Delegated Signing'
 
