@@ -11,6 +11,14 @@ import com.typesafe.config.ConfigValue
  */
 @Suppress("TooManyFunctions")
 interface SmartConfig : Config {
+    companion object {
+        const val SECRET_KEY = "configSecret"
+    }
+
+    /**
+     * Factory for creating similar [SmartConfig] objects.
+     */
+    val factory: SmartConfigFactory
 
     /**
      * Returns true of the value for [path] is a secret
@@ -64,5 +72,4 @@ interface SmartConfig : Config {
     override fun withValue(path: String?, value: ConfigValue?): SmartConfig
 }
 
-const val SECRETS_INDICATOR = "isSmartConfigSecret"
 

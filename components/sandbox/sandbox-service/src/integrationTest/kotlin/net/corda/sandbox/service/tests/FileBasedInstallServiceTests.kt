@@ -71,9 +71,6 @@ class FileBasedInstallServiceTests {
         lateinit var configurationReadService: ConfigurationReadService
 
         @InjectService
-        lateinit var smartConfigFactory: SmartConfigFactory
-
-        @InjectService
         lateinit var publisherFactory: PublisherFactory
 
         @JvmStatic
@@ -110,7 +107,8 @@ class FileBasedInstallServiceTests {
             installService.registerForUpdates { _, _ -> ready = true }
             installService.start()
 
-            configurationReadService.bootstrapConfig(smartConfigFactory.create(ConfigFactory.parseMap(mapOf())))
+            val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
+            configurationReadService.bootstrapConfig(smartConfigFactory.create(ConfigFactory.empty()))
 
             // wait until install service is 'ready' and has called us back with the
             // 'installed' cpi/cpbs.

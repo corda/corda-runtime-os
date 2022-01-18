@@ -12,7 +12,12 @@ dependencies {
     api "com.typesafe:config:$typeSafeConfigVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    implementation 'net.corda:corda-base'
+    implementation "net.corda:corda-config-schema"
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+
+    implementation project(":libs:crypto:crypto-internal")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

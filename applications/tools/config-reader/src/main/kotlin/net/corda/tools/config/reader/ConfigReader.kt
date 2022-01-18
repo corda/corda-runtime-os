@@ -22,8 +22,6 @@ class ConfigReader @Activate constructor(
     private var configurationReadService: ConfigurationReadService,
     @Reference(service = Shutdown::class)
     private var shutdown: Shutdown,
-    @Reference(service = SmartConfigFactory::class)
-    private var smartConfigFactory: SmartConfigFactory,
 ) : Application {
 
     private companion object {
@@ -39,7 +37,8 @@ class ConfigReader @Activate constructor(
             shutdownOSGiFramework()
         } else {
             configurationReadService.start()
-            val conf = smartConfigFactory.create(ConfigFactory.parseFile(parameters.configurationFile))
+            val configFile = ConfigFactory.parseFile(parameters.configurationFile)
+            val conf = SmartConfigFactory.create(configFile).create(configFile)
             configurationReadService.bootstrapConfig(conf)
             configurationReadService.registerForUpdates { changedKeys, config ->
                 logger.info("New configuration received for $changedKeys")

@@ -3,7 +3,7 @@ package net.corda.libs.configuration.read.file
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.libs.configuration.SmartConfigFactoryImpl
+import net.corda.libs.configuration.SmartConfigFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Test
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
-import net.corda.libs.configuration.SmartConfigImpl
 
 class FileConfigReaderImplTest {
 
@@ -26,11 +25,13 @@ class FileConfigReaderImplTest {
     private lateinit var service: FileConfigReaderImpl
     private lateinit var tempDirectoryPath: Path
     private lateinit var tempConfigFilePath: Path
+    private val configFactory = SmartConfigFactory.create(ConfigFactory.empty())
 
     @BeforeEach
     fun beforeEach() {
         createTempTestConfig()
-        service = FileConfigReaderImpl(configRepository, SmartConfigImpl(bootstrapConfig()), SmartConfigFactoryImpl())
+        val bootConfig = configFactory.create(bootstrapConfig())
+        service = FileConfigReaderImpl(configRepository, bootConfig, bootConfig.factory)
         service.start()
     }
 

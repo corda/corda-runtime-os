@@ -9,7 +9,7 @@ interface DBProcessor {
      *
      * @throws DBProcessorException If the cluster database cannot be connected to.
      */
-    fun start(config: SmartConfig)
+    fun start(bootConfig: SmartConfig)
 
     fun stop()
 }

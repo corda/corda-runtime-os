@@ -47,15 +47,12 @@ class DemoApp @Activate constructor(
     private var configReaderFactory: ConfigReaderFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = SmartConfigFactory::class)
-    private val smartConfigFactory: SmartConfigFactory,
 ) : Application {
 
     private companion object {
         val log: Logger = contextLogger()
         val consoleLogger: Logger = LoggerFactory.getLogger("Console")
         const val TOPIC_PREFIX = "messaging.topic.prefix"
-        const val CONFIG_TOPIC_NAME = "config.topic.name"
         const val BOOTSTRAP_SERVERS = "bootstrap.servers"
         const val KAFKA_COMMON_BOOTSTRAP_SERVER = "messaging.kafka.common.bootstrap.servers"
     }
@@ -159,11 +156,12 @@ class DemoApp @Activate constructor(
     private fun getBootstrapConfig(kafkaConnectionProperties: Properties?): SmartConfig {
         val bootstrapServer = getConfigValue(kafkaConnectionProperties, BOOTSTRAP_SERVERS)
 
-        // TODO - inject the secrets provider
-        return smartConfigFactory.create(ConfigFactory.empty()
+        // TODO - pick up secrets params from startup
+        val secretsConfig = ConfigFactory.empty()
+        val bootConfig = ConfigFactory.empty()
             .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(bootstrapServer))
-            .withValue(CONFIG_TOPIC_NAME, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, CONFIG_TOPIC_NAME)))
-            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX, ""))))
+            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX, "")))
+        return SmartConfigFactory.create(secretsConfig).create(bootConfig)
     }
 
     private fun getConfigValue(kafkaConnectionProperties: Properties?, path: String, default: String? = null): String {

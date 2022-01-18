@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigFactoryImpl
 import net.corda.libs.configuration.publish.CordaConfigurationKey
 import net.corda.libs.configuration.publish.CordaConfigurationVersion
@@ -29,7 +30,7 @@ import net.corda.v5.base.util.seconds
 import net.corda.v5.base.util.toBase64
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x500.X500Name
-import java.util.*
+import java.util.UUID
 
 open class TestBase {
     private fun readKeyStore(fileName: String): ByteArray {
@@ -85,7 +86,7 @@ open class TestBase {
         revocationCheck = RevocationConfig(RevocationConfigMode.OFF)
     )
 
-    protected val smartConfigFactory = SmartConfigFactoryImpl()
+    protected val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
 
     protected val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
 
@@ -105,10 +106,6 @@ open class TestBase {
             ).also {
                 it.start()
                 val bootstrapper = ConfigFactory.empty()
-                    .withValue(
-                        "config.topic.name",
-                        ConfigValueFactory.fromAnyRef(topicName)
-                    )
                 it.bootstrapConfig(smartConfigFactory.create(bootstrapper))
             }
         }

@@ -5,7 +5,7 @@ import com.typesafe.config.ConfigRenderOptions
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.config.Configuration
 import net.corda.install.InstallService
-import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -82,7 +82,7 @@ class LocalPackageCacheIntegrationTest {
             }
         }
         configReadService.bootstrapConfig(
-            SmartConfigImpl(ConfigFactory.parseMap(mapOf())))
+            SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty()))
         synchronized(lock) {
             lock.wait()
         }

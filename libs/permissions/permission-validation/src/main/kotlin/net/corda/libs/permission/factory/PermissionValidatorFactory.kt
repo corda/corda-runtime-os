@@ -8,5 +8,5 @@ interface PermissionValidatorFactory {
     /**
      * Create an instance of the [PermissionValidator]
      */
-    fun createPermissionValidator(permissionCache: PermissionCache): PermissionValidator
+    fun create(permissionCache: PermissionCache): PermissionValidator
 }

@@ -59,55 +59,57 @@ internal class ConfigWriterProcessor(
             configEntityRepository.writeEntities(req, clock)
         } catch (e: Exception) {
             val errMsg = "New configuration represented by $req couldn't be written to the database. Cause: $e"
-            handleException(respFuture, errMsg, e, req.section)
+            handleException(respFuture, errMsg, e, req.section, req.config, req.schemaVersion, req.version)
             null
         }
     }
 
     /**
-     * Publishes the updated config represented by [configEntity] on the [CONFIG_TOPIC] Kafka topic.
+     * Publishes the updated config represented by [entity] on the [CONFIG_TOPIC] Kafka topic.
      *
      * If the publication fails, the exception is caught and [respFuture] is completed unsuccessfully. Publication is
      * not retried. Otherwise, [respFuture] is completed successfully.
      */
     private fun publishConfigToKafka(
-        configEntity: ConfigEntity,
+        entity: ConfigEntity,
         respFuture: ConfigurationManagementResponseFuture
     ) {
-        val config = Configuration(configEntity.config, configEntity.version.toString())
-        val configRecord = Record(CONFIG_TOPIC, configEntity.section, config)
+        val config = Configuration(entity.config, entity.version.toString())
+        val configRecord = Record(CONFIG_TOPIC, entity.section, config)
+        // TODO - CORE-3404 - Check new config against current Kafka config to avoid overwriting.
         val future = publisher.publish(listOf(configRecord)).first()
 
         try {
             future.get()
         } catch (e: Exception) {
             val errMsg = "Record $configRecord was written to the database, but couldn't be published. Cause: $e"
-            handleException(respFuture, errMsg, e, configEntity.section)
+            handleException(respFuture, errMsg, e, entity.section, entity.config, entity.schemaVersion, entity.version)
             return
         }
 
-        respFuture.complete(ConfigurationManagementResponse(true, configEntity.version, configEntity.config))
+        val response = ConfigurationManagementResponse(
+            true, null, entity.section, entity.config, entity.schemaVersion, entity.version
+        )
+        respFuture.complete(response)
     }
 
     /**
-     * Logs the [errMsg] and [cause], then completes the [respFuture] with an [ExceptionEnvelope].
+     * Completes the [respFuture] with an [ExceptionEnvelope].
      *
      * @throws IllegalStateException If the current configuration cannot be read back from the cluster database.
      */
+    @Suppress("LongParameterList")
     private fun handleException(
-        respFuture: ConfigurationManagementResponseFuture, errMsg: String, cause: Exception, section: String
-    ) {
-        val currentConfig = try {
-            configEntityRepository.readConfigEntity(section)
-        } catch (e: IllegalStateException) {
-            // We ignore this additional error, and report the one we were already planning to report.
-            null
-        }
-
-        respFuture.complete(
-            ConfigurationManagementResponse(
-                ExceptionEnvelope(cause.javaClass.name, errMsg), currentConfig?.version, currentConfig?.config
-            )
-        )
+        respFuture: ConfigurationManagementResponseFuture,
+        errMsg: String,
+        cause: Exception,
+        section: String,
+        config: String,
+        schemaVersion: Int,
+        version: Int
+    ): Boolean {
+        val exception = ExceptionEnvelope(cause.javaClass.name, errMsg)
+        val response = ConfigurationManagementResponse(false, exception, section, config, schemaVersion, version)
+        return respFuture.complete(response)
     }
 }

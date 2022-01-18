@@ -9,7 +9,7 @@ import net.corda.flow.manager.FlowEventProcessor
 import net.corda.flow.manager.factory.FlowEventProcessorFactory
 import net.corda.flow.service.stubs.StateAndEventSubscriptionStub
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
@@ -35,7 +35,7 @@ class FlowExecutorTest {
     }
 
     private val coordinatorFactory: LifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
-    private val config: SmartConfig = SmartConfigImpl(
+    private val config: SmartConfig = SmartConfigFactory.create(ConfigFactory.empty()).create(
         ConfigFactory.empty().withValue(
             INSTANCE_ID, ConfigValueFactory
                 .fromAnyRef(1)

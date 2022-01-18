@@ -1,6 +1,7 @@
 package net.corda.applications.examples.testclients
 
 // import net.corda.applications.common.ConfigHelper.Companion.SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH
+import com.typesafe.config.ConfigFactory
 import net.corda.components.examples.publisher.RunChaosTestStringsPub
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -30,8 +31,6 @@ class ChaosTestStringsPubApp @Activate constructor(
     private val shutDownService: Shutdown,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = SmartConfigFactory::class)
-    private val smartConfigFactory: SmartConfigFactory,
 ) : Application {
 
     private companion object {
@@ -100,7 +99,11 @@ class ChaosTestStringsPubApp @Activate constructor(
     }
 
     private fun getBootstrapConfig(instanceId: Int?): SmartConfig {
-        return smartConfigFactory.create(getBootstrapConfig(instanceId))
+        // NOTE: this doesn't make sense as it's recursive.
+        //return smartConfigFactory.create(getBootstrapConfig(instanceId))
+        println(instanceId)
+        val config = ConfigFactory.empty()
+        return SmartConfigFactory.create(config).create(config)
     }
 }
 

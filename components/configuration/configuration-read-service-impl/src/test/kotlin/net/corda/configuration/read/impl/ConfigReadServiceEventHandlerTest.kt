@@ -4,7 +4,6 @@ import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadException
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.configuration.SmartConfigFactoryImpl
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
@@ -35,6 +34,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 
 internal class ConfigReadServiceEventHandlerTest {
+    val configFactory = SmartConfigFactory.create(ConfigFactory.empty())
 
     @Captor
     val lifecycleEventCaptor: ArgumentCaptor<LifecycleEvent> = ArgumentCaptor.forClass(LifecycleEvent::class.java)
@@ -50,8 +50,7 @@ internal class ConfigReadServiceEventHandlerTest {
 
     private lateinit var configReadServiceEventHandler: ConfigReadServiceEventHandler
 
-    private val smcf = SmartConfigFactoryImpl()
-    private val bootConfig = smcf.create(ConfigFactory.parseMap(mapOf("start" to 1)))
+    private val bootConfig = smartConfigFactory.create(ConfigFactory.parseMap(mapOf("start" to 1)))
 
     @BeforeEach
     fun setUp() {
@@ -126,7 +125,7 @@ internal class ConfigReadServiceEventHandlerTest {
     @Test
     fun `adding a registration updates it with current configuration`() {
         setupHandlerForProcessingConfig()
-        val newConfig = smcf.create(ConfigFactory.parseMap(mapOf("foo" to "bar")))
+        val newConfig = smartConfigFactory.create(ConfigFactory.parseMap(mapOf("foo" to "bar")))
         val registration = ConfigurationChangeRegistration(coordinator) { keys, config ->
             assertEquals(setOf(BOOT_CONFIG, FLOW_CONFIG), keys)
             assertEquals(mapOf(BOOT_CONFIG to bootConfig, FLOW_CONFIG to newConfig), config)
@@ -138,7 +137,7 @@ internal class ConfigReadServiceEventHandlerTest {
     @Test
     fun `all current registrations are updated when a config update happens`() {
         setupHandlerForProcessingConfig()
-        val newConfig = smcf.create(ConfigFactory.parseMap(mapOf("foo" to "bar")))
+        val newConfig = smartConfigFactory.create(ConfigFactory.parseMap(mapOf("foo" to "bar")))
         val reg1 = ConfigurationChangeRegistration(coordinator) { keys, config ->
             if (keys.contains(FLOW_CONFIG)) {
                 assertEquals(setOf(FLOW_CONFIG), keys)
@@ -159,7 +158,7 @@ internal class ConfigReadServiceEventHandlerTest {
     @Test
     fun `removing a registration stops updates being delivered`() {
         setupHandlerForProcessingConfig()
-        val newConfig = smcf.create(ConfigFactory.parseMap(mapOf("foo" to "bar")))
+        val newConfig = smartConfigFactory.create(ConfigFactory.parseMap(mapOf("foo" to "bar")))
         var shouldCallReg = true
         val reg = ConfigurationChangeRegistration(coordinator) { _, _ ->
             assertTrue(shouldCallReg)
@@ -172,8 +171,8 @@ internal class ConfigReadServiceEventHandlerTest {
 
     @Test
     fun `Multiple bootstrap events with same config are ignored`() {
-        val configA = smcf.create(ConfigFactory.parseMap(mapOf("foo" to "bar", "bar" to "baz")))
-        val configB = smcf.create(ConfigFactory.parseMap(mapOf("bar" to "baz", "foo" to "bar")))
+        val configA = configFactory.create(ConfigFactory.parseMap(mapOf("foo" to "bar", "bar" to "baz")))
+        val configB = configFactory.create(ConfigFactory.parseMap(mapOf("bar" to "baz", "foo" to "bar")))
         configReadServiceEventHandler.processEvent(BootstrapConfigProvided(configA), coordinator)
         configReadServiceEventHandler.processEvent(BootstrapConfigProvided(configB), coordinator)
         verify(coordinator, times(1)).postEvent(capture(lifecycleEventCaptor))
@@ -182,8 +181,8 @@ internal class ConfigReadServiceEventHandlerTest {
 
     @Test
     fun `Multiple bootstrap events with different config raises an error`() {
-        val configA = smcf.create(ConfigFactory.parseMap(mapOf("foo" to "bar", "bar" to "baz")))
-        val configB = smcf.create(ConfigFactory.parseMap(mapOf("bar" to "baz", "foo" to "foo")))
+        val configA = configFactory.create(ConfigFactory.parseMap(mapOf("foo" to "bar", "bar" to "baz")))
+        val configB = configFactory.create(ConfigFactory.parseMap(mapOf("bar" to "baz", "foo" to "foo")))
         configReadServiceEventHandler.processEvent(BootstrapConfigProvided(configA), coordinator)
         assertThrows<ConfigurationReadException> {
             configReadServiceEventHandler.processEvent(BootstrapConfigProvided(configB), coordinator)

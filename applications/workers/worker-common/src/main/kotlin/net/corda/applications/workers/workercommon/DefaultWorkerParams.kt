@@ -23,6 +23,7 @@ class DefaultWorkerParams {
         names = ["-t", "--topicPrefix"],
         description = ["The prefix to use for Kafka topics. Defaults to the empty string."]
     )
+    // This needs revision as arguably it belongs to the `messagingParams`
     var topicPrefix = ""
 
     @Option(names = ["-n", "--noHealthMonitor"], description = ["Disables the health monitor."])
@@ -36,6 +37,9 @@ class DefaultWorkerParams {
 
     @Option(names = ["-m", "--messagingParams"], description = ["Messaging parameters for the worker."])
     var messagingParams = emptyMap<String, String>()
+
+    @Option(names = ["-s", "--secretsParams"], description = ["Secrets parameters for the worker."])
+    var secretsParams = emptyMap<String, String>()
 
     @Option(names = ["-c", "--additionalParams"], description = ["Additional parameters for the worker."])
     var additionalParams = emptyMap<String, String>()

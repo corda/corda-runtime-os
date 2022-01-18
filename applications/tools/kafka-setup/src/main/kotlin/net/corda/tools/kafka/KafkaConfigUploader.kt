@@ -31,8 +31,6 @@ class KafkaConfigUploader @Activate constructor(
     private var configPublish: ConfigPublishService,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
-    @Reference(service = SmartConfigFactory::class)
-    private val smartConfigFactory: SmartConfigFactory,
 ) : Application {
 
     private companion object {
@@ -84,12 +82,13 @@ class KafkaConfigUploader @Activate constructor(
     }
 
     private fun getBootstrapConfig(kafkaConnectionProperties: Properties?): SmartConfig {
-        return smartConfigFactory.create(ConfigFactory.empty()
+        val allConfig = ConfigFactory.empty()
             .withValue(
                 KAFKA_COMMON_BOOTSTRAP_SERVER,
                 ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, KAFKA_BOOTSTRAP_SERVER))
             )
-            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX))))
+            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX)))
+        return SmartConfigFactory.create(allConfig).create(allConfig)
     }
 
     private fun getConfigValue(kafkaConnectionProperties: Properties?, path: String): String {
@@ -122,7 +121,7 @@ class KafkaConfigUploader @Activate constructor(
 class CliParameters {
     @CommandLine.Option(
         names = ["--kafka"], description = ["File containing Kafka connection properties" +
-                " OR pass in -Dbootstrap.servers and -Dconfig.topic.name"]
+                " OR pass in -Dbootstrap.servers"]
     )
     var kafkaConnection: File? = null
 

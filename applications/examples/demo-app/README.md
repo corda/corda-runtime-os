@@ -11,7 +11,7 @@ Run worker(s) from separate dirs. For example:
 
 Command line args/system properties can be used instead of a Kafka properties file
 ```
-java -jar -Dbootstrap.servers=localhost:9092 -Dconfig.topic.name=ConfigTopic \
+java -jar -Dbootstrap.servers=localhost:9092 \
     -Dmessaging.topic.prefix=demo build/bin/corda-demo-app-5.0.0.0-SNAPSHOT.jar --instanceId 4
 ```
 
