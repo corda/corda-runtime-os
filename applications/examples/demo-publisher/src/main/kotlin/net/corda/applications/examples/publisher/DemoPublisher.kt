@@ -34,8 +34,6 @@ class DemoPublisher @Activate constructor(
     private val shutDownService: Shutdown,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = SmartConfigFactory::class)
-    private val smartConfigFactory: SmartConfigFactory,
 ) : Application {
 
     private companion object {
@@ -105,9 +103,10 @@ class DemoPublisher @Activate constructor(
 
     private fun getBootstrapConfig(kafkaConnectionProperties: Properties?): SmartConfig {
         val bootstrapServer = getConfigValue(kafkaConnectionProperties, KAFKA_BOOTSTRAP_SERVER)
-        return smartConfigFactory.create(ConfigFactory.empty()
+        val allConfig = ConfigFactory.empty()
             .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(bootstrapServer))
-            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX, ""))))
+            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX, "")))
+        return SmartConfigFactory.create(allConfig).create(allConfig)
     }
 
     private fun getConfigValue(kafkaConnectionProperties: Properties?, path: String, default: String? = null): String {

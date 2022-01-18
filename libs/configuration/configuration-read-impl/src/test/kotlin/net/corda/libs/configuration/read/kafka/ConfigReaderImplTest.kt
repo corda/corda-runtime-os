@@ -5,8 +5,6 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import net.corda.data.config.Configuration
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.configuration.SmartConfigFactoryImpl
-import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.read.ConfigListener
 import net.corda.libs.configuration.read.kafka.ConfigReaderImpl.Companion.CONFIGURATION_READER
 import net.corda.messaging.api.records.Record
@@ -27,11 +25,11 @@ class ConfigReaderImplTest {
     private lateinit var configUpdateUtil: ConfigListenerTestUtil
     private val subscriptionFactory: SubscriptionFactory = mock()
     private val subscription: CompactedSubscription<String, Configuration> = mock()
-    private val smartConfigFactory: SmartConfigFactory = SmartConfigFactoryImpl()
+    private val smartConfigFactory: SmartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
 
     @BeforeEach
     fun beforeEach() {
-        val emptyConfig =  SmartConfigImpl(ConfigFactory.empty())
+        val emptyConfig =  smartConfigFactory.create(ConfigFactory.empty())
 
         configUpdateUtil = ConfigListenerTestUtil()
         configRepository = ConfigRepository(emptyConfig)

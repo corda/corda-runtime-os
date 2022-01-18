@@ -1,10 +1,10 @@
 package net.corda.components.rpc
 
+import net.corda.components.rbac.RBACSecurityManagerService
 import net.corda.components.rpc.internal.HttpRpcGatewayEventHandler
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.RpcOps
-import net.corda.httprpc.security.read.RPCSecurityManagerFactory
 import net.corda.httprpc.server.factory.HttpRpcServerFactory
 import net.corda.httprpc.ssl.SslCertReadServiceFactory
 import net.corda.lifecycle.Lifecycle
@@ -21,52 +21,37 @@ import org.osgi.service.component.annotations.ReferencePolicy
 
 @Suppress("LongParameterList")
 @Component(service = [HttpRpcGateway::class])
-class HttpRpcGateway private constructor(
+class HttpRpcGateway @Activate constructor(
+    @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = ConfigurationReadService::class)
     configurationReadService: ConfigurationReadService,
+    @Reference(service = HttpRpcServerFactory::class)
     httpRpcServerFactory: HttpRpcServerFactory,
-    rpcSecurityManagerFactory: RPCSecurityManagerFactory,
+    @Reference(service = RBACSecurityManagerService::class)
+    rbacSecurityManagerService: RBACSecurityManagerService,
+    @Reference(service = SslCertReadServiceFactory::class)
     sslCertReadServiceFactory: SslCertReadServiceFactory,
-    permissionServiceComponent: PermissionServiceComponent,
-    dynamicRpcOps: List<PluggableRPCOps<out RpcOps>>
+    @Reference(service = PermissionServiceComponent::class)
+    permissionServiceComponent: PermissionServiceComponent
 ) : Lifecycle {
 
     private companion object {
         val log = contextLogger()
     }
 
-    @Reference(service = PluggableRPCOps::class, cardinality = ReferenceCardinality.MULTIPLE, policy = ReferencePolicy.DYNAMIC)
-    private val dynamicRpcOps: List<PluggableRPCOps<out RpcOps>> = dynamicRpcOps
-
-    @Activate
-    constructor(
-        @Reference(service = LifecycleCoordinatorFactory::class)
-        coordinatorFactory: LifecycleCoordinatorFactory,
-        @Reference(service = ConfigurationReadService::class)
-        configurationReadService: ConfigurationReadService,
-        @Reference(service = HttpRpcServerFactory::class)
-        httpRpcServerFactory: HttpRpcServerFactory,
-        @Reference(service = RPCSecurityManagerFactory::class)
-        rpcSecurityManagerFactory: RPCSecurityManagerFactory,
-        @Reference(service = SslCertReadServiceFactory::class)
-        sslCertReadServiceFactory: SslCertReadServiceFactory,
-        @Reference(service = PermissionServiceComponent::class)
-        permissionServiceComponent: PermissionServiceComponent,
-    ) : this(
-        coordinatorFactory,
-        configurationReadService,
-        httpRpcServerFactory,
-        rpcSecurityManagerFactory,
-        sslCertReadServiceFactory,
-        permissionServiceComponent,
-        mutableListOf()
+    @Reference(
+        service = PluggableRPCOps::class,
+        cardinality = ReferenceCardinality.MULTIPLE,
+        policy = ReferencePolicy.DYNAMIC
     )
+    private val dynamicRpcOps: List<PluggableRPCOps<out RpcOps>> = mutableListOf()
 
     private val handler = HttpRpcGatewayEventHandler(
         permissionServiceComponent,
         configurationReadService,
         httpRpcServerFactory,
-        rpcSecurityManagerFactory,
+        rbacSecurityManagerService,
         sslCertReadServiceFactory,
         this.dynamicRpcOps
     )

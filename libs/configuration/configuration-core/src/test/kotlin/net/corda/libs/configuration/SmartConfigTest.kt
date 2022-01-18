@@ -2,6 +2,7 @@ package net.corda.libs.configuration
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.libs.configuration.secret.SecretsLookupService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -17,8 +18,7 @@ class SmartConfigTest {
     val sub = "\${fred}"
     val configString = """
         foo: bar,
-        fred {
-            isSmartConfigSecret: true,
+        fred.configSecret {
             token: secure-fred
         },
         bob: $sub,
@@ -39,18 +39,18 @@ class SmartConfigTest {
 
     val fallbackConfig = ConfigFactory.parseString(
         """
-        jon {
-            isSmartConfigSecret: true,
+        jon.configSecret {
             token: secure-jon
         },
         """.trimIndent()
     )
 
     val secretsLookupService = mock<SecretsLookupService>() {
-        on { getValue(config.getValue("fred"))} doReturn "secret"
-        on { getValue(fallbackConfig.getValue("jon"))} doReturn "fallback-secret"
+        on { getValue(config.getConfig("fred"))} doReturn "secret"
+        on { getValue(fallbackConfig.getConfig("jon"))} doReturn "fallback-secret"
     }
-    val smartConfig : SmartConfig = SmartConfigImpl(config, secretsLookupService)
+    val smartConfigFactory = mock<SmartConfigFactory>()
+    val smartConfig : SmartConfig = SmartConfigImpl(config, smartConfigFactory, secretsLookupService)
 
     @Test
     fun `isSecret true when property set`() {
@@ -70,7 +70,7 @@ class SmartConfigTest {
     @Test
     fun `getString delegates to secrets service when secret`() {
         smartConfig.getString("fred")
-        verify(secretsLookupService).getValue(config.getValue("fred"))
+        verify(secretsLookupService).getValue(config.getConfig("fred"))
         assertThat(smartConfig.getString("fred")).isEqualTo("secret")
     }
 
@@ -111,7 +111,7 @@ class SmartConfigTest {
 
     @Test
     fun `resolve still works`() {
-        val unresolvedConfig = SmartConfigImpl(ConfigFactory.parseString(configString), secretsLookupService)
+        val unresolvedConfig = SmartConfigImpl(ConfigFactory.parseString(configString), smartConfigFactory, secretsLookupService)
         val resolvedConfig = unresolvedConfig.resolve()
         assertThat(resolvedConfig.isResolved).isTrue
         assertThat(resolvedConfig.getString("bob")).isEqualTo("secret")
@@ -126,14 +126,13 @@ class SmartConfigTest {
         """.trimIndent())
         val resolveWithConf = ConfigFactory.parseString(
             """
-        fred {
-            isSmartConfigSecret: true,
+        fred.configSecret {
             token: secure-fred
         },
         """.trimIndent()
         )
 
-        val smartConf = SmartConfigImpl(config, secretsLookupService).resolveWith(resolveWithConf)
+        val smartConf = SmartConfigImpl(config, smartConfigFactory, secretsLookupService).resolveWith(resolveWithConf)
         assertThat(smartConf.getString("bob")).isEqualTo("secret")
         assertThat(smartConf.isSecret("bob")).isTrue
     }
@@ -299,7 +298,7 @@ class SmartConfigTest {
 
     @Test
     fun `equals compares underlying config`() {
-        assertThat(smartConfig).isEqualTo(SmartConfigImpl(config, secretsLookupService))
+        assertThat(smartConfig).isEqualTo(SmartConfigImpl(config, smartConfigFactory, secretsLookupService))
     }
 
     @Test
@@ -310,7 +309,7 @@ class SmartConfigTest {
 
     @Test
     fun `withFallback still works when fallback is smart`() {
-        val smartFallback = SmartConfigImpl(fallbackConfig, secretsLookupService)
+        val smartFallback = SmartConfigImpl(fallbackConfig, smartConfigFactory, secretsLookupService)
         val c = smartConfig
             .withFallback(smartFallback)
 

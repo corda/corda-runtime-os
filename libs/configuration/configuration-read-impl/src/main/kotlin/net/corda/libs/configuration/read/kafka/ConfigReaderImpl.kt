@@ -12,7 +12,7 @@ import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
-import java.util.*
+import java.util.Collections
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -106,7 +106,8 @@ class ConfigReaderImpl(
     override fun onSnapshot(currentData: Map<String, Configuration>) {
         val configMap = mutableMapOf<String, SmartConfig>()
         for (config in currentData) {
-            configMap[config.key] = smartConfigFactory.create(ConfigFactory.parseString(config.value.value))
+            configMap[config.key] = smartConfigFactory.create(
+                ConfigFactory.parseString(config.value.value))
         }
         configurationRepository.storeConfiguration(configMap)
         snapshotReceived = true
@@ -119,7 +120,8 @@ class ConfigReaderImpl(
         oldValue: Configuration?,
         currentData: Map<String, Configuration>
     ) {
-        val config = smartConfigFactory.create(ConfigFactory.parseString(newRecord.value?.value))
+        val config = smartConfigFactory.create(
+            ConfigFactory.parseString(newRecord.value?.value))
         configurationRepository.updateConfiguration(newRecord.key, config)
         val tempConfigMap = configurationRepository.getConfigurations()
         configUpdates.forEach { it.value.onUpdate(setOf(newRecord.key), tempConfigMap) }

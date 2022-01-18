@@ -3,12 +3,12 @@ A utility to publish configuration for the p2p components
 
 ## Building
 To build run:
-`./gradlew :applications:tools:p2p-test:configuration-publisher:clean :applications:tools:p2p-test:configuration-publisher:appJar`
-This will create an executable jar in `applications/p2p-gateway-config-publisher/build/bin` 
+`./gradlew :applications:tools:p2p-test:p2p-configuration-publisher:clean :applications:tools:p2p-test:p2p-configuration-publisher:appJar`
+This will create an executable jar in `applications/tools/p2p-test/p2p-configuration-publisher/build/bin/` 
 
 ## Running
 To run the application use:
-`java -jar ./applications/tools/p2p-test/configuration-publisher/build/bin/corda-configuration-publisher-5.0.0.0-SNAPSHOT.jar <gateway/linkmanager/file>`
+`java -jar ./applications/tools/p2p-test/p2p-configuration-publisher/build/bin/corda-p2p-configuration-publisher-5.0.0.0-SNAPSHOT.jar <gateway/linkmanager/file>`
 
 ### Command arguments:
 #### Common arguments:
@@ -98,7 +98,7 @@ The `-Djdk.net.hosts.file` will overwrite the hosts file, allow the JVM to open 
 3. Publish the configuration:
 ```bash
 java \
--jar ./applications/tools/p2p-test/configuration-publisher/build/bin/corda-configuration-publisher-5.0.0.0-SNAPSHOT.jar \
+-jar ./applications/tools/p2p-test/p2p-configuration-publisher/build/bin/corda-configuration-publisher-5.0.0.0-SNAPSHOT.jar \
 gateway \
 --keyStore ./components/gateway/src/integration-test/resources/sslkeystore_alice.jks \
 --keyStorePassword password \
@@ -111,8 +111,8 @@ The `keyStore` and `trustStore` are valid stores used in the integration tests.
 Or, one can load the configuration from an arguments file. For example, from [gateway-args-example](gateway-args-example.txt):
 ```bash
 java \
--jar ./applications/tools/p2p-test/configuration-publisher/build/bin/corda-configuration-publisher-5.0.0.0-SNAPSHOT.jar \
-@./applications/tools/p2p-test/configuration-publisher/gateway-args-example.txt
+-jar ./applications/tools/p2p-test/p2p-configuration-publisher/build/bin/corda-configuration-publisher-5.0.0.0-SNAPSHOT.jar \
+@./applications/tools/p2p-test/p2p-configuration-publisher/gateway-args-example.txt
 ```
 
 ## Docker image
@@ -138,7 +138,7 @@ docker run \
  --rm \
  -e KAFKA_SERVERS="broker1:9093" \
  --network kafka-docker_default \
- -v "$(pwd)/applications/tools/p2p-test/configuration-publisher/docker-args-example.txt:/args.txt" \
+ -v "$(pwd)/applications/tools/p2p-test/p2p-configuration-publisher/docker-args-example.txt:/args.txt" \
  -v "$(pwd)/components/gateway/src/integration-test/resources/sslkeystore_alice.jks:/keystore.jks" \
  -v "$(pwd)/components/gateway/src/integration-test/resources/truststore.jks:/truststore.jks" \
  corda-os-docker-dev.software.r3.com/corda-os-configuration-publisher:5.0.0.0-SNAPSHOT \

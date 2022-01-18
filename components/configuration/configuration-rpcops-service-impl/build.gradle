@@ -15,7 +15,7 @@ dependencies {
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-endpoints')
     implementation project(':libs:http-rpc:http-rpc')
-    implementation project(":libs:http-rpc:http-rpc-common")
+    implementation project(':libs:http-rpc:http-rpc-common')
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:messaging:messaging')
     implementation 'net.corda:corda-avro-schema'

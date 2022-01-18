@@ -12,9 +12,10 @@ dependencies {
     implementation project(':libs:http-rpc:http-rpc')
     implementation project(":libs:http-rpc:http-rpc-tools")
     implementation project(":libs:http-rpc:http-rpc-common")
-    implementation project(':libs:http-rpc:http-rpc-security-read')
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-application"
+
+    api project(':libs:http-rpc:http-rpc-security-read')
 
     implementation 'org.slf4j:slf4j-api'
 }

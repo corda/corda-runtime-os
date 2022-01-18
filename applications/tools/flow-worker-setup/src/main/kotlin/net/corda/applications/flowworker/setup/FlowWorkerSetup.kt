@@ -1,5 +1,6 @@
 package net.corda.applications.flowworker.setup
 
+import com.typesafe.config.ConfigFactory
 import net.corda.applications.flowworker.setup.helper.getHelloWorldRPCEventRecord
 import net.corda.applications.flowworker.setup.helper.getHelloWorldScheduleCleanupEvent
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
@@ -49,8 +50,6 @@ class FlowWorkerSetup @Activate constructor(
     private var configPublish: ConfigPublishService,
     @Reference(service = KafkaTopicAdmin::class)
     private var kafkaTopicAdmin: KafkaTopicAdmin,
-    @Reference(service = SmartConfigFactory::class)
-    private val smartConfigFactory: SmartConfigFactory
 ) : Application {
 
     private companion object {
@@ -79,7 +78,9 @@ class FlowWorkerSetup @Activate constructor(
         configurationFile = parameters.defaultParams.configurationFile
         topicTemplate = parameters.defaultParams.topicTemplate
         scheduleCleanup = parameters.scheduleCleanup
-        bootstrapConfig =  smartConfigFactory.create(getBootstrapConfig(instanceId))
+        // TODO - pick up secrets params from startup
+        val secretsConfig = ConfigFactory.empty()
+        bootstrapConfig =  SmartConfigFactory.create(secretsConfig).create(getBootstrapConfig(instanceId))
 
         lifeCycleCoordinator.start()
     }
