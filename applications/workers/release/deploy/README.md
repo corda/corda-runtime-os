@@ -1,11 +1,11 @@
 # All the workers Docker Compose
 
 The purpose of this Docker Compose cluster to run: 
-- HTTP RPC Gateway;
-- A DB Worker;
+- RPC Worker;
+- DB Worker;
 - Kafka Bus;
 - Postgres SQL server;
-- Flow Worker
+- Flow Worker;
 - Crypto Worker.
 
 locally to be able to demonstrate functionality built to date.
@@ -33,7 +33,7 @@ Once the plant is started it should be possible to run E2E tests like so:
 
 `gradlew :applications:workers:release:rpc-worker:e2eTest`
 
-For more information on E2E tests, please see [here](../rpc-worker/src/e2e-test/README.md). 
+For more information on E2E tests, please see [here](../rpc-worker/src/e2eTest/README.md). 
 
 ### View Kafka topics content
 

@@ -8,13 +8,13 @@ description 'RPC Worker'
 sourceSets {
     e2eTest {
         kotlin {
-            srcDirs = [ 'src/e2e-test/kotlin' ]
+            srcDirs = [ 'src/e2eTest/kotlin' ]
         }
         java {
-            srcDirs = [ 'src/e2e-test/java' ]
+            srcDirs = [ 'src/e2eTest/java' ]
         }
         resources {
-            srcDirs = [ 'src/e2e-test/resources' ]
+            srcDirs = [ 'src/e2eTest/resources' ]
         }
     }
 }
