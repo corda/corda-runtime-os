@@ -4,7 +4,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactoryImpl
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.permissions.cache.PermissionCache
 import net.corda.libs.permissions.storage.common.ConfigKeys.BOOTSTRAP_CONFIG
 import net.corda.libs.permissions.storage.common.ConfigKeys.DB_CONFIG_KEY
@@ -67,7 +67,8 @@ class PermissionStorageReaderServiceEventHandlerTest {
         entityManagerFactoryCreationFn = ::testObtainEntityManagerFactory
     )
 
-    private val config = SmartConfigFactoryImpl().create(
+    private val configFactory = SmartConfigFactory.create(ConfigFactory.empty())
+    private val config = configFactory.create(
         ConfigFactory.empty()
             .withValue(
                 DB_CONFIG_KEY,

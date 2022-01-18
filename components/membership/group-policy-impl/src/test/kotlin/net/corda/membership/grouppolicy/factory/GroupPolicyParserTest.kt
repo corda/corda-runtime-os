@@ -1,5 +1,6 @@
 package net.corda.membership.grouppolicy.factory
 
+import net.corda.membership.staticmemberlist.StaticMemberTemplateExtension.Companion.mgmKeyAlias
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.uncheckedCast
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -18,7 +19,7 @@ class GroupPolicyParserTest {
         const val WHITESPACE_STRING = "                  "
         const val INVALID_FORMAT_GROUP_POLICY = "{{[{[{[{[{[{[ \"groupId\": \"ABC123\" }"
 
-        const val X500_NAME = "x500Name"
+        const val NAME = "name"
         const val KEY_ALIAS = "keyAlias"
         const val MEMBER_STATUS = "memberStatus"
         const val ENDPOINT_URL_1 = "endpointUrl-1"
@@ -32,7 +33,8 @@ class GroupPolicyParserTest {
         const val REGISTRATION_PROTOCOL_FACTORY = "registrationProtocolFactory"
         const val SYNC_PROTOCOL_FACTORY = "synchronisationProtocolFactory"
         const val PROTOCOL_PARAMETERS = "protocolParameters"
-        const val STATIC_MEMBER_TEMPLATE = "staticMemberTemplate"
+        const val STATIC_NETWORK = "staticNetwork"
+        const val STATIC_MEMBERS = "members"
         const val IDENTITY_PKI = "identityPKI"
         const val IDENTITY_KEY_POLICY = "identityKeyPolicy"
         const val IDENTITY_TRUST_STORE = "identityTrustStore"
@@ -44,6 +46,7 @@ class GroupPolicyParserTest {
 
     private lateinit var groupPolicyParser: GroupPolicyParser
     private val testGroupId = "ABC123"
+    private val testMgmKeyAlias = "mgm-alias"
 
     @BeforeEach
     fun setUp() {
@@ -81,7 +84,7 @@ class GroupPolicyParserTest {
         assertEquals("net.corda.v5.mgm.MGMRegistrationProtocolFactory", result[REGISTRATION_PROTOCOL_FACTORY])
         assertEquals("net.corda.v5.mgm.MGMSynchronisationProtocolFactory", result[SYNC_PROTOCOL_FACTORY])
         assertTrue(result[PROTOCOL_PARAMETERS] is Map<*, *>)
-        assertTrue(result[STATIC_MEMBER_TEMPLATE] is List<*>)
+        assertTrue(result[STATIC_NETWORK] is Map<*, *>)
 
         // Protocol parameters
         val protocolParameters = result[PROTOCOL_PARAMETERS] as Map<*, *>
@@ -104,22 +107,24 @@ class GroupPolicyParserTest {
         assertTrue(protocolParameters[ROLES] is Map<*, *>)
         assertEquals(2, (protocolParameters[ROLES] as Map<*, *>).size)
 
-        // Static member template
-        val staticMemberTemplate = result[STATIC_MEMBER_TEMPLATE] as List<*>
-        assertEquals(3, staticMemberTemplate.size)
+        // Static network
+        val staticNetwork = result[STATIC_NETWORK] as Map<*, *>
+        assertEquals(2, staticNetwork.size)
 
-        val alice: Map<String, String> = uncheckedCast(staticMemberTemplate[0])
+        val staticMembers = staticNetwork[STATIC_MEMBERS] as List<*>
+
+        val alice: Map<String, String> = uncheckedCast(staticMembers[0])
         assertEquals(6, alice.size)
-        assertEquals(alice[X500_NAME], "C=GB, L=London, O=Alice")
+        assertEquals(alice[NAME], "C=GB, L=London, O=Alice")
         assertEquals(alice[KEY_ALIAS], "alice-alias")
         assertEquals(alice[ROTATED_KEY_ALIAS_1], "alice-historic-alias-1")
         assertEquals(alice[MEMBER_STATUS], "ACTIVE")
         assertEquals(alice[ENDPOINT_URL_1], "https://alice.corda5.r3.com:10000")
         assertEquals(alice[ENDPOINT_PROTOCOL_1], 1)
 
-        val bob: Map<String, String> = uncheckedCast(staticMemberTemplate[1])
+        val bob: Map<String, String> = uncheckedCast(staticMembers[1])
         assertEquals(7, bob.size)
-        assertEquals(bob[X500_NAME], "C=GB, L=London, O=Bob")
+        assertEquals(bob[NAME], "C=GB, L=London, O=Bob")
         assertEquals(bob[KEY_ALIAS], "bob-alias")
         assertEquals(bob[ROTATED_KEY_ALIAS_1], "bob-historic-alias-1")
         assertEquals(bob[ROTATED_KEY_ALIAS_2], "bob-historic-alias-2")
@@ -127,15 +132,21 @@ class GroupPolicyParserTest {
         assertEquals(bob[ENDPOINT_URL_1], "https://bob.corda5.r3.com:10000")
         assertEquals(bob[ENDPOINT_PROTOCOL_1], 1)
 
-        val charlie: Map<String, String> = uncheckedCast(staticMemberTemplate[2])
+        val charlie: Map<String, String> = uncheckedCast(staticMembers[2])
         assertEquals(7, charlie.size)
-        assertEquals(charlie[X500_NAME], "C=GB, L=London, O=Charlie")
+        assertEquals(charlie[NAME], "C=GB, L=London, O=Charlie")
         assertEquals(charlie[KEY_ALIAS], "charlie-alias")
         assertEquals(charlie[MEMBER_STATUS], "SUSPENDED")
         assertEquals(charlie[ENDPOINT_URL_1], "https://charlie.corda5.r3.com:10000")
         assertEquals(charlie[ENDPOINT_PROTOCOL_1], 1)
         assertEquals(charlie[ENDPOINT_URL_2], "https://charlie-dr.corda5.r3.com:10001")
         assertEquals(charlie[ENDPOINT_PROTOCOL_2], 1)
+    }
+
+    @Test
+    fun `Parse group policy - verify MGM private key alias`() {
+        val result = groupPolicyParser.parse(getSampleGroupPolicy())
+        assertEquals(testMgmKeyAlias, result.mgmKeyAlias)
     }
 
     private fun getSampleGroupPolicy(): String {

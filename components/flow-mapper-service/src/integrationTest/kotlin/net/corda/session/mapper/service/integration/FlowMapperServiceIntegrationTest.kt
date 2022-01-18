@@ -53,8 +53,8 @@ class FlowMapperServiceIntegrationTest {
     @InjectService(timeout = 4000)
     lateinit var publisherFactory: PublisherFactory
 
-    @InjectService(timeout = 4000)
-    lateinit var smartConfigFactory: SmartConfigFactory
+    // no secrets needed -> empty config
+    val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
 
     @InjectService(timeout = 4000)
     lateinit var subscriptionFactory: SubscriptionFactory
@@ -199,7 +199,6 @@ class FlowMapperServiceIntegrationTest {
     }
 
     private val bootConf = """
-        config.topic.name="config.topic"
         instanceId=1
     """
 

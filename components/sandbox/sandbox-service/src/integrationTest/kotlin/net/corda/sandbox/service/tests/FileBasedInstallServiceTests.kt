@@ -68,9 +68,6 @@ class FileBasedInstallServiceTests {
         @InjectService
         lateinit var configurationReadService: ConfigurationReadService
 
-        @InjectService
-        lateinit var smartConfigFactory: SmartConfigFactory
-
         @JvmStatic
         @BeforeAll
         fun setup(@TempDir testDirectory: Path) {
@@ -113,6 +110,7 @@ class FileBasedInstallServiceTests {
             installService.registerForUpdates { _, _ -> ready = true }
             installService.start()
 
+            val smartConfigFactory = SmartConfigFactory.create(cfg)
             configurationReadService.bootstrapConfig(smartConfigFactory.create(cfg))
 
             // wait until install service is 'ready' and has called us back with the

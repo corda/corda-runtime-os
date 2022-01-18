@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigFactoryImpl
 import net.corda.libs.configuration.publish.CordaConfigurationKey
 import net.corda.libs.configuration.publish.CordaConfigurationVersion
@@ -86,7 +87,7 @@ open class TestBase {
         revocationCheck = RevocationConfig(RevocationConfigMode.OFF)
     )
 
-    protected val smartConfigFactory = SmartConfigFactoryImpl()
+    protected val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
 
     protected val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
 
@@ -102,8 +103,7 @@ open class TestBase {
             ConfigurationReadServiceImpl(
                 coordinatorFactory!!,
                 ConfigReaderFactoryImpl(
-                    InMemSubscriptionFactory(configurationTopicService, rpcTopicService, coordinatorFactory!!),
-                    smartConfigFactory
+                    InMemSubscriptionFactory(configurationTopicService, rpcTopicService, coordinatorFactory!!)
                 ),
             ).also {
                 it.start()

@@ -1,5 +1,6 @@
 package net.corda.applications.testclients
 
+import com.typesafe.config.ConfigFactory
 import net.corda.components.examples.config.reader.ConfigReader
 import net.corda.components.examples.config.reader.ConfigReader.Companion.MESSAGING_CONFIG
 import net.corda.components.examples.config.reader.ConfigReceivedEvent
@@ -42,8 +43,6 @@ class ChaosTestApp @Activate constructor(
     private var configReaderFactory: ConfigReaderFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = SmartConfigFactory::class)
-    private val smartConfigFactory: SmartConfigFactory,
 ) : Application {
 
     private companion object {
@@ -148,7 +147,11 @@ class ChaosTestApp @Activate constructor(
     }
 
     private fun getBootstrapConfig(instanceId: Int?): SmartConfig {
-        return smartConfigFactory.create(getBootstrapConfig(instanceId))
+        // NOTE: this doesn't make sense as it's recursive.
+        //return smartConfigFactory.create(getBootstrapConfig(instanceId))
+        println(instanceId)
+        val config = ConfigFactory.empty()
+        return SmartConfigFactory.create(config).create(config)
     }
 
     override fun shutdown() {

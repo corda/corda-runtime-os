@@ -2,7 +2,7 @@ package net.corda.configuration.read.impl
 
 import com.typesafe.config.ConfigFactory
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.configuration.SmartConfigFactory
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -80,9 +80,10 @@ class ConfigurationHandlerStorageTest {
 
     private fun buildConfigMap(keys: Set<String>) : Map<String, SmartConfig> {
         var counter = 0
+        val configFactory = SmartConfigFactory.create(ConfigFactory.empty())
         return keys.associateWith {
             counter++
-            SmartConfigImpl(ConfigFactory.parseMap(mapOf(it to counter)))
+            configFactory.create(ConfigFactory.parseMap(mapOf(it to counter)))
         }
     }
 }

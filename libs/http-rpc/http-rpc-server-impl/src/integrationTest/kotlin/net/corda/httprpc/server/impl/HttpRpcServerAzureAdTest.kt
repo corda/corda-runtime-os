@@ -3,7 +3,6 @@ package net.corda.httprpc.server.impl
 import kong.unirest.HttpStatus
 import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.httprpc.security.read.RPCSecurityManager
-import net.corda.httprpc.security.read.impl.RPCSecurityManagerFactoryStubImpl
 import net.corda.httprpc.server.HttpRpcServer
 import net.corda.httprpc.server.config.models.AzureAdSettings
 import net.corda.httprpc.server.config.models.HttpRpcContext
@@ -30,7 +29,7 @@ class HttpRpcServerAzureAdTest {
 
     @BeforeEach
     fun setUp() {
-        securityManager = RPCSecurityManagerFactoryStubImpl().createRPCSecurityManager()
+        securityManager = FakeSecurityManager()
         httpRpcSettings = HttpRpcSettings(NetworkHostAndPort("localhost", findFreePort()),
                 HttpRpcContext("1", "api", "HttpRpcContext test title ", "HttpRpcContext test description"),
                 null,

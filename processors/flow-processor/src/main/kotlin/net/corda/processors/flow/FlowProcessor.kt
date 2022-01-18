@@ -4,7 +4,7 @@ import net.corda.libs.configuration.SmartConfig
 
 /** The processor for a `FlowWorker`. */
 interface FlowProcessor {
-    fun start(config: SmartConfig)
+    fun start(bootConfig: SmartConfig)
 
     fun stop()
 }

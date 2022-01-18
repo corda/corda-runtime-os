@@ -1,17 +1,16 @@
 package net.corda.p2p.deployment.pods
 
-import net.corda.p2p.deployment.CordaOsDockerDevSecret
+import net.corda.p2p.deployment.DockerSecrets
 
 abstract class P2pPod(
     kafkaServers: String,
     index: Int,
     details: P2PDeploymentDetails,
 ) : Pod() {
-    override val pullSecrets = listOf(CordaOsDockerDevSecret.name)
     open val otherPorts: Collection<Port> = emptyList()
     abstract val imageName: String
     override val image by lazy {
-        "${CordaOsDockerDevSecret.host}/corda-os-$imageName:${details.tag}"
+        "${DockerSecrets.cordaHost}/corda-os-$imageName:${details.tag}"
     }
     override val app by lazy {
         "$imageName-$index"

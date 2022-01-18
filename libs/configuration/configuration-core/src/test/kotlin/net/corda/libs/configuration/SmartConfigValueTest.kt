@@ -1,6 +1,7 @@
 package net.corda.libs.configuration
 
 import com.typesafe.config.ConfigFactory
+import net.corda.libs.configuration.secret.SecretsLookupService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.argThat
@@ -12,8 +13,7 @@ class SmartConfigValueTest {
     val configString = """
         root {
             foo: bar,
-            fred {
-                isSmartConfigSecret: true,
+            fred.configSecret {
                 token: secure-fred
             },
         }
@@ -21,8 +21,7 @@ class SmartConfigValueTest {
     val config = ConfigFactory.parseString(configString)
     val otherConfig = ConfigFactory.parseString(
         """
-        jon {
-            isSmartConfigSecret: true,
+        jon.configSecret {
             token: secure-jon
         },
         """.trimIndent()
@@ -31,13 +30,14 @@ class SmartConfigValueTest {
     val secretsLookupService = mock<SecretsLookupService>() {
         on { getValue(
             argThat {
-                this != otherConfig.getValue("jon")
+                this != otherConfig.getConfig("jon")
             }
         )} doReturn "secret"
-        on { getValue(otherConfig.getValue("jon"))} doReturn "other-secret"
+        on { getValue(otherConfig.getConfig("jon"))} doReturn "other-secret"
     }
+    val smartConfigFactory = mock<SmartConfigFactory>()
     val configValue: SmartConfigValue =
-        SmartConfigValueImpl(config.getValue("root"), secretsLookupService)
+        SmartConfigValueImpl(config.getValue("root"), smartConfigFactory, secretsLookupService)
 
     @Test
     fun `toSafeConfigValue never reveals secrets`() {
@@ -58,13 +58,13 @@ class SmartConfigValueTest {
 
     @Test
     fun `unwrapped still works`() {
-        val cv = SmartConfigValueImpl(config.getValue("root.foo"), secretsLookupService)
+        val cv = SmartConfigValueImpl(config.getValue("root.foo"), smartConfigFactory, secretsLookupService)
         assertThat(cv.unwrapped()).isEqualTo("bar")
     }
 
     @Test
     fun `unwrapped still works with secrets`() {
-        val cv = SmartConfigValueImpl(config.getValue("root.fred"), secretsLookupService)
+        val cv = SmartConfigValueImpl(config.getValue("root.fred"), smartConfigFactory, secretsLookupService)
         assertThat(cv.unwrapped()).isEqualTo("secret")
     }
 

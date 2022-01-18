@@ -1,6 +1,5 @@
 package net.corda.httprpc.server.impl
 
-import net.corda.httprpc.security.read.impl.RPCSecurityManagerFactoryStubImpl
 import net.corda.httprpc.server.HttpRpcServer
 import net.corda.httprpc.server.config.models.HttpRpcContext
 import net.corda.httprpc.server.impl.utils.TestHttpClient
@@ -14,7 +13,7 @@ abstract class HttpRpcServerTestBase {
         val userName = "admin"
         val password = "admin"
         fun findFreePort() = ServerSocket(0).use { it.localPort }
-        val securityManager = RPCSecurityManagerFactoryStubImpl().createRPCSecurityManager()
+        val securityManager = FakeSecurityManager()
         val context = HttpRpcContext("1", "api", "HttpRpcContext test title ", "HttpRpcContext test description")
     }
 }

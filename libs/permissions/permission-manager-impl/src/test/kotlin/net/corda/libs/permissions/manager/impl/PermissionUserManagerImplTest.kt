@@ -39,6 +39,7 @@ import net.corda.data.permissions.management.user.AddRoleToUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
+import net.corda.schema.configuration.ConfigKeys
 import org.junit.jupiter.api.assertThrows
 
 class PermissionUserManagerImplTest {
@@ -197,7 +198,7 @@ class PermissionUserManagerImplTest {
     @Test
     fun `creating permission user manager will use the remote writer timeout set in the config`() {
         val config = SmartConfigImpl.empty()
-            .withValue("endpointTimeoutMs", ConfigValueFactory.fromAnyRef(12345L))
+            .withValue(ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS, ConfigValueFactory.fromAnyRef(12345L))
 
         val future = mock<CompletableFuture<PermissionManagementResponse>>()
         val requestCaptor = argumentCaptor<PermissionManagementRequest>()
