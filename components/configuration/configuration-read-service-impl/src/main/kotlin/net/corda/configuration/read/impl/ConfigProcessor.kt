@@ -48,7 +48,7 @@ internal class ConfigProcessor(
         }
     }
 
-    // TODO: This smart config factory needs to be created from some boot configuration
+    // This smart config factory needs to be created from some boot configuration
     private val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
 
     private fun Configuration.toSmartConfig(): SmartConfig {

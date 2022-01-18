@@ -97,7 +97,8 @@ internal class ConfigReadServiceEventHandler(
         if (subscription != null) {
             throw ConfigurationReadException("Subscription to config topic already exists when setup requested")
         }
-        // TODO: The configuration passed through here might not be quite correct.
+        // The configuration passed through here might not be quite correct - boot configuration needs to be properly
+        // defined. May also be relevant for secret service configuration in the processor.
         val sub = subscriptionFactory.createCompactedSubscription(
             SubscriptionConfig(GROUP, CONFIG_TOPIC),
             ConfigProcessor(coordinator),
