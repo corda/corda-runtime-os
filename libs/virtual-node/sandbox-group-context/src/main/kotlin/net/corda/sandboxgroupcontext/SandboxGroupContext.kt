@@ -1,7 +1,6 @@
 package net.corda.sandboxgroupcontext
 
 import net.corda.sandbox.SandboxGroup
-import net.corda.serialization.NonSerializable
 
 /**
  * A context object that is essentially a decorated [SandboxGroup].  It should contain everything required to
