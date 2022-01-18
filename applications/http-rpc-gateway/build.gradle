@@ -37,6 +37,8 @@ dependencies {
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation 'org.slf4j:slf4j-api'
     implementation 'net.corda:corda-base'
+    implementation 'net.corda:corda-topic-schema'
+    implementation 'net.corda:corda-avro-schema'
     implementation project(":osgi-framework-api")
 
     implementation project(":components:configuration:configuration-read-service")
@@ -48,6 +50,7 @@ dependencies {
     implementation project(':libs:http-rpc:http-rpc-security-read')
     implementation project(':libs:http-rpc:ssl-cert-read')
     implementation project(':libs:http-rpc:http-rpc-server')
+    implementation project(':libs:configuration:file-configuration-read-impl')
 
     // Components
     implementation project(":components:http-rpc-gateway-comp")

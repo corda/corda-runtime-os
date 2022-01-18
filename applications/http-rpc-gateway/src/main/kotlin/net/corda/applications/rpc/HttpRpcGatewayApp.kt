@@ -1,17 +1,25 @@
 package net.corda.applications.rpc
 
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
+import net.corda.applications.rpc.internal.HttpRpcGatewayAppEventHandler
 import net.corda.components.rpc.HttpRpcGateway
+import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.config.Configuration
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.read.file.ConfigFileParser
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.records.Record
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
+import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.debug
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -21,13 +29,10 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.File
 import java.io.FileInputStream
-import java.nio.file.Files
 import java.nio.file.Path
-import java.util.Properties
+import java.util.*
 import kotlin.math.absoluteValue
 import kotlin.random.Random
-import net.corda.applications.rpc.internal.HttpRpcGatewayAppEventHandler
-import net.corda.configuration.read.ConfigurationReadService
 
 @Component(service = [Application::class], immediate = true)
 @Suppress("LongParameterList", "UNUSED")
@@ -41,7 +46,9 @@ class HttpRpcGatewayApp @Activate constructor(
     @Reference(service = HttpRpcGateway::class)
     private val httpRpcGateway: HttpRpcGateway,
     @Reference(service = ConfigurationReadService::class)
-    private val configurationReadService: ConfigurationReadService
+    private val configurationReadService: ConfigurationReadService,
+    @Reference(service = PublisherFactory::class)
+    private val publisherFactory: PublisherFactory
 ) : Application {
 
     private companion object {
@@ -73,6 +80,7 @@ class HttpRpcGatewayApp @Activate constructor(
         } else {
             val kafkaProperties = getKafkaPropertiesFromFile(parameters.kafkaProperties)
             val bootstrapConfig = getBootstrapConfig(parameters.instanceId, kafkaProperties)
+            publishConfig(bootstrapConfig)
 
             log.info("Starting configuration read service with bootstrap config ${bootstrapConfig}.")
             configurationReadService.start()
@@ -104,23 +112,40 @@ class HttpRpcGatewayApp @Activate constructor(
     }
 
     /**
+     * Use the configuration file to publish configuration to the bus on startup. This is a temporary solution.
+     */
+    private fun publishConfig(bootstrapConfig: SmartConfig) {
+        log.info("Publishing configuration to Kafka")
+        val publisher = publisherFactory.createPublisher(PublisherConfig("HTTPRPC Gateway"), bootstrapConfig)
+        val bundleContext = FrameworkUtil.getBundle(HttpRpcGatewayApp::class.java).bundleContext
+        val configFile = bundleContext.bundle.getResource(CONFIG_FILE)
+        val config = ConfigFileParser(smartConfigFactory).parseFile(configFile)
+        log.info("Config to publish: $config")
+        val records = config.map { (key, configValue) ->
+            val avroConfig = Configuration(configValue.root().render(ConfigRenderOptions.concise()), "1")
+            Record(CONFIG_TOPIC, key, avroConfig)
+        }
+        publisher.publish(records)
+    }
+
+    /**
      * Create the config file found in resources in a temp folder and return the full path
      */
-    private fun createConfigFile(): String {
-        tempDirectoryPath = Files.createTempDirectory(TEMP_DIRECTORY_PREFIX)
-        val bundleContext = FrameworkUtil.getBundle(HttpRpcGatewayApp::class.java).bundleContext
-        val configFileURL = bundleContext.bundle.getResource(CONFIG_FILE)
-        val configFileContent = configFileURL.openStream().readAllBytes()
-        val configFilePath = Path.of(tempDirectoryPath.toString(), CONFIG_FILE)
-        configFilePath.toFile().writeBytes(configFileContent)
-        return configFilePath.toString()
-    }
+//    private fun createConfigFile(): String {
+//        tempDirectoryPath = Files.createTempDirectory(TEMP_DIRECTORY_PREFIX)
+//        val bundleContext = FrameworkUtil.getBundle(HttpRpcGatewayApp::class.java).bundleContext
+//        val configFileURL = bundleContext.bundle.getResource(CONFIG_FILE)
+//        val configFileContent = configFileURL.openStream().readAllBytes()
+//        val configFilePath = Path.of(tempDirectoryPath.toString(), CONFIG_FILE)
+//        configFilePath.toFile().writeBytes(configFileContent)
+//        return configFilePath.toString()
+//    }
 
     private fun getBootstrapConfig(instanceId: Int, kafkaConnectionProperties: Properties?): SmartConfig {
 
         val bootstrapServer = getConfigValue(kafkaConnectionProperties, BOOTSTRAP_SERVERS)
-        val configFile = createConfigFile()
-        log.debug { "Config file saved to: $configFile" }
+//        val configFile = createConfigFile()
+//        log.debug { "Config file saved to: $configFile" }
         return smartConfigFactory.create(ConfigFactory.empty()
             .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(bootstrapServer))
             .withValue(
@@ -131,8 +156,8 @@ class HttpRpcGatewayApp @Activate constructor(
                 TOPIC_PREFIX,
                 ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX, ""))
             )
-            .withValue(GENERAL_CONFIG_INSTANCE_ID_PATH, ConfigValueFactory.fromAnyRef(instanceId))
-            .withValue("config.file", ConfigValueFactory.fromAnyRef(configFile)))
+            .withValue(GENERAL_CONFIG_INSTANCE_ID_PATH, ConfigValueFactory.fromAnyRef(instanceId)))
+//            .withValue("config.file", ConfigValueFactory.fromAnyRef(configFile)))
     }
 
     private fun getConfigValue(kafkaConnectionProperties: Properties?, path: String, default: String? = null): String {

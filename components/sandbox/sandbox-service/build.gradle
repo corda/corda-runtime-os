@@ -43,6 +43,9 @@ dependencies {
 
     integrationTestImplementation "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
     integrationTestImplementation project(":components:configuration:configuration-read-service")
+    integrationTestImplementation project(":libs:messaging:messaging")
+    integrationTestImplementation "net.corda:corda-avro-schema"
+    integrationTestImplementation "net.corda:corda-topic-schema"
     integrationTestImplementation "net.corda:corda-application"
     integrationTestRuntimeOnly project(':libs:sandbox-internal')
     testImplementation project(":testing:test-utilities")
@@ -54,8 +57,8 @@ dependencies {
     integrationTestRuntimeOnly project(":libs:sandbox-hooks")
     integrationTestRuntimeOnly project(":libs:configuration:configuration-core")
     integrationTestRuntimeOnly project(":libs:configuration:configuration-read-impl")
-    integrationTestRuntimeOnly project(":libs:configuration:file-configuration-read-impl")
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
+    integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")
 
     // Use custom configurations in consumer cpks to gather location of cpis to add into `resources`
     // Note:  we define the configuration `cpiForTest` in each project's gradle script.
