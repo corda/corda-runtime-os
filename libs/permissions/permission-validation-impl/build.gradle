@@ -19,6 +19,7 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:permissions:permission-validation")
     implementation project(":libs:permissions:permission-cache")
+    implementation project(":libs:permissions:permission-password")
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-topic-schema"
 

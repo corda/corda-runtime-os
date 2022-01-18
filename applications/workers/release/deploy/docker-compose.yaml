@@ -94,9 +94,6 @@ services:
       - "5007:5007"
     environment:
       JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5007"
-    depends_on:
-      init-kafka:
-        condition: service_completed_successfully
     command:
       - --messagingParams
       - kafka.common.bootstrap.servers=kafka:9092
@@ -111,22 +108,13 @@ services:
       - "5006:5006"
     environment:
       JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5006"
-    depends_on:
-      init-kafka:
-        condition: service_completed_successfully
-      cluster-db:
-        condition: service_healthy
     command:
-      - --messagingParams
-      - kafka.common.bootstrap.servers=kafka:9092
-      - --instanceId
-      - "1"
-      - --databaseParams
-      - cluster.user=user
-      - --databaseParams
-      - cluster.pass=pass
-      - --databaseParams
-      - cluster.jdbc.url=jdbc:postgresql://cluster-db:5432/cordacluster
+      - -mkafka.common.bootstrap.servers=kafka:9092
+      - -spassphrase=bad passphrase
+      - -ssalt=not so random
+      - -dcluster.user=user
+      - -dcluster.pass.configSecret.encryptedSecret=4LNuCvt+NhGIBwL7gRRhvAZh3k6JRN9NHv0aG3pi1xM=
+      - -dcluster.jdbc.url=jdbc:postgresql://cluster-db:5432/cordacluster
 
   flow-worker:
     container_name: flow-worker
@@ -136,9 +124,6 @@ services:
       - "5008:5008"
     environment:
       JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5008"
-    depends_on:
-      init-kafka:
-        condition: service_completed_successfully
     command:
       - --messagingParams
       - kafka.common.bootstrap.servers=kafka:9092
@@ -149,9 +134,6 @@ services:
     container_name: rpc-worker
     # Created with `gradlew applications:workers:release:rpc:publishOSGiImage`.
     image: "corda-os-docker-dev.software.r3.com/corda-os-rpc-worker:latest-local"
-    depends_on:
-      init-kafka:
-        condition: service_completed_successfully
     ports:
       - "8888:8888"
       - "5005:5005"
@@ -162,3 +144,8 @@ services:
       - kafka.common.bootstrap.servers=kafka:9092
       - --instanceId
       - "1"
+    healthcheck:
+      test: [ "CMD-SHELL", "curl --fail --insecure https://localhost:8888/api/v1/swagger.json || exit 1" ]
+      interval: 5s
+      timeout: 1s
+      retries: 20

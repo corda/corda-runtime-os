@@ -1,26 +1,34 @@
 package net.corda.libs.permission.impl
 
+import java.time.Instant
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 import net.corda.data.permissions.ChangeDetails
 import net.corda.data.permissions.Permission
+import net.corda.data.permissions.PermissionAssociation
 import net.corda.data.permissions.PermissionType
 import net.corda.data.permissions.Role
+import net.corda.data.permissions.RoleAssociation
 import net.corda.data.permissions.User
+import net.corda.libs.permissions.cache.PermissionCache
+import net.corda.permissions.password.PasswordHash
+import net.corda.permissions.password.PasswordService
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
-import java.time.Instant
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
-import net.corda.data.permissions.PermissionAssociation
-import net.corda.data.permissions.RoleAssociation
-import net.corda.libs.permissions.cache.PermissionCache
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 class PermissionValidatorImplTest {
 
     companion object {
         private val permissionCache: PermissionCache = mock()
-        private val permissionService = PermissionValidatorImpl(permissionCache)
+        private val passwordService: PasswordService = mock()
+        private val permissionValidator = PermissionValidatorImpl(permissionCache, passwordService)
 
         private const val virtualNode = "f39d810f-6ee6-4742-ab7c-d1fe274ab85e"
         private const val permissionString = "flow/start/com.myapp.MyFlow"
@@ -125,27 +133,118 @@ class PermissionValidatorImplTest {
     }
 
     @Test
+    fun `authenticate user will return false when user cannot be found in cache`() {
+        whenever(permissionCache.getUser("userLoginName1")).thenReturn(null)
+
+        val result = permissionValidator.authenticateUser("userLoginName1", "password".toCharArray())
+
+        assertFalse(result)
+    }
+
+    @Test
+    fun `authenticate user will return false when user does not have salt value`() {
+        val saltlessUser = User().apply {
+            saltValue = null
+            hashedPassword = "pass"
+        }
+        whenever(permissionCache.getUser("userLoginName1")).thenReturn(saltlessUser)
+
+        val result = permissionValidator.authenticateUser("userLoginName1", "password".toCharArray())
+
+        assertFalse(result)
+    }
+
+    @Test
+    fun `authenticate user will return false when user does not have hashed pass`() {
+        val saltlessUser = User().apply {
+            saltValue = "abcsalt"
+            hashedPassword = null
+        }
+        whenever(permissionCache.getUser("userLoginName1")).thenReturn(saltlessUser)
+
+        val result = permissionValidator.authenticateUser("userLoginName1", "password".toCharArray())
+
+        assertFalse(result)
+    }
+
+    @Test
+    fun `authenticate user will return false when password service returns says password not verified`() {
+        val storedPasswordHashCapture = argumentCaptor<PasswordHash>()
+        val requestPasswordCapture = argumentCaptor<String>()
+
+        val user = User().apply {
+            saltValue = "abcsalt"
+            hashedPassword = "hashedpass"
+        }
+
+        whenever(permissionCache.getUser("userLoginName2")).thenReturn(user)
+        whenever(passwordService.verifies(requestPasswordCapture.capture(), storedPasswordHashCapture.capture())).thenReturn(false)
+
+        val result = permissionValidator.authenticateUser("userLoginName2", "password".toCharArray())
+
+        assertFalse(result)
+
+        verify(permissionCache, times(1)).getUser("userLoginName2")
+
+        assertEquals(1, storedPasswordHashCapture.allValues.size)
+        assertEquals(1, requestPasswordCapture.allValues.size)
+        assertNotNull(storedPasswordHashCapture.firstValue)
+        assertNotNull(requestPasswordCapture.firstValue)
+        assertEquals("hashedpass", storedPasswordHashCapture.firstValue.value)
+        assertEquals("abcsalt", storedPasswordHashCapture.firstValue.salt)
+        assertEquals("password", requestPasswordCapture.firstValue)
+    }
+
+    @Test
+    fun `authenticate user return true when password service says password verified`() {
+        val storedPasswordHashCapture = argumentCaptor<PasswordHash>()
+        val requestPasswordCapture = argumentCaptor<String>()
+
+        val user = User().apply {
+            saltValue = "abcsalt"
+            hashedPassword = "hashedpass"
+        }
+
+        whenever(permissionCache.getUser("userLoginName1")).thenReturn(user)
+        whenever(passwordService.verifies(requestPasswordCapture.capture(), storedPasswordHashCapture.capture())).thenReturn(true)
+
+        val result = permissionValidator.authenticateUser("userLoginName1", "password".toCharArray())
+
+        assertTrue(result)
+
+        verify(permissionCache, times(1)).getUser("userLoginName1")
+
+        assertEquals(1, storedPasswordHashCapture.allValues.size)
+        assertEquals(1, requestPasswordCapture.allValues.size)
+        assertNotNull(storedPasswordHashCapture.firstValue)
+        assertNotNull(requestPasswordCapture.firstValue)
+        assertEquals("hashedpass", storedPasswordHashCapture.firstValue.value)
+        assertEquals("abcsalt", storedPasswordHashCapture.firstValue.salt)
+        assertEquals("password", requestPasswordCapture.firstValue)
+    }
+
+    @Test
     fun `User with proper permission will be authorized`() {
 
-        assertTrue(permissionService.authorizeUser("requestId", user.loginName, permissionUrlRequest))
+        assertTrue(permissionValidator.authorizeUser(user.loginName, permissionUrlRequest))
     }
 
     @Test
     fun `Non-existing user will not be authorized`() {
 
-        assertFalse(permissionService.authorizeUser("requestId", "user2", permissionUrlRequest))
+        assertFalse(permissionValidator.authorizeUser("user2", permissionUrlRequest))
     }
 
     @Test
     fun `Disabled user will not be authorized`() {
 
-        assertFalse(permissionService.authorizeUser("requestId", disabledUser.id, permissionUrlRequest))
+        assertFalse(permissionValidator.authorizeUser(disabledUser.id, permissionUrlRequest))
     }
 
     @Test
     fun `User with proper permission set to DENY will not be authorized`() {
 
-        assertFalse(permissionService.authorizeUser("requestId", userWithPermDenied.id, permissionUrlRequest))
+        assertFalse(permissionValidator.authorizeUser(userWithPermDenied.id, permissionUrlRequest))
     }
 
     // More tests are to be added which verify group related permissions

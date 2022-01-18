@@ -212,7 +212,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
     fun `GET without auth header returns WWW-Authenticate header`() {
         val getPathResponse = client.call(net.corda.httprpc.tools.HttpVerb.GET, WebRequest<Any>("health/sanity"))
         val headerValue = getPathResponse.headers[WWW_AUTHENTICATE]
-        assertEquals("Basic realm=\"net.corda.httprpc.security.read.impl.RPCSecurityManagerStubImpl\"", headerValue)
+        assertEquals("Basic realm=\"FakeSecurityManager\"", headerValue)
     }
 
     @Test

@@ -14,14 +14,14 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-avro-schema"
     implementation project(":components:configuration:configuration-read-service")
+    implementation project(":components:rbac-security-manager-service")
+    implementation project(':components:permissions:permission-service')
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(':libs:http-rpc:http-rpc')
-    implementation project(':libs:http-rpc:http-rpc-security-read')
     implementation project(':libs:http-rpc:ssl-cert-read')
     implementation project(':libs:http-rpc:http-rpc-server')
-    implementation project(':components:permissions:permission-service')
 
     implementation project(":osgi-framework-api")
 

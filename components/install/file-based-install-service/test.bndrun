@@ -8,6 +8,11 @@
 
 -runvm: \
     --add-opens, 'java.base/java.net=ALL-UNNAMED'
+-runsystempackages: \
+    javax.xml.stream;version=1.0.0,\
+    javax.xml.stream.events;version=1.0.0,\
+    javax.xml.stream.util;version=1.0.0,\
+    sun.security.x509
 
 # Enable debugging.
 # -runjdb: 1044
@@ -28,7 +33,9 @@
 # The version ranges will change as the versions of
 # the artifacts and/or their dependencies change.
 -runbundles: \
+	bcpkix;version='[1.69.0,1.69.1)',\
 	bcprov;version='[1.69.0,1.69.1)',\
+	bcutil;version='[1.69.0,1.69.1)',\
 	com.google.guava;version='[30.1.1,30.1.2)',\
 	com.google.guava.failureaccess;version='[1.0.1,1.0.2)',\
 	com.typesafe.config;version='[1.4.1,1.4.2)',\
@@ -40,11 +47,13 @@
 	junit-platform-engine;version='[1.8.2,1.8.3)',\
 	junit-platform-launcher;version='[1.8.2,1.8.3)',\
 	net.corda.base;version='[5.0.0,5.0.1)',\
+	net.corda.cipher-suite;version='[5.0.0,5.0.1)',\
 	net.corda.configuration-core;version='[5.0.0,5.0.1)',\
 	net.corda.configuration-read;version='[5.0.0,5.0.1)',\
 	net.corda.configuration-read-service;version='[5.0.0,5.0.1)',\
 	net.corda.configuration-read-service-impl;version='[5.0.0,5.0.1)',\
 	net.corda.crypto;version='[5.0.0,5.0.1)',\
+	net.corda.crypto-internal;version='[5.0.0,5.0.1)',\
 	net.corda.file-based-install-service;version='[5.0.0,5.0.1)',\
 	net.corda.file-configuration-read-impl;version='[5.0.0,5.0.1)',\
 	net.corda.install;version='[5.0.0,5.0.1)',\
@@ -54,6 +63,7 @@
 	net.corda.lifecycle-impl;version='[5.0.0,5.0.1)',\
 	net.corda.packaging;version='[5.0.0,5.0.1)',\
 	net.corda.registry;version='[5.0.0,5.0.1)',\
+	net.i2p.crypto.eddsa;version='[0.3.0,0.3.1)',\
 	org.apache.felix.scr;version='[2.1.28,2.1.29)',\
 	org.jetbrains.kotlin.osgi-bundle;version='[1.4.32,1.4.33)',\
 	org.opentest4j;version='[1.2.0,1.2.1)',\

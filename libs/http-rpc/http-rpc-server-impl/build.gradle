@@ -55,7 +55,6 @@ dependencies {
     runtimeOnly "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
     runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
 
-    integrationTestImplementation project(':libs:http-rpc:http-rpc-stubs-impl')
     integrationTestImplementation "com.konghq:unirest-java:$unirestVersion"
 
     integrationTestImplementation "org.mockito:mockito-core:$mockitoVersion"

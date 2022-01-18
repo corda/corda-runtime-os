@@ -1,6 +1,5 @@
 package net.corda.processors.db.internal
 
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
@@ -13,6 +12,12 @@ import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.datamodel.ConfigAuditEntity
 import net.corda.libs.configuration.datamodel.ConfigEntity
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
+import net.corda.lifecycle.createCoordinator
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.permissions.cache.PermissionCacheService
@@ -21,16 +26,18 @@ import net.corda.permissions.storage.writer.PermissionStorageWriterService
 import net.corda.processors.db.DBProcessor
 import net.corda.processors.db.DBProcessorException
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.sql.SQLException
 import javax.sql.DataSource
 
-/** The processor for a `DBWorker`. */
 @Suppress("Unused", "LongParameterList")
 @Component(service = [DBProcessor::class])
 class DBProcessorImpl @Activate constructor(
+    @Reference(service = LifecycleCoordinatorFactory::class)
+    private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigWriteService::class)
     private val configWriteService: ConfigWriteService,
     @Reference(service = ConfigurationReadService::class)
@@ -51,42 +58,52 @@ class DBProcessorImpl @Activate constructor(
         private val log = contextLogger()
     }
 
-    override fun start(config: SmartConfig) {
-        val dataSource = createDataSource(config)
-        checkDatabaseConnection(dataSource)
-        migrateDatabase(dataSource)
+    private val lifecycleCoordinator = coordinatorFactory.createCoordinator<DBProcessorImpl>(::eventHandler)
 
-        log.info("Starting ConfigWriteService")
-        configWriteService.start()
-
-        val instanceId = config.getInt(CONFIG_INSTANCE_ID)
-        val entityManagerFactory = createEntityManagerFactory(dataSource)
-        configWriteService.startProcessing(config, instanceId, entityManagerFactory)
-
-        // At the moment `configWriteService` does not seem to be piping initial configuration to
-        // `configurationReadService`, hence have to do it manually for now.
-        // Not even message is published on the config Kafka topic.
-        // This is very likely to be related to CORE-3316.
-        log.info("Starting configuration read service with bootstrap config ${config}.")
-        configurationReadService.start()
-        configurationReadService.bootstrapConfig(config)
-
-        log.info("Starting PermissionCacheService")
-        permissionCacheService.start()
-
-        log.info("Starting PermissionStorageReaderService")
-        permissionStorageReaderService.start()
-
-        log.info("Starting PermissionStorageWriterService")
-        permissionStorageWriterService.start()
+    override fun start(bootConfig: SmartConfig) {
+        log.info("DB processor starting.")
+        lifecycleCoordinator.start()
+        lifecycleCoordinator.postEvent(BootConfigEvent(bootConfig))
     }
 
     override fun stop() {
-        permissionStorageWriterService.stop()
-        permissionStorageReaderService.stop()
-        permissionCacheService.stop()
-        configWriteService.stop()
-        configurationReadService.stop()
+        log.info("DB processor stopping.")
+        lifecycleCoordinator.stop()
+    }
+
+    @Suppress("UNUSED_PARAMETER")
+    private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+        log.debug { "DB processor received event $event." }
+        when (event) {
+            is StartEvent -> {
+                configWriteService.start()
+                configurationReadService.start()
+                permissionCacheService.start()
+                permissionStorageReaderService.start()
+                permissionStorageWriterService.start()
+            }
+            is BootConfigEvent -> {
+                val dataSource = createDataSource(event.config)
+                checkDatabaseConnection(dataSource)
+                migrateDatabase(dataSource)
+
+                val instanceId = event.config.getInt(CONFIG_INSTANCE_ID)
+                val entityManagerFactory = createEntityManagerFactory(dataSource)
+                configWriteService.startProcessing(event.config, instanceId, entityManagerFactory)
+
+                configurationReadService.bootstrapConfig(event.config)
+            }
+            is StopEvent -> {
+                permissionStorageWriterService.stop()
+                permissionStorageReaderService.stop()
+                permissionCacheService.stop()
+                configWriteService.stop()
+                configurationReadService.stop()
+            }
+            else -> {
+                log.error("Unexpected event $event!")
+            }
+        }
     }
 
     /**
@@ -141,7 +158,7 @@ class DBProcessorImpl @Activate constructor(
     )
 
     /** Creates a [DataSource] using the [config]. */
-    private fun createDataSource(config: Config): DataSource {
+    private fun createDataSource(config: SmartConfig): DataSource {
         val fallbackConfig = ConfigFactory.empty()
             .withValue(CONFIG_DB_DRIVER, ConfigValueFactory.fromAnyRef(CONFIG_DB_DRIVER_DEFAULT))
             .withValue(CONFIG_JDBC_URL, ConfigValueFactory.fromAnyRef(CONFIG_JDBC_URL_DEFAULT))
@@ -153,16 +170,20 @@ class DBProcessorImpl @Activate constructor(
         val maxPoolSize = configWithFallback.getInt(CONFIG_MAX_POOL_SIZE)
         
         val username = getConfigStringOrNull(config, CONFIG_DB_USER) ?: throw DBProcessorException(
-            "No username provided to connect to cluster database. Pass the `-d cluster.user` flag at worker startup."
+            "No username provided to connect to cluster database. Pass the `-d cluster.user` flag at worker startup." +
+                    "Provided config: ${config.root().render()}"
         )
         val password = getConfigStringOrNull(config, CONFIG_DB_PASS) ?: throw DBProcessorException(
-            "No password provided to connect to cluster database. Pass the `-d cluster.pass` flag at worker startup."
+            "No password provided to connect to cluster database. Pass the `-d cluster.pass` flag at worker startup." +
+                    "Provided config: ${config.root().render()}"
         )
 
         return HikariDataSourceFactory().create(driver, jdbcUrl, username, password, false, maxPoolSize)
     }
 
     /** Returns the string at [path] from [config], or null if the path doesn't exist. */
-    private fun getConfigStringOrNull(config: Config, path: String) =
+    private fun getConfigStringOrNull(config: SmartConfig, path: String) =
         if (config.hasPath(path)) config.getString(path) else null
 }
+
+data class BootConfigEvent(val config: SmartConfig) : LifecycleEvent
