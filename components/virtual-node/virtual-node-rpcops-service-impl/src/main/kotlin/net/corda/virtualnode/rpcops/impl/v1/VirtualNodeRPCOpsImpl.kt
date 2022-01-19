@@ -8,7 +8,7 @@ import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeReques
 import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeResponse
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.api.subscription.factory.config.RPCConfig
+import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas.Config.Companion.CONFIG_MGMT_REQUEST_TOPIC
 import net.corda.virtualnode.rpcops.impl.CLIENT_NAME_HTTP
 import net.corda.virtualnode.rpcops.impl.GROUP_NAME
