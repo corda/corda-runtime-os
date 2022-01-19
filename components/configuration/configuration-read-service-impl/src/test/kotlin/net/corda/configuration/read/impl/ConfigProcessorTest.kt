@@ -21,6 +21,8 @@ class ConfigProcessorTest {
     @Captor
     val eventCaptor: ArgumentCaptor<LifecycleEvent> = ArgumentCaptor.forClass(LifecycleEvent::class.java)
 
+    private val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
+
     companion object {
         private const val CONFIG_STRING = "{ bar: foo }"
     }
@@ -28,7 +30,7 @@ class ConfigProcessorTest {
     @Test
     fun `config is forwarded on initial snapshot`() {
         val coordinator = mock<LifecycleCoordinator>()
-        val configProcessor = ConfigProcessor(coordinator)
+        val configProcessor = ConfigProcessor(coordinator, smartConfigFactory)
         val config = Configuration(CONFIG_STRING, "1")
         configProcessor.onSnapshot(mapOf("BAR" to config))
         verify(coordinator).postEvent(capture(eventCaptor))
@@ -42,7 +44,7 @@ class ConfigProcessorTest {
     @Test
     fun `config is forwarded on update`() {
         val coordinator = mock<LifecycleCoordinator>()
-        val configProcessor = ConfigProcessor(coordinator)
+        val configProcessor = ConfigProcessor(coordinator, smartConfigFactory)
         val config = Configuration(CONFIG_STRING, "1")
         configProcessor.onNext(Record("topic", "bar", config), null, mapOf("bar" to config))
         verify(coordinator).postEvent(capture(eventCaptor))
