@@ -2,9 +2,9 @@ package net.corda.flow.mapper.impl.executor
 
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
-import net.corda.data.flow.event.mapper.MessageDirection
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
@@ -17,14 +17,14 @@ import org.junit.jupiter.api.Test
 
 class SessionEventExecutorTest {
 
-
     @Test
     fun testSessionEventExecutorSessionInitOutbound() {
         val holdingIdentity = HoldingIdentity()
         val flowKey = FlowKey("", holdingIdentity)
-        val payload = SessionEvent(1, 1, SessionInit("", "", flowKey, holdingIdentity))
+        val payload = SessionEvent(MessageDirection.OUTBOUND, 1, "1", 1,
+            SessionInit("", "", flowKey, holdingIdentity, holdingIdentity, null))
 
-        val result = SessionEventExecutor("sessionId", MessageDirection.OUTBOUND, payload, null).execute()
+        val result = SessionEventExecutor("sessionId",  payload, null).execute()
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents
 
@@ -43,8 +43,8 @@ class SessionEventExecutorTest {
     @Test
     fun testSessionEventExecutorSessionInitInbound() {
         val holdingIdentity = HoldingIdentity()
-        val payload = SessionEvent(1, 1, SessionInit("", "", null, holdingIdentity))
-        val result = SessionEventExecutor("sessionId-INITIATED", MessageDirection.INBOUND, payload, null).execute()
+        val payload = SessionEvent(MessageDirection.INBOUND, 1, "", 1, SessionInit("", "", null, holdingIdentity, holdingIdentity, null))
+        val result = SessionEventExecutor("sessionId-INITIATED", payload, null).execute()
 
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents
@@ -63,9 +63,9 @@ class SessionEventExecutorTest {
 
     @Test
     fun testSessionEventExecutorSessionDataOutbound() {
-        val payload = SessionEvent(1, 1, SessionData(null))
+        val payload = SessionEvent(MessageDirection.OUTBOUND,1, "", 1, SessionData(null))
 
-        val result = SessionEventExecutor("sessionId", MessageDirection.OUTBOUND, payload, FlowMapperState()).execute()
+        val result = SessionEventExecutor("sessionId",  payload, FlowMapperState()).execute()
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents
 
@@ -80,10 +80,10 @@ class SessionEventExecutorTest {
     @Test
     fun testSessionEventExecutorSessionDataInbound() {
         val flowKey = FlowKey()
-        val payload = SessionEvent(1, 1, SessionData(null))
+        val payload = SessionEvent(MessageDirection.INBOUND, 1, "", 1, SessionData(null))
 
         val result = SessionEventExecutor(
-            "sessionId-INITIATED", MessageDirection.INBOUND, payload, FlowMapperState(
+            "sessionId-INITIATED", payload, FlowMapperState(
                 flowKey, null, FlowMapperStateType.OPEN
             )
         ).execute()

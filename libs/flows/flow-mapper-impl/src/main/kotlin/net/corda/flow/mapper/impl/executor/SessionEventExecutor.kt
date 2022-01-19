@@ -18,7 +18,6 @@ import net.corda.v5.base.util.contextLogger
 
 class SessionEventExecutor(
     private val eventKey: String,
-    private val messageDirection: MessageDirection,
     private val sessionEvent: SessionEvent,
     private val flowMapperState: FlowMapperState?,
 ) : FlowMapperEventExecutor {
@@ -28,6 +27,7 @@ class SessionEventExecutor(
     }
 
     private val flowKeyGenerator = FlowKeyGenerator()
+    private val messageDirection = sessionEvent.messageDirection
     private val outputTopic = getSessionEventOutputTopic(messageDirection)
 
     override fun execute(): FlowMapperResult {
