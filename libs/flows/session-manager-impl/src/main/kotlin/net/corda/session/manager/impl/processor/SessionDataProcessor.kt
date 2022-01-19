@@ -71,6 +71,7 @@ class SessionDataProcessor(
         sessionEvent.sequenceNum = nextSeqNum
         sessionEvent.timestamp = instant.toEpochMilli()
         undeliveredMessages.add(sessionEvent)
+        sentEventState.undeliveredMessages = undeliveredMessages
         return SessionEventResult(sessionState, generateOutBoundRecord(sessionEvent, sessionId))
     }
 

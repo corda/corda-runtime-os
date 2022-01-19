@@ -44,41 +44,47 @@ class SessionCloseProcessor(
     }
 
     private fun getSendCloseResult(sessionId: String): SessionEventResult {
-        return if (sessionState == null) {
-            logger.error("Tried to send SessionClose with flow key $flowKey and sessionId $sessionId  with null state")
-            SessionEventResult(null, null)
-        } else {
-            //TODO - add error handling. if there is still messages in sessionState.receivedEventsState.undeliveredMessages then we
-            // shouldn't be able to send close. indicates bug
+        return when {
+            sessionState == null -> {
+                logger.error("Tried to send SessionClose with flow key $flowKey and sessionId $sessionId  with null state")
+                SessionEventResult(null, null)
+            }
+            sessionState.receivedEventsState.undeliveredMessages.isNotEmpty() -> {
+                val errorMessage = "Tried to send SessionClose on key $flowKey and sessionId $sessionId, session status is " +
+                        "${sessionState.status}, however there are still received events that have not been processed. " +
+                        "Current SessionState: $sessionState. Sending error to counterparty"
+                logAndGenerateErrorResult(errorMessage, sessionState, sessionId, "SessionClose-SessionMismatch")
+            }
+            else -> {
+                val sentEventState = sessionState.sentEventsState
+                val nextSeqNum = sentEventState.lastProcessedSequenceNum + 1
+                val undeliveredMessages = sentEventState.undeliveredMessages?.toMutableList() ?: mutableListOf()
+                undeliveredMessages.add(sessionEvent)
+                sessionEvent.sequenceNum = nextSeqNum
+                sessionEvent.timestamp = instant.toEpochMilli()
+                sentEventState.lastProcessedSequenceNum = nextSeqNum
 
-            val sentEventState = sessionState.sentEventsState
-            val nextSeqNum = sentEventState.lastProcessedSequenceNum + 1
-            val undeliveredMessages = sentEventState.undeliveredMessages?.toMutableList() ?: mutableListOf()
-            undeliveredMessages.add(sessionEvent)
-            sessionEvent.sequenceNum = nextSeqNum
-            sessionEvent.timestamp = instant.toEpochMilli()
-            sentEventState.lastProcessedSequenceNum = nextSeqNum
-
-            when (val currentState = sessionState.status) {
-                SessionStateType.CONFIRMED -> {
-                    sessionState.status = SessionStateType.CLOSING
-                    SessionEventResult(sessionState, generateOutBoundRecord(sessionEvent, sessionId))
-                }
-                SessionStateType.CLOSING -> {
-                    //Doesn't go to closed until ack received
-                    sessionState.status = SessionStateType.WAIT_FOR_FINAL_ACK
-                    SessionEventResult(sessionState, generateOutBoundRecord(sessionEvent, sessionId))
-                }
-                SessionStateType.CLOSED -> {
-                    //session is already completed successfully. Indicates bug. should we send an error back and change state to error
-                    logger.error("Tried to send SessionClose on key $flowKey and sessionId $sessionId, session status is " +
-                            "$currentState. Current SessionState: $sessionState")
-                    SessionEventResult(sessionState, null)
-                }
-                else -> {
-                    val errorMessage = "Tried to send SessionClose on key $flowKey and sessionId $sessionId, session status is " +
-                            "$currentState. Current SessionState: $sessionState. Sending error to counterparty"
-                    logAndGenerateErrorResult(errorMessage, sessionState, sessionId, "SessionClose-InvalidStatus")
+                when (val currentState = sessionState.status) {
+                    SessionStateType.CONFIRMED -> {
+                        sessionState.status = SessionStateType.CLOSING
+                        SessionEventResult(sessionState, generateOutBoundRecord(sessionEvent, sessionId))
+                    }
+                    SessionStateType.CLOSING -> {
+                        //Doesn't go to closed until ack received
+                        sessionState.status = SessionStateType.WAIT_FOR_FINAL_ACK
+                        SessionEventResult(sessionState, generateOutBoundRecord(sessionEvent, sessionId))
+                    }
+                    SessionStateType.CLOSED -> {
+                        //session is already completed successfully. Indicates bug. should we send an error back and change state to error
+                        logger.error("Tried to send SessionClose on key $flowKey and sessionId $sessionId, session status is " +
+                                "$currentState. Current SessionState: $sessionState")
+                        SessionEventResult(sessionState, null)
+                    }
+                    else -> {
+                        val errorMessage = "Tried to send SessionClose on key $flowKey and sessionId $sessionId, session status is " +
+                                "$currentState. Current SessionState: $sessionState. Sending error to counterparty"
+                        logAndGenerateErrorResult(errorMessage, sessionState, sessionId, "SessionClose-InvalidStatus")
+                    }
                 }
             }
         }

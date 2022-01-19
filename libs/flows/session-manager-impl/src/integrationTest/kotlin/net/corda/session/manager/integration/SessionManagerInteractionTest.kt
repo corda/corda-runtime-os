@@ -6,6 +6,7 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
+import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
@@ -27,8 +28,6 @@ class SessionManagerInteractionTest {
     private val sessionId = "sessionId"
     private val sessionIdInitiated = "$sessionId-INITIATED"
 
-    //TODO individual tests per message type, complex scenarios and error scenarios
-
     @Test
     fun testFullSessionSendAndReceive() {
         //=============== Init =======================
@@ -39,6 +38,7 @@ class SessionManagerInteractionTest {
         val aliceResultInit = sessionManager.processMessage(aliceFlowKey, null, aliceSessionEvent1, instant)
         var aliceSessionState = aliceResultInit.sessionState
         assertThat(aliceSessionState).isNotNull
+        assertThat(aliceSessionState?.status).isEqualTo(SessionStateType.CREATED)
         assertThat(aliceResultInit.outputSessionRecord).isNotNull
 
         //FlowMapper Changes
@@ -50,6 +50,7 @@ class SessionManagerInteractionTest {
         //Receive Init
         val bobResultInitResult = sessionManager.processMessage(bobFlowKey, null, bobSessionInitReceived, instant)
         var bobSessionState = bobResultInitResult.sessionState
+        assertThat(bobSessionState?.status).isEqualTo(SessionStateType.CONFIRMED)
         assertThat(bobSessionState).isNotNull
         assertThat(bobResultInitResult.outputSessionRecord).isNotNull
 
@@ -64,7 +65,10 @@ class SessionManagerInteractionTest {
         assertThat(aliceResultAck1Result.outputSessionRecord).isNull()
 
         //bob processes init
-        bobSessionState = sessionManager.acknowledgeReceivedEvent(bobSessionState!!, bobSessionInitReceived.sequenceNum)
+        var bobNextEvent = sessionManager.getNextReceivedEvent(bobSessionState)
+        assertThat(bobNextEvent?.sequenceNum).isEqualTo(1)
+        assertThat(bobSessionState?.receivedEventsState?.undeliveredMessages?.size).isEqualTo(1)
+        bobSessionState = sessionManager.acknowledgeReceivedEvent(bobSessionState!!, bobNextEvent!!.sequenceNum)
         assertThat(bobSessionState.receivedEventsState.undeliveredMessages).isEmpty()
 
         //=============== Data =======================
@@ -97,10 +101,12 @@ class SessionManagerInteractionTest {
         assertThat(aliceResultAck2Result.outputSessionRecord).isNull()
 
         val bobSessionEventReceived = sessionManager.getNextReceivedEvent(bobSessionState)
-        assertThat(bobSessionEventReceived).isNotNull
+        assertThat(bobSessionEventReceived?.sequenceNum).isEqualTo(2)
+        assertThat(bobSessionState?.receivedEventsState?.undeliveredMessages?.size).isEqualTo(1)
 
         //bob processes data
-        bobSessionState = sessionManager.acknowledgeReceivedEvent(bobSessionState!!, bobSessionEventReceived!!.sequenceNum)
+        bobNextEvent = sessionManager.getNextReceivedEvent(bobSessionState)
+        bobSessionState = sessionManager.acknowledgeReceivedEvent(bobSessionState!!, bobNextEvent!!.sequenceNum)
         assertThat(bobSessionState.receivedEventsState.undeliveredMessages).isEmpty()
 
         //=============== ALice  Close =======================
@@ -109,26 +115,27 @@ class SessionManagerInteractionTest {
         val aliceSessionEvent3= SessionEvent(MessageDirection.OUTBOUND, instant.toEpochMilli(), sessionIdInitiated, null, aliceSessionClose)
         val aliceResultCloseSent = sessionManager.processMessage(aliceFlowKey, aliceSessionState, aliceSessionEvent3, instant)
         aliceSessionState = aliceResultCloseSent.sessionState
-        assertThat(aliceSessionState).isNotNull
+        assertThat(aliceSessionState?.status).isEqualTo(SessionStateType.CLOSING)
         assertThat(aliceResultCloseSent.outputSessionRecord).isNotNull
 
         //mapper changes
         val bobSessionCloseReceived = aliceResultCloseSent.outputSessionRecord?.value?.payload as SessionEvent
         bobSessionCloseReceived.messageDirection = MessageDirection.INBOUND
 
-        //receive close
+        //Bob receive close
         val bobResultCloseReceivedResult = sessionManager.processMessage(bobFlowKey, bobSessionState, bobSessionCloseReceived, instant)
         bobSessionState = bobResultCloseReceivedResult.sessionState
-        assertThat(bobSessionState).isNotNull
+        assertThat(bobSessionState?.status).isEqualTo(SessionStateType.CLOSING)
         assertThat(bobResultCloseReceivedResult.outputSessionRecord).isNotNull
 
         //FlowMapper Changes
         val aliceSessionEventAck3 = bobResultCloseReceivedResult.outputSessionRecord?.value?.payload as SessionEvent
         aliceSessionEventAck3.messageDirection = MessageDirection.INBOUND
 
-        //Receive Ack
+        //Alice receive Ack
         val aliceResultAck3Result = sessionManager.processMessage(aliceFlowKey, aliceSessionState, aliceSessionEventAck3, instant)
         aliceSessionState = aliceResultAck3Result.sessionState
+        assertThat(aliceSessionState?.status).isEqualTo(SessionStateType.CLOSING)
         assertThat(aliceSessionState).isNotNull
         assertThat(aliceResultAck3Result.outputSessionRecord).isNull()
 
@@ -138,6 +145,7 @@ class SessionManagerInteractionTest {
         val bobSessionEvent = SessionEvent(MessageDirection.OUTBOUND, instant.toEpochMilli(), sessionIdInitiated, null, bobSessionClose)
         val bobResultCloseSentResult = sessionManager.processMessage(bobFlowKey, bobSessionState, bobSessionEvent, instant)
         bobSessionState = bobResultCloseSentResult.sessionState
+        assertThat(bobSessionState?.status).isEqualTo(SessionStateType.WAIT_FOR_FINAL_ACK)
         assertThat(bobSessionState).isNotNull
         assertThat(bobResultCloseSentResult.outputSessionRecord).isNotNull
 
@@ -165,17 +173,65 @@ class SessionManagerInteractionTest {
     }
 
     @Test
-    fun testSendDataNullStateAndReceiveError() {
+    fun testSendOutOfOrderData() {
+        var aliceSessionState: SessionState? = SessionState(sessionId, 1, HoldingIdentity("Bob", "1"), true,
+            SessionProcessState(0, listOf()),
+            SessionProcessState(1, listOf()),
+            SessionStateType.CONFIRMED)
         val aliceSessionData = SessionData(null)
-        val aliceSessionEvent = SessionEvent(MessageDirection.OUTBOUND, instant.toEpochMilli(), sessionIdInitiated, 2, aliceSessionData)
-        val aliceResult = sessionManager.processMessage(aliceFlowKey, null, aliceSessionEvent, instant)
+
+        //send 1st data
+        val aliceSessionEvent1 = SessionEvent(MessageDirection.OUTBOUND, instant.toEpochMilli(), sessionId, null, aliceSessionData)
+        val aliceResult1 = sessionManager.processMessage(aliceFlowKey, aliceSessionState, aliceSessionEvent1, instant)
+        aliceSessionState = aliceResult1.sessionState
+        var sentEventsState = aliceSessionState?.sentEventsState
+        assertThat(sentEventsState?.lastProcessedSequenceNum).isEqualTo(2)
+        assertThat(sentEventsState?.undeliveredMessages?.size).isEqualTo(1)
+
+        //send 2nd data
+        val aliceSessionEvent2 = SessionEvent(MessageDirection.OUTBOUND, instant.toEpochMilli(), sessionId, null, aliceSessionData)
+        val aliceResult2 = sessionManager.processMessage(aliceFlowKey, aliceSessionState, aliceSessionEvent2, instant)
+        aliceSessionState = aliceResult2.sessionState
+        sentEventsState = aliceSessionState?.sentEventsState
+        assertThat(aliceSessionState).isNotNull
+        assertThat(sentEventsState?.lastProcessedSequenceNum).isEqualTo(3)
+        assertThat(sentEventsState?.undeliveredMessages?.size).isEqualTo(2)
 
         //FlowMapper Changes
-        val bobSessionEvent = aliceResult.outputSessionRecord?.value?.payload as SessionEvent
-        bobSessionEvent.messageDirection = MessageDirection.INBOUND
+        val bobSessionEvent1 = aliceResult2.outputSessionRecord?.value?.payload as SessionEvent
+        bobSessionEvent1.messageDirection = MessageDirection.INBOUND
+        val bobSessionEvent2 = aliceResult1.outputSessionRecord?.value?.payload as SessionEvent
+        bobSessionEvent2.messageDirection = MessageDirection.INBOUND
 
-        val bobResult = sessionManager.processMessage(bobFlowKey, SessionState(), bobSessionEvent, instant)
-        assertThat(bobResult.sessionState?.status).isEqualTo(SessionStateType.ERROR)
-        assertThat(bobResult.outputSessionRecord).isNull()
+        var bobSessionState: SessionState? = SessionState(sessionIdInitiated, 1, HoldingIdentity("Alice", "1"), false,
+            SessionProcessState(1, listOf()),
+            SessionProcessState(0, listOf()),
+            SessionStateType.CONFIRMED)
+
+        //receive out of order data
+        val bobResult1 = sessionManager.processMessage(bobFlowKey, bobSessionState, bobSessionEvent1, instant)
+        bobSessionState = bobResult1.sessionState
+        assertThat(bobSessionState?.receivedEventsState?.lastProcessedSequenceNum).isEqualTo(1)
+        assertThat(bobSessionState?.status).isEqualTo(SessionStateType.CONFIRMED)
+        assertThat(bobResult1.outputSessionRecord).isNotNull
+
+        //receive out of order data
+        val bobResult2 = sessionManager.processMessage(bobFlowKey, bobSessionState, bobSessionEvent2, instant)
+        bobSessionState = bobResult2.sessionState
+        assertThat(bobSessionState?.receivedEventsState?.lastProcessedSequenceNum).isEqualTo(3)
+        assertThat(bobSessionState?.status).isEqualTo(SessionStateType.CONFIRMED)
+        assertThat(bobResult2.outputSessionRecord).isNotNull
+
+        var bobNextEvent = sessionManager.getNextReceivedEvent(bobSessionState)
+        assertThat(bobNextEvent?.sequenceNum).isEqualTo(2)
+        assertThat(bobSessionState?.receivedEventsState?.lastProcessedSequenceNum).isEqualTo(3)
+        bobSessionState = sessionManager.acknowledgeReceivedEvent(bobSessionState!!, bobNextEvent!!.sequenceNum)
+        assertThat(bobSessionState.receivedEventsState.undeliveredMessages.size).isEqualTo(1)
+
+        bobNextEvent = sessionManager.getNextReceivedEvent(bobSessionState)
+        assertThat(bobNextEvent?.sequenceNum).isEqualTo(3)
+        bobSessionState = sessionManager.acknowledgeReceivedEvent(bobSessionState, bobNextEvent!!.sequenceNum)
+        assertThat(bobSessionState.receivedEventsState.undeliveredMessages).isEmpty()
+        assertThat(bobSessionState.receivedEventsState.lastProcessedSequenceNum).isEqualTo(3)
     }
 }
