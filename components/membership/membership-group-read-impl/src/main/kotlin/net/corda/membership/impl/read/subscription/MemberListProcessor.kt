@@ -1,7 +1,6 @@
 package net.corda.membership.impl.read.subscription
 
 import net.corda.data.KeyValuePairList
-import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.membership.identity.MGMContextImpl
 import net.corda.membership.identity.MemberContextImpl
@@ -11,7 +10,6 @@ import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.membership.conversion.PropertyConverter
-import net.corda.v5.membership.identity.MemberInfo
 import net.corda.virtualnode.toCorda
 import java.nio.ByteBuffer
 
@@ -34,27 +32,21 @@ class MemberListProcessor(
      * Populate the member list cache on initial snapshot.
      */
     override fun onSnapshot(currentData: Map<String, PersistentMemberInfo>) {
-        val memberInfoView = mutableMapOf<HoldingIdentity, MutableList<MemberInfo>>()
-        currentData.forEach { (_, persistentMemberInfo) ->
-            toMemberInfo(
-                MemberContextImpl(
-                    getContextMap(persistentMemberInfo.signedMemberInfo.memberContext),
-                    converter
-                ),
-                MGMContextImpl(
-                    getContextMap(persistentMemberInfo.signedMemberInfo.mgmContext),
-                    converter
+        currentData.entries.groupBy(
+            { it.value.viewOwningMember },
+            {
+                toMemberInfo(
+                    MemberContextImpl(
+                        getContextMap(it.value.signedMemberInfo.memberContext),
+                        converter
+                    ),
+                    MGMContextImpl(
+                        getContextMap(it.value.signedMemberInfo.mgmContext),
+                        converter
+                    )
                 )
-            ).apply {
-                val owner = persistentMemberInfo.viewOwningMember
-                if (memberInfoView[owner] == null) {
-                    memberInfoView[owner] = mutableListOf()
-                }
-                memberInfoView[owner]!!.add(this)
             }
-        }
-
-        memberInfoView.forEach { (owner, memberInfos) ->
+        ).forEach { (owner, memberInfos) ->
             membershipGroupReadCache.memberListCache.put(owner.toCorda(), memberInfos)
         }
     }
