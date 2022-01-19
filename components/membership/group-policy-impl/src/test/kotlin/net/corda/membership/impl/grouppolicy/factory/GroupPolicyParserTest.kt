@@ -1,4 +1,4 @@
-package net.corda.membership.grouppolicy.factory
+package net.corda.membership.impl.grouppolicy.factory
 
 import net.corda.membership.staticmemberlist.StaticMemberTemplateExtension.Companion.mgmKeyAlias
 import net.corda.v5.base.exceptions.CordaRuntimeException

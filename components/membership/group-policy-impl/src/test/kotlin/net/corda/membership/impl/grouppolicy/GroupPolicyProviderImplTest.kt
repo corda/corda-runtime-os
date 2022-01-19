@@ -1,4 +1,4 @@
-package net.corda.membership.grouppolicy
+package net.corda.membership.impl.grouppolicy
 
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.lifecycle.LifecycleCoordinator
