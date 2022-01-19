@@ -49,7 +49,7 @@ class ClusterBootstrapTest {
 
     private fun tryUntil(timeOut: Duration, function: () -> HttpResponse<String>): Int {
         var statusCode = -1
-        val now = Instant.now()
+        val startTime = Instant.now()
         while (statusCode < 200 && Instant.now() < now.plusNanos(timeOut.toNanos())) {
             try {
                 val response = function()
