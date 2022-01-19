@@ -63,6 +63,13 @@ class DBProcessorImpl @Activate constructor(
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<DBProcessorImpl>(::eventHandler)
     private var registration: RegistrationHandle? = null
+    private val dependentComponents = mapOf(
+        LifecycleCoordinatorName.forComponent<ConfigWriteService>() to configWriteService,
+        LifecycleCoordinatorName.forComponent<ConfigurationReadService>() to configurationReadService,
+        LifecycleCoordinatorName.forComponent<PermissionCacheService>() to permissionCacheService,
+        LifecycleCoordinatorName.forComponent<PermissionStorageReaderService>() to permissionStorageReaderService,
+        LifecycleCoordinatorName.forComponent<PermissionStorageWriterService>() to permissionStorageWriterService,
+    )
 
     override fun start(bootConfig: SmartConfig) {
         log.info("DB processor starting.")
@@ -77,14 +84,6 @@ class DBProcessorImpl @Activate constructor(
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         log.debug { "DB processor received event $event." }
-
-        val dependentComponents = mapOf(
-            LifecycleCoordinatorName.forComponent<ConfigWriteService>() to configWriteService,
-            LifecycleCoordinatorName.forComponent<ConfigurationReadService>() to configurationReadService,
-            LifecycleCoordinatorName.forComponent<PermissionCacheService>() to permissionCacheService,
-            LifecycleCoordinatorName.forComponent<PermissionStorageReaderService>() to permissionStorageReaderService,
-            LifecycleCoordinatorName.forComponent<PermissionStorageWriterService>() to permissionStorageWriterService,
-            )
 
         when (event) {
             is StartEvent -> {
