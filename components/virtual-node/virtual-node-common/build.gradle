@@ -24,11 +24,8 @@ dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
     implementation project(":libs:virtual-node:virtual-node-info")
-
-    implementation project(":libs:configuration:configuration-read")
     implementation project(":components:configuration:configuration-read-service")
 
-    runtimeOnly project(":libs:configuration:configuration-read-impl")
     runtimeOnly project(":components:configuration:configuration-read-service-impl")
 
     testImplementation project(":libs:lifecycle:lifecycle-impl")

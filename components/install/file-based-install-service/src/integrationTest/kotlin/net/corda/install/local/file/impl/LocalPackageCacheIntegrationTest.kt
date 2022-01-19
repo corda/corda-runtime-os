@@ -3,10 +3,14 @@ package net.corda.install.local.file.impl
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.config.Configuration
 import net.corda.install.InstallService
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.records.Record
 import net.corda.packaging.CPI
+import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
@@ -19,7 +23,7 @@ import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.NavigableSet
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 
@@ -32,9 +36,11 @@ class LocalPackageCacheIntegrationTest {
     @InjectService(timeout = 1000)
     lateinit var configReadService : ConfigurationReadService
 
+    @InjectService(timeout = 1000)
+    lateinit var publisherFactory: PublisherFactory
+
     lateinit var testDir : Path
     lateinit var cpiDir : Path
-    lateinit var configFile : Path
 
     private val lock = Object()
 
@@ -47,14 +53,10 @@ class LocalPackageCacheIntegrationTest {
             .forEach {
                 Files.copy(it, cpiDir.resolve(it.fileName))
             }
-        configFile = Files.createTempFile(testDir, "testConfiguration", ".json")
-        Files.newBufferedWriter(configFile).use {
-            it.write(ConfigFactory.parseMap(mapOf("corda" to
-                    mapOf("cpi" to
-                            mapOf("cacheDir" to cpiDir.toString())
-                    )
-            )).root().render(ConfigRenderOptions.concise()))
-        }
+        val config = ConfigFactory.parseMap(mapOf("cacheDir" to cpiDir.toString())).root().render(ConfigRenderOptions.concise())
+        val avroConfig = Configuration(config, "1")
+        val publisher = publisherFactory.createPublisher(PublisherConfig("foo"))
+        publisher.publish(listOf(Record(CONFIG_TOPIC, "corda.cpi", avroConfig)))
         configReadService.start()
         installService.start()
     }
@@ -80,8 +82,7 @@ class LocalPackageCacheIntegrationTest {
             }
         }
         configReadService.bootstrapConfig(
-            SmartConfigFactory.create(ConfigFactory.empty()).create(
-                ConfigFactory.parseMap(mapOf("config.file" to configFile.toAbsolutePath().toString()))))
+            SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty()))
         synchronized(lock) {
             lock.wait()
         }

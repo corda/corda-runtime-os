@@ -519,7 +519,6 @@ class LifecycleProcessorTest {
         state.postEvent(CloseCoordinator())
         process(processor, coordinator = coordinator)
         assertEquals(LifecycleStatus.DOWN, state.status)
-        verify(registry).removeCoordinator(coordinator.name)
     }
 
     private object TestEvent1 : LifecycleEvent

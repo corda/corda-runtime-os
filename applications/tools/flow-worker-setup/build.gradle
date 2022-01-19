@@ -21,16 +21,13 @@ dependencies {
     implementation project(":osgi-framework-api")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
-    implementation project(':libs:configuration:configuration-read')
     implementation project(":libs:configuration:configuration-core")
 
-    implementation project(":components:examples:common-publisher")
     implementation project(':components:kafka-topic-admin')
     implementation project(':components:configuration:configuration-publish-service')
 
     runtimeOnly project(':components:configuration:configuration-publish-service-impl')
     runtimeOnly project(":libs:configuration:configuration-publish-impl")
-    runtimeOnly project(":libs:configuration:configuration-read-impl")
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
     runtimeOnly project(":libs:kafka-utils:topic-admin-impl")
     runtimeOnly project(":libs:messaging:messaging-impl")
