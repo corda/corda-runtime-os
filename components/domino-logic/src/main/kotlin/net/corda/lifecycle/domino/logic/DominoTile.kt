@@ -178,19 +178,13 @@ class DominoTile(
                     // We don't do anything when starting/stopping the coordinator
                 }
                 is StopTile -> {
-                    if (event.dueToError) {
-                        when(state) {
-                            State.StoppedByParent, State.StoppedDueToBadConfig, State.StoppedDueToError -> {}
-                            State.Started, State.Created -> {
-                                stopTile()
+                    when(state) {
+                        State.StoppedByParent, State.StoppedDueToBadConfig, State.StoppedDueToError -> {}
+                        State.Started, State.Created -> {
+                            stopTile()
+                            if (event.dueToError) {
                                 updateState(State.StoppedDueToError)
-                            }
-                        }
-                    } else {
-                        when(state) {
-                            State.StoppedByParent, State.StoppedDueToBadConfig, State.StoppedDueToError -> {}
-                            State.Started, State.Created -> {
-                                stopTile()
+                            } else {
                                 updateState(State.StoppedByParent)
                             }
                         }
