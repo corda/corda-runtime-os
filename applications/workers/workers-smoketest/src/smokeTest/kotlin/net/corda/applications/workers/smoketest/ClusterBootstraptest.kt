@@ -17,7 +17,7 @@ import java.time.Instant
 
 
 class ClusterBootstraptest {
-    private val healtChecks = mapOf(
+    private val healthChecks = mapOf(
         // TODO: can take these from properties
         "crypto-worker" to 7001,
         "db-worker" to 7002,
