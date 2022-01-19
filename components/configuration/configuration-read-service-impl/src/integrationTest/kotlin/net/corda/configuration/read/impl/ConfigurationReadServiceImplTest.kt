@@ -5,6 +5,9 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.config.Configuration
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -33,12 +36,15 @@ class ConfigurationReadServiceImplTest {
     lateinit var configurationReadService: ConfigurationReadService
 
     @InjectService(timeout = 4000)
+    lateinit var lifecycleRegistry: LifecycleRegistry
+
+    @InjectService(timeout = 4000)
     lateinit var publisherFactory: PublisherFactory
 
     private val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
 
     @Test
-    fun `config read service goes up once bootstrap config is provided`() {
+    fun `config read service posts initial event once bootstrap config is provided`() {
         val bootConfig = smartConfigFactory.create(ConfigFactory.parseString(BOOT_CONFIG_STRING))
         val latch = CountDownLatch(1)
         configurationReadService.start()
@@ -53,6 +59,8 @@ class ConfigurationReadServiceImplTest {
             latch.countDown()
         }
         latch.await()
+        // Note that this does not wait for the connection to be made to the message bus, so there is no guarantee that
+        // the component has marked itself up yet.
         assertEquals(expectedKeys, receivedKeys, "Incorrect keys")
         assertEquals(expectedConfig, receivedConfig, "Incorrect config")
         reg.close()
@@ -78,6 +86,10 @@ class ConfigurationReadServiceImplTest {
         latch.await()
         assertEquals(expectedKeys, receivedKeys, "Incorrect keys")
         assertEquals(expectedConfig, receivedConfig, "Incorrect config")
+        assertEquals(
+            LifecycleStatus.UP,
+            lifecycleRegistry.componentStatus()[LifecycleCoordinatorName.forComponent<ConfigurationReadService>()]?.status
+        )
         latch = CountDownLatch(1)
 
         // Publish new configuration and verify it gets delivered
@@ -114,6 +126,10 @@ class ConfigurationReadServiceImplTest {
             }
         }
         prepareLatch.await()
+        assertEquals(
+            LifecycleStatus.UP,
+            lifecycleRegistry.componentStatus()[LifecycleCoordinatorName.forComponent<ConfigurationReadService>()]?.status
+        )
 
         // Register and verify everything gets delivered
         val expectedKeys = mutableSetOf(BOOT_CONFIG, FLOW_CONFIG)

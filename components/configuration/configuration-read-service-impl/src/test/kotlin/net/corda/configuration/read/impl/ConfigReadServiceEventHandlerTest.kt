@@ -65,7 +65,7 @@ internal class ConfigReadServiceEventHandlerTest {
     }
 
     @Test
-    fun `BootstrapConfigProvided has correct output`() {
+    fun `BootstrapConfigProvided triggers SetupSubscription to be sent on new config`() {
         configReadServiceEventHandler.processEvent(BootstrapConfigProvided(bootConfig), coordinator)
         verify(coordinator).postEvent(capture(lifecycleEventCaptor))
         assertThat(lifecycleEventCaptor.firstValue is SetupSubscription)

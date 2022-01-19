@@ -46,14 +46,15 @@ internal class ConfigReadServiceEventHandler(
                 }
             }
             is BootstrapConfigProvided -> {
+                // This will trigger SetupSubscription to be sent on new bootstrap configuration.
                 handleBootstrapConfig(event.config, coordinator)
             }
             is SetupSubscription -> {
                 setupSubscription(coordinator)
             }
             is NewConfigReceived -> {
-                for ((key, value) in event.config) {
-                    configuration[key] = value
+                for ((key, config) in event.config) {
+                    configuration[key] = config
                 }
                 registrations.forEach { it.invoke(event.config.keys, configuration) }
             }
@@ -95,7 +96,7 @@ internal class ConfigReadServiceEventHandler(
                 "Cannot setup the subscription to config topic with no bootstrap configuration"
             )
         if (subscription != null) {
-            throw ConfigurationReadException("Subscription to config topic already exists when setup requested")
+            throw ConfigurationReadException("Subscription to $CONFIG_TOPIC already exists when setup requested")
         }
         // The configuration passed through here might not be quite correct - boot configuration needs to be properly
         // defined. May also be relevant for secret service configuration in the processor.
@@ -114,6 +115,9 @@ internal class ConfigReadServiceEventHandler(
             logger.debug { "Bootstrap config received: $config" }
             bootstrapConfig = config
             configuration[BOOT_CONFIG] = config
+            // Now that the bootstrap configuration has been received the component should set up the subscription.
+            // Note that this must happen in a separate event as across restart the lifecycle should skip straight to
+            // set up subscription step.
             coordinator.postEvent(SetupSubscription())
         } else if (bootstrapConfig != config) {
             val errorString = "An attempt was made to set the bootstrap configuration twice with " +

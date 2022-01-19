@@ -12,7 +12,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 /**
- * Message bus implementation of the configuration read component.
+ * Configuration read service implementation.
  *
  * To use the configuration read service, the component should first be started at the top level. Bootstrap
  * configuration should then be provided to connect to the message bus configuration topic. Once connected, the

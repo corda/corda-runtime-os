@@ -28,6 +28,7 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     integrationTestImplementation project(":testing:test-utilities")
+    integrationTestImplementation project(":libs:lifecycle:registry")
 
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
     integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")
