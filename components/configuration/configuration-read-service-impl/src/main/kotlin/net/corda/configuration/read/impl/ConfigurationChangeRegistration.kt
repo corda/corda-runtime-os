@@ -33,7 +33,7 @@ class ConfigurationChangeRegistration(
     override fun close() {
         val closed = isClosed.getAndSet(true)
         if (!closed) {
-            coordinator.postEvent(ConfigRegistrationClose(this))
+            coordinator.postEvent(ConfigRegistrationRemove(this))
         }
     }
 }

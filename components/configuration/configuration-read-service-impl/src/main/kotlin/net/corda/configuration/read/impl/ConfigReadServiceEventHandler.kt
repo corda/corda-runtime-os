@@ -58,13 +58,13 @@ internal class ConfigReadServiceEventHandler(
                 }
                 registrations.forEach { it.invoke(event.config.keys, configuration) }
             }
-            is ConfigRegistrationOpen -> {
+            is ConfigRegistrationAdd -> {
                 registrations.add(event.registration)
                 if (configuration.keys.isNotEmpty()) {
                     event.registration.invoke(configuration.keys, configuration)
                 }
             }
-            is ConfigRegistrationClose -> {
+            is ConfigRegistrationRemove -> {
                 registrations.remove(event.registration)
             }
             is RegistrationStatusChangeEvent -> {

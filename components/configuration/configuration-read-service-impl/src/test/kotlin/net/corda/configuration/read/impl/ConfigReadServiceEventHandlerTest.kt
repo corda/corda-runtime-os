@@ -129,7 +129,7 @@ internal class ConfigReadServiceEventHandlerTest {
             assertEquals(mapOf(BOOT_CONFIG to bootConfig, FLOW_CONFIG to newConfig), config)
         }
         configReadServiceEventHandler.processEvent(NewConfigReceived(mapOf(FLOW_CONFIG to newConfig)), coordinator)
-        configReadServiceEventHandler.processEvent(ConfigRegistrationOpen(registration), coordinator)
+        configReadServiceEventHandler.processEvent(ConfigRegistrationAdd(registration), coordinator)
     }
 
     @Test
@@ -148,8 +148,8 @@ internal class ConfigReadServiceEventHandlerTest {
                 assertEquals(mapOf(BOOT_CONFIG to bootConfig, FLOW_CONFIG to newConfig), config)
             }
         }
-        configReadServiceEventHandler.processEvent(ConfigRegistrationOpen(reg1), coordinator)
-        configReadServiceEventHandler.processEvent(ConfigRegistrationOpen(reg2), coordinator)
+        configReadServiceEventHandler.processEvent(ConfigRegistrationAdd(reg1), coordinator)
+        configReadServiceEventHandler.processEvent(ConfigRegistrationAdd(reg2), coordinator)
         configReadServiceEventHandler.processEvent(NewConfigReceived(mapOf(FLOW_CONFIG to newConfig)), coordinator)
     }
 
@@ -161,9 +161,9 @@ internal class ConfigReadServiceEventHandlerTest {
         val reg = ConfigurationChangeRegistration(coordinator) { _, _ ->
             assertTrue(shouldCallReg)
         }
-        configReadServiceEventHandler.processEvent(ConfigRegistrationOpen(reg), coordinator)
+        configReadServiceEventHandler.processEvent(ConfigRegistrationAdd(reg), coordinator)
         shouldCallReg = false
-        configReadServiceEventHandler.processEvent(ConfigRegistrationClose(reg), coordinator)
+        configReadServiceEventHandler.processEvent(ConfigRegistrationRemove(reg), coordinator)
         configReadServiceEventHandler.processEvent(NewConfigReceived(mapOf(FLOW_CONFIG to newConfig)), coordinator)
     }
 

@@ -28,7 +28,7 @@ class ConfigurationChangeRegistrationTest {
             fail("Registration handler was called when the registration was closed")
         }
         reg.close()
-        verify(coordinator).postEvent(ConfigRegistrationClose(reg))
+        verify(coordinator).postEvent(ConfigRegistrationRemove(reg))
         reg.invoke(setOf("FOO"), mapOf("FOO" to mock()))
     }
 

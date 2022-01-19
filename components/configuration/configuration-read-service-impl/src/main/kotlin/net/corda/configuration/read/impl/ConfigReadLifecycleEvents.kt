@@ -27,11 +27,11 @@ internal data class NewConfigReceived(val config: Map<String, SmartConfig>) : Li
  *
  * @param registration The configuration registration that has been created.
  */
-internal data class ConfigRegistrationOpen(val registration: ConfigurationChangeRegistration) : LifecycleEvent
+internal data class ConfigRegistrationAdd(val registration: ConfigurationChangeRegistration) : LifecycleEvent
 
 /**
  * A configuration change handler has been removed by another component
  *
  * @param registration The removed registration
  */
-internal data class ConfigRegistrationClose(val registration: ConfigurationChangeRegistration) : LifecycleEvent
+internal data class ConfigRegistrationRemove(val registration: ConfigurationChangeRegistration) : LifecycleEvent

@@ -39,7 +39,7 @@ class ConfigurationReadServiceImpl @Activate constructor(
     override fun registerForUpdates(configHandler: ConfigurationHandler): AutoCloseable {
         if (isRunning) {
             val registration = ConfigurationChangeRegistration(lifecycleCoordinator, configHandler)
-            lifecycleCoordinator.postEvent(ConfigRegistrationOpen(registration))
+            lifecycleCoordinator.postEvent(ConfigRegistrationAdd(registration))
             return registration
         } else {
             throw ConfigurationReadException(
