@@ -6,7 +6,6 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.SoftAssertions
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.fail
 import java.io.IOException
 import java.net.URI
 import java.net.http.HttpClient
@@ -31,7 +30,7 @@ class ClusterBootstrapTest {
         runBlocking(Dispatchers.Default) {
             val softly = SoftAssertions()
             // check all workers are up and "ready"
-            healtChecks.map {
+            healthChecks.map {
                 async {
                     val response = tryUntil(Duration.ofSeconds(90)) { checkReady(it.key, it.value) }
                     if (response in 200..299)
@@ -50,7 +49,7 @@ class ClusterBootstrapTest {
     private fun tryUntil(timeOut: Duration, function: () -> HttpResponse<String>): Int {
         var statusCode = -1
         val startTime = Instant.now()
-        while (statusCode < 200 && Instant.now() < now.plusNanos(timeOut.toNanos())) {
+        while (statusCode < 200 && Instant.now() < startTime.plusNanos(timeOut.toNanos())) {
             try {
                 val response = function()
                 statusCode = response.statusCode()
