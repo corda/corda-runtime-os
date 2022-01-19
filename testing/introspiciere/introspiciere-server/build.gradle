@@ -1,0 +1,28 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+}
+
+description "Introspiciere REST server"
+
+dependencies {
+    implementation "io.javalin:javalin:4.3.0"
+    implementation "org.slf4j:slf4j-simple:$slf4jVersion"
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+
+    implementation project(':testing:introspiciere:introspiciere-core')
+}
+
+jar {
+    // not sure why the dependency is not building automatically
+    dependsOn ':testing:introspiciere:introspiciere-core:build'
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    manifest {
+        attributes "Main-Class": "net.corda.introspiciere.server.MainKt"
+    }
+
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}

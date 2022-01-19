@@ -1,0 +1,9 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+}
+
+description "Introspiciere http common lib"
+
+dependencies {
+    implementation "io.javalin:javalin:4.3.0"
+}
