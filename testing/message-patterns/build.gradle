@@ -2,6 +2,8 @@ import aQute.bnd.gradle.Bundle
 import aQute.bnd.gradle.Resolve
 import aQute.bnd.gradle.TestOSGi
 
+import static org.gradle.jvm.toolchain.JavaLanguageVersion.of
+
 plugins {
     id 'corda.common-library'
     id 'com.r3.internal.gradle.plugins.r3Publish'
@@ -75,6 +77,10 @@ def resolve = tasks.register('resolve', Resolve) {
 tasks.register('kafkaIntegrationTest', TestOSGi) {
     description = "Runs Kafka OSGi integration tests."
     group = "verification"
+    javaLauncher = javaToolchains.launcherFor {
+        languageVersion = of(11)
+    }
+    resultsDirectory = file("$testResultsDir/kafkaIntegrationTest")
     bundles = files(sourceSets.kafkaIntegrationTest.runtimeClasspath, configurations.archives.artifacts.files)
     bndrun = resolve.flatMap { it.outputBndrun }
 }

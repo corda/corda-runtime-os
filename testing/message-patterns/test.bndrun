@@ -1,11 +1,8 @@
 -tester: biz.aQute.tester.junit-platform
-
 -runee: JavaSE-11
 -runfw: org.apache.felix.framework
+-runtrace: true
 -resolve.effective: active
-
--runvm: \
-    --add-opens, 'java.base/java.net=ALL-UNNAMED'
 
 #uncomment to remote debug
 #-runjdb: 5005
