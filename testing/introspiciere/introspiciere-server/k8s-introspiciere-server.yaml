@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: introspiciere-server
+  labels:
+    app: introspiciere
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: introspiciere
+  template:
+    metadata:
+      labels:
+        app: introspiciere
+    spec:
+      containers:
+        - name: introspiciere-server
+          image: docker.io/library/introspiciere-server:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 7070
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: introspiciere-server
+  labels:
+    app: introspiciere
+spec:
+  selector:
+    app: introspiciere
+  ports:
+    - port: 7070
+      targetPort: 7070
+  type: LoadBalancer
