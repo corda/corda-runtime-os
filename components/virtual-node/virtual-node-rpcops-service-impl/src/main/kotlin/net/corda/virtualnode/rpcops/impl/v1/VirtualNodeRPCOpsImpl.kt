@@ -5,6 +5,7 @@ import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRPCOps
+import net.corda.libs.virtualnode.endpoints.v1.types.CpiIdentifier
 import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeResponse
 import net.corda.messaging.api.publisher.RPCSender
@@ -59,7 +60,11 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
     }
 
     override fun createVirtualNode(request: HTTPCreateVirtualNodeRequest): HTTPCreateVirtualNodeResponse {
-        // TODO - Joel - Create virtual node.
-        return HTTPCreateVirtualNodeResponse("", "", "", "", "")
+        // TODO - Create virtual node based on request.
+        return HTTPCreateVirtualNodeResponse(
+            "",
+            CpiIdentifier("", "", ""),
+            ""
+        )
     }
 }

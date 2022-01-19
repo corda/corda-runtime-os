@@ -18,9 +18,7 @@ interface VirtualNodeRPCOps : RpcOps {
     /**
      * Creates a virtual node.
      *
-     * // TODO - Joel - Work out what exceptions are thrown.
-     * @throws `VirtualNodeRPCOpsServiceException` If the virtual node could not be created.
-     * @throws `HttpApiException` If the request returns an exceptional response.
+     * TODO - Document thrown exceptions.
      */
     @HttpRpcPOST(
         path = "create",
