@@ -43,38 +43,40 @@ class SandboxDependencyInjectorImplTest {
     fun `an exception is thrown if the same interface is implemented by more than once service`() {
         Assertions.assertThatIllegalArgumentException()
             .isThrownBy { SandboxDependencyInjectorImpl(listOf(s2, DuplicateService2Impl())) }
-            .withMessage("An implementation of type 'net.corda.flow.manager.impl.Service2' has been already been " +
-                    "registered by 'net.corda.flow.manager.impl.Service2Impl' it can't be registered again " +
-                    "by 'net.corda.flow.manager.impl.DuplicateService2Impl'.")
+            .withMessage(
+                "An implementation of type 'net.corda.flow.manager.impl.Service2' has been already been " +
+                        "registered by 'net.corda.flow.manager.impl.Service2Impl' it can't be registered again " +
+                        "by 'net.corda.flow.manager.impl.DuplicateService2Impl'."
+            )
     }
+}
 
-    interface Service1
-    class Service1Impl : Service1, SingletonSerializeAsToken
+interface Service1
+class Service1Impl : Service1, SingletonSerializeAsToken
 
-    interface Service2
-    class Service2Impl : Service2, SingletonSerializeAsToken, CordaFlowInjectable
+interface Service2
+class Service2Impl : Service2, SingletonSerializeAsToken, CordaFlowInjectable
 
-    class DuplicateService2Impl : Service2, SingletonSerializeAsToken, CordaFlowInjectable
+class DuplicateService2Impl : Service2, SingletonSerializeAsToken, CordaFlowInjectable
 
-    class ExampleFlow : Flow<String> {
-        @CordaInject
-        lateinit var service1: Service1
+class ExampleFlow : Flow<String> {
+    @CordaInject
+    lateinit var service1: Service1
 
-        @CordaInject
-        lateinit var service2: Service2
+    @CordaInject
+    lateinit var service2: Service2
 
-        override fun call(): String {
-            return ""
-        }
+    override fun call(): String {
+        return ""
     }
+}
 
-    interface UnavailableService
-    class ExampleInvalidFlow : Flow<String> {
-        @CordaInject
-        lateinit var service: UnavailableService
+interface UnavailableService
+class ExampleInvalidFlow : Flow<String> {
+    @CordaInject
+    lateinit var service: UnavailableService
 
-        override fun call(): String {
-            return ""
-        }
+    override fun call(): String {
+        return ""
     }
 }
