@@ -1,10 +1,14 @@
 package net.corda.membership.staticnetwork
 
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.CryptoCategories
 import net.corda.crypto.CryptoLibraryClientsFactory
+import net.corda.crypto.CryptoLibraryClientsFactoryProvider
 import net.corda.crypto.CryptoLibraryFactory
 import net.corda.crypto.SigningService
 import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.createCoordinator
 import net.corda.membership.GroupPolicy
 import net.corda.membership.conversion.PropertyConverterImpl
 import net.corda.membership.grouppolicy.GroupPolicyProvider
@@ -61,11 +65,15 @@ class StaticMemberRegistrationService @Activate constructor(
     @Reference(service = GroupPolicyProvider::class)
     val groupPolicyProvider: GroupPolicyProvider,
     @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory,
+    val publisherFactory: PublisherFactory,
     @Reference(service = CryptoLibraryFactory::class)
-    private val cryptoLibraryFactory: CryptoLibraryFactory,
+    val cryptoLibraryFactory: CryptoLibraryFactory,
     @Reference(service = CryptoLibraryClientsFactory::class)
-    private val cryptoLibraryClientsFactory: CryptoLibraryClientsFactory
+    val cryptoLibraryClientsFactoryProvider: CryptoLibraryClientsFactoryProvider,
+    @Reference(service = ConfigurationReadService::class)
+    val configurationReadService: ConfigurationReadService,
+    @Reference(service = LifecycleCoordinatorFactory::class)
+    val coordinatorFactory: LifecycleCoordinatorFactory
 ) : MemberRegistrationService, Lifecycle {
     companion object {
         private val logger: Logger = contextLogger()
@@ -83,16 +91,25 @@ class StaticMemberRegistrationService @Activate constructor(
 
     private var publisher: Publisher? = null
 
-    private lateinit var topic: String
+    private val topic = Schemas.Membership.MEMBER_LIST_TOPIC
+
+    // Handler for lifecycle events.
+    private val lifecycleHandler = RegistrationServiceLifecycleHandler.Impl(
+        this,
+        publisherFactory
+    )
+
+    // Component lifecycle coordinator
+    private val coordinator =
+        coordinatorFactory.createCoordinator<MemberRegistrationService>(lifecycleHandler)
 
     override var isRunning: Boolean = false
 
     override fun start() {
         logger.info("StaticMemberRegistrationService started.")
         keyEncodingService = cryptoLibraryFactory.getKeyEncodingService()
-        topic = Schemas.Membership.MEMBER_LIST_TOPIC
         // temporary solution until we don't have a more suitable category
-        signingService = cryptoLibraryClientsFactory.getSigningService(CryptoCategories.LEDGER)
+        signingService = cryptoLibraryClientsFactoryProvider.get()//cryptoLibraryClientsFactory.getSigningService(CryptoCategories.LEDGER)
         publisher = publisherFactory.createPublisher(PublisherConfig("static-member-registration-service"))
         isRunning = true
     }
