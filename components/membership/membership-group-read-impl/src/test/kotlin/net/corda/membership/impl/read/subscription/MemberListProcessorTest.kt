@@ -2,6 +2,7 @@ package net.corda.membership.impl.read.subscription
 
 import net.corda.crypto.CryptoLibraryFactory
 import net.corda.data.crypto.wire.WireSignatureWithKey
+import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.membership.conversion.PropertyConverterImpl
 import net.corda.membership.conversion.toWire
@@ -32,8 +33,8 @@ import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.membership.identity.EndpointInfo
 import net.corda.v5.membership.identity.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toAvro
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
@@ -67,11 +68,14 @@ class MemberListProcessorTest {
             ByteBuffer.wrap(byteArrayOf()),
         )
         private lateinit var alice: MemberInfo
+        private lateinit var aliceIdentity: HoldingIdentity
         private lateinit var bob: MemberInfo
+        private lateinit var bobIdentity: HoldingIdentity
         private lateinit var charlie: MemberInfo
+        private lateinit var charlieIdentity: HoldingIdentity
 
         private lateinit var memberListProcessor: MemberListProcessor
-        private lateinit var memberListFromTopic: Map<String, SignedMemberInfo>
+        private lateinit var memberListFromTopic: Map<String, PersistentMemberInfo>
 
         private val membershipGroupReadCache = MembershipGroupReadCache.Impl()
 
@@ -99,16 +103,23 @@ class MemberListProcessorTest {
             )
         )
 
-        private fun convertToTestTopicData(memberInfoList: List<MemberInfo>): Map<String, SignedMemberInfo> {
-            val topicData = mutableMapOf<String, SignedMemberInfo>()
+        private fun convertToTestTopicData(
+            memberInfoList: List<MemberInfo>,
+            selfOwned: Boolean = false
+        ): Map<String, PersistentMemberInfo> {
+            val topicData = mutableMapOf<String, PersistentMemberInfo>()
             memberInfoList.forEach { member ->
-                val id = HoldingIdentity(member.name.toString(), member.groupId).id
-                topicData[id] = SignedMemberInfo(
+                val holdingIdentity = HoldingIdentity(member.name.toString(), member.groupId)
+                val signedMemberInfo = SignedMemberInfo(
                     member.memberProvidedContext.toWire(),
                     member.mgmProvidedContext.toWire(),
                     signature,
                     signature
                 )
+                if (!selfOwned && holdingIdentity != aliceIdentity) {
+                    topicData[aliceIdentity.id + holdingIdentity.id] = PersistentMemberInfo(aliceIdentity.toAvro(), signedMemberInfo)
+                }
+                topicData[holdingIdentity.id] = PersistentMemberInfo(holdingIdentity.toAvro(), signedMemberInfo)
             }
             return topicData
         }
@@ -147,8 +158,11 @@ class MemberListProcessorTest {
             whenever(keyEncodingService.decodePublicKey(knownKeyAsString)).thenReturn(knownKey)
             whenever(keyEncodingService.encodeAsString(knownKey)).thenReturn(knownKeyAsString)
             alice = createTestMemberInfo("O=Alice,L=London,C=GB", MEMBER_STATUS_PENDING)
+            aliceIdentity = HoldingIdentity(alice.name.toString(), alice.groupId)
             bob = createTestMemberInfo("O=Bob,L=London,C=GB", MEMBER_STATUS_ACTIVE)
+            bobIdentity = HoldingIdentity(bob.name.toString(), bob.groupId)
             charlie = createTestMemberInfo("O=Charlie,L=London,C=GB", MEMBER_STATUS_SUSPENDED)
+            charlieIdentity = HoldingIdentity(charlie.name.toString(), charlie.groupId)
             memberListFromTopic = convertToTestTopicData(listOf(alice, bob, charlie))
         }
     }
@@ -160,19 +174,16 @@ class MemberListProcessorTest {
 
     @Test
     fun `Value class is SignedMemberInfo`() {
-        assertEquals(SignedMemberInfo::class.java, memberListProcessor.valueClass)
+        assertEquals(PersistentMemberInfo::class.java, memberListProcessor.valueClass)
     }
 
     @Test
     fun `Member list cache is successfully populated from member list topic on initial snapshot`() {
         membershipGroupReadCache.start()
         memberListProcessor.onSnapshot(memberListFromTopic)
-        listOf(alice, bob, charlie).forEach { member ->
-            assertEquals(
-                listOf(member),
-                membershipGroupReadCache.memberListCache.get(HoldingIdentity(member.name.toString(), member.groupId))
-            )
-        }
+        assertEquals(listOf(alice, bob, charlie), membershipGroupReadCache.memberListCache.get(aliceIdentity))
+        assertEquals(listOf(bob), membershipGroupReadCache.memberListCache.get(bobIdentity))
+        assertEquals(listOf(charlie), membershipGroupReadCache.memberListCache.get(charlieIdentity))
         membershipGroupReadCache.stop()
     }
 
@@ -181,13 +192,11 @@ class MemberListProcessorTest {
         membershipGroupReadCache.start()
         memberListProcessor.onSnapshot(memberListFromTopic)
         val newMember = createTestMemberInfo("O=NewMember,L=London,C=GB", MEMBER_STATUS_ACTIVE)
-        val topicData = convertToTestTopicData(listOf(newMember)).entries.first()
+        val newMemberIdentity = HoldingIdentity(newMember.name.toString(), newMember.groupId)
+        val topicData = convertToTestTopicData(listOf(newMember), true).entries.first()
         val newRecord = Record("dummy-topic", topicData.key, topicData.value)
         memberListProcessor.onNext(newRecord, null, memberListFromTopic)
-        assertEquals(
-            listOf(newMember),
-            membershipGroupReadCache.memberListCache.get(HoldingIdentity(newMember.name.toString(), newMember.groupId))
-        )
+        assertEquals(listOf(newMember), membershipGroupReadCache.memberListCache.get(newMemberIdentity))
         membershipGroupReadCache.stop()
     }
 
@@ -196,23 +205,21 @@ class MemberListProcessorTest {
         membershipGroupReadCache.start()
         memberListProcessor.onSnapshot(memberListFromTopic)
         val updatedAlice = createTestMemberInfo("O=Alice,L=London,C=GB", MEMBER_STATUS_ACTIVE)
-        val topicData = convertToTestTopicData(listOf(updatedAlice)).entries.first()
+        val topicData = convertToTestTopicData(listOf(updatedAlice), true).entries.first()
         val newRecord = Record("dummy-topic", topicData.key, topicData.value)
-        val oldValue = SignedMemberInfo(
-            alice.memberProvidedContext.toWire(),
-            alice.mgmProvidedContext.toWire(),
-            signature,
-            signature
+        val oldValue = PersistentMemberInfo(
+            aliceIdentity.toAvro(),
+            SignedMemberInfo(
+                alice.memberProvidedContext.toWire(),
+                alice.mgmProvidedContext.toWire(),
+                signature,
+                signature
+            )
         )
         memberListProcessor.onNext(newRecord, oldValue, memberListFromTopic)
-        val updatedAliceId = HoldingIdentity(updatedAlice.name.toString(), updatedAlice.groupId)
         assertEquals(
-            listOf(updatedAlice),
-            membershipGroupReadCache.memberListCache.get(updatedAliceId)
-        )
-        assertNotEquals(
-            listOf(alice),
-            membershipGroupReadCache.memberListCache.get(updatedAliceId)
+            listOf(bob, charlie, updatedAlice),
+            membershipGroupReadCache.memberListCache.get(aliceIdentity)
         )
         membershipGroupReadCache.stop()
     }

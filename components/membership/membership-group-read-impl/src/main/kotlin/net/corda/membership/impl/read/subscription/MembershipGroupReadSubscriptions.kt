@@ -1,6 +1,6 @@
 package net.corda.membership.impl.read.subscription
 
-import net.corda.data.membership.SignedMemberInfo
+import net.corda.data.membership.PersistentMemberInfo
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.config.MembershipConfig
 import net.corda.membership.config.MembershipConfigConstants
@@ -36,7 +36,7 @@ interface MembershipGroupReadSubscriptions : Lifecycle {
         private val converter: PropertyConverter
     ) : MembershipGroupReadSubscriptions {
 
-        private var memberListSubscription: CompactedSubscription<String, SignedMemberInfo>? = null
+        private var memberListSubscription: CompactedSubscription<String, PersistentMemberInfo>? = null
 
         private val subscriptions
             get() = listOf(
