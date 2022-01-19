@@ -67,6 +67,7 @@ class SessionDataProcessor(
         val sentEventState = sessionState.sentEventsState
         val nextSeqNum = sentEventState.lastProcessedSequenceNum + 1
         val undeliveredMessages = sentEventState.undeliveredMessages?.toMutableList() ?: mutableListOf()
+        sentEventState.lastProcessedSequenceNum = nextSeqNum
         sessionEvent.sequenceNum = nextSeqNum
         sessionEvent.timestamp = instant.toEpochMilli()
         undeliveredMessages.add(sessionEvent)

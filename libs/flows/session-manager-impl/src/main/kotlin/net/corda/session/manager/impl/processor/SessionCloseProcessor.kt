@@ -48,12 +48,16 @@ class SessionCloseProcessor(
             logger.error("Tried to send SessionClose with flow key $flowKey and sessionId $sessionId  with null state")
             SessionEventResult(null, null)
         } else {
+            //TODO - add error handling. if there is still messages in sessionState.receivedEventsState.undeliveredMessages then we
+            // shouldn't be able to send close. indicates bug
+
             val sentEventState = sessionState.sentEventsState
             val nextSeqNum = sentEventState.lastProcessedSequenceNum + 1
             val undeliveredMessages = sentEventState.undeliveredMessages?.toMutableList() ?: mutableListOf()
             undeliveredMessages.add(sessionEvent)
             sessionEvent.sequenceNum = nextSeqNum
             sessionEvent.timestamp = instant.toEpochMilli()
+            sentEventState.lastProcessedSequenceNum = nextSeqNum
 
             when (val currentState = sessionState.status) {
                 SessionStateType.CONFIRMED -> {
@@ -62,6 +66,7 @@ class SessionCloseProcessor(
                 }
                 SessionStateType.CLOSING -> {
                     //Doesn't go to closed until ack received
+                    sessionState.status = SessionStateType.WAIT_FOR_FINAL_ACK
                     SessionEventResult(sessionState, generateOutBoundRecord(sessionEvent, sessionId))
                 }
                 SessionStateType.CLOSED -> {

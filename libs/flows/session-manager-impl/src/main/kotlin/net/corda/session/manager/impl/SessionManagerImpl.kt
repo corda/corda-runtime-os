@@ -32,7 +32,9 @@ class SessionManagerImpl : SessionManager {
     }
 
     override fun acknowledgeReceivedEvent(sessionState: SessionState, seqNum: Int): SessionState {
-        sessionState.receivedEventsState.undeliveredMessages.removeIf { it.sequenceNum == seqNum }
+        val undeliveredEventsReceived = sessionState.receivedEventsState.undeliveredMessages.toMutableList()
+        undeliveredEventsReceived.removeIf { it.sequenceNum == seqNum }
+        sessionState.receivedEventsState.undeliveredMessages = undeliveredEventsReceived
         return sessionState
     }
 
