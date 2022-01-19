@@ -109,6 +109,8 @@ class DBProcessorImpl @Activate constructor(
             }
             is StopEvent -> {
                 dependentComponents.forEach { (_, svc) -> svc.stop() }
+                registration?.close()
+                registration = null
             }
             else -> {
                 log.error("Unexpected event $event!")
