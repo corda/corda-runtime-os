@@ -22,7 +22,7 @@ internal class ConfigRPCOpsServiceImpl @Activate constructor(
 
     private val coordinator = let {
         val eventHandler = ConfigRPCOpsEventHandler(configReadService, configRPCOps)
-        coordinatorFactory.createCoordinator<ConfigRPCOpsServiceImpl>(eventHandler)
+        coordinatorFactory.createCoordinator<ConfigRPCOpsService>(eventHandler)
     }
 
     override val isRunning get() = coordinator.isRunning
