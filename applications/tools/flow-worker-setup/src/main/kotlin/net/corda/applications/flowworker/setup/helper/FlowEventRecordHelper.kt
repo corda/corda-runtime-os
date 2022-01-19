@@ -7,24 +7,52 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
 import java.time.Instant
+import java.util.*
 
 
-fun getHelloWorldRPCEventRecord(): Record<*, *> {
-    return getStartRPCEventRecord(
-        clientId = "test123",
-        cpiId = "corda-helloworld-cpb",
-        flowName = "net.corda.linearstatesample.flows.HelloWorldFlowInitiator",
-        x500Name = "x500name",
-        groupId = "123"
+fun getHelloWorldRPCEventRecords(): List<Record<*, *>> {
+    return listOf(
+        getStartRPCEventRecord(
+            clientId = UUID.randomUUID().toString(),
+            cpiId = "corda-helloworld-cpb",
+            flowName = "net.corda.linearstatesample.flows.HelloWorldFlowInitiator",
+            x500Name = "Mars",
+            groupId = "123",
+            jsonArgs = "{ \"who\":\"Mars 1\"}"
+        ),
+        getStartRPCEventRecord(
+            clientId = UUID.randomUUID().toString(),
+            cpiId = "corda-helloworld-cpb",
+            flowName = "net.corda.linearstatesample.flows.HelloWorldFlowInitiator",
+            x500Name = "Mars",
+            groupId = "123",
+            jsonArgs = "{ \"who\":\"Mars 2\"}"
+        ),
+        getStartRPCEventRecord(
+            clientId = UUID.randomUUID().toString(),
+            cpiId = "corda-helloworld-cpb",
+            flowName = "net.corda.linearstatesample.flows.HelloWorldFlowInitiator",
+            x500Name = "Earth",
+            groupId = "321",
+            jsonArgs = "{ \"who\":\"Earth 1\"}"
+        ),
+        getStartRPCEventRecord(
+            clientId = UUID.randomUUID().toString(),
+            cpiId = "corda-helloworld-cpb",
+            flowName = "net.corda.linearstatesample.flows.HelloWorldFlowInitiator",
+            x500Name = "Earth",
+            groupId = "321",
+            jsonArgs = "{ \"who\":\"Earth 2\"}"
+        ),
     )
 }
 
 @Suppress("LongParameterList")
-fun getStartRPCEventRecord(clientId: String, cpiId: String, flowName: String, x500Name: String, groupId: String):
+fun getStartRPCEventRecord(clientId: String, cpiId: String, flowName: String, x500Name: String, groupId: String, jsonArgs: String):
         Record<*, *> {
     val identity = HoldingIdentity(x500Name, groupId)
     val flowKey = "$clientId.$x500Name.$groupId"
-    val rpcStartFlow = StartRPCFlow(clientId, cpiId, flowName, identity, Instant.now(), "{ \"who\":\"world\"}")
+    val rpcStartFlow = StartRPCFlow(clientId, cpiId, flowName, identity, Instant.now(), jsonArgs)
     return Record(FLOW_MAPPER_EVENT_TOPIC, flowKey, FlowMapperEvent(rpcStartFlow))
 }
 

@@ -15,6 +15,7 @@ dependencies {
     implementation project(':components:gateway')
     implementation project(':libs:configuration:configuration-schema:p2p')
     implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-topic-schema"
     implementation project(":libs:configuration:configuration-core")
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation 'org.slf4j:slf4j-api'
@@ -28,7 +29,8 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
-    runtimeOnly project(":libs:messaging:kafka-messaging-impl")
+    runtimeOnly project(":libs:messaging:kafka-message-bus-impl")
+    runtimeOnly project(":libs:messaging:messaging-impl")
     implementation project(":libs:configuration:configuration-publish")
     runtimeOnly project(":libs:configuration:configuration-publish-impl")
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")

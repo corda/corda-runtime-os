@@ -1,6 +1,7 @@
 plugins {
     id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'corda.common-library'
+    id 'corda.osgi-test-conventions'
 }
 
 description 'Group policy provider component'
@@ -20,5 +21,23 @@ dependencies {
     implementation project(":components:virtual-node:virtual-node-info-service-reader")
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "com.typesafe:config:$typeSafeConfigVersion"
+
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation project(":components:membership:membership-static-memberlist-impl")
+    testImplementation project(":components:virtual-node:virtual-node-info-service-writer")
+    testImplementation project(":components:virtual-node:cpi-info-write-service")
+    testImplementation project(":components:configuration:configuration-read-service")
+    testImplementation project(":libs:messaging:messaging")
+    testImplementation project(":libs:configuration:configuration-core")
+    testImplementation project(":testing:test-utilities")
+    testImplementation "net.corda:corda-topic-schema"
+    testImplementation "net.corda:corda-config-schema"
+    testImplementation "net.corda:corda-packaging-avro-converters"
+
+    integrationTestRuntimeOnly project(":components:virtual-node:cpi-info-read-service-impl")
+    integrationTestRuntimeOnly project(":components:virtual-node:cpi-info-write-service-impl")
+    integrationTestRuntimeOnly project(":components:configuration:configuration-read-service-impl")
+    integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")
+    integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
+    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 }

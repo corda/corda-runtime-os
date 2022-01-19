@@ -9,6 +9,8 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.libs.configuration.schema.messaging.TOPIC_PREFIX
 import net.corda.osgi.api.Shutdown
+import net.corda.schema.configuration.ConfigKeys
+import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.FrameworkUtil
 import picocli.CommandLine
 
@@ -18,6 +20,8 @@ data class PathAndConfig(val path: String, val config: Map<String, String>)
 /** Helpers used across multiple workers. */
 class WorkerHelpers {
     companion object {
+        private val logger = contextLogger()
+
         /**
          * Parses the [args] into the [params].
          *
@@ -39,23 +43,28 @@ class WorkerHelpers {
          * params in the [defaultParams], and any [extraParams].
          */
         fun getBootstrapConfig(
-            smartConfigFactory: SmartConfigFactory,
             defaultParams: DefaultWorkerParams,
             extraParams: List<PathAndConfig> = emptyList()
         ): SmartConfig {
-            val messagingParamsMap = defaultParams.messagingParams.mapKeys { (key, _) -> "$MSG_CONFIG_PATH.$key" }
-            val additionalParamsMap = defaultParams.additionalParams.mapKeys { (key, _) -> "$CUSTOM_CONFIG_PATH.$key" }
+            val messagingParamsMap = defaultParams.messagingParams.mapKeys { (key, _) -> "$MSG_CONFIG_PATH.${key.trim()}" }
+            val additionalParamsMap = defaultParams.additionalParams.mapKeys { (key, _) -> "$CUSTOM_CONFIG_PATH.${key.trim()}" }
             val extraParamsMap = extraParams
                 .map { (path, params) -> params.mapKeys { (key, _) -> "$path.$key" } }
                 .flatMap { map -> map.entries }
                 .associate { (key, value) -> key to value }
 
-            return smartConfigFactory.create(
-                ConfigFactory
-                    .parseMap(messagingParamsMap + additionalParamsMap + extraParamsMap)
-                    .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(defaultParams.instanceId))
-                    .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(defaultParams.topicPrefix))
-            )
+            val config = ConfigFactory
+                .parseMap(messagingParamsMap + additionalParamsMap + extraParamsMap)
+                .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(defaultParams.instanceId))
+                .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(defaultParams.topicPrefix))
+
+            val secretsConfig = ConfigFactory.parseMap(defaultParams.secretsParams.mapKeys {
+                    (key, _) -> "${ConfigKeys.SECRETS_CONFIG}.${key.trim()}" })
+
+            val bootConfig = SmartConfigFactory.create(secretsConfig).create(config)
+            logger.debug("Worker boot config\n: ${bootConfig.root().render()}")
+
+            return bootConfig
         }
 
         /** Sets up the [healthMonitor] based on the [params]. */

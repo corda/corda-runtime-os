@@ -9,13 +9,12 @@ import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
-import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.RPCSubscription
-import net.corda.messaging.api.subscription.RandomAccessSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
-import net.corda.messaging.api.subscription.factory.config.RPCConfig
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.config.RPCConfig
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import java.util.concurrent.ExecutorService
 
@@ -133,18 +132,6 @@ interface SubscriptionFactory {
         nodeConfig: SmartConfig = SmartConfigImpl.empty(),
         partitionAssignmentListener: PartitionAssignmentListener?
     ): Subscription<K, V>
-
-    /**
-     * Creates a random access subscription.
-     * @param subscriptionConfig Define the mandatory params for creating a subscription.
-     * @param nodeConfig Map of properties to override the default settings for the connection to the source of events
-     */
-    fun <K : Any, V : Any> createRandomAccessSubscription(
-        subscriptionConfig: SubscriptionConfig,
-        nodeConfig: SmartConfig = SmartConfigImpl.empty(),
-        keyClass: Class<K>,
-        valueClass: Class<V>
-    ): RandomAccessSubscription<K, V>
 
     /**
      * Create an instance of the [RPCSubscription]

@@ -18,8 +18,8 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
@@ -53,8 +53,8 @@ class FlowMapperServiceIntegrationTest {
     @InjectService(timeout = 4000)
     lateinit var publisherFactory: PublisherFactory
 
-    @InjectService(timeout = 4000)
-    lateinit var smartConfigFactory: SmartConfigFactory
+    // no secrets needed -> empty config
+    val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
 
     @InjectService(timeout = 4000)
     lateinit var subscriptionFactory: SubscriptionFactory
@@ -195,7 +195,6 @@ class FlowMapperServiceIntegrationTest {
     }
 
     private val bootConf = """
-        config.topic.name="config.topic"
         instanceId=1
     """
 

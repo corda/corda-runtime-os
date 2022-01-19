@@ -9,6 +9,8 @@
 127.0.0.1   www.alice.net
 127.0.0.1   chip.net
 127.0.0.1   www.chip.net
+127.0.0.1   www.sender.net
+127.0.0.1   www.receiver.net
 81.169.184.163 www.tinycert.org
 81.169.184.163 tinycert.org
 81.169.184.163 crl.tinycert.org

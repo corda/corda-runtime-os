@@ -10,6 +10,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
 import net.corda.lifecycle.impl.registry.LifecycleRegistryCoordinatorAccess
+import net.corda.lifecycle.registry.LifecycleRegistryException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
@@ -156,7 +157,13 @@ internal class LifecycleProcessor(
             } else {
                 Pair(LifecycleStatus.DOWN, STOPPED_REASON)
             }
-            updateStatus(coordinator, newStatus, reason)
+            try {
+                updateStatus(coordinator, newStatus, reason)
+            } catch (e: LifecycleRegistryException) {
+                // If the coordinator has been closed, then updating the status will fail as it has been removed from
+                // the registry.
+                logger.debug { "Could not update status as coordinator is closing" }
+            }
             runUserEventHandler(event, coordinator)
         } else {
             logger.debug { "$name Lifecycle: An attempt was made to stop an already terminated coordinator" }
@@ -193,7 +200,6 @@ internal class LifecycleProcessor(
             it.updateCoordinatorStatus(coordinator, LifecycleStatus.ERROR)
         }
         state.registrations.clear()
-        registry.removeCoordinator(coordinator.name)
         return true
     }
 

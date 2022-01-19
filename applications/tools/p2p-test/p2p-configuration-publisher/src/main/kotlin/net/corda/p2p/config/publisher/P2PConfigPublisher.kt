@@ -1,6 +1,5 @@
 package net.corda.p2p.config.publisher
 
-import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.publish.factory.ConfigPublisherFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
@@ -19,15 +18,13 @@ class P2PConfigPublisher @Activate constructor(
     private val shutDownService: Shutdown,
     @Reference(service = ConfigPublisherFactory::class)
     private val configPublisherFactory: ConfigPublisherFactory,
-    @Reference(service = SmartConfigFactory::class)
-    private val smartConfigFactory: SmartConfigFactory,
 ) : Application {
     companion object {
         private val consoleLogger: Logger = LoggerFactory.getLogger("Console")
     }
 
     override fun startup(args: Array<String>) {
-        val arguments = CommonArguments(configPublisherFactory, smartConfigFactory)
+        val arguments = CommonArguments(configPublisherFactory)
         val commandLine = CommandLine(arguments)
         commandLine.isCaseInsensitiveEnumValuesAllowed = true
         try {

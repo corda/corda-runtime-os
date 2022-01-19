@@ -6,6 +6,7 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.publish.ConfigPublisher
 import net.corda.libs.configuration.publish.factory.ConfigPublisherFactory
+import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 
@@ -22,7 +23,6 @@ import picocli.CommandLine.Option
 )
 internal class CommonArguments(
     private val configPublisherFactory: ConfigPublisherFactory,
-    internal val smartConfigFactory: SmartConfigFactory,
 ) {
     @Option(
         names = ["-h", "--help"],
@@ -38,12 +38,6 @@ internal class CommonArguments(
     var kafkaServers = System.getenv("KAFKA_SERVERS") ?: "localhost:9092"
 
     @Option(
-        names = ["--config-topic-name"],
-        description = ["The config topic name"]
-    )
-    var configTopicName = System.getenv("CONFIG_TOPIC") ?: "ConfigTopic"
-
-    @Option(
         names = ["--topic-prefix"],
         description = ["The topic prefix"]
     )
@@ -56,17 +50,19 @@ internal class CommonArguments(
                 ConfigValueFactory.fromAnyRef(kafkaServers)
             )
             .withValue(
-                "config.topic.name",
-                ConfigValueFactory.fromAnyRef(configTopicName)
-            ).withValue(
                 "messaging.topic.prefix",
                 ConfigValueFactory.fromAnyRef(topicPrefix)
             )
     }
 
-    fun createPublisher(): ConfigPublisher =
-        configPublisherFactory.createPublisher(
-            configTopicName,
-            smartConfigFactory.create(kafkaNodeConfiguration)
+    fun createPublisher(): ConfigPublisher {
+        // TODO - move to common worker and pick up secrets params
+        val secretsConfig = ConfigFactory.empty()
+        val bootConfig = SmartConfigFactory.create(secretsConfig).create(kafkaNodeConfiguration)
+
+        return configPublisherFactory.createPublisher(
+            CONFIG_TOPIC,
+            bootConfig
         )
+    }
 }

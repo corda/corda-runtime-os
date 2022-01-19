@@ -12,13 +12,14 @@ import picocli.CommandLine.Option
 class Destroy : Runnable {
     companion object {
         @Suppress("UNCHECKED_CAST")
-        fun destroy(namespaceName: String) {
-            println("Removing namespace $namespaceName...")
+        fun destroy(namespacesName: Collection<String>) {
+            println("Removing namespaces $namespacesName...")
             ProcessRunner.follow(
-                "kubectl",
-                "delete",
-                "namespace",
-                namespaceName
+                listOf(
+                    "kubectl",
+                    "delete",
+                    "namespace",
+                ) + namespacesName
             )
         }
     }
@@ -54,11 +55,9 @@ class Destroy : Runnable {
 
     override fun run() {
         if (all) {
-            getNamespaces().forEach {
-                destroy(it)
-            }
+            destroy(getNamespaces())
         } else {
-            destroy(namespaceName)
+            destroy(listOf(namespaceName))
         }
     }
 }

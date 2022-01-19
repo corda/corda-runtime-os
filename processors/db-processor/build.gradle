@@ -10,7 +10,11 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(':components:configuration:configuration-read-service')
     implementation project(':components:configuration:configuration-write-service')
+    implementation project(':components:permissions:permission-cache-service')
+    implementation project(':components:permissions:permission-storage-reader-service')
+    implementation project(':components:permissions:permission-storage-writer-service')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-datamodel')
     implementation project(':libs:db:db-admin')
@@ -26,8 +30,16 @@ dependencies {
     runtimeOnly project(':libs:configuration:configuration-publish-impl')
     runtimeOnly project(':libs:configuration:configuration-write-impl')
     runtimeOnly project(':libs:db:db-orm-impl')
-    runtimeOnly project(':libs:messaging:kafka-messaging-impl')
+    runtimeOnly project(':libs:lifecycle:lifecycle-impl')
+    runtimeOnly project(':libs:messaging:messaging-impl')
+    runtimeOnly project(':libs:messaging:kafka-message-bus-impl')
+    runtimeOnly project(':libs:permissions:permission-storage-reader-impl')
+    runtimeOnly project(':libs:permissions:permission-storage-writer-impl')
+    runtimeOnly project(':libs:permissions:permission-cache-impl')
+    runtimeOnly project(':libs:permissions:permission-storage-reader-impl')
+    runtimeOnly project(':libs:permissions:permission-storage-writer-impl')
     runtimeOnly project(':libs:schema-registry:schema-registry-impl')
+
     runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
     runtimeOnly "org.liquibase:liquibase-core:$liquibaseVersion"

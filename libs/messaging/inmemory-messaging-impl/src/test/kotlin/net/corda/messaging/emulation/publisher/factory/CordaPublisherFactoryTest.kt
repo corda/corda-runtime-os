@@ -5,7 +5,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
-import net.corda.messaging.api.subscription.factory.config.RPCConfig
+import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.emulation.publisher.CordaPublisher
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test

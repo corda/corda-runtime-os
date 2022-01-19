@@ -94,7 +94,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
 
     @Input
     final Property<String> baseImageName =
-            getObjects().property(String).convention('azul/zulu-openjdk-alpine')
+            getObjects().property(String).convention('azul/zulu-openjdk')
 
     @Input
     final Property<String> baseImageTag =

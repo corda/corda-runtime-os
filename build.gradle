@@ -341,7 +341,7 @@ subprojects {
     }
 
     // apply docker publishing to workers and select testing applications
-    def nonWorkerImages = ['p2p-gateway', 'p2p-link-manager', 'http-rpc-gateway', 'app-simulator', 'configuration-publisher', 'db-worker-prototype']
+    def nonWorkerImages = ['p2p-gateway', 'p2p-link-manager', 'app-simulator', 'configuration-publisher']
     if (it.toString().contains(":applications:workers:release:") || nonWorkerImages.contains(it.name)) {
 
         tasks.register('publishOSGiImage', net.corda.gradle.DeployableContainerBuilder) {

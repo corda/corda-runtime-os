@@ -4,11 +4,10 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
-import net.corda.libs.configuration.SmartConfigFactoryImpl
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.publish.CordaConfigurationKey
 import net.corda.libs.configuration.publish.CordaConfigurationVersion
 import net.corda.libs.configuration.publish.impl.ConfigPublisherImpl
-import net.corda.libs.configuration.read.kafka.factory.ConfigReaderFactoryImpl
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
@@ -86,7 +85,7 @@ open class TestBase {
         revocationCheck = RevocationConfig(RevocationConfigMode.OFF)
     )
 
-    protected val smartConfigFactory = SmartConfigFactoryImpl()
+    protected val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
 
     protected val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
 
@@ -101,17 +100,10 @@ open class TestBase {
         val readerService by lazy {
             ConfigurationReadServiceImpl(
                 coordinatorFactory!!,
-                ConfigReaderFactoryImpl(
-                    InMemSubscriptionFactory(configurationTopicService, rpcTopicService, coordinatorFactory!!),
-                    smartConfigFactory
-                ),
+                InMemSubscriptionFactory(configurationTopicService, rpcTopicService, coordinatorFactory!!)
             ).also {
                 it.start()
                 val bootstrapper = ConfigFactory.empty()
-                    .withValue(
-                        "config.topic.name",
-                        ConfigValueFactory.fromAnyRef(topicName)
-                    )
                 it.bootstrapConfig(smartConfigFactory.create(bootstrapper))
             }
         }

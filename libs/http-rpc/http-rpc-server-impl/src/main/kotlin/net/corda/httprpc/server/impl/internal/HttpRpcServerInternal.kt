@@ -172,12 +172,12 @@ internal class HttpRpcServerInternal(
         }
     }
 
-    private fun authorize(authorizingSubject: AuthorizingSubject, methodFullName: String) {
+    private fun authorize(authorizingSubject: AuthorizingSubject, fullPath: String) {
         val principal = authorizingSubject.principal
-        log.trace { "Authorize \"$principal\" for \"$methodFullName\"." }
-        if (!authorizingSubject.isPermitted(methodFullName))
-            throw ForbiddenResponse("Method \"$methodFullName\" not allowed for: \"$principal\".")
-        log.trace { "Authorize \"$principal\" for \"$methodFullName\" completed." }
+        log.trace { "Authorize \"$principal\" for \"$fullPath\"." }
+        if (!authorizingSubject.isPermitted(fullPath))
+            throw ForbiddenResponse("Method '$fullPath' not allowed for '$principal'.")
+        log.trace { "Authorize \"$principal\" for \"$fullPath\" completed." }
     }
 
     @SuppressWarnings("ComplexMethod", "ThrowsCount")
@@ -202,7 +202,7 @@ internal class HttpRpcServerInternal(
             resourceProvider.httpGetRoutes.map { routeInfo ->
 
                 before(routeInfo.fullPath) {
-                    authorize(authenticate(it), routeInfo.methodFullName)
+                    authorize(authenticate(it), routeInfo.fullPath)
                 }
                 registerHandlerForRoute(routeInfo, HandlerType.GET)
             }
@@ -216,7 +216,7 @@ internal class HttpRpcServerInternal(
                             )
                         )
                     }
-                    authorize(authenticate(it), routeInfo.methodFullName)
+                    authorize(authenticate(it), routeInfo.fullPath)
                 }
                 registerHandlerForRoute(routeInfo, HandlerType.POST)
             }

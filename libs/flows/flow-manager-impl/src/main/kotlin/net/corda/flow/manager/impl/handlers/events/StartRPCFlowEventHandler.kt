@@ -5,7 +5,7 @@ import net.corda.data.flow.state.Checkpoint
 import net.corda.data.flow.state.StateMachineState
 import net.corda.flow.manager.impl.FlowEventContext
 import net.corda.flow.manager.impl.handlers.FlowProcessingException
-import net.corda.flow.fiber.FlowContinuation
+import net.corda.flow.manager.fiber.FlowContinuation
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Component
 import java.nio.ByteBuffer
