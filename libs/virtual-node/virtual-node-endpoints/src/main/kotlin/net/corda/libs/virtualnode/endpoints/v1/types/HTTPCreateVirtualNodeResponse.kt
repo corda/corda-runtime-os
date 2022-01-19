@@ -1,7 +1,7 @@
 package net.corda.libs.virtualnode.endpoints.v1.types
 
 /**
- * The data object received via HTTP in response to a request to update cluster configuration.
+ * The data object received via HTTP in response to a request to create a virtual node.
  *
  * Exactly one of [cpiId] and [cpiIdHash] should be null.
  *

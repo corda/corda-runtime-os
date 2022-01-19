@@ -11,7 +11,7 @@ import net.corda.schema.configuration.ConfigKeys.Companion.RPC_ENDPOINT_TIMEOUT_
 import net.corda.virtualnode.rpcops.VirtualNodeRPCOpsServiceException
 import net.corda.virtualnode.rpcops.impl.v1.VirtualNodeRPCOpsInternal
 
-/** Processes configuration changes for `ConfigRPCOpsService`. */
+/** Processes configuration changes for `VirtualNodeRPCOpsService`. */
 internal class VirtualNodeRPCOpsConfigHandler(
     private val coordinator: LifecycleCoordinator,
     private val virtualNodeRPCOps: VirtualNodeRPCOpsInternal

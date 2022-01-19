@@ -1,7 +1,5 @@
 package net.corda.virtualnode.rpcops.impl.v1
 
-import net.corda.data.config.ConfigurationManagementRequest
-import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRPCOps
@@ -31,15 +29,17 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
         private val RPC_CONFIG = RPCConfig(
             GROUP_NAME,
             CLIENT_NAME_HTTP,
+            // TODO - Use correct request topic.
             CONFIG_MGMT_REQUEST_TOPIC,
-            ConfigurationManagementRequest::class.java,
-            ConfigurationManagementResponse::class.java
+            // TODO - Use correct request and response objects.
+            Any::class.java,
+            Any::class.java
         )
     }
 
     override val targetInterface = VirtualNodeRPCOps::class.java
     override val protocolVersion = 1
-    private var rpcSender: RPCSender<ConfigurationManagementRequest, ConfigurationManagementResponse>? = null
+    private var rpcSender: RPCSender<Any, Any>? = null
     private var requestTimeout: Duration? = null
     override val isRunning = rpcSender != null && requestTimeout != null
 

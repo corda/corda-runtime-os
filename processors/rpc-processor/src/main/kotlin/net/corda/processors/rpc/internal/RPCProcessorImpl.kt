@@ -27,7 +27,7 @@ import org.osgi.service.component.annotations.Reference
 
 /** The processor for a `RPCWorker`. */
 @Component(service = [RPCProcessor::class])
-@Suppress("Unused")
+@Suppress("Unused", "LongParameterList")
 class RPCProcessorImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
