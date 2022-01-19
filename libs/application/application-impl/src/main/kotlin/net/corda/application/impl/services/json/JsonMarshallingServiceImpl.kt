@@ -10,7 +10,7 @@ import org.osgi.service.component.annotations.Component
  * Simple implementation, requires alignment with other serialization such as that used
  * in the HTTP library
  */
-@Component(service = [JsonMarshallingService::class, SingletonSerializeAsToken::class])
+@Component(service = [SingletonSerializeAsToken::class])
 class JsonMarshallingServiceImpl : JsonMarshallingService, SingletonSerializeAsToken, CordaFlowInjectable {
 
     private val mapper = ObjectMapper()

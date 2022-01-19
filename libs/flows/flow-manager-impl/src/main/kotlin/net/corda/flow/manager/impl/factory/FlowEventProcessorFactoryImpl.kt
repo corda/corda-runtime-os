@@ -9,6 +9,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 @Component(service = [FlowEventProcessorFactory::class])
+@Suppress("Unused")
 class FlowEventProcessorFactoryImpl @Activate constructor(
     @Reference(service = FlowEventPipelineFactory::class)
     private val flowEventPipelineFactory: FlowEventPipelineFactory
@@ -18,3 +19,4 @@ class FlowEventProcessorFactoryImpl @Activate constructor(
         return FlowEventProcessorImpl(flowEventPipelineFactory)
     }
 }
+

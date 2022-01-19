@@ -5,7 +5,7 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.StartRPCFlow
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.identity.HoldingIdentity
-import net.corda.flow.fiber.FlowContinuation
+import net.corda.flow.manager.fiber.FlowContinuation
 import net.corda.flow.manager.impl.FlowEventContext
 import net.corda.flow.manager.impl.handlers.FlowProcessingException
 import org.junit.jupiter.api.Assertions.assertEquals

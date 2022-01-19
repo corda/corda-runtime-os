@@ -10,8 +10,8 @@ import net.corda.libs.configuration.write.impl.ConfigWriterFactoryImpl
 import net.corda.libs.configuration.write.impl.GROUP_NAME
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.schema.Schemas.Config.Companion.CONFIG_MGMT_REQUEST_TOPIC
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
@@ -63,13 +63,12 @@ class ConfigWriterFactoryImplTests {
             CONFIG_MGMT_REQUEST_TOPIC,
             ConfigurationManagementRequest::class.java,
             ConfigurationManagementResponse::class.java,
-            777
         )
         val expectedConfig = configFactory.create(ConfigFactory.parseMap(mapOf("dummyKey" to "dummyValue")))
 
         val subscriptionFactory = getSubscriptionFactory()
         val configWriterFactory = ConfigWriterFactoryImpl(subscriptionFactory, getPublisherFactory())
-        configWriterFactory.create(expectedConfig, expectedRPCConfig.instanceId!!, mock())
+        configWriterFactory.create(expectedConfig, 777, mock())
 
         verify(subscriptionFactory).createRPCSubscription(eq(expectedRPCConfig), eq(expectedConfig), any())
     }

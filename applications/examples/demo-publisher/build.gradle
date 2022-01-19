@@ -20,7 +20,8 @@ dependencies {
     implementation project(":libs:configuration:configuration-core")
     implementation project(":components:examples:publisher")
 
-    runtimeOnly project(":libs:messaging:kafka-messaging-impl")
+    runtimeOnly project(":libs:messaging:messaging-impl")
+    runtimeOnly project(":libs:messaging:kafka-message-bus-impl")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
 
