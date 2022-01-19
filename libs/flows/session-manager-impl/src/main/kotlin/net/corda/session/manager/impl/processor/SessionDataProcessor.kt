@@ -86,6 +86,8 @@ class SessionDataProcessor(
 
         return when {
             seqNum >= expectedNextSeqNum -> {
+                undeliveredMessages.add(sessionEvent)
+
                 if (currentStatus != SessionStateType.CONFIRMED) {
                     val errorMessage =
                         "Data message on flowKey $flowKey with sessionId $sessionId with sequence number of $seqNum when status" +
@@ -95,8 +97,7 @@ class SessionDataProcessor(
                     logger.error(errorMessage)
                     SessionEventResult(sessionState, generateErrorEvent(sessionId, errorMessage, "SessionData-InvalidStatus", instant))
                 } else {
-                    undeliveredMessages.add(sessionEvent)
-                    sessionState.receivedEventsState = updateSessionProcessState(expectedNextSeqNum + 1, undeliveredMessages)
+                    sessionState.receivedEventsState = updateSessionProcessState(expectedNextSeqNum, undeliveredMessages)
                     SessionEventResult(sessionState, generateAckRecord(seqNum, sessionId, instant))
                 }
             }
