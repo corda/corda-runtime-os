@@ -5,4 +5,23 @@ plugins {
 description "Introspiciere core"
 
 dependencies {
+    implementation project(":testing:introspiciere:introspiciere-http")
+
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
+    implementation "info.picocli:picocli:$picocliVersion"
+}
+
+jar {
+    // not sure why the dependency is not building automatically
+    dependsOn ':testing:introspiciere:introspiciere-http:build'
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    manifest {
+        attributes "Main-Class": "net.corda.introspiciere.cli.MainKt"
+    }
+
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
 }
