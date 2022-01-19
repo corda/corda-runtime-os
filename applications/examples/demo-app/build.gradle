@@ -19,7 +19,7 @@ dependencies {
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
 
-    implementation project(":components:examples:config-reader")
+//    implementation project(":components:examples:config-reader")
     implementation project(":components:examples:publisher")
     implementation project(":components:examples:durable-sub")
     implementation project(":components:examples:pubsub-sub")

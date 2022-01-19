@@ -20,7 +20,7 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
 
     implementation project(":applications:tools:common-setup")
-    implementation project(":components:examples:config-reader")
+//    implementation project(":components:examples:config-reader")
     implementation project(":components:examples:chaos-test:chaos-test-strings-pub")
     implementation project(":components:examples:chaos-test:chaos-test-strings-durable-sub")
     implementation project(":components:examples:chaos-test:chaos-test-strings-pubsub-sub")
