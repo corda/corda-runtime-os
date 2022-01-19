@@ -16,7 +16,7 @@ import java.time.Duration
 import java.time.Instant
 
 
-class ClusterBootstraptest {
+class ClusterBootstrapTest {
     private val healthChecks = mapOf(
         // TODO: can take these from properties
         "crypto-worker" to 7001,
