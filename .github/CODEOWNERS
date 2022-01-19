@@ -1,9 +1,7 @@
-# All documentation should be reviewed by the technical writers
-*.md	@corda/technical-writers
 
 # Build scripts should be audited by BLT
-*.gradle        @corda/blt
-gradle.*        @corda/blt
-Jenkinsfile     @corda/blt
-.ci/*           @corda/blt
-gradle/*        @corda/blt
+*.gradle           @corda/blt
+gradle.properties  @corda/corda5-team-leads
+Jenkinsfile        @corda/blt
+.ci/*              @corda/blt
+gradle/*           @corda/blt
