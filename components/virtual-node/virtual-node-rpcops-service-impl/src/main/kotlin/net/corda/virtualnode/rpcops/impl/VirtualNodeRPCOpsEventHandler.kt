@@ -1,7 +1,6 @@
 package net.corda.virtualnode.rpcops.impl
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.virtualnode.rpcops.impl.v1.ConfigRPCOpsInternal
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
@@ -11,20 +10,20 @@ import net.corda.lifecycle.LifecycleStatus.UP
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.virtualnode.rpcops.impl.ConfigRPCOpsConfigHandler
+import net.corda.virtualnode.rpcops.impl.v1.VirtualNodeRPCOpsInternal
 
-/** Handles incoming [LifecycleCoordinator] events for [ConfigRPCOpsServiceImpl]. */
-internal class ConfigRPCOpsEventHandler(
+/** Handles incoming [LifecycleCoordinator] events for [VirtualNodeRPCOpsServiceImpl]. */
+internal class VirtualNodeRPCOpsEventHandler(
     private val configReadService: ConfigurationReadService,
-    private val configRPCOps: ConfigRPCOpsInternal
+    private val virtualNodeRPCOps: VirtualNodeRPCOpsInternal
 ) : LifecycleEventHandler {
 
     private var configReadServiceRegistrationHandle: AutoCloseable? = null
     private var configUpdateHandle: AutoCloseable? = null
 
     /**
-     * Upon receiving configuration from [configReadService], starts handling RPC operations related to cluster
-     * configuration management.
+     * Upon receiving configuration from [configReadService], starts handling RPC operations related to virtual node
+     * creation.
      */
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
@@ -50,7 +49,7 @@ internal class ConfigRPCOpsEventHandler(
         if (event.registration == configReadServiceRegistrationHandle) {
             when (event.status) {
                 UP -> {
-                    val configHandler = ConfigRPCOpsConfigHandler(coordinator, configRPCOps)
+                    val configHandler = VirtualNodeRPCOpsConfigHandler(coordinator, virtualNodeRPCOps)
                     configUpdateHandle?.close()
                     configUpdateHandle = configReadService.registerForUpdates(configHandler)
                 }
@@ -62,7 +61,7 @@ internal class ConfigRPCOpsEventHandler(
 
     /** Shuts down the service. */
     private fun stop() {
-        configRPCOps.close()
+        virtualNodeRPCOps.close()
         configReadServiceRegistrationHandle?.close()
         configUpdateHandle?.close()
     }
