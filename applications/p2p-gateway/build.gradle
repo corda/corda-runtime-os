@@ -29,7 +29,5 @@ dependencies {
     runtimeOnly project(":libs:messaging:kafka-message-bus-impl")
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
     runtimeOnly project(":components:configuration:configuration-read-service-impl")
-    runtimeOnly project(":libs:configuration:configuration-read-impl")
     implementation project(":libs:configuration:configuration-core")
-    implementation project(":libs:configuration:configuration-read")
 }

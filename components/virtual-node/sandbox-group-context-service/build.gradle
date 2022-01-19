@@ -32,7 +32,6 @@ dependencies {
     implementation project(":components:install:install")
 
     implementation project(":libs:configuration:configuration-core")
-    implementation project(":libs:configuration:configuration-read")
     implementation project(":components:configuration:configuration-read-service")
 
     testImplementation project(":libs:lifecycle:lifecycle-impl")
