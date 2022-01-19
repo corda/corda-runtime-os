@@ -18,8 +18,10 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.AuthenticatedMessageDeliveryState
+import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.linkmanager.LinkManagerCryptoService
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
+import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
@@ -29,6 +31,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("LongParameterList")
 class DeliveryTracker(
@@ -153,26 +156,43 @@ class DeliveryTracker(
         }
 
         val listener = object : StateAndEventListener<String, AuthenticatedMessageDeliveryState> {
+
+            val trackedSessionKeys = ConcurrentHashMap<String, SessionManager.SessionKey>()
+
             override fun onPostCommit(updatedStates: Map<String, AuthenticatedMessageDeliveryState?>) {
                 for ((key, state) in updatedStates) {
                     if (state != null) {
-                        replayScheduler.addForReplay(state.timestamp, key, state.message)
+                        val sessionKey = sessionKeyFromState(state)
+                        trackedSessionKeys[key] = sessionKey
+                        replayScheduler.addForReplay(state.timestamp, key, state.message, sessionKey)
                     } else {
-                        replayScheduler.removeFromReplay(key)
+                        val sessionKey = trackedSessionKeys.remove(key)
+                        sessionKey?.let { replayScheduler.removeFromReplay(key, sessionKey) }
                     }
                 }
             }
 
             override fun onPartitionLost(states: Map<String, AuthenticatedMessageDeliveryState>) {
-                for ((key, _) in states) {
-                    replayScheduler.removeFromReplay(key)
+                for ((key, state) in states) {
+                    replayScheduler.removeFromReplay(key, sessionKeyFromState(state))
+                    trackedSessionKeys.remove(key)
                 }
             }
 
             override fun onPartitionSynced(states: Map<String, AuthenticatedMessageDeliveryState>) {
                 for ((key, state) in states) {
-                    replayScheduler.addForReplay(state.timestamp, key, state.message)
+                    val sessionKey = sessionKeyFromState(state)
+                    trackedSessionKeys[key] = sessionKey
+                    replayScheduler.addForReplay(state.timestamp, key, state.message, sessionKey)
                 }
+            }
+
+            private fun sessionKeyFromState(state: AuthenticatedMessageDeliveryState): SessionManager.SessionKey {
+                val header = state.message.message.header
+                return SessionManager.SessionKey(
+                    header.source.toHoldingIdentity(),
+                    header.destination.toHoldingIdentity()
+                )
             }
         }
     }

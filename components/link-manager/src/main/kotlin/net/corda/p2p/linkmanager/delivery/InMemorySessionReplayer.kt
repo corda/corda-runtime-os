@@ -60,18 +60,19 @@ class InMemorySessionReplayer(
 
     fun addMessageForReplay(
         uniqueId: String,
-        messageReplay: SessionMessageReplay
+        messageReplay: SessionMessageReplay,
+        sessionKey: SessionManager.SessionKey
     ) {
         dominoTile.withLifecycleLock {
             if (!isRunning) {
                 throw IllegalStateException("A message was added for replay before the InMemorySessionReplayer was started.")
             }
-            replayScheduler.addForReplay(Instant.now().toEpochMilli(), uniqueId, messageReplay)
+            replayScheduler.addForReplay(Instant.now().toEpochMilli(), uniqueId, messageReplay, sessionKey)
         }
     }
 
-    fun removeMessageFromReplay(uniqueId: String) {
-        replayScheduler.removeFromReplay(uniqueId)
+    fun removeMessageFromReplay(uniqueId: String, sessionKey: SessionManager.SessionKey) {
+        replayScheduler.removeFromReplay(uniqueId, sessionKey)
     }
 
     fun removeAllMessagesFromReplay() {

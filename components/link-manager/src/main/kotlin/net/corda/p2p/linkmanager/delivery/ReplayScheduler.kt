@@ -10,12 +10,14 @@ import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.AutoClosableScheduledExecutorService
 import net.corda.v5.base.util.contextLogger
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
@@ -41,20 +43,23 @@ class ReplayScheduler<M>(
         configurationChangeHandler = ReplaySchedulerConfigurationChangeHandler()
     )
 
-    private val replayScheulerConfig = AtomicReference<ReplaySchedulerConfig>()
-
-    data class ReplayInfo(val currentReplayPeriod: Duration, val future: ScheduledFuture<*>)
-
     @Volatile
     private lateinit var executorService: ScheduledExecutorService
+
+    private val replaySchedulerConfig = AtomicReference<ReplaySchedulerConfig>()
+    data class ReplayInfo(val currentReplayPeriod: Duration, val future: ScheduledFuture<*>)
+    private val replayingMessagesPerSession = ConcurrentHashMap<SessionManager.SessionKey, MutableSet<String>>()
     private val replayInfoPerId = ConcurrentHashMap<String, ReplayInfo>()
+    data class QueuedMessage<M>(val originalAttemptTimestamp: Long, val uniqueId: String, val message: M)
+    private val queuedMessagesPerSessionKey = ConcurrentHashMap<SessionManager.SessionKey, ConcurrentLinkedQueue<QueuedMessage<M>>>()
 
     companion object {
         private val logger = contextLogger()
+        const val MESSAGES_PER_SESSION_KEY = 100
     }
 
     private fun calculateCappedBackoff(lastDelay: Duration): Duration {
-        val currentConfig = replayScheulerConfig.get()
+        val currentConfig = replaySchedulerConfig.get()
         val delay = lastDelay.multipliedBy(2)
         return when {
             delay > currentConfig.cutOff -> {
@@ -89,7 +94,7 @@ class ReplayScheduler<M>(
                 )
                 return configUpdateResult
             }
-            replayScheulerConfig.set(newConfiguration)
+            replaySchedulerConfig.set(newConfiguration)
             configUpdateResult.complete(Unit)
             return configUpdateResult
         }
@@ -110,24 +115,61 @@ class ReplayScheduler<M>(
         return future
     }
 
-    fun addForReplay(originalAttemptTimestamp: Long, uniqueId: String, message: M) {
-         dominoTile.withLifecycleLock {
+    fun addForReplay(originalAttemptTimestamp: Long, uniqueId: String, message: M, sessionKey: SessionManager.SessionKey) {
+        dominoTile.withLifecycleLock {
             if (!isRunning) {
                 throw IllegalStateException("A message was added for replay before the ReplayScheduler was started.")
             }
-            val baseReplayPeriod = replayScheulerConfig.get().baseReplayPeriod
-            val delay = baseReplayPeriod.toMillis() + originalAttemptTimestamp - currentTimestamp()
-            val future = executorService.schedule({ replay(message, uniqueId) }, delay, TimeUnit.MILLISECONDS)
-            replayInfoPerId[uniqueId] = ReplayInfo(baseReplayPeriod, future)
+            replayingMessagesPerSession.compute(sessionKey) { _, value ->
+                when {
+                    value == null -> {
+                        scheduleForReplay(originalAttemptTimestamp, uniqueId, message)
+                        val set = ConcurrentHashMap.newKeySet<String>()
+                        set.add(uniqueId)
+                        set
+                    }
+                    value.size < MESSAGES_PER_SESSION_KEY -> {
+                        scheduleForReplay(originalAttemptTimestamp, uniqueId, message)
+                        value.add(uniqueId)
+                        value
+                    }
+                    else -> {
+                        queuedMessagesPerSessionKey.computeIfAbsent(sessionKey) { ConcurrentLinkedQueue() }
+                            .add(QueuedMessage(originalAttemptTimestamp, uniqueId, message))
+                        value
+                    }
+                }
+            }
         }
     }
 
-    fun removeFromReplay(uniqueId: String) {
-        replayInfoPerId.remove(uniqueId)?.future?.cancel(false)
+    private fun scheduleForReplay(originalAttemptTimestamp: Long, uniqueId: String, message: M) {
+        val baseReplayPeriod = replaySchedulerConfig.get().baseReplayPeriod
+        val delay = baseReplayPeriod.toMillis() + originalAttemptTimestamp - currentTimestamp()
+        val future = executorService.schedule({ replay(message, uniqueId) }, delay, TimeUnit.MILLISECONDS)
+        replayInfoPerId[uniqueId] = ReplayInfo(baseReplayPeriod, future)
+    }
+
+    fun removeFromReplay(uniqueId: String, sessionKey: SessionManager.SessionKey) {
+        val removed = replayInfoPerId.remove(uniqueId)?.future?.cancel(false)
+        replayingMessagesPerSession[sessionKey]?.remove(uniqueId)
+        if (removed != null && removed) {
+            queuedMessagesPerSessionKey[sessionKey]?.poll()?.let {
+                addForReplay(it.originalAttemptTimestamp, it.uniqueId, it.message, sessionKey)
+            }
+        }
+        if (replayingMessagesPerSession[sessionKey]?.isEmpty() == true) {
+            replayingMessagesPerSession.remove(sessionKey)
+            queuedMessagesPerSessionKey.remove(sessionKey)
+        }
     }
 
     fun removeAllMessagesFromReplay() {
-        replayInfoPerId.keys.forEach { removeFromReplay(it) }
+        replayingMessagesPerSession.forEach { (sessionKey, messageIds) ->
+            messageIds.forEach { messageId ->
+                removeFromReplay(messageId, sessionKey)
+            }
+        }
     }
 
     private fun replay(message: M, uniqueId: String) {
@@ -135,7 +177,7 @@ class ReplayScheduler<M>(
             replayMessage(message)
         } catch (exception: Exception) {
             logger.error("An exception was thrown when replaying a message. The task will be retried again in " +
-                "${replayScheulerConfig.get().baseReplayPeriod.toMillis()} ms.\nException:",
+                "${replaySchedulerConfig.get().baseReplayPeriod.toMillis()} ms.\nException:",
                 exception
             )
         }
