@@ -96,7 +96,10 @@ class DominoTile(
     private val configResources = ResourcesHolder()
 
     @Volatile
-    private var registrations: MutableMap<RegistrationHandle, Pair<DominoTile, State>> = mutableMapOf()
+    private var registrations: MutableMap<RegistrationHandle, Pair<DominoTile, State>> = children.map {
+        val dominoTileName = it.name
+        coordinator.followStatusChangesByName(setOf(dominoTileName)) to Pair(it, it.state)
+    }.toMap().toMutableMap()
 
     private val currentState = AtomicReference(State.Created)
 
@@ -177,16 +180,7 @@ class DominoTile(
                 is StopTile -> {
                     if (event.dueToError) {
                         when(state) {
-                            State.StoppedDueToError -> {}
-                            // If the component is stopped due to other reasons (bad config or by parent), we change the status so that the
-                            // component will not attempt to start or process config before recovering from the error.
-                            State.StoppedDueToBadConfig -> {
-                                stopListeningForConfig()
-                                updateState(State.StoppedDueToError)
-                            }
-                            State.StoppedByParent -> {
-                                updateState(State.StoppedDueToError)
-                            }
+                            State.StoppedByParent, State.StoppedDueToBadConfig, State.StoppedDueToError -> {}
                             State.Started, State.Created -> {
                                 stopTile()
                                 updateState(State.StoppedDueToError)
@@ -194,8 +188,6 @@ class DominoTile(
                         }
                     } else {
                         when(state) {
-                            // If a component has stopped due to bad config or error, we don't change the status so that the component
-                            // will not attempt to start (if invoked by the parent) before recovering from the bad config or the error.
                             State.StoppedByParent, State.StoppedDueToBadConfig, State.StoppedDueToError -> {}
                             State.Started, State.Created -> {
                                 stopTile()
@@ -206,7 +198,7 @@ class DominoTile(
                 }
                 is StartTile -> {
                     when (state) {
-                        State.Created, State.StoppedByParent -> readyOrStartTile()
+                        State.Created, State.StoppedByParent -> startDependenciesIfNeeded()
                         State.Started -> {} // Do nothing
                         State.StoppedDueToError -> logger.warn("Can not start $name, it was stopped due to an error")
                         State.StoppedDueToBadConfig -> logger.warn("Can not start $name, it was stopped due to bad config")
@@ -341,23 +333,14 @@ class DominoTile(
                     logger.info("Stopping child ${child.name} that went up, since there are other children that are in errored state.")
                     child.stop()
                 }
-                else -> { // any children that are not running have been stopped by the parent.
+                // any children that are not running have been stopped by the parent.
+                childrenWithStatus.all { it.second == State.Started || it.second == State.StoppedByParent } -> {
                     logger.info("Starting other children that had been stopped by me.")
                     startDependenciesIfNeeded()
                 }
+                else -> {}
             }
         }
-    }
-
-    private fun readyOrStartTile() {
-        if (registrations.isEmpty() && children.isNotEmpty()) {
-            registrations = children.map {
-                val dominoTileName = it.name
-                coordinator.followStatusChangesByName(setOf(dominoTileName)) to Pair(it, it.state)
-            }.toMap().toMutableMap()
-            logger.info("Registered to follow children ${children.map { it.name }}.")
-        }
-        startDependenciesIfNeeded()
     }
 
     private fun startDependenciesIfNeeded() {
@@ -375,8 +358,10 @@ class DominoTile(
         } else {
             logger.info(
                 "Not all child tiles started yet.\n " +
-                    "Started Children = ${registrations.filter{ it.value.second == State.Started }}.\n " +
-                    "Not Started Children = ${registrations.filter { it.value.second != State.Started }}."
+                    "Started Children = ${registrations.filter{ it.value.second == State.Started }
+                        .map { "(${it.value.first.name}, ${it.value.second})" }.joinToString()}.\n " +
+                    "Not Started Children = ${registrations.filter { it.value.second != State.Started }
+                        .map { "(${it.value.first.name}, ${it.value.second})" }.joinToString()}."
             )
         }
     }

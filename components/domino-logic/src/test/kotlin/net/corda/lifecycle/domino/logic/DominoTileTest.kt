@@ -1055,22 +1055,13 @@ class DominoTileTest {
             }
 
             @Test
-            fun `close will not try to close registration if non where open`() {
-                val children = listOf<DominoTile>(mock())
-                val registration = mock<RegistrationHandle>()
-                doReturn(registration).whenever(coordinator).followStatusChangesByName(any())
-                val tile = tile(children)
-
-                tile.close()
-
-                verify(registration, never()).close()
-            }
-
-            @Test
             fun `close will close the coordinator`() {
-                val children = listOf<DominoTile>(mock())
-                val tile = tile(children)
+                val children = arrayOf<Pair<StubDominoTile, RegistrationHandle>>(
+                    StubDominoTile(LifecycleCoordinatorName("component", "1")) to mock()
+                )
+                registerChildren(coordinator, children)
 
+                val tile = tile(children.map { it.first.dominoTile })
                 tile.close()
 
                 verify(coordinator).close()
@@ -1260,7 +1251,7 @@ class DominoTileTest {
             outerConfigUpdateResult.completeExceptionally(IOException())
             resourceFuture.completeExceptionally(IOException())
 
-            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
+            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToBadConfig)
         }
     }
 
