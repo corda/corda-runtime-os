@@ -65,7 +65,7 @@ class SessionCloseProcessor(
                     SessionEventResult(sessionState, generateOutBoundRecord(sessionEvent, sessionId))
                 }
                 SessionStateType.CLOSED -> {
-                    //session is already completed successfully. Indicates bug.
+                    //session is already completed successfully. Indicates bug. should we send an error back and change state to error
                     logger.error("Tried to send SessionClose on key $flowKey and sessionId $sessionId, session status is " +
                             "$currentState. Current SessionState: $sessionState")
                     SessionEventResult(sessionState, null)

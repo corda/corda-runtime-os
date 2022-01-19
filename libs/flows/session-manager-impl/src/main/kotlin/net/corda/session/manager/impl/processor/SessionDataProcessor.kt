@@ -90,7 +90,7 @@ class SessionDataProcessor(
                         "Data message on flowKey $flowKey with sessionId $sessionId with sequence number of $seqNum when status" +
                                 " is $currentStatus. SessionState: $sessionState"
                     //Possibly only Warn here as if we are in error state we have already sent counterparty an error and this data message was
-                    // sent before they have processed that error
+                    // likely sent before they have processed that error
                     logger.error(errorMessage)
                     SessionEventResult(sessionState, generateErrorEvent(sessionId, errorMessage, "SessionData-InvalidStatus", instant))
                 } else {

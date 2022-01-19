@@ -8,6 +8,7 @@ import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.SessionEventResult
 import net.corda.session.manager.impl.SessionEventProcessor
+import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.generateOutBoundRecord
 import net.corda.v5.base.util.contextLogger
 import java.time.Instant
@@ -38,12 +39,12 @@ class SessionErrorProcessor(
         }
     }
 
-    private fun getSendSessionErrorResult(sessionId: String?): SessionEventResult {
+    private fun getSendSessionErrorResult(sessionId: String): SessionEventResult {
         return if (sessionState == null) {
             val errorMessage = "Tried to send SessionError on key $flowKey for sessionId which had null state: $sessionId. " +
                     "Error message was: $exceptionEnvelope"
             logger.error(errorMessage)
-            SessionEventResult(sessionState, null)
+            SessionEventResult(sessionState, generateErrorEvent(sessionId, errorMessage, "SessionData-NullSessionState", instant))
         } else {
             logger.info(
                 "Sending Session Error on sessionId $sessionId. " +
@@ -57,13 +58,13 @@ class SessionErrorProcessor(
     }
 
     private fun getSessionErrorReceivedResult(
-        sessionId: String?
+        sessionId: String
     ): SessionEventResult {
         return if (sessionState == null) {
             val errorMessage = "Received SessionError on key $flowKey for sessionId which had null state: $sessionId. " +
                     "Error message received was: $exceptionEnvelope"
             logger.error(errorMessage)
-            SessionEventResult(sessionState, null)
+            SessionEventResult(sessionState,  generateErrorEvent(sessionId, errorMessage, "SessionData-NullSessionState", instant))
         } else {
             if (sessionState.status == SessionStateType.ERROR) {
                 logger.info(
