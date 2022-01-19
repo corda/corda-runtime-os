@@ -12,7 +12,7 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-crypto"
     implementation "net.corda:corda-cipher-suite"
-    implementation project(":libs:crypto:cipher-suite-impl")
+    implementation project(":libs:crypto:cipher-suite-providers")
     implementation project(":libs:crypto:crypto-impl")
     implementation project(":libs:crypto:crypto-internal")
 }

@@ -1,5 +1,5 @@
 @Export
-package net.corda.cipher.suite.impl;
+package net.corda.cipher.suite.providers;
 
 import org.osgi.annotation.bundle.Export;
 

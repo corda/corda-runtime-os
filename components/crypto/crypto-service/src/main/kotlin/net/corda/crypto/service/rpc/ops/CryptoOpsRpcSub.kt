@@ -6,8 +6,8 @@ import net.corda.crypto.service.rpc.CryptoRpcSub
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
 import net.corda.messaging.api.subscription.RPCSubscription
+import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.schema.Schemas
 import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
 import org.osgi.service.component.annotations.Activate

@@ -1,4 +1,4 @@
-package net.corda.cipher.suite.impl
+package net.corda.cipher.suite.providers
 
 import net.corda.crypto.impl.CipherSuiteFactoryImpl
 import org.junit.jupiter.api.Test

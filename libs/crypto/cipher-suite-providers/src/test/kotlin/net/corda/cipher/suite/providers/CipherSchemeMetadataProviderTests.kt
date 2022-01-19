@@ -1,4 +1,4 @@
-package net.corda.cipher.suite.impl
+package net.corda.cipher.suite.providers
 
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
