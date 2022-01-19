@@ -20,7 +20,7 @@ import java.time.Instant
 interface SessionManager {
 
     /**
-     * Receive a session [event], process it and output the updated session state and an output record.
+     * Process a session [event], and output the updated session state and an output record.
      * Session Event may originate from a counterparty or from this party's flow.
      * Events are deduplicated and reordered based on sequence number and stored within the session state.
      * [sessionState] tracks which events have been delivered to the client library as well as the next expected session event sequence
