@@ -61,10 +61,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
 
     override fun createVirtualNode(request: HTTPCreateVirtualNodeRequest): HTTPCreateVirtualNodeResponse {
         // TODO - Create virtual node based on request.
-        return HTTPCreateVirtualNodeResponse(
-            "",
-            CpiIdentifier("", "", ""),
-            ""
-        )
+        val cpiId = CpiIdentifier("", "", "")
+        return HTTPCreateVirtualNodeResponse("", cpiId, "", "", "")
     }
 }
