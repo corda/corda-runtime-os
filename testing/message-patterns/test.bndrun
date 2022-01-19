@@ -10,6 +10,12 @@
 #uncomment to remote debug
 #-runjdb: 5005
 
+-runsystempackages: \
+    javax.xml.stream;version=1.0.0,\
+    javax.xml.stream.events;version=1.0.0,\
+    javax.xml.stream.util;version=1.0.0,\
+    sun.security.x509
+
 -runproperties: \
     org.slf4j.simpleLogger.defaultLogLevel=info,\
     org.slf4j.simpleLogger.showShortLogName=true,\
@@ -36,6 +42,9 @@
 # the artifacts and/or their dependencies change.
 -runbundles: \
 	avro;version='[1.11.0,1.11.1)',\
+	bcpkix;version='[1.69.0,1.69.1)',\
+	bcprov;version='[1.69.0,1.69.1)',\
+	bcutil;version='[1.69.0,1.69.1)',\
 	com.fasterxml.jackson.core.jackson-annotations;version='[2.13.1,2.13.2)',\
 	com.fasterxml.jackson.core.jackson-core;version='[2.13.1,2.13.2)',\
 	com.fasterxml.jackson.core.jackson-databind;version='[2.13.1,2.13.2)',\
@@ -51,7 +60,10 @@
 	message-patterns-tests;version='[5.0.0,5.0.1)',\
 	net.corda.avro-schema;version='[5.0.0,5.0.1)',\
 	net.corda.base;version='[5.0.0,5.0.1)',\
+	net.corda.cipher-suite;version='[5.0.0,5.0.1)',\
 	net.corda.configuration-core;version='[5.0.0,5.0.1)',\
+	net.corda.crypto;version='[5.0.0,5.0.1)',\
+	net.corda.crypto-internal;version='[5.0.0,5.0.1)',\
 	net.corda.kafka-message-bus-impl;version='[5.0.0,5.0.1)',\
 	net.corda.kafka-topic-admin;version='[5.0.0,5.0.1)',\
 	net.corda.kotlin-stdlib-jdk7.osgi-bundle;version='[1.4.32,1.4.33)',\
@@ -66,6 +78,7 @@
 	net.corda.test-utilities;version='[5.0.0,5.0.1)',\
 	net.corda.topic-admin;version='[5.0.0,5.0.1)',\
 	net.corda.topic-admin-impl;version='[5.0.0,5.0.1)',\
+	net.i2p.crypto.eddsa;version='[0.3.0,0.3.1)',\
 	org.apache.commons.commons-compress;version='[1.21.0,1.21.1)',\
 	org.apache.felix.scr;version='[2.1.28,2.1.29)',\
 	org.apache.servicemix.bundles.kafka-clients;version='[2.8.1,2.8.2)',\
