@@ -5,7 +5,7 @@ import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.emulation.subscription.compacted.InMemoryCompactedSubscription
 import net.corda.messaging.emulation.subscription.durable.DurableSubscription
 import net.corda.messaging.emulation.subscription.eventlog.EventLogSubscription

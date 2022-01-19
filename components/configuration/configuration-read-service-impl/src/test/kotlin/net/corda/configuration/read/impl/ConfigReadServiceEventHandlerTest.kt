@@ -2,17 +2,22 @@ package net.corda.configuration.read.impl
 
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadException
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.configuration.read.ConfigListener
-import net.corda.libs.configuration.read.ConfigReader
-import net.corda.libs.configuration.read.factory.ConfigReaderFactory
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.messaging.api.subscription.CompactedSubscription
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.Companion.FLOW_CONFIG
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -21,7 +26,6 @@ import org.mockito.Captor
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.capture
 import org.mockito.kotlin.firstValue
 import org.mockito.kotlin.mock
@@ -39,54 +43,53 @@ internal class ConfigReadServiceEventHandlerTest {
     val lifecycleStatusCaptor: ArgumentCaptor<LifecycleStatus> = ArgumentCaptor.forClass(LifecycleStatus::class.java)
 
     // Mocks
-    private lateinit var configReaderFactory: ConfigReaderFactory
-    private lateinit var callbackHandles: ConfigurationHandlerStorage
+    private lateinit var subscriptionFactory: SubscriptionFactory
     private lateinit var coordinator: LifecycleCoordinator
-    private lateinit var configReader: ConfigReader
+    private lateinit var compactedSubscription: CompactedSubscription<String, SmartConfig>
 
     private lateinit var configReadServiceEventHandler: ConfigReadServiceEventHandler
 
-    @Captor
-    private val callbackCaptor = argumentCaptor<ConfigListener>()
+    private val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
+    private val bootConfig = smartConfigFactory.create(ConfigFactory.parseMap(mapOf("start" to 1)))
 
     @BeforeEach
     fun setUp() {
-        configReaderFactory = mock()
-        callbackHandles = mock()
+        subscriptionFactory = mock()
         coordinator = mock()
-        configReader = mock()
-        `when`(configReaderFactory.createReader(any())).thenReturn(configReader)
+        compactedSubscription = mock()
+        `when`(subscriptionFactory.createCompactedSubscription<String, SmartConfig>(any(), any(), any())).thenReturn(
+            compactedSubscription
+        )
 
-        configReadServiceEventHandler = ConfigReadServiceEventHandler(configReaderFactory, callbackHandles)
+        configReadServiceEventHandler = ConfigReadServiceEventHandler(subscriptionFactory)
     }
 
     @Test
-    fun `BootstrapConfigProvided has correct output`() {
-        configReadServiceEventHandler.processEvent(BootstrapConfigProvided(mock()), coordinator)
+    fun `BootstrapConfigProvided triggers SetupSubscription to be sent on new config`() {
+        configReadServiceEventHandler.processEvent(BootstrapConfigProvided(bootConfig), coordinator)
         verify(coordinator).postEvent(capture(lifecycleEventCaptor))
         assertThat(lifecycleEventCaptor.firstValue is SetupSubscription)
     }
 
     @Test
     fun `Event handler works when states in correct order`() {
-        configReadServiceEventHandler.processEvent(BootstrapConfigProvided(mock()), coordinator)
+        configReadServiceEventHandler.processEvent(BootstrapConfigProvided(bootConfig), coordinator)
         configReadServiceEventHandler.processEvent(SetupSubscription(), coordinator)
         `when`(coordinator.status).thenReturn(LifecycleStatus.DOWN)
 
-        verify(configReader).start()
-        verify(callbackHandles).addSubscription(any())
-        verify(configReader, times(1)).registerCallback(callbackCaptor.capture())
+        verify(compactedSubscription).start()
 
-        // This callback should trigger the UP state as it's a "snapshot"
-        callbackCaptor.firstValue.onUpdate(emptySet(), emptyMap())
-
+        configReadServiceEventHandler.processEvent(
+            RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP),
+            coordinator
+        )
         verify(coordinator).updateStatus(capture(lifecycleStatusCaptor), any())
         assertThat(lifecycleStatusCaptor.firstValue).isEqualTo(LifecycleStatus.UP)
     }
 
     @Test
     fun `Start event works when bootstrap config provided`() {
-        configReadServiceEventHandler.processEvent(BootstrapConfigProvided(mock()), coordinator)
+        configReadServiceEventHandler.processEvent(BootstrapConfigProvided(bootConfig), coordinator)
         configReadServiceEventHandler.processEvent(StartEvent(), coordinator)
         // The first value captured will be from the BootstrapConfig being provided
         verify(coordinator, times(2)).postEvent(capture(lifecycleEventCaptor))
@@ -94,7 +97,7 @@ internal class ConfigReadServiceEventHandlerTest {
     }
 
     @Test
-    fun `Start event fails when bootstrap config not provided`() {
+    fun `Start event does not trigger subscription when bootstrap config not provided`() {
         configReadServiceEventHandler.processEvent(StartEvent(), coordinator)
         // The first value captured will be from the BootstrapConfig being provided
         verifyNoInteractions(coordinator)
@@ -102,12 +105,10 @@ internal class ConfigReadServiceEventHandlerTest {
 
     @Test
     fun `Stop event removes the subscription`() {
-        configReadServiceEventHandler.processEvent(BootstrapConfigProvided(mock()), coordinator)
+        configReadServiceEventHandler.processEvent(BootstrapConfigProvided(bootConfig), coordinator)
         configReadServiceEventHandler.processEvent(SetupSubscription(), coordinator)
         configReadServiceEventHandler.processEvent(StopEvent(), coordinator)
-        // The first value captured will be from the BootstrapConfig being provided
-        verify(callbackHandles).removeSubscription()
-        verify(configReader).stop()
+        verify(compactedSubscription).close()
     }
 
     @Test
@@ -115,9 +116,55 @@ internal class ConfigReadServiceEventHandlerTest {
         configReadServiceEventHandler.processEvent(ErrorEvent(Exception()), coordinator)
         // The first value captured will be from the BootstrapConfig being provided
         verifyNoInteractions(coordinator)
-        verifyNoInteractions(configReaderFactory)
-        verifyNoInteractions(configReader)
-        verifyNoInteractions(callbackHandles)
+        verifyNoInteractions(subscriptionFactory)
+        verifyNoInteractions(compactedSubscription)
+    }
+
+    @Test
+    fun `adding a registration updates it with current configuration`() {
+        setupHandlerForProcessingConfig()
+        val newConfig = smartConfigFactory.create(ConfigFactory.parseMap(mapOf("foo" to "bar")))
+        val registration = ConfigurationChangeRegistration(coordinator) { keys, config ->
+            assertEquals(setOf(BOOT_CONFIG, FLOW_CONFIG), keys)
+            assertEquals(mapOf(BOOT_CONFIG to bootConfig, FLOW_CONFIG to newConfig), config)
+        }
+        configReadServiceEventHandler.processEvent(NewConfigReceived(mapOf(FLOW_CONFIG to newConfig)), coordinator)
+        configReadServiceEventHandler.processEvent(ConfigRegistrationAdd(registration), coordinator)
+    }
+
+    @Test
+    fun `all current registrations are updated when a config update happens`() {
+        setupHandlerForProcessingConfig()
+        val newConfig = smartConfigFactory.create(ConfigFactory.parseMap(mapOf("foo" to "bar")))
+        val reg1 = ConfigurationChangeRegistration(coordinator) { keys, config ->
+            if (keys.contains(FLOW_CONFIG)) {
+                assertEquals(setOf(FLOW_CONFIG), keys)
+                assertEquals(mapOf(BOOT_CONFIG to bootConfig, FLOW_CONFIG to newConfig), config)
+            }
+        }
+        val reg2 = ConfigurationChangeRegistration(coordinator) { keys, config ->
+            if (keys.contains(FLOW_CONFIG)) {
+                assertEquals(setOf(FLOW_CONFIG), keys)
+                assertEquals(mapOf(BOOT_CONFIG to bootConfig, FLOW_CONFIG to newConfig), config)
+            }
+        }
+        configReadServiceEventHandler.processEvent(ConfigRegistrationAdd(reg1), coordinator)
+        configReadServiceEventHandler.processEvent(ConfigRegistrationAdd(reg2), coordinator)
+        configReadServiceEventHandler.processEvent(NewConfigReceived(mapOf(FLOW_CONFIG to newConfig)), coordinator)
+    }
+
+    @Test
+    fun `removing a registration stops updates being delivered`() {
+        setupHandlerForProcessingConfig()
+        val newConfig = smartConfigFactory.create(ConfigFactory.parseMap(mapOf("foo" to "bar")))
+        var shouldCallReg = true
+        val reg = ConfigurationChangeRegistration(coordinator) { _, _ ->
+            assertTrue(shouldCallReg)
+        }
+        configReadServiceEventHandler.processEvent(ConfigRegistrationAdd(reg), coordinator)
+        shouldCallReg = false
+        configReadServiceEventHandler.processEvent(ConfigRegistrationRemove(reg), coordinator)
+        configReadServiceEventHandler.processEvent(NewConfigReceived(mapOf(FLOW_CONFIG to newConfig)), coordinator)
     }
 
     @Test
@@ -138,5 +185,9 @@ internal class ConfigReadServiceEventHandlerTest {
         assertThrows<ConfigurationReadException> {
             configReadServiceEventHandler.processEvent(BootstrapConfigProvided(configB), coordinator)
         }
+    }
+
+    private fun setupHandlerForProcessingConfig() {
+        configReadServiceEventHandler.processEvent(BootstrapConfigProvided(bootConfig), coordinator)
     }
 }

@@ -6,9 +6,9 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.Subscription
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
 import net.corda.messaging.db.partition.PartitionAllocationListener
 import net.corda.messaging.db.partition.PartitionAllocator
 import net.corda.messaging.db.partition.PartitionAssignor
@@ -23,7 +23,6 @@ import net.corda.v5.base.util.trace
 import org.slf4j.Logger
 import java.nio.ByteBuffer
 import java.time.Duration
-import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 import java.util.concurrent.locks.ReentrantLock

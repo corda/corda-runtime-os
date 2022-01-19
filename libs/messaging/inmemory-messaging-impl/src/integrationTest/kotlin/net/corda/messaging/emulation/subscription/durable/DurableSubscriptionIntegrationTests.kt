@@ -5,8 +5,8 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -37,8 +37,8 @@ class DurableSubscriptionIntegrationTests {
     private val index = AtomicInteger(0)
     private val receivedValues = ConcurrentHashMap.newKeySet<Int?>()
 
-    private lateinit var otherConfig :SubscriptionConfig
-    private lateinit var config :SubscriptionConfig
+    private lateinit var otherConfig : SubscriptionConfig
+    private lateinit var config : SubscriptionConfig
 
     private val counter = CountDownLatch(numberOfMessagesToSend * numberOfMessagesToReplyForEachMessage)
 

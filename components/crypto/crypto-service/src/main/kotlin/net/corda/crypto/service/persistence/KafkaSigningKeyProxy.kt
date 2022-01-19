@@ -11,15 +11,15 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.sha256Bytes
 import org.slf4j.Logger
 import java.nio.ByteBuffer
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 

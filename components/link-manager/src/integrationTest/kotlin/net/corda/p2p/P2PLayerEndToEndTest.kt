@@ -10,7 +10,6 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.publish.CordaConfigurationKey
 import net.corda.libs.configuration.publish.CordaConfigurationVersion
 import net.corda.libs.configuration.publish.impl.ConfigPublisherImpl
-import net.corda.libs.configuration.read.kafka.factory.ConfigReaderFactoryImpl
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.HEARTBEAT_MESSAGE_PERIOD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITIES_KEY
@@ -25,7 +24,7 @@ import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
 import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
@@ -255,7 +254,7 @@ class P2PLayerEndToEndTest {
         val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
         val subscriptionFactory = InMemSubscriptionFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
         val publisherFactory = CordaPublisherFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
-        val configReadService = ConfigurationReadServiceImpl(lifecycleCoordinatorFactory, ConfigReaderFactoryImpl(subscriptionFactory))
+        val configReadService = ConfigurationReadServiceImpl(lifecycleCoordinatorFactory, subscriptionFactory)
         val configPublisher = publisherFactory.createPublisher(PublisherConfig("config-writer")).let {
             ConfigPublisherImpl(CONFIG_TOPIC, it)
         }

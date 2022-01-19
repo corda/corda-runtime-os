@@ -1,0 +1,60 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+}
+
+description 'Worker Smoketests'
+
+sourceSets {
+    smokeTest {
+        java {
+            srcDirs += [ 'src/smokeTest/java' ]
+        }
+        kotlin {
+            srcDirs += [ 'src/smokeTest/kotlin' ]
+        }
+        resources {
+            srcDirs = [ 'src/smokeTest/resources' ]
+        }
+        compileClasspath += main.output + test.output
+        runtimeClasspath += main.output + test.output
+    }
+}
+
+kotlin {
+    target {
+        java
+        compilations.smokeTest {
+            associateWith compilations.main
+            associateWith compilations.test
+
+            configurations {
+                smokeTestApi.extendsFrom testApi
+                smokeTestImplementation.extendsFrom testImplementation
+                smokeTestRuntimeOnly.extendsFrom testRuntimeOnly
+            }
+        }
+    }
+}
+
+dependencies {
+    // NO CORDA DEPENDENCIES!!
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.4.2"
+
+    smokeTestImplementation "org.assertj:assertj-core:$assertjVersion"
+    smokeTestImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+    smokeTestRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
+}
+
+tasks.register('smokeTest', Test) {
+    description = "Runs smoke tests."
+    group = "verification"
+
+    testClassesDirs = project.sourceSets["smokeTest"].output.classesDirs
+    classpath = project.sourceSets["smokeTest"].runtimeClasspath
+
+    // TODO: set url/ports as properties
+//    systemProperty "postgresHost", project.getProperty("postgresHost")
+
+    shouldRunAfter tasks.named('test')
+}
