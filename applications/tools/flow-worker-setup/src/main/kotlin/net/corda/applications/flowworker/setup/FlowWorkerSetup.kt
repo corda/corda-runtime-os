@@ -10,8 +10,6 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
-import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
@@ -56,13 +54,14 @@ class FlowWorkerSetup @Activate constructor(
         val consoleLogger: Logger = LoggerFactory.getLogger("Console")
     }
 
-    private var lifeCycleCoordinator: LifecycleCoordinator = coordinatorFactory.createCoordinator<FlowWorkerSetup>(::eventHandler)
+    private var lifeCycleCoordinator: LifecycleCoordinator =
+        coordinatorFactory.createCoordinator<FlowWorkerSetup>(::eventHandler)
 
     private var publisher: Publisher? = null
     private var instanceId: Int? = null
-    private var configurationFile : File? = null
-    private var topicTemplate : File? = null
-    private var bootstrapConfig : SmartConfig? = null
+    private var configurationFile: File? = null
+    private var topicTemplate: File? = null
+    private var bootstrapConfig: SmartConfig? = null
     private var scheduleCleanup = false
 
 
@@ -78,7 +77,7 @@ class FlowWorkerSetup @Activate constructor(
         scheduleCleanup = parameters.scheduleCleanup
         // TODO - pick up secrets params from startup
         val secretsConfig = ConfigFactory.empty()
-        bootstrapConfig =  SmartConfigFactory.create(secretsConfig).create(getBootstrapConfig(instanceId))
+        bootstrapConfig = SmartConfigFactory.create(secretsConfig).create(getBootstrapConfig(instanceId))
 
         lifeCycleCoordinator.start()
     }
@@ -97,8 +96,8 @@ class FlowWorkerSetup @Activate constructor(
             is ConfigWritten -> {
                 setupPublisher()
             }
-            is RegistrationStatusChangeEvent -> {
-                handleRegistrationChange(event)
+            is PublisherBuilt -> {
+                publishEvents()
             }
             is StopEvent -> {
                 publisher?.close()
@@ -109,19 +108,15 @@ class FlowWorkerSetup @Activate constructor(
         }
     }
 
-    private fun handleRegistrationChange(event: RegistrationStatusChangeEvent) {
-        if (event.status == LifecycleStatus.UP) {
-            consoleLogger.info("Publishing RPCRecord")
-            if (!scheduleCleanup) {
-                publisher?.publish(getHelloWorldRPCEventRecords())?.forEach { it.get() }
-            } else {
-                publisher?.publish(listOf(getHelloWorldScheduleCleanupEvent()))?.forEach { it.get() }
-            }
-            consoleLogger.info("Published RPCRecord")
-            shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
+    private fun publishEvents() {
+        consoleLogger.info("Publishing RPCRecord")
+        if (!scheduleCleanup) {
+            publisher?.publish(getHelloWorldRPCEventRecords())?.forEach { it.get() }
         } else {
-            publisher?.close()
+            publisher?.publish(listOf(getHelloWorldScheduleCleanupEvent()))?.forEach { it.get() }
         }
+        consoleLogger.info("Published RPCRecord")
+        shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
     }
 
     private fun setupPublisher() {
@@ -130,6 +125,7 @@ class FlowWorkerSetup @Activate constructor(
         publisher = publisherFactory.createPublisher(PublisherConfig("flow-setup-publisher", instanceId), config)
         publisher?.start()
         consoleLogger.info("Publisher created")
+        lifeCycleCoordinator.postEvent(PublisherBuilt())
     }
 
     private fun writeConfig(configurationFile: File?) {
@@ -159,7 +155,8 @@ class FlowWorkerSetup @Activate constructor(
 
     private fun getKafkaProperties(): Properties {
         val kafkaProperties = Properties()
-        kafkaProperties[SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH] = getConfigValue(SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH, "localhost:9092")
+        kafkaProperties[SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH] =
+            getConfigValue(SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH, "localhost:9092")
         return kafkaProperties
     }
 
