@@ -14,7 +14,11 @@ import net.corda.libs.configuration.datamodel.ConfigAuditEntity
 import net.corda.libs.configuration.datamodel.ConfigEntity
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
@@ -59,6 +63,7 @@ class DBProcessorImpl @Activate constructor(
     }
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<DBProcessorImpl>(::eventHandler)
+    private var registration: RegistrationHandle? = null
 
     override fun start(bootConfig: SmartConfig) {
         log.info("DB processor starting.")
@@ -74,13 +79,24 @@ class DBProcessorImpl @Activate constructor(
     @Suppress("UNUSED_PARAMETER")
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         log.debug { "DB processor received event $event." }
+
+        val dependentComponents = mapOf(
+            LifecycleCoordinatorName.forComponent<ConfigWriteService>() to configWriteService,
+            LifecycleCoordinatorName.forComponent<ConfigurationReadService>() to configurationReadService,
+            LifecycleCoordinatorName.forComponent<PermissionCacheService>() to permissionCacheService,
+            LifecycleCoordinatorName.forComponent<PermissionStorageReaderService>() to permissionStorageReaderService,
+            LifecycleCoordinatorName.forComponent<PermissionStorageWriterService>() to permissionStorageWriterService,
+            )
+
         when (event) {
             is StartEvent -> {
-                configWriteService.start()
-                configurationReadService.start()
-                permissionCacheService.start()
-                permissionStorageReaderService.start()
-                permissionStorageWriterService.start()
+                registration?.close()
+                registration = coordinator.followStatusChangesByName(dependentComponents.keys.toSet())
+                dependentComponents.forEach { (_, svc) -> svc.start() }
+            }
+            is RegistrationStatusChangeEvent -> {
+                log.info("DBProcessorImpl is ${event.status}")
+                coordinator.updateStatus(event.status)
             }
             is BootConfigEvent -> {
                 val dataSource = createDataSource(event.config)
@@ -94,11 +110,7 @@ class DBProcessorImpl @Activate constructor(
                 configurationReadService.bootstrapConfig(event.config)
             }
             is StopEvent -> {
-                permissionStorageWriterService.stop()
-                permissionStorageReaderService.stop()
-                permissionCacheService.stop()
-                configWriteService.stop()
-                configurationReadService.stop()
+                dependentComponents.forEach { (_, svc) -> svc.stop() }
             }
             else -> {
                 log.error("Unexpected event $event!")
