@@ -39,7 +39,6 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 
 @ExtendWith(ServiceExtension::class)
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GroupPolicyProviderIntegrationTest {
     companion object {
         const val CLIENT_ID = "group-policy-integration-test"
