@@ -23,7 +23,6 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:configuration:configuration-core")
 
-    implementation project(":components:examples:common-publisher")
     implementation project(':components:kafka-topic-admin')
     implementation project(':components:configuration:configuration-publish-service')
 
