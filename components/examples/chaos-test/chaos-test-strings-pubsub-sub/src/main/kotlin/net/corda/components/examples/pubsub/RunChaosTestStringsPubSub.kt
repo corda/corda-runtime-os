@@ -4,8 +4,8 @@ import net.corda.components.examples.pubsub.processor.ChaosTestStringsPubSubProc
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.subscription.Subscription
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger

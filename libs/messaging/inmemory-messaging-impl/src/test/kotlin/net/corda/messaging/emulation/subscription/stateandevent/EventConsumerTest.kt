@@ -1,7 +1,7 @@
 package net.corda.messaging.emulation.subscription.stateandevent
 
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.emulation.topic.model.CommitStrategy
 import net.corda.messaging.emulation.topic.model.OffsetStrategy
 import net.corda.messaging.emulation.topic.model.PartitionStrategy
