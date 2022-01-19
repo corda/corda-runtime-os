@@ -5,21 +5,22 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.api.publisher.RPCSender
-import net.corda.messaging.api.subscription.factory.config.RPCConfig
+import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.emulation.rpc.RPCTopicService
 import java.util.concurrent.CompletableFuture
 
 class RPCSenderImpl<REQUEST, RESPONSE>(
     private val rpcConfig: RPCConfig<REQUEST, RESPONSE>,
     private val rpcTopicService: RPCTopicService,
-    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    private val clientIdCounter: String
 ) : RPCSender<REQUEST, RESPONSE> {
 
     private var running = false
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
             "${rpcConfig.groupName}-RPCSender-${rpcConfig.requestTopic}",
-            rpcConfig.instanceId.toString()
+            clientIdCounter
         )
     ) { _, _ -> }
 

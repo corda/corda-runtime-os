@@ -5,3 +5,4 @@ import net.corda.flow.manager.FlowEventProcessor
 interface FlowEventProcessorFactory {
     fun create(): FlowEventProcessor
 }
+

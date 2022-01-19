@@ -11,8 +11,8 @@ import net.corda.membership.config.persistence
 import net.corda.membership.config.topicName
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.messaging.api.subscription.CompactedSubscription
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.schema.Schemas
 import net.corda.v5.base.exceptions.CordaRuntimeException
 

@@ -2,9 +2,6 @@ package net.corda.messaging.api.subscription
 
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.messaging.api.exception.CordaMessageAPIFatalException
-import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
-import net.corda.messaging.api.records.Record
 
 /**
  * A subscription that can be used to manage the life cycle of consumption of event records from a topic.
@@ -117,41 +114,3 @@ interface CompactedSubscription<K : Any, V : Any> : Subscription<K, V> {
     fun getValue(key: K): V?
 }
 
-/**
- * A subscription that can be used to retrieve records at a specific (partition, offset) location.
- */
-interface RandomAccessSubscription<K : Any, V : Any> : Subscription<K, V> {
-
-    /**
-     * Get the record at the provided partition and offset.
-     * @return the record if there is one at the specified location, null otherwise.
-     *
-     * @throws CordaMessageAPIFatalException if there was an fatal/unrecoverable error while trying to retrieve the
-     * record.
-     * @throws CordaMessageAPIIntermittentException if there was a recoverable/transient error while trying to retrieve
-     * the record.
-     */
-    fun getRecord(partition: Int, offset: Long): Record<K, V>?
-
-}
-
-/**
- * An interface that can be implemented for a subscription to react to assignment and revocation
- * of topic partitions.  This will be useful for handling rebalancing situations on the Kafka consumers and
- * will allow the subscription to ensure consistency after a rebalance event.
- */
-interface PartitionAssignmentListener {
-    /**
-     * Implement this method to handle the removal of topic partitions
-     *
-     * @param topicPartitions the topic partitions that were unassigned.
-     */
-    fun onPartitionsUnassigned(topicPartitions: List<Pair<String, Int>>)
-
-    /**
-     * Implement this method to handle the addition of topic partitions
-     *
-     * @param topicPartitions the topic partitions that were assigned.
-     */
-    fun onPartitionsAssigned(topicPartitions: List<Pair<String, Int>>)
-}

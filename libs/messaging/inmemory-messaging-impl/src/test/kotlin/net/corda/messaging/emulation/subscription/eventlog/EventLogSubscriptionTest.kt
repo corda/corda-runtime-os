@@ -2,7 +2,7 @@ package net.corda.messaging.emulation.subscription.eventlog
 
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.emulation.topic.model.Consumption
 import net.corda.messaging.emulation.topic.service.TopicService
 import org.assertj.core.api.Assertions.assertThat

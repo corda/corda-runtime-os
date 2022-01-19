@@ -37,6 +37,9 @@ internal class HealthMonitorImpl @Activate constructor(
                 val anyComponentsNotReady = existsComponentWithAnyOf(setOf(LifecycleStatus.DOWN, LifecycleStatus.ERROR))
                 val status = if (anyComponentsNotReady) HTTP_INTERNAL_SERVER_ERROR_CODE else HTTP_OK_CODE
                 context.status(status)
+                // Print as text so to avoid bringing in a JSON serialiser
+                // TODO - should we return json?
+                context.result(lifecycleRegistry.componentStatus().toString())
             }
     }
 

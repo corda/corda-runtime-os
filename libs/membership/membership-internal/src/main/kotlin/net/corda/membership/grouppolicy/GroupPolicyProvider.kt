@@ -1,12 +1,13 @@
 package net.corda.membership.grouppolicy
 
+import net.corda.lifecycle.Lifecycle
 import net.corda.membership.GroupPolicy
 import net.corda.virtualnode.HoldingIdentity
 
 /**
  * Service for retrieving the group policy file for a given holding identity
  */
-interface GroupPolicyProvider {
+interface GroupPolicyProvider : Lifecycle {
 
     /**
      * Retrieves the [GroupPolicy] object for a given member based on the member's holding identity.

@@ -5,14 +5,15 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.subscription.RPCSubscription
-import net.corda.messaging.api.subscription.factory.config.RPCConfig
+import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.emulation.rpc.RPCTopicService
 
 class RPCSubscriptionImpl<REQUEST, RESPONSE>(
     private val rpcConfig: RPCConfig<REQUEST, RESPONSE>,
     private val rpcTopicService: RPCTopicService,
     private val responderProcessor: RPCResponderProcessor<REQUEST, RESPONSE>,
-    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    private val clientIdCounter: String
 ) : RPCSubscription<REQUEST, RESPONSE> {
 
     private var running = false
@@ -25,7 +26,7 @@ class RPCSubscriptionImpl<REQUEST, RESPONSE>(
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
             "${rpcConfig.groupName}-RPCSubscription-${rpcConfig.requestTopic}",
-            rpcConfig.instanceId.toString()
+            clientIdCounter
         )
     ) { _, _ -> }
 

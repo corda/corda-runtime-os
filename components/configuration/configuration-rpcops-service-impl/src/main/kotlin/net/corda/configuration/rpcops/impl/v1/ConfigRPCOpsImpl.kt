@@ -16,7 +16,7 @@ import net.corda.libs.configuration.endpoints.v1.types.HTTPUpdateConfigRequest
 import net.corda.libs.configuration.endpoints.v1.types.HTTPUpdateConfigResponse
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.api.subscription.factory.config.RPCConfig
+import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas.Config.Companion.CONFIG_MGMT_REQUEST_TOPIC
 import net.corda.v5.base.concurrent.getOrThrow
 import org.osgi.service.component.annotations.Activate
@@ -46,7 +46,7 @@ internal class ConfigRPCOpsImpl @Activate constructor(
     override val protocolVersion = 1
     private var rpcSender: RPCSender<ConfigurationManagementRequest, ConfigurationManagementResponse>? = null
     private var requestTimeout: Duration? = null
-    override val isRunning = rpcSender != null && requestTimeout != null
+    override val isRunning get() = rpcSender != null && requestTimeout != null
 
     override fun start() = Unit
 
