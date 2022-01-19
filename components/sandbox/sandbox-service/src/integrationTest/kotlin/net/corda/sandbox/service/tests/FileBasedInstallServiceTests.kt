@@ -5,10 +5,8 @@ import com.typesafe.config.ConfigRenderOptions
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.install.InstallService
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.packaging.CPI
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxException
-import net.corda.sandbox.SandboxGroup
 import net.corda.sandbox.service.SandboxService
 import net.corda.sandbox.service.tests.Constants.CPB_ONE
 import net.corda.sandbox.service.tests.Constants.CPB_THREE
@@ -30,7 +28,6 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.service.cm.ConfigurationAdmin
-import org.osgi.service.component.runtime.ServiceComponentRuntime
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.file.Files

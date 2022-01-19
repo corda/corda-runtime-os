@@ -9,7 +9,7 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.api.subscription.factory.config.RPCConfig
+import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.emulation.publisher.CordaPublisher
 import net.corda.messaging.emulation.publisher.RPCSenderImpl
 import net.corda.messaging.emulation.rpc.RPCTopicService
@@ -17,6 +17,7 @@ import net.corda.messaging.emulation.topic.service.TopicService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * In-memory implementation for Publisher Factory.
@@ -31,6 +32,9 @@ class CordaPublisherFactory @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : PublisherFactory {
+
+    // Used to ensure that each rpc sender has a unique client.id
+    private val clientIdCounter = AtomicInteger()
 
     companion object {
         const val PUBLISHER_CLIENT_ID = "clientId"
@@ -55,6 +59,11 @@ class CordaPublisherFactory @Activate constructor(
         rpcConfig: RPCConfig<REQUEST, RESPONSE>,
         kafkaConfig: SmartConfig
     ): RPCSender<REQUEST, RESPONSE> {
-        return RPCSenderImpl(rpcConfig, rpcTopicService, lifecycleCoordinatorFactory)
+        return RPCSenderImpl(
+            rpcConfig,
+            rpcTopicService,
+            lifecycleCoordinatorFactory,
+            clientIdCounter.getAndIncrement().toString()
+        )
     }
 }

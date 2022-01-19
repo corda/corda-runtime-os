@@ -1,9 +1,8 @@
 package net.corda.flow.service
 
-import net.corda.dependency.injection.DependencyInjectionBuilder
-import net.corda.dependency.injection.DependencyInjectionBuilderFactory
 import net.corda.flow.manager.FlowSandboxContextTypes
 import net.corda.flow.manager.FlowSandboxService
+import net.corda.flow.manager.factory.SandboxDependencyInjectionFactory
 import net.corda.packaging.CPI
 import net.corda.sandbox.service.SandboxService
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
@@ -20,8 +19,8 @@ import org.osgi.service.component.annotations.Reference
 class FlowSandboxServiceImpl @Activate constructor(
     @Reference(service = SandboxService::class)
     private val sandboxService: SandboxService,
-    @Reference(service = DependencyInjectionBuilderFactory::class)
-    private val dependencyInjectionBuilderFactory: DependencyInjectionBuilderFactory,
+    @Reference(service = SandboxDependencyInjectionFactory::class)
+    private val dependencyInjectionFactory: SandboxDependencyInjectionFactory,
     @Reference(service = CheckpointSerializerBuilderFactory::class)
     private val checkpointSerializerBuilderFactory: CheckpointSerializerBuilderFactory
 ) : FlowSandboxService {
@@ -30,30 +29,23 @@ class FlowSandboxServiceImpl @Activate constructor(
         holdingIdentity: HoldingIdentity,
         cpi: CPI.Identifier,
     ): SandboxGroupContext {
-
-        // build the builder in the non sandbox context
-        val diBuilder = dependencyInjectionBuilderFactory.create()
-
         return sandboxService.getOrCreateByCpiIdentifier(
             holdingIdentity, cpi, SandboxGroupType.FLOW
-        ) { _, sandboxGroupContext -> initialiseSandbox(diBuilder, sandboxGroupContext) }
+        ) { _, sandboxGroupContext -> initialiseSandbox(dependencyInjectionFactory, sandboxGroupContext) }
     }
 
     private fun initialiseSandbox(
-        dependencyInjectionBuilder: DependencyInjectionBuilder,
+        dependencyInjectionFactory: SandboxDependencyInjectionFactory,
         sandboxGroupContext: MutableSandboxGroupContext
     ): AutoCloseable {
 
-        // Register the user defined injectable services from the CPK/CPB and
-        // store the injection service in the sandbox context.
-        dependencyInjectionBuilder.addSandboxDependencies(sandboxGroupContext)
-        val injectionService = dependencyInjectionBuilder.build()
+        val injectionService = dependencyInjectionFactory.create(sandboxGroupContext)
         sandboxGroupContext.putObjectByKey(FlowSandboxContextTypes.DEPENDENCY_INJECTOR, injectionService)
 
         // Create and configure the checkpoint serializer
         val builder = checkpointSerializerBuilderFactory
             .createCheckpointSerializerBuilder(sandboxGroupContext.sandboxGroup)
-        builder.addSingletonSerializableInstances(injectionService.getRegisteredAsTokenSingletons())
+        builder.addSingletonSerializableInstances(injectionService.getRegisteredSingletons())
         builder.addSingletonSerializableInstances(setOf(sandboxGroupContext.sandboxGroup))
 
         sandboxGroupContext.putObjectByKey(FlowSandboxContextTypes.CHECKPOINT_SERIALIZER, builder.build())

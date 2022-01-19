@@ -3,8 +3,7 @@ package net.corda.flow.manager.impl.handlers.requests
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.flow.state.StateMachineState
 import net.corda.data.flow.state.waiting.WaitingFor
-import net.corda.flow.fiber.FlowFiber
-import net.corda.flow.fiber.requests.FlowIORequest
+import net.corda.flow.manager.fiber.FlowIORequest
 import net.corda.flow.manager.impl.FlowEventContext
 import net.corda.flow.manager.impl.handlers.FlowProcessingException
 import net.corda.flow.manager.impl.pipeline.FlowEventPipeline

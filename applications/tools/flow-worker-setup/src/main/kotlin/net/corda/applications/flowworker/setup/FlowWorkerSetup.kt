@@ -1,7 +1,7 @@
 package net.corda.applications.flowworker.setup
 
 import com.typesafe.config.ConfigFactory
-import net.corda.applications.flowworker.setup.helper.getHelloWorldRPCEventRecord
+import net.corda.applications.flowworker.setup.helper.getHelloWorldRPCEventRecords
 import net.corda.applications.flowworker.setup.helper.getHelloWorldScheduleCleanupEvent
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.configuration.publish.ConfigPublishService
@@ -48,7 +48,7 @@ class FlowWorkerSetup @Activate constructor(
     @Reference(service = ConfigPublishService::class)
     private var configPublish: ConfigPublishService,
     @Reference(service = KafkaTopicAdmin::class)
-    private var kafkaTopicAdmin: KafkaTopicAdmin,
+    private var kafkaTopicAdmin: KafkaTopicAdmin
 ) : Application {
 
     private companion object {
@@ -113,7 +113,7 @@ class FlowWorkerSetup @Activate constructor(
         if (event.status == LifecycleStatus.UP) {
             consoleLogger.info("Publishing RPCRecord")
             if (!scheduleCleanup) {
-                publisher?.publish(listOf(getHelloWorldRPCEventRecord()))?.forEach { it.get() }
+                publisher?.publish(getHelloWorldRPCEventRecords())?.forEach { it.get() }
             } else {
                 publisher?.publish(listOf(getHelloWorldScheduleCleanupEvent()))?.forEach { it.get() }
             }

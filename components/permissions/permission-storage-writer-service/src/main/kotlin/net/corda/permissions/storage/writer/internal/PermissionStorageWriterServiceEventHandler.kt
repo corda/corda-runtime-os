@@ -17,8 +17,8 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.subscription.RPCSubscription
+import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.orm.EntitiesSet
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.permissions.storage.reader.PermissionStorageReaderService

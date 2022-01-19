@@ -9,8 +9,8 @@ import net.corda.libs.configuration.read.ConfigListener
 import net.corda.libs.configuration.read.kafka.ConfigReaderImpl.Companion.CONFIGURATION_READER
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach

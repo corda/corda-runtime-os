@@ -3,7 +3,6 @@ package net.corda.flow.manager.impl.pipeline
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.flow.state.StateMachineState
-import net.corda.flow.fiber.requests.FlowIORequest
 import net.corda.flow.manager.FlowEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor
 

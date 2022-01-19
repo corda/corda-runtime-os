@@ -8,7 +8,7 @@ import net.corda.data.flow.state.StateMachineState
 import net.corda.data.flow.state.waiting.Receive
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.data.identity.HoldingIdentity
-import net.corda.flow.fiber.FlowContinuation
+import net.corda.flow.manager.fiber.FlowContinuation
 import net.corda.flow.manager.impl.FlowEventContext
 import net.corda.flow.manager.impl.handlers.FlowProcessingException
 import org.junit.jupiter.api.Assertions.assertEquals

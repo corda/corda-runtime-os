@@ -9,8 +9,8 @@ import net.corda.libs.configuration.read.ConfigReader
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import java.util.Collections
 import java.util.concurrent.locks.ReentrantLock

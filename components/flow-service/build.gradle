@@ -16,8 +16,6 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:configuration:configuration-core")
     implementation project(':libs:configuration:configuration-schema:messaging-configuration')
-    implementation project(':libs:flows:dependency-injection')
-    implementation project(":libs:flows:flow-fiber")
     implementation project(":libs:flows:flow-manager")
     implementation project(":libs:flows:flow-manager-impl")
     implementation project(":libs:messaging:messaging")
