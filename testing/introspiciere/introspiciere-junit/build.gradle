@@ -5,5 +5,8 @@ plugins {
 description "Introspiciere junit lib"
 
 dependencies {
-    implementation "io.javalin:javalin:4.3.0"
+    implementation project(":testing:introspiciere:introspiciere-http")
+
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
+    implementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
 }

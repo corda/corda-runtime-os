@@ -5,5 +5,7 @@ plugins {
 description "Introspiciere http common lib"
 
 dependencies {
-    implementation "io.javalin:javalin:4.3.0"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
+    implementation "com.github.kittinunf.fuel:fuel:2.3.1"
+    implementation "com.github.kittinunf.fuel:fuel-gson:2.3.1"
 }
