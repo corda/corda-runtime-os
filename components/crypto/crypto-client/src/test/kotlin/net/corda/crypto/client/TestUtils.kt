@@ -94,7 +94,7 @@ data class SendActResult<REQUEST, RESPONSE>(
     fun assertThatIsBetween(timestamp: Instant) = assertThatIsBetween(timestamp, before, after)
 }
 
-abstract class AbstractComponentTests<COMPONENT: Lifecycle> {
+abstract class ComponentTestsBase<COMPONENT: Lifecycle> {
     protected var coordinatorIsRunning = false
     protected lateinit var coordinator: LifecycleCoordinator
     protected lateinit var coordinatorFactory: LifecycleCoordinatorFactory

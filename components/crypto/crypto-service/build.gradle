@@ -23,7 +23,6 @@ dependencies {
     implementation project(':libs:crypto:crypto-impl')
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
-    implementation project(":components:crypto:crypto-component-base")
     implementation project(":components:crypto:crypto-persistence")
     implementation project(":components:configuration:configuration-read-service")
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"

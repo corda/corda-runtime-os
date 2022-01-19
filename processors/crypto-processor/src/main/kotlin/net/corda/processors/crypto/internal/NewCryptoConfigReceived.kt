@@ -1,4 +1,4 @@
-package net.corda.crypto.component.lifecycle
+package net.corda.processors.crypto.internal
 
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.v5.cipher.suite.config.CryptoLibraryConfig

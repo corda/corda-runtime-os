@@ -1,7 +1,6 @@
 package net.corda.crypto.client
 
 import net.corda.crypto.CryptoOpsClientComponent
-import net.corda.crypto.component.lifecycle.AbstractComponent
 import net.corda.crypto.impl.stopGracefully
 import net.corda.data.crypto.config.HSMInfo
 import net.corda.data.crypto.wire.ops.rpc.HSMKeyDetails

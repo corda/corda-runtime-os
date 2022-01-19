@@ -3,7 +3,6 @@ package net.corda.crypto.client
 import net.corda.crypto.CryptoPublishResult
 import net.corda.crypto.HSMRegistrationClient
 import net.corda.crypto.HSMRegistrationClientComponent
-import net.corda.crypto.component.lifecycle.AbstractComponent
 import net.corda.crypto.impl.closeGracefully
 import net.corda.data.crypto.config.HSMConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory

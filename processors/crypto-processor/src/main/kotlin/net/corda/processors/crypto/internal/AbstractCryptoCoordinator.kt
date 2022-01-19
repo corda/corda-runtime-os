@@ -1,7 +1,6 @@
-package net.corda.crypto.component.lifecycle
+package net.corda.processors.crypto.internal
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.component.config.CryptoLibraryConfigImpl
 import net.corda.crypto.impl.closeGracefully
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle

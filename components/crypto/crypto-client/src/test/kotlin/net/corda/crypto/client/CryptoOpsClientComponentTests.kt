@@ -59,7 +59,7 @@ import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import kotlin.test.assertTrue
 
-class CryptoOpsClientComponentTests : AbstractComponentTests<CryptoOpsClientComponentImpl>() {
+class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponentImpl>() {
     private lateinit var knownTenantId: String
     private lateinit var knownAlias: String
     private lateinit var knownOperationContext: Map<String, String>

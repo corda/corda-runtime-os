@@ -36,7 +36,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertSame
 
-class HSMRegistrationClientComponentTests : AbstractComponentTests<HSMRegistrationClientComponentImpl>() {
+class HSMRegistrationClientComponentTests : ComponentTestsBase<HSMRegistrationClientComponentImpl>() {
     private lateinit var publisher: Publisher
     private lateinit var publisherFactory: PublisherFactory
 

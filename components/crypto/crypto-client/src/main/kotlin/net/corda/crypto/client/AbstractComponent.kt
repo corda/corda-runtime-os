@@ -1,4 +1,4 @@
-package net.corda.crypto.component.lifecycle
+package net.corda.crypto.client
 
 import net.corda.crypto.impl.closeGracefully
 import net.corda.lifecycle.Lifecycle
