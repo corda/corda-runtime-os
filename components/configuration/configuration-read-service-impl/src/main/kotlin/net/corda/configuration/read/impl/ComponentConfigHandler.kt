@@ -22,12 +22,8 @@ class ComponentConfigHandler(private val coordinator: LifecycleCoordinator, priv
                 snapshotPosted = true
                 requiredKeys
             }
-            val event = ConfigChangedEvent(keys, config.filterRequiredKeys(requiredKeys))
+            val event = ConfigChangedEvent(keys, config.filter { it.key in requiredKeys })
             coordinator.postEvent(event)
         }
-    }
-
-    private fun Map<String, SmartConfig>.filterRequiredKeys(requiredKeys: Set<String>) : Map<String, SmartConfig> {
-        return this.filter { entry -> entry.key in requiredKeys }
     }
 }
