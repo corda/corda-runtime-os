@@ -614,7 +614,7 @@ No custom serializers registered.
         val factory = testDefaultFactory()
         assertFailsWithMessage(
                 "Class \"class ${PropertyWithoutCordaSerializable::class.java.name}\" " +
-                "is not on annotated with @CordaSerializable.") {
+                "is not annotated with @CordaSerializable.") {
             TestSerializationOutput(VERBOSE, factory).serialize(PropertyWithoutCordaSerializable(1))
         }
     }
