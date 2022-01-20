@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit
 class RoundTripTests {
 
     @Test
-	fun mutableBecomesImmutable() {
+    fun mutableBecomesImmutable() {
         @CordaSerializable
         data class C(val l: MutableList<String>)
 
@@ -31,7 +31,7 @@ class RoundTripTests {
     }
 
     @Test
-	fun mutableStillMutable() {
+    fun mutableStillMutable() {
         @CordaSerializable
         class C(l: MutableList<String>) {
             val l: MutableList<String> = l.toMutableList()
@@ -46,7 +46,7 @@ class RoundTripTests {
     }
 
     @Test
-	fun mutableStillMutable2() {
+    fun mutableStillMutable2() {
         @CordaSerializable
         data class C(val l: MutableList<String>) {
             @ConstructorForDeserialization
@@ -63,7 +63,7 @@ class RoundTripTests {
     }
 
     @Test
-	fun mutableBecomesImmutable4() {
+    fun mutableBecomesImmutable4() {
         @CordaSerializable
         data class C(val l: List<String>)
 
@@ -74,7 +74,7 @@ class RoundTripTests {
     }
 
     @Test
-	fun calculatedValues() {
+    fun calculatedValues() {
         @CordaSerializable
         data class C(val i: Int) {
             @get:SerializableCalculatedProperty
@@ -88,7 +88,7 @@ class RoundTripTests {
     }
 
     @Test
-	fun calculatedFunction() {
+    fun calculatedFunction() {
         @CordaSerializable
         class C {
             var i: Int = 0
@@ -109,7 +109,7 @@ class RoundTripTests {
     }
 
     @Test
-	fun inheritedCalculatedFunction() {
+    fun inheritedCalculatedFunction() {
         @CordaSerializable
         class C: I {
             var i: Int = 0
@@ -175,7 +175,7 @@ class RoundTripTests {
     data class C<A, B : A>(override val t: B) : I2<B>
 
     @Test
-	fun recursiveTypeVariableResolution() {
+    fun recursiveTypeVariableResolution() {
         val factory = testDefaultFactoryNoEvolution()
         val instance = C<Collection<String>, List<String>>(emptyList())
 
