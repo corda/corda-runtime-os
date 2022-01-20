@@ -1,5 +1,6 @@
 package net.corda.virtualnode.read
 
+import net.corda.lifecycle.Lifecycle
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 
@@ -13,7 +14,7 @@ import net.corda.virtualnode.VirtualNodeInfo
  * You will probably use the callback if you are automatically interacting with the service,
  * e.g. a status page listening all nodes in the system.
  */
-interface VirtualNodeInfoReader {
+interface VirtualNodeInfoReadService : Lifecycle {
     /**
      * Returns virtual node context information for a given holding identity
      * without starting any bundles or instantiating any classes.

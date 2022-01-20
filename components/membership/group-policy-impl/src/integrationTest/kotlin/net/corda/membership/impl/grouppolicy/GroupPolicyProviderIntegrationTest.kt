@@ -23,7 +23,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.read.VirtualNodeInfoReaderComponent
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -48,7 +48,7 @@ class GroupPolicyProviderIntegrationTest {
     lateinit var groupPolicyProvider: GroupPolicyProvider
 
     @InjectService(timeout = 5000L)
-    lateinit var virtualNodeInfoReader: VirtualNodeInfoReaderComponent
+    lateinit var virtualNodeInfoReader: VirtualNodeInfoReadService
 
     @InjectService(timeout = 5000L)
     lateinit var cpiInfoReader: CpiInfoReadService
