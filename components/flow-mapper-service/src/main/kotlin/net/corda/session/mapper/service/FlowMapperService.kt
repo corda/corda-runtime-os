@@ -1,10 +1,10 @@
 package net.corda.session.mapper.service
 
+import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
-import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -74,12 +74,15 @@ class FlowMapperService @Activate constructor(
             }
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
-                    configHandle = configurationReadService.registerForUpdates(::onConfigChange)
+                    configHandle = configurationReadService.registerComponent(
+                        coordinator,
+                        setOf(BOOT_CONFIG, FLOW_CONFIG, MESSAGING_CONFIG)
+                    )
                 } else {
                     configHandle?.close()
                 }
             }
-            is NewConfigurationReceived -> {
+            is ConfigChangedEvent -> {
                 logger.info("Flow mapper processor component configuration received")
                 restartFlowMapperService(event)
             }
@@ -98,8 +101,9 @@ class FlowMapperService @Activate constructor(
     /**
      * Recreate the FLow Mapper service in response to new config [event]
      */
-    private fun restartFlowMapperService(event: NewConfigurationReceived) {
-        val config = event.config
+    private fun restartFlowMapperService(event: ConfigChangedEvent) {
+        val config = event.config[BOOT_CONFIG]!!.withFallback(event.config[MESSAGING_CONFIG])
+            .withFallback(event.config[FLOW_CONFIG])
         val consumerGroup = config.getString(CONSUMER_GROUP)
 
         scheduledTaskState?.close()
@@ -119,24 +123,6 @@ class FlowMapperService @Activate constructor(
         stateAndEventSub?.start()
     }
 
-    private fun onConfigChange(keys: Set<String>, config: Map<String, SmartConfig>) {
-        if (isRelevantConfigKey(keys)) {
-            coordinator.postEvent(
-                NewConfigurationReceived(
-                    config[BOOT_CONFIG]!!.withFallback(config[MESSAGING_CONFIG]).withFallback
-                        (config[FLOW_CONFIG])
-                )
-            )
-        }
-    }
-
-    /**
-     * True if any of the config [keys] are relevant to this app.
-     */
-    private fun isRelevantConfigKey(keys: Set<String>): Boolean {
-        return MESSAGING_CONFIG in keys || BOOT_CONFIG in keys || FLOW_CONFIG in keys
-    }
-
     override val isRunning: Boolean
         get() = coordinator.isRunning
 
@@ -152,5 +138,3 @@ class FlowMapperService @Activate constructor(
         coordinator.close()
     }
 }
-
-data class NewConfigurationReceived(val config: SmartConfig) : LifecycleEvent
