@@ -356,7 +356,7 @@ class StateAndEventSubscriptionIntegrationTest {
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         publisher.publish(getStringRecords(EVENT_TOPIC5, 5, 2)).forEach { it.get() }
 
-        assertTrue(stateAndEventLatch.await(75, TimeUnit.SECONDS))
+        assertTrue(stateAndEventLatch.await(5, TimeUnit.MINUTES))
         assertTrue(durableLatch.await(30, TimeUnit.SECONDS))
         assertTrue(deadLetterLatch.await(30, TimeUnit.SECONDS))
 
