@@ -41,6 +41,10 @@ pipeline {
         timeout(time: 30, unit: 'MINUTES')
         timestamps()
     }
+    
+    triggers {
+        cron '@midnight'
+    }
 
     stages {
         stage('Prepare') {
