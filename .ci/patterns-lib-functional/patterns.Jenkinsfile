@@ -18,11 +18,6 @@ pipeline {
         }
     }
 
-    parameters {
-        string(defaultValue: "",
-            description: 'Up Stream project name',
-            name: 'UPSTREAM_PROJECT_NAME')
-    }
 
     environment {
         ARTIFACTORY_CREDENTIALS = credentials('artifactory-credentials')
