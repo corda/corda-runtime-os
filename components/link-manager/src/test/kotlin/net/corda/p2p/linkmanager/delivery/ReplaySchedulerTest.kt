@@ -290,10 +290,10 @@ class ReplaySchedulerTest {
     }
 
     @Test
-    fun `The ReplayScheduler replays at most 100 messages at a time`() {
-        val total = 100
-        val firstBatchLatch = CountDownLatch(total)
-        val secondBatchLatch = CountDownLatch(total * 2)
+    fun `The ReplayScheduler caps the number of messages replayed at a time`() {
+        val messageCap = 10
+        val firstBatchLatch = CountDownLatch(messageCap)
+        val secondBatchLatch = CountDownLatch(messageCap * 2)
         val replayedMessages = ConcurrentHashMap.newKeySet<String>()
         fun onReplay(messageId: String) {
             if (!replayedMessages.contains(messageId)) {
@@ -308,24 +308,67 @@ class ReplaySchedulerTest {
         setRunning()
         createResources(resourcesHolder)
         configHandler.applyNewConfiguration(
-            ReplayScheduler.ReplaySchedulerConfig(Duration.ofMillis(100), Duration.ofMillis(100), MAX_REPLAYING_MESSAGES),
+            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod, messageCap),
             null,
             configResourcesHolder
         )
         val addedMessages = mutableListOf<String>()
-        for (i in 0 until 2 * total) {
+        for (i in 0 until 2 * messageCap) {
             val messageId = UUID.randomUUID().toString()
             replayManager.addForReplay(0, messageId, messageId, sessionKey)
             addedMessages.add(messageId)
         }
         firstBatchLatch.await()
-        for (i in 0 until total) {
+        Thread.sleep(5 * replayPeriod.toMillis())
+        //Second batch should only start to replay once we acknowledge the first batch.
+        assertThat(secondBatchLatch.count).isEqualTo(messageCap.toLong())
+
+        for (i in 0 until messageCap) {
             replayManager.removeFromReplay(addedMessages[i], sessionKey)
         }
         secondBatchLatch.await()
-        for (i in total until 2 * total) {
-            replayManager.removeFromReplay(addedMessages[i], sessionKey)
+    }
+
+    @Test
+    fun `If the ReplayScheduler cap increases queued messages are replayed`() {
+        val messageCap = 10
+        val firstBatchLatch = CountDownLatch(messageCap)
+        val secondBatchLatch = CountDownLatch(messageCap * 2)
+        val replayedMessages = ConcurrentHashMap.newKeySet<String>()
+        fun onReplay(messageId: String) {
+            if (!replayedMessages.contains(messageId)) {
+                firstBatchLatch.countDown()
+                secondBatchLatch.countDown()
+                replayedMessages.add(messageId)
+            }
         }
+
+        val replayManager = ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, ::onReplay) { 0 }
+        replayManager.start()
+        setRunning()
+        createResources(resourcesHolder)
+        configHandler.applyNewConfiguration(
+            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod, messageCap),
+            null,
+            configResourcesHolder
+        )
+        val addedMessages = mutableListOf<String>()
+        for (i in 0 until 2 * messageCap) {
+            val messageId = UUID.randomUUID().toString()
+            replayManager.addForReplay(0, messageId, messageId, sessionKey)
+            addedMessages.add(messageId)
+        }
+        firstBatchLatch.await()
+        Thread.sleep(5 * replayPeriod.toMillis())
+        //Second batch should only start to replay once we update the config.
+        assertThat(secondBatchLatch.count).isEqualTo(messageCap.toLong())
+        configHandler.applyNewConfiguration(
+            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod, 2 * messageCap),
+            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod, messageCap),
+            configResourcesHolder
+        )
+
+        secondBatchLatch.await()
     }
 
     class TrackReplayedMessages(numReplayedMessages: Int, private val totalNumberOfExceptions: Int = 0) {

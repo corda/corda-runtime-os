@@ -91,11 +91,20 @@ class ReplayScheduler<M>(
             val configUpdateResult = CompletableFuture<Unit>()
             if (newConfiguration.baseReplayPeriod.isNegative || newConfiguration.cutOff.isNegative) {
                 configUpdateResult.completeExceptionally(
-                    IllegalArgumentException("The duration configuration (with key $replaySchedulerConfigKey) must be positive.")
+                    IllegalArgumentException("The duration configurations (with keys " +
+                        "$replaySchedulerConfigKey$BASE_REPLAY_PERIOD_KEY_POSTFIX and $replaySchedulerConfigKey$CUTOFF_REPLAY_KEY_POSTFIX" +
+                         ") must be positive.")
                 )
                 return configUpdateResult
             }
             replaySchedulerConfig.set(newConfiguration)
+            if (oldConfiguration?.maxReplayingMessages?.let { it < newConfiguration.maxReplayingMessages} == true) {
+                queuedMessagesPerSessionKey.forEach { (sessionKey, queuedMessages) ->
+                    for (i in 0 until newConfiguration.maxReplayingMessages - oldConfiguration.maxReplayingMessages) {
+                        queuedMessages.poll()?.let { addForReplay(it.originalAttemptTimestamp, it.uniqueId, it.message, sessionKey) }
+                    }
+                }
+            }
             configUpdateResult.complete(Unit)
             return configUpdateResult
         }
