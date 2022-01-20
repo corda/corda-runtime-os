@@ -1,6 +1,6 @@
 package net.corda.httprpc.client
 
-import javax.security.auth.login.FailedLoginException
+import net.corda.httprpc.exception.NotAuthenticatedException
 import net.corda.httprpc.security.AuthServiceId
 import net.corda.httprpc.security.AuthorizingSubject
 import net.corda.httprpc.security.read.AdminSubject
@@ -29,7 +29,7 @@ class FakeSecurityManager : RPCSecurityManager {
             if (it == principal && password == Password(it)) {
                 AdminSubject(principal)
             } else {
-                throw FailedLoginException("No provisions for: $principal")
+                throw NotAuthenticatedException("No provisions for: $principal")
             }
         }
     }

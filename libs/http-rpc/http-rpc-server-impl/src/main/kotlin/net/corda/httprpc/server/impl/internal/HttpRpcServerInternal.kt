@@ -48,9 +48,7 @@ import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
 import java.io.OutputStream
 import java.io.PrintStream
-import javax.security.auth.login.FailedLoginException
-import net.corda.httprpc.exception.HttpApiException
-import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.httprpc.exception.NotAuthenticatedException
 
 @Suppress("TooManyFunctions", "TooGenericExceptionThrown")
 internal class HttpRpcServerInternal(
@@ -163,7 +161,7 @@ internal class HttpRpcServerInternal(
                 CURRENT_RPC_CONTEXT.set(rpcAuthContext)
                 log.trace { """Authenticate user "${it.principal}" completed.""" }
             }
-        } catch (e: FailedLoginException) {
+        } catch (e: NotAuthenticatedException) {
             "Error during user authentication".let {
                 log.warn("$it: ${e.message}")
                 addWwwAuthenticateHeaders(ctx)
@@ -266,6 +264,7 @@ internal class HttpRpcServerInternal(
                 """Error during invoking path "${this.fullPath}": ${e.rootMessage ?: e.rootCause}""".let {
                     log.error(it, e)
                 }
+                throw HttpExceptionMapper.mapToResponse(e)
             }
         }
     }

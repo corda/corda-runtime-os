@@ -9,8 +9,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import java.lang.reflect.Method
-import javax.security.auth.login.FailedLoginException
-import net.corda.httprpc.security.read.RPCSecurityException
+import net.corda.httprpc.exception.NotAuthenticatedException
 
 interface HttpRpcSecurityManager {
     fun authenticate(credential: AuthenticationCredentials): AuthorizingSubject
@@ -24,20 +23,18 @@ internal class SecurityManagerRPCImpl(private val providers: Set<AuthenticationP
     }
 
     override fun authenticate(credential: AuthenticationCredentials): AuthorizingSubject {
-        var lastException: FailedLoginException? = null
+        var lastException: NotAuthenticatedException? = null
         for (provider in providers) {
             if (provider.supports(credential)) {
                 lastException = try {
                     return provider.authenticate(credential)
-                } catch (e: RPCSecurityException) {
-                    FailedLoginException(e.message)
-                } catch (e: FailedLoginException) {
+                } catch (e: NotAuthenticatedException) {
                     e
                 }
             }
         }
 
-        throw lastException ?: FailedLoginException("Unable to authenticate request.")
+        throw lastException ?: NotAuthenticatedException("Unable to authenticate request.")
     }
 
     override fun getSchemeProviders(): Set<AuthenticationSchemeProvider> {
