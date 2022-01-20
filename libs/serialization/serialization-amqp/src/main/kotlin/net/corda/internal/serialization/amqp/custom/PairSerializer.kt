@@ -17,5 +17,6 @@ class PairSerializer : BaseProxySerializer<Pair<*, *>, PairSerializer.PairProxy>
         get() = false
     override val proxyType: Class<PairProxy>
         get() = PairProxy::class.java
+        
     data class PairProxy(val a:Any?, val b: Any?)
 }
