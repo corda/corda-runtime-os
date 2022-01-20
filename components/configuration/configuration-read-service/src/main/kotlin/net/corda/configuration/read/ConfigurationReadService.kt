@@ -2,6 +2,7 @@ package net.corda.configuration.read
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.LifecycleCoordinator
 
 /**
  * A service managing the configuration in the process.
@@ -30,6 +31,21 @@ interface ConfigurationReadService : Lifecycle {
      * @return A handle for this registration, which may be closed to unregister from the configuration read service.
      */
     fun registerForUpdates(configHandler: ConfigurationHandler) : AutoCloseable
+
+    /**
+     * Register a component for configuration updates on a particular set of top-level keys.
+     *
+     * This function provides a standard mechanism for components with lifecycle to receive configuration events. The
+     * configuration read service will deliver a [ConfigChangedEvent] when a configuration update occurs, provided that
+     * the update is for one of the [requiredKeys] and all the [requiredKeys] have been received.
+     *
+     * @param coordinator The lifecycle coordinator of the registering component. The [ConfigChangedEvent] will be
+     *                    delivered to this coordinator.
+     * @param requiredKeys The set of top-level configuration keys the component requires to configure itself. Once all
+     *                     these are present in the configuration, configuration updates will be delivered.
+     * @return A handle for this registration, which may be closed to unregister from the configuration read service.
+     */
+    fun registerComponent(coordinator: LifecycleCoordinator, requiredKeys: Set<String>) : AutoCloseable
 
     /**
      * Provide bootstrap configuration to the configuration service.
