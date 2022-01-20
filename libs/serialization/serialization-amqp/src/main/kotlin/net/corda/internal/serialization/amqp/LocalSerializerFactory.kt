@@ -16,7 +16,6 @@ import net.corda.internal.serialization.model.TypeIdentifier
 import net.corda.internal.serialization.model.TypeIdentifier.Parameterised
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
-import net.corda.serialization.ClassWhitelist
 import net.corda.utilities.reflection.kotlinObjectInstance
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -37,11 +36,6 @@ import javax.annotation.concurrent.ThreadSafe
  * we can discover the actual [Class] we are working with.
  */
 interface LocalSerializerFactory {
-    /**
-     * The [ClassWhitelist] used by this factory. Classes must be whitelisted for serialization, because they are expected
-     * to be written in a secure manner.
-     */
-    val whitelist: ClassWhitelist
 
     /**
      * Sandbox group to work within
@@ -113,7 +107,6 @@ interface LocalSerializerFactory {
  */
 @ThreadSafe
 class DefaultLocalSerializerFactory(
-        override val whitelist: ClassWhitelist,
         override val sandboxGroup: SandboxGroup,
         private val typeModel: LocalTypeModel,
         private val fingerPrinter: FingerPrinter,
@@ -214,13 +207,13 @@ class DefaultLocalSerializerFactory(
 
     private fun makeDeclaredEnum(localTypeInformation: LocalTypeInformation, declaredType: Type, declaredClass: Class<*>): AMQPSerializer<Any> =
             makeAndCache(localTypeInformation) {
-                whitelist.requireWhitelisted(declaredType)
+                requireCordaSerializable(declaredType)
                 EnumSerializer(declaredType, declaredClass, this)
             }
 
     private fun makeActualEnum(localTypeInformation: LocalTypeInformation, declaredType: Type, declaredClass: Class<*>): AMQPSerializer<Any> =
             makeAndCache(localTypeInformation) {
-                whitelist.requireWhitelisted(declaredType)
+                requireCordaSerializable(declaredType)
                 EnumSerializer(declaredType, declaredClass, this)
             }
 
@@ -304,10 +297,10 @@ class DefaultLocalSerializerFactory(
         else -> {
             val singleton = clazz.kotlinObjectInstance
             if (singleton != null) {
-                whitelist.requireWhitelisted(clazz)
+                requireCordaSerializable(clazz)
                 SingletonSerializer(clazz, singleton, this)
             } else {
-                whitelist.requireWhitelisted(type)
+                requireCordaSerializable(type)
                 ObjectSerializer.make(typeInformation, this)
             }
         }

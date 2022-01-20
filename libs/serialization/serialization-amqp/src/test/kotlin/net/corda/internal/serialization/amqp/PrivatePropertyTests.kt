@@ -9,6 +9,7 @@ import net.corda.internal.serialization.amqp.testutils.testDefaultFactoryNoEvolu
 import net.corda.internal.serialization.model.ConfigurableLocalTypeModel
 import net.corda.internal.serialization.model.LocalPropertyInformation
 import net.corda.internal.serialization.model.LocalTypeInformation
+import net.corda.v5.base.annotations.CordaSerializable
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.Java6Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -22,10 +23,11 @@ class PrivatePropertyTests {
 
     private val registry = TestDescriptorBasedSerializerRegistry()
     private val factory = testDefaultFactoryNoEvolution(registry)
-    val typeModel = ConfigurableLocalTypeModel(WhitelistBasedTypeModelConfiguration(factory.whitelist, factory))
+    val typeModel = ConfigurableLocalTypeModel(LocalTypeModelConfigurationImpl(factory))
 
     @Test
 	fun testWithOnePrivateProperty() {
+        @CordaSerializable
         data class C(private val b: String)
 
         val c1 = C("Pants are comfortable sometimes")
@@ -35,6 +37,7 @@ class PrivatePropertyTests {
 
     @Test
 	fun testWithOnePrivatePropertyBoolean() {
+        @CordaSerializable
         data class C(private val b: Boolean)
 
         C(false).apply {
@@ -44,6 +47,7 @@ class PrivatePropertyTests {
 
     @Test
 	fun testWithOnePrivatePropertyNullableNotNull() {
+        @CordaSerializable
         data class C(private val b: String?)
 
         val c1 = C("Pants are comfortable sometimes")
@@ -53,6 +57,7 @@ class PrivatePropertyTests {
 
     @Test
 	fun testWithOnePrivatePropertyNullableNull() {
+        @CordaSerializable
         data class C(private val b: String?)
 
         val c1 = C(null)
@@ -62,6 +67,7 @@ class PrivatePropertyTests {
 
     @Test
 	fun testWithOnePublicOnePrivateProperty() {
+        @CordaSerializable
         data class C(val a: Int, private val b: Int)
 
         val c1 = C(1, 2)
@@ -72,6 +78,7 @@ class PrivatePropertyTests {
     @Test
 	fun testWithInheritance() {
         open class B(val a: String, protected val b: String)
+        @CordaSerializable
         class D (a: String, b: String) : B (a, b) {
             override fun equals(other: Any?): Boolean = when (other) {
                 is D -> other.a == a && other.b == b
@@ -88,6 +95,7 @@ class PrivatePropertyTests {
     @Test
 	fun testMultiArgSetter() {
         @Suppress("UNUSED")
+        @CordaSerializable
         data class C(private var a: Int, var b: Int) {
             // This will force the serialization engine to use getter / setter
             // instantiation for the object rather than construction
@@ -125,6 +133,7 @@ class PrivatePropertyTests {
 
     @Test
 	fun testWithOnePublicOnePrivateProperty2() {
+        @CordaSerializable
         data class C(val a: Int, private val b: Int)
 
         val c1 = C(1, 2)
@@ -142,6 +151,7 @@ class PrivatePropertyTests {
 
     @Test
 	fun testGetterMakesAPublicReader() {
+        @CordaSerializable
         data class C(val a: Int, private val b: Int) {
             @Suppress("UNUSED")
             fun getB() = b
@@ -163,7 +173,9 @@ class PrivatePropertyTests {
     @Suppress("UNCHECKED_CAST")
     @Test
 	fun testNested() {
+        @CordaSerializable
         data class Inner(private val a: Int)
+        @CordaSerializable
         data class Outer(private val i: Inner)
 
         val c1 = Outer(Inner(1010101))

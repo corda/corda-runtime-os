@@ -6,9 +6,9 @@ import net.corda.internal.serialization.registerCustomSerializers
 import net.corda.serialization.BaseDirectSerializer
 import net.corda.serialization.BaseProxySerializer
 import net.corda.serialization.InternalDirectSerializer
-import net.corda.v5.serialization.MissingSerializerException
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.io.NotSerializableException
 
 class AnonymousClassTest {
 
@@ -26,14 +26,14 @@ class AnonymousClassTest {
 
     @Test
     fun anonymousClassBasedOnInterfaceWithoutCustomSerializer() {
-        assertThrows<MissingSerializerException> {
+        assertThrows<NotSerializableException> {
             serializeDeserializeAssert(testAnonymousClassFromInterface)
         }
     }
 
     @Test
     fun anonymousClassBasedOnAbstractClassWithoutCustomSerializer() {
-        assertThrows<MissingSerializerException> {
+        assertThrows<NotSerializableException> {
             serializeDeserializeAssert(testAnonymousClassFromAbstractClass)
         }
     }

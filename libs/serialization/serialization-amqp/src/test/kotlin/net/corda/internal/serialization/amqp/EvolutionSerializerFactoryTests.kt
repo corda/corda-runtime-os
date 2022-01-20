@@ -1,10 +1,10 @@
 package net.corda.internal.serialization.amqp
 
 import net.corda.v5.serialization.SerializedBytes
-import net.corda.internal.serialization.AllWhitelist
 import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.testName
 import net.corda.internal.serialization.amqp.testutils.testSerializationContext
+import net.corda.v5.base.annotations.CordaSerializable
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
@@ -17,14 +17,12 @@ import kotlin.test.assertTrue
 class EvolutionSerializerFactoryTests {
 
     private val nonStrictFactory = SerializerFactoryBuilder.build(
-            AllWhitelist,
             testSerializationContext.currentSandboxGroup(),
             descriptorBasedSerializerRegistry = DefaultDescriptorBasedSerializerRegistry(),
             mustPreserveDataWhenEvolving = false
     )
 
     private val strictFactory = SerializerFactoryBuilder.build(
-            AllWhitelist,
             testSerializationContext.currentSandboxGroup(),
             descriptorBasedSerializerRegistry = DefaultDescriptorBasedSerializerRegistry(),
             mustPreserveDataWhenEvolving = true
@@ -32,9 +30,11 @@ class EvolutionSerializerFactoryTests {
 
     // Version of the class as it was serialised
     //
+    // @CordaSerializable
     // data class C(val a: Int, val b: Int?)
     //
     // Version of the class as it's used in the test
+    @CordaSerializable
     data class C(val a: Int)
 
     @Test
