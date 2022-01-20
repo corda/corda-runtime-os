@@ -427,6 +427,7 @@ class DominoTileTest {
         private val configurationHandler = argumentCaptor<ConfigurationHandler>()
         private val service = mock<ConfigurationReadService> {
             on { registerForUpdates(configurationHandler.capture()) } doReturn registration
+            on { isRunning } doReturn true
         }
         private val configFactory = mock<(Config)-> Configuration> {
             on { invoke(any()) } doAnswer {
@@ -744,6 +745,84 @@ class DominoTileTest {
             tile.start()
 
             assertThat(resourceCreated).hasValue(1)
+        }
+
+        @Test
+        fun `start will not register to status changes if config service is running`() {
+            whenever(service.isRunning).doReturn(true)
+
+            tile().start()
+
+            verify(coordinator, never()).followStatusChangesByName(any())
+        }
+
+        @Test
+        fun `start will register to status changes if config service is not running`() {
+            whenever(service.isRunning).doReturn(false)
+
+            tile().start()
+
+            verify(coordinator).followStatusChangesByName(any())
+        }
+
+        @Test
+        fun `start will not register to configuration changes if config service is not running`() {
+            whenever(service.isRunning).doReturn(false)
+
+            tile().start()
+
+            verify(service, never()).registerForUpdates(any())
+        }
+
+        @Test
+        fun `config reader up will register to configuration changes`() {
+            val registration = mock<RegistrationHandle>()
+            whenever(coordinator.followStatusChangesByName(any())).doReturn(registration)
+            whenever(service.isRunning).doReturn(false)
+            tile().start()
+
+            whenever(service.isRunning).doReturn(true)
+            handler.lastValue.processEvent(
+                RegistrationStatusChangeEvent(
+                    registration,
+                    LifecycleStatus.UP
+                ),
+                coordinator
+            )
+
+            verify(service).registerForUpdates(any())
+        }
+
+        @Test
+        fun `config reader up will stop listening to config service status changes`() {
+            val registration = mock<RegistrationHandle>()
+            whenever(coordinator.followStatusChangesByName(any())).doReturn(registration)
+            whenever(service.isRunning).doReturn(false)
+            tile().start()
+
+            whenever(service.isRunning).doReturn(true)
+            handler.lastValue.processEvent(
+                RegistrationStatusChangeEvent(
+                    registration,
+                    LifecycleStatus.UP
+                ),
+                coordinator
+            )
+
+            verify(registration).close()
+        }
+
+        @Test
+        fun `close will stop listening to config service status changes`() {
+            val registration = mock<RegistrationHandle>()
+            whenever(coordinator.followStatusChangesByName(any())).doReturn(registration)
+            whenever(service.isRunning).doReturn(false)
+            val tile = tile()
+            tile.start()
+
+            tile.close()
+
+            verify(registration).close()
         }
     }
 
@@ -1218,6 +1297,7 @@ class DominoTileTest {
         private val configurationHandler = argumentCaptor<ConfigurationHandler>()
         private val service = mock<ConfigurationReadService> {
             on { registerForUpdates(configurationHandler.capture()) } doReturn registration
+            on { isRunning } doReturn true
         }
         private val configFactory = mock<(Config)-> Configuration> {
             on { invoke(any()) } doAnswer {
