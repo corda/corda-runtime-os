@@ -828,33 +828,33 @@ class DominoTileTest {
                 // simulate children starting
                 children[0].first.setState(DominoTile.State.Started)
                 handler.lastValue.processEvent(CustomEvent(children[0].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.Created, DominoTile.State.Started)), coordinator)
+                    DominoTile.StatusChangeEvent(DominoTile.State.Started)), coordinator)
                 children[1].first.setState(DominoTile.State.Started)
                 handler.lastValue.processEvent(CustomEvent(children[1].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.Created, DominoTile.State.Started)), coordinator)
+                    DominoTile.StatusChangeEvent(DominoTile.State.Started)), coordinator)
                 children[2].first.setState(DominoTile.State.Started)
                 handler.lastValue.processEvent(CustomEvent(children[2].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.Created, DominoTile.State.Started)), coordinator)
+                    DominoTile.StatusChangeEvent(DominoTile.State.Started)), coordinator)
                 // simulate child failing
                 children[2].first.setState(DominoTile.State.StoppedDueToError)
                 handler.lastValue.processEvent(CustomEvent(children[2].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.Started, DominoTile.State.StoppedDueToError)), coordinator)
+                    DominoTile.StatusChangeEvent(DominoTile.State.StoppedDueToError)), coordinator)
 
                 // verify other children stopped
                 verify(children[0].first.dominoTile).stop()
                 verify(children[1].first.dominoTile).stop()
                 children[0].first.setState(DominoTile.State.StoppedByParent)
                 handler.lastValue.processEvent(CustomEvent(children[0].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.Started, DominoTile.State.StoppedByParent)), coordinator)
+                    DominoTile.StatusChangeEvent(DominoTile.State.StoppedByParent)), coordinator)
                 children[1].first.setState(DominoTile.State.StoppedByParent)
                 handler.lastValue.processEvent(CustomEvent(children[1].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.Started, DominoTile.State.StoppedByParent)), coordinator)
+                    DominoTile.StatusChangeEvent(DominoTile.State.StoppedByParent)), coordinator)
 
                 // simulate errored child recovering
                 children.forEach { clearInvocations(it.first.dominoTile) }
                 children[2].first.setState(DominoTile.State.Started)
                 handler.lastValue.processEvent(CustomEvent(children[2].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.StoppedDueToError, DominoTile.State.Started)), coordinator)
+                    DominoTile.StatusChangeEvent(DominoTile.State.Started)), coordinator)
 
 
                 verify(children[0].first.dominoTile).start()
@@ -876,13 +876,13 @@ class DominoTileTest {
                 // simulate children starting
                 children[0].first.setState(DominoTile.State.Started)
                 handler.lastValue.processEvent(CustomEvent(children[0].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.Created, DominoTile.State.Started)), coordinator)
+                    DominoTile.StatusChangeEvent(DominoTile.State.Started)), coordinator)
                 children[1].first.setState(DominoTile.State.Started)
                 handler.lastValue.processEvent(CustomEvent(children[1].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.Created, DominoTile.State.Started)), coordinator)
+                    DominoTile.StatusChangeEvent(DominoTile.State.Started)), coordinator)
                 children[2].first.setState(DominoTile.State.Started)
                 handler.lastValue.processEvent(CustomEvent(children[2].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.Created, DominoTile.State.Started)), coordinator)
+                    DominoTile.StatusChangeEvent(DominoTile.State.Started)), coordinator)
 
                 assertThat(tile.isRunning).isTrue
             }
@@ -902,27 +902,27 @@ class DominoTileTest {
                 // simulate children starting
                 children[0].first.setState(DominoTile.State.Started)
                 handler.lastValue.processEvent(CustomEvent(children[0].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.Created, DominoTile.State.Started)), coordinator)
+                    DominoTile.StatusChangeEvent(DominoTile.State.Started)), coordinator)
                 children[1].first.setState(DominoTile.State.Started)
                 handler.lastValue.processEvent(CustomEvent(children[1].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.Created, DominoTile.State.Started)), coordinator)
+                    DominoTile.StatusChangeEvent(DominoTile.State.Started)), coordinator)
                 children[2].first.setState(DominoTile.State.Started)
                 handler.lastValue.processEvent(CustomEvent(children[2].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.Created, DominoTile.State.Started)), coordinator)
+                    DominoTile.StatusChangeEvent(DominoTile.State.Started)), coordinator)
                 // simulate two children failing
                 children[0].first.setState(DominoTile.State.StoppedDueToError)
                 handler.lastValue.processEvent(CustomEvent(children[0].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.Started, DominoTile.State.StoppedDueToError)), coordinator)
+                    DominoTile.StatusChangeEvent(DominoTile.State.StoppedDueToError)), coordinator)
                 children[1].first.setState(DominoTile.State.StoppedDueToError)
                 handler.lastValue.processEvent(CustomEvent(children[1].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.Started, DominoTile.State.StoppedDueToError)), coordinator)
+                    DominoTile.StatusChangeEvent(DominoTile.State.StoppedDueToError)), coordinator)
 
 
                 clearInvocations(children[0].first.dominoTile)
                 // simulate one child recovering
                 children[0].first.setState(DominoTile.State.Started)
                 handler.lastValue.processEvent(CustomEvent(children[0].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.StoppedDueToError, DominoTile.State.Started)), coordinator)
+                    DominoTile.StatusChangeEvent(DominoTile.State.Started)), coordinator)
 
                 verify(children[0].first.dominoTile).stop()
             }
@@ -942,13 +942,13 @@ class DominoTileTest {
                 // simulate children starting
                 children[0].first.setState(DominoTile.State.Started)
                 handler.lastValue.processEvent(CustomEvent(children[0].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.Created, DominoTile.State.Started)), coordinator)
+                    DominoTile.StatusChangeEvent(DominoTile.State.Started)), coordinator)
                 children[1].first.setState(DominoTile.State.Started)
                 handler.lastValue.processEvent(CustomEvent(children[1].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.Created, DominoTile.State.Started)), coordinator)
+                    DominoTile.StatusChangeEvent(DominoTile.State.Started)), coordinator)
                 children[2].first.setState(DominoTile.State.Started)
                 handler.lastValue.processEvent(CustomEvent(children[2].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.Created, DominoTile.State.Started)), coordinator)
+                    DominoTile.StatusChangeEvent(DominoTile.State.Started)), coordinator)
 
                 assertThat(tile.state).isEqualTo(DominoTile.State.Started)
             }
@@ -968,10 +968,10 @@ class DominoTileTest {
                 // simulate only 2 out of 3 children starting
                 children[0].first.setState(DominoTile.State.Started)
                 handler.lastValue.processEvent(CustomEvent(children[0].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.Created, DominoTile.State.Started)), coordinator)
+                    DominoTile.StatusChangeEvent(DominoTile.State.Started)), coordinator)
                 children[1].first.setState(DominoTile.State.Started)
                 handler.lastValue.processEvent(CustomEvent(children[1].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.Created, DominoTile.State.Started)), coordinator)
+                    DominoTile.StatusChangeEvent(DominoTile.State.Started)), coordinator)
 
                 assertThat(tile.state).isEqualTo(DominoTile.State.Created)
                 assertThat(tile.isRunning).isFalse()
@@ -1011,7 +1011,7 @@ class DominoTileTest {
 
                 children[0].first.setState(DominoTile.State.StoppedDueToError)
                 handler.lastValue.processEvent(CustomEvent(children[0].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.Created, DominoTile.State.StoppedDueToError)), coordinator)
+                    DominoTile.StatusChangeEvent(DominoTile.State.StoppedDueToError)), coordinator)
 
                 assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
             }

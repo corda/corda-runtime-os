@@ -51,7 +51,7 @@ class DominoTile(
         StoppedDueToBadConfig,
         StoppedByParent
     }
-    class StatusChangeEvent(val oldState: State, val newState: State): LifecycleEvent
+    class StatusChangeEvent(val newState: State): LifecycleEvent
 
     private val dominoTileName = LifecycleCoordinatorName(
         componentName,
@@ -95,10 +95,12 @@ class DominoTile(
     private val resources = ResourcesHolder()
     private val configResources = ResourcesHolder()
 
-    private val registrations: MutableMap<RegistrationHandle, Pair<DominoTile, State>> = children.map {
-        val dominoTileName = it.name
-        coordinator.followStatusChangesByName(setOf(dominoTileName)) to Pair(it, it.state)
+    private val latestChildStateMap: MutableMap<DominoTile, State> = children.map {
+        it to it.state
     }.toMap().toMutableMap()
+    private val registrationToChildMap: Map<RegistrationHandle, DominoTile> = children.map {
+        coordinator.followStatusChangesByName(setOf(it.name)) to it
+    }.toMap()
 
     private val currentState = AtomicReference(State.Created)
 
@@ -161,7 +163,7 @@ class DominoTile(
             }
             withLifecycleWriteLock {
                 status?.let { coordinator.updateStatus(it) }
-                coordinator.postCustomEventToFollowers(StatusChangeEvent(oldState, newState))
+                coordinator.postCustomEventToFollowers(StatusChangeEvent(newState))
             }
             logger.info("State updated from $oldState to $newState")
         }
@@ -204,14 +206,13 @@ class DominoTile(
                     if (event.payload is StatusChangeEvent) {
                         val statusChangeEvent = event.payload as StatusChangeEvent
 
-                        val childWithState = registrations[event.registration]
-                        if (childWithState == null) {
+                        val child = registrationToChildMap[event.registration]
+                        if (child == null) {
                             logger.warn("Signal change status received from registration " +
                                     "(${event.registration}) that didn't map to a component.")
                             return
                         }
-                        registrations[event.registration] = childWithState.copy(second = statusChangeEvent.newState)
-                        val (child, _) = childWithState
+                        latestChildStateMap[child] = statusChangeEvent.newState
 
                         when(statusChangeEvent.newState) {
                             State.Started -> {
@@ -316,18 +317,17 @@ class DominoTile(
 
     private fun handleLifecycleUp(child: DominoTile) {
         if (!isRunning) {
-            val childrenWithStatus = registrations.values
             when {
-                childrenWithStatus.all { it.second == State.Started } -> {
+                children.all { latestChildStateMap[it] == State.Started } -> {
                     logger.info("Starting resources, since all children are now up.")
                     createResourcesAndStart()
                 }
-                childrenWithStatus.any { it.second == State.StoppedDueToError || it.second == State.StoppedDueToBadConfig } -> {
+                children.any { latestChildStateMap[it] == State.StoppedDueToError || latestChildStateMap[it] == State.StoppedDueToBadConfig } -> {
                     logger.info("Stopping child ${child.name} that went up, since there are other children that are in errored state.")
                     child.stop()
                 }
                 // any children that are not running have been stopped by the parent.
-                childrenWithStatus.all { it.second == State.Started || it.second == State.StoppedByParent } -> {
+                children.all { latestChildStateMap[it] == State.Started || latestChildStateMap[it] == State.StoppedByParent } -> {
                     logger.info("Starting other children that had been stopped by me.")
                     startDependenciesIfNeeded()
                 }
@@ -337,11 +337,11 @@ class DominoTile(
     }
 
     private fun startDependenciesIfNeeded() {
-        registrations.values.map { it.first }.forEach {
+        children.forEach {
             logger.info("Starting child ${it.name}")
             it.start()
         }
-        if (registrations.all { it.value.second == State.Started }) {
+        if (children.all { latestChildStateMap[it] == State.Started }) {
             @Suppress("TooGenericExceptionCaught")
             try {
                 createResourcesAndStart()
@@ -351,10 +351,10 @@ class DominoTile(
         } else {
             logger.info(
                 "Not all child tiles started yet.\n " +
-                    "Started Children = ${registrations.filter{ it.value.second == State.Started }
-                        .map { "(${it.value.first.name}, ${it.value.second})" }.joinToString()}.\n " +
-                    "Not Started Children = ${registrations.filter { it.value.second != State.Started }
-                        .map { "(${it.value.first.name}, ${it.value.second})" }.joinToString()}."
+                    "Started Children = ${children.filter{ latestChildStateMap[it] == State.Started }
+                        .map { "(${it.name}, ${latestChildStateMap[it]})" }.joinToString()}.\n " +
+                    "Not Started Children = ${children.filter { latestChildStateMap[it] != State.Started }
+                        .map { "(${it.name}, ${latestChildStateMap[it]})" }.joinToString()}."
             )
         }
     }
@@ -409,10 +409,10 @@ class DominoTile(
         }
         configReady = false
 
-        registrations.values.forEach {
-            if (!(it.second == State.StoppedDueToError || it.second == State.StoppedDueToBadConfig )) {
-                logger.info("Stopping child ${it.first.name}")
-                it.first.stop()
+        children.forEach {
+            if (!(latestChildStateMap[it] == State.StoppedDueToError || latestChildStateMap[it] == State.StoppedDueToBadConfig )) {
+                logger.info("Stopping child ${it.name}")
+                it.stop()
             }
         }
     }
@@ -426,7 +426,7 @@ class DominoTile(
     }
 
     override fun close() {
-        registrations.forEach {
+        registrationToChildMap.forEach {
             it.key.close()
         }
         configRegistration?.close()
@@ -445,12 +445,12 @@ class DominoTile(
                 logger.debug("Could not close coordinator", e)
             }
         }
-        registrations.values.forEach {
+        children.forEach {
             @Suppress("TooGenericExceptionCaught")
             try {
-                it.first.close()
+                it.close()
             } catch (e: Throwable) {
-                logger.warn("Could not close ${it.first.name}", e)
+                logger.warn("Could not close ${it.name}", e)
             }
         }
     }
