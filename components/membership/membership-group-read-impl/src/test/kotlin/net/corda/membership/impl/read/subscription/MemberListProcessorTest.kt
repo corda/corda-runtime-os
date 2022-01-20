@@ -173,7 +173,7 @@ class MemberListProcessorTest {
     }
 
     @Test
-    fun `Value class is SignedMemberInfo`() {
+    fun `Value class is PersistentMemberInfo`() {
         assertEquals(PersistentMemberInfo::class.java, memberListProcessor.valueClass)
     }
 
