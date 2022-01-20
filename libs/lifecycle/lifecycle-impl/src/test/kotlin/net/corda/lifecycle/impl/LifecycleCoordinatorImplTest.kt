@@ -1037,26 +1037,37 @@ internal class LifecycleCoordinatorImplTest {
 
     @Test
     fun `custom events are sent to registered coordinators`() {
+        val startLatch = CountDownLatch(1)
         class CustomEventData(val value: String)
-        val receivedEvents = mutableListOf<LifecycleEvent>()
+        val receivedCustomEvents = mutableListOf<CustomEvent>()
 
-        val trackedCoordinator = createCoordinator { _, _ -> }
-        val trackingCoordinator = createCoordinator { event, _ ->
-            receivedEvents.add(event)
+        val trackedCoordinator = createCoordinator { event, _ ->
+            when(event) {
+                is StartEvent -> {
+                    startLatch.countDown()
+                }
+            }
         }
-        trackedCoordinator.start()
-        trackingCoordinator.start()
+        val trackingCoordinator = createCoordinator { event, _ ->
+            when(event) {
+                is CustomEvent -> {
+                    receivedCustomEvents.add(event)
+                }
+            }
+        }
 
         trackingCoordinator.followStatusChanges(setOf(trackedCoordinator))
+        trackedCoordinator.start()
+        trackingCoordinator.start()
+        startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS)
 
         val eventData = "hello world"
+        trackedCoordinator.postCustomEventToFollowers(CustomEventData(eventData))
         eventually {
-            trackedCoordinator.postCustomEventToFollowers(CustomEventData(eventData))
-
-            val customEvents = receivedEvents.filterIsInstance<CustomEvent>()
-                .map { it.payload }.filterIsInstance<CustomEventData>()
+            val customEvents = receivedCustomEvents.map { it.payload }
+                .filterIsInstance<CustomEventData>()
                 .filter { it.value == eventData }
-            assertThat(customEvents).hasSizeGreaterThan(1)
+            assertThat(customEvents).hasSize(1)
         }
     }
 
