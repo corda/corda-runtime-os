@@ -1,5 +1,6 @@
 package net.corda.flow.mapper.impl
 
+import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartRPCFlow
 import net.corda.data.flow.event.mapper.ExecuteCleanup
@@ -24,7 +25,8 @@ class FlowMapperEventExecutorFactoryImplTest {
 
     @Test
     fun testSessionEventExecutor() {
-        val executor = executorFactoryImpl.create("", FlowMapperEvent(SessionEvent()), null)
+        val executor = executorFactoryImpl.create("", FlowMapperEvent(SessionEvent(MessageDirection.INBOUND, 1, "", 1, null, )),
+            null)
         assertThat(executor::class).isEqualTo(SessionEventExecutor::class)
     }
 
