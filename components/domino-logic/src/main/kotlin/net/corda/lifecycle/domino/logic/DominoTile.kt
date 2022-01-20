@@ -322,7 +322,8 @@ class DominoTile(
                     logger.info("Starting resources, since all children are now up.")
                     createResourcesAndStart()
                 }
-                children.any { latestChildStateMap[it] == State.StoppedDueToError || latestChildStateMap[it] == State.StoppedDueToBadConfig } -> {
+                children.any { latestChildStateMap[it] == State.StoppedDueToError ||
+                               latestChildStateMap[it] == State.StoppedDueToBadConfig } -> {
                     logger.info("Stopping child ${child.name} that went up, since there are other children that are in errored state.")
                     child.stop()
                 }
