@@ -95,8 +95,7 @@ class DominoTile(
     private val resources = ResourcesHolder()
     private val configResources = ResourcesHolder()
 
-    @Volatile
-    private var registrations: MutableMap<RegistrationHandle, Pair<DominoTile, State>> = children.map {
+    private val registrations: MutableMap<RegistrationHandle, Pair<DominoTile, State>> = children.map {
         val dominoTileName = it.name
         coordinator.followStatusChangesByName(setOf(dominoTileName)) to Pair(it, it.state)
     }.toMap().toMutableMap()
@@ -164,7 +163,7 @@ class DominoTile(
                 status?.let { coordinator.updateStatus(it) }
                 coordinator.postCustomEventToFollowers(StatusChangeEvent(oldState, newState))
             }
-            logger.info("State of $name updated from $oldState to $newState")
+            logger.info("State updated from $oldState to $newState")
         }
     }
 
@@ -194,8 +193,8 @@ class DominoTile(
                     when (state) {
                         State.Created, State.StoppedByParent -> startDependenciesIfNeeded()
                         State.Started -> {} // Do nothing
-                        State.StoppedDueToError -> logger.warn("Can not start $name, it was stopped due to an error")
-                        State.StoppedDueToBadConfig -> logger.warn("Can not start $name, it was stopped due to bad config")
+                        State.StoppedDueToError -> logger.warn("Can not start, since currently being stopped due to an error")
+                        State.StoppedDueToBadConfig -> logger.warn("Can not start, since currently being stopped due to bad config")
                     }
                 }
                 is RegistrationStatusChangeEvent -> {
@@ -231,7 +230,7 @@ class DominoTile(
                     resourcesReady = true
                     when (state) {
                         State.StoppedDueToBadConfig, State.Created, State.StoppedByParent -> {
-                            logger.info("Resources ready for $name.")
+                            logger.info("Resources ready.")
                             setStartedIfCan()
                         }
                         State.StoppedDueToError, State.Started -> {} // Do nothing
@@ -243,23 +242,23 @@ class DominoTile(
                             configReady = true
                             when (state) {
                                 State.StoppedDueToBadConfig -> {
-                                    logger.info("Config applied successfully for $name.")
+                                    logger.info("Config applied successfully.")
                                     startDependenciesIfNeeded()
                                 }
                                 State.Created, State.StoppedByParent -> {
-                                    logger.info("Config applied successfully for $name.")
+                                    logger.info("Config applied successfully.")
                                     setStartedIfCan()
                                 }
                                 State.StoppedDueToError, State.Started -> {} // Do nothing
                             }
                         }
                         is ConfigUpdateResult.Error -> {
-                            logger.warn("Config error for $name. ${event.configUpdateResult.e}")
+                            logger.warn("Config error ${event.configUpdateResult.e}")
                             stopTile(false)
                             updateState(State.StoppedDueToBadConfig)
                         }
                         ConfigUpdateResult.NoUpdate -> {
-                            logger.info("Config applied with no update for $name.")
+                            logger.info("Config applied with no update.")
                         }
                     }
                 }
@@ -288,12 +287,12 @@ class DominoTile(
             configApplied(ConfigUpdateResult.Error(e))
             return
         }
-        logger.info("Got new configuration for $name")
+        logger.info("Got new configuration")
         if (newConfiguration == configurationChangeHandler.lastConfiguration) {
-            logger.info("Configuration same with previous for $name, so not applying it.")
+            logger.info("Configuration same with previous, so not applying it.")
             configApplied(ConfigUpdateResult.NoUpdate)
         } else {
-            logger.info("Applying new configuration for $name")
+            logger.info("Applying new configuration")
             val future = configurationChangeHandler.applyNewConfiguration(
                 newConfiguration,
                 configurationChangeHandler.lastConfiguration,
@@ -311,7 +310,7 @@ class DominoTile(
     }
 
     private fun gotError(cause: Throwable) {
-        logger.warn("Got error in $name", cause)
+        logger.warn("Got error", cause)
         coordinator.postEvent(StopTile(true))
     }
 
@@ -383,7 +382,7 @@ class DominoTile(
         }
 
         if (configRegistration == null && configurationChangeHandler != null) {
-            logger.info("Registering for Config Updates $name.")
+            logger.info("Registering for Config updates.")
             configRegistration =
                 configurationChangeHandler.configurationReaderService
                     .registerForUpdates(
@@ -420,7 +419,7 @@ class DominoTile(
 
     private fun stopListeningForConfig() {
         configRegistration?.close()
-        if (configRegistration != null) logger.info("Unregistered for Config Updates $name.")
+        if (configRegistration != null) logger.info("Unregistered for Config updates.")
         configurationChangeHandler?.lastConfiguration = null
         configRegistration = null
         configurationChangeHandler?.lastConfiguration = null
