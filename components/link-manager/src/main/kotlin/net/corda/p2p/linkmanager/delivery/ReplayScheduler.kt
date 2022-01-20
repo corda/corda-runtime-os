@@ -98,11 +98,10 @@ class ReplayScheduler<M>(
                 return configUpdateResult
             }
             replaySchedulerConfig.set(newConfiguration)
-            if (oldConfiguration?.maxReplayingMessages?.let { it < newConfiguration.maxReplayingMessages} == true) {
-                queuedMessagesPerSessionKey.forEach { (sessionKey, queuedMessages) ->
-                    for (i in 0 until newConfiguration.maxReplayingMessages - oldConfiguration.maxReplayingMessages) {
-                        queuedMessages.poll()?.let { addForReplay(it.originalAttemptTimestamp, it.uniqueId, it.message, sessionKey) }
-                    }
+            val extraMessages = oldConfiguration?.maxReplayingMessages?.let {newConfiguration.maxReplayingMessages - it} ?: 0
+            queuedMessagesPerSessionKey.forEach { (sessionKey, queuedMessages) ->
+                for (i in 0 until extraMessages) {
+                    queuedMessages.poll()?.let { addForReplay(it.originalAttemptTimestamp, it.uniqueId, it.message, sessionKey) }
                 }
             }
             configUpdateResult.complete(Unit)
