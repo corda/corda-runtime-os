@@ -33,7 +33,7 @@ class FingerPrinterTestingTests {
     }
 
     @Test
-	fun testingTest() {
+    fun testingTest() {
         val fpt = FingerPrinterTesting()
         val descriptorBasedSerializerRegistry = DefaultDescriptorBasedSerializerRegistry()
         val customSerializerRegistry: CustomSerializerRegistry = CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry)
@@ -46,7 +46,7 @@ class FingerPrinterTestingTests {
     }
 
     @Test
-	fun worksAsReplacement() {
+    fun worksAsReplacement() {
         @CordaSerializable
         data class C(val a: Int, val b: Long)
 
