@@ -11,11 +11,13 @@ import net.corda.v5.base.util.debug
 import java.time.Instant
 
 /**
- * Generate a [SessionAck] for the received event.
+ * Process a [SessionAck] received.
+ * Remove the message from undelivered sent events for the sequence number received in the ack.
  * If the current session state has a status of WAIT_FOR_FINAL_ACK then this is the final ACK of the session close message
  * and so the session can be set to CLOSED.
+ *
  */
-class SessionAckProcessor(
+class SessionAckProcessorReceived(
     private val flowKey: FlowKey,
     private val sessionState: SessionState?,
     private val sessionId: String,
