@@ -116,15 +116,14 @@ internal fun Type.isSubClassOf(type: Type): Boolean {
 
 fun requireCordaSerializable(type: Type) {
     // See CORDA-2782 for explanation of the special exemption made for Comparable
-    if (!isWhitelisted(type.asClass()) && type.asClass() != java.lang.Comparable::class.java) {
+    if (!hasCordaSerializable(type.asClass()) && type.asClass() != java.lang.Comparable::class.java) {
         throw AMQPNotSerializableException(
                 type,
                 "Class \"$type\" is not annotated with @CordaSerializable.")
     }
 }
 
-fun isWhitelisted(clazz: Class<*>) = hasCordaSerializable(clazz)
-fun isNotWhitelisted(clazz: Class<*>) = !isWhitelisted(clazz)
+fun isNotWhitelisted(clazz: Class<*>) = !hasCordaSerializable(clazz)
 
 /**
  * Check the given [Class] has the [CordaSerializable] annotation, either directly or inherited from any of its super
