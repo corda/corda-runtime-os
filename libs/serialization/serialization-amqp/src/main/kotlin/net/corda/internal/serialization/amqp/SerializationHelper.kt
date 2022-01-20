@@ -114,7 +114,7 @@ internal fun Type.isSubClassOf(type: Type): Boolean {
     return TypeToken.of(this).isSubtypeOf(TypeToken.of(type).rawType)
 }
 
-fun requireWhitelisted(type: Type) {
+fun requireCordaSerializable(type: Type) {
     // See CORDA-2782 for explanation of the special exemption made for Comparable
     if (!isWhitelisted(type.asClass()) && type.asClass() != java.lang.Comparable::class.java) {
         throw AMQPNotSerializableException(

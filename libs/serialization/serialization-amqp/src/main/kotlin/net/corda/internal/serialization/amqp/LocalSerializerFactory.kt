@@ -207,13 +207,13 @@ class DefaultLocalSerializerFactory(
 
     private fun makeDeclaredEnum(localTypeInformation: LocalTypeInformation, declaredType: Type, declaredClass: Class<*>): AMQPSerializer<Any> =
             makeAndCache(localTypeInformation) {
-                requireWhitelisted(declaredType)
+                requireCordaSerializable(declaredType)
                 EnumSerializer(declaredType, declaredClass, this)
             }
 
     private fun makeActualEnum(localTypeInformation: LocalTypeInformation, declaredType: Type, declaredClass: Class<*>): AMQPSerializer<Any> =
             makeAndCache(localTypeInformation) {
-                requireWhitelisted(declaredType)
+                requireCordaSerializable(declaredType)
                 EnumSerializer(declaredType, declaredClass, this)
             }
 
@@ -297,10 +297,10 @@ class DefaultLocalSerializerFactory(
         else -> {
             val singleton = clazz.kotlinObjectInstance
             if (singleton != null) {
-                requireWhitelisted(clazz)
+                requireCordaSerializable(clazz)
                 SingletonSerializer(clazz, singleton, this)
             } else {
-                requireWhitelisted(type)
+                requireCordaSerializable(type)
                 ObjectSerializer.make(typeInformation, this)
             }
         }
