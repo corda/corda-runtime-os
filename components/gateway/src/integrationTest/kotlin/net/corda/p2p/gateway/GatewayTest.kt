@@ -589,9 +589,9 @@ class GatewayTest : TestBase() {
                 )
                 eventually(duration = 20.seconds) {
                     assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.StoppedDueToError)
-                    assertThrows<ConnectException> {
-                        Socket(host, 10005).close()
-                    }
+                }
+                assertThrows<ConnectException> {
+                    Socket(host, 10005).close()
                 }
 
                 logger.info("Publishing good config again")

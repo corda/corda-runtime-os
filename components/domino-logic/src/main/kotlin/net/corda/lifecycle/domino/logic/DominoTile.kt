@@ -217,7 +217,7 @@ class DominoTile(
                         when(statusChangeEvent.newState) {
                             State.Started -> {
                                 logger.info("Status change: child ${child.name} went up.")
-                                handleLifecycleUp(child)
+                                handleChildStarted(child)
                             }
                             State.StoppedDueToBadConfig, State.StoppedDueToError -> {
                                 logger.info("Status change: child ${child.name} went down (${statusChangeEvent.newState}).")
@@ -315,7 +315,7 @@ class DominoTile(
         coordinator.postEvent(StopTile(true))
     }
 
-    private fun handleLifecycleUp(child: DominoTile) {
+    private fun handleChildStarted(child: DominoTile) {
         if (!isRunning) {
             when {
                 children.all { latestChildStateMap[it] == State.Started } -> {
