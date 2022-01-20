@@ -10,7 +10,7 @@ class Files {
             return if(System.getenv("CORDA_CLI_HOME_DIR").isNullOrEmpty()){
                 Paths.get(System.getProperty("user.home"), "/.corda/cli/").toFile()
             } else {
-                Paths.get(System.getenv("CORDA_CLI_HOME_DIR"), "/.corda/cli/").toFile()
+                Paths.get(System.getenv("CORDA_CLI_HOME_DIR")).toFile()
             }
         }
 
