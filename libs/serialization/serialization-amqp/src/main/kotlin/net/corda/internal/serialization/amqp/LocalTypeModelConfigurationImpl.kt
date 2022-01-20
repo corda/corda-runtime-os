@@ -16,9 +16,6 @@ import java.util.Date
 import java.util.EnumSet
 import java.util.UUID
 
-/**
- * [LocalTypeModelConfiguration] implementation
- */
 class LocalTypeModelConfigurationImpl(
     private val customSerializerRegistry: CustomSerializerRegistry,
     override val baseTypes: BaseLocalTypes
