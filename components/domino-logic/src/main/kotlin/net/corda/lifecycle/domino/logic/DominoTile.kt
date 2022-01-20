@@ -2,7 +2,6 @@ package net.corda.lifecycle.domino.logic
 
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationHandler
-import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.Lifecycle
@@ -105,8 +104,6 @@ class DominoTile(
     private var resourcesReady = false
     @Volatile
     private var configRegistration: AutoCloseable? = null
-    @Volatile
-    private var configUpRegistrationHandle: RegistrationHandle? = null
 
     private sealed class ConfigUpdateResult {
         object Success : ConfigUpdateResult()
@@ -195,12 +192,8 @@ class DominoTile(
                 }
                 is RegistrationStatusChangeEvent -> {
                     if (event.status == LifecycleStatus.UP) {
-                        if (event.registration == configUpRegistrationHandle) {
-                            registerToConfig()
-                        } else {
-                            logger.info("RegistrationStatusChangeEvent $name going up.")
-                            handleLifecycleUp()
-                        }
+                        logger.info("RegistrationStatusChangeEvent $name going up.")
+                        handleLifecycleUp()
                     } else {
                         val errorKids = children.filter { it.state == State.StoppedDueToError || it.state == State.StoppedDueToBadConfig }
                         if (errorKids.isEmpty()) {
@@ -354,27 +347,6 @@ class DominoTile(
         return createResources == null || resourcesReady
     }
 
-    private fun registerToConfig() {
-        if (configRegistration == null && configurationChangeHandler != null) {
-            if (!configurationChangeHandler.configurationReaderService.isRunning) {
-                val registerName = LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
-                configUpRegistrationHandle = coordinator.followStatusChangesByName(setOf(registerName))
-            }
-
-            if (configurationChangeHandler.configurationReaderService.isRunning) {
-                logger.info("Registering for Config Updates $name.")
-                configRegistration =
-                    configurationChangeHandler.configurationReaderService
-                        .registerForUpdates(
-                            Handler(configurationChangeHandler)
-                        )
-
-                configUpRegistrationHandle?.close()
-                configUpRegistrationHandle = null
-            }
-        }
-    }
-
     private fun createResourcesAndStart() {
         resources.close()
 
@@ -386,9 +358,14 @@ class DominoTile(
                 resourcesStarted()
             }
         }
-
-        registerToConfig()
-
+        if (configRegistration == null && configurationChangeHandler != null) {
+            logger.info("Registering for Config Updates $name.")
+            configRegistration =
+                configurationChangeHandler.configurationReaderService
+                    .registerForUpdates(
+                        Handler(configurationChangeHandler)
+                    )
+        }
         setStartedIfCan()
     }
 
@@ -420,9 +397,6 @@ class DominoTile(
     }
 
     override fun close() {
-        configUpRegistrationHandle?.close()
-        configUpRegistrationHandle = null
-
         registrations?.forEach {
             it.close()
         }

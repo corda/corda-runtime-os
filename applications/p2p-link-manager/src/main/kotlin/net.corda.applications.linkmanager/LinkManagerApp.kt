@@ -50,6 +50,9 @@ class LinkManagerApp @Activate constructor(
             val secretsConfig = ConfigFactory.empty()
             val bootConfig = SmartConfigFactory.create(secretsConfig).create(arguments.kafkaNodeConfiguration)
             configurationReadService.bootstrapConfig(bootConfig)
+            while (!configurationReadService.isRunning) {
+                Thread.sleep(100)
+            }
 
             consoleLogger.info("Starting link manager")
             linkManager = LinkManager(

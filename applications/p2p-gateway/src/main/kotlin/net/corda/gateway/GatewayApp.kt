@@ -48,6 +48,9 @@ class GatewayApp @Activate constructor(
             val bootConfig = SmartConfigFactory.create(secretsConfig).create(arguments.kafkaNodeConfiguration)
             configurationReadService.start()
             configurationReadService.bootstrapConfig(bootConfig)
+            while (!configurationReadService.isRunning) {
+                Thread.sleep(100)
+            }
 
             consoleLogger.info("Starting gateway")
             gateway = Gateway(
