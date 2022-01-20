@@ -33,7 +33,6 @@ class ExamplePluginTwoWrapperTest {
     fun testSubCommand() {
 
         val app = ExamplePluginTwoWrapper.ExamplePluginTwo()
-
         val outText = tapSystemOutNormalized {
             CommandLine(
                 app
