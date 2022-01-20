@@ -14,6 +14,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.sandbox.service.SandboxService
 import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
@@ -74,7 +75,7 @@ class FlowService @Activate constructor(
             }
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
-                    configHandle = configurationReadService.registerComponent(
+                    configHandle = configurationReadService.registerComponentForUpdates(
                         coordinator,
                         setOf(BOOT_CONFIG, FLOW_CONFIG, MESSAGING_CONFIG)
                     )
@@ -84,10 +85,10 @@ class FlowService @Activate constructor(
             }
             is ConfigChangedEvent -> {
                 executor?.stop()
+                val messagingConfig = event.config.toMessagingConfig()
                 val newExecutor = FlowExecutor(
                     coordinatorFactory,
-                    event.config[BOOT_CONFIG]!!.withFallback(event.config[MESSAGING_CONFIG])
-                        .withFallback(event.config[FLOW_CONFIG]),
+                    messagingConfig,
                     subscriptionFactory,
                     flowEventProcessorFactory
                 )

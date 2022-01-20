@@ -37,7 +37,7 @@ class ConfigurationReadServiceImpl @Activate constructor(
         lifecycleCoordinator.postEvent(BootstrapConfigProvided(config))
     }
 
-    override fun registerComponent(coordinator: LifecycleCoordinator, requiredKeys: Set<String>): AutoCloseable {
+    override fun registerComponentForUpdates(coordinator: LifecycleCoordinator, requiredKeys: Set<String>): AutoCloseable {
         val handler = ComponentConfigHandler(coordinator, requiredKeys)
         return registerForUpdates(handler)
     }

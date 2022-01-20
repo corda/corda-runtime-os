@@ -17,6 +17,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.StateAndEventSubscription
@@ -74,7 +75,7 @@ class FlowMapperService @Activate constructor(
             }
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
-                    configHandle = configurationReadService.registerComponent(
+                    configHandle = configurationReadService.registerComponentForUpdates(
                         coordinator,
                         setOf(BOOT_CONFIG, FLOW_CONFIG, MESSAGING_CONFIG)
                     )
@@ -99,25 +100,25 @@ class FlowMapperService @Activate constructor(
     }
 
     /**
-     * Recreate the FLow Mapper service in response to new config [event]
+     * Recreate the Flow Mapper service in response to new config [event]
      */
     private fun restartFlowMapperService(event: ConfigChangedEvent) {
-        val config = event.config[BOOT_CONFIG]!!.withFallback(event.config[MESSAGING_CONFIG])
-            .withFallback(event.config[FLOW_CONFIG])
-        val consumerGroup = config.getString(CONSUMER_GROUP)
+        val messagingConfig = event.config.toMessagingConfig()
+        val flowConfig = event.config[FLOW_CONFIG]!!
+        val consumerGroup = flowConfig.getString(CONSUMER_GROUP)
 
         scheduledTaskState?.close()
         stateAndEventSub?.close()
 
         scheduledTaskState = ScheduledTaskState(
             Executors.newSingleThreadScheduledExecutor(),
-            publisherFactory.createPublisher(PublisherConfig("$consumerGroup-cleanup-publisher"), config),
+            publisherFactory.createPublisher(PublisherConfig("$consumerGroup-cleanup-publisher"), messagingConfig),
             mutableMapOf()
         )
         stateAndEventSub = subscriptionFactory.createStateAndEventSubscription(
-            SubscriptionConfig(consumerGroup, FLOW_MAPPER_EVENT_TOPIC, config.getInt(INSTANCE_ID)),
+            SubscriptionConfig(consumerGroup, FLOW_MAPPER_EVENT_TOPIC, messagingConfig.getInt(INSTANCE_ID)),
             FlowMapperMessageProcessor(flowMapperEventExecutorFactory),
-            config,
+            messagingConfig,
             FlowMapperListener(scheduledTaskState!!)
         )
         stateAndEventSub?.start()
