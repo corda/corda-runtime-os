@@ -176,7 +176,7 @@ internal class HttpRpcServerInternal(
         val principal = authorizingSubject.principal
         log.trace { "Authorize \"$principal\" for \"$fullPath\"." }
         if (!authorizingSubject.isPermitted(fullPath))
-            throw ForbiddenResponse("Method '$fullPath' not allowed for '$principal'.")
+            throw ForbiddenResponse("User not authorized.")
         log.trace { "Authorize \"$principal\" for \"$fullPath\" completed." }
     }
 
@@ -263,41 +263,13 @@ internal class HttpRpcServerInternal(
                 }
                 log.debug { "Invoke method \"${this.method.method.name}\" for route info completed." }
             } catch (e: Exception) {
-                """Error during invoking method "${this.method.method.name}": ${e.rootMessage ?: e.rootCause}""".let {
+                """Error during invoking path "${this.fullPath}": ${e.rootMessage ?: e.rootCause}""".let {
                     log.error(it, e)
-                    mapToResponse(it, e)
                 }
             }
         }
     }
 
-    @Suppress("ThrowsCount", "ComplexMethod")
-    private fun mapToResponse(message: String, e: Exception) {
-        val messageEscaped = message.replace("\n", " ")
-        when (e) {
-            is HttpResponseException -> throw e
-
-            is BadRpcStartFlowRequestException -> throw BadRequestResponse(messageEscaped)
-            is JsonProcessingException -> throw BadRequestResponse(messageEscaped)
-//TODO restore these when possible
-//            is StartFlowPermissionException -> throw ForbiddenResponse(messageEscaped)
-//            is FlowNotFoundException -> throw NotFoundResponse(messageEscaped)
-            is MissingParameterException -> throw BadRequestResponse(messageEscaped)
-//            is InvalidCordaX500NameException -> throw BadRequestResponse(messageEscaped)
-//            is MemberNotFoundException -> throw NotFoundResponse(messageEscaped)
-
-            is ResourceNotFoundException -> throw NotFoundResponse(e.message)
-            is HttpApiException -> throw HttpResponseException(e.statusCode ?: 500, e.message)
-            else -> {
-                with(mutableMapOf<String, String>()) {
-                    this["exception"] = e.toString()
-                    this["rootCause"] = e.rootCause.toString()
-                    e.rootMessage?.let { this["rootMessage"] = it }
-                    throw HttpResponseException(HttpStatus.INTERNAL_SERVER_ERROR_500, messageEscaped, this)
-                }
-            }
-        }
-    }
 
     fun start() {
         val existingSystemErrStream = System.err

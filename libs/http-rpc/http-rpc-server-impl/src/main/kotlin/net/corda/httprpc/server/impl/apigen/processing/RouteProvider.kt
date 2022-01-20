@@ -115,7 +115,7 @@ internal class RouteInfo(
 
     private fun generateFullPath(resourcePath: String, endpointPath: String): String {
         log.trace { "Generate full path for resource path: \"$resourcePath\", endpoint path: \"$endpointPath\"." }
-        return "/${basePath}/v${apiVersion}/${resourcePath}/${endpointPath}".toLowerCase().also {
+        return "${basePath}/v${apiVersion}/${resourcePath}/${endpointPath}".toLowerCase().also {
             log.trace { "Full path $it generated." }
         }
     }

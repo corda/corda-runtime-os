@@ -47,7 +47,7 @@ class UserWriterImpl(
 
             val user = validateAndGetUniqueUser(entityManager, request.loginName)
             val role = validateAndGetUniqueRole(entityManager, request.roleId)
-            validateRoleNotAlreadyAssignedToUser(entityManager, user, request.roleId)
+            validateRoleNotAlreadyAssignedToUser(user, request.roleId)
 
             val resultUser = persistUserRoleAssociation(entityManager, requestUserId, user, role)
 
@@ -60,7 +60,7 @@ class UserWriterImpl(
         return entityManagerFactory.transaction { entityManager ->
 
             val user = validateAndGetUniqueUser(entityManager, request.loginName)
-            val association = validateAndGetRoleAssociatedWithUser(entityManager, user, request.roleId)
+            val association = validateAndGetRoleAssociatedWithUser(user, request.roleId)
 
             val resultUser = removeUserRoleAssociation(entityManager, requestUserId, user, request.roleId, association)
 
@@ -75,7 +75,6 @@ class UserWriterImpl(
             .singleResult as Long
 
         require(count == 0L) {
-            entityManager.transaction.setRollbackOnly()
             "User with login '${request.loginName}' already exists."
         }
     }
@@ -83,7 +82,6 @@ class UserWriterImpl(
     private fun validateAndGetOptionalParentGroup(request: CreateUserRequest, entityManager: EntityManager): Group? {
         val parentGroup = if (request.parentGroupId != null) {
             requireNotNull(entityManager.find(Group::class.java, request.parentGroupId)) {
-                entityManager.transaction.setRollbackOnly()
                 "The specified parent group '${request.parentGroupId}' does not exist."
             }
         } else {
@@ -99,7 +97,6 @@ class UserWriterImpl(
             .resultList
 
         require(users.size == 1) {
-            entityManager.transaction.setRollbackOnly()
             "User '$loginName' does not exist."
         }
 
@@ -110,23 +107,20 @@ class UserWriterImpl(
         val role = entityManager.find(Role::class.java, roleId)
 
         requireNotNull(role) {
-            entityManager.transaction.setRollbackOnly()
             "Role '$roleId' does not exist."
         }
 
         return role
     }
 
-    private fun validateRoleNotAlreadyAssignedToUser(entityManager: EntityManager, user: User, roleId: String) {
+    private fun validateRoleNotAlreadyAssignedToUser(user: User, roleId: String) {
         require(user.roleUserAssociations.none { it.role.id == roleId }) {
-            entityManager.transaction.setRollbackOnly()
             "Role '$roleId' is already associated with User '${user.loginName}'."
         }
     }
 
-    private fun validateAndGetRoleAssociatedWithUser(entityManager: EntityManager, user: User, roleId: String): RoleUserAssociation {
+    private fun validateAndGetRoleAssociatedWithUser(user: User, roleId: String): RoleUserAssociation {
         return requireNotNull(user.roleUserAssociations.singleOrNull { it.role.id == roleId }) {
-            entityManager.transaction.setRollbackOnly()
             "Role '$roleId' is not associated with User '${user.loginName}'."
         }
     }

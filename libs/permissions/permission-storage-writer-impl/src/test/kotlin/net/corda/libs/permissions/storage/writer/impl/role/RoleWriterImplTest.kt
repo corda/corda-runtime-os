@@ -54,7 +54,6 @@ class RoleWriterImplTest {
         whenever(entityManager.transaction).thenReturn(entityTransaction)
         whenever(entityManagerFactory.createEntityManager()).thenReturn(entityManager)
         val rollBack = AtomicBoolean(false)
-        whenever(entityTransaction.setRollbackOnly()).then { rollBack.set(true) }
         whenever(entityTransaction.rollbackOnly).then { rollBack.get() }
     }
 

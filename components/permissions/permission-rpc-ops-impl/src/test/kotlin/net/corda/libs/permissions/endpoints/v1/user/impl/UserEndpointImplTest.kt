@@ -22,6 +22,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
+import net.corda.httprpc.ResponseCode
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
 import net.corda.libs.permissions.manager.response.RoleAssociationResponseDto
@@ -128,7 +129,7 @@ internal class UserEndpointImplTest {
         val e = assertThrows<ResourceNotFoundException> {
             endpoint.getUser("abc")
         }
-        assertEquals(null, e.statusCode, "Resource not found exception should not override any status codes.")
+        assertEquals(ResponseCode.RESOURCE_NOT_FOUND, e.responseCode, "Resource not found exception should have correct response code.")
         assertEquals("User abc not found.", e.message)
         assertEquals("abc", getUserRequestDtoCapture.firstValue.loginName)
     }
