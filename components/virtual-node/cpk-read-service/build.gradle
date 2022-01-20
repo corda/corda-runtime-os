@@ -1,0 +1,15 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+description "CPK Read service"
+
+dependencies {
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    compileOnly 'org.osgi:osgi.annotation'
+
+    api group: 'net.corda', name: 'corda-packaging'
+    api project(":libs:lifecycle:lifecycle")
+}
