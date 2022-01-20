@@ -15,7 +15,7 @@ import net.corda.v5.membership.identity.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoListener
-import net.corda.virtualnode.read.VirtualNodeInfoReaderComponent
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
@@ -73,7 +73,7 @@ class GroupPolicyProviderImplTest {
 
     var virtualNodeListener: VirtualNodeInfoListener? = null
 
-    val virtualNodeInfoReader: VirtualNodeInfoReaderComponent = mock<VirtualNodeInfoReaderComponent>().apply {
+    val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock<VirtualNodeInfoReadService>().apply {
         doReturn(VirtualNodeInfo(holdingIdentity1, cpiIdentifier1)).whenever(this).get(eq(holdingIdentity1))
         doReturn(VirtualNodeInfo(holdingIdentity2, cpiIdentifier2)).whenever(this).get(eq(holdingIdentity2))
         doReturn(VirtualNodeInfo(holdingIdentity3, cpiIdentifier3)).whenever(this).get(eq(holdingIdentity3))
@@ -110,7 +110,7 @@ class GroupPolicyProviderImplTest {
     @BeforeEach
     fun setUp() {
         groupPolicyProvider = GroupPolicyProviderImpl(
-            virtualNodeInfoReader,
+            virtualNodeInfoReadService,
             cpiInfoReader,
             lifecycleCoordinatorFactory
         )

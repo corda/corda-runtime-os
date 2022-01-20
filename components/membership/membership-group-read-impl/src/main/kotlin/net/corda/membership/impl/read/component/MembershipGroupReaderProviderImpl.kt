@@ -16,7 +16,7 @@ import net.corda.membership.read.MembershipGroupReader
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.read.VirtualNodeInfoReaderComponent
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -34,8 +34,8 @@ import org.osgi.service.component.annotations.Reference
  */
 @Component(service = [MembershipGroupReaderProvider::class])
 class MembershipGroupReaderProviderImpl @Activate constructor(
-    @Reference(service = VirtualNodeInfoReaderComponent::class)
-    val virtualNodeInfoReader: VirtualNodeInfoReaderComponent,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = CpiInfoReadService::class)
     val cpiInfoReader: CpiInfoReadService,
     @Reference(service = ConfigurationReadService::class)

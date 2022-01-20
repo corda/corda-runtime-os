@@ -13,28 +13,28 @@ import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.common.ConfigChangedEvent
 import net.corda.virtualnode.impl.VirtualNodeInfoProcessor
 import net.corda.virtualnode.read.VirtualNodeInfoListener
-import net.corda.virtualnode.read.VirtualNodeInfoReader
-import net.corda.virtualnode.read.VirtualNodeInfoReaderComponent
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 
 /**
- * Virtual Node Info Service Component which implements [VirtualNodeInfoReader]
+ * Virtual Node Info Service Component which implements [VirtualNodeInfoReadService]
  *
  * Split into an event handler, a message processor, and this class, which contains the [LifecycleCoordinator]
  * for this component.
  */
-@Component(service = [VirtualNodeInfoReaderComponent::class])
-class VirtualNodeInfoReaderComponentImpl @Activate constructor(
+@Suppress("Unused")
+@Component(service = [VirtualNodeInfoReadService::class])
+class VirtualNodeInfoReadServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     configurationReadService: ConfigurationReadService,
     @Reference(service = SubscriptionFactory::class)
     subscriptionFactory: SubscriptionFactory
-) : VirtualNodeInfoReaderComponent {
+) : VirtualNodeInfoReadService {
     companion object {
         val log: Logger = contextLogger()
     }
@@ -58,7 +58,7 @@ class VirtualNodeInfoReaderComponentImpl @Activate constructor(
         this::onConfigChangeEvent
     )
 
-    private val coordinator = coordinatorFactory.createCoordinator<VirtualNodeInfoReader>(eventHandler)
+    private val coordinator = coordinatorFactory.createCoordinator<VirtualNodeInfoReadService>(eventHandler)
 
     /** Post a [ConfigChangedEvent]  */
     private fun onConfigChangeEvent(event: ConfigChangedEvent) = coordinator.postEvent(event)

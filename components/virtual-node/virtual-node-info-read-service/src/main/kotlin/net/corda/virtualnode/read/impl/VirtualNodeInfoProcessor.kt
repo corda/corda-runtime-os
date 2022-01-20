@@ -7,7 +7,7 @@ import net.corda.v5.base.util.trace
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoListener
-import net.corda.virtualnode.read.VirtualNodeInfoReader
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.read.impl.VirtualNodeInfoMap
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
@@ -21,14 +21,14 @@ import kotlin.concurrent.withLock
  *
  * This class listens and maintains a compacted queue of [HoldingIdentity] to [VirtualNodeInfo]
  *
- * It implements the [VirtualNodeInfoReader] interface that calls back with updates as well as allows
+ * It implements the [VirtualNodeInfoReadService] interface that calls back with updates as well as allows
  * the caller to directly query for [VirtualNodeInfo] by [HoldingIdentity] or 'short hash' of the [HoldingIdentity]
  * e.g. `123456ABCDEF`
  *
  * We use callback to indicate that we've received a snapshot and are 'ready'.
  */
 class VirtualNodeInfoProcessor(private val onStatusUpCallback: () -> Unit, private val onErrorCallback: () -> Unit) :
-    VirtualNodeInfoReader, AutoCloseable,
+    AutoCloseable,
     CompactedProcessor<net.corda.data.identity.HoldingIdentity, net.corda.data.virtualnode.VirtualNodeInfo> {
 
     companion object {
@@ -116,12 +116,12 @@ class VirtualNodeInfoProcessor(private val onStatusUpCallback: () -> Unit, priva
         listeners.forEach { it.value.onUpdate(setOf(newRecord.key.toCorda()), currentSnapshot) }
     }
 
-    override fun get(holdingIdentity: HoldingIdentity): VirtualNodeInfo? =
+    fun get(holdingIdentity: HoldingIdentity): VirtualNodeInfo? =
         virtualNodeInfoMap.get(holdingIdentity.toAvro())?.toCorda()
 
-    override fun getById(id: String): VirtualNodeInfo? = virtualNodeInfoMap.getById(id)?.toCorda()
+    fun getById(id: String): VirtualNodeInfo? = virtualNodeInfoMap.getById(id)?.toCorda()
 
-    override fun registerCallback(listener: VirtualNodeInfoListener): AutoCloseable {
+    fun registerCallback(listener: VirtualNodeInfoListener): AutoCloseable {
         lock.withLock {
             val subscription = ListenerSubscription(this)
             listeners[subscription] = listener

@@ -19,7 +19,7 @@ import net.corda.membership.impl.read.component.MembershipGroupReaderProviderImp
 import net.corda.membership.impl.read.lifecycle.MembershipGroupReadLifecycleHandler.Impl.MembershipGroupConfigurationHandler
 import net.corda.membership.impl.read.subscription.MembershipGroupReadSubscriptions
 import net.corda.membership.lifecycle.MembershipConfigReceived
-import net.corda.virtualnode.read.VirtualNodeInfoReaderComponent
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -39,7 +39,7 @@ class MembershipGroupReadLifecycleHandlerTest {
     val componentRegistrationHandle: RegistrationHandle = mock()
     val configRegistrationHandle: AutoCloseable = mock()
 
-    val virtualNodeInfoReader: VirtualNodeInfoReaderComponent = mock()
+    val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock()
     val cpiInfoReader: CpiInfoReadService = mock()
     val configurationReadService: ConfigurationReadService = mock<ConfigurationReadService>().apply {
         doReturn(configRegistrationHandle).whenever(this).registerForUpdates(any())
@@ -49,7 +49,7 @@ class MembershipGroupReadLifecycleHandlerTest {
         doReturn(readServiceCoordinator).whenever(this).createCoordinator(any(), any())
     }
     private val membershipGroupReadService: MembershipGroupReaderProviderImpl = MembershipGroupReaderProviderImpl(
-        virtualNodeInfoReader, cpiInfoReader, configurationReadService, mock(), coordinatorFactory
+        virtualNodeInfoReadService, cpiInfoReader, configurationReadService, mock(), coordinatorFactory
     )
     private val membershipGroupReadSubscriptions: MembershipGroupReadSubscriptions = mock()
 
@@ -74,7 +74,7 @@ class MembershipGroupReadLifecycleHandlerTest {
 
         verify(configurationReadService).start()
         verify(cpiInfoReader).start()
-        verify(virtualNodeInfoReader).start()
+        verify(virtualNodeInfoReadService).start()
         verify(membershipGroupReadCache).start()
 
         verify(coordinator).followStatusChangesByName(
@@ -82,7 +82,7 @@ class MembershipGroupReadLifecycleHandlerTest {
                 setOf(
                     LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
                     LifecycleCoordinatorName.forComponent<CpiInfoReadService>(),
-                    LifecycleCoordinatorName.forComponent<VirtualNodeInfoReaderComponent>(),
+                    LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
                 )
             )
         )
@@ -94,7 +94,7 @@ class MembershipGroupReadLifecycleHandlerTest {
 
         verify(configurationReadService).stop()
         verify(cpiInfoReader).stop()
-        verify(virtualNodeInfoReader).stop()
+        verify(virtualNodeInfoReadService).stop()
         verify(membershipGroupReadSubscriptions).stop()
         verify(membershipGroupReadCache).stop()
 

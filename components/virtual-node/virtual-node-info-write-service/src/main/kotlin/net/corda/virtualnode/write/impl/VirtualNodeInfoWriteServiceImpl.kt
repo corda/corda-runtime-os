@@ -18,21 +18,21 @@ import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.common.ConfigChangedEvent
 import net.corda.virtualnode.common.MessagingConfigEventHandler
 import net.corda.virtualnode.toAvro
-import net.corda.virtualnode.write.VirtualNodeInfoWriterComponent
+import net.corda.virtualnode.write.VirtualNodeInfoWriteService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 
-@Component(service = [VirtualNodeInfoWriterComponent::class])
-class VirtualNodeInfoWriterComponentImpl @Activate constructor(
+@Component(service = [VirtualNodeInfoWriteService::class])
+class VirtualNodeInfoWriteServiceImpl @Activate constructor(
     @Reference
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory
-) : VirtualNodeInfoWriterComponent {
+) : VirtualNodeInfoWriteService {
     companion object {
         val log: Logger = contextLogger()
         internal const val CLIENT_ID = "VIRTUAL_NODE_INFO_WRITER"
@@ -44,7 +44,7 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
     private val eventHandler: MessagingConfigEventHandler =
         MessagingConfigEventHandler(configurationReadService, this::onConfigChangeEvent, this::onConfig)
 
-    private val coordinator = coordinatorFactory.createCoordinator<VirtualNodeInfoWriterComponent>(eventHandler)
+    private val coordinator = coordinatorFactory.createCoordinator<VirtualNodeInfoWriteService>(eventHandler)
     private var publisher: Publisher? = null
 
     override fun put(virtualNodeInfo: VirtualNodeInfo) {
