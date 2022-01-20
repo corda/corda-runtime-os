@@ -119,7 +119,7 @@ fun requireWhitelisted(type: Type) {
     if (!isWhitelisted(type.asClass()) && type.asClass() != java.lang.Comparable::class.java) {
         throw AMQPNotSerializableException(
                 type,
-                "Class \"$type\" is not on the whitelist or annotated with @CordaSerializable.")
+                "Class \"$type\" is not annotated with @CordaSerializable.")
     }
 }
 

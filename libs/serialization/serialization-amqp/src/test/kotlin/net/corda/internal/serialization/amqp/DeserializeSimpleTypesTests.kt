@@ -614,7 +614,7 @@ No custom serializers registered.
         val factory = testDefaultFactory()
         assertFailsWithMessage(
                 "Class \"class ${PropertyWithoutCordaSerializable::class.java.name}\" " +
-                "is not on the whitelist or annotated with @CordaSerializable.") {
+                "is not on annotated with @CordaSerializable.") {
             TestSerializationOutput(VERBOSE, factory).serialize(PropertyWithoutCordaSerializable(1))
         }
     }
@@ -624,7 +624,7 @@ No custom serializers registered.
         val factory = testDefaultFactory()
         assertFailsWithMessage(
                 "Class \"class ${PropertyWithoutCordaSerializable::class.java.name}\" " +
-                        "is not on the whitelist or annotated with @CordaSerializable.") {
+                        "is not annotated with @CordaSerializable.") {
             TestSerializationOutput(VERBOSE, factory).serialize(Owner(PropertyWithoutCordaSerializable(1)))
         }
     }
@@ -653,7 +653,7 @@ No custom serializers registered.
         TestSerializationOutput(VERBOSE, factory).serialize(OkComparable(Ok("value")))
         assertFailsWithMessage(
                 "Class \"class ${NotOk::class.java.name}\" " +
-                        "is not on the whitelist or annotated with @CordaSerializable.") {
+                        "is not annotated with @CordaSerializable.") {
             TestSerializationOutput(VERBOSE, factory).serialize(NotOkComparable(NotOk("value")))
         }
 

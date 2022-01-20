@@ -93,7 +93,7 @@ class DeserializeMapTests {
         Assertions.assertThatThrownBy { TestSerializationOutput(VERBOSE, sf).serialize(c) }
             .isInstanceOf(NotSerializableException::class.java)
             .hasMessageContaining(
-                "Class \"java.util.Dictionary<java.lang.String, java.lang.Integer>\" is not on the whitelist or annotated with @CordaSerializable")
+                "Class \"java.util.Dictionary<java.lang.String, java.lang.Integer>\" is not annotated with @CordaSerializable")
     }
 
     @Test
