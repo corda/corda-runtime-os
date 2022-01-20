@@ -70,11 +70,6 @@ dependencyResolutionManagement {
 
 rootProject.name = 'corda-runtime-os'
 include 'applications:common'
-include 'applications:examples:serialization-amqp:custom-serializer-poc'
-include 'applications:examples:serialization-amqp:custom-serializer-poc:custom-serializer-poc-example-cpk-a'
-include 'applications:examples:serialization-amqp:custom-serializer-poc:custom-serializer-poc-example-cpk-b'
-include 'applications:examples:serialization-amqp:type-evolution-poc'
-include 'applications:examples:serialization-amqp:type-evolution-poc:evolution-example-cpk'
 include 'applications:experimental:virtual-node-cli'
 include 'applications:p2p-gateway'
 include 'applications:p2p-link-manager'
