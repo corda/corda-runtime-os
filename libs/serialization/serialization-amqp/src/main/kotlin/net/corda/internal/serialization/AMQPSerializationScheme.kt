@@ -46,7 +46,6 @@ import net.corda.utilities.toSynchronised
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.types.ByteSequence
 import net.corda.v5.serialization.SerializationCustomSerializer
-import net.corda.v5.serialization.SerializationWhitelist
 import net.corda.v5.serialization.SerializedBytes
 import java.util.Collections
 
@@ -56,13 +55,11 @@ data class SerializationFactoryCacheKey(val sandboxGroup: SandboxGroup?,
 
 abstract class AbstractAMQPSerializationScheme private constructor(
         private val cordappCustomSerializers: Set<SerializationCustomSerializer<*, *>>,
-        private val cordappSerializationWhitelists: Set<SerializationWhitelist>,
         maybeNotConcurrentSerializerFactoriesForContexts: MutableMap<SerializationFactoryCacheKey, SerializerFactory>,
         val sff: SerializerFactoryFactory = createSerializerFactoryFactory()
 ) : SerializationScheme {
     constructor() : this(
         emptySet<SerializationCustomSerializer<*, *>>(),
-        emptySet<SerializationWhitelist>(),
         AccessOrderLinkedHashMap<SerializationFactoryCacheKey, SerializerFactory>(128).toSynchronised()
     )
 
