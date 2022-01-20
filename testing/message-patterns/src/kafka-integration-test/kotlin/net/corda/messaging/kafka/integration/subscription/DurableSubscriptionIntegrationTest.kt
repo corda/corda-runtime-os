@@ -153,7 +153,7 @@ class DurableSubscriptionIntegrationTest {
             assertEquals(LifecycleStatus.UP, coordinator.status)
         }
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS))
+        assertTrue(latch.await(1, TimeUnit.MINUTES))
         durableSub.stop()
 
         eventually(duration = 5.seconds, waitBetween = 10.millis, waitBefore = 0.millis) {
@@ -167,10 +167,10 @@ class DurableSubscriptionIntegrationTest {
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         val futures = publisher.publish(getStringRecords(DURABLE_TOPIC3, 5, 2))
         assertThat(futures.size).isEqualTo(10)
-        futures.forEach { it.get(10, TimeUnit.SECONDS) }
+        futures.forEach { it.get(30, TimeUnit.SECONDS) }
         val futures2 = publisher.publish(getDemoRecords(DURABLE_TOPIC3, 5, 2))
         assertThat(futures2.size).isEqualTo(10)
-        futures2.forEach { it.get(10, TimeUnit.SECONDS) }
+        futures2.forEach { it.get(30, TimeUnit.SECONDS) }
         publisher.close()
 
         val latch = CountDownLatch(10)
@@ -188,12 +188,12 @@ class DurableSubscriptionIntegrationTest {
             null
         )
         durableSub.start()
+        dlqDurableSub.start()
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS))
+        assertTrue(latch.await(1, TimeUnit.MINUTES))
         durableSub.stop()
 
-        dlqDurableSub.start()
-        assertTrue(dlqLatch.await(5, TimeUnit.SECONDS))
+        assertTrue(dlqLatch.await(5, TimeUnit.MINUTES))
         durableSub.stop()
     }
 
