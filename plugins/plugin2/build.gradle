@@ -1,14 +1,41 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import static org.gradle.api.JavaVersion.VERSION_11
+
 plugins {
     id 'org.jetbrains.kotlin.kapt'
+    id 'org.jetbrains.kotlin.jvm'
 }
 
 dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+
     compileOnly project(":api")
+    api "info.picocli:picocli:${picoCliVersion}"
 
     compileOnly "org.pf4j:pf4j:${pf4jVersion}"
     kapt "org.pf4j:pf4j:${pf4jVersion}"
     implementation "org.apache.commons:commons-lang3:${commonsLangVersion}" // this is an examples for an external library included
+
+    testImplementation project(":api")
+    testImplementation "org.pf4j:pf4j:${pf4jVersion}"
+    testImplementation "org.junit.jupiter:junit-jupiter:5.8.2"
+    testImplementation "com.github.stefanbirkner:system-lambda:1.2.1"
+    testImplementation "org.mockito:mockito-core:3.+"
 }
 
-
-
+test {
+    useJUnitPlatform()
+}
+repositories {
+    mavenCentral()
+}
+compileKotlin {
+    kotlinOptions {
+        jvmTarget = VERSION_11
+    }
+}
+compileTestKotlin {
+    kotlinOptions {
+        jvmTarget = VERSION_11
+    }
+}

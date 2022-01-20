@@ -42,7 +42,7 @@ class ExamplePluginOneWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
 
         @CommandLine.Command(name = "service-example", description = ["A subcommand that uses a service supplied by the host."])
         fun exampleServiceSubCommand() {
-            service.get("message")
+            service.get("exampleEndpoint")
         }
     }
 }
