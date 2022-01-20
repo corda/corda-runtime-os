@@ -86,10 +86,6 @@ class ConfigurationReadServiceImplTest {
         latch.await()
         assertEquals(expectedKeys, receivedKeys, "Incorrect keys")
         assertEquals(expectedConfig, receivedConfig, "Incorrect config")
-        assertEquals(
-            LifecycleStatus.UP,
-            lifecycleRegistry.componentStatus()[LifecycleCoordinatorName.forComponent<ConfigurationReadService>()]?.status
-        )
         latch = CountDownLatch(1)
 
         // Publish new configuration and verify it gets delivered
@@ -101,6 +97,10 @@ class ConfigurationReadServiceImplTest {
         latch.await()
         assertEquals(expectedKeys, receivedKeys, "Incorrect keys")
         assertEquals(expectedConfig, receivedConfig, "Incorrect config")
+        assertEquals(
+            LifecycleStatus.UP,
+            lifecycleRegistry.componentStatus()[LifecycleCoordinatorName.forComponent<ConfigurationReadService>()]?.status
+        )
 
         // Cleanup
         reg.close()
