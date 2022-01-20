@@ -6,12 +6,12 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import picocli.CommandLine
 
-class ExamplePluginTwoWrapperTest {
+class ExamplePluginTwoTest {
 
     @Test
     fun testNoOptionCommand() {
 
-        val app = ExamplePluginTwoWrapper.ExamplePluginTwo()
+        val app = ExamplePluginTwo.ExamplePluginTwoEntry()
 
         val outText = tapSystemErrNormalized {
             CommandLine(
@@ -32,7 +32,7 @@ class ExamplePluginTwoWrapperTest {
     @Test
     fun testSubCommand() {
 
-        val app = ExamplePluginTwoWrapper.ExamplePluginTwo()
+        val app = ExamplePluginTwo.ExamplePluginTwoEntry()
         val outText = tapSystemOutNormalized {
             CommandLine(
                 app
