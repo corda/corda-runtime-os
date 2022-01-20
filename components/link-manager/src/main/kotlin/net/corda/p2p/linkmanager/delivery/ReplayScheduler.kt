@@ -4,7 +4,8 @@ import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.BASE_REPLAY_PERIOD_KEY_POSTFIX
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.CUTOFF_KEY_POSTFIX
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.CUTOFF_REPLAY_KEY_POSTFIX
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_REPLAYING_MESSAGES_PER_PEER_POSTFIX
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.DominoTile
@@ -55,7 +56,6 @@ class ReplayScheduler<M>(
 
     companion object {
         private val logger = contextLogger()
-        const val MESSAGES_PER_SESSION_KEY = 100
     }
 
     private fun calculateCappedBackoff(lastDelay: Duration): Duration {
@@ -76,7 +76,8 @@ class ReplayScheduler<M>(
 
     data class ReplaySchedulerConfig(
         val baseReplayPeriod: Duration,
-        val cutOff: Duration
+        val cutOff: Duration,
+        val maxReplayingMessages: Int
     )
 
     inner class ReplaySchedulerConfigurationChangeHandler: ConfigurationChangeHandler<ReplaySchedulerConfig>(configReadService,
@@ -103,7 +104,8 @@ class ReplayScheduler<M>(
     private fun fromConfig(config: Config): ReplaySchedulerConfig {
         return ReplaySchedulerConfig(
             config.getDuration(replaySchedulerConfigKey + BASE_REPLAY_PERIOD_KEY_POSTFIX),
-            config.getDuration(replaySchedulerConfigKey + CUTOFF_KEY_POSTFIX)
+            config.getDuration(replaySchedulerConfigKey + CUTOFF_REPLAY_KEY_POSTFIX),
+            config.getInt(replaySchedulerConfigKey + MAX_REPLAYING_MESSAGES_PER_PEER_POSTFIX)
         )
     }
 
@@ -120,6 +122,7 @@ class ReplayScheduler<M>(
             if (!isRunning) {
                 throw IllegalStateException("A message was added for replay before the ReplayScheduler was started.")
             }
+            val maxMessagesPerSessionKey = replaySchedulerConfig.get().maxReplayingMessages
             replayingMessagesPerSession.compute(sessionKey) { _, value ->
                 when {
                     value == null -> {
@@ -128,7 +131,7 @@ class ReplayScheduler<M>(
                         set.add(uniqueId)
                         set
                     }
-                    value.size < MESSAGES_PER_SESSION_KEY -> {
+                    value.size < maxMessagesPerSessionKey -> {
                         scheduleForReplay(originalAttemptTimestamp, uniqueId, message)
                         value.add(uniqueId)
                         value

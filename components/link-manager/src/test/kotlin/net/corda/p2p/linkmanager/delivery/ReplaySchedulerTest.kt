@@ -36,6 +36,7 @@ class ReplaySchedulerTest {
 
     companion object {
         private const val REPLAY_PERIOD_KEY = "REPLAY PERIOD"
+        private const val MAX_REPLAYING_MESSAGES = 100
         private val replayPeriod = Duration.ofMillis(2)
         private val sessionKey = SessionManager.SessionKey(
             LinkManagerNetworkMap.HoldingIdentity("Source", DeliveryTrackerTest.groupId),
@@ -85,7 +86,7 @@ class ReplaySchedulerTest {
     fun `on applyNewConfiguration completes the future exceptionally if config is invalid`() {
         ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, { _: Any -> }) { 0 }
         val future = configHandler.applyNewConfiguration(
-            ReplayScheduler.ReplaySchedulerConfig(Duration.ofMillis(-10), Duration.ofMillis(-10)),
+            ReplayScheduler.ReplaySchedulerConfig(Duration.ofMillis(-10), Duration.ofMillis(-10), MAX_REPLAYING_MESSAGES),
             null,
             configResourcesHolder
         )
@@ -98,7 +99,7 @@ class ReplaySchedulerTest {
     fun `on applyNewConfiguration completes the future if config is valid`() {
         ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, { _: Any -> }) { 0 }
         val future = configHandler.applyNewConfiguration(
-            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod),
+            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod, MAX_REPLAYING_MESSAGES),
             null,
             configResourcesHolder
         )
@@ -125,7 +126,7 @@ class ReplaySchedulerTest {
         setRunning()
         createResources(resourcesHolder)
         configHandler.applyNewConfiguration(
-            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod),
+            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod, MAX_REPLAYING_MESSAGES),
             null,
             configResourcesHolder
         )
@@ -153,7 +154,7 @@ class ReplaySchedulerTest {
         setRunning()
         createResources(resourcesHolder)
         configHandler.applyNewConfiguration(
-            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod),
+            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod, MAX_REPLAYING_MESSAGES),
             null,
             configResourcesHolder
         )
@@ -185,7 +186,7 @@ class ReplaySchedulerTest {
         setRunning()
         createResources(resourcesHolder)
         configHandler.applyNewConfiguration(
-            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod),
+            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod, MAX_REPLAYING_MESSAGES),
             null,
             configResourcesHolder
         )
@@ -233,7 +234,7 @@ class ReplaySchedulerTest {
         setRunning()
         createResources(resourcesHolder)
         configHandler.applyNewConfiguration(
-            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod),
+            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod, MAX_REPLAYING_MESSAGES),
              null,
             configResourcesHolder
         )
@@ -254,7 +255,7 @@ class ReplaySchedulerTest {
         setRunning()
         createResources(resourcesHolder)
         configHandler.applyNewConfiguration(
-            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod),
+            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod, MAX_REPLAYING_MESSAGES),
              null,
             configResourcesHolder
         )
@@ -268,7 +269,7 @@ class ReplaySchedulerTest {
         )
 
         configHandler.applyNewConfiguration(
-            ReplayScheduler.ReplaySchedulerConfig(replayPeriod.multipliedBy(2), replayPeriod.multipliedBy(2)),
+            ReplayScheduler.ReplaySchedulerConfig(replayPeriod.multipliedBy(2), replayPeriod.multipliedBy(2), MAX_REPLAYING_MESSAGES),
             null,
             configResourcesHolder
         )
@@ -307,7 +308,7 @@ class ReplaySchedulerTest {
         setRunning()
         createResources(resourcesHolder)
         configHandler.applyNewConfiguration(
-            ReplayScheduler.ReplaySchedulerConfig(Duration.ofMillis(100), Duration.ofMillis(100)),
+            ReplayScheduler.ReplaySchedulerConfig(Duration.ofMillis(100), Duration.ofMillis(100), MAX_REPLAYING_MESSAGES),
             null,
             configResourcesHolder
         )

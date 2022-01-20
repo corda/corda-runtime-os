@@ -17,7 +17,8 @@ class LinkManagerConfiguration {
         const val PROTOCOL_MODE_KEY = "protocolMode"
         const val MESSAGE_REPLAY_KEY_PREFIX = "messageReplay"
         const val BASE_REPLAY_PERIOD_KEY_POSTFIX = "BasePeriod"
-        const val CUTOFF_KEY_POSTFIX = "Cutoff"
+        const val CUTOFF_REPLAY_KEY_POSTFIX = "Cutoff"
+        const val MAX_REPLAYING_MESSAGES_PER_PEER_POSTFIX = "MaxMessages"
         const val HEARTBEAT_MESSAGE_PERIOD_KEY = "heartbeatMessagePeriod"
         const val SESSION_TIMEOUT_KEY = "sessionTimeout"
     }

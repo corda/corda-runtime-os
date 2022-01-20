@@ -38,16 +38,22 @@ class LinkManagerConfiguration : ConfigProducer() {
     var protocolModes: List<ProtocolMode> = listOf(ProtocolMode.AUTHENTICATED_ENCRYPTION)
 
     @Option(
-        names = ["--messageReplayPeriodMilliSecs"],
-        description = ["message replay period in milliseconds"]
+        names = ["--messageReplayPeriodBaseMilliSecs"],
+        description = ["message replay period base in milliseconds"]
     )
     var messageReplayPeriodBaseMilliSecs = 2_000L
 
     @Option(
-        names = ["--messageReplayPeriodMilliSecs"],
-        description = ["message replay period in milliseconds"]
+        names = ["--messageReplayPeriodCutOffMilliSecs"],
+        description = ["message replay period cut off in milliseconds"]
     )
     var messageReplayPeriodCutoffMilliSecs = 10_000L
+
+    @Option(
+        names = ["--maxReplayingMessages"],
+        description = ["the maximum number of replaying messages between two peers"]
+    )
+    var maxReplayingMessages = 100
 
     @Option(
         names = ["--heartbeatMessagePeriodMilliSecs"],
@@ -94,8 +100,12 @@ class LinkManagerConfiguration : ConfigProducer() {
                 ConfigValueFactory.fromAnyRef(messageReplayPeriodBaseMilliSecs)
             )
             .withValue(
-                LinkManagerConfiguration.MESSAGE_REPLAY_KEY_PREFIX + LinkManagerConfiguration.CUTOFF_KEY_POSTFIX,
+                LinkManagerConfiguration.MESSAGE_REPLAY_KEY_PREFIX + LinkManagerConfiguration.CUTOFF_REPLAY_KEY_POSTFIX,
                 ConfigValueFactory.fromAnyRef(messageReplayPeriodCutoffMilliSecs)
+            )
+            .withValue(
+                LinkManagerConfiguration.MESSAGE_REPLAY_KEY_PREFIX + LinkManagerConfiguration.MAX_REPLAYING_MESSAGES_PER_PEER_POSTFIX,
+                ConfigValueFactory.fromAnyRef(maxReplayingMessages)
             )
             .withValue(
                 LinkManagerConfiguration.HEARTBEAT_MESSAGE_PERIOD_KEY,
