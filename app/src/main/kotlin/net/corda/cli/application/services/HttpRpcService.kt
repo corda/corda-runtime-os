@@ -19,16 +19,15 @@ class HttpRpcService() : HttpService {
     @CommandLine.Option(names = ["-p", "--password"], description = ["Password"], required = true)
     override var password: String? = null
 
-    @CommandLine.Option(names = ["-n", "--node-url"], description = ["The Swagger Url of the target Node."])
+    @CommandLine.Option(names = ["-t", "--target-url"], description = ["The Swagger Url of the target."])
     override var url: String? = null
 
     private val data: Map<String, Any>
-    private var urlToUse: String?
+    private val urlToUse by lazy { checkUrl() }
 
     init {
         val yaml = Yaml()
         data = yaml.load(FileInputStream(Files.profile))
-        urlToUse = checkUrl()
     }
 
     override fun get(endpoint: String) {
@@ -99,7 +98,7 @@ class HttpRpcService() : HttpService {
 
     private fun checkUrl(): String? {
         if (!data.containsKey("url") && url.isNullOrEmpty()) {
-            println("A url must be supplied in either the profile yaml file, or as a parameter")
+            System.err.println("A url must be supplied in either the profile yaml file, or as a parameter")
             return null
         } else if (!url.isNullOrEmpty()) {
             return url

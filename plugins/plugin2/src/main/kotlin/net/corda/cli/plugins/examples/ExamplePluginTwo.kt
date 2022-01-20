@@ -11,10 +11,10 @@ import picocli.CommandLine
 /**
  * An Example Plugin that uses class based subcommands
  */
-class ExamplePluginTwoWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
+class ExamplePluginTwo(wrapper: PluginWrapper) : Plugin(wrapper) {
 
     companion object {
-        private val logger: Logger = LoggerFactory.getLogger(ExamplePluginTwoWrapper::class.java)
+        private val logger: Logger = LoggerFactory.getLogger(ExamplePluginTwo::class.java)
     }
 
     override fun start() {
@@ -31,5 +31,5 @@ class ExamplePluginTwoWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
         subcommands = [SubCommandOne::class],
         description = ["Example Plugin two using class based subcommands"]
     )
-    class ExamplePluginTwo : CordaCliPlugin {}
+    class ExamplePluginTwoEntry : CordaCliPlugin {}
 }
