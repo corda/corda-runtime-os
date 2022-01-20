@@ -14,7 +14,6 @@ import net.corda.libs.configuration.datamodel.ConfigAuditEntity
 import net.corda.libs.configuration.datamodel.ConfigEntity
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
@@ -63,12 +62,13 @@ class DBProcessorImpl @Activate constructor(
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<DBProcessorImpl>(::eventHandler)
     private var registration: RegistrationHandle? = null
-    private val dependentComponents = mapOf(
-        LifecycleCoordinatorName.forComponent<ConfigWriteService>() to configWriteService,
-        LifecycleCoordinatorName.forComponent<ConfigurationReadService>() to configurationReadService,
-        LifecycleCoordinatorName.forComponent<PermissionCacheService>() to permissionCacheService,
-        LifecycleCoordinatorName.forComponent<PermissionStorageReaderService>() to permissionStorageReaderService,
-        LifecycleCoordinatorName.forComponent<PermissionStorageWriterService>() to permissionStorageWriterService,
+
+    private val dependentComponents = DependentComponents.of(
+        ::configWriteService,
+        ::configurationReadService,
+        ::permissionCacheService,
+        ::permissionStorageReaderService,
+        ::permissionStorageWriterService
     )
 
     override fun start(bootConfig: SmartConfig) {
@@ -88,8 +88,8 @@ class DBProcessorImpl @Activate constructor(
         when (event) {
             is StartEvent -> {
                 registration?.close()
-                registration = coordinator.followStatusChangesByName(dependentComponents.keys.toSet())
-                dependentComponents.forEach { (_, svc) -> svc.start() }
+                registration = coordinator.followStatusChangesByName(dependentComponents.coordinatorNames)
+                dependentComponents.startAll()
             }
             is RegistrationStatusChangeEvent -> {
                 log.info("DBProcessorImpl is ${event.status}")
@@ -107,7 +107,7 @@ class DBProcessorImpl @Activate constructor(
                 configurationReadService.bootstrapConfig(event.config)
             }
             is StopEvent -> {
-                dependentComponents.forEach { (_, svc) -> svc.stop() }
+                dependentComponents.stopAll()
                 registration?.close()
                 registration = null
             }

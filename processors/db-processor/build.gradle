@@ -44,4 +44,8 @@ dependencies {
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
     runtimeOnly "org.liquibase:liquibase-core:$liquibaseVersion"
     runtimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }
