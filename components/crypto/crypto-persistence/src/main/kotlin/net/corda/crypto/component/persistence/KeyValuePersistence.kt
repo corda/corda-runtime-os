@@ -1,19 +1,6 @@
 package net.corda.crypto.component.persistence
 
 /**
- * Holds the key and description what that key means, like 'alias', 'publicKey'
- */
-data class EntityKeyInfo(
-    val desc: String,
-    val key: String
-) {
-    companion object {
-        const val ALIAS = "alias"
-        const val PUBLIC_KEY = "publicKey"
-    }
-}
-
-/**
  * Defines a simplified caching layer on top of an *append-only* persistence.
  * The cached and persistence items are different, the mutator defines the shape of the cached item
  * based on the persistent item.

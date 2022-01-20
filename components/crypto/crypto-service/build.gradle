@@ -37,5 +37,5 @@ dependencies {
     testImplementation project(":components:crypto:crypto-in-memory-persistence")
 }
 
-description 'Crypto Service Components'
+description 'Crypto Service Components API'
 

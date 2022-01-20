@@ -2,7 +2,7 @@ package net.corda.crypto.persistence.kafka
 
 import net.corda.crypto.component.persistence.EntityKeyInfo
 import net.corda.crypto.component.persistence.KeyValuePersistence
-import net.corda.crypto.component.persistence.SoftKeysRecordInfo
+import net.corda.crypto.component.persistence.CachedSoftKeysRecord
 import net.corda.data.crypto.persistence.SoftKeysRecord
 import net.corda.schema.Schemas
 import org.junit.jupiter.api.AfterEach
@@ -21,8 +21,8 @@ import kotlin.test.assertSame
 class KafkaSoftKeysPersistenceTests {
     private lateinit var tenantId: String
     private lateinit var kafka: KafkaInfrastructure
-    private lateinit var provider: KafkaSoftPersistenceProvider
-    private lateinit var persistence: KeyValuePersistence<SoftKeysRecordInfo, SoftKeysRecord>
+    private lateinit var provider: KafkaSoftKeysPersistenceProvider
+    private lateinit var persistence: KeyValuePersistence<CachedSoftKeysRecord, SoftKeysRecord>
 
     @BeforeEach
     fun setup() {
@@ -30,7 +30,7 @@ class KafkaSoftKeysPersistenceTests {
         kafka = KafkaInfrastructure()
         provider = kafka.createSoftPersistenceProvider()
         persistence = provider.getInstance(tenantId) {
-            SoftKeysRecordInfo(tenantId = it.tenantId)
+            CachedSoftKeysRecord(tenantId = it.tenantId)
         }
     }
 
@@ -74,7 +74,7 @@ class KafkaSoftKeysPersistenceTests {
         )
         persistence.put(original, EntityKeyInfo(EntityKeyInfo.ALIAS, original.alias))
         val records = kafka.getRecords<SoftKeysRecord>(
-            KafkaSoftPersistenceProcessor.GROUP_NAME,
+            KafkaSoftKeysPersistenceProcessor.GROUP_NAME,
             Schemas.Crypto.SOFT_HSM_PERSISTENCE_TOPIC
         )
         assertEquals(1, records.size)
@@ -100,7 +100,7 @@ class KafkaSoftKeysPersistenceTests {
             Instant.now()
         )
         kafka.publish(
-            KafkaSoftPersistenceProcessor.CLIENT_ID,
+            KafkaSoftKeysPersistenceProcessor.CLIENT_ID,
             persistence,
             Schemas.Crypto.SOFT_HSM_PERSISTENCE_TOPIC,
             original.alias,

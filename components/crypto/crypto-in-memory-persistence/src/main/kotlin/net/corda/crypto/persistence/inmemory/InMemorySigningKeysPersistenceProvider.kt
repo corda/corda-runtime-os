@@ -16,8 +16,6 @@ class InMemorySigningKeysPersistenceProvider : SigningKeysPersistenceProvider {
     private val instances =
         ConcurrentHashMap<String, InMemoryKeyValuePersistence<SigningKeysRecord, SigningKeysRecord>>()
 
-    override val name: String = NAME
-
     override fun getInstance(
         tenantId: String,
         mutator: KeyValueMutator<SigningKeysRecord, SigningKeysRecord>
@@ -28,4 +26,13 @@ class InMemorySigningKeysPersistenceProvider : SigningKeysPersistenceProvider {
                 data = ConcurrentHashMap<String, SigningKeysRecord>()
             )
         }
+
+    override val isRunning: Boolean = true
+
+    override fun start() {
+    }
+
+    override fun stop() {
+        instances.clear()
+    }
 }

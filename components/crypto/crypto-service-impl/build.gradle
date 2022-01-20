@@ -1,0 +1,47 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+    id 'corda.osgi-test-conventions'
+}
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
+    implementation "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion"
+    implementation "net.i2p.crypto:eddsa:$eddsaVersion"
+    implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-topic-schema"
+    implementation "net.corda:corda-crypto"
+    implementation "net.corda:corda-cipher-suite"
+    implementation project(":components:configuration:configuration-read-service")
+    implementation project(":components:crypto:crypto-persistence")
+    implementation project(":components:crypto:crypto-service")
+    implementation project(':libs:crypto:crypto-internal')
+    implementation project(':libs:crypto:crypto-impl')
+    implementation project(":libs:messaging:messaging")
+    implementation project(":libs:lifecycle:lifecycle")
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation project(":libs:lifecycle:lifecycle-impl")
+    testImplementation project(":testing:test-utilities")
+    testImplementation project(":libs:messaging:inmemory-messaging-impl")
+    testImplementation project(":libs:configuration:configuration-core")
+    testImplementation project(":components:crypto:crypto-in-memory-persistence")
+    integrationTestRuntimeOnly project(":components:configuration:configuration-read-service-impl")
+    integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")
+    integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
+    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+}
+
+description 'Crypto Service Components Implementation'
+

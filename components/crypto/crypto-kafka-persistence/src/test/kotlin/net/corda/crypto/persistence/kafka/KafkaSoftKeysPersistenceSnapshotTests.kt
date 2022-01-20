@@ -1,7 +1,7 @@
 package net.corda.crypto.persistence.kafka
 
 import net.corda.crypto.component.persistence.KeyValuePersistence
-import net.corda.crypto.component.persistence.SoftKeysRecordInfo
+import net.corda.crypto.component.persistence.CachedSoftKeysRecord
 import net.corda.crypto.persistence.kafka.KafkaInfrastructure.Companion.wait
 import net.corda.data.crypto.persistence.SoftKeysRecord
 import net.corda.schema.Schemas
@@ -21,8 +21,8 @@ class KafkaSoftKeysPersistenceSnapshotTests {
     private lateinit var alias1: String
     private lateinit var alias2: String
     private lateinit var kafka: KafkaInfrastructure
-    private lateinit var provider: KafkaSoftPersistenceProvider
-    private lateinit var persistence: KeyValuePersistence<SoftKeysRecordInfo, SoftKeysRecord>
+    private lateinit var provider: KafkaSoftKeysPersistenceProvider
+    private lateinit var persistence: KeyValuePersistence<CachedSoftKeysRecord, SoftKeysRecord>
     private lateinit var original1: SoftKeysRecord
     private lateinit var original2: SoftKeysRecord
 
@@ -51,15 +51,15 @@ class KafkaSoftKeysPersistenceSnapshotTests {
             Instant.now()
         )
         provider = kafka.createSoftPersistenceProvider {
-            kafka.publish<SoftKeysRecordInfo, SoftKeysRecord>(
-                KafkaSoftPersistenceProcessor.CLIENT_ID,
+            kafka.publish<CachedSoftKeysRecord, SoftKeysRecord>(
+                KafkaSoftKeysPersistenceProcessor.CLIENT_ID,
                 null,
                 Schemas.Crypto.SOFT_HSM_PERSISTENCE_TOPIC,
                 original1.alias,
                 original1
             )
-            kafka.publish<SoftKeysRecordInfo, SoftKeysRecord>(
-                KafkaSoftPersistenceProcessor.CLIENT_ID,
+            kafka.publish<CachedSoftKeysRecord, SoftKeysRecord>(
+                KafkaSoftKeysPersistenceProcessor.CLIENT_ID,
                 null,
                 Schemas.Crypto.SOFT_HSM_PERSISTENCE_TOPIC,
                 original2.alias,
@@ -68,7 +68,7 @@ class KafkaSoftKeysPersistenceSnapshotTests {
         }
         persistence = provider.getInstance(tenantId) {
             // just to be able to assert
-            SoftKeysRecordInfo(tenantId = it.alias)
+            CachedSoftKeysRecord(tenantId = it.alias)
         }
     }
 

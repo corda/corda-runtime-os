@@ -1,10 +1,12 @@
 package net.corda.crypto.persistence.kafka
 
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.component.persistence.KeyValuePersistence
-import net.corda.crypto.impl.config.CryptoConfigMap
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -17,7 +19,6 @@ import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.TopicService
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
-import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -38,51 +39,71 @@ class KafkaInfrastructure {
             val end = Instant.now().plus(timeout)
             do {
                 val value = this.get(key)
-                if(value != null) {
+                if (value != null) {
                     return value
                 }
                 Thread.sleep(retryDelay.toMillis())
-            } while(Instant.now() < end)
+            } while (Instant.now() < end)
             fail("Failed to wait for '$key'")
         }
     }
 
     private val topicService: TopicService = TopicServiceImpl()
     private val rpcTopicService: RPCTopicService = RPCTopicServiceImpl()
-    private var lifecycleCoordinator: LifecycleCoordinator = mock()
-    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock {
-        on { createCoordinator(any(), any()) } doReturn lifecycleCoordinator
+    val coordinator: LifecycleCoordinator = mock()
+    private val registrationHandle: AutoCloseable = mock()
+    private val coordinatorFactory: LifecycleCoordinatorFactory = mock {
+        on { createCoordinator(any(), any()) } doReturn coordinator
+    }
+    private val configurationReadService: ConfigurationReadService = mock {
+        on { registerForUpdates(any()) } doReturn registrationHandle
     }
     val subscriptionFactory: SubscriptionFactory =
-        InMemSubscriptionFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
+        InMemSubscriptionFactory(topicService, rpcTopicService, coordinatorFactory)
     val publisherFactory: PublisherFactory =
-        CordaPublisherFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
+        CordaPublisherFactory(topicService, rpcTopicService, coordinatorFactory)
 
     fun createSigningKeysPersistenceProvider(
         snapshot: (() -> Unit)? = null
     ): KafkaSigningKeysPersistenceProvider {
-        if(snapshot != null) {
+        if (snapshot != null) {
             snapshot()
         }
-        return KafkaSigningKeysPersistenceProvider().also {
-            it.subscriptionFactory = subscriptionFactory
-            it.publisherFactory = publisherFactory
+        return KafkaSigningKeysPersistenceProvider(
+            coordinatorFactory,
+            subscriptionFactory,
+            publisherFactory,
+            configurationReadService
+        ).also {
             it.start()
-            it.handleConfigEvent(CryptoLibraryConfigTestImpl(emptyMap()))
+            coordinator.postEvent(
+                RegistrationStatusChangeEvent(
+                    registration = mock(),
+                    status = LifecycleStatus.UP
+                )
+            )
         }
     }
 
     fun createSoftPersistenceProvider(
         snapshot: (() -> Unit)? = null
-    ): KafkaSoftPersistenceProvider {
-        if(snapshot != null) {
+    ): KafkaSoftKeysPersistenceProvider {
+        if (snapshot != null) {
             snapshot()
         }
-        return KafkaSoftPersistenceProvider().also {
-            it.subscriptionFactory = subscriptionFactory
-            it.publisherFactory = publisherFactory
+        return KafkaSoftKeysPersistenceProvider(
+            coordinatorFactory,
+            subscriptionFactory,
+            publisherFactory,
+            configurationReadService
+        ).also {
             it.start()
-            it.handleConfigEvent(CryptoLibraryConfigTestImpl(emptyMap()))
+            coordinator.postEvent(
+                RegistrationStatusChangeEvent(
+                    registration = mock(),
+                    status = LifecycleStatus.UP
+                )
+            )
         }
     }
 
@@ -131,8 +152,4 @@ class KafkaInfrastructure {
         persistence?.wait(key)
         pub.close()
     }
-
-    class CryptoLibraryConfigTestImpl(
-        map: Map<String, Any?>
-    ) : CryptoConfigMap(map), CryptoLibraryConfig
 }

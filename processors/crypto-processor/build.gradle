@@ -13,6 +13,8 @@ dependencies {
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-crypto"
     implementation "net.corda:corda-cipher-suite"
+    implementation project(':components:crypto:crypto-persistence')
+    implementation project(':components:crypto:crypto-service')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:crypto:crypto-internal')
     implementation project(':libs:crypto:crypto-impl')

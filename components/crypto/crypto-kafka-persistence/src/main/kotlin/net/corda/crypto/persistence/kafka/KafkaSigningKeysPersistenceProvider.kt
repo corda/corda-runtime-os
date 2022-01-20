@@ -1,68 +1,68 @@
 package net.corda.crypto.persistence.kafka
 
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.component.persistence.KeyValueMutator
 import net.corda.crypto.component.persistence.KeyValuePersistence
 import net.corda.crypto.component.persistence.SigningKeysPersistenceProvider
+import net.corda.crypto.component.persistence.config.CryptoPersistenceConfig
 import net.corda.crypto.component.persistence.config.signingPersistence
+import net.corda.crypto.impl.LifecycleDependencies
 import net.corda.crypto.impl.closeGracefully
 import net.corda.data.crypto.persistence.SigningKeysRecord
-import net.corda.lifecycle.Lifecycle
+import net.corda.libs.configuration.SmartConfig
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
+import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.schema.configuration.ConfigKeys.Companion.CRYPTO_CONFIG
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
-import net.corda.v5.cipher.suite.lifecycle.CryptoLifecycleComponent
+import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 @Component(service = [SigningKeysPersistenceProvider::class])
-class KafkaSigningKeysPersistenceProvider : SigningKeysPersistenceProvider, Lifecycle, CryptoLifecycleComponent {
+class KafkaSigningKeysPersistenceProvider @Activate constructor(
+    @Reference(service = LifecycleCoordinatorFactory::class)
+    coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = SubscriptionFactory::class)
+    val subscriptionFactory: SubscriptionFactory,
+    @Reference(service = PublisherFactory::class)
+    val publisherFactory: PublisherFactory,
+    @Reference(service = ConfigurationReadService::class)
+    private val configurationReadService: ConfigurationReadService
+) : SigningKeysPersistenceProvider {
     companion object {
         private val logger = contextLogger()
     }
 
-    @Volatile
-    @Reference(service = SubscriptionFactory::class)
-    lateinit var subscriptionFactory: SubscriptionFactory
+    private val coordinator =
+        coordinatorFactory.createCoordinator<SigningKeysPersistenceProvider>(::eventHandler)
 
-    @Volatile
-    @Reference(service = PublisherFactory::class)
-    lateinit var publisherFactory: PublisherFactory
+    private var configHandle: AutoCloseable? = null
+
+    private var dependencies: LifecycleDependencies? = null
 
     private var impl: Impl? = null
 
-    override var isRunning: Boolean = false
+    override val isRunning: Boolean get() = coordinator.isRunning
 
     override fun start() {
         logger.info("Starting...")
-        isRunning = true
+        coordinator.start()
+        coordinator.postEvent(StartEvent())
     }
 
     override fun stop() {
         logger.info("Stopping...")
-        close()
-        isRunning = false
+        coordinator.postEvent(StopEvent())
+        coordinator.stop()
     }
-
-    override fun handleConfigEvent(config: CryptoLibraryConfig) {
-        if(!isRunning) {
-            throw IllegalStateException("The provider haven't been started yet.")
-        }
-        logger.info("Received new configuration...")
-        instantiate(config)
-    }
-
-    private fun instantiate(config: CryptoLibraryConfig) {
-        val currentImpl = impl
-        impl = Impl(
-            subscriptionFactory,
-            publisherFactory,
-            config
-        )
-        currentImpl?.closeGracefully()
-    }
-
-    override val name: String = "kafka"
 
     override fun getInstance(
         tenantId: String,
@@ -71,16 +71,62 @@ class KafkaSigningKeysPersistenceProvider : SigningKeysPersistenceProvider, Life
         impl?.getInstance(tenantId, mutator)
             ?: throw IllegalStateException("The provider haven't been initialised yet.")
 
-    override fun close() {
-        val current = impl
-        impl = null
-        current?.closeGracefully()
+    private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+        logger.info("Received event {}", event)
+        when (event) {
+            is StartEvent -> {
+                logger.info("Received start event, waiting for UP event from ConfigurationReadService.")
+                dependencies?.close()
+                dependencies = LifecycleDependencies(coordinator, ConfigurationReadService::class.java)
+            }
+            is StopEvent -> {
+                configHandle?.close()
+                configHandle = null
+                impl?.close()
+                impl = null
+            }
+            is RegistrationStatusChangeEvent -> {
+                logger.info("Registration status change received for ConfigurationReadService: ${event.status.name}.")
+                if (dependencies?.areUpAfter(event) == true) {
+                    logger.info("Registering for configuration updates.")
+                    configHandle = configurationReadService.registerForUpdates(::onConfigChange)
+                } else {
+                    configHandle?.close()
+                }
+            }
+            is NewConfigurationReceivedEvent -> {
+                createResources(event.config)
+                setStatusUp()
+            }
+            else -> {
+                logger.error("Unexpected event $event!")
+            }
+        }
+    }
+
+    private fun onConfigChange(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
+        logger.info("Received configuration update event, changedKeys: $changedKeys")
+        if (CRYPTO_CONFIG in changedKeys) {
+            coordinator.postEvent(NewConfigurationReceivedEvent(config[CRYPTO_CONFIG]!!))
+        }
+    }
+
+    private fun createResources(config: SmartConfig) {
+        val currentImpl = impl
+        impl = Impl(subscriptionFactory, publisherFactory, config.signingPersistence)
+        logger.info("Created new implementation instance: {}", Impl::class.java.name)
+        currentImpl?.close()
+    }
+
+    private fun setStatusUp() {
+        logger.info("Setting status UP.")
+        coordinator.updateStatus(LifecycleStatus.UP)
     }
 
     private class Impl(
         subscriptionFactory: SubscriptionFactory,
         publisherFactory: PublisherFactory,
-        private val config: CryptoLibraryConfig
+        private val config: CryptoPersistenceConfig
     ) : AutoCloseable {
         private val processor = KafkaSigningKeysPersistenceProcessor(
             subscriptionFactory = subscriptionFactory,
@@ -92,11 +138,10 @@ class KafkaSigningKeysPersistenceProvider : SigningKeysPersistenceProvider, Life
             mutator: KeyValueMutator<SigningKeysRecord, SigningKeysRecord>
         ): KeyValuePersistence<SigningKeysRecord, SigningKeysRecord> {
             logger.info("Getting Kafka persistence instance for tenant={}", tenantId)
-            val cfg = config.signingPersistence
             return KafkaKeyValuePersistence(
                 processor = processor,
-                expireAfterAccessMins = cfg.expireAfterAccessMins,
-                maximumSize = cfg.maximumSize,
+                expireAfterAccessMins = config.expireAfterAccessMins,
+                maximumSize = config.maximumSize,
                 mutator = mutator
             )
         }

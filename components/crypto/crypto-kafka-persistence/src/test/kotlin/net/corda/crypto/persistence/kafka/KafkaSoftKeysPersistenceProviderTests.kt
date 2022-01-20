@@ -1,20 +1,28 @@
 package net.corda.crypto.persistence.kafka
 
-import net.corda.crypto.component.persistence.SoftKeysRecordInfo
+import com.typesafe.config.ConfigFactory
+import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.component.persistence.CachedSoftKeysRecord
 import net.corda.data.crypto.persistence.SoftKeysRecord
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.test.util.createTestCase
-import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import java.util.UUID
@@ -27,11 +35,23 @@ class KafkaSoftKeysPersistenceProviderTests {
     private lateinit var pub: Publisher
     private lateinit var subscriptionFactory: SubscriptionFactory
     private lateinit var publisherFactory: PublisherFactory
-    private lateinit var config: CryptoLibraryConfig
-    private lateinit var provider: KafkaSoftPersistenceProvider
+    private lateinit var config: SmartConfig
+    private lateinit var provider: KafkaSoftKeysPersistenceProvider
+    private lateinit var coordinator: LifecycleCoordinator
+    private lateinit var registrationHandle: AutoCloseable
+    private lateinit var coordinatorFactory: LifecycleCoordinatorFactory
+    private lateinit var configurationReadService: ConfigurationReadService
 
     @BeforeEach
     fun setup() {
+        coordinator = mock()
+        registrationHandle = mock()
+        coordinatorFactory = mock {
+            on { createCoordinator(any(), any()) } doReturn coordinator
+        }
+        configurationReadService = mock {
+            on { registerForUpdates(any()) } doReturn registrationHandle
+        }
         sub = mock()
         pub = mock()
         subscriptionFactory = mock  {
@@ -44,10 +64,21 @@ class KafkaSoftKeysPersistenceProviderTests {
                 createPublisher(any(), any())
             }.thenReturn(pub)
         }
-        config = KafkaInfrastructure.CryptoLibraryConfigTestImpl(emptyMap())
-        provider = KafkaSoftPersistenceProvider()
-        provider.publisherFactory = publisherFactory
-        provider.subscriptionFactory = subscriptionFactory
+        config = SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
+        provider = KafkaSoftKeysPersistenceProvider(
+            coordinatorFactory,
+            subscriptionFactory,
+            publisherFactory,
+            configurationReadService
+        ).also {
+            it.start()
+            coordinator.postEvent(
+                RegistrationStatusChangeEvent(
+                    registration = mock(),
+                    status = LifecycleStatus.UP
+                )
+            )
+        }
     }
 
     @Test
@@ -55,21 +86,21 @@ class KafkaSoftKeysPersistenceProviderTests {
     fun `Should return instances using same processor instance until config is changed regardless of tenant`() {
         provider.start()
         assertTrue(provider.isRunning)
-        provider.handleConfigEvent(config)
+        coordinator.postEvent(NewConfigurationReceivedEvent(config))
         var expectedCount = 1
         assertNotNull(
             provider.getInstance(UUID.randomUUID().toString()) {
-                SoftKeysRecordInfo(tenantId = it.tenantId)
+                CachedSoftKeysRecord(tenantId = it.tenantId)
             }
         )
         for (i in 1..100) {
             if(i % 3 == 2) {
-                provider.handleConfigEvent(config)
+                coordinator.postEvent(NewConfigurationReceivedEvent(config))
                 expectedCount ++
             }
             assertNotNull(
                 provider.getInstance(UUID.randomUUID().toString()) {
-                    SoftKeysRecordInfo(tenantId = it.tenantId)
+                    CachedSoftKeysRecord(tenantId = it.tenantId)
                 }
             )
             assertTrue(provider.isRunning)
@@ -89,16 +120,16 @@ class KafkaSoftKeysPersistenceProviderTests {
     fun `Should concurrently return instances regardless of tenant`() {
         provider.start()
         assertTrue(provider.isRunning)
-        provider.handleConfigEvent(config)
+        coordinator.postEvent(NewConfigurationReceivedEvent(config))
         assertNotNull(
             provider.getInstance(UUID.randomUUID().toString()) {
-                SoftKeysRecordInfo(tenantId = it.tenantId)
+                CachedSoftKeysRecord(tenantId = it.tenantId)
             }
         )
         (1..100).createTestCase {
             assertNotNull(
                 provider.getInstance(UUID.randomUUID().toString()) {
-                    SoftKeysRecordInfo(tenantId = it.tenantId)
+                    CachedSoftKeysRecord(tenantId = it.tenantId)
                 }
             )
             assertTrue(provider.isRunning)
@@ -118,7 +149,7 @@ class KafkaSoftKeysPersistenceProviderTests {
     fun `Should throw IllegalStateException if provider is not started yet`() {
         assertFalse(provider.isRunning)
         assertThrows<IllegalStateException> {
-            provider.handleConfigEvent(config)
+            coordinator.postEvent(NewConfigurationReceivedEvent(config))
         }
     }
 
@@ -129,7 +160,7 @@ class KafkaSoftKeysPersistenceProviderTests {
         assertTrue(provider.isRunning)
         assertThrows<IllegalStateException> {
             provider.getInstance(UUID.randomUUID().toString()) {
-                SoftKeysRecordInfo(tenantId = it.tenantId)
+                CachedSoftKeysRecord(tenantId = it.tenantId)
             }
         }
     }

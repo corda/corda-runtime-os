@@ -1,14 +1,20 @@
 package net.corda.crypto.component.persistence.config
 
-import net.corda.crypto.impl.config.CryptoConfigMap
-import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
+import com.typesafe.config.ConfigFactory
+import net.corda.libs.configuration.SmartConfig
 
 
-val CryptoLibraryConfig.softPersistence: CryptoPersistenceConfig
-    get() =
-        CryptoPersistenceConfig(CryptoConfigMap.getOptionalConfig(this, this::softPersistence.name) ?: emptyMap())
+val SmartConfig.softPersistence: CryptoPersistenceConfig get() =
+    if(hasPath(this::softPersistence.name)) {
+        CryptoPersistenceConfig(getConfig(this::softPersistence.name))
+    } else {
+        CryptoPersistenceConfig(factory.create(ConfigFactory.empty()))
+    }
 
 
-val CryptoLibraryConfig.signingPersistence: CryptoPersistenceConfig
-    get() =
-        CryptoPersistenceConfig(CryptoConfigMap.getOptionalConfig(this, this::signingPersistence.name) ?: emptyMap())
+val SmartConfig.signingPersistence: CryptoPersistenceConfig get() =
+    if(hasPath(this::signingPersistence.name)) {
+        CryptoPersistenceConfig(getConfig(this::signingPersistence.name))
+    } else {
+        CryptoPersistenceConfig(factory.create(ConfigFactory.empty()))
+    }

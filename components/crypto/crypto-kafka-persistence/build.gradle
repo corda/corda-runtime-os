@@ -1,6 +1,7 @@
 plugins {
     id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'corda.common-library'
+    id 'corda.osgi-test-conventions'
 }
 
 dependencies {
@@ -16,6 +17,7 @@ dependencies {
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-topic-schema"
     implementation "net.corda:corda-crypto"
     implementation "net.corda:corda-cipher-suite"
@@ -25,7 +27,6 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":components:crypto:crypto-persistence")
     implementation project(":components:configuration:configuration-read-service")
-    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
@@ -34,6 +35,10 @@ dependencies {
     testImplementation project(":testing:test-utilities")
     testImplementation project(":libs:messaging:inmemory-messaging-impl")
     testImplementation project(":libs:configuration:configuration-core")
+    integrationTestRuntimeOnly project(":components:configuration:configuration-read-service-impl")
+    integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")
+    integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
+    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 }
 
 description "Crypto's in-memory persistence factory"
