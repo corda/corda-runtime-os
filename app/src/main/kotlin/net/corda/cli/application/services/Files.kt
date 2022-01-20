@@ -14,6 +14,6 @@ class Files {
             }
         }
 
-        val profile: File by lazy { Paths.get(cliHomeDir().path, "/.corda/cli/profile.yaml").toFile() }
+        val profile: File by lazy { Paths.get(cliHomeDir().path, "/profile.yaml").toFile() }
     }
 }

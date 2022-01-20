@@ -23,6 +23,7 @@ class HttpRpcService() : HttpService {
     override var url: String? = null
 
     private val data: Map<String, Any>
+    private val urlToUse by lazy { checkUrl() }
 
     init {
         val yaml = Yaml()
@@ -30,8 +31,8 @@ class HttpRpcService() : HttpService {
     }
 
     override fun get(endpoint: String) {
-        if (!checkUrl().isNullOrEmpty()) {
-            val (_, response, result) = Fuel.get(checkUrl() + endpoint)
+        if (!urlToUse.isNullOrEmpty()) {
+            val (_, response, result) = Fuel.get(urlToUse + endpoint)
                 .authentication().basic(username.toString(), password.toString())
                 .responseString()
             handleResult(result, response)
@@ -39,8 +40,8 @@ class HttpRpcService() : HttpService {
     }
 
     override fun post(endpoint: String, jsonBody: String) {
-        if (!checkUrl().isNullOrEmpty()) {
-            val (_, response, result) = Fuel.post(checkUrl() + endpoint)
+        if (!urlToUse.isNullOrEmpty()) {
+            val (_, response, result) = Fuel.post(urlToUse + endpoint)
                 .jsonBody(jsonBody)
                 .authentication().basic(username.toString(), password.toString())
                 .responseString()
@@ -49,8 +50,8 @@ class HttpRpcService() : HttpService {
     }
 
     override fun patch(endpoint: String, jsonBody: String) {
-        if (!checkUrl().isNullOrEmpty()) {
-            val (_, response, result) = Fuel.patch(checkUrl() + endpoint)
+        if (!urlToUse.isNullOrEmpty()) {
+            val (_, response, result) = Fuel.patch(urlToUse + endpoint)
                 .jsonBody(jsonBody)
                 .authentication().basic(username.toString(), password.toString())
                 .responseString()
@@ -59,8 +60,8 @@ class HttpRpcService() : HttpService {
     }
 
     override fun put(endpoint: String, jsonBody: String) {
-        if (!checkUrl().isNullOrEmpty()) {
-            val (_, response, result) = Fuel.put(checkUrl() + endpoint)
+        if (!urlToUse.isNullOrEmpty()) {
+            val (_, response, result) = Fuel.put(urlToUse + endpoint)
                 .jsonBody(jsonBody)
                 .authentication().basic(username.toString(), password.toString())
                 .responseString()
@@ -69,8 +70,8 @@ class HttpRpcService() : HttpService {
     }
 
     override fun delete(endpoint: String) {
-        if (!checkUrl().isNullOrEmpty()) {
-            val (_, response, result) = Fuel.delete(checkUrl() + endpoint)
+        if (!urlToUse.isNullOrEmpty()) {
+            val (_, response, result) = Fuel.delete(urlToUse + endpoint)
                 .authentication().basic(username.toString(), password.toString())
                 .responseString()
             handleResult(result, response)
