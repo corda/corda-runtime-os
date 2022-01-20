@@ -11,10 +11,10 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine
 
 // The PluginWrapper and Plugin are required for PF4J
-class ExamplePluginOneWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
+class ExamplePluginOne(wrapper: PluginWrapper) : Plugin(wrapper) {
 
     companion object {
-        private val logger: Logger = LoggerFactory.getLogger(ExamplePluginOneWrapper::class.java)
+        private val logger: Logger = LoggerFactory.getLogger(ExamplePluginOne::class.java)
     }
 
     // Supply plugin startup logic here
@@ -29,7 +29,7 @@ class ExamplePluginOneWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
 
     @Extension
     @CommandLine.Command(name = "plugin-one", description = ["Example Plugin one using function based subcommands, and services"])
-    class ExamplePluginOne : CordaCliPlugin, HttpServiceUser {
+    class ExamplePluginOneEntry : CordaCliPlugin, HttpServiceUser {
 
         @CommandLine.Mixin
         override lateinit var service: HttpService
@@ -42,7 +42,7 @@ class ExamplePluginOneWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
 
         @CommandLine.Command(name = "service-example", description = ["A subcommand that uses a service supplied by the host."])
         fun exampleServiceSubCommand() {
-            service.get("exampleEndpoint")
+            service.get("message")
         }
     }
 }
