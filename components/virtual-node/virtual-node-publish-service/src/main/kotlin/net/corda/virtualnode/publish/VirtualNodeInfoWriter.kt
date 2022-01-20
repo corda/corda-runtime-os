@@ -1,4 +1,4 @@
-package net.corda.virtualnode.write
+package net.corda.virtualnode.publish
 
 import net.corda.virtualnode.VirtualNodeInfo
 

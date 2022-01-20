@@ -1,4 +1,4 @@
 @Export
-package net.corda.virtualnode.write;
+package net.corda.virtualnode.publish;
 
 import org.osgi.annotation.bundle.Export;

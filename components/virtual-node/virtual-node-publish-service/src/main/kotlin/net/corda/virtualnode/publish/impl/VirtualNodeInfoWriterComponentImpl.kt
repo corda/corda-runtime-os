@@ -1,4 +1,4 @@
-package net.corda.virtualnode.write.impl
+package net.corda.virtualnode.publish.impl
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.identity.HoldingIdentity
@@ -18,7 +18,7 @@ import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.common.ConfigChangedEvent
 import net.corda.virtualnode.common.MessagingConfigEventHandler
 import net.corda.virtualnode.toAvro
-import net.corda.virtualnode.write.VirtualNodeInfoWriterComponent
+import net.corda.virtualnode.publish.VirtualNodeInfoWriterComponent
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

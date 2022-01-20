@@ -10,7 +10,7 @@ interface ConfigWriteService : Lifecycle {
     /**
      * Starts processing cluster configuration updates.
      *
-     * @param config Config to be used by the subscription.
+     * @param config Config to use for subscribing to Kafka.
      * @param instanceId The instance ID to use for subscribing to Kafka.
      * @param entityManagerFactory The factory for creating entity managers for interacting with the cluster database.
      */

@@ -3,7 +3,7 @@ plugins {
     id 'corda.common-library'
 }
 
-description "Virtual Node Info Writer Component"
+description "Virtual Node Info Publish Component"
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
