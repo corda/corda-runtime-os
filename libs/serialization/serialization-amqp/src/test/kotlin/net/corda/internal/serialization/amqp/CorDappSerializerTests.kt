@@ -55,8 +55,8 @@ class CorDappSerializerTests {
 
     @Test
 	fun `type uses proxy`() {
-        val internalProxyFactory = testDefaultFactory()
         val proxyFactory = testDefaultFactory()
+        val internalProxyFactory = testDefaultFactory()
 
         val msg = "help"
 
