@@ -123,8 +123,6 @@ fun requireCordaSerializable(type: Type) {
     }
 }
 
-fun isNotWhitelisted(clazz: Class<*>) = !hasCordaSerializable(clazz)
-
 /**
  * Check the given [Class] has the [CordaSerializable] annotation, either directly or inherited from any of its super
  * classes or interfaces.

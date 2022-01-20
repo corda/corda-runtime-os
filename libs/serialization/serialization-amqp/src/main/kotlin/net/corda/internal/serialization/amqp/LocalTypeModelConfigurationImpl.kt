@@ -23,7 +23,7 @@ class LocalTypeModelConfigurationImpl(
     constructor(customSerializerRegistry: CustomSerializerRegistry)
         : this(customSerializerRegistry, DEFAULT_BASE_TYPES)
 
-    override fun isExcluded(type: Type): Boolean = isNotWhitelisted(type.asClass())
+    override fun isExcluded(type: Type): Boolean = !hasCordaSerializable(type.asClass())
     override fun isOpaque(type: Type): Boolean = Primitives.unwrap(type.asClass()) in opaqueTypes ||
             customSerializerRegistry.findCustomSerializer(type.asClass(), type) != null
 }
