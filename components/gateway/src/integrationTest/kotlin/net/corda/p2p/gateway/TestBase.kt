@@ -106,7 +106,7 @@ open class TestBase {
                 val bootstrapper = ConfigFactory.empty()
                 it.bootstrapConfig(smartConfigFactory.create(bootstrapper))
                 eventually {
-                    assertThat(it.isRunning)
+                    assertThat(it.isRunning).isTrue
                 }
             }
         }

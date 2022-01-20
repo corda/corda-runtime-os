@@ -378,7 +378,7 @@ class P2PLayerEndToEndTest {
             configReadService.start()
             configReadService.bootstrapConfig(bootstrapConfig)
             eventually {
-                configReadService.isRunning
+                assertThat(configReadService.isRunning).isTrue
             }
 
             linkManager.start()
