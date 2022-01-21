@@ -1,0 +1,46 @@
+{
+  "type": "record",
+  "name": "VirtualNodeCreationResponse",
+  "namespace": "net.corda.data.virtualnode",
+  "fields": [
+    {
+      "name": "success",
+      "type": "boolean",
+      "doc": "Whether the request was successful."
+    },
+    {
+      "name": "exception",
+      "type": [
+        "null",
+        "net.corda.data.ExceptionEnvelope"
+      ],
+      "doc": "The cause of failure if the request was unsuccessful."
+    },
+    {
+      "name": "x500Name",
+      "type": "string"
+    },
+    {
+      "name": "cpiIdentifier",
+      "type": "net.corda.data.packaging.CPIIdentifier"
+    },
+    {
+      "name": "cpiIdentifierHash",
+      "type": "string",
+      "doc": "The short 12-character hash of the CPI."
+    },
+    {
+      "name": "mgmGroupId",
+      "type": "string"
+    },
+    {
+      "name": "holdingIdentity",
+      "type": "net.corda.data.identity.HoldingIdentity"
+    },
+    {
+      "name": "holdingIdentifierHash",
+      "type": "string",
+      "doc": "The short 12-character hash of the holding identity."
+    }
+  ]
+}

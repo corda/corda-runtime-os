@@ -88,6 +88,7 @@ class Schemas {
     class VirtualNode {
         companion object {
             const val VIRTUAL_NODE_INFO_TOPIC = "virtual.node.info"
+            const val VIRTUAL_NODE_CREATION_REQUEST_TOPIC = "virtual.node.creation.request"
             const val CPI_INFO_TOPIC = "cpi.info"
         }
     }
