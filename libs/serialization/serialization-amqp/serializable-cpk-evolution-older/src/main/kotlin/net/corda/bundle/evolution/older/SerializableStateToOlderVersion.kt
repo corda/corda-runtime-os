@@ -8,4 +8,4 @@ import java.util.UUID
  */
 @CordaSerializable
 //data class SerializableStateToOlderVersion(val id: UUID, val removedField: String)
-data class SerializableStateToOlderVersion(val Id:UUID)
+data class SerializableStateToOlderVersion(val id:UUID)
