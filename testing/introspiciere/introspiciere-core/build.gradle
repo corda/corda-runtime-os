@@ -5,5 +5,12 @@ plugins {
 description "Introspiciere core"
 
 dependencies {
+    implementation "net.corda:corda-avro-schema:$cordaApiVersion"
+    implementation project(":libs:messaging:kafka-message-bus-impl")
+    implementation project(":libs:schema-registry:schema-registry")
+    implementation project(":libs:schema-registry:schema-registry-impl")
+
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
+    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+    implementation "org.reflections:reflections:0.10.2"
 }

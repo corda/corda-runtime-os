@@ -6,18 +6,15 @@ import net.corda.data.Fingerprint
 import net.corda.data.SchemaLoadException
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.uncheckedCast
 import org.apache.avro.Schema
 import org.apache.avro.SchemaNormalization
 import org.apache.avro.io.DecoderFactory
 import org.apache.avro.io.EncoderFactory
-import org.apache.avro.specific.SpecificData
-import org.apache.avro.specific.SpecificDatumReader
-import org.apache.avro.specific.SpecificDatumWriter
-import org.apache.avro.specific.SpecificRecord
+import org.apache.avro.specific.*
 import org.osgi.service.component.annotations.Component
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
@@ -31,8 +28,9 @@ import java.util.zip.InflaterInputStream
 @SuppressWarnings("TooManyFunctions")
 @Component(service = [AvroSchemaRegistry::class])
 class AvroSchemaRegistryImpl(
-    private val options: Options = Options()
-): AvroSchemaRegistry {
+    private val options: Options = Options(),
+    specificRecordaBaseClasses: Set<Class<out SpecificRecordBase>>? = null,
+) : AvroSchemaRegistry {
 
     /**
      * The set of options available for the [AvroSchemaRegistryImpl].
@@ -269,7 +267,7 @@ class AvroSchemaRegistryImpl(
     }
 
     init {
-        val classes = try {
+        val classes = specificRecordaBaseClasses ?: try {
             AvroGeneratedMessageClasses.getAvroGeneratedMessageClasses(AvroGeneratedMessageClasses::class.java)
         } catch (e: SchemaLoadException) {
             throw CordaRuntimeException("Initialization error in AvroSchemaRegistry", e)
