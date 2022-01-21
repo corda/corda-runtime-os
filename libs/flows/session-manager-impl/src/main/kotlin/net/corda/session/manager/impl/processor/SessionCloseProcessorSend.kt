@@ -51,36 +51,43 @@ class SessionCloseProcessorSend(
                 sessionEvent.timestamp = instant.toEpochMilli()
                 sentEventState.lastProcessedSequenceNum = nextSeqNum
 
-                when (val currentState = sessionState.status) {
-                    //TODO - is this valid?
-                    // session may have no data messages to send/receive and so flow can execute to the end
-                    // session wont be closed until acks are received regardless but theres no reason to wait?
-                    SessionStateType.CREATED -> {
-                        sessionState.status = SessionStateType.CLOSING
-                        SessionEventResult(sessionState, listOf(sessionEvent))
-                    }
-                    SessionStateType.CONFIRMED -> {
-                        sessionState.status = SessionStateType.CLOSING
-                        SessionEventResult(sessionState, listOf(sessionEvent))
-                    }
-                    SessionStateType.CLOSING -> {
-                        //Doesn't go to closed until ack received
-                        sessionState.status = SessionStateType.WAIT_FOR_FINAL_ACK
-                        SessionEventResult(sessionState, listOf(sessionEvent))
-                    }
-                    SessionStateType.CLOSED -> {
-                        //session is already completed successfully. Indicates bug. should we send an error back and change state to error
-                        logger.error("Tried to send SessionClose on key $key and sessionId $sessionId, session status is " +
-                                "$currentState. Current SessionState: $sessionState")
-                        SessionEventResult(sessionState, null)
-                    }
-                    else -> {
-                        val errorMessage = "Tried to send SessionClose on key $key and sessionId $sessionId, session status is " +
-                                "$currentState. Current SessionState: $sessionState. Sending error to counterparty"
-                        logAndGenerateErrorResult(errorMessage, sessionState, sessionId, "SessionClose-InvalidStatus")
-                    }
-                }
+                getResultByCurrentState(sessionState, sessionId)
             }
+        }
+    }
+
+    private fun getResultByCurrentState(
+        sessionState: SessionState,
+        sessionId: String
+    ) = when (val currentState = sessionState.status) {
+        //TODO - is this valid?
+        // session may have no data messages to send/receive and so flow can execute to the end
+        // session wont be closed until acks are received regardless but theres no reason to wait?
+        SessionStateType.CREATED -> {
+            sessionState.status = SessionStateType.CLOSING
+            SessionEventResult(sessionState, listOf(sessionEvent))
+        }
+        SessionStateType.CONFIRMED -> {
+            sessionState.status = SessionStateType.CLOSING
+            SessionEventResult(sessionState, listOf(sessionEvent))
+        }
+        SessionStateType.CLOSING -> {
+            //Doesn't go to closed until ack received
+            sessionState.status = SessionStateType.WAIT_FOR_FINAL_ACK
+            SessionEventResult(sessionState, listOf(sessionEvent))
+        }
+        SessionStateType.CLOSED -> {
+            //session is already completed successfully. Indicates bug. should we send an error back and change state to error
+            logger.error(
+                "Tried to send SessionClose on key $key and sessionId $sessionId, session status is " +
+                        "$currentState. Current SessionState: $sessionState"
+            )
+            SessionEventResult(sessionState, null)
+        }
+        else -> {
+            val errorMessage = "Tried to send SessionClose on key $key and sessionId $sessionId, session status is " +
+                    "$currentState. Current SessionState: $sessionState. Sending error to counterparty"
+            logAndGenerateErrorResult(errorMessage, sessionState, sessionId, "SessionClose-InvalidStatus")
         }
     }
 
