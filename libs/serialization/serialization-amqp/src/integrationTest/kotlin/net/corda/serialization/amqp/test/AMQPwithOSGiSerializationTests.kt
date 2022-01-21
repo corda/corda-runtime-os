@@ -236,10 +236,7 @@ class AMQPwithOSGiSerializationTests {
         }
     }
 
-    // Based on writeTestResource from AMQPTestUtils.kt but with the following changes:
-    // - Outputs to the integrationTest directory
-    // - Caller supplied filename
-    // - No search for the top level repo directory
+    // Based on writeTestResource from AMQPTestUtils.kt which is not available as an OSGi exported package
     private fun Any.writeIntegrationTestResource(bytes: OpaqueBytes, testResourceName: String) {
         // Change to the full path of the repository to regenerate resources
         val projectRootDir = "/full-path-to-repo-dir"
