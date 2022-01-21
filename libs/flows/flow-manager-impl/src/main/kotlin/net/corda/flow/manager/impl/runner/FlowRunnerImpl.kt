@@ -22,9 +22,12 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
 
+@Suppress("unused")
 @Component(service = [FlowRunner::class])
 class FlowRunnerImpl @Activate constructor(
     @Reference(service = FlowFiberFactory::class)
@@ -36,10 +39,16 @@ class FlowRunnerImpl @Activate constructor(
     @Reference(service = FlowFactory::class)
     private val flowFactory: FlowFactory
 ) : FlowRunner {
-
     private companion object {
         val log = contextLogger()
-        private val scheduler = FiberExecutorScheduler("Same thread scheduler", ScheduledSingleThreadExecutor())
+    }
+
+    private val scheduler = FiberExecutorScheduler("Same thread scheduler", ScheduledSingleThreadExecutor())
+
+    @Deactivate
+    fun shutdown() {
+        scheduler.shutdown()
+        (scheduler.executor as? ExecutorService)?.shutdownNow()
     }
 
     override fun runFlow(

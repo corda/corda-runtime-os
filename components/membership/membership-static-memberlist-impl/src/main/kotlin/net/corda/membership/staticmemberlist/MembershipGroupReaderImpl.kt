@@ -1,5 +1,6 @@
 package net.corda.membership.staticmemberlist
 
+import net.corda.crypto.CryptoLibraryFactory
 import net.corda.crypto.SigningService
 import net.corda.membership.CPIWhiteList
 import net.corda.membership.GroupPolicy
@@ -42,10 +43,11 @@ import java.time.Instant
 class MembershipGroupReaderImpl(
     override val owningMember: MemberX500Name,
     override val policy: GroupPolicy,
-    private val keyEncodingService: KeyEncodingService,
+    private val cryptoLibraryFactory: CryptoLibraryFactory,
     private val signingService: SigningService
 ) : MembershipGroupReader {
 
+    private val keyEncodingService = cryptoLibraryFactory.getKeyEncodingService()
     private val memberInfoList: List<MemberInfo> = parseMemberTemplate()
 
     override val groupId: String
@@ -67,7 +69,7 @@ class MembershipGroupReaderImpl(
         val converter = PropertyConverterImpl(
             listOf(
                 EndpointInfoConverter(),
-                PublicKeyConverter(keyEncodingService),
+                PublicKeyConverter(cryptoLibraryFactory),
             )
         )
         @Suppress("SpreadOperator")

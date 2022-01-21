@@ -3,8 +3,8 @@ package net.corda.internal.serialization.amqp
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.internal.serialization.amqp.testutils.deserializeAndReturnEnvelope
 import net.corda.internal.serialization.amqp.testutils.serialize
+import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactoryNoEvolution
-import net.corda.internal.serialization.amqp.testutils.testDefaultFactoryWithWhitelist
 import net.corda.internal.serialization.amqp.testutils.testName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -23,6 +23,7 @@ class DeserializeAndReturnEnvelopeTests {
 
     @Test
 	fun oneType() {
+        @CordaSerializable
         data class A(val a: Int, val b: String)
 
         val a = A(10, "20")
@@ -37,7 +38,9 @@ class DeserializeAndReturnEnvelopeTests {
 
     @Test
 	fun twoTypes() {
+        @CordaSerializable
         data class A(val a: Int, val b: String)
+        @CordaSerializable
         data class B(val a: A, val b: Float)
 
         val b = B(A(10, "20"), 30.0F)
@@ -59,7 +62,7 @@ class DeserializeAndReturnEnvelopeTests {
         }
 
         val a = Foo(123)
-        val factory = testDefaultFactoryWithWhitelist()
+        val factory = testDefaultFactory()
         fun serialise(clazz: Any) = SerializationOutput(factory).serialize(clazz)
         val obj = DeserializationInput(factory).deserializeAndReturnEnvelope(serialise(a))
 

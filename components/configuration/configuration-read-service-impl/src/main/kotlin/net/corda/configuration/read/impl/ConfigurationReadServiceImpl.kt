@@ -1,9 +1,9 @@
 package net.corda.configuration.read.impl
 
 import net.corda.configuration.read.ConfigurationHandler
-import net.corda.configuration.read.ConfigurationReadException
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
+import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -36,17 +36,15 @@ class ConfigurationReadServiceImpl @Activate constructor(
         lifecycleCoordinator.postEvent(BootstrapConfigProvided(config))
     }
 
+    override fun registerComponentForUpdates(coordinator: LifecycleCoordinator, requiredKeys: Set<String>): AutoCloseable {
+        val handler = ComponentConfigHandler(coordinator, requiredKeys)
+        return registerForUpdates(handler)
+    }
+
     override fun registerForUpdates(configHandler: ConfigurationHandler): AutoCloseable {
-        if (isRunning) {
-            val registration = ConfigurationChangeRegistration(lifecycleCoordinator, configHandler)
-            lifecycleCoordinator.postEvent(ConfigRegistrationAdd(registration))
-            return registration
-        } else {
-            throw ConfigurationReadException(
-                "Cannot register for config changes while the configuration read service " +
-                        "is not running"
-            )
-        }
+        val registration = ConfigurationChangeRegistration(lifecycleCoordinator, configHandler)
+        lifecycleCoordinator.postEvent(ConfigRegistrationAdd(registration))
+        return registration
     }
 
     override val isRunning: Boolean

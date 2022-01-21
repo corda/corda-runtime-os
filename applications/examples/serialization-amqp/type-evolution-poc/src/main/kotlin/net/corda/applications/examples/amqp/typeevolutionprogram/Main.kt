@@ -2,7 +2,6 @@ package net.corda.applications.examples.amqp.typeevolutionprogram
 
 import net.corda.install.InstallService
 import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT
-import net.corda.internal.serialization.AllWhitelist
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.serialization.SerializationContext
@@ -60,7 +59,7 @@ class Main @Activate constructor(
         val loadCpb: CPI = installService.loadCpb(ByteArrayInputStream(outputStream.toByteArray()))
         val sandboxGroup = sandboxCreationService.createSandboxGroup(loadCpb.cpks)
 
-        val factory = SerializerFactoryBuilder.build(AllWhitelist, sandboxGroup)
+        val factory = SerializerFactoryBuilder.build(sandboxGroup)
 
         // Save output
 //        val output = SerializationOutput(factory)

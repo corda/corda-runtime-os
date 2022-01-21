@@ -114,7 +114,7 @@ class SandboxServiceImpl @Activate constructor(
     ): SandboxGroupContext {
         val cpb = installService.get(cpiIdentifier).get()
             ?: throw CordaRuntimeException("Could not get cpi from its identifier $cpiIdentifier")
-        val identifiers = cpb.cpks.map { it.metadata.id }.toSet()
+        val identifiers = cpb.cpks.mapTo(LinkedHashSet()) { it.metadata.id }
         val virtualNodeContext = VirtualNodeContext(holdingIdentity, identifiers, sandboxGroupType)
         return sandboxGroupContextService.getOrCreate(virtualNodeContext, initializer)
     }

@@ -12,8 +12,10 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
 import org.mockito.Captor
+import org.mockito.kotlin.any
 import org.mockito.kotlin.capture
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 
 class ConfigProcessorTest {
@@ -53,6 +55,23 @@ class ConfigProcessorTest {
             mapOf("bar" to smartConfigFromString(CONFIG_STRING)),
             (eventCaptor.value as NewConfigReceived).config
         )
+    }
+
+    @Test
+    fun `no config is forwarded if the snapshot is empty`() {
+        val coordinator = mock<LifecycleCoordinator>()
+        val configProcessor = ConfigProcessor(coordinator, smartConfigFactory)
+        configProcessor.onSnapshot(mapOf())
+        verify(coordinator, times(0)).postEvent(any())
+    }
+
+    @Test
+    fun `no config is forwarded if the update is null`() {
+        val coordinator = mock<LifecycleCoordinator>()
+        val configProcessor = ConfigProcessor(coordinator, smartConfigFactory)
+        val config = Configuration(CONFIG_STRING, "1")
+        configProcessor.onNext(Record("topic", "bar", null), null, mapOf("bar" to config))
+        verify(coordinator, times(0)).postEvent(any())
     }
 
     private fun smartConfigFromString(string: String): SmartConfig {

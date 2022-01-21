@@ -1,5 +1,6 @@
 package net.corda.membership.identity
 
+import net.corda.crypto.CryptoLibraryFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.WireSignatureWithKey
 import net.corda.data.membership.SignedMemberInfo
@@ -46,6 +47,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.io.File
 import java.lang.ClassCastException
@@ -59,6 +61,9 @@ import kotlin.test.assertNull
 class MemberInfoTest {
     companion object {
         private val keyEncodingService = Mockito.mock(KeyEncodingService::class.java)
+        private val cryptoLibraryFactory: CryptoLibraryFactory = mock<CryptoLibraryFactory>().apply {
+            whenever(getKeyEncodingService()).thenReturn(keyEncodingService)
+        }
         private const val KEY = "12345"
         private val key = Mockito.mock(PublicKey::class.java)
 
@@ -79,7 +84,7 @@ class MemberInfoTest {
         private val converter = PropertyConverterImpl(
             listOf(
                 EndpointInfoConverter(),
-                PublicKeyConverter(keyEncodingService),
+                PublicKeyConverter(cryptoLibraryFactory),
                 DummyConverter()
             )
         )

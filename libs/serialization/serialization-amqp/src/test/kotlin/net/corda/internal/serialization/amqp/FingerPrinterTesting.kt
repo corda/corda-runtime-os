@@ -1,12 +1,12 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.internal.serialization.AllWhitelist
 import net.corda.internal.serialization.amqp.testutils.TestSerializationOutput
 import net.corda.internal.serialization.amqp.testutils.serializeAndReturnSchema
 import net.corda.internal.serialization.amqp.testutils.testSerializationContext
 import net.corda.internal.serialization.model.ConfigurableLocalTypeModel
 import net.corda.internal.serialization.model.FingerPrinter
 import net.corda.internal.serialization.model.LocalTypeInformation
+import net.corda.v5.base.annotations.CordaSerializable
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.util.concurrent.TimeUnit
@@ -33,11 +33,11 @@ class FingerPrinterTestingTests {
     }
 
     @Test
-	fun testingTest() {
+    fun testingTest() {
         val fpt = FingerPrinterTesting()
         val descriptorBasedSerializerRegistry = DefaultDescriptorBasedSerializerRegistry()
         val customSerializerRegistry: CustomSerializerRegistry = CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry)
-        val typeModel = ConfigurableLocalTypeModel(WhitelistBasedTypeModelConfiguration(AllWhitelist, customSerializerRegistry))
+        val typeModel = ConfigurableLocalTypeModel(LocalTypeModelConfigurationImpl(customSerializerRegistry))
 
         assertEquals("0", fpt.fingerprint(typeModel.inspect(Integer::class.java)))
         assertEquals("1", fpt.fingerprint(typeModel.inspect(String::class.java)))
@@ -46,10 +46,11 @@ class FingerPrinterTestingTests {
     }
 
     @Test
-	fun worksAsReplacement() {
+    fun worksAsReplacement() {
+        @CordaSerializable
         data class C(val a: Int, val b: Long)
 
-        val factory = SerializerFactoryBuilder.build(AllWhitelist,
+        val factory = SerializerFactoryBuilder.build(
                 testSerializationContext.currentSandboxGroup(),
                 overrideFingerPrinter = FingerPrinterTesting())
 

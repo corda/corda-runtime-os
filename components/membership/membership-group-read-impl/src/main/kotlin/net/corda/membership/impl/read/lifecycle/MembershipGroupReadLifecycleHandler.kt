@@ -19,7 +19,7 @@ import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.impl.read.component.MembershipGroupReaderProviderImpl
 import net.corda.membership.impl.read.subscription.MembershipGroupReadSubscriptions
 import net.corda.membership.lifecycle.MembershipConfigReceived
-import net.corda.virtualnode.read.VirtualNodeInfoReaderComponent
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 
 /**
  * Lifecycle handler for the membership group read component.
@@ -37,7 +37,7 @@ interface MembershipGroupReadLifecycleHandler : LifecycleEventHandler {
         private var componentRegistrationHandle: AutoCloseable? = null
 
         private val virtualNodeInfoReader
-            get() = membershipGroupReadService.virtualNodeInfoReader
+            get() = membershipGroupReadService.virtualNodeInfoReadService
 
         private val cpiInfoReader
             get() = membershipGroupReadService.cpiInfoReader
@@ -68,7 +68,7 @@ interface MembershipGroupReadLifecycleHandler : LifecycleEventHandler {
                 setOf(
                     LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
                     LifecycleCoordinatorName.forComponent<CpiInfoReadService>(),
-                    LifecycleCoordinatorName.forComponent<VirtualNodeInfoReaderComponent>(),
+                    LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
                 )
             )
         }
