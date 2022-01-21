@@ -53,18 +53,18 @@ class DominoTile(
     }
     class StatusChangeEvent(val newState: State): LifecycleEvent
 
-    private val dominoTileName = LifecycleCoordinatorName(
-        componentName,
-        instancesIndex.compute(componentName) { _, last ->
-            if (last == null) {
-                1
-            } else {
-                last + 1
-            }
-        }.toString()
-    )
-    val name: LifecycleCoordinatorName
-        get() = dominoTileName
+    val name: LifecycleCoordinatorName by lazy {
+        LifecycleCoordinatorName(
+            componentName,
+            instancesIndex.compute(componentName) { _, last ->
+                if (last == null) {
+                    1
+                } else {
+                    last + 1
+                }
+            }.toString()
+        )
+    }
 
     private val logger = LoggerFactory.getLogger(name.toString())
 
@@ -98,9 +98,9 @@ class DominoTile(
     private val latestChildStateMap: MutableMap<DominoTile, State> = children.map {
         it to it.state
     }.toMap().toMutableMap()
-    private val registrationToChildMap: Map<RegistrationHandle, DominoTile> = children.map {
-        coordinator.followStatusChangesByName(setOf(it.name)) to it
-    }.toMap()
+    private val registrationToChildMap: Map<RegistrationHandle, DominoTile> = children.associateBy {
+        coordinator.followStatusChangesByName(setOf(it.name))
+    }
 
     private val currentState = AtomicReference(State.Created)
 
@@ -427,8 +427,8 @@ class DominoTile(
     }
 
     override fun close() {
-        registrationToChildMap.forEach {
-            it.key.close()
+        registrationToChildMap.keys.forEach {
+            it.close()
         }
         configRegistration?.close()
         configRegistration = null
