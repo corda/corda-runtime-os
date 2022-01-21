@@ -2,6 +2,7 @@ package net.corda.membership.impl.read.lifecycle
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.crypto.CryptoLibraryFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigObject
 import net.corda.lifecycle.LifecycleCoordinator
@@ -50,8 +51,17 @@ class MembershipGroupReadLifecycleHandlerTest {
         doReturn(readServiceCoordinator).whenever(this).createCoordinator(any(), any())
     }
     private val converter: PropertyConverter = mock()
+    private val cryptoLibraryFactory: CryptoLibraryFactory = mock {
+        on { getKeyEncodingService() } doReturn mock()
+    }
     private val membershipGroupReadService: MembershipGroupReaderProviderImpl = MembershipGroupReaderProviderImpl(
-        virtualNodeInfoReadService, cpiInfoReader, configurationReadService, mock(), coordinatorFactory, converter
+        virtualNodeInfoReadService,
+        cpiInfoReader,
+        configurationReadService,
+        mock(),
+        coordinatorFactory,
+        converter,
+        cryptoLibraryFactory
     )
     private val membershipGroupReadSubscriptions: MembershipGroupReadSubscriptions = mock()
 
