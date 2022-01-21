@@ -8,6 +8,7 @@ import net.corda.crypto.SigningService
 import net.corda.crypto.SigningService.Companion.EMPTY_CONTEXT
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.membership.conversion.PropertyConverterImpl
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.identity.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.identity.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
@@ -16,6 +17,8 @@ import net.corda.membership.identity.MemberInfoExtension.Companion.groupId
 import net.corda.membership.identity.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.identity.MemberInfoExtension.Companion.softwareVersion
 import net.corda.membership.identity.MemberInfoExtension.Companion.status
+import net.corda.membership.identity.converter.EndpointInfoConverter
+import net.corda.membership.identity.converter.PublicKeyConverter
 import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.SUBMITTED
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.NOT_SUBMITTED
@@ -44,6 +47,7 @@ import org.mockito.kotlin.eq
 import java.security.PublicKey
 import java.util.concurrent.CompletableFuture
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -119,15 +123,19 @@ class StaticMemberRegistrationServiceTest {
         on { stop() } doAnswer { coordinatorIsRunning = false }
     }
 
-    private var registrationServiceLifecycleHandler: RegistrationServiceLifecycleHandlerImpl? = null
+    private var registrationServiceLifecycleHandler: RegistrationServiceLifecycleHandler? = null
 
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock {
         on { createCoordinator(any(), any()) } doReturn coordinator
         on { createCoordinator(any(), any()) } doAnswer {
-            registrationServiceLifecycleHandler = it.arguments[1] as RegistrationServiceLifecycleHandlerImpl
+            registrationServiceLifecycleHandler = it.arguments[1] as RegistrationServiceLifecycleHandler
             coordinator
         }
     }
+
+    private val converter: PropertyConverterImpl = PropertyConverterImpl(
+        listOf(EndpointInfoConverter(), PublicKeyConverter(cryptoLibraryFactory))
+    )
 
     private val registrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
@@ -135,7 +143,8 @@ class StaticMemberRegistrationServiceTest {
         cryptoLibraryFactory,
         cryptoLibraryClientsFactoryProvider,
         configurationReadService,
-        lifecycleCoordinatorFactory
+        lifecycleCoordinatorFactory,
+        converter
     )
 
     @Suppress("UNCHECKED_CAST")
@@ -149,9 +158,9 @@ class StaticMemberRegistrationServiceTest {
     @Test
     fun `starting and stopping the service succeeds`() {
         registrationService.start()
-        assertEquals(true, registrationService.isRunning)
+        assertTrue(registrationService.isRunning)
         registrationService.stop()
-        assertEquals(false, registrationService.isRunning)
+        assertFalse(registrationService.isRunning)
     }
 
     @Test
@@ -239,5 +248,18 @@ class StaticMemberRegistrationServiceTest {
             registrationResult
         )
         registrationService.stop()
+    }
+
+    @Test
+    fun `registration fails when coordinator is not running`() {
+        setUpPublisher()
+        val registrationResult = registrationService.register(daisy)
+        assertEquals(
+            MembershipRequestRegistrationResult(
+                NOT_SUBMITTED,
+                "Registration failed. Reason: StaticMemberRegistrationService is not running/down."
+            ),
+            registrationResult
+        )
     }
 }

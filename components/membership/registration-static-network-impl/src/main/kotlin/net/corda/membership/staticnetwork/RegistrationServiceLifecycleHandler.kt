@@ -16,16 +16,9 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.schema.configuration.ConfigKeys.Companion.MESSAGING_CONFIG
 
-interface RegistrationServiceLifecycleHandler : LifecycleEventHandler {
-    /**
-     * Publisher for Kafka messaging. Recreated after every [MESSAGING_CONFIG] change.
-     */
-    val publisher: Publisher
-}
-
-open class RegistrationServiceLifecycleHandlerImpl(
+class RegistrationServiceLifecycleHandler(
     staticMemberRegistrationService: StaticMemberRegistrationService
-) : RegistrationServiceLifecycleHandler {
+) : LifecycleEventHandler {
     // for watching the config changes
     private var configHandle: AutoCloseable? = null
     // for checking the components' health
@@ -37,7 +30,10 @@ open class RegistrationServiceLifecycleHandlerImpl(
 
     private var _publisher: Publisher? = null
 
-    override val publisher: Publisher
+    /**
+     * Publisher for Kafka messaging. Recreated after every [MESSAGING_CONFIG] change.
+     */
+    val publisher: Publisher
         get() = _publisher ?: throw IllegalArgumentException("Publisher is not initialized.")
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
@@ -94,7 +90,7 @@ open class RegistrationServiceLifecycleHandlerImpl(
     }
 }
 
-class MessagingConfigurationHandler(val coordinator: LifecycleCoordinator) : ConfigurationHandler {
+class MessagingConfigurationHandler(private val coordinator: LifecycleCoordinator) : ConfigurationHandler {
     override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
         if(MESSAGING_CONFIG in changedKeys) {
             coordinator.postEvent(MessagingConfigurationReceived(config[MESSAGING_CONFIG]!!))

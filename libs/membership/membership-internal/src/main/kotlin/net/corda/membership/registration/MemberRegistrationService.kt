@@ -1,5 +1,6 @@
 package net.corda.membership.registration
 
+import net.corda.lifecycle.Lifecycle
 import net.corda.virtualnode.HoldingIdentity
 
 enum class MembershipRequestRegistrationOutcome {
@@ -25,7 +26,7 @@ data class MembershipRequestRegistrationResult(val outcome: MembershipRequestReg
 /**
  * Handles the registration process on the member side.
  */
-interface MemberRegistrationService {
+interface MemberRegistrationService : Lifecycle {
     /**
      * Creates the registration request and submits it towards the MGM.
      * This is the first step to take for a virtual node to become a fully

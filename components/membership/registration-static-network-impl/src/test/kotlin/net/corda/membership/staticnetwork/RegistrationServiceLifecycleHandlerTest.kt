@@ -14,6 +14,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.v5.membership.conversion.PropertyConverter
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -50,16 +51,19 @@ class RegistrationServiceLifecycleHandlerTest {
         on { createCoordinator(any(), any()) } doReturn coordinator
     }
 
+    private val converter: PropertyConverter = mock()
+
     private val staticMemberRegistrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
         publisherFactory,
         cryptoLibraryFactory,
         cryptoLibraryClientsFactoryProvider,
         configurationReadService,
-        coordinatorFactory
+        coordinatorFactory,
+        converter
     )
 
-    private val registrationServiceLifecycleHandler = RegistrationServiceLifecycleHandlerImpl(
+    private val registrationServiceLifecycleHandler = RegistrationServiceLifecycleHandler(
         staticMemberRegistrationService
     )
 

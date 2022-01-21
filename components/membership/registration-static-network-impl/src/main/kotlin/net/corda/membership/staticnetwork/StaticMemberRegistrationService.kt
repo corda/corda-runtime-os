@@ -5,11 +5,10 @@ import net.corda.crypto.CryptoCategories
 import net.corda.crypto.CryptoLibraryClientsFactoryProvider
 import net.corda.crypto.CryptoLibraryFactory
 import net.corda.crypto.SigningService
-import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.GroupPolicy
-import net.corda.membership.conversion.PropertyConverterImpl
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.identity.EndpointInfoImpl
 import net.corda.membership.identity.MGMContextImpl
@@ -26,8 +25,6 @@ import net.corda.membership.identity.MemberInfoExtension.Companion.SOFTWARE_VERS
 import net.corda.membership.identity.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.identity.MemberInfoExtension.Companion.groupId
 import net.corda.membership.identity.MemberInfoImpl
-import net.corda.membership.identity.converter.EndpointInfoConverter
-import net.corda.membership.identity.converter.PublicKeyConverter
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.SUBMITTED
@@ -42,12 +39,12 @@ import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companio
 import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.STATIC_SERIAL
 import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.STATIC_SOFTWARE_VERSION
 import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.staticMembers
-import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.membership.conversion.PropertyConverter
 import net.corda.v5.membership.identity.EndpointInfo
 import net.corda.v5.membership.identity.MemberInfo
 import net.corda.v5.membership.identity.MemberX500Name
@@ -60,7 +57,7 @@ import java.time.Instant
 
 @Suppress("LongParameterList")
 @Component(service = [MemberRegistrationService::class])
-open class StaticMemberRegistrationService @Activate constructor(
+class StaticMemberRegistrationService @Activate constructor(
     @Reference(service = GroupPolicyProvider::class)
     val groupPolicyProvider: GroupPolicyProvider,
     @Reference(service = PublisherFactory::class)
@@ -72,8 +69,10 @@ open class StaticMemberRegistrationService @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     val configurationReadService: ConfigurationReadService,
     @Reference(service = LifecycleCoordinatorFactory::class)
-    val coordinatorFactory: LifecycleCoordinatorFactory
-) : MemberRegistrationService, Lifecycle {
+    val coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = PropertyConverter::class)
+    val converter: PropertyConverter
+) : MemberRegistrationService {
     companion object {
         private val logger: Logger = contextLogger()
         private val endpointUrlIdentifier = ENDPOINT_URL.substringBefore("-")
@@ -84,14 +83,12 @@ open class StaticMemberRegistrationService @Activate constructor(
         internal const val DEFAULT_SERIAL = "1"
     }
 
-    private lateinit var keyEncodingService: KeyEncodingService
-
-    private var publisher: Publisher? = null
+    private val keyEncodingService: KeyEncodingService  = cryptoLibraryFactory.getKeyEncodingService()
 
     private val topic = Schemas.Membership.MEMBER_LIST_TOPIC
 
     // Handler for lifecycle events
-    private val lifecycleHandler = RegistrationServiceLifecycleHandlerImpl(this)
+    private val lifecycleHandler = RegistrationServiceLifecycleHandler(this)
 
     // Component lifecycle coordinator
     private val coordinator =
@@ -103,7 +100,6 @@ open class StaticMemberRegistrationService @Activate constructor(
     override fun start() {
         logger.info("StaticMemberRegistrationService started.")
         coordinator.start()
-        keyEncodingService = cryptoLibraryFactory.getKeyEncodingService()
     }
 
     override fun stop() {
@@ -112,14 +108,19 @@ open class StaticMemberRegistrationService @Activate constructor(
     }
 
     override fun register(member: HoldingIdentity): MembershipRequestRegistrationResult {
+        if(!isRunning || coordinator.status == LifecycleStatus.DOWN) {
+            return MembershipRequestRegistrationResult(
+                NOT_SUBMITTED,
+                "Registration failed. Reason: StaticMemberRegistrationService is not running/down."
+            )
+        }
         try {
-            publisher = lifecycleHandler.publisher
-            val updates = publisher?.publish(
+            val updates = lifecycleHandler.publisher.publish(
                 parseMemberTemplate(member).map {
                     Record(topic, member.id + "-" + HoldingIdentity(it.name.toString(), it.groupId).id, it)
                 }
             )
-            updates?.forEach { it.get() }
+            updates.forEach { it.get() }
         } catch (e: Exception) {
             logger.warn("Registration failed. Reason: ${e.message}")
             return MembershipRequestRegistrationResult(
@@ -132,12 +133,6 @@ open class StaticMemberRegistrationService @Activate constructor(
 
     private fun parseMemberTemplate(member: HoldingIdentity): List<MemberInfo> {
         val members = mutableListOf<MemberInfo>()
-        val converter = PropertyConverterImpl(
-            listOf(
-                EndpointInfoConverter(),
-                PublicKeyConverter(cryptoLibraryFactory),
-            )
-        )
 
         val policy = groupPolicyProvider.getGroupPolicy(member)
 
@@ -146,16 +141,17 @@ open class StaticMemberRegistrationService @Activate constructor(
             throw IllegalArgumentException("Static member list inside the group policy file cannot be empty.")
         }
 
+        // temporary solution until we don't have a more suitable category
+        val signingService =
+            cryptoLibraryClientsFactoryProvider.get(
+                member.id,
+                "static-member-registration-service"
+            ).getSigningService(CryptoCategories.LEDGER)
+
         val processedMembers = mutableListOf<MemberX500Name>()
         @Suppress("SpreadOperator")
         staticMemberList.forEach { staticMember ->
             isValidStaticMemberDeclaration(processedMembers, staticMember)
-            // temporary solution until we don't have a more suitable category
-            val signingService =
-                cryptoLibraryClientsFactoryProvider.get(
-                    member.id,
-                    "static-member-registration-service"
-                ).getSigningService(CryptoCategories.LEDGER)
             val owningKey = generateOwningKey(signingService, staticMember, policy)
             members.add(
                 MemberInfoImpl(
