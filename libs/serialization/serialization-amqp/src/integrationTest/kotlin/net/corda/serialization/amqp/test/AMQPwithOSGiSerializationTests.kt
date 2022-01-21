@@ -311,7 +311,7 @@ class AMQPwithOSGiSerializationTests {
         // Test with current version of CPK
         val resource = this.javaClass.getResourceAsStream(testResourceName)
             ?: throw RuntimeException("$testResourceName not found")
-        val deserialize: Any =
+        val deserialized: Any =
             DeserializationInput(factory).deserialize(
                 ByteSequence.of(resource.readAllBytes()),
                 Any::class.java,
