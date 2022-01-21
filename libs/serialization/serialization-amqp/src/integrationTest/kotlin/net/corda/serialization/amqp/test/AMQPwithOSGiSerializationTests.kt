@@ -3,6 +3,7 @@ package net.corda.serialization.amqp.test
 import net.corda.install.InstallService
 import net.corda.internal.serialization.SerializationContextImpl
 import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT
+import net.corda.internal.serialization.AllWhitelist
 import net.corda.internal.serialization.amqp.DefaultDescriptorBasedSerializerRegistry
 import net.corda.internal.serialization.amqp.DescriptorBasedSerializerRegistry
 import net.corda.internal.serialization.amqp.DeserializationInput
@@ -119,22 +120,8 @@ class AMQPwithOSGiSerializationTests {
         }
     }
 
-    @JvmOverloads
-    fun testDefaultFactoryNoEvolution(sandboxGroup: SandboxGroup, descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
-                                              DefaultDescriptorBasedSerializerRegistry()): SerializerFactory =
-            SerializerFactoryBuilder.build(
-                    sandboxGroup,
-                    descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry,
-                    allowEvolution = false)
-
-    @JvmOverloads
-    fun testDefaultFactory(sandboxGroup: SandboxGroup, descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
-        DefaultDescriptorBasedSerializerRegistry()): SerializerFactory =
-        SerializerFactoryBuilder.build(
-            AllWhitelist,
-            sandboxGroup,
-            descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry,
-            allowEvolution = true)
+    fun testDefaultFactory(sandboxGroup: SandboxGroup): SerializerFactory =
+        SerializerFactoryBuilder.build(sandboxGroup, allowEvolution = true)
 
     @Throws(NotSerializableException::class)
     inline fun <reified T : Any> DeserializationInput.deserializeAndReturnEnvelope(
@@ -157,8 +144,8 @@ class AMQPwithOSGiSerializationTests {
             assertThat(sandboxGroup).isNotNull
 
             // Initialised two serialisation factories to avoid having successful tests due to caching
-            val factory1 = testDefaultFactoryNoEvolution(sandboxGroup)
-            val factory2 = testDefaultFactoryNoEvolution(sandboxGroup)
+            val factory1 = testDefaultFactory(sandboxGroup)
+            val factory2 = testDefaultFactory(sandboxGroup)
 
             // Initialise the serialisation context
             val testSerializationContext = testSerializationContext.withSandboxGroup(sandboxGroup)
@@ -223,7 +210,7 @@ class AMQPwithOSGiSerializationTests {
         val cpi = assembleCPI(cpk)
         val cpks = installService.getCpb(cpi.metadata.id)!!.cpks
         val sandboxGroup = sandboxCreationService.createSandboxGroup(cpks)
-        val factory = testDefaultFactoryNoEvolution(sandboxGroup)
+        val factory = testDefaultFactory(sandboxGroup)
         val context = testSerializationContext.withSandboxGroup(sandboxGroup)
 
         val mainBundleItemClass = sandboxGroup.loadClassFromMainBundles("net.corda.bundle.MainBundleItem")
@@ -321,7 +308,7 @@ class AMQPwithOSGiSerializationTests {
         val originalCpi = assembleCPI(originalCpk)
         val originalCpks = installService.getCpb(originalCpi.metadata.id)!!.cpks
         val originalSandboxGroup = sandboxCreationService.createSandboxGroup(originalCpks)
-        val originalFactory = testDefaultFactoryNoEvolution(originalSandboxGroup)
+        val originalFactory = testDefaultFactory(originalSandboxGroup)
         val originalContext = testSerializationContext.withSandboxGroup(originalSandboxGroup)
 
         val originalStateClass = originalSandboxGroup.loadClassFromMainBundles("net.corda.bundle.evolution.different.SerializableStateForDifferentCpk")
@@ -334,7 +321,7 @@ class AMQPwithOSGiSerializationTests {
         val replacementCpi = assembleCPI(replacementCpk)
         val replacementCpks = installService.getCpb(replacementCpi.metadata.id)!!.cpks
         val replacementSandboxGroup = sandboxCreationService.createSandboxGroup(replacementCpks)
-        val replacementFactory = testDefaultFactoryNoEvolution(replacementSandboxGroup)
+        val replacementFactory = testDefaultFactory(replacementSandboxGroup)
         val replacementContext = testSerializationContext.withSandboxGroup(replacementSandboxGroup)
         val deserializationInput = DeserializationInput(replacementFactory)
 
