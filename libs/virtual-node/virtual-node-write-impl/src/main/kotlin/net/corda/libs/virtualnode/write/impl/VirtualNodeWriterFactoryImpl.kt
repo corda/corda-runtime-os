@@ -1,7 +1,7 @@
 package net.corda.libs.virtualnode.write.impl
 
-import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.data.virtualnode.VirtualNodeCreationRequest
+import net.corda.data.virtualnode.VirtualNodeCreationResponse
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.virtualnode.write.VirtualNodeWriter
 import net.corda.libs.virtualnode.write.VirtualNodeWriterException
@@ -68,7 +68,7 @@ internal class VirtualNodeWriterFactoryImpl @Activate constructor(
             CLIENT_NAME_RPC,
             VIRTUAL_NODE_CREATION_REQUEST_TOPIC,
             VirtualNodeCreationRequest::class.java,
-            ConfigurationManagementResponse::class.java,
+            VirtualNodeCreationResponse::class.java,
         )
         val processor = VirtualNodeWriterProcessor(publisher)
 

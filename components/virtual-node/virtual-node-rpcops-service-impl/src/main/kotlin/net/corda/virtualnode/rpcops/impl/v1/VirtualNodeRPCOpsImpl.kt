@@ -1,8 +1,8 @@
 package net.corda.virtualnode.rpcops.impl.v1
 
-import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.data.crypto.SecureHash
 import net.corda.data.virtualnode.VirtualNodeCreationRequest
+import net.corda.data.virtualnode.VirtualNodeCreationResponse
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.HttpApiException
 import net.corda.libs.configuration.SmartConfig
@@ -38,14 +38,13 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
             CLIENT_NAME_HTTP,
             VIRTUAL_NODE_CREATION_REQUEST_TOPIC,
             VirtualNodeCreationRequest::class.java,
-            // TODO - Use correct response object.
-            ConfigurationManagementResponse::class.java
+            VirtualNodeCreationResponse::class.java
         )
     }
 
     override val targetInterface = VirtualNodeRPCOps::class.java
     override val protocolVersion = 1
-    private var rpcSender: RPCSender<VirtualNodeCreationRequest, ConfigurationManagementResponse>? = null
+    private var rpcSender: RPCSender<VirtualNodeCreationRequest, VirtualNodeCreationResponse>? = null
     private var requestTimeout: Duration? = null
     override val isRunning get() = rpcSender != null && requestTimeout != null
 
@@ -87,7 +86,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
      * @throws VirtualNodeRPCOpsServiceException If the updated configuration could not be published.
      */
     @Suppress("ThrowsCount")
-    private fun sendRequest(request: VirtualNodeCreationRequest): ConfigurationManagementResponse {
+    private fun sendRequest(request: VirtualNodeCreationRequest): VirtualNodeCreationResponse {
         val nonNullRPCSender = rpcSender ?: throw VirtualNodeRPCOpsServiceException(
             "Configuration update request could not be sent as no RPC sender has been created."
         )
