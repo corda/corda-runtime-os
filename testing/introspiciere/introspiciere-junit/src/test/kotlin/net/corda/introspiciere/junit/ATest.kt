@@ -5,11 +5,12 @@ import org.junit.jupiter.api.extension.RegisterExtension
 
 internal class ATest {
     @RegisterExtension
-    val hostA = DeployCluster("host-a")
+    val hostA = DeployCluster("alpha")
 
     @Test
     fun first() {
-        println(hostA.helloworld())
+        println(
+            hostA.helloworld()
+        )
     }
 }
-

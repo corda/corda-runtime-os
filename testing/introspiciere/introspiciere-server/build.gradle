@@ -9,12 +9,13 @@ dependencies {
     implementation "org.slf4j:slf4j-simple:$slf4jVersion"
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
-    implementation project(':testing:introspiciere:introspiciere-core')
+    implementation "org.pf4j:pf4j:3.6.0"
+
+    implementation project(':testing:introspiciere:introspiciere-plugin')
 }
 
 jar {
-    // not sure why the dependency is not building automatically
-    dependsOn ':testing:introspiciere:introspiciere-core:build'
+//    dependsOn ':testing:introspiciere:introspiciere-plugin-helloworld:jar'
 
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 

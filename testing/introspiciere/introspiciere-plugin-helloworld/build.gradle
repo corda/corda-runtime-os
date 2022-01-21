@@ -1,0 +1,34 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id "org.jetbrains.kotlin.kapt"
+}
+
+description "Introspiciere REST server"
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
+
+    compileOnly "io.javalin:javalin:4.3.0"
+    compileOnly "org.pf4j:pf4j:3.6.0"
+    kapt "org.pf4j:pf4j:3.6.0"
+
+    compileOnly project(':testing:introspiciere:introspiciere-plugin')
+    implementation project(':testing:introspiciere:introspiciere-core')
+}
+
+jar {
+    // not sure why the dependency is not building automatically
+//    dependsOn ':testing:introspiciere:introspiciere-core:build'
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    manifest {
+//        attributes "Plugin-Class": "net.corda.introspiciere.helloworld.HelloworldPlugin"
+        attributes "Plugin-Id": "helloworld-handler"
+        attributes "Plugin-Version": "0.0.1"
+    }
+
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}

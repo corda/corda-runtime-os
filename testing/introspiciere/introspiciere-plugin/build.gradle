@@ -1,0 +1,10 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+}
+
+description "Introspiciere plugin interface"
+
+dependencies {
+    compileOnly "io.javalin:javalin:4.3.0"
+    compileOnly "org.pf4j:pf4j:3.6.0"
+}
