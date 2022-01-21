@@ -1,7 +1,7 @@
 package net.corda.libs.virtualnode.write.impl
 
-import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
+import net.corda.data.virtualnode.VirtualNodeCreationRequest
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
@@ -16,7 +16,7 @@ import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
  */
 internal class VirtualNodeWriterProcessor(
     private val publisher: Publisher
-) : RPCResponderProcessor<ConfigurationManagementRequest, ConfigurationManagementResponse> {
+) : RPCResponderProcessor<VirtualNodeCreationRequest, ConfigurationManagementResponse> {
 
     /**
      * For each [request], the processor attempts to commit the updated config to the cluster database. If successful,
@@ -25,7 +25,8 @@ internal class VirtualNodeWriterProcessor(
      *
      * If both steps succeed, [respFuture] is completed successfully. Otherwise, it is completed unsuccessfully.
      */
-    override fun onNext(request: ConfigurationManagementRequest, respFuture: ConfigurationManagementResponseFuture) {
+    override fun onNext(request: VirtualNodeCreationRequest, respFuture: ConfigurationManagementResponseFuture) {
+        println("JJJ received request: $request")
         val response = ConfigurationManagementResponse(
             true, null, "", "", 0, 0
         )

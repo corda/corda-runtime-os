@@ -1,7 +1,8 @@
 package net.corda.virtualnode.rpcops.impl.v1
 
-import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
+import net.corda.data.crypto.SecureHash
+import net.corda.data.virtualnode.VirtualNodeCreationRequest
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.HttpApiException
 import net.corda.libs.configuration.SmartConfig
@@ -12,7 +13,6 @@ import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeRespon
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
-import net.corda.schema.Schemas.Config.Companion.CONFIG_MGMT_REQUEST_TOPIC
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_CREATION_REQUEST_TOPIC
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.virtualnode.rpcops.VirtualNodeRPCOpsServiceException
@@ -21,6 +21,7 @@ import net.corda.virtualnode.rpcops.impl.GROUP_NAME
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.nio.ByteBuffer
 import java.time.Duration
 
 /** An implementation of [VirtualNodeRPCOpsInternal]. */
@@ -36,17 +37,17 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
             GROUP_NAME,
             CLIENT_NAME_HTTP,
             VIRTUAL_NODE_CREATION_REQUEST_TOPIC,
-            // TODO - Use correct request and response objects.
-            ConfigurationManagementRequest::class.java,
+            VirtualNodeCreationRequest::class.java,
+            // TODO - Use correct response object.
             ConfigurationManagementResponse::class.java
         )
     }
 
     override val targetInterface = VirtualNodeRPCOps::class.java
     override val protocolVersion = 1
-    private var rpcSender: RPCSender<ConfigurationManagementRequest, ConfigurationManagementResponse>? = null
+    private var rpcSender: RPCSender<VirtualNodeCreationRequest, ConfigurationManagementResponse>? = null
     private var requestTimeout: Duration? = null
-    override val isRunning = rpcSender != null && requestTimeout != null
+    override val isRunning get() = rpcSender != null && requestTimeout != null
 
     override fun start() = Unit
 
@@ -65,7 +66,8 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
     }
 
     override fun createVirtualNode(request: HTTPCreateVirtualNodeRequest): HTTPCreateVirtualNodeResponse {
-        val rpcRequest = ConfigurationManagementRequest("", "", 0, "", 0)
+        val cpiIdHash = SecureHash("algorithm", ByteBuffer.wrap("1234".toByteArray()))
+        val rpcRequest = VirtualNodeCreationRequest("dummyX500Name", cpiIdHash)
         val response =  sendRequest(rpcRequest)
 
         return if (response.success) {
@@ -85,7 +87,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
      * @throws VirtualNodeRPCOpsServiceException If the updated configuration could not be published.
      */
     @Suppress("ThrowsCount")
-    private fun sendRequest(request: ConfigurationManagementRequest): ConfigurationManagementResponse {
+    private fun sendRequest(request: VirtualNodeCreationRequest): ConfigurationManagementResponse {
         val nonNullRPCSender = rpcSender ?: throw VirtualNodeRPCOpsServiceException(
             "Configuration update request could not be sent as no RPC sender has been created."
         )
