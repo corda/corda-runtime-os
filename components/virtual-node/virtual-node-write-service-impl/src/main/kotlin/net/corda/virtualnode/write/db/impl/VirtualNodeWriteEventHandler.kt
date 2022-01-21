@@ -1,7 +1,6 @@
 package net.corda.virtualnode.write.db.impl
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.db.core.HikariDataSourceFactory
 import net.corda.libs.virtualnode.write.VirtualNodeWriter
 import net.corda.libs.virtualnode.write.VirtualNodeWriterFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -13,9 +12,6 @@ import net.corda.lifecycle.LifecycleStatus.UP
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.orm.DbEntityManagerConfiguration
-import net.corda.orm.EntityManagerFactoryFactory
-import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 
 /** Handles incoming [LifecycleCoordinator] events for [VirtualNodeWriteServiceImpl]. */
 internal class VirtualNodeWriteEventHandler(
@@ -28,11 +24,8 @@ internal class VirtualNodeWriteEventHandler(
     internal var virtualNodeWriter: VirtualNodeWriter? = null
 
     /**
-     * Upon [StartProcessingEvent], starts processing cluster configuration updates. Upon [StopEvent], stops processing
-     * them.
-     *
-     * @throws VirtualNodeWriteServiceException If multiple [StartProcessingEvent]s are received, or if the creation of
-     *  the subscription fails.
+     * Upon receiving configuration from [configReadService], starts handling Kafka messages related to virtual node
+     * creation.
      */
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
@@ -44,7 +37,6 @@ internal class VirtualNodeWriteEventHandler(
 
     /** Starts tracking the status of the [ConfigurationReadService]. */
     private fun followConfigReadServiceStatus(coordinator: LifecycleCoordinator) {
-        println("JJJ starting up")
         configReadServiceRegistrationHandle?.close()
         configReadServiceRegistrationHandle = coordinator.followStatusChangesByName(
             setOf(LifecycleCoordinatorName.forComponent<ConfigurationReadService>())
@@ -56,7 +48,6 @@ internal class VirtualNodeWriteEventHandler(
         coordinator: LifecycleCoordinator,
         event: RegistrationStatusChangeEvent
     ) {
-        println("JJJ registering for config updates")
         if (event.registration == configReadServiceRegistrationHandle) {
             when (event.status) {
                 UP -> {

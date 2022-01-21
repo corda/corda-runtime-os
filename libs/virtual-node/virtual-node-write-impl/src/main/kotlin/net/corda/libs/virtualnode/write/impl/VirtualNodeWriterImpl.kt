@@ -5,7 +5,7 @@ import net.corda.messaging.api.publisher.Publisher
 
 /** An implementation of [VirtualNodeWriter]. */
 internal class VirtualNodeWriterImpl internal constructor(
-    private val subscription: ConfigurationManagementRPCSubscription,
+    private val subscription: VirtualNodeCreationRPCSubscription,
     private val publisher: Publisher
 ) : VirtualNodeWriter {
 

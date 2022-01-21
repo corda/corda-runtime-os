@@ -2,5 +2,8 @@ package net.corda.virtualnode.write.db
 
 import net.corda.lifecycle.Lifecycle
 
-/** Receives configuration updates via RPC, persists them to the cluster database, and publishes them to Kafka. */
+/**
+ * Receives virtual node creation requests via RPC, creates the corresponding virtual node, persists it in the cluster
+ * database, and publishes it to Kafka.
+ */
 interface VirtualNodeWriteService : Lifecycle

@@ -11,7 +11,6 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.Schemas.Config.Companion.CONFIG_MGMT_REQUEST_TOPIC
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_CREATION_REQUEST_TOPIC
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -51,15 +50,15 @@ internal class VirtualNodeWriterFactoryImpl @Activate constructor(
     }
 
     /**
-     * Creates a [ConfigurationManagementRPCSubscription] using the provided [config]. The subscription is to the
-     * [CONFIG_MGMT_REQUEST_TOPIC] topic, and handles requests using a [VirtualNodeWriterProcessor].
+     * Creates a [VirtualNodeCreationRPCSubscription] using the provided [config]. The subscription is to the
+     * [VIRTUAL_NODE_CREATION_REQUEST_TOPIC] topic, and handles requests using a [VirtualNodeWriterProcessor].
      *
      * @throws VirtualNodeWriterException If the subscription cannot be set up.
      */
     private fun createRPCSubscription(
         config: SmartConfig,
         publisher: Publisher
-    ): ConfigurationManagementRPCSubscription {
+    ): VirtualNodeCreationRPCSubscription {
 
         val rpcConfig = RPCConfig(
             GROUP_NAME,
@@ -73,7 +72,10 @@ internal class VirtualNodeWriterFactoryImpl @Activate constructor(
         return try {
             subscriptionFactory.createRPCSubscription(rpcConfig, config, processor)
         } catch (e: Exception) {
-            throw VirtualNodeWriterException("Could not create subscription to process configuration update requests.", e)
+            throw VirtualNodeWriterException(
+                "Could not create subscription to process virtual node creation requests.",
+                e
+            )
         }
     }
 }

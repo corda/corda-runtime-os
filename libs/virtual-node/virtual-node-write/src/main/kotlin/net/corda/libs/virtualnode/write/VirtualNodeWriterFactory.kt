@@ -1,7 +1,6 @@
 package net.corda.libs.virtualnode.write
 
 import net.corda.libs.configuration.SmartConfig
-import javax.persistence.EntityManagerFactory
 
 /** A factory for [VirtualNodeWriter]s. */
 interface VirtualNodeWriterFactory {
