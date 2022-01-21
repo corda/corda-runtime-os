@@ -104,7 +104,8 @@ class FlowMapperService @Activate constructor(
      */
     private fun restartFlowMapperService(event: ConfigChangedEvent) {
         val messagingConfig = event.config.toMessagingConfig()
-        val flowConfig = event.config[FLOW_CONFIG]!!
+        val flowConfig = event.config[FLOW_CONFIG]
+            ?: throw FlowMapperException("Missing config section $FLOW_CONFIG from configuration change event")
         val consumerGroup = flowConfig.getString(CONSUMER_GROUP)
 
         scheduledTaskState?.close()

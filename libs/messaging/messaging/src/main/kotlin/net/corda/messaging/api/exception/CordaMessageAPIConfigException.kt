@@ -5,4 +5,4 @@ package net.corda.messaging.api.exception
  * the patterns library.
  */
 class CordaMessageAPIConfigException(missingKey: String) :
-    Exception("Could not generate a messaging patterns configuration due to missing key: $missingKey")
+    RuntimeException("Could not generate a messaging patterns configuration due to missing key: $missingKey")
