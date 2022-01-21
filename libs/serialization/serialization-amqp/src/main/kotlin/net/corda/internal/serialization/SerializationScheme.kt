@@ -1,7 +1,6 @@
 package net.corda.internal.serialization
 
 import net.corda.internal.serialization.amqp.amqpMagic
-import net.corda.serialization.ClassWhitelist
 import net.corda.serialization.EncodingWhitelist
 import net.corda.serialization.ObjectWithCompatibleContext
 import net.corda.serialization.SerializationContext
@@ -30,7 +29,6 @@ object SnappyEncodingWhitelist : EncodingWhitelist {
 
 data class SerializationContextImpl @JvmOverloads constructor(
     override val preferredSerializationVersion: SerializationMagic,
-    override val whitelist: ClassWhitelist,
     override val properties: Map<Any, Any>,
     override val objectReferencesEnabled: Boolean,
     override val useCase: SerializationContext.UseCase,
@@ -56,14 +54,6 @@ data class SerializationContextImpl @JvmOverloads constructor(
     }
 
     override fun withPreventDataLoss(): SerializationContext = copy(preventDataLoss = true)
-
-    override fun withWhitelisted(clazz: Class<*>): SerializationContext {
-        return copy(
-            whitelist = object : ClassWhitelist {
-                override fun hasListed(type: Class<*>): Boolean = whitelist.hasListed(type) || type.name == clazz.name
-            }
-        )
-    }
 
     override fun withCustomSerializers(serializers: Set<SerializationCustomSerializer<*, *>>): SerializationContextImpl {
         return copy(customSerializers = customSerializers?.union(serializers) ?: serializers)

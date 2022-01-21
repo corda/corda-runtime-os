@@ -9,8 +9,8 @@ import net.corda.libs.configuration.write.ConfigWriterFactory
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.schema.Schemas.Config.Companion.CONFIG_MGMT_REQUEST_TOPIC
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -33,7 +33,7 @@ internal class ConfigWriterFactoryImpl @Activate constructor(
         entityManagerFactory: EntityManagerFactory
     ): ConfigWriter {
         val publisher = createPublisher(config, instanceId)
-        val subscription = createRPCSubscription(config, instanceId, publisher, entityManagerFactory)
+        val subscription = createRPCSubscription(config, publisher, entityManagerFactory)
         return ConfigWriterImpl(subscription, publisher)
     }
 
@@ -59,7 +59,6 @@ internal class ConfigWriterFactoryImpl @Activate constructor(
      */
     private fun createRPCSubscription(
         config: SmartConfig,
-        instanceId: Int,
         publisher: Publisher,
         entityManagerFactory: EntityManagerFactory
     ): ConfigurationManagementRPCSubscription {
@@ -70,7 +69,6 @@ internal class ConfigWriterFactoryImpl @Activate constructor(
             CONFIG_MGMT_REQUEST_TOPIC,
             ConfigurationManagementRequest::class.java,
             ConfigurationManagementResponse::class.java,
-            instanceId
         )
         val configEntityRepository = ConfigEntityRepository(entityManagerFactory)
         val processor = ConfigWriterProcessor(publisher, configEntityRepository)

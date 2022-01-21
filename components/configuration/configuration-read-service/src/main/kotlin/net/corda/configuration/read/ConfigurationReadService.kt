@@ -2,6 +2,7 @@ package net.corda.configuration.read
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.LifecycleCoordinator
 
 /**
  * A service managing the configuration in the process.
@@ -26,10 +27,34 @@ interface ConfigurationReadService : Lifecycle {
      *
      * The returned handle may be closed to unregister from the configuration read service.
      *
+     * Note that the provided callback is invoked in the context of the configuration read service's lifecycle event
+     * processing thread. This matters if component state is updated in this callback, as there is then a race condition
+     * between the callback executing and any component lifecycle events. This can be mitigated by posting a lifecycle
+     * event to the component on configuration change. See [registerComponentForUpdates] for an alternative registration
+     * mechanism that automates this.
+     *
      * @param configHandler The user configuration handler. See [ConfigurationHandler].
      * @return A handle for this registration, which may be closed to unregister from the configuration read service.
      */
-    fun registerForUpdates(configHandler: ConfigurationHandler) : AutoCloseable
+    fun registerForUpdates(configHandler: ConfigurationHandler): AutoCloseable
+
+    /**
+     * Register a component for configuration updates on a particular set of top-level keys.
+     *
+     * This function provides a standard mechanism for components with lifecycle to receive configuration events. The
+     * configuration read service will deliver a [ConfigChangedEvent] when a configuration update occurs, provided that
+     * the update is for one of the [requiredKeys] and all the [requiredKeys] have been received.
+     *
+     * The registration posts the [ConfigChangedEvent] to the provided coordinator whenever the relevant conditions are
+     * met. By doing this, the threading problems described in the [registerForUpdates] function are avoided.
+     *
+     * @param coordinator The lifecycle coordinator of the registering component. The [ConfigChangedEvent] will be
+     *                    delivered to this coordinator.
+     * @param requiredKeys The set of top-level configuration keys the component requires to configure itself. Once all
+     *                     these are present in the configuration, configuration updates will be delivered.
+     * @return A handle for this registration, which may be closed to unregister from the configuration read service.
+     */
+    fun registerComponentForUpdates(coordinator: LifecycleCoordinator, requiredKeys: Set<String>): AutoCloseable
 
     /**
      * Provide bootstrap configuration to the configuration service.

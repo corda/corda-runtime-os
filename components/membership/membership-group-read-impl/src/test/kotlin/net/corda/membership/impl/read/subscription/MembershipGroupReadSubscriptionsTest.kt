@@ -10,10 +10,11 @@ import net.corda.membership.impl.read.cache.MemberListCache
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.schema.Schemas
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.membership.conversion.PropertyConverter
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -72,12 +73,14 @@ class MembershipGroupReadSubscriptionsTest {
     private val groupReadCache = mock<MembershipGroupReadCache>().apply {
         doReturn(this@MembershipGroupReadSubscriptionsTest.memberListCache).whenever(this).memberListCache
     }
+    private val converter: PropertyConverter = mock()
 
     @BeforeEach
     fun setUp() {
         membershipGroupReadSubscriptions = MembershipGroupReadSubscriptions.Impl(
             subscriptionFactory,
-            groupReadCache
+            groupReadCache,
+            converter
         )
     }
 

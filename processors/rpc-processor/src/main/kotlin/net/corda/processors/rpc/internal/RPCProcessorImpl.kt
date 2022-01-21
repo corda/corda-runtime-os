@@ -20,13 +20,14 @@ import net.corda.schema.configuration.ConfigKeys.Companion.BOOTSTRAP_SERVERS
 import net.corda.schema.configuration.ConfigKeys.Companion.RPC_CONFIG
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.virtualnode.rpcops.VirtualNodeRPCOpsService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 /** The processor for a `RPCWorker`. */
 @Component(service = [RPCProcessor::class])
-@Suppress("Unused")
+@Suppress("Unused", "LongParameterList")
 class RPCProcessorImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
@@ -37,7 +38,9 @@ class RPCProcessorImpl @Activate constructor(
     @Reference(service = HttpRpcGateway::class)
     private val httpRpcGateway: HttpRpcGateway,
     @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory
+    private val publisherFactory: PublisherFactory,
+    @Reference(service = VirtualNodeRPCOpsService::class)
+    private val virtualNodeRPCOpsService: VirtualNodeRPCOpsService
 ) : RPCProcessor {
 
     private companion object {
@@ -65,6 +68,7 @@ class RPCProcessorImpl @Activate constructor(
                 configReadService.start()
                 httpRpcGateway.start()
                 configRPCOpsService.start()
+                virtualNodeRPCOpsService.start()
             }
             is BootConfigEvent -> {
                 configReadService.bootstrapConfig(event.config)
@@ -89,6 +93,7 @@ class RPCProcessorImpl @Activate constructor(
                 configReadService.stop()
                 configRPCOpsService.stop()
                 httpRpcGateway.stop()
+                virtualNodeRPCOpsService.stop()
             }
             else -> {
                 log.error("Unexpected event $event!")

@@ -9,8 +9,8 @@ import net.corda.data.crypto.config.CryptoConfigurationRecord
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
 import net.corda.v5.cipher.suite.config.CryptoMemberConfig

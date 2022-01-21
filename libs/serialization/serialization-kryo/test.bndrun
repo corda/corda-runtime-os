@@ -1,7 +1,7 @@
 -tester: biz.aQute.tester.junit-platform
 -runee: JavaSE-11
 -runfw: org.apache.felix.framework
--resolve.effective: active
+-resolve.effective: resolve,active
 -runtrace: true
 
 -runvm: \
@@ -66,6 +66,7 @@
 	net.corda.sandbox-hooks;version='[5.0.0,5.0.1)',\
 	net.corda.sandbox-internal;version='[5.0.0,5.0.1)',\
 	net.corda.serialization;version='[5.0.0,5.0.1)',\
+	net.corda.serialization-internal;version='[5.0.0,5.0.1)',\
 	net.corda.serialization-kryo;version='[5.0.0,5.0.1)',\
 	net.corda.utilities;version='[5.0.0,5.0.1)',\
 	net.i2p.crypto.eddsa;version='[0.3.0,0.3.1)',\

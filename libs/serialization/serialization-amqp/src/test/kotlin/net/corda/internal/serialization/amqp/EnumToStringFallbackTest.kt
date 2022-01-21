@@ -3,6 +3,7 @@ package net.corda.internal.serialization.amqp
 import net.corda.internal.serialization.amqp.testutils.TestSerializationOutput
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.amqp.testutils.testSerializationContext
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Java6Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -61,6 +62,7 @@ class EnumToStringFallbackTest {
      * This is the enumerated type, as it actually exist.
      */
     @Suppress("unused")
+    @CordaSerializable
     enum class Working(private val label: String) {
         ZERO("None"),
         ONE("Once"),
@@ -76,6 +78,7 @@ class EnumToStringFallbackTest {
      * rather than [Enum.name].
      */
     @Suppress("unused")
+    @CordaSerializable
     enum class Broken(private val label: String) {
         None("None"),
         Once("Once"),
@@ -85,6 +88,8 @@ class EnumToStringFallbackTest {
         override fun toString(): String = label
     }
 
+    @CordaSerializable
     data class WorkingContainer(val value: Working)
+    @CordaSerializable
     data class BrokenContainer(val value: Broken)
 }

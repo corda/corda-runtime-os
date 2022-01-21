@@ -1,6 +1,6 @@
 package net.corda.messaging.emulation.topic.model
 
-import net.corda.messaging.api.subscription.PartitionAssignmentListener
+import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
 import net.corda.messaging.emulation.properties.SubscriptionConfiguration
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly

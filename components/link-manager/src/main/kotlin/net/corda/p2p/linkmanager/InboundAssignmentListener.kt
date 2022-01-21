@@ -1,13 +1,14 @@
 package net.corda.p2p.linkmanager
 
-import net.corda.messaging.api.subscription.PartitionAssignmentListener
+import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
-class InboundAssignmentListener(private val future: AtomicReference<CompletableFuture<Unit>>): PartitionAssignmentListener {
+class InboundAssignmentListener(private val future: AtomicReference<CompletableFuture<Unit>>):
+    PartitionAssignmentListener {
 
     private val lock = ReentrantReadWriteLock()
     private val topicToPartition = mutableMapOf<String, MutableSet<Int>>()

@@ -1,10 +1,12 @@
 package net.corda.internal.serialization.amqp;
 
 import net.corda.internal.serialization.amqp.testutils.TestSerializationContext;
+import net.corda.v5.base.annotations.CordaSerializable;
 import net.corda.v5.serialization.SerializedBytes;
 import net.corda.v5.serialization.annotations.ConstructorForDeserialization;
 import org.apache.qpid.proton.codec.DecoderImpl;
 import org.apache.qpid.proton.codec.EncoderImpl;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -21,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Timeout(value = 30, unit = TimeUnit.SECONDS)
 public class JavaSerializationOutputTests {
 
+    @CordaSerializable
     static class Foo {
         private final String bob;
         private final int count;
@@ -103,6 +106,7 @@ public class JavaSerializationOutputTests {
         }
     }
 
+    @CordaSerializable
     static class BoxedFoo {
         private final String fred;
         private final Integer count;
@@ -142,6 +146,7 @@ public class JavaSerializationOutputTests {
     }
 
 
+    @CordaSerializable
     static class BoxedFooNotNull {
         private final String fred;
         private final Integer count;
@@ -227,7 +232,7 @@ public class JavaSerializationOutputTests {
     @Test
     public void testJavaConstructorWithoutAnnotations() throws NotSerializableException {
         UnAnnotatedFoo obj = new UnAnnotatedFoo("Hello World!", 123);
-        serdes(obj);
+        Assertions.assertThrows(NotSerializableException.class, () -> serdes(obj));
     }
 
 

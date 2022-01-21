@@ -16,7 +16,6 @@ import net.corda.serialization.SerializationContext
 
 val AMQP_STORAGE_CONTEXT = SerializationContextImpl(
         amqpMagic,
-        AllButBlacklisted,
         emptyMap(),
         true,
         SerializationContext.UseCase.Storage,

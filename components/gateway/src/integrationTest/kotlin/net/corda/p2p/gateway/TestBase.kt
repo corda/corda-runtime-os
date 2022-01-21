@@ -5,11 +5,9 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.configuration.SmartConfigFactoryImpl
 import net.corda.libs.configuration.publish.CordaConfigurationKey
 import net.corda.libs.configuration.publish.CordaConfigurationVersion
 import net.corda.libs.configuration.publish.impl.ConfigPublisherImpl
-import net.corda.libs.configuration.read.kafka.factory.ConfigReaderFactoryImpl
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
@@ -91,9 +89,9 @@ open class TestBase {
 
     protected val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
 
-    protected inner class ConfigPublisher(private var coordinatorFactory: LifecycleCoordinatorFactory?=null) {
+    protected inner class ConfigPublisher(private var coordinatorFactory: LifecycleCoordinatorFactory? = null) {
         init {
-            coordinatorFactory = coordinatorFactory?:lifecycleCoordinatorFactory
+            coordinatorFactory = coordinatorFactory ?: lifecycleCoordinatorFactory
         }
         private val configurationTopicService = TopicServiceImpl()
         private val rpcTopicService = RPCTopicServiceImpl()
@@ -102,13 +100,14 @@ open class TestBase {
         val readerService by lazy {
             ConfigurationReadServiceImpl(
                 coordinatorFactory!!,
-                ConfigReaderFactoryImpl(
-                    InMemSubscriptionFactory(configurationTopicService, rpcTopicService, coordinatorFactory!!)
-                ),
+                InMemSubscriptionFactory(configurationTopicService, rpcTopicService, coordinatorFactory!!)
             ).also {
                 it.start()
                 val bootstrapper = ConfigFactory.empty()
                 it.bootstrapConfig(smartConfigFactory.create(bootstrapper))
+                eventually {
+                    assertThat(it.isRunning).isTrue
+                }
             }
         }
 
@@ -157,7 +156,7 @@ open class TestBase {
         }
     }
 
-    protected fun createConfigurationServiceFor(configuration: GatewayConfiguration, coordinatorFactory: LifecycleCoordinatorFactory?=null): ConfigurationReadService {
+    protected fun createConfigurationServiceFor(configuration: GatewayConfiguration, coordinatorFactory: LifecycleCoordinatorFactory? = null): ConfigurationReadService {
         val publisher = ConfigPublisher(coordinatorFactory)
         publisher.publishConfig(configuration)
         return publisher.readerService

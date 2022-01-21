@@ -264,6 +264,7 @@ class LifecycleCoordinatorImpl(
         logger.trace { "$name: Closing coordinator" }
         stop()
         postEvent(CloseCoordinator())
+        registry.removeCoordinator(name)
         _isClosed.set(true)
     }
 }

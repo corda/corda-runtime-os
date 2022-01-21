@@ -1,6 +1,7 @@
 package net.corda.messaging.emulation.topic.model
 
-import net.corda.messaging.api.subscription.PartitionAssignmentListener
+import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
+
 
 interface Consumer {
     val groupName: String

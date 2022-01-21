@@ -1,7 +1,6 @@
 package net.corda.serialization.amqp.test
 
 import net.corda.install.InstallService
-import net.corda.internal.serialization.AllWhitelist
 import net.corda.internal.serialization.SerializationContextImpl
 import net.corda.internal.serialization.amqp.DefaultDescriptorBasedSerializerRegistry
 import net.corda.internal.serialization.amqp.DescriptorBasedSerializerRegistry
@@ -12,7 +11,6 @@ import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.internal.serialization.amqp.amqpMagic
 import net.corda.packaging.CPI
-import net.corda.sandbox.SandboxContextService
 import net.corda.sandbox.SandboxCreationService
 import net.corda.serialization.SerializationContext
 import net.corda.sandbox.SandboxException
@@ -115,7 +113,6 @@ class AMQPwithOSGiSerializationTests {
     fun testDefaultFactoryNoEvolution(sandboxGroup: SandboxGroup, descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
                                               DefaultDescriptorBasedSerializerRegistry()): SerializerFactory =
             SerializerFactoryBuilder.build(
-                    AllWhitelist,
                     sandboxGroup,
                     descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry,
                     allowEvolution = false)
@@ -151,7 +148,6 @@ class AMQPwithOSGiSerializationTests {
             // Initialise the serialisation context
             val testSerializationContext = SerializationContextImpl(
                 preferredSerializationVersion = amqpMagic,
-                whitelist = AllWhitelist,
                 properties = mutableMapOf(),
                 objectReferencesEnabled = false,
                 useCase = SerializationContext.UseCase.Testing,
@@ -220,7 +216,6 @@ class AMQPwithOSGiSerializationTests {
         val factory = testDefaultFactoryNoEvolution(sandboxGroup)
         val context = SerializationContextImpl(
             preferredSerializationVersion = amqpMagic,
-            whitelist = AllWhitelist,
             properties = mutableMapOf(),
             objectReferencesEnabled = false,
             useCase = SerializationContext.UseCase.Testing,

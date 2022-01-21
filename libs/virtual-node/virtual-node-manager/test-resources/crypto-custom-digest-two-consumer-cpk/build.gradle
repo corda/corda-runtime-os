@@ -17,16 +17,6 @@ cordapp {
     }
 }
 
-configurations {
-    cpiForTest {
-        canBeResolved = false
-    }
-}
-
-artifacts {
-    cpiForTest tasks.named('cpb', Jar)
-}
-
 dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     compileOnly "org.osgi:org.osgi.service.component.annotations"

@@ -1,9 +1,7 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.internal.serialization.AllWhitelist
 import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.testSerializationContext
-import net.corda.serialization.ClassWhitelist
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Disabled
@@ -52,7 +50,7 @@ class StaticInitialisationOfSerializedObjectTest {
 	fun kotlinObjectWithCompanionObject() {
         data class D(val c: C)
 
-        val sf = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
+        val sf = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
 
         val typeMap = sf::class.java.getDeclaredField("serializersByType")
         typeMap.isAccessible = true
@@ -81,18 +79,11 @@ class StaticInitialisationOfSerializedObjectTest {
 
         // Original version of the class for the serialised version of this class
         //
-//        val sf1 = SerializerFactoryBuilder.build(AllWhitelist, ClassLoader.getSystemClassLoader())
+//        val sf1 = SerializerFactoryBuilder.build(ClassLoader.getSystemClassLoader())
 //        val sc = SerializationOutput(sf1).serialize(D(C2(20)))
 //        File(URI("$localPath/$resource")).writeBytes(sc.bytes)
 
-        class WL : ClassWhitelist {
-            override fun hasListed(type: Class<*>) =
-                    type.name == "net.corda.v5.serialization.internal.amqp" +
-                            ".StaticInitialisationOfSerializedObjectTest\$deserializeTest\$D"
-        }
-
-        val whitelist = WL()
-        val sf2 = SerializerFactoryBuilder.build(whitelist, testSerializationContext.currentSandboxGroup())
+        val sf2 = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
         val bytes = url.readBytes()
 
         assertThatThrownBy {
