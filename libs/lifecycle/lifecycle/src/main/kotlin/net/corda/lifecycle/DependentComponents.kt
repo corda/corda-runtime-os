@@ -9,7 +9,7 @@ import kotlin.reflect.jvm.javaField
  * @property map
  * @constructor Create empty Dependent components
  */
-class DependentComponents(private val map: Map<LifecycleCoordinatorName, Lifecycle>) {
+class DependentComponents private constructor(private val map: Map<LifecycleCoordinatorName, Lifecycle>) {
 
     companion object {
         /**
