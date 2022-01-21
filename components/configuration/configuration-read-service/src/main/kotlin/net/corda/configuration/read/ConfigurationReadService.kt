@@ -26,6 +26,9 @@ interface ConfigurationReadService : Lifecycle {
      *
      * The returned handle may be closed to unregister from the configuration read service.
      *
+     * Note that this should not be called before the config read service is started. Doing so will result in the
+     * registration not going through correctly.
+     *
      * @param configHandler The user configuration handler. See [ConfigurationHandler].
      * @return A handle for this registration, which may be closed to unregister from the configuration read service.
      */
