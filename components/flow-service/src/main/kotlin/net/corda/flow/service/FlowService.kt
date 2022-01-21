@@ -1,8 +1,8 @@
 package net.corda.flow.service
 
+import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.flow.manager.factory.FlowEventProcessorFactory
-import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -14,6 +14,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.sandbox.service.SandboxService
 import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
@@ -74,16 +75,20 @@ class FlowService @Activate constructor(
             }
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
-                    configHandle = configurationReadService.registerForUpdates(::onConfigChange)
+                    configHandle = configurationReadService.registerComponentForUpdates(
+                        coordinator,
+                        setOf(BOOT_CONFIG, FLOW_CONFIG, MESSAGING_CONFIG)
+                    )
                 } else {
                     configHandle?.close()
                 }
             }
-            is NewConfigurationReceived -> {
+            is ConfigChangedEvent -> {
                 executor?.stop()
+                val messagingConfig = event.config.toMessagingConfig()
                 val newExecutor = FlowExecutor(
                     coordinatorFactory,
-                    event.config,
+                    messagingConfig,
                     subscriptionFactory,
                     flowEventProcessorFactory
                 )
@@ -97,22 +102,6 @@ class FlowService @Activate constructor(
                 registration = null
             }
         }
-    }
-
-    @Suppress("TooGenericExceptionThrown", "UNUSED_PARAMETER")
-    private fun onConfigChange(keys: Set<String>, config: Map<String, SmartConfig>) {
-        if (isRelevantConfigKey(keys)) {
-            coordinator.postEvent(
-                NewConfigurationReceived(config[BOOT_CONFIG]!!.withFallback(config[MESSAGING_CONFIG]).withFallback(config[FLOW_CONFIG]))
-            )
-        }
-    }
-
-    /**
-     * True if any of the config [keys] are relevant to this app.
-     */
-    private fun isRelevantConfigKey(keys: Set<String>) : Boolean {
-        return MESSAGING_CONFIG in keys || BOOT_CONFIG in keys || FLOW_CONFIG in keys
     }
 
     override val isRunning: Boolean
