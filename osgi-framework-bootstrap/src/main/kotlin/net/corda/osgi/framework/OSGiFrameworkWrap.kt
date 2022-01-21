@@ -461,9 +461,7 @@ class OSGiFrameworkWrap(
                     // No risk of deadlock because applications are registered by [startApplications]
                     // after this method returned and [stop] runs in separate thread.
                     override fun shutdown(bundle: Bundle) {
-                        Thread {
-                            stop()
-                        }.run()
+                        Thread(::stop).start()
                     }
                 },
                 null

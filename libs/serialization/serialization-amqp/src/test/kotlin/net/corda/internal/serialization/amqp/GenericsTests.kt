@@ -1,6 +1,5 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.internal.serialization.AllWhitelist
 import net.corda.internal.serialization.amqp.testutils.ProjectStructure.projectRootDir
 import net.corda.internal.serialization.amqp.testutils.TestSerializationOutput
 import net.corda.internal.serialization.amqp.testutils.deserialize
@@ -11,6 +10,7 @@ import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactoryNoEvolution
 import net.corda.internal.serialization.amqp.testutils.testName
 import net.corda.internal.serialization.amqp.testutils.testSerializationContext
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.serialization.SerializedBytes
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -25,6 +25,7 @@ interface TestContract {
     fun verify(tx: TestTransaction)
 }
 
+@CordaSerializable
 abstract class TestParty(val uncle: Int)
 
 class ConcreteTestParty(uncle: Int) : TestParty(uncle)
@@ -35,17 +36,20 @@ interface TestContractStateInterface {
     val participants: List<TestParty>
 }
 
+@CordaSerializable
 data class TestTransactionState<out T : TestContractStateInterface> constructor(
     val data: T,
     val constraint: AttachmentConstraintInterface
 )
 
+@CordaSerializable
 open class TestContractState(
     override val participants: List<TestParty>
 ) : TestContractStateInterface
 
 interface Attachment
 
+@CordaSerializable
 interface AttachmentConstraintInterface {
     fun isSatisfiedBy(attachment: Attachment): Boolean
 }
@@ -71,6 +75,7 @@ class GenericsTests {
 
     @Test
     fun twoDifferentTypesSameParameterizedOuter() {
+        @CordaSerializable
         data class G<A>(val a: A)
 
         val factory = testDefaultFactoryNoEvolution()
@@ -87,8 +92,11 @@ class GenericsTests {
 
     @Test
     fun doWeIgnoreMultipleParams() {
+        @CordaSerializable
         data class G1<out T>(val a: T)
+        @CordaSerializable
         data class G2<out T>(val a: T)
+        @CordaSerializable
         data class Wrapper<out T>(val a: Int, val b: G1<T>, val c: G2<T>)
 
         val factory = testDefaultFactoryNoEvolution()
@@ -101,7 +109,9 @@ class GenericsTests {
 
     @Test
     fun nestedSerializationOfGenerics() {
+        @CordaSerializable
         data class G<out T>(val a: T)
+        @CordaSerializable
         data class Wrapper<out T>(val a: Int, val b: G<T>)
 
         val factory = testDefaultFactoryNoEvolution()
@@ -130,11 +140,13 @@ class GenericsTests {
 
     @Test
     fun nestedGenericsReferencesByteArrayViaSerializedBytes() {
+        @CordaSerializable
         data class G(val a: Int)
+        @CordaSerializable
         data class Wrapper<T : Any>(val a: Int, val b: SerializedBytes<T>)
 
-        val factory = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
-        val factory2 = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
+        val factory = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
+        val factory2 = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
         val ser = SerializationOutput(factory)
 
         val gBytes = ser.serialize(G(1))
@@ -153,14 +165,19 @@ class GenericsTests {
     @Test
     @Suppress("ComplexMethod")
     fun nestedSerializationInMultipleContextsDoesntColideGenericTypes() {
+        @CordaSerializable
         data class InnerA(val a_a: Int)
+        @CordaSerializable
         data class InnerB(val a_b: Int)
+        @CordaSerializable
         data class InnerC(val a_c: String)
+        @CordaSerializable
         data class Container<T>(val b: T)
+        @CordaSerializable
         data class Wrapper<T : Any>(val c: Container<T>)
 
-        val factory = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
-        val factories = listOf(factory, SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup()))
+        val factory = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
+        val factories = listOf(factory, SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup()))
         val ser = SerializationOutput(factory)
 
         ser.serialize(Wrapper(Container(InnerA(1)))).apply {
@@ -184,13 +201,16 @@ class GenericsTests {
 
     @Test
     fun nestedSerializationWhereGenericDoesntImpactFingerprint() {
+        @CordaSerializable
         data class Inner(val a: Int)
+        @CordaSerializable
         data class Container<T : Any>(val b: Inner)
+        @CordaSerializable
         data class Wrapper<T : Any>(val c: Container<T>)
 
         val factorys = listOf(
-            SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup()),
-            SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
+            SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup()),
+            SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
         )
 
         val ser = SerializationOutput(factorys[0])
@@ -208,11 +228,12 @@ class GenericsTests {
         }
     }
 
+    @CordaSerializable
     data class ForceWildcard<out T>(val t: T)
 
     private fun forceWildcardSerialize(
         a: ForceWildcard<*>,
-        factory: SerializerFactory = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
+        factory: SerializerFactory = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
     ): SerializedBytes<*> {
         val bytes = SerializationOutput(factory).serializeAndReturnSchema(a)
         bytes.printSchema()
@@ -222,7 +243,7 @@ class GenericsTests {
     @Suppress("UNCHECKED_CAST")
     private fun forceWildcardDeserializeString(
         bytes: SerializedBytes<*>,
-        factory: SerializerFactory = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
+        factory: SerializerFactory = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
     ) {
         DeserializationInput(factory).deserialize(bytes as SerializedBytes<ForceWildcard<String>>)
     }
@@ -230,7 +251,7 @@ class GenericsTests {
     @Suppress("UNCHECKED_CAST")
     private fun forceWildcardDeserializeDouble(
         bytes: SerializedBytes<*>,
-        factory: SerializerFactory = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
+        factory: SerializerFactory = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
     ) {
         DeserializationInput(factory).deserialize(bytes as SerializedBytes<ForceWildcard<Double>>)
     }
@@ -238,7 +259,7 @@ class GenericsTests {
     @Suppress("UNCHECKED_CAST")
     private fun forceWildcardDeserialize(
         bytes: SerializedBytes<*>,
-        factory: SerializerFactory = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
+        factory: SerializerFactory = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
     ) {
         DeserializationInput(factory).deserialize(bytes as SerializedBytes<ForceWildcard<*>>)
     }
@@ -251,7 +272,7 @@ class GenericsTests {
 
     @Test
     fun forceWildcardSharedFactory() {
-        val f = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
+        val f = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
         forceWildcardDeserializeString(forceWildcardSerialize(ForceWildcard("hello"), f), f)
         forceWildcardDeserializeDouble(forceWildcardSerialize(ForceWildcard(3.0), f), f)
     }
@@ -265,7 +286,7 @@ class GenericsTests {
 
     @Test
     fun forceWildcardDeserializeSharedFactory() {
-        val f = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
+        val f = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
         forceWildcardDeserialize(forceWildcardSerialize(ForceWildcard("hello"), f), f)
         forceWildcardDeserialize(forceWildcardSerialize(ForceWildcard(10), f), f)
         forceWildcardDeserialize(forceWildcardSerialize(ForceWildcard(20.0), f), f)
@@ -289,7 +310,9 @@ class GenericsTests {
         )
     }
 
+    @CordaSerializable
     data class StateAndString(val state: TestTransactionState<*>, val ref: String)
+    @CordaSerializable
     data class GenericStateAndString<out T : TestContractState>(val state: TestTransactionState<T>, val ref: String)
 
     //
@@ -307,14 +330,14 @@ class GenericsTests {
         // attempt at having a class loader without some of the derived non core types loaded and thus
         // possibly altering how we serialise things
 
-        val factory2 = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
+        val factory2 = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
         val ser2 = TestSerializationOutput(VERBOSE, factory2).serializeAndReturnSchema(state)
 
         //  now deserialise those objects
         val factory3 = testDefaultFactory()
         DeserializationInput(factory3).deserializeAndReturnEnvelope(ser1.obj)
 
-        val factory4 = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
+        val factory4 = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
         DeserializationInput(factory4).deserializeAndReturnEnvelope(ser2.obj)
     }
 
@@ -351,6 +374,7 @@ class GenericsTests {
         // using this wrapper class we force the object to be serialised as
         //      net.corda.core.contracts.TransactionState<T>
         //
+        @CordaSerializable
         data class TransactionStateWrapper<out T : TestContractState>(val o: List<GenericStateAndString<T>>)
 
         val state = TestTransactionState<TestContractState>(
@@ -374,9 +398,12 @@ class GenericsTests {
 
     @Test
     fun nestedGenericsWithBound() {
+        @CordaSerializable
         open class BaseState(val a: Int)
         class DState(a: Int) : BaseState(a)
+        @CordaSerializable
         data class LTransactionState<out T : BaseState> constructor(val data: T)
+        @CordaSerializable
         data class StateWrapper<out T : BaseState>(val state: LTransactionState<T>)
 
         val factory1 = testDefaultFactoryNoEvolution()
@@ -395,11 +422,14 @@ class GenericsTests {
 
     @Test
     fun nestedMultiGenericsWithBound() {
+        @CordaSerializable
         open class BaseState(val a: Int)
         class DState(a: Int) : BaseState(a)
         class EState(a: Int, val msg: String) : BaseState(a)
 
+        @CordaSerializable
         data class LTransactionState<out T1 : BaseState, out T2 : BaseState> (val data: T1, val context: T2)
+        @CordaSerializable
         data class StateWrapper<out T1 : BaseState, out T2 : BaseState>(val state: LTransactionState<T1, T2>)
 
         val factory1 = testDefaultFactoryNoEvolution()
@@ -420,10 +450,14 @@ class GenericsTests {
     @Test
     fun nestedMultiGenericsNoBound() {
         open class BaseState(val a: Int)
+        @CordaSerializable
         class DState(a: Int) : BaseState(a)
+        @CordaSerializable
         class EState(a: Int, val msg: String) : BaseState(a)
 
+        @CordaSerializable
         data class LTransactionState<out T1, out T2> (val data: T1, val context: T2)
+        @CordaSerializable
         data class StateWrapper<out T1, out T2>(val state: LTransactionState<T1, T2>)
 
         val factory1 = testDefaultFactoryNoEvolution()
@@ -448,6 +482,7 @@ class GenericsTests {
         val factory2 = testDefaultFactory()
 
         open class BaseState<T1, T2>(open val a: T1, open val b: T2)
+        @CordaSerializable
         class DState<T1, T2>(a: T1, b: T2) : BaseState<T1, T2>(a, b)
 
         val state = DState(100, "hello")
@@ -457,6 +492,7 @@ class GenericsTests {
         assertEquals(state.a, des1.obj.a)
         assertEquals(state.b, des1.obj.b)
 
+        @CordaSerializable
         class DState2<T1, T2, T3>(a: T1, b: T2, val c: T3) : BaseState<T1, T2>(a, b)
 
         val state2 = DState2(100, "hello", 100L)
@@ -473,9 +509,11 @@ class GenericsTests {
         val factory1 = testDefaultFactoryNoEvolution()
         val factory2 = testDefaultFactory()
 
+        @CordaSerializable
         open class Bound(val a: Int)
 
         open class BaseState<out T1 : Bound>(open val a: T1)
+        @CordaSerializable
         class DState<out T1 : Bound>(a: T1) : BaseState<T1>(a)
 
         val state = DState(Bound(100))
@@ -487,11 +525,14 @@ class GenericsTests {
 
     @Test
     fun nestedMultiGenericsAtBottomWithBound() {
+        @CordaSerializable
         open class BaseState<T1, T2>(val a: T1, val b: T2)
         class DState<T1, T2>(a: T1, b: T2) : BaseState<T1, T2>(a, b)
         class EState<T1, T2>(a: T1, b: T2, val c: Long) : BaseState<T1, T2>(a, b)
 
+        @CordaSerializable
         data class LTransactionState<T1, T2, T3 : BaseState<T1, T2>, out T4 : BaseState<T1, T2>> (val data: T3, val context: T4)
+        @CordaSerializable
         data class StateWrapper<T1, T2, T3 : BaseState<T1, T2>, out T4 : BaseState<T1, T2>>(val state: LTransactionState<T1, T2, T3, T4>)
 
         val factory1 = testDefaultFactoryNoEvolution()
@@ -527,6 +568,7 @@ class GenericsTests {
 
     @Test
     fun implemntsGenericInterface() {
+        @CordaSerializable
         class D(override val a: String) : implementsGenericInterfaceI<String>
 
         val factory = testDefaultFactoryNoEvolution()

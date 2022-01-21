@@ -1,5 +1,6 @@
 package net.corda.virtualnode.write
 
+import net.corda.lifecycle.Lifecycle
 import net.corda.virtualnode.VirtualNodeInfo
 
 /**
@@ -8,7 +9,7 @@ import net.corda.virtualnode.VirtualNodeInfo
  *
  * This interface complements [VirtualNodeInfoReader]
  */
-interface VirtualNodeInfoWriter {
+interface VirtualNodeInfoWriteService : Lifecycle {
     /** Put a new [VirtualNodeInfo] into some implementation (e.g. a Kafka component) */
     fun put(virtualNodeInfo: VirtualNodeInfo)
     

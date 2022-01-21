@@ -7,6 +7,7 @@ import net.corda.internal.serialization.amqp.testutils.serializeAndReturnSchema
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.amqp.testutils.testName
 import net.corda.internal.serialization.amqp.testutils.testSerializationContext
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.SerializableCalculatedProperty
 import net.corda.v5.serialization.SerializedBytes
 import net.corda.v5.serialization.annotations.ConstructorForDeserialization
@@ -48,10 +49,12 @@ class EvolvabilityTests {
         val B = 2
 
         // Original version of the class for the serialised version of this class
+        // @CordaSerializable
         // data class C (val a: Int, val b: Int)
         // File(URI("$localPath/$resource")).writeBytes(SerializationOutput(sf).serialize(C(A, B)).bytes)
 
         // new version of the class, in this case the order of the parameters has been swapped
+        @CordaSerializable
         data class C(val b: Int, val a: Int)
 
         val url = EvolvabilityTests::class.java.getResource(resource)
@@ -71,10 +74,12 @@ class EvolvabilityTests {
         val B = 2
 
         // Original version of the class for the serialised version of this class
+        // @CordaSerializable
         // data class C (val a: Int, val b: Int, val c: Int = 5)
         // File(URI("$localPath/$resource")).writeBytes(SerializationOutput(sf).serialize(C(A, B)).bytes)
 
         // new version of the class, in this case the order of the parameters has been swapped
+        @CordaSerializable
         data class C(val b: Int, val a: Int, val c: Int = 5)
 
         val url = EvolvabilityTests::class.java.getResource(resource)
@@ -93,10 +98,12 @@ class EvolvabilityTests {
         val resource = "EvolvabilityTests.simpleOrderSwapDifferentType"
 
         // Original version of the class as it was serialised
+        // @CordaSerializable
         // data class C (val a: Int, val b: String)
         // File(URI("$localPath/$resource")).writeBytes(SerializationOutput(sf).serialize(C(A, B)).bytes)
 
         // new version of the class, in this case the order of the parameters has been swapped
+        @CordaSerializable
         data class C(val b: String, val a: Int)
 
         val url = EvolvabilityTests::class.java.getResource(resource)
@@ -114,9 +121,11 @@ class EvolvabilityTests {
         val resource = "EvolvabilityTests.addAdditionalParamNotMandatory"
 
         // Original version of the class as it was serialised
+        // @CordaSerializable
         // data class C(val a: Int)
         // File(URI("$localPath/$resource")).writeBytes(SerializationOutput(sf).serialize(C(A)).bytes)
 
+        @CordaSerializable
         data class C(val a: Int, val b: Int?)
 
         val url = EvolvabilityTests::class.java.getResource(resource)
@@ -166,9 +175,11 @@ class EvolvabilityTests {
         val D = 4
 
         // Original version of the class as it was serialised
+        // @CordaSerializable
         // data class CC(val a: Int, val b: String, val c: String, val d: Int)
         // File(URI("$localPath/$resource")).writeBytes(SerializationOutput(sf).serialize(CC(A, B, C, D)).bytes)
 
+        @CordaSerializable
         data class CC(val b: String, val d: Int)
 
         val url = EvolvabilityTests::class.java.getResource("EvolvabilityTests.removeParameters")
@@ -186,12 +197,14 @@ class EvolvabilityTests {
         val resource = "EvolvabilityTests.removeParameterWithCalculatedParameter"
 
         // Original version of the class as it was serialised
+        // @CordaSerializable
         // data class CC(val a: Int, val b: String, val c: String, val d: Int) {
         //     @get:SerializableCalculatedProperty
         //     val e: String get() = "$b $c"
         // }
         // File(URI("$localPath/$resource")).writeBytes(SerializationOutput(sf).serialize(CC(1, "hello", "world", 2)).bytes)
 
+        @CordaSerializable
         data class CC(val b: String, val d: Int) {
             @get:SerializableCalculatedProperty
             val e: String get() = "$b sailor"
@@ -219,9 +232,11 @@ class EvolvabilityTests {
         val resource = "EvolvabilityTests.addAndRemoveParameters"
 
         // Original version of the class as it was serialised
+        // @CordaSerializable
         // data class CC(val a: Int, val b: String, val c: String, val d: Int)
         // File(URI("$localPath/$resource")).writeBytes(SerializationOutput(sf).serialize(CC(A, B, C, D)).bytes)
 
+        @CordaSerializable
         data class CC(val a: Int, val e: Boolean?, val d: Int)
 
         val url = EvolvabilityTests::class.java.getResource(resource)
@@ -240,10 +255,12 @@ class EvolvabilityTests {
         val resource = "EvolvabilityTests.addMandatoryFieldWithAltConstructor"
 
         // Original version of the class as it was serialised
+        // @CordaSerializable
         // data class CC(val a: Int)
         // File(URI("$localPath/$resource")).writeBytes(SerializationOutput(sf).serialize(CC(A)).bytes)
 
         @Suppress("UNUSED")
+        @CordaSerializable
         data class CC(val a: Int, val b: String) {
             @DeprecatedConstructorForDeserialization(1)
             constructor (a: Int) : this(a, "hello")
@@ -265,10 +282,12 @@ class EvolvabilityTests {
         val resource = "EvolvabilityTests.addMandatoryFieldWithAltConstructorForceReorder"
 
         // Original version of the class as it was serialised
+        // @CordaSerializable
         // data class CC(val z: Int, val y: Int)
         // File(URI("$localPath/$resource")).writeBytes(SerializationOutput(sf).serialize(CC(z, y)).bytes)
 
         @Suppress("UNUSED")
+        @CordaSerializable
         data class CC(val z: Int, val y: Int, val a: String) {
             @DeprecatedConstructorForDeserialization(1)
             constructor (z: Int, y: Int) : this(z, y, "10")
@@ -286,6 +305,7 @@ class EvolvabilityTests {
     fun moreComplexNonNullWithReorder() {
         val resource = "${javaClass.simpleName}.${testName()}"
 
+        @CordaSerializable
         data class NetworkParametersExample(
             val minimumPlatformVersion: Int,
             val notaries: List<String>,
@@ -352,10 +372,12 @@ class EvolvabilityTests {
         val C = "This is not a banana"
 
         // Original version of the class as it was serialised
+        // @CordaSerializable
         // data class CC(val a: Int, val b: Int, val c: String)
         // File(URI("$localPath/$resource")).writeBytes(SerializationOutput(sf).serialize(CC(A, B, C)).bytes)
 
         @Suppress("UNUSED")
+        @CordaSerializable
         data class CC(val a: Int, val b: Int, val c: String, val d: String) {
             // ensure none of the original parameters align with the initial
             // construction order
@@ -383,10 +405,12 @@ class EvolvabilityTests {
         val C = "This is not a banana"
 
         // Original version of the class as it was serialised
+        // @CordaSerializable
         // data class CC(val a: Int, val b: Int, val c: String)
         // File(URI("$localPath/$resource")).writeBytes(SerializationOutput(sf).serialize(CC(A, B, C)).bytes)
 
         // b is removed, d is added
+        @CordaSerializable
         data class CC(val a: Int, val c: String, val d: String) {
             // ensure none of the original parameters align with the initial
             // construction order
@@ -419,18 +443,22 @@ class EvolvabilityTests {
         // Original version of the class as it was serialised
         //
         // Version 1:
+        // @CordaSerializable
         // data class C (val a: Int, val b: Int)
         // File(URI("$localPath/$resource1")).writeBytes(SerializationOutput(sf).serialize(C(a, b)).bytes)
         //
         // Version 2 - add param c
+        // @CordaSerializable
         // data class C (val c: Int, val b: Int, val a: Int)
         // File(URI("$localPath/$resource2")).writeBytes(SerializationOutput(sf).serialize(C(c, b, a)).bytes)
         //
         // Version 3 - add param d
+        // @CordaSerializable
         // data class C (val b: Int, val c: Int, val d: Int, val a: Int)
         // File(URI("$localPath/$resource3")).writeBytes(SerializationOutput(sf).serialize(C(b, c, d, a)).bytes)
 
         @Suppress("UNUSED")
+        @CordaSerializable
         data class C(val e: Int, val c: Int, val b: Int, val a: Int, val d: Int) {
             @DeprecatedConstructorForDeserialization(1)
             constructor (b: Int, a: Int) : this(-1, -1, b, a, -1)
@@ -482,13 +510,17 @@ class EvolvabilityTests {
         val ia = 200
 
         // Original version of the class as it was serialised
+        // @CordaSerializable
         // data class Inner (val a: Int)
+        // @CordaSerializable
         // data class Outer (val a: Int, val b: Inner)
         // File(URI("$localPath/$resource")).writeBytes(SerializationOutput(sf).serialize(Outer(oa, Inner (ia))).bytes)
 
         // Add a parameter to inner but keep outer unchanged
+        @CordaSerializable
         data class Inner(val a: Int, val b: String?)
 
+        @CordaSerializable
         data class Outer(val a: Int, val b: Inner)
 
         val url = EvolvabilityTests::class.java.getResource(resource)
@@ -531,18 +563,22 @@ class EvolvabilityTests {
         // Original version of the class as it was serialised
         //
         // Version 1:
+        // @CordaSerializable
         // data class C (val a: Int, val b: Int, val c: Int)
         // File(URI("$localPath/$resource1")).writeBytes(SerializationOutput(sf).serialize(C(a, b, c)).bytes)
         //
         // Version 2 - remove property a, add property e
+        // @CordaSerializable
         // data class C (val b: Int, val c: Int, val d: Int, val e: Int)
         // File(URI("$localPath/$resource2")).writeBytes(SerializationOutput(sf).serialize(C(b, c, d, e)).bytes)
         //
         // Version 3 - add param d
+        // @CordaSerializable
         // data class C (val b: Int, val c: Int, val d: Int, val e: Int, val f: Int)
         // File(URI("$localPath/$resource3")).writeBytes(SerializationOutput(sf).serialize(C(b, c, d, e, f)).bytes)
 
         @Suppress("UNUSED")
+        @CordaSerializable
         data class C(val b: Int, val c: Int, val d: Int, val e: Int, val f: Int, val g: Int) {
             @DeprecatedConstructorForDeserialization(1)
             constructor (b: Int, c: Int) : this(b, c, -1, -1, -1, -1)
@@ -601,6 +637,7 @@ class EvolvabilityTests {
         //
         // Class as it was serialised
         //
+        // @CordaSerializable
         // data class C(var c: Int, var d: Int, var b: Int, var e: Int, var a: Int) {
         //     // This will force the serialization engine to use getter / setter
         //     // instantiation for the object rather than construction
@@ -614,6 +651,7 @@ class EvolvabilityTests {
         //
         // Class as it exists now, c has been removed
         //
+        @CordaSerializable
         data class C(var d: Int, var b: Int, var e: Int, var a: Int) {
             // This will force the serialization engine to use getter / setter
             // instantiation for the object rather than construction
@@ -641,6 +679,7 @@ class EvolvabilityTests {
     data class Evolved(val fnord: String)
 
     // Container class
+    @CordaSerializable
     data class ParameterizedContainer(val parameterized: Parameterized<Int, Int>?)
     // Class as it was serialized
     // data class Parameterized<A, B>(val a: A, val b: Set<B>)
@@ -649,6 +688,7 @@ class EvolvabilityTests {
     interface ForceEvolution
 
     // Class after evolution
+    @CordaSerializable
     data class Parameterized<A, B>(val a: A, val b: Set<B>) : ForceEvolution
 
     // See CORDA-2742
@@ -674,9 +714,11 @@ class EvolvabilityTests {
         val resource = "EvolvabilityTests.addMandatoryFieldWithAltConstructorAndMakeExistingIntFieldNullable"
 
         // Original version of the class as it was serialised
+        // @CordaSerializable
         // data class CC(val a: Int)
         // File(URI("$localPath/$resource")).writeBytes(SerializationOutput(sf).serialize(CC(1)).bytes)
 
+        @CordaSerializable
         data class CC(val a: Int?, val b: Int) {
             @DeprecatedConstructorForDeserialization(1)
             @Suppress("unused")
@@ -697,9 +739,11 @@ class EvolvabilityTests {
         val resource = "EvolvabilityTests.addMandatoryFieldWithAltConstructorAndMakeExistingNullableIntFieldMandatory"
 
         // Original version of the class as it was serialised
+        // @CordaSerializable
         // data class CC(val a: Int?)
         // File(URI("$localPath/$resource")).writeBytes(SerializationOutput(sf).serialize(CC(null)).bytes)
 
+        @CordaSerializable
         data class CC(val a: Int, val b: Int) {
             @DeprecatedConstructorForDeserialization(1)
             @Suppress("unused")
@@ -720,9 +764,11 @@ class EvolvabilityTests {
         val resource = "EvolvabilityTests.addMandatoryFieldAndRemoveExistingNullableIntField"
 
         // Original version of the class as it was serialised
+        // @CordaSerializable
         // data class CC(val data: String, val a: Int?)
         // File(URI("$localPath/$resource")).writeBytes(SerializationOutput(sf).serialize(CC("written", null)).bytes)
 
+        @CordaSerializable
         data class CC(val data: String, val b: String) {
             @DeprecatedConstructorForDeserialization(1)
             @Suppress("unused")
@@ -743,9 +789,11 @@ class EvolvabilityTests {
         val resource = "EvolvabilityTests.removeExistingNullableIntFieldWithAltConstructor"
 
         // Original version of the class as it was serialised
+//         @CordaSerializable
 //         data class CC(val data: String, val a: Int?)
 //         File(URI("$localPath/$resource")).writeBytes(SerializationOutput(sf).serialize(CC("written", null)).bytes)
 
+        @CordaSerializable
         data class CC(val data: String) {
             @DeprecatedConstructorForDeserialization(1)
             @Suppress("unused")

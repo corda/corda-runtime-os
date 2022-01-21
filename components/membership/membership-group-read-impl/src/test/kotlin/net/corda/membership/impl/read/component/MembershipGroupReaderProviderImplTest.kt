@@ -8,8 +8,9 @@ import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_1
 import net.corda.membership.impl.read.TestProperties.Companion.aliceName
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.membership.conversion.PropertyConverter
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.read.VirtualNodeInfoReaderComponent
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -43,21 +44,23 @@ class MembershipGroupReaderProviderImplTest {
     }
 
     private val cpiInfoReader: CpiInfoReadService = mock()
-    private val virtualNodeInfoReader: VirtualNodeInfoReaderComponent = mock()
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock()
     private val subscriptionFactory: SubscriptionFactory = mock()
     private val configurationReadService: ConfigurationReadService = mock()
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>().apply {
         doReturn(coordinator).whenever(this).createCoordinator(any(), any())
     }
+    private val converter: PropertyConverter = mock()
 
     @BeforeEach
     fun setUp() {
         membershipGroupReadService = MembershipGroupReaderProviderImpl(
-            virtualNodeInfoReader,
+            virtualNodeInfoReadService,
             cpiInfoReader,
             configurationReadService,
             subscriptionFactory,
-            lifecycleCoordinatorFactory
+            lifecycleCoordinatorFactory,
+            converter
         )
     }
 

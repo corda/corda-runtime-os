@@ -3,6 +3,7 @@ package net.corda.internal.serialization.amqp
 import net.corda.internal.serialization.amqp.testutils.serializeAndReturnSchema
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactoryNoEvolution
 import net.corda.internal.serialization.amqp.testutils.testName
+import net.corda.v5.base.annotations.CordaSerializable
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -21,6 +22,7 @@ class SerializeAndReturnSchemaTest {
     // testing
     @Test
 	fun getSchema() {
+        @CordaSerializable
         data class C(val a: Int, val b: Int)
 
         val a = 1

@@ -3,6 +3,7 @@ package net.corda.internal.serialization.amqp
 import net.corda.internal.serialization.amqp.testutils.TestSerializationOutput
 import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactoryNoEvolution
+import net.corda.v5.base.annotations.CordaSerializable
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -24,6 +25,7 @@ class DeserializeMapTests {
 
     @Test
     fun mapTest() {
+        @CordaSerializable
         data class C(val c: Map<String, Int>)
 
         val c = C(mapOf("A" to 1, "B" to 2))
@@ -58,6 +60,7 @@ class DeserializeMapTests {
 
     @Test
     fun sortedMapTest() {
+        @CordaSerializable
         data class C(val c: SortedMap<String, Int>)
 
         val c = C(sortedMapOf("A" to 1, "B" to 2))
@@ -67,6 +70,7 @@ class DeserializeMapTests {
 
     @Test
     fun navigableMapTest() {
+        @CordaSerializable
         data class C(val c: NavigableMap<String, Int>)
 
         val c = C(TreeMap(mapOf("A" to 1, "B" to 2)).descendingMap())
@@ -77,6 +81,7 @@ class DeserializeMapTests {
 
     @Test
     fun dictionaryTest() {
+        @CordaSerializable
         data class C(val c: Dictionary<String, Int>)
 
         val v: Hashtable<String, Int> = Hashtable()
@@ -86,13 +91,14 @@ class DeserializeMapTests {
 
         // expected to throw
         Assertions.assertThatThrownBy { TestSerializationOutput(VERBOSE, sf).serialize(c) }
-            .isInstanceOf(IllegalArgumentException::class.java)
+            .isInstanceOf(NotSerializableException::class.java)
             .hasMessageContaining(
-                "Unable to serialise deprecated type class java.util.Dictionary.")
+                "Class \"java.util.Dictionary<java.lang.String, java.lang.Integer>\" is not annotated with @CordaSerializable")
     }
 
     @Test
     fun hashtableTest() {
+        @CordaSerializable
         data class C(val c: Hashtable<String, Int>)
 
         val v: Hashtable<String, Int> = Hashtable()
@@ -109,6 +115,7 @@ class DeserializeMapTests {
 
     @Test
     fun hashMapTest() {
+        @CordaSerializable
         data class C(val c: HashMap<String, Int>)
 
         val c = C(HashMap(mapOf("A" to 1, "B" to 2)))
@@ -122,6 +129,7 @@ class DeserializeMapTests {
 
     @Test
     fun weakHashMapTest() {
+        @CordaSerializable
         data class C(val c: WeakHashMap<String, Int>)
 
         val c = C(WeakHashMap(mapOf("A" to 1, "B" to 2)))
@@ -134,6 +142,7 @@ class DeserializeMapTests {
 
     @Test
     fun concreteTreeMapTest() {
+        @CordaSerializable
         data class C(val c: TreeMap<String, Int>)
 
         val c = C(TreeMap(mapOf("A" to 1, "B" to 3)))
@@ -144,6 +153,7 @@ class DeserializeMapTests {
 
     @Test
     fun concreteLinkedHashMapTest() {
+        @CordaSerializable
         data class C(val c: LinkedHashMap<String, Int>)
 
         val c = C(LinkedHashMap(mapOf("A" to 1, "B" to 2)))
