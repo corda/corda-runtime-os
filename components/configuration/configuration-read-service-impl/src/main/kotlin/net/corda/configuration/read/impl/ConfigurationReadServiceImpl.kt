@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadException
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
+import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -34,6 +35,11 @@ class ConfigurationReadServiceImpl @Activate constructor(
 
     override fun bootstrapConfig(config: SmartConfig) {
         lifecycleCoordinator.postEvent(BootstrapConfigProvided(config))
+    }
+
+    override fun registerComponentForUpdates(coordinator: LifecycleCoordinator, requiredKeys: Set<String>): AutoCloseable {
+        val handler = ComponentConfigHandler(coordinator, requiredKeys)
+        return registerForUpdates(handler)
     }
 
     override fun registerForUpdates(configHandler: ConfigurationHandler): AutoCloseable {
