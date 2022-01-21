@@ -44,15 +44,17 @@ class LinkManagerApp @Activate constructor(
             shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
         } else {
 
-            configurationReadService.start()
-
             // TODO - move to common worker and pick up secrets params
+            consoleLogger.info("Starting the configuration service")
             val secretsConfig = ConfigFactory.empty()
             val bootConfig = SmartConfigFactory.create(secretsConfig).create(arguments.kafkaNodeConfiguration)
+            configurationReadService.start()
             configurationReadService.bootstrapConfig(bootConfig)
             while (!configurationReadService.isRunning) {
+                consoleLogger.info("Waiting for the configuration service to start.")
                 Thread.sleep(100)
             }
+            consoleLogger.info("Configuration service is running")
 
             consoleLogger.info("Starting link manager")
             linkManager = LinkManager(
