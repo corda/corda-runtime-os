@@ -16,7 +16,6 @@ import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_CREATION_REQU
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import javax.persistence.EntityManagerFactory
 
 /** An implementation of [VirtualNodeWriterFactory]. */
 @Suppress("Unused")
@@ -30,8 +29,7 @@ internal class VirtualNodeWriterFactoryImpl @Activate constructor(
 
     override fun create(
         config: SmartConfig,
-        instanceId: Int,
-        entityManagerFactory: EntityManagerFactory
+        instanceId: Int
     ): VirtualNodeWriter {
         val publisher = createPublisher(config, instanceId)
         val subscription = createRPCSubscription(config, publisher)

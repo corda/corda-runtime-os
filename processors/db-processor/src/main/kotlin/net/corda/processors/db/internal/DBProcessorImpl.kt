@@ -94,8 +94,6 @@ class DBProcessorImpl @Activate constructor(
                 val instanceId = event.config.getInt(CONFIG_INSTANCE_ID)
                 val entityManagerFactory = createEntityManagerFactory(dataSource)
                 configWriteService.startProcessing(event.config, instanceId, entityManagerFactory)
-                // TODO - Joel - Reconsider this. Should this information come from the config reader?
-                virtualNodeWriteService.startProcessing(event.config, instanceId, entityManagerFactory)
 
                 configurationReadService.bootstrapConfig(event.config)
             }

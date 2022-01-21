@@ -1,21 +1,31 @@
 package net.corda.virtualnode.write.db.impl
 
+import net.corda.configuration.read.ConfigurationReadService
+import net.corda.db.core.HikariDataSourceFactory
 import net.corda.libs.virtualnode.write.VirtualNodeWriter
 import net.corda.libs.virtualnode.write.VirtualNodeWriterFactory
 import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
-import net.corda.lifecycle.LifecycleStatus.DOWN
 import net.corda.lifecycle.LifecycleStatus.ERROR
 import net.corda.lifecycle.LifecycleStatus.UP
+import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.orm.DbEntityManagerConfiguration
+import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 
 /** Handles incoming [LifecycleCoordinator] events for [VirtualNodeWriteServiceImpl]. */
 internal class VirtualNodeWriteEventHandler(
+    private val configReadService: ConfigurationReadService,
     private val virtualNodeWriterFactory: VirtualNodeWriterFactory
 ) : LifecycleEventHandler {
-    private var virtualNodeWriter: VirtualNodeWriter? = null
+
+    private var configReadServiceRegistrationHandle: AutoCloseable? = null
+    private var configUpdateHandle: AutoCloseable? = null
+    internal var virtualNodeWriter: VirtualNodeWriter? = null
 
     /**
      * Upon [StartProcessingEvent], starts processing cluster configuration updates. Upon [StopEvent], stops processing
@@ -26,30 +36,45 @@ internal class VirtualNodeWriteEventHandler(
      */
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
-            is StartProcessingEvent -> {
-                if (virtualNodeWriter != null) {
-                    throw VirtualNodeWriteServiceException("An attempt was made to start processing twice.")
+            is StartEvent -> followConfigReadServiceStatus(coordinator)
+            is RegistrationStatusChangeEvent -> tryRegisteringForConfigUpdates(coordinator, event)
+            is StopEvent -> stop()
+        }
+    }
+
+    /** Starts tracking the status of the [ConfigurationReadService]. */
+    private fun followConfigReadServiceStatus(coordinator: LifecycleCoordinator) {
+        println("JJJ starting up")
+        configReadServiceRegistrationHandle?.close()
+        configReadServiceRegistrationHandle = coordinator.followStatusChangesByName(
+            setOf(LifecycleCoordinatorName.forComponent<ConfigurationReadService>())
+        )
+    }
+
+    /** If the [ConfigurationReadService] comes up, registers to receive updates. */
+    private fun tryRegisteringForConfigUpdates(
+        coordinator: LifecycleCoordinator,
+        event: RegistrationStatusChangeEvent
+    ) {
+        println("JJJ registering for config updates")
+        if (event.registration == configReadServiceRegistrationHandle) {
+            when (event.status) {
+                UP -> {
+                    val configHandler = VirtualNodeWriteConfigHandler(this, coordinator, virtualNodeWriterFactory)
+                    configUpdateHandle?.close()
+                    configUpdateHandle = configReadService.registerForUpdates(configHandler)
                 }
-
-                try {
-                    // TODO - CORE-3316 - At worker start-up, read back configuration from database and check it
-                    //  against Kafka topic.
-                    virtualNodeWriter = virtualNodeWriterFactory
-                        .create(event.config, event.instanceId, event.entityManagerFactory)
-                        .apply { start() }
-                } catch (e: Exception) {
-                    coordinator.updateStatus(ERROR)
-                    throw VirtualNodeWriteServiceException("Could not subscribe to virtual node creation requests.", e)
-                }
-
-                coordinator.updateStatus(UP)
-            }
-
-            is StopEvent -> {
-                virtualNodeWriter?.stop()
-                virtualNodeWriter = null
-                coordinator.updateStatus(DOWN)
+                ERROR -> coordinator.postEvent(StopEvent(errored = true))
+                else -> Unit
             }
         }
     }
-}
+
+        /** Shuts down the service. */
+        private fun stop() {
+            virtualNodeWriter?.stop()
+            virtualNodeWriter = null
+            configReadServiceRegistrationHandle?.close()
+            configUpdateHandle?.close()
+        }
+    }
