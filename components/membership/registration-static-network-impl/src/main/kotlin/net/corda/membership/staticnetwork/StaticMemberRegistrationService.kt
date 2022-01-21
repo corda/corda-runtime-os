@@ -2,7 +2,6 @@ package net.corda.membership.staticnetwork
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.CryptoCategories
-import net.corda.crypto.CryptoLibraryClientsFactory
 import net.corda.crypto.CryptoLibraryClientsFactoryProvider
 import net.corda.crypto.CryptoLibraryFactory
 import net.corda.crypto.SigningService
@@ -68,14 +67,12 @@ open class StaticMemberRegistrationService @Activate constructor(
     val publisherFactory: PublisherFactory,
     @Reference(service = CryptoLibraryFactory::class)
     val cryptoLibraryFactory: CryptoLibraryFactory,
-    @Reference(service = CryptoLibraryClientsFactory::class)
+    @Reference(service = CryptoLibraryClientsFactoryProvider::class)
     val cryptoLibraryClientsFactoryProvider: CryptoLibraryClientsFactoryProvider,
     @Reference(service = ConfigurationReadService::class)
     val configurationReadService: ConfigurationReadService,
     @Reference(service = LifecycleCoordinatorFactory::class)
-    val coordinatorFactory: LifecycleCoordinatorFactory,
-    // only available for testing purposes
-    registrationLifecycleHandler: RegistrationServiceLifecycleHandler? = null
+    val coordinatorFactory: LifecycleCoordinatorFactory
 ) : MemberRegistrationService, Lifecycle {
     companion object {
         private val logger: Logger = contextLogger()
@@ -94,8 +91,7 @@ open class StaticMemberRegistrationService @Activate constructor(
     private val topic = Schemas.Membership.MEMBER_LIST_TOPIC
 
     // Handler for lifecycle events
-    private var lifecycleHandler =
-        registrationLifecycleHandler ?: RegistrationServiceLifecycleHandlerImpl(this)
+    private val lifecycleHandler = RegistrationServiceLifecycleHandlerImpl(this)
 
     // Component lifecycle coordinator
     private val coordinator =

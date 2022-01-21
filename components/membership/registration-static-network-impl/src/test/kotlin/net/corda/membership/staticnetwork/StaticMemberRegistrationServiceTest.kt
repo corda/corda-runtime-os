@@ -35,14 +35,12 @@ import net.corda.schema.Schemas
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.membership.identity.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
 import java.security.PublicKey
 import java.util.concurrent.CompletableFuture
 import kotlin.test.assertEquals
@@ -55,19 +53,6 @@ class StaticMemberRegistrationServiceTest {
         private const val BOB_KEY = "2345"
     }
 
-    private val groupPolicyProvider: GroupPolicyProvider = mock()
-    private val publisherFactory: PublisherFactory = mock()
-    private val cryptoLibraryFactory: CryptoLibraryFactory = mock()
-    private val cryptoLibraryClientsFactoryProvider: CryptoLibraryClientsFactoryProvider = mock()
-    private val cryptoLibraryClientsFactory: CryptoLibraryClientsFactory = mock()
-    private val configurationReadService: ConfigurationReadService = mock()
-    private val keyEncodingService: KeyEncodingService = mock()
-    private val signingService: SigningService = mock()
-    private val  lifecycleHandler: RegistrationServiceLifecycleHandler = mock()
-    private val mockPublisher: Publisher = mock()
-    private lateinit var registrationService: StaticMemberRegistrationService
-
-    private val publishedList = mutableListOf<Record<String, MemberInfo>>()
     private val alice = HoldingIdentity(aliceName.toString(), DUMMY_GROUP_ID)
     private val bob = HoldingIdentity(bobName.toString(), DUMMY_GROUP_ID)
     private val charlie = HoldingIdentity(charlieName.toString(), DUMMY_GROUP_ID)
@@ -75,76 +60,90 @@ class StaticMemberRegistrationServiceTest {
     private val aliceKey: PublicKey = mock()
     private val bobKey: PublicKey = mock()
 
-    private var coordinatorIsRunning = false
-    private val coordinator: LifecycleCoordinator = mock<LifecycleCoordinator>().apply {
-        doAnswer { coordinatorIsRunning }.whenever(this).isRunning
-        doAnswer { coordinatorIsRunning = true }.whenever(this).start()
-        doAnswer { coordinatorIsRunning = false }.whenever(this).stop()
+    private val groupPolicyProvider: GroupPolicyProvider = mock {
+        on { getGroupPolicy(alice) } doReturn groupPolicyWithStaticNetwork
+        on { getGroupPolicy(bob) } doReturn groupPolicyWithInvalidStaticNetworkTemplate
+        on { getGroupPolicy(charlie) } doReturn groupPolicyWithoutStaticNetwork
+        on { getGroupPolicy(daisy) } doReturn groupPolicyWithDuplicateMembers
     }
 
-    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>().apply {
-        doReturn(coordinator).whenever(this).createCoordinator(any(), any())
-    }
-
-    @BeforeEach
     @Suppress("UNCHECKED_CAST")
-    fun setUp() {
-        // clears the list before the test runs as we are using one list for the test cases
-        publishedList.clear()
-        whenever(mockPublisher.publish(any())).thenAnswer {
+    private val mockPublisher: Publisher = mock {
+        on { publish(any()) } doAnswer {
             publishedList.addAll(it.arguments.first() as List<Record<String, MemberInfo>>)
             listOf(CompletableFuture.completedFuture(Unit))
         }
-        whenever(lifecycleHandler.publisher).thenReturn(mockPublisher)
-        whenever(groupPolicyProvider.getGroupPolicy(alice)).thenReturn(groupPolicyWithStaticNetwork)
-        whenever(groupPolicyProvider.getGroupPolicy(bob)).thenReturn(groupPolicyWithInvalidStaticNetworkTemplate)
-        whenever(groupPolicyProvider.getGroupPolicy(charlie)).thenReturn(groupPolicyWithoutStaticNetwork)
-        whenever(groupPolicyProvider.getGroupPolicy(daisy)).thenReturn(groupPolicyWithDuplicateMembers)
+    }
 
-        whenever(cryptoLibraryFactory.getKeyEncodingService()).thenReturn(keyEncodingService)
-        whenever(cryptoLibraryClientsFactoryProvider.get(any(), any())).thenReturn(cryptoLibraryClientsFactory)
-        whenever(cryptoLibraryClientsFactory.getSigningService(any())).thenReturn(signingService)
+    private val publisherFactory: PublisherFactory = mock {
+        on { createPublisher(any(), any()) } doReturn mockPublisher
+    }
 
-        whenever(
-            keyEncodingService.decodePublicKey(any<String>())
-        ).thenReturn(mock())
-        whenever(
-            keyEncodingService.decodePublicKey(eq(ALICE_KEY))
-        ).thenReturn(aliceKey)
-        whenever(
-            keyEncodingService.decodePublicKey(eq(BOB_KEY))
-        ).thenReturn(bobKey)
+    private val keyEncodingService: KeyEncodingService = mock {
+        on { decodePublicKey(any<String>()) } doReturn mock()
+        on { decodePublicKey(ALICE_KEY) } doReturn aliceKey
+        on { decodePublicKey(BOB_KEY) } doReturn bobKey
 
-        whenever(
-            keyEncodingService.encodeAsString(any())
-        ).thenReturn("1")
-        whenever(
-            keyEncodingService.encodeAsString(aliceKey)
-        ).thenReturn(ALICE_KEY)
-        whenever(
-            keyEncodingService.encodeAsString(bobKey)
-        ).thenReturn(BOB_KEY)
+        on { encodeAsString(any()) } doReturn "1"
+        on { encodeAsString(aliceKey) } doReturn ALICE_KEY
+        on { encodeAsString(bobKey) } doReturn BOB_KEY
+    }
 
-        whenever(
-            signingService.generateKeyPair(any(), eq(EMPTY_CONTEXT))
-        ).thenReturn(mock())
-        whenever(
-            signingService.generateKeyPair(eq("alice-alias"), eq(EMPTY_CONTEXT))
-        ).thenReturn(aliceKey)
+    private val cryptoLibraryFactory: CryptoLibraryFactory = mock {
+        on { getKeyEncodingService() } doReturn keyEncodingService
+    }
+
+    private val signingService: SigningService = mock {
+        on { generateKeyPair(any(), eq(EMPTY_CONTEXT)) } doReturn mock()
+        on { generateKeyPair(eq("alice-alias"), eq(EMPTY_CONTEXT)) } doReturn aliceKey
         // when no keyAlias is defined in static template, we are using the HoldingIdentity's id
-        whenever(
-            signingService.generateKeyPair(eq(bob.id), eq(EMPTY_CONTEXT))
-        ).thenReturn(bobKey)
+        on { generateKeyPair(eq(bob.id), eq(EMPTY_CONTEXT)) } doReturn bobKey
+    }
 
-        registrationService = StaticMemberRegistrationService(
-            groupPolicyProvider,
-            publisherFactory,
-            cryptoLibraryFactory,
-            cryptoLibraryClientsFactoryProvider,
-            configurationReadService,
-            lifecycleCoordinatorFactory,
-            lifecycleHandler
-        )
+    private val cryptoLibraryClientsFactory: CryptoLibraryClientsFactory = mock {
+        on { getSigningService(any()) } doReturn signingService
+    }
+
+    private val cryptoLibraryClientsFactoryProvider: CryptoLibraryClientsFactoryProvider = mock {
+        on { get(any(), any()) } doReturn cryptoLibraryClientsFactory
+    }
+
+    private val configurationReadService: ConfigurationReadService = mock()
+
+    private val publishedList = mutableListOf<Record<String, MemberInfo>>()
+
+    private var coordinatorIsRunning = false
+    private val coordinator: LifecycleCoordinator = mock {
+        on { isRunning } doAnswer { coordinatorIsRunning }
+        on { start() } doAnswer { coordinatorIsRunning = true }
+        on { stop() } doAnswer { coordinatorIsRunning = false }
+    }
+
+    private var registrationServiceLifecycleHandler: RegistrationServiceLifecycleHandlerImpl? = null
+
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock {
+        on { createCoordinator(any(), any()) } doReturn coordinator
+        on { createCoordinator(any(), any()) } doAnswer {
+            registrationServiceLifecycleHandler = it.arguments[1] as RegistrationServiceLifecycleHandlerImpl
+            coordinator
+        }
+    }
+
+    private val registrationService = StaticMemberRegistrationService(
+        groupPolicyProvider,
+        publisherFactory,
+        cryptoLibraryFactory,
+        cryptoLibraryClientsFactoryProvider,
+        configurationReadService,
+        lifecycleCoordinatorFactory
+    )
+
+    @Suppress("UNCHECKED_CAST")
+    private fun setUpPublisher() {
+        // clears the list before the test runs as we are using one list for the test cases
+        publishedList.clear()
+        // kicks off the MessagingConfigurationReceived event to be able to mock the Publisher
+        registrationServiceLifecycleHandler?.processEvent(MessagingConfigurationReceived(mock()), coordinator)
     }
 
     @Test
@@ -157,6 +156,7 @@ class StaticMemberRegistrationServiceTest {
 
     @Test
     fun `during registration, the static network inside the GroupPolicy file gets parsed and published`() {
+        setUpPublisher()
         registrationService.start()
         val registrationResult = registrationService.register(alice)
         registrationService.stop()
@@ -198,6 +198,7 @@ class StaticMemberRegistrationServiceTest {
 
     @Test
     fun `parsing of MemberInfo list fails when name field is empty in the GroupPolicy file`() {
+        setUpPublisher()
         registrationService.start()
         val registrationResult = registrationService.register(bob)
         assertEquals(
@@ -212,6 +213,7 @@ class StaticMemberRegistrationServiceTest {
 
     @Test
     fun `registration fails when static network is empty`() {
+        setUpPublisher()
         registrationService.start()
         val registrationResult = registrationService.register(charlie)
         assertEquals(
@@ -226,6 +228,7 @@ class StaticMemberRegistrationServiceTest {
 
     @Test
     fun `registration fails when we have duplicated members defined`() {
+        setUpPublisher()
         registrationService.start()
         val registrationResult = registrationService.register(daisy)
         assertEquals(

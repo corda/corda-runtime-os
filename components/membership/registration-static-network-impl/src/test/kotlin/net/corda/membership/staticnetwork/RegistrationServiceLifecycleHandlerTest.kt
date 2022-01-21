@@ -15,7 +15,6 @@ import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -24,25 +23,31 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 
 class RegistrationServiceLifecycleHandlerTest {
-    private lateinit var registrationServiceLifecycleHandler: RegistrationServiceLifecycleHandlerImpl
-
     private val componentHandle: RegistrationHandle = mock()
     private val configHandle: AutoCloseable = mock()
 
     private val groupPolicyProvider: GroupPolicyProvider = mock()
-    private val publisherFactory: PublisherFactory = mock()
     private val cryptoLibraryFactory: CryptoLibraryFactory = mock()
     private val cryptoLibraryClientsFactoryProvider: CryptoLibraryClientsFactoryProvider = mock()
-    private val configurationReadService: ConfigurationReadService = mock()
-    private val coordinatorFactory: LifecycleCoordinatorFactory = mock()
+
+    private val configurationReadService: ConfigurationReadService = mock {
+        on { registerForUpdates(any()) } doReturn configHandle
+    }
 
     private val publisher: Publisher = mock()
 
-    private val coordinator: LifecycleCoordinator = mock<LifecycleCoordinator>().apply {
-        doReturn(componentHandle).whenever(this).followStatusChangesByName(any())
+    private val publisherFactory: PublisherFactory = mock {
+        on { createPublisher(any(), any()) } doReturn publisher
+    }
+
+    private val coordinator: LifecycleCoordinator = mock {
+        on { followStatusChangesByName(any()) } doReturn componentHandle
+    }
+
+    private val coordinatorFactory: LifecycleCoordinatorFactory = mock {
+        on { createCoordinator(any(), any()) } doReturn coordinator
     }
 
     private val staticMemberRegistrationService = StaticMemberRegistrationService(
@@ -54,16 +59,9 @@ class RegistrationServiceLifecycleHandlerTest {
         coordinatorFactory
     )
 
-    @BeforeEach
-    fun setUp() {
-        registrationServiceLifecycleHandler = RegistrationServiceLifecycleHandlerImpl(
-            staticMemberRegistrationService
-        )
-
-        whenever(coordinatorFactory.createCoordinator(any(), any())).thenReturn(coordinator)
-        whenever(configurationReadService.registerForUpdates(any())).thenReturn(configHandle)
-        whenever(publisherFactory.createPublisher(any(), any())).thenReturn(publisher)
-    }
+    private val registrationServiceLifecycleHandler = RegistrationServiceLifecycleHandlerImpl(
+        staticMemberRegistrationService
+    )
 
     @Test
     fun `Start event starts following the statuses of the required dependencies`() {
