@@ -54,7 +54,6 @@ open class RegistrationServiceLifecycleHandlerImpl(
         componentHandle = coordinator.followStatusChangesByName(
             setOf(
                 LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
-                LifecycleCoordinatorName.forComponent<CryptoLibraryClientsFactoryProvider>(),
                 LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
             )
         )

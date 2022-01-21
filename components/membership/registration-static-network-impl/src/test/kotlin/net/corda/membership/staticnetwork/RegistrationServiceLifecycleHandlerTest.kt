@@ -72,7 +72,6 @@ class RegistrationServiceLifecycleHandlerTest {
             eq(
                 setOf(
                     LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
-                    LifecycleCoordinatorName.forComponent<CryptoLibraryClientsFactoryProvider>(),
                     LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
                 )
             )
