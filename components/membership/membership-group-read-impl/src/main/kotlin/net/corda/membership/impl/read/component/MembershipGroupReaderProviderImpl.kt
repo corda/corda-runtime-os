@@ -11,10 +11,11 @@ import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.impl.read.lifecycle.MembershipGroupReadLifecycleHandler
 import net.corda.membership.impl.read.reader.MembershipGroupReaderFactory
 import net.corda.membership.impl.read.subscription.MembershipGroupReadSubscriptions
-import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.read.MembershipGroupReader
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.membership.conversion.PropertyConverter
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
@@ -33,6 +34,7 @@ import org.osgi.service.component.annotations.Reference
  * received will return no results.
  */
 @Component(service = [MembershipGroupReaderProvider::class])
+@Suppress("LongParameterList")
 class MembershipGroupReaderProviderImpl @Activate constructor(
     @Reference(service = VirtualNodeInfoReadService::class)
     val virtualNodeInfoReadService: VirtualNodeInfoReadService,
@@ -43,7 +45,9 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     val subscriptionFactory: SubscriptionFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
-    val coordinatorFactory: LifecycleCoordinatorFactory
+    val coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = PropertyConverter::class)
+    val converter: PropertyConverter
 ) : MembershipGroupReaderProvider, Lifecycle {
 
     companion object {
@@ -59,7 +63,8 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
     // Membership group topic subscriptions
     private val membershipGroupReadSubscriptions = MembershipGroupReadSubscriptions.Impl(
         subscriptionFactory,
-        membershipGroupReadCache
+        membershipGroupReadCache,
+        converter
     )
 
     // Handler for lifecycle events.
