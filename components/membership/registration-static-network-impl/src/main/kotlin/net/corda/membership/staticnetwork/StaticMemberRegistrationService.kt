@@ -135,7 +135,7 @@ open class StaticMemberRegistrationService @Activate constructor(
         val converter = PropertyConverterImpl(
             listOf(
                 EndpointInfoConverter(),
-                PublicKeyConverter(keyEncodingService),
+                PublicKeyConverter(cryptoLibraryFactory),
             )
         )
 
