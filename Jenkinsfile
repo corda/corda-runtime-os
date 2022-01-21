@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@yift/no-tick/image-only') _
+@Library('corda-shared-build-pipeline-steps@yift/no-tick/iamge-only') _
 
 cordaPipeline(
     nexusAppId: 'flow-worker-5.0',
