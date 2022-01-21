@@ -332,7 +332,7 @@ class AMQPwithOSGiSerializationTests {
         val originalFactory = testDefaultFactoryNoEvolution(originalSandboxGroup)
         val originalContext = testSerializationContext.withSandboxGroup(originalSandboxGroup)
 
-        val originalStateClass = originalSandboxGroup.loadClassFromMainBundles("net.corda.bundle.evolution.different.SerializableStateForDifferentCpkTest")
+        val originalStateClass = originalSandboxGroup.loadClassFromMainBundles("net.corda.bundle.evolution.different.SerializableStateForDifferentCpk")
         val originalStateInstance = originalStateClass.getConstructor(UUID::class.java).newInstance(UUID.randomUUID())
 
         val serializedBytes = SerializationOutput(originalFactory).serialize(originalStateInstance, originalContext)
