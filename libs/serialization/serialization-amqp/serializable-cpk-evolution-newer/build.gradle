@@ -11,7 +11,7 @@ cordapp {
     minimumPlatformVersion platformVersion as Integer
     workflow {
         name "Test Serializable Test"
-//        versionId 1
+        // Change version to 1 when rebuilding the test resources
         versionId 2
         vendor "R3"
     }
