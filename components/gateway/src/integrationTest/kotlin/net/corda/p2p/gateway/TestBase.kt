@@ -89,9 +89,9 @@ open class TestBase {
 
     protected val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
 
-    protected inner class ConfigPublisher(private var coordinatorFactory: LifecycleCoordinatorFactory?=null) {
+    protected inner class ConfigPublisher(private var coordinatorFactory: LifecycleCoordinatorFactory? = null) {
         init {
-            coordinatorFactory = coordinatorFactory?:lifecycleCoordinatorFactory
+            coordinatorFactory = coordinatorFactory ?: lifecycleCoordinatorFactory
         }
         private val configurationTopicService = TopicServiceImpl()
         private val rpcTopicService = RPCTopicServiceImpl()
@@ -105,6 +105,9 @@ open class TestBase {
                 it.start()
                 val bootstrapper = ConfigFactory.empty()
                 it.bootstrapConfig(smartConfigFactory.create(bootstrapper))
+                eventually {
+                    assertThat(it.isRunning).isTrue
+                }
             }
         }
 
@@ -153,7 +156,7 @@ open class TestBase {
         }
     }
 
-    protected fun createConfigurationServiceFor(configuration: GatewayConfiguration, coordinatorFactory: LifecycleCoordinatorFactory?=null): ConfigurationReadService {
+    protected fun createConfigurationServiceFor(configuration: GatewayConfiguration, coordinatorFactory: LifecycleCoordinatorFactory? = null): ConfigurationReadService {
         val publisher = ConfigPublisher(coordinatorFactory)
         publisher.publishConfig(configuration)
         return publisher.readerService
