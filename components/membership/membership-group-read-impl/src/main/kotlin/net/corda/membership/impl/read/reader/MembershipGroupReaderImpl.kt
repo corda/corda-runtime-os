@@ -29,7 +29,9 @@ class MembershipGroupReaderImpl(
         get() = TODO("Not yet implemented")
 
     override fun lookup(publicKeyHash: ByteArray): MemberInfo? =
-        memberList.singleOrNull { it.identityKeys.contains(keyEncodingService.decodePublicKey(publicKeyHash)) }
+        with(keyEncodingService.decodePublicKey(publicKeyHash)) {
+            memberList.singleOrNull { this in it.identityKeys }
+        }
 
     override fun lookup(name: MemberX500Name) = memberList.singleOrNull { it.name == name }
 }

@@ -29,14 +29,13 @@ class MembershipGroupReaderImplTest {
         whenever(this.memberListCache).thenReturn(memberCache)
     }
     private val knownKey: PublicKey = mock()
-    private val knownKeyAsString = "1234"
+    private val knownKeyAsByteArray = "1234".toByteArray()
     private val memberInfo: MemberInfo = mock {
         on { name } doReturn aliceName
         on { identityKeys } doReturn listOf(knownKey)
     }
     private val keyEncodingService: KeyEncodingService = mock {
-        on { encodeAsString(knownKey) } doReturn knownKeyAsString
-        on { decodePublicKey(knownKeyAsString.toByteArray()) } doReturn knownKey
+        on { decodePublicKey(knownKeyAsByteArray) } doReturn knownKey
     }
 
     @BeforeEach
@@ -70,13 +69,13 @@ class MembershipGroupReaderImplTest {
         mockMemberList(listOf(memberInfo))
         assertEquals(
             memberInfo,
-            membershipGroupReaderImpl.lookup(keyEncodingService.encodeAsString(knownKey).toByteArray())
+            membershipGroupReaderImpl.lookup(knownKeyAsByteArray)
         )
     }
 
     @Test
     fun `lookup non-existing member based on public key hash`() {
         mockMemberList(emptyList())
-        assertNull(membershipGroupReaderImpl.lookup(keyEncodingService.encodeAsString(knownKey).toByteArray()))
+        assertNull(membershipGroupReaderImpl.lookup(knownKeyAsByteArray))
     }
 }
