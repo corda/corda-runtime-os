@@ -7,5 +7,5 @@ import java.util.UUID
  * Serializable class used to test evolution to older CPKs.
  */
 @CordaSerializable
-//data class SerializableStateToOlderVersion(val Id: UUID, val RemovedField: String)
+//data class SerializableStateToOlderVersion(val id: UUID, val removedField: String)
 data class SerializableStateToOlderVersion(val Id:UUID)
