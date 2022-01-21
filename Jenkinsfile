@@ -1,10 +1,9 @@
-@Library('corda-shared-build-pipeline-steps@5.0') _
+@Library('corda-shared-build-pipeline-steps@yift/no-tick/image-only') _
 
 cordaPipeline(
     nexusAppId: 'flow-worker-5.0',
-    runIntegrationTests: true,
+    runIntegrationTests: false,
     publishRepoPrefix: 'corda-ent-maven',
-    createPostgresDb: true,
+    createPostgresDb: false,
     publishOSGiImage: true,
-    publishPreTestImage: false
     )
