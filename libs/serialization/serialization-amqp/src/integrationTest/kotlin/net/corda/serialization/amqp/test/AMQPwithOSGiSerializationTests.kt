@@ -317,7 +317,7 @@ class AMQPwithOSGiSerializationTests {
                 Any::class.java,
                 context
             )
-        val actual = deserialize::class.java.getMethod("getId").invoke(deserialize) as UUID
+        val actual = deserialized::class.java.getMethod("getId").invoke(deserialized) as UUID
         assertEquals(uuid, actual)
     }
 
