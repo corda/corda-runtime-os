@@ -1,6 +1,7 @@
 package net.corda.libs.virtualnode.write.impl
 
 import net.corda.data.crypto.SecureHash
+import net.corda.data.identity.HoldingIdentity
 import net.corda.data.packaging.CPIIdentifier
 import net.corda.data.virtualnode.VirtualNodeCreationRequest
 import net.corda.data.virtualnode.VirtualNodeCreationResponse
@@ -30,9 +31,9 @@ internal class VirtualNodeWriterProcessor(
     override fun onNext(request: VirtualNodeCreationRequest, respFuture: VirtualNodeCreationResponseFuture) {
         val cpiIdHash = SecureHash("algorithm", ByteBuffer.wrap("1234".toByteArray()))
         val cpiId = CPIIdentifier("", "", cpiIdHash)
-        val holdingIdHash = SecureHash("algorithm", ByteBuffer.wrap("1234".toByteArray()))
+        val holdingId = HoldingIdentity("", "")
         val response = VirtualNodeCreationResponse(
-            true, null, "", cpiId, cpiIdHash, "", holdingIdHash
+            true, null, "", cpiId, "", "", holdingId, "dummyHoldingIdHash"
         )
         respFuture.complete(response)
     }

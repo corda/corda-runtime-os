@@ -1,6 +1,5 @@
 package net.corda.virtualnode.rpcops.impl.v1
 
-import net.corda.data.crypto.SecureHash
 import net.corda.data.virtualnode.VirtualNodeCreationRequest
 import net.corda.data.virtualnode.VirtualNodeCreationResponse
 import net.corda.httprpc.PluggableRPCOps
@@ -21,7 +20,6 @@ import net.corda.virtualnode.rpcops.impl.GROUP_NAME
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.nio.ByteBuffer
 import java.time.Duration
 
 /** An implementation of [VirtualNodeRPCOpsInternal]. */
@@ -65,8 +63,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
     }
 
     override fun createVirtualNode(request: HTTPCreateVirtualNodeRequest): HTTPCreateVirtualNodeResponse {
-        val cpiIdHash = SecureHash("algorithm", ByteBuffer.wrap("1234".toByteArray()))
-        val rpcRequest = VirtualNodeCreationRequest("dummyX500Name", cpiIdHash)
+        val rpcRequest = VirtualNodeCreationRequest("", "")
         val response =  sendRequest(rpcRequest)
 
         return if (response.success) {
