@@ -1,9 +1,13 @@
 package net.corda.membership.staticnetwork
 
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.CryptoLibraryClientsFactory
+import net.corda.crypto.CryptoLibraryClientsFactoryProvider
 import net.corda.crypto.CryptoLibraryFactory
 import net.corda.crypto.SigningService
 import net.corda.crypto.SigningService.Companion.EMPTY_CONTEXT
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.identity.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.identity.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
@@ -13,8 +17,8 @@ import net.corda.membership.identity.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.identity.MemberInfoExtension.Companion.softwareVersion
 import net.corda.membership.identity.MemberInfoExtension.Companion.status
 import net.corda.membership.registration.MembershipRequestRegistrationResult
-import net.corda.membership.registration.MembershipRequestRegistrationResultOutcome.SUBMITTED
-import net.corda.membership.registration.MembershipRequestRegistrationResultOutcome.NOT_SUBMITTED
+import net.corda.membership.registration.MembershipRequestRegistrationOutcome.SUBMITTED
+import net.corda.membership.registration.MembershipRequestRegistrationOutcome.NOT_SUBMITTED
 import net.corda.membership.staticnetwork.TestUtils.Companion.DUMMY_GROUP_ID
 import net.corda.membership.staticnetwork.TestUtils.Companion.aliceName
 import net.corda.membership.staticnetwork.TestUtils.Companion.bobName
@@ -35,6 +39,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
@@ -52,11 +58,16 @@ class StaticMemberRegistrationServiceTest {
     private val groupPolicyProvider: GroupPolicyProvider = mock()
     private val publisherFactory: PublisherFactory = mock()
     private val cryptoLibraryFactory: CryptoLibraryFactory = mock()
+    private val cryptoLibraryClientsFactoryProvider: CryptoLibraryClientsFactoryProvider = mock()
     private val cryptoLibraryClientsFactory: CryptoLibraryClientsFactory = mock()
+    private val configurationReadService: ConfigurationReadService = mock()
     private val keyEncodingService: KeyEncodingService = mock()
     private val signingService: SigningService = mock()
+    private val  lifecycleHandler: RegistrationServiceLifecycleHandler = mock()
+    private val mockPublisher: Publisher = mock()
     private lateinit var registrationService: StaticMemberRegistrationService
 
+    private val publishedList = mutableListOf<Record<String, MemberInfo>>()
     private val alice = HoldingIdentity(aliceName.toString(), DUMMY_GROUP_ID)
     private val bob = HoldingIdentity(bobName.toString(), DUMMY_GROUP_ID)
     private val charlie = HoldingIdentity(charlieName.toString(), DUMMY_GROUP_ID)
@@ -64,21 +75,34 @@ class StaticMemberRegistrationServiceTest {
     private val aliceKey: PublicKey = mock()
     private val bobKey: PublicKey = mock()
 
-    @BeforeEach
-    fun setUp() {
-        registrationService = StaticMemberRegistrationService(
-            groupPolicyProvider,
-            publisherFactory,
-            cryptoLibraryFactory,
-            cryptoLibraryClientsFactory
-        )
+    private var coordinatorIsRunning = false
+    private val coordinator: LifecycleCoordinator = mock<LifecycleCoordinator>().apply {
+        doAnswer { coordinatorIsRunning }.whenever(this).isRunning
+        doAnswer { coordinatorIsRunning = true }.whenever(this).start()
+        doAnswer { coordinatorIsRunning = false }.whenever(this).stop()
+    }
 
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>().apply {
+        doReturn(coordinator).whenever(this).createCoordinator(any(), any())
+    }
+
+    @BeforeEach
+    @Suppress("UNCHECKED_CAST")
+    fun setUp() {
+        // clears the list before the test runs as we are using one list for the test cases
+        publishedList.clear()
+        whenever(mockPublisher.publish(any())).thenAnswer {
+            publishedList.addAll(it.arguments.first() as List<Record<String, MemberInfo>>)
+            listOf(CompletableFuture.completedFuture(Unit))
+        }
+        whenever(lifecycleHandler.publisher).thenReturn(mockPublisher)
         whenever(groupPolicyProvider.getGroupPolicy(alice)).thenReturn(groupPolicyWithStaticNetwork)
         whenever(groupPolicyProvider.getGroupPolicy(bob)).thenReturn(groupPolicyWithInvalidStaticNetworkTemplate)
         whenever(groupPolicyProvider.getGroupPolicy(charlie)).thenReturn(groupPolicyWithoutStaticNetwork)
         whenever(groupPolicyProvider.getGroupPolicy(daisy)).thenReturn(groupPolicyWithDuplicateMembers)
 
         whenever(cryptoLibraryFactory.getKeyEncodingService()).thenReturn(keyEncodingService)
+        whenever(cryptoLibraryClientsFactoryProvider.get(any(), any())).thenReturn(cryptoLibraryClientsFactory)
         whenever(cryptoLibraryClientsFactory.getSigningService(any())).thenReturn(signingService)
 
         whenever(
@@ -111,6 +135,16 @@ class StaticMemberRegistrationServiceTest {
         whenever(
             signingService.generateKeyPair(eq(bob.id), eq(EMPTY_CONTEXT))
         ).thenReturn(bobKey)
+
+        registrationService = StaticMemberRegistrationService(
+            groupPolicyProvider,
+            publisherFactory,
+            cryptoLibraryFactory,
+            cryptoLibraryClientsFactoryProvider,
+            configurationReadService,
+            lifecycleCoordinatorFactory,
+            lifecycleHandler
+        )
     }
 
     @Test
@@ -123,15 +157,13 @@ class StaticMemberRegistrationServiceTest {
 
     @Test
     fun `during registration, the static network inside the GroupPolicy file gets parsed and published`() {
-        val published = capturePublishedMemberInfoList()
-
         registrationService.start()
         val registrationResult = registrationService.register(alice)
         registrationService.stop()
 
-        assertEquals(3, published.size)
+        assertEquals(3, publishedList.size)
 
-        published.forEach {
+        publishedList.forEach {
             assertEquals(Schemas.Membership.MEMBER_LIST_TOPIC, it.topic)
             assertTrue { it.key.startsWith(alice.id) }
             val memberPublished = it.value as MemberInfo
@@ -166,7 +198,6 @@ class StaticMemberRegistrationServiceTest {
 
     @Test
     fun `parsing of MemberInfo list fails when name field is empty in the GroupPolicy file`() {
-        capturePublishedMemberInfoList()
         registrationService.start()
         val registrationResult = registrationService.register(bob)
         assertEquals(
@@ -181,7 +212,6 @@ class StaticMemberRegistrationServiceTest {
 
     @Test
     fun `registration fails when static network is empty`() {
-        capturePublishedMemberInfoList()
         registrationService.start()
         val registrationResult = registrationService.register(charlie)
         assertEquals(
@@ -196,7 +226,6 @@ class StaticMemberRegistrationServiceTest {
 
     @Test
     fun `registration fails when we have duplicated members defined`() {
-        capturePublishedMemberInfoList()
         registrationService.start()
         val registrationResult = registrationService.register(daisy)
         assertEquals(
@@ -207,19 +236,5 @@ class StaticMemberRegistrationServiceTest {
             registrationResult
         )
         registrationService.stop()
-    }
-
-    /* Used for storing and inspecting the MemberInfo list which is going to be published on kafka. */
-    @Suppress("UNCHECKED_CAST")
-    private fun capturePublishedMemberInfoList(): List<Record<String,MemberInfo>> {
-        val published = mutableListOf<Record<String, MemberInfo>>()
-        val mockPublisher = mock<Publisher> {
-            whenever(it.publish(any())).thenAnswer {
-                published.addAll(it.arguments.first() as List<Record<String, MemberInfo>>)
-                listOf(CompletableFuture.completedFuture(Unit))
-            }
-        }
-        whenever(publisherFactory.createPublisher(any(), any())).thenReturn(mockPublisher)
-        return published
     }
 }

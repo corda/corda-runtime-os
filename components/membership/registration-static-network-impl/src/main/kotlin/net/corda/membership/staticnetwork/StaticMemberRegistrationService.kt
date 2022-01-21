@@ -31,8 +31,8 @@ import net.corda.membership.identity.converter.EndpointInfoConverter
 import net.corda.membership.identity.converter.PublicKeyConverter
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.MembershipRequestRegistrationResult
-import net.corda.membership.registration.MembershipRequestRegistrationResultOutcome.SUBMITTED
-import net.corda.membership.registration.MembershipRequestRegistrationResultOutcome.NOT_SUBMITTED
+import net.corda.membership.registration.MembershipRequestRegistrationOutcome.SUBMITTED
+import net.corda.membership.registration.MembershipRequestRegistrationOutcome.NOT_SUBMITTED
 import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_PROTOCOL
 import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_URL
 import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.KEY_ALIAS
@@ -44,7 +44,6 @@ import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companio
 import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.STATIC_SOFTWARE_VERSION
 import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.staticMembers
 import net.corda.messaging.api.publisher.Publisher
-import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
@@ -60,8 +59,9 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import java.time.Instant
 
+@Suppress("LongParameterList")
 @Component(service = [MemberRegistrationService::class])
-class StaticMemberRegistrationService @Activate constructor(
+open class StaticMemberRegistrationService @Activate constructor(
     @Reference(service = GroupPolicyProvider::class)
     val groupPolicyProvider: GroupPolicyProvider,
     @Reference(service = PublisherFactory::class)
@@ -73,7 +73,9 @@ class StaticMemberRegistrationService @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     val configurationReadService: ConfigurationReadService,
     @Reference(service = LifecycleCoordinatorFactory::class)
-    val coordinatorFactory: LifecycleCoordinatorFactory
+    val coordinatorFactory: LifecycleCoordinatorFactory,
+    // only available for testing purposes
+    registrationLifecycleHandler: RegistrationServiceLifecycleHandler? = null
 ) : MemberRegistrationService, Lifecycle {
     companion object {
         private val logger: Logger = contextLogger()
@@ -87,40 +89,35 @@ class StaticMemberRegistrationService @Activate constructor(
 
     private lateinit var keyEncodingService: KeyEncodingService
 
-    private lateinit var signingService: SigningService
-
     private var publisher: Publisher? = null
 
     private val topic = Schemas.Membership.MEMBER_LIST_TOPIC
 
-    // Handler for lifecycle events.
-    private val lifecycleHandler = RegistrationServiceLifecycleHandler.Impl(
-        this,
-        publisherFactory
-    )
+    // Handler for lifecycle events
+    private var lifecycleHandler =
+        registrationLifecycleHandler ?: RegistrationServiceLifecycleHandlerImpl(this)
 
     // Component lifecycle coordinator
     private val coordinator =
         coordinatorFactory.createCoordinator<MemberRegistrationService>(lifecycleHandler)
 
-    override var isRunning: Boolean = false
+    override val isRunning: Boolean
+        get() = coordinator.isRunning
 
     override fun start() {
         logger.info("StaticMemberRegistrationService started.")
+        coordinator.start()
         keyEncodingService = cryptoLibraryFactory.getKeyEncodingService()
-        // temporary solution until we don't have a more suitable category
-        signingService = cryptoLibraryClientsFactoryProvider.get()//cryptoLibraryClientsFactory.getSigningService(CryptoCategories.LEDGER)
-        publisher = publisherFactory.createPublisher(PublisherConfig("static-member-registration-service"))
-        isRunning = true
     }
 
     override fun stop() {
         logger.info("StaticMemberRegistrationService stopped.")
-        isRunning = false
+        coordinator.stop()
     }
 
     override fun register(member: HoldingIdentity): MembershipRequestRegistrationResult {
         try {
+            publisher = lifecycleHandler.publisher
             val updates = publisher?.publish(
                 parseMemberTemplate(member).map {
                     Record(topic, member.id + "-" + HoldingIdentity(it.name.toString(), it.groupId).id, it)
@@ -157,7 +154,13 @@ class StaticMemberRegistrationService @Activate constructor(
         @Suppress("SpreadOperator")
         staticMemberList.forEach { staticMember ->
             isValidStaticMemberDeclaration(processedMembers, staticMember)
-            val owningKey = generateOwningKey(staticMember, policy)
+            // temporary solution until we don't have a more suitable category
+            val signingService =
+                cryptoLibraryClientsFactoryProvider.get(
+                    member.id,
+                    "static-member-registration-service"
+                ).getSigningService(CryptoCategories.LEDGER)
+            val owningKey = generateOwningKey(signingService, staticMember, policy)
             members.add(
                 MemberInfoImpl(
                     memberProvidedContext = MemberContextImpl(
@@ -188,7 +191,7 @@ class StaticMemberRegistrationService @Activate constructor(
     }
 
     private fun isValidStaticMemberDeclaration(processedMembers: List<MemberX500Name>, member: Map<String, String>) {
-        require(member[NAME]!=null || member[NAME]=="" ) { "Member's name is not provided." }
+        require(!member[NAME].isNullOrBlank()) { "Member's name is not provided." }
         require(!processedMembers.contains(MemberX500Name.parse(member[NAME]!!))) { "Duplicated static member declaration." }
         require(
             member.keys.any { it.startsWith(endpointUrlIdentifier) }
@@ -201,15 +204,22 @@ class StaticMemberRegistrationService @Activate constructor(
     /**
      * If the keyAlias is not defined in the static template, we are going to use the id of the HoldingIdentity as default.
      */
-    private fun generateOwningKey(member: Map<String, String>, policy: GroupPolicy): String {
+    private fun generateOwningKey(
+        signingService: SigningService,
+        member: Map<String, String>,
+        policy: GroupPolicy
+    ): String {
         var keyAlias = member[KEY_ALIAS]
-        if(keyAlias==null || keyAlias=="") {
+        if(keyAlias.isNullOrBlank()) {
              keyAlias = HoldingIdentity(member[NAME]!!, policy.groupId).id
         }
         val owningKey = signingService.generateKeyPair(keyAlias)
         return keyEncodingService.encodeAsString(owningKey)
     }
 
+    /**
+     * Mapping the keys from the json format to the keys expected in the [MemberInfo].
+     */
     private fun convertEndpoints(member: Map<String, String>): List<Pair<String, String>> {
         val endpoints = mutableListOf<EndpointInfo>()
         member.keys.filter { it.startsWith(endpointUrlIdentifier) }.size.apply {
