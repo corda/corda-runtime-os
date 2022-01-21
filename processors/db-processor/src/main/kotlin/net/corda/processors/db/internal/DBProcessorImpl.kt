@@ -27,6 +27,7 @@ import net.corda.processors.db.DBProcessor
 import net.corda.processors.db.DBProcessorException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.virtualnode.write.db.VirtualNodeWriteService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -51,7 +52,9 @@ class DBProcessorImpl @Activate constructor(
     @Reference(service = PermissionStorageReaderService::class)
     private val permissionStorageReaderService: PermissionStorageReaderService,
     @Reference(service = PermissionStorageWriterService::class)
-    private val permissionStorageWriterService: PermissionStorageWriterService
+    private val permissionStorageWriterService: PermissionStorageWriterService,
+    @Reference(service = VirtualNodeWriteService::class)
+    private val virtualNodeWriteService: VirtualNodeWriteService
 ) : DBProcessor {
 
     companion object {
@@ -81,6 +84,7 @@ class DBProcessorImpl @Activate constructor(
                 permissionCacheService.start()
                 permissionStorageReaderService.start()
                 permissionStorageWriterService.start()
+                virtualNodeWriteService.start()
             }
             is BootConfigEvent -> {
                 val dataSource = createDataSource(event.config)
@@ -90,6 +94,8 @@ class DBProcessorImpl @Activate constructor(
                 val instanceId = event.config.getInt(CONFIG_INSTANCE_ID)
                 val entityManagerFactory = createEntityManagerFactory(dataSource)
                 configWriteService.startProcessing(event.config, instanceId, entityManagerFactory)
+                // TODO - Joel - Reconsider this. Should this information come from the config reader?
+                virtualNodeWriteService.startProcessing(event.config, instanceId, entityManagerFactory)
 
                 configurationReadService.bootstrapConfig(event.config)
             }
@@ -99,6 +105,7 @@ class DBProcessorImpl @Activate constructor(
                 permissionCacheService.stop()
                 configWriteService.stop()
                 configurationReadService.stop()
+                virtualNodeWriteService.stop()
             }
             else -> {
                 log.error("Unexpected event $event!")

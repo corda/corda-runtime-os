@@ -1,0 +1,23 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+description "Configuration Write Service Impl"
+
+dependencies {
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(':components:virtual-node:virtual-node-write-service')
+    implementation project(':libs:configuration:configuration-core')
+    implementation project(':libs:virtual-node:virtual-node-write')
+    implementation project(':libs:lifecycle:lifecycle')
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation 'javax.persistence:javax.persistence-api'
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'net.corda:corda-base'
+    implementation 'org.slf4j:slf4j-api'
+
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}
