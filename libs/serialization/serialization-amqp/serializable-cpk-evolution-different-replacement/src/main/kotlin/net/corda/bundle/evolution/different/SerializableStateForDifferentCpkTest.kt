@@ -7,4 +7,4 @@ import java.util.UUID
  * Serializable class used to test that we cannot swap CPKs when deserializing
  */
 @CordaSerializable
-data class SerializableStateForDifferentCpkTest(val Id: UUID)
+data class SerializableStateForDifferentCpk(val id: UUID)
