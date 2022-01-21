@@ -1,11 +1,7 @@
 package net.corda.serialization.amqp.test
 
 import net.corda.install.InstallService
-import net.corda.internal.serialization.SerializationContextImpl
 import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT
-import net.corda.internal.serialization.AllWhitelist
-import net.corda.internal.serialization.amqp.DefaultDescriptorBasedSerializerRegistry
-import net.corda.internal.serialization.amqp.DescriptorBasedSerializerRegistry
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.ObjectAndEnvelope
 import net.corda.internal.serialization.amqp.SerializationOutput
