@@ -277,7 +277,7 @@ class AMQPwithOSGiSerializationTests {
             ?: throw RuntimeException("$testResourceName not found")
         val deserialize: Any =
             DeserializationInput(factory).deserialize(
-            ByteSequence.Companion.of(resource.readAllBytes()),
+            ByteSequence.of(resource.readAllBytes()),
             Any::class.java,
             context
             )
