@@ -2,6 +2,7 @@ package net.corda.serialization.amqp.test
 
 import net.corda.install.InstallService
 import net.corda.internal.serialization.SerializationContextImpl
+import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT
 import net.corda.internal.serialization.amqp.DefaultDescriptorBasedSerializerRegistry
 import net.corda.internal.serialization.amqp.DescriptorBasedSerializerRegistry
 import net.corda.internal.serialization.amqp.DeserializationInput
@@ -9,8 +10,6 @@ import net.corda.internal.serialization.amqp.ObjectAndEnvelope
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
-import net.corda.internal.serialization.amqp.amqpMagic
-import net.corda.internal.serialization.amqp.testutils.AMQPTestUtils
 import net.corda.packaging.CPI
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxException
@@ -52,15 +51,7 @@ import java.util.concurrent.TimeUnit
 class AMQPwithOSGiSerializationTests {
 
     private val testingBundle = FrameworkUtil.getBundle(this::class.java)
-    private val testSerializationContext = SerializationContextImpl(
-        preferredSerializationVersion = amqpMagic,
-        whitelist = AllWhitelist,
-        properties = mutableMapOf(),
-        objectReferencesEnabled = false,
-        useCase = SerializationContext.UseCase.Testing,
-        encoding = null,
-    )
-
+    private val testSerializationContext = AMQP_STORAGE_CONTEXT
 
     companion object {
         @InjectService
