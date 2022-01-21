@@ -96,7 +96,7 @@ class DelegatedSignatureTest {
         signature.initSign(privateKey)
         signature.update(data)
 
-        assertThrows<UnsupportedOperationException> {
+        assertThrows<SecurityException> {
             signature.sign()
         }
     }
@@ -110,7 +110,7 @@ class DelegatedSignatureTest {
         signature.initSign(privateKey)
         signature.update(data)
 
-        assertThrows<UnsupportedOperationException> {
+        assertThrows<SecurityException> {
             signature.sign()
         }
     }
@@ -152,7 +152,7 @@ class DelegatedSignatureTest {
         signature.setParameter(mock())
         signature.update(data)
 
-        assertThrows<UnsupportedOperationException> {
+        assertThrows<SecurityException> {
             signature.sign()
         }
     }

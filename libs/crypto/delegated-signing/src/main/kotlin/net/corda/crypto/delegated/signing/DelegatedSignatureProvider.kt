@@ -1,5 +1,6 @@
 package net.corda.crypto.delegated.signing
 
+import net.corda.crypto.delegated.signing.DelegatedSigningService.Companion.RSA_SIGNING_ALGORITHM
 import java.security.Provider
 
 internal class DelegatedSignatureProvider : Provider(
@@ -7,11 +8,8 @@ internal class DelegatedSignatureProvider : Provider(
     "0.2",
     "JCA/JCE Delegated Signature provider"
 ) {
-    companion object {
-        const val RSA_SINGING_ALGORITHM = "RSASSA-PSS"
-    }
     init {
-        putService(DelegatedSignatureService(RSA_SINGING_ALGORITHM, null))
+        putService(DelegatedSignatureService(RSA_SIGNING_ALGORITHM, null))
         DelegatedSigningService.Hash.values().forEach {
             putService(DelegatedSignatureService(it.ecName, it))
         }

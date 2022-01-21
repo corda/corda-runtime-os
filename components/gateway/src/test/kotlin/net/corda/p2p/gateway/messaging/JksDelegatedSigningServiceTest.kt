@@ -1,6 +1,7 @@
-package net.corda.crypto.delegated.signing
+package net.corda.p2p.gateway.messaging
 
-import net.corda.crypto.delegated.signing.DelegatedSignatureProvider.Companion.RSA_SINGING_ALGORITHM
+import net.corda.crypto.delegated.signing.DelegatedSigningService
+import net.corda.crypto.delegated.signing.DelegatedSigningService.Companion.RSA_SIGNING_ALGORITHM
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Nested
@@ -27,7 +28,6 @@ import java.security.cert.Certificate
 import java.util.Collections
 
 class JksDelegatedSigningServiceTest {
-    private val myProvider = mock<DelegatedKeystoreProvider>()
     private val rsaCertificateAlias = "rc-name"
     private val ecCertificateAlias = "ec-name"
     private val privateKey = mock<PrivateKey>()
@@ -64,16 +64,15 @@ class JksDelegatedSigningServiceTest {
         on { type } doReturn "KeyStore"
         on { newInstance(anyOrNull()) } doReturn keyStoreSpi
     }
-    private val delegatedSignatureProvider = mock<DelegatedSignatureProvider>()
     private val originalProvider = mock<Provider> {
         on { services } doReturn setOf(nonJksKeyStoreService, nonKeyStoreJksService, jksService)
     }
     private val rsaSignatureService = mock<Provider.Service> {
-        on { algorithm } doReturn RSA_SINGING_ALGORITHM
+        on { algorithm } doReturn RSA_SIGNING_ALGORITHM
         on { type } doReturn "Signature"
     }
     private val rsaNonSignatureService = mock<Provider.Service> {
-        on { algorithm } doReturn RSA_SINGING_ALGORITHM
+        on { algorithm } doReturn RSA_SIGNING_ALGORITHM
         on { type } doReturn "NotSignature"
     }
     private val rsaSignatureProvider = mock<Provider> {
@@ -100,7 +99,7 @@ class JksDelegatedSigningServiceTest {
         it.`when`<Array<Provider>> {
             Security.getProviders()
         }.doReturn(
-            arrayOf(delegatedSignatureProvider, myProvider, originalProvider, rsaSignatureProvider, ecSignatureProvider)
+            arrayOf(originalProvider, rsaSignatureProvider, ecSignatureProvider)
         )
 
         whenever(rsaSignatureService.provider).doReturn(rsaSignatureProvider)
@@ -169,6 +168,24 @@ class JksDelegatedSigningServiceTest {
         }
 
         @Test
+        fun `aliases throw an exception for unknown algorithm`() {
+            val nopPublicKey = mock<PublicKey> {
+                on { algorithm } doReturn "NOP"
+            }
+            val certificate = mock<Certificate> {
+                on { publicKey } doReturn nopPublicKey
+            }
+            whenever(keyStoreSpi.engineAliases()).doReturn(Collections.enumeration(listOf("nop")))
+            whenever(keyStoreSpi.engineGetCertificateChain("nop")).doReturn(arrayOf(certificate))
+
+            val service = JksDelegatedSigningService("name", ByteArray(0), "password")
+
+            assertThrows<SecurityException> {
+                service.aliases
+            }
+        }
+
+        @Test
         fun `aliases load with the correct data`() {
             val data = argumentCaptor<InputStream>()
             val password = argumentCaptor<CharArray>()
@@ -198,7 +215,7 @@ class JksDelegatedSigningServiceTest {
                 val sign = mockStatic(Signature::class.java).use { mockSignature ->
                     mockSignature.`when`<Signature> {
                         Signature.getInstance(
-                            RSA_SINGING_ALGORITHM,
+                            RSA_SIGNING_ALGORITHM,
                             rsaSignatureProvider
                         )
                     }.doReturn(
@@ -223,7 +240,7 @@ class JksDelegatedSigningServiceTest {
                 mockStatic(Signature::class.java).use { mockSignature ->
                     mockSignature.`when`<Signature> {
                         Signature.getInstance(
-                            RSA_SINGING_ALGORITHM,
+                            RSA_SIGNING_ALGORITHM,
                             rsaSignatureProvider
                         )
                     }.doReturn(
@@ -243,7 +260,7 @@ class JksDelegatedSigningServiceTest {
                 mockSecurity.`when`<Array<Provider>> {
                     Security.getProviders()
                 }.doReturn(
-                    arrayOf(myProvider, originalProvider, ecSignatureProvider)
+                    arrayOf(originalProvider, ecSignatureProvider)
                 )
                 val data = "data".toByteArray()
                 val hash = DelegatedSigningService.Hash.SHA384
@@ -253,7 +270,7 @@ class JksDelegatedSigningServiceTest {
                 mockStatic(Signature::class.java).use { mockSignature ->
                     mockSignature.`when`<Signature> {
                         Signature.getInstance(
-                            RSA_SINGING_ALGORITHM,
+                            RSA_SIGNING_ALGORITHM,
                             rsaSignatureProvider
                         )
                     }.doReturn(
@@ -326,7 +343,7 @@ class JksDelegatedSigningServiceTest {
                 mockSecurity.`when`<Array<Provider>> {
                     Security.getProviders()
                 }.doReturn(
-                    arrayOf(myProvider, originalProvider, rsaSignatureProvider)
+                    arrayOf(originalProvider, rsaSignatureProvider)
                 )
                 val data = "data".toByteArray()
                 val hash = DelegatedSigningService.Hash.SHA384

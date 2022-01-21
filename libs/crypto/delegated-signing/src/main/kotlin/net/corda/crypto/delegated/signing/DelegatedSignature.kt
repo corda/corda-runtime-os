@@ -1,6 +1,6 @@
 package net.corda.crypto.delegated.signing
 
-import net.corda.crypto.delegated.signing.DelegatedSignatureProvider.Companion.RSA_SINGING_ALGORITHM
+import net.corda.crypto.delegated.signing.DelegatedSigningService.Companion.RSA_SIGNING_ALGORITHM
 import java.io.ByteArrayOutputStream
 import java.security.AlgorithmParameters
 import java.security.PrivateKey
@@ -33,9 +33,13 @@ internal class DelegatedSignature(
     override fun engineSign(): ByteArray? {
         return try {
             signingKey?.alias?.sign(
-                hash ?: throw UnsupportedOperationException(),
+                hash ?: throw SecurityException(
+                    "'engineSign' invoked without a hash having been assigned previously via 'engineSetParameter'"
+                ),
                 data.toByteArray()
-            ) ?: throw UnsupportedOperationException()
+            ) ?: throw SecurityException(
+                "'engineSign' invoked without a key having been assigned previously via 'engineInitSign'"
+            )
         } finally {
             data.reset()
         }
@@ -53,7 +57,7 @@ internal class DelegatedSignature(
 
     override fun engineGetParameters(): AlgorithmParameters? {
         return hash?.let { hash ->
-            AlgorithmParameters.getInstance(RSA_SINGING_ALGORITHM).also {
+            AlgorithmParameters.getInstance(RSA_SIGNING_ALGORITHM).also {
                 it.init(hash.rsaParameter)
             }
         }

@@ -19,7 +19,7 @@ internal class DelegatedKeystoreProvider : Provider(
     private inner class DelegatedKeyStoreService(
         name: String,
         private val signingService:
-        DelegatedSigningService
+            DelegatedSigningService
     ) : Service(
         this@DelegatedKeystoreProvider,
         "KeyStore",

@@ -1,6 +1,7 @@
 package net.corda.crypto.delegated.signing
 
 import java.security.KeyStore
+import java.security.Provider
 import java.security.Security
 import java.security.cert.Certificate
 import java.security.spec.MGF1ParameterSpec
@@ -9,6 +10,9 @@ import java.security.spec.PSSParameterSpec
 abstract class DelegatedSigningService(
     private val name: String
 ) {
+    companion object {
+        const val RSA_SIGNING_ALGORITHM = "RSASSA-PSS"
+    }
     init {
         val provider = Security.getProvider(DelegatedKeystoreProvider.PROVIDER_NAME)
         val delegatedKeystoreProvider = if (provider != null) {
@@ -36,6 +40,21 @@ abstract class DelegatedSigningService(
         }
 
         val ecName = "${name}withECDSA"
+    }
+
+    protected fun findOriginalSignatureProvider(algorithm: String): Provider {
+        return Security.getProviders()
+            .filter {
+                it !is DelegatedKeystoreProvider &&
+                    it !is DelegatedSignatureProvider
+            }
+            .flatMap {
+                it.services
+            }.filter {
+                it.algorithm == algorithm
+            }.firstOrNull {
+                it.type == "Signature"
+            }?.provider ?: throw SecurityException("Could not find a signature provider for $algorithm")
     }
 
     interface Alias {

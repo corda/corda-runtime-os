@@ -1,6 +1,6 @@
-package net.corda.crypto.delegated.signing
+package net.corda.p2p.gateway.messaging
 
-import net.corda.crypto.delegated.signing.DelegatedSignatureProvider.Companion.RSA_SINGING_ALGORITHM
+import net.corda.crypto.delegated.signing.DelegatedSigningService
 import java.io.ByteArrayInputStream
 import java.security.KeyStoreSpi
 import java.security.PrivateKey
@@ -65,36 +65,12 @@ class JksDelegatedSigningService(
 
     private val ecSignatureProviders by lazy {
         Hash.values().associateWith { hash ->
-            val provider = Security.getProviders()
-                .filter {
-                    it !is DelegatedKeystoreProvider &&
-                        it !is DelegatedSignatureProvider
-                }
-                .flatMap {
-                    it.services
-                }.filter {
-                    it.algorithm == "${hash.name}withECDSA"
-                }.firstOrNull {
-                    it.type == "Signature"
-                }?.provider ?: throw SecurityException("Could not find a signature provider for ${hash.ecName}")
-            provider
+            findOriginalSignatureProvider(hash.ecName)
         }
     }
 
     private val rsaSignatureProvider by lazy {
-        Security.getProviders()
-            .filter {
-                it !is DelegatedKeystoreProvider &&
-                    it !is DelegatedSignatureProvider
-            }
-            .flatMap {
-                it.services
-            }.filter {
-                it.algorithm == RSA_SINGING_ALGORITHM
-            }.firstOrNull {
-                it.type == "Signature"
-            }?.provider
-            ?: throw SecurityException("Could not find a signature provider for $RSA_SINGING_ALGORITHM")
+        findOriginalSignatureProvider(RSA_SIGNING_ALGORITHM)
     }
 
     private inner class JksEcAlias(
@@ -123,7 +99,7 @@ class JksDelegatedSigningService(
 
         override fun sign(hash: Hash, data: ByteArray): ByteArray {
             val signature = Signature.getInstance(
-                RSA_SINGING_ALGORITHM,
+                RSA_SIGNING_ALGORITHM,
                 rsaSignatureProvider
             )
             val parameter = hash.rsaParameter
