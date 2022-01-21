@@ -1,6 +1,5 @@
 package net.corda.session.manager.impl.factory
 
-import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionAck
@@ -19,40 +18,64 @@ import net.corda.session.manager.impl.processor.SessionErrorProcessorReceive
 import net.corda.session.manager.impl.processor.SessionErrorProcessorSend
 import net.corda.session.manager.impl.processor.SessionInitProcessorReceive
 import net.corda.session.manager.impl.processor.SessionInitProcessorSend
+import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.util.contextLogger
 import java.time.Instant
 
 class SessionEventProcessorFactory {
 
+    private companion object {
+        val logger = contextLogger()
+    }
     /**
      * Get the correct processor for the [sessionEvent] received.
-     * [flowKey] is provided for logging purposes
+     * [key] is provided for logging purposes
      * [sessionState] is provided for the given [sessionEvent]
      * [instant] is provided for timestamps
      */
-    fun create(flowKey: FlowKey, sessionEvent: SessionEvent, sessionState: SessionState?, instant: Instant): SessionEventProcessor {
+    fun createEventReceivedProcessor(key: Any, sessionEvent: SessionEvent, sessionState: SessionState?, instant: Instant):
+            SessionEventProcessor {
         val messageDirection = sessionEvent.messageDirection
+        if (messageDirection != MessageDirection.INBOUND) {
+            val error = "MessageDirection $messageDirection must be set to ${MessageDirection.INBOUND} for factory method " +
+                    "createReceivedEventProcessor()"
+            logger.error(error)
+            throw CordaRuntimeException(error)
+        }
+
         return when (val payload = sessionEvent.payload) {
-            is SessionInit -> if (messageDirection == MessageDirection.INBOUND) {
-                SessionInitProcessorReceive(flowKey, sessionState, sessionEvent, instant)
-            } else {
-                SessionInitProcessorSend(flowKey, sessionState, sessionEvent, instant)
-            }
-            is SessionData -> if (messageDirection == MessageDirection.INBOUND) {
-                SessionDataProcessorReceive(flowKey, sessionState, sessionEvent, instant)
-            } else {
-                SessionDataProcessorSend(flowKey, sessionState, sessionEvent, instant)
-            }
-            is SessionClose -> if (messageDirection == MessageDirection.INBOUND) {
-                SessionCloseProcessorReceive(flowKey, sessionState, sessionEvent, instant)
-            } else {
-                SessionCloseProcessorSend(flowKey, sessionState, sessionEvent, instant)
-            }
-            is SessionError -> if (messageDirection == MessageDirection.INBOUND) {
-                SessionErrorProcessorReceive(flowKey, sessionState, sessionEvent, payload.errorMessage, instant)
-            } else {
-                SessionErrorProcessorSend(flowKey, sessionState, sessionEvent, payload.errorMessage, instant)
-            }
-            is SessionAck -> SessionAckProcessorReceived(flowKey, sessionState, sessionEvent.sessionId, payload.sequenceNum, instant)
+            is SessionInit -> SessionInitProcessorReceive(key, sessionEvent, instant)
+            is SessionData -> SessionDataProcessorReceive(key, sessionState, sessionEvent, instant)
+            is SessionClose -> SessionCloseProcessorReceive(key, sessionState, sessionEvent, instant)
+            is SessionError -> SessionErrorProcessorReceive(key, sessionState, sessionEvent, payload.errorMessage, instant)
+            is SessionAck -> SessionAckProcessorReceived(key, sessionState, sessionEvent.sessionId, payload.sequenceNum, instant)
+            else -> throw NotImplementedError(
+                "The session event type '${payload.javaClass.name}' is not supported."
+            )
+        }
+    }
+
+    /**
+     * Get the correct processor for the [sessionEvent] to be sent to a counterparty.
+     * [key] is provided for logging purposes
+     * [sessionState] is provided for the given [sessionEvent]
+     * [instant] is provided for timestamps
+     */
+    fun createEventToSendProcessor(key: Any, sessionEvent: SessionEvent, sessionState: SessionState?, instant: Instant):
+            SessionEventProcessor {
+        val messageDirection = sessionEvent.messageDirection
+
+        if (messageDirection != MessageDirection.OUTBOUND) {
+            val error = "MessageDirection $messageDirection must be set to ${MessageDirection.OUTBOUND} for factory method " +
+                    "createEventToSendProcessor()"
+            logger.error(error)
+            throw CordaRuntimeException(error)
+        }
+        return when (val payload = sessionEvent.payload) {
+            is SessionInit -> SessionInitProcessorSend(key, sessionEvent, instant)
+            is SessionData -> SessionDataProcessorSend(key, sessionState, sessionEvent, instant)
+            is SessionClose -> SessionCloseProcessorSend(key, sessionState, sessionEvent, instant)
+            is SessionError -> SessionErrorProcessorSend(key, sessionState, sessionEvent, payload.errorMessage, instant)
             else -> throw NotImplementedError(
                 "The session event type '${payload.javaClass.name}' is not supported."
             )

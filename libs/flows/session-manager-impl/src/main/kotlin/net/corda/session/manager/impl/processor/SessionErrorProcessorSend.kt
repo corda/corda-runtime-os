@@ -1,14 +1,12 @@
 package net.corda.session.manager.impl.processor
 
 import net.corda.data.ExceptionEnvelope
-import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.SessionEventResult
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
-import net.corda.session.manager.impl.processor.helper.generateOutBoundRecord
 import net.corda.v5.base.util.contextLogger
 import java.time.Instant
 
@@ -18,7 +16,7 @@ import java.time.Instant
  * If the state is not ERROR update the state to status ERROR.
  */
 class SessionErrorProcessorSend(
-    private val flowKey: FlowKey,
+    private val key: Any,
     private val sessionState: SessionState?,
     private val sessionEvent: SessionEvent,
     private val exceptionEnvelope: ExceptionEnvelope,
@@ -32,10 +30,10 @@ class SessionErrorProcessorSend(
     override fun execute(): SessionEventResult {
         val sessionId = sessionEvent.sessionId
         return if (sessionState == null) {
-            val errorMessage = "Tried to send SessionError on key $flowKey for sessionId which had null state: $sessionId. " +
+            val errorMessage = "Tried to send SessionError on key $key for sessionId which had null state: $sessionId. " +
                     "Error message was: $exceptionEnvelope"
             logger.error(errorMessage)
-            SessionEventResult(sessionState, generateErrorEvent(sessionId, errorMessage, "SessionData-NullSessionState", instant))
+            SessionEventResult(sessionState, listOf(generateErrorEvent(sessionId, errorMessage, "SessionData-NullSessionState", instant)))
         } else {
             logger.info(
                 "Sending Session Error on sessionId $sessionId. " +
@@ -44,7 +42,7 @@ class SessionErrorProcessorSend(
             sessionState.status = SessionStateType.ERROR
             sessionEvent.timestamp = instant.toEpochMilli()
             sessionEvent.sequenceNum = null
-            SessionEventResult(sessionState, generateOutBoundRecord(sessionEvent, sessionEvent.sessionId))
+            SessionEventResult(sessionState, listOf(sessionEvent))
         }
     }
 }

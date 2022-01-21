@@ -1,6 +1,5 @@
 package net.corda.session.manager.impl.processor
 
-import net.corda.data.flow.FlowKey
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.SessionEventResult
@@ -18,7 +17,7 @@ import java.time.Instant
  *
  */
 class SessionAckProcessorReceived(
-    private val flowKey: FlowKey,
+    private val key: Any,
     private val sessionState: SessionState?,
     private val sessionId: String,
     private val sequenceNum: Int,
@@ -31,11 +30,11 @@ class SessionAckProcessorReceived(
 
     override fun execute(): SessionEventResult {
         return if (sessionState == null) {
-            val errorMessage = "Received SessionAck on key $flowKey for sessionId $sessionId which had null state"
+            val errorMessage = "Received SessionAck on key $key for sessionId $sessionId which had null state"
             logger.error(errorMessage)
-            SessionEventResult(sessionState, generateErrorEvent(sessionId, errorMessage, "SessionAck-NullState", instant))
+            SessionEventResult(sessionState, listOf(generateErrorEvent(sessionId, errorMessage, "SessionAck-NullState", instant)))
         } else {
-            logger.debug { "Received SessionAck on key $flowKey for seqNum $sequenceNum for session state: $sessionState" }
+            logger.debug { "Received SessionAck on key $key for seqNum $sequenceNum for session state: $sessionState" }
             val undeliveredMessages = sessionState.sentEventsState.undeliveredMessages
             undeliveredMessages.removeIf { it.sequenceNum == sequenceNum}
 

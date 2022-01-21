@@ -1,10 +1,7 @@
 package net.corda.session.manager
 
-import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.state.session.SessionState
-import net.corda.messaging.api.records.Record
 import java.time.Instant
 
 /**
@@ -20,20 +17,27 @@ import java.time.Instant
 interface SessionManager {
 
     /**
-     * Process a session [event], and output the updated session state and an output record.
-     * Session Event may originate from a counterparty or from this party's flow.
+     * Process a session [event] received from a counterparty, and output the updated session state and an output [SessionEvent].
      * Events are deduplicated and reordered based on sequence number and stored within the session state.
      * [sessionState] tracks which events have been delivered to the client library as well as the next expected session event sequence
-     * number to be received.
-     * [flowKey] is provided for logging purposes.
+     * number to be received. [SessionState] should be set to null for [SessionInit] session events.
+     * [key] is provided for logging purposes.
      */
-    //TODO possibly try split this into two for messages to be sent/messages received either here or further down
-    fun processMessage(flowKey: FlowKey, sessionState: SessionState?, event: SessionEvent, instant: Instant): SessionEventResult
+    fun processMessageReceived(key: Any, sessionState: SessionState?, event: SessionEvent, instant: Instant): SessionEventResult
+
+    /**
+     * Process a session [event] to be sent to a counterparty, and output the updated session state and an output [SessionEvent].
+     * [sessionState] tracks which events have been acknowledged by the counterparty as well as the next expected session event sequence
+     * number to be sent. [SessionState] should be set to null for [SessionInit] session events.
+     * [key] is provided for logging purposes.
+     */
+    fun processMessageToSend(key: Any, sessionState: SessionState?, event: SessionEvent, instant: Instant): SessionEventResult
 
     /**
      * Get and return the next available buffered event in the correct sequence from the [sessionState] received from a counterparty.
+     * @return The next session event to be processed. Return null when the next session event in the correct sequence is not available.
      */
-    fun getNextReceivedEvent(sessionState: SessionState?): SessionEvent?
+    fun getNextReceivedEvent(sessionState: SessionState): SessionEvent?
 
     /**
      * Mark the session event with the sequence number equal to [seqNum] as consumed in the session state.
@@ -41,12 +45,4 @@ interface SessionManager {
      */
     fun acknowledgeReceivedEvent(sessionState: SessionState, seqNum: Int): SessionState
 
-    /**
-     * Generate a session error event for the [sessionId]. Set the error enveloper with the [errorMessage], [errorType] and [instant]
-     */
-    fun generateSessionErrorEvent(sessionId: String,
-                                  errorMessage: String,
-                                  errorType: String,
-                                  instant: Instant
-    ): Record<String, FlowMapperEvent>
 }

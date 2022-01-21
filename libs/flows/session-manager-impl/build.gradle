@@ -7,8 +7,7 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
-   implementation project(":libs:flows:session-manager")
-   implementation project(":libs:messaging:messaging")
+    implementation project(":libs:flows:session-manager")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
