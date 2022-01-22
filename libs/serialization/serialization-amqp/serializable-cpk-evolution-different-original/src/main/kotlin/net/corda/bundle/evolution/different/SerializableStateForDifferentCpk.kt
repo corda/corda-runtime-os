@@ -8,4 +8,3 @@ import java.util.UUID
  */
 @CordaSerializable
 data class SerializableStateForDifferentCpk(val id: UUID)
-
