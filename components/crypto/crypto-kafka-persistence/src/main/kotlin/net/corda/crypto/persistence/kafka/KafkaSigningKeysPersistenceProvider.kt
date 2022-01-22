@@ -42,7 +42,7 @@ class KafkaSigningKeysPersistenceProvider @Activate constructor(
     }
 
     private val coordinator =
-        coordinatorFactory.createCoordinator<SigningKeysPersistenceProvider>(::eventHandler)
+        coordinatorFactory.createCoordinator<SigningKeysPersistenceProvider> { e, _ -> eventHandler(e) }
 
     private var configHandle: AutoCloseable? = null
 
@@ -71,13 +71,17 @@ class KafkaSigningKeysPersistenceProvider @Activate constructor(
         impl?.getInstance(tenantId, mutator)
             ?: throw IllegalStateException("The provider haven't been initialised yet.")
 
-    private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+    private fun eventHandler(event: LifecycleEvent) {
         logger.info("Received event {}", event)
         when (event) {
             is StartEvent -> {
                 logger.info("Received start event, waiting for UP event from ConfigurationReadService.")
                 dependencies?.close()
-                dependencies = LifecycleDependencies(coordinator, ConfigurationReadService::class.java)
+                dependencies = LifecycleDependencies(
+                    this::class.java,
+                    coordinator,
+                    ConfigurationReadService::class.java
+                )
             }
             is StopEvent -> {
                 configHandle?.close()

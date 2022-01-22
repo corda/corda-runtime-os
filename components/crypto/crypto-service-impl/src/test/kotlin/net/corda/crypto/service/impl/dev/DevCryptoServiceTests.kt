@@ -5,8 +5,8 @@ import net.corda.crypto.service.impl.signing.CryptoServicesTestFactory
 import net.corda.crypto.service.impl.persistence.SigningKeyCache
 import net.corda.crypto.service.impl.persistence.SoftCryptoKeyCache
 import net.corda.crypto.component.persistence.CachedSoftKeysRecord
-import net.corda.crypto.persistence.inmemory.InMemorySigningKeysPersistenceProvider
-import net.corda.crypto.persistence.inmemory.InMemorySoftKeysPersistenceProvider
+import net.corda.crypto.service.impl.TestSigningKeysPersistenceProvider
+import net.corda.crypto.service.impl.TestSoftKeysPersistenceProvider
 import net.corda.data.crypto.persistence.SigningKeysRecord
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoServiceContext
@@ -70,10 +70,11 @@ class DevCryptoServiceTests {
             services = factory.createCryptoServices()
             schemeMetadata = factory.getSchemeMap()
             verifier = factory.getSignatureVerificationService()
-            devCryptoServiceProvider = DevCryptoServiceProviderImpl().also {
-                it.softPersistenceFactory = InMemorySoftKeysPersistenceProvider()
-                it.signingPersistenceFactory = InMemorySigningKeysPersistenceProvider()
-            }
+            devCryptoServiceProvider = DevCryptoServiceProviderImpl(
+                factory,
+                TestSoftKeysPersistenceProvider(),
+                TestSigningKeysPersistenceProvider()
+            )
             cryptoService = devCryptoServiceProvider.getInstance(
                 CryptoServiceContext(
                     memberId = services.tenantId,

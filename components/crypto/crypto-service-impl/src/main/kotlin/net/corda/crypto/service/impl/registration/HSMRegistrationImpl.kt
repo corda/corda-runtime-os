@@ -2,7 +2,7 @@ package net.corda.crypto.service.impl.registration
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.crypto.CryptoConsts
-import net.corda.crypto.service.impl.soft.SoftCryptoServiceConfig
+import net.corda.crypto.service.SoftCryptoServiceConfig
 import net.corda.data.crypto.config.HSMConfig
 import net.corda.data.crypto.config.HSMInfo
 import net.corda.data.crypto.config.TenantHSMConfig

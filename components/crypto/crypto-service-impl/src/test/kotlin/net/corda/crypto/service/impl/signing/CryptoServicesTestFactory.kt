@@ -11,6 +11,8 @@ import net.corda.crypto.persistence.inmemory.InMemorySoftKeysPersistenceProvider
 import net.corda.crypto.service.CryptoServiceConfiguredInstance
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.SigningService
+import net.corda.crypto.service.impl.TestSigningKeysPersistenceProvider
+import net.corda.crypto.service.impl.TestSoftKeysPersistenceProvider
 import net.corda.crypto.service.impl.persistence.SoftCryptoKeyCache
 import net.corda.crypto.service.impl.persistence.SoftCryptoKeyCacheImpl
 import net.corda.crypto.service.impl.soft.SoftCryptoService
@@ -61,9 +63,9 @@ class CryptoServicesTestFactory(
 
         private val salt = "SALT"
 
-        private val signingPersistenceFactory = InMemorySigningKeysPersistenceProvider()
+        private val signingPersistenceFactory = TestSigningKeysPersistenceProvider()
 
-        private val softPersistenceFactory = InMemorySoftKeysPersistenceProvider()
+        private val softPersistenceFactory = TestSoftKeysPersistenceProvider()
 
         private val cryptoServiceCache: SoftCryptoKeyCache = SoftCryptoKeyCacheImpl(
             tenantId = tenantId,

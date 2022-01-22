@@ -1,5 +1,6 @@
 package net.corda.crypto.impl
 
+import net.corda.crypto.impl.components.CipherSuiteFactoryImpl
 import net.corda.test.util.createTestCase
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CipherSchemeMetadataProvider
@@ -40,10 +41,11 @@ class CipherSuiteFactoryTests {
         digestServiceProvider = mock {
             on { getInstance(any()) }.thenReturn(digestService)
         }
-        factory = CipherSuiteFactoryImpl()
-        factory.schemeMetadataProvider = schemeMetadataProvider
-        factory.verifierProvider = verifierProvider
-        factory.digestServiceProvider = digestServiceProvider
+        factory = CipherSuiteFactoryImpl(
+            schemeMetadataProvider,
+            verifierProvider,
+            digestServiceProvider
+        )
     }
 
     @Test

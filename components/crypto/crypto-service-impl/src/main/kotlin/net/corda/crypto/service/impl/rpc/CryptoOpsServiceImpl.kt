@@ -38,7 +38,7 @@ class CryptoOpsServiceImpl @Activate constructor(
     }
 
     private val coordinator =
-        coordinatorFactory.createCoordinator<CryptoOpsService>(::eventHandler)
+        coordinatorFactory.createCoordinator<CryptoOpsService> { e, _ -> eventHandler(e) }
 
     private var dependencies: LifecycleDependencies? = null
 
@@ -58,13 +58,14 @@ class CryptoOpsServiceImpl @Activate constructor(
         coordinator.stop()
     }
 
-    private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+    private fun eventHandler(event: LifecycleEvent) {
         logger.info("Received event {}", event)
         when (event) {
             is StartEvent -> {
                 logger.info("Received start event, waiting for UP event from dependencies.")
                 dependencies?.close()
                 dependencies = LifecycleDependencies(
+                    this::class.java,
                     coordinator,
                     SigningServiceFactory::class.java
                 )

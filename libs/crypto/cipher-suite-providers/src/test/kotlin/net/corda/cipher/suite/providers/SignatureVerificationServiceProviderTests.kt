@@ -1,6 +1,6 @@
 package net.corda.cipher.suite.providers
 
-import net.corda.crypto.impl.CipherSuiteFactoryImpl
+import net.corda.crypto.impl.components.CipherSuiteFactoryImpl
 import org.junit.jupiter.api.Test
 import kotlin.test.assertNotNull
 

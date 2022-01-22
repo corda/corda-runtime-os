@@ -4,6 +4,8 @@ plugins {
     id 'corda.osgi-test-conventions'
 }
 
+description 'Crypto Service Components Implementation'
+
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
     compileOnly "org.osgi:org.osgi.service.component.annotations"
@@ -38,10 +40,23 @@ dependencies {
     testImplementation project(":libs:configuration:configuration-core")
     testImplementation project(":components:crypto:crypto-in-memory-persistence")
     integrationTestRuntimeOnly project(":components:configuration:configuration-read-service-impl")
+    integrationTestRuntimeOnly project(":components:crypto:crypto-in-memory-persistence")
+    integrationTestRuntimeOnly project(":libs:crypto:cipher-suite-providers")
     integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
     integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 }
 
-description 'Crypto Service Components Implementation'
-
+tasks.named('jar', Jar) {
+    bnd """\
+Import-Package:\
+    org.bouncycastle.jcajce.provider.asymmetric,\
+    org.bouncycastle.jcajce.provider.config,\
+    org.bouncycastle.jcajce.provider.digest,\
+    org.bouncycastle.jcajce.provider.keystore,\
+    org.bouncycastle.jcajce.provider.symmetric,\
+    org.bouncycastle.jcajce.provider.util,\
+    net.i2p.crypto.eddsa.math;resolution:=optional,\
+    *
+"""
+}

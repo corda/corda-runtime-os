@@ -1,7 +1,7 @@
 package net.corda.cipher.suite.providers
 
 import net.corda.crypto.DigestAlgorithmFactoryProvider
-import net.corda.crypto.impl.CipherSuiteFactoryImpl
+import net.corda.crypto.impl.components.CipherSuiteFactoryImpl
 import net.corda.crypto.impl.DoubleSHA256Digest
 import net.corda.v5.cipher.suite.DigestAlgorithm
 import net.corda.v5.cipher.suite.DigestAlgorithmFactory

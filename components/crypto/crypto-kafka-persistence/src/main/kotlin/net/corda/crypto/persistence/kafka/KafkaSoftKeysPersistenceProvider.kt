@@ -43,7 +43,7 @@ class KafkaSoftKeysPersistenceProvider @Activate constructor(
     }
 
     private val coordinator =
-        coordinatorFactory.createCoordinator<SoftKeysPersistenceProvider>(::eventHandler)
+        coordinatorFactory.createCoordinator<SoftKeysPersistenceProvider> { e, _ -> eventHandler(e) }
 
     private var configHandle: AutoCloseable? = null
 
@@ -72,13 +72,17 @@ class KafkaSoftKeysPersistenceProvider @Activate constructor(
         impl?.getInstance(tenantId, mutator)
             ?: throw IllegalStateException("The provider haven't been initialised yet.")
 
-    private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+    private fun eventHandler(event: LifecycleEvent) {
         logger.info("Received event {}", event)
         when (event) {
             is StartEvent -> {
                 logger.info("Received start event, waiting for UP event from dependencies.")
                 dependencies?.close()
-                dependencies = LifecycleDependencies(coordinator, ConfigurationReadService::class.java)
+                dependencies = LifecycleDependencies(
+                    this::class.java,
+                    coordinator,
+                    ConfigurationReadService::class.java
+                )
             }
             is StopEvent -> {
                 configHandle?.close()
@@ -119,10 +123,8 @@ class KafkaSoftKeysPersistenceProvider @Activate constructor(
     }
 
     private fun setStatusUp() {
-        if(coordinator.status != LifecycleStatus.UP) {
-            logger.info("Setting status UP.")
-            coordinator.updateStatus(LifecycleStatus.UP)
-        }
+        logger.info("Setting status UP.")
+        coordinator.updateStatus(LifecycleStatus.UP)
     }
 
     private class Impl(

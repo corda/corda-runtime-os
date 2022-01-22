@@ -39,7 +39,7 @@ class SigningServiceFactoryImpl @Activate constructor(
     }
 
     private val coordinator =
-        coordinatorFactory.createCoordinator<SigningServiceFactory>(::eventHandler)
+        coordinatorFactory.createCoordinator<SigningServiceFactory> { e, _ -> eventHandler(e) }
 
     private var dependencies: LifecycleDependencies? = null
 
@@ -62,13 +62,14 @@ class SigningServiceFactoryImpl @Activate constructor(
     override fun getInstance(tenantId: String): SigningService =
         impl?.getInstance(tenantId) ?: throw IllegalStateException("The factory is not initialised yet.")
 
-    private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+    private fun eventHandler(event: LifecycleEvent) {
         logger.info("Received event {}", event)
         when (event) {
             is StartEvent -> {
                 logger.info("Received start event, waiting for UP event from dependencies.")
                 dependencies?.close()
                 dependencies = LifecycleDependencies(
+                    this::class.java,
                     coordinator,
                     SigningKeysPersistenceProvider::class.java,
                     CryptoServiceFactory::class.java

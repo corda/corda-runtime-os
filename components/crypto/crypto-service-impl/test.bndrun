@@ -12,6 +12,9 @@
     sun.security.x509
 -runrequires: \
     bnd.identity;id='net.corda.crypto-service-impl',\
+    bnd.identity;id='net.corda.crypto-impl',\
+    bnd.identity;id='net.corda.crypto-in-memory-persistence',\
+    bnd.identity;id='net.corda.cipher-suite-providers',\
     bnd.identity;id='net.corda.configuration-read-impl',\
     bnd.identity;id='net.corda.configuration-read-service-impl',\
     bnd.identity;id='net.corda.lifecycle-impl',\
@@ -31,11 +34,12 @@
 	com.fasterxml.jackson.core.jackson-annotations;version='[2.13.1,2.13.2)',\
 	com.fasterxml.jackson.core.jackson-core;version='[2.13.1,2.13.2)',\
 	com.fasterxml.jackson.core.jackson-databind;version='[2.13.1,2.13.2)',\
-	com.github.ben-manes.caffeine;version='[3.0.2,3.0.3)',\
+	com.fasterxml.jackson.datatype.jackson-datatype-jsr310;version='[2.13.1,2.13.2)',\
+	com.fasterxml.jackson.module.jackson-module-kotlin;version='[2.13.1,2.13.2)',\
 	com.google.guava;version='[30.1.1,30.1.2)',\
 	com.google.guava.failureaccess;version='[1.0.1,1.0.2)',\
 	com.typesafe.config;version='[1.4.1,1.4.2)',\
-	crypto-kafka-persistence-tests;version='[5.0.0,5.0.1)',\
+	crypto-service-impl-tests;version='[5.0.0,5.0.1)',\
 	junit-jupiter-api;version='[5.8.2,5.8.3)',\
 	junit-jupiter-engine;version='[5.8.2,5.8.3)',\
 	junit-jupiter-params;version='[5.8.2,5.8.3)',\
@@ -45,6 +49,7 @@
 	net.corda.avro-schema;version='[5.0.0,5.0.1)',\
 	net.corda.base;version='[5.0.0,5.0.1)',\
 	net.corda.cipher-suite;version='[5.0.0,5.0.1)',\
+	net.corda.cipher-suite-providers;version='[5.0.0,5.0.1)',\
 	net.corda.configuration-core;version='[5.0.0,5.0.1)',\
 	net.corda.configuration-read;version='[5.0.0,5.0.1)',\
 	net.corda.configuration-read-impl;version='[5.0.0,5.0.1)',\
@@ -52,9 +57,11 @@
 	net.corda.configuration-read-service-impl;version='[5.0.0,5.0.1)',\
 	net.corda.crypto;version='[5.0.0,5.0.1)',\
 	net.corda.crypto-impl;version='[5.0.0,5.0.1)',\
+	net.corda.crypto-in-memory-persistence;version='[5.0.0,5.0.1)',\
 	net.corda.crypto-internal;version='[5.0.0,5.0.1)',\
-	net.corda.crypto-kafka-persistence;version='[5.0.0,5.0.1)',\
 	net.corda.crypto-persistence;version='[5.0.0,5.0.1)',\
+	net.corda.crypto-service;version='[5.0.0,5.0.1)',\
+	net.corda.crypto-service-impl;version='[5.0.0,5.0.1)',\
 	net.corda.inmemory-messaging-impl;version='[5.0.0,5.0.1)',\
 	net.corda.kotlin-stdlib-jdk7.osgi-bundle;version='[1.4.32,1.4.33)',\
 	net.corda.kotlin-stdlib-jdk8.osgi-bundle;version='[1.4.32,1.4.33)',\

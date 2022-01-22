@@ -1,4 +1,4 @@
-package net.corda.crypto.impl
+package net.corda.crypto.impl.components
 
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -9,24 +9,23 @@ import net.corda.v5.cipher.suite.SignatureVerificationServiceProvider
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SignatureVerificationService
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
+import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 
 @Component(service = [CipherSuiteFactory::class])
-open class CipherSuiteFactoryImpl : CipherSuiteFactory {
+open class CipherSuiteFactoryImpl @Activate constructor(
+    @Reference(service = CipherSchemeMetadataProvider::class)
+    private val schemeMetadataProvider: CipherSchemeMetadataProvider,
+    @Reference(service = SignatureVerificationServiceProvider::class)
+    private val verifierProvider: SignatureVerificationServiceProvider,
+    @Reference(service = DigestServiceProvider::class)
+    private val digestServiceProvider: DigestServiceProvider
+) : CipherSuiteFactory {
     companion object {
         private val logger: Logger = contextLogger()
     }
-
-    @Reference(service = CipherSchemeMetadataProvider::class)
-    lateinit var schemeMetadataProvider: CipherSchemeMetadataProvider
-
-    @Reference(service = SignatureVerificationServiceProvider::class)
-    lateinit var verifierProvider: SignatureVerificationServiceProvider
-
-    @Reference(service = DigestServiceProvider::class)
-    lateinit var digestServiceProvider: DigestServiceProvider
 
     private val _schemeMap: CipherSchemeMetadata by lazy(LazyThreadSafetyMode.PUBLICATION) {
         schemeMetadataProvider.getInstance()
