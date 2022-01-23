@@ -6,7 +6,8 @@ import net.corda.crypto.component.persistence.KeyValuePersistence
 import net.corda.crypto.component.persistence.SigningKeysPersistenceProvider
 import net.corda.crypto.component.persistence.config.CryptoPersistenceConfig
 import net.corda.crypto.component.persistence.config.signingPersistence
-import net.corda.crypto.impl.LifecycleDependencies
+import net.corda.crypto.impl.LifecycleDependenciesTracker
+import net.corda.crypto.impl.LifecycleDependenciesTracker.Companion.track
 import net.corda.crypto.impl.closeGracefully
 import net.corda.data.crypto.persistence.SigningKeysRecord
 import net.corda.libs.configuration.SmartConfig
@@ -41,27 +42,27 @@ class KafkaSigningKeysPersistenceProvider @Activate constructor(
         private val logger = contextLogger()
     }
 
-    private val coordinator =
-        coordinatorFactory.createCoordinator<SigningKeysPersistenceProvider> { e, _ -> eventHandler(e) }
+    private val lifecycleCoordinator =
+        coordinatorFactory.createCoordinator<SigningKeysPersistenceProvider>(::eventHandler)
 
     private var configHandle: AutoCloseable? = null
 
-    private var dependencies: LifecycleDependencies? = null
+    private var tracker: LifecycleDependenciesTracker? = null
 
     private var impl: Impl? = null
 
-    override val isRunning: Boolean get() = coordinator.isRunning
+    override val isRunning: Boolean get() = lifecycleCoordinator.isRunning
 
     override fun start() {
         logger.info("Starting...")
-        coordinator.start()
-        coordinator.postEvent(StartEvent())
+        lifecycleCoordinator.start()
+        lifecycleCoordinator.postEvent(StartEvent())
     }
 
     override fun stop() {
         logger.info("Stopping...")
-        coordinator.postEvent(StopEvent())
-        coordinator.stop()
+        lifecycleCoordinator.postEvent(StopEvent())
+        lifecycleCoordinator.stop()
     }
 
     override fun getInstance(
@@ -71,17 +72,13 @@ class KafkaSigningKeysPersistenceProvider @Activate constructor(
         impl?.getInstance(tenantId, mutator)
             ?: throw IllegalStateException("The provider haven't been initialised yet.")
 
-    private fun eventHandler(event: LifecycleEvent) {
+    private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         logger.info("Received event {}", event)
         when (event) {
             is StartEvent -> {
                 logger.info("Received start event, waiting for UP event from ConfigurationReadService.")
-                dependencies?.close()
-                dependencies = LifecycleDependencies(
-                    this::class.java,
-                    coordinator,
-                    ConfigurationReadService::class.java
-                )
+                tracker?.close()
+                tracker = lifecycleCoordinator.track(ConfigurationReadService::class.java)
             }
             is StopEvent -> {
                 configHandle?.close()
@@ -90,8 +87,7 @@ class KafkaSigningKeysPersistenceProvider @Activate constructor(
                 impl = null
             }
             is RegistrationStatusChangeEvent -> {
-                logger.info("Registration status change received for ConfigurationReadService: ${event.status.name}.")
-                if (dependencies?.areUpAfter(event) == true) {
+                if (tracker?.areUpAfter(event, coordinator) == true) {
                     logger.info("Registering for configuration updates.")
                     configHandle = configurationReadService.registerForUpdates(::onConfigChange)
                 } else {
@@ -111,7 +107,7 @@ class KafkaSigningKeysPersistenceProvider @Activate constructor(
     private fun onConfigChange(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
         logger.info("Received configuration update event, changedKeys: $changedKeys")
         if (CRYPTO_CONFIG in changedKeys) {
-            coordinator.postEvent(NewConfigurationReceivedEvent(config[CRYPTO_CONFIG]!!))
+            lifecycleCoordinator.postEvent(NewConfigurationReceivedEvent(config[CRYPTO_CONFIG]!!))
         }
     }
 
@@ -124,7 +120,7 @@ class KafkaSigningKeysPersistenceProvider @Activate constructor(
 
     private fun setStatusUp() {
         logger.info("Setting status UP.")
-        coordinator.updateStatus(LifecycleStatus.UP)
+        lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
     }
 
     private class Impl(

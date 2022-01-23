@@ -1,12 +1,14 @@
 package net.corda.crypto.service.impl.soft
 
 import net.corda.crypto.component.persistence.SoftKeysPersistenceProvider
-import net.corda.crypto.impl.LifecycleDependencies
+import net.corda.crypto.impl.LifecycleDependenciesTracker
+import net.corda.crypto.impl.LifecycleDependenciesTracker.Companion.track
 import net.corda.crypto.service.CryptoServiceProviderWithLifecycle
 import net.corda.crypto.service.SoftCryptoServiceConfig
 import net.corda.crypto.service.SoftCryptoServiceProvider
 import net.corda.crypto.service.impl.persistence.SoftCryptoKeyCache
 import net.corda.crypto.service.impl.persistence.SoftCryptoKeyCacheImpl
+import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
@@ -46,10 +48,10 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
         private val logger: Logger = contextLogger()
     }
 
-    private val coordinator =
-        coordinatorFactory.createCoordinator<SoftCryptoServiceProviderImpl> { e, _ -> eventHandler(e) }
+    private val lifecycleCoordinator =
+        coordinatorFactory.createCoordinator<SoftCryptoServiceProviderImpl>(::eventHandler)
 
-    private var dependencies: LifecycleDependencies? = null
+    private var tracker: LifecycleDependenciesTracker? = null
 
     private var impl: Impl? = null
 
@@ -57,18 +59,18 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
 
     override val configType: Class<SoftCryptoServiceConfig> = SoftCryptoServiceConfig::class.java
 
-    override val isRunning: Boolean get() = coordinator.isRunning
+    override val isRunning: Boolean get() = lifecycleCoordinator.isRunning
 
     override fun start() {
         logger.info("Starting...")
-        coordinator.start()
-        coordinator.postEvent(StartEvent())
+        lifecycleCoordinator.start()
+        lifecycleCoordinator.postEvent(StartEvent())
     }
 
     override fun stop() {
         logger.info("Stopping...")
-        coordinator.postEvent(StopEvent())
-        coordinator.stop()
+        lifecycleCoordinator.postEvent(StopEvent())
+        lifecycleCoordinator.stop()
     }
 
     override fun getInstance(context: CryptoServiceContext<SoftCryptoServiceConfig>): CryptoService =
@@ -76,33 +78,28 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
             ?: throw CryptoServiceException("Provider haven't been initialised yet.", true)
 
     @Suppress("UNUSED")
-    private fun eventHandler(event: LifecycleEvent) {
+    private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         logger.info("Received event {}", event)
         when (event) {
             is StartEvent -> {
                 logger.info("Received start event, waiting for UP event from dependencies.")
-                dependencies?.close()
-                dependencies = LifecycleDependencies(
-                    this::class.java,
-                    this.coordinator,
-                    SoftKeysPersistenceProvider::class.java
-                )
+                tracker?.close()
+                tracker = lifecycleCoordinator.track(SoftKeysPersistenceProvider::class.java)
             }
             is StopEvent -> {
-                dependencies?.close()
-                dependencies = null
+                tracker?.close()
+                tracker = null
                 deleteResources()
             }
             is RegistrationStatusChangeEvent -> {
-                logger.info("Registration status change received from dependencies: ${event.status.name}.")
-                if (dependencies?.areUpAfter(event) == true) {
+                if (tracker?.areUpAfter(event, coordinator) == true) {
                     createResources()
                     logger.info("Setting status UP.")
-                    this.coordinator.updateStatus(LifecycleStatus.UP)
+                    this.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
                 } else {
                     deleteResources()
                     logger.info("Setting status DOWN.")
-                    this.coordinator.updateStatus(LifecycleStatus.DOWN)
+                    this.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
                 }
             }
             else -> {

@@ -5,7 +5,8 @@ import net.corda.crypto.impl.closeGracefully
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.SigningServiceFactory
-import net.corda.crypto.impl.LifecycleDependencies
+import net.corda.crypto.impl.LifecycleDependenciesTracker
+import net.corda.crypto.impl.LifecycleDependenciesTracker.Companion.track
 import net.corda.crypto.service.impl.persistence.SigningKeyCacheImpl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -38,58 +39,52 @@ class SigningServiceFactoryImpl @Activate constructor(
         private val logger = contextLogger()
     }
 
-    private val coordinator =
-        coordinatorFactory.createCoordinator<SigningServiceFactory> { e, _ -> eventHandler(e) }
+    private val lifecycleCoordinator =
+        coordinatorFactory.createCoordinator<SigningServiceFactory>(::eventHandler)
 
-    private var dependencies: LifecycleDependencies? = null
+    private var tracker: LifecycleDependenciesTracker? = null
 
     private var impl: Impl? = null
 
-    override val isRunning: Boolean get() = coordinator.isRunning
+    override val isRunning: Boolean get() = lifecycleCoordinator.isRunning
 
     override fun start() {
         logger.info("Starting...")
-        coordinator.start()
-        coordinator.postEvent(StartEvent())
+        lifecycleCoordinator.start()
+        lifecycleCoordinator.postEvent(StartEvent())
     }
 
     override fun stop() {
         logger.info("Stopping...")
-        coordinator.postEvent(StopEvent())
-        coordinator.stop()
+        lifecycleCoordinator.postEvent(StopEvent())
+        lifecycleCoordinator.stop()
     }
 
     override fun getInstance(tenantId: String): SigningService =
         impl?.getInstance(tenantId) ?: throw IllegalStateException("The factory is not initialised yet.")
 
-    private fun eventHandler(event: LifecycleEvent) {
+    private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         logger.info("Received event {}", event)
         when (event) {
             is StartEvent -> {
                 logger.info("Received start event, waiting for UP event from dependencies.")
-                dependencies?.close()
-                dependencies = LifecycleDependencies(
-                    this::class.java,
-                    coordinator,
-                    SigningKeysPersistenceProvider::class.java,
-                    CryptoServiceFactory::class.java
-                )
+                tracker?.close()
+                tracker = lifecycleCoordinator.track(SigningKeysPersistenceProvider::class.java)
             }
             is StopEvent -> {
-                dependencies?.close()
-                dependencies = null
+                tracker?.close()
+                tracker = null
                 deleteResources()
             }
             is RegistrationStatusChangeEvent -> {
-                logger.info("Registration status change received from dependencies: ${event.status.name}.")
-                if (dependencies?.areUpAfter(event) == true) {
+                if (tracker?.areUpAfter(event, coordinator) == true) {
                     createResources()
                     logger.info("Setting status UP.")
-                    coordinator.updateStatus(LifecycleStatus.UP)
+                    lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
                 } else {
                     deleteResources()
                     logger.info("Setting status DOWN.")
-                    coordinator.updateStatus(LifecycleStatus.DOWN)
+                    lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
                 }
             }
             else -> {

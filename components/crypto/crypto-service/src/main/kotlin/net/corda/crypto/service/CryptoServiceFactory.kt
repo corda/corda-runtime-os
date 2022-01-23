@@ -12,4 +12,3 @@ interface CryptoServiceFactory {
      */
     fun getInstance(tenantId: String, category: String): CryptoServiceConfiguredInstance
 }
-

@@ -54,7 +54,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
         private val hsmRegistrar: HSMRegistration,
         private val cipherSuiteFactory: CipherSuiteFactory,
         private val cryptoServiceProviders: List<CryptoServiceProvider<*>>
-    ) : CryptoServiceFactory {
+    ) {
         companion object {
             private val jsonMapper = JsonMapper
                 .builder()
@@ -69,7 +69,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
 
         private val cryptoServices = ConcurrentHashMap<Pair<String, String>, CryptoServiceConfiguredInstance>()
 
-        override fun getInstance(tenantId: String, category: String): CryptoServiceConfiguredInstance {
+        fun getInstance(tenantId: String, category: String): CryptoServiceConfiguredInstance {
             val key = Pair(tenantId, category)
             logger.debug("Getting the crypto service  for {}", key)
             return cryptoServices.computeIfAbsent(key) {

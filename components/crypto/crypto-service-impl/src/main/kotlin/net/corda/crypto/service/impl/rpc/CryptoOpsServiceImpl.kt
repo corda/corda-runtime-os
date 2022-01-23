@@ -2,7 +2,8 @@ package net.corda.crypto.service.impl.rpc
 
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.service.CryptoOpsService
-import net.corda.crypto.impl.LifecycleDependencies
+import net.corda.crypto.impl.LifecycleDependenciesTracker
+import net.corda.crypto.impl.LifecycleDependenciesTracker.Companion.track
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
 import net.corda.lifecycle.LifecycleCoordinator
@@ -37,52 +38,47 @@ class CryptoOpsServiceImpl @Activate constructor(
         const val CLIENT_NAME = "crypto.ops.rpc"
     }
 
-    private val coordinator =
-        coordinatorFactory.createCoordinator<CryptoOpsService> { e, _ -> eventHandler(e) }
+    private val lifecycleCoordinator =
+        coordinatorFactory.createCoordinator<CryptoOpsService>(::eventHandler)
 
-    private var dependencies: LifecycleDependencies? = null
+    private var dependencies: LifecycleDependenciesTracker? = null
 
     private var subscription: RPCSubscription<RpcOpsRequest, RpcOpsResponse>? = null
 
-    override val isRunning: Boolean get() = coordinator.isRunning
+    override val isRunning: Boolean get() = lifecycleCoordinator.isRunning
 
     override fun start() {
         logger.info("Starting...")
-        coordinator.start()
-        coordinator.postEvent(StartEvent())
+        lifecycleCoordinator.start()
+        lifecycleCoordinator.postEvent(StartEvent())
     }
 
     override fun stop() {
         logger.info("Stopping...")
-        coordinator.postEvent(StopEvent())
-        coordinator.stop()
+        lifecycleCoordinator.postEvent(StopEvent())
+        lifecycleCoordinator.stop()
     }
 
-    private fun eventHandler(event: LifecycleEvent) {
+    private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         logger.info("Received event {}", event)
         when (event) {
             is StartEvent -> {
                 logger.info("Received start event, waiting for UP event from dependencies.")
                 dependencies?.close()
-                dependencies = LifecycleDependencies(
-                    this::class.java,
-                    coordinator,
-                    SigningServiceFactory::class.java
-                )
+                dependencies = lifecycleCoordinator.track(SigningServiceFactory::class.java)
             }
             is StopEvent -> {
                 deleteResources()
             }
             is RegistrationStatusChangeEvent -> {
-                logger.info("Registration status change received from dependencies: ${event.status.name}.")
-                if (dependencies?.areUpAfter(event) == true) {
+                if (dependencies?.areUpAfter(event, coordinator) == true) {
                     createResources()
                     logger.info("Setting status UP.")
-                    coordinator.updateStatus(LifecycleStatus.UP)
+                    lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
                 } else {
                     deleteResources()
                     logger.info("Setting status DOWN.")
-                    coordinator.updateStatus(LifecycleStatus.DOWN)
+                    lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
                 }
             }
             else -> {
