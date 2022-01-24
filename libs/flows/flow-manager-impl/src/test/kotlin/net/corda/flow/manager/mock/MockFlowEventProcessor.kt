@@ -242,8 +242,13 @@ class MockFlowFiber(val flowId: String = UUID.randomUUID().toString()) {
         )
     }
 
+    fun repeatSuspension(request: FlowIORequest<*>, times: Int) {
+        repeat(times) { queueSuspension(request) }
+    }
+
     fun dequeueSuspension(): FlowIORequest<*> {
         check(requests.isNotEmpty()) { "The next ${FlowIORequest::class.java.simpleName} that the mocked flow returns must be set" }
         return requests.removeFirst()
     }
+
 }

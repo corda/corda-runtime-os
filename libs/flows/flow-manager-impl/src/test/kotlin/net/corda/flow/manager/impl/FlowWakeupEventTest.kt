@@ -134,4 +134,31 @@ class FlowWakeupEventTest {
 
         }
     }
+
+    @Test
+    fun `keep waking up the flow using the FlowEventDSL and repeatSuspension`() {
+        flowEventDSL {
+
+            val fiber = flowFiber("flow id") {
+                repeatSuspension(FlowIORequest.ForceCheckpoint, 3)
+            }
+
+            input(startFlowEvent)
+            // change to process all because this cant happen
+            inputLastOutputEvent()
+            inputLastOutputEvent()
+
+            val output1 = processAll()
+            assertNotNull(output1.last().updatedState)
+            assertEquals(Wakeup(), output1.last().filterOutputFlowTopicEventPayloads().single())
+
+            inputLastOutputEvent()
+            fiber.queueSuspension(FlowIORequest.FlowFinished(Unit))
+
+            val output2 = processOne()
+            assertNull(output2.updatedState)
+            assertEquals(0, output2.filterOutputFlowTopicEventPayloads().size)
+
+        }
+    }
 }
