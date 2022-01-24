@@ -3,9 +3,16 @@ package net.corda.processors.crypto.tests
 import com.typesafe.config.ConfigFactory
 import net.corda.crypto.CryptoConsts
 import net.corda.crypto.CryptoOpsClient
+import net.corda.crypto.service.CryptoOpsService
 import net.corda.data.config.Configuration
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -56,6 +63,9 @@ class CryptoOpsTests {
     }
 
     @InjectService(timeout = 5000L)
+    lateinit var coordinatorFactory: LifecycleCoordinatorFactory
+
+    @InjectService(timeout = 5000L)
     lateinit var publisherFactory: PublisherFactory
 
     @InjectService(timeout = 5000L)
@@ -64,10 +74,26 @@ class CryptoOpsTests {
     @InjectService(timeout = 5000L)
     lateinit var client: CryptoOpsClient
 
+    lateinit var testCoordinator: LifecycleCoordinator
+
     lateinit var tenantId: String
+
+    var up = false
 
     @BeforeEach
     fun setup() {
+        testCoordinator = coordinatorFactory.createCoordinator<CryptoOpsTests> { event, _ ->
+            if(event is RegistrationStatusChangeEvent && event.status == LifecycleStatus.UP) {
+                up = true
+            }
+        }
+        testCoordinator.followStatusChangesByName(
+            setOf(
+                LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
+                //LifecycleCoordinatorName.forComponent<CryptoOpsService>()
+            )
+        )
+
         tenantId = UUID.randomUUID().toString()
 
         // Publish crypto config
@@ -88,9 +114,8 @@ class CryptoOpsTests {
         )
 
         processor.start(bootstrapConfig)
-        sleep(500)
         client.startAndWait()
-        sleep(500)
+        eventually { assertTrue(up) }
     }
 
     @Test
