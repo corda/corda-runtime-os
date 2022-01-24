@@ -29,7 +29,7 @@ class FlowExecutor(
 
     companion object {
         private val logger = contextLogger()
-        private const val GROUP = "FlowEventConsumer"
+        private const val CONSUMER_GROUP = "FlowEventConsumer"
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<FlowExecutor> { event, _ -> eventHandler(event) }
@@ -42,7 +42,7 @@ class FlowExecutor(
                 logger.debug { "Starting the flow executor" }
                 val instanceId = config.getInt(INSTANCE_ID)
                 messagingSubscription = subscriptionFactory.createStateAndEventSubscription(
-                    SubscriptionConfig(GROUP, FLOW_EVENT_TOPIC, instanceId),
+                    SubscriptionConfig(CONSUMER_GROUP, FLOW_EVENT_TOPIC, instanceId),
                     flowEventProcessorFactory.create(),
                     config
                 )
