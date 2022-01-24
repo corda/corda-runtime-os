@@ -24,6 +24,7 @@ dependencies {
     api project(':libs:permissions:permission-cache')
 
     runtimeOnly project(':components:configuration:configuration-read-service-impl')
+    runtimeOnly project(':libs:permissions:permission-cache-impl')
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

@@ -2,6 +2,7 @@ package net.corda.tools.setup.rpc
 
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
+import net.corda.permissions.management.PermissionManagementService
 import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
@@ -15,7 +16,9 @@ import picocli.CommandLine.Option
 @Component(service = [Application::class])
 class RPCUserSetup @Activate constructor(
     @Reference(service = Shutdown::class)
-    private val shutDownService: Shutdown
+    private val shutDownService: Shutdown,
+    @Reference(service = PermissionManagementService::class)
+    private val permissionManagementService: PermissionManagementService
 ) : Application {
 
     private companion object {
@@ -32,7 +35,14 @@ class RPCUserSetup @Activate constructor(
 
         logger.info("Params received : $rpcUserSetupParams")
 
-        shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
+        permissionManagementService.start()
+
+        try {
+            //permissionManagementService.permissionManager.createUser(TODO())
+        } finally {
+            permissionManagementService.stop()
+            shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
+        }
     }
 
     override fun shutdown() {

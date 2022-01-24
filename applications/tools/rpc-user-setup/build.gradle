@@ -13,7 +13,13 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "info.picocli:picocli:$picocliVersion"
     implementation 'net.corda:corda-base'
+    implementation project(':components:permissions:permission-management-service')
+    implementation project(':libs:lifecycle:lifecycle')
 
+    runtimeOnly project(':libs:lifecycle:lifecycle-impl')
+    runtimeOnly project(':libs:messaging:messaging-impl')
+    runtimeOnly project(':libs:messaging:kafka-message-bus-impl')
+    runtimeOnly project(':libs:schema-registry:schema-registry-impl')
     runtimeOnly "com.typesafe:config:$typeSafeConfigVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
