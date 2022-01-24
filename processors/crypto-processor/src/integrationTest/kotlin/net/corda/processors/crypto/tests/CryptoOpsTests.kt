@@ -11,7 +11,9 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -20,6 +22,7 @@ import net.corda.processors.crypto.CryptoProcessor
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
+import net.corda.v5.base.util.contextLogger
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -34,6 +37,7 @@ import java.util.UUID
 @ExtendWith(ServiceExtension::class)
 class CryptoOpsTests {
     companion object {
+        private val logger = contextLogger()
 
         private val CLIENT_ID = "${CryptoOpsTests::class.java}-integration-test"
 
@@ -76,24 +80,14 @@ class CryptoOpsTests {
 
     lateinit var testCoordinator: LifecycleCoordinator
 
+    lateinit var testRegistrationHandle: RegistrationHandle
+
     lateinit var tenantId: String
 
     var up = false
 
     @BeforeEach
     fun setup() {
-        testCoordinator = coordinatorFactory.createCoordinator<CryptoOpsTests> { event, _ ->
-            if(event is RegistrationStatusChangeEvent && event.status == LifecycleStatus.UP) {
-                up = true
-            }
-        }
-        testCoordinator.followStatusChangesByName(
-            setOf(
-                LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
-                //LifecycleCoordinatorName.forComponent<CryptoOpsService>()
-            )
-        )
-
         tenantId = UUID.randomUUID().toString()
 
         // Publish crypto config
@@ -114,8 +108,27 @@ class CryptoOpsTests {
         )
 
         processor.start(bootstrapConfig)
+
+        testCoordinator = coordinatorFactory.createCoordinator<CryptoOpsTests> { event, _ ->
+            logger.info("Received event $event")
+            if(event is RegistrationStatusChangeEvent && event.status == LifecycleStatus.UP) {
+                logger.info("All required dependencies are up...")
+                up = true
+            }
+        }
+        testCoordinator.postEvent(StartEvent())
+        testRegistrationHandle = testCoordinator.followStatusChangesByName(
+            setOf(
+                LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
+                LifecycleCoordinatorName.forComponent<CryptoOpsService>()
+            )
+        )
+        logger.info("Registered to follow $testRegistrationHandle")
+
         client.startAndWait()
-        eventually { assertTrue(up) }
+        eventually {
+            assertTrue(up)
+        }
     }
 
     @Test
