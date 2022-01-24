@@ -86,6 +86,17 @@ services:
       timeout: 2s
       retries: 15
 
+  init-rpc-user:
+    container_name: init-rpc-user
+    # Created with `gradlew applications:tools:rpc-user-setup:publishOSGiImage`.
+    image: "corda-os-docker-dev.software.r3.com/corda-os-rpc-user-setup:latest-local"
+    command:
+      - --messagingParams
+      - kafka.common.bootstrap.servers=kafka:9092
+    depends_on:
+      init-kafka:
+        condition: service_completed_successfully
+
   crypto-worker:
     container_name: crypto-worker
     # Created with `gradlew applications:workers:release:crypto:publishOSGiImage`.

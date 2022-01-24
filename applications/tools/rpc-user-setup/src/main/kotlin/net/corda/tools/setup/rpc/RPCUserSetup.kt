@@ -3,6 +3,7 @@ package net.corda.tools.setup.rpc
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.v5.base.util.contextLogger
+import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -19,10 +20,9 @@ class RPCUserSetup @Activate constructor(
 
     private companion object {
         private val logger = contextLogger()
-        private const val RPC_CONFIG_PATH = "rpc"
     }
 
-    /** Parses the arguments, then initialises and starts the [processor]. */
+    /** Parses the arguments, then performs actions necessary. */
     override fun startup(args: Array<String>) {
         logger.info("RPC User setup starting.")
 
@@ -31,6 +31,8 @@ class RPCUserSetup @Activate constructor(
         commandLine.parseArgs(*args)
 
         logger.info("Params received : $rpcUserSetupParams")
+
+        shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
     }
 
     override fun shutdown() {

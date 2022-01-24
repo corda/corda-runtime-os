@@ -7,6 +7,7 @@ description 'RPC User Setup'
 
 
 dependencies {
+    compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")

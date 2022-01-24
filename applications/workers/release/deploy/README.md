@@ -14,9 +14,9 @@ locally to be able to demonstrate functionality built to date.
 
 In order to get started it is necessary to:
 - Start Docker Desktop.
-- Build the images of the workers:
+- Build the images of the workers and tools:
 ```
-gradlew :applications:workers:release:crypto-worker:publishOSGiImage :applications:workers:release:db-worker:publishOSGiImage :applications:workers:release:flow-worker:publishOSGiImage :applications:workers:release:rpc-worker:publishOSGiImage
+gradlew :applications:workers:release:crypto-worker:publishOSGiImage :applications:workers:release:db-worker:publishOSGiImage :applications:workers:release:flow-worker:publishOSGiImage :applications:workers:release:rpc-worker:publishOSGiImage :applications:tools:rpc-user-setup:publishOSGiImage
 ```
 
 ## Start the network
