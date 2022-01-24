@@ -10,6 +10,7 @@ import net.corda.flow.manager.impl.handlers.requests.FlowRequestHandler
 import net.corda.flow.manager.impl.pipeline.FlowEventPipeline
 import net.corda.flow.manager.impl.pipeline.FlowEventPipelineImpl
 import net.corda.flow.manager.impl.runner.FlowRunner
+import net.corda.v5.base.util.uncheckedCast
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -20,19 +21,19 @@ import org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC
 @Component(service = [FlowEventPipelineFactory::class])
 class FlowEventPipelineFactoryImpl(
     private val flowRunner: FlowRunner,
-    flowEventHandlers: List<FlowEventHandler<Any>>,
+    flowEventHandlers: List<FlowEventHandler<out Any>>,
     flowRequestHandlers: List<FlowRequestHandler<out FlowIORequest<*>>>
 ) : FlowEventPipelineFactory {
 
     // We cannot use constructor injection with DYNAMIC policy.
     @Reference(service = FlowEventHandler::class, cardinality = MULTIPLE, policy = DYNAMIC)
-    private val flowEventHandlers: List<FlowEventHandler<Any>> = flowEventHandlers
+    private val flowEventHandlers: List<FlowEventHandler<out Any>> = flowEventHandlers
 
     // We cannot use constructor injection with DYNAMIC policy.
     @Reference(service = FlowRequestHandler::class, cardinality = MULTIPLE, policy = DYNAMIC)
     private val flowRequestHandlers: List<FlowRequestHandler<out FlowIORequest<*>>> = flowRequestHandlers
 
-    private val flowEventHandlerMap: Map<Any, FlowEventHandler<Any>> by lazy {
+    private val flowEventHandlerMap: Map<Any, FlowEventHandler<out Any>> by lazy {
         flowEventHandlers.associateBy(FlowEventHandler<*>::type)
     }
 
@@ -58,6 +59,7 @@ class FlowEventPipelineFactoryImpl(
 
     private fun getFlowEventHandler(event: FlowEvent): FlowEventHandler<Any> {
         return flowEventHandlerMap[event.payload::class.java]
+            ?.let { uncheckedCast(it) }
             ?: throw FlowProcessingException("${event.payload::class.java.name} does not have an associated flow event handler")
     }
 }
