@@ -9,6 +9,9 @@ import net.corda.v5.application.flows.Flow
  * The FlowStackService provides an API for managing the flow/sub-flow call stack, stored in the [Checkpoint] state.
  */
 interface FlowStackService : NonSerializable {
+
+    val size: Int
+
     /**
      * Pushes a flow onto the stack
      *

@@ -3,9 +3,10 @@ package net.corda.flow.manager.impl.handlers.events
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.flow.state.StateMachineState
+import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.manager.impl.FlowEventContext
 import net.corda.flow.manager.impl.handlers.FlowProcessingException
-import net.corda.flow.manager.fiber.FlowContinuation
+import net.corda.flow.manager.impl.handlers.status.WaitingForStartFlow
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Component
 import java.nio.ByteBuffer
@@ -24,7 +25,7 @@ class StartFlowEventHandler : FlowEventHandler<StartFlow> {
         val state = StateMachineState.newBuilder()
             .setSuspendCount(0)
             .setIsKilled(false)
-            .setWaitingFor(null)
+            .setWaitingFor(WaitingFor(WaitingForStartFlow))
             .setSuspendedOn(null)
             .build()
         val checkpoint = Checkpoint.newBuilder()
@@ -44,13 +45,5 @@ class StartFlowEventHandler : FlowEventHandler<StartFlow> {
             log.error(message)
             throw FlowProcessingException(message)
         }
-    }
-
-    override fun runOrContinue(context: FlowEventContext<StartFlow>): FlowContinuation {
-        return FlowContinuation.Run()
-    }
-
-    override fun postProcess(context: FlowEventContext<StartFlow>): FlowEventContext<StartFlow> {
-        return context
     }
 }
