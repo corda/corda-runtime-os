@@ -29,7 +29,6 @@ import net.corda.flow.manager.impl.runner.FlowRunner
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.uncheckedCast
 import java.nio.ByteBuffer
 import java.time.Instant
@@ -75,34 +74,28 @@ private val flowRequestHandlers = listOf(
 
 class MockFlowRunner : FlowRunner {
 
-    private companion object {
-        val log = contextLogger()
-    }
-
-    private var requests = mutableListOf<FlowIORequest<*>>()
+    private var fibers = mutableMapOf<String, MockFlowFiber>()
 
     override fun runFlow(
         context: FlowEventContext<Any>,
         flowContinuation: FlowContinuation
     ): Future<FlowIORequest<*>> {
-        check(requests.isNotEmpty()) { "The next ${FlowIORequest::class.java.simpleName} that the mocked flow returns must be set" }
-        return CompletableFuture.completedFuture(requests.removeFirst()).also {
-            log.info("Mock result being returned from flow: $it")
-        }
+        val flowId = checkNotNull(context.checkpoint?.flowKey?.flowId) { "No flow id is set, context: $context" }
+        val fiber = checkNotNull(fibers[flowId]) { "No flow with flow id: $flowId has been set up within the mocking framework" }
+        return CompletableFuture.completedFuture(fiber.dequeueSuspension())
     }
 
-    fun setNextFlowIORequest(request: FlowIORequest<*>) {
-        requests.add(when (request) {
-            is FlowIORequest.FlowFinished -> request
-            is FlowIORequest.FlowFailed -> request
-            else -> FlowIORequest.FlowSuspended(ByteBuffer.wrap(byteArrayOf(0)), request)
-        })
+    fun addFlowFiber(fiber: MockFlowFiber) {
+        fibers[fiber.flowId] = fiber
     }
 }
 
 class MockFlowEventProcessor(delegate: FlowEventProcessor, private val flowRunner: MockFlowRunner) : FlowEventProcessor by delegate {
 
-    fun startFlowProcessing(flowId: UUID = UUID.randomUUID(), clientId: String = "client id"): StateAndEventProcessor.Response<Checkpoint> {
+    fun startFlow(
+        flowId: String = UUID.randomUUID().toString(),
+        clientId: String = "client id"
+    ): Pair<MockFlowFiber, StateAndEventProcessor.Response<Checkpoint>> {
         val startRPCFlowPayload = StartRPCFlow.newBuilder()
             .setClientId(clientId)
             .setCpiId("cpi id")
@@ -112,16 +105,19 @@ class MockFlowEventProcessor(delegate: FlowEventProcessor, private val flowRunne
             .setJsonArgs(" { \"json\": \"args\" }")
             .build()
 
-        val key = FlowKey(flowId.toString(), HoldingIdentity("x500 name", "group id"))
+        val key = FlowKey(flowId, HoldingIdentity("x500 name", "group id"))
 
         val event = FlowEvent(key, startRPCFlowPayload)
 
-        setNextFlowIORequest(FlowIORequest.ForceCheckpoint)
-        return onNext(state = null, event = Record(Schemas.Flow.FLOW_EVENT_TOPIC, key, event))
+        val fiber = MockFlowFiber(flowId).apply {
+            queueSuspension(FlowIORequest.ForceCheckpoint)
+            addFlowFiber(this)
+        }
+        return fiber to onNext(state = null, event = Record(Schemas.Flow.FLOW_EVENT_TOPIC, key, event))
     }
 
-    fun setNextFlowIORequest(request: FlowIORequest<*>) {
-        flowRunner.setNextFlowIORequest(request)
+    fun addFlowFiber(fiber: MockFlowFiber) {
+        flowRunner.addFlowFiber(fiber)
     }
 }
 
@@ -157,7 +153,11 @@ interface FlowEventDSL {
 
     fun inputLastOutputEvent()
 
-    fun suspend(request: FlowIORequest<*>)
+    fun flowFiber(fiber: MockFlowFiber): MockFlowFiber
+
+    fun flowFiber(flowId: String = UUID.randomUUID().toString(), fiber: MockFlowFiber.() -> Unit): MockFlowFiber
+
+    fun startedFlowFiber(flowId: String = UUID.randomUUID().toString(), fiber: MockFlowFiber.() -> Unit): MockFlowFiber
 
     fun processOne(): StateAndEventProcessor.Response<Checkpoint>
 
@@ -183,8 +183,22 @@ class FlowEventDSLImpl : FlowEventDSL {
         inputFlowEvents += ProcessLastOutputFlowEvent
     }
 
-    override fun suspend(request: FlowIORequest<*>) {
-        processor.setNextFlowIORequest(request)
+    override fun flowFiber(fiber: MockFlowFiber): MockFlowFiber {
+        processor.addFlowFiber(fiber)
+        return fiber
+    }
+
+    override fun flowFiber(flowId: String, fiber: MockFlowFiber.() -> Unit): MockFlowFiber {
+        return MockFlowFiber(flowId).apply {
+            fiber(this)
+            processor.addFlowFiber(this)
+        }
+    }
+
+    override fun startedFlowFiber(flowId: String, fiber: MockFlowFiber.() -> Unit): MockFlowFiber {
+        val (mockFlowFiber, _) = processor.startFlow(flowId)
+        fiber(mockFlowFiber)
+        return mockFlowFiber
     }
 
     override fun processOne(): StateAndEventProcessor.Response<Checkpoint> {
@@ -212,4 +226,24 @@ class FlowEventDSLImpl : FlowEventDSL {
     }
 
     private object ProcessLastOutputFlowEvent
+}
+
+class MockFlowFiber(val flowId: String = UUID.randomUUID().toString()) {
+
+    private var requests = mutableListOf<FlowIORequest<*>>()
+
+    fun queueSuspension(request: FlowIORequest<*>) {
+        requests.add(
+            when (request) {
+                is FlowIORequest.FlowFinished -> request
+                is FlowIORequest.FlowFailed -> request
+                else -> FlowIORequest.FlowSuspended(ByteBuffer.wrap(byteArrayOf(0)), request)
+            }
+        )
+    }
+
+    fun dequeueSuspension(): FlowIORequest<*> {
+        check(requests.isNotEmpty()) { "The next ${FlowIORequest::class.java.simpleName} that the mocked flow returns must be set" }
+        return requests.removeFirst()
+    }
 }

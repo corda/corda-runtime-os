@@ -6,6 +6,7 @@ import net.corda.data.flow.event.StartRPCFlow
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.manager.fiber.FlowIORequest
+import net.corda.flow.manager.mock.MockFlowFiber
 import net.corda.flow.manager.mock.filterOutputFlowTopicEventPayloads
 import net.corda.flow.manager.mock.filterOutputFlowTopicEvents
 import net.corda.flow.manager.mock.filterOutputFlowTopicRecords
@@ -38,64 +39,69 @@ class FlowWakeupEventTest {
 
     @Test
     fun `keep waking up the flow`() {
-        mockFlowEventProcessor.setNextFlowIORequest(FlowIORequest.ForceCheckpoint)
+
+        val fiber = MockFlowFiber("flow id")
+
+        mockFlowEventProcessor.addFlowFiber(fiber)
+
+        fiber.queueSuspension(FlowIORequest.ForceCheckpoint)
         val output1 = mockFlowEventProcessor.onNext(state = null, event = Record("topic", flowKey, startFlowEvent))
 
         assertNotNull(output1.updatedState)
 
-        mockFlowEventProcessor.setNextFlowIORequest(FlowIORequest.ForceCheckpoint)
+        fiber.queueSuspension(FlowIORequest.ForceCheckpoint)
         val output2 = mockFlowEventProcessor.onNext(state = output1.updatedState, event = uncheckedCast(output1.responseEvents.single()))
 
         assertNotNull(output1.updatedState)
 
-        mockFlowEventProcessor.setNextFlowIORequest(FlowIORequest.FlowFinished(Unit))
+        fiber.queueSuspension(FlowIORequest.FlowFinished(Unit))
         val output3 = mockFlowEventProcessor.onNext(state = output2.updatedState, event = uncheckedCast(output2.responseEvents.single()))
         assertNull(output3.updatedState)
     }
 
     @Test
     fun `keep waking up the flow using startFlowProcessing function`() {
-        val output1 = mockFlowEventProcessor.startFlowProcessing()
+        val (fiber, output1) = mockFlowEventProcessor.startFlow()
 
         assertNotNull(output1.updatedState)
 
-        mockFlowEventProcessor.setNextFlowIORequest(FlowIORequest.ForceCheckpoint)
+        fiber.queueSuspension(FlowIORequest.ForceCheckpoint)
         val output2 = mockFlowEventProcessor.onNext(state = output1.updatedState, event = uncheckedCast(output1.responseEvents.single()))
 
         assertNotNull(output1.updatedState)
 
-        mockFlowEventProcessor.setNextFlowIORequest(FlowIORequest.FlowFinished(Unit))
+        fiber.queueSuspension(FlowIORequest.FlowFinished(Unit))
         val output3 = mockFlowEventProcessor.onNext(state = output2.updatedState, event = uncheckedCast(output2.responseEvents.single()))
         assertNull(output3.updatedState)
     }
 
     @Test
     fun `keep waking up the flow using filterOutputFlowTopicRecords function`() {
-        val output1 = mockFlowEventProcessor.startFlowProcessing()
+        val (fiber, output1) = mockFlowEventProcessor.startFlow()
 
         assertNotNull(output1.updatedState)
 
-        mockFlowEventProcessor.setNextFlowIORequest(FlowIORequest.ForceCheckpoint)
+        fiber.queueSuspension(FlowIORequest.ForceCheckpoint)
         val output2 = mockFlowEventProcessor.onNext(state = output1.updatedState, event = output1.filterOutputFlowTopicRecords().single())
 
         assertNotNull(output1.updatedState)
 
-        mockFlowEventProcessor.setNextFlowIORequest(FlowIORequest.FlowFinished(Unit))
+        fiber.queueSuspension(FlowIORequest.FlowFinished(Unit))
         val output3 = mockFlowEventProcessor.onNext(state = output2.updatedState, event = output2.filterOutputFlowTopicRecords().single())
         assertNull(output3.updatedState)
     }
 
     @Test
     fun `keep waking up the flow using filterOutputFlowTopicEvents and filterOutputFlowTopicEventPayloads functions`() {
-        val output1 = mockFlowEventProcessor.startFlowProcessing()
+        val (fiber, output1) = mockFlowEventProcessor.startFlow()
 
         assertNotNull(output1.updatedState)
         assertEquals(Wakeup(), output1.filterOutputFlowTopicEvents().single().payload)
         assertEquals(Wakeup(), output1.filterOutputFlowTopicEventPayloads().single())
 
-        mockFlowEventProcessor.setNextFlowIORequest(FlowIORequest.ForceCheckpoint)
+        fiber.queueSuspension(FlowIORequest.ForceCheckpoint)
         val output2 = mockFlowEventProcessor.onNext(state = output1.updatedState, event = output1.filterOutputFlowTopicRecords().single())
-        mockFlowEventProcessor.setNextFlowIORequest(FlowIORequest.FlowFinished(Unit))
+        fiber.queueSuspension(FlowIORequest.FlowFinished(Unit))
         val output3 = mockFlowEventProcessor.onNext(state = output2.updatedState, event = output2.filterOutputFlowTopicRecords().single())
         assertNull(output3.updatedState)
     }
@@ -103,19 +109,24 @@ class FlowWakeupEventTest {
     @Test
     fun `keep waking up the flow using the FlowEventDSL`() {
         flowEventDSL {
+
+            val fiber = flowFiber("flow id") {
+                queueSuspension(FlowIORequest.ForceCheckpoint)
+                queueSuspension(FlowIORequest.ForceCheckpoint)
+                queueSuspension(FlowIORequest.ForceCheckpoint)
+            }
+
             input(startFlowEvent)
+            // change to process all because this cant happen
             inputLastOutputEvent()
             inputLastOutputEvent()
-            suspend(FlowIORequest.ForceCheckpoint)
-            suspend(FlowIORequest.ForceCheckpoint)
-            suspend(FlowIORequest.ForceCheckpoint)
 
             val output1 = processAll()
             assertNotNull(output1.last().updatedState)
             assertEquals(Wakeup(), output1.last().filterOutputFlowTopicEventPayloads().single())
 
             inputLastOutputEvent()
-            suspend(FlowIORequest.FlowFinished(Unit))
+            fiber.queueSuspension(FlowIORequest.FlowFinished(Unit))
 
             val output2 = processOne()
             assertNull(output2.updatedState)
