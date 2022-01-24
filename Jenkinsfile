@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@5.0') _
+@Library('corda-shared-build-pipeline-steps@test-tooling/p2p-poc') _
 
 cordaPipeline(
     nexusAppId: 'flow-worker-5.0',
