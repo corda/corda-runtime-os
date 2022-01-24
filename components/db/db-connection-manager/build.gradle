@@ -1,0 +1,18 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+description "DB Connection Manager"
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda:corda-base'
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+
+    api project(":libs:configuration:configuration-core")
+    api project(':libs:db:db-orm')
+    api project(':libs:lifecycle:lifecycle')
+}
