@@ -1,0 +1,20 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-app'
+}
+
+description 'RPC User Setup'
+
+
+dependencies {
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "info.picocli:picocli:$picocliVersion"
+    implementation 'net.corda:corda-base'
+
+    runtimeOnly "com.typesafe:config:$typeSafeConfigVersion"
+    runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
+    runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
+    runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+}
