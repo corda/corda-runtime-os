@@ -93,6 +93,10 @@ services:
     command:
       - --messagingParams
       - kafka.common.bootstrap.servers=kafka:9092
+      - --login
+      - admin
+      - --password
+      - admin
     depends_on:
       init-kafka:
         condition: service_completed_successfully

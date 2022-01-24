@@ -9,6 +9,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import picocli.CommandLine
+import picocli.CommandLine.Mixin
 import picocli.CommandLine.Option
 
 /** A tool to set up RPC Users */
@@ -27,20 +28,37 @@ class RPCUserSetup @Activate constructor(
 
     /** Parses the arguments, then performs actions necessary. */
     override fun startup(args: Array<String>) {
+
         logger.info("RPC User setup starting.")
 
-        val rpcUserSetupParams = RPCUserSetupParams()
-        val commandLine = CommandLine(rpcUserSetupParams)
-        commandLine.parseArgs(*args)
-
-        logger.info("Params received : $rpcUserSetupParams")
-
-        permissionManagementService.start()
-
+        val params = RPCUserSetupParams()
+        val commandLine = CommandLine(params)
         try {
-            //permissionManagementService.permissionManager.createUser(TODO())
-        } finally {
-            permissionManagementService.stop()
+            commandLine.parseArgs(*args)
+
+            if (params.helpRequested) {
+                CommandLine.usage(params, System.out)
+
+            } else if (params.versionRequested) {
+                val appClass = this::class.java
+                val appName = appClass.simpleName
+                println("$appName specification version: ${appClass.`package`.specificationVersion ?: "Unknown"}")
+                println("$appName implementation version: ${appClass.`package`.implementationVersion ?: "Unknown"}")
+            } else {
+
+                logger.info("Params received : $params")
+
+                permissionManagementService.start()
+
+                //permissionManagementService.permissionManager.createUser()
+
+                permissionManagementService.stop()
+            }
+        }
+        catch (ex: CommandLine.MissingParameterException) {
+            logger.error(ex.message)
+        }
+        finally {
             shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
         }
     }
@@ -50,12 +68,21 @@ class RPCUserSetup @Activate constructor(
     }
 }
 
-/** Additional parameters for the RPC worker are added here. */
 private class RPCUserSetupParams {
-    @Option(names = ["-m", "--messagingParams"], description = ["Messaging parameters for the tool."])
+
+    @Option(names = ["-h", "--help"], usageHelp = true, description = ["Display help and exit."])
+    var helpRequested = false
+
+    @Option(names = ["-v", "--version"], versionHelp = true, description = ["Display version and exit."])
+    var versionRequested = false
+
+    @Option(names = ["-m", "--messagingParams"], description = ["Messaging parameters for the tool."], required = true)
     var messagingParams = emptyMap<String, String>()
 
+    @Mixin
+    var userCreationParams = UserCreationParams()
+
     override fun toString(): String {
-        return "messagingParams : $messagingParams"
+        return "messagingParams : $messagingParams, userCreationParams: { $userCreationParams }"
     }
 }
