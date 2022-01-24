@@ -3,16 +3,21 @@ package net.corda.libs.configuration.datamodel.tests
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.ClassloaderChangeLog.ChangeLogResourceFiles
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
+import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.DbSchema
-import net.corda.db.testkit.InMemoryEntityManagerConfiguration
+import net.corda.db.testkit.DbUtils
 import net.corda.libs.configuration.datamodel.ConfigAuditEntity
 import net.corda.libs.configuration.datamodel.ConfigEntity
+import net.corda.libs.configuration.datamodel.ConfigurationEntities
+import net.corda.libs.configuration.datamodel.DbConnectionConfig
+import net.corda.libs.configuration.datamodel.findDbConnectionByNameAndPrivilege
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import java.time.Instant
+import java.util.UUID
 import javax.persistence.EntityManagerFactory
 import kotlin.random.Random
 
@@ -30,7 +35,7 @@ class EntityManagerFactoryFactoryIntegrationTest {
         @BeforeAll
         @JvmStatic
         private fun prepareDatabase() {
-            val dbConfig = InMemoryEntityManagerConfiguration("test_db")
+            val dbConfig = DbUtils.getEntityManagerConfiguration("configuration_db")
 
             val dbChange = ClassloaderChangeLog(
                 linkedSetOf(
@@ -44,10 +49,9 @@ class EntityManagerFactoryFactoryIntegrationTest {
             dbConfig.dataSource.connection.use { connection ->
                 LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange)
             }
-
             entityManagerFactory = EntityManagerFactoryFactoryImpl().create(
                 "test_unit",
-                listOf(ConfigEntity::class.java, ConfigAuditEntity::class.java),
+                ConfigurationEntities.classes.toList(),
                 dbConfig
             )
         }
@@ -79,6 +83,30 @@ class EntityManagerFactoryFactoryIntegrationTest {
         assertEquals(
             configAudit,
             entityManagerFactory.createEntityManager().find(ConfigAuditEntity::class.java, configAudit.changeNumber)
+        )
+    }
+
+    @Test
+    fun `can persiste and read back db connection configs`() {
+        val dbConnection = DbConnectionConfig(
+            UUID.randomUUID(),
+            "batman",
+            DbPrivilege.DDL,
+            Instant.now(),
+            "the joker",
+            "The Night Is Darkest Right Before The Dawn.",
+            """
+hello=world
+            """.trimIndent()
+        )
+
+        entityManagerFactory.createEntityManager().transaction { em ->
+            em.persist(dbConnection)
+        }
+
+        assertEquals(
+            dbConnection,
+            entityManagerFactory.createEntityManager().findDbConnectionByNameAndPrivilege("batman", DbPrivilege.DDL)
         )
     }
 }

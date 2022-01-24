@@ -1,9 +1,10 @@
 package net.corda.db.connection.manager.impl
 
-import net.corda.db.connection.manager.CordaDb
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.DbConnectionsRepository
 import net.corda.db.connection.manager.EntityManagerFactoryCache
+import net.corda.db.core.DbPrivilege
+import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -14,7 +15,6 @@ import net.corda.permissions.model.RpcRbacEntitiesSet
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.UUID
 import javax.persistence.EntityManagerFactory
 
 @Component(service = [DbConnectionManager::class])
@@ -47,14 +47,20 @@ class DbConnectionManagerImpl @Activate constructor(
     private val lifecycleCoordinator =
         lifecycleCoordinatorFactory.createCoordinator<DbConnectionManager>(eventHandler)
 
-    override fun getOrCreateEntityManagerFactory(db: CordaDb): EntityManagerFactory =
-        cache.getOrCreate(db)
+    override fun getOrCreateEntityManagerFactory(db: CordaDb, privilege: DbPrivilege): EntityManagerFactory =
+        cache.getOrCreate(db, privilege)
 
-    override fun getOrCreateEntityManagerFactory(connectionID: UUID, entitiesSet: JpaEntitiesSet): EntityManagerFactory =
-        cache.getOrCreate(connectionID, entitiesSet)
+    override fun getOrCreateEntityManagerFactory(name: String, privilege: DbPrivilege, entitiesSet: JpaEntitiesSet):
+            EntityManagerFactory =
+        cache.getOrCreate(name, privilege, entitiesSet)
 
-    override fun putConnection(connectionID: UUID, config: SmartConfig) {
-        dbConnectionsRepository.put(connectionID, config)
+    override fun putConnection(
+        name: String,
+        privilege: DbPrivilege,
+        config: SmartConfig,
+        description: String?,
+        updateActor: String) {
+        dbConnectionsRepository.put(name, privilege, config, description, updateActor)
     }
 
     override val clusterDbEntityManagerFactory: EntityManagerFactory
