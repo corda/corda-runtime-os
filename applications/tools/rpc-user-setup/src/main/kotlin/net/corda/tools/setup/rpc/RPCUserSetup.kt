@@ -1,5 +1,6 @@
 package net.corda.tools.setup.rpc
 
+import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.permissions.management.PermissionManagementService
@@ -11,6 +12,8 @@ import org.osgi.service.component.annotations.Reference
 import picocli.CommandLine
 import picocli.CommandLine.Mixin
 import picocli.CommandLine.Option
+import java.time.Duration
+import java.time.Instant
 
 /** A tool to set up RPC Users */
 @Suppress("Unused")
@@ -45,14 +48,15 @@ class RPCUserSetup @Activate constructor(
                 println("$appName specification version: ${appClass.`package`.specificationVersion ?: "Unknown"}")
                 println("$appName implementation version: ${appClass.`package`.implementationVersion ?: "Unknown"}")
             } else {
-
                 logger.info("Params received : $params")
 
                 permissionManagementService.start()
-
-                //permissionManagementService.permissionManager.createUser()
-
-                permissionManagementService.stop()
+                try {
+                    createUser(params)
+                }
+                finally {
+                    permissionManagementService.stop()
+                }
             }
         }
         catch (ex: CommandLine.MissingParameterException) {
@@ -61,6 +65,19 @@ class RPCUserSetup @Activate constructor(
         finally {
             shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
         }
+    }
+
+    private fun createUser(params: RPCUserSetupParams) {
+
+        val userDto = with(params.userCreationParams) {
+            val passwordExpiryInstant =
+                if (password == null) null else Instant.now().plus(Duration.parse(passwordExpiry))
+            CreateUserRequestDto(
+                loginName, loginName, loginName, true, password,
+                passwordExpiryInstant, null
+            )
+        }
+        permissionManagementService.permissionManager.createUser(userDto)
     }
 
     override fun shutdown() {
