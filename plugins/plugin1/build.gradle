@@ -6,12 +6,10 @@ plugins {
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
-
-    compileOnly project(":api")
+    implementation project(":api")
     api "info.picocli:picocli:${picoCliVersion}"
 
-    compileOnly "org.pf4j:pf4j:${pf4jVersion}"
+    implementation "org.pf4j:pf4j:${pf4jVersion}"
     kapt "org.pf4j:pf4j:${pf4jVersion}"
     implementation "org.apache.commons:commons-lang3:${commonsLangVersion}" // this is an examples for an external library included
 

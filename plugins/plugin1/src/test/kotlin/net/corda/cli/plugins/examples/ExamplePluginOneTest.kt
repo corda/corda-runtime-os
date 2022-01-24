@@ -58,7 +58,6 @@ class ExamplePluginOneTest {
             ).execute("--user=test", "--password=test", "-t=$url", "service-example")
         }
 
-        print(outText)
         assertTrue(outText.contains("$url/$endpoint"))
     }
 }

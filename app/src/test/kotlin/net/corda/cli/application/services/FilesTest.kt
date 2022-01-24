@@ -23,7 +23,7 @@ class FilesTest {
     @Test
     fun testCliHomeDirWithEnvVar() {
 
-        withEnvironmentVariable("CORDA_CLI_HOME_DIR", "C:\\corda\\cli").execute {
+        withEnvironmentVariable("CORDA_CLI_HOME_DIR", "\\corda\\cli").execute {
             assertEquals(
                 "C:\\corda\\cli",
                 Files.cliHomeDir().absolutePath
