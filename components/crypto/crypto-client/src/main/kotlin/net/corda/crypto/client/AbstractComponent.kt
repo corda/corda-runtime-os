@@ -7,74 +7,72 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-abstract class AbstractComponent<RESOURCE: AutoCloseable> : Lifecycle {
+abstract class AbstractComponent<RESOURCE: AutoCloseable>(
+    coordinatorFactory: LifecycleCoordinatorFactory,
+    coordinatorName: LifecycleCoordinatorName
+) : Lifecycle {
     protected val logger: Logger = LoggerFactory.getLogger(this::class.java)
 
-    private lateinit var coordinator: LifecycleCoordinator
-
-    fun setup(
-        coordinatorFactory: LifecycleCoordinatorFactory,
-        coordinatorName: LifecycleCoordinatorName
-    ) {
-        coordinator = coordinatorFactory.createCoordinator(coordinatorName) { event, _ ->
-            handleCoordinatorEvent(event)
-        }
-    }
+    private val lifecycleCoordinator = coordinatorFactory.createCoordinator(coordinatorName, ::eventHandler)
 
     @Volatile
     var resources: RESOURCE? = null
         private set
 
     override val isRunning: Boolean
-        get() = coordinator.isRunning
+        get() = lifecycleCoordinator.isRunning
 
     override fun start() {
-        logger.info("Starting component")
-        coordinator.start()
+        logger.info("Starting...")
+        lifecycleCoordinator.start()
+        lifecycleCoordinator.postEvent(StartEvent())
     }
 
     override fun stop() {
-        logger.info("Stopping component")
-        coordinator.stop()
-        closeResources()
+        logger.info("Stopping...")
+        lifecycleCoordinator.postEvent(StopEvent())
+        lifecycleCoordinator.stop()
     }
 
-    protected open fun handleCoordinatorEvent(event: LifecycleEvent) {
+    protected open fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         logger.info("LifecycleEvent received: $event")
         when (event) {
-            is RegistrationStatusChangeEvent -> {
-                // No need to check what registration this is as there is only one.
-                if (event.status == LifecycleStatus.UP) {
-                    createResources()
-                } else {
-                    closeResources()
-                }
+            is StartEvent -> {
+                createResources()
+                setStatusUp()
+            }
+            is StopEvent -> {
+                deleteResources()
+            }
+            else -> {
+                logger.error("Unexpected event $event!")
             }
         }
     }
 
     protected fun createResources() {
-        if (!readyCreateResources()) {
-            return
-        }
         logger.info("Creating resources")
         val tmp = resources
         resources = allocateResources()
         tmp?.closeGracefully()
     }
 
-    protected fun closeResources() {
+    protected fun deleteResources() {
         logger.info("Closing resources")
         val tmp = resources
         resources = null
         tmp?.closeGracefully()
     }
 
-    protected open fun readyCreateResources(): Boolean = isRunning
-
     protected abstract fun allocateResources(): RESOURCE
+
+    private fun setStatusUp() {
+        logger.info("Setting status UP.")
+        lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+    }
 }

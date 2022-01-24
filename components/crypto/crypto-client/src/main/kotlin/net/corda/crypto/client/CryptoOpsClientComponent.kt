@@ -1,6 +1,6 @@
 package net.corda.crypto.client
 
-import net.corda.crypto.CryptoOpsClientComponent
+import net.corda.crypto.CryptoOpsClient
 import net.corda.crypto.impl.stopGracefully
 import net.corda.data.crypto.config.HSMInfo
 import net.corda.data.crypto.wire.ops.rpc.HSMKeyDetails
@@ -13,6 +13,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import org.osgi.service.component.annotations.Activate
@@ -22,37 +23,24 @@ import java.security.PublicKey
 import java.util.UUID
 
 @Suppress("TooManyFunctions")
-@Component(service = [CryptoOpsClientComponent::class])
-class CryptoOpsClientComponentImpl :
-    AbstractComponent<CryptoOpsClientComponentImpl.Resources>(),
-    CryptoOpsClientComponent {
+@Component(service = [CryptoOpsClient::class])
+class CryptoOpsClientComponent @Activate constructor(
+    @Reference(service = LifecycleCoordinatorFactory::class)
+    coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = PublisherFactory::class)
+    private val publisherFactory: PublisherFactory,
+    @Reference(service = CipherSuiteFactory::class)
+    private val suiteFactory: CipherSuiteFactory
+) : AbstractComponent<CryptoOpsClientComponent.Resources>(
+        coordinatorFactory,
+        LifecycleCoordinatorName.forComponent<CryptoOpsClient>()
+), CryptoOpsClient {
     companion object {
         const val CLIENT_ID = "crypto.ops.rpc"
         const val GROUP_NAME = "crypto.ops.rpc"
 
         private inline val Resources?.instance: CryptoOpsClientImpl
             get() = this?.ops ?: throw IllegalStateException("The component haven't been initialised.")
-    }
-
-    @Volatile
-    @Reference(service = LifecycleCoordinatorFactory::class)
-    lateinit var coordinatorFactory: LifecycleCoordinatorFactory
-
-    @Volatile
-    @Reference(service = PublisherFactory::class)
-    lateinit var publisherFactory: PublisherFactory
-
-    @Volatile
-    @Reference(service = CipherSchemeMetadata::class)
-    lateinit var schemeMetadata: CipherSchemeMetadata
-
-    @Activate
-    fun activate() {
-        setup(
-            coordinatorFactory,
-            LifecycleCoordinatorName.forComponent<CryptoOpsClientComponent>()
-        )
-        createResources()
     }
 
     override fun getSupportedSchemes(tenantId: String, category: String): List<String> =
@@ -116,7 +104,10 @@ class CryptoOpsClientComponentImpl :
     override fun findHSM(tenantId: String, category: String): HSMInfo? =
         resources.instance.findHSM(tenantId, category)
 
-    override fun allocateResources(): Resources = Resources(publisherFactory, schemeMetadata)
+    override fun allocateResources(): Resources {
+        logger.info("Creating ${Resources::class.java.name}")
+        return Resources(publisherFactory, suiteFactory.getSchemeMap())
+    }
 
     class Resources(
         publisherFactory: PublisherFactory,
@@ -131,10 +122,12 @@ class CryptoOpsClientComponentImpl :
                 responseType = RpcOpsResponse::class.java
             )
         ).also { it.start() }
+
         internal val ops: CryptoOpsClientImpl = CryptoOpsClientImpl(
             schemeMetadata = schemeMetadata,
             sender = sender
         )
+
         override fun close() {
             sender.stopGracefully()
         }

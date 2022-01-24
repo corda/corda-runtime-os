@@ -1,11 +1,12 @@
 package net.corda.crypto
 
 import net.corda.data.crypto.config.HSMConfig
+import net.corda.lifecycle.Lifecycle
 
 /**
  * The HSM registration client to generate keys.
  */
-interface HSMRegistrationClient {
+interface HSMRegistrationClient : Lifecycle {
     /**
      * Adds new HSM configuration.
      */

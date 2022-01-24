@@ -1,6 +1,5 @@
 package net.corda.crypto.client
 
-import net.corda.crypto.CryptoOpsClient
 import net.corda.data.crypto.config.HSMInfo
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
@@ -40,12 +39,12 @@ import java.util.UUID
 internal class CryptoOpsClientImpl(
     private val schemeMetadata: CipherSchemeMetadata,
     private val sender: RPCSender<RpcOpsRequest, RpcOpsResponse>
-) : CryptoOpsClient {
+) {
     companion object {
         private val logger = contextLogger()
     }
 
-    override fun getSupportedSchemes(tenantId: String, category: String): List<String> {
+    fun getSupportedSchemes(tenantId: String, category: String): List<String> {
         logger.info(
             "Sending '{}'(tenant={},category={})",
             SupportedSchemesRpcQuery::class.java.simpleName,
@@ -60,7 +59,7 @@ internal class CryptoOpsClientImpl(
         return response!!.codes
     }
 
-    override fun findPublicKey(tenantId: String, alias: String): PublicKey? {
+    fun findPublicKey(tenantId: String, alias: String): PublicKey? {
         logger.info(
             "Sending '{}'(tenant={},alias={})",
             PublicKeyRpcQuery::class.java.simpleName,
@@ -79,7 +78,7 @@ internal class CryptoOpsClientImpl(
         }
     }
 
-    override fun filterMyKeys(tenantId: String, candidateKeys: Iterable<PublicKey>): Iterable<PublicKey> {
+    fun filterMyKeys(tenantId: String, candidateKeys: Iterable<PublicKey>): Iterable<PublicKey> {
         logger.info(
             "Sending '{}'(tenant={},candidateKeys={})",
             FilterMyKeysRpcQuery::class.java.simpleName,
@@ -100,7 +99,7 @@ internal class CryptoOpsClientImpl(
         }
     }
 
-    override fun generateKeyPair(
+    fun generateKeyPair(
         tenantId: String,
         category: String,
         alias: String,
@@ -121,7 +120,7 @@ internal class CryptoOpsClientImpl(
         return schemeMetadata.decodePublicKey(response!!.key.array())
     }
 
-    override fun freshKey(tenantId: String, context: Map<String, String>): PublicKey {
+    fun freshKey(tenantId: String, context: Map<String, String>): PublicKey {
         logger.info(
             "Sending '{}'(tenant={})",
             GenerateFreshKeyRpcCommand::class.java.simpleName,
@@ -135,7 +134,7 @@ internal class CryptoOpsClientImpl(
         return schemeMetadata.decodePublicKey(response!!.key.array())
     }
 
-    override fun freshKey(tenantId: String, externalId: UUID, context: Map<String, String>): PublicKey {
+    fun freshKey(tenantId: String, externalId: UUID, context: Map<String, String>): PublicKey {
         logger.info(
             "Sending '{}'(tenant={},externalId={})",
             GenerateFreshKeyRpcCommand::class.java.simpleName,
@@ -150,7 +149,7 @@ internal class CryptoOpsClientImpl(
         return schemeMetadata.decodePublicKey(response!!.key.array())
     }
 
-    override fun sign(
+    fun sign(
         tenantId: String,
         publicKey: PublicKey,
         data: ByteArray,
@@ -177,7 +176,7 @@ internal class CryptoOpsClientImpl(
         )
     }
 
-    override fun sign(
+    fun sign(
         tenantId: String,
         publicKey: PublicKey,
         signatureSpec: SignatureSpec,
@@ -207,7 +206,7 @@ internal class CryptoOpsClientImpl(
         )
     }
 
-    override fun sign(tenantId: String, alias: String, data: ByteArray, context: Map<String, String>): ByteArray {
+    fun sign(tenantId: String, alias: String, data: ByteArray, context: Map<String, String>): ByteArray {
         logger.info(
             "Sending '{}'(tenant={},alias={})",
             SignWithAliasRpcCommand::class.java.simpleName,
@@ -226,7 +225,7 @@ internal class CryptoOpsClientImpl(
         return response!!.bytes.array()
     }
 
-    override fun sign(
+    fun sign(
         tenantId: String,
         alias: String,
         signatureSpec: SignatureSpec,
@@ -253,7 +252,7 @@ internal class CryptoOpsClientImpl(
         return response!!.bytes.array()
     }
 
-    override fun findHSMKey(tenantId: String, alias: String): HSMKeyDetails? {
+    fun findHSMKey(tenantId: String, alias: String): HSMKeyDetails? {
         logger.info(
             "Sending '{}'(tenant={},alias={})",
             HSMKeyInfoByAliasRpcQuery::class.java.simpleName,
@@ -267,7 +266,7 @@ internal class CryptoOpsClientImpl(
         return request.execute(HSMKeyDetails::class.java, allowNoContentValue = true)
     }
 
-    override fun findHSMKey(tenantId: String, publicKey: PublicKey): HSMKeyDetails? {
+    fun findHSMKey(tenantId: String, publicKey: PublicKey): HSMKeyDetails? {
         logger.info(
             "Sending '{}'(tenant={},publicKey={}..)",
             HSMKeyInfoByPublicKeyRpcQuery::class.java.simpleName,
@@ -281,7 +280,7 @@ internal class CryptoOpsClientImpl(
         return request.execute(HSMKeyDetails::class.java, allowNoContentValue = true)
     }
 
-    override fun findHSM(tenantId: String, category: String): HSMInfo? {
+    fun findHSM(tenantId: String, category: String): HSMInfo? {
         logger.info(
             "Sending '{}'(tenant={},category={})",
             AssignedHSMRpcQuery::class.java.simpleName,

@@ -36,7 +36,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertSame
 
-class HSMRegistrationClientComponentTests : ComponentTestsBase<HSMRegistrationClientComponentImpl>() {
+class HSMRegistrationClientComponentTests : ComponentTestsBase<HSMRegistrationClientComponent>() {
     private lateinit var publisher: Publisher
     private lateinit var publisherFactory: PublisherFactory
 
@@ -48,11 +48,10 @@ class HSMRegistrationClientComponentTests : ComponentTestsBase<HSMRegistrationCl
         publisherFactory = mock {
             on { createPublisher(any(), any()) } doReturn publisher
         }
-        val instance = HSMRegistrationClientComponentImpl()
-        instance.coordinatorFactory = coordinatorFactory
-        instance.publisherFactory = publisherFactory
-        instance.activate()
-        instance
+        HSMRegistrationClientComponent(
+            coordinatorFactory = coordinatorFactory,
+            publisherFactory = publisherFactory
+        )
     }
 
     private fun assertRequestContext(

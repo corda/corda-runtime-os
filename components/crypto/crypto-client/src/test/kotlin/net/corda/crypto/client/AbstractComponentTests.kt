@@ -4,8 +4,6 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
-import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationStatusChangeEvent
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
@@ -41,9 +39,9 @@ class AbstractComponentTests {
             on { isRunning }.thenAnswer { coordinatorIsRunning }
             on { postEvent(any()) } doAnswer {
                 val event = it.getArgument(0, LifecycleEvent::class.java)
-                testComponent::class.memberFunctions.first { f -> f.name == "handleCoordinatorEvent" }.let { ff ->
+                testComponent::class.memberFunctions.first { f -> f.name == "eventHandler" }.let { ff ->
                     ff.isAccessible = true
-                    ff.call(testComponent, event)
+                    ff.call(testComponent, event, coordinator)
                 }
                 Unit
             }
@@ -52,8 +50,8 @@ class AbstractComponentTests {
             on { createCoordinator(any(), any()) } doReturn coordinator
         }
         resourcesToAllocate = Resources()
-        testComponent = TestAbstractComponent(resourcesToAllocate)
-        testComponent.setup(
+        testComponent = TestAbstractComponent(
+            resourcesToAllocate,
             coordinatorFactory,
             LifecycleCoordinatorName.forComponent<TestAbstractComponent>()
         )
@@ -62,48 +60,19 @@ class AbstractComponentTests {
     @Test
     @Timeout(5)
     fun `Should start component and create resources only after the component is up`() {
+        assertFalse(testComponent.isRunning)
+        assertNull(testComponent.resources)
         testComponent.start()
         assertTrue(testComponent.isRunning)
-        assertNull(testComponent.resources)
-        coordinator.postEvent(
-            RegistrationStatusChangeEvent(
-                registration = mock(),
-                status = LifecycleStatus.UP
-            )
-        )
         assertNotNull(testComponent.resources)
-    }
-
-    @Test
-    @Timeout(5)
-    fun `Should cleanup created resources when component is down`() {
-        testComponent.start()
-        coordinator.postEvent(
-            RegistrationStatusChangeEvent(
-                registration = mock(),
-                status = LifecycleStatus.UP
-            )
-        )
-        coordinator.postEvent(
-            RegistrationStatusChangeEvent(
-                registration = mock(),
-                status = LifecycleStatus.DOWN
-            )
-        )
-        assertNull(testComponent.resources)
-        assertEquals(1, resourcesToAllocate.closingCounter.get())
     }
 
     @Test
     @Timeout(5)
     fun `Should cleanup created resources when component is stopped`() {
         testComponent.start()
-        coordinator.postEvent(
-            RegistrationStatusChangeEvent(
-                registration = mock(),
-                status = LifecycleStatus.UP
-            )
-        )
+        assertTrue(testComponent.isRunning)
+        assertNotNull(testComponent.resources)
         testComponent.stop()
         assertFalse(testComponent.isRunning)
         assertNull(testComponent.resources)
@@ -115,7 +84,6 @@ class AbstractComponentTests {
     fun `Should not be able to create resources when component is not started`() {
         assertFalse(testComponent.isRunning)
         assertNull(testComponent.resources)
-        testComponent.callCreateResources()
         assertFalse(testComponent.isRunning)
         assertNull(testComponent.resources)
     }
@@ -128,9 +96,10 @@ class AbstractComponentTests {
     }
 
     class TestAbstractComponent(
-        private val resourcesToAllocate: Resources
-    ) : AbstractComponent<Resources>() {
+        private val resourcesToAllocate: Resources,
+        coordinatorFactory: LifecycleCoordinatorFactory,
+        coordinatorName: LifecycleCoordinatorName
+    ) : AbstractComponent<Resources>(coordinatorFactory, coordinatorName) {
         override fun allocateResources(): Resources = resourcesToAllocate
-        fun callCreateResources() = createResources()
     }
 }

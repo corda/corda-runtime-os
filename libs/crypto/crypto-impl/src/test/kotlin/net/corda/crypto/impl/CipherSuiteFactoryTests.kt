@@ -44,7 +44,8 @@ class CipherSuiteFactoryTests {
         factory = CipherSuiteFactoryImpl(
             schemeMetadataProvider,
             verifierProvider,
-            digestServiceProvider
+            digestServiceProvider,
+            mock()
         )
     }
 

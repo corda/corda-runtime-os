@@ -2,6 +2,7 @@ package net.corda.crypto
 
 import net.corda.data.crypto.config.HSMInfo
 import net.corda.data.crypto.wire.ops.rpc.HSMKeyDetails
+import net.corda.lifecycle.Lifecycle
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
@@ -12,7 +13,7 @@ import java.util.UUID
 /**
  * The crypto operations client to generate fresh keys, sign, find or filter public keys, some HSM related queries.
  */
-interface CryptoOpsClient {
+interface CryptoOpsClient : Lifecycle {
     companion object {
         val EMPTY_CONTEXT = emptyMap<String, String>()
     }

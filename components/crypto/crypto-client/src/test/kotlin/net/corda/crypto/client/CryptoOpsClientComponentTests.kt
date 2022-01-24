@@ -59,7 +59,7 @@ import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import kotlin.test.assertTrue
 
-class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponentImpl>() {
+class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponent>() {
     private lateinit var knownTenantId: String
     private lateinit var knownAlias: String
     private lateinit var knownOperationContext: Map<String, String>
@@ -80,12 +80,11 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
             publisherFactory = mock {
                 on { createRPCSender<RpcOpsRequest, RpcOpsResponse>(any(), any()) } doReturn sender
             }
-            val instance = CryptoOpsClientComponentImpl()
-            instance.coordinatorFactory = coordinatorFactory
-            instance.publisherFactory = publisherFactory
-            instance.schemeMetadata = schemeMetadata
-            instance.activate()
-            instance
+            CryptoOpsClientComponent(
+                coordinatorFactory = coordinatorFactory,
+                publisherFactory = publisherFactory,
+                schemeMetadata = schemeMetadata
+            )
         }
     }
 

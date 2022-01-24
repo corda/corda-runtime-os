@@ -2,7 +2,6 @@ package net.corda.crypto.client
 
 import net.corda.crypto.CryptoPublishResult
 import net.corda.crypto.HSMRegistrationClient
-import net.corda.crypto.HSMRegistrationClientComponent
 import net.corda.crypto.impl.closeGracefully
 import net.corda.data.crypto.config.HSMConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -14,32 +13,21 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
-@Component(service = [HSMRegistrationClientComponent::class])
-class HSMRegistrationClientComponentImpl :
-    AbstractComponent<HSMRegistrationClientComponentImpl.Resources>(),
-    HSMRegistrationClientComponent {
+@Component(service = [HSMRegistrationClient::class])
+class HSMRegistrationClientComponent @Activate constructor(
+    @Reference(service = LifecycleCoordinatorFactory::class)
+    coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = PublisherFactory::class)
+    private val publisherFactory: PublisherFactory
+) : AbstractComponent<HSMRegistrationClientComponent.Resources>(
+        coordinatorFactory,
+        LifecycleCoordinatorName.forComponent<HSMRegistrationClientComponent>()
+), HSMRegistrationClient {
     companion object {
         const val CLIENT_ID = "crypto.registration.hsm"
 
-        private inline val Resources?.instance: HSMRegistrationClient
+        private inline val Resources?.instance: HSMRegistrationClientImpl
             get() = this?.registrar ?: throw IllegalStateException("The component haven't been initialised.")
-    }
-
-    @Volatile
-    @Reference(service = LifecycleCoordinatorFactory::class)
-    lateinit var coordinatorFactory: LifecycleCoordinatorFactory
-
-    @Volatile
-    @Reference(service = PublisherFactory::class)
-    lateinit var publisherFactory: PublisherFactory
-
-    @Activate
-    fun activate() {
-        setup(
-            coordinatorFactory,
-            LifecycleCoordinatorName.forComponent<HSMRegistrationClientComponent>()
-        )
-        createResources()
     }
 
     override fun putHSM(config: HSMConfig): CryptoPublishResult =

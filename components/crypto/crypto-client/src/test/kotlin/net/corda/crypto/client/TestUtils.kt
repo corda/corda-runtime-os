@@ -111,9 +111,9 @@ abstract class ComponentTestsBase<COMPONENT: Lifecycle> {
             on { isRunning }.thenAnswer { coordinatorIsRunning }
             on { postEvent(any()) } doAnswer {
                 val event = it.getArgument(0, LifecycleEvent::class.java)
-                component::class.memberFunctions.first { f -> f.name == "handleCoordinatorEvent" }.let { ff ->
+                component::class.memberFunctions.first { f -> f.name == "eventHandler" }.let { ff ->
                     ff.isAccessible = true
-                    ff.call(component, event)
+                    ff.call(component, event, coordinator)
                 }
                 Unit
             }
@@ -131,6 +131,7 @@ abstract class ComponentTestsBase<COMPONENT: Lifecycle> {
         )
     }
 }
+
 fun generateKeyPair(schemeMetadata: CipherSchemeMetadata, signatureSchemeName: String): KeyPair {
     val scheme = schemeMetadata.findSignatureScheme(signatureSchemeName)
     val keyPairGenerator = KeyPairGenerator.getInstance(
@@ -144,7 +145,6 @@ fun generateKeyPair(schemeMetadata: CipherSchemeMetadata, signatureSchemeName: S
     }
     return keyPairGenerator.generateKeyPair()
 }
-
 
 fun signData(schemeMetadata: CipherSchemeMetadata, keyPair: KeyPair, data: ByteArray): ByteArray {
     val scheme = schemeMetadata.findSignatureScheme(keyPair.public)

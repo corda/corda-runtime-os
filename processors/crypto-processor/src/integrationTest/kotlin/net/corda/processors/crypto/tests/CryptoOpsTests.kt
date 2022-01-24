@@ -1,33 +1,40 @@
-package net.corda.crypto.persistence.kafka
+package net.corda.processors.crypto.tests
 
 import com.typesafe.config.ConfigFactory
-import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.component.persistence.SigningKeysPersistenceProvider
+import net.corda.crypto.CryptoConsts
+import net.corda.crypto.CryptoOpsClient
 import net.corda.data.config.Configuration
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.Lifecycle
-import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
+import net.corda.processors.crypto.CryptoProcessor
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
 import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import java.lang.Thread.sleep
 import java.util.UUID
 
+
 @ExtendWith(ServiceExtension::class)
-class KafkaSigningKeysPersistenceProviderIntegrationTests {
+class CryptoOpsTests {
     companion object {
-        val CLIENT_ID = "${KafkaSigningKeysPersistenceProviderIntegrationTests::class.java}-integration-test"
+
+        private val CLIENT_ID = "${CryptoOpsTests::class.java}-integration-test"
+
+        private const val CRYPTO_CONFIGURATION: String = "{}"
+
+        private const val BOOT_CONFIGURATION = """
+        instanceId=1
+    """
 
         private fun Lifecycle.stopAndWait() {
             stop()
@@ -52,48 +59,43 @@ class KafkaSigningKeysPersistenceProviderIntegrationTests {
     lateinit var publisherFactory: PublisherFactory
 
     @InjectService(timeout = 5000L)
-    lateinit var configurationReadService: ConfigurationReadService
+    lateinit var processor: CryptoProcessor
 
     @InjectService(timeout = 5000L)
-    lateinit var provider: SigningKeysPersistenceProvider
+    lateinit var client: CryptoOpsClient
 
-    private val cryptoConfig: String = "{}"
-
-    private val bootConf = """
-        instanceId=1
-    """
-
-    private fun Publisher.publishConf(key: String, config: String) =
-        publish(listOf(Record(Schemas.Config.CONFIG_TOPIC, key, Configuration(config, "1"))))
+    lateinit var tenantId: String
 
     @BeforeEach
     fun setup() {
-        // start all required services
-        configurationReadService.startAndWait()
-        provider.startAndWait()
+        tenantId = UUID.randomUUID().toString()
 
         // Publish crypto config
         with(publisherFactory.createPublisher(PublisherConfig(CLIENT_ID))) {
-            publishConf(ConfigKeys.CRYPTO_CONFIG, cryptoConfig)
+            publish(
+                listOf(
+                    Record(
+                        Schemas.Config.CONFIG_TOPIC,
+                        ConfigKeys.CRYPTO_CONFIG,
+                        Configuration(CRYPTO_CONFIGURATION, "1")
+                    )
+                )
+            )
         }
 
-        // Set basic bootstrap config
-        configurationReadService.bootstrapConfig(
-            SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.parseString(bootConf))
+        val bootstrapConfig = SmartConfigFactory.create(
+            ConfigFactory.empty()).create(ConfigFactory.parseString(BOOT_CONFIGURATION)
         )
+
+        processor.start(bootstrapConfig)
+        sleep(500)
+        client.startAndWait()
+        sleep(500)
     }
 
     @Test
-    @Timeout(30)
-    fun `Should return instances using same processor instance regardless of tenant`() {
-        assertTrue(provider.isRunning)
-        eventually {
-            assertNotNull(provider.getInstance(UUID.randomUUID().toString()) { it })
-        }
-        for (i in 1..100) {
-            assertNotNull(provider.getInstance(UUID.randomUUID().toString()) { it })
-        }
-        provider.stopAndWait()
-        assertFalse(provider.isRunning)
+    fun `Should be able to use crypto operations`() {
+        val supportedSchemes = client.getSupportedSchemes(tenantId, CryptoConsts.CryptoCategories.LEDGER)
+        assertTrue(supportedSchemes.isNotEmpty())
     }
 }

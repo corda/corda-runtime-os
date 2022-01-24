@@ -2,7 +2,6 @@ package net.corda.crypto.client
 
 import net.corda.crypto.CryptoConsts
 import net.corda.crypto.CryptoPublishResult
-import net.corda.crypto.HSMRegistrationClient
 import net.corda.data.crypto.config.HSMConfig
 import net.corda.data.crypto.wire.registration.hsm.AddHSMCommand
 import net.corda.data.crypto.wire.registration.hsm.AssignHSMCommand
@@ -15,12 +14,12 @@ import net.corda.v5.base.util.contextLogger
 
 internal class HSMRegistrationClientImpl(
     private val publisher: Publisher
-) : HSMRegistrationClient {
+) {
     companion object {
         private val logger = contextLogger()
     }
 
-    override fun putHSM(config: HSMConfig): CryptoPublishResult {
+    fun putHSM(config: HSMConfig): CryptoPublishResult {
         logger.info(
             "Publishing {}(serviceName={},label={},byo={},categories=[{}])",
             AddHSMCommand::class.java.simpleName,
@@ -35,7 +34,7 @@ internal class HSMRegistrationClientImpl(
         )
     }
 
-    override fun assignHSM(tenantId: String, category: String, defaultSignatureScheme: String): CryptoPublishResult {
+    fun assignHSM(tenantId: String, category: String, defaultSignatureScheme: String): CryptoPublishResult {
         logger.info(
             "Publishing {}(tenant={},category={},defaultSignatureScheme={})",
             AssignHSMCommand::class.java.simpleName,
@@ -49,7 +48,7 @@ internal class HSMRegistrationClientImpl(
         )
     }
 
-    override fun assignSoftHSM(
+    fun assignSoftHSM(
         tenantId: String,
         category: String,
         passphrase: String,

@@ -8,6 +8,7 @@ import net.corda.crypto.service.CryptoOpsService
 import net.corda.crypto.service.CryptoServiceProviderWithLifecycle
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.libs.configuration.SmartConfig
+import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.StartEvent
@@ -48,23 +49,21 @@ class CryptoProcessorImpl @Activate constructor(
         val log = contextLogger()
     }
 
-    private val coordinator = coordinatorFactory.createCoordinator<CryptoProcessorImpl> {
-            e, _ -> eventHandler(e)
-    }
+    private val lifecycleCoordinator = coordinatorFactory.createCoordinator<CryptoProcessorImpl>(::eventHandler)
 
     override fun start(bootConfig: SmartConfig) {
         log.info("Crypto processor starting.")
-        coordinator.start()
-        coordinator.postEvent(BootConfigEvent(bootConfig))
+        lifecycleCoordinator.start()
+        lifecycleCoordinator.postEvent(BootConfigEvent(bootConfig))
     }
 
     override fun stop() {
         log.info("Crypto processor stopping.")
-        coordinator.stop()
+        lifecycleCoordinator.stop()
     }
 
     @Suppress("UNUSED_PARAMETER")
-    private fun eventHandler(event: LifecycleEvent) {
+    private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         log.debug { "Crypto processor received event $event." }
         when (event) {
             is StartEvent -> {
