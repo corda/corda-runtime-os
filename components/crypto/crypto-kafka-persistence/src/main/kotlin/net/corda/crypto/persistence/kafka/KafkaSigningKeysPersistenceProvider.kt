@@ -6,15 +6,15 @@ import net.corda.crypto.component.persistence.KeyValuePersistence
 import net.corda.crypto.component.persistence.SigningKeysPersistenceProvider
 import net.corda.crypto.component.persistence.config.CryptoPersistenceConfig
 import net.corda.crypto.component.persistence.config.signingPersistence
-import net.corda.crypto.impl.LifecycleDependenciesTracker
-import net.corda.crypto.impl.LifecycleDependenciesTracker.Companion.track
 import net.corda.crypto.impl.closeGracefully
 import net.corda.data.crypto.persistence.SigningKeysRecord
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
@@ -47,7 +47,7 @@ class KafkaSigningKeysPersistenceProvider @Activate constructor(
 
     private var configHandle: AutoCloseable? = null
 
-    private var tracker: LifecycleDependenciesTracker? = null
+    private var registrationHandle: RegistrationHandle? = null
 
     private var impl: Impl? = null
 
@@ -72,22 +72,26 @@ class KafkaSigningKeysPersistenceProvider @Activate constructor(
         impl?.getInstance(tenantId, mutator)
             ?: throw IllegalStateException("The provider haven't been initialised yet.")
 
+    @Suppress("UNUSED_PARAMETER")
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         logger.info("Received event {}", event)
         when (event) {
             is StartEvent -> {
-                logger.info("Received start event, waiting for UP event from ConfigurationReadService.")
-                tracker?.close()
-                tracker = lifecycleCoordinator.track(ConfigurationReadService::class.java)
+                logger.info("Received start event, starting wait for UP event from ConfigurationReadService.")
+                registrationHandle?.close()
+                registrationHandle = lifecycleCoordinator.followStatusChangesByName(
+                    setOf(LifecycleCoordinatorName.forComponent<ConfigurationReadService>())
+                )
             }
             is StopEvent -> {
+                registrationHandle?.close()
+                registrationHandle = null
                 configHandle?.close()
                 configHandle = null
-                impl?.close()
-                impl = null
+                deleteResources()
             }
             is RegistrationStatusChangeEvent -> {
-                if (tracker?.areUpAfter(event, coordinator) == true) {
+                if (event.status == LifecycleStatus.UP) {
                     logger.info("Registering for configuration updates.")
                     configHandle = configurationReadService.registerForUpdates(::onConfigChange)
                 } else {
@@ -116,6 +120,12 @@ class KafkaSigningKeysPersistenceProvider @Activate constructor(
         impl = Impl(subscriptionFactory, publisherFactory, config.signingPersistence)
         logger.info("Created new implementation instance: {}", Impl::class.java.name)
         currentImpl?.close()
+    }
+
+    private fun deleteResources() {
+        val current = impl
+        impl = null
+        current?.closeGracefully()
     }
 
     private fun setStatusUp() {

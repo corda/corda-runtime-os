@@ -7,15 +7,15 @@ import net.corda.crypto.component.persistence.CachedSoftKeysRecord
 import net.corda.crypto.component.persistence.SoftKeysPersistenceProvider
 import net.corda.crypto.component.persistence.config.CryptoPersistenceConfig
 import net.corda.crypto.component.persistence.config.softPersistence
-import net.corda.crypto.impl.LifecycleDependenciesTracker
-import net.corda.crypto.impl.LifecycleDependenciesTracker.Companion.track
 import net.corda.crypto.impl.closeGracefully
 import net.corda.data.crypto.persistence.SoftKeysRecord
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
@@ -48,7 +48,7 @@ class KafkaSoftKeysPersistenceProvider @Activate constructor(
 
     private var configHandle: AutoCloseable? = null
 
-    private var tracker: LifecycleDependenciesTracker? = null
+    private var registrationHandle: RegistrationHandle? = null
 
     private var impl: Impl? = null
 
@@ -73,22 +73,26 @@ class KafkaSoftKeysPersistenceProvider @Activate constructor(
         impl?.getInstance(tenantId, mutator)
             ?: throw IllegalStateException("The provider haven't been initialised yet.")
 
+    @Suppress("UNUSED_PARAMETER")
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         logger.info("Received event {}", event)
         when (event) {
             is StartEvent -> {
-                logger.info("Received start event, waiting for UP event from dependencies.")
-                tracker?.close()
-                tracker = lifecycleCoordinator.track(ConfigurationReadService::class.java)
+                logger.info("Received start event, starting wait for UP event from dependencies.")
+                registrationHandle?.close()
+                registrationHandle = lifecycleCoordinator.followStatusChangesByName(
+                    setOf(LifecycleCoordinatorName.forComponent<ConfigurationReadService>())
+                )
             }
             is StopEvent -> {
+                registrationHandle?.close()
+                registrationHandle = null
                 configHandle?.close()
                 configHandle = null
-                impl?.close()
-                impl = null
+                deleteResources()
             }
             is RegistrationStatusChangeEvent -> {
-                if (tracker?.areUpAfter(event, coordinator) == true) {
+                if (event.status == LifecycleStatus.UP) {
                     logger.info("Registering for configuration updates.")
                     configHandle = configurationReadService.registerForUpdates(::onConfigChange)
                 } else {
@@ -116,6 +120,12 @@ class KafkaSoftKeysPersistenceProvider @Activate constructor(
         val currentImpl = impl
         impl = Impl(subscriptionFactory, publisherFactory, config.softPersistence)
         currentImpl?.close()
+    }
+
+    private fun deleteResources() {
+        val current = impl
+        impl = null
+        current?.closeGracefully()
     }
 
     private fun setStatusUp() {

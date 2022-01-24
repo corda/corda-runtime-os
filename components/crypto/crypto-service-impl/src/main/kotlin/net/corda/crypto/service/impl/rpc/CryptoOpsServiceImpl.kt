@@ -1,15 +1,16 @@
 package net.corda.crypto.service.impl.rpc
 
+import net.corda.crypto.impl.closeGracefully
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.service.CryptoOpsService
-import net.corda.crypto.impl.LifecycleDependenciesTracker
-import net.corda.crypto.impl.LifecycleDependenciesTracker.Companion.track
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
@@ -41,7 +42,7 @@ class CryptoOpsServiceImpl @Activate constructor(
     private val lifecycleCoordinator =
         coordinatorFactory.createCoordinator<CryptoOpsService>(::eventHandler)
 
-    private var dependencies: LifecycleDependenciesTracker? = null
+    private var registrationHandle: RegistrationHandle? = null
 
     private var subscription: RPCSubscription<RpcOpsRequest, RpcOpsResponse>? = null
 
@@ -59,19 +60,24 @@ class CryptoOpsServiceImpl @Activate constructor(
         lifecycleCoordinator.stop()
     }
 
+    @Suppress("UNUSED_PARAMETER")
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         logger.info("Received event {}", event)
         when (event) {
             is StartEvent -> {
-                logger.info("Received start event, waiting for UP event from dependencies.")
-                dependencies?.close()
-                dependencies = lifecycleCoordinator.track(SigningServiceFactory::class.java)
+                logger.info("Received start event, starting wait for UP event from dependencies.")
+                registrationHandle?.close()
+                registrationHandle = lifecycleCoordinator.followStatusChangesByName(
+                    setOf(LifecycleCoordinatorName.forComponent<SigningServiceFactory>())
+                )
             }
             is StopEvent -> {
+                registrationHandle?.close()
+                registrationHandle = null
                 deleteResources()
             }
             is RegistrationStatusChangeEvent -> {
-                if (dependencies?.areUpAfter(event, coordinator) == true) {
+                if (event.status == LifecycleStatus.UP) {
                     createResources()
                     logger.info("Setting status UP.")
                     lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
@@ -88,8 +94,9 @@ class CryptoOpsServiceImpl @Activate constructor(
     }
 
     private fun deleteResources() {
-        subscription?.close()
+        val current = subscription
         subscription = null
+        current?.closeGracefully()
     }
 
     private fun createResources() {
@@ -106,6 +113,6 @@ class CryptoOpsServiceImpl @Activate constructor(
             ),
             responderProcessor = processor
         ).also { start() }
-        current?.close()
+        current?.closeGracefully()
     }
 }

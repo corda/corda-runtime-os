@@ -22,6 +22,7 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceCardinality
 import org.osgi.service.component.annotations.ReferencePolicyOption
 
+@Suppress("LongParameterList")
 @Component(service = [CryptoProcessor::class])
 class CryptoProcessorImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)

@@ -1,8 +1,6 @@
 package net.corda.crypto.service.impl.soft
 
 import net.corda.crypto.component.persistence.SoftKeysPersistenceProvider
-import net.corda.crypto.impl.LifecycleDependenciesTracker
-import net.corda.crypto.impl.LifecycleDependenciesTracker.Companion.track
 import net.corda.crypto.service.CryptoServiceProviderWithLifecycle
 import net.corda.crypto.service.SoftCryptoServiceConfig
 import net.corda.crypto.service.SoftCryptoServiceProvider
@@ -10,8 +8,10 @@ import net.corda.crypto.service.impl.persistence.SoftCryptoKeyCache
 import net.corda.crypto.service.impl.persistence.SoftCryptoKeyCacheImpl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
@@ -51,7 +51,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     private val lifecycleCoordinator =
         coordinatorFactory.createCoordinator<SoftCryptoServiceProviderImpl>(::eventHandler)
 
-    private var tracker: LifecycleDependenciesTracker? = null
+    private var registrationHandle: RegistrationHandle? = null
 
     private var impl: Impl? = null
 
@@ -77,22 +77,24 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
         impl?.getInstance(context)
             ?: throw CryptoServiceException("Provider haven't been initialised yet.", true)
 
-    @Suppress("UNUSED")
+    @Suppress("UNUSED_PARAMETER")
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         logger.info("Received event {}", event)
         when (event) {
             is StartEvent -> {
-                logger.info("Received start event, waiting for UP event from dependencies.")
-                tracker?.close()
-                tracker = lifecycleCoordinator.track(SoftKeysPersistenceProvider::class.java)
+                logger.info("Received start event, starting wait for UP event from dependencies.")
+                registrationHandle?.close()
+                registrationHandle = lifecycleCoordinator.followStatusChangesByName(
+                    setOf(LifecycleCoordinatorName.forComponent<SoftKeysPersistenceProvider>())
+                )
             }
             is StopEvent -> {
-                tracker?.close()
-                tracker = null
+                registrationHandle?.close()
+                registrationHandle = null
                 deleteResources()
             }
             is RegistrationStatusChangeEvent -> {
-                if (tracker?.areUpAfter(event, coordinator) == true) {
+                if (event.status == LifecycleStatus.UP) {
                     createResources()
                     logger.info("Setting status UP.")
                     this.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
