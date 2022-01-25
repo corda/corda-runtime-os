@@ -10,6 +10,7 @@ import net.corda.osgi.api.Shutdown
 import net.corda.permissions.service.PermissionServiceComponent
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.seconds
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -37,7 +38,7 @@ class RPCUserSetup @Activate constructor(
         private const val MSG_CONFIG_PATH = "messaging"
 
         private fun waitingLoop(
-            duration: Duration = Duration.ofSeconds(20),
+            duration: Duration,
             waitBetween: Duration = Duration.ofMillis(100),
             waitBefore: Duration = waitBetween,
             binaryBlock: () -> Boolean) {
@@ -85,7 +86,7 @@ class RPCUserSetup @Activate constructor(
                 configReadService.bootstrapConfig(getBootstrapConfig(params))
 
                 // Bootstrapping is done asynchronously in a separate thread, it may take sometime to propagate
-                waitingLoop {
+                waitingLoop(Duration.parse(params.waitForReadinessDuration)) {
                     permissionServiceComponent.isRunning
                 }
                 try {
@@ -148,6 +149,10 @@ private class RPCUserSetupParams {
 
     @Option(names = ["-m", "--messagingParams"], description = ["Messaging parameters for the tool."], required = true)
     var messagingParams = emptyMap<String, String>()
+
+    @Option(names = ["-w", "--waitForReadinessDuration"], description = ["Password expiry in ISO-8601 format. E.g. 'PT20S'. " +
+            "Defaulted to 20 seconds."])
+    var waitForReadinessDuration: String = 20.seconds.toString()
 
     @Mixin
     var userCreationParams = UserCreationParams()

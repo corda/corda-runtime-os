@@ -1,12 +1,16 @@
 package net.corda.libs.permissions.manager.impl
 
+import net.corda.data.permissions.management.PermissionManagementRequest
+import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.libs.permissions.manager.PermissionEntityManager
 import net.corda.libs.permissions.manager.PermissionGroupManager
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.PermissionRoleManager
 import net.corda.libs.permissions.manager.PermissionUserManager
+import net.corda.messaging.api.publisher.RPCSender
 
 class PermissionManagerImpl(
+    private val rpcSender: RPCSender<PermissionManagementRequest, PermissionManagementResponse>,
     private val permissionUserManager: PermissionUserManager,
     private val permissionGroupManager: PermissionGroupManager,
     private val permissionRoleManager: PermissionRoleManager,
@@ -17,16 +21,17 @@ class PermissionManagerImpl(
     PermissionRoleManager by permissionRoleManager,
     PermissionEntityManager by permissionEntityManager {
 
-    private var running = false
+    @Volatile
+    private var started = false
 
     override val isRunning: Boolean
-        get() = running
+        get() = started && rpcSender.isRunning
 
     override fun start() {
-        running = true
+        started = true
     }
 
     override fun stop() {
-        running = false
+        started = false
     }
 }

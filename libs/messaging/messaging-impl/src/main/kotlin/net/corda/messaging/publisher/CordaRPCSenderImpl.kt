@@ -50,7 +50,7 @@ class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private val cordaProducerBuilder: CordaProducerBuilder,
     private val serializer: CordaAvroSerializer<REQUEST>,
     private val deserializer: CordaAvroDeserializer<RESPONSE>,
-    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : RPCSender<REQUEST, RESPONSE>, RPCSubscription<REQUEST, RESPONSE> {
 
     private companion object {
@@ -62,9 +62,12 @@ class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
 
-
+    /**
+     * Sender can only be considered properly running when partitions been discovered via asynchronous process,
+     * or else it will not be able to perform send operation.
+     */
     override val isRunning: Boolean
-        get() = !stopped
+        get() = !stopped && partitionListener.getPartitions().isNotEmpty()
 
     override val subscriptionName: LifecycleCoordinatorName
         get() = lifecycleCoordinator.name

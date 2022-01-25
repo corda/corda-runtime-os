@@ -29,6 +29,7 @@ class PermissionManagerFactoryImpl @Activate constructor(
         permissionCache: PermissionCache
     ): PermissionManager {
         return PermissionManagerImpl(
+            rpcSender,
             PermissionUserManagerImpl(config, rpcSender, permissionCache, passwordServiceFactory.createPasswordService(SecureRandom())),
             PermissionGroupManagerImpl(config, rpcSender, permissionCache),
             PermissionRoleManagerImpl(config, rpcSender, permissionCache),

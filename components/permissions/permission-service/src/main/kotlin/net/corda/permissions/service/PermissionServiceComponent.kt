@@ -62,7 +62,9 @@ class PermissionServiceComponent @Activate constructor(
     }
 
     override val isRunning: Boolean
-        get() = coordinator.isRunning && coordinator.status == LifecycleStatus.UP
+        get() = coordinator.isRunning &&
+                coordinator.status == LifecycleStatus.UP &&
+                permissionManagementService.isRunning
 
     override fun start() {
         coordinator.start()
