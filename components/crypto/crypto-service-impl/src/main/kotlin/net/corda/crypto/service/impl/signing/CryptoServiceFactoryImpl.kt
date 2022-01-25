@@ -116,7 +116,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
                 category = category,
                 memberId = tenantId,
                 cipherSuiteFactory = cipherSuiteFactory,
-                config = objectMapper.convertValue(config.hsm.serviceConfig, provider.configType)
+                config = objectMapper.readValue(config.hsm.serviceConfig.array(), provider.configType)
             )
             return CryptoServiceDecorator(
                 cryptoService = provider.getInstance(context),

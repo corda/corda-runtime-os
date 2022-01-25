@@ -6,7 +6,6 @@ import net.corda.crypto.service.SoftCryptoServiceConfig
 import net.corda.data.crypto.config.HSMConfig
 import net.corda.data.crypto.config.HSMInfo
 import net.corda.data.crypto.config.TenantHSMConfig
-import net.corda.v5.cipher.suite.config.CryptoServiceConfig
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
@@ -35,7 +34,7 @@ class HSMRegistrationImpl : HSMRegistration {
                 1,
                 "default",
                 "Dummy configuration",
-                CryptoServiceConfig.DEFAULT_SERVICE_NAME,
+                "soft",
                 null,
                 listOf(
                     CryptoConsts.CryptoCategories.LEDGER,
@@ -76,12 +75,21 @@ class HSMRegistrationImpl : HSMRegistration {
     }
 
     override fun getTenantConfig(tenantId: String, category: String): TenantHSMConfig {
-        return TenantHSMConfig(
-            tenantId,
-            "dummy",
-            category,
-            ECDSA_SECP256R1_CODE_NAME,
-            "wrapping-key"
-        )
+        return when(category) {
+            CryptoConsts.CryptoCategories.TLS -> TenantHSMConfig(
+                tenantId,
+                "dummy",
+                category,
+                RSA_CODE_NAME,
+                "wrapping-key"
+            )
+            else -> TenantHSMConfig(
+                tenantId,
+                "dummy",
+                category,
+                ECDSA_SECP256R1_CODE_NAME,
+                "wrapping-key"
+            )
+        }
     }
 }
