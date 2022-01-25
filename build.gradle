@@ -28,7 +28,7 @@ plugins {
 wrapper {
     gradleVersion = '7.3.2'
     distributionType = Wrapper.DistributionType.BIN
-    distributionUrl="https://gradleproxy:gradleproxy@software.r3.com/artifactory/gradle-proxy/gradle-$gradleVersion-bin.zip"
+    distributionUrl="https://services.gradle.org/distributions/gradle-$gradleVersion-bin.zip"
 }
 
 def javaVersion = VERSION_11
