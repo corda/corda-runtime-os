@@ -18,5 +18,5 @@ gradlew :applications:tools:rpc-user-setup:appJar
 To run it:
 ```
 cd applications\tools\rpc-user-setup\build\bin
-java -jar corda-rpc-user-setup-5.0.0.0-SNAPSHOT.jar --messagingParams kafka.common.bootstrap.servers=localhost:9092 --login admin --password admin
+java -jar corda-rpc-user-setup-5.0.0.0-SNAPSHOT.jar --messagingParams kafka.common.bootstrap.servers=localhost:9093 --login admin --password admin
 ```
