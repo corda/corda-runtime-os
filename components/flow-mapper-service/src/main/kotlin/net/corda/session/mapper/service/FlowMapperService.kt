@@ -52,7 +52,7 @@ class FlowMapperService @Activate constructor(
 
     private companion object {
         private val logger = contextLogger()
-        private const val CONSUMER_GROUP = "mapper.consumer.group"
+        private const val CONSUMER_GROUP = "FlowMapperConsumer"
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<FlowMapperService>(::eventHandler)
@@ -104,20 +104,17 @@ class FlowMapperService @Activate constructor(
      */
     private fun restartFlowMapperService(event: ConfigChangedEvent) {
         val messagingConfig = event.config.toMessagingConfig()
-        val flowConfig = event.config[FLOW_CONFIG]
-            ?: throw FlowMapperException("Missing config section $FLOW_CONFIG from configuration change event")
-        val consumerGroup = flowConfig.getString(CONSUMER_GROUP)
 
         scheduledTaskState?.close()
         stateAndEventSub?.close()
 
         scheduledTaskState = ScheduledTaskState(
             Executors.newSingleThreadScheduledExecutor(),
-            publisherFactory.createPublisher(PublisherConfig("$consumerGroup-cleanup-publisher"), messagingConfig),
+            publisherFactory.createPublisher(PublisherConfig("$CONSUMER_GROUP-cleanup-publisher"), messagingConfig),
             mutableMapOf()
         )
         stateAndEventSub = subscriptionFactory.createStateAndEventSubscription(
-            SubscriptionConfig(consumerGroup, FLOW_MAPPER_EVENT_TOPIC, messagingConfig.getInt(INSTANCE_ID)),
+            SubscriptionConfig(CONSUMER_GROUP, FLOW_MAPPER_EVENT_TOPIC, messagingConfig.getInt(INSTANCE_ID)),
             FlowMapperMessageProcessor(flowMapperEventExecutorFactory),
             messagingConfig,
             FlowMapperListener(scheduledTaskState!!)
