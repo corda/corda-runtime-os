@@ -36,7 +36,6 @@ data class SslConfiguration(
      */
     val keyStore: KeyStore by lazy {
         JksDelegatedSigningService(
-            "gateway/jks/service",
             rawKeyStore,
             keyStorePassword
         ).asKeyStore()

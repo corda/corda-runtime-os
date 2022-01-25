@@ -1,6 +1,6 @@
 package net.corda.crypto.delegated.signing
 
-import net.corda.crypto.delegated.signing.DelegatedSigningService.Companion.RSA_SIGNING_ALGORITHM
+import net.corda.crypto.delegated.signing.DelegatedSignerInstaller.Companion.RSA_SIGNING_ALGORITHM
 import java.io.ByteArrayOutputStream
 import java.security.AlgorithmParameters
 import java.security.PrivateKey
@@ -10,10 +10,10 @@ import java.security.spec.AlgorithmParameterSpec
 import java.security.spec.PSSParameterSpec
 
 internal class DelegatedSignature(
-    defaultHash: DelegatedSigningService.Hash?
+    defaultHash: DelegatedSigner.Hash?,
 ) : SignatureSpi() {
     private val data = ByteArrayOutputStream()
-    private var hash: DelegatedSigningService.Hash? = defaultHash
+    private var hash: DelegatedSigner.Hash? = defaultHash
     private var signingKey: DelegatedPrivateKey? = null
 
     override fun engineInitSign(privateKey: PrivateKey) {
@@ -32,13 +32,15 @@ internal class DelegatedSignature(
 
     override fun engineSign(): ByteArray? {
         return try {
-            signingKey?.alias?.sign(
+            val key = signingKey ?: throw SecurityException(
+                "'engineSign' invoked without a key having been assigned previously via 'engineInitSign'"
+            )
+            key.signer.sign(
+                key.publicKey,
                 hash ?: throw SecurityException(
                     "'engineSign' invoked without a hash having been assigned previously via 'engineSetParameter'"
                 ),
                 data.toByteArray()
-            ) ?: throw SecurityException(
-                "'engineSign' invoked without a key having been assigned previously via 'engineInitSign'"
             )
         } finally {
             data.reset()
@@ -47,7 +49,7 @@ internal class DelegatedSignature(
 
     override fun engineSetParameter(params: AlgorithmParameterSpec?) {
         if (params is PSSParameterSpec) {
-            hash = DelegatedSigningService.Hash
+            hash = DelegatedSigner.Hash
                 .values()
                 .firstOrNull {
                     it.hashName == params.digestAlgorithm

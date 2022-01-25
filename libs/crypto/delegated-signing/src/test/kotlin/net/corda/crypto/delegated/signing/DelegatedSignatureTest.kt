@@ -23,7 +23,7 @@ class DelegatedSignatureTest {
     ) {
         init {
             putService(SignatureTestService(this, null))
-            DelegatedSigningService.Hash.values().forEach {
+            DelegatedSigner.Hash.values().forEach {
                 putService(SignatureTestService(this, it))
             }
         }
@@ -32,7 +32,7 @@ class DelegatedSignatureTest {
     private inner class SignatureTestService(
         provider: Provider,
         private val defaultHash:
-        DelegatedSigningService.Hash?
+            DelegatedSigner.Hash?
     ) : Provider.Service(
         provider,
         "Signature",
@@ -69,15 +69,17 @@ class DelegatedSignatureTest {
 
     @Test
     fun `engineSign returns data from service`() {
-        val hash = DelegatedSigningService.Hash.SHA384
+        val hash = DelegatedSigner.Hash.SHA384
+        val mockPublicKey = mock<PublicKey>()
         val data = "data".toByteArray()
         val sign = "sign".toByteArray()
         val signature = Signature.getInstance("test-$hash")
-        val service = mock<DelegatedSigningService.Alias> {
-            on { sign(hash, data) } doReturn sign
+        val service = mock<DelegatedSigner> {
+            on { sign(mockPublicKey, hash, data) } doReturn sign
         }
         val privateKey = mock<DelegatedPrivateKey> {
-            on { alias } doReturn service
+            on { publicKey } doReturn mockPublicKey
+            on { signer } doReturn service
         }
         signature.initSign(privateKey)
         signature.update(data)
@@ -89,24 +91,10 @@ class DelegatedSignatureTest {
     fun `engineSign without hash throws an exception`() {
         val data = "data".toByteArray()
         val signature = Signature.getInstance("test-null")
-        val service = mock<DelegatedSigningService.Alias>()
+        val service = mock<DelegatedSigner>()
         val privateKey = mock<DelegatedPrivateKey> {
-            on { alias } doReturn service
+            on { signer } doReturn service
         }
-        signature.initSign(privateKey)
-        signature.update(data)
-
-        assertThrows<SecurityException> {
-            signature.sign()
-        }
-    }
-
-    @Test
-    fun `engineSign without service throws exception`() {
-        val hash = DelegatedSigningService.Hash.SHA384
-        val data = "data".toByteArray()
-        val signature = Signature.getInstance("test-$hash")
-        val privateKey = mock<DelegatedPrivateKey>()
         signature.initSign(privateKey)
         signature.update(data)
 
@@ -117,14 +105,16 @@ class DelegatedSignatureTest {
 
     @Test
     fun `engineSetParameter set the correct hash`() {
-        val hash = DelegatedSigningService.Hash.SHA384
+        val hash = DelegatedSigner.Hash.SHA384
+        val mockPublicKey = mock<PublicKey>()
         val data = "data".toByteArray()
         val signature = Signature.getInstance("test-null")
-        val service = mock<DelegatedSigningService.Alias> {
-            on { sign(hash, data) } doReturn ByteArray(0)
+        val service = mock<DelegatedSigner> {
+            on { sign(mockPublicKey, hash, data) } doReturn ByteArray(0)
         }
         val privateKey = mock<DelegatedPrivateKey> {
-            on { alias } doReturn service
+            on { signer } doReturn service
+            on { publicKey } doReturn mockPublicKey
         }
 
         signature.initSign(privateKey)
@@ -134,18 +124,18 @@ class DelegatedSignatureTest {
         }
         signature.sign()
 
-        verify(service).sign(hash, data)
+        verify(service).sign(mockPublicKey, hash, data)
     }
 
     @Test
     fun `engineSetParameter will ignore unknown parameters`() {
         val data = "data".toByteArray()
         val signature = Signature.getInstance("test-null")
-        val service = mock<DelegatedSigningService.Alias> {
-            on { sign(any(), any()) } doReturn ByteArray(0)
+        val service = mock<DelegatedSigner> {
+            on { sign(any(), any(), any()) } doReturn ByteArray(0)
         }
         val privateKey = mock<DelegatedPrivateKey> {
-            on { alias } doReturn service
+            on { signer } doReturn service
         }
 
         signature.initSign(privateKey)
@@ -166,7 +156,7 @@ class DelegatedSignatureTest {
 
     @Test
     fun `engineGetParameter will return valid parameter if set`() {
-        val hash = DelegatedSigningService.Hash.SHA512
+        val hash = DelegatedSigner.Hash.SHA512
         val signature = Signature.getInstance("test-$hash")
 
         val parameters = signature.parameters
@@ -196,7 +186,7 @@ class DelegatedSignatureTest {
 
     @Test
     fun `engineInitVerify will throws an exception`() {
-        val hash = DelegatedSigningService.Hash.SHA512
+        val hash = DelegatedSigner.Hash.SHA512
         val signature = Signature.getInstance("test-$hash")
 
         assertThrows<UnsupportedOperationException> {

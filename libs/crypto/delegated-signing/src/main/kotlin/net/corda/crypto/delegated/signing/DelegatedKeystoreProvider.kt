@@ -1,6 +1,8 @@
 package net.corda.crypto.delegated.signing
 
+import net.corda.crypto.delegated.signing.DelegatedSignerInstaller.Companion.RSA_SIGNING_ALGORITHM
 import java.security.Provider
+import java.security.Security
 
 internal class DelegatedKeystoreProvider : Provider(
     PROVIDER_NAME,
@@ -9,17 +11,33 @@ internal class DelegatedKeystoreProvider : Provider(
 ) {
 
     companion object {
-        internal const val PROVIDER_NAME = "DelegatedKeyStore"
+        private const val PROVIDER_NAME = "DelegatedKeyStore"
+
+        val provider: DelegatedKeystoreProvider
+            get() =
+                Security.getProvider(PROVIDER_NAME) as DelegatedKeystoreProvider? ?: DelegatedKeystoreProvider().also {
+                    Security.insertProviderAt(it, 1)
+                }
+    }
+    init {
+        this["AlgorithmParameters.EC"] = "sun.security.util.ECParameters"
     }
 
-    fun putService(name: String, signingService: DelegatedSigningService) {
-        putService(DelegatedKeyStoreService(name, signingService))
+    fun putServices(name: String, signer: DelegatedSigner, certificatesStores: Collection<DelegatedCertificatesStore>) {
+        if (getService("Signature", RSA_SIGNING_ALGORITHM) == null) {
+            putService(DelegatedSignatureService(RSA_SIGNING_ALGORITHM, null))
+            DelegatedSigner.Hash.values().forEach {
+                putService(DelegatedSignatureService(it.ecName, it))
+            }
+        }
+
+        putService(DelegatedKeyStoreService(name, certificatesStores, signer))
     }
 
     private inner class DelegatedKeyStoreService(
         name: String,
-        private val signingService:
-            DelegatedSigningService
+        private val certificatesStores: Collection<DelegatedCertificatesStore>,
+        private val signer: DelegatedSigner,
     ) : Service(
         this@DelegatedKeystoreProvider,
         "KeyStore",
@@ -29,7 +47,22 @@ internal class DelegatedKeystoreProvider : Provider(
         null,
     ) {
         override fun newInstance(constructorParameter: Any?): Any {
-            return DelegatedKeystore(signingService)
+            return DelegatedKeystore(certificatesStores, signer)
+        }
+    }
+    private inner class DelegatedSignatureService(
+        algorithm: String,
+        private val defaultHash: DelegatedSigner.Hash?,
+    ) : Service(
+        this@DelegatedKeystoreProvider,
+        "Signature",
+        algorithm,
+        DelegatedSignature::class.java.name,
+        null,
+        mapOf("SupportedKeyClasses" to DelegatedPrivateKey::class.java.name)
+    ) {
+        override fun newInstance(constructorParameter: Any?): Any {
+            return DelegatedSignature(defaultHash)
         }
     }
 }

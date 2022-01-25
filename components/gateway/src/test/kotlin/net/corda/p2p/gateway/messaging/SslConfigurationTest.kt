@@ -68,7 +68,7 @@ class SslConfigurationTest {
             RevocationConfig(RevocationConfigMode.SOFT_FAIL)
         )
         mockConstruction(JksDelegatedSigningService::class.java) { _, context ->
-            assertThat(context.arguments()[1]).isEqualTo(byteArrayOf(1, 2, 3, 4))
+            assertThat(context.arguments()[0]).isEqualTo(byteArrayOf(1, 2, 3, 4))
         }.use {
             config.keyStore
         }
@@ -85,7 +85,7 @@ class SslConfigurationTest {
             RevocationConfig(RevocationConfigMode.SOFT_FAIL)
         )
         mockConstruction(JksDelegatedSigningService::class.java) { _, context ->
-            assertThat(context.arguments()[2]).isEqualTo("password")
+            assertThat(context.arguments()[1]).isEqualTo("password")
         }.use {
             config.keyStore
         }

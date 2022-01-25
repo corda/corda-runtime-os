@@ -4,29 +4,27 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.Mockito.mockStatic
-import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
 import org.mockito.kotlin.whenever
-import java.security.Provider
 import java.security.PublicKey
-import java.security.Security
 import java.security.cert.Certificate
 
 class DelegatedKeystoreTest {
-    private val aliasOne = mock<DelegatedSigningService.Alias> {
+    private val signer = mock<DelegatedSigner>()
+    private val certificatesStoreOne = mock<DelegatedCertificatesStore> {
         on { name } doReturn "one"
     }
-    private val aliasTwo = mock<DelegatedSigningService.Alias> {
+    private val certificatesStoreTwo = mock<DelegatedCertificatesStore> {
         on { name } doReturn "two"
     }
-    private val signingService = mock<DelegatedSigningService> {
-        on { aliases } doReturn listOf(aliasOne, aliasTwo)
-    }
-    private val delegatedKeystore = DelegatedKeystore(signingService)
+    private val delegatedKeystore = DelegatedKeystore(
+        listOf(
+            certificatesStoreOne,
+            certificatesStoreTwo
+        ),
+        signer
+    )
 
     @Test
     fun `engineGetKey for unknown alias returns null`() {
@@ -35,7 +33,7 @@ class DelegatedKeystoreTest {
 
     @Test
     fun `engineGetKey for alias with no certificates returns null`() {
-        whenever(aliasOne.certificates).doReturn(emptyList())
+        whenever(certificatesStoreTwo.certificates).doReturn(emptyList())
 
         assertThat(delegatedKeystore.engineGetKey("one", CharArray(0))).isNull()
     }
@@ -43,7 +41,7 @@ class DelegatedKeystoreTest {
     @Test
     fun `engineGetKey for alias with no public key returns null`() {
         val certificate = mock<Certificate>()
-        whenever(aliasOne.certificates).doReturn(listOf(certificate))
+        whenever(certificatesStoreTwo.certificates).doReturn(listOf(certificate))
 
         assertThat(delegatedKeystore.engineGetKey("one", CharArray(0))).isNull()
     }
@@ -57,7 +55,7 @@ class DelegatedKeystoreTest {
         val certificate = mock<Certificate> {
             on { publicKey } doReturn key
         }
-        whenever(aliasOne.certificates).doReturn(listOf(certificate))
+        whenever(certificatesStoreOne.certificates).doReturn(listOf(certificate))
 
         assertThat(delegatedKeystore.engineGetKey("one", CharArray(0))).isInstanceOf(DelegatedPrivateKey::class.java)
     }
@@ -70,7 +68,7 @@ class DelegatedKeystoreTest {
     @Test
     fun `engineGetCertificate will return the first certificate for known alias`() {
         val certificate = mock<Certificate>()
-        whenever(aliasOne.certificates).doReturn(listOf(certificate))
+        whenever(certificatesStoreOne.certificates).doReturn(listOf(certificate))
 
         assertThat(delegatedKeystore.engineGetCertificate("one")).isSameAs(certificate)
     }
@@ -84,14 +82,14 @@ class DelegatedKeystoreTest {
     fun `engineGetCertificateChain will return the certificates for known alias`() {
         val certificate1 = mock<Certificate>()
         val certificate2 = mock<Certificate>()
-        whenever(aliasOne.certificates).doReturn(listOf(certificate1, certificate2))
+        whenever(certificatesStoreTwo.certificates).doReturn(listOf(certificate1, certificate2))
 
-        assertThat(delegatedKeystore.engineGetCertificateChain("one")).contains(certificate1, certificate2)
+        assertThat(delegatedKeystore.engineGetCertificateChain("two")).contains(certificate1, certificate2)
     }
 
     @Test
     fun `engineAliases will return the list of aliases`() {
-        assertThat(delegatedKeystore.engineAliases()?.toList()).containsExactly("one", "two")
+        assertThat(delegatedKeystore.engineAliases().toList()).containsExactly("one", "two")
     }
 
     @Test
@@ -115,48 +113,13 @@ class DelegatedKeystoreTest {
     }
 
     @Test
-    fun `engineLoad will insert Delegated signature provider if there are no provider`() {
-        mockStatic(Security::class.java).use { mockSecurity ->
-            mockSecurity.`when`<Array<Provider>> {
-                Security.getProviders()
-            }.doReturn(emptyArray())
-
-            delegatedKeystore.engineLoad(null)
-
-            mockSecurity.verify {
-                Security.insertProviderAt(any<DelegatedSignatureProvider>(), eq(1))
-            }
-        }
+    fun `engineLoad will not throw an exception`() {
+        delegatedKeystore.engineLoad(null)
     }
 
     @Test
-    fun `engineLoad will not insert Delegated signature provider if already added`() {
-        mockStatic(Security::class.java).use { mockSecurity ->
-            mockSecurity.`when`<Array<Provider>> {
-                Security.getProviders()
-            }.doReturn(arrayOf(mock(), mock<DelegatedSignatureProvider>()))
-
-            delegatedKeystore.engineLoad(null)
-
-            mockSecurity.verify({
-                Security.insertProviderAt(any<DelegatedSignatureProvider>(), eq(1))
-            }, never())
-        }
-    }
-
-    @Test
-    fun `engineLoad will insert Delegated signature provider if was not added before`() {
-        mockStatic(Security::class.java).use { mockSecurity ->
-            mockSecurity.`when`<Array<Provider>> {
-                Security.getProviders()
-            }.doReturn(arrayOf(mock(), mock(), mock()))
-
-            delegatedKeystore.engineLoad(mock(), CharArray(0))
-
-            mockSecurity.verify {
-                Security.insertProviderAt(any<DelegatedSignatureProvider>(), eq(1))
-            }
-        }
+    fun `engineLoad with password will not throw an exception`() {
+        delegatedKeystore.engineLoad(mock(), "".toCharArray())
     }
 
     @Nested
