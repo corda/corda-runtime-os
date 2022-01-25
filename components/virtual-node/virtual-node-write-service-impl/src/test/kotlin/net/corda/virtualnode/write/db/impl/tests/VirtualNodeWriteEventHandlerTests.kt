@@ -121,7 +121,7 @@ class VirtualNodeWriteEventHandlerTests {
         val vnodeWriterFactory = mock<VirtualNodeWriterFactory>()
         val (configReadService, updateHandle) = getConfigReadServiceAndUpdateHandle()
         val eventHandler = VirtualNodeWriteEventHandler(configReadService, vnodeWriterFactory)
-        
+
         val registrationHandle = mock<RegistrationHandle>()
         val eventCaptor = argumentCaptor<LifecycleEvent>()
         val coordinator = mock<LifecycleCoordinator>().apply {
