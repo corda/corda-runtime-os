@@ -18,7 +18,6 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.processors.rpc.RPCProcessor
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
-import net.corda.schema.configuration.ConfigKeys.Companion.BOOTSTRAP_SERVERS
 import net.corda.schema.configuration.ConfigKeys.Companion.RPC_CONFIG
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -85,14 +84,7 @@ class RPCProcessorImpl @Activate constructor(
                 val publisher = publisherFactory.createPublisher(publisherConfig, event.config)
                 publisher.start()
                 publisher.use {
-                    val bootstrapServersConfig = if (event.config.hasPath(BOOTSTRAP_SERVERS)) {
-                        val bootstrapServers = event.config.getString(BOOTSTRAP_SERVERS)
-                        "\n$BOOTSTRAP_SERVERS=\"$bootstrapServers\""
-                    } else {
-                        ""
-                    }
-                    val configValue = "$CONFIG_HTTP_RPC$bootstrapServersConfig"
-
+                    val configValue = CONFIG_HTTP_RPC
                     val record = Record(CONFIG_TOPIC, RPC_CONFIG, Configuration(configValue, "1"))
                     publisher.publish(listOf(record)).forEach { future -> future.get() }
                 }
