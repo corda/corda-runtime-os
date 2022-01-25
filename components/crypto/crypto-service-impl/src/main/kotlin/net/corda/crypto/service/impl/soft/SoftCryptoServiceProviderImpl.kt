@@ -1,7 +1,6 @@
 package net.corda.crypto.service.impl.soft
 
 import net.corda.crypto.component.persistence.SoftKeysPersistenceProvider
-import net.corda.crypto.service.CryptoServiceProviderWithLifecycle
 import net.corda.crypto.service.SoftCryptoServiceConfig
 import net.corda.crypto.service.SoftCryptoServiceProvider
 import net.corda.crypto.service.impl.persistence.SoftCryptoKeyCache
@@ -28,13 +27,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 
-@Component(
-    service = [
-        CryptoServiceProvider::class,
-        CryptoServiceProviderWithLifecycle::class,
-        SoftCryptoServiceProvider::class
-    ]
-)
+@Component(service = [CryptoServiceProvider::class, SoftCryptoServiceProvider::class])
 open class SoftCryptoServiceProviderImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
@@ -42,14 +35,13 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     private val cipherSuiteFactory: CipherSuiteFactory,
     @Reference(service = SoftKeysPersistenceProvider::class)
     private val persistenceFactory: SoftKeysPersistenceProvider
-) : SoftCryptoServiceProvider, CryptoServiceProvider<SoftCryptoServiceConfig> {
-
+) : SoftCryptoServiceProvider {
     companion object {
         private val logger: Logger = contextLogger()
     }
 
     private val lifecycleCoordinator =
-        coordinatorFactory.createCoordinator<SoftCryptoServiceProviderImpl>(::eventHandler)
+        coordinatorFactory.createCoordinator<SoftCryptoServiceProvider>(::eventHandler)
 
     private var registrationHandle: RegistrationHandle? = null
 

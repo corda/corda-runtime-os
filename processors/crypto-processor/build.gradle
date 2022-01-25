@@ -40,7 +40,6 @@ dependencies {
     integrationTestRuntimeOnly project(":components:configuration:configuration-read-service-impl")
     integrationTestRuntimeOnly project(":components:crypto:crypto-client")
     integrationTestRuntimeOnly project(":components:crypto:crypto-kafka-persistence")
-    integrationTestRuntimeOnly project(":libs:configuration:configuration-read-impl")
     integrationTestRuntimeOnly project(":libs:crypto:cipher-suite-providers")
     integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")
 }

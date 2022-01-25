@@ -84,7 +84,7 @@ fun <R> runTestCase(logger: Logger, testCaseArg: Any, testCase: KFunction<R>): R
 class TestLifecycleDependenciesTrackingCoordinator(
     private val logger: Logger,
     coordinatorFactory: LifecycleCoordinatorFactory,
-    vararg dependencies: Class<out Lifecycle>
+    vararg dependencies: Class<*>
 ) : AutoCloseable {
 
     private val registrationHandle: RegistrationHandle

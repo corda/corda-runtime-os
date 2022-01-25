@@ -16,7 +16,6 @@
     bnd.identity;id='net.corda.crypto-client',\
     bnd.identity;id='net.corda.crypto-kafka-persistence',\
     bnd.identity;id='net.corda.cipher-suite-providers',\
-    bnd.identity;id='net.corda.configuration-read-impl',\
     bnd.identity;id='net.corda.configuration-read-service-impl',\
     bnd.identity;id='net.corda.lifecycle-impl',\
     bnd.identity;id='${project.archivesBaseName}-tests',\
@@ -53,8 +52,6 @@
 	net.corda.cipher-suite;version='[5.0.0,5.0.1)',\
 	net.corda.cipher-suite-providers;version='[5.0.0,5.0.1)',\
 	net.corda.configuration-core;version='[5.0.0,5.0.1)',\
-	net.corda.configuration-read;version='[5.0.0,5.0.1)',\
-	net.corda.configuration-read-impl;version='[5.0.0,5.0.1)',\
 	net.corda.configuration-read-service;version='[5.0.0,5.0.1)',\
 	net.corda.configuration-read-service-impl;version='[5.0.0,5.0.1)',\
 	net.corda.crypto;version='[5.0.0,5.0.1)',\

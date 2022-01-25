@@ -77,7 +77,7 @@ class CryptoOpsTests {
             logger,
             coordinatorFactory,
             CryptoOpsClient::class.java,
-            CryptoOpsService::class.java
+            CryptoProcessor::class.java
         )
 
         client.startAndWait()

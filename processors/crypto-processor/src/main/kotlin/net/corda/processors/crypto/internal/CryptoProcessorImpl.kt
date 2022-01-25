@@ -3,14 +3,15 @@ package net.corda.processors.crypto.internal
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.component.persistence.SigningKeysPersistenceProvider
 import net.corda.crypto.component.persistence.SoftKeysPersistenceProvider
-import net.corda.crypto.impl.stopGracefully
 import net.corda.crypto.service.CryptoOpsService
-import net.corda.crypto.service.CryptoServiceProviderWithLifecycle
 import net.corda.crypto.service.SigningServiceFactory
+import net.corda.crypto.service.SoftCryptoServiceProvider
 import net.corda.libs.configuration.SmartConfig
+import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
@@ -20,8 +21,6 @@ import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ReferenceCardinality
-import org.osgi.service.component.annotations.ReferencePolicyOption
 
 @Suppress("LongParameterList")
 @Component(service = [CryptoProcessor::class])
@@ -38,18 +37,23 @@ class CryptoProcessorImpl @Activate constructor(
     private val signingServiceFactory: SigningServiceFactory,
     @Reference(service = CryptoOpsService::class)
     private val cryptoOspService: CryptoOpsService,
-    @Reference(
-        service = CryptoServiceProviderWithLifecycle::class,
-        cardinality = ReferenceCardinality.AT_LEAST_ONE,
-        policyOption = ReferencePolicyOption.GREEDY
-    )
-    private val cryptoServiceProviders: List<CryptoServiceProviderWithLifecycle>
+    @Reference(service = SoftCryptoServiceProvider::class)
+    private val softCryptoServiceProviders: SoftCryptoServiceProvider
 ) : CryptoProcessor {
     private companion object {
         val log = contextLogger()
     }
 
-    private val lifecycleCoordinator = coordinatorFactory.createCoordinator<CryptoProcessorImpl>(::eventHandler)
+    private val lifecycleCoordinator = coordinatorFactory.createCoordinator<CryptoProcessor>(::eventHandler)
+
+    private val dependentComponents = DependentComponents.of(
+        ::configurationReadService,
+        ::softKeysPersistenceProvider,
+        ::signingKeysPersistenceProvider,
+        ::signingServiceFactory,
+        ::cryptoOspService,
+        ::softCryptoServiceProviders
+    )
 
     override fun start(bootConfig: SmartConfig) {
         log.info("Crypto processor starting.")
@@ -67,10 +71,14 @@ class CryptoProcessorImpl @Activate constructor(
         log.debug { "Crypto processor received event $event." }
         when (event) {
             is StartEvent -> {
-                startDependencies()
+                dependentComponents.registerAndStartAll(coordinator)
             }
             is StopEvent -> {
-                stopDependencies()
+                dependentComponents.stopAll()
+            }
+            is RegistrationStatusChangeEvent -> {
+                log.info("Crypto processor is ${event.status}")
+                coordinator.updateStatus(event.status)
             }
             is BootConfigEvent -> {
                 configurationReadService.bootstrapConfig(event.config)
@@ -79,28 +87,6 @@ class CryptoProcessorImpl @Activate constructor(
                 log.error("Unexpected event $event!")
             }
         }
-    }
-
-    private fun startDependencies() {
-        configurationReadService.start()
-        softKeysPersistenceProvider.start()
-        signingKeysPersistenceProvider.start()
-        signingServiceFactory.start()
-        cryptoOspService.start()
-        cryptoServiceProviders.forEach {
-            it.start()
-        }
-    }
-
-    private fun stopDependencies() {
-        cryptoServiceProviders.forEach {
-            it.stopGracefully()
-        }
-        cryptoOspService.stopGracefully()
-        signingServiceFactory.stopGracefully()
-        signingKeysPersistenceProvider.stopGracefully()
-        softKeysPersistenceProvider.stopGracefully()
-        configurationReadService.stopGracefully()
     }
 }
 
