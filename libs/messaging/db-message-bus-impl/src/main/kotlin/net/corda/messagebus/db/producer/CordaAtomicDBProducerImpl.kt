@@ -3,10 +3,10 @@ package net.corda.messagebus.db.producer
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducer
+import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.db.persistence.DBWriter
 import net.corda.messagebus.db.persistence.RecordDbEntry
 import net.corda.messagebus.db.toCordaRecord
-import net.corda.messagebus.db.util.CordaProducerRecord
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.emulation.topic.service.TopicService
 import net.corda.schema.registry.AvroSchemaRegistry
@@ -41,7 +41,7 @@ class CordaAtomicDBProducerImpl(
     override fun sendRecords(records: List<CordaProducerRecord<*, *>>) {
         sendRecordsToPartitions(records.map {
             // Determine the partition
-            val topic = it.key
+            val topic = it.topic
             val numberOfPartitions = topicPartitionMap[topic]
                 ?: throw CordaMessageAPIFatalException("Cannot find topic: $topic")
             val partition = getPartition(topic.hashCode(), numberOfPartitions)

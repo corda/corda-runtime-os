@@ -5,7 +5,7 @@ import net.corda.messagebus.api.configuration.ConfigProperties.Companion.PRODUCE
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.PRODUCER_CLOSE_TIMEOUT
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.PRODUCER_TRANSACTIONAL_ID
 import net.corda.messagebus.api.producer.CordaProducer
-import net.corda.messagebus.db.util.CordaProducerRecord
+import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.publisher.Publisher

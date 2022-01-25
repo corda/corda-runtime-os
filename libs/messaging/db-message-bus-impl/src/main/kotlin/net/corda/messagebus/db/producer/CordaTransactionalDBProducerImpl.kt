@@ -1,15 +1,12 @@
 package net.corda.messagebus.db.producer
 
-import com.typesafe.config.Config
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.TRANSACTIONAL_ID
-import net.corda.messagebus.api.configuration.getStringOrNull
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducer
+import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.db.persistence.DBWriter
 import net.corda.messagebus.db.persistence.RecordDbEntry
 import net.corda.messagebus.db.toCordaRecord
-import net.corda.messagebus.db.util.CordaProducerRecord
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.emulation.topic.service.TopicService
 import net.corda.schema.registry.AvroSchemaRegistry
@@ -20,7 +17,6 @@ import kotlin.math.abs
 
 class CordaTransactionalDBProducerImpl(
     private val schemaRegistry: AvroSchemaRegistry,
-    private val config: Config,
     private val topicService: TopicService,
     private val dbWriterImpl: DBWriter
 ) : CordaProducer {
@@ -29,7 +25,6 @@ class CordaTransactionalDBProducerImpl(
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
     }
 
-    private val transactionalId = config.getStringOrNull(TRANSACTIONAL_ID)
     private val defaultTimeout: Duration = Duration.ofSeconds(1)
     private val topicPartitionMap = dbWriterImpl.getTopicPartitionMap()
 
@@ -38,16 +33,19 @@ class CordaTransactionalDBProducerImpl(
         get() = transactionalRecords.get().isNotEmpty()
 
     override fun send(record: CordaProducerRecord<*, *>, callback: CordaProducer.Callback?) {
+        verifyInTransaction()
         sendRecords(listOf(record))
         callback?.onCompletion(null)
     }
 
     override fun send(record: CordaProducerRecord<*, *>, partition: Int, callback: CordaProducer.Callback?) {
+        verifyInTransaction()
         sendRecordsToPartitions(listOf(Pair(partition, record)))
         callback?.onCompletion(null)
     }
 
     override fun sendRecords(records: List<CordaProducerRecord<*, *>>) {
+        verifyInTransaction()
         sendRecordsToPartitions(records.map {
             // Determine the partition
             val topic = it.key
@@ -59,6 +57,7 @@ class CordaTransactionalDBProducerImpl(
     }
 
     override fun sendRecordsToPartitions(recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>) {
+        verifyInTransaction()
         val dbRecords = recordsWithPartitions.map { (partition, record) ->
             val offset = topicService.getLatestOffsets(record.topic)[partition]
                 ?: throw CordaMessageAPIFatalException("Cannot find offset for ${record.topic}, partition $partition")
@@ -103,9 +102,7 @@ class CordaTransactionalDBProducerImpl(
         consumer: CordaConsumer<*, *>,
         records: List<CordaConsumerRecord<*, *>>
     ) {
-        if (!inTransaction) {
-            throw CordaMessageAPIFatalException("No transaction is available for sending record offsets.")
-        }
+        verifyInTransaction()
 
         records
             .groupBy { it.topic }
@@ -124,6 +121,7 @@ class CordaTransactionalDBProducerImpl(
     }
 
     override fun sendAllOffsetsToTransaction(consumer: CordaConsumer<*, *>) {
+        verifyInTransaction()
         val topicPartitions = consumer.assignment()
         topicPartitions.forEach { (topic, partition) ->
             val offset = topicService.getLatestOffsets(topic)[partition]
@@ -138,17 +136,13 @@ class CordaTransactionalDBProducerImpl(
     }
 
     override fun commitTransaction() {
-        if (!inTransaction) {
-            throw CordaMessageAPIFatalException("No transaction is available to commit.")
-        }
+        verifyInTransaction()
         dbWriterImpl.commitRecords(transactionalRecords.get())
         transactionalRecords.get().clear()
     }
 
     override fun abortTransaction() {
-        if (!inTransaction) {
-            throw CordaMessageAPIFatalException("No transaction is available to abort.")
-        }
+        verifyInTransaction()
         transactionalRecords.get().clear()
     }
 
@@ -161,6 +155,11 @@ class CordaTransactionalDBProducerImpl(
 
     override fun close() = close(defaultTimeout)
 
+    private fun verifyInTransaction() {
+        if (!inTransaction) {
+            throw CordaMessageAPIFatalException("No transaction is available for the command.")
+        }
+    }
     private fun getPartition(key: Any, numberOfPartitions: Int): Int {
         require(numberOfPartitions > 0)
         return abs(key.hashCode() % numberOfPartitions) + 1

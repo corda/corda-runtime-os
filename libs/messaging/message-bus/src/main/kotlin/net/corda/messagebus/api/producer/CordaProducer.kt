@@ -2,7 +2,6 @@ package net.corda.messagebus.api.producer
 
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
-import net.corda.messagebus.db.util.CordaProducerRecord
 import java.time.Duration
 
 /**

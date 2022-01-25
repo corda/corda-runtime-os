@@ -7,7 +7,7 @@ import net.corda.messagebus.api.configuration.getStringOrNull
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducer
-import net.corda.messagebus.db.util.CordaProducerRecord
+import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.kafka.consumer.CordaKafkaConsumerImpl
 import net.corda.messagebus.kafka.utils.toKafkaRecords
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException

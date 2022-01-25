@@ -28,7 +28,6 @@ class DBCordaProducerBuilderImpl @Activate constructor(
     private val avroSchemaRegistry: AvroSchemaRegistry,
 ) : CordaProducerBuilder {
     override fun createProducer(producerConfig: Config): CordaProducer {
-        val dataSource = setupDB(producerConfig)
         val isTransactional = producerConfig.hasPath("instanceId")
         val dbWriter = DBWriter(
             producerConfig,
@@ -37,7 +36,6 @@ class DBCordaProducerBuilderImpl @Activate constructor(
         return if (isTransactional) {
             CordaTransactionalDBProducerImpl(
                 avroSchemaRegistry,
-                producerConfig,
                 TopicServiceImpl(),
                 dbWriter
             )

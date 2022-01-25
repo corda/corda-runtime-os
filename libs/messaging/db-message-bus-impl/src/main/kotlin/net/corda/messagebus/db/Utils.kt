@@ -1,6 +1,6 @@
 package net.corda.messagebus.db
 
-import net.corda.messagebus.db.util.CordaProducerRecord
+import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.api.records.Record
 
 fun CordaProducerRecord<*, *>.toCordaRecord() = Record(topic, key, value)
