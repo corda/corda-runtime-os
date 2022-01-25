@@ -64,7 +64,6 @@ internal class VirtualNodeWriteEventHandler(
         /** Shuts down the service. */
         private fun stop() {
             virtualNodeWriter?.stop()
-            virtualNodeWriter = null
             configReadServiceRegistrationHandle?.close()
             configUpdateHandle?.close()
         }
