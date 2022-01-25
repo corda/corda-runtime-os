@@ -22,7 +22,7 @@ internal class VirtualNodeRPCOpsServiceImpl @Activate constructor(
 
     private val coordinator = let {
         val eventHandler = VirtualNodeRPCOpsEventHandler(configReadService, virtualNodeRPCOps)
-        coordinatorFactory.createCoordinator<VirtualNodeRPCOpsServiceImpl>(eventHandler)
+        coordinatorFactory.createCoordinator<VirtualNodeRPCOpsService>(eventHandler)
     }
 
     override val isRunning get() = coordinator.isRunning

@@ -86,6 +86,14 @@ interface LifecycleCoordinator : Lifecycle {
     fun updateStatus(newStatus: LifecycleStatus, reason: String = "Status has changed to $newStatus")
 
     /**
+     * Posts a custom event to anyone registered on this coordinator.
+     * This will emit a [CustomEvent] with the specified payload to all the registered coordinators.
+     *
+     * @param eventPayload the payload of the custom event.
+     */
+    fun postCustomEventToFollowers(eventPayload: Any)
+
+    /**
      * Register for status changes from a set of dependent coordinators.
      *
      * On calling this function, this coordinator is registered for status changes from the provided coordinators.

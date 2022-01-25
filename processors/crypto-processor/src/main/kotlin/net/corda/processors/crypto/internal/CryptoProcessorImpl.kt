@@ -1,9 +1,11 @@
 package net.corda.processors.crypto.internal
 
 import net.corda.libs.configuration.SmartConfig
+import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
@@ -25,6 +27,9 @@ class CryptoProcessorImpl @Activate constructor(
     }
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<CryptoProcessorImpl>(::eventHandler)
+    private val dependentComponents = DependentComponents.of(
+        // TODO - add dependencies when they are added as `@Reference` in the constructor of this class
+    )
 
     override fun start(bootConfig: SmartConfig) {
         log.info("Crypto processor starting.")
@@ -39,10 +44,17 @@ class CryptoProcessorImpl @Activate constructor(
     @Suppress("UNUSED_PARAMETER")
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         log.debug { "Crypto processor received event $event." }
+
         when (event) {
             is StartEvent -> {
+                dependentComponents.registerAndStartAll(coordinator)
+            }
+            is RegistrationStatusChangeEvent -> {
+                log.info("Crypto processor is ${event.status}")
+                coordinator.updateStatus(event.status)
             }
             is StopEvent -> {
+                dependentComponents.stopAll()
             }
             else -> {
                 log.error("Unexpected event $event!")
