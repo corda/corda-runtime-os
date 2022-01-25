@@ -23,4 +23,6 @@ dependencies {
 
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    runtimeOnly project(':libs:permissions:permission-validation-impl')
 }

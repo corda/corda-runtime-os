@@ -7,7 +7,7 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
-import net.corda.permissions.management.PermissionManagementService
+import net.corda.permissions.service.PermissionServiceComponent
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.osgi.framework.FrameworkUtil
@@ -28,8 +28,8 @@ class RPCUserSetup @Activate constructor(
     private val shutDownService: Shutdown,
     @Reference(service = ConfigurationReadService::class)
     private val configReadService: ConfigurationReadService,
-    @Reference(service = PermissionManagementService::class)
-    private val permissionManagementService: PermissionManagementService
+    @Reference(service = PermissionServiceComponent::class)
+    private val permissionServiceComponent: PermissionServiceComponent
 ) : Application {
 
     companion object {
@@ -80,20 +80,22 @@ class RPCUserSetup @Activate constructor(
             } else {
                 logger.info("Params received : $params")
 
-                permissionManagementService.start()
+                permissionServiceComponent.start()
                 configReadService.start()
                 configReadService.bootstrapConfig(getBootstrapConfig(params))
 
-                // Bootstrapping is done asynchronously in a separate thread and it may take sometime to
-                // propagate
+                // Bootstrapping is done asynchronously in a separate thread, it may take sometime to propagate
                 waitingLoop {
-                    permissionManagementService.isRunning
+                    permissionServiceComponent.isRunning
                 }
                 try {
                     createUser(params)
+                } catch (ex: Exception) {
+                    logger.error("Unexpected error", ex)
+                    throw ex
                 }
                 finally {
-                    permissionManagementService.stop()
+                    permissionServiceComponent.stop()
                     configReadService.stop()
                 }
             }
@@ -128,7 +130,7 @@ class RPCUserSetup @Activate constructor(
                 passwordExpiryInstant, null
             )
         }
-        permissionManagementService.permissionManager.createUser(userDto)
+        permissionServiceComponent.permissionManager.createUser(userDto)
     }
 
     override fun shutdown() {
