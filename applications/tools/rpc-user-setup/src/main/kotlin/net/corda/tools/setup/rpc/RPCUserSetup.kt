@@ -5,6 +5,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
+import net.corda.libs.permissions.manager.request.GetUserRequestDto
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.permissions.service.PermissionServiceComponent
@@ -122,6 +123,19 @@ class RPCUserSetup @Activate constructor(
     }
 
     private fun createUser(params: RPCUserSetupParams) {
+
+        // Check if user already exists
+        val existingUser = permissionServiceComponent.permissionManager.getUser(
+            GetUserRequestDto(
+                this::class.java.simpleName,
+                params.userCreationParams.loginName
+            )
+        )
+
+        if (existingUser != null) {
+            throw IllegalStateException("User: ${params.userCreationParams.loginName} cannot be created " +
+                    "as it already exists:\n$existingUser")
+        }
 
         val userDto = with(params.userCreationParams) {
             val passwordExpiryInstant =
