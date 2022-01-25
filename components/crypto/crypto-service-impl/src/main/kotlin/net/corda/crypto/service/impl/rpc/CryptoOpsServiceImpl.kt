@@ -112,7 +112,7 @@ class CryptoOpsServiceImpl @Activate constructor(
                 responseType = RpcOpsResponse::class.java
             ),
             responderProcessor = processor
-        ).also { start() }
+        ).also { it.start() }
         current?.closeGracefully()
     }
 }
