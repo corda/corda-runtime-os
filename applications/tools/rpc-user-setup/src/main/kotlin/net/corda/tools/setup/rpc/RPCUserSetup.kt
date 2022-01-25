@@ -1,10 +1,15 @@
 package net.corda.tools.setup.rpc
 
+import com.typesafe.config.ConfigFactory
+import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.permissions.management.PermissionManagementService
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -21,12 +26,37 @@ import java.time.Instant
 class RPCUserSetup @Activate constructor(
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
+    @Reference(service = ConfigurationReadService::class)
+    private val configReadService: ConfigurationReadService,
     @Reference(service = PermissionManagementService::class)
     private val permissionManagementService: PermissionManagementService
 ) : Application {
 
-    private companion object {
+    companion object {
         private val logger = contextLogger()
+        private const val MSG_CONFIG_PATH = "messaging"
+
+        private fun waitingLoop(
+            duration: Duration = Duration.ofSeconds(20),
+            waitBetween: Duration = Duration.ofMillis(100),
+            waitBefore: Duration = waitBetween,
+            binaryBlock: () -> Boolean) {
+            val end = System.nanoTime() + duration.toNanos()
+            var times = 0
+
+            if (!waitBefore.isZero) Thread.sleep(waitBefore.toMillis())
+
+            while (System.nanoTime() < end) {
+                if(binaryBlock()) {
+                    logger.info("Target state reached after trying $times times.")
+                    return
+                }
+                if (!waitBetween.isZero) Thread.sleep(waitBetween.toMillis())
+                times++
+            }
+
+            throw IllegalStateException("Failed to reach target state after $duration; attempted $times times.")
+        }
     }
 
     /** Parses the arguments, then performs actions necessary. */
@@ -51,11 +81,20 @@ class RPCUserSetup @Activate constructor(
                 logger.info("Params received : $params")
 
                 permissionManagementService.start()
+                configReadService.start()
+                configReadService.bootstrapConfig(getBootstrapConfig(params))
+
+                // Bootstrapping is done asynchronously in a separate thread and it may take sometime to
+                // propagate
+                waitingLoop {
+                    permissionManagementService.isRunning
+                }
                 try {
                     createUser(params)
                 }
                 finally {
                     permissionManagementService.stop()
+                    configReadService.stop()
                 }
             }
         }
@@ -65,6 +104,18 @@ class RPCUserSetup @Activate constructor(
         finally {
             shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
         }
+    }
+
+    private fun getBootstrapConfig(defaultParams: RPCUserSetupParams): SmartConfig {
+        val messagingParamsMap = defaultParams.messagingParams.mapKeys { (key, _) -> "$MSG_CONFIG_PATH.${key.trim()}" }
+
+        val config = ConfigFactory.parseMap(messagingParamsMap)
+
+        val secretsConfig = ConfigFactory.empty()
+        val bootConfig = SmartConfigFactory.create(secretsConfig).create(config)
+        logger.debug { "Tool boot config\n: ${bootConfig.root().render()}" }
+
+        return bootConfig
     }
 
     private fun createUser(params: RPCUserSetupParams) {

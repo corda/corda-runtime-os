@@ -44,7 +44,7 @@ class PermissionManagementService @Activate constructor(
         }
 
     override val isRunning: Boolean
-        get() = coordinator.isRunning
+        get() = coordinator.isRunning && handler.permissionManager != null
 
     override fun start() {
         coordinator.start()

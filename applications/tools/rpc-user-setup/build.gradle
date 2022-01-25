@@ -13,9 +13,11 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "info.picocli:picocli:$picocliVersion"
     implementation 'net.corda:corda-base'
+    implementation project(':components:configuration:configuration-read-service')
     implementation project(':components:permissions:permission-management-service')
     implementation project(':libs:lifecycle:lifecycle')
 
+    runtimeOnly project(':components:configuration:configuration-read-service-impl')
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')
     runtimeOnly project(':libs:messaging:messaging-impl')
     runtimeOnly project(':libs:messaging:kafka-message-bus-impl')
