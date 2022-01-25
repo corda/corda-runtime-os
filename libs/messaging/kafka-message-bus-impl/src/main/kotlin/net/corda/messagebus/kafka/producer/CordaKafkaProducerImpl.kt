@@ -3,11 +3,11 @@ package net.corda.messagebus.kafka.producer
 import com.typesafe.config.Config
 import net.corda.libs.configuration.schema.messaging.TOPIC_PREFIX_PATH
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CLOSE_TIMEOUT
+import net.corda.messagebus.api.configuration.getStringOrNull
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducer
-import net.corda.messagebus.api.producer.CordaProducerRecord
-import net.corda.messagebus.getStringOrNull
+import net.corda.messagebus.db.util.CordaProducerRecord
 import net.corda.messagebus.kafka.consumer.CordaKafkaConsumerImpl
 import net.corda.messagebus.kafka.utils.toKafkaRecords
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException

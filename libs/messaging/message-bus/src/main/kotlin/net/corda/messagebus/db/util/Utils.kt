@@ -1,4 +1,4 @@
-package net.corda.messagebus.api.producer
+package net.corda.messagebus.db.util
 
 /**
  * Object to encapsulate the events stored on topics

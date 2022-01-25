@@ -1,7 +1,7 @@
 package net.corda.messaging.utils
 
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
-import net.corda.messagebus.api.producer.CordaProducerRecord
+import net.corda.messagebus.db.util.CordaProducerRecord
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 
