@@ -161,4 +161,32 @@ class FlowWakeupEventTest {
 
         }
     }
+
+    @Test
+    fun `keep waking up multiple flows`() {
+        flowEventDSL {
+
+            startedFlowFiber("flow id 1") {
+                queueSuspension(FlowIORequest.ForceCheckpoint)
+            }
+
+            startedFlowFiber("flow id 2") {
+                queueSuspension(FlowIORequest.ForceCheckpoint)
+            }
+
+            inputLastOutputEvent()
+            inputLastOutputEvent()
+
+            val output = processAll()
+
+            assertEquals(
+                Wakeup(),
+                output.last { it.updatedState?.flowKey?.flowId == "flow id 1" }.filterOutputFlowTopicEventPayloads().single()
+            )
+            assertEquals(
+                Wakeup(),
+                output.last { it.updatedState?.flowKey?.flowId == "flow id 2" }.filterOutputFlowTopicEventPayloads().single()
+            )
+        }
+    }
 }

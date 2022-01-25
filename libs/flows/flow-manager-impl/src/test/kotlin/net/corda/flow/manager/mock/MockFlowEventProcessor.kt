@@ -172,7 +172,7 @@ class FlowEventDSLImpl : FlowEventDSL {
 
     private val inputFlowEvents = mutableListOf<Any>()
 
-    private var checkpoint: Checkpoint? = null
+    private var checkpoints = mutableMapOf<String, Checkpoint>()
     private var outputFlowEvents = mutableListOf<FlowEvent>()
 
     override fun input(event: FlowEvent) {
@@ -196,7 +196,8 @@ class FlowEventDSLImpl : FlowEventDSL {
     }
 
     override fun startedFlowFiber(flowId: String, fiber: MockFlowFiber.() -> Unit): MockFlowFiber {
-        val (mockFlowFiber, _) = processor.startFlow(flowId)
+        val (mockFlowFiber, response) = processor.startFlow(flowId)
+        updateDSLStateWithEventResponse(flowId, response)
         fiber(mockFlowFiber)
         return mockFlowFiber
     }
@@ -211,18 +212,21 @@ class FlowEventDSLImpl : FlowEventDSL {
             is FlowEvent -> input
             else -> throw IllegalStateException("Must be a ${FlowEvent::class.simpleName} or ${ProcessLastOutputFlowEvent::class.simpleName}")
         }
+        val flowId = event.flowKey.flowId
         return processor.onNext(
-            state = checkpoint,
+            state = checkpoints[flowId],
             event = Record(Schemas.Flow.FLOW_EVENT_TOPIC, event.flowKey, event)
-        ).also { response ->
-            checkpoint = response.updatedState
-            outputFlowEvents.addAll(response.filterOutputFlowTopicEvents())
-        }
+        ).also { updateDSLStateWithEventResponse(flowId, it) }
     }
 
     override fun processAll(): List<StateAndEventProcessor.Response<Checkpoint>> {
         // Copy [inputs] and throw it away for code simplicity
         return inputFlowEvents.toList().map { processOne() }
+    }
+
+    private fun updateDSLStateWithEventResponse(flowId: String, response: StateAndEventProcessor.Response<Checkpoint>) {
+        response.updatedState?.let { checkpoint -> checkpoints[flowId] = checkpoint } ?: checkpoints.remove(flowId)
+        outputFlowEvents.addAll(response.filterOutputFlowTopicEvents())
     }
 
     private object ProcessLastOutputFlowEvent
