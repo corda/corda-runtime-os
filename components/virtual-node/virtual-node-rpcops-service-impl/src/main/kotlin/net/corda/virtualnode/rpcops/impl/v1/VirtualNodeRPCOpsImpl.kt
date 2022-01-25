@@ -6,7 +6,7 @@ import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.HttpApiException
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRPCOps
-import net.corda.libs.virtualnode.endpoints.v1.types.CpiIdentifier
+import net.corda.libs.virtualnode.endpoints.v1.types.CPIIdentifierHttp
 import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeResponse
 import net.corda.messaging.api.publisher.RPCSender
@@ -67,7 +67,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
         val response =  sendRequest(rpcRequest)
 
         return if (response.success) {
-            val cpiId = CpiIdentifier("", "", "")
+            val cpiId = CPIIdentifierHttp("", "", "")
             HTTPCreateVirtualNodeResponse("", cpiId, "", "", "")
         } else {
             val exception = response.exception
@@ -93,7 +93,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
         return try {
             nonNullRPCSender.sendRequest(request).getOrThrow(nonNullRequestTimeout)
         } catch (e: Exception) {
-            throw VirtualNodeRPCOpsServiceException("Could not publish updated configuration.", e)
+            throw VirtualNodeRPCOpsServiceException("Could not create virtual node.", e)
         }
     }
 }
