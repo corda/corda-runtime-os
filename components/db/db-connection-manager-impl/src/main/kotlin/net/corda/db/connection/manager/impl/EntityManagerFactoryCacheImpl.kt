@@ -1,10 +1,15 @@
 package net.corda.db.connection.manager.impl
 
 import net.corda.db.connection.manager.CordaDb
+import net.corda.db.connection.manager.DbConnectionsRepository
+import net.corda.db.connection.manager.EntityManagerFactoryCache
 import net.corda.orm.DbEntityManagerConfiguration
-import net.corda.orm.EntitiesSet
 import net.corda.orm.EntityManagerFactoryFactory
+import net.corda.orm.JpaEntitiesSet
 import net.corda.v5.base.util.contextLogger
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import javax.persistence.EntityManagerFactory
@@ -13,11 +18,15 @@ import javax.sql.DataSource
 /**
  * Read-through cache of [EntityManagerFactory] objects.
  */
-class EntityManagerFactoryCache(
+@Component(service = [EntityManagerFactoryCache::class])
+class EntityManagerFactoryCacheImpl @Activate constructor(
+    @Reference(service = DbConnectionsRepository::class)
     private val dbConnectionsRepository: DbConnectionsRepository,
+    @Reference(service = EntityManagerFactoryFactory::class)
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
-    private val allEntitiesSets: List<EntitiesSet>
-) {
+    @Reference(service = JpaEntitiesSet::class)
+    private val allEntitiesSets: List<JpaEntitiesSet>,
+): EntityManagerFactoryCache {
     companion object {
         private val logger = contextLogger()
     }
@@ -25,13 +34,11 @@ class EntityManagerFactoryCache(
     // TODO - replace with caffeine cache
     private val cache = ConcurrentHashMap<UUID, EntityManagerFactory>()
 
-    val clusterDbEntityManagerFactory: EntityManagerFactory by lazy {
-        if(!dbConnectionsRepository.isInitialised)
-            throw DBConfigurationException("Cluster DB must be initialised.")
+    override val clusterDbEntityManagerFactory: EntityManagerFactory by lazy {
         createManagerFactory(CordaDb.CordaCluster.persistenceUnitName, dbConnectionsRepository.clusterDataSource)
     }
 
-    fun getOrCreate(db: CordaDb): EntityManagerFactory {
+    override fun getOrCreate(db: CordaDb): EntityManagerFactory {
         val entitiesSet =
             allEntitiesSets.singleOrNull { it.name == db.persistenceUnitName } ?:
             throw DBConfigurationException("Entity set for ${db.persistenceUnitName} not found")
@@ -42,7 +49,7 @@ class EntityManagerFactoryCache(
             entitiesSet)
     }
 
-    fun getOrCreate(id: UUID, entitiesSet: EntitiesSet): EntityManagerFactory {
+    override fun getOrCreate(id: UUID, entitiesSet: JpaEntitiesSet): EntityManagerFactory {
         return cache.computeIfAbsent(id) {
             // TODO - use clusterDbEntityManagerFactory to load DB connection details from DB.
             logger.info("Loading DB connection details for ${entitiesSet.name}[$id]")

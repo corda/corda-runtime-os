@@ -2,12 +2,14 @@ package net.corda.db.connection.manager.impl
 
 import net.corda.db.connection.manager.CordaDb
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.db.connection.manager.DbConnectionsRepository
+import net.corda.db.connection.manager.EntityManagerFactoryCache
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
-import net.corda.orm.EntitiesSet
-import net.corda.orm.EntityManagerFactoryFactory
+import net.corda.orm.JpaEntitiesRegistry
+import net.corda.orm.JpaEntitiesSet
 import net.corda.permissions.model.RpcRbacEntitiesSet
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -19,13 +21,15 @@ import javax.persistence.EntityManagerFactory
 class DbConnectionManagerImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = EntityManagerFactoryFactory::class)
-    entityManagerFactoryFactory: EntityManagerFactoryFactory,
-    private val dbConnectionsRepository: DbConnectionsRepository = DbConnectionsRepository(),
-    private val cache: EntityManagerFactoryCache = EntityManagerFactoryCache(
-        dbConnectionsRepository, entityManagerFactoryFactory, allEntitySets)
+    @Reference(service = DbConnectionsRepository::class)
+    private val dbConnectionsRepository: DbConnectionsRepository,
+    @Reference(service = EntityManagerFactoryCache::class)
+    private val cache: EntityManagerFactoryCache,
+    // TODO - move this elsewhere
+    @Reference(service = JpaEntitiesRegistry::class)
+    private val allEntities: JpaEntitiesRegistry,
 ): DbConnectionManager {
-    companion object {
+    init {
         // define the different DB Entity Sets
         //  entities can be in different packages, but all JPA classes must be passed in.
         // TODO - review this pattern. It's different from the initial RBAC implementation that it
@@ -33,12 +37,10 @@ class DbConnectionManagerImpl @Activate constructor(
         //    - These lists are known at compile time
         //    - We should be able to combine entities from multiple modules (e.g. configuration + vnode)
         //  Maybe this list needs to be defined in the DB Processor module instead to decouple things?
-        val allEntitySets = listOf(
-            // TODO - add VNode entities, for example.
-            EntitiesSet.create(CordaDb.CordaCluster.persistenceUnitName, ConfigurationEntities.classes),
-            // TODO - refactor RpcRbacEntitiesSet
-            EntitiesSet.create(CordaDb.RBAC.persistenceUnitName, RpcRbacEntitiesSet().content)
-        )
+        // TODO - add VNode entities, for example.
+        allEntities.register(JpaEntitiesSet.create(CordaDb.CordaCluster.persistenceUnitName, ConfigurationEntities.classes))
+        // TODO - refactor RpcRbacEntitiesSet
+        allEntities.register(JpaEntitiesSet.create(CordaDb.RBAC.persistenceUnitName, RpcRbacEntitiesSet().content))
     }
 
     private val eventHandler = DbConnectionManagerEventHandler(dbConnectionsRepository)
@@ -48,7 +50,7 @@ class DbConnectionManagerImpl @Activate constructor(
     override fun getOrCreateEntityManagerFactory(db: CordaDb): EntityManagerFactory =
         cache.getOrCreate(db)
 
-    override fun getOrCreateEntityManagerFactory(connectionID: UUID, entitiesSet: EntitiesSet): EntityManagerFactory =
+    override fun getOrCreateEntityManagerFactory(connectionID: UUID, entitiesSet: JpaEntitiesSet): EntityManagerFactory =
         cache.getOrCreate(connectionID, entitiesSet)
 
     override fun putConnection(connectionID: UUID, config: SmartConfig) {

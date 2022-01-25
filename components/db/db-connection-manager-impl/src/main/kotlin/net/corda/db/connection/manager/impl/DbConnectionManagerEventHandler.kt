@@ -1,5 +1,6 @@
 package net.corda.db.connection.manager.impl
 
+import net.corda.db.connection.manager.DbConnectionsRepository
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator

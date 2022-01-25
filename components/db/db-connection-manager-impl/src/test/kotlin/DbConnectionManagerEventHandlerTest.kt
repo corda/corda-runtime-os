@@ -1,7 +1,7 @@
 import net.corda.db.connection.manager.impl.BootstrapConfigProvided
 import net.corda.db.connection.manager.impl.DBConfigurationException
 import net.corda.db.connection.manager.impl.DbConnectionManagerEventHandler
-import net.corda.db.connection.manager.impl.DbConnectionsRepository
+import net.corda.db.connection.manager.impl.DbConnectionsRepositoryImpl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus
@@ -11,7 +11,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 
 class DbConnectionManagerEventHandlerTest {
-    private val dbConnectionsRepository = mock< DbConnectionsRepository>()
+    private val dbConnectionsRepository = mock< DbConnectionsRepositoryImpl>()
     private val config = mock<SmartConfig>()
     private val coordinator = mock<LifecycleCoordinator>()
 

@@ -19,7 +19,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.orm.EntitiesSet
+import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_MGMT_REQ_TOPIC
@@ -35,9 +35,9 @@ class PermissionStorageWriterServiceEventHandler(
     private val readerService: PermissionStorageReaderService,
     private val configurationReadService: ConfigurationReadService,
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
-    private val allEntitiesSets: List<EntitiesSet>,
+    private val allEntitiesSets: List<JpaEntitiesSet>,
     private val entityManagerFactoryCreationFn:
-    KFunction3<SmartConfig, EntityManagerFactoryFactory, EntitiesSet, EntityManagerFactory> =
+    KFunction3<SmartConfig, EntityManagerFactoryFactory, JpaEntitiesSet, EntityManagerFactory> =
         DbUtils::obtainEntityManagerFactory
 ) : LifecycleEventHandler {
 

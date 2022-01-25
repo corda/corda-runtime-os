@@ -1,13 +1,13 @@
 import net.corda.db.connection.manager.CordaDb
 import net.corda.db.connection.manager.impl.BootstrapConfigProvided
 import net.corda.db.connection.manager.impl.DbConnectionManagerImpl
-import net.corda.db.connection.manager.impl.DbConnectionsRepository
-import net.corda.db.connection.manager.impl.EntityManagerFactoryCache
+import net.corda.db.connection.manager.impl.DbConnectionsRepositoryImpl
+import net.corda.db.connection.manager.impl.EntityManagerFactoryCacheImpl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.orm.EntitiesSet
-import net.corda.orm.EntityManagerFactoryFactory
+import net.corda.orm.JpaEntitiesRegistry
+import net.corda.orm.JpaEntitiesSet
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
@@ -24,43 +24,63 @@ class DbConnectionManagerImplTest {
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory> {
         on { createCoordinator(any(), any()) }.doReturn(lifecycleCoordinator)
     }
-    private val entityManagerFactoryFactory = mock<EntityManagerFactoryFactory>()
-    private val dbConnectionsRepository = mock< DbConnectionsRepository>()
-    private val entityManagerFactoryCache = mock< EntityManagerFactoryCache>()
+    private val dbConnectionsRepository = mock< DbConnectionsRepositoryImpl>()
+    private val entityManagerFactoryCache = mock<EntityManagerFactoryCacheImpl>()
+    private val jpaEntitiesRegistry = mock<JpaEntitiesRegistry>()
 
     private val config = mock<SmartConfig>()
 
     @Test
     fun `when bootstrap post event`() {
-        val mgr = DbConnectionManagerImpl(lifecycleCoordinatorFactory, entityManagerFactoryFactory)
+        val mgr = DbConnectionManagerImpl(
+            lifecycleCoordinatorFactory,
+            dbConnectionsRepository,
+            entityManagerFactoryCache,
+            jpaEntitiesRegistry)
         mgr.bootstrap(config)
         verify(lifecycleCoordinator).postEvent(BootstrapConfigProvided(config))
     }
 
     @Test
     fun `when start post start event()`() {
-        val mgr = DbConnectionManagerImpl(lifecycleCoordinatorFactory, entityManagerFactoryFactory)
+        val mgr = DbConnectionManagerImpl(
+            lifecycleCoordinatorFactory,
+            dbConnectionsRepository,
+            entityManagerFactoryCache,
+            jpaEntitiesRegistry)
         mgr.start()
         verify(lifecycleCoordinator).start()
     }
 
     @Test
     fun `when stop post stop event()`() {
-        val mgr = DbConnectionManagerImpl(lifecycleCoordinatorFactory, entityManagerFactoryFactory)
+        val mgr = DbConnectionManagerImpl(
+            lifecycleCoordinatorFactory,
+            dbConnectionsRepository,
+            entityManagerFactoryCache,
+            jpaEntitiesRegistry)
         mgr.stop()
         verify(lifecycleCoordinator).stop()
     }
 
     @Test
     fun `when close post close event()`() {
-        val mgr = DbConnectionManagerImpl(lifecycleCoordinatorFactory, entityManagerFactoryFactory)
+        val mgr = DbConnectionManagerImpl(
+            lifecycleCoordinatorFactory,
+            dbConnectionsRepository,
+            entityManagerFactoryCache,
+            jpaEntitiesRegistry)
         mgr.close()
         verify(lifecycleCoordinator).close()
     }
 
     @Test
     fun `when isrunning return from coordinator()`() {
-        val mgr = DbConnectionManagerImpl(lifecycleCoordinatorFactory, entityManagerFactoryFactory)
+        val mgr = DbConnectionManagerImpl(
+            lifecycleCoordinatorFactory,
+            dbConnectionsRepository,
+            entityManagerFactoryCache,
+            jpaEntitiesRegistry)
         mgr.isRunning
         verify(lifecycleCoordinator).isRunning
     }
@@ -69,9 +89,9 @@ class DbConnectionManagerImplTest {
     fun `when get clusterDbEntityManagerFactory fetch from cache`() {
         val mgr = DbConnectionManagerImpl(
             lifecycleCoordinatorFactory,
-            entityManagerFactoryFactory,
             dbConnectionsRepository,
             entityManagerFactoryCache,
+            jpaEntitiesRegistry
         )
 
         val emf = mock<EntityManagerFactory>()
@@ -84,10 +104,9 @@ class DbConnectionManagerImplTest {
     fun `when getOrCreateEntityManagerFactory fetch from cache`() {
         val mgr = DbConnectionManagerImpl(
             lifecycleCoordinatorFactory,
-            entityManagerFactoryFactory,
             dbConnectionsRepository,
             entityManagerFactoryCache,
-        )
+            jpaEntitiesRegistry)
 
         val emf = mock<EntityManagerFactory>()
         whenever(entityManagerFactoryCache.getOrCreate(CordaDb.RBAC)).doReturn(emf)
@@ -99,12 +118,11 @@ class DbConnectionManagerImplTest {
     fun `when getOrCreateEntityManagerFactory with UUID fetch from cache`() {
         val mgr = DbConnectionManagerImpl(
             lifecycleCoordinatorFactory,
-            entityManagerFactoryFactory,
             dbConnectionsRepository,
             entityManagerFactoryCache,
-        )
+            jpaEntitiesRegistry)
 
-        val entitiesSet = mock<EntitiesSet>()
+        val entitiesSet = mock<JpaEntitiesSet>()
 
         val emf = mock<EntityManagerFactory>()
         val id = UUID.randomUUID()
@@ -117,10 +135,9 @@ class DbConnectionManagerImplTest {
     fun `when putConnection put on DbConnectionsRepo`() {
         val mgr = DbConnectionManagerImpl(
             lifecycleCoordinatorFactory,
-            entityManagerFactoryFactory,
             dbConnectionsRepository,
             entityManagerFactoryCache,
-        )
+            jpaEntitiesRegistry)
 
         val config = mock<SmartConfig>()
         val id = UUID.randomUUID()
@@ -132,6 +149,12 @@ class DbConnectionManagerImplTest {
     @Test
     @Disabled
     fun `when put persist connection`() {
+        TODO()
+    }
+
+    @Test
+    @Disabled
+    fun `when get connection`() {
         TODO()
     }
 }

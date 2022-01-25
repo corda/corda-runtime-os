@@ -2,7 +2,7 @@ package net.corda.db.connection.manager
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
-import net.corda.orm.EntitiesSet
+import net.corda.orm.JpaEntitiesSet
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
 
@@ -49,7 +49,7 @@ interface DbConnectionManager : Lifecycle {
      * @param entitiesSet to used with the EntityManager.
      * @return
      */
-    fun getOrCreateEntityManagerFactory(connectionID: UUID, entitiesSet: EntitiesSet): EntityManagerFactory
+    fun getOrCreateEntityManagerFactory(connectionID: UUID, entitiesSet: JpaEntitiesSet): EntityManagerFactory
 
     /**
      * Persist new DB connection with given [config].

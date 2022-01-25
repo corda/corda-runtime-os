@@ -1,9 +1,9 @@
 import net.corda.db.connection.manager.CordaDb
 import net.corda.db.connection.manager.impl.DBConfigurationException
-import net.corda.db.connection.manager.impl.DbConnectionsRepository
-import net.corda.db.connection.manager.impl.EntityManagerFactoryCache
-import net.corda.orm.EntitiesSet
+import net.corda.db.connection.manager.impl.DbConnectionsRepositoryImpl
+import net.corda.db.connection.manager.impl.EntityManagerFactoryCacheImpl
 import net.corda.orm.EntityManagerFactoryFactory
+import net.corda.orm.JpaEntitiesSet
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -13,7 +13,6 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import java.util.UUID
 import javax.sql.DataSource
 
@@ -27,13 +26,12 @@ class EntityManagerFactoryCacheTest {
     private val clusterDatasource = mock<DataSource>()
     private val rbacDatasource = mock<DataSource>()
     private val otherDataSource = mock<DataSource>()
-    private val dbConnectionsRepository = mock<DbConnectionsRepository>() {
+    private val dbConnectionsRepository = mock<DbConnectionsRepositoryImpl>() {
         on { this.clusterDataSource }.doReturn(clusterDatasource)
-        on { isInitialised }.doReturn(true)
     }
     private val entityManagerFactoryFactory = mock<EntityManagerFactoryFactory>()
     private val allEntities = listOf(
-        mock<EntitiesSet> {
+        mock<JpaEntitiesSet> {
             on { name }.doReturn(CordaDb.CordaCluster.persistenceUnitName)
             on { content }.doReturn(setOf(ExampleEntity1::class.java))
         },
@@ -46,14 +44,14 @@ class EntityManagerFactoryCacheTest {
             on { content }.doReturn(setOf(ExampleEntity3::class.java))
         }
     )
-    private val otherEntitiesSet = mock<EntitiesSet>() {
+    private val otherEntitiesSet = mock<JpaEntitiesSet>() {
         on { name }.doReturn("another-db")
         on { content }.doReturn(setOf(ExampleEntity1::class.java, ExampleEntity3::class.java))
     }
 
     @Test
     fun `when clusterDbEntityManagerFactory create factory only once`() {
-        val cache = EntityManagerFactoryCache(dbConnectionsRepository, entityManagerFactoryFactory, allEntities)
+        val cache = EntityManagerFactoryCacheImpl(dbConnectionsRepository, entityManagerFactoryFactory, allEntities)
 
         cache.clusterDbEntityManagerFactory
         cache.clusterDbEntityManagerFactory
@@ -67,7 +65,7 @@ class EntityManagerFactoryCacheTest {
     @Test
     @Disabled
     fun `when getOrCreate from CordaDb create factory only once`() {
-        val cache = EntityManagerFactoryCache(dbConnectionsRepository, entityManagerFactoryFactory, allEntities)
+        val cache = EntityManagerFactoryCacheImpl(dbConnectionsRepository, entityManagerFactoryFactory, allEntities)
 
         cache.getOrCreate(CordaDb.RBAC)
 
@@ -79,7 +77,7 @@ class EntityManagerFactoryCacheTest {
 
     @Test
     fun `when getOrCreate and entitiesSet not defined, throw`() {
-        val cache = EntityManagerFactoryCache(dbConnectionsRepository, entityManagerFactoryFactory, emptyList())
+        val cache = EntityManagerFactoryCacheImpl(dbConnectionsRepository, entityManagerFactoryFactory, emptyList())
 
         assertThrows<DBConfigurationException> {
             cache.getOrCreate(CordaDb.RBAC)
@@ -88,7 +86,7 @@ class EntityManagerFactoryCacheTest {
 
     @Test
     fun `when getOrCreate and no ID, throw`() {
-        val cache = EntityManagerFactoryCache(dbConnectionsRepository, entityManagerFactoryFactory, allEntities)
+        val cache = EntityManagerFactoryCacheImpl(dbConnectionsRepository, entityManagerFactoryFactory, allEntities)
 
         assertThrows<DBConfigurationException> {
             cache.getOrCreate(CordaDb.Crypto)
@@ -98,7 +96,7 @@ class EntityManagerFactoryCacheTest {
     @Test
     @Disabled
     fun `when getOrCreate from UUID and EnititiesSet create factory only once`() {
-        val cache = EntityManagerFactoryCache(dbConnectionsRepository, entityManagerFactoryFactory, allEntities)
+        val cache = EntityManagerFactoryCacheImpl(dbConnectionsRepository, entityManagerFactoryFactory, allEntities)
 
         cache.getOrCreate(otherDBUUID, otherEntitiesSet)
 
@@ -106,16 +104,5 @@ class EntityManagerFactoryCacheTest {
             eq("another-db"),
             argThat { this.equals(listOf(ExampleEntity1::class.java, ExampleEntity3::class.java)) },
             argThat { this.dataSource == otherDataSource })
-    }
-
-    @Test
-    fun `when clusterDbEntityManagerFactory and not initialised throw`() {
-        val cache = EntityManagerFactoryCache(dbConnectionsRepository, entityManagerFactoryFactory, allEntities)
-
-        whenever(dbConnectionsRepository.isInitialised).doReturn(false)
-
-        assertThrows<DBConfigurationException> {
-            cache.clusterDbEntityManagerFactory
-        }
     }
 }

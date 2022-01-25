@@ -1,4 +1,4 @@
-import net.corda.db.connection.manager.impl.DbConnectionsRepository
+import net.corda.db.connection.manager.impl.DbConnectionsRepositoryImpl
 import net.corda.db.connection.manager.impl.createFromConfig
 import net.corda.db.core.DataSourceFactory
 import net.corda.libs.configuration.SmartConfig
@@ -28,7 +28,7 @@ class DbConnectionsRepositoryTest {
 
     @Test
     fun `initialise sets cluster db connection`() {
-        val repository = DbConnectionsRepository(dataSourceFactory)
+        val repository = DbConnectionsRepositoryImpl(dataSourceFactory)
         repository.initialise(config)
 
         assertThat(repository.clusterDataSource).isSameAs(dataSource)
@@ -36,7 +36,7 @@ class DbConnectionsRepositoryTest {
 
     @Test
     fun `initialise verifies the DB connection`() {
-        val repository = DbConnectionsRepository(dataSourceFactory)
+        val repository = DbConnectionsRepositoryImpl(dataSourceFactory)
         repository.initialise(config)
         verify(connection).close()
     }
@@ -57,7 +57,7 @@ class DbConnectionsRepositoryTest {
         }
 
         val repository =
-            DbConnectionsRepository(dataSourceFactory,
+            DbConnectionsRepositoryImpl(dataSourceFactory,
                 // reconfigure mock after sleeping
                 sleeper = { d -> println("Sleeping for $d") })
 

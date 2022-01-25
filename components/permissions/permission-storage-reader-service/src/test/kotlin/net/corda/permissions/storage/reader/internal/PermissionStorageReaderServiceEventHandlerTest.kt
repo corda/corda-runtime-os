@@ -21,7 +21,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.orm.EntitiesSet
+import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.permissions.cache.PermissionCacheService
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -53,7 +53,7 @@ class PermissionStorageReaderServiceEventHandlerTest {
         whenever(followStatusChangesByName(any())).thenReturn(registrationHandle)
     }
 
-    private val allEntitiesSets = listOf(mock<EntitiesSet>().apply {
+    private val allEntitiesSets = listOf(mock<JpaEntitiesSet>().apply {
         whenever(name).thenReturn(DbSchema.RPC_RBAC)
     })
 
@@ -80,7 +80,7 @@ class PermissionStorageReaderServiceEventHandlerTest {
 
     private fun testObtainEntityManagerFactory(
         dbConfig: SmartConfig, entityManagerFactoryFactory: EntityManagerFactoryFactory,
-        entitiesSet: EntitiesSet
+        entitiesSet: JpaEntitiesSet
     ): EntityManagerFactory {
         Triple(
             dbConfig,
