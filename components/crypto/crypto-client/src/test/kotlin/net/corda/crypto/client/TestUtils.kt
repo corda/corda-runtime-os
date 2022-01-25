@@ -1,3 +1,5 @@
+@file:JvmName("TestUtils")
+
 package net.corda.crypto.client
 
 import net.corda.lifecycle.Lifecycle

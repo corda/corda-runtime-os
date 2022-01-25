@@ -1,12 +1,19 @@
 package net.corda.crypto.persistence.kafka
 
+import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.component.persistence.KeyValuePersistence
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.TimerEvent
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -20,6 +27,7 @@ import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFacto
 import net.corda.messaging.emulation.topic.service.TopicService
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import java.time.Duration
@@ -50,10 +58,18 @@ class KafkaInfrastructure {
 
     private val topicService: TopicService = TopicServiceImpl()
     private val rpcTopicService: RPCTopicService = RPCTopicServiceImpl()
-    val coordinator: LifecycleCoordinator = mock()
+    private var coordinator: LifecycleCoordinator? = null
     private val registrationHandle: AutoCloseable = mock()
     private val coordinatorFactory: LifecycleCoordinatorFactory = mock {
-        on { createCoordinator(any(), any()) } doReturn coordinator
+        on { createCoordinator(any(), any()) } doAnswer {
+            if(coordinator == null) {
+                coordinator = TestCoordinator(
+                    name = it.getArgument(0, LifecycleCoordinatorName::class.java),
+                    handler = it.getArgument(1, LifecycleEventHandler::class.java)
+                )
+            }
+            coordinator
+        }
     }
     private val configurationReadService: ConfigurationReadService = mock {
         on { registerForUpdates(any()) } doReturn registrationHandle
@@ -76,10 +92,15 @@ class KafkaInfrastructure {
             configurationReadService
         ).also {
             it.start()
-            coordinator.postEvent(
+            coordinator?.postEvent(
                 RegistrationStatusChangeEvent(
                     registration = mock(),
                     status = LifecycleStatus.UP
+                )
+            )
+            coordinator?.postEvent(
+                NewConfigurationReceivedEvent(
+                    SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
                 )
             )
         }
@@ -98,10 +119,15 @@ class KafkaInfrastructure {
             configurationReadService
         ).also {
             it.start()
-            coordinator.postEvent(
+            coordinator?.postEvent(
                 RegistrationStatusChangeEvent(
                     registration = mock(),
                     status = LifecycleStatus.UP
+                )
+            )
+            coordinator?.postEvent(
+                NewConfigurationReceivedEvent(
+                    SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
                 )
             )
         }
@@ -151,5 +177,49 @@ class KafkaInfrastructure {
         )[0].get()
         persistence?.wait(key)
         pub.close()
+    }
+
+    private class TestCoordinator(
+        override val name: LifecycleCoordinatorName,
+        private val handler: LifecycleEventHandler
+    ) : LifecycleCoordinator {
+        override var isRunning: Boolean = false
+
+        override fun start() {
+            isRunning = true
+        }
+
+        override fun stop() {
+            isRunning = false
+        }
+
+        override fun postEvent(event: LifecycleEvent) {
+            handler.processEvent(event, this)
+        }
+
+        override fun setTimer(key: String, delay: Long, onTime: (String) -> TimerEvent) {
+        }
+
+        override fun cancelTimer(key: String) {
+        }
+
+        override var status: LifecycleStatus = LifecycleStatus.DOWN
+
+        override fun updateStatus(newStatus: LifecycleStatus, reason: String) {
+            status = newStatus
+        }
+
+        override fun followStatusChanges(coordinators: Set<LifecycleCoordinator>): RegistrationHandle {
+            return mock()
+        }
+
+        override fun followStatusChangesByName(coordinatorNames: Set<LifecycleCoordinatorName>): RegistrationHandle {
+            return mock()
+        }
+
+        override val isClosed: Boolean = false
+
+        override fun close() {
+        }
     }
 }

@@ -34,7 +34,6 @@ dependencies {
     testImplementation project(":testing:test-utilities")
     testImplementation project(":libs:messaging:inmemory-messaging-impl")
     testImplementation project(":libs:configuration:configuration-core")
-    testImplementation project(":components:crypto:crypto-in-memory-persistence")
 }
 
 description 'Crypto Service Components API'

@@ -1,11 +1,11 @@
 package net.corda.crypto.service.impl
 
 import net.corda.crypto.component.persistence.CachedSoftKeysRecord
+import net.corda.crypto.component.persistence.EntityKeyInfo
 import net.corda.crypto.component.persistence.KeyValueMutator
 import net.corda.crypto.component.persistence.KeyValuePersistence
 import net.corda.crypto.component.persistence.SigningKeysPersistenceProvider
 import net.corda.crypto.component.persistence.SoftKeysPersistenceProvider
-import net.corda.crypto.persistence.inmemory.InMemoryKeyValuePersistence
 import net.corda.data.crypto.persistence.SigningKeysRecord
 import net.corda.data.crypto.persistence.SoftKeysRecord
 import net.corda.v5.base.util.contextLogger
@@ -26,6 +26,30 @@ fun generateKeyPair(schemeMetadata: CipherSchemeMetadata, signatureSchemeName: S
         keyPairGenerator.initialize(scheme.keySize!!, schemeMetadata.secureRandom)
     }
     return keyPairGenerator.generateKeyPair()
+}
+
+class InMemoryKeyValuePersistence<V, E>(
+    private val data: ConcurrentHashMap<String, V>,
+    private val mutator: KeyValueMutator<V, E>
+) : KeyValuePersistence<V, E>, AutoCloseable {
+
+    override fun put(entity: E, vararg key: EntityKeyInfo): V {
+        require(key.isNotEmpty()) {
+            "There must be at least one key provided."
+        }
+        val value = mutator.mutate(entity)
+        key.forEach {
+            data[it.key] = value
+        }
+        return value
+    }
+
+    override fun get(key: String): V? =
+        data[key]
+
+    override fun close() {
+        data.clear()
+    }
 }
 
 class TestSigningKeysPersistenceProvider : SigningKeysPersistenceProvider {

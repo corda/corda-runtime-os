@@ -38,13 +38,6 @@ dependencies {
     testImplementation project(":testing:test-utilities")
     testImplementation project(":libs:messaging:inmemory-messaging-impl")
     testImplementation project(":libs:configuration:configuration-core")
-    testImplementation project(":components:crypto:crypto-in-memory-persistence")
-    integrationTestRuntimeOnly project(":components:configuration:configuration-read-service-impl")
-    integrationTestRuntimeOnly project(":components:crypto:crypto-in-memory-persistence")
-    integrationTestRuntimeOnly project(":libs:crypto:cipher-suite-providers")
-    integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")
-    integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
-    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 }
 
 tasks.named('jar', Jar) {
