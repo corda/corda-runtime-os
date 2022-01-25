@@ -52,6 +52,11 @@ class PermissionRoleManagerImpl(
         return cachedRole.convertToResponseDto()
     }
 
+    override fun getRolesMatchingName(regexStr: String): Collection<RoleResponseDto> {
+        return permissionCache.roles.values.filter { it.name.matches(regexStr.toRegex()) }
+            .map { it.convertToResponseDto() }
+    }
+
     override fun addPermissionToRole(roleId: String, permissionId: String, principal: String): RoleResponseDto {
         val future = rpcSender.sendRequest(
             PermissionManagementRequest(

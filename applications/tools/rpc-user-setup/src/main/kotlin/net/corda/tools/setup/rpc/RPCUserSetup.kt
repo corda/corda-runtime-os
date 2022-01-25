@@ -4,7 +4,10 @@ import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.permissions.manager.common.PermissionTypeDto
+import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
+import net.corda.libs.permissions.manager.request.GetPermissionRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
@@ -37,6 +40,7 @@ class RPCUserSetup @Activate constructor(
     companion object {
         private val logger = contextLogger()
         private const val MSG_CONFIG_PATH = "messaging"
+        private const val ALL_ALLOWED_PERMISSION = ".*"
 
         private fun waitingLoop(
             duration: Duration,
@@ -60,6 +64,8 @@ class RPCUserSetup @Activate constructor(
             throw IllegalStateException("Failed to reach target state after $duration; attempted $times times.")
         }
     }
+
+    private val actorName = this::class.java.simpleName
 
     /** Parses the arguments, then performs actions necessary. */
     override fun startup(args: Array<String>) {
@@ -92,6 +98,9 @@ class RPCUserSetup @Activate constructor(
                 }
                 try {
                     createUser(params)
+                    val roleId = getOrCreateRole()
+                    assignRoleToUser(params.userCreationParams.loginName, roleId)
+                    logger.info("Successfully created superuser: ${params.userCreationParams.loginName}")
                 } catch (ex: Exception) {
                     logger.error("Unexpected error", ex)
                     throw ex
@@ -127,7 +136,7 @@ class RPCUserSetup @Activate constructor(
         // Check if user already exists
         val existingUser = permissionServiceComponent.permissionManager.getUser(
             GetUserRequestDto(
-                this::class.java.simpleName,
+                actorName,
                 params.userCreationParams.loginName
             )
         )
@@ -146,6 +155,41 @@ class RPCUserSetup @Activate constructor(
             )
         }
         permissionServiceComponent.permissionManager.createUser(userDto)
+    }
+
+    private fun getOrCreateRole(): String {
+        // Tries to locate and verify the role, if the role cannot be found or unsuitable then creates one
+        return findRole() ?: createRole()
+    }
+
+    private fun findRole(): String? {
+        val rolesFound = permissionServiceComponent.permissionManager.getRolesMatchingName("$actorName.*")
+        val roleFound = rolesFound.find {
+            if (it.permissions.size != 1 || it.groupVisibility != null) {
+                false
+            } else {
+                val permissionAssociation = it.permissions.first()
+                val permissionRequest = GetPermissionRequestDto(actorName, permissionAssociation.id)
+                val permission = permissionServiceComponent.permissionManager.getPermission(permissionRequest)
+                if (permission == null) {
+                    false
+                } else {
+                    permission.groupVisibility == null && permission.permissionType == PermissionTypeDto.ALLOW &&
+                            permission.permissionString == ALL_ALLOWED_PERMISSION
+                }
+            }
+        }
+        logger.debug { "Found role: $roleFound" }
+        return roleFound?.id
+    }
+
+    private fun createRole(): String {
+        TODO("Not yet implemented")
+    }
+
+    private fun assignRoleToUser(loginName: String, roleId: String) {
+        val request = AddRoleToUserRequestDto(actorName, loginName, roleId)
+        permissionServiceComponent.permissionManager.addRoleToUser(request)
     }
 
     override fun shutdown() {

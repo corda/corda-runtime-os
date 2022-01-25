@@ -19,6 +19,11 @@ interface PermissionRoleManager {
     fun getRole(roleRequestDto: GetRoleRequestDto): RoleResponseDto?
 
     /**
+     * Get a set of roles whose names match a particular regular expression.
+     */
+    fun getRolesMatchingName(regexStr: String): Collection<RoleResponseDto>
+
+    /**
      * Add permission to a role
      */
     fun addPermissionToRole(roleId: String, permissionId: String, principal: String): RoleResponseDto
