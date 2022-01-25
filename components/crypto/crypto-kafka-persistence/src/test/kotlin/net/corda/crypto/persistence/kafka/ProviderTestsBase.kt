@@ -1,5 +1,3 @@
-@file:JvmName("TestUtils")
-
 package net.corda.crypto.persistence.kafka
 
 import com.typesafe.config.ConfigFactory

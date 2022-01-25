@@ -1,5 +1,3 @@
-@file:JvmName("TestUtils")
-
 package net.corda.processors.crypto.tests
 
 import com.typesafe.config.ConfigFactory

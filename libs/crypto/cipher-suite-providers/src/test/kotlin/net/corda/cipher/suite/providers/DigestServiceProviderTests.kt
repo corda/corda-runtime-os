@@ -28,8 +28,12 @@ class DigestServiceProviderTests {
 
     @BeforeEach
     fun setup() {
-        schemeMetadataFactory = CipherSuiteFactoryImpl()
-        schemeMetadataFactory.schemeMetadataProvider = CipherSchemeMetadataProviderImpl()
+        schemeMetadataFactory = CipherSuiteFactoryImpl(
+            schemeMetadataProvider = CipherSchemeMetadataProviderImpl(),
+            verifierProvider = SignatureVerificationServiceProviderImpl(),
+            digestServiceProvider = DigestServiceProviderImpl(),
+            mock()
+        )
         algorithmFactory = mock {
             on { algorithm }.thenReturn(CUSTOM_DIGEST)
             on { getInstance() }.thenReturn(object : DigestAlgorithm {
