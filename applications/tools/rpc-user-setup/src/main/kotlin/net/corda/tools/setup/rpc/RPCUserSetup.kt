@@ -75,6 +75,7 @@ class RPCUserSetup @Activate constructor(
         val params = RPCUserSetupParams()
         val commandLine = CommandLine(params)
         try {
+            @Suppress("SpreadOperator")
             commandLine.parseArgs(*args)
 
             if (params.helpRequested) {
