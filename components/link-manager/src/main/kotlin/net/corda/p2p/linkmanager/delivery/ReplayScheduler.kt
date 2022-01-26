@@ -167,7 +167,7 @@ class ReplayScheduler<M>(
 
     fun removeFromReplay(messageId: MessageId, sessionKey: SessionManager.SessionKey) {
         replayingMessageIdsPerSessionKey.compute(sessionKey) { _, replayingMessagesForSessionKey ->
-            val removed = replayInfoPerMessageId.remove(messageId)?.future?.cancel(false)  ?: false
+            val removed = replayInfoPerMessageId.remove(messageId)?.future?.cancel(false) ?: false
             replayingMessagesForSessionKey?.remove(messageId)
             if (removed) {
                 queuedMessagesPerSessionKey[sessionKey]?.poll()?.let {
