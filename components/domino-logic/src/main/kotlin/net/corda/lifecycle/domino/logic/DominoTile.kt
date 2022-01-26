@@ -98,7 +98,9 @@ class DominoTile(
     private val registrationToChildMap: Map<RegistrationHandle, DominoTile> = children.associateBy {
         coordinator.followStatusChangesByName(setOf(it.name))
     }
-    private val latestChildStateMap = ConcurrentHashMap<DominoTile, State>()
+    private val latestChildStateMap = children.associateWith {
+        it.state
+    }.toMutableMap()
 
     private val currentState = AtomicReference(State.Created)
 
