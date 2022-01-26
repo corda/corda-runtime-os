@@ -1,0 +1,16 @@
+plugins {
+    id 'corda.common-library'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+}
+
+description 'Endpoint API for management of virtual nodes.'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(':libs:http-rpc:http-rpc')
+    implementation project(':libs:virtual-node:virtual-node-endpoints')
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+}
