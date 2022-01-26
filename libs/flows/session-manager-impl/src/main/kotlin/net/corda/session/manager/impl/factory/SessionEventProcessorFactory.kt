@@ -44,7 +44,7 @@ class SessionEventProcessorFactory {
         }
 
         return when (val payload = sessionEvent.payload) {
-            is SessionInit -> SessionInitProcessorReceive(key, sessionEvent, instant)
+            is SessionInit -> SessionInitProcessorReceive(key, sessionState, sessionEvent, instant)
             is SessionData -> SessionDataProcessorReceive(key, sessionState, sessionEvent, instant)
             is SessionClose -> SessionCloseProcessorReceive(key, sessionState, sessionEvent, instant)
             is SessionError -> SessionErrorProcessorReceive(key, sessionState, sessionEvent, payload.errorMessage, instant)
@@ -72,7 +72,7 @@ class SessionEventProcessorFactory {
             throw CordaRuntimeException(error)
         }
         return when (val payload = sessionEvent.payload) {
-            is SessionInit -> SessionInitProcessorSend(key, sessionEvent, instant)
+            is SessionInit -> SessionInitProcessorSend(key, sessionState, sessionEvent, instant)
             is SessionData -> SessionDataProcessorSend(key, sessionState, sessionEvent, instant)
             is SessionClose -> SessionCloseProcessorSend(key, sessionState, sessionEvent, instant)
             is SessionError -> SessionErrorProcessorSend(key, sessionState, sessionEvent, payload.errorMessage, instant)

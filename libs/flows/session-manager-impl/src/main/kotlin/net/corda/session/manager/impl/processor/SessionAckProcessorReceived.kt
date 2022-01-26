@@ -2,9 +2,8 @@ package net.corda.session.manager.impl.processor
 
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
-import net.corda.session.manager.SessionEventResult
 import net.corda.session.manager.impl.SessionEventProcessor
-import net.corda.session.manager.impl.processor.helper.generateErrorEvent
+import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import java.time.Instant
@@ -14,6 +13,7 @@ import java.time.Instant
  * Remove the message from undelivered sent events for the sequence number received in the ack.
  * If the current session state has a status of WAIT_FOR_FINAL_ACK then this is the final ACK of the session close message
  * and so the session can be set to CLOSED.
+ * If the current session state has a status of CREATED and the SessionInit has been acked then the session can be set to CONFIRMED
  *
  */
 class SessionAckProcessorReceived(
@@ -28,11 +28,11 @@ class SessionAckProcessorReceived(
         private val logger = contextLogger()
     }
 
-    override fun execute(): SessionEventResult {
+    override fun execute(): SessionState {
         return if (sessionState == null) {
             val errorMessage = "Received SessionAck on key $key for sessionId $sessionId which had null state"
             logger.error(errorMessage)
-            SessionEventResult(sessionState, listOf(generateErrorEvent(sessionId, errorMessage, "SessionAck-NullState", instant)))
+            generateErrorSessionStateFromSessionEvent(sessionId, errorMessage, "SessionAck-NullState", instant)
         } else {
             logger.debug { "Received SessionAck on key $key for seqNum $sequenceNum for session state: $sessionState" }
             val undeliveredMessages = sessionState.sentEventsState.undeliveredMessages
@@ -46,7 +46,7 @@ class SessionAckProcessorReceived(
                 sessionState.status = SessionStateType.CONFIRMED
             }
 
-            SessionEventResult(sessionState, null)
+            sessionState
         }
     }
 }

@@ -4,15 +4,14 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
-import net.corda.session.manager.SessionEventResult
 import net.corda.session.manager.impl.SessionEventProcessor
-import net.corda.session.manager.impl.processor.helper.generateErrorEvent
+import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
 import net.corda.v5.base.util.contextLogger
 import java.time.Instant
 
 /**
- * Process a [SessionError] received from a counterparty. I
- * f the current state is already in state of ERROR log the error message.
+ * Process a [SessionError] received from a counterparty.
+ * If the current state is already in state of ERROR log the error message.
  * If the state is not ERROR update the state to status ERROR.
  */
 class SessionErrorProcessorReceive(
@@ -27,28 +26,22 @@ class SessionErrorProcessorReceive(
         private val logger = contextLogger()
     }
 
-    override fun execute(): SessionEventResult {
+    override fun execute(): SessionState {
         val sessionId = sessionEvent.sessionId
 
         return if (sessionState == null) {
             val errorMessage = "Received SessionError on key $key for sessionId which had null state: $sessionId. " +
                     "Error message received was: $exceptionEnvelope"
             logger.error(errorMessage)
-            SessionEventResult(sessionState, listOf(generateErrorEvent(sessionId, errorMessage, "SessionData-NullSessionState", instant)))
+            generateErrorSessionStateFromSessionEvent(sessionId, errorMessage, "SessionData-NullSessionState", instant)
         } else {
-            if (sessionState.status == SessionStateType.ERROR) {
-                logger.info(
-                    "Session Error received on sessionId $sessionId. " +
-                            "Status was already ${SessionStateType.ERROR}. Error message: $exceptionEnvelope"
-                )
-            } else {
-                logger.error(
-                    "Session Error received on sessionId $sessionId. " +
-                            "Updating status from ${sessionState.status} to ${SessionStateType.ERROR}. Error message: $exceptionEnvelope"
-                )
-                sessionState.status = SessionStateType.ERROR
+            logger.error(
+                "Session Error received on sessionId $sessionId. " +
+                        "Updating status from ${sessionState.status} to ${SessionStateType.ERROR}. Error message: $exceptionEnvelope"
+            )
+            sessionState.apply {
+                status = SessionStateType.ERROR
             }
-            SessionEventResult(sessionState, null)
         }
     }
 }

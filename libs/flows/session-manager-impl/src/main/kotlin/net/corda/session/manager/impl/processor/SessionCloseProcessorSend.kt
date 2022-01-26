@@ -3,19 +3,21 @@ package net.corda.session.manager.impl.processor
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
-import net.corda.session.manager.SessionEventResult
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
+import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
 import net.corda.v5.base.util.contextLogger
 import java.time.Instant
 
 
 /**
  * Handle send of a [SessionClose] event.
- * If the state is null, ERROR or CLOSED send an error response to the counterparty as this indicates a bug in client code and a mismatch.
- * If the state is CONFIRMED and the sequence number is valid then set the status to CLOSING
- * If the state is CLOSING and it is not a duplicate then set the status to WAIT_FOR_FINAL_ACK. The session cannot be closed until all
- * acks are received by the counterparty.
+ * If the state is null, ERROR or CLOSED send an error response to the counterparty as this indicates a bug in client code or  a
+ * session mismatch has occurred.
+ * If the client has not consumed all received events and it tries to send a close then trigger an error as this is a bug/session mismatch.
+ * If the state is CONFIRMED then set the status to CLOSING
+ * If the state is CLOSING and set the status to WAIT_FOR_FINAL_ACK. The session cannot be closed until all acks are received by the
+ * counterparty.
  */
 class SessionCloseProcessorSend(
     private val key: Any,
@@ -28,12 +30,23 @@ class SessionCloseProcessorSend(
         private val logger = contextLogger()
     }
 
-    override fun execute(): SessionEventResult {
+    override fun execute(): SessionState {
         val sessionId = sessionEvent.sessionId
+        val currentStatus = sessionState?.status
         return when {
             sessionState == null -> {
-                logger.error("Tried to send SessionClose with flow key $key and sessionId $sessionId  with null state")
-                SessionEventResult(null, null)
+                val errorMessage = "Tried to send SessionClose with flow key $key and sessionId $sessionId  with null state"
+                logger.error(errorMessage)
+                generateErrorSessionStateFromSessionEvent(sessionId, errorMessage, "SessionCLose-StateNull", instant)
+            }
+            currentStatus == SessionStateType.ERROR -> {
+                val errorMessage = "Tried to send SessionClose on key $key for sessionId $sessionId with status of : $currentStatus"
+                logger.error(errorMessage)
+                sessionState.apply {
+                    sentEventsState.undeliveredMessages = sessionState.sentEventsState.undeliveredMessages.plus(
+                        generateErrorEvent(sessionId, errorMessage, "SessionClose-InvalidStatus", instant)
+                    )
+                }
             }
             //session mismatch error
             sessionState.receivedEventsState.undeliveredMessages.isNotEmpty() -> {
@@ -60,21 +73,24 @@ class SessionCloseProcessorSend(
         sessionState: SessionState,
         sessionId: String
     ) = when (val currentState = sessionState.status) {
-        //TODO - is this valid?
-        // session may have no data messages to send/receive and so flow can execute to the end
-        // session wont be closed until acks are received regardless but theres no reason to wait?
         SessionStateType.CREATED -> {
-            sessionState.status = SessionStateType.CLOSING
-            SessionEventResult(sessionState, listOf(sessionEvent))
+            sessionState.apply {
+                status = SessionStateType.CLOSING
+                sentEventsState.undeliveredMessages = sessionState.sentEventsState.undeliveredMessages.plus(sessionEvent)
+            }
         }
         SessionStateType.CONFIRMED -> {
-            sessionState.status = SessionStateType.CLOSING
-            SessionEventResult(sessionState, listOf(sessionEvent))
+            sessionState.apply {
+                status = SessionStateType.CLOSING
+                sentEventsState.undeliveredMessages = sessionState.sentEventsState.undeliveredMessages.plus(sessionEvent)
+            }
         }
         SessionStateType.CLOSING -> {
             //Doesn't go to closed until ack received
-            sessionState.status = SessionStateType.WAIT_FOR_FINAL_ACK
-            SessionEventResult(sessionState, listOf(sessionEvent))
+            sessionState.apply {
+                status = SessionStateType.WAIT_FOR_FINAL_ACK
+                sentEventsState.undeliveredMessages = sessionState.sentEventsState.undeliveredMessages.plus(sessionEvent)
+            }
         }
         SessionStateType.CLOSED -> {
             //session is already completed successfully. Indicates bug. should we send an error back and change state to error
@@ -82,7 +98,7 @@ class SessionCloseProcessorSend(
                 "Tried to send SessionClose on key $key and sessionId $sessionId, session status is " +
                         "$currentState. Current SessionState: $sessionState"
             )
-            SessionEventResult(sessionState, null)
+            sessionState
         }
         else -> {
             val errorMessage = "Tried to send SessionClose on key $key and sessionId $sessionId, session status is " +
@@ -96,9 +112,9 @@ class SessionCloseProcessorSend(
         sessionState: SessionState,
         sessionId: String,
         errorType: String
-    ): SessionEventResult {
+    ): SessionState {
         logger.error(errorMessage)
         sessionState.status = SessionStateType.ERROR
-        return SessionEventResult(sessionState, listOf(generateErrorEvent(sessionId, errorMessage, errorType, instant)))
+        return generateErrorSessionStateFromSessionEvent(sessionId, errorMessage, errorType, instant)
     }
 }

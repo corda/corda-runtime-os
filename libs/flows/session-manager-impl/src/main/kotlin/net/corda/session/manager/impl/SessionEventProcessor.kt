@@ -1,12 +1,12 @@
 package net.corda.session.manager.impl
 
-import net.corda.session.manager.SessionEventResult
+import net.corda.data.flow.state.session.SessionState
 
 /**
  * Process session events and update the session state for the given events.
- * Outputs [SessionEventResult] containing the updated session state and output ack or error record.
+ * Outputs the updated session state. Any output messages will be added to [SessionState.sentEventsState]
  */
 interface SessionEventProcessor {
 
-    fun execute(): SessionEventResult
+    fun execute(): SessionState
 }

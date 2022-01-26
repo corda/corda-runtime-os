@@ -5,7 +5,6 @@ import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
-import net.corda.session.manager.SessionEventResult
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateAckEvent
 import net.corda.v5.base.util.contextLogger
@@ -21,6 +20,7 @@ import java.util.*
  */
 class SessionInitProcessorReceive(
     private val key: Any,
+    private val sessionState: SessionState?,
     private val sessionEvent: SessionEvent,
     private val instant: Instant
 ) : SessionEventProcessor {
@@ -29,7 +29,13 @@ class SessionInitProcessorReceive(
         private val logger = contextLogger()
     }
 
-    override fun execute(): SessionEventResult {
+    override fun execute(): SessionState {
+        if (sessionState != null) {
+            logger.debug { "Received duplicate SessionInit on key $key for session which was not null: $sessionState" }
+            //TODO - Flow mapper will stop/block this duplicate already. is this check redundant
+            return sessionState
+        }
+
         val sessionInit: SessionInit = uncheckedCast(sessionEvent.payload)
         val sessionId = sessionEvent.sessionId
         val seqNum = sessionEvent.sequenceNum
@@ -39,12 +45,12 @@ class SessionInitProcessorReceive(
             .setIsInitiator(false)
             .setCounterpartyIdentity(sessionInit.initiatingIdentity)
             .setReceivedEventsState(SessionProcessState(seqNum, mutableListOf(sessionEvent)))
-            .setSentEventsState(SessionProcessState(seqNum - 1, mutableListOf()))
+            .setSentEventsState(SessionProcessState(seqNum - 1, mutableListOf(generateAckEvent(seqNum, sessionId, instant))))
             .setStatus(SessionStateType.CONFIRMED)
             .build()
 
-        logger.debug { "Creating new session with id $sessionId for SessionInit received on key $key. sessionState $newSessionState"}
+        logger.debug { "Created new session with id $sessionId for SessionInit received on key $key. sessionState $newSessionState"}
 
-        return SessionEventResult(newSessionState, listOf(generateAckEvent(seqNum, sessionId, instant)))
+        return newSessionState
     }
 }

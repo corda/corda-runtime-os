@@ -4,9 +4,8 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
-import net.corda.session.manager.SessionEventResult
 import net.corda.session.manager.impl.SessionEventProcessor
-import net.corda.session.manager.impl.processor.helper.generateErrorEvent
+import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
 import net.corda.v5.base.util.contextLogger
 import java.time.Instant
 
@@ -27,22 +26,28 @@ class SessionErrorProcessorSend(
         private val logger = contextLogger()
     }
 
-    override fun execute(): SessionEventResult {
+    override fun execute(): SessionState {
         val sessionId = sessionEvent.sessionId
         return if (sessionState == null) {
             val errorMessage = "Tried to send SessionError on key $key for sessionId which had null state: $sessionId. " +
                     "Error message was: $exceptionEnvelope"
             logger.error(errorMessage)
-            SessionEventResult(sessionState, listOf(generateErrorEvent(sessionId, errorMessage, "SessionData-NullSessionState", instant)))
+            generateErrorSessionStateFromSessionEvent(sessionId, errorMessage, "SessionData-NullSessionState", instant)
         } else {
             logger.info(
                 "Sending Session Error on sessionId $sessionId. " +
                         "Updating status from ${sessionState.status} to ${SessionStateType.ERROR}. Error message: $exceptionEnvelope"
             )
-            sessionState.status = SessionStateType.ERROR
-            sessionEvent.timestamp = instant.toEpochMilli()
-            sessionEvent.sequenceNum = null
-            SessionEventResult(sessionState, listOf(sessionEvent))
+
+            sessionEvent.apply {
+                timestamp = instant.toEpochMilli()
+                sequenceNum = null
+            }
+
+            sessionState.apply {
+                status = SessionStateType.ERROR
+                sentEventsState.undeliveredMessages = sessionState.sentEventsState.undeliveredMessages.plus(sessionEvent)
+            }
         }
     }
 }

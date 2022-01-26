@@ -4,10 +4,10 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
-import net.corda.session.manager.SessionEventResult
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateAckEvent
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
+import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import java.time.Instant
@@ -15,10 +15,11 @@ import java.time.Instant
 /**
  * Process a [SessionData] event received from a counterparty.
  * Deduplicate and reorder the event according to its sequence number.
- * If the current state is not CONFIRMED and the event is not a duplicate then return an error to the counterparty as there is
+ * If the current state is not CONFIRMED or CREATED and the event is not a duplicate then return an error to the counterparty as there is
  * mismatch of events and the state is out of sync. This likely indicates a bug in the client code.
- * If the event is a duplicate log it.
- * Otherwise buffer the event in the received events state ready to be processed by the client code via the session manager api.
+ * If the event is a duplicate log it and queue a SessionAck to be sent.
+ * Otherwise buffer the event in the received events state ready to be processed by the client code via the session manager api and queue
+ * a session ack to send.
  */
 class SessionDataProcessorReceive(
     private val key: Any,
@@ -31,15 +32,12 @@ class SessionDataProcessorReceive(
         private val logger = contextLogger()
     }
 
-    override fun execute(): SessionEventResult {
+    override fun execute(): SessionState {
         val sessionId = sessionEvent.sessionId
         return if (sessionState == null) {
             val errorMessage = "Received SessionData on key $key for session which was null: SessionEvent: $sessionEvent"
             logger.error(errorMessage)
-            SessionEventResult(
-                sessionState,
-                listOf(generateErrorEvent(sessionId, errorMessage, "SessionData-NullSessionState", instant))
-            )
+            generateErrorSessionStateFromSessionEvent(sessionId, errorMessage, "SessionData-NullSessionState", instant)
         } else {
             getInboundDataEventResult(sessionState, sessionId)
         }
@@ -48,36 +46,19 @@ class SessionDataProcessorReceive(
     private fun getInboundDataEventResult(
         sessionState: SessionState,
         sessionId: String
-    ): SessionEventResult {
+    ): SessionState {
         val seqNum = sessionEvent.sequenceNum
         val receivedEventState = sessionState.receivedEventsState
         val expectedNextSeqNum = receivedEventState.lastProcessedSequenceNum + 1
-        val currentStatus = sessionState.status
-        val undeliveredMessages = receivedEventState.undeliveredMessages?.toMutableList() ?: mutableListOf()
 
         return when {
             seqNum >= expectedNextSeqNum -> {
-                undeliveredMessages.add(sessionEvent)
-                
-                if (currentStatus != SessionStateType.CONFIRMED || currentStatus != SessionStateType.CREATED) {
-                    val errorMessage =
-                        "Data message on key $key with sessionId $sessionId with sequence number of $seqNum when status" +
-                                " is $currentStatus. SessionState: $sessionState"
-                    //Possibly only Warn here as if we are in error state we have already sent counterparty an error and this data message
-                    // was likely sent before they have processed that error.
-                    // note: It should be not possible to be in a state of CREATED as
-                    logger.error(errorMessage)
-                    SessionEventResult(
-                        sessionState, listOf(
-                            generateErrorEvent(
-                                sessionId, errorMessage, "SessionData-InvalidStatus",
-                                instant
-                            )
-                        )
-                    )
-                } else {
-                    sessionState.receivedEventsState = updateSessionProcessState(expectedNextSeqNum, undeliveredMessages)
-                    SessionEventResult(sessionState, listOf(generateAckEvent(seqNum, sessionId, instant)))
+                getSessionStateForDataEvent(sessionState, sessionId, seqNum, expectedNextSeqNum)
+            }
+            seqNum < expectedNextSeqNum -> {
+                sessionState.apply {
+                    sentEventsState.undeliveredMessages =
+                        sessionState.sentEventsState.undeliveredMessages.plus(generateAckEvent(seqNum, sessionId, instant))
                 }
             }
             else -> {
@@ -85,7 +66,41 @@ class SessionDataProcessorReceive(
                     "Duplicate message on key $key with sessionId $sessionId with sequence number of $seqNum when next" +
                             " expected seqNum is $expectedNextSeqNum"
                 }
-                SessionEventResult(sessionState, null)
+                sessionState
+            }
+        }
+    }
+
+    private fun getSessionStateForDataEvent(
+        sessionState: SessionState,
+        sessionId: String,
+        seqNum: Int,
+        expectedNextSeqNum: Int
+    ): SessionState {
+        val receivedEventState = sessionState.receivedEventsState
+        val undeliveredMessages = receivedEventState.undeliveredMessages?.toMutableList() ?: mutableListOf()
+        val currentStatus = sessionState.status
+
+        //store data event received regardless of current state status
+        undeliveredMessages.add(sessionEvent)
+
+        //If in state of CLOSING/WAIT_FOR_FINAL_ACK/CLOSED we should not be receiving data messages with a valid seqNum
+        return if (currentStatus != SessionStateType.CONFIRMED && currentStatus != SessionStateType.CREATED) {
+            val errorMessage ="Received data message on key $key with sessionId $sessionId with sequence number of $seqNum when status" +
+                        " is $currentStatus. Session mismatch error. SessionState: $sessionState"
+            logger.error(errorMessage)
+            sessionState.apply {
+                status = SessionStateType.ERROR
+                sentEventsState.undeliveredMessages = sessionState.sentEventsState.undeliveredMessages.plus(
+                    generateErrorEvent(sessionId, errorMessage, "SessionData-SessionMismatch", instant)
+                )
+            }
+        } else {
+            sessionState.apply {
+                receivedEventsState = updateSessionProcessState(expectedNextSeqNum, undeliveredMessages)
+                sentEventsState.undeliveredMessages = sessionState.sentEventsState.undeliveredMessages.plus(
+                    generateAckEvent(seqNum, sessionId, instant)
+                )
             }
         }
     }
