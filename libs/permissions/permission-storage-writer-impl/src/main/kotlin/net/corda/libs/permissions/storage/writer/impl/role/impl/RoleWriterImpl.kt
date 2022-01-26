@@ -8,6 +8,9 @@ import net.corda.data.permissions.management.role.CreateRoleRequest
 import net.corda.data.permissions.management.role.RemovePermissionFromRoleRequest
 import net.corda.libs.permissions.storage.common.converter.toAvroRole
 import net.corda.libs.permissions.storage.writer.impl.role.RoleWriter
+import net.corda.libs.permissions.storage.writer.impl.validation.requireEntityAssociationDoesNotExist
+import net.corda.libs.permissions.storage.writer.impl.validation.requireEntityAssociationExists
+import net.corda.libs.permissions.storage.writer.impl.validation.requireEntityExists
 import net.corda.orm.utils.transaction
 import net.corda.permissions.model.ChangeAudit
 import net.corda.permissions.model.Group
@@ -34,8 +37,8 @@ class RoleWriterImpl(
 
         return entityManagerFactory.transaction { entityManager ->
             val groupVisibility = if (request.groupVisibility != null) {
-                requireNotNull(entityManager.find(Group::class.java, request.groupVisibility)) {
-                    "Failed to create new Role: $roleName as the specified group visibility: ${request.groupVisibility} does not exist."
+                requireEntityExists(entityManager.find(Group::class.java, request.groupVisibility)) {
+                    "Group '${request.groupVisibility}' not found."
                 }
             } else {
                 null
@@ -56,12 +59,12 @@ class RoleWriterImpl(
                 updateTimestamp = updateTimestamp,
                 actorUser = requestUserId,
                 changeType = RPCPermissionOperation.ROLE_INSERT,
-                details = "Role '${role.name}' created by '$requestUserId'."
+                details = "Role '${role.id}' with name '$roleName' created by '$requestUserId'."
             )
 
             entityManager.persist(auditLog)
 
-            log.info("Successfully created new role: $roleName.")
+            log.info("Successfully created new role: ${role.id} ($roleName).")
 
             role.toAvroRole()
         }
@@ -73,16 +76,16 @@ class RoleWriterImpl(
 
         return entityManagerFactory.transaction { entityManager ->
 
-            val role = requireNotNull(entityManager.find(Role::class.java, request.roleId)) {
-                "Unable to find Role with Id: ${request.roleId}"
+            val role = requireEntityExists(entityManager.find(Role::class.java, request.roleId)) {
+                "Role '${request.roleId}' not found."
             }
 
-            require(role.rolePermAssociations.none { it.permission.id == request.permissionId }) {
+            requireEntityAssociationDoesNotExist(role.rolePermAssociations.none { it.permission.id == request.permissionId }) {
                 "Permission '${request.permissionId}' is already associated with Role '${request.roleId}'."
             }
 
-            val permission = requireNotNull(entityManager.find(Permission::class.java, request.permissionId)) {
-                "Unable to find Permission with Id: ${request.permissionId}"
+            val permission = requireEntityExists(entityManager.find(Permission::class.java, request.permissionId)) {
+                "Permission '${request.permissionId}' not found."
             }
 
             val updateTimestamp = Instant.now()
@@ -118,13 +121,13 @@ class RoleWriterImpl(
 
         return entityManagerFactory.transaction { entityManager ->
 
-            val role = requireNotNull(entityManager.find(Role::class.java, request.roleId)) {
-                "Unable to find Role with Id: ${request.roleId}"
+            val role = requireEntityExists(entityManager.find(Role::class.java, request.roleId)) {
+                "Role '${request.roleId}' not found."
             }
 
             val rolePermissionAssociation =
-                requireNotNull(role.rolePermAssociations.find { it.permission.id == request.permissionId }) {
-                    "Permission with Id: ${request.permissionId} is not associated with a role: ${role.id}."
+                requireEntityAssociationExists(role.rolePermAssociations.find { it.permission.id == request.permissionId }) {
+                    "Permission '${request.permissionId}' is not associated with Role '${role.id}'."
                 }
 
             val updateTimestamp = Instant.now()

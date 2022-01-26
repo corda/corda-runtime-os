@@ -6,16 +6,19 @@ import net.corda.libs.permissions.endpoints.common.PermissionEndpointEventHandle
 import net.corda.libs.permissions.endpoints.v1.converter.convertToDto
 import net.corda.libs.permissions.endpoints.v1.converter.convertToEndpointType
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
+import net.corda.libs.permissions.endpoints.common.PermissionManagementHandler.withPermissionManager
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
+import net.corda.libs.permissions.manager.response.UserResponseDto
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.permissions.service.PermissionServiceComponent
+import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -36,25 +39,26 @@ class UserEndpointImpl @Activate constructor(
     override val protocolVersion = 1
 
     private val coordinator = coordinatorFactory.createCoordinator<UserEndpoint>(
-        PermissionEndpointEventHandler("User")
+        PermissionEndpointEventHandler("UserEndpoint")
     )
 
     override fun createUser(createUserType: CreateUserType): UserResponseType {
         val principal = getRpcThreadLocalContext()
 
-        val createUserResult = permissionServiceComponent.permissionManager.createUser(
-            createUserType.convertToDto(principal)
-        )
+        val createUserResult = withPermissionManager(permissionServiceComponent.permissionManager) {
+            createUser(createUserType.convertToDto(principal))
+        }
 
-        return createUserResult.convertToEndpointType()
+        return createUserResult!!.convertToEndpointType()
     }
+
 
     override fun getUser(loginName: String): UserResponseType {
         val principal = getRpcThreadLocalContext()
 
-        val userResponseDto = permissionServiceComponent.permissionManager.getUser(
-            GetUserRequestDto(principal, loginName)
-        )
+        val userResponseDto: UserResponseDto? = withPermissionManager(permissionServiceComponent.permissionManager) {
+            getUser(GetUserRequestDto(principal, loginName))
+        }
 
         return userResponseDto?.convertToEndpointType() ?: throw ResourceNotFoundException("User", loginName)
     }
@@ -62,19 +66,19 @@ class UserEndpointImpl @Activate constructor(
     override fun addRole(loginName: String, roleId: String): UserResponseType {
         val principal = getRpcThreadLocalContext()
 
-        val result = permissionServiceComponent.permissionManager.addRoleToUser(
-            AddRoleToUserRequestDto(principal, loginName, roleId)
-        )
-        return result.convertToEndpointType()
+        val result = withPermissionManager(permissionServiceComponent.permissionManager) {
+            addRoleToUser(AddRoleToUserRequestDto(principal, loginName, roleId))
+        }
+        return result!!.convertToEndpointType()
     }
 
     override fun removeRole(loginName: String, roleId: String): UserResponseType {
         val principal = getRpcThreadLocalContext()
 
-        val result = permissionServiceComponent.permissionManager.removeRoleFromUser(
-            RemoveRoleFromUserRequestDto(principal, loginName, roleId)
-        )
-        return result.convertToEndpointType()
+        val result = withPermissionManager(permissionServiceComponent.permissionManager) {
+            removeRoleFromUser(RemoveRoleFromUserRequestDto(principal, loginName, roleId))
+        }
+        return result!!.convertToEndpointType()
     }
 
     private fun getRpcThreadLocalContext(): String {

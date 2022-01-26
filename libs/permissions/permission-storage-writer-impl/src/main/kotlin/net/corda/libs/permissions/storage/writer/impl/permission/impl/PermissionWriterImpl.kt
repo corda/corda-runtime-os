@@ -7,6 +7,7 @@ import net.corda.data.permissions.management.permission.CreatePermissionRequest
 import net.corda.libs.permissions.storage.common.converter.toDbModelPermissionType
 import net.corda.libs.permissions.storage.common.converter.toAvroPermission
 import net.corda.libs.permissions.storage.writer.impl.permission.PermissionWriter
+import net.corda.libs.permissions.storage.writer.impl.validation.requireEntityExists
 import net.corda.orm.utils.transaction
 import net.corda.permissions.model.ChangeAudit
 import net.corda.permissions.model.Group
@@ -31,9 +32,8 @@ class PermissionWriterImpl(
 
         return entityManagerFactory.transaction { entityManager ->
             val groupVisibility = if (request.groupVisibility != null) {
-                requireNotNull(entityManager.find(Group::class.java, request.groupVisibility)) {
-                    "Failed to create new Permission: $permissionName as the specified group visibility: " +
-                            "${request.groupVisibility} does not exist."
+                requireEntityExists(entityManager.find(Group::class.java, request.groupVisibility)) {
+                    "Group '${request.groupVisibility}' not found."
                 }
             } else {
                 null
@@ -56,12 +56,12 @@ class PermissionWriterImpl(
                 updateTimestamp = updateTimestamp,
                 actorUser = requestUserId,
                 changeType = RPCPermissionOperation.PERMISSION_INSERT,
-                details = "Permission '$permissionName' created by '$requestUserId'."
+                details = "Permission '${permission.id}' with name '$permissionName' created by '$requestUserId'."
             )
 
             entityManager.persist(auditLog)
 
-            log.info("Successfully created new permission: $permissionName.")
+            log.info("Successfully created new permission: ${permission.id}.")
 
             permission.toAvroPermission()
         }

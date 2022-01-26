@@ -23,7 +23,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.time.Duration
 import net.corda.configuration.rpcops.impl.exception.ConfigVersionException
-import net.corda.httprpc.exception.UnexpectedErrorException
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InternalServerException
 

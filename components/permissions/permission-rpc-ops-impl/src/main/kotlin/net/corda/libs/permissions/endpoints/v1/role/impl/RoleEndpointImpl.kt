@@ -4,6 +4,7 @@ import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.permissions.endpoints.common.PermissionEndpointEventHandler
+import net.corda.libs.permissions.endpoints.common.PermissionManagementHandler.withPermissionManager
 import net.corda.libs.permissions.endpoints.v1.converter.convertToDto
 import net.corda.libs.permissions.endpoints.v1.converter.convertToEndpointType
 import net.corda.libs.permissions.endpoints.v1.role.RoleEndpoint
@@ -41,20 +42,20 @@ class RoleEndpointImpl @Activate constructor(
         val rpcContext = CURRENT_RPC_CONTEXT.get()
         val principal = rpcContext.principal
 
-        val createRoleResult = permissionServiceComponent.permissionManager.createRole(
-            createRoleType.convertToDto(principal)
-        )
+        val createRoleResult = withPermissionManager(permissionServiceComponent.permissionManager) {
+            createRole(createRoleType.convertToDto(principal))
+        }
 
-        return createRoleResult.convertToEndpointType()
+        return createRoleResult!!.convertToEndpointType()
     }
 
     override fun getRole(id: String): RoleResponseType {
         val rpcContext = CURRENT_RPC_CONTEXT.get()
         val principal = rpcContext.principal
 
-        val roleResponseDto = permissionServiceComponent.permissionManager.getRole(
-            GetRoleRequestDto(principal, id)
-        )
+        val roleResponseDto = withPermissionManager(permissionServiceComponent.permissionManager) {
+            getRole(GetRoleRequestDto(principal, id))
+        }
 
         return roleResponseDto?.convertToEndpointType() ?: throw ResourceNotFoundException("Role", id)
     }
@@ -63,22 +64,22 @@ class RoleEndpointImpl @Activate constructor(
         val rpcContext = CURRENT_RPC_CONTEXT.get()
         val principal = rpcContext.principal
 
-        val updatedRoleResult = permissionServiceComponent.permissionManager.addPermissionToRole(
-            roleId, permissionId, principal
-        )
+        val updatedRoleResult = withPermissionManager(permissionServiceComponent.permissionManager) {
+            addPermissionToRole(roleId, permissionId, principal)
+        }
 
-        return updatedRoleResult.convertToEndpointType()
+        return updatedRoleResult!!.convertToEndpointType()
     }
 
     override fun removePermission(roleId: String, permissionId: String): RoleResponseType {
         val rpcContext = CURRENT_RPC_CONTEXT.get()
         val principal = rpcContext.principal
 
-        val updatedRoleResult = permissionServiceComponent.permissionManager.removePermissionFromRole(
-            roleId, permissionId, principal
-        )
+        val updatedRoleResult = withPermissionManager(permissionServiceComponent.permissionManager) {
+            removePermissionFromRole(roleId, permissionId, principal)
+        }
 
-        return updatedRoleResult.convertToEndpointType()
+        return updatedRoleResult!!.convertToEndpointType()
     }
 
     override val isRunning: Boolean

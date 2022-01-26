@@ -1,14 +1,11 @@
 package net.corda.httprpc.server.impl.internal
 
-import com.fasterxml.jackson.core.JsonProcessingException
 import io.javalin.Javalin
 import io.javalin.core.util.Header
 import io.javalin.http.BadRequestResponse
 import io.javalin.http.Context
 import io.javalin.http.ForbiddenResponse
 import io.javalin.http.HandlerType
-import io.javalin.http.HttpResponseException
-import io.javalin.http.NotFoundResponse
 import io.javalin.http.UnauthorizedResponse
 import io.javalin.http.util.RedirectToLowercasePathPlugin
 import io.javalin.plugin.json.JavalinJackson
@@ -21,20 +18,15 @@ import net.corda.httprpc.server.config.HttpRpcSettingsProvider
 import net.corda.httprpc.server.impl.apigen.processing.RouteInfo
 import net.corda.httprpc.server.impl.apigen.processing.RouteProvider
 import net.corda.httprpc.server.impl.apigen.processing.openapi.OpenApiInfoProvider
-import net.corda.httprpc.server.impl.exception.MissingParameterException
 import net.corda.httprpc.server.impl.security.HttpRpcSecurityManager
 import net.corda.httprpc.server.impl.security.provider.credentials.DefaultCredentialResolver
 import net.corda.httprpc.server.impl.utils.addHeaderValues
 import net.corda.httprpc.server.impl.utils.executeWithThreadContextClassLoader
-import net.corda.utilities.rootCause
-import net.corda.utilities.rootMessage
-import net.corda.v5.application.flows.BadRpcStartFlowRequestException
 import net.corda.v5.application.identity.CordaX500Name
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
-import org.eclipse.jetty.http.HttpStatus
 import org.eclipse.jetty.http2.HTTP2Cipher
 import org.eclipse.jetty.server.HttpConfiguration
 import org.eclipse.jetty.server.HttpConnectionFactory
@@ -261,9 +253,7 @@ internal class HttpRpcServerInternal(
                 }
                 log.debug { "Invoke method \"${this.method.method.name}\" for route info completed." }
             } catch (e: Exception) {
-                """Error during invoking path "${this.fullPath}": ${e.rootMessage ?: e.rootCause}""".let {
-                    log.error(it, e)
-                }
+                log.warn("Error invoking path '${this.fullPath}'.", e)
                 throw HttpExceptionMapper.mapToResponse(e)
             }
         }

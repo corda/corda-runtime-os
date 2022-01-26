@@ -9,6 +9,10 @@ import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
 import net.corda.libs.permissions.storage.common.converter.toAvroUser
 import net.corda.libs.permissions.storage.writer.impl.user.UserWriter
+import net.corda.libs.permissions.storage.writer.impl.validation.requireEntityAssociationDoesNotExist
+import net.corda.libs.permissions.storage.writer.impl.validation.requireEntityAssociationExists
+import net.corda.libs.permissions.storage.writer.impl.validation.requireEntityDoesNotExist
+import net.corda.libs.permissions.storage.writer.impl.validation.requireEntityExists
 import net.corda.orm.utils.transaction
 import net.corda.permissions.model.ChangeAudit
 import net.corda.permissions.model.Group
@@ -74,15 +78,15 @@ class UserWriterImpl(
             .setParameter("loginName", request.loginName)
             .singleResult as Long
 
-        require(count == 0L) {
-            "User with login '${request.loginName}' already exists."
+        requireEntityDoesNotExist(count == 0L) {
+            "User '${request.loginName}' already exists."
         }
     }
 
     private fun validateAndGetOptionalParentGroup(request: CreateUserRequest, entityManager: EntityManager): Group? {
         val parentGroup = if (request.parentGroupId != null) {
-            requireNotNull(entityManager.find(Group::class.java, request.parentGroupId)) {
-                "The specified parent group '${request.parentGroupId}' does not exist."
+            requireEntityExists(entityManager.find(Group::class.java, request.parentGroupId)) {
+                "Group '${request.parentGroupId}' not found."
             }
         } else {
             null
@@ -91,36 +95,34 @@ class UserWriterImpl(
     }
 
     private fun validateAndGetUniqueUser(entityManager: EntityManager, loginName: String): User {
-        val users = entityManager
-            .createQuery("FROM User WHERE loginName = :loginName", User::class.java)
-            .setParameter("loginName", loginName)
-            .resultList
+        val userList = entityManager
+                .createQuery("FROM User WHERE loginName = :loginName", User::class.java)
+                .setParameter("loginName", loginName)
+                .resultList
 
-        require(users.size == 1) {
-            "User '$loginName' does not exist."
+        return requireEntityExists(userList.getOrNull(0)) {
+            "User '$loginName' not found."
         }
-
-        return users.first()
     }
 
     private fun validateAndGetUniqueRole(entityManager: EntityManager, roleId: String): Role {
         val role = entityManager.find(Role::class.java, roleId)
 
-        requireNotNull(role) {
-            "Role '$roleId' does not exist."
+        requireEntityExists(role) {
+            "Role '$roleId' not found."
         }
 
         return role
     }
 
     private fun validateRoleNotAlreadyAssignedToUser(user: User, roleId: String) {
-        require(user.roleUserAssociations.none { it.role.id == roleId }) {
+        requireEntityAssociationDoesNotExist(user.roleUserAssociations.none { it.role.id == roleId }) {
             "Role '$roleId' is already associated with User '${user.loginName}'."
         }
     }
 
     private fun validateAndGetRoleAssociatedWithUser(user: User, roleId: String): RoleUserAssociation {
-        return requireNotNull(user.roleUserAssociations.singleOrNull { it.role.id == roleId }) {
+        return requireEntityAssociationExists(user.roleUserAssociations.singleOrNull { it.role.id == roleId }) {
             "Role '$roleId' is not associated with User '${user.loginName}'."
         }
     }

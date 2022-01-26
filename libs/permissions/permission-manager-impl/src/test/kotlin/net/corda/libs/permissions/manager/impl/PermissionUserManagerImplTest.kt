@@ -12,7 +12,7 @@ import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.permissions.cache.PermissionCache
-import net.corda.libs.permissions.manager.exception.PermissionManagerException
+import net.corda.libs.permissions.manager.exception.UnexpectedPermissionResponseException
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
 import net.corda.messaging.api.publisher.RPCSender
@@ -71,8 +71,8 @@ class PermissionUserManagerImplTest {
         "user-login2", fullName, true, null, null, null,
         true, parentGroup, listOf(userProperty), listOf(RoleAssociation(ChangeDetails(userCreationTime), "roleId1")))
 
-    private val permissionManagementResponse = PermissionManagementResponse(avroUser)
-    private val permissionManagementResponseWithoutPassword = PermissionManagementResponse(avroUserWithoutPassword)
+    private val permissionManagementResponse = PermissionManagementResponse(true, null, avroUser)
+    private val permissionManagementResponseWithoutPassword = PermissionManagementResponse(true, null, avroUserWithoutPassword)
     private val config = mock<SmartConfig>()
 
     private val manager = PermissionUserManagerImpl(config, rpcSender, permissionCache, passwordService)
@@ -157,13 +157,13 @@ class PermissionUserManagerImplTest {
     @Test
     fun `create a user throws exception if result is not an avro User`() {
         val future = mock<CompletableFuture<PermissionManagementResponse>>()
-        val incorrectResponse = PermissionManagementResponse(true)
+        val incorrectResponse = PermissionManagementResponse(true, null, true)
         whenever(future.getOrThrow(Duration.ofSeconds(10))).thenReturn(incorrectResponse)
 
         val requestCaptor = argumentCaptor<PermissionManagementRequest>()
         whenever(rpcSender.sendRequest(requestCaptor.capture())).thenReturn(future)
 
-        assertThrows(PermissionManagerException::class.java) { manager.createUser(createUserRequestDto) }
+        assertThrows(UnexpectedPermissionResponseException::class.java) { manager.createUser(createUserRequestDto) }
     }
 
     @Test
@@ -260,7 +260,7 @@ class PermissionUserManagerImplTest {
         val avroUser = User(UUID.randomUUID().toString(), 0, ChangeDetails(userCreationTime), "user-login1", fullName, true,
             "temp-hashed-password", "temporary-salt", userCreationTime, false, parentGroup, listOf(userProperty),
             emptyList())
-        val permissionManagementResponse = PermissionManagementResponse(avroUser)
+        val permissionManagementResponse = PermissionManagementResponse(true, null, avroUser)
 
         val future = mock<CompletableFuture<PermissionManagementResponse>>()
         whenever(future.getOrThrow(Duration.ofSeconds(10))).thenReturn(permissionManagementResponse)

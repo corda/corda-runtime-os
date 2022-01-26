@@ -4,6 +4,7 @@ import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.permissions.endpoints.common.PermissionEndpointEventHandler
+import net.corda.libs.permissions.endpoints.common.PermissionManagementHandler.withPermissionManager
 import net.corda.libs.permissions.endpoints.v1.converter.convertToDto
 import net.corda.libs.permissions.endpoints.v1.converter.convertToEndpointType
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
@@ -41,20 +42,20 @@ class PermissionEndpointImpl @Activate constructor(
         val rpcContext = CURRENT_RPC_CONTEXT.get()
         val principal = rpcContext.principal
 
-        val createPermissionResult = permissionServiceComponent.permissionManager.createPermission(
-            createPermissionType.convertToDto(principal)
-        )
+        val createPermissionResult = withPermissionManager(permissionServiceComponent.permissionManager) {
+            createPermission(createPermissionType.convertToDto(principal))
+        }
 
-        return createPermissionResult.convertToEndpointType()
+        return createPermissionResult!!.convertToEndpointType()
     }
 
     override fun getPermission(id: String): PermissionResponseType {
         val rpcContext = CURRENT_RPC_CONTEXT.get()
         val principal = rpcContext.principal
 
-        val permissionResponseDto = permissionServiceComponent.permissionManager.getPermission(
-            GetPermissionRequestDto(principal, id)
-        )
+        val permissionResponseDto = withPermissionManager(permissionServiceComponent.permissionManager) {
+            getPermission(GetPermissionRequestDto(principal, id))
+        }
 
         return permissionResponseDto?.convertToEndpointType() ?: throw ResourceNotFoundException("Permission", id)
     }
