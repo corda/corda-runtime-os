@@ -1,4 +1,4 @@
 @Export
-package net.corda.messaging.api.configuration;
+package net.corda.libs.virtualnode.write;
 
 import org.osgi.annotation.bundle.Export;

@@ -1,6 +1,7 @@
 package net.corda.lifecycle.impl
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
+import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
@@ -184,6 +185,14 @@ class LifecycleCoordinatorImpl(
     override fun updateStatus(newStatus: LifecycleStatus, reason: String) {
         logger.trace { "$name: Updating status from ${lifecycleState.status} to $newStatus ($reason)" }
         postEvent(StatusChange(newStatus, reason))
+    }
+
+    /**
+     * See [LifecycleCoordinator].
+     */
+    override fun postCustomEventToFollowers(eventPayload: Any) {
+        logger.trace { "$name: Posting custom event with ${eventPayload.javaClass.simpleName} payload to registrations." }
+        lifecycleState.registrations.forEach { it.postCustomEvent(CustomEvent(it, eventPayload)) }
     }
 
     /**
