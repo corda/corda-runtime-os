@@ -1,21 +1,42 @@
 package net.corda.orm.impl
 
-import net.corda.orm.JpaEntitiesSet
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.mock
 
 class JpaEntitiesRegistryImplTest {
-    private val set1 = mock<JpaEntitiesSet>()
-    private val set2 = mock<JpaEntitiesSet>()
+    class ExampleClass1
+    class ExampleClass2
+    class ExampleClass3
+
+    private val classes1 = setOf(ExampleClass1::class.java, ExampleClass2::class.java)
+    private val classes2 = setOf(ExampleClass3::class.java)
 
     @Test
-    fun `when register can part of set`() {
+    fun `when register can get`() {
         val registry = JpaEntitiesRegistryImpl()
 
-        registry.register(set1)
-        registry.register(set2)
+        registry.register("set1", classes1)
+        registry.register("set2", classes2)
 
-        assertThat(registry.all).isEqualTo(setOf(set1, set2))
+        assertThat(registry.get("set1")).extracting {
+            assertThat(it).isNotNull
+            assertThat(it?.persistenceUnitName).isEqualTo("set1")
+            assertThat(it?.classes).isEqualTo(classes1)
+        }
+    }
+
+    @Test
+    fun `when register can get all`() {
+        val registry = JpaEntitiesRegistryImpl()
+
+        registry.register("set1", classes1)
+        registry.register("set2", classes2)
+
+        assertThat(registry.all.map{
+            it.persistenceUnitName to it.classes
+        }).containsExactly(
+            "set1" to classes1,
+            "set2" to classes2,
+        )
     }
 }

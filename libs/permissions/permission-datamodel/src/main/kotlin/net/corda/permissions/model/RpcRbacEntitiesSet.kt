@@ -7,9 +7,9 @@ import org.osgi.service.component.annotations.Component
 @Suppress("Unused")
 @Component
 class RpcRbacEntitiesSet : JpaEntitiesSet {
-    override val name = DbSchema.RPC_RBAC
+    override val persistenceUnitName = DbSchema.RPC_RBAC
 
-    override val content: Set<Class<*>> =
+    override val classes: Set<Class<*>> =
         setOf(
             User::class.java,
             Group::class.java,

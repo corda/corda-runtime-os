@@ -6,12 +6,14 @@ import org.osgi.service.component.annotations.Component
 
 @Component(service = [JpaEntitiesRegistry::class])
 class JpaEntitiesRegistryImpl : JpaEntitiesRegistry {
-    private val fullSet = mutableSetOf<JpaEntitiesSet>()
+    private val fullSet = mutableMapOf<String,JpaEntitiesSet>()
 
     override val all: Set<JpaEntitiesSet>
-        get() = fullSet
+        get() = fullSet.values.toSet()
 
-    override fun register(set: JpaEntitiesSet) {
-        fullSet.add(set)
+    override fun get(persistenceUnitName: String): JpaEntitiesSet? = fullSet[persistenceUnitName]
+
+    override fun register(persistenceUnitName: String, jpeEntities: Set<Class<*>>) {
+        fullSet[persistenceUnitName] = JpaEntitiesSet.create(persistenceUnitName, jpeEntities.toSet())
     }
 }

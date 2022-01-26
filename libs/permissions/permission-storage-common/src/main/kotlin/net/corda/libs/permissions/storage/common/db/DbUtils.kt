@@ -32,8 +32,8 @@ object DbUtils {
         )
 
         return entityManagerFactoryFactory.create(
-            entitiesSet.name,
-            entitiesSet.content.toList(),
+            entitiesSet.persistenceUnitName,
+            entitiesSet.classes.toList(),
             DbEntityManagerConfiguration(dbSource),
         )
     }

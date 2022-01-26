@@ -43,7 +43,7 @@ class PermissionStorageWriterServiceEventHandlerTest {
     }
 
     private val allEntitiesSets = listOf(mock<JpaEntitiesSet>().apply {
-        whenever(name).thenReturn(DbSchema.RPC_RBAC)
+        whenever(persistenceUnitName).thenReturn(DbSchema.RPC_RBAC)
     })
 
     private val handler = PermissionStorageWriterServiceEventHandler(

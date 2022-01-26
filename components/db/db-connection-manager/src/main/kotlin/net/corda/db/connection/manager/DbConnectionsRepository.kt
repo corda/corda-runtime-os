@@ -5,8 +5,6 @@ import java.util.UUID
 import javax.sql.DataSource
 
 interface DbConnectionsRepository {
-
-
     /**
      * Initialise the [DbConnectionsRepository] with the given Cluster DB config.
      *

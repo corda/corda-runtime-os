@@ -40,7 +40,7 @@ class EntityManagerFactoryCacheImpl @Activate constructor(
 
     override fun getOrCreate(db: CordaDb): EntityManagerFactory {
         val entitiesSet =
-            allEntitiesSets.singleOrNull { it.name == db.persistenceUnitName } ?:
+            allEntitiesSets.singleOrNull { it.persistenceUnitName == db.persistenceUnitName } ?:
             throw DBConfigurationException("Entity set for ${db.persistenceUnitName} not found")
 
         return getOrCreate(
@@ -52,7 +52,7 @@ class EntityManagerFactoryCacheImpl @Activate constructor(
     override fun getOrCreate(id: UUID, entitiesSet: JpaEntitiesSet): EntityManagerFactory {
         return cache.computeIfAbsent(id) {
             // TODO - use clusterDbEntityManagerFactory to load DB connection details from DB.
-            logger.info("Loading DB connection details for ${entitiesSet.name}[$id]")
+            logger.info("Loading DB connection details for ${entitiesSet.persistenceUnitName}[$id]")
             throw NotImplementedError("TODO")
         }
     }
@@ -60,7 +60,7 @@ class EntityManagerFactoryCacheImpl @Activate constructor(
     private fun createManagerFactory(name: String, dataSource: DataSource): EntityManagerFactory {
         return entityManagerFactoryFactory.create(
             name,
-            allEntitiesSets.single{it.name == name}.content.toList(),
+            allEntitiesSets.single{it.persistenceUnitName == name}.classes.toList(),
             DbEntityManagerConfiguration(dataSource),
         )
     }

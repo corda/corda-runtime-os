@@ -8,16 +8,16 @@ interface JpaEntitiesSet {
     companion object {
         fun create(name: String, classes: Set<Class<*>>): JpaEntitiesSet {
             return object :JpaEntitiesSet {
-                override val name: String
+                override val persistenceUnitName: String
                     get() = name
-                override val content: Set<Class<*>>
+                override val classes: Set<Class<*>>
                     get() = classes
 
             }
         }
     }
 
-    val name: String
-    val content: Set<Class<*>>
+    val persistenceUnitName: String
+    val classes: Set<Class<*>>
 }
 

@@ -99,7 +99,7 @@ class PermissionStorageWriterServiceEventHandler(
                 entityManagerFactoryCreationFn(
                     dbConfig,
                     entityManagerFactoryFactory,
-                    allEntitiesSets.single { it.name == DbSchema.RPC_RBAC })
+                    allEntitiesSets.single { it.persistenceUnitName == DbSchema.RPC_RBAC })
 
             subscription = subscriptionFactory.createRPCSubscription(
                 rpcConfig = RPCConfig(

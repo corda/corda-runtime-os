@@ -27,7 +27,7 @@ class DbConnectionManagerImpl @Activate constructor(
     private val cache: EntityManagerFactoryCache,
     // TODO - move this elsewhere
     @Reference(service = JpaEntitiesRegistry::class)
-    private val allEntities: JpaEntitiesRegistry,
+    private val entitiesRegistry: JpaEntitiesRegistry,
 ): DbConnectionManager {
     init {
         // define the different DB Entity Sets
@@ -38,9 +38,9 @@ class DbConnectionManagerImpl @Activate constructor(
         //    - We should be able to combine entities from multiple modules (e.g. configuration + vnode)
         //  Maybe this list needs to be defined in the DB Processor module instead to decouple things?
         // TODO - add VNode entities, for example.
-        allEntities.register(JpaEntitiesSet.create(CordaDb.CordaCluster.persistenceUnitName, ConfigurationEntities.classes))
+        entitiesRegistry.register(CordaDb.CordaCluster.persistenceUnitName, ConfigurationEntities.classes)
         // TODO - refactor RpcRbacEntitiesSet
-        allEntities.register(JpaEntitiesSet.create(CordaDb.RBAC.persistenceUnitName, RpcRbacEntitiesSet().content))
+        entitiesRegistry.register(CordaDb.RBAC.persistenceUnitName, RpcRbacEntitiesSet().classes)
     }
 
     private val eventHandler = DbConnectionManagerEventHandler(dbConnectionsRepository)

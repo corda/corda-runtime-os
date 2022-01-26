@@ -32,21 +32,21 @@ class EntityManagerFactoryCacheTest {
     private val entityManagerFactoryFactory = mock<EntityManagerFactoryFactory>()
     private val allEntities = listOf(
         mock<JpaEntitiesSet> {
-            on { name }.doReturn(CordaDb.CordaCluster.persistenceUnitName)
-            on { content }.doReturn(setOf(ExampleEntity1::class.java))
+            on { persistenceUnitName }.doReturn(CordaDb.CordaCluster.persistenceUnitName)
+            on { classes }.doReturn(setOf(ExampleEntity1::class.java))
         },
         mock {
-            on { name }.doReturn(CordaDb.RBAC.persistenceUnitName)
-            on { content }.doReturn(setOf(ExampleEntity2::class.java, ExampleEntity3::class.java))
+            on { persistenceUnitName }.doReturn(CordaDb.RBAC.persistenceUnitName)
+            on { classes }.doReturn(setOf(ExampleEntity2::class.java, ExampleEntity3::class.java))
         },
         mock {
-            on { name }.doReturn(CordaDb.Crypto.persistenceUnitName)
-            on { content }.doReturn(setOf(ExampleEntity3::class.java))
+            on { persistenceUnitName }.doReturn(CordaDb.Crypto.persistenceUnitName)
+            on { classes }.doReturn(setOf(ExampleEntity3::class.java))
         }
     )
     private val otherEntitiesSet = mock<JpaEntitiesSet>() {
-        on { name }.doReturn("another-db")
-        on { content }.doReturn(setOf(ExampleEntity1::class.java, ExampleEntity3::class.java))
+        on { persistenceUnitName }.doReturn("another-db")
+        on { classes }.doReturn(setOf(ExampleEntity1::class.java, ExampleEntity3::class.java))
     }
 
     @Test
