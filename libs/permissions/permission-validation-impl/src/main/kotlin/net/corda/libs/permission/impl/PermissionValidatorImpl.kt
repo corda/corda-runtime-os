@@ -4,11 +4,14 @@ import net.corda.data.permissions.Permission
 import net.corda.data.permissions.PermissionType
 import net.corda.libs.permission.PermissionValidator
 import net.corda.libs.permissions.cache.PermissionCache
+import net.corda.permissions.password.PasswordHash
+import net.corda.permissions.password.PasswordService
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 
 class PermissionValidatorImpl(
-    private val permissionCache: PermissionCache
+    private val permissionCache: PermissionCache,
+    private val passwordService: PasswordService
 ) : PermissionValidator {
 
     companion object {
@@ -28,7 +31,22 @@ class PermissionValidatorImpl(
         running = false
     }
 
-    override fun authorizeUser(requestId: String, loginName: String, permission: String): Boolean {
+    override fun authenticateUser(loginName: String, password: CharArray): Boolean {
+        logger.debug { "Checking authentication for user $loginName." }
+        val user = permissionCache.getUser(loginName) ?: return false
+
+        if(user.saltValue == null || user.hashedPassword == null) {
+            return false
+        }
+
+        if(!passwordService.verifies(String(password), PasswordHash(user.saltValue, user.hashedPassword))) {
+            return false
+        }
+
+        return true
+    }
+
+    override fun authorizeUser(loginName: String, permission: String): Boolean {
         logger.debug { "Checking permissions for $permission for user $loginName" }
         val user = permissionCache.getUser(loginName) ?: return false
 
@@ -95,6 +113,6 @@ class PermissionValidatorImpl(
     }
 
     private fun wildcardMatch(existingPermission: Permission, permissionRequested: String): Boolean {
-        return permissionRequested.matches(existingPermission.permissionString.toRegex())
+        return permissionRequested.matches(existingPermission.permissionString.toRegex(RegexOption.IGNORE_CASE))
     }
 }

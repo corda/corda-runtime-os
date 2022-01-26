@@ -11,7 +11,7 @@ class KafkaSetup(
 ) : Runnable {
     override fun run() {
         println("Setting up kafka topics...")
-        val topics = listOf("ConfigTopic", "session.out.partitions", "p2p.out.markers.state").map {
+        val topics = listOf("config.topic", "session.out.partitions", "p2p.out.markers.state").map {
             mapOf(
                 "topicName" to it,
                 "numPartitions" to defaultPartitionsCount,

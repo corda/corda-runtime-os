@@ -1,5 +1,6 @@
 package net.corda.membership.staticmemberlist
 
+import net.corda.crypto.CryptoLibraryFactory
 import net.corda.crypto.SigningService
 import net.corda.membership.CPIWhiteList
 import net.corda.membership.GroupPolicy
@@ -21,16 +22,16 @@ import net.corda.membership.identity.MemberInfoImpl
 import net.corda.membership.identity.converter.EndpointInfoConverter
 import net.corda.membership.identity.converter.PublicKeyConverter
 import net.corda.membership.read.MembershipGroupReader
-import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.ENDPOINT_PROTOCOL
-import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.ENDPOINT_URL
-import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.MEMBER_STATUS
-import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.ROTATED_KEY_ALIAS
-import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.STATIC_MODIFIED_TIME
-import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.STATIC_PLATFORM_VERSION
-import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.STATIC_SERIAL
-import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.STATIC_SOFTWARE_VERSION
-import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.X500NAME
-import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.staticMemberTemplate
+import net.corda.membership.staticmemberlist.StaticMemberTemplateExtension.Companion.ENDPOINT_PROTOCOL
+import net.corda.membership.staticmemberlist.StaticMemberTemplateExtension.Companion.ENDPOINT_URL
+import net.corda.membership.staticmemberlist.StaticMemberTemplateExtension.Companion.MEMBER_STATUS
+import net.corda.membership.staticmemberlist.StaticMemberTemplateExtension.Companion.ROTATED_KEY_ALIAS
+import net.corda.membership.staticmemberlist.StaticMemberTemplateExtension.Companion.STATIC_MODIFIED_TIME
+import net.corda.membership.staticmemberlist.StaticMemberTemplateExtension.Companion.STATIC_PLATFORM_VERSION
+import net.corda.membership.staticmemberlist.StaticMemberTemplateExtension.Companion.STATIC_SERIAL
+import net.corda.membership.staticmemberlist.StaticMemberTemplateExtension.Companion.STATIC_SOFTWARE_VERSION
+import net.corda.membership.staticmemberlist.StaticMemberTemplateExtension.Companion.NAME
+import net.corda.membership.staticmemberlist.StaticMemberTemplateExtension.Companion.staticMembers
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.identity.EndpointInfo
@@ -42,10 +43,11 @@ import java.time.Instant
 class MembershipGroupReaderImpl(
     override val owningMember: MemberX500Name,
     override val policy: GroupPolicy,
-    private val keyEncodingService: KeyEncodingService,
+    private val cryptoLibraryFactory: CryptoLibraryFactory,
     private val signingService: SigningService
 ) : MembershipGroupReader {
 
+    private val keyEncodingService = cryptoLibraryFactory.getKeyEncodingService()
     private val memberInfoList: List<MemberInfo> = parseMemberTemplate()
 
     override val groupId: String
@@ -67,17 +69,17 @@ class MembershipGroupReaderImpl(
         val converter = PropertyConverterImpl(
             listOf(
                 EndpointInfoConverter(),
-                PublicKeyConverter(keyEncodingService),
+                PublicKeyConverter(cryptoLibraryFactory),
             )
         )
         @Suppress("SpreadOperator")
-        policy.staticMemberTemplate.forEach { member ->
+        policy.staticMembers.forEach { member ->
             val owningKey = signingService.generateKeyPair(member["keyAlias"].toString())
             members.add(
                 MemberInfoImpl(
                     memberProvidedContext = MemberContextImpl(
                         sortedMapOf(
-                            PARTY_NAME to member[X500NAME].toString(),
+                            PARTY_NAME to member[NAME].toString(),
                             PARTY_OWNING_KEY to keyEncodingService.encodeAsString(owningKey),
                             GROUP_ID to policy.groupId,
                             *convertPublicKeys(keyEncodingService, member, owningKey).toTypedArray(),

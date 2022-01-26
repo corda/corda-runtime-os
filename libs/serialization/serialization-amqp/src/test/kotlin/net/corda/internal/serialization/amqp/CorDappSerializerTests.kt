@@ -1,7 +1,5 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.internal.serialization.AllWhitelist
-import net.corda.internal.serialization.MutableClassWhitelist
 import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.deserializeAndReturnEnvelope
 import net.corda.internal.serialization.amqp.testutils.serialize
@@ -9,6 +7,7 @@ import net.corda.internal.serialization.amqp.testutils.serializeAndReturnSchema
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.amqp.testutils.testSerializationContext
 import net.corda.serialization.BaseProxySerializer
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.serialization.SerializationCustomSerializer
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
@@ -23,7 +22,7 @@ class CorDappSerializerTests {
 
     private fun proxyFactory(
             serializers: List<SerializationCustomSerializer<*, *>>
-    ) = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup()).apply {
+    ) = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup()).apply {
         serializers.forEach {
             registerExternal(it, this)
         }
@@ -56,9 +55,8 @@ class CorDappSerializerTests {
 
     @Test
 	fun `type uses proxy`() {
-        val internalProxyFactory = testDefaultFactory()
         val proxyFactory = testDefaultFactory()
-        val defaultFactory = testDefaultFactory()
+        val internalProxyFactory = testDefaultFactory()
 
         val msg = "help"
 
@@ -69,19 +67,17 @@ class CorDappSerializerTests {
 
         val bAndSProxy = SerializationOutput(proxyFactory).serializeAndReturnSchema(needsProxy)
         val bAndSInternal = SerializationOutput(internalProxyFactory).serializeAndReturnSchema(needsProxy)
-        val bAndSDefault = SerializationOutput(defaultFactory).serializeAndReturnSchema(needsProxy)
 
-        val objFromDefault = DeserializationInput(defaultFactory).deserializeAndReturnEnvelope(bAndSDefault.obj)
         val objFromInternal = DeserializationInput(internalProxyFactory).deserializeAndReturnEnvelope(bAndSInternal.obj)
         val objFromProxy = DeserializationInput(proxyFactory).deserializeAndReturnEnvelope(bAndSProxy.obj)
 
-        assertEquals(msg, objFromDefault.obj.a)
         assertEquals(msg, objFromInternal.obj.a)
         assertEquals(msg, objFromProxy.obj.a)
     }
 
     @Test
 	fun proxiedTypeIsNested() {
+        @CordaSerializable
         data class A(val a: Int, val b: NeedsProxy)
 
         val factory = testDefaultFactory()
@@ -101,18 +97,7 @@ class CorDappSerializerTests {
 	fun testWithWhitelistNotAllowed() {
         data class A(val a: Int, val b: NeedsProxy)
 
-        class WL : MutableClassWhitelist {
-            private val allowedClasses = mutableSetOf<String>()
-
-            override fun add(entry: Class<*>) {
-                allowedClasses.add(entry.name)
-            }
-
-            override fun hasListed(type: Class<*>): Boolean = type.name in allowedClasses
-        }
-
-        val whitelist = WL()
-        val factory = SerializerFactoryBuilder.build(whitelist, testSerializationContext.currentSandboxGroup())
+        val factory = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
         factory.registerExternal(NeedsProxyProxySerializer(), factory)
 
         val tv1 = 100
@@ -120,64 +105,6 @@ class CorDappSerializerTests {
         Assertions.assertThatThrownBy {
             SerializationOutput(factory).serialize(A(tv1, NeedsProxy(tv2)))
         }.isInstanceOf(NotSerializableException::class.java)
-    }
-
-    @Test
-	fun testWithWhitelistAllowed() {
-        data class A(val a: Int, val b: NeedsProxy)
-
-        class WL : MutableClassWhitelist {
-            private val allowedClasses = mutableSetOf<String>(
-                    A::class.java.name)
-
-            override fun add(entry: Class<*>) {
-                allowedClasses.add(entry.name)
-            }
-
-            override fun hasListed(type: Class<*>): Boolean = type.name in allowedClasses
-        }
-
-        val whitelist = WL()
-        val factory = SerializerFactoryBuilder.build(whitelist, testSerializationContext.currentSandboxGroup())
-        factory.registerExternal(NeedsProxyProxySerializer(), factory)
-
-        val tv1 = 100
-        val tv2 = "pants schmants"
-        val obj = DeserializationInput(factory).deserialize(
-                SerializationOutput(factory).serialize(A(tv1, NeedsProxy(tv2))))
-
-        assertEquals(tv1, obj.a)
-        assertEquals(tv2, obj.b.a)
-    }
-
-    // The custom type not being whitelisted won't matter here because the act of adding a
-    // custom serializer bypasses the whitelist
-    @Test
-	fun testWithWhitelistAllowedOuterOnly() {
-        data class A(val a: Int, val b: NeedsProxy)
-
-        class WL : MutableClassWhitelist {
-            // explicitly don't add NeedsProxy
-            private val allowedClasses = mutableSetOf<String>(A::class.java.name)
-
-            override fun add(entry: Class<*>) {
-                allowedClasses.add(entry.name)
-            }
-
-            override fun hasListed(type: Class<*>): Boolean = type.name in allowedClasses
-        }
-
-        val whitelist = WL()
-        val factory = SerializerFactoryBuilder.build(whitelist, testSerializationContext.currentSandboxGroup())
-        factory.registerExternal(NeedsProxyProxySerializer(), factory)
-
-        val tv1 = 100
-        val tv2 = "pants schmants"
-        val obj = DeserializationInput(factory).deserialize(
-                SerializationOutput(factory).serialize(A(tv1, NeedsProxy(tv2))))
-
-        assertEquals(tv1, obj.a)
-        assertEquals(tv2, obj.b.a)
     }
 
     data class NeedsProxyGen<T>(val a: T)

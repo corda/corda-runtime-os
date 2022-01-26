@@ -16,6 +16,7 @@ dependencies {
     implementation project(':processors:flow-processor')
     implementation project(':processors:rpc-processor')
     implementation "info.picocli:picocli:$picocliVersion"
+    implementation 'net.corda:corda-base'
 
     runtimeOnly "com.typesafe:config:$typeSafeConfigVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"

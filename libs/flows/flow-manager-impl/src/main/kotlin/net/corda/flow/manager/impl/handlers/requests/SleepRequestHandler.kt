@@ -1,7 +1,7 @@
 package net.corda.flow.manager.impl.handlers.requests
 
+import net.corda.flow.manager.fiber.FlowIORequest
 import net.corda.flow.manager.impl.FlowEventContext
-import net.corda.flow.fiber.requests.FlowIORequest
 import org.osgi.service.component.annotations.Component
 
 @Component(service = [FlowRequestHandler::class])

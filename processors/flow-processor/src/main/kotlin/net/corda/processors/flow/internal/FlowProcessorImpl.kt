@@ -3,9 +3,11 @@ package net.corda.processors.flow.internal
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.flow.service.FlowService
 import net.corda.libs.configuration.SmartConfig
+import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
@@ -22,14 +24,14 @@ import org.slf4j.Logger
 @Suppress("LongParameterList", "Unused")
 @Component(service = [FlowProcessor::class])
 class FlowProcessorImpl @Activate constructor(
+    @Reference(service = LifecycleCoordinatorFactory::class)
+    private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = FlowService::class)
     private val flowService: FlowService,
     @Reference(service = FlowMapperService::class)
     private val flowMapperService: FlowMapperService,
-    @Reference(service = LifecycleCoordinatorFactory::class)
-    private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = SandboxService::class)
     private val sandboxService: SandboxService
 ) : FlowProcessor {
@@ -38,43 +40,46 @@ class FlowProcessorImpl @Activate constructor(
         val log: Logger = contextLogger()
     }
 
-    private val lifeCycleCoordinator = coordinatorFactory.createCoordinator<FlowProcessorImpl>(::eventHandler)
+    private val lifecycleCoordinator = coordinatorFactory.createCoordinator<FlowProcessorImpl>(::eventHandler)
+    private val dependentComponents = DependentComponents.of(
+        ::configurationReadService,
+        ::flowService,
+        ::flowMapperService,
+        // TODO - This needs to change to use SandboxGroupContextService
+        ::sandboxService
+    )
 
-    override fun start(config: SmartConfig) {
+    override fun start(bootConfig: SmartConfig) {
         log.info("Flow processor starting.")
-        lifeCycleCoordinator.start()
-        lifeCycleCoordinator.postEvent(BootConfigEvent(config))
+        lifecycleCoordinator.start()
+        lifecycleCoordinator.postEvent(BootConfigEvent(bootConfig))
     }
 
     override fun stop() {
-        log.info("Stopping application")
-        lifeCycleCoordinator.stop()
+        log.info("Flow processor stopping.")
+        lifecycleCoordinator.stop()
     }
 
     @Suppress("UNUSED_PARAMETER")
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        log.debug { "Flow Processor received: $event" }
+        log.debug { "Flow processor received event $event." }
+
         when (event) {
             is StartEvent -> {
-                configurationReadService.start()
-                flowService.start()
-                flowMapperService.start()
-                // HACK: This needs to change when we have the proper sandbox group service
-                // for now we need to start this version of the service as it hosts the new
-                // api we use elsewhere
-                sandboxService.start()
+                dependentComponents.registerAndStartAll(coordinator)
+            }
+            is RegistrationStatusChangeEvent -> {
+                log.info("Flow processor is ${event.status}")
+                coordinator.updateStatus(event.status)
             }
             is BootConfigEvent -> {
                 configurationReadService.bootstrapConfig(event.config)
             }
             is StopEvent -> {
-                configurationReadService.stop()
-                flowService.stop()
-                flowMapperService.stop()
-                sandboxService.stop()
+                dependentComponents.stopAll()
             }
             else -> {
-                log.error("$event unexpected!")
+                log.error("Unexpected event $event!")
             }
         }
     }

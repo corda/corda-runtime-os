@@ -1,5 +1,6 @@
 package net.corda.lifecycle.impl
 
+import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -14,6 +15,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
 import net.corda.lifecycle.impl.LifecycleProcessor.Companion.STOPPED_REASON
 import net.corda.lifecycle.impl.registry.LifecycleRegistryCoordinatorAccess
+import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -1030,6 +1032,42 @@ internal class LifecycleCoordinatorImplTest {
         val coordinator = createCoordinator { _, _ -> }
         assertThrows<LifecycleException> {
             coordinator.followStatusChanges(setOf(coordinator))
+        }
+    }
+
+    @Test
+    fun `custom events are sent to registered coordinators`() {
+        val startLatch = CountDownLatch(1)
+        class CustomEventData(val value: String)
+        val receivedCustomEvents = mutableListOf<CustomEvent>()
+
+        val trackedCoordinator = createCoordinator { event, _ ->
+            when(event) {
+                is StartEvent -> {
+                    startLatch.countDown()
+                }
+            }
+        }
+        val trackingCoordinator = createCoordinator { event, _ ->
+            when(event) {
+                is CustomEvent -> {
+                    receivedCustomEvents.add(event)
+                }
+            }
+        }
+
+        trackingCoordinator.followStatusChanges(setOf(trackedCoordinator))
+        trackedCoordinator.start()
+        trackingCoordinator.start()
+        startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS)
+
+        val eventData = "hello world"
+        trackedCoordinator.postCustomEventToFollowers(CustomEventData(eventData))
+        eventually {
+            val customEvents = receivedCustomEvents.map { it.payload }
+                .filterIsInstance<CustomEventData>()
+                .filter { it.value == eventData }
+            assertThat(customEvents).hasSize(1)
         }
     }
 

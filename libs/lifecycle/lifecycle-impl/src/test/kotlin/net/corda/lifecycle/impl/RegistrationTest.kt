@@ -1,5 +1,6 @@
 package net.corda.lifecycle.impl
 
+import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -96,6 +97,18 @@ class RegistrationTest {
         harness.closeRegistration()
         harness.requestNotify()
         harness.verifyDeliveredEvents(1, 0)
+    }
+
+    @Test
+    fun `custom event is posted to the registering coordinator`() {
+        val registeringCoordinator = mock<LifecycleCoordinator>()
+        val registeredCoordinator = mock<LifecycleCoordinator>()
+        val registration = Registration(setOf(registeredCoordinator), registeringCoordinator)
+
+        val customEvent = CustomEvent(registration, "hello world")
+        registration.postCustomEvent(customEvent)
+
+        verify(registeringCoordinator).postEvent(customEvent)
     }
 
     @Test

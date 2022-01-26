@@ -1,6 +1,7 @@
 package net.corda.internal.serialization.amqp;
 
 import net.corda.internal.serialization.amqp.testutils.TestSerializationContext;
+import net.corda.v5.base.annotations.CordaSerializable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -12,10 +13,12 @@ import static net.corda.internal.serialization.amqp.testutils.AMQPTestUtilsKt.te
 @Timeout(value = 30, unit = TimeUnit.SECONDS)
 public class JavaSerialiseEnumTests {
 
+    @CordaSerializable
     public enum Bras {
         TSHIRT, UNDERWIRE, PUSHUP, BRALETTE, STRAPLESS, SPORTS, BACKLESS, PADDED
     }
 
+    @CordaSerializable
     private static class Bra {
         private final Bras bra;
 

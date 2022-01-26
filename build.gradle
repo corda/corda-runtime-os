@@ -28,7 +28,6 @@ plugins {
 wrapper {
     gradleVersion = '7.3.2'
     distributionType = Wrapper.DistributionType.BIN
-    distributionUrl="https://gradleproxy:gradleproxy@software.r3.com/artifactory/gradle-proxy/gradle-$gradleVersion-bin.zip"
 }
 
 def javaVersion = VERSION_11
@@ -170,14 +169,16 @@ allprojects {
     sourceSets {
         integrationTest {
             java {
-                srcDirs += [ 'src/integration-test/java' ]
+                srcDirs += [ 'src/integrationTest/java' ]
             }
             kotlin {
-                srcDirs += [ 'src/integration-test/kotlin' ]
+                srcDirs += [ 'src/integrationTest/kotlin' ]
             }
             resources {
-                srcDirs = [ 'src/integration-test/resources' ]
+                srcDirs = [ 'src/integrationTest/resources' ]
             }
+            compileClasspath += main.output + test.output
+            runtimeClasspath += main.output + test.output
         }
     }
 
@@ -199,6 +200,22 @@ allprojects {
                 }
             }
         }
+    }
+
+    tasks.register('integrationTest', Test) {
+        description = "Runs integration tests."
+        group = "verification"
+
+        testClassesDirs = project.sourceSets["integrationTest"].output.classesDirs
+        classpath = project.sourceSets["integrationTest"].runtimeClasspath
+
+        systemProperty "postgresHost", project.getProperty("postgresHost")
+        systemProperty "postgresDb", project.getProperty("postgresDb")
+        systemProperty "postgresPort", project.getProperty("postgresPort")
+        systemProperty "postgresUser", project.getProperty("postgresUser")
+        systemProperty "postgresPassword", project.getProperty("postgresPassword")
+
+        shouldRunAfter tasks.named('test')
     }
 
     dependencies {
@@ -323,7 +340,7 @@ subprojects {
     }
 
     // apply docker publishing to workers and select testing applications
-    def nonWorkerImages = ['p2p-gateway', 'p2p-link-manager', 'http-rpc-gateway', 'app-simulator', 'configuration-publisher', 'db-worker-prototype']
+    def nonWorkerImages = ['p2p-gateway', 'p2p-link-manager', 'app-simulator', 'configuration-publisher']
     if (it.toString().contains(":applications:workers:release:") || nonWorkerImages.contains(it.name)) {
 
         tasks.register('publishOSGiImage', net.corda.gradle.DeployableContainerBuilder) {

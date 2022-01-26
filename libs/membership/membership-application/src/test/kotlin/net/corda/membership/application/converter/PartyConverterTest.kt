@@ -1,5 +1,6 @@
 package net.corda.membership.application.converter
 
+import net.corda.crypto.CryptoLibraryFactory
 import net.corda.membership.application.PartyImpl
 import net.corda.membership.conversion.PropertyConverterImpl
 import net.corda.membership.identity.MGMContextImpl
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
 import kotlin.test.assertFailsWith
@@ -21,6 +23,9 @@ import kotlin.test.assertFailsWith
 class PartyConverterTest {
     companion object {
         private val keyEncodingService = Mockito.mock(KeyEncodingService::class.java)
+        private val cryptoLibraryFactory = mock<CryptoLibraryFactory>().apply {
+            whenever(getKeyEncodingService()).thenReturn(keyEncodingService)
+        }
         private const val PARTY = "corda.party"
         private const val partyName = "O=Alice,L=London,C=GB"
         private const val notaryName = "O=Notary,L=London,C=GB"
@@ -28,7 +33,7 @@ class PartyConverterTest {
         private const val KEY = "12345"
         private val key = Mockito.mock(PublicKey::class.java)
 
-        private val converter = PropertyConverterImpl(listOf(PartyConverter(), PublicKeyConverter(keyEncodingService)))
+        private val converter = PropertyConverterImpl(listOf(PartyConverter(), PublicKeyConverter(cryptoLibraryFactory)))
 
         val memberContext = MemberContextImpl(
             sortedMapOf(

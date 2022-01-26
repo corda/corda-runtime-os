@@ -43,10 +43,9 @@ dependencies {
     integrationTestRuntimeOnly project(":libs:sandbox-hooks")
     integrationTestRuntimeOnly project(":libs:sandbox-internal")
 
-    // Use custom configurations in consumer cpks to gather location of cpis to add into `resources`
-    // Note:  we define the configuration `cpiForTest` in each project's gradle script.
-    cpis project(path: 'test-resources:crypto-custom-digest-one-consumer-cpk', configuration: 'cpiForTest')
-    cpis project(path: 'test-resources:crypto-custom-digest-two-consumer-cpk', configuration: 'cpiForTest')
+    // Gather locations of CPIs to add into `resources`
+    cpis project(path: 'test-resources:crypto-custom-digest-one-consumer-cpk', configuration: 'cordaCPB')
+    cpis project(path: 'test-resources:crypto-custom-digest-two-consumer-cpk', configuration: 'cordaCPB')
 }
 
 def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {

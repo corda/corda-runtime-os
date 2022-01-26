@@ -29,11 +29,14 @@ class LiquibaseSchemaMigratorImpl(
         }
 ) : LiquibaseSchemaMigrator {
     companion object {
+        // default schema
+        // NOTE: may need to become variable depending on the DB type
+        const val DEFAULT_DB_SCHEMA = "PUBLIC"
         private val log = contextLogger()
     }
 
-    override fun updateDb(datasource: Connection, dbChange: DbChange, liquibaseSchemaName: String) {
-        process(datasource, dbChange, sql = null, liquibaseSchemaName)
+    override fun updateDb(datasource: Connection, dbChange: DbChange) {
+        process(datasource, dbChange, sql = null, DEFAULT_DB_SCHEMA)
     }
 
     /**
@@ -44,8 +47,8 @@ class LiquibaseSchemaMigratorImpl(
      * @param dbChange
      * @param sql output
      */
-    override fun createUpdateSql(datasource: Connection, dbChange: DbChange, sql: Writer, liquibaseSchemaName: String) {
-        process(datasource, dbChange, sql, liquibaseSchemaName)
+    override fun createUpdateSql(datasource: Connection, dbChange: DbChange, sql: Writer) {
+        process(datasource, dbChange, sql, DEFAULT_DB_SCHEMA)
     }
 
     private fun process(

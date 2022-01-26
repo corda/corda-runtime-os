@@ -6,15 +6,8 @@
     <ID>ComplexCondition:DeserializationInput.kt$DeserializationInput$type != TypeIdentifier.UnknownType.getLocalType(sandboxGroup) &amp;&amp; serializer.type != type &amp;&amp; with(serializer.type) { !isSubClassOf(type) &amp;&amp; !materiallyEquivalentTo(type) }</ID>
     <ID>ComplexCondition:Schema.kt$obj == null || obj is DescribedType || obj is Binary || forGenericType(type).run { isPrimitive(this) || this == TopType }</ID>
     <ID>ComplexMethod:AMQPTypeIdentifierParser.kt$AMQPTypeIdentifierParser$// Make sure our inputs aren't designed to blow things up. private fun validate(typeString: String)</ID>
-    <ID>ComplexMethod:LocalTypeInformationBuilder.kt$ private fun constructorForDeserialization(type: Type): KFunction&lt;Any&gt;?</ID>
     <ID>ComplexMethod:LocalTypeInformationBuilder.kt$LocalTypeInformationBuilder$private fun buildForClass(type: Class&lt;*&gt;, typeIdentifier: TypeIdentifier, isOpaque: Boolean): LocalTypeInformation</ID>
     <ID>ComplexMethod:TypeModellingFingerPrinter.kt$FingerPrintingState$// For a type we haven't seen before, determine the correct path depending on the type of type it is. private fun fingerprintNewType(type: LocalTypeInformation)</ID>
-    <ID>ForbiddenComment:AllButBlacklisted.kt$AllButBlacklisted$// TODO: AutoCloseable::class.java.name,</ID>
-    <ID>ForbiddenComment:AllButBlacklisted.kt$AllButBlacklisted$// TODO: add more from java.io.</ID>
-    <ID>ForbiddenComment:AllButBlacklisted.kt$AllButBlacklisted$// TODO: add more from java.lang.reflect.</ID>
-    <ID>ForbiddenComment:AllButBlacklisted.kt$AllButBlacklisted$// TODO: add more from java.net.</ID>
-    <ID>ForbiddenComment:AllButBlacklisted.kt$AllButBlacklisted$// TODO: blacklistedClasses += type.name // add it, so checking is faster next time we encounter this class.</ID>
-    <ID>ForbiddenComment:ClassWhitelists.kt$GlobalTransientClassWhiteList$// TODO: Need some concept of from which class loader</ID>
     <ID>ForbiddenComment:CollectionSerializer.kt$CollectionSerializer$// TODO: Can we verify the entries in the list?</ID>
     <ID>ForbiddenComment:Envelope.kt$Envelope$// TODO: don't recognise a type descriptor.</ID>
     <ID>ForbiddenComment:Envelope.kt$Envelope$// TODO: make the schema parsing lazy since mostly schemas will have been seen before and we only need it if we</ID>
@@ -25,7 +18,7 @@
     <ID>ForbiddenComment:TransformTypes.kt$TransformTypes$// TODO: it would be awesome to auto build this list by scanning for transform annotations themselves</ID>
     <ID>FunctionNaming:SerializationOutput.kt$SerializationOutput$protected fun &lt;T : Any&gt; _serialize(obj: T, context: SerializationContext): SerializedBytes&lt;T&gt;</ID>
     <ID>LongParameterList:AMQPSerializer.kt$AMQPSerializer$(obj: Any, data: Data, type: Type, output: SerializationOutput, context: SerializationContext, debugIndent: Int = 0)</ID>
-    <ID>LongParameterList:LocalSerializerFactory.kt$DefaultLocalSerializerFactory$( override val whitelist: ClassWhitelist, override val sandboxGroup: SandboxGroup, private val typeModel: LocalTypeModel, private val fingerPrinter: FingerPrinter, private val descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry, private val primitiveSerializerFactory: Function&lt;Class&lt;*&gt;, AMQPSerializer&lt;Any&gt;&gt;, private val isPrimitiveType: Predicate&lt;Class&lt;*&gt;&gt;, private val customSerializerRegistry: CustomSerializerRegistry, private val onlyCustomSerializers: Boolean)</ID>
+    <ID>LongParameterList:LocalSerializerFactory.kt$DefaultLocalSerializerFactory$( override val sandboxGroup: SandboxGroup, private val typeModel: LocalTypeModel, private val fingerPrinter: FingerPrinter, private val descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry, private val primitiveSerializerFactory: Function&lt;Class&lt;*&gt;, AMQPSerializer&lt;Any&gt;&gt;, private val isPrimitiveType: Predicate&lt;Class&lt;*&gt;&gt;, private val customSerializerRegistry: CustomSerializerRegistry, private val onlyCustomSerializers: Boolean)</ID>
     <ID>LongParameterList:LocalTypeModel.kt$BaseLocalTypes$( val collectionClass: Class&lt;*&gt;, val enumSetClass: Class&lt;*&gt;, val exceptionClass: Class&lt;*&gt;, val mapClass: Class&lt;*&gt;, val stringClass: Class&lt;*&gt;, val isEnum: Predicate&lt;Class&lt;*&gt;&gt;, val enumConstants: Function&lt;Class&lt;*&gt;, Array&lt;out Any&gt;&gt;, val enumConstantNames: Function&lt;Class&lt;*&gt;, List&lt;String&gt;&gt; )</ID>
     <ID>LongParameterList:ObjectSerializer.kt$ComposableObjectSerializer$( override val type: Type, override val typeDescriptor: Symbol, override val propertySerializers: Map&lt;PropertyName, PropertySerializer&gt;, override val fields: List&lt;Field&gt;, private val reader: ComposableObjectReader, private val writer: ComposableObjectWriter)</ID>
     <ID>LongParameterList:ObjectSerializer.kt$ComposableObjectWriter$( obj: Any, data: Data, @Suppress("UNUSED_PARAMETER") type: Type, output: SerializationOutput, context: SerializationContext, debugIndent: Int )</ID>
@@ -33,15 +26,13 @@
     <ID>MatchingDeclarationName:SupportedTransforms.kt$SupportedTransform</ID>
     <ID>MaxLineLength:AMQPRemoteTypeModel.kt$AMQPRemoteTypeModel$cache.getOrPut(typeDescriptor) { interpretationState.run { typeNotation.name.getTypeIdentifier(sandboxGroup).interpretIdentifier(sandboxGroup) } }</ID>
     <ID>MaxLineLength:AMQPRemoteTypeModel.kt$AMQPRemoteTypeModel.InterpretationState$private</ID>
-    <ID>MaxLineLength:AMQPTestUtils.kt$SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup(), descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry)</ID>
-    <ID>MaxLineLength:AMQPTestUtils.kt$SerializerFactoryBuilder.build(TestMutableWhiteList(),testSerializationContext.currentSandboxGroup(), descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry)</ID>
+    <ID>MaxLineLength:AMQPTestUtils.kt$SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup(), descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry)</ID>
     <ID>MaxLineLength:AMQPTypeIdentifierParser.kt$AMQPTypeIdentifierParser.ParseState.ParsingParameterList$data</ID>
-    <ID>MaxLineLength:AllButBlacklisted.kt$AllButBlacklisted$throw IllegalStateException("The $matchType $aMatch of ${type.name} is blacklisted, so it cannot be used in serialization.")</ID>
-    <ID>MaxLineLength:ClassWhitelists.kt$AbstractMutableClassWhitelist$sealed</ID>
     <ID>MaxLineLength:CollectionSerializer.kt$CollectionSerializer$private val typeNotation: TypeNotation = RestrictedType(AMQPTypeIdentifiers.nameForType(declaredType), null, emptyList(), "list", Descriptor(typeDescriptor), emptyList())</ID>
     <ID>MaxLineLength:CollectionSerializer.kt$CollectionSerializer.Companion$fun</ID>
     <ID>MaxLineLength:CollectionSerializer.kt$CollectionSerializer.Companion$private</ID>
     <ID>MaxLineLength:CustomSerializerRegistry.kt$CachingCustomSerializerRegistry$private val customSerializersCache: MutableMap&lt;CustomSerializerIdentifier, CustomSerializerLookupResult&gt; = DefaultCacheProvider.createCache()</ID>
+    <ID>MaxLineLength:DeserializeMapTests.kt$DeserializeMapTests$"Class \"java.util.Dictionary&lt;java.lang.String, java.lang.Integer&gt;\" is not on the whitelist or annotated with @CordaSerializable"</ID>
     <ID>MaxLineLength:EnumEvolutionSerializer.kt$EnumEvolutionSerializer$val converted = conversions[enumName] ?: throw AMQPNotSerializableException(type, "No rule to evolve enum constant $type::$enumName")</ID>
     <ID>MaxLineLength:EvolutionSerializerFactory.kt$DefaultEvolutionSerializerFactory$val propertyTypes = properties.mapValues { (_, info) -&gt; info.type.typeIdentifier.getLocalType(localSerializerFactory.sandboxGroup).asClass() }</ID>
     <ID>MaxLineLength:LocalPropertyInformation.kt$LocalPropertyInformation.CalculatedProperty$data</ID>
@@ -61,7 +52,6 @@
     <ID>MaxLineLength:LocalTypeInformationBuilder.kt$LocalTypeInformationBuilder$remedy = "Either annotate a constructor for this type with @ConstructorForDeserialization, or provide a custom serializer for it"</ID>
     <ID>MaxLineLength:LocalTypeInformationBuilder.kt$LocalTypeInformationBuilder$remedy = "Either ensure that the properties ${nonComposableProperties.keys} are serializable, or provide a custom serializer for this type"</ID>
     <ID>MaxLineLength:LocalTypeModel.kt$ConfigurableLocalTypeModel.BuilderLookup$override</ID>
-    <ID>MaxLineLength:MapSerializer.kt$MapSerializer$private val typeNotation: TypeNotation = RestrictedType(AMQPTypeIdentifiers.nameForType(declaredType), null, emptyList(), "map", Descriptor(typeDescriptor), emptyList())</ID>
     <ID>MaxLineLength:MapSerializer.kt$MapSerializer.Companion$fun</ID>
     <ID>MaxLineLength:ObjectSerializer.kt$AbstractObjectSerializer$override</ID>
     <ID>MaxLineLength:ObjectSerializer.kt$ComposableObjectSerializer$override</ID>
@@ -77,10 +67,8 @@
     <ID>MaxLineLength:SerializationEnvironment.kt$SerializationEnvironmentImpl$override val p2pSerialization: P2pSerializationService by lazy { P2pSerializationServiceImpl(SerializationServiceImpl(this, p2pContext)) }</ID>
     <ID>MaxLineLength:SerializationOutput.kt$SerializationOutput$writeObject(obj, data, if (type == TypeIdentifier.UnknownType.getLocalType(context.currentSandboxGroup())) obj.javaClass else type, context, debugIndent)</ID>
     <ID>MaxLineLength:SerializationScheme.kt$SerializationFactoryImpl$private</ID>
-    <ID>MaxLineLength:SingletonSerializer.kt$SingletonSerializer$internal val typeNotation: TypeNotation = RestrictedType(type.typeName, "Singleton", generateProvides(), "boolean", Descriptor(typeDescriptor), emptyList())</ID>
     <ID>MaxLineLength:TypeIdentifier.kt$TypeIdentifier.Parameterised$data</ID>
     <ID>MaxLineLength:TypeParameterUtils.kt$private</ID>
-    <ID>NestedBlockDepth:AllButBlacklisted.kt$AllButBlacklisted$ override fun hasListed(type: Class&lt;*&gt;): Boolean</ID>
     <ID>SpreadOperator:ObjectBuilder.kt$ConstructorCaller$(*parameters)</ID>
     <ID>SpreadOperator:ThrowableSerializer.kt$ThrowableSerializer$(*params.toTypedArray())</ID>
     <ID>ThrowsCount:AMQPTypeIdentifierParser.kt$AMQPTypeIdentifierParser$// Make sure our inputs aren't designed to blow things up. private fun validate(typeString: String)</ID>

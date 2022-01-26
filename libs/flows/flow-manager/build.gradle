@@ -11,8 +11,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-application"
     implementation "net.corda:corda-avro-schema"
-
-    implementation project(':libs:flows:flow-fiber')
+    implementation("com.esotericsoftware:kryo:$kryoVersion")
 
     implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
     implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"

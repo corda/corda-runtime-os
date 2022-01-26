@@ -9,7 +9,8 @@ import net.corda.flow.manager.FlowEventProcessor
 import net.corda.flow.manager.factory.FlowEventProcessorFactory
 import net.corda.flow.service.stubs.StateAndEventSubscriptionStub
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
@@ -31,13 +32,12 @@ class FlowExecutorTest {
 
     companion object {
         private const val GROUP_NAME_KEY = "manager.consumer.group"
-        private const val INSTANCE_ID_KEY = "instance-id"
     }
 
     private val coordinatorFactory: LifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
-    private val config: SmartConfig = SmartConfigImpl(
+    private val config: SmartConfig = SmartConfigFactory.create(ConfigFactory.empty()).create(
         ConfigFactory.empty().withValue(
-            INSTANCE_ID_KEY, ConfigValueFactory
+            INSTANCE_ID, ConfigValueFactory
                 .fromAnyRef(1)
         ).withValue(GROUP_NAME_KEY, ConfigValueFactory.fromAnyRef("Group1"))
     )

@@ -25,7 +25,7 @@ class PermissionValidationService @Activate constructor(
     @Reference(service = PermissionValidatorFactory::class)
     private val permissionValidatorFactory: PermissionValidatorFactory,
     @Reference(service = PermissionCacheService::class)
-    private val permissionCacheService: PermissionCacheService,
+    private val permissionCacheService: PermissionCacheService
 ) : Lifecycle {
 
     private companion object {
@@ -80,7 +80,7 @@ class PermissionValidationService @Activate constructor(
         checkNotNull(permissionCache) {
             "The PermissionCacheService reported status UP but its permissionCache field was null."
         }
-        _permissionValidator = permissionValidatorFactory.createPermissionValidator(permissionCache)
+        _permissionValidator = permissionValidatorFactory.create(permissionCache)
             .also { it.start() }
     }
 

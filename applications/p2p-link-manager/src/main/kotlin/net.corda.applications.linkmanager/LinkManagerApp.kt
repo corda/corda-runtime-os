@@ -1,5 +1,6 @@
 package net.corda.applications.linkmanager
 
+import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -29,8 +30,6 @@ class LinkManagerApp @Activate constructor(
     private val publisherFactory: PublisherFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = SmartConfigFactory::class)
-    private val smartConfigFactory: SmartConfigFactory,
 ) : Application {
 
     companion object {
@@ -45,10 +44,17 @@ class LinkManagerApp @Activate constructor(
             shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
         } else {
 
+            // TODO - move to common worker and pick up secrets params
+            consoleLogger.info("Starting the configuration service")
+            val secretsConfig = ConfigFactory.empty()
+            val bootConfig = SmartConfigFactory.create(secretsConfig).create(arguments.kafkaNodeConfiguration)
             configurationReadService.start()
-            configurationReadService.bootstrapConfig(
-                smartConfigFactory.create(arguments.kafkaNodeConfiguration)
-            )
+            configurationReadService.bootstrapConfig(bootConfig)
+            while (!configurationReadService.isRunning) {
+                consoleLogger.info("Waiting for the configuration service to start.")
+                Thread.sleep(100)
+            }
+            consoleLogger.info("Configuration service is running")
 
             consoleLogger.info("Starting link manager")
             linkManager = LinkManager(
@@ -56,7 +62,7 @@ class LinkManagerApp @Activate constructor(
                 publisherFactory,
                 lifecycleCoordinatorFactory,
                 configurationReadService,
-                smartConfigFactory.create(arguments.kafkaNodeConfiguration),
+                bootConfig,
                 arguments.instanceId
             ).also { linkmanager ->
                 linkmanager.start()

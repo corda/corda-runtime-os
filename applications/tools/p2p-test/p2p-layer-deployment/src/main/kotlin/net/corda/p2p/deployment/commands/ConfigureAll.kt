@@ -232,7 +232,7 @@ class ConfigureAll : Runnable {
     private fun configureLinkManager() {
         println("Configure link manager of $namespaceName")
         RunJar(
-            "configuration-publisher",
+            "p2p-configuration-publisher",
             listOf(
                 "-k",
                 RunJar.kafkaServers(namespaceName),
@@ -245,7 +245,7 @@ class ConfigureAll : Runnable {
     private fun configureGateway() {
         println("Configure gateway of $namespaceName")
         RunJar(
-            "configuration-publisher",
+            "p2p-configuration-publisher",
             listOf(
                 "-k",
                 RunJar.kafkaServers(namespaceName),

@@ -1,15 +1,12 @@
 package net.corda.flow.service
 
-
-import net.corda.dependency.injection.DependencyInjectionBuilder
-import net.corda.dependency.injection.DependencyInjectionBuilderFactory
-import net.corda.dependency.injection.FlowDependencyInjector
 import net.corda.flow.manager.FlowSandboxContextTypes
+import net.corda.flow.manager.SandboxDependencyInjector
+import net.corda.flow.manager.factory.SandboxDependencyInjectionFactory
 import net.corda.packaging.CPI
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandbox.service.SandboxService
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
-import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContextInitializer
 import net.corda.sandboxgroupcontext.putObjectByKey
 import net.corda.serialization.CheckpointSerializer
@@ -20,7 +17,6 @@ import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito.inOrder
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
@@ -31,9 +27,8 @@ import org.mockito.kotlin.whenever
 
 class FlowSandboxServiceImplTest {
 
-    private val dependencyInjectionBuilderFactory: DependencyInjectionBuilderFactory = mock()
-    private val dependencyInjectionBuilder: DependencyInjectionBuilder = mock()
-    private val flowDependencyInjector: FlowDependencyInjector = mock()
+    private val dependencyInjectionFactory: SandboxDependencyInjectionFactory = mock()
+    private val sandboxDependencyInjector: SandboxDependencyInjector = mock()
     private val singletonRegistrations: Set<SingletonSerializeAsToken> = setOf(mock())
 
     private val checkpointSerializerBuilderFactory: CheckpointSerializerBuilderFactory = mock()
@@ -41,7 +36,7 @@ class FlowSandboxServiceImplTest {
     private val checkpointSerializer: CheckpointSerializer = mock()
 
     private val sandboxService: SandboxService = mock()
-    private val sandboxGroupContext: SandboxGroupContext = mock()
+
     private val mutableSandboxGroupContext: MutableSandboxGroupContext = mock()
     private val sandboxGroup: SandboxGroup = mock()
 
@@ -50,7 +45,7 @@ class FlowSandboxServiceImplTest {
 
     private val flowSandboxService = FlowSandboxServiceImpl(
         sandboxService,
-        dependencyInjectionBuilderFactory,
+        dependencyInjectionFactory,
         checkpointSerializerBuilderFactory
     )
     private val initCallbackCaptor = argumentCaptor<SandboxGroupContextInitializer>()
@@ -58,16 +53,14 @@ class FlowSandboxServiceImplTest {
 
     @BeforeEach
     fun setup() {
-        doReturn(sandboxGroupContext).whenever(sandboxService)
-            .getOrCreate(any(),  initCallbackCaptor.capture())
-        doReturn(sandboxGroupContext).whenever(sandboxService)
+        doReturn(mutableSandboxGroupContext).whenever(sandboxService)
+            .getOrCreate(any(), initCallbackCaptor.capture())
+        doReturn(mutableSandboxGroupContext).whenever(sandboxService)
             .getOrCreateByCpiIdentifier(any(), any(), any(), initCallbackCaptor.capture())
-        doReturn(sandboxGroup).whenever(sandboxGroupContext).sandboxGroup
         doReturn(sandboxGroup).whenever(mutableSandboxGroupContext).sandboxGroup
 
-        doReturn(dependencyInjectionBuilder).whenever(dependencyInjectionBuilderFactory).create()
-        doReturn(flowDependencyInjector).whenever(dependencyInjectionBuilder).build()
-        doReturn(singletonRegistrations).whenever(flowDependencyInjector).getRegisteredAsTokenSingletons()
+        doReturn(sandboxDependencyInjector).whenever(dependencyInjectionFactory).create(mutableSandboxGroupContext)
+        doReturn(singletonRegistrations).whenever(sandboxDependencyInjector).getRegisteredSingletons()
 
         doReturn(checkpointSerializerBuilder)
             .whenever(checkpointSerializerBuilderFactory).createCheckpointSerializerBuilder(any())
@@ -79,7 +72,7 @@ class FlowSandboxServiceImplTest {
     @Test
     fun `get should return group context provided by the sandbox service`() {
         val sandbox = flowSandboxService.get(holderIdentity, cpi)
-        assertThat(sandbox).isSameAs(sandboxGroupContext)
+        assertThat(sandbox).isSameAs(mutableSandboxGroupContext)
     }
 
     @Test
@@ -89,13 +82,10 @@ class FlowSandboxServiceImplTest {
         // invoke the callback
         initCallbackCaptor.firstValue.initializeSandboxGroupContext(holderIdentity, mutableSandboxGroupContext)
 
-
-        val inOrder = inOrder(dependencyInjectionBuilder)
-        inOrder.verify(dependencyInjectionBuilder, times(1)).addSandboxDependencies(mutableSandboxGroupContext)
-        inOrder.verify(dependencyInjectionBuilder, times(1)).build()
+        verify(dependencyInjectionFactory, times(1)).create(mutableSandboxGroupContext)
 
         verify(mutableSandboxGroupContext, times(1))
-            .putObjectByKey(FlowSandboxContextTypes.DEPENDENCY_INJECTOR, flowDependencyInjector)
+            .putObjectByKey(FlowSandboxContextTypes.DEPENDENCY_INJECTOR, sandboxDependencyInjector)
     }
 
     @Test
@@ -112,6 +102,6 @@ class FlowSandboxServiceImplTest {
         assertThat(allSingletons).containsAll(listOf(sandboxGroup, singletonRegistrations.first()))
 
         verify(mutableSandboxGroupContext, times(1))
-            .putObjectByKey(FlowSandboxContextTypes.DEPENDENCY_INJECTOR, flowDependencyInjector)
+            .putObjectByKey(FlowSandboxContextTypes.CHECKPOINT_SERIALIZER, checkpointSerializer)
     }
 }

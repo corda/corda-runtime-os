@@ -3,6 +3,7 @@ package net.corda.kryoserialization
 import net.corda.serialization.CheckpointInput
 import net.corda.serialization.CheckpointInternalCustomSerializer
 import net.corda.serialization.CheckpointOutput
+import net.corda.serialization.NonSerializable
 
 internal class TestClass(
     val someInt: Int,
@@ -21,6 +22,17 @@ internal class TestClass(
 
         override fun read(input: CheckpointInput, type: Class<TestClass>): TestClass {
             return TestClass(input.readInt(), input.readString())
+        }
+    }
+}
+
+internal class NonSerializableTestClass : NonSerializable{
+    internal class Serializer : CheckpointInternalCustomSerializer<NonSerializableTestClass> {
+        override fun write(output: CheckpointOutput, obj: NonSerializableTestClass) {
+        }
+
+        override fun read(input: CheckpointInput, type: Class<NonSerializableTestClass>): NonSerializableTestClass {
+            return NonSerializableTestClass()
         }
     }
 }

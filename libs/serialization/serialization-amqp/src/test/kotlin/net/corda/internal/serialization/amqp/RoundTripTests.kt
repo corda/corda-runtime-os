@@ -5,6 +5,7 @@ import net.corda.v5.serialization.annotations.ConstructorForDeserialization
 import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.serialize
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactoryNoEvolution
+import net.corda.v5.base.annotations.CordaSerializable
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -16,7 +17,8 @@ import java.util.concurrent.TimeUnit
 class RoundTripTests {
 
     @Test
-	fun mutableBecomesImmutable() {
+    fun mutableBecomesImmutable() {
+        @CordaSerializable
         data class C(val l: MutableList<String>)
 
         val factory = testDefaultFactoryNoEvolution()
@@ -29,7 +31,8 @@ class RoundTripTests {
     }
 
     @Test
-	fun mutableStillMutable() {
+    fun mutableStillMutable() {
+        @CordaSerializable
         class C(l: MutableList<String>) {
             val l: MutableList<String> = l.toMutableList()
         }
@@ -43,7 +46,8 @@ class RoundTripTests {
     }
 
     @Test
-	fun mutableStillMutable2() {
+    fun mutableStillMutable2() {
+        @CordaSerializable
         data class C(val l: MutableList<String>) {
             @ConstructorForDeserialization
             @Suppress("Unused")
@@ -59,7 +63,8 @@ class RoundTripTests {
     }
 
     @Test
-	fun mutableBecomesImmutable4() {
+    fun mutableBecomesImmutable4() {
+        @CordaSerializable
         data class C(val l: List<String>)
 
         val factory = testDefaultFactoryNoEvolution()
@@ -69,7 +74,8 @@ class RoundTripTests {
     }
 
     @Test
-	fun calculatedValues() {
+    fun calculatedValues() {
+        @CordaSerializable
         data class C(val i: Int) {
             @get:SerializableCalculatedProperty
             val squared = i * i
@@ -82,7 +88,8 @@ class RoundTripTests {
     }
 
     @Test
-	fun calculatedFunction() {
+    fun calculatedFunction() {
+        @CordaSerializable
         class C {
             var i: Int = 0
             @SerializableCalculatedProperty
@@ -102,7 +109,8 @@ class RoundTripTests {
     }
 
     @Test
-	fun inheritedCalculatedFunction() {
+    fun inheritedCalculatedFunction() {
+        @CordaSerializable
         class C: I {
             var i: Int = 0
             override val squared get() = i * i
@@ -117,6 +125,7 @@ class RoundTripTests {
 
     @Test
     fun inheritedCalculatedFunctionIsNotCalculated() {
+        @CordaSerializable
         class C(override val squared: Int) : I
 
         val instance = C(2)
@@ -126,13 +135,16 @@ class RoundTripTests {
         assertThat(deserialized.squared).isEqualTo(2)
     }
 
+    @CordaSerializable
     data class MembershipState<out T : Any>(val metadata: T) : TestContractStateInterface {
         override val participants: List<TestParty>
             get() = emptyList()
     }
 
+    @CordaSerializable
     data class TestStateAndRef<out T : TestContractStateInterface>(val state: TestTransactionState<T>, val ref: String)
 
+    @CordaSerializable
     data class OnMembershipChanged(val changedMembership: TestStateAndRef<MembershipState<Any>>)
 
     @Test
@@ -154,14 +166,16 @@ class RoundTripTests {
         assertEquals(mapOf("foo" to "bar"), deserialized.changedMembership.state.data.metadata)
     }
 
+    @CordaSerializable
     interface I2<T> {
         val t: T
     }
 
+    @CordaSerializable
     data class C<A, B : A>(override val t: B) : I2<B>
 
     @Test
-	fun recursiveTypeVariableResolution() {
+    fun recursiveTypeVariableResolution() {
         val factory = testDefaultFactoryNoEvolution()
         val instance = C<Collection<String>, List<String>>(emptyList())
 

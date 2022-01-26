@@ -20,6 +20,7 @@ dependencies {
     cordapp project(":libs:serialization:serialization-amqp:serializable-cpk-two")
     cordapp project(":libs:serialization:serialization-amqp:serializable-cpk-three")
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+    cordaProvided "net.corda:corda-base"
     cordaProvided 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 }
 
