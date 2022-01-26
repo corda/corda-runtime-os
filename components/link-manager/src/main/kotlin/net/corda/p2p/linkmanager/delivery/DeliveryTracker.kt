@@ -156,7 +156,7 @@ class DeliveryTracker(
 
         val listener = object : StateAndEventListener<String, AuthenticatedMessageDeliveryState> {
 
-            val trackedSessionKeys = ConcurrentHashMap<String, SessionManager.SessionKey>()
+            private val trackedSessionKeys = ConcurrentHashMap<String, SessionManager.SessionKey>()
 
             override fun onPostCommit(updatedStates: Map<String, AuthenticatedMessageDeliveryState?>) {
                 for ((key, state) in updatedStates) {
