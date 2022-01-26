@@ -34,3 +34,16 @@ dependencies {
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 }
 
+tasks.named('jar', Jar) {
+    bnd """\
+Import-Package:\
+    org.bouncycastle.jcajce.provider.asymmetric,\
+    org.bouncycastle.jcajce.provider.config,\
+    org.bouncycastle.jcajce.provider.digest,\
+    org.bouncycastle.jcajce.provider.keystore,\
+    org.bouncycastle.jcajce.provider.symmetric,\
+    org.bouncycastle.jcajce.provider.util,\
+    net.i2p.crypto.eddsa.math;resolution:=optional,\
+    *
+"""
+}

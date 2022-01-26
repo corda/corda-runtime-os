@@ -3,7 +3,7 @@ plugins {
     id 'corda.common-library'
 }
 
-description "Crypto's messaging based persistence"
+description "Crypto messaging based persistence"
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
