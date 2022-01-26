@@ -38,20 +38,36 @@ internal object HttpExceptionMapper {
             is IllegalArgumentException -> HttpResponseException(
                 ResponseCode.INTERNAL_SERVER_ERROR.statusCode,
                 "Illegal argument occurred.",
-                e.message?.let { mapOf("reason" to e.message!!) } ?: emptyMap()
+                createDetailMap(ResponseCode.INTERNAL_SERVER_ERROR, e.message)
             )
 
             // Http API exceptions
             is HttpApiException -> HttpResponseException(
                 e.responseCode.statusCode,
                 e.message,
-                e.details
+                e.details.addResponseCode(e.responseCode)
             )
 
             else -> {
-                logger.error("Exception was unmapped by http exception mapper.", e)
-                HttpResponseException(ResponseCode.INTERNAL_SERVER_ERROR.statusCode, e.message ?: "Internal error occurred.")
+                logger.error("Unexpected error occurred and was unmapped by http exception mapper.", e)
+                val message = e.message ?: "Unexpected error occurred."
+                HttpResponseException(
+                    ResponseCode.UNEXPECTED_ERROR.statusCode,
+                    message,
+                    createDetailMap(ResponseCode.UNEXPECTED_ERROR, message)
+                )
             }
         }
+    }
+
+    private fun createDetailMap(responseCode: ResponseCode, message: String?): Map<String, String> {
+        val map = message?.let { mapOf("reason" to message) } ?: emptyMap()
+        return map.addResponseCode(responseCode)
+    }
+
+    private fun Map<String, String>.addResponseCode(responseCode: ResponseCode): Map<String, String> {
+        val mutable = this.toMutableMap()
+        mutable["code"] = responseCode.name
+        return mutable
     }
 }
