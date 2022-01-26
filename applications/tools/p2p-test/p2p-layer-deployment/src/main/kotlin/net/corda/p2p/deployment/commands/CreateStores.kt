@@ -31,18 +31,22 @@ class CreateStores : Runnable {
         description = ["The TinyCert API Key"]
     )
     private var apiKey = System.getenv("TINYCERT_API_KEY")
+        ?: throw DeploymentException("Please set the TINYCERT_API_KEY environment variable")
 
     @Option(
         names = ["-p", "--tinycert-passphrase"],
         description = ["The TinyCert Pass phrase"]
     )
     private var passPhrase = System.getenv("TINYCERT_PASS_PHRASE")
+        ?: throw DeploymentException("Please set the TINYCERT_PASS_PHRASE environment variable")
 
     @Option(
         names = ["-e", "--tinycert-email"],
         description = ["The TinyCert email"]
     )
-    private var email = System.getenv("TINYCERT_EMAIL") ?: System.getenv("CORDA_ARTIFACTORY_USERNAME")
+    private var email = System.getenv("TINYCERT_EMAIL")
+        ?: System.getenv("CORDA_ARTIFACTORY_USERNAME")
+        ?: throw DeploymentException("Please set the CORDA_ARTIFACTORY_USERNAME environment variable")
 
     @Option(
         names = ["--hosts"],

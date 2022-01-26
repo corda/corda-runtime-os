@@ -47,6 +47,10 @@ object DockerSecrets {
     }
 
     private val auth by lazy {
-        "${getenv("CORDA_ARTIFACTORY_USERNAME")}:${getenv("CORDA_ARTIFACTORY_PASSWORD")}"
+        "${
+        getenv("CORDA_ARTIFACTORY_USERNAME")
+            ?: throw DeploymentException("Please set the CORDA_ARTIFACTORY_USERNAME environment variable")}:${
+        getenv("CORDA_ARTIFACTORY_PASSWORD")
+            ?: throw DeploymentException("Please set the CORDA_ARTIFACTORY_PASSWORD environment variable")}"
     }
 }
