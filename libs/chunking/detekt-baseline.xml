@@ -1,0 +1,18 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <CurrentIssues>
+    <ID>SpreadOperator:ConcurrencyUtils.kt$(*toTypedArray())</ID>
+    <ID>SpreadOperator:InternalUtils.kt$(this, target, *options)</ID>
+    <ID>SpreadOperator:PathUtils.kt$(*options)</ID>
+    <ID>SpreadOperator:PathUtils.kt$(charset, *options)</ID>
+    <ID>SpreadOperator:PathUtils.kt$(this, *attrs)</ID>
+    <ID>SpreadOperator:PathUtils.kt$(this, *options)</ID>
+    <ID>SpreadOperator:PathUtils.kt$(this, bytes, *options)</ID>
+    <ID>SpreadOperator:PathUtils.kt$(this, charset, *options)</ID>
+    <ID>SpreadOperator:PathUtils.kt$(this, lines, charset, *options)</ID>
+    <ID>SpreadOperator:PathUtils.kt$(this, target, *options)</ID>
+    <ID>SpreadOperator:PathUtils.kt$(this, targetFile, *options)</ID>
+    <ID>TooManyFunctions:PathUtils.kt$net.corda.utilities.PathUtils.kt</ID>
+  </CurrentIssues>
+</SmellBaseline>
