@@ -2,7 +2,6 @@ package net.corda.processors.crypto.tests
 
 import net.corda.crypto.CryptoConsts
 import net.corda.crypto.CryptoOpsClient
-import net.corda.crypto.service.CryptoOpsService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.processors.crypto.CryptoProcessor
