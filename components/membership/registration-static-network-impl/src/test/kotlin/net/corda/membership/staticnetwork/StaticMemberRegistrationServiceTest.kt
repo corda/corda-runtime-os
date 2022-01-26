@@ -7,10 +7,14 @@ import net.corda.crypto.CryptoLibraryClientsFactoryProvider
 import net.corda.crypto.CryptoLibraryFactory
 import net.corda.crypto.SigningService
 import net.corda.crypto.SigningService.Companion.EMPTY_CONTEXT
+import net.corda.data.KeyValuePairList
+import net.corda.data.membership.SignedMemberInfo
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.conversion.PropertyConverterImpl
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.identity.MGMContextImpl
+import net.corda.membership.identity.MemberContextImpl
 import net.corda.membership.identity.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.identity.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.identity.MemberInfoExtension.Companion.endpoints
@@ -20,6 +24,8 @@ import net.corda.membership.identity.MemberInfoExtension.Companion.softwareVersi
 import net.corda.membership.identity.MemberInfoExtension.Companion.status
 import net.corda.membership.identity.converter.EndpointInfoConverter
 import net.corda.membership.identity.converter.PublicKeyConverter
+import net.corda.membership.identity.toMemberInfo
+import net.corda.membership.identity.toSortedMap
 import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.SUBMITTED
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.NOT_SUBMITTED
@@ -29,17 +35,23 @@ import net.corda.membership.staticnetwork.TestUtils.Companion.bobName
 import net.corda.membership.staticnetwork.TestUtils.Companion.charlieName
 import net.corda.membership.staticnetwork.TestUtils.Companion.configs
 import net.corda.membership.staticnetwork.TestUtils.Companion.daisyName
+import net.corda.membership.staticnetwork.TestUtils.Companion.ericName
+import net.corda.membership.staticnetwork.TestUtils.Companion.frankieName
 import net.corda.membership.staticnetwork.TestUtils.Companion.groupPolicyWithInvalidStaticNetworkTemplate
 import net.corda.membership.staticnetwork.TestUtils.Companion.groupPolicyWithStaticNetwork
 import net.corda.membership.staticnetwork.TestUtils.Companion.groupPolicyWithoutStaticNetwork
 import net.corda.membership.staticnetwork.TestUtils.Companion.groupPolicyWithDuplicateMembers
+import net.corda.membership.staticnetwork.TestUtils.Companion.groupPolicyWithoutMgm
+import net.corda.membership.staticnetwork.TestUtils.Companion.groupPolicyWithoutMgmKeyAlias
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
+import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.membership.identity.MemberInfo
+import net.corda.v5.crypto.DigestService
+import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
@@ -64,6 +76,8 @@ class StaticMemberRegistrationServiceTest {
     private val bob = HoldingIdentity(bobName.toString(), DUMMY_GROUP_ID)
     private val charlie = HoldingIdentity(charlieName.toString(), DUMMY_GROUP_ID)
     private val daisy = HoldingIdentity(daisyName.toString(), DUMMY_GROUP_ID)
+    private val eric = HoldingIdentity(ericName.toString(), DUMMY_GROUP_ID)
+    private val frankie = HoldingIdentity(frankieName.toString(), DUMMY_GROUP_ID)
     private val aliceKey: PublicKey = mock()
     private val bobKey: PublicKey = mock()
 
@@ -72,12 +86,14 @@ class StaticMemberRegistrationServiceTest {
         on { getGroupPolicy(bob) } doReturn groupPolicyWithInvalidStaticNetworkTemplate
         on { getGroupPolicy(charlie) } doReturn groupPolicyWithoutStaticNetwork
         on { getGroupPolicy(daisy) } doReturn groupPolicyWithDuplicateMembers
+        on { getGroupPolicy(eric) } doReturn  groupPolicyWithoutMgm
+        on { getGroupPolicy(frankie) } doReturn groupPolicyWithoutMgmKeyAlias
     }
 
     @Suppress("UNCHECKED_CAST")
     private val mockPublisher: Publisher = mock {
         on { publish(any()) } doAnswer {
-            publishedList.addAll(it.arguments.first() as List<Record<String, MemberInfo>>)
+            publishedList.addAll(it.arguments.first() as List<Record<String, SignedMemberInfo>>)
             listOf(CompletableFuture.completedFuture(Unit))
         }
     }
@@ -105,6 +121,7 @@ class StaticMemberRegistrationServiceTest {
         on { generateKeyPair(eq("alice-alias"), eq(EMPTY_CONTEXT)) } doReturn aliceKey
         // when no keyAlias is defined in static template, we are using the HoldingIdentity's id
         on { generateKeyPair(eq(bob.id), eq(EMPTY_CONTEXT)) } doReturn bobKey
+        on { sign(any<String>(), any<ByteArray>(), any()) } doReturn ByteArray(1)
     }
 
     private val cryptoLibraryClientsFactory: CryptoLibraryClientsFactory = mock {
@@ -117,7 +134,7 @@ class StaticMemberRegistrationServiceTest {
 
     private val configurationReadService: ConfigurationReadService = mock()
 
-    private val publishedList = mutableListOf<Record<String, MemberInfo>>()
+    private val publishedList = mutableListOf<Record<String, SignedMemberInfo>>()
 
     private var coordinatorIsRunning = false
     private val coordinator: LifecycleCoordinator = mock {
@@ -140,6 +157,14 @@ class StaticMemberRegistrationServiceTest {
         listOf(EndpointInfoConverter(), PublicKeyConverter(cryptoLibraryFactory))
     )
 
+    private val digestService: DigestService = mock {
+        on { hash(any<ByteArray>(), any()) } doReturn SecureHash("SHA256", "1234ABCD".toByteArray())
+    }
+
+    private val cipherSuiteFactory: CipherSuiteFactory = mock {
+        on { getDigestService() } doReturn digestService
+    }
+
     private val registrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
         publisherFactory,
@@ -147,7 +172,8 @@ class StaticMemberRegistrationServiceTest {
         cryptoLibraryClientsFactoryProvider,
         configurationReadService,
         lifecycleCoordinatorFactory,
-        converter
+        converter,
+        cipherSuiteFactory
     )
 
     @Suppress("UNCHECKED_CAST")
@@ -181,7 +207,11 @@ class StaticMemberRegistrationServiceTest {
         publishedList.forEach {
             assertEquals(Schemas.Membership.MEMBER_LIST_TOPIC, it.topic)
             assertTrue { it.key.startsWith(alice.id) }
-            val memberPublished = it.value as MemberInfo
+            val signedMemberPublished = it.value as SignedMemberInfo
+            val memberPublished = toMemberInfo(
+                MemberContextImpl(KeyValuePairList.fromByteBuffer(signedMemberPublished.memberContext).toSortedMap(), converter),
+                MGMContextImpl(KeyValuePairList.fromByteBuffer(signedMemberPublished.mgmContext).toSortedMap(), converter)
+            )
             assertEquals(DUMMY_GROUP_ID, memberPublished.groupId)
             assertNotNull(memberPublished.softwareVersion)
             assertNotNull(memberPublished.platformVersion)
@@ -267,5 +297,35 @@ class StaticMemberRegistrationServiceTest {
             ),
             registrationResult
         )
+    }
+
+    @Test
+    fun `registration fails when mgm is not defined`() {
+        setUpPublisher()
+        registrationService.start()
+        val registrationResult = registrationService.register(eric)
+        assertEquals(
+            MembershipRequestRegistrationResult(
+                NOT_SUBMITTED,
+                "Registration failed. Reason: Static mgm inside the group policy file should be defined."
+            ),
+            registrationResult
+        )
+        registrationService.stop()
+    }
+
+    @Test
+    fun `registration fails when mgm's key alias is not defined`() {
+        setUpPublisher()
+        registrationService.start()
+        val registrationResult = registrationService.register(frankie)
+        assertEquals(
+            MembershipRequestRegistrationResult(
+                NOT_SUBMITTED,
+                "Registration failed. Reason: MGM's key alias is not provided."
+            ),
+            registrationResult
+        )
+        registrationService.stop()
     }
 }

@@ -5,6 +5,7 @@ import net.corda.crypto.CryptoCategories
 import net.corda.crypto.CryptoLibraryClientsFactoryProvider
 import net.corda.crypto.CryptoLibraryFactory
 import net.corda.crypto.SigningService
+import net.corda.data.membership.SignedMemberInfo
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.createCoordinator
@@ -23,8 +24,7 @@ import net.corda.membership.identity.MemberInfoExtension.Companion.PLATFORM_VERS
 import net.corda.membership.identity.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.identity.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.identity.MemberInfoExtension.Companion.STATUS
-import net.corda.membership.identity.MemberInfoExtension.Companion.groupId
-import net.corda.membership.identity.MemberInfoImpl
+import net.corda.membership.identity.signMemberInfo
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.SUBMITTED
@@ -39,15 +39,16 @@ import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companio
 import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.STATIC_SERIAL
 import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.STATIC_SOFTWARE_VERSION
 import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.staticMembers
+import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.staticMgm
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.membership.conversion.PropertyConverter
 import net.corda.v5.membership.identity.EndpointInfo
 import net.corda.v5.membership.identity.MemberInfo
-import net.corda.v5.membership.identity.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -71,7 +72,9 @@ class StaticMemberRegistrationService @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = PropertyConverter::class)
-    val converter: PropertyConverter
+    val converter: PropertyConverter,
+    @Reference(service = CipherSuiteFactory::class)
+    val cipherSuiteFactory: CipherSuiteFactory
 ) : MemberRegistrationService {
     companion object {
         private val logger: Logger = contextLogger()
@@ -84,6 +87,7 @@ class StaticMemberRegistrationService @Activate constructor(
     }
 
     private val keyEncodingService: KeyEncodingService  = cryptoLibraryFactory.getKeyEncodingService()
+    private val digestService = cipherSuiteFactory.getDigestService()
 
     private val topic = Schemas.Membership.MEMBER_LIST_TOPIC
 
@@ -115,11 +119,7 @@ class StaticMemberRegistrationService @Activate constructor(
             )
         }
         try {
-            val updates = lifecycleHandler.publisher.publish(
-                parseMemberTemplate(member).map {
-                    Record(topic, member.id + "-" + HoldingIdentity(it.name.toString(), it.groupId).id, it)
-                }
-            )
+            val updates = lifecycleHandler.publisher.publish(parseMemberTemplate(member))
             updates.forEach { it.get() }
         } catch (e: Exception) {
             logger.warn("Registration failed. Reason: ${e.message}")
@@ -131,15 +131,18 @@ class StaticMemberRegistrationService @Activate constructor(
         return MembershipRequestRegistrationResult(SUBMITTED)
     }
 
-    private fun parseMemberTemplate(member: HoldingIdentity): List<MemberInfo> {
-        val members = mutableListOf<MemberInfo>()
+    /**
+     * Parses the static member list template as SignedMemberInfo objects and creates the records for the
+     * kafka publisher.
+     */
+    private fun parseMemberTemplate(member: HoldingIdentity): List<Record<String, SignedMemberInfo>> {
+        val members = mutableListOf<Record<String, SignedMemberInfo>>()
 
         val policy = groupPolicyProvider.getGroupPolicy(member)
+        val groupId = policy.groupId
 
         val staticMemberList = policy.staticMembers
-        if(staticMemberList.isEmpty()) {
-            throw IllegalArgumentException("Static member list inside the group policy file cannot be empty.")
-        }
+        require(staticMemberList.isNotEmpty()) { "Static member list inside the group policy file cannot be empty." }
 
         // temporary solution until we don't have a more suitable category
         val signingService =
@@ -148,43 +151,56 @@ class StaticMemberRegistrationService @Activate constructor(
                 "static-member-registration-service"
             ).getSigningService(CryptoCategories.LEDGER)
 
-        val processedMembers = mutableListOf<MemberX500Name>()
+        val processedMembers = mutableListOf<String>()
         @Suppress("SpreadOperator")
         staticMemberList.forEach { staticMember ->
             isValidStaticMemberDeclaration(processedMembers, staticMember)
-            val owningKey = generateOwningKey(signingService, staticMember, policy)
+            val memberName = staticMember[NAME].toString()
+            val memberId = HoldingIdentity(memberName, groupId).id
+            val memberKey = generateOwningKey(signingService, staticMember, memberId)
+            val mgmKey = parseMgmTemplate(signingService, policy)
+            val memberContext = MemberContextImpl(
+                sortedMapOf(
+                    PARTY_NAME to memberName,
+                    PARTY_OWNING_KEY to memberKey,
+                    GROUP_ID to groupId,
+                    *generateIdentityKeys(memberKey).toTypedArray(),
+                    *convertEndpoints(staticMember).toTypedArray(),
+                    SOFTWARE_VERSION to (staticMember[STATIC_SOFTWARE_VERSION] ?: DEFAULT_SOFTWARE_VERSION),
+                    PLATFORM_VERSION to (staticMember[STATIC_PLATFORM_VERSION] ?: DEFAULT_PLATFORM_VERSION),
+                    SERIAL to (staticMember[STATIC_SERIAL] ?: DEFAULT_SERIAL),
+                ),
+                converter
+            )
+            val mgmContext = MGMContextImpl(
+                sortedMapOf(
+                    STATUS to (staticMember[MEMBER_STATUS] ?: MEMBER_STATUS_ACTIVE),
+                    MODIFIED_TIME to (staticMember[STATIC_MODIFIED_TIME] ?: Instant.now().toString()),
+                ),
+                converter
+            )
             members.add(
-                MemberInfoImpl(
-                    memberProvidedContext = MemberContextImpl(
-                        sortedMapOf(
-                            PARTY_NAME to staticMember[NAME].toString(),
-                            PARTY_OWNING_KEY to owningKey,
-                            GROUP_ID to policy.groupId,
-                            *generateIdentityKeys(owningKey).toTypedArray(),
-                            *convertEndpoints(staticMember).toTypedArray(),
-                            SOFTWARE_VERSION to (staticMember[STATIC_SOFTWARE_VERSION] ?: DEFAULT_SOFTWARE_VERSION),
-                            PLATFORM_VERSION to (staticMember[STATIC_PLATFORM_VERSION] ?: DEFAULT_PLATFORM_VERSION),
-                            SERIAL to (staticMember[STATIC_SERIAL] ?: DEFAULT_SERIAL),
-                        ),
-                        converter
-                    ),
-                    mgmProvidedContext = MGMContextImpl(
-                        sortedMapOf(
-                            STATUS to (staticMember[MEMBER_STATUS] ?: MEMBER_STATUS_ACTIVE),
-                            MODIFIED_TIME to (staticMember[STATIC_MODIFIED_TIME] ?: Instant.now().toString()),
-                        ),
-                        converter
+                Record(
+                    topic,
+                    member.id + "-" + memberId,
+                    signMemberInfo(
+                        memberContext,
+                        mgmContext,
+                        memberKey,
+                        mgmKey,
+                        signingService,
+                        digestService
                     )
                 )
             )
-            processedMembers.add(members.last().name)
+            processedMembers.add(memberName)
         }
         return members
     }
 
-    private fun isValidStaticMemberDeclaration(processedMembers: List<MemberX500Name>, member: Map<String, String>) {
+    private fun isValidStaticMemberDeclaration(processedMembers: List<String>, member: Map<String, String>) {
         require(!member[NAME].isNullOrBlank()) { "Member's name is not provided." }
-        require(!processedMembers.contains(MemberX500Name.parse(member[NAME]!!))) { "Duplicated static member declaration." }
+        require(!processedMembers.contains(member[NAME]!!)) { "Duplicated static member declaration." }
         require(
             member.keys.any { it.startsWith(endpointUrlIdentifier) }
         ) { "Endpoint urls are not provided." }
@@ -199,14 +215,28 @@ class StaticMemberRegistrationService @Activate constructor(
     private fun generateOwningKey(
         signingService: SigningService,
         member: Map<String, String>,
-        policy: GroupPolicy
+        memberId: String
     ): String {
         var keyAlias = member[KEY_ALIAS]
         if(keyAlias.isNullOrBlank()) {
-             keyAlias = HoldingIdentity(member[NAME]!!, policy.groupId).id
+             keyAlias = memberId
         }
         val owningKey = signingService.generateKeyPair(keyAlias)
         return keyEncodingService.encodeAsString(owningKey)
+    }
+
+    /**
+     * Generates the MGM's key used for signing the MemberInfo from the static template.
+     */
+    private fun parseMgmTemplate(signingService: SigningService, policy: GroupPolicy): String {
+        val staticMgm = policy.staticMgm
+        require(staticMgm.isNotEmpty()) { "Static mgm inside the group policy file should be defined." }
+
+        val keyAlias: String? = staticMgm[KEY_ALIAS]
+        require(!keyAlias.isNullOrBlank()) { "MGM's key alias is not provided." }
+
+        val mgmKey = signingService.generateKeyPair(keyAlias)
+        return keyEncodingService.encodeAsString(mgmKey)
     }
 
     /**

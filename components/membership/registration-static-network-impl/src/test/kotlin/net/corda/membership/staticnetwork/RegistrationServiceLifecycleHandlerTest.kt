@@ -16,6 +16,7 @@ import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.staticnetwork.TestUtils.Companion.configs
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.Companion.MESSAGING_CONFIG
 import net.corda.v5.membership.conversion.PropertyConverter
@@ -57,6 +58,8 @@ class RegistrationServiceLifecycleHandlerTest {
 
     private val converter: PropertyConverter = mock()
 
+    private val cipherSuiteFactory: CipherSuiteFactory = mock()
+
     private val staticMemberRegistrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
         publisherFactory,
@@ -64,7 +67,8 @@ class RegistrationServiceLifecycleHandlerTest {
         cryptoLibraryClientsFactoryProvider,
         configurationReadService,
         coordinatorFactory,
-        converter
+        converter,
+        cipherSuiteFactory
     )
 
     private val registrationServiceLifecycleHandler = RegistrationServiceLifecycleHandler(
