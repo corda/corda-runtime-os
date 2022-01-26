@@ -2,7 +2,6 @@ package net.corda.p2p.deployment.commands
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
-import net.corda.p2p.deployment.DeploymentException
 import net.corda.p2p.deployment.pods.InfrastructureDetails
 import net.corda.p2p.deployment.pods.LbType
 import net.corda.p2p.deployment.pods.Namespace
@@ -165,7 +164,6 @@ class Deploy : Runnable {
     private var lbType: LbType = LbType.NGINX
 
     override fun run() {
-        checkEnvironmentVariables()
         val namespace = Namespace(
             NamespaceIdentifier(
                 namespaceName,
@@ -220,22 +218,6 @@ class Deploy : Runnable {
 
             configureNamespace()
             println("Cluster $namespaceName is deployed")
-        }
-    }
-
-    private fun checkEnvironmentVariables() {
-        val neededVariables = listOf(
-            "CORDA_ARTIFACTORY_USERNAME",
-            "CORDA_ARTIFACTORY_PASSWORD",
-            "TINYCERT_API_KEY",
-            "TINYCERT_PASS_PHRASE",
-            "TINYCERT_EMAIL"
-        )
-        val missingVariables = neededVariables.filter {
-            System.getenv(it) == null
-        }
-        if (missingVariables.isNotEmpty()) {
-            throw DeploymentException("Missing environment variables. Please set $missingVariables and try again")
         }
     }
 
