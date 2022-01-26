@@ -6,9 +6,12 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.permissions.manager.common.PermissionTypeDto
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
+import net.corda.libs.permissions.manager.request.CreatePermissionRequestDto
+import net.corda.libs.permissions.manager.request.CreateRoleRequestDto
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.libs.permissions.manager.request.GetPermissionRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
+import net.corda.libs.permissions.manager.response.RoleResponseDto
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.permissions.service.PermissionServiceComponent
@@ -22,8 +25,10 @@ import org.osgi.service.component.annotations.Reference
 import picocli.CommandLine
 import picocli.CommandLine.Mixin
 import picocli.CommandLine.Option
+import java.text.SimpleDateFormat
 import java.time.Duration
 import java.time.Instant
+import java.util.*
 
 /** A tool to set up RPC Users */
 @Suppress("Unused")
@@ -143,7 +148,7 @@ class RPCUserSetup @Activate constructor(
         )
 
         if (existingUser != null) {
-            throw IllegalStateException("User: ${params.userCreationParams.loginName} cannot be created " +
+            throw IllegalStateException("User: '${params.userCreationParams.loginName}' cannot be created " +
                     "as it already exists:\n$existingUser")
         }
 
@@ -151,7 +156,7 @@ class RPCUserSetup @Activate constructor(
             val passwordExpiryInstant =
                 if (password == null) null else Instant.now().plus(Duration.parse(passwordExpiry))
             CreateUserRequestDto(
-                loginName, loginName, loginName, true, password,
+                actorName, loginName, loginName, true, password,
                 passwordExpiryInstant, null
             )
         }
@@ -160,10 +165,15 @@ class RPCUserSetup @Activate constructor(
 
     private fun getOrCreateRole(): String {
         // Tries to locate and verify the role, if the role cannot be found or unsuitable then creates one
-        return findRole() ?: createRole()
+        val maybeFoundRole = findRole()
+        if (maybeFoundRole != null) {
+            logger.info("Suitable role found - reusing it: $maybeFoundRole")
+            return maybeFoundRole.id
+        }
+        return createRole().id
     }
 
-    private fun findRole(): String? {
+    private fun findRole(): RoleResponseDto? {
         val rolesFound = permissionServiceComponent.permissionManager.getRolesMatchingName("$actorName.*")
         val roleFound = rolesFound.find {
             if (it.permissions.size != 1 || it.groupVisibility != null) {
@@ -181,11 +191,30 @@ class RPCUserSetup @Activate constructor(
             }
         }
         logger.debug { "Found role: $roleFound" }
-        return roleFound?.id
+        return roleFound
     }
 
-    private fun createRole(): String {
-        TODO("Not yet implemented")
+    private fun createRole(): RoleResponseDto {
+        // Create permission
+        val permCreateRequest =
+            CreatePermissionRequestDto(actorName, PermissionTypeDto.ALLOW, ALL_ALLOWED_PERMISSION, null, null)
+        val permCreatedResponse = permissionServiceComponent.permissionManager.createPermission(permCreateRequest)
+
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
+        val suffix = dateFormat.format(Date())
+
+        // Create role
+        val roleCreationRequest = CreateRoleRequestDto(actorName, "$actorName-$suffix", null)
+        val roleCreatedResponse = permissionServiceComponent.permissionManager.createRole(roleCreationRequest)
+
+        // Link permission into a role
+        val roleWithPermission = permissionServiceComponent.permissionManager.addPermissionToRole(
+            roleCreatedResponse.id,
+            permCreatedResponse.id,
+            actorName
+        )
+        logger.info("Created new role: $roleWithPermission")
+        return roleWithPermission
     }
 
     private fun assignRoleToUser(loginName: String, roleId: String) {
