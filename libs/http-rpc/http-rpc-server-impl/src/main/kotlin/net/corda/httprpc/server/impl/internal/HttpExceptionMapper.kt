@@ -22,7 +22,7 @@ internal object HttpExceptionMapper {
             is HttpResponseException -> e
 
             is BadRpcStartFlowRequestException -> BadRequestResponse("Operation failed due to bad RPC StartFlow request.")
-            is MissingKotlinParameterException -> BadRequestResponse("Missing field in JSON request body.")
+            is MissingKotlinParameterException -> BadRequestResponse("Missing or invalid field in JSON request body.")
             is JsonProcessingException -> BadRequestResponse("Error during processing of request JSON.")
             is MissingParameterException -> BadRequestResponse(e.message)
             // TODO restore these when possible

@@ -21,6 +21,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.time.Duration
+import net.corda.httprpc.exception.InternalServerException
 
 /** An implementation of [VirtualNodeRPCOpsInternal]. */
 @Suppress("Unused")
@@ -71,9 +72,9 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
             HTTPCreateVirtualNodeResponse("", cpiId, "", "", "")
         } else {
             val exception = response.exception
-                ?: throw HttpApiException("Request was unsuccessful but no exception was provided.", 500)
+                ?: throw InternalServerException("Request was unsuccessful but no exception was provided.")
             // TODO - CORE-3304 - Return richer exception (e.g. containing the config and version currently in the DB).
-            throw HttpApiException("${exception.errorType}: ${exception.errorMessage}", 500)
+            throw InternalServerException("${exception.errorType}: ${exception.errorMessage}")
         }
     }
 
