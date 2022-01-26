@@ -68,6 +68,22 @@ dependencyResolutionManagement {
     }
 }
 
+ext.isPush = getProperty('gradle.cache.push')
+
+buildCache {
+    local {
+        enabled = false
+    }
+    remote(HttpBuildCache) {
+        url = "${artifactoryContextUrl}/gradle-build-cache-local/"
+        credentials {
+            username = System.getenv('CORDA_ARTIFACTORY_USERNAME')
+            password = System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+        }
+        push = isPush
+    }
+}
+
 rootProject.name = 'corda-runtime-os'
 include 'applications:common'
 include 'applications:examples:serialization-amqp:custom-serializer-poc'
