@@ -4,7 +4,7 @@ import net.corda.crypto.CryptoConsts
 import net.corda.crypto.service.impl.signing.CryptoServicesTestFactory
 import net.corda.crypto.service.impl.persistence.SigningKeyCache
 import net.corda.crypto.service.impl.persistence.SoftCryptoKeyCache
-import net.corda.crypto.component.persistence.CachedSoftKeysRecord
+import net.corda.crypto.persistence.CachedSoftKeysRecord
 import net.corda.crypto.service.impl.TestSigningKeysPersistenceProvider
 import net.corda.crypto.service.impl.TestSoftKeysPersistenceProvider
 import net.corda.data.crypto.persistence.SigningKeysRecord

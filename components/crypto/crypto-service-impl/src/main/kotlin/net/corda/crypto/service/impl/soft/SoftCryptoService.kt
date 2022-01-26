@@ -2,7 +2,7 @@ package net.corda.crypto.service.impl.soft
 
 import net.corda.crypto.impl.SignatureInstances
 import net.corda.crypto.service.impl.persistence.SoftCryptoKeyCache
-import net.corda.crypto.component.persistence.WrappingKey
+import net.corda.crypto.persistence.WrappingKey
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService

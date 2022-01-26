@@ -1,0 +1,36 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+description 'Crypto client components'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-cipher-suite"
+    implementation "net.corda:corda-crypto"
+    implementation "net.corda:corda-topic-schema"
+
+    implementation project(':libs:crypto:crypto-impl')
+    implementation project(":libs:crypto:crypto-internal")
+    implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:messaging:messaging")
+
+    testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "net.i2p.crypto:eddsa:$eddsaVersion"
+    testImplementation "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion"
+    testImplementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
+
+    testImplementation project(":libs:configuration:configuration-core")
+
+    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+}
+

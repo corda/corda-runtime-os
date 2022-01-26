@@ -1,10 +1,10 @@
 package net.corda.crypto.service.impl.persistence
 
-import net.corda.crypto.component.persistence.EntityKeyInfo
-import net.corda.crypto.component.persistence.KeyValuePersistence
-import net.corda.crypto.component.persistence.CachedSoftKeysRecord
-import net.corda.crypto.component.persistence.SoftKeysPersistenceProvider
-import net.corda.crypto.component.persistence.WrappingKey
+import net.corda.crypto.persistence.EntityKeyInfo
+import net.corda.crypto.persistence.KeyValuePersistence
+import net.corda.crypto.persistence.CachedSoftKeysRecord
+import net.corda.crypto.persistence.SoftKeysPersistenceProvider
+import net.corda.crypto.persistence.WrappingKey
 import net.corda.data.crypto.persistence.SoftKeysRecord
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata

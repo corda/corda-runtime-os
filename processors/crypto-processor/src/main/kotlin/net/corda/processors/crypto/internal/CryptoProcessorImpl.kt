@@ -1,8 +1,8 @@
 package net.corda.processors.crypto.internal
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.component.persistence.SigningKeysPersistenceProvider
-import net.corda.crypto.component.persistence.SoftKeysPersistenceProvider
+import net.corda.crypto.persistence.SigningKeysPersistenceProvider
+import net.corda.crypto.persistence.SoftKeysPersistenceProvider
 import net.corda.crypto.service.CryptoOpsService
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.service.SoftCryptoServiceProvider

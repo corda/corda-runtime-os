@@ -1,6 +1,5 @@
 package net.corda.crypto.service.impl.rpc
 
-import net.corda.crypto.impl.closeGracefully
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.service.CryptoOpsService
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
@@ -96,7 +95,7 @@ class CryptoOpsServiceImpl @Activate constructor(
     private fun deleteResources() {
         val current = subscription
         subscription = null
-        current?.closeGracefully()
+        current?.close()
     }
 
     private fun createResources() {
@@ -113,6 +112,6 @@ class CryptoOpsServiceImpl @Activate constructor(
             ),
             responderProcessor = processor
         ).also { it.start() }
-        current?.closeGracefully()
+        current?.close()
     }
 }

@@ -1,7 +1,7 @@
 package net.corda.crypto.service.impl.persistence
 
-import net.corda.crypto.component.persistence.CachedSoftKeysRecord
-import net.corda.crypto.component.persistence.WrappingKey
+import net.corda.crypto.persistence.CachedSoftKeysRecord
+import net.corda.crypto.persistence.WrappingKey
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import java.security.KeyPair
 

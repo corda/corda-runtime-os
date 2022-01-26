@@ -1,7 +1,7 @@
 package net.corda.crypto.service.impl.dev
 
-import net.corda.crypto.component.persistence.SigningKeysPersistenceProvider
-import net.corda.crypto.component.persistence.SoftKeysPersistenceProvider
+import net.corda.crypto.persistence.SigningKeysPersistenceProvider
+import net.corda.crypto.persistence.SoftKeysPersistenceProvider
 import net.corda.crypto.service.impl.persistence.SigningKeyCache
 import net.corda.crypto.service.impl.persistence.SigningKeyCacheImpl
 import net.corda.crypto.service.impl.persistence.SoftCryptoKeyCache

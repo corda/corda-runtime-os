@@ -1,7 +1,6 @@
 package net.corda.crypto.service.impl.signing
 
-import net.corda.crypto.component.persistence.SigningKeysPersistenceProvider
-import net.corda.crypto.impl.closeGracefully
+import net.corda.crypto.persistence.SigningKeysPersistenceProvider
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.SigningServiceFactory
@@ -99,7 +98,7 @@ class SigningServiceFactoryImpl @Activate constructor(
     private fun deleteResources() {
         val current = impl
         impl = null
-        current?.closeGracefully()
+        current?.close()
     }
 
     private fun createResources() {
@@ -109,7 +108,7 @@ class SigningServiceFactoryImpl @Activate constructor(
             persistenceFactory,
             cryptoServiceFactory
         )
-        current?.closeGracefully()
+        current?.close()
     }
 
 

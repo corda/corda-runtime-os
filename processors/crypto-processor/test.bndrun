@@ -13,7 +13,7 @@
 -runrequires: \
     bnd.identity;id='net.corda.crypto-processor',\
     bnd.identity;id='net.corda.crypto-service-impl',\
-    bnd.identity;id='net.corda.crypto-client',\
+    bnd.identity;id='net.corda.crypto-client-impl',\
     bnd.identity;id='net.corda.crypto-messaging-persistence-impl',\
     bnd.identity;id='net.corda.cipher-suite-providers',\
     bnd.identity;id='net.corda.configuration-read-service-impl',\
@@ -55,7 +55,7 @@
 	net.corda.configuration-read-service;version='[5.0.0,5.0.1)',\
 	net.corda.configuration-read-service-impl;version='[5.0.0,5.0.1)',\
 	net.corda.crypto;version='[5.0.0,5.0.1)',\
-	net.corda.crypto-client;version='[5.0.0,5.0.1)',\
+	net.corda.crypto-client-impl;version='[5.0.0,5.0.1)',\
 	net.corda.crypto-impl;version='[5.0.0,5.0.1)',\
 	net.corda.crypto-internal;version='[5.0.0,5.0.1)',\
 	net.corda.crypto-messaging-persistence-impl;version='[5.0.0,5.0.1)',\

@@ -1,11 +1,11 @@
 package net.corda.crypto.service.impl
 
-import net.corda.crypto.component.persistence.CachedSoftKeysRecord
-import net.corda.crypto.component.persistence.EntityKeyInfo
-import net.corda.crypto.component.persistence.KeyValueMutator
-import net.corda.crypto.component.persistence.KeyValuePersistence
-import net.corda.crypto.component.persistence.SigningKeysPersistenceProvider
-import net.corda.crypto.component.persistence.SoftKeysPersistenceProvider
+import net.corda.crypto.persistence.CachedSoftKeysRecord
+import net.corda.crypto.persistence.EntityKeyInfo
+import net.corda.crypto.persistence.KeyValueMutator
+import net.corda.crypto.persistence.KeyValuePersistence
+import net.corda.crypto.persistence.SigningKeysPersistenceProvider
+import net.corda.crypto.persistence.SoftKeysPersistenceProvider
 import net.corda.data.crypto.persistence.SigningKeysRecord
 import net.corda.data.crypto.persistence.SoftKeysRecord
 import net.corda.v5.base.util.contextLogger
