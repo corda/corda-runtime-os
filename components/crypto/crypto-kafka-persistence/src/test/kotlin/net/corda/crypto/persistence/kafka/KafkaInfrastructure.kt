@@ -209,6 +209,9 @@ class KafkaInfrastructure {
             status = newStatus
         }
 
+        override fun postCustomEventToFollowers(eventPayload: Any) {
+        }
+
         override fun followStatusChanges(coordinators: Set<LifecycleCoordinator>): RegistrationHandle {
             return mock()
         }

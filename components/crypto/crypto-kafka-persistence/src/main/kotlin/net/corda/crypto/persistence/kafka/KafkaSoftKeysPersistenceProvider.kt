@@ -7,7 +7,6 @@ import net.corda.crypto.component.persistence.CachedSoftKeysRecord
 import net.corda.crypto.component.persistence.SoftKeysPersistenceProvider
 import net.corda.crypto.component.persistence.config.CryptoPersistenceConfig
 import net.corda.crypto.component.persistence.config.softPersistence
-import net.corda.crypto.impl.closeGracefully
 import net.corda.data.crypto.persistence.SoftKeysRecord
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -125,7 +124,7 @@ class KafkaSoftKeysPersistenceProvider @Activate constructor(
     private fun deleteResources() {
         val current = impl
         impl = null
-        current?.closeGracefully()
+        current?.close()
     }
 
     private fun setStatusUp() {
@@ -157,7 +156,7 @@ class KafkaSoftKeysPersistenceProvider @Activate constructor(
         }
 
         override fun close() {
-            processor.closeGracefully()
+            processor.close()
         }
     }
 }

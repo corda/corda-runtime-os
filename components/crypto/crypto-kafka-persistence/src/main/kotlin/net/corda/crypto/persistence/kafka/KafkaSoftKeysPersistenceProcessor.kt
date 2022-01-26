@@ -1,7 +1,6 @@
 package net.corda.crypto.persistence.kafka
 
 import net.corda.crypto.component.persistence.EntityKeyInfo
-import net.corda.crypto.impl.closeGracefully
 import net.corda.data.crypto.persistence.SoftKeysRecord
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher
@@ -85,7 +84,7 @@ class KafkaSoftKeysPersistenceProcessor(
     }
 
     override fun close() {
-        pub.closeGracefully()
-        sub.closeGracefully()
+        pub.close()
+        sub.close()
     }
 }

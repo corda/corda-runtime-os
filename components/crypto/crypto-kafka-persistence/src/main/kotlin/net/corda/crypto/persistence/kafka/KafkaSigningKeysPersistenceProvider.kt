@@ -6,7 +6,6 @@ import net.corda.crypto.component.persistence.KeyValuePersistence
 import net.corda.crypto.component.persistence.SigningKeysPersistenceProvider
 import net.corda.crypto.component.persistence.config.CryptoPersistenceConfig
 import net.corda.crypto.component.persistence.config.signingPersistence
-import net.corda.crypto.impl.closeGracefully
 import net.corda.data.crypto.persistence.SigningKeysRecord
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -125,7 +124,7 @@ class KafkaSigningKeysPersistenceProvider @Activate constructor(
     private fun deleteResources() {
         val current = impl
         impl = null
-        current?.closeGracefully()
+        current?.close()
     }
 
     private fun setStatusUp() {
@@ -157,7 +156,7 @@ class KafkaSigningKeysPersistenceProvider @Activate constructor(
         }
 
         override fun close() {
-            processor.closeGracefully()
+            processor.close()
         }
     }
 }
