@@ -34,7 +34,7 @@ class JpaEntitiesRegistryImplTest {
 
         assertThat(registry.all.map{
             it.persistenceUnitName to it.classes
-        }).containsExactly(
+        }).containsExactlyInAnyOrder(
             "set1" to classes1,
             "set2" to classes2,
         )

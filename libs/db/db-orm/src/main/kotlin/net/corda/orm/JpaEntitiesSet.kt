@@ -7,7 +7,7 @@ package net.corda.orm
 interface JpaEntitiesSet {
     companion object {
         fun create(name: String, classes: Set<Class<*>>): JpaEntitiesSet {
-            return object :JpaEntitiesSet {
+            return object : JpaEntitiesSet {
                 override val persistenceUnitName: String
                     get() = name
                 override val classes: Set<Class<*>>
