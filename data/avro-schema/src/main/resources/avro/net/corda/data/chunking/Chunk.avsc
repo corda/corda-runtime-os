@@ -1,0 +1,41 @@
+{
+  "type": "record",
+  "name": "Chunk",
+  "namespace": "net.corda.data.chunking",
+  "fields": [
+    {
+      "name": "id",
+      "type": "net.corda.data.crypto.SecureHash",
+      "doc": "group id of this chunk"
+    },
+    {
+      "name": "checksum",
+      "type": "net.corda.data.crypto.SecureHash",
+      "doc": "checksum of assembled chunks"
+    },
+    {
+      "name": "chunkNumber",
+      "type": "int",
+      "doc": "number of chunk"
+    },
+    {
+      "name": "chunkCount",
+      "type": "int",
+      "doc": "total number of chunks"
+    },
+    {
+      "name": "offset",
+      "type": "long",
+      "doc": "offset of this chunk from beginning of complete byte array"
+    },
+    {
+      "name": "length",
+      "type": "long",
+      "doc": "number of bytes in payload"
+    },
+    {
+      "name": "payload",
+      "type": "bytes"
+    }
+  ]
+}
