@@ -1,7 +1,6 @@
 package net.corda.crypto
 
 import net.corda.crypto.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
-import net.corda.crypto.testkit.CryptoMocks
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoNoContentValue
@@ -30,10 +29,15 @@ import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
+import kotlin.random.Random
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -56,12 +60,29 @@ class CryptoFlowOpsTransformerTests {
             UUID.randomUUID().toString() to UUID.randomUUID().toString()
         )
         knownExternalId = UUID.randomUUID()
-        val cryptoMocks = CryptoMocks()
-        schemeMetadata = cryptoMocks.schemeMetadata
+        schemeMetadata = mock {
+            on { encodeAsByteArray(any()) } doAnswer {
+                (it.getArgument(0) as PublicKey).encoded
+            }
+            on { decodePublicKey(any<ByteArray>()) } doAnswer { sc ->
+                mock {
+                    on { encoded } doAnswer {
+                        sc.getArgument(0) as ByteArray
+                    }
+                }
+            }
+        }
         transformer = CryptoFlowOpsTransformer(
             requestingComponent = knownComponentName,
             schemeMetadata = schemeMetadata
         )
+    }
+
+    private fun mockPublicKey(): PublicKey {
+        val serialisedPublicKey = Random(Instant.now().toEpochMilli()).nextBytes(256)
+        return mock {
+            on { encoded } doReturn serialisedPublicKey
+        }
     }
 
     private fun createResponse(
@@ -118,10 +139,10 @@ class CryptoFlowOpsTransformerTests {
     @Test
     fun `Should create query to filter my keys`() {
         val myPublicKeys = listOf(
-            generateKeyPair(schemeMetadata).public,
-            generateKeyPair(schemeMetadata).public
+            mockPublicKey(),
+            mockPublicKey()
         )
-        val notMyKey = generateKeyPair(schemeMetadata).public
+        val notMyKey = mockPublicKey()
         val result = act {
             transformer.createFilterMyKeys(knownTenantId, listOf(myPublicKeys[0], myPublicKeys[1], notMyKey))
         }
@@ -207,7 +228,7 @@ class CryptoFlowOpsTransformerTests {
 
     @Test
     fun `Should create command to sign data`() {
-        val publicKey = generateKeyPair(schemeMetadata).public
+        val publicKey = mockPublicKey()
         val data = "Hello World!".toByteArray()
         val result = act {
             transformer.createSign(knownTenantId, publicKey, data, knownOperationContext)
@@ -224,7 +245,7 @@ class CryptoFlowOpsTransformerTests {
 
     @Test
     fun `Should create command to sign data and with empty operation context`() {
-        val publicKey = generateKeyPair(schemeMetadata).public
+        val publicKey = mockPublicKey()
         val data = "Hello World!".toByteArray()
         val result = act {
             transformer.createSign(knownTenantId, publicKey, data)
@@ -242,7 +263,7 @@ class CryptoFlowOpsTransformerTests {
     @Test
     fun `Should create command to sign data with explicit signature spec`() {
         val spec = SignatureSpec("NONEwithECDSA", DigestAlgorithmName.SHA2_256)
-        val publicKey = generateKeyPair(schemeMetadata).public
+        val publicKey = mockPublicKey()
         val data = "Hello World!".toByteArray()
         val result = act {
             transformer.createSign(knownTenantId, publicKey, spec, data, knownOperationContext)
@@ -263,7 +284,7 @@ class CryptoFlowOpsTransformerTests {
     @Test
     fun `Should create command to sign data with explicit signature spec and with empty operation context`() {
         val spec = SignatureSpec("NONEwithECDSA", DigestAlgorithmName.SHA2_256)
-        val publicKey = generateKeyPair(schemeMetadata).public
+        val publicKey = mockPublicKey()
         val data = "Hello World!".toByteArray()
         val result = act {
             transformer.createSign(knownTenantId, publicKey, spec, data)
@@ -363,8 +384,8 @@ class CryptoFlowOpsTransformerTests {
     @Suppress("UNCHECKED_CAST")
     fun `Should transform response to filter my keys query`() {
         val publicKeys = listOf(
-            generateKeyPair(schemeMetadata).public,
-            generateKeyPair(schemeMetadata).public
+            mockPublicKey(),
+            mockPublicKey()
         )
         val response = createResponse(
             CryptoPublicKeys(
@@ -379,8 +400,8 @@ class CryptoFlowOpsTransformerTests {
         assertThat(result, instanceOf(List::class.java))
         val resultKeys = result as List<PublicKey>
         assertEquals(2, resultKeys.size)
-        assertTrue(resultKeys.any { it == publicKeys[0] })
-        assertTrue(resultKeys.any { it == publicKeys[1] })
+        assertTrue(resultKeys.any { it.encoded.contentEquals(publicKeys[0].encoded) })
+        assertTrue(resultKeys.any { it.encoded.contentEquals(publicKeys[1].encoded) })
     }
 
     @Test
@@ -424,7 +445,7 @@ class CryptoFlowOpsTransformerTests {
     @Test
     @Suppress("UNCHECKED_CAST")
     fun `Should transform response to generate fresh key command`() {
-        val publicKey = generateKeyPair(schemeMetadata).public
+        val publicKey = mockPublicKey()
         val response = createResponse(
             CryptoPublicKey(ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey))),
             GenerateFreshKeyFlowCommand::class.java
@@ -432,7 +453,7 @@ class CryptoFlowOpsTransformerTests {
         val result = transformer.transform(response)
         assertThat(result, instanceOf(PublicKey::class.java))
         val resultKey = result as PublicKey
-        assertEquals(publicKey, resultKey)
+        assertArrayEquals(publicKey.encoded, resultKey.encoded)
     }
 
     @Test
@@ -476,7 +497,7 @@ class CryptoFlowOpsTransformerTests {
     @Test
     @Suppress("UNCHECKED_CAST")
     fun `Should transform response to sign command`() {
-        val publicKey = generateKeyPair(schemeMetadata).public
+        val publicKey = mockPublicKey()
         val signature = "Hello World!".toByteArray()
         val response = createResponse(
             CryptoSignatureWithKey(
@@ -488,7 +509,7 @@ class CryptoFlowOpsTransformerTests {
         val result = transformer.transform(response)
         assertThat(result, instanceOf(DigitalSignature.WithKey::class.java))
         val resultSignature = result as DigitalSignature.WithKey
-        assertEquals(publicKey, resultSignature.by)
+        assertArrayEquals(publicKey.encoded, resultSignature.by.encoded)
         assertArrayEquals(signature, resultSignature.bytes)
     }
 
@@ -533,7 +554,7 @@ class CryptoFlowOpsTransformerTests {
     @Test
     @Suppress("UNCHECKED_CAST")
     fun `Should transform response to sign command with signature spec`() {
-        val publicKey = generateKeyPair(schemeMetadata).public
+        val publicKey = mockPublicKey()
         val signature = "Hello World!".toByteArray()
         val response = createResponse(
             CryptoSignatureWithKey(
@@ -545,7 +566,7 @@ class CryptoFlowOpsTransformerTests {
         val result = transformer.transform(response)
         assertThat(result, instanceOf(DigitalSignature.WithKey::class.java))
         val resultSignature = result as DigitalSignature.WithKey
-        assertEquals(publicKey, resultSignature.by)
+        assertArrayEquals(publicKey.encoded, resultSignature.by.encoded)
         assertArrayEquals(signature, resultSignature.bytes)
     }
 
