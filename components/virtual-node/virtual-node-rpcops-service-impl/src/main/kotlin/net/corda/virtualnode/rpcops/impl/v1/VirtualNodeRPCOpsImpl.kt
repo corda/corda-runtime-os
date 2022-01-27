@@ -17,6 +17,7 @@ import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.virtualnode.rpcops.VirtualNodeRPCOpsServiceException
 import net.corda.virtualnode.rpcops.impl.CLIENT_NAME_HTTP
 import net.corda.virtualnode.rpcops.impl.GROUP_NAME
+import net.corda.virtualnode.rpcops.impl.internal.VirtualNodeRPCOpsInternal
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -43,23 +44,24 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
     override val targetInterface = VirtualNodeRPCOps::class.java
     override val protocolVersion = 1
     private var rpcSender: RPCSender<VirtualNodeCreationRequest, VirtualNodeCreationResponse>? = null
-    private var requestTimeout: Duration? = null
-    override val isRunning get() = rpcSender != null && requestTimeout != null
+    private var httpRequestTimeout: Duration? = null
+    override val isRunning get() = rpcSender != null && httpRequestTimeout != null
 
-    override fun start() = Unit
+    override fun start() =
+        rpcSender?.start() ?: throw VirtualNodeRPCOpsServiceException("RPC sender has not been created")
 
     override fun stop() {
         rpcSender?.close()
         rpcSender = null
     }
 
-    override fun createAndStartRPCSender(config: SmartConfig) {
+    override fun createRpcSender(config: SmartConfig) {
         rpcSender?.close()
-        rpcSender = publisherFactory.createRPCSender(RPC_CONFIG, config).apply { start() }
+        rpcSender = publisherFactory.createRPCSender(RPC_CONFIG, config)
     }
 
-    override fun setTimeout(millis: Int) {
-        this.requestTimeout = Duration.ofMillis(millis.toLong())
+    override fun setHttpRequestTimeout(httpRequestTimeout: Duration) {
+        this.httpRequestTimeout = httpRequestTimeout
     }
 
     override fun createVirtualNode(request: HTTPCreateVirtualNodeRequest): HTTPCreateVirtualNodeResponse {
@@ -87,7 +89,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
         val nonNullRPCSender = rpcSender ?: throw VirtualNodeRPCOpsServiceException(
             "Configuration update request could not be sent as no RPC sender has been created."
         )
-        val nonNullRequestTimeout = requestTimeout ?: throw VirtualNodeRPCOpsServiceException(
+        val nonNullRequestTimeout = httpRequestTimeout ?: throw VirtualNodeRPCOpsServiceException(
             "Configuration update request could not be sent as the request timeout has not been set."
         )
         return try {

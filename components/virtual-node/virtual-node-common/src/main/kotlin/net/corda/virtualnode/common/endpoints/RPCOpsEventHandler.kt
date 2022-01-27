@@ -1,24 +1,24 @@
-package net.corda.virtualnode.rpcops.impl
+package net.corda.virtualnode.common.endpoints
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
+import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.LifecycleStatus.ERROR
 import net.corda.lifecycle.LifecycleStatus.UP
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.virtualnode.rpcops.impl.v1.VirtualNodeRPCOpsInternal
 
 /** Handles incoming [LifecycleCoordinator] events for [VirtualNodeRPCOpsServiceImpl]. */
-internal class VirtualNodeRPCOpsEventHandler(
+class RPCOpsEventHandler(
     private val configReadService: ConfigurationReadService,
-    private val virtualNodeRPCOps: VirtualNodeRPCOpsInternal
+    private val cpiUploadRPCOps: LateInitRPCOps
 ) : LifecycleEventHandler {
 
-    private var configReadServiceRegistrationHandle: AutoCloseable? = null
+    private var configReadServiceRegistrationHandle: RegistrationHandle? = null
     private var configUpdateHandle: AutoCloseable? = null
 
     /**
@@ -49,7 +49,8 @@ internal class VirtualNodeRPCOpsEventHandler(
         if (event.registration == configReadServiceRegistrationHandle) {
             when (event.status) {
                 UP -> {
-                    val configHandler = VirtualNodeRPCOpsConfigHandler(coordinator, virtualNodeRPCOps)
+                    val configHandler =
+                        RPCOpsConfigHandler(coordinator, cpiUploadRPCOps)
                     configUpdateHandle?.close()
                     configUpdateHandle = configReadService.registerForUpdates(configHandler)
                 }
@@ -61,7 +62,7 @@ internal class VirtualNodeRPCOpsEventHandler(
 
     /** Shuts down the service. */
     private fun stop() {
-        virtualNodeRPCOps.close()
+        cpiUploadRPCOps.close()
         configReadServiceRegistrationHandle?.close()
         configUpdateHandle?.close()
     }
