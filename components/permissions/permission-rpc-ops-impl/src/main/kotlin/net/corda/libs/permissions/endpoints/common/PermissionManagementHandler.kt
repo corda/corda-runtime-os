@@ -26,8 +26,10 @@ fun <T : Any> withPermissionManager(
         block.invoke(permissionManager)
 
     } catch (e: UnexpectedPermissionResponseException) {
-        logger.warn("Permission manager failed to execute operation.")
-        throw InternalServerException(e.message!!)
+        logger.warn("Permission manager received an unexpected response.")
+        throw InternalServerException(
+            details = buildExceptionCauseDetails(e)
+        )
 
     } catch (e: RemotePermissionManagementException) {
         logger.warn("Remote permission management error: ${e.exceptionType}: ${e.message}")
@@ -37,37 +39,34 @@ fun <T : Any> withPermissionManager(
             EntityAssociationAlreadyExistsException::class.java.name -> throw InvalidInputDataException(e.message!!)
             EntityAlreadyExistsException::class.java.name -> throw InvalidInputDataException(e.message!!)
             else -> throw InternalServerException(
-                "Internal server error.",
-                buildExceptionCauseDetails(e)
+                details = buildExceptionCauseDetails(e)
             )
         }
 
     } catch (e: CordaRPCAPISenderException) {
-        logger.warn("Error during sending of permission management request.")
+        logger.warn("Error during sending of permission management request.", e)
         throw InternalServerException(
-            "Failed to send permission management request.",
-            buildExceptionCauseDetails(e)
+            details = buildExceptionCauseDetails(e)
         )
 
     } catch (e: CordaRPCAPIResponderException) {
-        logger.warn("Internal error reported from responder during permission management request.")
+        logger.warn("Responder error during permission management request:", e)
         throw InternalServerException(
-            "Responder failed to send permission management request.",
-            buildExceptionCauseDetails(e)
+            details = buildExceptionCauseDetails(e)
         )
 
     } catch (e: TimeoutException) {
-        logger.warn("Permission management operation timed out.")
+        logger.warn("Permission management operation timed out.", e)
         throw InternalServerException(
             "Permission management operation timed out.",
-            buildExceptionCauseDetails(e)
+            details = buildExceptionCauseDetails(e)
         )
 
     } catch (e: Exception) {
-        logger.warn("Unexpected error during permission management operation.")
+        logger.warn("Unexpected error during permission management operation.", e)
         throw UnexpectedErrorException(
             "Unexpected permission management error occurred.",
-            buildExceptionCauseDetails(e)
+            details = buildExceptionCauseDetails(e)
         )
 
     }
@@ -75,5 +74,5 @@ fun <T : Any> withPermissionManager(
 
 private fun buildExceptionCauseDetails(e: Exception) = mapOf(
     "cause" to e::javaClass.name,
-    "message" to (e.message ?: "")
+    "reason" to (e.message ?: "")
 )

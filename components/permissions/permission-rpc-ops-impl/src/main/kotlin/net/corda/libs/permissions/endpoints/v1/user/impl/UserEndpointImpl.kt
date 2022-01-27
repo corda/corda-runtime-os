@@ -60,7 +60,7 @@ class UserEndpointImpl @Activate constructor(
     override fun getUser(loginName: String): UserResponseType {
         val principal = getRpcThreadLocalContext()
 
-        val userResponseDto: UserResponseDto? = withPermissionManager(permissionServiceComponent.permissionManager, logger) {
+        val userResponseDto = withPermissionManager(permissionServiceComponent.permissionManager, logger) {
             getUser(GetUserRequestDto(principal, loginName))
         }
 

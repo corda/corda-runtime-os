@@ -38,7 +38,7 @@ internal object HttpExceptionMapper {
             is IllegalArgumentException -> HttpResponseException(
                 ResponseCode.INTERNAL_SERVER_ERROR.statusCode,
                 "Illegal argument occurred.",
-                createDetailMap(ResponseCode.INTERNAL_SERVER_ERROR, e.message)
+                buildExceptionCauseDetails(e).addResponseCode(ResponseCode.INTERNAL_SERVER_ERROR)
             )
 
             // Http API exceptions
@@ -54,16 +54,16 @@ internal object HttpExceptionMapper {
                 HttpResponseException(
                     ResponseCode.UNEXPECTED_ERROR.statusCode,
                     message,
-                    createDetailMap(ResponseCode.UNEXPECTED_ERROR, message)
+                    buildExceptionCauseDetails(e).addResponseCode(ResponseCode.UNEXPECTED_ERROR)
                 )
             }
         }
     }
 
-    private fun createDetailMap(responseCode: ResponseCode, message: String?): Map<String, String> {
-        val map = message?.let { mapOf("reason" to message) } ?: emptyMap()
-        return map.addResponseCode(responseCode)
-    }
+    private fun buildExceptionCauseDetails(e: Exception) = mapOf(
+        "cause" to e::javaClass.name,
+        "reason" to (e.message ?: "")
+    )
 
     private fun Map<String, String>.addResponseCode(responseCode: ResponseCode): Map<String, String> {
         val mutable = this.toMutableMap()
