@@ -51,7 +51,7 @@ class DominoTile(
         StoppedDueToBadConfig,
         StoppedByParent
     }
-    class StatusChangeEvent(val newState: State): LifecycleEvent
+    class StatusChangeEvent(val newState: State) : LifecycleEvent
 
     val name: LifecycleCoordinatorName by lazy {
         LifecycleCoordinatorName(
@@ -95,12 +95,12 @@ class DominoTile(
     private val resources = ResourcesHolder()
     private val configResources = ResourcesHolder()
 
-    private val latestChildStateMap: MutableMap<DominoTile, State> = children.map {
-        it to it.state
-    }.toMap().toMutableMap()
     private val registrationToChildMap: Map<RegistrationHandle, DominoTile> = children.associateBy {
         coordinator.followStatusChangesByName(setOf(it.name))
     }
+    private val latestChildStateMap = children.associateWith {
+        it.state
+    }.toMutableMap()
 
     private val currentState = AtomicReference(State.Created)
 
@@ -175,11 +175,18 @@ class DominoTile(
                 is ErrorEvent -> {
                     gotError(event.cause)
                 }
-                is StartEvent, is StopEvent -> {
-                    // We don't do anything when starting/stopping the coordinator
+                is StartEvent -> {
+                    // The coordinator had started, set the children state map - from
+                    // now on we should receive messages of any change
+                    latestChildStateMap += children.associateWith {
+                        it.state
+                    }
+                }
+                is StopEvent -> {
+                    // We don't do anything when stopping the coordinator
                 }
                 is StopTile -> {
-                    when(state) {
+                    when (state) {
                         State.StoppedByParent, State.StoppedDueToBadConfig, State.StoppedDueToError -> {}
                         State.Started, State.Created -> {
                             stopTile()
@@ -208,13 +215,15 @@ class DominoTile(
 
                         val child = registrationToChildMap[event.registration]
                         if (child == null) {
-                            logger.warn("Signal change status received from registration " +
-                                    "(${event.registration}) that didn't map to a component.")
+                            logger.warn(
+                                "Signal change status received from registration " +
+                                    "(${event.registration}) that didn't map to a component."
+                            )
                             return
                         }
                         latestChildStateMap[child] = statusChangeEvent.newState
 
-                        when(statusChangeEvent.newState) {
+                        when (statusChangeEvent.newState) {
                             State.Started -> {
                                 logger.info("Status change: child ${child.name} went up.")
                                 handleChildStarted(child)
@@ -223,7 +232,7 @@ class DominoTile(
                                 logger.info("Status change: child ${child.name} went down (${statusChangeEvent.newState}).")
                                 coordinator.postEvent(StopTile(true))
                             }
-                            State.Created, State.StoppedByParent -> {  }
+                            State.Created, State.StoppedByParent -> { }
                         }
                     }
                 }
@@ -322,8 +331,10 @@ class DominoTile(
                     logger.info("Starting resources, since all children are now up.")
                     createResourcesAndStart()
                 }
-                children.any { latestChildStateMap[it] == State.StoppedDueToError ||
-                               latestChildStateMap[it] == State.StoppedDueToBadConfig } -> {
+                children.any {
+                    latestChildStateMap[it] == State.StoppedDueToError ||
+                        latestChildStateMap[it] == State.StoppedDueToBadConfig
+                } -> {
                     logger.info("Stopping child ${child.name} that went up, since there are other children that are in errored state.")
                     child.stop()
                 }
@@ -411,7 +422,7 @@ class DominoTile(
         configReady = false
 
         children.forEach {
-            if (!(latestChildStateMap[it] == State.StoppedDueToError || latestChildStateMap[it] == State.StoppedDueToBadConfig )) {
+            if (!(latestChildStateMap[it] == State.StoppedDueToError || latestChildStateMap[it] == State.StoppedDueToBadConfig)) {
                 logger.info("Stopping child ${it.name}")
                 it.stop()
             }

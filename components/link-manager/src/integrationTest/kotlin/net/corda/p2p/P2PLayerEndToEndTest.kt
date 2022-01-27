@@ -55,7 +55,6 @@ import net.corda.v5.base.util.seconds
 import net.corda.v5.base.util.toBase64
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.nio.ByteBuffer
@@ -122,7 +121,6 @@ class P2PLayerEndToEndTest {
     }
 
     @Test
-    @Disabled("Disabled due to flakiness in CI. Flakiness to be fixed and tests enabled in CORE-3621.")
     @Timeout(60)
     fun `two hosts can exchange data messages over p2p using RSA keys`() {
         Host(
@@ -151,7 +149,6 @@ class P2PLayerEndToEndTest {
     }
 
     @Test
-    @Disabled("Disabled due to flakiness in CI. Flakiness to be fixed and tests enabled in CORE-3621.")
     @Timeout(60)
     fun `two hosts can exchange data messages over p2p with ECDSA keys`() {
         Host(
