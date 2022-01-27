@@ -76,7 +76,7 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     override fun getTrustedCertificates(groupId: String): List<String>? {
         return dominoTile.withLifecycleLock {
             if (!isRunning) {
-                throw IllegalStateException("getNetworkType operation invoked while component was stopped.")
+                throw IllegalStateException("getTrustedCertificates operation invoked while component was stopped.")
             }
 
             processor.netMapEntriesByGroupIdPublicKeyHash[groupId]?.values?.first()?.trustedCertificates

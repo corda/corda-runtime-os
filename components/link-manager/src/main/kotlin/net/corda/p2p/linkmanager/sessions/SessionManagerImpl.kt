@@ -36,7 +36,8 @@ import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.TrustStoresContainer
 import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
-import net.corda.p2p.linkmanager.messaging.MessageConverter
+import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.createLinkOutMessage
+import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromHeartbeat
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionKey
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.couldNotFindNetworkType
@@ -56,7 +57,8 @@ import net.corda.v5.base.util.trace
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.time.Instant
-import java.util.*
+import java.util.Base64
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
@@ -340,7 +342,7 @@ open class SessionManagerImpl(
         }
         heartbeatManager.sessionMessageSent(sessionKey, sessionId)
 
-        return MessageConverter.createLinkOutMessage(sessionInitPayload, responderMemberInfo, networkType, trustStoreHash).let {
+        return createLinkOutMessage(sessionInitPayload, responderMemberInfo, networkType, trustStoreHash).let {
             sessionId to it
         }
     }
@@ -413,7 +415,7 @@ open class SessionManagerImpl(
             message.header.sessionId,
         )
 
-        return MessageConverter.createLinkOutMessage(payload, responderMemberInfo, networkType, trustStoreHash)
+        return createLinkOutMessage(payload, responderMemberInfo, networkType, trustStoreHash)
     }
 
     private fun processResponderHandshake(message: ResponderHandshakeMessage): LinkOutMessage? {
@@ -492,7 +494,7 @@ open class SessionManagerImpl(
         }
 
         logger.info("Remote identity ${peer.holdingIdentity} initiated new session ${message.header.sessionId}.")
-        return MessageConverter.createLinkOutMessage(responderHello, peer, networkType, trustStoreHash)
+        return createLinkOutMessage(responderHello, peer, networkType, trustStoreHash)
     }
 
     private fun processInitiatorHandshake(message: InitiatorHandshakeMessage): LinkOutMessage? {
@@ -571,7 +573,7 @@ open class SessionManagerImpl(
          * We delay removing the session from pendingInboundSessions until we receive the first data message as before this point
          * the other side (Initiator) might replay [InitiatorHandshakeMessage] in the case where the [ResponderHandshakeMessage] was lost.
          * */
-        return MessageConverter.createLinkOutMessage(response, peer, networkType, trustStoreHash)
+        return createLinkOutMessage(response, peer, networkType, trustStoreHash)
     }
 
     class HeartbeatManager(
@@ -766,7 +768,7 @@ open class SessionManagerImpl(
 
         private fun sendHeartbeatMessage(source: HoldingIdentity, dest: HoldingIdentity, session: Session) {
             val heartbeatMessage = HeartbeatMessage()
-            val message = MessageConverter.linkOutMessageFromHeartbeat(source, dest, heartbeatMessage, session, networkMap, trustStoresContainer)
+            val message = linkOutMessageFromHeartbeat(source, dest, heartbeatMessage, session, networkMap, trustStoresContainer)
             if (message == null) {
                 logger.warn("Failed to send a Heartbeat between $source and $dest.")
                 return

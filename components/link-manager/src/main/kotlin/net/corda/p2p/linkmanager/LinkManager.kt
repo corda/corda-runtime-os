@@ -623,7 +623,7 @@ class LinkManager(
             key: SessionKey,
             session: Session,
             networkMap: LinkManagerNetworkMap,
-            trustStoreContainer: TrustStoresContainer
+            trustStoreContainer: TrustStoresContainer,
         ) {
             publisher.dominoTile.withLifecycleLock {
                 if (!isRunning) {
