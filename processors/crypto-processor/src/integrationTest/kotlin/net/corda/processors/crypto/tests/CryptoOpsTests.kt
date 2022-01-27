@@ -8,8 +8,8 @@ import net.corda.processors.crypto.CryptoProcessor
 import net.corda.schema.configuration.ConfigKeys.Companion.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.Companion.MESSAGING_CONFIG
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.crypto.SignatureSpec
+import net.corda.v5.crypto.SignatureVerificationService
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -69,7 +69,7 @@ class CryptoOpsTests {
     lateinit var client: CryptoOpsClient
 
     @InjectService(timeout = 5000L)
-    lateinit var cipherSuiteFactory: CipherSuiteFactory
+    lateinit var verifier: SignatureVerificationService
 
     private lateinit var testDependencies: TestLifecycleDependenciesTrackingCoordinator
 
@@ -188,7 +188,7 @@ class CryptoOpsTests {
             data = data
         )
         assertTrue(signature.isNotEmpty())
-        cipherSuiteFactory.getSignatureVerificationService().verify(
+        verifier.verify(
             publicKey = params.second,
             signatureData = signature,
             clearData = data
@@ -207,7 +207,7 @@ class CryptoOpsTests {
             data = data
         )
         assertTrue(signature.isNotEmpty())
-        cipherSuiteFactory.getSignatureVerificationService().verify(
+        verifier.verify(
             publicKey = params.second,
             signatureSpec = signatureSpec,
             signatureData = signature,
@@ -224,7 +224,7 @@ class CryptoOpsTests {
         )
         assertEquals(publicKey, signature.by)
         assertTrue(signature.bytes.isNotEmpty())
-        cipherSuiteFactory.getSignatureVerificationService().verify(
+        verifier.verify(
             publicKey = publicKey,
             signatureData = signature.bytes,
             clearData = data
@@ -242,7 +242,7 @@ class CryptoOpsTests {
         )
         assertEquals(publicKey, signature.by)
         assertTrue(signature.bytes.isNotEmpty())
-        cipherSuiteFactory.getSignatureVerificationService().verify(
+        verifier.verify(
             publicKey = publicKey,
             signatureSpec = signatureSpec,
             signatureData = signature.bytes,

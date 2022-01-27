@@ -12,7 +12,6 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import org.osgi.service.component.annotations.Activate
@@ -28,8 +27,8 @@ class CryptoOpsClientComponent @Activate constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
-    @Reference(service = CipherSuiteFactory::class)
-    private val suiteFactory: CipherSuiteFactory
+    @Reference(service = CipherSchemeMetadata::class)
+    private val schemeMetadata: CipherSchemeMetadata
 ) : AbstractComponent<CryptoOpsClientComponent.Resources>(
         coordinatorFactory,
         LifecycleCoordinatorName.forComponent<CryptoOpsClient>()
@@ -105,7 +104,7 @@ class CryptoOpsClientComponent @Activate constructor(
 
     override fun allocateResources(): Resources {
         logger.info("Creating ${Resources::class.java.name}")
-        return Resources(publisherFactory, suiteFactory.getSchemeMap())
+        return Resources(publisherFactory, schemeMetadata)
     }
 
     class Resources(

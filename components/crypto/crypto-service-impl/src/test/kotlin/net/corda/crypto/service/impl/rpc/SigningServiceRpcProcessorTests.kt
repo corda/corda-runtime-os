@@ -166,11 +166,11 @@ class SigningServiceRpcProcessorTests {
             category = category
         )
         tenantId = services.tenantId
-        schemeMetadata = factory.getSchemeMap()
+        schemeMetadata = factory.schemeMetadata
         signingService = services.createSigningService(
             schemeMetadata.findSignatureScheme(ECDSA_SECP256R1_CODE_NAME)
         )
-        verifier = factory.getSignatureVerificationService()
+        verifier = factory.verifier
         signingFactory = mock {
             on { getInstance(tenantId) }.thenReturn(SigningServiceWrapper(signingService))
         }

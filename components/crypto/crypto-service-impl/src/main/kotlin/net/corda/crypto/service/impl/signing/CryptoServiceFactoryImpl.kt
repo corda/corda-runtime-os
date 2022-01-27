@@ -11,10 +11,13 @@ import net.corda.crypto.service.impl.registration.HSMRegistration
 import net.corda.data.crypto.config.HSMConfig
 import net.corda.data.crypto.config.TenantHSMConfig
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceContext
 import net.corda.v5.cipher.suite.CryptoServiceProvider
+import net.corda.v5.crypto.DigestService
+import net.corda.v5.crypto.SignatureVerificationService
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -28,8 +31,8 @@ import java.util.concurrent.ConcurrentHashMap
 class CryptoServiceFactoryImpl @Activate constructor(
     @Reference(service = HSMRegistration::class)
     private val hsmRegistrar: HSMRegistration,
-    @Reference(service = CipherSuiteFactory::class)
-    private val cipherSuiteFactory: CipherSuiteFactory,
+    @Reference(service = CipherSchemeMetadata::class)
+    private val schemeMetadata: CipherSchemeMetadata,
     @Reference(
         service = CryptoServiceProvider::class,
         cardinality = ReferenceCardinality.AT_LEAST_ONE,
@@ -43,7 +46,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
 
     private var impl: Impl = Impl(
         hsmRegistrar,
-        cipherSuiteFactory,
+        schemeMetadata,
         cryptoServiceProviders
     )
 
@@ -52,7 +55,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
 
     private class Impl(
         private val hsmRegistrar: HSMRegistration,
-        private val cipherSuiteFactory: CipherSuiteFactory,
+        private val schemeMetadata: CipherSchemeMetadata,
         private val cryptoServiceProviders: List<CryptoServiceProvider<*>>
     ) {
         companion object {
@@ -79,7 +82,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
                     CryptoServiceConfiguredInstance(
                         tenantId = tenantId,
                         category = category,
-                        defaultSignatureScheme = cipherSuiteFactory.getSchemeMap().findSignatureScheme(
+                        defaultSignatureScheme = schemeMetadata.findSignatureScheme(
                             config.tenant.defaultSignatureScheme
                         ),
                         wrappingKeyAlias = config.tenant.wrappingKeyAlias,
@@ -115,7 +118,12 @@ class CryptoServiceFactoryImpl @Activate constructor(
             val context = CryptoServiceContext(
                 category = category,
                 memberId = tenantId,
-                cipherSuiteFactory = cipherSuiteFactory,
+                cipherSuiteFactory = object : CipherSuiteFactory { // TODO2 delete that
+                    override fun getDigestService(): DigestService = throw  NotImplementedError()
+                    override fun getSchemeMap(): CipherSchemeMetadata = throw  NotImplementedError()
+                    override fun getSignatureVerificationService(): SignatureVerificationService =
+                        throw  NotImplementedError()
+                },
                 config = objectMapper.readValue(config.hsm.serviceConfig.array(), provider.configType)
             )
             return CryptoServiceDecorator(

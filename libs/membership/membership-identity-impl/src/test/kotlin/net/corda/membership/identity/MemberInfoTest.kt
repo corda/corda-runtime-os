@@ -31,7 +31,6 @@ import net.corda.membership.testkit.DummyConverter
 import net.corda.membership.testkit.DummyObjectWithNumberAndText
 import net.corda.membership.testkit.DummyObjectWithText
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.membership.conversion.ValueNotFoundException
 import net.corda.v5.membership.identity.EndpointInfo
 import net.corda.v5.membership.identity.MemberInfo
@@ -47,7 +46,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
-import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.io.File
 import java.lang.ClassCastException
@@ -61,9 +59,6 @@ import kotlin.test.assertNull
 class MemberInfoTest {
     companion object {
         private val keyEncodingService = Mockito.mock(CipherSchemeMetadata::class.java)
-        private val cipherSuiteFactory = mock<CipherSuiteFactory>().apply {
-            whenever(getSchemeMap()).thenReturn(keyEncodingService)
-        }
         private const val KEY = "12345"
         private val key = Mockito.mock(PublicKey::class.java)
 
@@ -84,7 +79,7 @@ class MemberInfoTest {
         private val converter = PropertyConverterImpl(
             listOf(
                 EndpointInfoConverter(),
-                PublicKeyConverter(cipherSuiteFactory),
+                PublicKeyConverter(keyEncodingService),
                 DummyConverter()
             )
         )

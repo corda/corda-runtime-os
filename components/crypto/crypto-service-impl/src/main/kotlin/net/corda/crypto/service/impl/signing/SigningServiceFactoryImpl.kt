@@ -16,7 +16,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.CipherSuiteFactory
+import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -27,8 +27,8 @@ import java.util.concurrent.ConcurrentHashMap
 class SigningServiceFactoryImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = CipherSuiteFactory::class)
-    private val cipherSuiteFactory: CipherSuiteFactory,
+    @Reference(service = CipherSchemeMetadata::class)
+    private val schemeMetadata: CipherSchemeMetadata,
     @Reference(service = SigningKeysPersistenceProvider::class)
     private val persistenceFactory: SigningKeysPersistenceProvider,
     @Reference(service = CryptoServiceFactory::class)
@@ -104,7 +104,7 @@ class SigningServiceFactoryImpl @Activate constructor(
     private fun createResources() {
         val current = impl
         impl = Impl(
-            cipherSuiteFactory,
+            schemeMetadata,
             persistenceFactory,
             cryptoServiceFactory
         )
@@ -113,7 +113,7 @@ class SigningServiceFactoryImpl @Activate constructor(
 
 
     private class Impl(
-        private val cipherSuiteFactory: CipherSuiteFactory,
+        private val schemeMetadata: CipherSchemeMetadata,
         private val persistenceFactory: SigningKeysPersistenceProvider,
         private val cryptoServiceFactory: CryptoServiceFactory
     ) : AutoCloseable {
@@ -124,7 +124,6 @@ class SigningServiceFactoryImpl @Activate constructor(
                 logger.debug("Getting the signing service for tenant={}", tenantId)
                 signingServices.computeIfAbsent(tenantId) {
                     logger.info("Creating the signing service for tenant={}", tenantId)
-                    val schemeMetadata = cipherSuiteFactory.getSchemeMap()
                     SigningServiceImpl(
                         tenantId = tenantId,
                         cache = SigningKeyCacheImpl(

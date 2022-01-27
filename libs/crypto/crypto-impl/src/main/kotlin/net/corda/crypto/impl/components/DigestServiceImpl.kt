@@ -1,4 +1,4 @@
-package net.corda.crypto.impl
+package net.corda.crypto.impl.components
 
 import net.corda.crypto.DigestAlgorithmFactoryProvider
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -7,21 +7,26 @@ import net.corda.v5.cipher.suite.DigestAlgorithmFactory
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SecureHash
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.ReferenceCardinality
 import java.io.InputStream
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.security.Provider
 import java.util.concurrent.ConcurrentHashMap
 
-class DigestServiceImpl(
+@Component(service = [DigestService::class])
+class DigestServiceImpl @Activate constructor(
+    @Reference(service = CipherSchemeMetadata::class)
     private val schemeMetadata: CipherSchemeMetadata,
-    private val customDigestAlgorithmFactories: List<DigestAlgorithmFactory>,
+    @Reference(service = DigestAlgorithmFactoryProvider::class, cardinality = ReferenceCardinality.OPTIONAL)
     private val customFactoriesProvider: DigestAlgorithmFactoryProvider?
 ) : DigestService {
-    private val factories = ConcurrentHashMap<String, DigestAlgorithmFactory>().also { factories ->
-        customDigestAlgorithmFactories.forEach { factory ->
-            factories[factory.algorithm] = factory
-        }
+    private val factories = ConcurrentHashMap<String, DigestAlgorithmFactory>().also {
+        val factory = DoubleSHA256DigestFactory()
+        it[factory.algorithm] = factory
     }
     private val lengths = ConcurrentHashMap<String, Int>()
 

@@ -1,10 +1,9 @@
 package net.corda.crypto.service.impl.signing
 
 import net.corda.crypto.CryptoConsts
-import net.corda.crypto.impl.CipherSchemeMetadataImpl
-import net.corda.crypto.impl.DigestServiceImpl
-import net.corda.crypto.impl.DoubleSHA256DigestFactory
-import net.corda.crypto.impl.SignatureVerificationServiceImpl
+import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
+import net.corda.crypto.impl.components.DigestServiceImpl
+import net.corda.crypto.impl.components.SignatureVerificationServiceImpl
 import net.corda.crypto.service.impl.persistence.SigningKeyCacheImpl
 import net.corda.crypto.service.CryptoServiceConfiguredInstance
 import net.corda.crypto.service.CryptoServiceFactory
@@ -16,7 +15,6 @@ import net.corda.crypto.service.impl.persistence.SoftCryptoKeyCacheImpl
 import net.corda.crypto.service.impl.soft.SoftCryptoService
 import net.corda.data.crypto.persistence.SigningKeysRecord
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SignatureVerificationService
@@ -24,22 +22,16 @@ import java.security.KeyPair
 import java.security.PublicKey
 import java.util.UUID
 
-class CryptoServicesTestFactory : CipherSuiteFactory {
-    private val schemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataImpl()
+class CryptoServicesTestFactory {
+    val schemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataImpl()
 
-    private val digest: DigestService by lazy {
-        DigestServiceImpl(schemeMetadata, listOf(DoubleSHA256DigestFactory()), null)
+    val digest: DigestService by lazy {
+        DigestServiceImpl(schemeMetadata, null)
     }
 
-    private val verifier: SignatureVerificationService by lazy {
+    val verifier: SignatureVerificationService by lazy {
         SignatureVerificationServiceImpl(schemeMetadata, digest)
     }
-
-    override fun getDigestService(): DigestService = digest
-
-    override fun getSchemeMap(): CipherSchemeMetadata = schemeMetadata
-
-    override fun getSignatureVerificationService(): SignatureVerificationService = verifier
 
     fun createCryptoServices(
         tenantId: String = UUID.randomUUID().toString(),

@@ -29,7 +29,6 @@ import net.corda.membership.identity.converter.PublicKeyConverter
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.messaging.api.records.Record
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.membership.identity.EndpointInfo
 import net.corda.v5.membership.identity.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -46,9 +45,6 @@ import java.time.Instant
 class MemberListProcessorTest {
     companion object {
         private val keyEncodingService: CipherSchemeMetadata = mock()
-        private val cipherSuiteFactory: CipherSuiteFactory = mock<CipherSuiteFactory>().apply {
-            whenever(getSchemeMap()).thenReturn(keyEncodingService)
-        }
         private val knownKey: PublicKey = mock()
         private const val knownKeyAsString = "12345"
         private val modifiedTime = Instant.now()
@@ -60,7 +56,7 @@ class MemberListProcessorTest {
         private val converter = PropertyConverterImpl(
             listOf(
                 EndpointInfoConverter(),
-                PublicKeyConverter(cipherSuiteFactory),
+                PublicKeyConverter(keyEncodingService),
             )
         )
         private val signature = WireSignatureWithKey(

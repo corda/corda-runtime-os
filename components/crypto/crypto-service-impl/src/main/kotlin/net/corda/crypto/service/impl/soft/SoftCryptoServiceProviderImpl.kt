@@ -17,10 +17,10 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceContext
 import net.corda.v5.cipher.suite.CryptoServiceProvider
+import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.exceptions.CryptoServiceException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -31,8 +31,10 @@ import org.slf4j.Logger
 open class SoftCryptoServiceProviderImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = CipherSuiteFactory::class)
-    private val cipherSuiteFactory: CipherSuiteFactory,
+    @Reference(service = CipherSchemeMetadata::class)
+    private val schemeMetadata: CipherSchemeMetadata,
+    @Reference(service = DigestService::class)
+    private val digestService: DigestService,
     @Reference(service = SoftKeysPersistenceProvider::class)
     private val persistenceFactory: SoftKeysPersistenceProvider
 ) : SoftCryptoServiceProvider {
@@ -103,7 +105,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     }
 
     private fun createResources() {
-        impl = Impl(cipherSuiteFactory, persistenceFactory)
+        impl = Impl(schemeMetadata, digestService, persistenceFactory)
     }
 
     private fun deleteResources() {
@@ -111,7 +113,8 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     }
 
     private class Impl(
-        private val cipherSuiteFactory: CipherSuiteFactory,
+        private val schemeMetadata: CipherSchemeMetadata,
+        private val digestService: DigestService,
         private val persistenceFactory: SoftKeysPersistenceProvider
     ) {
         fun getInstance(context: CryptoServiceContext<SoftCryptoServiceConfig>): CryptoService {
@@ -121,11 +124,10 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
                 context.memberId,
                 context.category
             )
-            val schemeMetadata = cipherSuiteFactory.getSchemeMap()
             return SoftCryptoService(
                 cache = makeCache(context, schemeMetadata),
                 schemeMetadata = schemeMetadata,
-                hashingService = cipherSuiteFactory.getDigestService()
+                hashingService = digestService
             )
         }
 

@@ -77,7 +77,7 @@ class CryptoOperationsTests {
         fun setup() {
             factory = CryptoServicesTestFactory()
             services = factory.createCryptoServices()
-            schemeMetadata = factory.getSchemeMap()
+            schemeMetadata = factory.schemeMetadata
         }
 
         @JvmStatic
@@ -161,7 +161,7 @@ class CryptoOperationsTests {
             data: ByteArray
         ) {
             val badData = UUID.randomUUID().toString().toByteArray()
-            val verifier = factory.getSignatureVerificationService()
+            val verifier = factory.verifier
             assertTrue(
                 verifier.isValid(publicKey, signature, data)
             )
@@ -187,7 +187,7 @@ class CryptoOperationsTests {
             data: ByteArray
         ) {
             val badData = UUID.randomUUID().toString().toByteArray()
-            val verifier = factory.getSignatureVerificationService()
+            val verifier = factory.verifier
             assertTrue(
                 verifier.isValid(publicKey, signatureSpec, signature, data),
                 "Should validate with ${signatureSpec.signatureName}"

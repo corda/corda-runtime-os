@@ -1,4 +1,4 @@
-package net.corda.crypto.impl
+package net.corda.crypto.impl.components
 
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.DigestScheme
@@ -37,11 +37,7 @@ class DigestServiceTests {
         @BeforeAll
         fun setup() {
             schemeMetadata = CipherSchemeMetadataImpl()
-            digestService = DigestServiceImpl(
-                schemeMetadata,
-                listOf(DoubleSHA256DigestFactory()),
-                null
-            )
+            digestService = DigestServiceImpl(schemeMetadata, null)
         }
 
         @JvmStatic

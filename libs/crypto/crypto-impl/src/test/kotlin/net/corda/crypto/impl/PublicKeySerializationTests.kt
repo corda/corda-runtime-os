@@ -1,9 +1,8 @@
-package net.corda.crypto.impl.serializer
+package net.corda.crypto.impl
 
 import net.corda.serialization.InternalDirectSerializer.ReadObject
 import net.corda.serialization.InternalDirectSerializer.WriteObject
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.CipherSuiteFactory
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.mockito.kotlin.argumentCaptor
@@ -24,11 +23,7 @@ class PublicKeySerializationTests {
             on { it.decodePublicKey(encodedPublicKey) }.thenReturn(publicKey)
             on { it.encodeAsByteArray(publicKey) }.thenReturn(encodedPublicKey)
         }
-        val cryptoLibraryFactory = mock<CipherSuiteFactory> {
-            on { it.getSchemeMap() }.thenReturn(keyEncodingService)
-        }
-        val publicKeySerializer = PublicKeySerializer()
-        publicKeySerializer.factory = cryptoLibraryFactory
+        val publicKeySerializer = PublicKeySerializer(keyEncodingService)
 
         argumentCaptor<ByteArray> {
             val writeOps = mock<WriteObject>()

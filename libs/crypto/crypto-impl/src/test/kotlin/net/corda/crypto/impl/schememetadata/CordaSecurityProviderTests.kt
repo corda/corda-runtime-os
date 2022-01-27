@@ -1,6 +1,6 @@
 package net.corda.crypto.impl.schememetadata
 
-import net.corda.crypto.impl.CipherSchemeMetadataImpl
+import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.CompositeKey
 import org.junit.jupiter.api.Assertions.assertEquals

@@ -1,16 +1,23 @@
-package net.corda.crypto.impl
+package net.corda.crypto.impl.components
 
+import net.corda.crypto.impl.SignatureInstances
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SignatureVerificationService
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
 import java.security.PublicKey
 import java.security.SignatureException
 import javax.crypto.Cipher
 
-open class SignatureVerificationServiceImpl(
+@Component(service = [SignatureVerificationService::class])
+class SignatureVerificationServiceImpl @Activate constructor(
+    @Reference(service = CipherSchemeMetadata::class)
     private val schemeMetadata: CipherSchemeMetadata,
+    @Reference(service = DigestService::class)
     private val hashingService: DigestService
 ) : SignatureVerificationService {
 

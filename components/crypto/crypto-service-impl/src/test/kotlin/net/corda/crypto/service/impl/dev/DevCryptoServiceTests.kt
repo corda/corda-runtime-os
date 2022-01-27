@@ -9,12 +9,14 @@ import net.corda.crypto.service.impl.TestSigningKeysPersistenceProvider
 import net.corda.crypto.service.impl.TestSoftKeysPersistenceProvider
 import net.corda.data.crypto.persistence.SigningKeysRecord
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.cipher.suite.CryptoServiceContext
 import net.corda.v5.cipher.suite.WrappedPrivateKey
 import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.NaSignatureSpec
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.crypto.CompositeKey
+import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.OID_COMPOSITE_KEY_IDENTIFIER
 import net.corda.v5.crypto.SignatureVerificationService
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
@@ -68,10 +70,11 @@ class DevCryptoServiceTests {
         fun setup() {
             factory = CryptoServicesTestFactory()
             services = factory.createCryptoServices()
-            schemeMetadata = factory.getSchemeMap()
-            verifier = factory.getSignatureVerificationService()
+            schemeMetadata = factory.schemeMetadata
+            verifier = factory.verifier
             devCryptoServiceProvider = DevCryptoServiceProviderImpl(
-                factory,
+                schemeMetadata,
+                factory.digest,
                 TestSoftKeysPersistenceProvider(),
                 TestSigningKeysPersistenceProvider()
             )
@@ -79,7 +82,12 @@ class DevCryptoServiceTests {
                 CryptoServiceContext(
                     memberId = services.tenantId,
                     category = CryptoConsts.Categories.LEDGER,
-                    cipherSuiteFactory = factory,
+                    cipherSuiteFactory = object : CipherSuiteFactory {
+                        override fun getDigestService(): DigestService = throw NotImplementedError()
+                        override fun getSchemeMap(): CipherSchemeMetadata = throw NotImplementedError()
+                        override fun getSignatureVerificationService(): SignatureVerificationService =
+                            throw NotImplementedError()
+                    },
                     config = DevCryptoServiceConfig()
                 )
             ) as DevCryptoService

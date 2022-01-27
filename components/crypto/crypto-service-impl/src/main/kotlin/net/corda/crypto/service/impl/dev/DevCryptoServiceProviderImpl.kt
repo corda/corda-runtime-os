@@ -7,10 +7,11 @@ import net.corda.crypto.service.impl.persistence.SigningKeyCacheImpl
 import net.corda.crypto.service.impl.persistence.SoftCryptoKeyCache
 import net.corda.crypto.service.impl.persistence.SoftCryptoKeyCacheImpl
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.CipherSuiteFactory
+import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceContext
 import net.corda.v5.cipher.suite.CryptoServiceProvider
+import net.corda.v5.crypto.DigestService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -19,8 +20,10 @@ import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [CryptoServiceProvider::class])
 class DevCryptoServiceProviderImpl @Activate constructor(
-    @Reference(service = CipherSuiteFactory::class)
-    private val cipherSuiteFactory: CipherSuiteFactory,
+    @Reference(service = CipherSchemeMetadata::class)
+    private val schemeMetadata: CipherSchemeMetadata,
+    @Reference(service = DigestService::class)
+    private val digestService: DigestService,
     @Reference(service = SoftKeysPersistenceProvider::class)
     private val softPersistenceFactory: SoftKeysPersistenceProvider,
     @Reference(service = SigningKeysPersistenceProvider::class,)
@@ -50,7 +53,6 @@ class DevCryptoServiceProviderImpl @Activate constructor(
             context.memberId,
             context.category
         )
-        val schemeMetadata = cipherSuiteFactory.getSchemeMap()
         val cryptoServiceCache = devKeysCache.getOrPut(context.memberId) {
             SoftCryptoKeyCacheImpl(
                 tenantId = context.memberId,
@@ -73,7 +75,7 @@ class DevCryptoServiceProviderImpl @Activate constructor(
             keyCache = cryptoServiceCache,
             signingCache = signingKeyCache,
             schemeMetadata = schemeMetadata,
-            hashingService = cipherSuiteFactory.getDigestService()
+            hashingService = digestService
         )
     }
 

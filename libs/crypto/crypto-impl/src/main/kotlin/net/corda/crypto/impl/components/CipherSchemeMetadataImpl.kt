@@ -1,7 +1,8 @@
-package net.corda.crypto.impl
+package net.corda.crypto.impl.components
 
 import net.corda.crypto.impl.schememetadata.ProviderMap
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.cipher.suite.schemes.DigestScheme
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.crypto.CompositeKey
@@ -19,6 +20,7 @@ import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.bouncycastle.pqc.jcajce.provider.sphincs.BCSphincs256PublicKey
 import org.bouncycastle.util.io.pem.PemReader
+import org.osgi.service.component.annotations.Component
 import java.io.StringReader
 import java.io.StringWriter
 import java.security.KeyFactory
@@ -30,7 +32,8 @@ import java.security.SecureRandom
 import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
 
-open class CipherSchemeMetadataImpl : CipherSchemeMetadata {
+@Component(service = [CipherSchemeMetadata::class, KeyEncodingService::class])
+class CipherSchemeMetadataImpl : CipherSchemeMetadata {
     companion object {
         val MESSAGE_DIGEST_TYPE: String = MessageDigest::class.java.simpleName
 
@@ -97,7 +100,7 @@ open class CipherSchemeMetadataImpl : CipherSchemeMetadata {
 
     private val providerMap by lazy(LazyThreadSafetyMode.PUBLICATION) { ProviderMap(this) }
 
-    final override val schemes: Array<SignatureScheme> = arrayOf(
+    override val schemes: Array<SignatureScheme> = arrayOf(
         providerMap.RSA_SHA256,
         providerMap.ECDSA_SECP256K1_SHA256,
         providerMap.ECDSA_SECP256R1_SHA256,
@@ -112,7 +115,7 @@ open class CipherSchemeMetadataImpl : CipherSchemeMetadata {
         scheme.algorithmOIDs.map { identifier -> identifier to scheme }
     }.toMap()
 
-    final override val digests: Array<DigestScheme> = providerMap.providers.values
+    override val digests: Array<DigestScheme> = providerMap.providers.values
         .flatMap { it.services }
         .filter {
             it.type.equals(MESSAGE_DIGEST_TYPE, true)
@@ -123,9 +126,9 @@ open class CipherSchemeMetadataImpl : CipherSchemeMetadata {
         .distinctBy { it.algorithmName }
         .toTypedArray()
 
-    final override val providers: Map<String, Provider> get() = providerMap.providers
+    override val providers: Map<String, Provider> get() = providerMap.providers
 
-    final override val secureRandom: SecureRandom get() = providerMap.secureRandom
+    override val secureRandom: SecureRandom get() = providerMap.secureRandom
 
     override fun findSignatureScheme(codeName: String): SignatureScheme = schemes.firstOrNull { it.codeName == codeName }
         ?: throw IllegalArgumentException("Unrecognised scheme code name: $codeName")

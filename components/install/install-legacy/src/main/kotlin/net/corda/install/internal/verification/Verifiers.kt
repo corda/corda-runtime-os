@@ -9,8 +9,8 @@ import net.corda.packaging.CordappManifest
 import net.corda.packaging.CordappManifest.Companion.DEFAULT_MIN_PLATFORM_VERSION
 import net.corda.packaging.CPK
 import net.corda.packaging.DependencyResolutionException
-import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.create
 import net.corda.v5.crypto.sha256Bytes
@@ -119,10 +119,8 @@ internal class CordappSignatureVerifier @Activate constructor(
         @Reference
         private val configAdmin: ConfigurationAdmin,
         @Reference
-        private val cipherSuiteFactory: CipherSuiteFactory
+        private val hashingService: DigestService
 ) : StandaloneCpkVerifier {
-
-    private val hashingService = cipherSuiteFactory.getDigestService()
 
     private fun ByteArray.sha256(): SecureHash = hashingService.hash(this, DigestAlgorithmName.SHA2_256)
 

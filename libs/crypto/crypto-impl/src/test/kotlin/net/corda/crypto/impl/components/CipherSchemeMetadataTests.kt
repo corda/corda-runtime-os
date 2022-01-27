@@ -1,5 +1,6 @@
-package net.corda.crypto.impl
+package net.corda.crypto.impl.components
 
+import net.corda.crypto.impl.generateKeyPair
 import net.corda.crypto.impl.schememetadata.CordaSecureRandomService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.COMPOSITE_KEY_CODE_NAME

@@ -1,6 +1,6 @@
 package net.corda.permissions.password.impl
 
-import net.corda.crypto.impl.CipherSchemeMetadataImpl
+import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
 import net.corda.permissions.password.PasswordServiceFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse

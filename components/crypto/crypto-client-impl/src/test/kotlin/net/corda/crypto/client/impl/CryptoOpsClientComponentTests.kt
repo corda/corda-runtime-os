@@ -1,7 +1,7 @@
 package net.corda.crypto.client.impl
 
 import net.corda.crypto.CryptoConsts
-import net.corda.crypto.impl.CipherSchemeMetadataImpl
+import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.config.HSMInfo
 import net.corda.data.crypto.wire.CryptoNoContentValue
@@ -29,12 +29,9 @@ import net.corda.data.crypto.wire.ops.rpc.SupportedSchemesRpcQuery
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.SignatureVerificationService
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.empty
@@ -86,14 +83,7 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
             CryptoOpsClientComponent(
                 coordinatorFactory = coordinatorFactory,
                 publisherFactory = publisherFactory,
-                suiteFactory = object : CipherSuiteFactory {
-                    override fun getDigestService(): DigestService =
-                        throw NotImplementedError()
-                    override fun getSchemeMap(): CipherSchemeMetadata =
-                        schemeMetadata
-                    override fun getSignatureVerificationService(): SignatureVerificationService =
-                        throw NotImplementedError()
-                }
+                schemeMetadata = schemeMetadata
             )
         }
     }

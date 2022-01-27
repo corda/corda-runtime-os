@@ -18,7 +18,7 @@ class SoftCryptoServiceExceptionsTests {
             mock {
                 on { find(any()) }.thenThrow(exception)
             },
-            CryptoServicesTestFactory().getSchemeMap(),
+            CryptoServicesTestFactory().schemeMetadata,
             mock()
         )
         val thrown = assertThrows<CryptoServiceException> {
@@ -34,7 +34,7 @@ class SoftCryptoServiceExceptionsTests {
             mock {
                 on { find(any()) }.thenThrow(exception)
             },
-            CryptoServicesTestFactory().getSchemeMap(),
+            CryptoServicesTestFactory().schemeMetadata,
             mock()
         )
         val thrown = assertThrows<CryptoServiceException> {
@@ -50,7 +50,7 @@ class SoftCryptoServiceExceptionsTests {
             mock {
                 on { find(any()) }.thenThrow(exception)
             },
-            CryptoServicesTestFactory().getSchemeMap(),
+            CryptoServicesTestFactory().schemeMetadata,
             mock()
         )
         val thrown = assertThrows<CryptoServiceException> {
@@ -66,7 +66,7 @@ class SoftCryptoServiceExceptionsTests {
             mock {
                 on { find(any()) }.thenThrow(exception)
             },
-            CryptoServicesTestFactory().getSchemeMap(),
+            CryptoServicesTestFactory().schemeMetadata,
             mock()
         )
         val thrown = assertThrows<CryptoServiceException> {
@@ -82,7 +82,7 @@ class SoftCryptoServiceExceptionsTests {
             mock {
                 on { find(any()) }.thenThrow(exception)
             },
-            CryptoServicesTestFactory().getSchemeMap(),
+            CryptoServicesTestFactory().schemeMetadata,
             mock()
         )
         val thrown = assertThrows<CryptoServiceException> {
@@ -98,7 +98,7 @@ class SoftCryptoServiceExceptionsTests {
             mock {
                 on { find(any()) }.thenThrow(exception)
             },
-            CryptoServicesTestFactory().getSchemeMap(),
+            CryptoServicesTestFactory().schemeMetadata,
             mock()
         )
         val thrown = assertThrows<CryptoServiceException> {
@@ -114,7 +114,7 @@ class SoftCryptoServiceExceptionsTests {
             mock {
                 on { find(any()) }.thenThrow(exception)
             },
-            CryptoServicesTestFactory().getSchemeMap(),
+            CryptoServicesTestFactory().schemeMetadata,
             mock()
         )
         val thrown = assertThrows<CryptoServiceException> {
@@ -130,7 +130,7 @@ class SoftCryptoServiceExceptionsTests {
             mock {
                 on { find(any()) }.thenThrow(exception)
             },
-            CryptoServicesTestFactory().getSchemeMap(),
+            CryptoServicesTestFactory().schemeMetadata,
             mock()
         )
         val thrown = assertThrows<CryptoServiceException> {
@@ -146,7 +146,7 @@ class SoftCryptoServiceExceptionsTests {
             mock {
                 on { find(any()) }.thenThrow(exception)
             },
-            CryptoServicesTestFactory().getSchemeMap(),
+            CryptoServicesTestFactory().schemeMetadata,
             mock()
         )
         val thrown = assertThrows<CryptoServiceException> {
@@ -171,7 +171,7 @@ class SoftCryptoServiceExceptionsTests {
             mock {
                 on { find(any()) }.thenThrow(exception)
             },
-            CryptoServicesTestFactory().getSchemeMap(),
+            CryptoServicesTestFactory().schemeMetadata,
             mock()
         )
         val thrown = assertThrows<CryptoServiceException> {

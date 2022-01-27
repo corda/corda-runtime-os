@@ -6,11 +6,9 @@ import net.corda.membership.identity.MemberInfoExtension.Companion.PARTY_OWNING_
 import net.corda.membership.identity.converter.PublicKeyConverter
 import net.corda.membership.testkit.createContext
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.CipherSuiteFactory
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
-import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.lang.IllegalArgumentException
 import java.security.PublicKey
@@ -21,9 +19,6 @@ import kotlin.test.assertNotEquals
 class PublicKeyConverterTest {
     companion object {
         private val keyEncodingService = Mockito.mock(CipherSchemeMetadata::class.java)
-        private val cipherSuiteFactory = mock<CipherSuiteFactory>().apply {
-            whenever(getSchemeMap()).thenReturn(keyEncodingService)
-        }
 
         private const val IDENTITY_KEY_KEY = "corda.identityKeys.1"
         private const val IDENTITY_KEY = "12345"
@@ -32,7 +27,7 @@ class PublicKeyConverterTest {
         private const val OWNING_KEY = "12378"
         private val owningKey = Mockito.mock(PublicKey::class.java)
 
-        private val converter = PropertyConverterImpl(listOf(PublicKeyConverter(cipherSuiteFactory)))
+        private val converter = PropertyConverterImpl(listOf(PublicKeyConverter(keyEncodingService)))
         private val publicKeyConverter = converter.customConverters.first()
     }
 

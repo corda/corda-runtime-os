@@ -1,5 +1,6 @@
-package net.corda.crypto.impl
+package net.corda.crypto.impl.components
 
+import net.corda.crypto.impl.components.DoubleSHA256Digest
 import net.corda.v5.crypto.DigestAlgorithmName
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Test

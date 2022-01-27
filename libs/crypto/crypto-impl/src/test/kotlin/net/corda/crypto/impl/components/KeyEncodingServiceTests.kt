@@ -1,5 +1,7 @@
-package net.corda.crypto.impl
+package net.corda.crypto.impl.components
 
+import net.corda.crypto.impl.generateKeyPair
+import net.corda.crypto.impl.signData
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.cipher.suite.schemes.COMPOSITE_KEY_CODE_NAME
@@ -51,11 +53,7 @@ class KeyEncodingServiceTests {
         fun setup() {
             schemeMetadata = CipherSchemeMetadataImpl()
             keyEncoder = schemeMetadata
-            val digest = DigestServiceImpl(
-                schemeMetadata,
-                listOf(DoubleSHA256DigestFactory()),
-                null
-            )
+            val digest = DigestServiceImpl(schemeMetadata, null)
             verifier = SignatureVerificationServiceImpl(schemeMetadata, digest)
         }
 
