@@ -13,11 +13,11 @@ import org.osgi.service.component.annotations.Reference
 @Component(immediate = true, service = [VirtualNodeRPCOpsService::class])
 internal class VirtualNodeRPCOpsServiceImpl @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
-    private val configReadService: ConfigurationReadService,
+    configReadService: ConfigurationReadService,
     @Reference(service = LifecycleCoordinatorFactory::class)
-    private val coordinatorFactory: LifecycleCoordinatorFactory,
+    coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = VirtualNodeRPCOpsInternal::class)
-    private val virtualNodeRPCOps: VirtualNodeRPCOpsInternal
+    virtualNodeRPCOps: VirtualNodeRPCOpsInternal
 ) : VirtualNodeRPCOpsService {
 
     private val coordinator = let {

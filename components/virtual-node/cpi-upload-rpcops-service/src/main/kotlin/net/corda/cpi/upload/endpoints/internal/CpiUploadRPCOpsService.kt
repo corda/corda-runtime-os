@@ -13,11 +13,11 @@ import org.osgi.service.component.annotations.Reference
 @Component(service = [CpiUploadRPCOpsService::class], immediate = true)
 class CpiUploadRPCOpsServiceImpl @Activate constructor(
     @Reference(service = CpiUploadRPCOpsInternal::class)
-    private val cpiUploadRPCOps: CpiUploadRPCOpsInternal,
+    cpiUploadRPCOps: CpiUploadRPCOpsInternal,
     @Reference(service = LifecycleCoordinatorFactory::class)
-    private val coordinatorFactory: LifecycleCoordinatorFactory,
+    coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
-    private val configReadService: ConfigurationReadService
+    configReadService: ConfigurationReadService
 ) : CpiUploadRPCOpsService {
 
     private val coordinator: LifecycleCoordinator
