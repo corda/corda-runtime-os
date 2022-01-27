@@ -27,8 +27,7 @@ class CpiUploadRPCOpsServiceImpl @Activate constructor(
         coordinator = coordinatorFactory.createCoordinator<CpiUploadRPCOpsService>(eventHandler)
     }
 
-    override val isRunning: Boolean
-        get() = TODO("Not yet implemented")
+    override val isRunning get() = coordinator.isRunning
 
     override fun start() {
         coordinator.start()
