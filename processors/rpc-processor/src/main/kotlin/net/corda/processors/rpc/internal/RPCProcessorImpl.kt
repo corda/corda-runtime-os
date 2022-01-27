@@ -58,6 +58,7 @@ class RPCProcessorImpl @Activate constructor(
         ::httpRpcGateway,
         ::configRPCOpsService,
         ::virtualNodeRPCOpsService,
+        ::cpiUploadRPCOpsService
     )
 
     override fun start(bootConfig: SmartConfig) {
