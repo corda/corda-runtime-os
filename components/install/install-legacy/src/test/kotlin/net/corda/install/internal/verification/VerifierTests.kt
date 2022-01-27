@@ -77,7 +77,7 @@ class VerifierTests {
     private val dummyCertificates = setOf(dummySigningKeyOne, dummySigningKeyTwo)
         .mapTo(LinkedHashSet(), ::createMockCertificate)
 
-    private val cryptoLibraryFactory = CryptoMocks().factories.cryptoLibrary
+    private val cryptoLibraryFactory = CryptoMocks()
     private val hashingService = cryptoLibraryFactory.getDigestService()
 
     private fun ByteArray.sha256(): SecureHash = hashingService.hash(this, DigestAlgorithmName.SHA2_256)
