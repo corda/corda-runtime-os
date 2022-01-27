@@ -15,6 +15,7 @@ import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.LinkManagerTest.Companion.authenticatedMessageAndKey
 import net.corda.p2p.linkmanager.LinkManagerTest.Companion.createSessionPair
+import net.corda.p2p.linkmanager.TrustStoresContainer
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.SessionAndMessage
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.any
+import org.mockito.kotlin.mock
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 
@@ -48,6 +50,8 @@ class MessageConverterTest {
     fun resetLogging() {
         loggingInterceptor.reset()
     }
+
+    private val trustStoresContainer = mock<TrustStoresContainer>()
 
     @Test
     fun `convertAuthenticatedEncryptedMessageToFlowMessage returns null (with appropriate logging) if authentication fails`() {
@@ -93,7 +97,7 @@ class MessageConverterTest {
         val networkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
         Mockito.`when`(networkMap.getMemberInfo(any())).thenReturn(null)
         val flowMessage = authenticatedMessageAndKey(HoldingIdentity("", ""), peer, ByteBuffer.wrap("DATA".toByteArray()))
-        assertNull(MessageConverter.linkOutMessageFromAuthenticatedMessageAndKey(flowMessage, session, networkMap))
+        assertNull(MessageConverter.linkOutMessageFromAuthenticatedMessageAndKey(flowMessage, session, trustStoresContainer))
         loggingInterceptor.assertSingleWarning(
             "Attempted to send message to peer $peer which is not in the network map." +
                 " The message was discarded."
@@ -115,7 +119,7 @@ class MessageConverterTest {
             )
         )
         val flowMessage = authenticatedMessageAndKey(us, peer, ByteBuffer.wrap("DATA".toByteArray()))
-        assertNull(MessageConverter.linkOutMessageFromAuthenticatedMessageAndKey(flowMessage, session, networkMap))
+        assertNull(MessageConverter.linkOutMessageFromAuthenticatedMessageAndKey(flowMessage, session, trustStoresContainer))
         loggingInterceptor.assertSingleWarning(
             "Could not find the network type in the NetworkMap for our identity = $us." +
                 " The message was discarded."
@@ -131,7 +135,7 @@ class MessageConverterTest {
 
         val networkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
         Mockito.`when`(networkMap.getMemberInfo(any())).thenReturn(null)
-        assertNull(MessageConverter.linkOutFromUnauthenticatedMessage(unauthenticatedMsg, networkMap))
+        assertNull(MessageConverter.linkOutFromUnauthenticatedMessage(unauthenticatedMsg, trustStoresContainer))
         loggingInterceptor.assertSingleWarning(
             "Attempted to send message to peer $peer which is not in the network map." +
                 " The message was discarded."
@@ -154,7 +158,7 @@ class MessageConverterTest {
                 LinkManagerNetworkMap.EndPoint("")
             )
         )
-        assertNull(MessageConverter.linkOutFromUnauthenticatedMessage(unauthenticatedMsg, networkMap))
+        assertNull(MessageConverter.linkOutFromUnauthenticatedMessage(unauthenticatedMsg, trustStoresContainer))
         loggingInterceptor.assertSingleWarning(
             "Could not find the network type in the NetworkMap for $peer." +
                 " The message was discarded."

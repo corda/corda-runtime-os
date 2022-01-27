@@ -26,7 +26,6 @@ class InMemorySessionReplayer(
     configurationReaderService: ConfigurationReadService,
     coordinatorFactory: LifecycleCoordinatorFactory,
     configuration: SmartConfig,
-    private val networkMap: LinkManagerNetworkMap,
     private val trustStoresContainer: TrustStoresContainer,
 ): LifecycleWithDominoTile {
 
@@ -49,7 +48,7 @@ class InMemorySessionReplayer(
     override val dominoTile = DominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
-        children = setOf(replayScheduler.dominoTile, publisher.dominoTile, networkMap.dominoTile)
+        children = setOf(replayScheduler.dominoTile, publisher.dominoTile, trustStoresContainer.dominoTile)
     )
 
     data class SessionMessageReplay(
@@ -83,30 +82,14 @@ class InMemorySessionReplayer(
     private fun replayMessage(
         messageReplay: SessionMessageReplay,
     ) {
-        val memberInfo = networkMap.getMemberInfo(messageReplay.dest)
-        if (memberInfo == null) {
+        val header = trustStoresContainer.createLinkOutHeader(messageReplay.dest)
+        if(header == null)
+        {
             logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName})" +
-                " with peer ${messageReplay.dest} which is not in the network map. The message was not replayed.")
+                    " with peer ${messageReplay.dest} which is not in the network map. The message was not replayed.")
             return
         }
-
-        val networkType = networkMap.getNetworkType(memberInfo.holdingIdentity.groupId)
-        if (networkType == null) {
-            logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName}) but" +
-                " could not find the network type in the NetworkMap for group ${memberInfo.holdingIdentity.groupId}." +
-                " The message was not replayed.")
-            return
-        }
-
-        val trustStoreHash = trustStoresContainer.getTrustStoreHash(memberInfo.holdingIdentity)
-        if (trustStoreHash == null) {
-            logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName}) but" +
-                    " could not find the trust store for group ${memberInfo.holdingIdentity.groupId}." +
-                    " The message was not replayed.")
-            return
-        }
-
-        val message = MessageConverter.createLinkOutMessage(messageReplay.message, memberInfo, networkType, trustStoreHash)
+        val message = MessageConverter.createLinkOutMessage(messageReplay.message, header)
         logger.debug { "Replaying session message ${message.payload.javaClass} for session ${messageReplay.sessionId}." }
         publisher.publish(listOf(Record(LINK_OUT_TOPIC, LinkManager.generateKey(), message)))
         messageReplay.sentSessionMessageCallback(

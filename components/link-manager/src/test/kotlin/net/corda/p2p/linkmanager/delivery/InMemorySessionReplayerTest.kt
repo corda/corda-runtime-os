@@ -8,6 +8,7 @@ import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
+import net.corda.p2p.linkmanager.TrustStoresContainer
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.linkmanager.utilities.MockNetworkMap
@@ -68,11 +69,12 @@ class InMemorySessionReplayerTest {
         replayCallback = context.arguments()[3] as (message: InMemorySessionReplayer.SessionMessageReplay) -> Unit
     }
 
-    val netMap = MockNetworkMap(listOf(US, COUNTER_PARTY)).getSessionNetworkMapForNode(US)
+    private val netMap = MockNetworkMap(listOf(US, COUNTER_PARTY)).getSessionNetworkMapForNode(US)
+    private val trustStores = mock<TrustStoresContainer>()
 
     @Test
     fun `The InMemorySessionReplacer adds a message to be replayed (by the replayScheduler) when addMessageForReplay`() {
-        val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(), netMap)
+        val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(), trustStores)
 
         val id = UUID.randomUUID().toString()
         val helloMessage = AuthenticationProtocolInitiator(
@@ -93,7 +95,7 @@ class InMemorySessionReplayerTest {
 
     @Test
     fun `The InMemorySessionReplacer removes a message from the replayScheduler when removeMessageFromReplay`() {
-        val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(), netMap)
+        val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(), trustStores)
 
         val id = UUID.randomUUID().toString()
         setRunning()
@@ -105,7 +107,7 @@ class InMemorySessionReplayerTest {
 
     @Test
     fun `The InMemorySessionReplacer removes a message from the replayScheduler when removeAllMessageFromReplay`() {
-        val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(), netMap)
+        val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(), trustStores)
 
         setRunning()
         replayer.removeAllMessagesFromReplay()
@@ -116,7 +118,7 @@ class InMemorySessionReplayerTest {
 
     @Test
     fun `The replaySchedular callback publishes the session message`() {
-        InMemorySessionReplayer(mock(), mock(), mock(), mock(), netMap)
+        InMemorySessionReplayer(mock(), mock(), mock(), mock(), trustStores)
         val id = UUID.randomUUID().toString()
         val helloMessage = AuthenticationProtocolInitiator(
             id,
@@ -151,7 +153,7 @@ class InMemorySessionReplayerTest {
         Mockito.`when`(mockNetworkMap.getNetworkType(any())).thenReturn(null).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
         Mockito.`when`(mockNetworkMap.getMemberInfo(COUNTER_PARTY)).thenReturn(netMap.getMemberInfo(COUNTER_PARTY))
 
-        InMemorySessionReplayer(mock(), mock(), mock(), mock(), mockNetworkMap)
+        InMemorySessionReplayer(mock(), mock(), mock(), mock(), trustStores)
         val id = UUID.randomUUID().toString()
         val helloMessage = AuthenticationProtocolInitiator(
             id,
@@ -176,7 +178,7 @@ class InMemorySessionReplayerTest {
         Mockito.`when`(mockNetworkMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
         Mockito.`when`(mockNetworkMap.getMemberInfo(COUNTER_PARTY)).thenReturn(null).thenReturn(netMap.getMemberInfo(COUNTER_PARTY))
 
-        InMemorySessionReplayer(mock(), mock(), mock(), mock(), mockNetworkMap)
+        InMemorySessionReplayer(mock(), mock(), mock(), mock(), trustStores)
         val id = UUID.randomUUID().toString()
         val helloMessage = AuthenticationProtocolInitiator(
             id,

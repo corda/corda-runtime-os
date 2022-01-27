@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager
 
+import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
@@ -12,8 +13,12 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.GatewayTruststore
+import net.corda.p2p.LinkOutHeader
 import net.corda.p2p.crypto.protocol.ProtocolConstants
+import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
+import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toNetworkType
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_TRUSTSTORES
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.toBase64
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.security.MessageDigest
@@ -33,15 +38,53 @@ class TrustStoresContainer(
     companion object {
         private const val READ_CURRENT_DATA = "linkmanager_truststore_reader"
         private const val WRITE_MISSING_DATA = "linkmanager_truststore_writer"
+        private val logger = contextLogger()
+    }
+
+    fun createLinkOutHeader(
+        source: HoldingIdentity,
+        destination: HoldingIdentity = source,
+    ): LinkOutHeader? {
+        return createLinkOutHeader(
+            destination.toHoldingIdentity(),
+            source.toHoldingIdentity(),
+        )
+    }
+
+    fun createLinkOutHeader(
+        source: LinkManagerNetworkMap.HoldingIdentity,
+        destination: LinkManagerNetworkMap.HoldingIdentity = source,
+    ): LinkOutHeader? {
+        val destMemberInfo = linkManagerNetworkMap.getMemberInfo(destination)
+        if (destMemberInfo == null) {
+            logger.warn("Attempted to send message to peer $destination which is not in the network map. The message was discarded.")
+            return null
+        }
+        val trustStoreHash = groupIdToHash[destination.groupId]
+        if (trustStoreHash == null) {
+            logger.warn("Attempted to send message to peer $destination which has no trust store. The message was discarded.")
+            return null
+        }
+
+        val networkType = linkManagerNetworkMap.getNetworkType(source.groupId)
+        if (networkType == null) {
+            logger.warn("Could not find the network type in the NetworkMap for $source. The message was discarded.")
+            return null
+        }
+
+        return LinkOutHeader(
+            destMemberInfo.holdingIdentity.x500Name,
+            networkType.toNetworkType(),
+            destMemberInfo.endPoint.address,
+            trustStoreHash
+        ).also {
+            println("QQQ sending -> ${it.trustStoreHash}")
+        }
     }
 
     private val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, BouncyCastleProvider())
 
     private val groupIdToHash = ConcurrentHashMap<String, String>()
-
-    fun getTrustStoreHash(identity: LinkManagerNetworkMap.HoldingIdentity): String? {
-        return groupIdToHash[identity.groupId]
-    }
 
     override val dominoTile = DominoTile(
         this.javaClass.simpleName,
@@ -75,7 +118,7 @@ class TrustStoresContainer(
             certificates.forEach {
                 messageDigest.update(it.toByteArray())
             }
-            val hash = messageDigest.digest().toBase64() to certificates
+            val hash = messageDigest.digest().toBase64()
             val data = generateSequence(1) { it + 1 }.map {
                 "$hash-$it"
             }.map {
@@ -100,11 +143,13 @@ class TrustStoresContainer(
         }.mapNotNull {
             it.toPublish
         }
+        println("QQQ records ->")
+        records.forEach {
+            println("QQQ\t $it")
+        }
 
         if (records.isNotEmpty()) {
-            PublisherWithDominoLogic(
-                publisherFactory,
-                lifecycleCoordinatorFactory,
+            publisherFactory.createPublisher(
                 PublisherConfig(WRITE_MISSING_DATA),
                 configuration
             ).use { publisher ->

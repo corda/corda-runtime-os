@@ -84,20 +84,23 @@ class StubNetworkMapTest {
                 HoldingIdentity(aliceName, groupId1),
                 ByteBuffer.wrap(aliceKeyPair.public.encoded),
                 KeyAlgorithm.RSA, aliceAddress,
-                NetworkType.CORDA_4
+                NetworkType.CORDA_4,
+                listOf("CERT1.1", "CERT1.2"),
             ),
             "$bobName-$groupId1" to NetworkMapEntry(
                 HoldingIdentity(bobName, groupId1),
                 ByteBuffer.wrap(bobKeyPair.public.encoded),
                 KeyAlgorithm.RSA, bobAddress,
-                NetworkType.CORDA_4
+                NetworkType.CORDA_4,
+                listOf("CERT2"),
             ),
         )
         val charlieEntry = "$charlieName-$groupId2" to NetworkMapEntry(
             HoldingIdentity(charlieName, groupId2),
             ByteBuffer.wrap(charlieKeyPair.public.encoded),
             KeyAlgorithm.ECDSA, charlieAddress,
-            NetworkType.CORDA_5
+            NetworkType.CORDA_5,
+            listOf("CERT3"),
         )
         createResources(resourcesHolder)
         clientProcessor!!.onSnapshot(snapshot)

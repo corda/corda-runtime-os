@@ -77,6 +77,10 @@ class MockNetworkMap(nodes: List<LinkManagerNetworkMap.HoldingIdentity>) {
                 return LinkManagerNetworkMap.NetworkType.CORDA_5
             }
 
+            override fun getTrustedCertificates(groupId: String): List<String>? {
+                return emptyList()
+            }
+
             override val dominoTile = mock<DominoTile>()
         }
     }

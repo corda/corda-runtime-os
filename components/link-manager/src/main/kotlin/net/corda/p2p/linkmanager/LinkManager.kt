@@ -130,7 +130,6 @@ class LinkManager(
     private val outboundMessageProcessor = OutboundMessageProcessor(
         sessionManager,
         linkManagerHostingMap,
-        linkManagerNetworkMap,
         inboundAssignmentListener,
         trustStoreContainer
     )
@@ -151,7 +150,6 @@ class LinkManager(
         SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, LINK_IN_TOPIC, instanceId),
         InboundMessageProcessor(
             sessionManager,
-            linkManagerNetworkMap,
             inboundAssignmentListener,
             trustStoreContainer,
         ),
@@ -215,7 +213,6 @@ class LinkManager(
     class OutboundMessageProcessor(
         private val sessionManager: SessionManager,
         private val linkManagerHostingMap: LinkManagerHostingMap,
-        private val networkMap: LinkManagerNetworkMap,
         private val inboundAssignmentListener: InboundAssignmentListener,
         private val trustStoresContainer: TrustStoresContainer,
     ) : EventLogProcessor<String, AppMessage> {
@@ -259,7 +256,7 @@ class LinkManager(
             return if (linkManagerHostingMap.isHostedLocally(message.header.destination.toHoldingIdentity())) {
                 listOf(Record(P2P_IN_TOPIC, generateKey(), AppMessage(message)))
             } else {
-                val linkOutMessage = linkOutFromUnauthenticatedMessage(message, networkMap, trustStoresContainer)
+                val linkOutMessage = linkOutFromUnauthenticatedMessage(message, trustStoresContainer)
                 listOf(Record(LINK_OUT_TOPIC, generateKey(), linkOutMessage))
             }
         }
@@ -330,7 +327,6 @@ class LinkManager(
         ): List<Record<String, *>> {
             return recordsForSessionEstablished(
                 sessionManager,
-                networkMap,
                 state.session,
                 messageAndKey,
                 trustStoresContainer
@@ -356,7 +352,6 @@ class LinkManager(
 
     class InboundMessageProcessor(
         private val sessionManager: SessionManager,
-        private val networkMap: LinkManagerNetworkMap,
         private val inboundAssignmentListener: InboundAssignmentListener,
         private val trustStoreContainer: TrustStoresContainer,
     ) :
@@ -528,7 +523,6 @@ class LinkManager(
                 ackSource,
                 ackDest,
                 session,
-                networkMap,
                 trustStoreContainer,
             ) ?: return null
             return Record(
@@ -547,7 +541,6 @@ class LinkManager(
                 ackSource,
                 ackDest,
                 session,
-                networkMap,
                 trustStoreContainer,
             ) ?: return null
             return Record(
@@ -640,7 +633,6 @@ class LinkManager(
                     records.addAll(
                         recordsForSessionEstablished(
                             sessionManager,
-                            networkMap,
                             session,
                             message,
                             trustStoreContainer
@@ -663,7 +655,6 @@ class LinkManager(
 
 fun recordsForSessionEstablished(
     sessionManager: SessionManager,
-    networkMap: LinkManagerNetworkMap,
     session: Session,
     messageAndKey: AuthenticatedMessageAndKey,
     trustStoreContainer: TrustStoresContainer,
@@ -671,7 +662,7 @@ fun recordsForSessionEstablished(
     val records = mutableListOf<Record<String, *>>()
     val key = LinkManager.generateKey()
     sessionManager.dataMessageSent(session)
-    linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, session, networkMap, trustStoreContainer)?. let {
+    linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, session, trustStoreContainer)?. let {
         records.add(Record(LINK_OUT_TOPIC, key, it))
     }
     return records

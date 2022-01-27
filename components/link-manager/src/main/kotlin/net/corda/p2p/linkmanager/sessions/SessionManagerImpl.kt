@@ -40,8 +40,6 @@ import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.createLink
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromHeartbeat
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionKey
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
-import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.couldNotFindNetworkType
-import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.couldNotFindTrustStore
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.noSessionWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourHashNotInNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourIdNotInNetworkMapWarning
@@ -85,7 +83,6 @@ open class SessionManagerImpl(
         configurationReaderService,
         coordinatorFactory,
         configuration,
-        networkMap,
         trustStoresContainer,
     ),
 ) : SessionManager {
@@ -118,7 +115,6 @@ open class SessionManagerImpl(
         configurationReaderService,
         coordinatorFactory,
         configuration,
-        networkMap,
         trustStoresContainer,
         ::destroyOutboundSession,
     )
@@ -280,29 +276,13 @@ open class SessionManagerImpl(
     private fun getSessionInitMessage(sessionKey: SessionKey): Pair<String, LinkOutMessage>? {
         val sessionId = UUID.randomUUID().toString()
 
-        val networkType = networkMap.getNetworkType(sessionKey.ourId.groupId)
-        if (networkType == null) {
-            logger.warn(
-                "Could not find the network type in the NetworkMap for groupId ${sessionKey.ourId.groupId}." +
-                        " The sessionInit message was not sent."
-            )
-            return null
-        }
+        val header = trustStoresContainer.createLinkOutHeader(sessionKey.ourId) ?: return null
 
         val ourMemberInfo = networkMap.getMemberInfo(sessionKey.ourId)
         if (ourMemberInfo == null) {
             logger.warn(
                 "Attempted to start session negotiation with peer ${sessionKey.responderId} but our identity ${sessionKey.ourId}" +
                         " is not in the network map. The sessionInit message was not sent."
-            )
-            return null
-        }
-
-        val trustStoreHash = trustStoresContainer.getTrustStoreHash(sessionKey.ourId)
-        if(trustStoreHash == null) {
-            logger.warn(
-                "Attempted to start session negotiation with peer ${sessionKey.responderId} but our identity ${sessionKey.ourId}" +
-                        " has no known trust store. The sessionInit message was not sent."
             )
             return null
         }
@@ -342,7 +322,7 @@ open class SessionManagerImpl(
         }
         heartbeatManager.sessionMessageSent(sessionKey, sessionId)
 
-        return createLinkOutMessage(sessionInitPayload, responderMemberInfo, networkType, trustStoreHash).let {
+        return createLinkOutMessage(sessionInitPayload, header).let {
             sessionId to it
         }
     }
@@ -400,22 +380,14 @@ open class SessionManagerImpl(
             )
         )
 
-        val networkType = networkMap.getNetworkType(ourMemberInfo.holdingIdentity.groupId)
-        if (networkType == null) {
-            logger.couldNotFindNetworkType(message::class.java.simpleName, message.header.sessionId, ourMemberInfo.holdingIdentity.groupId)
-            return null
-        }
-        val trustStoreHash = trustStoresContainer.getTrustStoreHash(ourMemberInfo.holdingIdentity)
-        if (trustStoreHash == null) {
-            logger.couldNotFindTrustStore(message::class.java.simpleName, message.header.sessionId, ourMemberInfo.holdingIdentity.groupId)
-            return null
-        }
+        val header = trustStoresContainer.createLinkOutHeader(ourMemberInfo.holdingIdentity) ?: return null
+
         heartbeatManager.sessionMessageSent(
             SessionKey(ourMemberInfo.holdingIdentity, responderMemberInfo.holdingIdentity),
             message.header.sessionId,
         )
 
-        return createLinkOutMessage(payload, responderMemberInfo, networkType, trustStoreHash)
+        return createLinkOutMessage(payload, header)
     }
 
     private fun processResponderHandshake(message: ResponderHandshakeMessage): LinkOutMessage? {
@@ -482,19 +454,11 @@ open class SessionManagerImpl(
             )
             return null
         }
-        val networkType = networkMap.getNetworkType(peer.holdingIdentity.groupId)
-        if (networkType == null) {
-            logger.couldNotFindNetworkType(message::class.java.simpleName, message.header.sessionId, peer.holdingIdentity.groupId)
-            return null
-        }
-        val trustStoreHash = trustStoresContainer.getTrustStoreHash(peer.holdingIdentity)
-        if (trustStoreHash == null) {
-            logger.couldNotFindTrustStore(message::class.java.simpleName, message.header.sessionId, peer.holdingIdentity.groupId)
-            return null
-        }
+
+        val header = trustStoresContainer.createLinkOutHeader(peer.holdingIdentity) ?: return null
 
         logger.info("Remote identity ${peer.holdingIdentity} initiated new session ${message.header.sessionId}.")
-        return createLinkOutMessage(responderHello, peer, networkType, trustStoreHash)
+        return createLinkOutMessage(responderHello, header)
     }
 
     private fun processInitiatorHandshake(message: InitiatorHandshakeMessage): LinkOutMessage? {
@@ -540,16 +504,7 @@ open class SessionManagerImpl(
             return null
         }
 
-        val networkType = networkMap.getNetworkType(ourMemberInfo.holdingIdentity.groupId)
-        if (networkType == null) {
-            logger.couldNotFindNetworkType(message::class.java.simpleName, message.header.sessionId, ourMemberInfo.holdingIdentity.groupId)
-            return null
-        }
-        val trustStoreHash = trustStoresContainer.getTrustStoreHash(peer.holdingIdentity)
-        if (trustStoreHash == null) {
-            logger.couldNotFindTrustStore(message::class.java.simpleName, message.header.sessionId, peer.holdingIdentity.groupId)
-            return null
-        }
+        val header = trustStoresContainer.createLinkOutHeader(ourMemberInfo.holdingIdentity) ?: return null
 
         val response = try {
             val ourPublicKey = ourMemberInfo.publicKey
@@ -573,7 +528,7 @@ open class SessionManagerImpl(
          * We delay removing the session from pendingInboundSessions until we receive the first data message as before this point
          * the other side (Initiator) might replay [InitiatorHandshakeMessage] in the case where the [ResponderHandshakeMessage] was lost.
          * */
-        return createLinkOutMessage(response, peer, networkType, trustStoreHash)
+        return createLinkOutMessage(response, header)
     }
 
     class HeartbeatManager(
@@ -581,7 +536,6 @@ open class SessionManagerImpl(
         private val configurationReaderService: ConfigurationReadService,
         coordinatorFactory: LifecycleCoordinatorFactory,
         configuration: SmartConfig,
-        private val networkMap: LinkManagerNetworkMap,
         private var trustStoresContainer: TrustStoresContainer,
         private val destroySession: (key: SessionKey, sessionId: String) -> Any,
     ) : LifecycleWithDominoTile {
@@ -646,7 +600,7 @@ open class SessionManagerImpl(
             this::class.java.simpleName,
             coordinatorFactory,
             ::createResources,
-            setOf(networkMap.dominoTile, publisher.dominoTile),
+            setOf(publisher.dominoTile),
             HeartbeatManagerConfigChangeHandler(),
         )
 
@@ -768,7 +722,7 @@ open class SessionManagerImpl(
 
         private fun sendHeartbeatMessage(source: HoldingIdentity, dest: HoldingIdentity, session: Session) {
             val heartbeatMessage = HeartbeatMessage()
-            val message = linkOutMessageFromHeartbeat(source, dest, heartbeatMessage, session, networkMap, trustStoresContainer)
+            val message = linkOutMessageFromHeartbeat(source, dest, heartbeatMessage, session, trustStoresContainer)
             if (message == null) {
                 logger.warn("Failed to send a Heartbeat between $source and $dest.")
                 return

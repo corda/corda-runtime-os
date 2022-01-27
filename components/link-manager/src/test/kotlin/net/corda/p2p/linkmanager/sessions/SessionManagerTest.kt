@@ -181,8 +181,9 @@ class SessionManagerTest {
         mock(),
         mock(),
         mock(),
+        mock(),
         protocolFactory,
-        sessionReplayer
+        sessionReplayer,
     ).apply {
         setRunning()
         configHandler.applyNewConfiguration(
@@ -757,7 +758,7 @@ class SessionManagerTest {
             }
         verify(sessionReplayer).removeMessageFromReplay("${sessionState.sessionId}_${InitiatorHandshakeMessage::class.java.simpleName}")
         verify(pendingSessionMessageQueues)
-            .sessionNegotiatedCallback(sessionManager, SessionManager.SessionKey(OUR_PARTY, PEER_PARTY), session, networkMap)
+            .sessionNegotiatedCallback(sessionManager, SessionManager.SessionKey(OUR_PARTY, PEER_PARTY), session, networkMap, mock())
     }
 
     @Test
@@ -781,7 +782,7 @@ class SessionManagerTest {
             "${sessionState.sessionId}_${InitiatorHandshakeMessage::class.java.simpleName}"
         )
         verify(pendingSessionMessageQueues)
-            .sessionNegotiatedCallback(sessionManager, SessionManager.SessionKey(OUR_PARTY, PEER_PARTY), session, networkMap)
+            .sessionNegotiatedCallback(sessionManager, SessionManager.SessionKey(OUR_PARTY, PEER_PARTY), session, networkMap, mock())
 
         configHandler.applyNewConfiguration(
             SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
@@ -864,6 +865,7 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
+            mock(),
             protocolFactory,
             sessionReplayer
         ).apply {
@@ -902,6 +904,7 @@ class SessionManagerTest {
             networkMap,
             cryptoService,
             pendingSessionMessageQueues,
+            mock(),
             mock(),
             mock(),
             mock(),
@@ -959,6 +962,7 @@ class SessionManagerTest {
             networkMap,
             cryptoService,
             pendingSessionMessageQueues,
+            mock(),
             mock(),
             mock(),
             mock(),
@@ -1032,6 +1036,7 @@ class SessionManagerTest {
             networkMap,
             cryptoService,
             pendingSessionMessageQueues,
+            mock(),
             mock(),
             mock(),
             mock(),
@@ -1120,6 +1125,7 @@ class SessionManagerTest {
             networkMap,
             cryptoService,
             pendingSessionMessageQueues,
+            mock(),
             mock(),
             mock(),
             mock(),
@@ -1214,6 +1220,7 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
+            mock(),
             protocolFactory,
             sessionReplayer
         ).apply {
@@ -1288,6 +1295,7 @@ class SessionManagerTest {
             networkMap,
             cryptoService,
             pendingSessionMessageQueues,
+            mock(),
             mock(),
             mock(),
             mock(),
