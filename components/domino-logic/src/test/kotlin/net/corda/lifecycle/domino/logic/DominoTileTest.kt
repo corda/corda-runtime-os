@@ -976,6 +976,28 @@ class DominoTileTest {
                 assertThat(tile.state).isEqualTo(DominoTile.State.Created)
                 assertThat(tile.isRunning).isFalse()
             }
+
+            @Test
+            fun `parent will stop if one of the children was stopped by a different parent component`() {
+                val children = arrayOf<Pair<StubDominoTile, RegistrationHandle>>(
+                    StubDominoTile(LifecycleCoordinatorName("component" , "1")) to mock(),
+                    StubDominoTile(LifecycleCoordinatorName("component" , "2")) to mock(),
+                    StubDominoTile(LifecycleCoordinatorName("component" , "3")) to mock(),
+                )
+                registerChildren(coordinator, children)
+
+                val tile = tile(children.map { it.first.dominoTile })
+                tile.start()
+
+                // simulate children starting
+                children[0].first.setState(DominoTile.State.StoppedByParent)
+                handler.lastValue.processEvent(CustomEvent(children[0].second,
+                    DominoTile.StatusChangeEvent(DominoTile.State.StoppedByParent)), coordinator)
+
+                assertThat(tile.state).isEqualTo(DominoTile.State.StoppedByParent)
+                verify(children[1].first.dominoTile).stop()
+                verify(children[2].first.dominoTile).stop()
+            }
         }
 
         @Nested

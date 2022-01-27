@@ -232,7 +232,11 @@ class DominoTile(
                                 logger.info("Status change: child ${child.name} went down (${statusChangeEvent.newState}).")
                                 coordinator.postEvent(StopTile(true))
                             }
-                            State.Created, State.StoppedByParent -> { }
+                            State.StoppedByParent -> {
+                                logger.info("Status change: child ${child.name} was stopped by one of its parents.")
+                                coordinator.postEvent(StopTile(false))
+                            }
+                            State.Created -> { }
                         }
                     }
                 }
@@ -422,7 +426,7 @@ class DominoTile(
         configReady = false
 
         children.forEach {
-            if (!(latestChildStateMap[it] == State.StoppedDueToError || latestChildStateMap[it] == State.StoppedDueToBadConfig)) {
+            if (latestChildStateMap[it] !in setOf(State.StoppedDueToError, State.StoppedDueToBadConfig, State.StoppedByParent)) {
                 logger.info("Stopping child ${it.name}")
                 it.stop()
             }
