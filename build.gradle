@@ -28,6 +28,12 @@ subprojects {
     tasks.withType(GenerateModuleMetadata).configureEach {
         enabled = false
     }
+
+    tasks.register('compileAll') { task ->
+        description = "Compiles all the Kotlin and Java classes, including all of the test classes."
+        group = "verification"
+        task.dependsOn tasks.withType(AbstractCompile)
+    }
 }
 
 wrapper {
