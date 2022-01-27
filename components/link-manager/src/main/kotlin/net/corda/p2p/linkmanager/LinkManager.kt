@@ -36,8 +36,10 @@ import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.delivery.DeliveryTracker
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.DataMessage
-import net.corda.p2p.linkmanager.messaging.MessageConverter
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.extractPayload
+import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutFromUnauthenticatedMessage
+import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromAck
+import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromAuthenticatedMessageAndKey
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionDirection
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionKey
@@ -257,7 +259,7 @@ class LinkManager(
             return if (linkManagerHostingMap.isHostedLocally(message.header.destination.toHoldingIdentity())) {
                 listOf(Record(P2P_IN_TOPIC, generateKey(), AppMessage(message)))
             } else {
-                val linkOutMessage = MessageConverter.linkOutFromUnauthenticatedMessage(message, networkMap, trustStoresContainer)
+                val linkOutMessage = linkOutFromUnauthenticatedMessage(message, networkMap, trustStoresContainer)
                 listOf(Record(LINK_OUT_TOPIC, generateKey(), linkOutMessage))
             }
         }
@@ -521,7 +523,7 @@ class LinkManager(
         ): Record<String, LinkOutMessage>? {
             val ackDest = key.responderId.toHoldingIdentity()
             val ackSource = key.ourId.toHoldingIdentity()
-            val ack = MessageConverter.linkOutMessageFromAck(
+            val ack = linkOutMessageFromAck(
                 MessageAck(HeartbeatMessageAck()),
                 ackSource,
                 ackDest,
@@ -540,7 +542,7 @@ class LinkManager(
             // We route the ACK back to the original source
             val ackDest = message.header.source
             val ackSource = message.header.destination
-            val ack = MessageConverter.linkOutMessageFromAck(
+            val ack = linkOutMessageFromAck(
                 MessageAck(AuthenticatedMessageAck(message.header.messageId)),
                 ackSource,
                 ackDest,
@@ -669,7 +671,7 @@ fun recordsForSessionEstablished(
     val records = mutableListOf<Record<String, *>>()
     val key = LinkManager.generateKey()
     sessionManager.dataMessageSent(session)
-    MessageConverter.linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, session, networkMap, trustStoreContainer)?. let {
+    linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, session, networkMap, trustStoreContainer)?. let {
         records.add(Record(LINK_OUT_TOPIC, key, it))
     }
     return records

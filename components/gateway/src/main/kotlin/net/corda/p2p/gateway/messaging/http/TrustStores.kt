@@ -36,7 +36,7 @@ internal class TrustStores(
 
     class Truststore(pemCertificates: Collection<String>) {
 
-        val trustStore by lazy {
+        val trustStore: KeyStore by lazy {
             KeyStore.getInstance("JKS").also { keyStore ->
                 keyStore.load(null, null)
                 pemCertificates.withIndex().forEach { (index, pemCertificate) ->
@@ -50,18 +50,18 @@ internal class TrustStores(
         }
     }
 
-    private val stores = ConcurrentHashMap<String, Truststore>()
+    private val hashToActualStore = ConcurrentHashMap<String, Truststore>()
 
     override fun onSnapshot(currentData: Map<String, GatewayTruststore>) {
-        stores.putAll(
+        hashToActualStore.putAll(
             currentData.mapValues {
                 Truststore(it.value.trustedCertificates)
             }
         )
-        future.get()?.complete(Unit)
+        ready.get()?.complete(Unit)
     }
 
-    fun trustStore(hash: String) = stores[hash]?.trustStore ?: throw IllegalArgumentException("Unknown trust store: $hash")
+    fun trustStore(hash: String) = hashToActualStore[hash]?.trustStore ?: throw IllegalArgumentException("Unknown trust store: $hash")
 
     private val subscription = subscriptionFactory.createCompactedSubscription(
         SubscriptionConfig(CONSUMER_GROUP_ID, Schemas.P2P.GATEWAY_TLS_TRUSTSTORES, instanceId),
@@ -79,9 +79,9 @@ internal class TrustStores(
         }
 
         if (store != null) {
-            stores[newRecord.key] = store
+            hashToActualStore[newRecord.key] = store
         } else {
-            stores.remove(newRecord.key)
+            hashToActualStore.remove(newRecord.key)
         }
     }
 
@@ -91,11 +91,11 @@ internal class TrustStores(
         createResources = ::createResources
     )
 
-    private val future = AtomicReference<CompletableFuture<Unit>>()
+    private val ready = AtomicReference<CompletableFuture<Unit>>()
 
     private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
         val resourceFuture = CompletableFuture<Unit>()
-        future.set(resourceFuture)
+        ready.set(resourceFuture)
         subscription.start()
         resources.keep { subscription.stop() }
         return resourceFuture
