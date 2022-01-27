@@ -12,18 +12,18 @@ import java.security.cert.Certificate
 
 class DelegatedKeystoreTest {
     private val signer = mock<DelegatedSigner>()
-    private val certificatesStoreOne = mock<DelegatedCertificatesStore> {
-        on { name } doReturn "one"
+    val firstCertificates = (1..3).map {
+        mock<Certificate>()
     }
-    private val certificatesStoreTwo = mock<DelegatedCertificatesStore> {
-        on { name } doReturn "two"
+    private val certificatesStore = object : DelegatedCertificateStore {
+        override val aliasToCertificates = mapOf(
+            "one" to firstCertificates,
+            "two" to emptyList()
+        )
     }
     private val delegatedKeystore = DelegatedKeystore(
-        listOf(
-            certificatesStoreOne,
-            certificatesStoreTwo
-        ),
-        signer
+        certificatesStore,
+        signer,
     )
 
     @Test
@@ -33,16 +33,11 @@ class DelegatedKeystoreTest {
 
     @Test
     fun `engineGetKey for alias with no certificates returns null`() {
-        whenever(certificatesStoreTwo.certificates).doReturn(emptyList())
-
-        assertThat(delegatedKeystore.engineGetKey("one", CharArray(0))).isNull()
+        assertThat(delegatedKeystore.engineGetKey("two", CharArray(0))).isNull()
     }
 
     @Test
     fun `engineGetKey for alias with no public key returns null`() {
-        val certificate = mock<Certificate>()
-        whenever(certificatesStoreTwo.certificates).doReturn(listOf(certificate))
-
         assertThat(delegatedKeystore.engineGetKey("one", CharArray(0))).isNull()
     }
 
@@ -52,10 +47,7 @@ class DelegatedKeystoreTest {
             on { format } doReturn "format"
             on { algorithm } doReturn "algorithm"
         }
-        val certificate = mock<Certificate> {
-            on { publicKey } doReturn key
-        }
-        whenever(certificatesStoreOne.certificates).doReturn(listOf(certificate))
+        whenever(firstCertificates[0].publicKey).doReturn(key)
 
         assertThat(delegatedKeystore.engineGetKey("one", CharArray(0))).isInstanceOf(DelegatedPrivateKey::class.java)
     }
@@ -67,10 +59,7 @@ class DelegatedKeystoreTest {
 
     @Test
     fun `engineGetCertificate will return the first certificate for known alias`() {
-        val certificate = mock<Certificate>()
-        whenever(certificatesStoreOne.certificates).doReturn(listOf(certificate))
-
-        assertThat(delegatedKeystore.engineGetCertificate("one")).isSameAs(certificate)
+        assertThat(delegatedKeystore.engineGetCertificate("one")).isSameAs(firstCertificates[0])
     }
 
     @Test
@@ -80,11 +69,7 @@ class DelegatedKeystoreTest {
 
     @Test
     fun `engineGetCertificateChain will return the certificates for known alias`() {
-        val certificate1 = mock<Certificate>()
-        val certificate2 = mock<Certificate>()
-        whenever(certificatesStoreTwo.certificates).doReturn(listOf(certificate1, certificate2))
-
-        assertThat(delegatedKeystore.engineGetCertificateChain("two")).contains(certificate1, certificate2)
+        assertThat(delegatedKeystore.engineGetCertificateChain("one")).containsAll(firstCertificates)
     }
 
     @Test
@@ -98,7 +83,7 @@ class DelegatedKeystoreTest {
     }
 
     @Test
-    fun `engineContainsAlias will return false for unknow alias`() {
+    fun `engineContainsAlias will return false for unknown alias`() {
         assertThat(delegatedKeystore.engineContainsAlias("three")).isFalse
     }
 

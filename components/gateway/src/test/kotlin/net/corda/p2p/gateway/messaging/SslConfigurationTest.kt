@@ -50,10 +50,12 @@ class SslConfigurationTest {
             RevocationConfig(RevocationConfigMode.SOFT_FAIL)
         )
         val keyStore = mock<KeyStore>()
-        mockConstruction(JksDelegatedSigningService::class.java) { mock, _ ->
-            whenever(mock.asKeyStore()).doReturn(keyStore)
-        }.use {
-            assertThat(config.keyStore).isSameAs(keyStore)
+        mockConstruction(JksKeyStoreReader::class.java).use {
+            mockConstruction(KeyStoreFactory::class.java) { mock, _ ->
+                whenever(mock.createKeyStore()).doReturn(keyStore)
+            }.use {
+                assertThat(config.keyStore).isSameAs(keyStore)
+            }
         }
     }
 
@@ -67,10 +69,12 @@ class SslConfigurationTest {
             revocationCheck =
             RevocationConfig(RevocationConfigMode.SOFT_FAIL)
         )
-        mockConstruction(JksDelegatedSigningService::class.java) { _, context ->
-            assertThat(context.arguments()[0]).isEqualTo(byteArrayOf(1, 2, 3, 4))
-        }.use {
-            config.keyStore
+        mockConstruction(KeyStoreFactory::class.java).use {
+            mockConstruction(JksKeyStoreReader::class.java) { _, context ->
+                assertThat(context.arguments()[0]).isEqualTo(byteArrayOf(1, 2, 3, 4))
+            }.use {
+                config.keyStore
+            }
         }
     }
 
@@ -84,10 +88,12 @@ class SslConfigurationTest {
             revocationCheck =
             RevocationConfig(RevocationConfigMode.SOFT_FAIL)
         )
-        mockConstruction(JksDelegatedSigningService::class.java) { _, context ->
-            assertThat(context.arguments()[1]).isEqualTo("password")
-        }.use {
-            config.keyStore
+        mockConstruction(KeyStoreFactory::class.java).use {
+            mockConstruction(JksKeyStoreReader::class.java) { _, context ->
+                assertThat(context.arguments()[1]).isEqualTo("password")
+            }.use {
+                config.keyStore
+            }
         }
     }
 

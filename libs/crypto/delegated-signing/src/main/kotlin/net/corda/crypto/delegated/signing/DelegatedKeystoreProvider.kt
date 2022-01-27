@@ -23,7 +23,7 @@ internal class DelegatedKeystoreProvider : Provider(
         this["AlgorithmParameters.EC"] = "sun.security.util.ECParameters"
     }
 
-    fun putServices(name: String, signer: DelegatedSigner, certificatesStores: Collection<DelegatedCertificatesStore>) {
+    fun putServices(name: String, signer: DelegatedSigner, certificatesStores: DelegatedCertificateStore) {
         if (getService("Signature", RSA_SIGNING_ALGORITHM) == null) {
             putService(DelegatedSignatureService(RSA_SIGNING_ALGORITHM, null))
             DelegatedSigner.Hash.values().forEach {
@@ -36,7 +36,7 @@ internal class DelegatedKeystoreProvider : Provider(
 
     private inner class DelegatedKeyStoreService(
         name: String,
-        private val certificatesStores: Collection<DelegatedCertificatesStore>,
+        private val certificatesStore: DelegatedCertificateStore,
         private val signer: DelegatedSigner,
     ) : Service(
         this@DelegatedKeystoreProvider,
@@ -47,7 +47,7 @@ internal class DelegatedKeystoreProvider : Provider(
         null,
     ) {
         override fun newInstance(constructorParameter: Any?): Any {
-            return DelegatedKeystore(certificatesStores, signer)
+            return DelegatedKeystore(certificatesStore, signer)
         }
     }
     private inner class DelegatedSignatureService(

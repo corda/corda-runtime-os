@@ -11,19 +11,16 @@ import java.util.Enumeration
 
 @Suppress("TooManyFunctions")
 internal class DelegatedKeystore(
-    private val certificates: Collection<DelegatedCertificatesStore>,
+    private val certificateStore: DelegatedCertificateStore,
     private val signer: DelegatedSigner,
 ) : KeyStoreSpi() {
-    private fun getCertificates(alias: String): Collection<Certificate>? =
-        certificates.firstOrNull {
-            it.name == alias
-        }?.certificates
+    private fun getCertificates(alias: String): Collection<Certificate>? = certificateStore.aliasToCertificates[alias]
 
     override fun engineGetKey(alias: String, password: CharArray): Key? =
         getCertificates(alias)
             ?.firstOrNull()
-            ?.let {
-                DelegatedPrivateKey(it.publicKey, signer)
+            ?.publicKey?.let {
+                DelegatedPrivateKey(it, signer)
             }
 
     override fun engineGetCertificate(alias: String): Certificate? =
@@ -33,11 +30,11 @@ internal class DelegatedKeystore(
         getCertificates(alias)?.toTypedArray()
 
     override fun engineAliases(): Enumeration<String> =
-        Collections.enumeration(certificates.map { it.name })
+        Collections.enumeration(certificateStore.aliasToCertificates.keys)
 
-    override fun engineContainsAlias(alias: String): Boolean = certificates.any { it.name == alias }
+    override fun engineContainsAlias(alias: String): Boolean = certificateStore.aliasToCertificates.containsKey(alias)
 
-    override fun engineSize(): Int = certificates.size
+    override fun engineSize() = certificateStore.aliasToCertificates.size
 
     override fun engineIsKeyEntry(alias: String): Boolean = engineContainsAlias(alias)
 
