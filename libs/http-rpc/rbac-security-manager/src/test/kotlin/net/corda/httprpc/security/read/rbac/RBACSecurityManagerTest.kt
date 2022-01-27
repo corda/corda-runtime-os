@@ -1,6 +1,6 @@
 package net.corda.httprpc.security.read.rbac
 
-import net.corda.httprpc.exception.NotAuthenticatedException
+import javax.security.auth.login.FailedLoginException
 import net.corda.httprpc.security.read.Password
 import net.corda.libs.permission.PermissionValidator
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -17,12 +17,12 @@ class RBACSecurityManagerTest {
     private val manager = RBACSecurityManager(validator)
 
     @Test
-    fun `unauthenticated user throws RPCSecurityException`() {
+    fun `unauthenticated user throws FailedLoginException`() {
         val passwordCapture = argumentCaptor<CharArray>()
 
         whenever(validator.authenticateUser(eq("principal1"), passwordCapture.capture())).thenReturn(false)
 
-        val e = assertThrows<NotAuthenticatedException> {
+        val e = assertThrows<FailedLoginException> {
             manager.authenticate("principal1", Password("pass1"))
         }
 

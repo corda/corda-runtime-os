@@ -11,9 +11,9 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.util.Base64
+import javax.security.auth.login.FailedLoginException
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
-import net.corda.httprpc.exception.NotAuthenticatedException
 
 class DefaultCredentialResolverTest {
     //need to mock these as Javalin's context class in unmockable due to overload resolution issues
@@ -40,7 +40,7 @@ class DefaultCredentialResolverTest {
     fun `resolve malformed BearerToken should throw`() {
         whenever(req.getHeader(AUTHORIZATION)).thenReturn("Bearer_token")
 
-        Assertions.assertThrows(NotAuthenticatedException::class.java) {
+        Assertions.assertThrows(FailedLoginException::class.java) {
             resolver.resolve(context)
         }
     }

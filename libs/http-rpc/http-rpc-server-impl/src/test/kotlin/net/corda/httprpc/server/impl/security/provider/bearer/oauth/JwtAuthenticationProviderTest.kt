@@ -14,7 +14,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import net.corda.httprpc.exception.NotAuthenticatedException
+import javax.security.auth.login.FailedLoginException
 
 class JwtAuthenticationProviderTest {
 
@@ -50,7 +50,7 @@ class JwtAuthenticationProviderTest {
 
     @Test
     fun `authenticate_malformedJwt_shouldThrow`() {
-        Assertions.assertThrows(NotAuthenticatedException::class.java) {
+        Assertions.assertThrows(FailedLoginException::class.java) {
             provider.authenticate(BearerTokenAuthenticationCredentials("random"))
         }
     }
@@ -59,7 +59,7 @@ class JwtAuthenticationProviderTest {
     fun `authenticate_invalidJwt_shouldThrow`() {
         whenever(jwtProcessor.process(argThat { serialize() == token })).thenAnswer { throw BadJOSEException("") }
 
-        Assertions.assertThrows(NotAuthenticatedException::class.java) {
+        Assertions.assertThrows(FailedLoginException::class.java) {
             provider.authenticate(BearerTokenAuthenticationCredentials(token))
         }
     }

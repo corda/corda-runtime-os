@@ -1,6 +1,6 @@
 package net.corda.httprpc.security.read.rbac
 
-import net.corda.httprpc.exception.NotAuthenticatedException
+import javax.security.auth.login.FailedLoginException
 import net.corda.httprpc.security.AuthServiceId
 import net.corda.httprpc.security.AuthorizingSubject
 import net.corda.httprpc.security.read.Password
@@ -17,7 +17,7 @@ class RBACSecurityManager(
         if(principal == "admin" && password.valueAsString == "admin") return buildSubject(principal)
 
         if(!permissionValidator.authenticateUser(principal, password.value)) {
-            throw NotAuthenticatedException("User not authenticated.")
+            throw FailedLoginException("User not authenticated.")
         }
 
         return buildSubject(principal)

@@ -8,7 +8,7 @@ import net.corda.httprpc.security.read.RPCSecurityManager
 import net.corda.httprpc.server.impl.security.provider.bearer.BearerTokenAuthenticationProvider
 import net.corda.httprpc.server.impl.security.provider.credentials.tokens.BearerTokenAuthenticationCredentials
 import net.corda.v5.base.util.contextLogger
-import net.corda.httprpc.exception.NotAuthenticatedException
+import javax.security.auth.login.FailedLoginException
 
 internal open class JwtAuthenticationProvider(
     private val jwtProcessor: JwtProcessor,
@@ -29,7 +29,7 @@ internal open class JwtAuthenticationProvider(
             // even though: `com.nimbusds.jose.util.JSONObjectUtils.parse` already has similar sort of logic,
             // but this may change in the future
             // versions.
-            throw NotAuthenticatedException("Failed to parse JWT token.")
+            throw FailedLoginException("Failed to parse JWT token.")
         }
 
         return extractSubjectFromJwt(jwt)
@@ -41,7 +41,7 @@ internal open class JwtAuthenticationProvider(
             val username = claimExtractor.getUsername(claims)
             rpcSecurityManager.buildSubject(username)
         } catch (e: BadJOSEException) {
-            throw NotAuthenticatedException("Unable to validate token.")
+            throw FailedLoginException("Unable to validate token.")
         }
     }
 }

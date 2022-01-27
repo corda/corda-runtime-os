@@ -5,7 +5,9 @@ import com.fasterxml.jackson.module.kotlin.MissingKotlinParameterException
 import io.javalin.http.BadRequestResponse
 import io.javalin.http.HttpResponseException
 import io.javalin.http.InternalServerErrorResponse
+import io.javalin.http.UnauthorizedResponse
 import java.util.concurrent.TimeoutException
+import javax.security.auth.login.FailedLoginException
 import net.corda.httprpc.ResponseCode
 import net.corda.httprpc.exception.HttpApiException
 import net.corda.httprpc.server.impl.exception.MissingParameterException
@@ -30,6 +32,9 @@ internal object HttpExceptionMapper {
             //  is FlowNotFoundException -> NotFoundResponse(loggedMessage)
             //  is InvalidCordaX500NameException -> BadRequestResponse(loggedMessage)
             //  is MemberNotFoundException -> NotFoundResponse(loggedMessage)
+
+            // catch-all for failed login attempts
+            is FailedLoginException -> UnauthorizedResponse("User authentication failed.")
 
             // catch-all for Timeouts
             is TimeoutException -> InternalServerErrorResponse("Timeout occurred while processing operation.")

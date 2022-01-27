@@ -7,8 +7,8 @@ import net.corda.httprpc.test.TestHealthCheckAPI
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
+import javax.security.auth.login.FailedLoginException
 import kotlin.reflect.jvm.javaMethod
-import net.corda.httprpc.exception.NotAuthenticatedException
 
 internal class MethodInvokerTest {
 
@@ -43,7 +43,7 @@ internal class MethodInvokerTest {
     fun `invoke durableStreamsMethodInvoker withContextNotSet throws`() {
         CURRENT_RPC_CONTEXT.remove()
         assertThatThrownBy { invoker.invokeDurableStreamMethod(DurableStreamContext(1L, 1)) }
-            .isInstanceOf(NotAuthenticatedException::class.java)
+            .isInstanceOf(FailedLoginException::class.java)
             .hasMessage("Missing authentication context.")
     }
 }

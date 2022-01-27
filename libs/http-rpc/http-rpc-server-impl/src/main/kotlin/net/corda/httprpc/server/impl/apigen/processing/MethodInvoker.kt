@@ -11,7 +11,7 @@ import net.corda.v5.base.util.contextLogger
 import java.lang.IllegalArgumentException
 import net.corda.v5.base.util.trace
 import java.util.function.Supplier
-import net.corda.httprpc.exception.NotAuthenticatedException
+import javax.security.auth.login.FailedLoginException
 
 /**
  * [MethodInvoker] implementations are responsible for doing method invocations using the arguments provided.
@@ -69,7 +69,7 @@ internal open class DurableStreamsMethodInvoker(private val invocationMethod: In
         }
         val durableStreamContext = durableContexts.single() as DurableStreamContext
 
-        val rpcAuthContext = CURRENT_RPC_CONTEXT.get() ?: throw NotAuthenticatedException("Missing authentication context.")
+        val rpcAuthContext = CURRENT_RPC_CONTEXT.get() ?: throw FailedLoginException("Missing authentication context.")
         with(rpcAuthContext) {
             val rpcContextWithDurableStreamContext =
                 this.copy(invocation = this.invocation.copy(durableStreamContext = durableStreamContext))

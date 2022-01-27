@@ -7,7 +7,6 @@ import net.corda.httprpc.server.impl.security.provider.credentials.tokens.Bearer
 import net.corda.httprpc.server.impl.security.provider.credentials.tokens.UsernamePasswordAuthenticationCredentials
 import net.corda.httprpc.server.impl.security.provider.scheme.AuthenticationSchemeProvider
 import net.corda.httprpc.RpcOps
-import net.corda.httprpc.exception.NotAuthenticatedException
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertSame
@@ -17,6 +16,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import javax.security.auth.login.FailedLoginException
 import org.junit.jupiter.api.Assertions.assertEquals
 
 interface TestRpcOps : RpcOps {
@@ -59,7 +59,7 @@ class SecurityManagerTest {
 
     @Test
     fun `authenticate_validUserForSecondProvider_shouldReturnAuthenticatedUser`() {
-        whenever(authenticationProvider1.authenticate(any())).thenAnswer { throw NotAuthenticatedException() }
+        whenever(authenticationProvider1.authenticate(any())).thenAnswer { throw FailedLoginException() }
         whenever(authenticationProvider2.authenticate(any<BearerTokenAuthenticationCredentials>())).thenReturn(subject)
 
         val auth = securityManager.authenticate(BearerTokenAuthenticationCredentials("testToken"))
@@ -67,43 +67,43 @@ class SecurityManagerTest {
     }
 
     @Test
-    fun `authenticate_notSupportedCredential_shouldThrowNotAuthenticatedException`() {
+    fun `authenticate_notSupportedCredential_shouldThrowFailedLoginException`() {
         whenever(authenticationProvider2.supports(any<BearerTokenAuthenticationCredentials>())).thenReturn(false)
 
-        assertThrows(NotAuthenticatedException::class.java) {
+        assertThrows(FailedLoginException::class.java) {
             securityManager.authenticate(BearerTokenAuthenticationCredentials("testToken"))
         }
     }
 
     @Test
-    fun `authenticate providers last throws NotAuthenticatedException that gets rethrown as NotAuthenticatedException`() {
+    fun `authenticate providers last throws FailedLoginException that gets rethrown as FailedLoginException`() {
         whenever(authenticationProvider2.supports(any<UsernamePasswordAuthenticationCredentials>())).thenReturn(true)
 
-        whenever(authenticationProvider1.authenticate(any())).thenAnswer { throw NotAuthenticatedException("failed to login1") }
-        whenever(authenticationProvider2.authenticate(any())).thenAnswer { throw NotAuthenticatedException("failed to login2") }
+        whenever(authenticationProvider1.authenticate(any())).thenAnswer { throw FailedLoginException("failed to login1") }
+        whenever(authenticationProvider2.authenticate(any())).thenAnswer { throw FailedLoginException("failed to login2") }
 
-        val e = assertThrows(NotAuthenticatedException::class.java) {
+        val e = assertThrows(FailedLoginException::class.java) {
             securityManager.authenticate(UsernamePasswordAuthenticationCredentials("guest", password))
         }
         assertEquals("failed to login2", e.message)
     }
 
     @Test
-    fun `authenticate provider throws NotAuthenticatedException that gets rethrown as NotAuthenticatedException`() {
-        whenever(authenticationProvider1.authenticate(any())).thenAnswer { throw NotAuthenticatedException("failed to login1") }
+    fun `authenticate provider throws FailedLoginException that gets rethrown as FailedLoginException`() {
+        whenever(authenticationProvider1.authenticate(any())).thenAnswer { throw FailedLoginException("failed to login1") }
 
-        val e = assertThrows(NotAuthenticatedException::class.java) {
+        val e = assertThrows(FailedLoginException::class.java) {
             securityManager.authenticate(UsernamePasswordAuthenticationCredentials("guest", password))
         }
         assertEquals("failed to login1", e.message)
     }
 
     @Test
-    fun `authenticate_invalidUser_shouldThrowNotAuthenticatedException`() {
-        whenever(authenticationProvider1.authenticate(any())).thenAnswer { throw NotAuthenticatedException() }
-        whenever(authenticationProvider2.authenticate(any())).thenAnswer { throw NotAuthenticatedException() }
+    fun `authenticate_invalidUser_shouldThrowFailedLoginException`() {
+        whenever(authenticationProvider1.authenticate(any())).thenAnswer { throw FailedLoginException() }
+        whenever(authenticationProvider2.authenticate(any())).thenAnswer { throw FailedLoginException() }
 
-        assertThrows(NotAuthenticatedException::class.java) {
+        assertThrows(FailedLoginException::class.java) {
             securityManager.authenticate(UsernamePasswordAuthenticationCredentials("guest", password))
         }
     }

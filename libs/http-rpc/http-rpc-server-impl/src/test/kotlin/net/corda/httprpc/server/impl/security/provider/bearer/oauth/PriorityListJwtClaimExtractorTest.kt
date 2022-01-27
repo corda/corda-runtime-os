@@ -4,7 +4,7 @@ import com.nimbusds.jwt.JWTParser
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import net.corda.httprpc.exception.NotAuthenticatedException
+import javax.security.auth.login.FailedLoginException
 
 class PriorityListJwtClaimExtractorTest {
     private val token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6InVz" +
@@ -16,7 +16,7 @@ class PriorityListJwtClaimExtractorTest {
         val extractor = PriorityListJwtClaimExtractor(listOf("random"))
         val jwt = JWTParser.parse(token)
 
-        Assertions.assertThrows(NotAuthenticatedException::class.java) {
+        Assertions.assertThrows(FailedLoginException::class.java) {
             extractor.getUsername(jwt.jwtClaimsSet)
         }
     }

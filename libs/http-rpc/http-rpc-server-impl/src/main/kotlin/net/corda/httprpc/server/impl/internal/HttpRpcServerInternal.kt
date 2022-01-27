@@ -40,7 +40,7 @@ import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
 import java.io.OutputStream
 import java.io.PrintStream
-import net.corda.httprpc.exception.NotAuthenticatedException
+import javax.security.auth.login.FailedLoginException
 
 @Suppress("TooManyFunctions", "TooGenericExceptionThrown")
 internal class HttpRpcServerInternal(
@@ -153,7 +153,7 @@ internal class HttpRpcServerInternal(
                 CURRENT_RPC_CONTEXT.set(rpcAuthContext)
                 log.trace { """Authenticate user "${it.principal}" completed.""" }
             }
-        } catch (e: NotAuthenticatedException) {
+        } catch (e: FailedLoginException) {
             "Error during user authentication".let {
                 log.warn("$it: ${e.message}")
                 addWwwAuthenticateHeaders(ctx)
