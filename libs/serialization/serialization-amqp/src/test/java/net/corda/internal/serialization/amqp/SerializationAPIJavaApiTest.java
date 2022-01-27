@@ -1,6 +1,5 @@
 package net.corda.internal.serialization.amqp;
 
-import net.corda.serialization.ClassWhitelist;
 import net.corda.serialization.EncodingWhitelist;
 import net.corda.serialization.ObjectWithCompatibleContext;
 import net.corda.serialization.SerializationContext;
@@ -26,7 +25,6 @@ public class SerializationAPIJavaApiTest {
     private final SerializationContext serializationContext = mock(SerializationContext.class);
     private final SerializationEncoding serializationEncoding = mock(SerializationEncoding.class);
     private final ClassLoader classLoader = mock(ClassLoader.class);
-    private final ClassWhitelist classWhitelist = mock(ClassWhitelist.class);
     private final EncodingWhitelist encodingWhitelist = mock(EncodingWhitelist.class);
     private final MySerializationFactory serializationFactory = new MySerializationFactory();
     private final BaseProxyTestClass baseProxyTestClass = new BaseProxyTestClass();
@@ -86,15 +84,6 @@ public class SerializationAPIJavaApiTest {
 
             assertThat(result).isNotNull();
             assertThat(result).isEqualTo(serializationEncoding);
-        }
-
-        @Test
-        public void getWhitelist() {
-            when(serializationContext.getWhitelist()).thenReturn(classWhitelist);
-            var result = serializationContext.getWhitelist();
-
-            assertThat(result).isNotNull();
-            assertThat(result).isEqualTo(classWhitelist);
         }
 
         @Test
@@ -207,15 +196,6 @@ public class SerializationAPIJavaApiTest {
         }
 
         @Test
-        public void withWhitelisted() {
-            when(serializationContext.withWhitelisted(String.class)).thenReturn(serializationContext);
-            var result = serializationContext.withWhitelisted(String.class);
-
-            assertThat(result).isNotNull();
-            assertThat(result).isEqualTo(serializationContext);
-        }
-
-        @Test
         public void withCustomSerializers() {
             when(serializationContext.withCustomSerializers(Set.of(baseProxyTestClass))).thenReturn(serializationContext);
             var result = serializationContext.withCustomSerializers(Set.of(baseProxyTestClass));
@@ -268,19 +248,6 @@ public class SerializationAPIJavaApiTest {
             var result = serializedBytes.getSummary();
 
             assertThat(result).isNotNull();
-        }
-    }
-
-    @Nested
-    public class ClassWhitelistJavaApiTest {
-
-        @Test
-        public void getSummary() {
-            when(classWhitelist.hasListed(String.class)).thenReturn(true);
-            var result = classWhitelist.hasListed(String.class);
-
-            assertThat(result).isNotNull();
-            assertThat(result).isEqualTo(true);
         }
     }
 

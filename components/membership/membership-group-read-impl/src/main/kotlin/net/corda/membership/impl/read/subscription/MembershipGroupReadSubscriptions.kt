@@ -1,6 +1,6 @@
 package net.corda.membership.impl.read.subscription
 
-import net.corda.data.membership.SignedMemberInfo
+import net.corda.data.membership.PersistentMemberInfo
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.config.MembershipConfig
 import net.corda.membership.config.MembershipConfigConstants
@@ -15,6 +15,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.membership.conversion.PropertyConverter
 
 /**
  * Implementations of this interface manage the subscriptions required for the membership group read service component.
@@ -31,10 +32,11 @@ interface MembershipGroupReadSubscriptions : Lifecycle {
      */
     class Impl(
         private val subscriptionFactory: SubscriptionFactory,
-        private val groupReadCache: MembershipGroupReadCache
+        private val groupReadCache: MembershipGroupReadCache,
+        private val converter: PropertyConverter
     ) : MembershipGroupReadSubscriptions {
 
-        private var memberListSubscription: CompactedSubscription<String, SignedMemberInfo>? = null
+        private var memberListSubscription: CompactedSubscription<String, PersistentMemberInfo>? = null
 
         private val subscriptions
             get() = listOf(
@@ -66,7 +68,7 @@ interface MembershipGroupReadSubscriptions : Lifecycle {
 
             memberListSubscription = subscriptionFactory.createCompactedSubscription(
                 SubscriptionConfig(memberListGroupName, memberListTopicName),
-                MemberListProcessor(groupReadCache)
+                MemberListProcessor(groupReadCache, converter)
             ).also {
                 it.start()
             }

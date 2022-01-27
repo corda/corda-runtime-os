@@ -3,9 +3,11 @@ package net.corda.processors.flow.internal
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.flow.service.FlowService
 import net.corda.libs.configuration.SmartConfig
+import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
@@ -39,6 +41,13 @@ class FlowProcessorImpl @Activate constructor(
     }
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<FlowProcessorImpl>(::eventHandler)
+    private val dependentComponents = DependentComponents.of(
+        ::configurationReadService,
+        ::flowService,
+        ::flowMapperService,
+        // TODO - This needs to change to use SandboxGroupContextService
+        ::sandboxService
+    )
 
     override fun start(bootConfig: SmartConfig) {
         log.info("Flow processor starting.")
@@ -54,24 +63,20 @@ class FlowProcessorImpl @Activate constructor(
     @Suppress("UNUSED_PARAMETER")
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         log.debug { "Flow processor received event $event." }
+
         when (event) {
             is StartEvent -> {
-                configurationReadService.start()
-                flowService.start()
-                flowMapperService.start()
-                // HACK: This needs to change when we have the proper sandbox group service
-                // for now we need to start this version of the service as it hosts the new
-                // api we use elsewhere
-                sandboxService.start()
+                dependentComponents.registerAndStartAll(coordinator)
+            }
+            is RegistrationStatusChangeEvent -> {
+                log.info("Flow processor is ${event.status}")
+                coordinator.updateStatus(event.status)
             }
             is BootConfigEvent -> {
                 configurationReadService.bootstrapConfig(event.config)
             }
             is StopEvent -> {
-                configurationReadService.stop()
-                flowService.stop()
-                flowMapperService.stop()
-                sandboxService.stop()
+                dependentComponents.stopAll()
             }
             else -> {
                 log.error("Unexpected event $event!")

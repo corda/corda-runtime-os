@@ -10,6 +10,7 @@ dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation project(":libs:membership:membership-identity-impl")
     implementation project(":libs:membership:membership-internal")
     implementation project(":libs:membership:membership-impl")
     implementation project(":libs:messaging:messaging")
@@ -23,10 +24,12 @@ dependencies {
     implementation "net.corda:corda-topic-schema"
     implementation "net.corda:corda-membership"
     implementation "net.corda:corda-membership-identity"
+    implementation "net.corda:corda-membership-conversion"
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "org.slf4j:slf4j-api"
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation project(":libs:crypto:crypto-internal")
 }

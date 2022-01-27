@@ -40,7 +40,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -557,7 +556,6 @@ class GatewayTest : TestBase() {
     inner class BadConfigurationTests {
         @Test
         @Timeout(120)
-        @Disabled("Disabled temporarily until we identify the reason for the flakiness and remove it.")
         fun `Gateway can recover from bad configuration`() {
             val configPublisher = ConfigPublisher()
             val host = "www.alice.net"
@@ -569,6 +567,7 @@ class GatewayTest : TestBase() {
                 nodeConfig,
                 instanceId.incrementAndGet(),
             ).use { gateway ->
+                logger.info("Publishing good config")
                 configPublisher.publishConfig(
                     GatewayConfiguration(
                         host,
@@ -579,6 +578,7 @@ class GatewayTest : TestBase() {
                 gateway.startAndWaitForStarted()
                 assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.Started)
 
+                logger.info("Publishing bad config")
                 // -20 is invalid port, serer should fail
                 configPublisher.publishConfig(
                     GatewayConfiguration(
@@ -594,6 +594,7 @@ class GatewayTest : TestBase() {
                     Socket(host, 10005).close()
                 }
 
+                logger.info("Publishing good config again")
                 configPublisher.publishConfig(
                     GatewayConfiguration(
                         host,
@@ -608,6 +609,7 @@ class GatewayTest : TestBase() {
                     Socket(host, 10006).close()
                 }
 
+                logger.info("Publishing bad config again")
                 configPublisher.publishBadConfig()
                 eventually(duration = 20.seconds) {
                     assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.StoppedDueToError)
@@ -615,6 +617,7 @@ class GatewayTest : TestBase() {
                 assertThrows<ConnectException> {
                     Socket(host, 10006).close()
                 }
+
             }
         }
     }

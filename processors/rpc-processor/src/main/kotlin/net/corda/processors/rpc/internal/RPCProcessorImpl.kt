@@ -5,9 +5,11 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.rpcops.ConfigRPCOpsService
 import net.corda.data.config.Configuration
 import net.corda.libs.configuration.SmartConfig
+import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
@@ -48,6 +50,12 @@ class RPCProcessorImpl @Activate constructor(
     }
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<RPCProcessorImpl>(::eventHandler)
+    private val dependentComponents = DependentComponents.of(
+        ::configReadService,
+        ::httpRpcGateway,
+        ::configRPCOpsService,
+        ::virtualNodeRPCOpsService,
+    )
 
     override fun start(bootConfig: SmartConfig) {
         log.info("RPC processor starting.")
@@ -60,15 +68,15 @@ class RPCProcessorImpl @Activate constructor(
         lifecycleCoordinator.stop()
     }
 
-    @Suppress("UNUSED_PARAMETER")
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         log.debug { "RPC processor received event $event." }
         when (event) {
             is StartEvent -> {
-                configReadService.start()
-                httpRpcGateway.start()
-                configRPCOpsService.start()
-                virtualNodeRPCOpsService.start()
+                dependentComponents.registerAndStartAll(coordinator)
+            }
+            is RegistrationStatusChangeEvent -> {
+                log.info("RPC processor is ${event.status}")
+                coordinator.updateStatus(event.status)
             }
             is BootConfigEvent -> {
                 configReadService.bootstrapConfig(event.config)
@@ -90,10 +98,7 @@ class RPCProcessorImpl @Activate constructor(
                 }
             }
             is StopEvent -> {
-                configReadService.stop()
-                configRPCOpsService.stop()
-                httpRpcGateway.stop()
-                virtualNodeRPCOpsService.stop()
+                dependentComponents.stopAll()
             }
             else -> {
                 log.error("Unexpected event $event!")

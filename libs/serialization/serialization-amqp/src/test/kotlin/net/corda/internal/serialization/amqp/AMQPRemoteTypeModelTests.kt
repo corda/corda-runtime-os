@@ -4,6 +4,7 @@ import net.corda.internal.serialization.accessAsClass
 import net.corda.internal.serialization.amqp.testutils.serializeAndReturnSchema
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactoryNoEvolution
 import net.corda.internal.serialization.model.RemoteTypeInformation
+import net.corda.v5.base.annotations.CordaSerializable
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -15,12 +16,14 @@ class AMQPRemoteTypeModelTests {
     private val factory = testDefaultFactoryNoEvolution()
     private val typeModel = AMQPRemoteTypeModel()
 
+    @CordaSerializable
     interface Interface<P, Q, R> {
         val array: Array<out P>
         val list: List<Q>
         val map: Map<Q, R>
     }
 
+    @CordaSerializable
     enum class Enum : Interface<String, IntArray, Int> {
         FOO, BAR, BAZ;
 
@@ -29,11 +32,14 @@ class AMQPRemoteTypeModelTests {
         override val map: Map<IntArray, Int> get() = emptyMap()
     }
 
+    @CordaSerializable
     open class Superclass<K, V>(override val array: Array<out String>, override val list: List<K>, override val map: Map<K, V>)
         : Interface<String, K, V>
 
+    @CordaSerializable
     class C<V>(array: Array<out String>, list: List<UUID>, map: Map<UUID, V>, val enum: Enum): Superclass<UUID, V>(array, list, map)
 
+    @CordaSerializable
     class SimpleClass(val a: Int, val b: Double, val c: Short?, val d: ByteArray, val e: ByteArray?)
 
     @Test

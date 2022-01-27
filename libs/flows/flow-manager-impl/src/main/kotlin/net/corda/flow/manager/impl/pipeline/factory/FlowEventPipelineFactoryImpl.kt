@@ -13,9 +13,10 @@ import net.corda.flow.manager.impl.runner.FlowRunner
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ReferenceCardinality
-import org.osgi.service.component.annotations.ReferencePolicy
+import org.osgi.service.component.annotations.ReferenceCardinality.MULTIPLE
+import org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC
 
+@Suppress("CanBePrimaryConstructorProperty")
 @Component(service = [FlowEventPipelineFactory::class])
 class FlowEventPipelineFactoryImpl(
     private val flowRunner: FlowRunner,
@@ -23,18 +24,20 @@ class FlowEventPipelineFactoryImpl(
     flowRequestHandlers: List<FlowRequestHandler<out FlowIORequest<*>>>
 ) : FlowEventPipelineFactory {
 
-    @Reference(service = FlowEventHandler::class, cardinality = ReferenceCardinality.MULTIPLE, policy = ReferencePolicy.DYNAMIC)
+    // We cannot use constructor injection with DYNAMIC policy.
+    @Reference(service = FlowEventHandler::class, cardinality = MULTIPLE, policy = DYNAMIC)
     private val flowEventHandlers: List<FlowEventHandler<Any>> = flowEventHandlers
 
-    @Reference(service = FlowRequestHandler::class, cardinality = ReferenceCardinality.MULTIPLE, policy = ReferencePolicy.DYNAMIC)
+    // We cannot use constructor injection with DYNAMIC policy.
+    @Reference(service = FlowRequestHandler::class, cardinality = MULTIPLE, policy = DYNAMIC)
     private val flowRequestHandlers: List<FlowRequestHandler<out FlowIORequest<*>>> = flowRequestHandlers
 
     private val flowEventHandlerMap: Map<Any, FlowEventHandler<Any>> by lazy {
-        flowEventHandlers.associateBy { it.type }
+        flowEventHandlers.associateBy(FlowEventHandler<*>::type)
     }
 
     private val flowRequestHandlerMap: Map<Class<out FlowIORequest<*>>, FlowRequestHandler<out FlowIORequest<*>>> by lazy {
-        flowRequestHandlers.associateBy { it.type }
+        flowRequestHandlers.associateBy(FlowRequestHandler<*>::type)
     }
 
     @Activate

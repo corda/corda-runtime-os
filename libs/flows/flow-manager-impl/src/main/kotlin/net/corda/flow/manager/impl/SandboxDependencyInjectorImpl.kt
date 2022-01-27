@@ -6,17 +6,28 @@ import net.corda.v5.application.injection.CordaFlowInjectable
 import net.corda.v5.application.injection.CordaInject
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import java.lang.reflect.Field
-import java.util.*
+import java.util.Collections.synchronizedMap
+import java.util.Collections.unmodifiableSet
+import net.corda.v5.application.injection.CordaServiceInjectable
+import net.corda.v5.application.services.CordaService
 
 class SandboxDependencyInjectorImpl(
     singletons: List<SingletonSerializeAsToken>
 ) : SandboxDependencyInjector {
+    private companion object {
+        private val FORBIDDEN_INTERFACES: Set<Class<*>> = unmodifiableSet(setOf(
+            CordaFlowInjectable::class.java,
+            CordaServiceInjectable::class.java,
+            CordaService::class.java,
+            SingletonSerializeAsToken::class.java
+        ))
+    }
 
     private val serviceTypeMap: MutableMap<Class<*>, SingletonSerializeAsToken> =
-        Collections.synchronizedMap(mutableMapOf<Class<*>, SingletonSerializeAsToken>())
+        synchronizedMap(mutableMapOf<Class<*>, SingletonSerializeAsToken>())
 
     init {
-        singletons.forEach { registerService(it) }
+        singletons.forEach(::registerService)
     }
 
     override fun injectServices(flow: Flow<*>) {
@@ -94,15 +105,16 @@ class SandboxDependencyInjectorImpl(
         and made explicit with a different approach.
          */
 
-        // If the service type is an interface then assume it can be registered as is.
-        if (serviceClass.isInterface) {
-            return listOf(serviceClass)
+        return if (serviceClass.isInterface) {
+            // If the service type is an interface then assume it can be registered as is.
+            listOf(serviceClass)
+        } else {
+            // associate the service will all the interfaces it implements, excluding common shared types.
+            // Failing that, associate the service with its own implementation class.
+            serviceClass.interfaces.filterNot(FORBIDDEN_INTERFACES::contains).ifEmpty {
+                listOf(serviceClass)
+            }
         }
-
-        // associate the service will all the interfaces it implements, excluding common shared types.
-        return serviceClass.interfaces.filterNot {
-            it == SingletonSerializeAsToken::class.java || it == CordaFlowInjectable::class.java
-        }.toList()
     }
 }
 

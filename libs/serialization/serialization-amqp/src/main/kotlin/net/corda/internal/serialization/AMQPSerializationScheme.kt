@@ -13,6 +13,7 @@ import net.corda.internal.serialization.amqp.custom.BitSetSerializer
 import net.corda.internal.serialization.amqp.custom.CertPathSerializer
 import net.corda.internal.serialization.amqp.custom.ClassSerializer
 import net.corda.internal.serialization.amqp.custom.CurrencySerializer
+import net.corda.internal.serialization.amqp.custom.DayOfWeekSerializer
 import net.corda.internal.serialization.amqp.custom.DurationSerializer
 import net.corda.internal.serialization.amqp.custom.EnumSetSerializer
 import net.corda.internal.serialization.amqp.custom.InputStreamSerializer
@@ -21,14 +22,17 @@ import net.corda.internal.serialization.amqp.custom.LocalDateSerializer
 import net.corda.internal.serialization.amqp.custom.LocalDateTimeSerializer
 import net.corda.internal.serialization.amqp.custom.LocalTimeSerializer
 import net.corda.internal.serialization.amqp.custom.MonthDaySerializer
+import net.corda.internal.serialization.amqp.custom.MonthSerializer
 import net.corda.internal.serialization.amqp.custom.OffsetDateTimeSerializer
 import net.corda.internal.serialization.amqp.custom.OffsetTimeSerializer
 import net.corda.internal.serialization.amqp.custom.OpaqueBytesSubSequenceSerializer
 import net.corda.internal.serialization.amqp.custom.OptionalSerializer
+import net.corda.internal.serialization.amqp.custom.PairSerializer
 import net.corda.internal.serialization.amqp.custom.PeriodSerializer
 import net.corda.internal.serialization.amqp.custom.StackTraceElementSerializer
 import net.corda.internal.serialization.amqp.custom.StringBufferSerializer
 import net.corda.internal.serialization.amqp.custom.ThrowableSerializer
+import net.corda.internal.serialization.amqp.custom.UnitSerializer
 import net.corda.internal.serialization.amqp.custom.X500PrincipalSerializer
 import net.corda.internal.serialization.amqp.custom.X509CRLSerializer
 import net.corda.internal.serialization.amqp.custom.X509CertificateSerializer
@@ -37,44 +41,25 @@ import net.corda.internal.serialization.amqp.custom.YearSerializer
 import net.corda.internal.serialization.amqp.custom.ZoneIdSerializer
 import net.corda.internal.serialization.amqp.custom.ZonedDateTimeSerializer
 import net.corda.sandbox.SandboxGroup
-import net.corda.serialization.ClassWhitelist
 import net.corda.serialization.SerializationContext
 import net.corda.utilities.toSynchronised
 import net.corda.v5.base.annotations.VisibleForTesting
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.ByteSequence
 import net.corda.v5.serialization.SerializationCustomSerializer
-import net.corda.v5.serialization.SerializationWhitelist
 import net.corda.v5.serialization.SerializedBytes
 import java.util.Collections
 
-data class SerializationFactoryCacheKey(val classWhitelist: ClassWhitelist,
-                                        val sandboxGroup: SandboxGroup?,
+data class SerializationFactoryCacheKey(val sandboxGroup: SandboxGroup?,
                                         val preventDataLoss: Boolean,
                                         val customSerializers: Set<SerializationCustomSerializer<*, *>>?)
 
-fun SerializerFactory.addToWhitelist(types: Collection<Class<*>>) {
-    require(types.toSet().size == types.size) {
-        val duplicates = types.toMutableList()
-        types.toSet().forEach { duplicates -= it }
-        "Cannot add duplicate classes to the whitelist ($duplicates)."
-    }
-    val mutableClassWhitelist = this.whitelist as? MutableClassWhitelist
-        ?: throw CordaRuntimeException("whitelist is not an instance of MutableClassWhitelist, cannot whitelist types")
-    for (type in types) {
-        mutableClassWhitelist.add(type)
-    }
-}
-
 abstract class AbstractAMQPSerializationScheme private constructor(
         private val cordappCustomSerializers: Set<SerializationCustomSerializer<*, *>>,
-        private val cordappSerializationWhitelists: Set<SerializationWhitelist>,
         maybeNotConcurrentSerializerFactoriesForContexts: MutableMap<SerializationFactoryCacheKey, SerializerFactory>,
         val sff: SerializerFactoryFactory = createSerializerFactoryFactory()
 ) : SerializationScheme {
     constructor() : this(
         emptySet<SerializationCustomSerializer<*, *>>(),
-        emptySet<SerializationWhitelist>(),
         AccessOrderLinkedHashMap<SerializationFactoryCacheKey, SerializerFactory>(128).toSynchronised()
     )
 
@@ -90,10 +75,6 @@ abstract class AbstractAMQPSerializationScheme private constructor(
                 maybeNotConcurrentSerializerFactoriesForContexts
             }
 
-    companion object {
-        private val serializationWhitelists: List<SerializationWhitelist> by lazy { listOf(DefaultWhitelist) }
-    }
-
     private fun registerCustomSerializers(context: SerializationContext, factory: SerializerFactory) {
         registerCustomSerializers(factory)
 
@@ -103,23 +84,13 @@ abstract class AbstractAMQPSerializationScheme private constructor(
         }
     }
 
-    private fun registerCustomWhitelists(factory: SerializerFactory) {
-        serializationWhitelists.forEach {
-            factory.addToWhitelist(it.whitelist)
-        }
-        cordappSerializationWhitelists.forEach {
-            factory.addToWhitelist(it.whitelist)
-        }
-    }
-
     fun getSerializerFactory(context: SerializationContext): SerializerFactory {
         val sandboxGroup = context.currentSandboxGroup()
-        val key = SerializationFactoryCacheKey(context.whitelist, sandboxGroup, context.preventDataLoss, context.customSerializers)
+        val key = SerializationFactoryCacheKey(sandboxGroup, context.preventDataLoss, context.customSerializers)
         // ConcurrentHashMap.get() is lock free, but computeIfAbsent is not, even if the key is in the map already.
         return serializerFactoriesForContexts[key] ?: serializerFactoriesForContexts.computeIfAbsent(key) {
             sff.make(context).also {
                 registerCustomSerializers(context, it)
-                registerCustomWhitelists(it)
             }
         }
     }
@@ -168,5 +139,9 @@ fun registerCustomSerializers(factory: SerializerFactory) {
         register(BitSetSerializer(), this)
         register(EnumSetSerializer(), this)
         register(X500PrincipalSerializer(), this)
+        register(DayOfWeekSerializer(), this)
+        register(MonthSerializer(), this)
+        register(PairSerializer(), this)
+        register(UnitSerializer(), this)
     }
 }

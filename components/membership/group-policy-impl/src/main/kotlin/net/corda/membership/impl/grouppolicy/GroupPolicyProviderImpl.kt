@@ -18,8 +18,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.read.VirtualNodeInfoReader
-import net.corda.virtualnode.read.VirtualNodeInfoReaderComponent
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -27,8 +26,8 @@ import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [GroupPolicyProvider::class])
 class GroupPolicyProviderImpl @Activate constructor(
-    @Reference(service = VirtualNodeInfoReaderComponent::class)
-    private val virtualNodeInfoReader: VirtualNodeInfoReaderComponent,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = CpiInfoReadService::class)
     private val cpiInfoReader: CpiInfoReadService,
     @Reference(service = LifecycleCoordinatorFactory::class)
@@ -77,7 +76,7 @@ class GroupPolicyProviderImpl @Activate constructor(
     /**
      * Parse the group policy string to a [GroupPolicy] object.
      *
-     * [VirtualNodeInfoReaderComponent] is used to get the [VirtualNodeInfo], unless provided as a parameter. It may be
+     * [VirtualNodeInfoReadService] is used to get the [VirtualNodeInfo], unless provided as a parameter. It may be
      * the case in a virtual node info callback where we are given the changed virtual node info.
      *
      * [CpiInfoReadService] is used to get the CPI metadata containing the group policy for the CPI installed on
@@ -94,7 +93,7 @@ class GroupPolicyProviderImpl @Activate constructor(
         virtualNodeInfo: VirtualNodeInfo? = null,
     ): GroupPolicy {
         val vNodeInfo = virtualNodeInfo
-            ?: virtualNodeInfoReader.get(holdingIdentity)
+            ?: virtualNodeInfoReadService.get(holdingIdentity)
         val metadata = vNodeInfo
             ?.cpiIdentifier
             ?.let { cpiInfoReader.get(it) }
@@ -124,7 +123,7 @@ class GroupPolicyProviderImpl @Activate constructor(
 
         registrationHandle = coordinator.followStatusChangesByName(
             setOf(
-                LifecycleCoordinatorName.forComponent<VirtualNodeInfoReader>(),
+                LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
                 LifecycleCoordinatorName.forComponent<CpiInfoReadService>()
             )
         )
@@ -165,7 +164,7 @@ class GroupPolicyProviderImpl @Activate constructor(
          * Register callback so that if a holding identity modifies their virtual node information, the group policy
          * for that holding identity will be parsed in case the virtual node change affected the group policy file.
          */
-        virtualNodeInfoCallbackHandle = virtualNodeInfoReader.registerCallback { changed, snapshot ->
+        virtualNodeInfoCallbackHandle = virtualNodeInfoReadService.registerCallback { changed, snapshot ->
             if (isRunning) {
                 changed.filter { snapshot[it] != null }.forEach {
                     parseGroupPolicy(it, virtualNodeInfo = snapshot[it])
