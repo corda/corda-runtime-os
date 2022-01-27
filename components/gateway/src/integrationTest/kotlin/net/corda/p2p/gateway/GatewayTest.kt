@@ -86,7 +86,7 @@ class GatewayTest : TestBase() {
             publisher.close()
         }
 
-        fun publishTruststore() {
+        init {
             publish(
                 Record(Schemas.P2P.GATEWAY_TLS_TRUSTSTORES, TRUST_STORE_HASH, GatewayTruststore(listOf(truststoreCertificate)))
             )
@@ -139,8 +139,6 @@ class GatewayTest : TestBase() {
         @Timeout(30)
         fun `http client to gateway`() {
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
-            alice.publishTruststore()
-            bob.publishTruststore()
             val serverAddress = URI.create("http://www.alice.net:10000")
             val linkInMessage = LinkInMessage(authenticatedP2PMessage(""))
             val gatewayMessage = GatewayMessage("msg-id", linkInMessage.payload)
@@ -195,8 +193,6 @@ class GatewayTest : TestBase() {
         @Timeout(100)
         fun `gateway reconfiguration`() {
             val configurationCount = 3
-            alice.publishTruststore()
-            bob.publishTruststore()
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             val recipientServerUrl = URI.create("http://www.alice.net:10001")
 
@@ -305,8 +301,6 @@ class GatewayTest : TestBase() {
             val clientNumber = 4
             val threadPool = NioEventLoopGroup(clientNumber)
             val serverAddress = URI.create("http://www.alice.net:10002")
-            alice.publishTruststore()
-            bob.publishTruststore()
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             Gateway(
                 createConfigurationServiceFor(
@@ -367,7 +361,6 @@ class GatewayTest : TestBase() {
 
             // We first produce some messages which will be consumed by the Gateway.
             val deliveryLatch = CountDownLatch(serversCount * messageCount)
-            alice.publishTruststore()
             val servers = (1..serversCount).map {
                 it + 20000
             }.map {
@@ -443,8 +436,6 @@ class GatewayTest : TestBase() {
             val aliceGatewayAddress = URI.create("http://www.chip.net:11003")
             val bobGatewayAddress = URI.create("http://www.dale.net:11004")
             val messageCount = 100
-            alice.publishTruststore()
-            bob.publishTruststore()
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
             bob.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
 
@@ -579,8 +570,6 @@ class GatewayTest : TestBase() {
         fun `Gateway can recover from bad configuration`() {
             val configPublisher = ConfigPublisher()
             val host = "www.alice.net"
-            alice.publishTruststore()
-            bob.publishTruststore()
             Gateway(
                 configPublisher.readerService,
                 alice.subscriptionFactory,
@@ -639,7 +628,6 @@ class GatewayTest : TestBase() {
                 assertThrows<ConnectException> {
                     Socket(host, 10006).close()
                 }
-
             }
         }
     }
