@@ -230,7 +230,10 @@ internal class UserWriterImplTest {
 
         val audit = capture.secondValue as ChangeAudit
         assertEquals(RPCPermissionOperation.ADD_ROLE_TO_USER, audit.changeType)
-        assertEquals("Role 'role1' assigned to User 'userId1' by 'requestUserId'.", audit.details)
+        assertEquals(
+            "Role 'role1' assigned to User 'userLogin1' by 'requestUserId'. Created RoleUserAssociation '${persistedAssociation.id}'.",
+            audit.details
+        )
         assertEquals("requestUserId", audit.actorUser)
 
         assertEquals(user.id, avroUser.id)
@@ -301,7 +304,10 @@ internal class UserWriterImplTest {
 
         val audit = capture.thirdValue as ChangeAudit
         assertEquals(RPCPermissionOperation.DELETE_ROLE_FROM_USER, audit.changeType)
-        assertEquals("Role 'role1' unassigned from User 'userId1' by 'requestUserId'.", audit.details)
+        assertEquals(
+            "Role 'role1' unassigned from User 'userLogin1' by 'requestUserId'. Removed RoleUserAssociation 'assoc1'.",
+            audit.details
+        )
         assertEquals("requestUserId", audit.actorUser)
 
         assertEquals(user.id, avroUser.id)

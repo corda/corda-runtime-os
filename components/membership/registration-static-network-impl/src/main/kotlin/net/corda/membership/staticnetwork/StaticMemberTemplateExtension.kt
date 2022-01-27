@@ -1,4 +1,4 @@
-package net.corda.membership.staticmemberlist
+package net.corda.membership.staticnetwork
 
 import net.corda.membership.GroupPolicy
 
