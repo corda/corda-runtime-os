@@ -51,6 +51,7 @@ import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigestService
+import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import org.junit.jupiter.api.Test
@@ -110,18 +111,22 @@ class StaticMemberRegistrationServiceTest {
         on { encodeAsString(any()) } doReturn "1"
         on { encodeAsString(aliceKey) } doReturn ALICE_KEY
         on { encodeAsString(bobKey) } doReturn BOB_KEY
+
+        on { encodeAsByteArray(any()) } doReturn ByteArray(1)
     }
 
     private val cryptoLibraryFactory: CryptoLibraryFactory = mock {
         on { getKeyEncodingService() } doReturn keyEncodingService
     }
 
+    private val signature: DigitalSignature.WithKey = DigitalSignature.WithKey(mock(), ByteArray(1))
+
     private val signingService: SigningService = mock {
         on { generateKeyPair(any(), eq(EMPTY_CONTEXT)) } doReturn mock()
         on { generateKeyPair(eq("alice-alias"), eq(EMPTY_CONTEXT)) } doReturn aliceKey
         // when no keyAlias is defined in static template, we are using the HoldingIdentity's id
         on { generateKeyPair(eq(bob.id), eq(EMPTY_CONTEXT)) } doReturn bobKey
-        on { sign(any<String>(), any<ByteArray>(), any()) } doReturn ByteArray(1)
+        on { sign(any<PublicKey>(), any<ByteArray>(), any()) } doReturn signature
     }
 
     private val cryptoLibraryClientsFactory: CryptoLibraryClientsFactory = mock {

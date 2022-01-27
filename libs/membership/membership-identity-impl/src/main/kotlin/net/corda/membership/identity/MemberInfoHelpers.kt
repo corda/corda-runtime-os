@@ -1,11 +1,6 @@
 package net.corda.membership.identity
 
-import net.corda.crypto.SigningService
-import net.corda.crypto.SigningService.Companion.EMPTY_CONTEXT
 import net.corda.data.KeyValuePairList
-import net.corda.data.crypto.wire.WireSignatureWithKey
-import net.corda.data.membership.SignedMemberInfo
-import net.corda.membership.conversion.toWire
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.MerkleTree
@@ -44,50 +39,10 @@ fun KeyValuePairList.toSortedMap(): SortedMap<String, String?> {
 }
 
 /**
- * Creates and returns a [SignedMemberInfo] object.
- */
-@Suppress("LongParameterList")
-fun signMemberInfo(
-    memberContext: MemberContext,
-    mgmContext: MGMContext,
-    memberKey: String,
-    mgmKey: String,
-    signingService: SigningService,
-    digestService: DigestService
-): SignedMemberInfo {
-    val memberContextBF = memberContext.toWire()
-    val mgmContextBF = mgmContext.toWire()
-    return SignedMemberInfo(
-        memberContextBF,
-        mgmContextBF,
-        WireSignatureWithKey(
-            ByteBuffer.wrap(memberKey.encodeToByteArray()),
-            ByteBuffer.wrap(
-                signingService.sign(
-                    memberKey,
-                    memberContextBF.array(),
-                    EMPTY_CONTEXT
-                )
-            )
-        ),
-        WireSignatureWithKey(
-            ByteBuffer.wrap(mgmKey.encodeToByteArray()),
-            ByteBuffer.wrap(
-                signingService.sign(
-                    mgmKey,
-                    buildMerkleTree(mgmContextBF, memberContextBF, digestService).hash.bytes,
-                    EMPTY_CONTEXT
-                )
-            )
-        )
-    )
-}
-
-/**
  * Builds the Merkle tree used for the mgm's signature.
  * The leaves are the [MemberContext] and [MGMContext].
  */
-private fun buildMerkleTree(memberContext: ByteBuffer, mgmContext: ByteBuffer, digestService: DigestService): MerkleTree {
+fun buildMerkleTree(memberContext: ByteBuffer, mgmContext: ByteBuffer, digestService: DigestService): MerkleTree {
     val leaves = mutableListOf(
         digestService.hash(memberContext.array(), DigestAlgorithmName.SHA2_256),
         digestService.hash(mgmContext.array(), DigestAlgorithmName.SHA2_256)

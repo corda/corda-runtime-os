@@ -5,11 +5,13 @@ import net.corda.crypto.CryptoCategories
 import net.corda.crypto.CryptoLibraryClientsFactoryProvider
 import net.corda.crypto.CryptoLibraryFactory
 import net.corda.crypto.SigningService
+import net.corda.data.crypto.wire.WireSignatureWithKey
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.GroupPolicy
+import net.corda.membership.conversion.toWire
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.identity.EndpointInfoImpl
 import net.corda.membership.identity.MGMContextImpl
@@ -24,7 +26,8 @@ import net.corda.membership.identity.MemberInfoExtension.Companion.PLATFORM_VERS
 import net.corda.membership.identity.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.identity.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.identity.MemberInfoExtension.Companion.STATUS
-import net.corda.membership.identity.signMemberInfo
+import net.corda.membership.identity.MemberInfoImpl
+import net.corda.membership.identity.buildMerkleTree
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.SUBMITTED
@@ -54,6 +57,8 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import java.nio.ByteBuffer
+import java.security.PublicKey
 import java.time.Instant
 
 @Suppress("LongParameterList")
@@ -87,7 +92,7 @@ class StaticMemberRegistrationService @Activate constructor(
     }
 
     private val keyEncodingService: KeyEncodingService  = cryptoLibraryFactory.getKeyEncodingService()
-    private val digestService = cipherSuiteFactory.getDigestService()
+    private val digestService get() = cipherSuiteFactory.getDigestService()
 
     private val topic = Schemas.Membership.MEMBER_LIST_TOPIC
 
@@ -158,38 +163,39 @@ class StaticMemberRegistrationService @Activate constructor(
             val memberName = staticMember[NAME].toString()
             val memberId = HoldingIdentity(memberName, groupId).id
             val memberKey = generateOwningKey(signingService, staticMember, memberId)
+            val encodedMemberKey = keyEncodingService.encodeAsString(memberKey)
             val mgmKey = parseMgmTemplate(signingService, policy)
-            val memberContext = MemberContextImpl(
-                sortedMapOf(
-                    PARTY_NAME to memberName,
-                    PARTY_OWNING_KEY to memberKey,
-                    GROUP_ID to groupId,
-                    *generateIdentityKeys(memberKey).toTypedArray(),
-                    *convertEndpoints(staticMember).toTypedArray(),
-                    SOFTWARE_VERSION to (staticMember[STATIC_SOFTWARE_VERSION] ?: DEFAULT_SOFTWARE_VERSION),
-                    PLATFORM_VERSION to (staticMember[STATIC_PLATFORM_VERSION] ?: DEFAULT_PLATFORM_VERSION),
-                    SERIAL to (staticMember[STATIC_SERIAL] ?: DEFAULT_SERIAL),
+            val memberInfo = MemberInfoImpl(
+                memberProvidedContext = MemberContextImpl(
+                    sortedMapOf(
+                        PARTY_NAME to memberName,
+                        PARTY_OWNING_KEY to encodedMemberKey,
+                        GROUP_ID to groupId,
+                        *generateIdentityKeys(encodedMemberKey).toTypedArray(),
+                        *convertEndpoints(staticMember).toTypedArray(),
+                        SOFTWARE_VERSION to (staticMember[STATIC_SOFTWARE_VERSION] ?: DEFAULT_SOFTWARE_VERSION),
+                        PLATFORM_VERSION to (staticMember[STATIC_PLATFORM_VERSION] ?: DEFAULT_PLATFORM_VERSION),
+                        SERIAL to (staticMember[STATIC_SERIAL] ?: DEFAULT_SERIAL),
+                    ),
+                    converter
                 ),
-                converter
-            )
-            val mgmContext = MGMContextImpl(
-                sortedMapOf(
-                    STATUS to (staticMember[MEMBER_STATUS] ?: MEMBER_STATUS_ACTIVE),
-                    MODIFIED_TIME to (staticMember[STATIC_MODIFIED_TIME] ?: Instant.now().toString()),
-                ),
-                converter
+                mgmProvidedContext = MGMContextImpl(
+                    sortedMapOf(
+                        STATUS to (staticMember[MEMBER_STATUS] ?: MEMBER_STATUS_ACTIVE),
+                        MODIFIED_TIME to (staticMember[STATIC_MODIFIED_TIME] ?: Instant.now().toString()),
+                    ),
+                    converter
+                )
             )
             members.add(
                 Record(
                     topic,
                     member.id + "-" + memberId,
                     signMemberInfo(
-                        memberContext,
-                        mgmContext,
+                        memberInfo,
                         memberKey,
                         mgmKey,
-                        signingService,
-                        digestService
+                        signingService
                     )
                 )
             )
@@ -216,27 +222,25 @@ class StaticMemberRegistrationService @Activate constructor(
         signingService: SigningService,
         member: Map<String, String>,
         memberId: String
-    ): String {
+    ): PublicKey {
         var keyAlias = member[KEY_ALIAS]
         if(keyAlias.isNullOrBlank()) {
              keyAlias = memberId
         }
-        val owningKey = signingService.generateKeyPair(keyAlias)
-        return keyEncodingService.encodeAsString(owningKey)
+        return signingService.generateKeyPair(keyAlias)
     }
 
     /**
      * Generates the MGM's key used for signing the MemberInfo from the static template.
      */
-    private fun parseMgmTemplate(signingService: SigningService, policy: GroupPolicy): String {
+    private fun parseMgmTemplate(signingService: SigningService, policy: GroupPolicy): PublicKey {
         val staticMgm = policy.staticMgm
         require(staticMgm.isNotEmpty()) { "Static mgm inside the group policy file should be defined." }
 
         val keyAlias: String? = staticMgm[KEY_ALIAS]
         require(!keyAlias.isNullOrBlank()) { "MGM's key alias is not provided." }
 
-        val mgmKey = signingService.generateKeyPair(keyAlias)
-        return keyEncodingService.encodeAsString(mgmKey)
+        return signingService.generateKeyPair(keyAlias)
     }
 
     /**
@@ -285,5 +289,40 @@ class StaticMemberRegistrationService @Activate constructor(
                 index
             ) to identityKey
         }
+    }
+
+    /**
+     * Creates and returns a [SignedMemberInfo] object.
+     */
+    private fun signMemberInfo(
+        memberInfo: MemberInfo,
+        memberKey: PublicKey,
+        mgmKey: PublicKey,
+        signingService: SigningService
+    ): SignedMemberInfo {
+        val memberContextBF = memberInfo.memberProvidedContext.toWire()
+        val mgmContextBF = memberInfo.mgmProvidedContext.toWire()
+        return SignedMemberInfo(
+            memberContextBF,
+            mgmContextBF,
+            WireSignatureWithKey(
+                ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(memberKey)),
+                ByteBuffer.wrap(
+                    signingService.sign(
+                        memberKey,
+                        memberContextBF.array()
+                    ).bytes
+                )
+            ),
+            WireSignatureWithKey(
+                ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(mgmKey)),
+                ByteBuffer.wrap(
+                    signingService.sign(
+                        mgmKey,
+                        buildMerkleTree(mgmContextBF, memberContextBF, digestService).hash.bytes
+                    ).bytes
+                )
+            )
+        )
     }
 }
