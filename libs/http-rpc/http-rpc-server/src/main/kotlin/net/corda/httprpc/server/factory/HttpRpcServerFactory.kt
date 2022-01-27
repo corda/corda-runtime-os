@@ -11,7 +11,6 @@ interface HttpRpcServerFactory {
     fun createHttpRpcServer(
         rpcOpsImpls: List<PluggableRPCOps<out RpcOps>>,
         rpcSecurityManager: RPCSecurityManager,
-        httpRpcSettings: HttpRpcSettings,
-        devMode: Boolean
+        httpRpcSettings: HttpRpcSettings
     ): HttpRpcServer
 }
