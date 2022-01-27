@@ -37,10 +37,10 @@ class HSMRegistrationImpl : HSMRegistration {
                 "soft",
                 null,
                 listOf(
-                    CryptoConsts.CryptoCategories.LEDGER,
-                    CryptoConsts.CryptoCategories.TLS,
-                    CryptoConsts.CryptoCategories.FRESH_KEYS,
-                    CryptoConsts.CryptoCategories.AUTHENTICATION
+                    CryptoConsts.Categories.LEDGER,
+                    CryptoConsts.Categories.TLS,
+                    CryptoConsts.Categories.FRESH_KEYS,
+                    CryptoConsts.Categories.AUTHENTICATION
                 ),
                 0,
                 1000,
@@ -76,7 +76,7 @@ class HSMRegistrationImpl : HSMRegistration {
 
     override fun getTenantConfig(tenantId: String, category: String): TenantHSMConfig {
         return when(category) {
-            CryptoConsts.CryptoCategories.TLS -> TenantHSMConfig(
+            CryptoConsts.Categories.TLS -> TenantHSMConfig(
                 tenantId,
                 "dummy",
                 category,

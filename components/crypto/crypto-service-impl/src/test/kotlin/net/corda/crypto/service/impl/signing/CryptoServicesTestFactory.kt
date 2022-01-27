@@ -43,7 +43,7 @@ class CryptoServicesTestFactory : CipherSuiteFactory {
 
     fun createCryptoServices(
         tenantId: String = UUID.randomUUID().toString(),
-        category: String = CryptoConsts.CryptoCategories.LEDGER
+        category: String = CryptoConsts.Categories.LEDGER
     ): CryptoServices = CryptoServices(tenantId, category, schemeMetadata, digest)
 
     class CryptoServices(

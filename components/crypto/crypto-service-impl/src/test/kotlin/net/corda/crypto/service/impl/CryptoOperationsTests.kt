@@ -142,7 +142,7 @@ class CryptoOperationsTests {
             val freshKeyData = services.getSigningKeyRecord(freshKey)
             assertNotNull(freshKeyData)
             assertEquals(services.tenantId, freshKeyData.tenantId)
-            assertEquals(CryptoConsts.CryptoCategories.FRESH_KEYS, freshKeyData.category)
+            assertEquals(CryptoConsts.Categories.FRESH_KEYS, freshKeyData.category)
             if (uuid != null)
                 assertEquals(uuid, UUID.fromString(freshKeyData.externalId))
             else

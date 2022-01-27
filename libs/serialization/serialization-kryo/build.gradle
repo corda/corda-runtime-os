@@ -64,6 +64,8 @@ dependencies {
     integrationTestImplementation project(":libs:crypto:crypto-impl")
     integrationTestImplementation project(":libs:messaging:inmemory-messaging-impl")
     integrationTestImplementation project(":libs:lifecycle:lifecycle-impl")
+    integrationTestRuntimeOnly project(':libs:crypto:cipher-suite-impl')
+    integrationTestRuntimeOnly project(':libs:crypto:crypto-client')
     integrationTestRuntimeOnly project(":libs:sandbox-hooks")
     integrationTestRuntimeOnly project(":libs:sandbox-internal")
 }

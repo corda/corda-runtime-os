@@ -151,7 +151,7 @@ open class SigningServiceImpl(
 
     private fun generateFreshKey(externalId: UUID?, context: Map<String, String>): PublicKey {
         logger.info("Generating fresh key for tenant=$tenantId and externalId=${externalId ?: "null"}")
-        val cryptoService = cryptoService(CryptoConsts.CryptoCategories.FRESH_KEYS)
+        val cryptoService = cryptoService(CryptoConsts.Categories.FRESH_KEYS)
         val wrappedKeyPair = cryptoService.generateWrappedKeyPair(context)
         cache.save(
             wrappedKeyPair,

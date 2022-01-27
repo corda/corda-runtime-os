@@ -81,7 +81,7 @@ class SigningKeyCacheImpl(
     ) {
         val entity = SigningKeysRecord(
             tenantId,
-            CryptoConsts.CryptoCategories.FRESH_KEYS,
+            CryptoConsts.Categories.FRESH_KEYS,
             null,
             null,
             ByteBuffer.wrap(keyEncoder.encodeAsByteArray(wrappedKeyPair.publicKey)),

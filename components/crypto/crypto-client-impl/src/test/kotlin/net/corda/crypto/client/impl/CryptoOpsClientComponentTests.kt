@@ -151,7 +151,7 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
             )
         }
         val result = sender.act {
-            component.getSupportedSchemes(knownTenantId, CryptoConsts.CryptoCategories.LEDGER)
+            component.getSupportedSchemes(knownTenantId, CryptoConsts.Categories.LEDGER)
         }
         assertNotNull(result.value)
         assertEquals(schemeMetadata.schemes.size, result.value!!.size)
@@ -159,7 +159,7 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
             assertTrue(result.value.contains(it.codeName))
         }
         val query = assertOperationType<SupportedSchemesRpcQuery>(result)
-        assertEquals(CryptoConsts.CryptoCategories.LEDGER, query.category)
+        assertEquals(CryptoConsts.Categories.LEDGER, query.category)
         assertRequestContext(result)
     }
 
@@ -261,7 +261,7 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
         val result = sender.act {
             component.generateKeyPair(
                 tenantId = knownTenantId,
-                category = CryptoConsts.CryptoCategories.LEDGER,
+                category = CryptoConsts.Categories.LEDGER,
                 alias = knownAlias,
                 context = knownOperationContext
             )
@@ -269,7 +269,7 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
         assertNotNull(result.value)
         assertEquals(keyPair.public, result.value)
         val command = assertOperationType<GenerateKeyPairCommand>(result)
-        assertEquals(CryptoConsts.CryptoCategories.LEDGER, command.category)
+        assertEquals(CryptoConsts.Categories.LEDGER, command.category)
         assertEquals(knownAlias, command.alias)
         assertOperationContext(command.context)
         assertRequestContext(result)
@@ -518,13 +518,13 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
         val result = sender.act {
             component.findHSM(
                 tenantId = knownTenantId,
-                category = CryptoConsts.CryptoCategories.LEDGER
+                category = CryptoConsts.Categories.LEDGER
             )
         }
         assertNotNull(result.value)
         assertEquals(expectedValue, result.value)
         val query = assertOperationType<AssignedHSMRpcQuery>(result)
-        assertEquals(CryptoConsts.CryptoCategories.LEDGER, query.category)
+        assertEquals(CryptoConsts.Categories.LEDGER, query.category)
         assertRequestContext(result)
     }
 
@@ -537,12 +537,12 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
         val result = sender.act {
             component.findHSM(
                 tenantId = knownTenantId,
-                category = CryptoConsts.CryptoCategories.LEDGER
+                category = CryptoConsts.Categories.LEDGER
             )
         }
         assertNull(result.value)
         val query = assertOperationType<AssignedHSMRpcQuery>(result)
-        assertEquals(CryptoConsts.CryptoCategories.LEDGER, query.category)
+        assertEquals(CryptoConsts.Categories.LEDGER, query.category)
         assertRequestContext(result)
     }
 

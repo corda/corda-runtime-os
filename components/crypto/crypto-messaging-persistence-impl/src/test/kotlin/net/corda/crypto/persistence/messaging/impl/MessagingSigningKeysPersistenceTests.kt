@@ -70,7 +70,7 @@ class MessagingSigningKeysPersistenceTests {
     fun `Should round trip persist and get signing cache value`() {
         val original = SigningKeysRecord(
             tenantId,
-            CryptoConsts.CryptoCategories.LEDGER,
+            CryptoConsts.Categories.LEDGER,
             alias1,
             Base32.toBase32String((tenantId + alias1).encodeToByteArray().sha256Bytes()).take(30).toLowerCase(),
             ByteBuffer.wrap("Hello World!".toByteArray()),
@@ -110,7 +110,7 @@ class MessagingSigningKeysPersistenceTests {
     fun `Should fetch and cache record from subscription when it's not cached yet`() {
         val original = SigningKeysRecord(
             tenantId,
-            CryptoConsts.CryptoCategories.LEDGER,
+            CryptoConsts.Categories.LEDGER,
             alias1,
             Base32.toBase32String((tenantId + alias1).encodeToByteArray().sha256Bytes()).take(30).toLowerCase(),
             ByteBuffer.wrap("Hello World!".toByteArray()),

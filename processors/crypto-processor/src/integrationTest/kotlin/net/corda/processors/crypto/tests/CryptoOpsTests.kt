@@ -116,10 +116,10 @@ class CryptoOpsTests {
 
     private fun `Should be able to get supported schemes for all categories`() {
         val categories = listOf(
-            CryptoConsts.CryptoCategories.LEDGER,
-            CryptoConsts.CryptoCategories.FRESH_KEYS,
-            CryptoConsts.CryptoCategories.AUTHENTICATION,
-            CryptoConsts.CryptoCategories.TLS
+            CryptoConsts.Categories.LEDGER,
+            CryptoConsts.Categories.FRESH_KEYS,
+            CryptoConsts.Categories.AUTHENTICATION,
+            CryptoConsts.Categories.TLS
         )
         categories.forEach { category ->
             logger.info("category=$category")
@@ -131,7 +131,7 @@ class CryptoOpsTests {
     private fun `Should generate new key pair`(keyAlias: String): PublicKey {
         return client.generateKeyPair(
             tenantId = tenantId,
-            category = CryptoConsts.CryptoCategories.LEDGER,
+            category = CryptoConsts.Categories.LEDGER,
             alias = keyAlias
         )
     }

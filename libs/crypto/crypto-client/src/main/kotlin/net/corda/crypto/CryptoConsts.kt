@@ -9,7 +9,7 @@ object CryptoConsts {
     /**
      * Constants defining most common categories for the signing service.
      */
-    object CryptoCategories {
+    object Categories {
         const val LEDGER = "LEDGER"
         const val FRESH_KEYS = "FRESH_KEYS"
         const val AUTHENTICATION = "AUTHENTICATION"

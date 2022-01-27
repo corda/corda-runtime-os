@@ -20,7 +20,7 @@ class CryptoServiceConfiguredInstance(
     val instance: CryptoService
 ) {
     fun getSupportedSchemes(): List<String> =
-        if(category.equals(CryptoConsts.CryptoCategories.FRESH_KEYS, ignoreCase = true)) {
+        if(category.equals(CryptoConsts.Categories.FRESH_KEYS, ignoreCase = true)) {
             instance.supportedWrappingSchemes()
         } else {
             instance.supportedSchemes()

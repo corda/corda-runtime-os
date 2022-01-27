@@ -49,7 +49,7 @@ class MessagingSigningKeysPersistenceSnapshotTests {
         kafka = KafkaInfrastructure()
         original1 = SigningKeysRecord(
             tenantId,
-            CryptoConsts.CryptoCategories.LEDGER,
+            CryptoConsts.Categories.LEDGER,
             alias1,
             Base32.toBase32String((tenantId + alias1).encodeToByteArray().sha256Bytes()).take(30).toLowerCase(),
             ByteBuffer.wrap(publicKey1),
@@ -62,7 +62,7 @@ class MessagingSigningKeysPersistenceSnapshotTests {
         )
         original2 = SigningKeysRecord(
             tenantId,
-            CryptoConsts.CryptoCategories.LEDGER,
+            CryptoConsts.Categories.LEDGER,
             alias2,
             Base32.toBase32String((tenantId + alias2).encodeToByteArray().sha256Bytes()).take(30).toLowerCase(),
             ByteBuffer.wrap(publicKey2),

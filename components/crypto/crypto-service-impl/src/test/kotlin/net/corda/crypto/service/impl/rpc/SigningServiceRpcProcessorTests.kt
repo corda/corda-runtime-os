@@ -214,7 +214,7 @@ class SigningServiceRpcProcessorTests {
     @Test
     @Timeout(5)
     fun `Should return CryptoNoContentValue for unknown key alias`() {
-        setup(category = CryptoConsts.CryptoCategories.LEDGER)
+        setup(category = CryptoConsts.Categories.LEDGER)
         val alias = newAlias()
         val context = createRequestContext()
         val future = CompletableFuture<RpcOpsResponse>()
@@ -234,7 +234,7 @@ class SigningServiceRpcProcessorTests {
     @Test
     @Timeout(5)
     fun `Should filer my keys`() {
-        setup(category = CryptoConsts.CryptoCategories.LEDGER)
+        setup(category = CryptoConsts.Categories.LEDGER)
         val context = createRequestContext()
         val future = CompletableFuture<RpcOpsResponse>()
         val candidates = listOf<PublicKey>(
@@ -262,7 +262,7 @@ class SigningServiceRpcProcessorTests {
     @Test
     @Timeout(5)
     fun `Should generate key pair and be able to find and then sign using default and custom schemes`() {
-        setup(category = CryptoConsts.CryptoCategories.LEDGER)
+        setup(category = CryptoConsts.Categories.LEDGER)
         val data = UUID.randomUUID().toString().toByteArray()
         val alias = newAlias()
         // generate
@@ -276,7 +276,7 @@ class SigningServiceRpcProcessorTests {
             RpcOpsRequest(
                 context1,
                 GenerateKeyPairCommand(
-                    CryptoConsts.CryptoCategories.LEDGER,
+                    CryptoConsts.Categories.LEDGER,
                     alias,
                     KeyValuePairList(operationContext)
                 )
@@ -318,7 +318,7 @@ class SigningServiceRpcProcessorTests {
     @Test
     @Timeout(5)
     fun `Should generate fresh key pair without external id and be able to sign using default and custom schemes`() {
-        setup(category = CryptoConsts.CryptoCategories.LEDGER)
+        setup(category = CryptoConsts.Categories.LEDGER)
         val data = UUID.randomUUID().toString().toByteArray()
         // generate
         val context1 = createRequestContext()
@@ -357,7 +357,7 @@ class SigningServiceRpcProcessorTests {
     @Test
     @Timeout(5)
     fun `Should generate fresh key pair with external id and be able to sign using default and custom schemes`() {
-        setup(category = CryptoConsts.CryptoCategories.LEDGER)
+        setup(category = CryptoConsts.Categories.LEDGER)
         val data = UUID.randomUUID().toString().toByteArray()
         // generate
         val context1 = createRequestContext()
@@ -397,7 +397,7 @@ class SigningServiceRpcProcessorTests {
     @Test
     @Timeout(5)
     fun `Should complete future exceptionally in case of service failure`() {
-        setup(category = CryptoConsts.CryptoCategories.LEDGER)
+        setup(category = CryptoConsts.Categories.LEDGER)
         val data = UUID.randomUUID().toString().toByteArray()
         val alias = newAlias()
         // generate
@@ -411,7 +411,7 @@ class SigningServiceRpcProcessorTests {
             RpcOpsRequest(
                 context1,
                 GenerateKeyPairCommand(
-                    CryptoConsts.CryptoCategories.LEDGER,
+                    CryptoConsts.Categories.LEDGER,
                     alias,
                     KeyValuePairList(operationContext)
                 )
@@ -458,14 +458,14 @@ class SigningServiceRpcProcessorTests {
     @Test
     @Timeout(5)
     fun `Should complete future exceptionally in case of unknown request`() {
-        setup(category = CryptoConsts.CryptoCategories.LEDGER)
+        setup(category = CryptoConsts.Categories.LEDGER)
         val context = createRequestContext()
         val future = CompletableFuture<RpcOpsResponse>()
         processor.onNext(
             RpcOpsRequest(
                 context,
                 AssignHSMCommand(
-                    CryptoConsts.CryptoCategories.LEDGER,
+                    CryptoConsts.Categories.LEDGER,
                     RSA_CODE_NAME,
                     KeyValuePairList(emptyList())
                 )
@@ -484,14 +484,14 @@ class SigningServiceRpcProcessorTests {
     @Test
     @Timeout(5)
     fun `Should return all supported scheme codes`() {
-        setup(category = CryptoConsts.CryptoCategories.LEDGER)
+        setup(category = CryptoConsts.Categories.LEDGER)
         val context = createRequestContext()
         val future = CompletableFuture<RpcOpsResponse>()
         processor.onNext(
             RpcOpsRequest(
                 context,
                 SupportedSchemesRpcQuery(
-                    CryptoConsts.CryptoCategories.LEDGER
+                    CryptoConsts.Categories.LEDGER
                 )
             ),
             future
@@ -501,7 +501,7 @@ class SigningServiceRpcProcessorTests {
         assertThat(result.response, instanceOf(CryptoSignatureSchemes::class.java))
         val actualSchemes = result.response as CryptoSignatureSchemes
         val expectedSchemes = signingService.getSupportedSchemes(
-            CryptoConsts.CryptoCategories.LEDGER
+            CryptoConsts.Categories.LEDGER
         )
         assertEquals(expectedSchemes.size, actualSchemes.codes.size)
         expectedSchemes.forEach {
@@ -512,14 +512,14 @@ class SigningServiceRpcProcessorTests {
     @Test
     @Timeout(5)
     fun `Should return all supported scheme codes for fresh keys`() {
-        setup(category = CryptoConsts.CryptoCategories.FRESH_KEYS)
+        setup(category = CryptoConsts.Categories.FRESH_KEYS)
         val context = createRequestContext()
         val future = CompletableFuture<RpcOpsResponse>()
         processor.onNext(
             RpcOpsRequest(
                 context,
                 SupportedSchemesRpcQuery(
-                    CryptoConsts.CryptoCategories.FRESH_KEYS
+                    CryptoConsts.Categories.FRESH_KEYS
                 )
             ),
             future
@@ -529,7 +529,7 @@ class SigningServiceRpcProcessorTests {
         assertThat(result.response, instanceOf(CryptoSignatureSchemes::class.java))
         val actualSchemes = result.response as CryptoSignatureSchemes
         val expectedSchemes = signingService.getSupportedSchemes(
-            CryptoConsts.CryptoCategories.LEDGER
+            CryptoConsts.Categories.LEDGER
         )
         assertEquals(expectedSchemes.size, actualSchemes.codes.size)
         expectedSchemes.forEach {

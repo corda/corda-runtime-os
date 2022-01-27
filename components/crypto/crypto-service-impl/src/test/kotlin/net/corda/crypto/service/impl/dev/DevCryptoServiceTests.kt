@@ -78,7 +78,7 @@ class DevCryptoServiceTests {
             cryptoService = devCryptoServiceProvider.getInstance(
                 CryptoServiceContext(
                     memberId = services.tenantId,
-                    category = CryptoConsts.CryptoCategories.LEDGER,
+                    category = CryptoConsts.Categories.LEDGER,
                     cipherSuiteFactory = factory,
                     config = DevCryptoServiceConfig()
                 )
