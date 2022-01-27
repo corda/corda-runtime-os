@@ -42,7 +42,7 @@ class InMemorySessionReplayer(
     )
 
     private val replayScheduler = ReplayScheduler(coordinatorFactory, configurationReaderService,
-        ExponentialBackoffWithMaxReplayCalculatorFactory(), LinkManagerConfiguration.MESSAGE_REPLAY_KEY_PREFIX, ::replayMessage)
+        ExponentialBackoffReplayCalculator(), LinkManagerConfiguration.MESSAGE_REPLAY_KEY_PREFIX, ::replayMessage)
 
     override val dominoTile = DominoTile(
         this::class.java.simpleName,
