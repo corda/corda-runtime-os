@@ -42,7 +42,6 @@ dependencies {
     integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
     integrationTestRuntimeOnly project(":libs:sandbox-hooks")
     integrationTestRuntimeOnly project(":libs:sandbox-internal")
-    integrationTestRuntimeOnly project(":libs:crypto:cipher-suite-impl")
 
     // Gather locations of CPIs to add into `resources`
     cpis project(path: 'test-resources:crypto-custom-digest-one-consumer-cpk', configuration: 'cordaCPB')

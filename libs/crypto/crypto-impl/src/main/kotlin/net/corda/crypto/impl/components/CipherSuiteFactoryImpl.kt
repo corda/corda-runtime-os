@@ -1,12 +1,15 @@
 package net.corda.crypto.impl.components
 
+import net.corda.crypto.DigestAlgorithmFactoryProvider
+import net.corda.crypto.impl.CipherSchemeMetadataImpl
+import net.corda.crypto.impl.DigestServiceImpl
+import net.corda.crypto.impl.DoubleSHA256DigestFactory
+import net.corda.crypto.impl.SignatureVerificationServiceImpl
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.CipherSchemeMetadataProvider
 import net.corda.v5.cipher.suite.CipherSuiteFactory
-import net.corda.v5.cipher.suite.DigestServiceProvider
+import net.corda.v5.cipher.suite.DigestAlgorithmFactory
 import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.cipher.suite.SignatureVerificationServiceProvider
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SignatureVerificationService
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
@@ -23,6 +26,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.ReferenceCardinality
 import org.slf4j.Logger
 
 @Capabilities(
@@ -53,12 +57,8 @@ import org.slf4j.Logger
 )
 @Component(service = [CipherSuiteFactory::class])
 open class CipherSuiteFactoryImpl @Activate constructor(
-    @Reference(service = CipherSchemeMetadataProvider::class)
-    private val schemeMetadataProvider: CipherSchemeMetadataProvider,
-    @Reference(service = SignatureVerificationServiceProvider::class)
-    private val verifierProvider: SignatureVerificationServiceProvider,
-    @Reference(service = DigestServiceProvider::class)
-    private val digestServiceProvider: DigestServiceProvider,
+    @Reference(service = DigestAlgorithmFactoryProvider::class, cardinality = ReferenceCardinality.OPTIONAL)
+    private val customFactoriesProvider: DigestAlgorithmFactoryProvider?,
     context: BundleContext
 ) : CipherSuiteFactory {
     companion object {
@@ -92,15 +92,24 @@ open class CipherSuiteFactoryImpl @Activate constructor(
     }
 
     private val _schemeMap: CipherSchemeMetadata by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        schemeMetadataProvider.getInstance()
+        CipherSchemeMetadataImpl()
     }
 
     private val _verifier: SignatureVerificationService by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        verifierProvider.getInstance(this)
+        SignatureVerificationServiceImpl(
+            schemeMetadata = _schemeMap,
+            hashingService = _digestService
+        )
     }
 
     private val _digestService: DigestService by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        digestServiceProvider.getInstance(this)
+        DigestServiceImpl(
+            schemeMetadata = _schemeMap,
+            customDigestAlgorithmFactories = mutableListOf<DigestAlgorithmFactory>(
+                DoubleSHA256DigestFactory()
+            ),
+            customFactoriesProvider = customFactoriesProvider
+        )
     }
 
     override fun getSchemeMap(): CipherSchemeMetadata {
