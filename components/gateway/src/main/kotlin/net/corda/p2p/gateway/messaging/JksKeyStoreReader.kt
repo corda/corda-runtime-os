@@ -26,14 +26,14 @@ internal class JksKeyStoreReader(
     }
 
     private val publicKeyToPrivateKey by lazy {
-        certificates.aliasToCertificates.mapNotNull { (alias, certificates) ->
+        certificateStore.aliasToCertificates.mapNotNull { (alias, certificates) ->
             certificates.firstOrNull()?.publicKey?.let {
                 it to originalSpi.engineGetKey(alias, password.toCharArray()) as PrivateKey
             }
         }.toMap()
     }
 
-    val certificates by lazy {
+    val certificateStore by lazy {
         object : DelegatedCertificateStore {
             override val aliasToCertificates by lazy {
                 aliasNames.associateWith {

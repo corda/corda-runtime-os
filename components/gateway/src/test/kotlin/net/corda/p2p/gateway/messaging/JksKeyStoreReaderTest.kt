@@ -64,12 +64,12 @@ class JksKeyStoreReaderTest {
     }
 
     @Nested
-    inner class CertificatesTest {
+    inner class CertificateStoreTests {
         @Test
-        fun `certificates return the corect certificates`() {
-            val certificates = testObject.certificates
+        fun `certificateStore return the correct certificates`() {
+            val certificateStore = testObject.certificateStore
 
-            assertThat(certificates.aliasToCertificates)
+            assertThat(certificateStore.aliasToCertificates)
                 .containsEntry(
                     "one", certificatesOne
                 )
@@ -82,41 +82,41 @@ class JksKeyStoreReaderTest {
         }
 
         @Test
-        fun `certificates throws exception if provider can not be found`() {
+        fun `certificateStore throws exception if provider can not be found`() {
             mockSecurity.`when`<Provider> {
                 Security.getProvider("SUN")
             }.doReturn(null)
 
             assertThrows<SecurityException> {
-                testObject.certificates.aliasToCertificates
+                testObject.certificateStore.aliasToCertificates
             }
         }
 
         @Test
-        fun `certificates throws exception if provider has no service`() {
+        fun `certificateStore throws exception if provider has no service`() {
             whenever(provider.getService("KeyStore", "JKS")).doReturn(null)
 
             assertThrows<SecurityException> {
-                testObject.certificates.aliasToCertificates
+                testObject.certificateStore.aliasToCertificates
             }
         }
 
         @Test
-        fun `certificates throws exception if service return wrong instance type`() {
+        fun `certificateStore throws exception if service return wrong instance type`() {
             whenever(provider.getService("KeyStore", "JKS")).doReturn(mock())
 
             assertThrows<SecurityException> {
-                testObject.certificates.aliasToCertificates
+                testObject.certificateStore.aliasToCertificates
             }
         }
 
         @Test
-        fun `certificates load the correct data`() {
+        fun `certificateStore load the correct data`() {
             val data = argumentCaptor<InputStream>()
             val password = argumentCaptor<CharArray>()
             whenever(originalSpi.engineLoad(data.capture(), password.capture())).doAnswer { }
 
-            testObject.certificates.aliasToCertificates
+            testObject.certificateStore.aliasToCertificates
 
             assertThat(data.firstValue.readAllBytes()).isEqualTo("hello".toByteArray())
             assertThat(password.firstValue).isEqualTo("password".toCharArray())

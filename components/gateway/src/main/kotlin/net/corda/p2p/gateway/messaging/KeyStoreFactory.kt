@@ -14,7 +14,7 @@ internal class KeyStoreFactory(
     private val name: String = "Gateway-JKS-Signing-Service-${UUID.randomUUID()}",
     private val installer: DelegatedSignerInstaller = DelegatedSignerInstaller(),
 ) {
-    fun createKeyStore(): KeyStore {
+    fun createDelegatedKeyStore(): KeyStore {
         installer.install(name, signer, certificatesStore)
         return KeyStore.getInstance(name).also {
             it.load(null)

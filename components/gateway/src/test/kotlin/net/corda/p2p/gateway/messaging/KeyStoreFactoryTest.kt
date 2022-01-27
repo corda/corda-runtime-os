@@ -35,20 +35,20 @@ class KeyStoreFactoryTest {
     }
 
     @Test
-    fun `createKeyStore return the key store`() {
-        assertThat(testObject.createKeyStore()).isSameAs(keyStore)
+    fun `createDelegatedKeyStore return the key store`() {
+        assertThat(testObject.createDelegatedKeyStore()).isSameAs(keyStore)
     }
 
     @Test
-    fun `createKeyStore call the installer`() {
-        testObject.createKeyStore()
+    fun `createDelegatedKeyStore call the installer`() {
+        testObject.createDelegatedKeyStore()
 
         verify(installer).install("name", signer, certificateStore)
     }
 
     @Test
-    fun `createKeyStore call load with null`() {
-        testObject.createKeyStore()
+    fun `createDelegatedKeyStore call load with null`() {
+        testObject.createDelegatedKeyStore()
 
         verify(keyStore).load(null)
     }

@@ -52,7 +52,7 @@ class SslConfigurationTest {
         val keyStore = mock<KeyStore>()
         mockConstruction(JksKeyStoreReader::class.java).use {
             mockConstruction(KeyStoreFactory::class.java) { mock, _ ->
-                whenever(mock.createKeyStore()).doReturn(keyStore)
+                whenever(mock.createDelegatedKeyStore()).doReturn(keyStore)
             }.use {
                 assertThat(config.keyStore).isSameAs(keyStore)
             }

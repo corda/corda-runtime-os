@@ -43,8 +43,8 @@ data class SslConfiguration(
     val keyStore: KeyStore by lazy {
         KeyStoreFactory(
             storeReader.signer,
-            storeReader.certificates,
-        ).createKeyStore()
+            storeReader.certificateStore,
+        ).createDelegatedKeyStore()
     }
     /**
      * The trust root key store used to validate the peer certificate
