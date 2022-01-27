@@ -23,6 +23,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import net.corda.httprpc.ResponseCode
+import net.corda.httprpc.exception.UnexpectedErrorException
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
 import net.corda.libs.permissions.manager.response.RoleAssociationResponseDto
@@ -130,7 +131,7 @@ internal class UserEndpointImplTest {
             endpoint.getUser("abc")
         }
         assertEquals(ResponseCode.RESOURCE_NOT_FOUND, e.responseCode, "Resource not found exception should have correct response code.")
-        assertEquals("User abc not found.", e.message)
+        assertEquals("User 'abc' not found.", e.message)
         assertEquals("abc", getUserRequestDtoCapture.firstValue.loginName)
     }
 
@@ -184,10 +185,10 @@ internal class UserEndpointImplTest {
         whenever(permissionManager.addRoleToUser(any())).thenThrow(IllegalArgumentException("Exc"))
 
         endpoint.start()
-        val e = assertThrows<IllegalArgumentException> {
+        val e = assertThrows<UnexpectedErrorException> {
             endpoint.addRole("userLogin1", "roleId1")
         }
-        assertEquals("Exc", e.message)
+        assertEquals("Unexpected permission management error occurred.", e.message)
     }
 
     @Test
@@ -224,9 +225,9 @@ internal class UserEndpointImplTest {
         whenever(permissionManager.removeRoleFromUser(any())).thenThrow(IllegalArgumentException("Exc"))
 
         endpoint.start()
-        val e = assertThrows<IllegalArgumentException> {
+        val e = assertThrows<UnexpectedErrorException> {
             endpoint.removeRole("userLogin1", "roleId1")
         }
-        assertEquals("Exc", e.message)
+        assertEquals("Unexpected permission management error occurred.", e.message)
     }
 }

@@ -12,5 +12,5 @@ open class ResourceNotFoundException(message: String) : HttpApiException(Respons
      * @param resource The resource which could not be found.
      * @param id The ID of the resource.
      */
-    constructor(resource: Any, id: String) : this("$resource $id not found.")
+    constructor(resource: Any, id: String) : this("$resource '$id' not found.")
 }

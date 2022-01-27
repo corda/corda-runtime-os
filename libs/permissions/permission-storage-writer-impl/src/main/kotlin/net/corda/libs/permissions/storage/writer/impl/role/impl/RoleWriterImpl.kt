@@ -104,8 +104,7 @@ class RoleWriterImpl(
                 updateTimestamp = updateTimestamp,
                 actorUser = requestUserId,
                 changeType = RPCPermissionOperation.ADD_PERMISSION_TO_ROLE,
-                details = "Permission '${permission.id}' assigned to Role '${role.id}' by '$requestUserId'. " +
-                        "Created RolePermissionAssociation '${rolePermissionAssociation.id}'."
+                details = "Role '${role.id}' got permission assigned '${permission.id}' by '$requestUserId'."
             )
 
             entityManager.persist(auditLog)
@@ -142,8 +141,7 @@ class RoleWriterImpl(
                 updateTimestamp = updateTimestamp,
                 actorUser = requestUserId,
                 changeType = RPCPermissionOperation.DELETE_PERMISSION_FROM_ROLE,
-                details = "Permission '${request.permissionId} removed from Role '${role.id}' by '$requestUserId'. " +
-                        "Removed RolePermissionAssociation '${rolePermissionAssociation.id}'."
+                details = "Role '${role.id}' got permission removed '${request.permissionId}' by '$requestUserId'."
             )
 
             entityManager.persist(auditLog)

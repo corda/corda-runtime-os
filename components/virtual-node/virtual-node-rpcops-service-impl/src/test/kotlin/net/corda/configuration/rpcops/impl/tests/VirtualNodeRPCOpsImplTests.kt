@@ -24,6 +24,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.util.concurrent.CompletableFuture
+import net.corda.httprpc.ResponseCode
 
 // TODO - Expand these tests to cover success responses once these contain meaningful data.
 /** Tests of [VirtualNodeRPCOpsImpl]. */
@@ -84,7 +85,7 @@ class VirtualNodeRPCOpsImplTests {
         }
 
         assertEquals("ErrorType: ErrorMessage.", e.message)
-        assertEquals(500, e.statusCode)
+        assertEquals(ResponseCode.INTERNAL_SERVER_ERROR, e.responseCode)
     }
 
     @Test
@@ -100,7 +101,7 @@ class VirtualNodeRPCOpsImplTests {
         }
 
         assertEquals("Request was unsuccessful but no exception was provided.", e.message)
-        assertEquals(500, e.statusCode)
+        assertEquals(ResponseCode.INTERNAL_SERVER_ERROR, e.responseCode)
     }
 
     @Test

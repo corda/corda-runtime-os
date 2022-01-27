@@ -18,10 +18,13 @@ import net.corda.libs.permissions.storage.writer.impl.role.RoleWriter
 import net.corda.libs.permissions.storage.writer.impl.user.UserWriter
 import net.corda.v5.base.concurrent.getOrThrow
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -70,7 +73,11 @@ class PermissionStorageWriterProcessorImplTest {
             respFuture = future
         )
 
-        assertThrows<IllegalArgumentException> { future.getOrThrow() }
+        val result = future.getOrThrow()
+        assertFalse(result.success)
+        assertNull(result.response)
+        assertEquals(IllegalArgumentException::class.java.name, result.exception.errorType)
+        assertEquals("Received invalid permission request type.", result.exception.errorMessage)
 
         verify(userWriter, never()).createUser(any(), eq(creatorUserId))
         verify(roleWriter, never()).createRole(any(), eq(creatorUserId))
@@ -102,7 +109,7 @@ class PermissionStorageWriterProcessorImplTest {
     }
 
     @Test
-    fun `receiving CreateUserRequest calls userWriter and catches exception and does not publish and completes future exceptionally`() {
+    fun `create user receives exception and completes future with exception in the response`() {
         whenever(userWriter.createUser(createUserRequest, creatorUserId)).thenThrow(IllegalArgumentException("Entity manager error."))
 
         val future = CompletableFuture<PermissionManagementResponse>()
@@ -116,8 +123,11 @@ class PermissionStorageWriterProcessorImplTest {
 
         verify(permissionStorageReader, times(0)).publishNewUser(any())
 
-        val e = assertThrows<IllegalArgumentException> { future.getOrThrow() }
-        assertEquals("Entity manager error.", e.message)
+        val result = future.getOrThrow()
+        assertFalse(result.success)
+        assertNull(result.response)
+        assertEquals(IllegalArgumentException::class.java.name, result.exception.errorType)
+        assertEquals("Entity manager error.", result.exception.errorMessage)
     }
 
     @Test
@@ -143,7 +153,7 @@ class PermissionStorageWriterProcessorImplTest {
     }
 
     @Test
-    fun `receiving CreateRoleRequest calls roleWriter and catches exception and does not publish and completes future exceptionally`() {
+    fun `create role with exception completes future with exception in response`() {
         whenever(roleWriter.createRole(createRoleRequest, creatorUserId)).thenThrow(IllegalArgumentException("Entity manager error."))
 
         val future = CompletableFuture<PermissionManagementResponse>()
@@ -157,8 +167,11 @@ class PermissionStorageWriterProcessorImplTest {
 
         verify(permissionStorageReader, times(0)).publishNewRole(any())
 
-        val e = assertThrows<IllegalArgumentException> { future.getOrThrow() }
-        assertEquals("Entity manager error.", e.message)
+        val result = future.getOrThrow()
+        assertFalse(result.success)
+        assertNull(result.response)
+        assertEquals(IllegalArgumentException::class.java.name, result.exception.errorType)
+        assertEquals("Entity manager error.", result.exception.errorMessage)
     }
 
     @Test
@@ -176,7 +189,11 @@ class PermissionStorageWriterProcessorImplTest {
             respFuture = future
         )
 
-        val response = future.getOrThrow().response
+        val result = future.getOrThrow()
+        assertTrue(result.success)
+        assertNull(result.exception)
+
+        val response = result.response
         assertTrue(response is AvroPermission)
         (response as? AvroPermission)?.let { permission ->
             assertEquals(avroPermission, permission)
@@ -184,15 +201,13 @@ class PermissionStorageWriterProcessorImplTest {
     }
 
     @Test
-    fun `receiving CreatePermissionRequest calls permissionWriter and completes future exceptionally`() {
+    fun `receiving CreatePermissionRequest calls permissionWriter and completes future with exception in the response`() {
+        val capture = argumentCaptor<PermissionManagementResponse>()
         val message = "Entity manager error."
-        whenever(permissionWriter.createPermission(createPermissionRequest, creatorUserId, null)).thenThrow(
-            IllegalArgumentException(
-                message
-            )
-        )
+        whenever(permissionWriter.createPermission(createPermissionRequest, creatorUserId, null))
+            .thenThrow(IllegalArgumentException(message))
 
-        val future = CompletableFuture<PermissionManagementResponse>()
+        val future = mock<CompletableFuture<PermissionManagementResponse>>()
         processor.onNext(
             request = PermissionManagementRequest().apply {
                 request = createPermissionRequest
@@ -201,12 +216,17 @@ class PermissionStorageWriterProcessorImplTest {
             respFuture = future
         )
 
-        val e = assertThrows<IllegalArgumentException> { future.getOrThrow() }
-        assertEquals(message, e.message)
+        verify(permissionStorageReader, times(0)).publishNewPermission(any())
+        verify(future, times(1)).complete(capture.capture())
+
+        assertFalse(capture.firstValue.success)
+        assertEquals(IllegalArgumentException::class.java.name, capture.firstValue.exception.errorType)
+        assertEquals(message, capture.firstValue.exception.errorMessage)
     }
 
     @Test
     fun `receiving AddRoleToUserRequest calls userWriter and publishes updated user`() {
+        val capture = argumentCaptor<PermissionManagementResponse>()
         val avroUser = AvroUser().apply {
             id = "userId1"
             loginName = "userLogin1"
@@ -215,10 +235,11 @@ class PermissionStorageWriterProcessorImplTest {
         }
 
         val avroRequest = AddRoleToUserRequest("userLogin1", "roleId")
+        val future = mock<CompletableFuture<PermissionManagementResponse>>()
 
         whenever(userWriter.addRoleToUser(avroRequest, creatorUserId)).thenReturn(avroUser)
+        whenever(future.complete(capture.capture())).thenReturn(true)
 
-        val future = CompletableFuture<PermissionManagementResponse>()
         processor.onNext(
             request = PermissionManagementRequest().apply {
                 request = avroRequest
@@ -229,11 +250,9 @@ class PermissionStorageWriterProcessorImplTest {
 
         verify(permissionStorageReader, times(1)).publishUpdatedUser(avroUser)
 
-        val response = future.getOrThrow().response
-        assertTrue(response is AvroUser)
-        (response as? AvroUser)?.let { user ->
-            assertEquals(avroUser, user)
-        }
+        assertTrue(capture.firstValue.success)
+        assertNotNull(capture.firstValue.response)
+        assertEquals(avroUser, capture.firstValue.response)
     }
 
     @Test
@@ -259,7 +278,11 @@ class PermissionStorageWriterProcessorImplTest {
 
         verify(permissionStorageReader, times(1)).publishUpdatedUser(avroUser)
 
-        val response = future.getOrThrow().response
+        val result = future.getOrThrow()
+        assertTrue(result.success)
+        assertNull(result.exception)
+
+        val response = result.response
         assertTrue(response is AvroUser)
         (response as? AvroUser)?.let { user ->
             assertEquals(avroUser, user)

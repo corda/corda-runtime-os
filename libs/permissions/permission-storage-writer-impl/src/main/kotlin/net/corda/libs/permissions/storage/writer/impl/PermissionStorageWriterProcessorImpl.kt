@@ -68,7 +68,7 @@ class PermissionStorageWriterProcessorImpl(
                     permissionStorageReader.publishUpdatedRole(avroRole)
                     avroRole
                 }
-                else -> throw IllegalArgumentException("Received invalid permission request type")
+                else -> throw IllegalArgumentException("Received invalid permission request type.")
             }
             respFuture.complete(PermissionManagementResponse(true, null, response))
         } catch (e: Exception) {

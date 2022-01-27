@@ -98,7 +98,7 @@ internal class RoleEndpointImplTest {
             endpoint.getRole("abc")
         }
         assertEquals(ResponseCode.RESOURCE_NOT_FOUND, e.responseCode, "Resource not found exception should have appropriate response code.")
-        assertEquals("Role abc not found.", e.message)
+        assertEquals("Role 'abc' not found.", e.message)
         assertEquals("abc", getRoleRequestDtoCapture.firstValue.roleId)
     }
 }
