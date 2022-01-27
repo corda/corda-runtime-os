@@ -29,6 +29,7 @@ import net.corda.processors.db.DBProcessor
 import net.corda.processors.db.DBProcessorException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.virtualnode.write.db.VirtualNodeWriteService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -53,7 +54,9 @@ class DBProcessorImpl @Activate constructor(
     @Reference(service = PermissionStorageReaderService::class)
     private val permissionStorageReaderService: PermissionStorageReaderService,
     @Reference(service = PermissionStorageWriterService::class)
-    private val permissionStorageWriterService: PermissionStorageWriterService
+    private val permissionStorageWriterService: PermissionStorageWriterService,
+    @Reference(service = VirtualNodeWriteService::class)
+    private val virtualNodeWriteService: VirtualNodeWriteService
 ) : DBProcessor {
 
     companion object {
@@ -66,7 +69,8 @@ class DBProcessorImpl @Activate constructor(
         ::configurationReadService,
         ::permissionCacheService,
         ::permissionStorageReaderService,
-        ::permissionStorageWriterService
+        ::permissionStorageWriterService,
+        ::virtualNodeWriteService
     )
 
     override fun start(bootConfig: SmartConfig) {

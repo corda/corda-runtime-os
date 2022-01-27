@@ -9,7 +9,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.orm.EntitiesSet
+import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
 import net.corda.permissions.storage.writer.internal.PermissionStorageWriterServiceEventHandler
@@ -37,11 +37,11 @@ class PermissionStorageWriterService @Activate constructor(
 ) : Lifecycle {
 
     @Reference(
-        service = EntitiesSet::class,
+        service = JpaEntitiesSet::class,
         cardinality = ReferenceCardinality.MULTIPLE,
         policy = ReferencePolicy.DYNAMIC
     )
-    private val allEntitiesSets: List<EntitiesSet> = mutableListOf()
+    private val allEntitiesSets: List<JpaEntitiesSet> = mutableListOf()
 
     private val coordinator = coordinatorFactory.createCoordinator<PermissionStorageWriterService>(
         PermissionStorageWriterServiceEventHandler(

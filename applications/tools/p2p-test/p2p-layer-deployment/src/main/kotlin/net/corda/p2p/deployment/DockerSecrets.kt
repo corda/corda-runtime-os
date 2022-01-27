@@ -1,7 +1,6 @@
 package net.corda.p2p.deployment
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import java.lang.System.getenv
 import java.util.Base64
 
 object DockerSecrets {
@@ -47,6 +46,6 @@ object DockerSecrets {
     }
 
     private val auth by lazy {
-        "${getenv("CORDA_ARTIFACTORY_USERNAME")}:${getenv("CORDA_ARTIFACTORY_PASSWORD")}"
+        "${getAndCheckEnv("CORDA_ARTIFACTORY_USERNAME")}:${getAndCheckEnv("CORDA_ARTIFACTORY_PASSWORD")}"
     }
 }
