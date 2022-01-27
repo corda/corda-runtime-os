@@ -2,7 +2,6 @@ package net.corda.p2p.gateway.messaging.http
 
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.Channel
-import io.netty.channel.ChannelFutureListener
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.SocketChannel
@@ -74,11 +73,7 @@ class HttpServer(
         } else {
             logger.debug("Writing HTTP response to channel $channel")
             val response = HttpHelper.createResponse(message, statusCode)
-            val writeFuture = channel.writeAndFlush(response)
-            if (statusCode != HttpResponseStatus.OK) {
-                logger.info("Closing channel...")
-                writeFuture.addListener(ChannelFutureListener.CLOSE)
-            }
+            channel.writeAndFlush(response)
             logger.debug("Done writing HTTP response to channel $channel")
         }
     }
