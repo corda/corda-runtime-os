@@ -67,7 +67,7 @@ internal class VirtualNodeWriterFactoryImpl @Activate constructor(
             VirtualNodeCreationRequest::class.java,
             VirtualNodeCreationResponse::class.java,
         )
-        val processor = VirtualNodeWriterProcessor(publisher)
+        val processor = VirtualNodeWriterProcessor(publisher, CPIRepository())
 
         return try {
             subscriptionFactory.createRPCSubscription(rpcConfig, config, processor)

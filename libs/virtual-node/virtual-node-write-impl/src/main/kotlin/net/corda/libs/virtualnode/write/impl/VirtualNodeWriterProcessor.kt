@@ -1,10 +1,10 @@
 package net.corda.libs.virtualnode.write.impl
 
 import net.corda.data.ExceptionEnvelope
-import net.corda.data.packaging.CPIIdentifier
 import net.corda.data.virtualnode.VirtualNodeCreationRequest
 import net.corda.data.virtualnode.VirtualNodeCreationResponse
 import net.corda.data.virtualnode.VirtualNodeInfo
+import net.corda.libs.virtualnode.write.VirtualNodeWriterException
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -19,9 +19,11 @@ import net.corda.virtualnode.toAvro
  * Kafka.
  *
  * @property publisher Used to publish to Kafka.
+ * @property cpiRepository Temporary stub used for retrieving CPI data and holding identities.
  */
 internal class VirtualNodeWriterProcessor(
-    private val publisher: Publisher
+    private val publisher: Publisher,
+    private val cpiRepository: CPIRepository
 ) : RPCResponderProcessor<VirtualNodeCreationRequest, VirtualNodeCreationResponse> {
 
     /**
@@ -31,14 +33,29 @@ internal class VirtualNodeWriterProcessor(
      * If both steps succeed, [respFuture] is completed successfully. Otherwise, it is completed unsuccessfully.
      */
     override fun onNext(request: VirtualNodeCreationRequest, respFuture: VirtualNodeCreationResponseFuture) {
-        // TODO - Write vnode to database.
-        // TODO - Retrieve CPI from database.
-        // TODO - Wrap retrieving these in functions.
-        // TODO - Handle possible exceptions in flow chart (not-unique holding ID, invalid CPI).
-        val cpi = CPI(CPIIdentifier(), "dummy_mgm_group_id")
-        val holdingId = HoldingIdentity(request.x500Name, cpi.mgmGroupId)
+        val cpiMetadata = cpiRepository.getCPIMetadata(request.cpiIdHash)
+        if (cpiMetadata == null) {
+            val errMsg = "CPI with hash ${request.cpiIdHash} was not found."
+            handleException(respFuture, errMsg, VirtualNodeWriterException::class.java.name, null, null)
+            return
+        }
 
-        val virtualNodeInfo = VirtualNodeInfo(holdingId.toAvro(), cpi.id)
+        val holdingId = HoldingIdentity(request.x500Name, cpiMetadata.mgmGroupId)
+        val storedHoldingId = cpiRepository.getHoldingIdentity(request.cpiIdHash)
+        if (storedHoldingId == null) {
+            cpiRepository.putHoldingIdentity(request.x500Name, cpiMetadata.mgmGroupId)
+        } else {
+            if (storedHoldingId != holdingId) {
+                val errMsg = "New holding identity $holdingId has a short hash that collided with existing holding " +
+                        "identity $storedHoldingId."
+                handleException(respFuture, errMsg, VirtualNodeWriterException::class.java.name, null, null)
+                return
+            }
+        }
+
+        // TODO - Write vnode to database.
+
+        val virtualNodeInfo = VirtualNodeInfo(holdingId.toAvro(), cpiMetadata.id.toAvro())
         val virtualNodeRecord = Record(VIRTUAL_NODE_INFO_TOPIC, virtualNodeInfo.holdingIdentity, virtualNodeInfo)
         val future = publisher.publish(listOf(virtualNodeRecord)).first()
 
@@ -46,12 +63,19 @@ internal class VirtualNodeWriterProcessor(
             future.get()
         } catch (e: Exception) {
             val errMsg = "Record $virtualNodeRecord was written to the database, but couldn't be published. Cause: $e"
-            handleException(respFuture, errMsg, e, request.x500Name, cpi.id, request.cpiIdHash, cpi.mgmGroupId, holdingId, holdingId.id)
+            handleException(respFuture, errMsg, e::class.java.name, cpiMetadata, holdingId)
             return
         }
 
         val response = VirtualNodeCreationResponse(
-            true, null, request.x500Name, cpi.id, request.cpiIdHash, cpi.mgmGroupId, holdingId.toAvro(), holdingId.id
+            true,
+            null,
+            request.x500Name,
+            cpiMetadata.id.toAvro(),
+            request.cpiIdHash,
+            cpiMetadata.mgmGroupId,
+            holdingId.toAvro(),
+            holdingId.id
         )
         respFuture.complete(response)
     }
@@ -61,21 +85,21 @@ internal class VirtualNodeWriterProcessor(
     private fun handleException(
         respFuture: VirtualNodeCreationResponseFuture,
         errMsg: String,
-        cause: Exception,
-        x500Name: String,
-        cpiId: CPIIdentifier,
-        cpiIdHash: String,
-        mgmGroupId: String,
-        holdingId: HoldingIdentity,
-        holdingIdHash: String
+        errClassName: String,
+        cpiMetadata: CPIMetadata?,
+        holdingId: HoldingIdentity?
     ): Boolean {
-        val exception = ExceptionEnvelope(cause.javaClass.name, errMsg)
+        val exception = ExceptionEnvelope(errClassName, errMsg)
         val response = VirtualNodeCreationResponse(
-            false, exception, x500Name, cpiId, cpiIdHash, mgmGroupId, holdingId.toAvro(), holdingIdHash
+            false,
+            exception,
+            holdingId?.x500Name,
+            cpiMetadata?.id?.toAvro(),
+            cpiMetadata?.idShortHash,
+            holdingId?.groupId,
+            holdingId?.toAvro(),
+            holdingId?.id
         )
         return respFuture.complete(response)
     }
 }
-
-// TODO - Joel - Describe.
-private data class CPI(val id: CPIIdentifier, val mgmGroupId: String)

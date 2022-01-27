@@ -64,6 +64,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
 
     override fun createVirtualNode(request: HTTPCreateVirtualNodeRequest): HTTPCreateVirtualNodeResponse {
         val rpcRequest = VirtualNodeCreationRequest("", "")
+        // TODO - Check x500 name is well-formed.
         val response =  sendRequest(rpcRequest)
 
         return if (response.success) {
