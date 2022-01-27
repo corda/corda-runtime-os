@@ -12,9 +12,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import java.security.PrivateKey
-import java.security.Provider
 import java.security.PublicKey
-import java.security.Security
 import java.security.Signature
 
 class JksSignerTest {
