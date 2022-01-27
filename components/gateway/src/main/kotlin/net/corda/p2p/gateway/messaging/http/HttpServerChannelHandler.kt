@@ -14,6 +14,7 @@ import io.netty.handler.codec.http.HttpVersion
 import io.netty.handler.codec.http.LastHttpContent
 import net.corda.p2p.gateway.messaging.http.HttpHelper.Companion.createResponse
 import net.corda.p2p.gateway.messaging.http.HttpHelper.Companion.validate
+import net.corda.v5.base.util.debug
 import org.slf4j.Logger
 import java.lang.IndexOutOfBoundsException
 
@@ -29,11 +30,11 @@ class HttpServerChannelHandler(private val serverListener: HttpServerListener,
     override fun channelRead0(ctx: ChannelHandlerContext, msg: HttpObject) {
         if (msg is HttpRequest) {
             responseCode = msg.validate()
-            logger.debug("Received HTTP request from ${ctx.channel().remoteAddress()}\n" +
+            logger.debug {"Received HTTP request from ${ctx.channel().remoteAddress()}\n" +
                     "Protocol version: ${msg.protocolVersion()}\n" +
                     "Hostname: ${msg.headers()[HttpHeaderNames.HOST]?:"unknown"}\n" +
                     "Request URI: ${msg.uri()}\n" +
-                    "Content length: ${msg.headers()[HttpHeaderNames.CONTENT_LENGTH]}\n")
+                    "Content length: ${msg.headers()[HttpHeaderNames.CONTENT_LENGTH]?:"missing"}\n"}
             // initialise byte array to read the request into
             if (responseCode!! != HttpResponseStatus.LENGTH_REQUIRED) {
                 allocateBodyBuffer(ctx, msg.headers()[HttpHeaderNames.CONTENT_LENGTH].toInt())
