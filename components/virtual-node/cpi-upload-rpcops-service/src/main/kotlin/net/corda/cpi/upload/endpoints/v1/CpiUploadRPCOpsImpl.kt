@@ -11,7 +11,6 @@ import net.corda.messaging.api.subscription.config.RPCConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import kotlin.concurrent.thread
 
 @Component(service = [CpiUploadRPCOpsInternal::class, PluggableRPCOps::class], immediate = true)
 class CpiUploadRPCOpsImpl @Activate constructor(
