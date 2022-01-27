@@ -1,5 +1,6 @@
 package net.corda.membership.staticnetwork
 
+import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.identity.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.identity.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.impl.GroupPolicyExtension.Companion.GROUP_ID
@@ -12,7 +13,10 @@ import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companio
 import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.STATIC_MEMBERS
 import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.STATIC_MGM
 import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.STATIC_NETWORK_TEMPLATE
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.membership.identity.MemberX500Name
+import org.mockito.kotlin.any
+import org.mockito.kotlin.mock
 
 class TestUtils {
     companion object {
@@ -21,6 +25,16 @@ class TestUtils {
 
         private const val TEST_ENDPOINT_PROTOCOL = "1"
         private const val TEST_ENDPOINT_URL = "https://dummyurl.corda5.r3.com:10000"
+
+        private val bootConfig: SmartConfig = mock()
+        private val messagingConfig: SmartConfig = mock {
+            on(it.withFallback(any())).thenReturn(mock())
+        }
+
+        val configs = mapOf(
+            ConfigKeys.BOOT_CONFIG to bootConfig,
+            ConfigKeys.MESSAGING_CONFIG to messagingConfig
+        )
 
         val aliceName = MemberX500Name("Alice", "London", "GB")
         val bobName = MemberX500Name("Bob", "London", "GB")

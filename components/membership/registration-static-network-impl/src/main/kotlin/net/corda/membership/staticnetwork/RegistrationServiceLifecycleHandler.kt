@@ -1,8 +1,7 @@
 package net.corda.membership.staticnetwork
 
-import net.corda.configuration.read.ConfigurationHandler
+import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
@@ -12,8 +11,10 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.Companion.MESSAGING_CONFIG
 
 class RegistrationServiceLifecycleHandler(
@@ -41,11 +42,12 @@ class RegistrationServiceLifecycleHandler(
             is StartEvent -> handleStartEvent(coordinator)
             is StopEvent -> handleStopEvent()
             is RegistrationStatusChangeEvent -> handleRegistrationChangeEvent(event, coordinator)
-            is MessagingConfigurationReceived -> handleConfigChange(event)
+            is ConfigChangedEvent -> handleConfigChange(event, coordinator)
         }
     }
 
     private fun handleStartEvent(coordinator: LifecycleCoordinator) {
+        componentHandle?.close()
         componentHandle = coordinator.followStatusChangesByName(
             setOf(
                 LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
@@ -67,10 +69,11 @@ class RegistrationServiceLifecycleHandler(
     ) {
         when (event.status) {
             LifecycleStatus.UP -> {
-                configHandle = configurationReadService.registerForUpdates(
-                    MessagingConfigurationHandler(coordinator)
+                configHandle?.close()
+                configHandle = configurationReadService.registerComponentForUpdates(
+                    coordinator,
+                    setOf(BOOT_CONFIG, MESSAGING_CONFIG)
                 )
-                coordinator.updateStatus(LifecycleStatus.UP)
             }
             else -> {
                 coordinator.updateStatus(LifecycleStatus.DOWN)
@@ -79,23 +82,16 @@ class RegistrationServiceLifecycleHandler(
         }
     }
 
-    // re-creates the publisher with the new config
-    private fun handleConfigChange(event: MessagingConfigurationReceived) {
+    // re-creates the publisher with the new config, sets the lifecycle status to UP when the publisher is ready for the first time
+    private fun handleConfigChange(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         _publisher?.close()
         _publisher = publisherFactory.createPublisher(
             PublisherConfig("static-member-registration-service"),
-            event.config
+            event.config.toMessagingConfig()
         )
         _publisher?.start()
-    }
-}
-
-class MessagingConfigurationHandler(private val coordinator: LifecycleCoordinator) : ConfigurationHandler {
-    override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
-        if(MESSAGING_CONFIG in changedKeys) {
-            coordinator.postEvent(MessagingConfigurationReceived(config[MESSAGING_CONFIG]!!))
+        if(coordinator.status != LifecycleStatus.UP) {
+            coordinator.updateStatus(LifecycleStatus.UP)
         }
     }
 }
-
-data class MessagingConfigurationReceived(val config: SmartConfig) : LifecycleEvent

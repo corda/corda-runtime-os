@@ -1,5 +1,6 @@
 package net.corda.membership.staticnetwork
 
+import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.CryptoLibraryClientsFactory
 import net.corda.crypto.CryptoLibraryClientsFactoryProvider
@@ -26,6 +27,7 @@ import net.corda.membership.staticnetwork.TestUtils.Companion.DUMMY_GROUP_ID
 import net.corda.membership.staticnetwork.TestUtils.Companion.aliceName
 import net.corda.membership.staticnetwork.TestUtils.Companion.bobName
 import net.corda.membership.staticnetwork.TestUtils.Companion.charlieName
+import net.corda.membership.staticnetwork.TestUtils.Companion.configs
 import net.corda.membership.staticnetwork.TestUtils.Companion.daisyName
 import net.corda.membership.staticnetwork.TestUtils.Companion.groupPolicyWithInvalidStaticNetworkTemplate
 import net.corda.membership.staticnetwork.TestUtils.Companion.groupPolicyWithStaticNetwork
@@ -35,6 +37,7 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.membership.identity.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -152,7 +155,10 @@ class StaticMemberRegistrationServiceTest {
         // clears the list before the test runs as we are using one list for the test cases
         publishedList.clear()
         // kicks off the MessagingConfigurationReceived event to be able to mock the Publisher
-        registrationServiceLifecycleHandler?.processEvent(MessagingConfigurationReceived(mock()), coordinator)
+        registrationServiceLifecycleHandler?.processEvent(
+            ConfigChangedEvent(setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG), configs),
+            coordinator
+        )
     }
 
     @Test

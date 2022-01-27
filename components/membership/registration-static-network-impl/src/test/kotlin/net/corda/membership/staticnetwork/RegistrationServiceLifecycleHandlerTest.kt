@@ -1,5 +1,6 @@
 package net.corda.membership.staticnetwork
 
+import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.CryptoLibraryClientsFactoryProvider
 import net.corda.crypto.CryptoLibraryFactory
@@ -12,8 +13,11 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.staticnetwork.TestUtils.Companion.configs
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.Companion.MESSAGING_CONFIG
 import net.corda.v5.membership.conversion.PropertyConverter
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
@@ -34,7 +38,7 @@ class RegistrationServiceLifecycleHandlerTest {
     private val cryptoLibraryClientsFactoryProvider: CryptoLibraryClientsFactoryProvider = mock()
 
     private val configurationReadService: ConfigurationReadService = mock {
-        on { registerForUpdates(any()) } doReturn configHandle
+        on { registerComponentForUpdates(any(), any()) } doReturn configHandle
     }
 
     private val publisher: Publisher = mock()
@@ -84,7 +88,10 @@ class RegistrationServiceLifecycleHandlerTest {
 
     @Test
     fun `Stop event sets the publisher to null`() {
-        registrationServiceLifecycleHandler.processEvent(MessagingConfigurationReceived(mock()), coordinator)
+        registrationServiceLifecycleHandler.processEvent(
+            ConfigChangedEvent(setOf(BOOT_CONFIG, MESSAGING_CONFIG), configs),
+            coordinator
+        )
         registrationServiceLifecycleHandler.processEvent(StopEvent(), coordinator)
         assertThrows<IllegalArgumentException> { registrationServiceLifecycleHandler.publisher }
 
@@ -111,15 +118,15 @@ class RegistrationServiceLifecycleHandlerTest {
     }
 
     @Test
-    fun `Registration status UP registers for config updates and sets component status to UP`() {
+    fun `Registration status UP registers for config updates`() {
         registrationServiceLifecycleHandler.processEvent(
             RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator
         )
 
-        verify(configurationReadService).registerForUpdates(
-            any<MessagingConfigurationHandler>()
+        verify(configurationReadService).registerComponentForUpdates(
+            any(), any()
         )
-        verify(coordinator).updateStatus(eq(LifecycleStatus.UP), any())
+        verify(coordinator, never()).updateStatus(eq(LifecycleStatus.UP), any())
     }
 
     @Test
@@ -146,8 +153,8 @@ class RegistrationServiceLifecycleHandlerTest {
             RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator
         )
 
-        verify(configurationReadService).registerForUpdates(
-            any<MessagingConfigurationHandler>()
+        verify(configurationReadService).registerComponentForUpdates(
+            any(), any()
         )
 
         registrationServiceLifecycleHandler.processEvent(
@@ -159,7 +166,11 @@ class RegistrationServiceLifecycleHandlerTest {
 
     @Test
     fun `After receiving the messaging configuration the publisher is initialized`() {
-        registrationServiceLifecycleHandler.processEvent(MessagingConfigurationReceived(mock()), coordinator)
+        registrationServiceLifecycleHandler.processEvent(
+            ConfigChangedEvent(setOf(BOOT_CONFIG, MESSAGING_CONFIG), configs),
+            coordinator
+        )
         assertNotNull(registrationServiceLifecycleHandler.publisher)
+        verify(coordinator).updateStatus(LifecycleStatus.UP)
     }
 }
