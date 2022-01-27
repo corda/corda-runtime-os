@@ -93,11 +93,7 @@ internal class ConfigWriterProcessor(
         respFuture.complete(response)
     }
 
-    /**
-     * Completes the [respFuture] with an [ExceptionEnvelope].
-     *
-     * @throws IllegalStateException If the current configuration cannot be read back from the cluster database.
-     */
+    /** Completes the [respFuture] with an [ExceptionEnvelope]. */
     @Suppress("LongParameterList")
     private fun handleException(
         respFuture: ConfigurationManagementResponseFuture,
