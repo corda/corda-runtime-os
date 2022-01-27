@@ -59,5 +59,32 @@
                        schemaName="${schema.name}"/>
         <createSequence sequenceName="config_audit_id_seq"/>
 
+        <!-- db connections -->
+        <createTable tableName="db_connection" schemaName="${schema.name}">
+            <column name="connection_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_ts" type="DATETIME">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_actor" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="privilege" type="VARCHAR(3)">
+                <!-- DDL or DML -->
+                <constraints nullable="false"  />
+            </column>
+            <column name="description" type="VARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="config" type="VARCHAR(255)">
+                <constraints nullable="false"  />
+            </column>
+        </createTable>
+        <addPrimaryKey columnNames="connection_id" constraintName="db_connection_pk" tableName="db_connection"
+                       schemaName="${schema.name}"/>
     </changeSet>
 </databaseChangeLog>
