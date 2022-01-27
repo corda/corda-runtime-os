@@ -17,7 +17,6 @@ import net.corda.permissions.model.RPCPermissionOperation
 import net.corda.permissions.model.Role
 import net.corda.permissions.model.RoleUserAssociation
 import net.corda.permissions.model.User
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
@@ -231,7 +230,10 @@ internal class UserWriterImplTest {
 
         val audit = capture.secondValue as ChangeAudit
         assertEquals(RPCPermissionOperation.ADD_ROLE_TO_USER, audit.changeType)
-        assertThat(audit.details).matches("Role 'role1' assigned to User 'userLogin1' by 'requestUserId'. Created RoleUserAssociation '.*'.")
+        assertEquals(
+            "Role 'role1' assigned to User 'userLogin1' by 'requestUserId'. Created RoleUserAssociation '${persistedAssociation.id}'.",
+            audit.details
+        )
         assertEquals("requestUserId", audit.actorUser)
 
         assertEquals(user.id, avroUser.id)
