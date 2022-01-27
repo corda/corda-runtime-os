@@ -1,14 +1,18 @@
 package net.corda.crypto.impl
 
-import net.corda.crypto.createDevCertificate
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.cipher.suite.schemes.COMPOSITE_KEY_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.SignatureVerificationService
+import org.bouncycastle.asn1.ASN1Sequence
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
+import org.bouncycastle.asn1.x509.Time
+import org.bouncycastle.cert.X509CertificateHolder
+import org.bouncycastle.cert.X509v3CertificateBuilder
 import org.bouncycastle.operator.ContentSigner
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Timeout
@@ -17,9 +21,17 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import java.io.ByteArrayOutputStream
 import java.io.OutputStream
+import java.math.BigInteger
 import java.nio.file.Files
 import java.nio.file.Path
 import java.security.KeyStore
+import java.security.PublicKey
+import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
+import java.time.Duration
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+import java.util.Date
 import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -37,7 +49,7 @@ class KeyEncodingServiceTests {
         @JvmStatic
         @BeforeAll
         fun setup() {
-            schemeMetadata = CipherSchemeMetadataFactory().getInstance()
+            schemeMetadata = CipherSchemeMetadataImpl()
             keyEncoder = schemeMetadata
             val digest = DigestServiceImpl(
                 schemeMetadata,
@@ -226,4 +238,39 @@ class KeyEncodingServiceTests {
     }
 
     private fun newAlias(): String = UUID.randomUUID().toString()
+
+    private fun createDevCertificate(
+        issuer: X500Name,
+        signer: ContentSigner,
+        subject: X500Name,
+        subjectPublicKey: PublicKey
+    ): X509Certificate {
+        val subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(ASN1Sequence.getInstance(subjectPublicKey.encoded))
+        val validityWindow = getValidityWindow(Duration.ZERO, Duration.ofDays(365))
+        val v3CertGen = X509v3CertificateBuilder(
+            issuer,
+            BigInteger.valueOf(System.currentTimeMillis()),
+            Time(validityWindow.first),
+            Time(validityWindow.second),
+            subject,
+            subjectPublicKeyInfo
+        )
+        return v3CertGen.build(signer).toJca()
+    }
+
+    @Suppress("SameParameterValue")
+    private fun getValidityWindow(before: Duration, after: Duration): Pair<Date, Date> {
+        val startOfDayUTC = Instant.now().truncatedTo(ChronoUnit.DAYS)
+        val notBefore = startOfDayUTC - before
+        val notAfter = startOfDayUTC + after
+        return Pair(Date(notBefore.toEpochMilli()), Date(notAfter.toEpochMilli()))
+    }
+
+    private fun X509CertificateHolder.toJca(): X509Certificate =
+        requireNotNull(
+            CertificateFactory.getInstance("X.509").generateCertificate(
+            encoded.inputStream()) as? X509Certificate
+        ) {
+            "Not an X.509 certificate: $this"
+        }
 }

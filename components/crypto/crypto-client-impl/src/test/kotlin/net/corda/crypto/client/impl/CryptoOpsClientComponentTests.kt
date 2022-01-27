@@ -1,7 +1,7 @@
 package net.corda.crypto.client.impl
 
 import net.corda.crypto.CryptoConsts
-import net.corda.crypto.impl.CipherSchemeMetadataFactory
+import net.corda.crypto.impl.CipherSchemeMetadataImpl
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.config.HSMInfo
 import net.corda.data.crypto.wire.CryptoNoContentValue
@@ -78,7 +78,7 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
             knownOperationContext = mapOf(
                 UUID.randomUUID().toString() to UUID.randomUUID().toString()
             )
-            schemeMetadata = CipherSchemeMetadataFactory().getInstance()
+            schemeMetadata = CipherSchemeMetadataImpl()
             sender = mock()
             publisherFactory = mock {
                 on { createRPCSender<RpcOpsRequest, RpcOpsResponse>(any(), any()) } doReturn sender

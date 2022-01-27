@@ -1,7 +1,7 @@
 package net.corda.crypto.service.impl.signing
 
 import net.corda.crypto.CryptoConsts
-import net.corda.crypto.impl.CipherSchemeMetadataFactory
+import net.corda.crypto.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.impl.DigestServiceImpl
 import net.corda.crypto.impl.DoubleSHA256DigestFactory
 import net.corda.crypto.impl.SignatureVerificationServiceImpl
@@ -24,11 +24,8 @@ import java.security.KeyPair
 import java.security.PublicKey
 import java.util.UUID
 
-class CryptoServicesTestFactory(
-    schemeMetadataOverride: CipherSchemeMetadata? = null
-) : CipherSuiteFactory {
-    private val schemeMetadata: CipherSchemeMetadata =
-        schemeMetadataOverride ?: CipherSchemeMetadataFactory().getInstance()
+class CryptoServicesTestFactory : CipherSuiteFactory {
+    private val schemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataImpl()
 
     private val digest: DigestService by lazy {
         DigestServiceImpl(schemeMetadata, listOf(DoubleSHA256DigestFactory()), null)

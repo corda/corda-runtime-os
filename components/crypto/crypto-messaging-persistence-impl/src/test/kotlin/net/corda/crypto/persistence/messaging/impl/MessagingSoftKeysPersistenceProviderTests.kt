@@ -1,7 +1,9 @@
 package net.corda.crypto.persistence.messaging.impl
 
+import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.persistence.CachedSoftKeysRecord
 import net.corda.messaging.api.processor.CompactedProcessor
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.createTestCase
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -34,7 +36,14 @@ class MessagingSoftKeysPersistenceProviderTests : ProviderTestsBase<MessagingSof
     @Test
     @Timeout(30)
     fun `Should return instances using same processor instance until config is changed regardless of tenant`() {
-        coordinator.postEvent(NewConfigurationReceivedEvent(config))
+        coordinator.postEvent(
+            ConfigChangedEvent(
+                setOf(ConfigKeys.CRYPTO_CONFIG),
+                mapOf(
+                    ConfigKeys.CRYPTO_CONFIG to config
+                )
+            )
+        )
         var expectedCount = 1
         assertNotNull(
             provider.getInstance(UUID.randomUUID().toString()) {
@@ -43,7 +52,14 @@ class MessagingSoftKeysPersistenceProviderTests : ProviderTestsBase<MessagingSof
         )
         for (i in 1..100) {
             if(i % 3 == 2) {
-                coordinator.postEvent(NewConfigurationReceivedEvent(config))
+                coordinator.postEvent(
+                    ConfigChangedEvent(
+                        setOf(ConfigKeys.CRYPTO_CONFIG),
+                        mapOf(
+                            ConfigKeys.CRYPTO_CONFIG to config
+                        )
+                    )
+                )
                 expectedCount ++
             }
             assertNotNull(
@@ -66,7 +82,14 @@ class MessagingSoftKeysPersistenceProviderTests : ProviderTestsBase<MessagingSof
     @Test
     @Timeout(30)
     fun `Should concurrently return instances regardless of tenant`() {
-        coordinator.postEvent(NewConfigurationReceivedEvent(config))
+        coordinator.postEvent(
+            ConfigChangedEvent(
+                setOf(ConfigKeys.CRYPTO_CONFIG),
+                mapOf(
+                    ConfigKeys.CRYPTO_CONFIG to config
+                )
+            )
+        )
         assertNotNull(
             provider.getInstance(UUID.randomUUID().toString()) {
                 CachedSoftKeysRecord(tenantId = it.tenantId)

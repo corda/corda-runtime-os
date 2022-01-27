@@ -28,7 +28,7 @@ dependencies {
     implementation project(':components:crypto:crypto-service')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:crypto:crypto-impl')
-    implementation project(':libs:crypto:crypto-internal')
+    implementation project(':libs:crypto:crypto-client')
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(":libs:messaging:messaging")
 
@@ -40,6 +40,6 @@ dependencies {
     integrationTestRuntimeOnly project(":components:configuration:configuration-read-service-impl")
     integrationTestRuntimeOnly project(":components:crypto:crypto-client-impl")
     integrationTestRuntimeOnly project(":components:crypto:crypto-messaging-persistence-impl")
-    integrationTestRuntimeOnly project(":libs:crypto:cipher-suite-providers")
+    integrationTestRuntimeOnly project(":libs:crypto:cipher-suite-impl")
     integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")
 }

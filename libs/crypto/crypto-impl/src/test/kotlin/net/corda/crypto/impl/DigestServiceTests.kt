@@ -36,7 +36,7 @@ class DigestServiceTests {
         @JvmStatic
         @BeforeAll
         fun setup() {
-            schemeMetadata = CipherSchemeMetadataFactory().getInstance()
+            schemeMetadata = CipherSchemeMetadataImpl()
             digestService = DigestServiceImpl(
                 schemeMetadata,
                 listOf(DoubleSHA256DigestFactory()),

@@ -1,8 +1,15 @@
 package net.corda.crypto.impl
 
+import net.corda.crypto.impl.schememetadata.CordaSecureRandomService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.COMPOSITE_KEY_CODE_NAME
+import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_CODE_NAME
+import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
+import net.corda.v5.cipher.suite.schemes.GOST3410_GOST3411_CODE_NAME
+import net.corda.v5.cipher.suite.schemes.RSA_CODE_NAME
+import net.corda.v5.cipher.suite.schemes.SM2_CODE_NAME
+import net.corda.v5.cipher.suite.schemes.SPHINCS256_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.SignatureSpec
@@ -27,7 +34,6 @@ import kotlin.test.assertNotEquals
 
 class CipherSchemeMetadataTests {
     companion object {
-        private lateinit var schemeMetadataFactory: CipherSchemeMetadataFactory
         private lateinit var schemeMetadata: CipherSchemeMetadata
         private lateinit var unknownSignatureSpec: SignatureSpec
         private lateinit var unknownScheme: SignatureScheme
@@ -35,8 +41,7 @@ class CipherSchemeMetadataTests {
         @JvmStatic
         @BeforeAll
         fun setup() {
-            schemeMetadataFactory = CipherSchemeMetadataFactory()
-            schemeMetadata = schemeMetadataFactory.getInstance()
+            schemeMetadata = CipherSchemeMetadataImpl()
             unknownSignatureSpec = SignatureSpec(
                 signatureName = "na",
                 signatureOID = AlgorithmIdentifier(PKCSObjectIdentifiers.RC2_CBC, null)
@@ -107,14 +112,14 @@ class CipherSchemeMetadataTests {
     @Timeout(30)
     fun `Should contain predefined list of signature schemes`() {
         assertEquals(8, schemeMetadata.schemes.size)
-        assertTrue(schemeMetadata.schemes.contains(schemeMetadataFactory.providerMap.RSA_SHA256))
-        assertTrue(schemeMetadata.schemes.contains(schemeMetadataFactory.providerMap.ECDSA_SECP256K1_SHA256))
-        assertTrue(schemeMetadata.schemes.contains(schemeMetadataFactory.providerMap.ECDSA_SECP256R1_SHA256))
-        assertTrue(schemeMetadata.schemes.contains(schemeMetadataFactory.providerMap.EDDSA_ED25519_NONE))
-        assertTrue(schemeMetadata.schemes.contains(schemeMetadataFactory.providerMap.SM2_SM3))
-        assertTrue(schemeMetadata.schemes.contains(schemeMetadataFactory.providerMap.GOST3410_GOST3411))
-        assertTrue(schemeMetadata.schemes.contains(schemeMetadataFactory.providerMap.SPHINCS256_SHA512))
-        assertTrue(schemeMetadata.schemes.contains(schemeMetadataFactory.providerMap.COMPOSITE_KEY))
+        assertTrue(schemeMetadata.schemes.any { it.codeName == RSA_CODE_NAME })
+        assertTrue(schemeMetadata.schemes.any { it.codeName == ECDSA_SECP256K1_CODE_NAME })
+        assertTrue(schemeMetadata.schemes.any { it.codeName == ECDSA_SECP256R1_CODE_NAME })
+        assertTrue(schemeMetadata.schemes.any { it.codeName == EDDSA_ED25519_CODE_NAME })
+        assertTrue(schemeMetadata.schemes.any { it.codeName == SM2_CODE_NAME })
+        assertTrue(schemeMetadata.schemes.any { it.codeName == GOST3410_GOST3411_CODE_NAME })
+        assertTrue(schemeMetadata.schemes.any { it.codeName == SPHINCS256_CODE_NAME })
+        assertTrue(schemeMetadata.schemes.any { it.codeName == COMPOSITE_KEY_CODE_NAME })
     }
 
     @Test

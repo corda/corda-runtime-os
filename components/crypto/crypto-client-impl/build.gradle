@@ -19,7 +19,7 @@ dependencies {
 
     implementation project(":libs:configuration:configuration-core")
     implementation project(':libs:crypto:crypto-impl')
-    implementation project(":libs:crypto:crypto-internal")
+    implementation project(":libs:crypto:crypto-client")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
 

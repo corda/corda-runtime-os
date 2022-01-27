@@ -1,5 +1,6 @@
 package net.corda.crypto.persistence.messaging.impl
 
+import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.persistence.KeyValueMutator
 import net.corda.crypto.persistence.KeyValuePersistence
@@ -93,25 +94,21 @@ class MessagingSoftKeysPersistenceProvider @Activate constructor(
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
                     logger.info("Registering for configuration updates.")
-                    configHandle = configurationReadService.registerForUpdates(::onConfigChange)
+                    configHandle = configurationReadService.registerComponentForUpdates(
+                        lifecycleCoordinator,
+                        setOf(CRYPTO_CONFIG)
+                    )
                 } else {
                     configHandle?.close()
                 }
             }
-            is NewConfigurationReceivedEvent -> {
-                createResources(event.config)
+            is ConfigChangedEvent -> {
+                createResources(event.config.getValue(CRYPTO_CONFIG))
                 setStatusUp()
             }
             else -> {
                 logger.error("Unexpected event $event!")
             }
-        }
-    }
-
-    private fun onConfigChange(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
-        logger.info("Received configuration update event, changedKeys: $changedKeys")
-        if (CRYPTO_CONFIG in changedKeys) {
-            lifecycleCoordinator.postEvent(NewConfigurationReceivedEvent(config[CRYPTO_CONFIG]!!))
         }
     }
 

@@ -21,7 +21,7 @@ dependencies {
     implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
     implementation "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion"
 
-    implementation project(':libs:crypto:crypto-internal')
+    implementation project(':libs:crypto:crypto-client')
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":components:crypto:crypto-persistence")

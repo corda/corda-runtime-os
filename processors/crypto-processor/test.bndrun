@@ -15,7 +15,7 @@
     bnd.identity;id='net.corda.crypto-service-impl',\
     bnd.identity;id='net.corda.crypto-client-impl',\
     bnd.identity;id='net.corda.crypto-messaging-persistence-impl',\
-    bnd.identity;id='net.corda.cipher-suite-providers',\
+    bnd.identity;id='net.corda.cipher-suite-impl',\
     bnd.identity;id='net.corda.configuration-read-service-impl',\
     bnd.identity;id='net.corda.lifecycle-impl',\
     bnd.identity;id='${project.archivesBaseName}-tests',\
@@ -50,14 +50,14 @@
 	net.corda.avro-schema;version='[5.0.0,5.0.1)',\
 	net.corda.base;version='[5.0.0,5.0.1)',\
 	net.corda.cipher-suite;version='[5.0.0,5.0.1)',\
-	net.corda.cipher-suite-providers;version='[5.0.0,5.0.1)',\
+	net.corda.cipher-suite-impl;version='[5.0.0,5.0.1)',\
 	net.corda.configuration-core;version='[5.0.0,5.0.1)',\
 	net.corda.configuration-read-service;version='[5.0.0,5.0.1)',\
 	net.corda.configuration-read-service-impl;version='[5.0.0,5.0.1)',\
 	net.corda.crypto;version='[5.0.0,5.0.1)',\
+	net.corda.crypto-client;version='[5.0.0,5.0.1)',\
 	net.corda.crypto-client-impl;version='[5.0.0,5.0.1)',\
 	net.corda.crypto-impl;version='[5.0.0,5.0.1)',\
-	net.corda.crypto-internal;version='[5.0.0,5.0.1)',\
 	net.corda.crypto-messaging-persistence-impl;version='[5.0.0,5.0.1)',\
 	net.corda.crypto-persistence;version='[5.0.0,5.0.1)',\
 	net.corda.crypto-processor;version='[5.0.0,5.0.1)',\

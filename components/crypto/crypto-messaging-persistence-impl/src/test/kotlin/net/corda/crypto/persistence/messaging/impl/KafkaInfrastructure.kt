@@ -1,6 +1,7 @@
 package net.corda.crypto.persistence.messaging.impl
 
 import com.typesafe.config.ConfigFactory
+import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.persistence.KeyValuePersistence
 import net.corda.libs.configuration.SmartConfigFactory
@@ -26,6 +27,7 @@ import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.TopicService
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
+import net.corda.schema.configuration.ConfigKeys.Companion.CRYPTO_CONFIG
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -99,8 +101,11 @@ class KafkaInfrastructure {
                 )
             )
             coordinator?.postEvent(
-                NewConfigurationReceivedEvent(
-                    SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
+                ConfigChangedEvent(
+                    setOf(CRYPTO_CONFIG),
+                    mapOf(
+                        CRYPTO_CONFIG to SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
+                    )
                 )
             )
         }
@@ -126,8 +131,11 @@ class KafkaInfrastructure {
                 )
             )
             coordinator?.postEvent(
-                NewConfigurationReceivedEvent(
-                    SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
+                ConfigChangedEvent(
+                    setOf(CRYPTO_CONFIG),
+                    mapOf(
+                        CRYPTO_CONFIG to SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
+                    )
                 )
             )
         }

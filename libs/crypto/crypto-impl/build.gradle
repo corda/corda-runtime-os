@@ -24,7 +24,7 @@ dependencies {
     implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
     implementation "org.slf4j:slf4j-api"
 
-    implementation project(":libs:crypto:crypto-internal")
+    implementation project(":libs:crypto:crypto-client")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(':libs:serialization:serialization-internal')
     implementation project(":libs:utilities")

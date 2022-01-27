@@ -1,13 +1,13 @@
 package net.corda.crypto.testkit
 
-import net.corda.crypto.impl.CipherSchemeMetadataFactory
+import net.corda.crypto.impl.CipherSchemeMetadataImpl
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 
 class CryptoMocks(
     schemeMetadataOverride: CipherSchemeMetadata? = null
 ) {
     val schemeMetadata: CipherSchemeMetadata =
-        schemeMetadataOverride ?: CipherSchemeMetadataFactory().getInstance()
+        schemeMetadataOverride ?: CipherSchemeMetadataImpl()
 
     /*
     val persistenceFactoryProvider = InMemoryKeyValuePersistenceFactoryProvider()

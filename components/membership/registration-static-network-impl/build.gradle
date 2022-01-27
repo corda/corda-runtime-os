@@ -19,6 +19,10 @@ dependencies {
     implementation project(":libs:membership:membership-internal")
     implementation project(":libs:messaging:messaging")
     implementation "net.corda:corda-membership-conversion"
+    implementation project(":libs:crypto:crypto-client")
+    implementation "net.corda:corda-cipher-suite"
+    testImplementation project(":libs:crypto:crypto-impl")
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     implementation "net.corda:corda-membership-identity"
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-topic-schema"
