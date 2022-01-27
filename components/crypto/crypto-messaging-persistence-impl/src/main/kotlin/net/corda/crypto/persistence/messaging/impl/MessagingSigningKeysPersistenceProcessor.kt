@@ -2,6 +2,7 @@ package net.corda.crypto.persistence.messaging.impl
 
 import net.corda.crypto.persistence.EntityKeyInfo
 import net.corda.data.crypto.persistence.SigningKeysRecord
+import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -18,7 +19,8 @@ import java.util.concurrent.ConcurrentHashMap
 
 class MessagingSigningKeysPersistenceProcessor(
     subscriptionFactory: SubscriptionFactory,
-    publisherFactory: PublisherFactory
+    publisherFactory: PublisherFactory,
+    messagingConfig: SmartConfig
 ) : CompactedProcessor<String, SigningKeysRecord>, MessagingPersistenceProcessor<SigningKeysRecord> {
     companion object {
         private val logger: Logger = contextLogger()
@@ -29,7 +31,8 @@ class MessagingSigningKeysPersistenceProcessor(
     private var keyMap = ConcurrentHashMap<String, SigningKeysRecord>()
 
     private val pub: Publisher = publisherFactory.createPublisher(
-        PublisherConfig(CLIENT_ID)
+        PublisherConfig(CLIENT_ID),
+        messagingConfig
     )
 
     private val sub: CompactedSubscription<String, SigningKeysRecord> =

@@ -5,7 +5,8 @@ import net.corda.crypto.CryptoOpsClient
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.processors.crypto.CryptoProcessor
-import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.ConfigKeys.Companion.CRYPTO_CONFIG
+import net.corda.schema.configuration.ConfigKeys.Companion.MESSAGING_CONFIG
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.crypto.SignatureSpec
@@ -31,7 +32,24 @@ class CryptoOpsTests {
 
         private val CLIENT_ID = makeClientId<CryptoOpsTests>()
 
-        private const val CRYPTO_CONFIGURATION: String = "{}"
+        private const val CRYPTO_CONFIGURATION: String = ""
+
+        private const val MESSAGING_CONFIGURATION: String =  """
+            componentVersion="5.1"
+            subscription {
+                consumer {
+                    close.timeout = 6000
+                    poll.timeout = 6000
+                    thread.stop.timeout = 6000
+                    processor.retries = 3
+                    subscribe.retries = 3
+                    commit.retries = 3
+                }
+                producer {
+                    close.timeout = 6000
+                }
+            }
+      """
 
         private const val BOOT_CONFIGURATION = """
         instanceId=1
@@ -67,7 +85,8 @@ class CryptoOpsTests {
 
         publisherFactory.publishConfig(
             CLIENT_ID,
-            CRYPTO_CONFIGURATION to ConfigKeys.CRYPTO_CONFIG
+            CRYPTO_CONFIGURATION to CRYPTO_CONFIG,
+            MESSAGING_CONFIGURATION to MESSAGING_CONFIG
         )
 
         processor.start(makeBootstrapConfig(BOOT_CONFIGURATION))

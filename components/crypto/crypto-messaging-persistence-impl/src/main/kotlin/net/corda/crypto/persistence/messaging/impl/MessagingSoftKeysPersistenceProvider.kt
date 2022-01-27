@@ -20,9 +20,12 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.Companion.CRYPTO_CONFIG
+import net.corda.schema.configuration.ConfigKeys.Companion.MESSAGING_CONFIG
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -96,14 +99,14 @@ class MessagingSoftKeysPersistenceProvider @Activate constructor(
                     logger.info("Registering for configuration updates.")
                     configHandle = configurationReadService.registerComponentForUpdates(
                         lifecycleCoordinator,
-                        setOf(CRYPTO_CONFIG)
+                        setOf(CRYPTO_CONFIG, MESSAGING_CONFIG, BOOT_CONFIG)
                     )
                 } else {
                     configHandle?.close()
                 }
             }
             is ConfigChangedEvent -> {
-                createResources(event.config.getValue(CRYPTO_CONFIG))
+                createResources(event)
                 setStatusUp()
             }
             else -> {
@@ -112,9 +115,16 @@ class MessagingSoftKeysPersistenceProvider @Activate constructor(
         }
     }
 
-    private fun createResources(config: SmartConfig) {
+    private fun createResources(event: ConfigChangedEvent) {
+        val messagingConfig = event.config.toMessagingConfig()
+        val config = event.config.getValue(CRYPTO_CONFIG)
         val currentImpl = impl
-        impl = Impl(subscriptionFactory, publisherFactory, config.softPersistence)
+        impl = Impl(
+            subscriptionFactory,
+            publisherFactory,
+            config.softPersistence,
+            messagingConfig
+        )
         currentImpl?.close()
     }
 
@@ -132,11 +142,13 @@ class MessagingSoftKeysPersistenceProvider @Activate constructor(
     private class Impl(
         subscriptionFactory: SubscriptionFactory,
         publisherFactory: PublisherFactory,
-        private val config: CryptoPersistenceConfig
+        private val config: CryptoPersistenceConfig,
+        messagingConfig: SmartConfig
     ) : AutoCloseable {
         private val processor = MessagingSoftKeysPersistenceProcessor(
             subscriptionFactory = subscriptionFactory,
-            publisherFactory = publisherFactory
+            publisherFactory = publisherFactory,
+            messagingConfig = messagingConfig
         )
 
         fun getInstance(

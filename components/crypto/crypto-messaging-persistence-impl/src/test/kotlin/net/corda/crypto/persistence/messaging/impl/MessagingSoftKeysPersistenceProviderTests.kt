@@ -3,7 +3,9 @@ package net.corda.crypto.persistence.messaging.impl
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.persistence.CachedSoftKeysRecord
 import net.corda.messaging.api.processor.CompactedProcessor
-import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.Companion.CRYPTO_CONFIG
+import net.corda.schema.configuration.ConfigKeys.Companion.MESSAGING_CONFIG
 import net.corda.test.util.createTestCase
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -38,9 +40,11 @@ class MessagingSoftKeysPersistenceProviderTests : ProviderTestsBase<MessagingSof
     fun `Should return instances using same processor instance until config is changed regardless of tenant`() {
         coordinator.postEvent(
             ConfigChangedEvent(
-                setOf(ConfigKeys.CRYPTO_CONFIG),
+                setOf(CRYPTO_CONFIG),
                 mapOf(
-                    ConfigKeys.CRYPTO_CONFIG to config
+                    CRYPTO_CONFIG to emptyConfig,
+                    BOOT_CONFIG to emptyConfig,
+                    MESSAGING_CONFIG to emptyConfig
                 )
             )
         )
@@ -54,9 +58,11 @@ class MessagingSoftKeysPersistenceProviderTests : ProviderTestsBase<MessagingSof
             if(i % 3 == 2) {
                 coordinator.postEvent(
                     ConfigChangedEvent(
-                        setOf(ConfigKeys.CRYPTO_CONFIG),
+                        setOf(CRYPTO_CONFIG),
                         mapOf(
-                            ConfigKeys.CRYPTO_CONFIG to config
+                            CRYPTO_CONFIG to emptyConfig,
+                            BOOT_CONFIG to emptyConfig,
+                            MESSAGING_CONFIG to emptyConfig
                         )
                     )
                 )
@@ -84,9 +90,11 @@ class MessagingSoftKeysPersistenceProviderTests : ProviderTestsBase<MessagingSof
     fun `Should concurrently return instances regardless of tenant`() {
         coordinator.postEvent(
             ConfigChangedEvent(
-                setOf(ConfigKeys.CRYPTO_CONFIG),
+                setOf(CRYPTO_CONFIG),
                 mapOf(
-                    ConfigKeys.CRYPTO_CONFIG to config
+                    CRYPTO_CONFIG to emptyConfig,
+                    BOOT_CONFIG to emptyConfig,
+                    MESSAGING_CONFIG to emptyConfig
                 )
             )
         )

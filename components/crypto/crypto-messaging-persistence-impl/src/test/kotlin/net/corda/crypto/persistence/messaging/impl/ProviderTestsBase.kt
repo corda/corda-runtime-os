@@ -29,7 +29,7 @@ abstract class ProviderTestsBase<PROVIDER: Lifecycle> {
     protected lateinit var pub: Publisher
     protected lateinit var subscriptionFactory: SubscriptionFactory
     protected lateinit var publisherFactory: PublisherFactory
-    protected lateinit var config: SmartConfig
+    protected lateinit var emptyConfig: SmartConfig
     private lateinit var registrationHandle: AutoCloseable
     protected lateinit var configurationReadService: ConfigurationReadService
     protected lateinit var coordinator: LifecycleCoordinator
@@ -53,7 +53,7 @@ abstract class ProviderTestsBase<PROVIDER: Lifecycle> {
                 createPublisher(any(), any())
             }.thenReturn(pub)
         }
-        config = SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
+        emptyConfig = SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
         coordinator = mock {
             on { start() } doAnswer {
                 coordinatorIsRunning = true
