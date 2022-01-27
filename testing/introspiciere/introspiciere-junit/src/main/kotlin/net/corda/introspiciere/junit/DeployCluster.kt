@@ -1,7 +1,12 @@
 package net.corda.introspiciere.junit
 
 import net.corda.introspiciere.http.HelloWorldReq
-import org.junit.jupiter.api.extension.*
+import net.corda.introspiciere.http.IdentitiesRequester
+import org.junit.jupiter.api.extension.AfterAllCallback
+import org.junit.jupiter.api.extension.AfterEachCallback
+import org.junit.jupiter.api.extension.BeforeAllCallback
+import org.junit.jupiter.api.extension.BeforeEachCallback
+import org.junit.jupiter.api.extension.ExtensionContext
 import java.io.File
 import java.util.*
 
@@ -9,8 +14,13 @@ class DeployCluster(
     private val name: String,
 ) : BeforeAllCallback, BeforeEachCallback, AfterEachCallback, AfterAllCallback {
 
+    private val introspiciereEndpoint = "http://localhost:7070"
     fun helloworld(): String {
-        return HelloWorldReq("http://localhost:7070").greetings()
+        return HelloWorldReq(introspiciereEndpoint).greetings()
+    }
+
+    fun createKeyAndAddIdentity(alias: String, algorithm: String) {
+        IdentitiesRequester(introspiciereEndpoint).createKeyAndAddIdentity(alias, algorithm)
     }
 
     override fun beforeAll(context: ExtensionContext?) {
@@ -33,7 +43,7 @@ class DeployCluster(
 
     private fun delete() {
         if (::portForwarding.isInitialized) portForwarding.destroy()
-        exec("kubectl delete namespace $name")
+        exec("kubectl delete namespace $name --wait=false")
     }
 
     private fun deploy() {
@@ -54,7 +64,8 @@ class DeployCluster(
                 }
             } 
         """.trimIndent())
-        exec("kubectl create secret generic test-docker-registry-cred --from-file=.dockerconfigjson=auths.json --type=kubernetes.io/dockerconfigjson -n $name")
+        exec("kubectl create secret generic test-docker-registry-cred " +
+                "--from-file=.dockerconfigjson=auths.json --type=kubernetes.io/dockerconfigjson -n $name")
         authsJson.delete()
 
         exec("corda-cli cluster configure k8s $name")

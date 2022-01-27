@@ -8,19 +8,25 @@ dependencies {
     implementation "io.javalin:javalin:4.3.0"
     implementation "org.slf4j:slf4j-simple:$slf4jVersion"
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 
     implementation project(':testing:introspiciere:introspiciere-core')
 }
 
 jar {
     // not sure why the dependency is not building automatically
-    dependsOn ':testing:introspiciere:introspiciere-core:build'
+//    dependsOn ':testing:introspiciere:introspiciere-core:build'
 
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
     manifest {
         attributes "Main-Class": "net.corda.introspiciere.server.MainKt"
     }
+
+    exclude 'META-INF/*.EC'
+    exclude 'META-INF/*.SF'
+    exclude 'META-INF/*.DSA'
+    exclude 'META-INF/*.RSA'
 
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }

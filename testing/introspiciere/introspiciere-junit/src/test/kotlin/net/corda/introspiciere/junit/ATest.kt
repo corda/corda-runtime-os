@@ -10,6 +10,8 @@ internal class ATest {
     @Test
     fun first() {
         println(hostA.helloworld())
+        // failing
+        // hostA.createKeyAndAddIdentity("alice", "ECDSA")
     }
 }
 

@@ -7,7 +7,7 @@
 cd testing/introspiciere/introspiciere-server
 
 # compile
-../../../gradlew build -x test 
+../../../gradlew jar -x test 
 
 # build image and add it to minikube image repository
 minikube start                  # if not done yet

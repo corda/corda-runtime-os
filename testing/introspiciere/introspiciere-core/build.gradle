@@ -6,6 +6,7 @@ description "Introspiciere core"
 
 dependencies {
     implementation "net.corda:corda-avro-schema:$cordaApiVersion"
+    implementation "net.corda:corda-topic-schema:$cordaApiVersion"
     implementation project(":libs:messaging:kafka-message-bus-impl")
     implementation project(":libs:schema-registry:schema-registry")
     implementation project(":libs:schema-registry:schema-registry-impl")
