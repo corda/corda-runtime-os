@@ -23,26 +23,13 @@ class JksSignerTest {
     }
     private val mockSignature = mockStatic(Signature::class.java).also {
         it.`when`<Signature> {
-            Signature.getInstance(any(), any<Provider>())
+            Signature.getInstance(any(), any<String>())
         }.doReturn(signature)
-    }
-    private val rsaSignatureProvider = mock<Provider>()
-
-    private val ecSignatureProvider = mock<Provider>()
-
-    private val mockSecurity = mockStatic(Security::class.java).also {
-        it.`when`<Provider> {
-            Security.getProvider("SunEC")
-        }.doReturn(ecSignatureProvider)
-        it.`when`<Provider> {
-            Security.getProvider("SunRsaSign")
-        }.doReturn(rsaSignatureProvider)
     }
 
     @AfterEach
     fun cleanUp() {
         mockSignature.close()
-        mockSecurity.close()
     }
     private val privateKey = mock<PrivateKey>()
     private val rsaPublicKey = mock<PublicKey> {
@@ -83,19 +70,6 @@ class JksSignerTest {
             verify(signature).setParameter(hash.rsaParameter)
             verify(signature).update(data)
         }
-
-        @Test
-        fun `rsa sign with hash that has no provider will throw an exception`() {
-            mockSecurity.`when`<Provider?> {
-                Security.getProvider(any())
-            }.doReturn(null)
-            val data = "data".toByteArray()
-            val hash = DelegatedSigner.Hash.SHA512
-
-            assertThrows<SecurityException> {
-                testObject.sign(rsaPublicKey, hash, data)
-            }
-        }
     }
 
     @Nested
@@ -119,19 +93,6 @@ class JksSignerTest {
 
             verify(signature).initSign(privateKey)
             verify(signature).update(data)
-        }
-
-        @Test
-        fun `ec sign with hash that has no provider will throw an exception`() {
-            mockSecurity.`when`<Provider?> {
-                Security.getProvider(any())
-            }.doReturn(null)
-            val data = "data".toByteArray()
-            val hash = DelegatedSigner.Hash.SHA512
-
-            assertThrows<SecurityException> {
-                testObject.sign(ecPublicKey, hash, data)
-            }
         }
     }
 

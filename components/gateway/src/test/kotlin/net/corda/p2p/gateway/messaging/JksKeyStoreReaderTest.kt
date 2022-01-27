@@ -4,7 +4,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mockConstruction
 import org.mockito.Mockito.mockStatic
 import org.mockito.kotlin.argumentCaptor
@@ -13,11 +12,9 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.io.InputStream
-import java.security.KeyStoreSpi
+import java.security.KeyStore
 import java.security.PrivateKey
-import java.security.Provider
 import java.security.PublicKey
-import java.security.Security
 import java.security.cert.Certificate
 import java.util.Collections
 
@@ -31,8 +28,8 @@ class JksKeyStoreReaderTest {
     private val certificatesThree = (1..4).map {
         mock<Certificate>()
     }
-    private val originalSpi = mock<KeyStoreSpi> {
-        on { engineAliases() } doReturn Collections.enumeration(
+    private val originalKeystore = mock<KeyStore> {
+        on { aliases() } doReturn Collections.enumeration(
             listOf(
                 "one",
                 "two",
@@ -40,27 +37,21 @@ class JksKeyStoreReaderTest {
                 "four",
             )
         )
-        on { engineGetCertificateChain("one") } doReturn certificatesOne.toTypedArray()
-        on { engineGetCertificateChain("two") } doReturn certificatesTwo.toTypedArray()
-        on { engineGetCertificateChain("three") } doReturn certificatesThree.toTypedArray()
-        on { engineGetCertificateChain("four") } doReturn emptyArray()
+        on { getCertificateChain("one") } doReturn certificatesOne.toTypedArray()
+        on { getCertificateChain("two") } doReturn certificatesTwo.toTypedArray()
+        on { getCertificateChain("three") } doReturn certificatesThree.toTypedArray()
+        on { getCertificateChain("four") } doReturn emptyArray()
     }
-    private val service = mock<Provider.Service> {
-        on { newInstance(null) } doReturn originalSpi
-    }
-    private val provider = mock<Provider> {
-        on { getService("KeyStore", "JKS") } doReturn service
-    }
-    private val mockSecurity = mockStatic(Security::class.java).also { mockSecurity ->
-        mockSecurity.`when`<Provider> {
-            Security.getProvider("SUN")
-        }.doReturn(provider)
+    private val mockKeyStore = mockStatic(KeyStore::class.java).also { mockSecurity ->
+        mockSecurity.`when`<KeyStore> {
+            KeyStore.getInstance("JKS")
+        }.doReturn(originalKeystore)
     }
     private val testObject = JksKeyStoreReader("hello".toByteArray(), "password")
 
     @AfterEach
     fun cleanUp() {
-        mockSecurity.close()
+        mockKeyStore.close()
     }
 
     @Nested
@@ -82,39 +73,10 @@ class JksKeyStoreReaderTest {
         }
 
         @Test
-        fun `certificateStore throws exception if provider can not be found`() {
-            mockSecurity.`when`<Provider> {
-                Security.getProvider("SUN")
-            }.doReturn(null)
-
-            assertThrows<SecurityException> {
-                testObject.certificateStore.aliasToCertificates
-            }
-        }
-
-        @Test
-        fun `certificateStore throws exception if provider has no service`() {
-            whenever(provider.getService("KeyStore", "JKS")).doReturn(null)
-
-            assertThrows<SecurityException> {
-                testObject.certificateStore.aliasToCertificates
-            }
-        }
-
-        @Test
-        fun `certificateStore throws exception if service return wrong instance type`() {
-            whenever(provider.getService("KeyStore", "JKS")).doReturn(mock())
-
-            assertThrows<SecurityException> {
-                testObject.certificateStore.aliasToCertificates
-            }
-        }
-
-        @Test
         fun `certificateStore load the correct data`() {
             val data = argumentCaptor<InputStream>()
             val password = argumentCaptor<CharArray>()
-            whenever(originalSpi.engineLoad(data.capture(), password.capture())).doAnswer { }
+            whenever(originalKeystore.load(data.capture(), password.capture())).doAnswer { }
 
             testObject.certificateStore.aliasToCertificates
 
@@ -137,8 +99,8 @@ class JksKeyStoreReaderTest {
             val lastPrivateKey = mock<PrivateKey>()
             whenever(certificatesOne.first().publicKey).doReturn(firstPublicKey)
             whenever(certificatesThree.first().publicKey).doReturn(lastPublicKey)
-            whenever(originalSpi.engineGetKey("one", "password".toCharArray())).doReturn(firstPrivateKey)
-            whenever(originalSpi.engineGetKey("three", "password".toCharArray())).doReturn(lastPrivateKey)
+            whenever(originalKeystore.getKey("one", "password".toCharArray())).doReturn(firstPrivateKey)
+            whenever(originalKeystore.getKey("three", "password".toCharArray())).doReturn(lastPrivateKey)
 
             var arguments: Map<PublicKey, PrivateKey>? = null
             mockConstruction(JksSigner::class.java) { _, context ->

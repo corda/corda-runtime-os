@@ -4,20 +4,11 @@ import net.corda.crypto.delegated.signing.DelegatedSigner
 import net.corda.crypto.delegated.signing.DelegatedSignerInstaller
 import java.security.PrivateKey
 import java.security.PublicKey
-import java.security.Security
 import java.security.Signature
 
 internal class JksSigner(
     private val publicKeyToPrivateKey: Map<PublicKey, PrivateKey>
 ) : DelegatedSigner {
-    private val ecSignatureProvider by lazy {
-        Security.getProvider("SunEC") ?: throw SecurityException("Provider: SunEC not installed")
-    }
-
-    private val rsaSignatureProvider by lazy {
-        Security.getProvider("SunRsaSign") ?: throw SecurityException("Provider: SunRsaSign not installed")
-    }
-
     private fun signEc(
         privateKey: PrivateKey,
         hash: DelegatedSigner.Hash,
@@ -25,7 +16,7 @@ internal class JksSigner(
     ): ByteArray {
         val signature = Signature.getInstance(
             hash.ecName,
-            ecSignatureProvider
+            "SunEC"
         )
         signature.initSign(privateKey)
         signature.update(data)
@@ -39,7 +30,7 @@ internal class JksSigner(
     ): ByteArray {
         val signature = Signature.getInstance(
             DelegatedSignerInstaller.RSA_SIGNING_ALGORITHM,
-            rsaSignatureProvider
+            "SunRsaSign"
         )
         val parameter = hash.rsaParameter
         signature.initSign(privateKey)
