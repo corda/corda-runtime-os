@@ -1,27 +1,24 @@
 package net.corda.applications.flowworker.setup
 
-import net.corda.applications.flowworker.setup.helper.getHelloWorldRPCEventRecord
+import com.typesafe.config.ConfigFactory
+import net.corda.applications.flowworker.setup.helper.getHelloWorldRPCEventRecords
 import net.corda.applications.flowworker.setup.helper.getHelloWorldScheduleCleanupEvent
-import net.corda.comp.kafka.config.write.KafkaConfigWrite
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
-import net.corda.components.examples.publisher.CommonPublisher
+import net.corda.configuration.publish.ConfigPublishService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
-import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationHandle
-import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.publisher.Publisher
+import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
-import net.corda.tools.setup.common.ConfigHelper
 import net.corda.tools.setup.common.ConfigHelper.Companion.SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH
 import net.corda.tools.setup.common.ConfigHelper.Companion.getBootstrapConfig
 import net.corda.tools.setup.common.ConfigHelper.Companion.getConfigValue
@@ -35,7 +32,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.File
-import java.util.*
+import java.util.Properties
 
 @Suppress("LongParameterList")
 @Component
@@ -46,12 +43,10 @@ class FlowWorkerSetup @Activate constructor(
     private val shutDownService: Shutdown,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = KafkaConfigWrite::class)
-    private var configWriter: KafkaConfigWrite,
+    @Reference(service = ConfigPublishService::class)
+    private var configPublish: ConfigPublishService,
     @Reference(service = KafkaTopicAdmin::class)
-    private var kafkaTopicAdmin: KafkaTopicAdmin,
-    @Reference(service = SmartConfigFactory::class)
-    private val smartConfigFactory: SmartConfigFactory
+    private var kafkaTopicAdmin: KafkaTopicAdmin
 ) : Application {
 
     private companion object {
@@ -59,14 +54,14 @@ class FlowWorkerSetup @Activate constructor(
         val consoleLogger: Logger = LoggerFactory.getLogger("Console")
     }
 
-    private var lifeCycleCoordinator: LifecycleCoordinator = coordinatorFactory.createCoordinator<FlowWorkerSetup>(::eventHandler)
+    private var lifeCycleCoordinator: LifecycleCoordinator =
+        coordinatorFactory.createCoordinator<FlowWorkerSetup>(::eventHandler)
 
-    private var registration: RegistrationHandle? = null
-    private var publisher: CommonPublisher? = null
+    private var publisher: Publisher? = null
     private var instanceId: Int? = null
-    private var configurationFile : File? = null
-    private var topicTemplate : File? = null
-    private var bootstrapConfig : SmartConfig? = null
+    private var configurationFile: File? = null
+    private var topicTemplate: File? = null
+    private var bootstrapConfig: SmartConfig? = null
     private var scheduleCleanup = false
 
 
@@ -80,7 +75,9 @@ class FlowWorkerSetup @Activate constructor(
         configurationFile = parameters.defaultParams.configurationFile
         topicTemplate = parameters.defaultParams.topicTemplate
         scheduleCleanup = parameters.scheduleCleanup
-        bootstrapConfig =  smartConfigFactory.create(getBootstrapConfig(instanceId))
+        // TODO - pick up secrets params from startup
+        val secretsConfig = ConfigFactory.empty()
+        bootstrapConfig = SmartConfigFactory.create(secretsConfig).create(getBootstrapConfig(instanceId))
 
         lifeCycleCoordinator.start()
     }
@@ -97,10 +94,10 @@ class FlowWorkerSetup @Activate constructor(
                 coordinator.postEvent(ConfigWritten())
             }
             is ConfigWritten -> {
-                setupPublisher(coordinator)
+                setupPublisher()
             }
-            is RegistrationStatusChangeEvent -> {
-                handleRegistrationChange(event)
+            is PublisherBuilt -> {
+                publishEvents()
             }
             is StopEvent -> {
                 publisher?.close()
@@ -111,29 +108,24 @@ class FlowWorkerSetup @Activate constructor(
         }
     }
 
-    private fun handleRegistrationChange(event: RegistrationStatusChangeEvent) {
-        if (event.status == LifecycleStatus.UP) {
-            consoleLogger.info("Publishing RPCRecord")
-            if (!scheduleCleanup) {
-                publisher?.publishRecords(listOf(getHelloWorldRPCEventRecord()))?.forEach { it.get() }
-            } else {
-                publisher?.publishRecords(listOf(getHelloWorldScheduleCleanupEvent()))?.forEach { it.get() }
-            }
-            consoleLogger.info("Published RPCRecord")
-            shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
+    private fun publishEvents() {
+        consoleLogger.info("Publishing RPCRecord")
+        if (!scheduleCleanup) {
+            publisher?.publish(getHelloWorldRPCEventRecords())?.forEach { it.get() }
         } else {
-            publisher?.close()
+            publisher?.publish(listOf(getHelloWorldScheduleCleanupEvent()))?.forEach { it.get() }
         }
+        consoleLogger.info("Published RPCRecord")
+        shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
     }
 
-    private fun setupPublisher(coordinator: LifecycleCoordinator) {
+    private fun setupPublisher() {
         consoleLogger.info("Creating publisher")
         val config = bootstrapConfig ?: throw CordaRuntimeException("BootstrapConfig is null")
-        publisher = CommonPublisher(coordinatorFactory, publisherFactory, instanceId, config)
-        registration =
-            coordinator.followStatusChangesByName(setOf(LifecycleCoordinatorName.forComponent<CommonPublisher>()))
+        publisher = publisherFactory.createPublisher(PublisherConfig("flow-setup-publisher", instanceId), config)
         publisher?.start()
         consoleLogger.info("Publisher created")
+        lifeCycleCoordinator.postEvent(PublisherBuilt())
     }
 
     private fun writeConfig(configurationFile: File?) {
@@ -141,8 +133,8 @@ class FlowWorkerSetup @Activate constructor(
         if (configurationFile != null) {
             log.info("Writing config to topic")
             consoleLogger.info("Writing config")
-            configWriter.updateConfig(
-                getConfigValue(ConfigHelper.SYSTEM_ENV_CONFIG_TOPIC_PATH, CONFIG_TOPIC),
+            configPublish.updateConfig(
+                CONFIG_TOPIC,
                 config,
                 configurationFile.readText()
             )
@@ -163,7 +155,8 @@ class FlowWorkerSetup @Activate constructor(
 
     private fun getKafkaProperties(): Properties {
         val kafkaProperties = Properties()
-        kafkaProperties[SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH] = getConfigValue(SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH, "localhost:9092")
+        kafkaProperties[SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH] =
+            getConfigValue(SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH, "localhost:9092")
         return kafkaProperties
     }
 

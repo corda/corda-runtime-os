@@ -3,6 +3,7 @@ package net.corda.p2p.deployment.commands
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import net.corda.p2p.deployment.pods.InfrastructureDetails
+import net.corda.p2p.deployment.pods.LbType
 import net.corda.p2p.deployment.pods.Namespace
 import net.corda.p2p.deployment.pods.NamespaceIdentifier
 import net.corda.p2p.deployment.pods.P2PDeploymentDetails
@@ -28,6 +29,7 @@ class Deploy : Runnable {
         description = ["Number of Gateways in the cluster"]
     )
     private var gatewayCount = 2
+
     @Option(
         names = ["-l", "--link-manager-count"],
         description = ["Number of Link Managers in the cluster"]
@@ -93,7 +95,7 @@ class Deploy : Runnable {
         names = ["-t", "--tag"],
         description = ["The docker name of the tag to pull"]
     )
-    private var tag = "5.0.0.0-beta-1639131609697"
+    private var tag = "5.0.0.0-beta-1642413090363"
 
     @Option(
         names = ["--lm-conf", "--link-manager-config"],
@@ -155,6 +157,12 @@ class Deploy : Runnable {
         1.0
     }
 
+    @Option(
+        names = ["--load-balancer-type"],
+        description = ["The load balancer type (\${COMPLETION-CANDIDATES})"]
+    )
+    private var lbType: LbType = LbType.NGINX
+
     override fun run() {
         val namespace = Namespace(
             NamespaceIdentifier(
@@ -171,7 +179,8 @@ class Deploy : Runnable {
                 ResourceRequest(
                     p2pMemory,
                     p2pCpu,
-                )
+                ),
+                lbType,
             ),
             InfrastructureDetails(
                 kafkaBrokerCount,

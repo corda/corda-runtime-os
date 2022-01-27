@@ -3,12 +3,14 @@ package net.corda.sandbox.service.tests
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.config.Configuration
 import net.corda.install.InstallService
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.packaging.CPI
+import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.records.Record
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxException
-import net.corda.sandbox.SandboxGroup
 import net.corda.sandbox.service.SandboxService
 import net.corda.sandbox.service.tests.Constants.CPB_ONE
 import net.corda.sandbox.service.tests.Constants.CPB_THREE
@@ -17,22 +19,26 @@ import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.getUniqueObject
 import net.corda.sandboxgroupcontext.putUniqueObject
+import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
+import net.corda.test.util.eventually
+import net.corda.v5.base.util.seconds
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.service.cm.ConfigurationAdmin
-import org.osgi.service.component.runtime.ServiceComponentRuntime
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 /**
  * These tests probably need deleting when we switch to a different implementation
@@ -65,7 +71,7 @@ class FileBasedInstallServiceTests {
         lateinit var configurationReadService: ConfigurationReadService
 
         @InjectService
-        lateinit var smartConfigFactory: SmartConfigFactory
+        lateinit var publisherFactory: PublisherFactory
 
         @JvmStatic
         @BeforeAll
@@ -79,14 +85,12 @@ class FileBasedInstallServiceTests {
                 config.update(properties)
             }
 
-            val configFile = Files.createTempFile(testDirectory, "testConfiguration", ".json")
-            Files.newBufferedWriter(configFile).use {
-                it.write(
-                    ConfigFactory.parseMap(
-                        mapOf("corda" to mapOf("cpi" to mapOf("cacheDir" to cacheDir.toString())))
-                    ).root().render(ConfigRenderOptions.concise())
-                )
-            }
+            val publisher = publisherFactory.createPublisher(PublisherConfig("foo"))
+            val config = ConfigFactory.parseMap(mapOf("cacheDir" to cacheDir.toString())).root().render(
+                ConfigRenderOptions.concise()
+            )
+            val avroConfig = Configuration(config, "1")
+            publisher.publish(listOf(Record(CONFIG_TOPIC, "corda.cpi", avroConfig)))
 
             service = IntegrationTestService(sandboxCreationService, testDirectory)
 
@@ -96,12 +100,6 @@ class FileBasedInstallServiceTests {
             service.copyCPIFromResource(CPB_TWO, cacheDir)
             service.copyCPIFromResource(CPB_THREE, cacheDir)
 
-            // We need to tell the file-backed install service via the config
-            // service where to find the above folder.  Unfortunately we seem to have to
-            // do this via an intermediate file in the 'bootstrap config' rather than in the
-            // config itself.
-            val cfg = ConfigFactory.parseMap(mapOf("config.file" to configFile.toAbsolutePath().toString()))
-
             configurationReadService.start()
 
             var ready = false
@@ -109,12 +107,13 @@ class FileBasedInstallServiceTests {
             installService.registerForUpdates { _, _ -> ready = true }
             installService.start()
 
-            configurationReadService.bootstrapConfig(smartConfigFactory.create(cfg))
+            val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
+            configurationReadService.bootstrapConfig(smartConfigFactory.create(ConfigFactory.empty()))
 
             // wait until install service is 'ready' and has called us back with the
             // 'installed' cpi/cpbs.
-            while (!ready) {
-                Thread.sleep(100)
+            eventually(duration = 10.seconds) {
+                assertThat(ready).isTrue
             }
 
             sandboxService.start()
@@ -144,6 +143,7 @@ class FileBasedInstallServiceTests {
      * behaviour for now.
      */
     @Test
+    @Timeout(value = 10, unit = TimeUnit.SECONDS)
     fun `run flows using sandboxgroupcontext and install service`() {
         // Run flow 1 in cpb 1
         val sandboxGroupCtx1 = useSandboxService(CPB_ONE)

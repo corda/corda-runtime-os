@@ -13,6 +13,7 @@ dependencies {
     implementation project(':libs:configuration:configuration-core')
     implementation project(':processors:crypto-processor')
     implementation "info.picocli:picocli:$picocliVersion"
+    implementation 'net.corda:corda-base'
 
     runtimeOnly "com.typesafe:config:$typeSafeConfigVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"

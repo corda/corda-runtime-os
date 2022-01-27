@@ -1,6 +1,5 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.internal.serialization.AlwaysEmptyWhitelist
 import net.corda.internal.serialization.amqp.testutils.TestSerializationOutput
 import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.deserializeAndReturnEnvelope
@@ -8,7 +7,7 @@ import net.corda.internal.serialization.amqp.testutils.serializeAndReturnSchema
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactoryNoEvolution
 import net.corda.internal.serialization.amqp.testutils.testName
 import net.corda.internal.serialization.amqp.testutils.testSerializationContext
-import net.corda.serialization.ClassWhitelist
+import net.corda.internal.serialization.registerCustomSerializers
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions
@@ -25,6 +24,7 @@ import kotlin.test.assertNotNull
 @Timeout(value = 30, unit = TimeUnit.SECONDS)
 @Suppress("VariableNaming")
 class EnumTests {
+    @CordaSerializable
     enum class Bras {
         TSHIRT, UNDERWIRE, PUSHUP, BRALETTE, STRAPLESS, SPORTS, BACKLESS, PADDED
     }
@@ -58,6 +58,7 @@ class EnumTests {
         TSHIRT, UNDERWIRE, PUSHUP, SPACER, BRALETTE, SPACER2
     }
 
+    @CordaSerializable
     enum class BrasWithInit(val someList: List<Int>) {
         TSHIRT(emptyList()),
         UNDERWIRE(listOf(1, 2, 3)),
@@ -77,10 +78,11 @@ class EnumTests {
     @Suppress("NOTHING_TO_INLINE")
     private inline fun classTestName(clazz: String) = "${this.javaClass.name}\$${testName()}\$$clazz"
 
-    private val sf1 = testDefaultFactoryNoEvolution()
+    private val sf1 = testDefaultFactoryNoEvolution().also { registerCustomSerializers(it) }
 
     @Test
     fun serialiseSimpleTest() {
+        @CordaSerializable
         data class C(val c: Bras)
 
         val schema = TestSerializationOutput(VERBOSE, sf1).serializeAndReturnSchema(C(Bras.UNDERWIRE)).schema
@@ -105,6 +107,7 @@ class EnumTests {
 
     @Test
     fun deserialiseSimpleTest() {
+        @CordaSerializable
         data class C(val c: Bras)
 
         val objAndEnvelope = DeserializationInput(sf1).deserializeAndReturnEnvelope(
@@ -134,7 +137,9 @@ class EnumTests {
 
     @Test
     fun multiEnum() {
+        @CordaSerializable
         data class Support(val top: Bras, val day: DayOfWeek)
+        @CordaSerializable
         data class WeeklySupport(val tops: List<Support>)
 
         val week = WeeklySupport(
@@ -157,6 +162,7 @@ class EnumTests {
 
     @Test
     fun enumWithInit() {
+        @CordaSerializable
         data class C(val c: BrasWithInit)
 
         val c = C(BrasWithInit.PUSHUP)
@@ -214,14 +220,7 @@ class EnumTests {
     fun enumNotWhitelistedFails() {
         data class C(val c: Bras)
 
-        class WL(val allowed: String) : ClassWhitelist {
-            override fun hasListed(type: Class<*>): Boolean {
-                return type.name == allowed
-            }
-        }
-
-        val whitelist = WL(classTestName("C"))
-        val factory = SerializerFactoryBuilder.build(whitelist, testSerializationContext.currentSandboxGroup())
+        val factory = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
 
         Assertions.assertThatThrownBy {
             TestSerializationOutput(VERBOSE, factory).serialize(C(Bras.UNDERWIRE))
@@ -229,73 +228,22 @@ class EnumTests {
     }
 
     @Test
-    fun enumWhitelisted() {
-        data class C(val c: Bras)
-
-        class WL : ClassWhitelist {
-            override fun hasListed(type: Class<*>): Boolean {
-                return type.name == "net.corda.internal.serialization.amqp.EnumTests\$enumWhitelisted\$C" ||
-                    type.name == "net.corda.internal.serialization.amqp.EnumTests\$Bras"
-            }
-        }
-
-        val whitelist = WL()
-        val factory = SerializerFactoryBuilder.build(whitelist, testSerializationContext.currentSandboxGroup())
-
-        // if it all works, this won't explode
-        TestSerializationOutput(VERBOSE, factory).serialize(C(Bras.UNDERWIRE))
-    }
-
-    @Test
     fun enumAnnotated() {
         @CordaSerializable data class C(val c: AnnotatedBras)
 
-        class WL : ClassWhitelist {
-            override fun hasListed(type: Class<*>) = false
-        }
-
-        val whitelist = WL()
-        val factory = SerializerFactoryBuilder.build(whitelist, testSerializationContext.currentSandboxGroup())
+        val factory = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
 
         // if it all works, this won't explode
         TestSerializationOutput(VERBOSE, factory).serialize(C(AnnotatedBras.UNDERWIRE))
     }
 
     @Test
-    fun deserializeNonWhitlistedEnum() {
-        data class C(val c: Bras)
-
-        class WL(val allowed: List<String>) : ClassWhitelist {
-            override fun hasListed(type: Class<*>) = type.name in allowed
-        }
-
-        // first serialise the class using a context in which Bras are whitelisted
-        val whitelist = WL(
-            listOf(
-                classTestName("C"),
-                "net.corda.internal.serialization.amqp.EnumTests\$Bras"
-            )
-        )
-        val factory = SerializerFactoryBuilder.build(whitelist, testSerializationContext.currentSandboxGroup())
-        val bytes = TestSerializationOutput(VERBOSE, factory).serialize(C(Bras.UNDERWIRE))
-
-        // then take that serialised object and attempt to deserialize it in a context that
-        // disallows the Bras enum
-        val whitelist1 = WL(listOf(classTestName("C")))
-        val factory2 = SerializerFactoryBuilder.build(whitelist1, testSerializationContext.currentSandboxGroup())
-
-        Assertions.assertThatThrownBy {
-            DeserializationInput(factory2).deserialize(bytes)
-        }.isInstanceOf(NotSerializableException::class.java)
-    }
-
-    @Test
     fun deserializeCustomisedEnum() {
         val input = CustomEnumWrapper(CustomEnum.ONE)
-        val factory1 = SerializerFactoryBuilder.build(AlwaysEmptyWhitelist, testSerializationContext.currentSandboxGroup())
+        val factory1 = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
         val serialized = TestSerializationOutput(VERBOSE, factory1).serialize(input)
 
-        val factory2 = SerializerFactoryBuilder.build(AlwaysEmptyWhitelist, testSerializationContext.currentSandboxGroup())
+        val factory2 = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
         val output = DeserializationInput(factory2).deserialize(serialized)
 
         assertEquals(input, output)

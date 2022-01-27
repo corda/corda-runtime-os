@@ -70,3 +70,15 @@ data class RegistrationStatusChangeEvent(
     val registration: RegistrationHandle,
     val status: LifecycleStatus
 ) : LifecycleEvent
+
+/**
+ * A custom event that can be sent from a coordinator to any coordinators that have followed it.
+ *
+ * This can be used to transmit custom signals between coordinators.
+ * Event handlers can selectively handle incoming custom events based on the type of the [payload] field.
+ * In this way, they can handle any events that they are aware of and ignore gracefully any other events they are agnostic of.
+ *
+ * @param registration the registration the custom event was be sent to.
+ * @param payload the payload of the custom event.
+ */
+class CustomEvent(val registration: RegistrationHandle, val payload: Any): LifecycleEvent

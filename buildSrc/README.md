@@ -500,42 +500,4 @@ Local Machine
     ShortGitHash
 ```
 
-
-Optionally an 'arguments' array may be provided to the task which will bake parameters into the image to be passed to the java -jar command.
-Unless necessary this should be avoided and use environment variable JAVA_TOOL_OPTIONS to pass properties at run time instead, as follows:
-
-    docker run -p 8888:8888 -e "JAVA_TOOL_OPTIONS=-DinstanceId=1" corda-os-docker-dev.software.r3.com/corda-os-http-rpc-gateway:latest
-
-If a kafka.properties file exists in the project root as follows:
-
-```
-    http-rpc-gateway
-        +--- src
-        +--- build.gradle
-        +--- kafka.properties
-```
-
-The file will be copied to the container and "--kafka", "/opt/pathToFile" will also be passed ot the java -jar command.
-If this file does not exist in the project and therefore is never copied ot the container properties may be passed at container run time using JAVA_TOOL_OPTIONS as described previously.
-
-    docker run -e  "JAVA_TOOL_OPTIONS=-Dconfig.topic.name=ConfigTopic,-Dmessaging.topic.prefix=http-rpc-gateway,-Dbootstrap.servers=localhost:9092"
-
-### Running the container
-
-```
-docker run -it -p 8888:8888 -e "JAVA_TOOL_OPTIONS=-DinstanceId=1" corda-os-docker-dev.software.r3.com/corda-os-http-rpc-gateway:latest
-```
-
-### Debugging the container
-To debug a running container we can use the JAVA_TOOL_OPTIONS environment variable to pass arguments at runtime e.g.
-
-```
-docker run -it -p 8888:8888 -p 5005:5005 -e "JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005 -DinstanceId=1"" corda-os-docker-dev.software.r3.com/corda-os-http-rpc-gateway:latest
-```
-
-__NOTE:__ `-p 5005:5005` which forwards internal container debug port to a local port such that remote debugger can
-be attached.
-
-__NOTE:__ Extra parameters can be passed to the java -jar command at run time by passing these within the JAVA_TOOL_OPTIONS environment variable.
-
-    docker run -e "JAVA_TOOL_OPTIONS=<JVM flags>" <image name>
+For information how to run Workers locally, please see [here](../applications/workers/release/deploy/README.md).

@@ -5,10 +5,10 @@ import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.component.config.rpc
 import net.corda.crypto.component.lifecycle.AbstractCryptoCoordinator
-import net.corda.crypto.impl.config.isDev
 import net.corda.crypto.impl.config.defaultCryptoService
+import net.corda.crypto.impl.config.isDev
 import net.corda.crypto.impl.config.publicKeys
-import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -87,12 +87,14 @@ class CryptoLibraryCoordinatorTests {
             )
         )
         Mockito.verify(configurationReadService, times(1)).registerForUpdates(any())
+
+        val configFactory = SmartConfigFactory.create(ConfigFactory.empty())
         configChangeHandler.onNewConfiguration(
             setOf(
                 AbstractCryptoCoordinator.CRYPTO_CONFIG
             ),
             mapOf(
-                AbstractCryptoCoordinator.CRYPTO_CONFIG to SmartConfigImpl(ConfigFactory.empty())
+                AbstractCryptoCoordinator.CRYPTO_CONFIG to configFactory.create(ConfigFactory.empty())
             )
         )
         val cipherSuiteFactoryCaptor = argumentCaptor<CryptoLibraryConfig>()

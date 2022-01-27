@@ -12,8 +12,8 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.p2p.AuthenticatedMessageAck
 import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.DataMessagePayload
@@ -272,11 +272,17 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         }
 
         private fun recordsForNewSession(state: SessionState.NewSessionNeeded): List<Record<String, *>> {
-            val records = mutableListOf<Record<String, *>>()
-            records.add(Record(LINK_OUT_TOPIC, generateKey(), state.sessionInitMessage))
             val partitions = inboundAssignmentListener.getCurrentlyAssignedPartitions(LINK_IN_TOPIC).toList()
-            records.add(Record(SESSION_OUT_PARTITIONS, state.sessionId, SessionPartitions(partitions)))
-            return records
+            return if(partitions.isEmpty()) {
+                logger.warn("No partitions from topic $LINK_IN_TOPIC are currently assigned to the inbound message processor." +
+                        " Session ${state.sessionId} will not be initiated.")
+                emptyList()
+            } else {
+                listOf(
+                    Record(LINK_OUT_TOPIC, generateKey(), state.sessionInitMessage),
+                    Record(SESSION_OUT_PARTITIONS, state.sessionId, SessionPartitions(partitions))
+                )
+            }
         }
 
         private fun recordsForSessionEstablished(
@@ -343,13 +349,26 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         private fun processSessionMessage(message: LinkInMessage): List<Record<String, *>> {
             val response = sessionManager.processSessionMessage(message)
             return if (response != null) {
-                when(val payload = message.payload) {
+                when (val payload = message.payload) {
                     is InitiatorHelloMessage -> {
-                        val partitionsAssigned = inboundAssignmentListener.getCurrentlyAssignedPartitions(LINK_IN_TOPIC).toList()
-                        listOf(
-                            Record(LINK_OUT_TOPIC, generateKey(), response),
-                            Record(SESSION_OUT_PARTITIONS, payload.header.sessionId, SessionPartitions(partitionsAssigned))
-                        )
+                        val partitionsAssigned =
+                            inboundAssignmentListener.getCurrentlyAssignedPartitions(LINK_IN_TOPIC).toList()
+                        if (partitionsAssigned.isNotEmpty()) {
+                            listOf(
+                                Record(LINK_OUT_TOPIC, generateKey(), response),
+                                Record(
+                                    SESSION_OUT_PARTITIONS,
+                                    payload.header.sessionId,
+                                    SessionPartitions(partitionsAssigned)
+                                )
+                            )
+                        } else {
+                            logger.warn(
+                                "No partitions from topic ${LINK_IN_TOPIC} are currently assigned to the inbound message processor." +
+                                        " Not going to reply to session initiation for session ${payload.header.sessionId}."
+                            )
+                            emptyList()
+                        }
                     }
                     else -> {
                         listOf(Record(LINK_OUT_TOPIC, generateKey(), response))

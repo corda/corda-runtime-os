@@ -1,5 +1,7 @@
 package net.corda.sandboxgroupcontext
 
+import net.corda.packaging.CPK
+
 interface SandboxGroupContextService {
     /**
      * This function creates and returns a "fully constructed" node that is ready to
@@ -39,7 +41,8 @@ interface SandboxGroupContextService {
      *     private var ctx : SandboxGroupContext? = null
      *
      *     fun setUp() {
-     *       ctx = service.getOrCreate(VirtualNodeContext(holdingIdentity, cpi, type), ::initialize)
+     *       if (! service.hasCpks(cpkIdentifiers)) { /* some retry logic */ }
+     *       ctx = service.getOrCreate(VirtualNodeContext(holdingIdentity, cpkIdentifiers, type), ::initialize)
      *       val someObject = ctx!!.getObject<SomeObject>(someKey)
      *       val anotherObject = ctx!!.getUniqueObject<AnotherObject>()
      *       someObject.doThing()
@@ -59,4 +62,13 @@ interface SandboxGroupContextService {
         virtualNodeContext: VirtualNodeContext,
         initializer: SandboxGroupContextInitializer
     ): SandboxGroupContext
+
+    /**
+     * Does the service 'contain' the cpks in its cache?
+     *
+     *     if (service.hasCpks(virtualNodeContext.cpkIdentifiers)) {
+     *        service.getOrCreate(virtualNodeContext) { .... }
+     *     }
+     */
+    fun hasCpks(cpkIdentifiers: Set<CPK.Identifier>) : Boolean
 }

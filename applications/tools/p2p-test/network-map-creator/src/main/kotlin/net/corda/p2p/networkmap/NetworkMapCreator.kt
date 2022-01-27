@@ -35,8 +35,6 @@ class NetworkMapCreator @Activate constructor(
     private val shutDownService: Shutdown,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
-    @Reference(service = SmartConfigFactory::class)
-    private val smartConfigFactory: SmartConfigFactory,
 ): Application {
 
     private companion object {
@@ -107,9 +105,12 @@ class NetworkMapCreator @Activate constructor(
             }
             val totalRecords = recordsWithAdditions + recordsWithRemovals
 
-            val publisherConfig = smartConfigFactory.create(ConfigFactory.empty()
+            // TODO - pick up secrets params from startup
+            val secretsConfig = ConfigFactory.empty()
+            val bootConfig = ConfigFactory.empty()
                 .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(kafkaProperties[KAFKA_BOOTSTRAP_SERVER].toString()))
-                .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("network-map-creator")))
+                .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("network-map-creator"))
+            val publisherConfig = SmartConfigFactory.create(secretsConfig).create(bootConfig)
             val publisher = publisherFactory.createPublisher(PublisherConfig("network-map-creator"), publisherConfig)
 
             publisher.start()

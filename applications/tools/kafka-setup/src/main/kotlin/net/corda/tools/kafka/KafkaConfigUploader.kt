@@ -2,12 +2,14 @@ package net.corda.tools.kafka
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.comp.kafka.config.write.KafkaConfigWrite
+import net.corda.configuration.publish.ConfigPublishService
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.schema.messaging.TOPIC_PREFIX_PATH
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
+import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
@@ -25,19 +27,16 @@ import java.util.Properties
 class KafkaConfigUploader @Activate constructor(
     @Reference(service = KafkaTopicAdmin::class)
     private var topicAdmin: KafkaTopicAdmin,
-    @Reference(service = KafkaConfigWrite::class)
-    private var configWriter: KafkaConfigWrite,
+    @Reference(service = ConfigPublishService::class)
+    private var configPublish: ConfigPublishService,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
-    @Reference(service = SmartConfigFactory::class)
-    private val smartConfigFactory: SmartConfigFactory,
 ) : Application {
 
     private companion object {
         private val logger: Logger = contextLogger()
         val consoleLogger: Logger = LoggerFactory.getLogger("Console")
-        const val TOPIC_PREFIX = "messaging.topic.prefix"
-        const val CONFIG_TOPIC_NAME = "config.topic.name"
+        const val TOPIC_PREFIX = "messaging.${TOPIC_PREFIX_PATH}"
         const val KAFKA_BOOTSTRAP_SERVER = "bootstrap.servers"
         const val KAFKA_COMMON_BOOTSTRAP_SERVER = "messaging.kafka.common.bootstrap.servers"
     }
@@ -70,8 +69,8 @@ class KafkaConfigUploader @Activate constructor(
             val configurationFile = parameters.configurationFile
             if (configurationFile != null) {
                 logger.info("Writing config to topic")
-                configWriter.updateConfig(
-                    getConfigValue(kafkaConnectionProperties, CONFIG_TOPIC_NAME),
+                configPublish.updateConfig(
+                    CONFIG_TOPIC,
                     getBootstrapConfig(kafkaConnectionProperties),
                     configurationFile.readText()
                 )
@@ -83,13 +82,13 @@ class KafkaConfigUploader @Activate constructor(
     }
 
     private fun getBootstrapConfig(kafkaConnectionProperties: Properties?): SmartConfig {
-        return smartConfigFactory.create(ConfigFactory.empty()
+        val allConfig = ConfigFactory.empty()
             .withValue(
                 KAFKA_COMMON_BOOTSTRAP_SERVER,
                 ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, KAFKA_BOOTSTRAP_SERVER))
             )
-            .withValue(CONFIG_TOPIC_NAME, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, CONFIG_TOPIC_NAME)))
-            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX))))
+            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX)))
+        return SmartConfigFactory.create(allConfig).create(allConfig)
     }
 
     private fun getConfigValue(kafkaConnectionProperties: Properties?, path: String): String {
@@ -122,7 +121,7 @@ class KafkaConfigUploader @Activate constructor(
 class CliParameters {
     @CommandLine.Option(
         names = ["--kafka"], description = ["File containing Kafka connection properties" +
-                " OR pass in -Dbootstrap.servers and -Dconfig.topic.name"]
+                " OR pass in -Dbootstrap.servers"]
     )
     var kafkaConnection: File? = null
 

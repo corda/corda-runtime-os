@@ -5,8 +5,8 @@ import net.corda.internal.serialization.amqp.testutils.TestSerializationOutput
 import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.serialize
 import net.corda.internal.serialization.amqp.testutils.serializeAndReturnSchema
+import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactoryNoEvolution
-import net.corda.internal.serialization.amqp.testutils.testDefaultFactoryWithWhitelist
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.lang.Character.valueOf
@@ -33,6 +33,7 @@ class DeserializeSimpleTypesTests {
 
     @Test
 	fun testChar() {
+        @CordaSerializable
         data class C(val c: Char)
 
         var deserializedC = DeserializationInput(sf1).deserialize(SerializationOutput(sf1).serialize(C('c')))
@@ -58,6 +59,7 @@ class DeserializeSimpleTypesTests {
     @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
     @Test
 	fun testCharacter() {
+        @CordaSerializable
         data class C(val c: Char)
 
         val c = C(valueOf('c'))
@@ -69,6 +71,7 @@ class DeserializeSimpleTypesTests {
 
     @Test
 	fun testNullCharacter() {
+        @CordaSerializable
         data class C(val c: Char?)
 
         val c = C(null)
@@ -80,6 +83,7 @@ class DeserializeSimpleTypesTests {
 
     @Test
 	fun testArrayOfInt() {
+        @CordaSerializable
         class IA(val ia: Array<Int>)
 
         val ia = IA(arrayOf(1, 2, 3))
@@ -99,6 +103,7 @@ class DeserializeSimpleTypesTests {
     @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
     @Test
 	fun testArrayOfInteger() {
+        @CordaSerializable
         class IA(val ia: Array<Int>)
 
         val ia = IA(arrayOf(Integer.valueOf(1), Integer.valueOf(2), Integer.valueOf(3)))
@@ -120,6 +125,7 @@ class DeserializeSimpleTypesTests {
      */
     @Test
 	fun testIntArray() {
+        @CordaSerializable
         class IA(val ia: IntArray)
 
         val v = IntArray(3)
@@ -140,6 +146,7 @@ class DeserializeSimpleTypesTests {
 
     @Test
 	fun testArrayOfChars() {
+        @CordaSerializable
         class C(val c: Array<Char>)
 
         val c = C(arrayOf('a', 'b', 'c'))
@@ -158,6 +165,7 @@ class DeserializeSimpleTypesTests {
 
     @Test
 	fun testCharArray() {
+        @CordaSerializable
         class C(val c: CharArray)
 
         val v = CharArray(3)
@@ -189,6 +197,7 @@ class DeserializeSimpleTypesTests {
 
     @Test
 	fun testArrayOfBoolean() {
+        @CordaSerializable
         class C(val c: Array<Boolean>)
 
         val c = C(arrayOf(true, false, false, true))
@@ -208,6 +217,7 @@ class DeserializeSimpleTypesTests {
 
     @Test
 	fun testBooleanArray() {
+        @CordaSerializable
         class C(val c: BooleanArray)
 
         val c = C(BooleanArray(4))
@@ -228,6 +238,7 @@ class DeserializeSimpleTypesTests {
 
     @Test
 	fun testArrayOfByte() {
+        @CordaSerializable
         class C(val c: Array<Byte>)
 
         val c = C(arrayOf(0b0001, 0b0101, 0b1111))
@@ -246,6 +257,7 @@ class DeserializeSimpleTypesTests {
 
     @Test
 	fun testByteArray() {
+        @CordaSerializable
         class C(val c: ByteArray)
 
         val c = C(ByteArray(3))
@@ -273,6 +285,7 @@ class DeserializeSimpleTypesTests {
 
     @Test
 	fun testArrayOfShort() {
+        @CordaSerializable
         class C(val c: Array<Short>)
 
         val c = C(arrayOf(1, 2, 3))
@@ -291,6 +304,7 @@ class DeserializeSimpleTypesTests {
 
     @Test
 	fun testShortArray() {
+        @CordaSerializable
         class C(val c: ShortArray)
 
         val c = C(ShortArray(3))
@@ -310,6 +324,7 @@ class DeserializeSimpleTypesTests {
 
     @Test
 	fun testArrayOfLong() {
+        @CordaSerializable
         class C(val c: Array<Long>)
 
         val c = C(arrayOf(2147483650, -2147483800, 10))
@@ -328,6 +343,7 @@ class DeserializeSimpleTypesTests {
 
     @Test
 	fun testLongArray() {
+        @CordaSerializable
         class C(val c: LongArray)
 
         val c = C(LongArray(3))
@@ -347,6 +363,7 @@ class DeserializeSimpleTypesTests {
 
     @Test
 	fun testArrayOfFloat() {
+        @CordaSerializable
         class C(val c: Array<Float>)
 
         val c = C(arrayOf(10F, 100.023232F, -1455.433400F))
@@ -365,6 +382,7 @@ class DeserializeSimpleTypesTests {
 
     @Test
 	fun testFloatArray() {
+        @CordaSerializable
         class C(val c: FloatArray)
 
         val c = C(FloatArray(3))
@@ -384,6 +402,7 @@ class DeserializeSimpleTypesTests {
 
     @Test
 	fun testArrayOfDouble() {
+        @CordaSerializable
         class C(val c: Array<Double>)
 
         val c = C(arrayOf(10.0, 100.2, -1455.2))
@@ -402,6 +421,7 @@ class DeserializeSimpleTypesTests {
 
     @Test
 	fun testDoubleArray() {
+        @CordaSerializable
         class C(val c: DoubleArray)
 
         val c = C(DoubleArray(3))
@@ -421,6 +441,7 @@ class DeserializeSimpleTypesTests {
 
     @Test
 	fun arrayOfArrayOfInt() {
+        @CordaSerializable
         class C(val c: Array<Array<Int>>)
 
         val c = C(arrayOf(arrayOf(1, 2, 3), arrayOf(4, 5, 6)))
@@ -441,6 +462,7 @@ class DeserializeSimpleTypesTests {
 
     @Test
 	fun arrayOfIntArray() {
+        @CordaSerializable
         class C(val c: Array<IntArray>)
 
         val c = C(arrayOf(IntArray(3), IntArray(3)))
@@ -463,6 +485,7 @@ class DeserializeSimpleTypesTests {
 
     @Test
 	fun arrayOfArrayOfIntArray() {
+        @CordaSerializable
         class C(val c: Array<Array<IntArray>>)
 
         val c = C(arrayOf(arrayOf(IntArray(3), IntArray(3), IntArray(3)),
@@ -491,6 +514,7 @@ class DeserializeSimpleTypesTests {
 
     @Test
 	fun nestedRepeatedTypes() {
+        @CordaSerializable
         class A(val a: A?, val b: Int)
 
         var a = A(A(A(A(A(null, 1), 2), 3), 4), 5)
@@ -515,6 +539,7 @@ class DeserializeSimpleTypesTests {
     // Replicates CORDA-1545
     @Test
 	fun arrayOfByteArray() {
+        @CordaSerializable
         class A(val a : Array<ByteArray>)
 
         val ba1 = ByteArray(3)
@@ -585,21 +610,21 @@ No custom serializers registered.
     }
 
     @Test
-	fun notWhitelistedError() {
-        val factory = testDefaultFactoryWithWhitelist()
+    fun notWhitelistedError() {
+        val factory = testDefaultFactory()
         assertFailsWithMessage(
                 "Class \"class ${PropertyWithoutCordaSerializable::class.java.name}\" " +
-                "is not on the whitelist or annotated with @CordaSerializable.") {
+                "is not annotated with @CordaSerializable.") {
             TestSerializationOutput(VERBOSE, factory).serialize(PropertyWithoutCordaSerializable(1))
         }
     }
 
     @Test
-	fun propertyClassNotWhitelistedError() {
-        val factory = testDefaultFactoryWithWhitelist()
+    fun propertyClassNotWhitelistedError() {
+        val factory = testDefaultFactory()
         assertFailsWithMessage(
                 "Class \"class ${PropertyWithoutCordaSerializable::class.java.name}\" " +
-                        "is not on the whitelist or annotated with @CordaSerializable.") {
+                        "is not annotated with @CordaSerializable.") {
             TestSerializationOutput(VERBOSE, factory).serialize(Owner(PropertyWithoutCordaSerializable(1)))
         }
     }
@@ -623,12 +648,12 @@ No custom serializers registered.
         @CordaSerializable
         class NotOkComparable(val value: java.lang.Comparable<NotOk>)
 
-        val factory = testDefaultFactoryWithWhitelist()
+        val factory = testDefaultFactory()
 
         TestSerializationOutput(VERBOSE, factory).serialize(OkComparable(Ok("value")))
         assertFailsWithMessage(
                 "Class \"class ${NotOk::class.java.name}\" " +
-                        "is not on the whitelist or annotated with @CordaSerializable.") {
+                        "is not annotated with @CordaSerializable.") {
             TestSerializationOutput(VERBOSE, factory).serialize(NotOkComparable(NotOk("value")))
         }
 

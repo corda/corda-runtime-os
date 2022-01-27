@@ -18,11 +18,6 @@ pipeline {
         }
     }
 
-    parameters {
-        string(defaultValue: "",
-            description: 'Up Stream project name',
-            name: 'UPSTREAM_PROJECT_NAME')
-    }
 
     environment {
         ARTIFACTORY_CREDENTIALS = credentials('artifactory-credentials')
@@ -40,6 +35,10 @@ pipeline {
         buildDiscarder(logRotator(daysToKeepStr: '14', artifactDaysToKeepStr: '14'))
         timeout(time: 30, unit: 'MINUTES')
         timestamps()
+    }
+    
+    triggers {
+        cron '@midnight'
     }
 
     stages {

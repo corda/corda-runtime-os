@@ -56,7 +56,8 @@ internal class HttpRpcClientProxyHandler<I : RpcOps>(
             val sinceVersion = method.getAnnotation(RPCSinceVersion::class.java)?.version ?: 0
             if (sinceVersion > serverProtocolVersion) {
                 throw UnsupportedOperationException(
-                    "Method $method was added in RPC protocol version $sinceVersion but the server is running $serverProtocolVersion"
+                    "Method $method was added in RPC protocol version '$sinceVersion' " +
+                            "but the server is running '$serverProtocolVersion'."
                 )
             }
         }

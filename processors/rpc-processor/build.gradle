@@ -10,6 +10,33 @@ dependencies {
     compileOnly "org.osgi:osgi.annotation"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation project(':libs:configuration:configuration-core')
+    implementation 'net.corda:corda-avro-schema'
     implementation 'net.corda:corda-base'
+    implementation 'net.corda:corda-config-schema'
+    implementation 'net.corda:corda-topic-schema'
+
+    implementation project(':components:configuration:configuration-rpcops-service')
+    implementation project(':components:configuration:configuration-read-service')
+    implementation project(':components:virtual-node:virtual-node-rpcops-service')
+    implementation project(':components:http-rpc-gateway-comp')
+
+    implementation project(':libs:configuration:configuration-core')
+    implementation project(':libs:lifecycle:lifecycle')
+    implementation project(':libs:messaging:messaging')
+
+    runtimeOnly project(':components:configuration:configuration-read-service-impl')
+    runtimeOnly project(':components:configuration:configuration-rpcops-service-impl')
+    runtimeOnly project(':components:virtual-node:virtual-node-rpcops-service-impl')
+    runtimeOnly project(":components:permissions:permission-rpc-ops-impl")
+
+    runtimeOnly project(':libs:configuration:configuration-endpoints')
+    runtimeOnly project(':libs:http-rpc:http-rpc-server-impl')
+    runtimeOnly project(':libs:http-rpc:http-rpc-stubs-impl')
+    runtimeOnly project(':libs:lifecycle:lifecycle-impl')
+    runtimeOnly project(':libs:messaging:messaging-impl')
+    runtimeOnly project(':libs:messaging:kafka-message-bus-impl')
+    runtimeOnly project(':libs:permissions:permission-cache-impl')
+    runtimeOnly project(':libs:permissions:permission-manager-impl')
+    runtimeOnly project(':libs:permissions:permission-validation-impl')
+    runtimeOnly project(':libs:schema-registry:schema-registry-impl')
 }

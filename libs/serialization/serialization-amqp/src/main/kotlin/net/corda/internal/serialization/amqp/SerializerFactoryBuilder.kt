@@ -10,7 +10,6 @@ import net.corda.internal.serialization.model.RemoteTypeInformation
 import net.corda.internal.serialization.model.TypeLoader
 import net.corda.internal.serialization.model.TypeModellingFingerPrinter
 import net.corda.sandbox.SandboxGroup
-import net.corda.serialization.ClassWhitelist
 import java.io.NotSerializableException
 import java.lang.reflect.Method
 import java.util.Collections.unmodifiableMap
@@ -90,9 +89,8 @@ object SerializerFactoryBuilder {
     }) as Map<Class<*>, Class<*>>
 
     @JvmStatic
-    fun build(whitelist: ClassWhitelist, sandboxGroup: SandboxGroup): SerializerFactory {
+    fun build(sandboxGroup: SandboxGroup): SerializerFactory {
         return makeFactory(
-            whitelist,
             sandboxGroup,
             DefaultDescriptorBasedSerializerRegistry(),
             allowEvolution = true,
@@ -105,7 +103,6 @@ object SerializerFactoryBuilder {
     @Suppress("LongParameterList")
     @JvmStatic
     fun build(
-            whitelist: ClassWhitelist,
             sandboxGroup: SandboxGroup,
             descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
                     DefaultDescriptorBasedSerializerRegistry(),
@@ -114,7 +111,6 @@ object SerializerFactoryBuilder {
             onlyCustomSerializers: Boolean = false,
             mustPreserveDataWhenEvolving: Boolean = false): SerializerFactory {
         return makeFactory(
-                whitelist,
                 sandboxGroup,
                 descriptorBasedSerializerRegistry,
                 allowEvolution,
@@ -124,7 +120,7 @@ object SerializerFactoryBuilder {
     }
 
     @Suppress("LongParameterList")
-    private fun makeFactory(whitelist: ClassWhitelist,
+    private fun makeFactory(
                             sandboxGroup: SandboxGroup,
                             descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
                             allowEvolution: Boolean,
@@ -133,13 +129,12 @@ object SerializerFactoryBuilder {
                             mustPreserveDataWhenEvolving: Boolean): SerializerFactory {
         val customSerializerRegistry = CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry)
 
-        val typeModelConfiguration = WhitelistBasedTypeModelConfiguration(whitelist, customSerializerRegistry)
+        val typeModelConfiguration = LocalTypeModelConfigurationImpl(customSerializerRegistry)
         val localTypeModel = ConfigurableLocalTypeModel(typeModelConfiguration)
 
         val fingerPrinter = overrideFingerPrinter ?: TypeModellingFingerPrinter(customSerializerRegistry, sandboxGroup)
 
         val localSerializerFactory = DefaultLocalSerializerFactory(
-            whitelist,
             sandboxGroup,
             localTypeModel,
             fingerPrinter,

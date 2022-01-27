@@ -23,9 +23,9 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-application"
     implementation "net.corda:corda-base"
-    implementation project(":components:install:install")
+    implementation project(":components:install:install-service")
     // this needs to be removed in the future, and is a choice when building the 'app'
-    implementation project(":components:install:file-based-install-service")
+    implementation project(":components:install:install-service-file-based-impl")
     implementation "net.corda:corda-packaging"
     implementation "net.corda:corda-avro-schema"
     implementation project(":libs:lifecycle:lifecycle")
@@ -43,20 +43,21 @@ dependencies {
 
     integrationTestImplementation "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
     integrationTestImplementation project(":components:configuration:configuration-read-service")
+    integrationTestImplementation project(":libs:messaging:messaging")
+    integrationTestImplementation "net.corda:corda-avro-schema"
+    integrationTestImplementation "net.corda:corda-topic-schema"
     integrationTestImplementation "net.corda:corda-application"
     integrationTestRuntimeOnly project(':libs:sandbox-internal')
-
-
+    testImplementation project(":testing:test-utilities")
 
     integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
-    integrationTestRuntimeOnly project(":components:install:file-based-install-service")
+    integrationTestRuntimeOnly project(":components:install:install-service-file-based-impl")
     integrationTestRuntimeOnly project(":components:configuration:configuration-read-service-impl")
     integrationTestRuntimeOnly project(':components:virtual-node:sandbox-group-context-service')
     integrationTestRuntimeOnly project(":libs:sandbox-hooks")
     integrationTestRuntimeOnly project(":libs:configuration:configuration-core")
-    integrationTestRuntimeOnly project(":libs:configuration:configuration-read-impl")
-    integrationTestRuntimeOnly project(":libs:configuration:file-configuration-read-impl")
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
+    integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")
 
     // Use custom configurations in consumer cpks to gather location of cpis to add into `resources`
     // Note:  we define the configuration `cpiForTest` in each project's gradle script.

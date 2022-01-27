@@ -7,7 +7,6 @@ import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBo
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setUpHealthMonitor
-import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.db.DBProcessor
@@ -26,8 +25,6 @@ class DBWorker @Activate constructor(
     private val processor: DBProcessor,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
-    @Reference(service = SmartConfigFactory::class)
-    private val smartConfigFactory: SmartConfigFactory,
     @Reference(service = HealthMonitor::class)
     private val healthMonitor: HealthMonitor
 ) : Application {
@@ -46,7 +43,7 @@ class DBWorker @Activate constructor(
         setUpHealthMonitor(healthMonitor, params.defaultParams)
 
         val databaseConfig = PathAndConfig(DB_CONFIG_PATH, params.databaseParams)
-        val config = getBootstrapConfig(smartConfigFactory, params.defaultParams, listOf(databaseConfig))
+        val config = getBootstrapConfig(params.defaultParams, listOf(databaseConfig))
 
         processor.start(config)
     }

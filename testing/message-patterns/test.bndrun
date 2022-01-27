@@ -1,14 +1,17 @@
 -tester: biz.aQute.tester.junit-platform
-
 -runee: JavaSE-11
 -runfw: org.apache.felix.framework
+-runtrace: true
 -resolve.effective: active
-
--runvm: \
-    --add-opens, 'java.base/java.net=ALL-UNNAMED'
 
 #uncomment to remote debug
 #-runjdb: 5005
+
+-runsystempackages: \
+    javax.xml.stream;version=1.0.0,\
+    javax.xml.stream.events;version=1.0.0,\
+    javax.xml.stream.util;version=1.0.0,\
+    sun.security.x509
 
 -runproperties: \
     org.slf4j.simpleLogger.defaultLogLevel=info,\
@@ -18,7 +21,7 @@
     org.slf4j.simpleLogger.dateTimeFormat='yyyy-MM-dd HH:mm:ss:SSS Z'
 
 -runrequires: \
-    bnd.identity;id='net.corda.kafka-messaging-impl',\
+    bnd.identity;id='net.corda.messaging-impl',\
     bnd.identity;id='net.corda.schema-registry-impl',\
     bnd.identity;id='net.corda.topic-admin-impl',\
     bnd.identity;id='net.corda.lifecycle-impl',\
@@ -35,10 +38,13 @@
 # The version ranges will change as the versions of
 # the artifacts and/or their dependencies change.
 -runbundles: \
-	avro;version='[1.10.1,1.10.2)',\
-	com.fasterxml.jackson.core.jackson-annotations;version='[2.11.3,2.11.4)',\
-	com.fasterxml.jackson.core.jackson-core;version='[2.11.3,2.11.4)',\
-	com.fasterxml.jackson.core.jackson-databind;version='[2.11.3,2.11.4)',\
+	avro;version='[1.11.0,1.11.1)',\
+	bcpkix;version='[1.69.0,1.69.1)',\
+	bcprov;version='[1.69.0,1.69.1)',\
+	bcutil;version='[1.69.0,1.69.1)',\
+	com.fasterxml.jackson.core.jackson-annotations;version='[2.13.1,2.13.2)',\
+	com.fasterxml.jackson.core.jackson-core;version='[2.13.1,2.13.2)',\
+	com.fasterxml.jackson.core.jackson-databind;version='[2.13.1,2.13.2)',\
 	com.google.guava;version='[30.1.1,30.1.2)',\
 	com.google.guava.failureaccess;version='[1.0.1,1.0.2)',\
 	com.typesafe.config;version='[1.4.1,1.4.2)',\
@@ -51,19 +57,25 @@
 	message-patterns-tests;version='[5.0.0,5.0.1)',\
 	net.corda.avro-schema;version='[5.0.0,5.0.1)',\
 	net.corda.base;version='[5.0.0,5.0.1)',\
+	net.corda.cipher-suite;version='[5.0.0,5.0.1)',\
 	net.corda.configuration-core;version='[5.0.0,5.0.1)',\
-	net.corda.kafka-messaging-impl;version='[5.0.0,5.0.1)',\
+	net.corda.crypto;version='[5.0.0,5.0.1)',\
+	net.corda.crypto-internal;version='[5.0.0,5.0.1)',\
+	net.corda.kafka-message-bus-impl;version='[5.0.0,5.0.1)',\
 	net.corda.kafka-topic-admin;version='[5.0.0,5.0.1)',\
 	net.corda.kotlin-stdlib-jdk7.osgi-bundle;version='[1.4.32,1.4.33)',\
 	net.corda.lifecycle;version='[5.0.0,5.0.1)',\
 	net.corda.lifecycle-impl;version='[5.0.0,5.0.1)',\
+	net.corda.message-bus;version='[5.0.0,5.0.1)',\
 	net.corda.messaging;version='[5.0.0,5.0.1)',\
+	net.corda.messaging-impl;version='[5.0.0,5.0.1)',\
 	net.corda.registry;version='[5.0.0,5.0.1)',\
 	net.corda.schema-registry;version='[5.0.0,5.0.1)',\
 	net.corda.schema-registry-impl;version='[5.0.0,5.0.1)',\
 	net.corda.test-utilities;version='[5.0.0,5.0.1)',\
 	net.corda.topic-admin;version='[5.0.0,5.0.1)',\
 	net.corda.topic-admin-impl;version='[5.0.0,5.0.1)',\
+	net.i2p.crypto.eddsa;version='[0.3.0,0.3.1)',\
 	org.apache.commons.commons-compress;version='[1.21.0,1.21.1)',\
 	org.apache.felix.scr;version='[2.1.28,2.1.29)',\
 	org.apache.servicemix.bundles.kafka-clients;version='[2.8.1,2.8.2)',\
