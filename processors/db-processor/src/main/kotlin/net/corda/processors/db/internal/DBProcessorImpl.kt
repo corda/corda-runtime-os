@@ -12,9 +12,11 @@ import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.datamodel.ConfigAuditEntity
 import net.corda.libs.configuration.datamodel.ConfigEntity
+import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
@@ -27,6 +29,7 @@ import net.corda.processors.db.DBProcessor
 import net.corda.processors.db.DBProcessorException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.virtualnode.write.db.VirtualNodeWriteService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -51,7 +54,9 @@ class DBProcessorImpl @Activate constructor(
     @Reference(service = PermissionStorageReaderService::class)
     private val permissionStorageReaderService: PermissionStorageReaderService,
     @Reference(service = PermissionStorageWriterService::class)
-    private val permissionStorageWriterService: PermissionStorageWriterService
+    private val permissionStorageWriterService: PermissionStorageWriterService,
+    @Reference(service = VirtualNodeWriteService::class)
+    private val virtualNodeWriteService: VirtualNodeWriteService
 ) : DBProcessor {
 
     companion object {
@@ -59,6 +64,14 @@ class DBProcessorImpl @Activate constructor(
     }
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<DBProcessorImpl>(::eventHandler)
+    private val dependentComponents = DependentComponents.of(
+        ::configWriteService,
+        ::configurationReadService,
+        ::permissionCacheService,
+        ::permissionStorageReaderService,
+        ::permissionStorageWriterService,
+        ::virtualNodeWriteService
+    )
 
     override fun start(bootConfig: SmartConfig) {
         log.info("DB processor starting.")
@@ -71,16 +84,16 @@ class DBProcessorImpl @Activate constructor(
         lifecycleCoordinator.stop()
     }
 
-    @Suppress("UNUSED_PARAMETER")
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         log.debug { "DB processor received event $event." }
+
         when (event) {
             is StartEvent -> {
-                configWriteService.start()
-                configurationReadService.start()
-                permissionCacheService.start()
-                permissionStorageReaderService.start()
-                permissionStorageWriterService.start()
+                dependentComponents.registerAndStartAll(coordinator)
+            }
+            is RegistrationStatusChangeEvent -> {
+                log.info("DB processor is ${event.status}")
+                coordinator.updateStatus(event.status)
             }
             is BootConfigEvent -> {
                 val dataSource = createDataSource(event.config)
@@ -94,11 +107,7 @@ class DBProcessorImpl @Activate constructor(
                 configurationReadService.bootstrapConfig(event.config)
             }
             is StopEvent -> {
-                permissionStorageWriterService.stop()
-                permissionStorageReaderService.stop()
-                permissionCacheService.stop()
-                configWriteService.stop()
-                configurationReadService.stop()
+                dependentComponents.stopAll()
             }
             else -> {
                 log.error("Unexpected event $event!")

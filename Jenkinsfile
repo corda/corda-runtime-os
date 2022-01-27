@@ -6,5 +6,5 @@ cordaPipeline(
     publishRepoPrefix: 'corda-ent-maven',
     createPostgresDb: true,
     publishOSGiImage: true,
-    publishPreTestImage: false
+    publishPreTestImage: true
     )

@@ -6,7 +6,7 @@ import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.flow.state.StateMachineState
 import net.corda.data.identity.HoldingIdentity
-import net.corda.flow.fiber.requests.FlowIORequest
+import net.corda.flow.manager.fiber.FlowIORequest
 import net.corda.flow.manager.impl.FlowEventContext
 import net.corda.flow.manager.impl.handlers.FlowProcessingException
 import net.corda.messaging.api.records.Record

@@ -8,6 +8,7 @@ import net.corda.kryoserialization.serializers.ClassSerializer
 import net.corda.serialization.CheckpointInternalCustomSerializer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import java.util.concurrent.Executors
 
 internal class KryoCheckpointSerializerTest {
@@ -24,6 +25,19 @@ internal class KryoCheckpointSerializerTest {
 
         assertThat(tested.someInt).isEqualTo(tester.someInt)
         assertThat(tested.someString).isEqualTo(tester.someString)
+    }
+
+    @Test
+    fun `serialization of a non-serializable type throws an exception`() {
+        val serializer = createCheckpointSerializer(
+            mapOf(NonSerializableTestClass::class.java to NonSerializableTestClass.Serializer())
+        )
+
+        val tester = NonSerializableTestClass()
+
+        val error = assertThrows<UnsupportedOperationException> { serializer.serialize(tester) }
+        assertThat(error.message).isEqualTo("net.corda.kryoserialization.NonSerializableTestClass, " +
+                "has been marked as a non-serializable type is should never be serialised into a checkpoint.")
     }
 
     @Test

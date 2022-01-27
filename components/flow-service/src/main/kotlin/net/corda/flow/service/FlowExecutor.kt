@@ -13,8 +13,8 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.StateAndEventSubscription
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -29,7 +29,7 @@ class FlowExecutor(
 
     companion object {
         private val logger = contextLogger()
-        private const val GROUP_NAME_KEY = "manager.consumer.group"
+        private const val CONSUMER_GROUP = "FlowEventConsumer"
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<FlowExecutor> { event, _ -> eventHandler(event) }
@@ -40,10 +40,9 @@ class FlowExecutor(
         when (event) {
             is StartEvent -> {
                 logger.debug { "Starting the flow executor" }
-                val groupName = config.getString(GROUP_NAME_KEY)
                 val instanceId = config.getInt(INSTANCE_ID)
                 messagingSubscription = subscriptionFactory.createStateAndEventSubscription(
-                    SubscriptionConfig(groupName, FLOW_EVENT_TOPIC, instanceId),
+                    SubscriptionConfig(CONSUMER_GROUP, FLOW_EVENT_TOPIC, instanceId),
                     flowEventProcessorFactory.create(),
                     config
                 )

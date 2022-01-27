@@ -70,7 +70,6 @@ dependencies {
     systemPackages "net.corda.kotlin:kotlin-stdlib-jdk7-osgi:$kotlinVersion"
     systemPackages "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
     systemPackages "org.slf4j:slf4j-api:$slf4jVersion"
-    systemPackages "net.corda:corda-base:$cordaApiVersion"
     systemPackages project(":osgi-framework-api")
 }
 
@@ -442,15 +441,17 @@ artifacts {
     archives appJar
 }
 
-publishing {
-    publications {
-        mavenAppJar(MavenPublication) {
-            artifactId appJarBaseName
+pluginManager.withPlugin('maven-publish') {
+    publishing {
+        publications {
+            mavenAppJar(MavenPublication) {
+                artifactId appJarBaseName
 
-            afterEvaluate { proj ->
-                groupId proj.group
-                version proj.version
-                artifact appJar
+                afterEvaluate { proj ->
+                    groupId proj.group
+                    version proj.version
+                    artifact appJar
+                }
             }
         }
     }

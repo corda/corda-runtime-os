@@ -63,15 +63,15 @@ internal class SandboxGroupContextServiceImplTest {
         }
     }
 
-    private fun Set<CPK>.toIds() = map { it.metadata.id }.toSet()
-    private fun Set<CPK>.toMap() = map { it.metadata.id to it }.toMap()
+    private fun Set<CPK>.toIds() = mapTo(LinkedHashSet()) { it.metadata.id }
+    private fun Set<CPK>.toMap() = associateBy { it.metadata.id }
 
     private val cpkServiceImpl = InstallServiceImpl(cpks.toMap())
 
     @BeforeEach
     private fun beforeEach() {
         service = SandboxGroupContextServiceImpl(Helpers.mockSandboxCreationService(listOf(cpks)), cpkServiceImpl)
-        virtualNodeContext = VirtualNodeContext(holdingIdentity, cpks.toMap().keys, SandboxGroupType.FLOW)
+        virtualNodeContext = VirtualNodeContext(holdingIdentity, cpks.toIds(), SandboxGroupType.FLOW)
     }
 
     @Test

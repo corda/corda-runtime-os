@@ -20,7 +20,9 @@ class GatewayTest {
             mock {
                 on { createPublisher(any(), any()) } doReturn mock()
             },
-            mock(),
+            mock {
+                on { createCoordinator(any(), any()) } doReturn mock()
+            },
             mock(),
             1,
         )

@@ -29,10 +29,9 @@ dependencies {
     implementation project(":libs:sandbox-hooks")
 
     implementation project(":components:virtual-node:virtual-node-common")
-    implementation project(":components:install:install")
+    implementation project(":components:install:install-service")
 
     implementation project(":libs:configuration:configuration-core")
-    implementation project(":libs:configuration:configuration-read")
     implementation project(":components:configuration:configuration-read-service")
 
     testImplementation project(":libs:lifecycle:lifecycle-impl")

@@ -8,6 +8,7 @@ group 'com.example.serialization'
 
 dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    compileOnly "net.corda:corda-base"
     compileOnly "org.osgi:osgi.core"
     compileOnly "org.osgi:osgi.annotation"
     compileOnly "org.osgi:org.osgi.service.component.annotations"

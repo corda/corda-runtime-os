@@ -5,7 +5,7 @@ import java.io.NotSerializableException
 /**
  *The serializer interface for serde methods on a when checkpointing (i.e. Quasar suspend)
  */
-interface CheckpointSerializer {
+interface CheckpointSerializer : NonSerializable {
 
     /**
      * Deserialize the checkpoint from [bytes] into a type of [clazz]

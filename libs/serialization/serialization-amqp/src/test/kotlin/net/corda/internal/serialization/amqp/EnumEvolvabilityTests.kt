@@ -7,6 +7,7 @@ import net.corda.internal.serialization.amqp.testutils.deserializeAndReturnEnvel
 import net.corda.internal.serialization.amqp.testutils.serialize
 import net.corda.internal.serialization.amqp.testutils.serializeAndReturnSchema
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.serialization.SerializedBytes
 import net.corda.v5.serialization.annotations.CordaSerializationTransformEnumDefault
 import net.corda.v5.serialization.annotations.CordaSerializationTransformEnumDefaults
@@ -16,6 +17,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import org.junit.jupiter.api.assertThrows
 import java.io.NotSerializableException
 import java.net.URI
 import java.util.concurrent.TimeUnit
@@ -38,11 +40,13 @@ class EnumEvolvabilityTests {
     }
 
     @CordaSerializationTransformRenames()
+    @CordaSerializable
     enum class MissingRenames {
         A, B, C, D
     }
 
     @CordaSerializationTransformEnumDefault("D", "A")
+    @CordaSerializable
     enum class AnnotatedEnumOnce {
         A, B, C, D
     }
@@ -51,33 +55,35 @@ class EnumEvolvabilityTests {
         CordaSerializationTransformEnumDefault("E", "D"),
         CordaSerializationTransformEnumDefault("D", "A")
     )
+    @CordaSerializable
     enum class AnnotatedEnumTwice {
         A, B, C, D, E
     }
 
     @CordaSerializationTransformRename("E", "D")
+    @CordaSerializable
     enum class RenameEnumOnce {
         A, B, C, E
     }
 
     @Test
     fun noAnnotation() {
+        @CordaSerializable
         data class C(val n: NotAnnotated)
 
         val sf = testDefaultFactory()
-        val bAndS = TestSerializationOutput(VERBOSE, sf).serializeAndReturnSchema(C(NotAnnotated.A))
-
-        assertEquals(2, bAndS.schema.types.size)
-        assertEquals(0, bAndS.transformsSchema.types.size)
+        assertThrows<NotSerializableException> { TestSerializationOutput(VERBOSE, sf).serializeAndReturnSchema(C(NotAnnotated.A)) }
     }
 
     @CordaSerializationTransformEnumDefaults()
+    @CordaSerializable
     enum class MissingDefaults {
         A, B, C, D
     }
 
     @Test
     fun missingDefaults() {
+        @CordaSerializable
         data class C(val m: MissingDefaults)
 
         val sf = testDefaultFactory()
@@ -89,6 +95,7 @@ class EnumEvolvabilityTests {
 
     @Test
     fun missingRenames() {
+        @CordaSerializable
         data class C(val m: MissingRenames)
 
         val sf = testDefaultFactory()
@@ -100,6 +107,7 @@ class EnumEvolvabilityTests {
 
     @Test
     fun defaultAnnotationIsAddedToEnvelope() {
+        @CordaSerializable
         data class C(val annotatedEnum: AnnotatedEnumOnce)
 
         val sf = testDefaultFactory()
@@ -122,6 +130,7 @@ class EnumEvolvabilityTests {
 
     @Test
     fun doubleDefaultAnnotationIsAddedToEnvelope() {
+        @CordaSerializable
         data class C(val annotatedEnum: AnnotatedEnumTwice)
 
         val sf = testDefaultFactory()
@@ -146,6 +155,7 @@ class EnumEvolvabilityTests {
 
     @Test
     fun defaultAnnotationIsAddedToEnvelopeAndDeserialised() {
+        @CordaSerializable
         data class C(val annotatedEnum: AnnotatedEnumOnce)
 
         val sf = testDefaultFactory()
@@ -175,6 +185,7 @@ class EnumEvolvabilityTests {
 
     @Test
     fun doubleDefaultAnnotationIsAddedToEnvelopeAndDeserialised() {
+        @CordaSerializable
         data class C(val annotatedEnum: AnnotatedEnumTwice)
 
         val sf = testDefaultFactory()
@@ -202,6 +213,7 @@ class EnumEvolvabilityTests {
 
     @Test
     fun renameAnnotationIsAdded() {
+        @CordaSerializable
         data class C(val annotatedEnum: RenameEnumOnce)
 
         val sf = testDefaultFactory()
@@ -241,12 +253,14 @@ class EnumEvolvabilityTests {
         CordaSerializationTransformRename("E", "C"),
         CordaSerializationTransformRename("F", "D")
     )
+    @CordaSerializable
     enum class RenameEnumTwice {
         A, B, E, F
     }
 
     @Test
     fun doubleRenameAnnotationIsAdded() {
+        @CordaSerializable
         data class C(val annotatedEnum: RenameEnumTwice)
 
         val sf = testDefaultFactory()
@@ -288,12 +302,14 @@ class EnumEvolvabilityTests {
 
     @CordaSerializationTransformRename(from = "A", to = "X")
     @CordaSerializationTransformEnumDefault(old = "X", new = "E")
+    @CordaSerializable
     enum class RenameAndExtendEnum {
         X, B, C, D, E
     }
 
     @Test
     fun bothAnnotationTypes() {
+        @CordaSerializable
         data class C(val annotatedEnum: RenameAndExtendEnum)
 
         val sf = testDefaultFactory()
@@ -342,6 +358,7 @@ class EnumEvolvabilityTests {
     }
 
     @CordaSerializationTransformEnumDefault("D", "A")
+    @CordaSerializable
     enum class E1 {
         A, B, C, D
     }
@@ -350,19 +367,24 @@ class EnumEvolvabilityTests {
         CordaSerializationTransformEnumDefault("D", "A"),
         CordaSerializationTransformEnumDefault("E", "A")
     )
+    @CordaSerializable
     enum class E2 {
         A, B, C, D, E
     }
 
     @CordaSerializationTransformEnumDefaults(CordaSerializationTransformEnumDefault("D", "A"))
+    @CordaSerializable
     enum class E3 {
         A, B, C, D
     }
 
     @Test
     fun multiEnums() {
+        @CordaSerializable
         data class A(val a: E1, val b: E2)
+        @CordaSerializable
         data class B(val a: E3, val b: A, val c: E1)
+        @CordaSerializable
         data class C(val a: B, val b: E2, val c: E3)
 
         val c = C(B(E3.A, A(E1.A, E2.B), E1.C), E2.B, E3.A)
@@ -401,7 +423,9 @@ class EnumEvolvabilityTests {
 
     @Test
     fun testCache() {
+        @CordaSerializable
         data class C2(val annotatedEnum: AnnotatedEnumOnce)
+        @CordaSerializable
         data class C1(val annotatedEnum: AnnotatedEnumOnce)
 
         val sf = testDefaultFactory()
@@ -416,10 +440,12 @@ class EnumEvolvabilityTests {
     }
 
     // @UnknownTransformAnnotation(10, 20, 30)
+    @CordaSerializable
     enum class WithUnknownTest {
         A, B, C, D
     }
 
+    @CordaSerializable
     data class WrapsUnknown(val unknown: WithUnknownTest)
 
     // To regenerate the types for this test uncomment UnknownTransformAnnotation from SupportedTransforms.kt and it's
@@ -448,10 +474,12 @@ class EnumEvolvabilityTests {
         CordaSerializationTransformRename(from = "A", to = "B"),
         CordaSerializationTransformRename(from = "B", to = "C")
     )
+    @CordaSerializable
     enum class AcceptMultipleRename { C }
 
     @Test
     fun acceptMultipleRename() {
+        @CordaSerializable
         data class C(val e: AcceptMultipleRename)
 
         val sf = testDefaultFactory()

@@ -5,11 +5,9 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.configuration.SmartConfigFactoryImpl
 import net.corda.libs.configuration.publish.CordaConfigurationKey
 import net.corda.libs.configuration.publish.CordaConfigurationVersion
 import net.corda.libs.configuration.publish.impl.ConfigPublisherImpl
-import net.corda.libs.configuration.read.kafka.factory.ConfigReaderFactoryImpl
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
@@ -91,24 +89,25 @@ open class TestBase {
 
     protected val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
 
-    protected inner class ConfigPublisher(private var coordinatorFactory: LifecycleCoordinatorFactory?=null) {
+    protected inner class ConfigPublisher(private var coordinatorFactory: LifecycleCoordinatorFactory? = null) {
         init {
-            coordinatorFactory = coordinatorFactory?:lifecycleCoordinatorFactory
+            coordinatorFactory = coordinatorFactory ?: lifecycleCoordinatorFactory
         }
         private val configurationTopicService = TopicServiceImpl()
         private val rpcTopicService = RPCTopicServiceImpl()
-        private val topicName = "config.${UUID.randomUUID().toString().replace("-", "")}"
+        private val configPublisherClientId = "config.${UUID.randomUUID().toString().replace("-", "")}"
 
         val readerService by lazy {
             ConfigurationReadServiceImpl(
                 coordinatorFactory!!,
-                ConfigReaderFactoryImpl(
-                    InMemSubscriptionFactory(configurationTopicService, rpcTopicService, coordinatorFactory!!)
-                ),
+                InMemSubscriptionFactory(configurationTopicService, rpcTopicService, coordinatorFactory!!)
             ).also {
                 it.start()
                 val bootstrapper = ConfigFactory.empty()
                 it.bootstrapConfig(smartConfigFactory.create(bootstrapper))
+                eventually {
+                    assertThat(it.isRunning).isTrue
+                }
             }
         }
 
@@ -126,7 +125,7 @@ open class TestBase {
                 .withValue("connectionConfig.acquireTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.acquireTimeout))
                 .withValue("connectionConfig.responseTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.responseTimeout))
                 .withValue("connectionConfig.retryDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.retryDelay))
-            CordaPublisherFactory(configurationTopicService, rpcTopicService, lifecycleCoordinatorFactory).createPublisher(PublisherConfig((topicName))).use { publisher ->
+            CordaPublisherFactory(configurationTopicService, rpcTopicService, lifecycleCoordinatorFactory).createPublisher(PublisherConfig((configPublisherClientId))).use { publisher ->
                 val configurationPublisher = ConfigPublisherImpl(CONFIG_TOPIC, publisher)
                 configurationPublisher.updateConfiguration(
                     CordaConfigurationKey(
@@ -142,9 +141,9 @@ open class TestBase {
             val publishConfig = ConfigFactory.empty()
                 .withValue("hello", ConfigValueFactory.fromAnyRef("world"))
             CordaPublisherFactory(configurationTopicService, rpcTopicService, lifecycleCoordinatorFactory)
-                .createPublisher(PublisherConfig((topicName)))
+                .createPublisher(PublisherConfig((configPublisherClientId)))
                 .use { publisher ->
-                    val configurationPublisher = ConfigPublisherImpl(topicName, publisher)
+                    val configurationPublisher = ConfigPublisherImpl(CONFIG_TOPIC, publisher)
                     configurationPublisher.updateConfiguration(
                         CordaConfigurationKey(
                             "myKey",
@@ -157,7 +156,7 @@ open class TestBase {
         }
     }
 
-    protected fun createConfigurationServiceFor(configuration: GatewayConfiguration, coordinatorFactory: LifecycleCoordinatorFactory?=null): ConfigurationReadService {
+    protected fun createConfigurationServiceFor(configuration: GatewayConfiguration, coordinatorFactory: LifecycleCoordinatorFactory? = null): ConfigurationReadService {
         val publisher = ConfigPublisher(coordinatorFactory)
         publisher.publishConfig(configuration)
         return publisher.readerService

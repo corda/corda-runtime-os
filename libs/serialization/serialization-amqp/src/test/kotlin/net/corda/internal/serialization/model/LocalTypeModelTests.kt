@@ -1,15 +1,15 @@
 package net.corda.internal.serialization.model
 
 import com.google.common.reflect.TypeToken
-import net.corda.internal.serialization.AllWhitelist
 import net.corda.internal.serialization.amqp.AMQPSerializer
 import net.corda.internal.serialization.amqp.CachingCustomSerializerRegistry
 import net.corda.internal.serialization.amqp.standard.CustomSerializer
 import net.corda.internal.serialization.amqp.CustomSerializerRegistry
 import net.corda.internal.serialization.amqp.DefaultDescriptorBasedSerializerRegistry
 import net.corda.internal.serialization.amqp.SerializerFactory
-import net.corda.internal.serialization.amqp.WhitelistBasedTypeModelConfiguration
+import net.corda.internal.serialization.amqp.LocalTypeModelConfigurationImpl
 import net.corda.serialization.InternalCustomSerializer
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.SerializableCalculatedProperty
 import net.corda.v5.serialization.SerializationCustomSerializer
 import org.assertj.core.api.Assertions.assertThat
@@ -26,7 +26,7 @@ class LocalTypeModelTests {
 
     private val descriptorBasedSerializerRegistry = DefaultDescriptorBasedSerializerRegistry()
     private val customSerializerRegistry: CustomSerializerRegistry = CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry)
-    private val model = ConfigurableLocalTypeModel(WhitelistBasedTypeModelConfiguration(AllWhitelist, customSerializerRegistry))
+    private val model = ConfigurableLocalTypeModel(LocalTypeModelConfigurationImpl(customSerializerRegistry))
     private val emptyCustomSerializerRegistry = object : CustomSerializerRegistry {
         override val customSerializerNames: List<String> = emptyList()
         override fun register(customSerializer: CustomSerializer<out Any>) {}
@@ -36,12 +36,12 @@ class LocalTypeModelTests {
     }
     private val modelWithoutOpacity =
         ConfigurableLocalTypeModel(
-            WhitelistBasedTypeModelConfiguration(
-                AllWhitelist,
+            LocalTypeModelConfigurationImpl(
                 emptyCustomSerializerRegistry
             )
         )
 
+    @CordaSerializable
     interface CollectionHolder<K, V> {
         val list: List<V>
         val map: Map<K, V>
@@ -110,11 +110,13 @@ class LocalTypeModelTests {
         assertInformation<NonComposableNested>("NonComposableNested")
     }
 
+    @CordaSerializable
     interface SuperSuper<A, B> {
         val a: A
         val b: B
     }
 
+    @CordaSerializable
     interface Super<C> : SuperSuper<C, Double> {
         val c: List<C>
     }
@@ -146,6 +148,7 @@ class LocalTypeModelTests {
         )
     }
 
+    @CordaSerializable
     interface OldStylePojo<A> {
         var a: A?
         var b: String
@@ -153,6 +156,7 @@ class LocalTypeModelTests {
         val c: String
     }
 
+    @CordaSerializable
     class OldStylePojoImpl : OldStylePojo<IntArray> {
         override var a: IntArray? = null
         override var b: String = ""

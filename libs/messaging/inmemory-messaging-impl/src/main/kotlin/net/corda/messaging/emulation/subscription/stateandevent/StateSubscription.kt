@@ -1,7 +1,7 @@
 package net.corda.messaging.emulation.subscription.stateandevent
 
 import net.corda.lifecycle.Lifecycle
-import net.corda.messaging.api.subscription.PartitionAssignmentListener
+import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
 import net.corda.messaging.emulation.topic.model.Consumption
 import net.corda.messaging.emulation.topic.model.RecordMetadata
 import java.util.concurrent.ConcurrentHashMap

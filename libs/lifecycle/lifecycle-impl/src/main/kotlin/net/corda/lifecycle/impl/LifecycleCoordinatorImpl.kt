@@ -1,6 +1,7 @@
 package net.corda.lifecycle.impl
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
+import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
@@ -189,6 +190,14 @@ class LifecycleCoordinatorImpl(
     /**
      * See [LifecycleCoordinator].
      */
+    override fun postCustomEventToFollowers(eventPayload: Any) {
+        logger.trace { "$name: Posting custom event with ${eventPayload.javaClass.simpleName} payload to registrations." }
+        lifecycleState.registrations.forEach { it.postCustomEvent(CustomEvent(it, eventPayload)) }
+    }
+
+    /**
+     * See [LifecycleCoordinator].
+     */
     override fun followStatusChanges(coordinators: Set<LifecycleCoordinator>): RegistrationHandle {
         logger.trace { "$name: Registering on coordinators: ${coordinators.map { it.name }}" }
         if (coordinators.contains(this)) {
@@ -255,6 +264,7 @@ class LifecycleCoordinatorImpl(
         logger.trace { "$name: Closing coordinator" }
         stop()
         postEvent(CloseCoordinator())
+        registry.removeCoordinator(name)
         _isClosed.set(true)
     }
 }

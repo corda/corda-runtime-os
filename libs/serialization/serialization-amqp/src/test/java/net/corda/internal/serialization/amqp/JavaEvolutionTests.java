@@ -1,6 +1,7 @@
 package net.corda.internal.serialization.amqp;
 
 import net.corda.internal.serialization.amqp.testutils.TestSerializationContext;
+import net.corda.v5.base.annotations.CordaSerializable;
 import net.corda.v5.serialization.SerializedBytes;
 import net.corda.internal.serialization.amqp.testutils.AMQPTestUtilsKt;
 import org.junit.jupiter.api.Test;
@@ -19,6 +20,7 @@ public class JavaEvolutionTests {
     // Class as it was when it was serialized and written to disk. Uncomment
     // if the test referencing the object needs regenerating.
     /*
+    @CordaSerializable
     static class N1 {
         private String word;
         public N1(String word) { this.word = word; }
@@ -26,6 +28,7 @@ public class JavaEvolutionTests {
     }
     */
     // Class as it exists now with the newly added element
+    @CordaSerializable
     static class N1 {
         private String word;
         private Integer wibble;
@@ -103,6 +106,7 @@ public class JavaEvolutionTests {
     // if the test referencing the object needs regenerating.
     /*
     @SuppressWarnings("unused")
+    @CordaSerializable
     static class POJOWithInteger {
         private Integer id;
 
@@ -122,10 +126,12 @@ public class JavaEvolutionTests {
      this might be a spurious evolution candidate). We do this by adding a marker interface to the type,
      which will change its fingerprint but have no effect on its serialisation behaviour.
     */
+    @CordaSerializable
     public interface ForceEvolution { }
 
     // Class as it exists now with the newly added interface
     @SuppressWarnings("unused")
+    @CordaSerializable
     static class POJOWithInteger implements ForceEvolution {
         private Integer id;
 

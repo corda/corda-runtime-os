@@ -1,6 +1,7 @@
 package net.corda.internal.serialization.amqp;
 
 import net.corda.internal.serialization.amqp.testutils.TestSerializationContext;
+import net.corda.v5.base.annotations.CordaSerializable;
 import net.corda.v5.serialization.SerializedBytes;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -18,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @Timeout(value = 30, unit = TimeUnit.SECONDS)
 public class SetterConstructorTests {
 
+    @CordaSerializable
     static class C {
         private int a;
         private int b;
@@ -37,6 +39,7 @@ public class SetterConstructorTests {
         }
     }
 
+    @CordaSerializable
     static class C2 {
         private int a;
         private int b;
@@ -50,6 +53,7 @@ public class SetterConstructorTests {
         public void setB(int b) { this.b = b; }
     }
 
+    @CordaSerializable
     static class C3 {
         private int a;
         private int b;
@@ -63,6 +67,7 @@ public class SetterConstructorTests {
         public void setC(int c) { this.c = c; }
     }
 
+    @CordaSerializable
     static class C4 {
         private int a;
         private int b;
@@ -77,6 +82,7 @@ public class SetterConstructorTests {
         public void setC(int c) { this.c = c; }
     }
 
+    @CordaSerializable
     static class CIntList {
         private List<Integer> l;
 
@@ -84,6 +90,7 @@ public class SetterConstructorTests {
         public void setL(List<Integer> l) { this.l = l; }
     }
 
+    @CordaSerializable
     static class Inner1 {
         private String a;
 
@@ -91,6 +98,7 @@ public class SetterConstructorTests {
         public String getA() { return this.a; }
     }
 
+    @CordaSerializable
     static class Inner2 {
         private Double a;
 
@@ -98,6 +106,7 @@ public class SetterConstructorTests {
         public void setA(Double a) { this.a = a; }
     }
 
+    @CordaSerializable
     static class Outer {
         private Inner1 a;
         private String b;

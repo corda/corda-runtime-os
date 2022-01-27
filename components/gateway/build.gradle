@@ -44,8 +44,6 @@ dependencies {
     integrationTestImplementation project(":libs:lifecycle:registry")
     integrationTestImplementation project(":components:configuration:configuration-read-service-impl")
     integrationTestImplementation project(":libs:configuration:configuration-core")
-    integrationTestImplementation project(":libs:configuration:configuration-read-impl")
-    integrationTestImplementation project(":libs:configuration:configuration-read")
     integrationTestImplementation project(":libs:configuration:configuration-publish")
     integrationTestImplementation project(":libs:configuration:configuration-publish-impl")
 }

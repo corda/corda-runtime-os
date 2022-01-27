@@ -2,7 +2,6 @@ package net.corda.applications.examples.amqp.customserializer
 
 import net.corda.install.InstallService
 import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT
-import net.corda.internal.serialization.AllWhitelist
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactory
@@ -121,7 +120,7 @@ class Main @Activate constructor(
 
     private fun configureSerialization(sandboxAndSerializers: SandboxAndSerializers): SerializerFactory {
         // Create SerializerFactory
-        val factory = SerializerFactoryBuilder.build(AllWhitelist, sandboxAndSerializers.sandboxGroup)
+        val factory = SerializerFactoryBuilder.build(sandboxAndSerializers.sandboxGroup)
         // Register platform serializers
         for (customSerializer in internalCustomSerializers) {
             consoleLogger.info("Registering internal serializer {}", customSerializer.javaClass.name)
@@ -213,7 +212,7 @@ class Main @Activate constructor(
         consoleLogger.info("Attempt to override platform serialiser:")
 
         // Create SerializerFactory
-        val factory = SerializerFactoryBuilder.build(AllWhitelist, sandboxA.sandboxGroup)
+        val factory = SerializerFactoryBuilder.build(sandboxA.sandboxGroup)
 
         // Build serializers
         val constructor = sandboxA

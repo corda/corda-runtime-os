@@ -55,6 +55,15 @@ class TopicTemplates {
                     } 
                 ]"""
 
+        const val PUBLISHER_TEST_DURABLE_TOPIC2  = "PublisherTestDurableTopic2"
+        const val PUBLISHER_TEST_DURABLE_TOPIC2_TEMPLATE = """topics = [ 
+                    { 
+                        topicName = "$TEST_TOPIC_PREFIX$PUBLISHER_TEST_DURABLE_TOPIC2" 
+                        numPartitions = 2 
+                        replicationFactor = 3 
+                    } 
+                ]"""
+
         const val EVENT_TOPIC1  = "EventTopic1"
         const val EVENT_TOPIC1_TEMPLATE = """topics = [ 
                     { 

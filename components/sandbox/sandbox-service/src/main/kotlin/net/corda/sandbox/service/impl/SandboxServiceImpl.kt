@@ -12,6 +12,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.packaging.CPI
+import net.corda.packaging.CPK
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.service.SandboxService
 import net.corda.sandbox.service.helper.initPublicSandboxes
@@ -114,7 +115,7 @@ class SandboxServiceImpl @Activate constructor(
     ): SandboxGroupContext {
         val cpb = installService.get(cpiIdentifier).get()
             ?: throw CordaRuntimeException("Could not get cpi from its identifier $cpiIdentifier")
-        val identifiers = cpb.cpks.map { it.metadata.id }.toSet()
+        val identifiers = cpb.cpks.mapTo(LinkedHashSet()) { it.metadata.id }
         val virtualNodeContext = VirtualNodeContext(holdingIdentity, identifiers, sandboxGroupType)
         return sandboxGroupContextService.getOrCreate(virtualNodeContext, initializer)
     }
@@ -125,4 +126,6 @@ class SandboxServiceImpl @Activate constructor(
     ): SandboxGroupContext {
         return sandboxGroupContextService.getOrCreate(virtualNodeContext, initializer)
     }
+
+    override fun hasCpks(cpkIdentifiers: Set<CPK.Identifier>): Boolean = sandboxGroupContextService.hasCpks(cpkIdentifiers)
 }

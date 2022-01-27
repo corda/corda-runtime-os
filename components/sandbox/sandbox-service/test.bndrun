@@ -51,14 +51,13 @@
 	net.corda.base;version='[5.0.0,5.0.1)',\
 	net.corda.cipher-suite;version='[5.0.0,5.0.1)',\
 	net.corda.configuration-core;version='[5.0.0,5.0.1)',\
-	net.corda.configuration-read;version='[5.0.0,5.0.1)',\
 	net.corda.configuration-read-service;version='[5.0.0,5.0.1)',\
 	net.corda.configuration-read-service-impl;version='[5.0.0,5.0.1)',\
 	net.corda.crypto;version='[5.0.0,5.0.1)',\
 	net.corda.crypto-internal;version='[5.0.0,5.0.1)',\
-	net.corda.file-based-install-service;version='[5.0.0,5.0.1)',\
-	net.corda.file-configuration-read-impl;version='[5.0.0,5.0.1)',\
-	net.corda.install;version='[5.0.0,5.0.1)',\
+	net.corda.inmemory-messaging-impl;version='[5.0.0,5.0.1)',\
+	net.corda.install-service;version='[5.0.0,5.0.1)',\
+	net.corda.install-service-file-based-impl;version='[5.0.0,5.0.1)',\
 	net.corda.kotlin-stdlib-jdk7.osgi-bundle;version='[1.4.32,1.4.33)',\
 	net.corda.kotlin-stdlib-jdk8.osgi-bundle;version='[1.4.32,1.4.33)',\
 	net.corda.lifecycle;version='[5.0.0,5.0.1)',\
@@ -66,6 +65,7 @@
 	net.corda.membership;version='[5.0.0,5.0.1)',\
 	net.corda.membership-conversion;version='[5.0.0,5.0.1)',\
 	net.corda.membership-identity;version='[5.0.0,5.0.1)',\
+	net.corda.messaging;version='[5.0.0,5.0.1)',\
 	net.corda.packaging;version='[5.0.0,5.0.1)',\
 	net.corda.packaging-avro-converters;version='[5.0.0,5.0.1)',\
 	net.corda.registry;version='[5.0.0,5.0.1)',\
