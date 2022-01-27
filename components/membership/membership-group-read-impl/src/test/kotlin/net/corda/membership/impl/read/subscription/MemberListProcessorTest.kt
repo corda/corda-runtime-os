@@ -46,7 +46,7 @@ import java.time.Instant
 class MemberListProcessorTest {
     companion object {
         private val keyEncodingService: CipherSchemeMetadata = mock()
-        private val cryptoLibraryFactory: CipherSuiteFactory = mock<CipherSuiteFactory>().apply {
+        private val cipherSuiteFactory: CipherSuiteFactory = mock<CipherSuiteFactory>().apply {
             whenever(getSchemeMap()).thenReturn(keyEncodingService)
         }
         private val knownKey: PublicKey = mock()
@@ -60,7 +60,7 @@ class MemberListProcessorTest {
         private val converter = PropertyConverterImpl(
             listOf(
                 EndpointInfoConverter(),
-                PublicKeyConverter(cryptoLibraryFactory),
+                PublicKeyConverter(cipherSuiteFactory),
             )
         )
         private val signature = WireSignatureWithKey(
