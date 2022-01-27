@@ -17,6 +17,7 @@ import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
 import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
+import net.corda.p2p.GatewayTruststore
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutHeader
 import net.corda.p2p.LinkOutMessage
@@ -32,6 +33,7 @@ import net.corda.p2p.gateway.messaging.http.HttpConnectionEvent
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.p2p.gateway.messaging.http.ListenerWithServer
+import net.corda.schema.Schemas
 import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
@@ -64,6 +66,7 @@ import kotlin.concurrent.thread
 class GatewayTest : TestBase() {
     companion object {
         private val logger = contextLogger()
+        const val TRUST_STORE_HASH = "TRUST_STORE_HASH"
     }
 
     private val sessionId = "session-1"
@@ -71,7 +74,7 @@ class GatewayTest : TestBase() {
 
     private val nodeConfig = SmartConfigImpl.empty()
 
-    private class Node(private val name: String) {
+    private inner class Node(private val name: String) {
         private val topicService = TopicServiceImpl()
         private val rpcTopicService = RPCTopicServiceImpl()
         private val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
@@ -81,6 +84,12 @@ class GatewayTest : TestBase() {
 
         fun stop() {
             publisher.close()
+        }
+
+        fun publishTruststore() {
+            publish(
+                Record(Schemas.P2P.GATEWAY_TLS_TRUSTSTORES, TRUST_STORE_HASH, GatewayTruststore(listOf(truststoreCertificate)))
+            )
         }
 
         fun publish(vararg records: Record<Any, Any>): List<CompletableFuture<Unit>> {
@@ -130,6 +139,8 @@ class GatewayTest : TestBase() {
         @Timeout(30)
         fun `http client to gateway`() {
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
+            alice.publishTruststore()
+            bob.publishTruststore()
             val serverAddress = URI.create("http://www.alice.net:10000")
             val linkInMessage = LinkInMessage(authenticatedP2PMessage(""))
             val gatewayMessage = GatewayMessage("msg-id", linkInMessage.payload)
@@ -148,7 +159,7 @@ class GatewayTest : TestBase() {
                 instanceId.incrementAndGet(),
             ).use {
                 it.startAndWaitForStarted()
-                val serverInfo = DestinationInfo(serverAddress, aliceSNI[0], null)
+                val serverInfo = DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore)
                 HttpClient(
                     serverInfo,
                     bobSslConfig,
@@ -184,12 +195,14 @@ class GatewayTest : TestBase() {
         @Timeout(100)
         fun `gateway reconfiguration`() {
             val configurationCount = 3
+            alice.publishTruststore()
+            bob.publishTruststore()
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             val recipientServerUrl = URI.create("http://www.alice.net:10001")
 
             val linkInMessage = LinkInMessage(authenticatedP2PMessage(""))
             val linkOutMessage = LinkOutMessage.newBuilder().apply {
-                header = LinkOutHeader("", NetworkType.CORDA_5, recipientServerUrl.toString())
+                header = LinkOutHeader("", NetworkType.CORDA_5, recipientServerUrl.toString(), TRUST_STORE_HASH)
                 payload = authenticatedP2PMessage("link out")
             }.build()
             val gatewayMessage = GatewayMessage("msg-id", linkInMessage.payload)
@@ -257,7 +270,8 @@ class GatewayTest : TestBase() {
                             DestinationInfo(
                                 url,
                                 aliceSNI[0],
-                                null
+                                null,
+                                truststoreKeyStore
                             ),
                             aliceSslConfig,
                             NioEventLoopGroup(1),
@@ -291,6 +305,8 @@ class GatewayTest : TestBase() {
             val clientNumber = 4
             val threadPool = NioEventLoopGroup(clientNumber)
             val serverAddress = URI.create("http://www.alice.net:10002")
+            alice.publishTruststore()
+            bob.publishTruststore()
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             Gateway(
                 createConfigurationServiceFor(
@@ -308,7 +324,7 @@ class GatewayTest : TestBase() {
             ).use {
                 it.startAndWaitForStarted()
                 (1..clientNumber).map { index ->
-                    val serverInfo = DestinationInfo(serverAddress, aliceSNI[1], null)
+                    val serverInfo = DestinationInfo(serverAddress, aliceSNI[1], null, truststoreKeyStore)
                     val client = HttpClient(serverInfo, bobSslConfig, threadPool, threadPool, 2.seconds)
                     client.start()
                     val p2pOutMessage = LinkInMessage(authenticatedP2PMessage("Client-$index"))
@@ -351,6 +367,7 @@ class GatewayTest : TestBase() {
 
             // We first produce some messages which will be consumed by the Gateway.
             val deliveryLatch = CountDownLatch(serversCount * messageCount)
+            alice.publishTruststore()
             val servers = (1..serversCount).map {
                 it + 20000
             }.map {
@@ -358,7 +375,7 @@ class GatewayTest : TestBase() {
             }.onEach { serverUrl ->
                 repeat(messageCount) {
                     val msg = LinkOutMessage.newBuilder().apply {
-                        header = LinkOutHeader("", NetworkType.CORDA_5, serverUrl)
+                        header = LinkOutHeader("", NetworkType.CORDA_5, serverUrl, TRUST_STORE_HASH)
                         payload = authenticatedP2PMessage("Target-$serverUrl")
                     }.build()
                     alice.publish(Record(LINK_OUT_TOPIC, "key", msg))
@@ -426,6 +443,8 @@ class GatewayTest : TestBase() {
             val aliceGatewayAddress = URI.create("http://www.chip.net:11003")
             val bobGatewayAddress = URI.create("http://www.dale.net:11004")
             val messageCount = 100
+            alice.publishTruststore()
+            bob.publishTruststore()
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
             bob.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
 
@@ -482,7 +501,8 @@ class GatewayTest : TestBase() {
                             aliceGatewayAddress.host,
                             aliceGatewayAddress.port,
                             chipSslConfig
-                        ), lcf1
+                        ),
+                        lcf1
                     ),
                     alice.subscriptionFactory,
                     alice.publisherFactory,
@@ -496,7 +516,8 @@ class GatewayTest : TestBase() {
                             bobGatewayAddress.host,
                             bobGatewayAddress.port,
                             daleSslConfig
-                        ), lcf2
+                        ),
+                        lcf2
                     ),
                     bob.subscriptionFactory,
                     bob.publisherFactory,
@@ -516,7 +537,7 @@ class GatewayTest : TestBase() {
                 )
             }.flatMap { (address, node) ->
                 val msg = LinkOutMessage.newBuilder().apply {
-                    header = LinkOutHeader("", NetworkType.CORDA_5, address)
+                    header = LinkOutHeader("", NetworkType.CORDA_5, address, TRUST_STORE_HASH)
                     payload = authenticatedP2PMessage("Target-$address")
                 }.build()
                 node.publish(Record(LINK_OUT_TOPIC, "key", msg))
@@ -528,7 +549,7 @@ class GatewayTest : TestBase() {
             if (!allMessagesDelivered) {
                 fail(
                     "Not all messages were delivered successfully. Bob received $bobReceivedMessages messages (expected $messageCount), " +
-                            "Alice received $aliceReceivedMessages (expected $messageCount)"
+                        "Alice received $aliceReceivedMessages (expected $messageCount)"
                 )
             }
 
@@ -545,7 +566,6 @@ class GatewayTest : TestBase() {
         }
     }
 
-
     private fun authenticatedP2PMessage(content: String) = AuthenticatedDataMessage.newBuilder().apply {
         header = CommonHeader(MessageType.DATA, 0, sessionId, 1L, Instant.now().toEpochMilli())
         payload = ByteBuffer.wrap(content.toByteArray())
@@ -559,6 +579,8 @@ class GatewayTest : TestBase() {
         fun `Gateway can recover from bad configuration`() {
             val configPublisher = ConfigPublisher()
             val host = "www.alice.net"
+            alice.publishTruststore()
+            bob.publishTruststore()
             Gateway(
                 configPublisher.readerService,
                 alice.subscriptionFactory,
@@ -621,6 +643,4 @@ class GatewayTest : TestBase() {
             }
         }
     }
-
-
 }

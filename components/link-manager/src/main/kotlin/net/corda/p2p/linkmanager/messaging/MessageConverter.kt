@@ -21,6 +21,7 @@ import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdenti
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toNetworkType
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.MemberInfo
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.NetworkType
+import net.corda.p2p.linkmanager.TrustStoresContainer
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.DataMessage
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.SessionAndMessage
 import org.apache.avro.AvroRuntimeException
@@ -38,13 +39,13 @@ class MessageConverter {
 
         private val logger = LoggerFactory.getLogger(this::class.java.name)
 
-        internal fun createLinkOutMessage(payload: Any, dest: MemberInfo, networkType: NetworkType): LinkOutMessage {
-            val header = generateLinkOutHeaderFromPeer(dest, networkType)
+        internal fun createLinkOutMessage(payload: Any, dest: MemberInfo, networkType: NetworkType, trustStoreHash: String): LinkOutMessage {
+            val header = generateLinkOutHeaderFromPeer(dest, networkType, trustStoreHash)
             return LinkOutMessage(header, payload)
         }
 
-        private fun generateLinkOutHeaderFromPeer(peer: MemberInfo, networkType: NetworkType): LinkOutHeader {
-            return LinkOutHeader(peer.holdingIdentity.x500Name, networkType.toNetworkType(), peer.endPoint.address)
+        private fun generateLinkOutHeaderFromPeer(peer: MemberInfo, networkType: NetworkType, trustStoreHash: String): LinkOutHeader {
+            return LinkOutHeader(peer.holdingIdentity.x500Name, networkType.toNetworkType(), peer.endPoint.address, trustStoreHash)
         }
 
         private fun <T> deserializeHandleAvroErrors(deserialize: (ByteBuffer) -> T, data: ByteBuffer, sessionId: String): T? {
@@ -65,7 +66,8 @@ class MessageConverter {
             source: HoldingIdentity,
             destination: HoldingIdentity,
             session: Session,
-            networkMap: LinkManagerNetworkMap
+            networkMap: LinkManagerNetworkMap,
+            trustStores: TrustStoresContainer,
         ): LinkOutMessage? {
             val serializedMessage = try {
                 message.toByteBuffer()
@@ -73,13 +75,14 @@ class MessageConverter {
                 logger.error("Could not serialize message type ${message::class.java.simpleName}. The message was discarded.")
                 return null
             }
-            return createLinkOutMessageFromPayload(serializedMessage, source, destination, session, networkMap)
+            return createLinkOutMessageFromPayload(serializedMessage, source, destination, session, networkMap, trustStores)
         }
 
         fun linkOutMessageFromAuthenticatedMessageAndKey(
             message: AuthenticatedMessageAndKey,
             session: Session,
-            networkMap: LinkManagerNetworkMap
+            networkMap: LinkManagerNetworkMap,
+            trustStores: TrustStoresContainer,
         ): LinkOutMessage? {
             val serializedMessage = try {
                 DataMessagePayload(message).toByteBuffer()
@@ -92,7 +95,8 @@ class MessageConverter {
                 message.message.header.source,
                 message.message.header.destination,
                 session,
-                networkMap
+                networkMap,
+                trustStores,
             )
         }
 
@@ -101,7 +105,8 @@ class MessageConverter {
             destination: HoldingIdentity,
             message: HeartbeatMessage,
             session: Session,
-            networkMap: LinkManagerNetworkMap
+            networkMap: LinkManagerNetworkMap,
+            trustStores: TrustStoresContainer,
         ): LinkOutMessage? {
             val serializedMessage = try {
                 DataMessagePayload(message).toByteBuffer()
@@ -114,18 +119,25 @@ class MessageConverter {
                 source,
                 destination,
                 session,
-                networkMap
+                networkMap,
+                trustStores
             )
         }
 
         fun linkOutFromUnauthenticatedMessage(
             message: UnauthenticatedMessage,
-            networkMap: LinkManagerNetworkMap
+            networkMap: LinkManagerNetworkMap,
+            trustStores: TrustStoresContainer,
         ): LinkOutMessage? {
             val destination = message.header.destination
             val destMemberInfo = networkMap.getMemberInfo(destination.toHoldingIdentity())
             if (destMemberInfo == null) {
                 logger.warn("Attempted to send message to peer $destination which is not in the network map. The message was discarded.")
+                return null
+            }
+            val trustStoreHash = trustStores.getTrustStoreHash(destination.toHoldingIdentity())
+            if (trustStoreHash == null) {
+                logger.warn("Attempted to send message to peer $destination which has no trust store. The message was discarded.")
                 return null
             }
 
@@ -135,7 +147,7 @@ class MessageConverter {
                 return null
             }
 
-            return createLinkOutMessage(message, destMemberInfo, networkType)
+            return createLinkOutMessage(message, destMemberInfo, networkType, trustStoreHash)
         }
 
         private fun createLinkOutMessageFromPayload(
@@ -143,7 +155,8 @@ class MessageConverter {
             source: HoldingIdentity,
             destination: HoldingIdentity,
             session: Session,
-            networkMap: LinkManagerNetworkMap
+            networkMap: LinkManagerNetworkMap,
+            trustStores: TrustStoresContainer,
         ): LinkOutMessage? {
             val result = when (session) {
                 is AuthenticatedSession -> {
@@ -176,8 +189,13 @@ class MessageConverter {
                 logger.warn("Could not find the network type in the NetworkMap for our identity = ${source}. The message was discarded.")
                 return null
             }
+            val trustStoreHash = trustStores.getTrustStoreHash(destination.toHoldingIdentity())
+            if (trustStoreHash == null) {
+                logger.warn("Attempted to send message to peer $destination which has no trust store. The message was discarded.")
+                return null
+            }
 
-            return createLinkOutMessage(result, destMemberInfo, networkType)
+            return createLinkOutMessage(result, destMemberInfo, networkType, trustStoreHash)
         }
 
         fun <T> extractPayload(session: Session, sessionId: String, message: DataMessage, deserialize: (ByteBuffer) -> T): T? {

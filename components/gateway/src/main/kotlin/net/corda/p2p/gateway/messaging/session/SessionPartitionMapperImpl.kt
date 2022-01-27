@@ -23,7 +23,7 @@ class SessionPartitionMapperImpl(
 ) : SessionPartitionMapper, LifecycleWithDominoTile {
 
     companion object {
-        const val CONSUMER_GROUP_ID = "session_partitions_mapper"
+        private const val CONSUMER_GROUP_ID = "session_partitions_mapper"
     }
 
     private val sessionPartitionsMapping = ConcurrentHashMap<String, List<Int>>()

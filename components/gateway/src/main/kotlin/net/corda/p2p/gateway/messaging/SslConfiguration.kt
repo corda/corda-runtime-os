@@ -19,13 +19,6 @@ data class SslConfiguration(
      */
     val keyStorePassword: String,
 
-    val rawTrustStore: ByteArray,
-
-    /**
-     * The trust store password
-     */
-    val trustStorePassword: String,
-
     /**
      * Property determining how the revocation check will be made for the server certificate
      */
@@ -36,12 +29,6 @@ data class SslConfiguration(
      */
     val keyStore: KeyStore by lazy {
         readKeyStore(rawKeyStore, keyStorePassword)
-    }
-    /**
-     * The trust root key store used to validate the peer certificate
-     */
-    val trustStore: KeyStore by lazy {
-        readKeyStore(rawTrustStore, trustStorePassword)
     }
 
     private fun readKeyStore(rawData: ByteArray, password: String): KeyStore {
@@ -58,8 +45,6 @@ data class SslConfiguration(
 
         if (!rawKeyStore.contentEquals(other.rawKeyStore)) return false
         if (keyStorePassword != other.keyStorePassword) return false
-        if (!rawTrustStore.contentEquals(other.rawTrustStore)) return false
-        if (trustStorePassword != other.trustStorePassword) return false
         if (revocationCheck != other.revocationCheck) return false
 
         return true
@@ -68,8 +53,6 @@ data class SslConfiguration(
     override fun hashCode(): Int {
         var result = rawKeyStore.contentHashCode()
         result = 31 * result + keyStorePassword.hashCode()
-        result = 31 * result + rawTrustStore.contentHashCode()
-        result = 31 * result + trustStorePassword.hashCode()
         result = 31 * result + revocationCheck.hashCode()
         return result
     }
@@ -80,8 +63,6 @@ internal fun Config.toSslConfiguration(): SslConfiguration {
     return SslConfiguration(
         rawKeyStore = this.getString("keyStore").base64ToByteArray(),
         keyStorePassword = this.getString("keyStorePassword"),
-        rawTrustStore = this.getString("trustStore").base64ToByteArray(),
-        trustStorePassword = this.getString("trustStorePassword"),
         revocationCheck = RevocationConfig(revocationCheckMode)
     )
 }

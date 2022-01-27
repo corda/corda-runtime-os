@@ -23,6 +23,7 @@ import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.gateway.messaging.http.SniCalculator
+import net.corda.p2p.gateway.messaging.http.TrustStores
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.seconds
@@ -36,12 +37,24 @@ open class TestBase {
         return javaClass.classLoader.getResource("$fileName.jks").readBytes()
     }
 
+    protected val truststoreCertificate by lazy {
+        javaClass.classLoader.getResource("truststore/certificate.pem").readText()
+    }
+    protected val c4TruststoreCertificate by lazy {
+        javaClass.classLoader.getResource("truststore_c4/cordarootca.pem").readText()
+    }
+    protected val truststoreKeyStore by lazy {
+        TrustStores.Truststore(listOf(truststoreCertificate)).trustStore
+    }
+    protected val c4TruststoreKeyStore by lazy {
+        TrustStores.Truststore(listOf(c4TruststoreCertificate)).trustStore
+    }
+
     protected val clientMessageContent = "PING"
     protected val serverResponseContent = "PONG"
     private val keystorePass = "password"
-    private val truststorePass = "password"
+
     private val keystorePass_c4 = "cordacadevpass"
-    private val truststorePass_c4 = "trustpass"
     protected val aliceSNI = listOf("alice.net", "www.alice.net")
     protected val bobSNI = listOf("bob.net", "www.bob.net")
     protected val partyAx500Name = X500Name("O=PartyA, L=London, C=GB")
@@ -49,39 +62,27 @@ open class TestBase {
     protected val aliceSslConfig = SslConfiguration(
         keyStorePassword = keystorePass,
         rawKeyStore = readKeyStore("sslkeystore_alice"),
-        trustStorePassword = truststorePass,
-        rawTrustStore = readKeyStore("truststore"),
         revocationCheck = RevocationConfig(RevocationConfigMode.OFF)
     )
     protected val bobSslConfig = SslConfiguration(
         keyStorePassword = keystorePass,
         rawKeyStore = readKeyStore("sslkeystore_bob"),
-        trustStorePassword = truststorePass,
-        rawTrustStore = readKeyStore("truststore"),
         revocationCheck = RevocationConfig(RevocationConfigMode.HARD_FAIL)
-
     )
     protected val chipSslConfig = SslConfiguration(
         keyStorePassword = keystorePass,
         rawKeyStore = readKeyStore("sslkeystore_chip"),
-        trustStorePassword = truststorePass,
-        rawTrustStore = readKeyStore("truststore"),
         revocationCheck = RevocationConfig(RevocationConfigMode.HARD_FAIL)
-
     )
     protected val daleSslConfig = SslConfiguration(
         keyStorePassword = keystorePass,
         rawKeyStore = readKeyStore("sslkeystore_dale"),
-        trustStorePassword = truststorePass,
-        rawTrustStore = readKeyStore("truststore"),
         revocationCheck = RevocationConfig(RevocationConfigMode.SOFT_FAIL)
 
     )
     protected val c4sslConfig = SslConfiguration(
         keyStorePassword = keystorePass_c4,
         rawKeyStore = readKeyStore("sslkeystore_c4"),
-        trustStorePassword = truststorePass_c4,
-        rawTrustStore = readKeyStore("truststore_c4"),
         revocationCheck = RevocationConfig(RevocationConfigMode.OFF)
     )
 
@@ -117,8 +118,6 @@ open class TestBase {
                 .withValue("hostPort", ConfigValueFactory.fromAnyRef(configuration.hostPort))
                 .withValue("sslConfig.keyStorePassword", ConfigValueFactory.fromAnyRef(configuration.sslConfig.keyStorePassword))
                 .withValue("sslConfig.keyStore", ConfigValueFactory.fromAnyRef(configuration.sslConfig.rawKeyStore.toBase64()))
-                .withValue("sslConfig.trustStorePassword", ConfigValueFactory.fromAnyRef(configuration.sslConfig.trustStorePassword))
-                .withValue("sslConfig.trustStore", ConfigValueFactory.fromAnyRef(configuration.sslConfig.rawTrustStore.toBase64()))
                 .withValue("sslConfig.revocationCheck.mode", ConfigValueFactory.fromAnyRef(configuration.sslConfig.revocationCheck.mode.toString()))
                 .withValue("connectionConfig.connectionIdleTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.connectionIdleTimeout))
                 .withValue("connectionConfig.maxClientConnections", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maxClientConnections))

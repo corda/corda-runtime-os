@@ -27,7 +27,7 @@ class ConfigBasedLinkManagerHostingMap(
         configurationChangeHandler = HostingMapConfigurationChangeHandler()
     )
 
-    private val locallyHostedIdentities = ConcurrentHashMap.newKeySet<LinkManagerNetworkMap.HoldingIdentity>()
+    override val locallyHostedIdentities = ConcurrentHashMap.newKeySet<LinkManagerNetworkMap.HoldingIdentity>()
 
     override fun isHostedLocally(identity: LinkManagerNetworkMap.HoldingIdentity): Boolean {
         return locallyHostedIdentities.contains(identity)

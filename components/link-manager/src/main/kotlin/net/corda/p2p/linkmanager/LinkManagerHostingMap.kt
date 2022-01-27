@@ -12,4 +12,6 @@ interface LinkManagerHostingMap: LifecycleWithDominoTile {
 
     fun isHostedLocally(identity: LinkManagerNetworkMap.HoldingIdentity): Boolean
 
+    val locallyHostedIdentities: Collection<LinkManagerNetworkMap.HoldingIdentity>
+
 }

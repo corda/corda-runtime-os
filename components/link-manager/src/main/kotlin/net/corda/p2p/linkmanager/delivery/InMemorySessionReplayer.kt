@@ -12,6 +12,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
+import net.corda.p2p.linkmanager.TrustStoresContainer
 import net.corda.p2p.linkmanager.messaging.MessageConverter
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
@@ -25,7 +26,8 @@ class InMemorySessionReplayer(
     configurationReaderService: ConfigurationReadService,
     coordinatorFactory: LifecycleCoordinatorFactory,
     configuration: SmartConfig,
-    private val networkMap: LinkManagerNetworkMap
+    private val networkMap: LinkManagerNetworkMap,
+    private val trustStoresContainer: TrustStoresContainer,
 ): LifecycleWithDominoTile {
 
     companion object {
@@ -96,7 +98,15 @@ class InMemorySessionReplayer(
             return
         }
 
-        val message = MessageConverter.createLinkOutMessage(messageReplay.message, memberInfo, networkType)
+        val trustStoreHash = trustStoresContainer.getTrustStoreHash(memberInfo.holdingIdentity)
+        if (trustStoreHash == null) {
+            logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName}) but" +
+                    " could not find the trust store for group ${memberInfo.holdingIdentity.groupId}." +
+                    " The message was not replayed.")
+            return
+        }
+
+        val message = MessageConverter.createLinkOutMessage(messageReplay.message, memberInfo, networkType, trustStoreHash)
         logger.debug { "Replaying session message ${message.payload.javaClass} for session ${messageReplay.sessionId}." }
         publisher.publish(listOf(Record(LINK_OUT_TOPIC, LinkManager.generateKey(), message)))
         messageReplay.sentSessionMessageCallback(

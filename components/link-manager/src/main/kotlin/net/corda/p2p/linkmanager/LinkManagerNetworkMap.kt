@@ -3,6 +3,7 @@ package net.corda.p2p.linkmanager
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import java.security.PublicKey
+import java.security.cert.Certificate
 
 /**
  * This interface defines the parts of the Network Map required by the LinkManager.
@@ -44,6 +45,11 @@ interface LinkManagerNetworkMap: LifecycleWithDominoTile {
      * Returns the [NetworkType] for group identifier [groupId].
      */
     fun getNetworkType(groupId: String): NetworkType?
+
+    /**
+     * return a collection of certificates for a given group ID.
+     */
+    fun getTrustedCertificates(groupId: String): List<String>?
 
     data class MemberInfo(val holdingIdentity: HoldingIdentity,
                           val publicKey: PublicKey,
