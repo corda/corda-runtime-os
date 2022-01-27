@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.isA
@@ -65,6 +66,15 @@ class ReplaySchedulerTest {
         createResources = context.arguments()[2] as ((ResourcesHolder) -> CompletableFuture<Unit>)
         configHandler = context.arguments()[4] as ReplayScheduler<*>.ReplaySchedulerConfigurationChangeHandler
     }
+    private val replayCalculator = mock<ReplayCalculator> {
+        whenever(mock.calculateReplayInterval()).thenReturn(replayPeriod)
+        whenever(mock.calculateReplayInterval(any())).thenReturn(replayPeriod)
+        whenever(mock.shouldReplayMessage(any())).thenReturn(true)
+    }
+    private val replayCalculatorFactory = mock<ReplayCalculatorFactory> {
+        whenever(mock.fromConfig(any())).thenReturn(replayCalculator)
+    }
+
 
     @AfterEach
     fun cleanUp() {
@@ -76,7 +86,7 @@ class ReplaySchedulerTest {
 
     @Test
     fun `The ReplayScheduler will not replay before start`() {
-        val replayManager = ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, { _: Any -> }) { 0 }
+        val replayManager = ReplayScheduler(coordinatorFactory, service, mock(), REPLAY_PERIOD_KEY, { _: Any -> }) { 0 }
         assertThrows<IllegalStateException> {
             replayManager.addForReplay(0,"", Any(), Mockito.mock(SessionManager.SessionKey::class.java))
         }
@@ -84,7 +94,7 @@ class ReplaySchedulerTest {
 
     @Test
     fun `on applyNewConfiguration completes the future exceptionally if config is invalid`() {
-        ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, { _: Any -> }) { 0 }
+        ReplayScheduler(coordinatorFactory, service, mock(), REPLAY_PERIOD_KEY, { _: Any -> }) { 0 }
         val future = configHandler.applyNewConfiguration(
             ReplayScheduler.ReplaySchedulerConfig(Duration.ofMillis(-10), Duration.ofMillis(-10), MAX_REPLAYING_MESSAGES),
             null,
@@ -97,7 +107,7 @@ class ReplaySchedulerTest {
 
     @Test
     fun `on applyNewConfiguration completes the future if config is valid`() {
-        ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, { _: Any -> }) { 0 }
+        ReplayScheduler(coordinatorFactory, service, mock(), REPLAY_PERIOD_KEY, { _: Any -> }) { 0 }
         val future = configHandler.applyNewConfiguration(
             ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod, MAX_REPLAYING_MESSAGES),
             null,
@@ -110,7 +120,7 @@ class ReplaySchedulerTest {
 
     @Test
     fun `on createResource the ReplayScheduler adds a executor service to the resource holder`() {
-        ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, { _: Any -> }) { 0 }
+        ReplayScheduler(coordinatorFactory, service, mock(), REPLAY_PERIOD_KEY, { _: Any -> }) { 0 }
         val future = createResources(resourcesHolder)
         verify(resourcesHolder).keep(isA<AutoClosableScheduledExecutorService>())
         assertThat(future.isDone).isTrue
@@ -122,11 +132,17 @@ class ReplaySchedulerTest {
         val messages = 9
 
         val tracker = TrackReplayedMessages(messages)
-        val replayManager = ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, tracker::replayMessage) { 0 }
+        val replayManager = ReplayScheduler(
+            coordinatorFactory,
+            service,
+            replayCalculatorFactory,
+            REPLAY_PERIOD_KEY,
+            tracker::replayMessage
+        ) { 0 }
         setRunning()
         createResources(resourcesHolder)
         configHandler.applyNewConfiguration(
-            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod, MAX_REPLAYING_MESSAGES),
+            mock(),
             null,
             configResourcesHolder
         )
@@ -150,11 +166,17 @@ class ReplaySchedulerTest {
         val messages = 9
 
         val tracker = TrackReplayedMessages(messages)
-        val replayManager = ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, tracker::replayMessage) { 0 }
+        val replayManager = ReplayScheduler(
+            coordinatorFactory,
+            service,
+            replayCalculatorFactory,
+            REPLAY_PERIOD_KEY,
+            tracker::replayMessage
+        ) { 0 }
         setRunning()
         createResources(resourcesHolder)
         configHandler.applyNewConfiguration(
-            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod, MAX_REPLAYING_MESSAGES),
+            mock(),
             null,
             configResourcesHolder
         )
@@ -182,14 +204,16 @@ class ReplaySchedulerTest {
         val messages = 8
 
         val tracker = TrackReplayedMessages(messages)
-        val replayManager = ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, tracker::replayMessage) { 0 }
+        val replayManager = ReplayScheduler(
+            coordinatorFactory,
+            service,
+            replayCalculatorFactory,
+            REPLAY_PERIOD_KEY,
+            tracker::replayMessage
+        ) { 0 }
         setRunning()
         createResources(resourcesHolder)
-        configHandler.applyNewConfiguration(
-            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod, MAX_REPLAYING_MESSAGES),
-            null,
-            configResourcesHolder
-        )
+        configHandler.applyNewConfiguration(mock(), null, configResourcesHolder)
 
         val messageIdsToRemove = mutableListOf<String>()
         val messageIdsToNotRemove = mutableListOf<String>()
@@ -229,15 +253,17 @@ class ReplaySchedulerTest {
     fun `The ReplayScheduler handles exceptions`() {
         val message = "message"
         val tracker = TrackReplayedMessages(2, 1)
-        val replayManager = ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, tracker::replayMessage) { 0 }
+        val replayManager = ReplayScheduler(
+            coordinatorFactory,
+            service,
+            replayCalculatorFactory,
+            REPLAY_PERIOD_KEY,
+            tracker::replayMessage
+        ) { 0 }
         replayManager.start()
         setRunning()
         createResources(resourcesHolder)
-        configHandler.applyNewConfiguration(
-            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod, MAX_REPLAYING_MESSAGES),
-             null,
-            configResourcesHolder
-        )
+        configHandler.applyNewConfiguration(mock(), null, configResourcesHolder)
 
         replayManager.addForReplay(0, "", message, sessionKey)
         tracker.await()
@@ -249,13 +275,34 @@ class ReplaySchedulerTest {
 
     @Test
     fun `The ReplayScheduler replays added messages after config update`() {
+        val replayCalculator = mock<ReplayCalculator> {
+            whenever(mock.calculateReplayInterval()).thenReturn(replayPeriod)
+            whenever(mock.calculateReplayInterval(any())).thenReturn(replayPeriod)
+            whenever(mock.shouldReplayMessage(any())).thenReturn(true)
+        }
+        val afterConfigUpdate = mock<ReplayCalculator> {
+            whenever(mock.calculateReplayInterval()).thenReturn(replayPeriod.multipliedBy( 2))
+            whenever(mock.calculateReplayInterval(any())).thenReturn(replayPeriod.multipliedBy(2))
+            whenever(mock.shouldReplayMessage(any())).thenReturn(true)
+            whenever(mock.extraMessagesToReplay(any())).thenReturn(0)
+        }
+        val replayCalculatorFactory = mock<ReplayCalculatorFactory> {
+            whenever(mock.fromConfig(any())).thenReturn(replayCalculator).thenReturn(afterConfigUpdate)
+        }
+
         val tracker = TrackReplayedMessages( 2)
-        val replayManager = ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, tracker::replayMessage) { 0 }
+        val replayManager = ReplayScheduler(
+            coordinatorFactory,
+            service,
+            replayCalculatorFactory,
+            REPLAY_PERIOD_KEY,
+            tracker::replayMessage
+        ) { 0 }
         replayManager.start()
         setRunning()
         createResources(resourcesHolder)
         configHandler.applyNewConfiguration(
-            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod, MAX_REPLAYING_MESSAGES),
+            mock(),
              null,
             configResourcesHolder
         )
@@ -269,7 +316,7 @@ class ReplaySchedulerTest {
         )
 
         configHandler.applyNewConfiguration(
-            ReplayScheduler.ReplaySchedulerConfig(replayPeriod.multipliedBy(2), replayPeriod.multipliedBy(2), MAX_REPLAYING_MESSAGES),
+            mock(),
             null,
             configResourcesHolder
         )
@@ -290,48 +337,25 @@ class ReplaySchedulerTest {
     }
 
     @Test
-    fun `The ReplayScheduler caps the number of messages replayed at a time`() {
-        val messageCap = 10
-        val firstBatchLatch = CountDownLatch(messageCap)
-        val secondBatchLatch = CountDownLatch(messageCap * 2)
-        val replayedMessages = ConcurrentHashMap.newKeySet<String>()
-        fun onReplay(messageId: String) {
-            if (!replayedMessages.contains(messageId)) {
-                firstBatchLatch.countDown()
-                secondBatchLatch.countDown()
-                replayedMessages.add(messageId)
-            }
-        }
-
-        val replayManager = ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, ::onReplay) { 0 }
-        replayManager.start()
-        setRunning()
-        createResources(resourcesHolder)
-        configHandler.applyNewConfiguration(
-            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod, messageCap),
-            null,
-            configResourcesHolder
-        )
-        val addedMessages = mutableListOf<String>()
-        for (i in 0 until 2 * messageCap) {
-            val messageId = UUID.randomUUID().toString()
-            replayManager.addForReplay(0, messageId, messageId, sessionKey)
-            addedMessages.add(messageId)
-        }
-        firstBatchLatch.await()
-        Thread.sleep(5 * replayPeriod.toMillis())
-        //Second batch should only start to replay once we acknowledge the first batch.
-        assertThat(secondBatchLatch.count).isEqualTo(messageCap.toLong())
-
-        for (i in 0 until messageCap) {
-            replayManager.removeFromReplay(addedMessages[i], sessionKey)
-        }
-        secondBatchLatch.await()
-    }
-
-    @Test
     fun `If the ReplayScheduler cap increases queued messages are replayed`() {
-        val messageCap = 10
+        val messageCap = 3
+        val numberOfMessagesCapture = argumentCaptor<Int>()
+        val replayCalculator = mock<ReplayCalculator> {
+            whenever(mock.calculateReplayInterval()).thenReturn(replayPeriod)
+            whenever(mock.calculateReplayInterval(any())).thenReturn(replayPeriod)
+            whenever(mock.shouldReplayMessage(numberOfMessagesCapture.capture()))
+                .thenAnswer { numberOfMessagesCapture.lastValue < messageCap }
+        }
+        val afterConfigUpdate = mock<ReplayCalculator> {
+            whenever(mock.calculateReplayInterval()).thenReturn(replayPeriod)
+            whenever(mock.calculateReplayInterval(any())).thenReturn(replayPeriod)
+            whenever(mock.shouldReplayMessage(any())).thenReturn(true)
+            whenever(mock.extraMessagesToReplay(any())).thenReturn(messageCap)
+        }
+        val replayCalculatorFactory = mock<ReplayCalculatorFactory> {
+            whenever(mock.fromConfig(any())).thenReturn(replayCalculator).thenReturn(afterConfigUpdate)
+        }
+
         val firstBatchLatch = CountDownLatch(messageCap)
         val secondBatchLatch = CountDownLatch(messageCap * 2)
         val replayedMessages = ConcurrentHashMap.newKeySet<String>()
@@ -343,15 +367,11 @@ class ReplaySchedulerTest {
             }
         }
 
-        val replayManager = ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, ::onReplay) { 0 }
+        val replayManager = ReplayScheduler(coordinatorFactory, service, replayCalculatorFactory, REPLAY_PERIOD_KEY, ::onReplay) { 0 }
         replayManager.start()
         setRunning()
         createResources(resourcesHolder)
-        configHandler.applyNewConfiguration(
-            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod, messageCap),
-            null,
-            configResourcesHolder
-        )
+        configHandler.applyNewConfiguration(mock(), null, configResourcesHolder)
         val addedMessages = mutableListOf<String>()
         for (i in 0 until 2 * messageCap) {
             val messageId = UUID.randomUUID().toString()
@@ -363,8 +383,8 @@ class ReplaySchedulerTest {
         //Second batch should only start to replay once we update the config.
         assertThat(secondBatchLatch.count).isEqualTo(messageCap.toLong())
         configHandler.applyNewConfiguration(
-            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod, 2 * messageCap),
-            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod, messageCap),
+            mock(),
+            mock(),
             configResourcesHolder
         )
 

@@ -29,9 +29,10 @@ import java.util.concurrent.atomic.AtomicReference
  * This class keeps track of messages which may need to be replayed.
  */
 @Suppress("LongParameterList")
-class ReplayScheduler<M>(
+internal class ReplayScheduler<M>(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val configReadService: ConfigurationReadService,
+    private val replayCalculatorFactory: ReplayCalculatorFactory,
     private val replaySchedulerConfigKey: String,
     private val replayMessage: (message: M) -> Unit,
     private val currentTimestamp: () -> Long = { Instant.now().toEpochMilli() },
@@ -47,7 +48,7 @@ class ReplayScheduler<M>(
     @Volatile
     private lateinit var executorService: ScheduledExecutorService
 
-    private val replaySchedulerConfig = AtomicReference<ReplaySchedulerConfig>()
+    private val replayCalculator = AtomicReference<ReplayCalculator>()
     data class ReplayInfo(val currentReplayPeriod: Duration, val future: ScheduledFuture<*>)
     private val replayingMessageIdsPerSessionKey = ConcurrentHashMap<SessionManager.SessionKey, MutableSet<MessageId>>()
     private val replayInfoPerMessageId = ConcurrentHashMap<MessageId, ReplayInfo>()
@@ -58,23 +59,15 @@ class ReplayScheduler<M>(
         private val logger = contextLogger()
     }
 
-    private fun calculateCappedBackoff(lastDelay: Duration): Duration {
-        val currentConfig = replaySchedulerConfig.get()
-        val delay = lastDelay.multipliedBy(2)
-        return when {
-            delay > currentConfig.cutOff -> {
-                currentConfig.cutOff
-            }
-            delay < currentConfig.baseReplayPeriod -> {
-                currentConfig.baseReplayPeriod
-            }
-            else -> {
-                delay
-            }
-        }
-    }
-
-    data class ReplaySchedulerConfig(
+    /**
+     * Controls how added messages are replayed.
+     * [baseReplayPeriod] The period between the original message being sent and a replay. This will double on every subsequent replay,
+     * until [cutOff] is reached.
+     * [cutOff] The maximum period between two replays of the same message.
+     * [maxReplayingMessages] The maximum number of replaying messages for each [SessionManager.SessionKey]. This limit is only applied
+     * when using a [ExponentialBackoffWithMaxReplayCalculatorFactory].
+     */
+    internal data class ReplaySchedulerConfig(
         val baseReplayPeriod: Duration,
         val cutOff: Duration,
         val maxReplayingMessages: Int
@@ -97,8 +90,9 @@ class ReplayScheduler<M>(
                 )
                 return configUpdateResult
             }
-            replaySchedulerConfig.set(newConfiguration)
-            val extraMessages = oldConfiguration?.maxReplayingMessages?.let {newConfiguration.maxReplayingMessages - it} ?: 0
+            val newReplayCalculator = replayCalculatorFactory.fromConfig(newConfiguration)
+            replayCalculator.set(newReplayCalculator)
+            val extraMessages = oldConfiguration?.maxReplayingMessages?.let { newReplayCalculator.extraMessagesToReplay(it) } ?: 0
             queuedMessagesPerSessionKey.forEach { (sessionKey, queuedMessages) ->
                 for (i in 0 until extraMessages) {
                     queuedMessages.poll()?.let { addForReplay(it.originalAttemptTimestamp, it.uniqueId, it.message, sessionKey) }
@@ -134,7 +128,6 @@ class ReplayScheduler<M>(
             if (!isRunning) {
                 throw IllegalStateException("A message was added for replay before the ReplayScheduler was started.")
             }
-            val maxMessagesPerSessionKey = replaySchedulerConfig.get().maxReplayingMessages
             replayingMessageIdsPerSessionKey.compute(sessionKey) { _, replayingMessagesForSessionKey ->
                 when {
                     replayingMessagesForSessionKey == null -> {
@@ -143,7 +136,7 @@ class ReplayScheduler<M>(
                         set.add(messageId)
                         set
                     }
-                    replayingMessagesForSessionKey.size < maxMessagesPerSessionKey -> {
+                    replayCalculator.get().shouldReplayMessage(replayingMessagesForSessionKey.size) -> {
                         scheduleForReplay(originalAttemptTimestamp, messageId, message)
                         replayingMessagesForSessionKey.add(messageId)
                         replayingMessagesForSessionKey
@@ -159,10 +152,10 @@ class ReplayScheduler<M>(
     }
 
     private fun scheduleForReplay(originalAttemptTimestamp: Long, messageId: MessageId, message: M) {
-        val baseReplayPeriod = replaySchedulerConfig.get().baseReplayPeriod
-        val delay = baseReplayPeriod.toMillis() + originalAttemptTimestamp - currentTimestamp()
+        val firstReplayPeriod = replayCalculator.get().calculateReplayInterval()
+        val delay = firstReplayPeriod.toMillis() + originalAttemptTimestamp - currentTimestamp()
         val future = executorService.schedule({ replay(message, messageId) }, delay, TimeUnit.MILLISECONDS)
-        replayInfoPerMessageId[messageId] = ReplayInfo(baseReplayPeriod, future)
+        replayInfoPerMessageId[messageId] = ReplayInfo(firstReplayPeriod, future)
     }
 
     fun removeFromReplay(messageId: MessageId, sessionKey: SessionManager.SessionKey) {
@@ -195,20 +188,22 @@ class ReplayScheduler<M>(
         try {
             replayMessage(message)
         } catch (exception: Exception) {
-            logger.error("An exception was thrown when replaying a message. The task will be retried again in " +
-                "${replaySchedulerConfig.get().baseReplayPeriod.toMillis()} ms.\nException:",
+            val nextReplayInterval =
+                replayInfoPerMessageId[messageId]?.let { replayCalculator.get().calculateReplayInterval(it.currentReplayPeriod).toMillis() }
+            logger.error("An exception was thrown when replaying a message. The task will be retried again in $nextReplayInterval ms." +
+                "\nException:",
                 exception
             )
         }
         reschedule(message, messageId)
     }
 
-    private fun reschedule(message: M, uniqueId: MessageId) {
-        replayInfoPerMessageId.computeIfPresent(uniqueId) { _, oldReplayInfo ->
-            val delay = calculateCappedBackoff(oldReplayInfo.currentReplayPeriod)
+    private fun reschedule(message: M, messageId: MessageId) {
+        replayInfoPerMessageId.computeIfPresent(messageId) { _, oldReplayInfo ->
+            val delay = replayCalculator.get().calculateReplayInterval(oldReplayInfo.currentReplayPeriod)
             ReplayInfo(
                 delay,
-                executorService.schedule({ replay(message, uniqueId) }, delay.toMillis(), TimeUnit.MILLISECONDS)
+                executorService.schedule({ replay(message, messageId) }, delay.toMillis(), TimeUnit.MILLISECONDS)
             )
         }
     }
