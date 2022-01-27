@@ -11,8 +11,6 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.virtualnode.rpcops.impl.VirtualNodeRPCOpsEventHandler
-import net.corda.virtualnode.rpcops.impl.v1.VirtualNodeRPCOpsInternal
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor

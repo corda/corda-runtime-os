@@ -8,8 +8,6 @@ import net.corda.schema.configuration.ConfigKeys.Companion.BOOTSTRAP_SERVERS
 import net.corda.schema.configuration.ConfigKeys.Companion.RPC_CONFIG
 import net.corda.schema.configuration.ConfigKeys.Companion.RPC_ENDPOINT_TIMEOUT_MILLIS
 import net.corda.virtualnode.rpcops.VirtualNodeRPCOpsServiceException
-import net.corda.virtualnode.rpcops.impl.VirtualNodeRPCOpsConfigHandler
-import net.corda.virtualnode.rpcops.impl.v1.VirtualNodeRPCOpsInternal
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
