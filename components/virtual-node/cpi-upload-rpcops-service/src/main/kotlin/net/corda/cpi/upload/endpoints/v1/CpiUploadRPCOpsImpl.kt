@@ -23,18 +23,6 @@ class CpiUploadRPCOpsImpl @Activate constructor(
 
     override val targetInterface: Class<CpiUploadRPCOps> = CpiUploadRPCOps::class.java
 
-    // TODO: remove the following
-//    init {
-//        thread {
-//            if (rpcSender != null) {
-//                println("rpcSender is set!")
-//            } else {
-//                println("rpcSender is not set!")
-//            }
-//            Thread.sleep(1000)
-//        }.start()
-//    }
-
     companion object {
         val RPC_CONFIG = RPCConfig("", "", "", Any::class.java, Any::class.java)
     }
