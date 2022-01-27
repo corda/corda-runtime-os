@@ -70,7 +70,7 @@ class PermissionStorageWriterProcessorImpl(
                 }
                 else -> throw IllegalArgumentException("Received invalid permission request type")
             }
-            respFuture.complete(PermissionManagementResponse(response))
+            respFuture.complete(PermissionManagementResponse(true, null, response))
         } catch (e: Exception) {
             log.warn(e.message)
             respFuture.completeExceptionally(e)
