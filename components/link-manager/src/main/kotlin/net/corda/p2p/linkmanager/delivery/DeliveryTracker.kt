@@ -55,7 +55,7 @@ class DeliveryTracker(
     private val replayScheduler = ReplayScheduler(
         coordinatorFactory,
         configReadService,
-        ExponentialBackoffWithMaxReplayCalculatorFactory(),
+        true,
         MESSAGE_REPLAY_KEY_PREFIX,
         appMessageReplayer::replayMessage,
     )

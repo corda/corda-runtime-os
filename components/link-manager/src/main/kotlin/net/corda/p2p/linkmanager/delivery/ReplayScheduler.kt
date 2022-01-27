@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicReference
 internal class ReplayScheduler<M>(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val configReadService: ConfigurationReadService,
-    private val replayCalculatorFactory: ReplayCalculatorFactory,
+    private val limitTotalReplays: Boolean,
     private val replaySchedulerConfigKey: String,
     private val replayMessage: (message: M) -> Unit,
     private val currentTimestamp: () -> Long = { Instant.now().toEpochMilli() },
@@ -65,7 +65,7 @@ internal class ReplayScheduler<M>(
      * until [cutOff] is reached.
      * [cutOff] The maximum period between two replays of the same message.
      * [maxReplayingMessages] The maximum number of replaying messages for each [SessionManager.SessionKey]. This limit is only applied
-     * when using a [ExponentialBackoffWithMaxReplayCalculatorFactory].
+     * when using a [ExponentialBackoffReplayCalculatorFactory].
      */
     internal data class ReplaySchedulerConfig(
         val baseReplayPeriod: Duration,
@@ -90,7 +90,7 @@ internal class ReplayScheduler<M>(
                 )
                 return configUpdateResult
             }
-            val newReplayCalculator = replayCalculatorFactory.fromConfig(newConfiguration)
+            val newReplayCalculator = ReplayCalculator(limitTotalReplays, newConfiguration)
             replayCalculator.set(newReplayCalculator)
             val extraMessages = oldConfiguration?.maxReplayingMessages?.let { newReplayCalculator.extraMessagesToReplay(it) } ?: 0
             queuedMessagesPerSessionKey.forEach { (sessionKey, queuedMessages) ->

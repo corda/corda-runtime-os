@@ -17,8 +17,8 @@ class ReplayCalculatorTest {
     }
 
     @Test
-    fun `ExponentialBackoffReplayCalculator calculates intervals correctly`() {
-        val calculator = ExponentialBackoffReplayCalculator().fromConfig(CONFIG)
+    fun `ReplayCalculator calculates intervals correctly`() {
+        val calculator = ReplayCalculator(false, CONFIG)
         val firstInterval = calculator.calculateReplayInterval()
         assertEquals(Duration.ofSeconds(1), firstInterval)
         val secondInterval = calculator.calculateReplayInterval(firstInterval)
@@ -30,8 +30,8 @@ class ReplayCalculatorTest {
     }
 
     @Test
-    fun `ExponentialBackoffReplayCalculator always replays messages`() {
-        val calculator = ExponentialBackoffReplayCalculator().fromConfig(CONFIG)
+    fun `ExponentialBackoffReplayCalculator always replays messages if no limit`() {
+        val calculator = ReplayCalculator(false, CONFIG)
         assertTrue(calculator.shouldReplayMessage(0))
         assertTrue(calculator.shouldReplayMessage(CONFIG.maxReplayingMessages))
         assertTrue(calculator.shouldReplayMessage(CONFIG.maxReplayingMessages + 1))
@@ -39,21 +39,8 @@ class ReplayCalculatorTest {
     }
 
     @Test
-    fun `ExponentialBackoffWithMaxReplayCalculatorFactory calculates intervals correctly`() {
-        val calculator = ExponentialBackoffWithMaxReplayCalculatorFactory().fromConfig(CONFIG)
-        val firstInterval = calculator.calculateReplayInterval()
-        assertEquals(Duration.ofSeconds(1), firstInterval)
-        val secondInterval = calculator.calculateReplayInterval(firstInterval)
-        assertEquals(Duration.ofSeconds(2), secondInterval)
-        val thirdInterval = calculator.calculateReplayInterval(secondInterval)
-        assertEquals(Duration.ofSeconds(4), thirdInterval)
-        val fourthInterval = calculator.calculateReplayInterval(thirdInterval)
-        assertEquals(Duration.ofSeconds(7), fourthInterval)
-    }
-
-    @Test
-    fun `ExponentialBackoffWithMaxReplayCalculatorFactory only replays messages smaller than the cap`() {
-        val calculator = ExponentialBackoffWithMaxReplayCalculatorFactory().fromConfig(CONFIG)
+    fun `ExponentialBackoffReplayCalculator only replays messages smaller than the limit`() {
+        val calculator = ReplayCalculator(true, CONFIG)
         assertTrue(calculator.shouldReplayMessage(0))
         assertTrue(calculator.shouldReplayMessage(CONFIG.maxReplayingMessages - 1))
         assertFalse(calculator.shouldReplayMessage(CONFIG.maxReplayingMessages))

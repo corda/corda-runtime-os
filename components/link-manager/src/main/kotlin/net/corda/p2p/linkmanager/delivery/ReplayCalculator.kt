@@ -2,66 +2,35 @@ package net.corda.p2p.linkmanager.delivery
 
 import java.time.Duration
 
-internal interface ReplayCalculator {
-    fun calculateReplayInterval(lastDelay: Duration = Duration.ZERO): Duration
-    fun shouldReplayMessage(currentNumberOfReplayingMessages: Int): Boolean
-    fun extraMessagesToReplay(maxNumberOfReplayingMessagesBefore: Int): Int
-}
-
-internal interface ReplayCalculatorFactory {
-    fun fromConfig(config: ReplayScheduler.ReplaySchedulerConfig): ReplayCalculator
-}
-
-internal class ExponentialBackoffWithMaxReplayCalculatorFactory: ReplayCalculatorFactory {
-
-    override fun fromConfig(config: ReplayScheduler.ReplaySchedulerConfig): ReplayCalculator {
-        return object : ReplayCalculator {
-            override fun calculateReplayInterval(lastDelay: Duration): Duration {
-                val delay = lastDelay.multipliedBy(2)
-                return when {
-                    delay > config.cutOff -> {
-                        config.cutOff
-                    }
-                    delay < config.baseReplayPeriod -> {
-                        config.baseReplayPeriod
-                    }
-                    else -> {
-                        delay
-                    }
-                }
+internal class ReplayCalculator(private val limitTotalReplays: Boolean, private val config: ReplayScheduler.ReplaySchedulerConfig) {
+    fun calculateReplayInterval(lastDelay: Duration = Duration.ZERO): Duration {
+        val delay = lastDelay.multipliedBy(2)
+        return when {
+            delay > config.cutOff -> {
+                config.cutOff
             }
-
-            override fun shouldReplayMessage(currentNumberOfReplayingMessages: Int): Boolean {
-                return currentNumberOfReplayingMessages < config.maxReplayingMessages
+            delay < config.baseReplayPeriod -> {
+                config.baseReplayPeriod
             }
-
-            override fun extraMessagesToReplay(maxNumberOfReplayingMessagesBefore: Int)
-                = config.maxReplayingMessages - maxNumberOfReplayingMessagesBefore
+            else -> {
+                delay
+            }
         }
     }
-}
 
-internal class ExponentialBackoffReplayCalculator: ReplayCalculatorFactory {
-    override fun fromConfig(config: ReplayScheduler.ReplaySchedulerConfig): ReplayCalculator {
-        return object : ReplayCalculator {
-            override fun calculateReplayInterval(lastDelay: Duration): Duration {
-                val delay = lastDelay.multipliedBy(2)
-                return when {
-                    delay > config.cutOff -> {
-                        config.cutOff
-                    }
-                    delay < config.baseReplayPeriod -> {
-                        config.baseReplayPeriod
-                    }
-                    else -> {
-                        delay
-                    }
-                }
-            }
+    fun shouldReplayMessage(currentNumberOfReplayingMessages: Int): Boolean {
+        return if (limitTotalReplays) {
+            currentNumberOfReplayingMessages < config.maxReplayingMessages
+        } else {
+            true
+        }
+    }
 
-            override fun shouldReplayMessage(currentNumberOfReplayingMessages: Int): Boolean = true
-
-            override fun extraMessagesToReplay(maxNumberOfReplayingMessagesBefore: Int): Int = 0
+    fun extraMessagesToReplay(maxNumberOfReplayingMessagesBefore: Int): Int {
+        return if (limitTotalReplays) {
+            config.maxReplayingMessages - maxNumberOfReplayingMessagesBefore
+        } else {
+            0
         }
     }
 }
