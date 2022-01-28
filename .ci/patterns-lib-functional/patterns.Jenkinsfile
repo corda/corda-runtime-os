@@ -76,7 +76,7 @@ pipeline {
                     trap "kill -9 ${procno}" EXIT
                     ./corda-cli/bin/corda-cli cluster wait -n ${NAME_SPACE}
                     port=$(./corda-cli/bin/corda-cli cluster status -n "${NAME_SPACE}" -f json | jq '.services | .[] | .publicPorts | select(.BROKERINTERNAL != null) | .[]' | sort | head -n 1)
-                    BROKERS_ADDRS="localhost:9092" ./gradlew kafkaIntegrationTest
+                    BROKERS_ADDRS="localhost:9093" ./gradlew kafkaIntegrationTest
                 '''
             }
             post {
