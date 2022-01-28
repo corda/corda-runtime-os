@@ -31,8 +31,7 @@ class CpiUploadRPCOpsImpl @Activate constructor(
 
     private var rpcSender: RPCSender<Any, Any>?  = null
 
-    override val isRunning: Boolean
-        get() = rpcSender?.isRunning ?: false
+    override val isRunning get() = rpcSender?.isRunning ?: false && httpRequestTimeout != null
 
     override fun start() {
         rpcSender?.start() ?: throw CpiUploadRPCOpsException("RPC sender has not been created")

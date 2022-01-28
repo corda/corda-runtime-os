@@ -11,6 +11,7 @@ import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeReques
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.virtualnode.rpcops.VirtualNodeRPCOpsServiceException
+import net.corda.virtualnode.rpcops.impl.internal.VirtualNodeRPCOpsInternal
 import net.corda.virtualnode.rpcops.impl.v1.VirtualNodeRPCOpsImpl
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -19,9 +20,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import java.time.Duration
 import java.util.concurrent.CompletableFuture
 
 // TODO - Expand these tests to cover success responses once these contain meaningful data.
@@ -30,72 +31,50 @@ class VirtualNodeRPCOpsImplTests {
     private val cpiId = CPIIdentifier("cpiName", "1.0.0", SecureHash("SHA-256", ByteBuffer.wrap("a".toByteArray())))
     private val holdingId = HoldingIdentity("holdingIdName", "groupId")
 
-    private val req = HTTPCreateVirtualNodeRequest("name", "hash")
-    private val successFuture = CompletableFuture.supplyAsync {
-        VirtualNodeCreationResponse(
-            true, null, req.x500Name, cpiId, req.cpiIdHash, "mgmGroupId", holdingId, "holdingIdHash"
-        )
-    }
-
-    @Test
-    fun `createAndStartRPCSender starts new RPC sender`() {
-        val (rpcSender, vnodeRPCOps) = getVirtualNodeRPCOps()
-
-        vnodeRPCOps.createAndStartRPCSender(mock())
-
-        verify(rpcSender).start()
-    }
-
-    @Test
-    fun `createAndStartRPCSender closes existing RPC sender if one exists`() {
-        val (rpcSender, vnodeRPCOps) = getVirtualNodeRPCOps()
-
-        vnodeRPCOps.createAndStartRPCSender(mock())
-        vnodeRPCOps.createAndStartRPCSender(mock())
-
-        verify(rpcSender).close()
-    }
-
-    @Test
-    fun `stop closes existing RPC sender if one exists`() {
-        val (rpcSender, vnodeRPCOps) = getVirtualNodeRPCOps()
-
-        vnodeRPCOps.createAndStartRPCSender(mock())
-        vnodeRPCOps.stop()
-
-        verify(rpcSender).close()
-    }
+    private val httpCreateVNRequest = HTTPCreateVirtualNodeRequest("name", "hash")
+    private val vnCreateSuccessfulResponse = VirtualNodeCreationResponse(
+        true,
+        null,
+        httpCreateVNRequest.x500Name,
+        cpiId,
+        httpCreateVNRequest.cpiIdHash,
+        "mgmGroupId",
+        holdingId,
+        "holdingIdHash"
+    )
+    private val httpRequestTimeoutDuration = Duration.ofMillis(1000.toLong())
 
     @Test
     fun `createVirtualNode throws HttpApiException if response is failure`() {
-        val exception = ExceptionEnvelope("ErrorType", "ErrorMessage.")
-        val response = req.run {
+        val exception = ExceptionEnvelope("ErrorType", "errorMessage")
+        val (_, vnodeRPCOps) = getVirtualNodeRPCOps{
             VirtualNodeCreationResponse(false, exception, "", mock(), "", "", mock(), "")
         }
-        val future = CompletableFuture.supplyAsync { response }
 
-        val (_, vnodeRPCOps) = getVirtualNodeRPCOps(future)
+        vnodeRPCOps.createRpcSender(mock())
+        vnodeRPCOps.start()
+        vnodeRPCOps.setHttpRequestTimeout(httpRequestTimeoutDuration)
 
-        vnodeRPCOps.createAndStartRPCSender(mock())
-        vnodeRPCOps.setTimeout(1000)
         val e = assertThrows<HttpApiException> {
-            vnodeRPCOps.createVirtualNode(req)
+            vnodeRPCOps.createVirtualNode(httpCreateVNRequest)
         }
 
-        assertEquals("ErrorType: ErrorMessage.", e.message)
+        assertEquals("ErrorType: errorMessage", e.message)
         assertEquals(500, e.statusCode)
     }
 
     @Test
     fun `createVirtualNode throws HttpApiException if request fails but no exception is provided`() {
-        val (_, vnodeRPCOps) = getVirtualNodeRPCOps(CompletableFuture.supplyAsync {
+        val (_, vnodeRPCOps) = getVirtualNodeRPCOps {
             VirtualNodeCreationResponse(false, null, "", mock(), "", "", mock(), "")
-        })
+        }
 
-        vnodeRPCOps.createAndStartRPCSender(mock())
-        vnodeRPCOps.setTimeout(1000)
+        vnodeRPCOps.createRpcSender(mock())
+        vnodeRPCOps.start()
+        vnodeRPCOps.setHttpRequestTimeout(httpRequestTimeoutDuration)
+
         val e = assertThrows<HttpApiException> {
-            vnodeRPCOps.createVirtualNode(req)
+            vnodeRPCOps.createVirtualNode(httpCreateVNRequest)
         }
 
         assertEquals("Request was unsuccessful but no exception was provided.", e.message)
@@ -106,9 +85,10 @@ class VirtualNodeRPCOpsImplTests {
     fun `createVirtualNode throws if RPC sender is not set`() {
         val vnodeRPCOps = VirtualNodeRPCOpsImpl(mock())
 
-        vnodeRPCOps.setTimeout(1000)
+        vnodeRPCOps.setHttpRequestTimeout(httpRequestTimeoutDuration)
+
         val e = assertThrows<VirtualNodeRPCOpsServiceException> {
-            vnodeRPCOps.createVirtualNode(req)
+            vnodeRPCOps.createVirtualNode(httpCreateVNRequest)
         }
 
         assertEquals(
@@ -121,9 +101,10 @@ class VirtualNodeRPCOpsImplTests {
     fun `createVirtualNode throws if request timeout is not set`() {
         val (_, vnodeRPCOps) = getVirtualNodeRPCOps()
 
-        vnodeRPCOps.createAndStartRPCSender(mock())
+        vnodeRPCOps.createRpcSender(mock())
+
         val e = assertThrows<VirtualNodeRPCOpsServiceException> {
-            vnodeRPCOps.createVirtualNode(req)
+            vnodeRPCOps.createVirtualNode(httpCreateVNRequest)
         }
 
         assertEquals(
@@ -134,13 +115,15 @@ class VirtualNodeRPCOpsImplTests {
 
     @Test
     fun `createVirtualNode throws VirtualNodeRPCOpsServiceException if response future completes exceptionally`() {
-        val future = CompletableFuture.supplyAsync<VirtualNodeCreationResponse> { throw IllegalStateException() }
-        val (_, vnodeRPCOps) = getVirtualNodeRPCOps(future)
+        val vnCreateResponse =  { throw IllegalStateException() }
+        val (_, vnodeRPCOps) = getVirtualNodeRPCOps(vnCreateResponse)
 
-        vnodeRPCOps.createAndStartRPCSender(mock())
-        vnodeRPCOps.setTimeout(1000)
+        vnodeRPCOps.createRpcSender(mock())
+        vnodeRPCOps.start()
+        vnodeRPCOps.setHttpRequestTimeout(httpRequestTimeoutDuration)
+
         val e = assertThrows<VirtualNodeRPCOpsServiceException> {
-            vnodeRPCOps.createVirtualNode(req)
+            vnodeRPCOps.createVirtualNode(httpCreateVNRequest)
         }
 
         assertEquals("Could not create virtual node.", e.message)
@@ -149,32 +132,45 @@ class VirtualNodeRPCOpsImplTests {
     @Test
     fun `is not running if RPC sender is not created`() {
         val vnodeRPCOps = VirtualNodeRPCOpsImpl(mock())
-        vnodeRPCOps.setTimeout(0)
+        vnodeRPCOps.setHttpRequestTimeout(httpRequestTimeoutDuration)
+        assertFalse(vnodeRPCOps.isRunning)
+    }
+
+    @Test
+    fun `is not running if RPC sender is not running`() {
+        val (_, vnodeRPCOps) = getVirtualNodeRPCOps()
+        vnodeRPCOps.createRpcSender(mock())
+        vnodeRPCOps.setHttpRequestTimeout(httpRequestTimeoutDuration)
         assertFalse(vnodeRPCOps.isRunning)
     }
 
     @Test
     fun `is not running if RPC timeout is not set`() {
         val (_, vnodeRPCOps) = getVirtualNodeRPCOps()
-        vnodeRPCOps.createAndStartRPCSender(mock())
+        vnodeRPCOps.createRpcSender(mock())
+        vnodeRPCOps.start()
         assertFalse(vnodeRPCOps.isRunning)
     }
 
     @Test
-    fun `is running if RPC sender is created and RPC timeout is set`() {
-        val (_, vnodeRPCOps) = getVirtualNodeRPCOps()
-        vnodeRPCOps.createAndStartRPCSender(mock())
-        vnodeRPCOps.setTimeout(0)
+    fun `is running if RPC sender is created and is running and RPC timeout is set`() {
+        val (rpcSender, vnodeRPCOps) = getVirtualNodeRPCOps()
+        whenever(rpcSender.isRunning).thenReturn(true)
+
+        vnodeRPCOps.createRpcSender(mock())
+        vnodeRPCOps.start()
+        vnodeRPCOps.setHttpRequestTimeout(httpRequestTimeoutDuration)
         assertTrue(vnodeRPCOps.isRunning)
     }
 
     /** Returns a [VirtualNodeRPCOpsInternal] where the RPC sender returns [future] in response to any RPC requests. */
     private fun getVirtualNodeRPCOps(
-        future: CompletableFuture<VirtualNodeCreationResponse> = successFuture
+        vnCreateResponse: () -> VirtualNodeCreationResponse = { vnCreateSuccessfulResponse }
     ): Pair<RPCSender<VirtualNodeCreationRequest, VirtualNodeCreationResponse>, VirtualNodeRPCOpsInternal> {
 
+        val vnCreateResponseFuture = CompletableFuture.supplyAsync(vnCreateResponse)
         val rpcSender = mock<RPCSender<VirtualNodeCreationRequest, VirtualNodeCreationResponse>>().apply {
-            whenever(sendRequest(any())).thenReturn(future)
+            whenever(sendRequest(any())).thenReturn(vnCreateResponseFuture)
         }
         val publisherFactory = mock<PublisherFactory>().apply {
             whenever(createRPCSender<VirtualNodeCreationRequest, VirtualNodeCreationResponse>(any(), any()))
