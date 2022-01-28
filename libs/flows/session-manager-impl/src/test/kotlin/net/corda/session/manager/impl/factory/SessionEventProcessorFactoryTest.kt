@@ -8,6 +8,7 @@ import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
+import net.corda.session.manager.SessionManagerException
 import net.corda.session.manager.impl.processor.SessionAckProcessorReceived
 import net.corda.session.manager.impl.processor.SessionCloseProcessorReceive
 import net.corda.session.manager.impl.processor.SessionCloseProcessorSend
@@ -17,7 +18,6 @@ import net.corda.session.manager.impl.processor.SessionErrorProcessorReceive
 import net.corda.session.manager.impl.processor.SessionErrorProcessorSend
 import net.corda.session.manager.impl.processor.SessionInitProcessorReceive
 import net.corda.session.manager.impl.processor.SessionInitProcessorSend
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -29,7 +29,7 @@ class SessionEventProcessorFactoryTest {
 
     @Test
     fun testCreateEventReceivedProcessorOutboundMessage() {
-        assertThrows<CordaRuntimeException> {
+        assertThrows<SessionManagerException> {
             sessionEventProcessorFactory.createEventReceivedProcessor(
                 "key", SessionEvent(MessageDirection.OUTBOUND, 1, "1", 1, null),
                 null, Instant.now()
@@ -39,7 +39,7 @@ class SessionEventProcessorFactoryTest {
 
     @Test
     fun testCreateEventToSendProcessorInboundMessage() {
-        assertThrows<CordaRuntimeException> {
+        assertThrows<SessionManagerException> {
             sessionEventProcessorFactory.createEventToSendProcessor(
                 "key", SessionEvent(MessageDirection.INBOUND, 1, "1", null, null), null,
                 Instant.now()

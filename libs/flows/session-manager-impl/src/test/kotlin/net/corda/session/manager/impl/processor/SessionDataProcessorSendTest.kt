@@ -51,7 +51,7 @@ class SessionDataProcessorSendTest {
 
     @Test
     fun testValidDataMessage() {
-        val sessionEvent = SessionEvent(MessageDirection.OUTBOUND, 1, "sessionId", 1, SessionData())
+        val sessionEvent = SessionEvent(MessageDirection.OUTBOUND, 1, "sessionId", null, SessionData())
         val inputState = buildSessionState(
             SessionStateType.CONFIRMED, 0, mutableListOf(), 0, mutableListOf()
         )

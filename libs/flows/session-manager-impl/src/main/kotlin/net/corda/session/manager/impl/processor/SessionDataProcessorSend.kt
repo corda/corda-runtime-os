@@ -33,26 +33,29 @@ class SessionDataProcessorSend(
             return generateErrorSessionStateFromSessionEvent(sessionId, errorMessage, "SessionData-NullSessionState", instant)
         }
 
-        val currentStatus = sessionState.status
+        return when(val currentStatus = sessionState.status) {
+            SessionStateType.ERROR -> {
+                val errorMessage = "Tried to send SessionData on key $key for sessionId with status of ${SessionStateType.ERROR}. "
+                logger.error(errorMessage)
+                sessionState
+            }
+            SessionStateType.CREATED, SessionStateType.CONFIRMED ->{
+                val nextSeqNum = sessionState.sentEventsState.lastProcessedSequenceNum + 1
+                sessionEvent.apply {
+                    sequenceNum = nextSeqNum
+                    timestamp = instant.toEpochMilli()
+                }
 
-        return if (currentStatus == SessionStateType.ERROR) {
-            val errorMessage = "Tried to send SessionData on key $key for sessionId with status of ${SessionStateType.ERROR}. "
-            logger.error(errorMessage)
-            sessionState
-        } else if (currentStatus != SessionStateType.CONFIRMED && currentStatus != SessionStateType.CREATED) {
-            //If the session is in states CLOSING, WAIT_FOR_FINAL_ACK or CLOSED then this indicates a session mismatch as no more data
-            // messages are expected to be sent. Send an error to the counterparty to inform it of the mismatch.
-            val errorMessage = "Tried to send SessionData on key $key for sessionId $sessionId with status of : $currentStatus"
-            logger.error(errorMessage)
-            generateErrorSessionStateFromSessionEvent(sessionId, errorMessage, "SessionData-InvalidStatus", instant)
-        } else {
-            val nextSeqNum = sessionState.sentEventsState.lastProcessedSequenceNum + 1
-            sessionEvent.sequenceNum = nextSeqNum
-            sessionEvent.timestamp = instant.toEpochMilli()
-
-            sessionState.apply {
-                sentEventsState.lastProcessedSequenceNum = nextSeqNum
-                sentEventsState.undeliveredMessages =  sentEventsState.undeliveredMessages.plus(sessionEvent)
+                sessionState.apply {
+                    sentEventsState.lastProcessedSequenceNum = nextSeqNum
+                    sentEventsState.undeliveredMessages = sentEventsState.undeliveredMessages.plus(sessionEvent)
+                }
+            } else -> {
+                //If the session is in states CLOSING, WAIT_FOR_FINAL_ACK or CLOSED then this indicates a session mismatch as no more data
+                // messages are expected to be sent. Send an error to the counterparty to inform it of the mismatch.
+                val errorMessage = "Tried to send SessionData on key $key for sessionId $sessionId with status of : $currentStatus"
+                logger.error(errorMessage)
+                generateErrorSessionStateFromSessionEvent(sessionId, errorMessage, "SessionData-InvalidStatus", instant)
             }
         }
     }

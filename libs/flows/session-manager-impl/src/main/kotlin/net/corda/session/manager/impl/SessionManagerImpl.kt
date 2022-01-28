@@ -49,8 +49,9 @@ class SessionManagerImpl : SessionManager {
     override fun getMessagesToSend(sessionState: SessionState): Pair<SessionState, List<SessionEvent>> {
         val messagesToReturn = sessionState.sentEventsState.undeliveredMessages
         //remove SessionAcks
-        val messagesWithoutAcks = sessionState.sentEventsState.undeliveredMessages.toMutableList()
-        messagesWithoutAcks.removeAll { it.payload::class.java == SessionAck::class.java }
+        val messagesWithoutAcks = sessionState.sentEventsState.undeliveredMessages.filter {
+            it.payload !is SessionAck
+        }
         sessionState.sentEventsState.undeliveredMessages = messagesWithoutAcks
         return Pair(sessionState, messagesToReturn)
     }

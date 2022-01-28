@@ -16,7 +16,6 @@ dependencies {
     implementation "net.corda:corda-topic-schema"
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }
 
 description 'Session Manager Impl lib'

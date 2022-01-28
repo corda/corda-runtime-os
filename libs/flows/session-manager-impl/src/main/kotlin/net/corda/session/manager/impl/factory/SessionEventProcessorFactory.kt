@@ -8,6 +8,7 @@ import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionState
+import net.corda.session.manager.SessionManagerException
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.SessionAckProcessorReceived
 import net.corda.session.manager.impl.processor.SessionCloseProcessorReceive
@@ -18,7 +19,6 @@ import net.corda.session.manager.impl.processor.SessionErrorProcessorReceive
 import net.corda.session.manager.impl.processor.SessionErrorProcessorSend
 import net.corda.session.manager.impl.processor.SessionInitProcessorReceive
 import net.corda.session.manager.impl.processor.SessionInitProcessorSend
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import java.time.Instant
 
@@ -40,7 +40,7 @@ class SessionEventProcessorFactory {
             val error = "MessageDirection $messageDirection must be set to ${MessageDirection.INBOUND} for factory method " +
                     "createReceivedEventProcessor()"
             logger.error(error)
-            throw CordaRuntimeException(error)
+            throw SessionManagerException(error)
         }
 
         return when (val payload = sessionEvent.payload) {
@@ -69,7 +69,7 @@ class SessionEventProcessorFactory {
             val error = "MessageDirection $messageDirection must be set to ${MessageDirection.OUTBOUND} for factory method " +
                     "createEventToSendProcessor()"
             logger.error(error)
-            throw CordaRuntimeException(error)
+            throw SessionManagerException(error)
         }
         return when (val payload = sessionEvent.payload) {
             is SessionInit -> SessionInitProcessorSend(key, sessionState, sessionEvent, instant)

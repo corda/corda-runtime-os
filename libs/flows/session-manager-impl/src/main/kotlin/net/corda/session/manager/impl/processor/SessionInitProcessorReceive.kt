@@ -32,7 +32,6 @@ class SessionInitProcessorReceive(
     override fun execute(): SessionState {
         if (sessionState != null) {
             logger.debug { "Received duplicate SessionInit on key $key for session which was not null: $sessionState" }
-            //TODO - Flow mapper will stop/block this duplicate already. is this check redundant
             return sessionState
         }
 
