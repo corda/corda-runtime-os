@@ -4,18 +4,6 @@
   "namespace": "net.corda.data.flow.event.mapper",
   "fields": [
     {
-      "name": "messageDirection",
-      "doc": "INBOUND for messages originating from the P2P layer. OUTBOUND for messages to be sent to the P2P layer." ,
-      "type": {
-        "name": "MessageDirection",
-        "type": "enum",
-        "symbols": [
-          "INBOUND",
-          "OUTBOUND"
-        ]
-      }
-    },
-    {
       "name": "payload",
       "type": [
         "net.corda.data.flow.event.StartRPCFlow",

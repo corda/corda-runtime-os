@@ -20,6 +20,14 @@
     {
       "name": "initiatedIdentity",
       "type": "net.corda.data.identity.HoldingIdentity"
+    },
+    {
+      "name": "initiatingIdentity",
+      "type": "net.corda.data.identity.HoldingIdentity"
+    },
+    {
+      "name": "payload",
+      "type": "bytes"
     }
   ]
 }

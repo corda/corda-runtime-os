@@ -5,12 +5,28 @@
   "doc": "Events sent to counterparties as part of a session",
   "fields": [
     {
+      "name": "messageDirection",
+      "doc": "INBOUND for messages originating from a counterparty. OUTBOUND for messages to be sent to a counterparty." ,
+      "type": {
+        "name": "MessageDirection",
+        "type": "enum",
+        "symbols": [
+          "INBOUND",
+          "OUTBOUND"
+        ]
+      }
+    },
+    {
       "name": "timestamp",
       "type": "long"
     },
     {
+      "name": "sessionId",
+      "type": "string"
+    },
+    {
       "name": "sequenceNum",
-      "type": "int",
+      "type": ["null", "int"],
       "doc" : "Unique id for a message sent to a party. sequenceNum is not bidirectional. Each party will track outbound/inbound sequence numbers separately."
     },
     {
