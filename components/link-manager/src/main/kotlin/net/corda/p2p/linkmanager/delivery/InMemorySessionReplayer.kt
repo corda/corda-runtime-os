@@ -5,7 +5,9 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.DominoTileV2
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTileV2
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -26,7 +28,7 @@ class InMemorySessionReplayer(
     coordinatorFactory: LifecycleCoordinatorFactory,
     configuration: SmartConfig,
     private val networkMap: LinkManagerNetworkMap
-): LifecycleWithDominoTile {
+): LifecycleWithDominoTileV2 {
 
     companion object {
         const val MESSAGE_REPLAYER_CLIENT_ID = "session-message-replayer-client"
@@ -44,10 +46,11 @@ class InMemorySessionReplayer(
     private val replayScheduler = ReplayScheduler(coordinatorFactory, configurationReaderService,
         LinkManagerConfiguration.MESSAGE_REPLAY_PERIOD_KEY, ::replayMessage)
 
-    override val dominoTile = DominoTile(
+    override val dominoTile = DominoTileV2(
         this::class.java.simpleName,
         coordinatorFactory,
-        children = setOf(replayScheduler.dominoTile, publisher.dominoTile, networkMap.dominoTile)
+        dependentChildren = setOf(replayScheduler.dominoTile, publisher.dominoTile, networkMap.dominoTile),
+        managedChildren = setOf(replayScheduler.dominoTile, publisher.dominoTile)
     )
 
     data class SessionMessageReplay(

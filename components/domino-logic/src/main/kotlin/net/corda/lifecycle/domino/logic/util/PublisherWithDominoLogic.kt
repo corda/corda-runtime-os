@@ -3,7 +3,9 @@ package net.corda.lifecycle.domino.logic.util
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.DominoTileV2
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTileV2
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -15,12 +17,12 @@ class PublisherWithDominoLogic(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val publisherConfig: PublisherConfig,
     private val configuration: SmartConfig,
-) : LifecycleWithDominoTile {
+) : LifecycleWithDominoTileV2 {
 
     @Volatile
     private var publisher: Publisher? = null
 
-    override val dominoTile = DominoTile(this::class.java.simpleName, coordinatorFactory, ::createResources)
+    override val dominoTile = DominoTileV2(this::class.java.simpleName, coordinatorFactory, ::createResources)
 
     private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
         val resourceReady = CompletableFuture<Unit>()

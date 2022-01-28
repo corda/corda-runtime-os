@@ -8,6 +8,7 @@ import net.corda.libs.configuration.publish.CordaConfigurationVersion
 import net.corda.libs.configuration.publish.impl.ConfigPublisherImpl
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.DominoTileV2
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -117,7 +118,7 @@ class LinkManagerIntegrationTest {
                 invalidConfig
             )
             eventually {
-                assertThat(linkManager.dominoTile.state).isEqualTo(DominoTile.State.StoppedDueToError)
+                assertThat(linkManager.dominoTile.state).isEqualTo(DominoTileV2.State.DownDueToChildDown)
             }
 
             logger.info("Publishing valid configuration again")

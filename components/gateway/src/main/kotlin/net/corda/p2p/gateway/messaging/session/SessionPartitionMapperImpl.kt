@@ -3,7 +3,9 @@ package net.corda.p2p.gateway.messaging.session
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.DominoTileV2
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTileV2
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
@@ -20,7 +22,7 @@ class SessionPartitionMapperImpl(
     subscriptionFactory: SubscriptionFactory,
     nodeConfiguration: SmartConfig,
     instanceId: Int,
-) : SessionPartitionMapper, LifecycleWithDominoTile {
+) : SessionPartitionMapper, LifecycleWithDominoTileV2 {
 
     companion object {
         const val CONSUMER_GROUP_ID = "session_partitions_mapper"
@@ -28,7 +30,7 @@ class SessionPartitionMapperImpl(
 
     private val sessionPartitionsMapping = ConcurrentHashMap<String, List<Int>>()
     private val processor = SessionPartitionProcessor()
-    override val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, ::createResources)
+    override val dominoTile = DominoTileV2(this::class.java.simpleName, lifecycleCoordinatorFactory, ::createResources)
     private val future = AtomicReference<CompletableFuture<Unit>>()
 
     private val sessionPartitionSubscription = subscriptionFactory.createCompactedSubscription(

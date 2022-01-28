@@ -1,13 +1,14 @@
 package net.corda.p2p.linkmanager
 
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTileV2
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import java.security.PublicKey
 
 /**
  * This interface defines the parts of the Network Map required by the LinkManager.
  */
-interface LinkManagerNetworkMap: LifecycleWithDominoTile {
+interface LinkManagerNetworkMap: LifecycleWithDominoTileV2 {
 
     companion object {
         internal fun net.corda.data.identity.HoldingIdentity.toHoldingIdentity(): HoldingIdentity {

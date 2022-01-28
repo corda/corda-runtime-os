@@ -6,6 +6,7 @@ import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.DominoTileV2
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.messaging.api.processor.EventLogProcessor
@@ -576,7 +577,7 @@ class GatewayTest : TestBase() {
                     )
                 )
                 gateway.startAndWaitForStarted()
-                assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.Started)
+                assertThat(gateway.dominoTile.state).isEqualTo(DominoTileV2.State.Started)
 
                 logger.info("Publishing bad config")
                 // -20 is invalid port, serer should fail
@@ -588,7 +589,7 @@ class GatewayTest : TestBase() {
                     )
                 )
                 eventually(duration = 20.seconds) {
-                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.StoppedDueToError)
+                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTileV2.State.DownDueToChildDown)
                 }
                 assertThrows<ConnectException> {
                     Socket(host, 10005).close()
@@ -603,7 +604,7 @@ class GatewayTest : TestBase() {
                     )
                 )
                 eventually(duration = 20.seconds) {
-                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.Started)
+                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTileV2.State.Started)
                 }
                 assertDoesNotThrow {
                     Socket(host, 10006).close()
@@ -612,7 +613,7 @@ class GatewayTest : TestBase() {
                 logger.info("Publishing bad config again")
                 configPublisher.publishBadConfig()
                 eventually(duration = 20.seconds) {
-                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.StoppedDueToError)
+                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTileV2.State.DownDueToChildDown)
                 }
                 assertThrows<ConnectException> {
                     Socket(host, 10006).close()

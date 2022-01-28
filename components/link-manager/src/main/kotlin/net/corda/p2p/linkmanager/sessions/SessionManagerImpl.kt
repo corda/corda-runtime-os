@@ -8,7 +8,9 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.DominoTileV2
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTileV2
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -124,13 +126,14 @@ open class SessionManagerImpl(
         configuration
     )
 
-    override val dominoTile = DominoTile(
+    override val dominoTile = DominoTileV2(
         this::class.java.simpleName,
         coordinatorFactory,
-        children = setOf(
+        dependentChildren = setOf(
             heartbeatManager.dominoTile, sessionReplayer.dominoTile, networkMap.dominoTile, cryptoService.dominoTile,
             pendingOutboundSessionMessageQueues.dominoTile, publisher.dominoTile
         ),
+        managedChildren = setOf(heartbeatManager.dominoTile, sessionReplayer.dominoTile, publisher.dominoTile),
         configurationChangeHandler = SessionManagerConfigChangeHandler()
     )
 
@@ -546,7 +549,7 @@ open class SessionManagerImpl(
         configuration: SmartConfig,
         private val networkMap: LinkManagerNetworkMap,
         private val destroySession: (key: SessionKey, sessionId: String) -> Any
-    ) : LifecycleWithDominoTile {
+    ) : LifecycleWithDominoTileV2 {
 
         companion object {
             private val logger = contextLogger()
@@ -604,11 +607,12 @@ open class SessionManagerImpl(
             configuration
         )
 
-        override val dominoTile = DominoTile(
+        override val dominoTile = DominoTileV2(
             this::class.java.simpleName,
             coordinatorFactory,
             ::createResources,
-            setOf(networkMap.dominoTile, publisher.dominoTile),
+            dependentChildren = setOf(networkMap.dominoTile, publisher.dominoTile),
+            managedChildren = setOf(publisher.dominoTile),
             HeartbeatManagerConfigChangeHandler(),
         )
 

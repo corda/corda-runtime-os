@@ -5,7 +5,9 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.DominoTileV2
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTileV2
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.gateway.Gateway
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
@@ -21,13 +23,13 @@ class ReconfigurableHttpServer(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val configurationReaderService: ConfigurationReadService,
     private val listener: HttpServerListener,
-) : LifecycleWithDominoTile {
+) : LifecycleWithDominoTileV2 {
 
     @Volatile
     private var httpServer: HttpServer? = null
     private val serverLock = ReentrantReadWriteLock()
 
-    override val dominoTile = DominoTile(
+    override val dominoTile = DominoTileV2(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         configurationChangeHandler = ReconfigurableHttpServerConfigChangeHandler()

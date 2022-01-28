@@ -1,10 +1,11 @@
 package net.corda.p2p.linkmanager
 
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTileV2
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.security.PublicKey
 
-interface LinkManagerCryptoService: LifecycleWithDominoTile {
+interface LinkManagerCryptoService: LifecycleWithDominoTileV2 {
 
     /**
      * Sign [data] with the private-key corresponding to the [hash] of the public-key.

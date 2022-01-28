@@ -5,7 +5,9 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MESSAGE_REPLAY_PERIOD_KEY
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.DominoTileV2
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTileV2
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.StateAndEventProcessor
@@ -42,7 +44,7 @@ class DeliveryTracker(
     sessionManager: SessionManager,
     private val instanceId: Int,
     processAuthenticatedMessage: (message: AuthenticatedMessageAndKey) -> List<Record<String, *>>,
-    ): LifecycleWithDominoTile {
+    ): LifecycleWithDominoTileV2 {
 
     private val appMessageReplayer = AppMessageReplayer(
         coordinatorFactory,
@@ -57,14 +59,15 @@ class DeliveryTracker(
         appMessageReplayer::replayMessage,
     )
 
-    override val dominoTile = DominoTile(this::class.java.simpleName, coordinatorFactory, ::createResources,
-        setOf(
+    override val dominoTile = DominoTileV2(this::class.java.simpleName, coordinatorFactory, ::createResources,
+        dependentChildren = setOf(
             replayScheduler.dominoTile,
             networkMap.dominoTile,
             cryptoService.dominoTile,
             sessionManager.dominoTile,
             appMessageReplayer.dominoTile
-        )
+        ),
+        managedChildren = setOf(replayScheduler.dominoTile, appMessageReplayer.dominoTile)
     )
 
     private val messageTracker = MessageTracker(replayScheduler)
@@ -88,7 +91,7 @@ class DeliveryTracker(
         publisherFactory: PublisherFactory,
         configuration: SmartConfig,
         private val processAuthenticatedMessage: (message: AuthenticatedMessageAndKey) -> List<Record<String, *>>
-    ): LifecycleWithDominoTile {
+    ): LifecycleWithDominoTileV2 {
 
         companion object {
             const val MESSAGE_REPLAYER_CLIENT_ID = "message-replayer-client"

@@ -4,7 +4,9 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.DominoTileV2
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTileV2
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.EventLogProcessor
@@ -82,7 +84,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                       = ConfigBasedLinkManagerHostingMap(configurationReaderService, lifecycleCoordinatorFactory),
                   private val linkManagerCryptoService: LinkManagerCryptoService
                       = StubCryptoService(lifecycleCoordinatorFactory, subscriptionFactory, instanceId, configuration)
-) : LifecycleWithDominoTile {
+) : LifecycleWithDominoTileV2 {
 
     companion object {
         const val LINK_MANAGER_PUBLISHER_CLIENT_ID = "linkmanager"
@@ -167,22 +169,26 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
     private val commonChildren = setOf(linkManagerNetworkMap.dominoTile, linkManagerCryptoService.dominoTile,
         linkManagerHostingMap.dominoTile)
-    private val inboundDominoTile = DominoTile(
+    private val inboundDominoTile = DominoTileV2(
         "InboundProcessor",
         lifecycleCoordinatorFactory,
         ::createInboundResources,
-        children = commonChildren
+        dependentChildren = commonChildren
     )
-    private val outboundDominoTile = DominoTile(
+    private val outboundDominoTile = DominoTileV2(
         "OutboundProcessor",
         lifecycleCoordinatorFactory,
         ::createOutboundResources,
-        children = setOf(inboundDominoTile, messagesPendingSession.dominoTile) + commonChildren)
+        dependentChildren = setOf(inboundDominoTile, messagesPendingSession.dominoTile) + commonChildren,
+        managedChildren = setOf(messagesPendingSession.dominoTile)
+    )
 
-    override val dominoTile = DominoTile(
+    override val dominoTile = DominoTileV2(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        children = setOf(inboundDominoTile, outboundDominoTile, deliveryTracker.dominoTile))
+        dependentChildren = setOf(inboundDominoTile, outboundDominoTile, deliveryTracker.dominoTile),
+        managedChildren = setOf(inboundDominoTile, outboundDominoTile, deliveryTracker.dominoTile, sessionManager.dominoTile) + commonChildren
+    )
 
     class OutboundMessageProcessor(
         private val sessionManager: SessionManager,
@@ -523,14 +529,14 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         )
         fun destroyQueue(key: SessionKey)
         fun destroyAllQueues()
-        val dominoTile: DominoTile
+        val dominoTile: DominoTileV2
     }
 
     class PendingSessionMessageQueuesImpl(
         publisherFactory: PublisherFactory,
         coordinatorFactory: LifecycleCoordinatorFactory,
         configuration: SmartConfig
-    ): PendingSessionMessageQueues, LifecycleWithDominoTile {
+    ): PendingSessionMessageQueues, LifecycleWithDominoTileV2 {
 
         companion object {
             private val logger = contextLogger()
