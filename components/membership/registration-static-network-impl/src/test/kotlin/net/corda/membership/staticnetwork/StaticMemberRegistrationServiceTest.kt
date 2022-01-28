@@ -3,6 +3,8 @@ package net.corda.membership.staticnetwork
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.CryptoOpsClient
+import net.corda.data.KeyValuePairList
+import net.corda.data.membership.SignedMemberInfo
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.conversion.PropertyConverterImpl
@@ -19,6 +21,7 @@ import net.corda.membership.identity.MemberInfoExtension.Companion.status
 import net.corda.membership.identity.converter.EndpointInfoConverter
 import net.corda.membership.identity.converter.PublicKeyConverter
 import net.corda.membership.identity.toMemberInfo
+import net.corda.membership.identity.toSortedMap
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.NOT_SUBMITTED
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.SUBMITTED
 import net.corda.membership.registration.MembershipRequestRegistrationResult
@@ -50,6 +53,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import java.security.PublicKey
 import java.util.concurrent.CompletableFuture
@@ -113,7 +117,7 @@ class StaticMemberRegistrationServiceTest {
         on { generateKeyPair(any(), any(), eq("alice-alias"), any()) } doReturn aliceKey
         // when no keyAlias is defined in static template, we are using the HoldingIdentity's id
         on { generateKeyPair(any(), any(), eq(bob.id), any()) } doReturn bobKey
-        on { sign(any<PublicKey>(), any<ByteArray>(), any()) } doReturn signature
+        on { sign(any(), any<PublicKey>(), any<ByteArray>(), any()) } doReturn signature
     }
 
     private val configurationReadService: ConfigurationReadService = mock()

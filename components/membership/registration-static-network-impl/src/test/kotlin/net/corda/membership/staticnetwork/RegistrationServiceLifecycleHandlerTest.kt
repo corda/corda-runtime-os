@@ -14,9 +14,9 @@ import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.staticnetwork.TestUtils.Companion.configs
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.Companion.MESSAGING_CONFIG
+import net.corda.v5.crypto.DigestService
 import net.corda.v5.membership.conversion.PropertyConverter
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
@@ -54,7 +54,7 @@ class RegistrationServiceLifecycleHandlerTest {
 
     private val converter: PropertyConverter = mock()
 
-    private val cipherSuiteFactory: CipherSuiteFactory = mock()
+    private val digestService: DigestService = mock()
 
     private val staticMemberRegistrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
@@ -64,7 +64,7 @@ class RegistrationServiceLifecycleHandlerTest {
         configurationReadService,
         coordinatorFactory,
         converter,
-        cipherSuiteFactory
+        digestService
     )
 
     private val registrationServiceLifecycleHandler = RegistrationServiceLifecycleHandler(

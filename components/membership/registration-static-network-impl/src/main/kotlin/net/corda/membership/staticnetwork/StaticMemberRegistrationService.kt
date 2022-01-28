@@ -3,10 +3,13 @@ package net.corda.membership.staticnetwork
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.CryptoConsts
 import net.corda.crypto.CryptoOpsClient
+import net.corda.data.crypto.wire.WireSignatureWithKey
+import net.corda.data.membership.SignedMemberInfo
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.GroupPolicy
+import net.corda.membership.conversion.toWire
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.identity.EndpointInfoImpl
 import net.corda.membership.identity.MGMContextImpl
@@ -22,10 +25,11 @@ import net.corda.membership.identity.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.identity.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.identity.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.identity.MemberInfoImpl
+import net.corda.membership.identity.buildMerkleTree
 import net.corda.membership.registration.MemberRegistrationService
-import net.corda.membership.registration.MembershipRequestRegistrationResult
-import net.corda.membership.registration.MembershipRequestRegistrationOutcome.SUBMITTED
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.NOT_SUBMITTED
+import net.corda.membership.registration.MembershipRequestRegistrationOutcome.SUBMITTED
+import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_PROTOCOL
 import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_URL
 import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.KEY_ALIAS
@@ -51,6 +55,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
 
@@ -72,7 +77,7 @@ class StaticMemberRegistrationService @Activate constructor(
     @Reference(service = PropertyConverter::class)
     val converter: PropertyConverter,
     @Reference(service = DigestService::class)
-    val cipherSuiteFactory: DigestService
+    val digestService: DigestService
 ) : MemberRegistrationService {
     companion object {
         private val logger: Logger = contextLogger()
@@ -107,7 +112,7 @@ class StaticMemberRegistrationService @Activate constructor(
     }
 
     override fun register(member: HoldingIdentity): MembershipRequestRegistrationResult {
-        if(!isRunning || coordinator.status == LifecycleStatus.DOWN) {
+        if (!isRunning || coordinator.status == LifecycleStatus.DOWN) {
             return MembershipRequestRegistrationResult(
                 NOT_SUBMITTED,
                 "Registration failed. Reason: StaticMemberRegistrationService is not running/down."
@@ -147,7 +152,7 @@ class StaticMemberRegistrationService @Activate constructor(
             val memberId = HoldingIdentity(memberName, groupId).id
             val memberKey = generateOwningKey(staticMember, memberId)
             val encodedMemberKey = keyEncodingService.encodeAsString(memberKey)
-            val mgmKey = parseMgmTemplate(signingService, policy)
+            val mgmKey = parseMgmTemplate(memberId, policy)
             val memberInfo = MemberInfoImpl(
                 memberProvidedContext = MemberContextImpl(
                     sortedMapOf(
@@ -175,10 +180,10 @@ class StaticMemberRegistrationService @Activate constructor(
                     topic,
                     member.id + "-" + memberId,
                     signMemberInfo(
+                        memberId,
                         memberInfo,
                         memberKey,
                         mgmKey,
-                        signingService
                     )
                 )
             )
@@ -219,14 +224,21 @@ class StaticMemberRegistrationService @Activate constructor(
     /**
      * Generates the MGM's key used for signing the MemberInfo from the static template.
      */
-    private fun parseMgmTemplate(signingService: SigningService, policy: GroupPolicy): PublicKey {
+    private fun parseMgmTemplate(
+        memberId: String,
+        policy: GroupPolicy
+    ): PublicKey {
         val staticMgm = policy.staticMgm
         require(staticMgm.isNotEmpty()) { "Static mgm inside the group policy file should be defined." }
 
         val keyAlias: String? = staticMgm[KEY_ALIAS]
         require(!keyAlias.isNullOrBlank()) { "MGM's key alias is not provided." }
 
-        return signingService.generateKeyPair(keyAlias)
+        return cryptoOpsClient.generateKeyPair(
+            tenantId = memberId,
+            category = CryptoConsts.Categories.LEDGER,
+            alias = keyAlias
+        )
     }
 
     /**
@@ -249,7 +261,8 @@ class StaticMemberRegistrationService @Activate constructor(
             result.add(
                 Pair(
                     String.format(MemberInfoExtension.URL_KEY, index),
-                    endpoints[index].url)
+                    endpoints[index].url
+                )
             )
             result.add(
                 Pair(
@@ -281,34 +294,33 @@ class StaticMemberRegistrationService @Activate constructor(
      * Creates and returns a [SignedMemberInfo] object.
      */
     private fun signMemberInfo(
+        memberId: String,
         memberInfo: MemberInfo,
         memberKey: PublicKey,
         mgmKey: PublicKey,
-        signingService: SigningService
     ): SignedMemberInfo {
         val memberContextBF = memberInfo.memberProvidedContext.toWire()
         val mgmContextBF = memberInfo.mgmProvidedContext.toWire()
         return SignedMemberInfo(
             memberContextBF,
             mgmContextBF,
-            WireSignatureWithKey(
-                ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(memberKey)),
-                ByteBuffer.wrap(
-                    signingService.sign(
-                        memberKey,
-                        memberContextBF.array()
-                    ).bytes
-                )
-            ),
-            WireSignatureWithKey(
-                ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(mgmKey)),
-                ByteBuffer.wrap(
-                    signingService.sign(
-                        mgmKey,
-                        buildMerkleTree(mgmContextBF, memberContextBF, digestService).hash.bytes
-                    ).bytes
-                )
-            )
+            memberContextBF
+                .array()
+                .toWireSignatureWithKey(memberId, memberKey),
+            buildMerkleTree(
+                mgmContextBF,
+                memberContextBF,
+                digestService
+            ).hash.bytes.toWireSignatureWithKey(memberId, mgmKey)
         )
     }
+
+    private fun ByteArray.toByteBuffer(): ByteBuffer = ByteBuffer.wrap(this)
+    private fun ByteArray.toWireSignatureWithKey(
+        memberId: String,
+        signingKey: PublicKey
+    ) = WireSignatureWithKey(
+        keyEncodingService.encodeAsByteArray(signingKey).toByteBuffer(),
+        cryptoOpsClient.sign(memberId, signingKey, this).bytes.toByteBuffer()
+    )
 }
