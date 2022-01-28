@@ -41,7 +41,7 @@ interface SessionManager {
      * number to be sent. [SessionState] should be set to null for [SessionInit] session events.
      * [key] is provided for logging purposes.
      * @param key The key on which the [sessionState] is stored for logging purposes.
-     * @param sessionState The session state. This should be null in the case of [SessionInit]
+     * @param sessionState The session state. This should be null in the case of [SessionInit].
      * @param event Session event to process.
      * @param instant Timestamp to be applied for any output messages.
      * @return Updated session state with any output messages added to the undelivered sentEvents queue
