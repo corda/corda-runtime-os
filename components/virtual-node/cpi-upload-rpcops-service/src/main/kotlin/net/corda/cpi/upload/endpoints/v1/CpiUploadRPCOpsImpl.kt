@@ -8,6 +8,7 @@ import net.corda.libs.virtualnode.endpoints.v1.HTTPCpiUploadRequestId
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -34,13 +35,11 @@ class CpiUploadRPCOpsImpl @Activate constructor(
         get() = rpcSender?.isRunning ?: false
 
     override fun start() {
-        // TODO - Replace with dedicated exception
-        rpcSender?.start() ?: throw IllegalStateException("RPC sender has not been created")
+        rpcSender?.start() ?: throw CpiUploadRPCOpsException("RPC sender has not been created")
     }
 
     override fun stop() {
-        // TODO - Replace with dedicated exception
-        rpcSender?.stop() ?: throw IllegalStateException("RPC sender has not been created")
+        rpcSender?.stop() ?: throw CpiUploadRPCOpsException("RPC sender has not been created")
     }
 
     override fun cpi(file: ByteArray): HTTPCpiUploadRequestId {
@@ -60,3 +59,5 @@ class CpiUploadRPCOpsImpl @Activate constructor(
         this.httpRequestTimeout = httpRequestTimeout
     }
 }
+
+class CpiUploadRPCOpsException(message: String?, cause: Exception? = null) : CordaRuntimeException(message, cause)
