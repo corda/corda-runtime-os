@@ -3,7 +3,7 @@ plugins {
     id 'com.r3.internal.gradle.plugins.r3Publish'
 }
 
-description 'Endpoint API for management of virtual nodes.'
+description 'Endpoint API for uploading a CPI.'
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'

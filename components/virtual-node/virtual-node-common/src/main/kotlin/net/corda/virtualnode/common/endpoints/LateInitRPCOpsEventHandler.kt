@@ -12,7 +12,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 
-/** Handles incoming [LifecycleCoordinator] events for [VirtualNodeRPCOpsServiceImpl]. */
+/** Registers [LateInitRPCOpsConfigHandler] for updates when [ConfigurationReadService] is ready. */
 class LateInitRPCOpsEventHandler(
     private val configReadService: ConfigurationReadService,
     private val lateInitRPCOps: LateInitRPCOps
@@ -21,10 +21,6 @@ class LateInitRPCOpsEventHandler(
     private var configReadServiceRegistrationHandle: RegistrationHandle? = null
     private var configUpdateHandle: AutoCloseable? = null
 
-    /**
-     * Upon receiving configuration from [configReadService], starts handling RPC operations related to virtual node
-     * creation.
-     */
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> followConfigReadServiceStatus(coordinator)
