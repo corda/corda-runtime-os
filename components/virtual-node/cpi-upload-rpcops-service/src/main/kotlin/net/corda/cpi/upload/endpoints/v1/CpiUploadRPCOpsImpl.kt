@@ -28,7 +28,6 @@ class CpiUploadRPCOpsImpl @Activate constructor(
         val RPC_CONFIG = RPCConfig("", "", "", Any::class.java, Any::class.java)
     }
 
-    @Volatile
     private var rpcSender: RPCSender<Any, Any>?  = null
 
     override val isRunning: Boolean
