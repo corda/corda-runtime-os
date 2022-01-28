@@ -44,7 +44,7 @@ class SessionInitProcessorReceive(
             .setIsInitiator(false)
             .setCounterpartyIdentity(sessionInit.initiatingIdentity)
             .setReceivedEventsState(SessionProcessState(seqNum, mutableListOf(sessionEvent)))
-            .setSentEventsState(SessionProcessState(seqNum - 1, mutableListOf(generateAckEvent(seqNum, sessionId, instant))))
+            .setSendEventsState(SessionProcessState(seqNum - 1, mutableListOf(generateAckEvent(seqNum, sessionId, instant))))
             .setStatus(SessionStateType.CONFIRMED)
             .build()
 

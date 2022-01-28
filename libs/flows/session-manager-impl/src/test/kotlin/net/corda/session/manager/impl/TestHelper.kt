@@ -19,7 +19,7 @@ fun buildSessionState(
         .setCounterpartyIdentity(HoldingIdentity("Alice", "group1"))
         .setIsInitiator(true)
         .setReceivedEventsState(SessionProcessState(lastReceivedSeqNum, receivedEvents))
-        .setSentEventsState(SessionProcessState(lastSentSeqNum, eventsToSend))
+        .setSendEventsState(SessionProcessState(lastSentSeqNum, eventsToSend))
         .setStatus(status)
         .build()
 }

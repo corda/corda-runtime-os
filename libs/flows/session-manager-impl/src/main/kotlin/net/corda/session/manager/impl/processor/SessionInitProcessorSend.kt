@@ -51,7 +51,7 @@ class SessionInitProcessorSend(
             .setIsInitiator(true)
             .setCounterpartyIdentity(sessionInit.initiatedIdentity)
             .setReceivedEventsState(SessionProcessState(0, mutableListOf()))
-            .setSentEventsState(SessionProcessState(seqNum, mutableListOf(sessionEvent)))
+            .setSendEventsState(SessionProcessState(seqNum, mutableListOf(sessionEvent)))
             .setStatus(SessionStateType.CREATED)
             .build()
 
