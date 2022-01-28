@@ -86,7 +86,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
         MemberX500Name.parse(x500Name)
     } catch (e: Exception) {
         val message = "X500 name \"$x500Name\" could not be parsed. Cause: ${e.message}"
-        throw HttpApiException(message, 500)
+        throw HttpApiException(message, 400)
     }
 
     /**

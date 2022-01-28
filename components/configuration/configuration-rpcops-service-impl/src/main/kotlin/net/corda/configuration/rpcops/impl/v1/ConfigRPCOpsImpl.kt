@@ -86,7 +86,7 @@ internal class ConfigRPCOpsImpl @Activate constructor(
         ConfigFactory.parseString(config)
     } catch (e: ConfigException.Parse) {
         val message = "Configuration \"$config\" could not be parsed. Valid JSON or HOCON expected. Cause: ${e.message}"
-        throw HttpApiException(message, 500)
+        throw HttpApiException(message, 400)
     }
 
     /**
