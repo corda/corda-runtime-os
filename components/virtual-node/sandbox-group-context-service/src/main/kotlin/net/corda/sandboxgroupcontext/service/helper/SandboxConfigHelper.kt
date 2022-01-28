@@ -1,7 +1,8 @@
-package net.corda.sandbox.service.helper
+package net.corda.sandboxgroupcontext.service.helper
+
 
 import net.corda.sandbox.SandboxCreationService
-import net.corda.sandbox.service.SandboxService
+import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.cm.ConfigurationAdmin
 import java.util.*
@@ -49,7 +50,7 @@ fun initPublicSandboxes(
         config.update(properties as Dictionary<String, Any>)
     }
 
-    val allBundles = FrameworkUtil.getBundle(SandboxService::class.java).bundleContext.bundles
+    val allBundles = FrameworkUtil.getBundle(SandboxGroupContextComponent::class.java).bundleContext.bundles
     val (publicBundles, privateBundles) = allBundles.partition { bundle ->
         bundle.symbolicName in PLATFORM_PUBLIC_BUNDLE_NAMES
     }
