@@ -1,17 +1,12 @@
 package net.corda.membership.staticnetwork
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.CryptoCategories
-import net.corda.crypto.CryptoLibraryClientsFactoryProvider
-import net.corda.crypto.CryptoLibraryFactory
-import net.corda.crypto.SigningService
-import net.corda.data.crypto.wire.WireSignatureWithKey
-import net.corda.data.membership.SignedMemberInfo
+import net.corda.crypto.CryptoConsts
+import net.corda.crypto.CryptoOpsClient
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.GroupPolicy
-import net.corda.membership.conversion.toWire
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.identity.EndpointInfoImpl
 import net.corda.membership.identity.MGMContextImpl
@@ -27,7 +22,6 @@ import net.corda.membership.identity.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.identity.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.identity.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.identity.MemberInfoImpl
-import net.corda.membership.identity.buildMerkleTree
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.SUBMITTED
@@ -47,8 +41,8 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.crypto.DigestService
 import net.corda.v5.membership.conversion.PropertyConverter
 import net.corda.v5.membership.identity.EndpointInfo
 import net.corda.v5.membership.identity.MemberInfo
@@ -57,7 +51,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
 
@@ -68,18 +61,18 @@ class StaticMemberRegistrationService @Activate constructor(
     val groupPolicyProvider: GroupPolicyProvider,
     @Reference(service = PublisherFactory::class)
     val publisherFactory: PublisherFactory,
-    @Reference(service = CryptoLibraryFactory::class)
-    val cryptoLibraryFactory: CryptoLibraryFactory,
-    @Reference(service = CryptoLibraryClientsFactoryProvider::class)
-    val cryptoLibraryClientsFactoryProvider: CryptoLibraryClientsFactoryProvider,
+    @Reference(service = KeyEncodingService::class)
+    val keyEncodingService: KeyEncodingService,
+    @Reference(service = CryptoOpsClient::class)
+    val cryptoOpsClient: CryptoOpsClient,
     @Reference(service = ConfigurationReadService::class)
     val configurationReadService: ConfigurationReadService,
     @Reference(service = LifecycleCoordinatorFactory::class)
     val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = PropertyConverter::class)
     val converter: PropertyConverter,
-    @Reference(service = CipherSuiteFactory::class)
-    val cipherSuiteFactory: CipherSuiteFactory
+    @Reference(service = DigestService::class)
+    val cipherSuiteFactory: DigestService
 ) : MemberRegistrationService {
     companion object {
         private val logger: Logger = contextLogger()
@@ -90,9 +83,6 @@ class StaticMemberRegistrationService @Activate constructor(
         internal const val DEFAULT_PLATFORM_VERSION = "10"
         internal const val DEFAULT_SERIAL = "1"
     }
-
-    private val keyEncodingService: KeyEncodingService  = cryptoLibraryFactory.getKeyEncodingService()
-    private val digestService get() = cipherSuiteFactory.getDigestService()
 
     private val topic = Schemas.Membership.MEMBER_LIST_TOPIC
 
@@ -149,20 +139,13 @@ class StaticMemberRegistrationService @Activate constructor(
         val staticMemberList = policy.staticMembers
         require(staticMemberList.isNotEmpty()) { "Static member list inside the group policy file cannot be empty." }
 
-        // temporary solution until we don't have a more suitable category
-        val signingService =
-            cryptoLibraryClientsFactoryProvider.get(
-                member.id,
-                "static-member-registration-service"
-            ).getSigningService(CryptoCategories.LEDGER)
-
         val processedMembers = mutableListOf<String>()
         @Suppress("SpreadOperator")
         staticMemberList.forEach { staticMember ->
             isValidStaticMemberDeclaration(processedMembers, staticMember)
             val memberName = staticMember[NAME].toString()
             val memberId = HoldingIdentity(memberName, groupId).id
-            val memberKey = generateOwningKey(signingService, staticMember, memberId)
+            val memberKey = generateOwningKey(staticMember, memberId)
             val encodedMemberKey = keyEncodingService.encodeAsString(memberKey)
             val mgmKey = parseMgmTemplate(signingService, policy)
             val memberInfo = MemberInfoImpl(
@@ -219,15 +202,18 @@ class StaticMemberRegistrationService @Activate constructor(
      * If the keyAlias is not defined in the static template, we are going to use the id of the HoldingIdentity as default.
      */
     private fun generateOwningKey(
-        signingService: SigningService,
         member: Map<String, String>,
         memberId: String
     ): PublicKey {
         var keyAlias = member[KEY_ALIAS]
-        if(keyAlias.isNullOrBlank()) {
-             keyAlias = memberId
+        if (keyAlias.isNullOrBlank()) {
+            keyAlias = memberId
         }
-        return signingService.generateKeyPair(keyAlias)
+        return cryptoOpsClient.generateKeyPair(
+            tenantId = memberId,
+            category = CryptoConsts.Categories.LEDGER,
+            alias = keyAlias
+        )
     }
 
     /**

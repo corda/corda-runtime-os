@@ -2,13 +2,7 @@ package net.corda.membership.staticnetwork
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.CryptoLibraryClientsFactory
-import net.corda.crypto.CryptoLibraryClientsFactoryProvider
-import net.corda.crypto.CryptoLibraryFactory
-import net.corda.crypto.SigningService
-import net.corda.crypto.SigningService.Companion.EMPTY_CONTEXT
-import net.corda.data.KeyValuePairList
-import net.corda.data.membership.SignedMemberInfo
+import net.corda.crypto.CryptoOpsClient
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.conversion.PropertyConverterImpl
@@ -25,10 +19,9 @@ import net.corda.membership.identity.MemberInfoExtension.Companion.status
 import net.corda.membership.identity.converter.EndpointInfoConverter
 import net.corda.membership.identity.converter.PublicKeyConverter
 import net.corda.membership.identity.toMemberInfo
-import net.corda.membership.identity.toSortedMap
-import net.corda.membership.registration.MembershipRequestRegistrationResult
-import net.corda.membership.registration.MembershipRequestRegistrationOutcome.SUBMITTED
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.NOT_SUBMITTED
+import net.corda.membership.registration.MembershipRequestRegistrationOutcome.SUBMITTED
+import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.membership.staticnetwork.TestUtils.Companion.DUMMY_GROUP_ID
 import net.corda.membership.staticnetwork.TestUtils.Companion.aliceName
 import net.corda.membership.staticnetwork.TestUtils.Companion.bobName
@@ -37,17 +30,16 @@ import net.corda.membership.staticnetwork.TestUtils.Companion.configs
 import net.corda.membership.staticnetwork.TestUtils.Companion.daisyName
 import net.corda.membership.staticnetwork.TestUtils.Companion.ericName
 import net.corda.membership.staticnetwork.TestUtils.Companion.frankieName
+import net.corda.membership.staticnetwork.TestUtils.Companion.groupPolicyWithDuplicateMembers
 import net.corda.membership.staticnetwork.TestUtils.Companion.groupPolicyWithInvalidStaticNetworkTemplate
 import net.corda.membership.staticnetwork.TestUtils.Companion.groupPolicyWithStaticNetwork
-import net.corda.membership.staticnetwork.TestUtils.Companion.groupPolicyWithoutStaticNetwork
-import net.corda.membership.staticnetwork.TestUtils.Companion.groupPolicyWithDuplicateMembers
 import net.corda.membership.staticnetwork.TestUtils.Companion.groupPolicyWithoutMgm
 import net.corda.membership.staticnetwork.TestUtils.Companion.groupPolicyWithoutMgmKeyAlias
+import net.corda.membership.staticnetwork.TestUtils.Companion.groupPolicyWithoutStaticNetwork
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
-import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigestService
@@ -55,11 +47,10 @@ import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.mock
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
 import java.security.PublicKey
 import java.util.concurrent.CompletableFuture
 import kotlin.test.assertEquals
@@ -87,7 +78,7 @@ class StaticMemberRegistrationServiceTest {
         on { getGroupPolicy(bob) } doReturn groupPolicyWithInvalidStaticNetworkTemplate
         on { getGroupPolicy(charlie) } doReturn groupPolicyWithoutStaticNetwork
         on { getGroupPolicy(daisy) } doReturn groupPolicyWithDuplicateMembers
-        on { getGroupPolicy(eric) } doReturn  groupPolicyWithoutMgm
+        on { getGroupPolicy(eric) } doReturn groupPolicyWithoutMgm
         on { getGroupPolicy(frankie) } doReturn groupPolicyWithoutMgmKeyAlias
     }
 
@@ -115,26 +106,14 @@ class StaticMemberRegistrationServiceTest {
         on { encodeAsByteArray(any()) } doReturn ByteArray(1)
     }
 
-    private val cryptoLibraryFactory: CryptoLibraryFactory = mock {
-        on { getKeyEncodingService() } doReturn keyEncodingService
-    }
-
     private val signature: DigitalSignature.WithKey = DigitalSignature.WithKey(mock(), ByteArray(1))
 
-    private val signingService: SigningService = mock {
-        on { generateKeyPair(any(), eq(EMPTY_CONTEXT)) } doReturn mock()
-        on { generateKeyPair(eq("alice-alias"), eq(EMPTY_CONTEXT)) } doReturn aliceKey
+    private val cryptoOpsClient: CryptoOpsClient = mock {
+        on { generateKeyPair(any(), any(), any(), any()) } doReturn mock()
+        on { generateKeyPair(any(), any(), eq("alice-alias"), any()) } doReturn aliceKey
         // when no keyAlias is defined in static template, we are using the HoldingIdentity's id
-        on { generateKeyPair(eq(bob.id), eq(EMPTY_CONTEXT)) } doReturn bobKey
+        on { generateKeyPair(any(), any(), eq(bob.id), any()) } doReturn bobKey
         on { sign(any<PublicKey>(), any<ByteArray>(), any()) } doReturn signature
-    }
-
-    private val cryptoLibraryClientsFactory: CryptoLibraryClientsFactory = mock {
-        on { getSigningService(any()) } doReturn signingService
-    }
-
-    private val cryptoLibraryClientsFactoryProvider: CryptoLibraryClientsFactoryProvider = mock {
-        on { get(any(), any()) } doReturn cryptoLibraryClientsFactory
     }
 
     private val configurationReadService: ConfigurationReadService = mock()
@@ -159,26 +138,22 @@ class StaticMemberRegistrationServiceTest {
     }
 
     private val converter: PropertyConverterImpl = PropertyConverterImpl(
-        listOf(EndpointInfoConverter(), PublicKeyConverter(cryptoLibraryFactory))
+        listOf(EndpointInfoConverter(), PublicKeyConverter(keyEncodingService))
     )
 
     private val digestService: DigestService = mock {
         on { hash(any<ByteArray>(), any()) } doReturn SecureHash("SHA256", "1234ABCD".toByteArray())
     }
 
-    private val cipherSuiteFactory: CipherSuiteFactory = mock {
-        on { getDigestService() } doReturn digestService
-    }
-
     private val registrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
         publisherFactory,
-        cryptoLibraryFactory,
-        cryptoLibraryClientsFactoryProvider,
+        keyEncodingService,
+        cryptoOpsClient,
         configurationReadService,
         lifecycleCoordinatorFactory,
         converter,
-        cipherSuiteFactory
+        digestService
     )
 
     @Suppress("UNCHECKED_CAST")
@@ -214,8 +189,14 @@ class StaticMemberRegistrationServiceTest {
             assertTrue { it.key.startsWith(alice.id) }
             val signedMemberPublished = it.value as SignedMemberInfo
             val memberPublished = toMemberInfo(
-                MemberContextImpl(KeyValuePairList.fromByteBuffer(signedMemberPublished.memberContext).toSortedMap(), converter),
-                MGMContextImpl(KeyValuePairList.fromByteBuffer(signedMemberPublished.mgmContext).toSortedMap(), converter)
+                MemberContextImpl(
+                    KeyValuePairList.fromByteBuffer(signedMemberPublished.memberContext).toSortedMap(),
+                    converter
+                ),
+                MGMContextImpl(
+                    KeyValuePairList.fromByteBuffer(signedMemberPublished.mgmContext).toSortedMap(),
+                    converter
+                )
             )
             assertEquals(DUMMY_GROUP_ID, memberPublished.groupId)
             assertNotNull(memberPublished.softwareVersion)
@@ -223,7 +204,7 @@ class StaticMemberRegistrationServiceTest {
             assertNotNull(memberPublished.serial)
             assertNotNull(memberPublished.modifiedTime)
 
-            when(memberPublished.name) {
+            when (memberPublished.name) {
                 aliceName -> {
                     assertEquals(aliceKey, memberPublished.owningKey)
                     assertEquals(1, memberPublished.identityKeys.size)
