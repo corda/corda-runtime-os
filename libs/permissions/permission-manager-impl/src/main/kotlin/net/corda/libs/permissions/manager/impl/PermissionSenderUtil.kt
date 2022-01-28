@@ -1,6 +1,7 @@
 package net.corda.libs.permissions.manager.impl
 
 import java.time.Duration
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.libs.permissions.manager.exception.UnexpectedPermissionResponseException
@@ -19,17 +20,17 @@ inline fun <reified T : Any> sendPermissionWriteRequest(
 
     val futureResponse = future.getOrThrow(timeout)
 
-    if (!futureResponse.success) {
+    val response = futureResponse.response
+    if (response is ExceptionEnvelope) {
         throw RemotePermissionManagementException(
-            futureResponse.exception.errorType,
-            futureResponse.exception.errorMessage
+            response.errorType,
+            response.errorMessage
         )
     }
 
-    val result = futureResponse.response
-    if (result !is T) {
-        throw UnexpectedPermissionResponseException("Unknown response type for permission management request: ${result::class.java.name}")
+    if (response !is T) {
+        throw UnexpectedPermissionResponseException("Unknown response type for permission management request: ${response::class.java.name}")
     }
 
-    return result
+    return response
 }

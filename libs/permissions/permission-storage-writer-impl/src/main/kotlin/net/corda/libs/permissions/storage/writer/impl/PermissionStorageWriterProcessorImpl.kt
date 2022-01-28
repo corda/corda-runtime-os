@@ -70,14 +70,12 @@ class PermissionStorageWriterProcessorImpl(
                 }
                 else -> throw IllegalArgumentException("Received invalid permission request type.")
             }
-            respFuture.complete(PermissionManagementResponse(true, null, response))
+            respFuture.complete(PermissionManagementResponse(response))
         } catch (e: Exception) {
             log.warn("Failed to execute permission write request.", e)
             respFuture.complete(
                 PermissionManagementResponse(
-                    false,
                     ExceptionEnvelope(e::class.java.name, e.message),
-                    null
                 )
             )
         }
