@@ -3,6 +3,7 @@ package net.corda.libs.permissions.storage.writer.impl
 import java.time.Instant
 import net.corda.data.permissions.PermissionType
 import java.util.concurrent.CompletableFuture
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.permissions.ChangeDetails
 import net.corda.data.permissions.RoleAssociation
 import net.corda.data.permissions.management.PermissionManagementRequest
@@ -74,10 +75,10 @@ class PermissionStorageWriterProcessorImplTest {
         )
 
         val result = future.getOrThrow()
-        assertFalse(result.success)
-        assertNull(result.response)
-        assertEquals(IllegalArgumentException::class.java.name, result.exception.errorType)
-        assertEquals("Received invalid permission request type.", result.exception.errorMessage)
+        assertTrue(result.response is ExceptionEnvelope)
+        val exception = result.response as ExceptionEnvelope
+        assertEquals(IllegalArgumentException::class.java.name, exception.errorType)
+        assertEquals("Received invalid permission request type.", exception.errorMessage)
 
         verify(userWriter, never()).createUser(any(), eq(creatorUserId))
         verify(roleWriter, never()).createRole(any(), eq(creatorUserId))
@@ -124,10 +125,10 @@ class PermissionStorageWriterProcessorImplTest {
         verify(permissionStorageReader, times(0)).publishNewUser(any())
 
         val result = future.getOrThrow()
-        assertFalse(result.success)
-        assertNull(result.response)
-        assertEquals(IllegalArgumentException::class.java.name, result.exception.errorType)
-        assertEquals("Entity manager error.", result.exception.errorMessage)
+        assertTrue(result.response is ExceptionEnvelope)
+        val exception = result.response as ExceptionEnvelope
+        assertEquals(IllegalArgumentException::class.java.name, exception.errorType)
+        assertEquals("Entity manager error.", exception.errorMessage)
     }
 
     @Test
@@ -168,10 +169,10 @@ class PermissionStorageWriterProcessorImplTest {
         verify(permissionStorageReader, times(0)).publishNewRole(any())
 
         val result = future.getOrThrow()
-        assertFalse(result.success)
-        assertNull(result.response)
-        assertEquals(IllegalArgumentException::class.java.name, result.exception.errorType)
-        assertEquals("Entity manager error.", result.exception.errorMessage)
+        assertTrue(result.response is ExceptionEnvelope)
+        val exception = result.response as ExceptionEnvelope
+        assertEquals(IllegalArgumentException::class.java.name, exception.errorType)
+        assertEquals("Entity manager error.", exception.errorMessage)
     }
 
     @Test
@@ -190,9 +191,6 @@ class PermissionStorageWriterProcessorImplTest {
         )
 
         val result = future.getOrThrow()
-        assertTrue(result.success)
-        assertNull(result.exception)
-
         val response = result.response
         assertTrue(response is AvroPermission)
         (response as? AvroPermission)?.let { permission ->
@@ -219,9 +217,10 @@ class PermissionStorageWriterProcessorImplTest {
         verify(permissionStorageReader, times(0)).publishNewPermission(any())
         verify(future, times(1)).complete(capture.capture())
 
-        assertFalse(capture.firstValue.success)
-        assertEquals(IllegalArgumentException::class.java.name, capture.firstValue.exception.errorType)
-        assertEquals(message, capture.firstValue.exception.errorMessage)
+        assertTrue(capture.firstValue.response is ExceptionEnvelope)
+        val exception = capture.firstValue.response as ExceptionEnvelope
+        assertEquals(IllegalArgumentException::class.java.name, exception.errorType)
+        assertEquals(message, exception.errorMessage)
     }
 
     @Test
@@ -250,7 +249,6 @@ class PermissionStorageWriterProcessorImplTest {
 
         verify(permissionStorageReader, times(1)).publishUpdatedUser(avroUser)
 
-        assertTrue(capture.firstValue.success)
         assertNotNull(capture.firstValue.response)
         assertEquals(avroUser, capture.firstValue.response)
     }
@@ -279,9 +277,6 @@ class PermissionStorageWriterProcessorImplTest {
         verify(permissionStorageReader, times(1)).publishUpdatedUser(avroUser)
 
         val result = future.getOrThrow()
-        assertTrue(result.success)
-        assertNull(result.exception)
-
         val response = result.response
         assertTrue(response is AvroUser)
         (response as? AvroUser)?.let { user ->

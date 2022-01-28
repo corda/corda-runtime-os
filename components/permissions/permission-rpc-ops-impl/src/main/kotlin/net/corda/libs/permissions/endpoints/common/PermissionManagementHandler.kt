@@ -26,7 +26,7 @@ fun <T : Any> withPermissionManager(
         block.invoke(permissionManager)
 
     } catch (e: UnexpectedPermissionResponseException) {
-        logger.warn("Permission manager received an unexpected response.")
+        logger.warn("Permission manager received an unexpected response: ${e::class.java.name}: ${e.message}")
         throw InternalServerException(
             details = buildExceptionCauseDetails(e)
         )
@@ -50,7 +50,7 @@ fun <T : Any> withPermissionManager(
         )
 
     } catch (e: CordaRPCAPIResponderException) {
-        logger.warn("Responder error during permission management request:", e)
+        logger.warn("Permission manager received error from responder: ${e.message}", e.cause)
         throw InternalServerException(
             details = buildExceptionCauseDetails(e)
         )
