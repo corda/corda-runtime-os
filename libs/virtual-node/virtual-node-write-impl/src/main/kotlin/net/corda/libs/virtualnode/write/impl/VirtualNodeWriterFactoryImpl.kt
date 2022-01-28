@@ -26,10 +26,7 @@ internal class VirtualNodeWriterFactoryImpl @Activate constructor(
     private val publisherFactory: PublisherFactory
 ) : VirtualNodeWriterFactory {
 
-    override fun create(
-        config: SmartConfig,
-        instanceId: Int
-    ): VirtualNodeWriter {
+    override fun create(config: SmartConfig, instanceId: Int): VirtualNodeWriter {
         val publisher = createPublisher(config, instanceId)
         val subscription = createRPCSubscription(config, publisher)
         return VirtualNodeWriterImpl(subscription, publisher)
