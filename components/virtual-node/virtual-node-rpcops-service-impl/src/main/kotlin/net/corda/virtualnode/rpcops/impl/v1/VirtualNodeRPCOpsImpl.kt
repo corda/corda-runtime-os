@@ -14,6 +14,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_CREATION_REQUEST_TOPIC
 import net.corda.v5.base.concurrent.getOrThrow
+import net.corda.v5.membership.identity.MemberX500Name
 import net.corda.virtualnode.rpcops.VirtualNodeRPCOpsServiceException
 import net.corda.virtualnode.rpcops.impl.CLIENT_NAME_HTTP
 import net.corda.virtualnode.rpcops.impl.GROUP_NAME
@@ -63,8 +64,8 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
     }
 
     override fun createVirtualNode(request: HTTPCreateVirtualNodeRequest): HTTPCreateVirtualNodeResponse {
-        val rpcRequest = VirtualNodeCreationRequest("", "")
-        // TODO - Check x500 name is well-formed.
+        val rpcRequest = VirtualNodeCreationRequest(request.x500Name, request.cpiIdHash)
+        validateRequestedConfig(rpcRequest.x500Name)
         val resp = sendRequest(rpcRequest)
 
         return if (resp.success) {
@@ -78,6 +79,14 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
             // TODO - CORE-3304 - Return richer exception (e.g. containing the config and version currently in the DB).
             throw HttpApiException("${exception.errorType}: ${exception.errorMessage}", 500)
         }
+    }
+
+    /** Validates the [x500Name]. */
+    private fun validateRequestedConfig(x500Name: String) = try {
+        MemberX500Name.parse(x500Name)
+    } catch (e: Exception) {
+        val message = "X500 name \"$x500Name\" could not be parsed. Cause: ${e.message}"
+        throw HttpApiException(message, 500)
     }
 
     /**

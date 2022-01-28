@@ -111,7 +111,7 @@ class ConfigRPCOpsImplTests {
         }
 
         assertEquals(expectedMessage, e.message)
-        assertEquals(400, e.statusCode)
+        assertEquals(500, e.statusCode)
     }
 
     @Test

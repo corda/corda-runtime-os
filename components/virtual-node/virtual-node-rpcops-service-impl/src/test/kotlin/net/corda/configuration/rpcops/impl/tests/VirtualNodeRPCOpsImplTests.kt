@@ -31,7 +31,7 @@ class VirtualNodeRPCOpsImplTests {
     private val cpiId = CPIIdentifier("cpiName", "1.0.0", SecureHash("SHA-256", ByteBuffer.wrap("a".toByteArray())))
     private val holdingId = HoldingIdentity("holdingIdName", "groupId")
 
-    private val req = HTTPCreateVirtualNodeRequest("name", "hash")
+    private val req = HTTPCreateVirtualNodeRequest("o=test,l=test,c=GB", "hash")
     private val successFuture = CompletableFuture.supplyAsync {
         VirtualNodeCreationResponse(
             true, null, req.x500Name, cpiId, req.cpiIdHash, "mgmGroupId", holdingId, "holdingIdHash"
@@ -65,6 +65,26 @@ class VirtualNodeRPCOpsImplTests {
         vnodeRPCOps.stop()
 
         verify(rpcSender).close()
+    }
+
+    @Test
+    fun `createVirtualNode throws HttpApiException if X500 name is invalid`() {
+        val (_, vnodeRPCOps) = getVirtualNodeRPCOps()
+
+        val badX500 = "invalid"
+        val badX500Req = HTTPCreateVirtualNodeRequest(badX500, "hash")
+
+        vnodeRPCOps.createAndStartRPCSender(mock())
+        vnodeRPCOps.setTimeout(1000)
+        val e = assertThrows<HttpApiException> {
+            vnodeRPCOps.createVirtualNode(badX500Req)
+        }
+
+        assertEquals(
+            "X500 name \"$badX500\" could not be parsed. Cause: improperly specified input name: $badX500",
+            e.message
+        )
+        assertEquals(500, e.statusCode)
     }
 
     @Test
