@@ -2,11 +2,7 @@ package net.corda.membership.staticnetwork
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.CryptoLibraryClientsFactory
-import net.corda.crypto.CryptoLibraryClientsFactoryProvider
-import net.corda.crypto.CryptoLibraryFactory
-import net.corda.crypto.SigningService
-import net.corda.crypto.SigningService.Companion.EMPTY_CONTEXT
+import net.corda.crypto.CryptoOpsClient
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.conversion.PropertyConverterImpl
@@ -96,23 +92,11 @@ class StaticMemberRegistrationServiceTest {
         on { encodeAsString(bobKey) } doReturn BOB_KEY
     }
 
-    private val cryptoLibraryFactory: CryptoLibraryFactory = mock {
-        on { getKeyEncodingService() } doReturn keyEncodingService
-    }
-
-    private val signingService: SigningService = mock {
-        on { generateKeyPair(any(), eq(EMPTY_CONTEXT)) } doReturn mock()
-        on { generateKeyPair(eq("alice-alias"), eq(EMPTY_CONTEXT)) } doReturn aliceKey
+    private val cryptoOpsClient: CryptoOpsClient = mock {
+        on { generateKeyPair(any(), any(), any(), any()) } doReturn mock()
+        on { generateKeyPair(any(), any(), eq("alice-alias"), any()) } doReturn aliceKey
         // when no keyAlias is defined in static template, we are using the HoldingIdentity's id
-        on { generateKeyPair(eq(bob.id), eq(EMPTY_CONTEXT)) } doReturn bobKey
-    }
-
-    private val cryptoLibraryClientsFactory: CryptoLibraryClientsFactory = mock {
-        on { getSigningService(any()) } doReturn signingService
-    }
-
-    private val cryptoLibraryClientsFactoryProvider: CryptoLibraryClientsFactoryProvider = mock {
-        on { get(any(), any()) } doReturn cryptoLibraryClientsFactory
+        on { generateKeyPair(any(), any(), eq(bob.id), any()) } doReturn bobKey
     }
 
     private val configurationReadService: ConfigurationReadService = mock()
@@ -137,14 +121,14 @@ class StaticMemberRegistrationServiceTest {
     }
 
     private val converter: PropertyConverterImpl = PropertyConverterImpl(
-        listOf(EndpointInfoConverter(), PublicKeyConverter(cryptoLibraryFactory))
+        listOf(EndpointInfoConverter(), PublicKeyConverter(keyEncodingService))
     )
 
     private val registrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
         publisherFactory,
-        cryptoLibraryFactory,
-        cryptoLibraryClientsFactoryProvider,
+        keyEncodingService,
+        cryptoOpsClient,
         configurationReadService,
         lifecycleCoordinatorFactory,
         converter
