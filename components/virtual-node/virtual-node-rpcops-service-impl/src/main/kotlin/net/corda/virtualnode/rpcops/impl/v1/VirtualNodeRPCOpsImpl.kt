@@ -65,7 +65,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
 
     override fun createVirtualNode(request: HTTPCreateVirtualNodeRequest): HTTPCreateVirtualNodeResponse {
         val rpcRequest = VirtualNodeCreationRequest(request.x500Name, request.cpiIdHash)
-        validateRequestedConfig(rpcRequest.x500Name)
+        validateX500Name(rpcRequest.x500Name)
         val resp = sendRequest(rpcRequest)
 
         return if (resp.success) {
@@ -82,7 +82,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
     }
 
     /** Validates the [x500Name]. */
-    private fun validateRequestedConfig(x500Name: String) = try {
+    private fun validateX500Name(x500Name: String) = try {
         MemberX500Name.parse(x500Name)
     } catch (e: Exception) {
         val message = "X500 name \"$x500Name\" could not be parsed. Cause: ${e.message}"
