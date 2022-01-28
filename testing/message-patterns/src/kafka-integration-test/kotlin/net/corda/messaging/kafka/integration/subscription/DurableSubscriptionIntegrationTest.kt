@@ -35,6 +35,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
@@ -77,6 +78,7 @@ class DurableSubscriptionIntegrationTest {
     }
 
     @Test
+    @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `asynch publish records and then start 2 durable subscriptions, delay 1 sub, trigger rebalance`() {
         topicAdmin.createTopics(kafkaProperties, TopicTemplates.DURABLE_TOPIC1_TEMPLATE)
 
@@ -116,7 +118,10 @@ class DurableSubscriptionIntegrationTest {
     }
 
     @Test
+    @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `asynch publish records and then start durable subscription`() {
+        topicAdmin.createTopics(kafkaProperties, TopicTemplates.DURABLE_TOPIC2_TEMPLATE)
+
         publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC2)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         val futures = publisher.publish(getDemoRecords(DURABLE_TOPIC2, 5, 2))
@@ -162,15 +167,18 @@ class DurableSubscriptionIntegrationTest {
     }
 
     @Test
+    @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `asynch publish the wrong records and then start durable subscription`() {
+        topicAdmin.createTopics(kafkaProperties, TopicTemplates.DURABLE_TOPIC3_TEMPLATE)
+
         publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC3)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         val futures = publisher.publish(getStringRecords(DURABLE_TOPIC3, 5, 2))
         assertThat(futures.size).isEqualTo(10)
-        futures.forEach { it.get(30, TimeUnit.SECONDS) }
+        futures.forEach { it.get(10, TimeUnit.SECONDS) }
         val futures2 = publisher.publish(getDemoRecords(DURABLE_TOPIC3, 5, 2))
         assertThat(futures2.size).isEqualTo(10)
-        futures2.forEach { it.get(30, TimeUnit.SECONDS) }
+        futures2.forEach { it.get(10, TimeUnit.SECONDS) }
         publisher.close()
 
         val latch = CountDownLatch(10)
@@ -190,14 +198,15 @@ class DurableSubscriptionIntegrationTest {
         durableSub.start()
         dlqDurableSub.start()
 
-        assertTrue(latch.await(1, TimeUnit.MINUTES))
-        durableSub.stop()
+        assertTrue(latch.await(10, TimeUnit.SECONDS))
+        assertTrue(dlqLatch.await(10, TimeUnit.SECONDS))
 
-        assertTrue(dlqLatch.await(5, TimeUnit.MINUTES))
+        dlqDurableSub.stop()
         durableSub.stop()
     }
 
     @Test
+    @Timeout(value = 60, unit = TimeUnit.SECONDS)
     fun `transactional publish records, start two durable subscription, stop subs, publish again and start subs`() {
         publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC4, 1)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
