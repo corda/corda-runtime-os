@@ -112,21 +112,32 @@ class CryptoOpsTests {
     @Timeout(60)
     fun `Should be able to use crypto operations`() {
         run(::`Should be able to get supported schemes for all categories`)
-        val keyAlias = UUID.randomUUID().toString()
-        val publicKey = run(keyAlias, ::`Should generate new key pair`)
-        run(keyAlias to publicKey, ::`Should find existing public key by its alias`)
+        val ledgerKeyAlias = UUID.randomUUID().toString()
+        val tlsKeyAlias = UUID.randomUUID().toString()
+        val ledgerPublicKey = run(ledgerKeyAlias, ::`Should generate new key pair for LEDGER`)
+        run(ledgerKeyAlias to ledgerPublicKey, ::`Should find existing public key by its alias`)
+        val tlsPublicKey = run(tlsKeyAlias, ::`Should generate new key pair for TLS`)
+        run(ledgerKeyAlias to ledgerPublicKey, ::`Should find existing public key by its alias`)
+        run(tlsKeyAlias to tlsPublicKey, ::`Should find existing public key by its alias`)
         run(::`Should not find unknown public key by its alias`)
+        run(ledgerKeyAlias to ledgerPublicKey, ::`Should be able to sign by referencing key alias`)
+        run(
+            ledgerKeyAlias to ledgerPublicKey,
+            ::`Should be able to sign using custom signature spec by referencing key alias`
+        )
+        run(tlsKeyAlias to tlsPublicKey, ::`Should be able to sign by referencing key alias`)
+        run(
+            tlsKeyAlias to tlsPublicKey,
+            ::`Should be able to sign using custom signature spec by referencing key alias`
+        )
+        run(ledgerPublicKey, ::`Should be able to sign by referencing public key`)
+        run(tlsPublicKey, ::`Should be able to sign by referencing public key`)
+        run(ledgerPublicKey, ::`Should be able to sign using custom signature spec by referencing public key`)
+        run(tlsPublicKey, ::`Should be able to sign using custom signature spec by referencing public key`)
         // add back when the HSM registration is done
         //val freshPublicKey1 = run(::`Should generate new fresh key pair without external id`)
         //val externalId = UUID.randomUUID()
         //val freshPublicKey2 = run(externalId, ::`Should generate new fresh key pair with external id`)
-        run(keyAlias to publicKey, ::`Should be able to sign by referencing key alias`)
-        run(
-            keyAlias to publicKey,
-            ::`Should be able to sign using custom signature spec by referencing key alias`
-        )
-        run(publicKey, ::`Should be able to sign by referencing public key`)
-        run(publicKey, ::`Should be able to sign using custom signature spec by referencing public key`)
         //run(freshPublicKey1, ::`Should be able to sign by referencing public key`)
         //run(freshPublicKey1, ::`Should be able to sign using custom signature spec by referencing public key`)
         //run(freshPublicKey2, ::`Should be able to sign by referencing public key`)
@@ -147,7 +158,15 @@ class CryptoOpsTests {
         }
     }
 
-    private fun `Should generate new key pair`(keyAlias: String): PublicKey {
+    private fun `Should generate new key pair for LEDGER`(keyAlias: String): PublicKey {
+        return client.generateKeyPair(
+            tenantId = tenantId,
+            category = CryptoConsts.Categories.LEDGER,
+            alias = keyAlias
+        )
+    }
+
+    private fun `Should generate new key pair for TLS`(keyAlias: String): PublicKey {
         return client.generateKeyPair(
             tenantId = tenantId,
             category = CryptoConsts.Categories.LEDGER,
@@ -199,7 +218,11 @@ class CryptoOpsTests {
         params: Pair<String, PublicKey>
     ) {
         val data = randomDataByteArray()
-        val signatureSpec = SignatureSpec("SHA512withECDSA")
+        val signatureSpec = when (params.second.algorithm) {
+            "EC" -> SignatureSpec("SHA512withECDSA")
+            "RSA" -> SignatureSpec("SHA512withECDSA")
+            else -> throw IllegalArgumentException("Test supports only RSA or ECDSA")
+        }
         val signature = client.sign(
             tenantId = tenantId,
             alias = params.first,
@@ -233,7 +256,11 @@ class CryptoOpsTests {
 
     private fun `Should be able to sign using custom signature spec by referencing public key`(publicKey: PublicKey) {
         val data = randomDataByteArray()
-        val signatureSpec = SignatureSpec("SHA512withECDSA")
+        val signatureSpec = when (publicKey.algorithm) {
+            "EC" -> SignatureSpec("SHA512withECDSA")
+            "RSA" -> SignatureSpec("SHA512withECDSA")
+            else -> throw IllegalArgumentException("Test supports only RSA or ECDSA")
+        }
         val signature = client.sign(
             tenantId = tenantId,
             publicKey = publicKey,

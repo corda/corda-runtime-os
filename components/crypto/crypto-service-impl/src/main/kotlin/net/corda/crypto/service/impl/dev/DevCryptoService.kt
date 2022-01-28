@@ -8,17 +8,20 @@ import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.WrappedKeyPair
 import net.corda.v5.cipher.suite.WrappedPrivateKey
-import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
+import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.exceptions.CryptoServiceException
 import net.corda.v5.crypto.sha256Bytes
-import net.i2p.crypto.eddsa.EdDSAPrivateKey
-import net.i2p.crypto.eddsa.EdDSAPublicKey
-import net.i2p.crypto.eddsa.spec.EdDSANamedCurveSpec
-import net.i2p.crypto.eddsa.spec.EdDSAPrivateKeySpec
-import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec
+import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey
+import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey
+import org.bouncycastle.jce.provider.BouncyCastleProvider
+import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec
+import org.bouncycastle.jce.spec.ECPrivateKeySpec
+import org.bouncycastle.jce.spec.ECPublicKeySpec
+import org.bouncycastle.math.ec.ECConstants
+import org.bouncycastle.math.ec.FixedPointCombMultiplier
 import org.bouncycastle.util.encoders.Base32
 import java.math.BigInteger
 import java.security.KeyPair
@@ -32,12 +35,12 @@ import java.security.PublicKey
  *
  * The keys assumed always exists and will be automatically generated.
  *
- * The service supports only EDDSA_ED25519 to avoid ambiguity to auto generate key when [containsKey] or
+ * The service supports only ECDSA_SECP256R1 to avoid ambiguity to auto generate key when [containsKey] or
  * [findPublicKey] are called.
  *
- * The auto generated keys are automatically synchronised with the key cache used by [SigningService]
+ * The auto generated keys are automatically synchronised with the key cache used by [SigningKeyCache]
  *
- * The wrapped keys are not deterministic generated using the [SoftCryptoService] instance.
+ * The wrapped keys are not deterministic and are generated using the [SoftCryptoService] instance.
  */
 @Suppress("LongParameterList")
 class DevCryptoService(
@@ -49,7 +52,7 @@ class DevCryptoService(
     hashingService: DigestService
 ) : CryptoService {
     companion object {
-        const val SUPPORTED_SCHEME_CODE_NAME = EDDSA_ED25519_CODE_NAME
+        const val SUPPORTED_SCHEME_CODE_NAME = ECDSA_SECP256R1_CODE_NAME
 
         private val logger = contextLogger()
 
@@ -189,7 +192,7 @@ class DevCryptoService(
         return try {
             val entropy = alias.toBigIntegerEntropy()
             val keyPair = when(signatureScheme.codeName) {
-                EDDSA_ED25519_CODE_NAME -> deriveEDDSAKeyPairFromEntropy(signatureScheme, entropy)
+                ECDSA_SECP256R1_CODE_NAME -> deriveECDSAKeyPairFromEntropy(signatureScheme, entropy)
                 else -> throw CryptoServiceBadRequestException(
                     "Unsupported signature scheme: ${signatureScheme.codeName}"
                 )
@@ -215,26 +218,9 @@ class DevCryptoService(
         }
     }
 
-    // Custom key pair generator from entropy.
-    // The BigIntenger.toByteArray() uses the two's-complement representation.
-    // The entropy is transformed to a byte array in big-endian byte-order and
-    // only the first ed25519.field.getb() / 8 bytes are used.
-    private fun deriveEDDSAKeyPairFromEntropy(signatureScheme: SignatureScheme, entropy: BigInteger): KeyPair {
-        if (!isSupported(signatureScheme)) {
-            throw CryptoServiceBadRequestException("Unsupported signature scheme: ${signatureScheme.codeName}")
-        }
-        val params = signatureScheme.algSpec as EdDSANamedCurveSpec
-        // Need to pad the entropy to the valid seed length.
-        val bytes = entropy.toByteArray().copyOf(params.curve.field.getb() / 8)
-        val priv = EdDSAPrivateKeySpec(bytes, params)
-        val pub = EdDSAPublicKeySpec(priv.a, params)
-        return KeyPair(EdDSAPublicKey(pub), EdDSAPrivateKey(priv))
-    }
-
     // Custom key pair generator from an entropy required for various tests. It is similar to deriveKeyPairECDSA,
     // but the accepted range of the input entropy is more relaxed:
     // 2 <= entropy < N, where N is the order of base-point G.
-    /*
     private fun deriveECDSAKeyPairFromEntropy(signatureScheme: SignatureScheme, entropy: BigInteger): KeyPair {
         val parameterSpec = signatureScheme.algSpec as ECNamedCurveParameterSpec
         // The entropy might be a negative number and/or out of range (e.g. PRNG output).
@@ -253,7 +239,6 @@ class DevCryptoService(
         val pub = BCECPublicKey("EC", publicKeySpec, BouncyCastleProvider.CONFIGURATION)
         return KeyPair(pub, priv)
     }
-     */
 
     private fun isSupported(scheme: SignatureScheme): Boolean = scheme.codeName in supportedSchemeCodes
 

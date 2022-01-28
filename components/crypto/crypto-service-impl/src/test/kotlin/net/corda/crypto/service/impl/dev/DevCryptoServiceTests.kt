@@ -12,7 +12,7 @@ import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.cipher.suite.CryptoServiceContext
 import net.corda.v5.cipher.suite.WrappedPrivateKey
-import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
+import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.NaSignatureSpec
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.crypto.CompositeKey
@@ -20,9 +20,9 @@ import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.OID_COMPOSITE_KEY_IDENTIFIER
 import net.corda.v5.crypto.SignatureVerificationService
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
-import net.i2p.crypto.eddsa.EdDSAKey
-import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
+import org.bouncycastle.jce.ECNamedCurveTable
+import org.bouncycastle.jce.interfaces.ECKey
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -123,16 +123,16 @@ class DevCryptoServiceTests {
 
     @Test
     @Timeout(5)
-    fun `Should support only EDDSA`() {
+    fun `Should support only ECDSA`() {
         assertEquals(1, cryptoService.supportedSchemes().size)
-        assertTrue(cryptoService.supportedSchemes().any { it.codeName == EDDSA_ED25519_CODE_NAME })
+        assertTrue(cryptoService.supportedSchemes().any { it.codeName == ECDSA_SECP256R1_CODE_NAME })
     }
 
     @Test
     @Timeout(5)
-    fun `Should support only EDDSA for wrapping`() {
+    fun `Should support only ECDSA for wrapping`() {
         assertEquals(1, cryptoService.supportedWrappingSchemes().size)
-        assertTrue(cryptoService.supportedWrappingSchemes().any { it.codeName == EDDSA_ED25519_CODE_NAME })
+        assertTrue(cryptoService.supportedWrappingSchemes().any { it.codeName == ECDSA_SECP256R1_CODE_NAME })
     }
 
     @Test
@@ -181,7 +181,7 @@ class DevCryptoServiceTests {
 
     @Test
     @Timeout(5)
-    fun `Should generate EDDSA key pair with ED25519 curve and be able to sign and verify with the key`() {
+    fun `Should generate ECDSA key pair with SECP256R1 curve and be able to sign and verify with the key`() {
         val testData = UUID.randomUUID().toString().toByteArray()
         val badVerifyData = UUID.randomUUID().toString().toByteArray()
         val signatureScheme = schemeMetadata.findSignatureScheme(DevCryptoService.SUPPORTED_SCHEME_CODE_NAME)
@@ -197,7 +197,47 @@ class DevCryptoServiceTests {
 
     @Test
     @Timeout(5)
-    fun `Should generate deterministic EDDSA key pair with ED25519 curve based on alias`() {
+    fun `Should generate same ECDSA key pair with SECP256R1 curve for same alias`() {
+        val signatureScheme = schemeMetadata.findSignatureScheme(DevCryptoService.SUPPORTED_SCHEME_CODE_NAME)
+        val alias = newAlias()
+
+        val publicKey1 = cryptoService.generateKeyPair(alias, signatureScheme, EMPTY_CONTEXT)
+        val keyPair1 = cryptoService.keyCache.find(alias)
+        assertNotNull(publicKey1)
+        assertEquals(keyPair1!!.publicKey, publicKey1)
+
+        val devCryptoServiceProvider2 = DevCryptoServiceProviderImpl(
+            schemeMetadata,
+            factory.digest,
+            TestSoftKeysPersistenceProvider(),
+            TestSigningKeysPersistenceProvider()
+        )
+        val cryptoService2 = devCryptoServiceProvider2.getInstance(
+            CryptoServiceContext(
+                memberId = services.tenantId,
+                category = CryptoConsts.Categories.LEDGER,
+                cipherSuiteFactory = object : CipherSuiteFactory {
+                    override fun getDigestService(): DigestService = throw NotImplementedError()
+                    override fun getSchemeMap(): CipherSchemeMetadata = throw NotImplementedError()
+                    override fun getSignatureVerificationService(): SignatureVerificationService =
+                        throw NotImplementedError()
+                },
+                config = DevCryptoServiceConfig()
+            )
+        ) as DevCryptoService
+
+        val publicKey2 = cryptoService2.generateKeyPair(alias, signatureScheme, EMPTY_CONTEXT)
+        val keyPair2 = cryptoService2.keyCache.find(alias)
+        assertNotNull(publicKey2)
+        assertEquals(keyPair2!!.publicKey, publicKey2)
+
+        assertEquals(keyPair1.publicKey, keyPair2.publicKey)
+        assertEquals(keyPair1.privateKey, keyPair2.privateKey)
+    }
+
+    @Test
+    @Timeout(5)
+    fun `Should generate deterministic ECDSA key pair with SECP256R1 curve based on alias`() {
         val signatureScheme = schemeMetadata.findSignatureScheme(DevCryptoService.SUPPORTED_SCHEME_CODE_NAME)
         val alias1 = newAlias()
         val publicKey1 = cryptoService.generateKeyPair(alias1, signatureScheme, EMPTY_CONTEXT)
@@ -232,31 +272,6 @@ class DevCryptoServiceTests {
         assertFalse(verifier.isValid(keyPair.public, signature, badVerifyData))
     }
 
-    private fun newAlias(): String = UUID.randomUUID().toString()
-
-    private fun validateGeneratedKeySpecs(alias: String, signingCacheShouldExists: Boolean): KeyPair {
-        val keyPairInfo = getGeneratedKeyPair(alias)
-        assertNotNull(keyPairInfo)
-        assertEquals(services.tenantId, keyPairInfo.tenantId)
-        assertNotNull(keyPairInfo.privateKey)
-        assertNotNull(keyPairInfo.publicKey)
-        assertEquals(keyPairInfo.privateKey!!.algorithm, "EdDSA")
-        assertEquals((keyPairInfo.privateKey as EdDSAKey).params, EdDSANamedCurveTable.getByName("ED25519"))
-        assertEquals(keyPairInfo.publicKey!!.algorithm, "EdDSA")
-        assertEquals((keyPairInfo.publicKey as EdDSAKey).params, EdDSANamedCurveTable.getByName("ED25519"))
-        val signingKeyInfo = getSigningKeyInfo(keyPairInfo.publicKey!!)
-        if (signingCacheShouldExists) {
-            assertNotNull(signingKeyInfo)
-            assertEquals(alias, signingKeyInfo.alias)
-            assertArrayEquals(schemeMetadata.encodeAsByteArray(keyPairInfo.publicKey!!), signingKeyInfo.publicKey.array())
-            assertEquals(services.tenantId, signingKeyInfo.tenantId)
-            assertNull(signingKeyInfo.externalId)
-        } else {
-            assertNull(signingKeyInfo)
-        }
-        return KeyPair(keyPairInfo.publicKey, keyPairInfo.privateKey)
-    }
-
     @Test
     @Timeout(30)
     fun `Should fail when generating key pair with unsupported signature scheme`() {
@@ -278,7 +293,7 @@ class DevCryptoServiceTests {
 
     @Test
     @Timeout(5)
-    fun `Should generate wrapped EDDSA key pair with ED25519 curve and be able to sign and verify with the key`() {
+    fun `Should generate wrapped ECDSA key pair with SECP256R1 curve and be able to sign and verify with the key`() {
         val testData = UUID.randomUUID().toString().toByteArray()
         val badVerifyData = UUID.randomUUID().toString().toByteArray()
         val signatureScheme = schemeMetadata.findSignatureScheme(DevCryptoService.SUPPORTED_SCHEME_CODE_NAME)
@@ -316,6 +331,31 @@ class DevCryptoServiceTests {
                 EMPTY_CONTEXT
             )
         }
+    }
+
+    private fun newAlias(): String = UUID.randomUUID().toString()
+
+    private fun validateGeneratedKeySpecs(alias: String, signingCacheShouldExists: Boolean): KeyPair {
+        val keyPairInfo = getGeneratedKeyPair(alias)
+        assertNotNull(keyPairInfo)
+        assertEquals(services.tenantId, keyPairInfo.tenantId)
+        assertNotNull(keyPairInfo.privateKey)
+        assertNotNull(keyPairInfo.publicKey)
+        assertEquals(keyPairInfo.privateKey!!.algorithm, "EC")
+        assertEquals((keyPairInfo.privateKey as ECKey).parameters.curve, ECNamedCurveTable.getParameterSpec("secp256r1").curve)
+        assertEquals(keyPairInfo.publicKey!!.algorithm, "EC")
+        assertEquals((keyPairInfo.publicKey as ECKey).parameters.curve, ECNamedCurveTable.getParameterSpec("secp256r1").curve)
+        val signingKeyInfo = getSigningKeyInfo(keyPairInfo.publicKey!!)
+        if (signingCacheShouldExists) {
+            assertNotNull(signingKeyInfo)
+            assertEquals(alias, signingKeyInfo.alias)
+            assertArrayEquals(schemeMetadata.encodeAsByteArray(keyPairInfo.publicKey!!), signingKeyInfo.publicKey.array())
+            assertEquals(services.tenantId, signingKeyInfo.tenantId)
+            assertNull(signingKeyInfo.externalId)
+        } else {
+            assertNull(signingKeyInfo)
+        }
+        return KeyPair(keyPairInfo.publicKey, keyPairInfo.privateKey)
     }
 
     private fun getGeneratedKeyPair(alias: String): CachedSoftKeysRecord? {

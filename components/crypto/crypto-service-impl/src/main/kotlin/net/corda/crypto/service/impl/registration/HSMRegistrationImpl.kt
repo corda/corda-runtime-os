@@ -93,7 +93,7 @@ class HSMRegistrationImpl : HSMRegistration {
                 tenantId,
                 "dummy-$category",
                 category,
-                EDDSA_ED25519_CODE_NAME,
+                ECDSA_SECP256R1_CODE_NAME,
                 "wrapping-key"
             )
         }
