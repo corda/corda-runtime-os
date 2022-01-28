@@ -16,6 +16,8 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import org.junit.jupiter.api.condition.EnabledOnOs
+import org.junit.jupiter.api.condition.OS
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.test.common.annotation.InjectService
@@ -67,7 +69,12 @@ class LocalPackageCacheIntegrationTest {
         configReadService.stop()
     }
 
-
+    /**
+     * Some "bug" on Windows prevents teardown from deleting the `cpi` folder
+     * on the build server with [AccessDeniedException]
+     * Not reproducible on a local machine AFAIK.
+     */
+//    @EnabledOnOs(OS.LINUX, OS.MAC)
     @Test
     @Timeout(value = 10, unit = TimeUnit.SECONDS)
     fun `check all advertised CPIs are available`() {

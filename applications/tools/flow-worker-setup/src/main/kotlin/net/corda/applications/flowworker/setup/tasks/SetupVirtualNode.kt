@@ -60,12 +60,14 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
 
     private fun scanCPIs(packageRepository: Path, cacheDir: Path): List<CPI> {
         return packageRepository.takeIf(Files::exists)?.let { path ->
-            Files.list(path).filter {
-                val fileName = it.fileName.toString()
-                CPI.fileExtensions.any(fileName::endsWith)
-            }.map {
-                CPI.from(Files.newInputStream(it), cacheDir, it.toString(), true)
-            }.toList()
+            Files.list(path).use { stream ->
+                stream.filter {
+                    val fileName = it.fileName.toString()
+                    CPI.fileExtensions.any(fileName::endsWith)
+                }.map {
+                    CPI.from(Files.newInputStream(it), cacheDir, it.toString(), true)
+                }.toList()
+            }
         } ?: listOf()
     }
 
@@ -73,8 +75,9 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
         val tmpDir = Paths.get(System.getProperty("java.io.tmpdir"), dir)
 
         if (Files.exists(tmpDir)) {
-            val filesToDelete = Files.list(tmpDir)
-            filesToDelete.forEach { Files.delete(it) }
+            Files.list(tmpDir).use { stream ->
+                stream.forEach { Files.delete(it) }
+            }
         } else {
             Files.createDirectory(tmpDir)
         }
