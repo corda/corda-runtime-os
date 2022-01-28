@@ -10,10 +10,15 @@ data class HTTPCpiUploadRequestId(val id: Int)
 @HttpRpcResource(
     name = "CpiUploadRPCOps",
     description = "Cpi Upload management endpoints",
-    path = "cpiupload"
+    path = "cpi"
 )
 interface CpiUploadRPCOps : RpcOps {
 
-    @HttpRpcPOST
+    @HttpRpcPOST(
+        path = "/",
+        title = "Upload a CPI",
+        description = "Uploads a CPI",
+        responseDescription = "The request Id calculated for a CPI upload request"
+    )
     fun cpi(@HttpRpcRequestBodyParameter file: ByteArray): HTTPCpiUploadRequestId
 }

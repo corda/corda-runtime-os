@@ -11,7 +11,7 @@ import net.corda.schema.configuration.ConfigKeys.Companion.RPC_ENDPOINT_TIMEOUT_
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.time.Duration
 
-/** Processes configuration changes for `VirtualNodeRPCOpsService`. */
+/** Sets [LateInitRPCOps] late init properties. */
 internal class LateInitRPCOpsConfigHandler(
     private val coordinator: LifecycleCoordinator,
     private val lateInitRPCOps: LateInitRPCOps
@@ -23,7 +23,7 @@ internal class LateInitRPCOpsConfigHandler(
      *
      * After updating [lateInitRPCOps], sets [coordinator]'s status to UP if [lateInitRPCOps] is running.
      *
-     * @throws VirtualNodeRPCOpsServiceException If [RPC_CONFIG] is in the [changedKeys], but no corresponding
+     * @throws LateInitRPCOpsServiceException If [RPC_CONFIG] is in the [changedKeys], but no corresponding
      * configuration is provided in [config].
      */
     override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
@@ -37,7 +37,7 @@ internal class LateInitRPCOpsConfigHandler(
      *
      * If [BOOTSTRAP_SERVERS] is in [configSnapshot], creates and starts [lateInitRPCOps]'s RPC sender.
      *
-     * @throws VirtualNodeRPCOpsServiceException If [configSnapshot] does not contain any config for key [RPC_CONFIG],
+     * @throws LateInitRPCOpsServiceException If [configSnapshot] does not contain any config for key [RPC_CONFIG],
      * or if [lateInitRPCOps]'s RPC sender could not be started.
      */
     private fun processRPCConfig(configSnapshot: Map<String, SmartConfig>) {
@@ -56,7 +56,7 @@ internal class LateInitRPCOpsConfigHandler(
             } catch (e: Exception) {
                 coordinator.updateStatus(ERROR)
                 throw LateInitRPCOpsServiceException(
-                    "Could not start the RPC sender for incoming HTTP RPC virtual node management requests", e
+                    "Could not start the RPC sender for incoming HTTP RPC requests", e
                 )
             }
         }
