@@ -15,7 +15,6 @@ import net.corda.flow.manager.fiber.FlowFiberExecutionContext
 import net.corda.flow.manager.fiber.FlowIORequest
 import net.corda.flow.manager.impl.FlowEventContext
 import net.corda.flow.manager.impl.fiber.FlowFiberImpl
-import net.corda.packaging.CPI
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.serialization.CheckpointSerializer
 import net.corda.v5.base.util.contextLogger
@@ -113,7 +112,6 @@ class FlowRunnerImpl @Activate constructor(
     private fun getSandbox(checkpoint: Checkpoint): SandboxGroupContext {
         return flowSandboxService.get(
             HoldingIdentity(checkpoint.flowKey.identity.x500Name, checkpoint.flowKey.identity.groupId),
-            CPI.Identifier.newInstance(checkpoint.cpiId, "1", null)
         )
     }
 

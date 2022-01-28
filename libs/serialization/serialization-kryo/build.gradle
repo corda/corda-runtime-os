@@ -35,7 +35,7 @@ dependencies {
     implementation "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion"
     implementation "org.slf4j:slf4j-api"
 
-    implementation project(":libs:crypto:crypto-internal")
+    implementation project(":libs:crypto:crypto-client")
     implementation project(":libs:sandbox")
     implementation project(":libs:serialization:checkpoint-serialization-api")
     implementation project(path: ':libs:serialization:serialization-encoding', configuration: 'bundle')
@@ -64,6 +64,7 @@ dependencies {
     integrationTestImplementation project(":libs:crypto:crypto-impl")
     integrationTestImplementation project(":libs:messaging:inmemory-messaging-impl")
     integrationTestImplementation project(":libs:lifecycle:lifecycle-impl")
+    integrationTestRuntimeOnly project(':libs:crypto:crypto-client')
     integrationTestRuntimeOnly project(":libs:sandbox-hooks")
     integrationTestRuntimeOnly project(":libs:sandbox-internal")
 }

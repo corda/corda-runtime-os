@@ -2,6 +2,7 @@ package net.corda.flow.service
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.flow.manager.factory.FlowEventProcessorFactory
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -16,12 +17,13 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.sandbox.service.SandboxService
+import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.Companion.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.Companion.MESSAGING_CONFIG
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -41,9 +43,7 @@ class FlowService @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = FlowEventProcessorFactory::class)
-    private val flowEventProcessorFactory: FlowEventProcessorFactory,
-    @Reference(service = SandboxService::class)
-    private val sandboxService: SandboxService
+    private val flowEventProcessorFactory: FlowEventProcessorFactory
 ) : Lifecycle {
 
     companion object {
@@ -66,10 +66,9 @@ class FlowService @Activate constructor(
                     coordinator.followStatusChangesByName(
                         setOf(
                             LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                            // HACK: This needs to change when we have the proper sandbox group service
-                            // for now we need to start this version of the service as it hosts the new
-                            // api we use elsewhere
-                            LifecycleCoordinatorName.forComponent<SandboxService>()
+                            LifecycleCoordinatorName.forComponent<SandboxGroupContextComponent>(),
+                            LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
+                            LifecycleCoordinatorName.forComponent<CpiInfoReadService>()
                         )
                     )
             }
