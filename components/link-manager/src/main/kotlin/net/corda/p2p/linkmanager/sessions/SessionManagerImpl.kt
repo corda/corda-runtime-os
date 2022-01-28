@@ -276,8 +276,6 @@ open class SessionManagerImpl(
     private fun getSessionInitMessage(sessionKey: SessionKey): Pair<String, LinkOutMessage>? {
         val sessionId = UUID.randomUUID().toString()
 
-        val header = trustStoresContainer.createLinkOutHeader(sessionKey.ourId) ?: return null
-
         val ourMemberInfo = networkMap.getMemberInfo(sessionKey.ourId)
         if (ourMemberInfo == null) {
             logger.warn(
@@ -321,6 +319,8 @@ open class SessionManagerImpl(
             return null
         }
         heartbeatManager.sessionMessageSent(sessionKey, sessionId)
+
+        val header = trustStoresContainer.createLinkOutHeader(sessionKey.ourId, responderMemberInfo.holdingIdentity) ?: return null
 
         return createLinkOutMessage(sessionInitPayload, header).let {
             sessionId to it
@@ -380,7 +380,10 @@ open class SessionManagerImpl(
             )
         )
 
-        val header = trustStoresContainer.createLinkOutHeader(ourMemberInfo.holdingIdentity) ?: return null
+        val header = trustStoresContainer.createLinkOutHeader(
+            ourMemberInfo.holdingIdentity,
+            responderMemberInfo.holdingIdentity
+        ) ?: return null
 
         heartbeatManager.sessionMessageSent(
             SessionKey(ourMemberInfo.holdingIdentity, responderMemberInfo.holdingIdentity),
@@ -504,11 +507,14 @@ open class SessionManagerImpl(
             return null
         }
 
-        val header = trustStoresContainer.createLinkOutHeader(ourMemberInfo.holdingIdentity) ?: return null
+        val header = trustStoresContainer.createLinkOutHeader(ourMemberInfo.holdingIdentity, peer.holdingIdentity) ?: return null
+
 
         val response = try {
             val ourPublicKey = ourMemberInfo.publicKey
-            val signData = { data: ByteArray -> cryptoService.signData(ourMemberInfo.publicKey, data) }
+            val signData = { data: ByteArray ->
+                cryptoService.signData(ourMemberInfo.publicKey, data)
+            }
             session.generateOurHandshakeMessage(ourPublicKey, signData)
         } catch (exception: LinkManagerCryptoService.NoPrivateKeyForGroupException) {
             logger.warn(

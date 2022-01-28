@@ -46,8 +46,8 @@ class TrustStoresContainer(
         destination: HoldingIdentity = source,
     ): LinkOutHeader? {
         return createLinkOutHeader(
-            destination.toHoldingIdentity(),
             source.toHoldingIdentity(),
+            destination.toHoldingIdentity(),
         )
     }
 
@@ -77,9 +77,7 @@ class TrustStoresContainer(
             networkType.toNetworkType(),
             destMemberInfo.endPoint.address,
             trustStoreHash
-        ).also {
-            println("QQQ sending -> ${it.trustStoreHash}")
-        }
+        )
     }
 
     private val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, BouncyCastleProvider())
@@ -142,10 +140,6 @@ class TrustStoresContainer(
             it.process()
         }.mapNotNull {
             it.toPublish
-        }
-        println("QQQ records ->")
-        records.forEach {
-            println("QQQ\t $it")
         }
 
         if (records.isNotEmpty()) {

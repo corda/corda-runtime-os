@@ -37,7 +37,6 @@ internal class TrustStores(
     class Truststore(pemCertificates: Collection<String>) {
 
         val trustStore: KeyStore by lazy {
-            println("QQQ convert to keystore...")
             KeyStore.getInstance("JKS").also { keyStore ->
                 keyStore.load(null, null)
                 pemCertificates.withIndex().forEach { (index, pemCertificate) ->
@@ -47,8 +46,6 @@ internal class TrustStores(
                     }
                     keyStore.setCertificateEntry("gateway-$index", certificate)
                 }
-            }.also {
-                println("QQQ converted -> $it (${it.aliases().toList()})")
             }
         }
     }
@@ -61,7 +58,6 @@ internal class TrustStores(
                 Truststore(it.value.trustedCertificates)
             }
         )
-        println("QQQ got snapshots, ${hashToActualStore.keys().toList()}")
         ready.get()?.complete(Unit)
     }
 
@@ -87,8 +83,6 @@ internal class TrustStores(
         } else {
             hashToActualStore.remove(newRecord.key)
         }
-
-        println("QQQ got values, ${hashToActualStore.keys().toList()}")
     }
 
     override val dominoTile = DominoTile(
