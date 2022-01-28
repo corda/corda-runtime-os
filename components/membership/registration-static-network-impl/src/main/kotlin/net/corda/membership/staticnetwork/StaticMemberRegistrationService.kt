@@ -1,10 +1,8 @@
 package net.corda.membership.staticnetwork
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.CryptoCategories
-import net.corda.crypto.CryptoLibraryClientsFactoryProvider
-import net.corda.crypto.CryptoLibraryFactory
-import net.corda.crypto.SigningService
+import net.corda.crypto.CryptoConsts
+import net.corda.crypto.CryptoOpsClient
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.createCoordinator
@@ -62,10 +60,10 @@ class StaticMemberRegistrationService @Activate constructor(
     val groupPolicyProvider: GroupPolicyProvider,
     @Reference(service = PublisherFactory::class)
     val publisherFactory: PublisherFactory,
-    @Reference(service = CryptoLibraryFactory::class)
-    val cryptoLibraryFactory: CryptoLibraryFactory,
-    @Reference(service = CryptoLibraryClientsFactoryProvider::class)
-    val cryptoLibraryClientsFactoryProvider: CryptoLibraryClientsFactoryProvider,
+    @Reference(service = KeyEncodingService::class)
+    val keyEncodingService: KeyEncodingService,
+    @Reference(service = CryptoOpsClient::class)
+    val cryptoOpsClient: CryptoOpsClient,
     @Reference(service = ConfigurationReadService::class)
     val configurationReadService: ConfigurationReadService,
     @Reference(service = LifecycleCoordinatorFactory::class)
@@ -82,8 +80,6 @@ class StaticMemberRegistrationService @Activate constructor(
         internal const val DEFAULT_PLATFORM_VERSION = "10"
         internal const val DEFAULT_SERIAL = "1"
     }
-
-    private val keyEncodingService: KeyEncodingService  = cryptoLibraryFactory.getKeyEncodingService()
 
     private val topic = Schemas.Membership.MEMBER_LIST_TOPIC
 
@@ -141,18 +137,11 @@ class StaticMemberRegistrationService @Activate constructor(
             throw IllegalArgumentException("Static member list inside the group policy file cannot be empty.")
         }
 
-        // temporary solution until we don't have a more suitable category
-        val signingService =
-            cryptoLibraryClientsFactoryProvider.get(
-                member.id,
-                "static-member-registration-service"
-            ).getSigningService(CryptoCategories.LEDGER)
-
         val processedMembers = mutableListOf<MemberX500Name>()
         @Suppress("SpreadOperator")
         staticMemberList.forEach { staticMember ->
             isValidStaticMemberDeclaration(processedMembers, staticMember)
-            val owningKey = generateOwningKey(signingService, staticMember, policy)
+            val owningKey = generateOwningKey(staticMember, policy)
             members.add(
                 MemberInfoImpl(
                     memberProvidedContext = MemberContextImpl(
@@ -197,15 +186,19 @@ class StaticMemberRegistrationService @Activate constructor(
      * If the keyAlias is not defined in the static template, we are going to use the id of the HoldingIdentity as default.
      */
     private fun generateOwningKey(
-        signingService: SigningService,
         member: Map<String, String>,
         policy: GroupPolicy
     ): String {
+        val holdingIdentity = HoldingIdentity(member[NAME]!!, policy.groupId)
         var keyAlias = member[KEY_ALIAS]
         if(keyAlias.isNullOrBlank()) {
-             keyAlias = HoldingIdentity(member[NAME]!!, policy.groupId).id
+             keyAlias = holdingIdentity.id
         }
-        val owningKey = signingService.generateKeyPair(keyAlias)
+        val owningKey = cryptoOpsClient.generateKeyPair(
+            tenantId = holdingIdentity.id,
+            category =  CryptoConsts.Categories.LEDGER,
+            alias = keyAlias
+        )
         return keyEncodingService.encodeAsString(owningKey)
     }
 
