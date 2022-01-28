@@ -2,17 +2,17 @@ package net.corda.libs.virtualnode.write.impl
 
 import net.corda.v5.crypto.SecureHash
 import java.nio.ByteBuffer
+import net.corda.data.crypto.SecureHash as SecureHashAvro
+import net.corda.data.packaging.CPIIdentifier as CPIIdentifierAvro
 
-// TODO - Joel - Describe.
+/** The metadata associated with a CPI file. */
 internal data class CPIMetadata(val id: CPIIdentifier, val idShortHash: String, val mgmGroupId: String)
 
-// TODO - Joel - Describe.
+/** The identifier of a CPI file. */
 internal data class CPIIdentifier(val name: String, val version: String, val signerSummaryHash: SecureHash) {
-    // TODO - Joel - Describe.
-    fun toAvro(): net.corda.data.packaging.CPIIdentifier {
-        return net.corda.data.packaging.CPIIdentifier(name, version, signerSummaryHash.toAvro())
+    /** Converts the [CPIIdentifier] to its Avro representation. */
+    fun toAvro(): CPIIdentifierAvro {
+        val secureHashAvro = SecureHashAvro(signerSummaryHash.algorithm, ByteBuffer.wrap(signerSummaryHash.bytes))
+        return net.corda.data.packaging.CPIIdentifier(name, version, secureHashAvro)
     }
-
-    // TODO - Joel - Describe.
-    private fun SecureHash.toAvro() = net.corda.data.crypto.SecureHash(algorithm, ByteBuffer.wrap(bytes))
 }

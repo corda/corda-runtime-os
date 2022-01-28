@@ -6,7 +6,7 @@ import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.HttpApiException
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRPCOps
-import net.corda.libs.virtualnode.endpoints.v1.types.CPIIdentifierHttp
+import net.corda.libs.virtualnode.endpoints.v1.types.CPIIdentifier
 import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeResponse
 import net.corda.messaging.api.publisher.RPCSender
@@ -65,13 +65,15 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
     override fun createVirtualNode(request: HTTPCreateVirtualNodeRequest): HTTPCreateVirtualNodeResponse {
         val rpcRequest = VirtualNodeCreationRequest("", "")
         // TODO - Check x500 name is well-formed.
-        val response =  sendRequest(rpcRequest)
+        val resp = sendRequest(rpcRequest)
 
-        return if (response.success) {
-            val cpiId = CPIIdentifierHttp("", "", "")
-            HTTPCreateVirtualNodeResponse("", cpiId, "", "", "")
+        return if (resp.success) {
+            val cpiId = CPIIdentifier.fromAvro(resp.cpiIdentifier)
+            HTTPCreateVirtualNodeResponse(
+                resp.x500Name, cpiId, resp.cpiIdentifierHash, resp.mgmGroupId, resp.holdingIdentifierHash
+            )
         } else {
-            val exception = response.exception
+            val exception = resp.exception
                 ?: throw HttpApiException("Request was unsuccessful but no exception was provided.", 500)
             // TODO - CORE-3304 - Return richer exception (e.g. containing the config and version currently in the DB).
             throw HttpApiException("${exception.errorType}: ${exception.errorMessage}", 500)
