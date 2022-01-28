@@ -30,7 +30,7 @@ class ReplayCalculatorTest {
     }
 
     @Test
-    fun `ExponentialBackoffReplayCalculator always replays messages if no limit`() {
+    fun `ReplayCalculator always replays messages if no limit`() {
         val calculator = ReplayCalculator(false, CONFIG)
         assertTrue(calculator.shouldReplayMessage(0))
         assertTrue(calculator.shouldReplayMessage(CONFIG.maxReplayingMessages))
@@ -39,7 +39,7 @@ class ReplayCalculatorTest {
     }
 
     @Test
-    fun `ExponentialBackoffReplayCalculator only replays messages smaller than the limit`() {
+    fun `ReplayCalculator only replays messages smaller than the limit`() {
         val calculator = ReplayCalculator(true, CONFIG)
         assertTrue(calculator.shouldReplayMessage(0))
         assertTrue(calculator.shouldReplayMessage(CONFIG.maxReplayingMessages - 1))

@@ -65,7 +65,7 @@ internal class ReplayScheduler<M>(
      * until [cutOff] is reached.
      * [cutOff] The maximum period between two replays of the same message.
      * [maxReplayingMessages] The maximum number of replaying messages for each [SessionManager.SessionKey]. This limit is only applied
-     * when using a [ExponentialBackoffReplayCalculatorFactory].
+     * if [limitTotalReplays] is true.
      */
     internal data class ReplaySchedulerConfig(
         val baseReplayPeriod: Duration,
