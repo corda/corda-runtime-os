@@ -175,7 +175,8 @@ class UserWriterImpl(
             updateTimestamp = updateTimestamp,
             actorUser = requestUserId,
             changeType = RPCPermissionOperation.ADD_ROLE_TO_USER,
-            details = "Role '${role.id}' assigned to User '${user.id}' by '$requestUserId'."
+            details = "Role '${role.id}' assigned to User '${user.loginName}' by '$requestUserId'. " +
+                    "Created RoleUserAssociation '${association.id}'."
         )
 
         user.roleUserAssociations.add(association)
@@ -200,7 +201,8 @@ class UserWriterImpl(
             updateTimestamp = updateTimestamp,
             actorUser = requestUserId,
             changeType = RPCPermissionOperation.DELETE_ROLE_FROM_USER,
-            details = "Role '$roleId' unassigned from User '${user.id}' by '$requestUserId'."
+            details = "Role '$roleId' unassigned from User '${user.loginName}' by '$requestUserId'. " +
+                    "Removed RoleUserAssociation '${association.id}'."
         )
 
         user.roleUserAssociations.remove(association)
