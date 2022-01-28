@@ -6,7 +6,6 @@ import net.corda.membership.impl.read.TestProperties.Companion.bobName
 import net.corda.membership.impl.read.cache.MemberDataCache
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.read.MembershipGroupReader
-import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.HoldingIdentity
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
@@ -38,11 +37,10 @@ class MembershipGroupReaderFactoryTest {
     val cache: MembershipGroupReadCache = mock<MembershipGroupReadCache>().apply {
         doReturn(this@MembershipGroupReaderFactoryTest.groupReaderCache).whenever(this).groupReaderCache
     }
-    private val keyEncodingService: KeyEncodingService = mock()
 
     @BeforeEach
     fun setUp() {
-        membershipGroupReaderFactory = MembershipGroupReaderFactory.Impl(cache, keyEncodingService)
+        membershipGroupReaderFactory = MembershipGroupReaderFactory.Impl(cache)
     }
 
     @Test

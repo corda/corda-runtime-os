@@ -4,7 +4,6 @@ import net.corda.membership.GroupPolicy
 import net.corda.membership.impl.GroupPolicyImpl
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.read.MembershipGroupReader
-import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.HoldingIdentity
 
 /**
@@ -23,8 +22,7 @@ interface MembershipGroupReaderFactory {
      * Default implementation.
      */
     class Impl(
-        private val membershipGroupReadCache: MembershipGroupReadCache,
-        private val keyEncodingService: KeyEncodingService
+        private val membershipGroupReadCache: MembershipGroupReadCache
     ) : MembershipGroupReaderFactory {
         private val groupReaderCache get() = membershipGroupReadCache.groupReaderCache
 
@@ -37,8 +35,7 @@ interface MembershipGroupReaderFactory {
         ) = MembershipGroupReaderImpl(
             holdingIdentity,
             getGroupPolicy(holdingIdentity),
-            membershipGroupReadCache,
-            keyEncodingService
+            membershipGroupReadCache
         ).apply {
             groupReaderCache.put(holdingIdentity, this)
         }

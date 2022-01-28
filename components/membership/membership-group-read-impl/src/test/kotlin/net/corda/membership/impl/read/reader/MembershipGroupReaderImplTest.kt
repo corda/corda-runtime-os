@@ -5,7 +5,10 @@ import net.corda.membership.impl.read.TestProperties
 import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_1
 import net.corda.membership.impl.read.cache.MemberListCache
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
-import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.membership.impl.read.reader.MembershipGroupReaderImpl.Companion.IDENTITY_KEY_HASHES
+import net.corda.v5.crypto.PublicKeyHash
+import net.corda.v5.crypto.sha256Bytes
+import net.corda.v5.membership.identity.MemberContext
 import net.corda.v5.membership.identity.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -30,12 +33,15 @@ class MembershipGroupReaderImplTest {
     }
     private val knownKey: PublicKey = mock()
     private val knownKeyAsByteArray = "1234".toByteArray()
+    private val knownKeyHash = PublicKeyHash.parse(knownKeyAsByteArray.sha256Bytes())
     private val memberInfo: MemberInfo = mock {
         on { name } doReturn aliceName
         on { identityKeys } doReturn listOf(knownKey)
-    }
-    private val keyEncodingService: KeyEncodingService = mock {
-        on { decodePublicKey(knownKeyAsByteArray) } doReturn knownKey
+        val mockedMemberProvidedContext = mock<MemberContext> {
+            on { parseList(eq(IDENTITY_KEY_HASHES), eq(PublicKeyHash::class.java)) } doReturn listOf(knownKeyHash)
+        }
+        on { memberProvidedContext } doReturn mockedMemberProvidedContext
+
     }
 
     @BeforeEach
@@ -43,8 +49,7 @@ class MembershipGroupReaderImplTest {
         membershipGroupReaderImpl = MembershipGroupReaderImpl(
             aliceIdGroup1,
             groupPolicy,
-            membershipGroupCache,
-            keyEncodingService
+            membershipGroupCache
         )
     }
 
@@ -67,15 +72,12 @@ class MembershipGroupReaderImplTest {
     @Test
     fun `lookup known member based on public key hash`() {
         mockMemberList(listOf(memberInfo))
-        assertEquals(
-            memberInfo,
-            membershipGroupReaderImpl.lookup(knownKeyAsByteArray)
-        )
+        assertEquals(memberInfo, membershipGroupReaderImpl.lookup(knownKeyHash))
     }
 
     @Test
     fun `lookup non-existing member based on public key hash`() {
         mockMemberList(emptyList())
-        assertNull(membershipGroupReaderImpl.lookup(knownKeyAsByteArray))
+        assertNull(membershipGroupReaderImpl.lookup(knownKeyHash))
     }
 }
