@@ -39,6 +39,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     private val persistenceFactory: SoftKeysPersistenceProvider
 ) : SoftCryptoServiceProvider {
     companion object {
+        const val SERVICE_NAME = "soft"
         private val logger: Logger = contextLogger()
     }
 
@@ -49,7 +50,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
 
     private var impl: Impl? = null
 
-    override val name: String = "soft"
+    override val name: String = SERVICE_NAME
 
     override val configType: Class<SoftCryptoServiceConfig> = SoftCryptoServiceConfig::class.java
 

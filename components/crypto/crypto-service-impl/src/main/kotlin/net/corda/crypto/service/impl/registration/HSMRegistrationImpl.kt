@@ -3,6 +3,8 @@ package net.corda.crypto.service.impl.registration
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.crypto.CryptoConsts
 import net.corda.crypto.service.SoftCryptoServiceConfig
+import net.corda.crypto.service.impl.dev.DevCryptoServiceProviderImpl
+import net.corda.crypto.service.impl.soft.SoftCryptoServiceProviderImpl
 import net.corda.data.crypto.config.HSMConfig
 import net.corda.data.crypto.config.HSMInfo
 import net.corda.data.crypto.config.TenantHSMConfig
@@ -24,8 +26,8 @@ class HSMRegistrationImpl : HSMRegistration {
     }
 
     override fun getHSMConfig(id: String): HSMConfig {
-        require(id == "dummy") {
-            "Currently supports only hardcoded Soft HSM configuration with id=dummy"
+        require(id.startsWith("dummy-")) {
+            "Currently supports only hardcoded Soft HSM configuration with ids having 'dummy-' prefix."
         }
         return HSMConfig(
             HSMInfo(
@@ -34,7 +36,11 @@ class HSMRegistrationImpl : HSMRegistration {
                 1,
                 "default",
                 "Dummy configuration",
-                "soft",
+                if(id == "dummy-${CryptoConsts.Categories.TLS}") {
+                    SoftCryptoServiceProviderImpl.SERVICE_NAME
+                } else {
+                    DevCryptoServiceProviderImpl.SERVICE_NAME
+                },
                 null,
                 listOf(
                     CryptoConsts.Categories.LEDGER,
@@ -78,16 +84,16 @@ class HSMRegistrationImpl : HSMRegistration {
         return when(category) {
             CryptoConsts.Categories.TLS -> TenantHSMConfig(
                 tenantId,
-                "dummy",
+                "dummy-$category",
                 category,
                 RSA_CODE_NAME,
                 "wrapping-key"
             )
             else -> TenantHSMConfig(
                 tenantId,
-                "dummy",
+                "dummy-$category",
                 category,
-                ECDSA_SECP256R1_CODE_NAME,
+                EDDSA_ED25519_CODE_NAME,
                 "wrapping-key"
             )
         }
