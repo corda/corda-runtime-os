@@ -17,7 +17,7 @@ class SessionErrorProcessorReceiveTest {
         val sessionEvent = SessionEvent(MessageDirection.INBOUND, 1, "1", 1, SessionError(ExceptionEnvelope()))
         val sessionState = SessionErrorProcessorReceive("Key", null, sessionEvent, ExceptionEnvelope(), Instant.now()).execute()
         Assertions.assertThat(sessionState).isNotNull
-        Assertions.assertThat(sessionState.sentEventsState.undeliveredMessages.first().payload::class.java)
+        Assertions.assertThat(sessionState.sendEventsState.undeliveredMessages.first().payload::class.java)
             .isEqualTo(SessionError::class.java)
     }
 

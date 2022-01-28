@@ -18,8 +18,8 @@ class SessionDataProcessorReceiveTest {
         val sessionEvent = SessionEvent(MessageDirection.INBOUND, 1, "sessionId", 1, SessionData())
         val result = SessionDataProcessorReceive("key", null, sessionEvent, Instant.now()).execute()
         assertThat(result).isNotNull
-        assertThat(result.sentEventsState.undeliveredMessages.size).isEqualTo(1)
-        assertThat(result.sentEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionError::class.java)
+        assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
+        assertThat(result.sendEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionError::class.java)
     }
 
     @Test
@@ -32,8 +32,8 @@ class SessionDataProcessorReceiveTest {
         val result = SessionDataProcessorReceive("key", inputState, sessionEvent, Instant.now()).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.ERROR)
-        assertThat(result.sentEventsState.undeliveredMessages.size).isEqualTo(1)
-        assertThat(result.sentEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionError::class.java)
+        assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
+        assertThat(result.sendEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionError::class.java)
     }
 
     @Test
@@ -47,8 +47,8 @@ class SessionDataProcessorReceiveTest {
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.CONFIRMED)
 
-        assertThat(result.sentEventsState.undeliveredMessages.size).isEqualTo(1)
-        val outputEvent = result.sentEventsState.undeliveredMessages.first()
+        assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
+        val outputEvent = result.sendEventsState.undeliveredMessages.first()
         assertThat(outputEvent.payload::class.java).isEqualTo(SessionAck::class.java)
         val sessionAck = outputEvent.payload as SessionAck
         assertThat(sessionAck.sequenceNum).isEqualTo(2)
@@ -65,8 +65,8 @@ class SessionDataProcessorReceiveTest {
         val result = SessionDataProcessorReceive("key", inputState, sessionEvent, Instant.now()).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.CONFIRMED)
-        assertThat(result.sentEventsState.undeliveredMessages.size).isEqualTo(1)
-        val outputEvent = result.sentEventsState.undeliveredMessages.first()
+        assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
+        val outputEvent = result.sendEventsState.undeliveredMessages.first()
         assertThat(outputEvent.payload::class.java).isEqualTo(SessionAck::class.java)
         val sessionAck = outputEvent.payload as SessionAck
         assertThat(sessionAck.sequenceNum).isEqualTo(3)

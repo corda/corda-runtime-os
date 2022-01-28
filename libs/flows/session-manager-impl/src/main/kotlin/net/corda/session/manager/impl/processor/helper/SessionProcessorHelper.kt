@@ -27,7 +27,7 @@ fun generateErrorSessionStateFromSessionEvent(sessionId: String, errorMessage: S
     val errorSessionState = SessionState()
     errorSessionState.sessionId = sessionId
     errorSessionState.sessionStartTime = instant.toEpochMilli()
-    errorSessionState.sentEventsState = SessionProcessState(0, mutableListOf(errorEvent))
+    errorSessionState.sendEventsState = SessionProcessState(0, mutableListOf(errorEvent))
     errorSessionState.status = SessionStateType.ERROR
     return errorSessionState
 }

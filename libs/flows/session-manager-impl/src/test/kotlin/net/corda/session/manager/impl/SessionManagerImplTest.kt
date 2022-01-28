@@ -80,7 +80,7 @@ class SessionManagerImplTest {
         )
         val (outputState, messagesToSend) = sessionManager.getMessagesToSend(sessionState)
         assertThat(messagesToSend.size).isEqualTo(3)
-        assertThat(outputState.sentEventsState.undeliveredMessages.size).isEqualTo(2)
-        assertThat(outputState.sentEventsState.undeliveredMessages.find{ it.payload::class.java == SessionAck::class.java}).isNull()
+        assertThat(outputState.sendEventsState.undeliveredMessages.size).isEqualTo(2)
+        assertThat(outputState.sendEventsState.undeliveredMessages.find{ it.payload::class.java == SessionAck::class.java}).isNull()
     }
 }

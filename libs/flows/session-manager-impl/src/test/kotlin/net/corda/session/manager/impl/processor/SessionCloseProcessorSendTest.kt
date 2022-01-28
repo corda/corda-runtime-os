@@ -18,8 +18,8 @@ class SessionCloseProcessorSendTest {
         val result = SessionCloseProcessorSend("key", null, sessionEvent, Instant.now()).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.ERROR)
-        assertThat(result.sentEventsState.undeliveredMessages.size).isEqualTo(1)
-        assertThat(result.sentEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionError::class.java)
+        assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
+        assertThat(result.sendEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionError::class.java)
     }
 
     @Test
@@ -32,8 +32,8 @@ class SessionCloseProcessorSendTest {
         val result = SessionCloseProcessorSend("key", inputState, sessionEvent, Instant.now()).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.ERROR)
-        assertThat(result.sentEventsState.undeliveredMessages.size).isEqualTo(1)
-        assertThat(result.sentEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionError::class.java)
+        assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
+        assertThat(result.sendEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionError::class.java)
     }
 
     @Test
@@ -46,8 +46,8 @@ class SessionCloseProcessorSendTest {
         val result = SessionCloseProcessorSend("key", inputState, sessionEvent, Instant.now()).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.ERROR)
-        assertThat(result.sentEventsState.undeliveredMessages.size).isEqualTo(1)
-        assertThat(result.sentEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionError::class.java)
+        assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
+        assertThat(result.sendEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionError::class.java)
     }
 
     @Test
@@ -60,8 +60,8 @@ class SessionCloseProcessorSendTest {
         val result = SessionCloseProcessorSend("key", inputState, sessionEvent, Instant.now()).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.CLOSING)
-        assertThat(result.sentEventsState.undeliveredMessages.size).isEqualTo(1)
-        val sessionEventOutput = result.sentEventsState.undeliveredMessages.first()
+        assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
+        val sessionEventOutput = result.sendEventsState.undeliveredMessages.first()
         assertThat(sessionEventOutput.sequenceNum).isNotNull
         assertThat(sessionEventOutput.payload).isEqualTo(sessionEvent.payload)
     }
@@ -76,8 +76,8 @@ class SessionCloseProcessorSendTest {
         val result = SessionCloseProcessorSend("key", inputState, sessionEvent, Instant.now()).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.WAIT_FOR_FINAL_ACK)
-        assertThat(result.sentEventsState.undeliveredMessages.size).isEqualTo(1)
-        val sessionEventOutput = result.sentEventsState.undeliveredMessages.first()
+        assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
+        val sessionEventOutput = result.sendEventsState.undeliveredMessages.first()
         assertThat(sessionEventOutput.sequenceNum).isNotNull
         assertThat(sessionEventOutput.payload).isEqualTo(sessionEvent.payload)
     }

@@ -70,7 +70,7 @@ class SessionManagerInteractionTest {
         assertThat(aliceSessionState).isNotNull
 
         //mapper changes
-        val bobSessionDataReceived = aliceSessionState.sentEventsState?.undeliveredMessages?.last()!!
+        val bobSessionDataReceived = aliceSessionState.sendEventsState?.undeliveredMessages?.last()!!
         bobSessionDataReceived.messageDirection = MessageDirection.INBOUND
 
         //data received
@@ -102,7 +102,7 @@ class SessionManagerInteractionTest {
         assertThat(aliceSessionState.status).isEqualTo(SessionStateType.CLOSING)
 
         //mapper changes
-        val bobSessionCloseReceived = aliceSessionState.sentEventsState?.undeliveredMessages?.last()!!
+        val bobSessionCloseReceived = aliceSessionState.sendEventsState?.undeliveredMessages?.last()!!
         bobSessionCloseReceived.messageDirection = MessageDirection.INBOUND
 
         //Bob receive close
@@ -127,7 +127,7 @@ class SessionManagerInteractionTest {
         assertThat(bobSessionState).isNotNull
 
         //mapper changes
-        val aliceSessionCloseReceived = bobSessionState.sentEventsState?.undeliveredMessages?.last()!!
+        val aliceSessionCloseReceived = bobSessionState.sendEventsState?.undeliveredMessages?.last()!!
         aliceSessionCloseReceived.messageDirection = MessageDirection.INBOUND
 
         //alice receive close
@@ -154,24 +154,24 @@ class SessionManagerInteractionTest {
         //send 1st data
         val aliceSessionEvent1 = SessionEvent(MessageDirection.OUTBOUND, instant.toEpochMilli(), sessionId, null, aliceSessionData)
         aliceSessionState = sessionManager.processMessageToSend(aliceFlowKey, aliceSessionState, aliceSessionEvent1, instant)
-        var sentEventsState = aliceSessionState.sentEventsState
-        assertThat(sentEventsState?.lastProcessedSequenceNum).isEqualTo(2)
-        assertThat(sentEventsState?.undeliveredMessages?.size).isEqualTo(1)
+        var sendEventsState = aliceSessionState.sendEventsState
+        assertThat(sendEventsState?.lastProcessedSequenceNum).isEqualTo(2)
+        assertThat(sendEventsState?.undeliveredMessages?.size).isEqualTo(1)
 
         //FlowMapper Changes
-        val bobSessionEvent2 = aliceSessionState.sentEventsState?.undeliveredMessages?.last()!!
+        val bobSessionEvent2 = aliceSessionState.sendEventsState?.undeliveredMessages?.last()!!
         bobSessionEvent2.messageDirection = MessageDirection.INBOUND
 
         //send 2nd data
         val aliceSessionEvent2 = SessionEvent(MessageDirection.OUTBOUND, instant.toEpochMilli(), sessionId, null, aliceSessionData)
         aliceSessionState = sessionManager.processMessageToSend(aliceFlowKey, aliceSessionState, aliceSessionEvent2, instant)
-        sentEventsState = aliceSessionState.sentEventsState
+        sendEventsState = aliceSessionState.sendEventsState
         assertThat(aliceSessionState).isNotNull
-        assertThat(sentEventsState?.lastProcessedSequenceNum).isEqualTo(3)
-        assertThat(sentEventsState?.undeliveredMessages?.size).isEqualTo(2)
+        assertThat(sendEventsState?.lastProcessedSequenceNum).isEqualTo(3)
+        assertThat(sendEventsState?.undeliveredMessages?.size).isEqualTo(2)
 
         //FlowMapper Changes
-        val bobSessionEvent1 = aliceSessionState.sentEventsState?.undeliveredMessages?.last()!!
+        val bobSessionEvent1 = aliceSessionState.sendEventsState?.undeliveredMessages?.last()!!
         bobSessionEvent1.messageDirection = MessageDirection.INBOUND
 
         var bobSessionState: SessionState? = SessionState(sessionIdInitiated, 1, HoldingIdentity("Alice", "1"), false,

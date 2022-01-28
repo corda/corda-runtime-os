@@ -49,8 +49,8 @@ class SessionCloseProcessorReceive(
                             "when last processed seqNum was $lastProcessedSequenceNum. Current SessionState: $sessionState"
                 }
                 sessionState.apply {
-                    sentEventsState.undeliveredMessages =
-                        sessionState.sentEventsState.undeliveredMessages.plus(generateAckEvent(seqNum, sessionId, instant))
+                    sendEventsState.undeliveredMessages =
+                        sessionState.sendEventsState.undeliveredMessages.plus(generateAckEvent(seqNum, sessionId, instant))
                 }
             } else {
                 processCloseReceivedAndGetState(sessionState, seqNum, sessionId)
@@ -66,22 +66,22 @@ class SessionCloseProcessorReceive(
         SessionStateType.CONFIRMED, SessionStateType.CREATED -> {
             sessionState.apply {
                 status = SessionStateType.CLOSING
-                sentEventsState.undeliveredMessages =
-                    sentEventsState.undeliveredMessages.plus(generateAckEvent(seqNum, sessionId, instant))
+                sendEventsState.undeliveredMessages =
+                    sendEventsState.undeliveredMessages.plus(generateAckEvent(seqNum, sessionId, instant))
 
             }
         }
         SessionStateType.CLOSING -> {
             sessionState.apply {
-                status = if (sentEventsState.undeliveredMessages.isNullOrEmpty()) {
+                status = if (sendEventsState.undeliveredMessages.isNullOrEmpty()) {
                     logger.debug { "Updating session state to ${SessionStateType.CLOSED} for session state $sessionState" }
                     SessionStateType.CLOSED
                 } else {
                     logger.debug { "Updating session state to ${SessionStateType.WAIT_FOR_FINAL_ACK} for session state $sessionState" }
                     SessionStateType.WAIT_FOR_FINAL_ACK
                 }
-                sentEventsState.undeliveredMessages =
-                    sentEventsState.undeliveredMessages.plus(generateAckEvent(seqNum, sessionId, instant))
+                sendEventsState.undeliveredMessages =
+                    sendEventsState.undeliveredMessages.plus(generateAckEvent(seqNum, sessionId, instant))
             }
         }
         else -> {
@@ -100,8 +100,8 @@ class SessionCloseProcessorReceive(
         logger.error(errorMessage)
         return sessionState.apply {
             status = SessionStateType.ERROR
-            sentEventsState.undeliveredMessages =
-                sentEventsState.undeliveredMessages.plus(generateErrorEvent(sessionId, errorMessage, errorType, instant))
+            sendEventsState.undeliveredMessages =
+                sendEventsState.undeliveredMessages.plus(generateErrorEvent(sessionId, errorMessage, errorType, instant))
 
         }
     }

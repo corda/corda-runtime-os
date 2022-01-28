@@ -43,7 +43,7 @@ class SessionCloseProcessorSend(
                 val errorMessage = "Tried to send SessionClose on key $key for sessionId $sessionId with status of : $currentStatus"
                 logger.error(errorMessage)
                 sessionState.apply {
-                    sentEventsState.undeliveredMessages = sessionState.sentEventsState.undeliveredMessages.plus(
+                    sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.plus(
                         generateErrorEvent(sessionId, errorMessage, "SessionClose-InvalidStatus", instant)
                     )
                 }
@@ -56,7 +56,7 @@ class SessionCloseProcessorSend(
                 logAndGenerateErrorResult(errorMessage, sessionState, sessionId, "SessionClose-SessionMismatch")
             }
             else -> {
-                val nextSeqNum = sessionState.sentEventsState.lastProcessedSequenceNum + 1
+                val nextSeqNum = sessionState.sendEventsState.lastProcessedSequenceNum + 1
                 sessionEvent.apply {
                     sequenceNum = nextSeqNum
                     timestamp = instant.toEpochMilli()
@@ -75,23 +75,23 @@ class SessionCloseProcessorSend(
         SessionStateType.CREATED -> {
             sessionState.apply {
                 status = SessionStateType.CLOSING
-                sentEventsState.lastProcessedSequenceNum = nextSeqNum
-                sentEventsState.undeliveredMessages = sessionState.sentEventsState.undeliveredMessages.plus(sessionEvent)
+                sendEventsState.lastProcessedSequenceNum = nextSeqNum
+                sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.plus(sessionEvent)
             }
         }
         SessionStateType.CONFIRMED -> {
             sessionState.apply {
                 status = SessionStateType.CLOSING
-                sentEventsState.lastProcessedSequenceNum = nextSeqNum
-                sentEventsState.undeliveredMessages = sessionState.sentEventsState.undeliveredMessages.plus(sessionEvent)
+                sendEventsState.lastProcessedSequenceNum = nextSeqNum
+                sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.plus(sessionEvent)
             }
         }
         SessionStateType.CLOSING -> {
             //Doesn't go to closed until ack received
             sessionState.apply {
                 status = SessionStateType.WAIT_FOR_FINAL_ACK
-                sentEventsState.lastProcessedSequenceNum = nextSeqNum
-                sentEventsState.undeliveredMessages = sessionState.sentEventsState.undeliveredMessages.plus(sessionEvent)
+                sendEventsState.lastProcessedSequenceNum = nextSeqNum
+                sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.plus(sessionEvent)
             }
         }
         SessionStateType.CLOSED -> {

@@ -18,8 +18,8 @@ class SessionDataProcessorSendTest {
         val result = SessionDataProcessorSend("key", null, sessionEvent, Instant.now()).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.ERROR)
-        assertThat(result.sentEventsState.undeliveredMessages.size).isEqualTo(1)
-        assertThat(result.sentEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionError::class.java)
+        assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
+        assertThat(result.sendEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionError::class.java)
     }
 
     @Test
@@ -32,7 +32,7 @@ class SessionDataProcessorSendTest {
         val result = SessionDataProcessorSend("key", inputState, sessionEvent, Instant.now()).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.ERROR)
-        assertThat(result.sentEventsState.undeliveredMessages).isEmpty()
+        assertThat(result.sendEventsState.undeliveredMessages).isEmpty()
     }
 
     @Test
@@ -45,8 +45,8 @@ class SessionDataProcessorSendTest {
         val result = SessionDataProcessorSend("key", inputState, sessionEvent, Instant.now()).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.ERROR)
-        assertThat(result.sentEventsState.undeliveredMessages.size).isEqualTo(1)
-        assertThat(result.sentEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionError::class.java)
+        assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
+        assertThat(result.sendEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionError::class.java)
     }
 
     @Test
@@ -59,8 +59,8 @@ class SessionDataProcessorSendTest {
         val result = SessionDataProcessorSend("key", inputState, sessionEvent, Instant.now()).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.CONFIRMED)
-        assertThat(result.sentEventsState.undeliveredMessages.size).isEqualTo(1)
-        val sessionEventOutput = result.sentEventsState.undeliveredMessages.first()
+        assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
+        val sessionEventOutput = result.sendEventsState.undeliveredMessages.first()
         assertThat(sessionEventOutput.sequenceNum).isNotNull
         assertThat(sessionEventOutput.payload).isEqualTo(sessionEvent.payload)
     }

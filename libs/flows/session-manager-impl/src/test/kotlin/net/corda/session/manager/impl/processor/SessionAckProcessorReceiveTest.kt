@@ -19,7 +19,7 @@ class SessionAckProcessorReceiveTest {
         val sessionAckProcessorReceived = SessionAckProcessorReceived("key", null, "sessionId", 1, Instant.now())
         val sessionState = sessionAckProcessorReceived.execute()
 
-        val messagesToSend = sessionState.sentEventsState.undeliveredMessages
+        val messagesToSend = sessionState.sendEventsState.undeliveredMessages
         assertThat(messagesToSend.size).isEqualTo(1)
         assertThat(messagesToSend.first()!!.payload::class.java).isEqualTo(SessionError::class.java)
     }
@@ -33,7 +33,7 @@ class SessionAckProcessorReceiveTest {
         val updatedState = SessionAckProcessorReceived("key", sessionState, "sessionId", 1, Instant.now()).execute()
 
         assertThat(updatedState.status).isEqualTo(SessionStateType.CONFIRMED)
-        assertThat(updatedState.sentEventsState?.undeliveredMessages).isEmpty()
+        assertThat(updatedState.sendEventsState?.undeliveredMessages).isEmpty()
     }
 
     @Test
@@ -45,7 +45,7 @@ class SessionAckProcessorReceiveTest {
         val updatedState = SessionAckProcessorReceived("key", sessionState, "sessionId", 1, Instant.now()).execute()
 
         assertThat(updatedState.status).isEqualTo(SessionStateType.CONFIRMED)
-        assertThat(updatedState.sentEventsState?.undeliveredMessages).isEmpty()
+        assertThat(updatedState.sendEventsState?.undeliveredMessages).isEmpty()
     }
 
     @Test
@@ -58,6 +58,6 @@ class SessionAckProcessorReceiveTest {
         val updatedState = SessionAckProcessorReceived("key", sessionState, "sessionId", 3, Instant.now()).execute()
 
         assertThat(updatedState.status).isEqualTo(SessionStateType.CLOSED)
-        assertThat(updatedState.sentEventsState?.undeliveredMessages).isEmpty()
+        assertThat(updatedState.sendEventsState?.undeliveredMessages).isEmpty()
     }
 }

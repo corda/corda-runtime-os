@@ -51,7 +51,7 @@ class SessionInitProcessorReceiveTest {
         assertThat(receivedEvents.undeliveredMessages.size).isEqualTo(1)
         assertThat(receivedEvents.undeliveredMessages.first()).isEqualTo(sessionInitEvent)
 
-        val messagesToSend = sessionState.sentEventsState.undeliveredMessages
+        val messagesToSend = sessionState.sendEventsState.undeliveredMessages
         assertThat(messagesToSend.size).isEqualTo(1)
         val sessionAck = messagesToSend.first().payload!!
         assertThat(sessionAck::class.java).isEqualTo(SessionAck::class.java)

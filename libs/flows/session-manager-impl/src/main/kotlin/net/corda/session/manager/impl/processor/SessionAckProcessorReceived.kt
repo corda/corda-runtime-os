@@ -35,18 +35,18 @@ class SessionAckProcessorReceived(
             generateErrorSessionStateFromSessionEvent(sessionId, errorMessage, "SessionAck-NullState", instant)
         } else {
             logger.debug { "Received SessionAck on key $key for seqNum $sequenceNum for session state: $sessionState" }
-            val undeliveredMessages = sessionState.sentEventsState.undeliveredMessages
-            undeliveredMessages.removeIf { it.sequenceNum == sequenceNum}
 
-            if (sessionState.status == SessionStateType.WAIT_FOR_FINAL_ACK && undeliveredMessages.isEmpty()) {
-                logger.debug { "Updating session state to ${SessionStateType.CLOSED} for session state $sessionState" }
-                sessionState.status = SessionStateType.CLOSED
-            } else if (sessionState.status == SessionStateType.CREATED && undeliveredMessages.isEmpty()) {
-                logger.debug { "Updating session state to ${SessionStateType.CONFIRMED} for session state $sessionState" }
-                sessionState.status = SessionStateType.CONFIRMED
+            sessionState.apply {
+                sendEventsState.undeliveredMessages.removeIf { it.sequenceNum == sequenceNum}
+
+                if (sessionState.status == SessionStateType.WAIT_FOR_FINAL_ACK && sendEventsState.undeliveredMessages.isEmpty()) {
+                    logger.debug { "Updating session state to ${SessionStateType.CLOSED} for session state $sessionState" }
+                    sessionState.status = SessionStateType.CLOSED
+                } else if (sessionState.status == SessionStateType.CREATED && sendEventsState.undeliveredMessages.isEmpty()) {
+                    logger.debug { "Updating session state to ${SessionStateType.CONFIRMED} for session state $sessionState" }
+                    sessionState.status = SessionStateType.CONFIRMED
+                }
             }
-
-            sessionState
         }
     }
 }

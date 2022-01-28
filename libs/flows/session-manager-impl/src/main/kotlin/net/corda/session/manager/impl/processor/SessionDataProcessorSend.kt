@@ -40,15 +40,15 @@ class SessionDataProcessorSend(
                 sessionState
             }
             SessionStateType.CREATED, SessionStateType.CONFIRMED ->{
-                val nextSeqNum = sessionState.sentEventsState.lastProcessedSequenceNum + 1
+                val nextSeqNum = sessionState.sendEventsState.lastProcessedSequenceNum + 1
                 sessionEvent.apply {
                     sequenceNum = nextSeqNum
                     timestamp = instant.toEpochMilli()
                 }
 
                 sessionState.apply {
-                    sentEventsState.lastProcessedSequenceNum = nextSeqNum
-                    sentEventsState.undeliveredMessages = sentEventsState.undeliveredMessages.plus(sessionEvent)
+                    sendEventsState.lastProcessedSequenceNum = nextSeqNum
+                    sendEventsState.undeliveredMessages = sendEventsState.undeliveredMessages.plus(sessionEvent)
                 }
             } else -> {
                 //If the session is in states CLOSING, WAIT_FOR_FINAL_ACK or CLOSED then this indicates a session mismatch as no more data

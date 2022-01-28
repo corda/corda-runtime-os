@@ -46,7 +46,7 @@ class SessionErrorProcessorSend(
 
             sessionState.apply {
                 status = SessionStateType.ERROR
-                sentEventsState.undeliveredMessages = sessionState.sentEventsState.undeliveredMessages.plus(sessionEvent)
+                sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.plus(sessionEvent)
             }
         }
     }

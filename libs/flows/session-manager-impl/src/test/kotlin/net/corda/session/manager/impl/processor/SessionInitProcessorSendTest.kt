@@ -40,8 +40,8 @@ class SessionInitProcessorSendTest {
         assertThat(sessionState.isInitiator).isEqualTo(true)
         assertThat(sessionState.status).isEqualTo(SessionStateType.CREATED)
 
-        val sentEvents = sessionState.sentEventsState
-        assertThat(sentEvents.undeliveredMessages.size).isEqualTo(1)
-        assertThat(sentEvents.undeliveredMessages.first()).isEqualTo(sessionInitEvent)
+        val sendEvents = sessionState.sendEventsState
+        assertThat(sendEvents.undeliveredMessages.size).isEqualTo(1)
+        assertThat(sendEvents.undeliveredMessages.first()).isEqualTo(sessionInitEvent)
     }
 }

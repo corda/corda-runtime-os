@@ -19,8 +19,8 @@ class SessionCloseProcessorReceiveTest {
         val result = SessionCloseProcessorReceive("key", null, sessionEvent, Instant.now()).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.ERROR)
-        assertThat(result.sentEventsState.undeliveredMessages.size).isEqualTo(1)
-        assertThat(result.sentEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionError::class.java)
+        assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
+        assertThat(result.sendEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionError::class.java)
     }
 
     @Test
@@ -33,8 +33,8 @@ class SessionCloseProcessorReceiveTest {
         val result = SessionCloseProcessorReceive("key", inputState, sessionEvent, Instant.now()).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.CLOSING)
-        assertThat(result.sentEventsState.undeliveredMessages.size).isEqualTo(1)
-        assertThat(result.sentEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionAck::class.java)
+        assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
+        assertThat(result.sendEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionAck::class.java)
     }
 
     @Test
@@ -47,8 +47,8 @@ class SessionCloseProcessorReceiveTest {
         val result = SessionCloseProcessorReceive("key", inputState, sessionEvent, Instant.now()).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.ERROR)
-        assertThat(result.sentEventsState.undeliveredMessages.size).isEqualTo(1)
-        assertThat(result.sentEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionError::class.java)
+        assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
+        assertThat(result.sendEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionError::class.java)
     }
 
     @Test
@@ -61,8 +61,8 @@ class SessionCloseProcessorReceiveTest {
         val result = SessionCloseProcessorReceive("key", inputState, sessionEvent, Instant.now()).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.CLOSING)
-        assertThat(result.sentEventsState.undeliveredMessages.size).isEqualTo(1)
-        assertThat(result.sentEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionAck::class.java)
+        assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
+        assertThat(result.sendEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionAck::class.java)
     }
 
     @Test
@@ -75,8 +75,8 @@ class SessionCloseProcessorReceiveTest {
         val result = SessionCloseProcessorReceive("key", inputState, sessionEvent, Instant.now()).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.CLOSED)
-        assertThat(result.sentEventsState.undeliveredMessages.size).isEqualTo(1)
-        assertThat(result.sentEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionAck::class.java)
+        assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
+        assertThat(result.sendEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionAck::class.java)
     }
 
     @Test
@@ -89,7 +89,7 @@ class SessionCloseProcessorReceiveTest {
         val result = SessionCloseProcessorReceive("key", inputState, sessionEvent, Instant.now()).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.WAIT_FOR_FINAL_ACK)
-        assertThat(result.sentEventsState.undeliveredMessages.size).isEqualTo(2)
-        assertThat(result.sentEventsState.undeliveredMessages.last().payload::class.java).isEqualTo(SessionAck::class.java)
+        assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(2)
+        assertThat(result.sendEventsState.undeliveredMessages.last().payload::class.java).isEqualTo(SessionAck::class.java)
     }
 }

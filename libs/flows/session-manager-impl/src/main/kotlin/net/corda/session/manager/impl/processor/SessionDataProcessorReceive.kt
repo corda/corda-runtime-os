@@ -57,8 +57,8 @@ class SessionDataProcessorReceive(
             }
             seqNum < expectedNextSeqNum -> {
                 sessionState.apply {
-                    sentEventsState.undeliveredMessages =
-                        sessionState.sentEventsState.undeliveredMessages.plus(generateAckEvent(seqNum, sessionId, instant))
+                    sendEventsState.undeliveredMessages =
+                        sessionState.sendEventsState.undeliveredMessages.plus(generateAckEvent(seqNum, sessionId, instant))
                 }
             }
             else -> {
@@ -91,14 +91,14 @@ class SessionDataProcessorReceive(
             logger.error(errorMessage)
             sessionState.apply {
                 status = SessionStateType.ERROR
-                sentEventsState.undeliveredMessages = sessionState.sentEventsState.undeliveredMessages.plus(
+                sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.plus(
                     generateErrorEvent(sessionId, errorMessage, "SessionData-SessionMismatch", instant)
                 )
             }
         } else {
             sessionState.apply {
                 receivedEventsState = updateSessionProcessState(expectedNextSeqNum, undeliveredMessages)
-                sentEventsState.undeliveredMessages = sessionState.sentEventsState.undeliveredMessages.plus(
+                sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.plus(
                     generateAckEvent(seqNum, sessionId, instant)
                 )
             }
