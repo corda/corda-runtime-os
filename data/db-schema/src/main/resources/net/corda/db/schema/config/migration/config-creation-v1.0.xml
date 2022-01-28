@@ -64,6 +64,13 @@
             <column name="connection_id" type="UUID">
                 <constraints nullable="false"/>
             </column>
+            <column name="connection_name" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="privilege" type="VARCHAR(3)">
+                <!-- DDL or DML -->
+                <constraints nullable="false"  />
+            </column>
             <column name="version" type="INT">
                 <constraints nullable="false"/>
             </column>
@@ -84,7 +91,9 @@
                 <constraints nullable="false"  />
             </column>
         </createTable>
-        <addPrimaryKey columnNames="connection_id" constraintName="db_connection_pk" tableName="db_connection"
+        <addPrimaryKey tableName="db_connection" columnNames="connection_id" constraintName="db_connection_pk"
                        schemaName="${schema.name}"/>
+        <addUniqueConstraint tableName="db_connection" columnNames="connection_name, privilege" constraintName="db_connection_uc1"
+                             schemaName="${schema.name}"/>
     </changeSet>
 </databaseChangeLog>

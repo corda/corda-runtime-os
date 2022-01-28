@@ -1,15 +1,13 @@
 package net.corda.db.schema
 
-import java.util.UUID
-
 /**
  * Corda DB Types
  *
- * When UUID is set, it is the PK for the connection details to be fetched from the cluster DB.
+ * [persistenceUnitName] also used as ID for the connection in the db_connections table.
  */
-enum class CordaDb(val persistenceUnitName: String, val id: UUID? = null) {
+enum class CordaDb(val persistenceUnitName: String) {
     CordaCluster("corda-cluster"),
-    RBAC("corda-rbac", UUID.fromString("fd301442-7ac7-11ec-90d6-0242ac120003")),
+    RBAC("corda-rbac"),
     Vault("corda-vault"),
     Crypto("corda-crypto"),
 }
