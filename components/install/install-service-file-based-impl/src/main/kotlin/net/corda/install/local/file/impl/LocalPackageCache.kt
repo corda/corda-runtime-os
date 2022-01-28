@@ -92,7 +92,7 @@ class LocalPackageCache @Activate constructor(
             Files.list(path).filter {
                 it.fileName.toString().endsWith(CPK.fileExtension)
             }.map {
-                CPK.from(Files.newInputStream(it), cacheDir, it.toString(), true)
+                Files.newInputStream(it).use { str -> CPK.from(str, cacheDir, it.toString(), true) }
             }.collect(cpkMapCollector)
         } ?: emptyNavigableMap()
     }
@@ -103,7 +103,7 @@ class LocalPackageCache @Activate constructor(
                 val fileName = it.fileName.toString()
                 CPI.fileExtensions.any(fileName::endsWith)
             }.map {
-                CPI.from(Files.newInputStream(it), cacheDir, it.toString(), true)
+                Files.newInputStream(it).use { str -> CPI.from(str, cacheDir, it.toString(), true) }
             }.collect(cpiMapCollector)
         } ?: emptyNavigableMap()
     }
