@@ -41,7 +41,7 @@ internal class LateInitRPCOpsConfigHandler(
      * or if [lateInitRPCOps]'s RPC sender could not be started.
      */
     private fun processRPCConfig(configSnapshot: Map<String, SmartConfig>) {
-        val config = configSnapshot[RPC_CONFIG] ?: throw RPCOpsServiceException(
+        val config = configSnapshot[RPC_CONFIG] ?: throw LateInitRPCOpsServiceException(
             "Was notified of an update to configuration key $RPC_CONFIG, but no such configuration was found."
         )
 
@@ -55,7 +55,7 @@ internal class LateInitRPCOpsConfigHandler(
                 lateInitRPCOps.createRpcSender(config)
             } catch (e: Exception) {
                 coordinator.updateStatus(ERROR)
-                throw RPCOpsServiceException(
+                throw LateInitRPCOpsServiceException(
                     "Could not start the RPC sender for incoming HTTP RPC virtual node management requests", e
                 )
             }
@@ -63,4 +63,4 @@ internal class LateInitRPCOpsConfigHandler(
     }
 }
 
-class RPCOpsServiceException(message: String, e: Exception? = null) : CordaRuntimeException(message, e)
+class LateInitRPCOpsServiceException(message: String, e: Exception? = null) : CordaRuntimeException(message, e)
