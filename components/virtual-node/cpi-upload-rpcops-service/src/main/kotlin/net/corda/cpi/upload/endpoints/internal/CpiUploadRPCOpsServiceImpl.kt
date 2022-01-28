@@ -5,7 +5,7 @@ import net.corda.cpi.upload.endpoints.CpiUploadRPCOpsService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.createCoordinator
-import net.corda.virtualnode.common.endpoints.RPCOpsEventHandler
+import net.corda.virtualnode.common.endpoints.LateInitRPCOpsEventHandler
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -23,7 +23,7 @@ class CpiUploadRPCOpsServiceImpl @Activate constructor(
     private val coordinator: LifecycleCoordinator
 
     init {
-        val eventHandler = RPCOpsEventHandler(configReadService, cpiUploadRPCOps)
+        val eventHandler = LateInitRPCOpsEventHandler(configReadService, cpiUploadRPCOps)
         coordinator = coordinatorFactory.createCoordinator<CpiUploadRPCOpsService>(eventHandler)
     }
 

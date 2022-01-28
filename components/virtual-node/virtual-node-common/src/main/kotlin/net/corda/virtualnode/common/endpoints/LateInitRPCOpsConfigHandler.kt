@@ -12,33 +12,33 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.time.Duration
 
 /** Processes configuration changes for `VirtualNodeRPCOpsService`. */
-internal class RPCOpsConfigHandler(
+internal class LateInitRPCOpsConfigHandler(
     private val coordinator: LifecycleCoordinator,
-    private val cpiUploadRPCOps: LateInitRPCOps
+    private val lateInitRPCOps: LateInitRPCOps
 ) : ConfigurationHandler {
 
     /**
-     * When [RPC_CONFIG] configuration is received, updates [cpiUploadRPCOps]'s request timeout and creates and
-     * starts [cpiUploadRPCOps]'s RPC sender if the relevant keys are present.
+     * When [RPC_CONFIG] configuration is received, updates [lateInitRPCOps]'s request timeout and creates and
+     * starts [lateInitRPCOps]'s RPC sender if the relevant keys are present.
      *
-     * After updating [cpiUploadRPCOps], sets [coordinator]'s status to UP if [cpiUploadRPCOps] is running.
+     * After updating [lateInitRPCOps], sets [coordinator]'s status to UP if [lateInitRPCOps] is running.
      *
      * @throws VirtualNodeRPCOpsServiceException If [RPC_CONFIG] is in the [changedKeys], but no corresponding
      * configuration is provided in [config].
      */
     override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
         if (RPC_CONFIG in changedKeys) processRPCConfig(config)
-        if (cpiUploadRPCOps.isRunning) coordinator.updateStatus(UP)
+        if (lateInitRPCOps.isRunning) coordinator.updateStatus(UP)
     }
 
     /**
-     * If [RPC_ENDPOINT_TIMEOUT_MILLIS] is in [configSnapshot], updates [cpiUploadRPCOps]'s request
+     * If [RPC_ENDPOINT_TIMEOUT_MILLIS] is in [configSnapshot], updates [lateInitRPCOps]'s request
      * timeout.
      *
-     * If [BOOTSTRAP_SERVERS] is in [configSnapshot], creates and starts [cpiUploadRPCOps]'s RPC sender.
+     * If [BOOTSTRAP_SERVERS] is in [configSnapshot], creates and starts [lateInitRPCOps]'s RPC sender.
      *
      * @throws VirtualNodeRPCOpsServiceException If [configSnapshot] does not contain any config for key [RPC_CONFIG],
-     * or if [cpiUploadRPCOps]'s RPC sender could not be started.
+     * or if [lateInitRPCOps]'s RPC sender could not be started.
      */
     private fun processRPCConfig(configSnapshot: Map<String, SmartConfig>) {
         val config = configSnapshot[RPC_CONFIG] ?: throw RPCOpsServiceException(
@@ -47,12 +47,12 @@ internal class RPCOpsConfigHandler(
 
         if (config.hasPath(RPC_ENDPOINT_TIMEOUT_MILLIS)) {
             val timeoutMillis = config.getInt(RPC_ENDPOINT_TIMEOUT_MILLIS)
-            cpiUploadRPCOps.setHttpRequestTimeout(Duration.ofMillis(timeoutMillis.toLong()))
+            lateInitRPCOps.setHttpRequestTimeout(Duration.ofMillis(timeoutMillis.toLong()))
         }
 
         if (config.hasPath(BOOTSTRAP_SERVERS)) {
             try {
-                cpiUploadRPCOps.createRpcSender(config)
+                lateInitRPCOps.createRpcSender(config)
             } catch (e: Exception) {
                 coordinator.updateStatus(ERROR)
                 throw RPCOpsServiceException(
