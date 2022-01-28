@@ -2,9 +2,10 @@ package net.corda.introspiciere.server
 
 import io.javalin.Javalin
 import io.javalin.http.InternalServerErrorResponse
-import net.corda.introspiciere.core.CreateKeysAndAddIdentityInteractor
 import net.corda.introspiciere.core.HelloWorld
 import net.corda.introspiciere.core.SimpleKafkaClient
+import net.corda.introspiciere.core.addidentity.CreateKeysAndAddIdentityInteractor
+import net.corda.introspiciere.core.addidentity.CryptoKeySenderImpl
 
 fun main() {
     val app = Javalin.create().start(7070)
@@ -24,8 +25,14 @@ fun main() {
     }
 
     app.post("/identities") { ctx ->
-        val input = ctx.bodyAsClass<CreateKeysAndAddIdentityInteractor.Input>()
-        CreateKeysAndAddIdentityInteractor(kafka).execute(input)
-        ctx.result("OK")
+        try {
+            val input = ctx.bodyAsClass<CreateKeysAndAddIdentityInteractor.Input>()
+            CreateKeysAndAddIdentityInteractor(CryptoKeySenderImpl(kafka)).execute(input)
+            ctx.result("OK")
+        } catch (ex: Exception) {
+            throw InternalServerErrorResponse(details = mapOf(
+                "exception" to ex.stackTraceToString()
+            ))
+        }
     }
 }

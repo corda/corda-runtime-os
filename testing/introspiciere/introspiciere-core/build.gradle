@@ -14,4 +14,6 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
     implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
     implementation "org.reflections:reflections:0.10.2"
+
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

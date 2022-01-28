@@ -20,21 +20,25 @@ class DeployKafka(
 
     private fun delete() {
         if (::portForwarding.isInitialized) portForwarding.destroy()
-        exec("kubectl delete namespace $name")
+        exec("kubectl delete namespace $name --wait=false")
     }
 
     private fun deploy() {
         exec("kubectl create namespace $name")
+
         val proc = exec("kubectl apply -f - -n $name", ensureSuccess = false)
+
         proc.outputStream.bufferedWriter().use {
             it.write(this::class.java.getResource("/k8s-single-kafka-deployment.yaml").readText())
         }
+
         if (proc.waitFor() != 0) {
             throw CommandExecutionFailed(proc.exitValue())
         }
-
         Thread.sleep(5000) // wait for pod to start running
+
         exec("kubectl get all -n $name")
+
         portForwarding = exec("kubectl port-forward service/kafka-service 9092:9092 -n $name", ensureSuccess = false)
     }
 

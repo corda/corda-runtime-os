@@ -1,5 +1,14 @@
 # Introspiciere-server
 
+## Dependencies
+
+Make sure you have installed:
+* Docker
+* Kubectl
+* Minikube
+
+In mac they can all be easily installed using _brew_.
+
 ## Instructions to build Introspiciere image
 
 ```shell

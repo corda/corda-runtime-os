@@ -16,7 +16,6 @@ import java.net.InetAddress
 import java.time.Duration
 import java.util.*
 
-
 class SimpleKafkaClient(val servers: List<String>) {
 
     fun createTopic(name: String, partitions: Int = 1, replicationFactor: Short = 1) {
@@ -29,10 +28,10 @@ class SimpleKafkaClient(val servers: List<String>) {
     }
 
     val classes: MutableSet<Class<out SpecificRecordBase>> by lazy {
-        Reflections("net.corda.data").getSubTypesOf(SpecificRecordBase::class.java)
+        Reflections("net.corda").getSubTypesOf(SpecificRecordBase::class.java)
     }
 
-    inline fun <reified K : Any, reified V : Any> send(topic: String, key: K, value: V) {
+    fun <K : Any, V : Any> send(topic: String, key: K, value: V) {
         val config = Properties()
         config[ConsumerConfig.CLIENT_ID_CONFIG] = InetAddress.getLocalHost().hostName
         config[ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG] = servers.joinToString(":")

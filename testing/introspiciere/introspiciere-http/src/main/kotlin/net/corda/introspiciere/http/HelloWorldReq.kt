@@ -20,8 +20,8 @@ class IdentitiesRequester(private val endpoint: String) {
         val (_, _, result) = "$endpoint/identities".httpPost()
             .jsonBody("""
                 {
-                    "alias" = "$alias",
-                    "algorithm" = "$algorithm"
+                    "alias": "$alias",
+                    "algorithm": "$algorithm"
                 }
             """.trimIndent())
             .responseString()
