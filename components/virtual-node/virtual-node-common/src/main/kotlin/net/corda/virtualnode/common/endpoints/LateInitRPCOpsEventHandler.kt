@@ -13,9 +13,9 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 
 /** Handles incoming [LifecycleCoordinator] events for [VirtualNodeRPCOpsServiceImpl]. */
-class RPCOpsEventHandler(
+class LateInitRPCOpsEventHandler(
     private val configReadService: ConfigurationReadService,
-    private val cpiUploadRPCOps: LateInitRPCOps
+    private val lateInitRPCOps: LateInitRPCOps
 ) : LifecycleEventHandler {
 
     private var configReadServiceRegistrationHandle: RegistrationHandle? = null
@@ -50,7 +50,7 @@ class RPCOpsEventHandler(
             when (event.status) {
                 UP -> {
                     val configHandler =
-                        RPCOpsConfigHandler(coordinator, cpiUploadRPCOps)
+                        LateInitRPCOpsConfigHandler(coordinator, lateInitRPCOps)
                     configUpdateHandle?.close()
                     configUpdateHandle = configReadService.registerForUpdates(configHandler)
                 }
@@ -62,7 +62,7 @@ class RPCOpsEventHandler(
 
     /** Shuts down the service. */
     private fun stop() {
-        cpiUploadRPCOps.close()
+        lateInitRPCOps.close()
         configReadServiceRegistrationHandle?.close()
         configUpdateHandle?.close()
     }
