@@ -48,7 +48,7 @@ class FlowSandboxServiceImpl @Activate constructor(
             SandboxGroupType.FLOW
         )
 
-        if (!sandboxGroupContextComponent.hasCpks(vNodeContext)) {
+        if (!sandboxGroupContextComponent.hasCpks(vNodeContext.cpkIdentifiers)) {
             throw IllegalStateException("The sandbox can't find one or more of the CPKs for CPI '${cpiMeta.id}'")
         }
 

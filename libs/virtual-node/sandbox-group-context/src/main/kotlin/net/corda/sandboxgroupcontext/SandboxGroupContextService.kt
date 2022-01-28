@@ -70,5 +70,5 @@ interface SandboxGroupContextService {
      *        service.getOrCreate(virtualNodeContext) { .... }
      *     }
      */
-    fun hasCpks(virtualNodeContext: VirtualNodeContext) : Boolean
+    fun hasCpks(cpkIdentifiers: Set<CPK.Identifier>) : Boolean
 }

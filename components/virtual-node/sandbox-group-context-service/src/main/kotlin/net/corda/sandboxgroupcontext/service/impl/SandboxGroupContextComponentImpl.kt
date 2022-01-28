@@ -11,6 +11,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.packaging.CPK
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContextInitializer
@@ -53,8 +54,8 @@ class SandboxGroupContextComponentImpl @Activate constructor(
         virtualNodeContext: VirtualNodeContext, initializer: SandboxGroupContextInitializer
     ): SandboxGroupContext = sandboxGroupContextServiceImpl.getOrCreate(virtualNodeContext, initializer)
 
-    override fun hasCpks(virtualNodeContext: VirtualNodeContext): Boolean =
-        sandboxGroupContextServiceImpl.hasCpks(virtualNodeContext)
+    override fun hasCpks(cpkIdentifiers: Set<CPK.Identifier>): Boolean =
+        sandboxGroupContextServiceImpl.hasCpks(cpkIdentifiers)
 
     override val isRunning: Boolean
         get() = coordinator.isRunning

@@ -1,6 +1,7 @@
 package net.corda.sandboxgroupcontext.service.impl
 
 import net.corda.install.InstallService
+import net.corda.packaging.CPK
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
@@ -68,7 +69,7 @@ class SandboxGroupContextServiceImpl(
         return ctx
     }
 
-    override fun hasCpks(virtualNodeContext: VirtualNodeContext): Boolean {
+    override fun hasCpks(cpkIdentifiers: Set<CPK.Identifier>) : Boolean {
         // This needs to be updated when the CPK service is introduced.
         return true
     }
