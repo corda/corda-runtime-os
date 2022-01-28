@@ -10,7 +10,9 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import java.io.InputStream
 import java.nio.ByteBuffer
+import java.nio.file.Path
 import java.security.DigestInputStream
+import java.util.UUID
 
 /**
  * Chunks up a binary into smaller parts and passes them to the supplied callback.
@@ -24,7 +26,7 @@ class ChunkWriterImpl(val chunkSize: Int) : ChunkWriter {
 
     var chunkWriteCallback: ChunkWriteCallback? = null
 
-    override fun write(identifier: SecureHash, inputStream: InputStream) {
+    override fun write(fileName: Path, inputStream: InputStream) {
         if (chunkWriteCallback == null) {
             throw CordaRuntimeException("Chunk write callback not set")
         }
@@ -33,6 +35,7 @@ class ChunkWriterImpl(val chunkSize: Int) : ChunkWriter {
         var actualBytesRead: Int
         val bufferByteArray = ByteArray(chunkSize)
         var offset = 0L
+        val identifier = UUID.randomUUID().toString()
 
         // Ensure we use the same algorithm to read/write
         val messageDigest = InternalChecksum.getMessageDigest()
@@ -55,7 +58,7 @@ class ChunkWriterImpl(val chunkSize: Int) : ChunkWriter {
 
             // We don't bother creating a checksum for the individual chunks.
             // We're trimmed the bytes, so [byteBuffer] implicitly contains the length of this chunk.
-            writeChunk(identifier, chunkNumber, byteBuffer, offset)
+            writeChunk(identifier, fileName, chunkNumber, byteBuffer, offset)
 
             chunkNumber++
             offset += actualBytesRead
@@ -66,35 +69,39 @@ class ChunkWriterImpl(val chunkSize: Int) : ChunkWriter {
         // We always send a zero sized chunk as a marker to indicate that we've sent
         // every chunk.  It also includes the checksum of the file, and the final offset
         // is also the length of the bytes read from the stream.
-        writeZeroChunk(identifier, chunkNumber, finalChecksum, offset)
+        writeZeroChunk(identifier, fileName, chunkNumber, finalChecksum, offset)
     }
 
     private fun writeZeroChunk(
-        identifier: SecureHash,
+        identifier: String,
+        fileName: Path,
         chunkNumber: Int,
         checksum: SecureHash,
         offset: Long
     ) = chunkWriteCallback!!.onChunk(
         Chunk().also {
-            it.identifier = identifier.toAvro()
-            it.chunkNumber = chunkNumber
+            it.requestId = identifier
+            it.fileName = fileName.toString()
+            it.partNumber = chunkNumber
             // Must be zero size or you break the code
-            it.payload = ByteBuffer.wrap(ByteArray(0))
+            it.data = ByteBuffer.wrap(ByteArray(0))
             it.offset = offset
             it.checksum = checksum.toAvro()
         }
     )
 
     private fun writeChunk(
-        identifier: SecureHash,
+        identifier: String,
+        fileName: Path,
         chunkNumber: Int,
         byteBuffer: ByteBuffer,
         offset: Long
     ) = chunkWriteCallback!!.onChunk(
         Chunk().also {
-            it.identifier = identifier.toAvro()
-            it.chunkNumber = chunkNumber
-            it.payload = byteBuffer
+            it.requestId = identifier
+            it.fileName = fileName.toString()
+            it.partNumber = chunkNumber
+            it.data = byteBuffer
             it.offset = offset
         }
     )

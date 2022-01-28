@@ -9,6 +9,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
 
 /**
@@ -28,14 +29,14 @@ class ChunkReaderImpl(private val destDir: Path) : ChunkReader {
         var expectedChecksum: SecureHash
     )
 
-    private val chunksSoFar = mutableMapOf<SecureHash, ChunksReceived>()
+    private val chunksSoFar = mutableMapOf<String, ChunksReceived>()
     private var chunksCombinedCallback: ChunksCombined? = null
 
     override fun read(chunk: Chunk) {
         if (chunksCombinedCallback == null) throw CordaRuntimeException("onComplete callback not defined")
 
-        val path = getPath(chunk.identifier.toCorda().toHexString())
-        val chunksReceived = chunksSoFar.computeIfAbsent(chunk.identifier.toCorda()) {
+        val path = getPath(chunk.requestId)
+        val chunksReceived = chunksSoFar.computeIfAbsent(chunk.requestId) {
             ChunksReceived(
                 mutableSetOf(),
                 0,
@@ -46,19 +47,19 @@ class ChunkReaderImpl(private val destDir: Path) : ChunkReader {
         // The zero sized chunk is 'special' as it marks the end of the chunks that have been sent,
         // and its number is therefore the total number of chunks that have been sent.  We don't need
         // to write it.
-        if (chunk.payload.limit() == 0) {
-            chunksReceived.expectedCount = chunk.chunkNumber
+        if (chunk.data.limit() == 0) {
+            chunksReceived.expectedCount = chunk.partNumber
             chunksReceived.expectedChecksum = chunk.checksum.toCorda()
         } else {
-            // We have a chunk, move to the correct offset, and write the payload.
-            // We expect the payload to be correct sized.  There is a unit test to
+            // We have a chunk, move to the correct offset, and write the data.
+            // We expect the data to be correct sized.  There is a unit test to
             // ensure the writer does this.
             Files.newByteChannel(path, StandardOpenOption.WRITE, StandardOpenOption.CREATE).apply {
                 position(chunk.offset)
-                write(chunk.payload)
+                write(chunk.data)
             }
 
-            chunksReceived.chunks.add(chunk.chunkNumber)
+            chunksReceived.chunks.add(chunk.partNumber)
         }
 
         // Have we received all the chunks?
@@ -66,16 +67,14 @@ class ChunkReaderImpl(private val destDir: Path) : ChunkReader {
             val internalChecksum = InternalChecksum()
             val actualChecksum = internalChecksum.digestForPath(path)
             if (actualChecksum != chunksReceived.expectedChecksum) {
-                log.error("SHIT! $actualChecksum != ${chunksReceived.expectedChecksum}")
+                throw IllegalArgumentException("Checksums do not match, one or more of the chunks may be corrupt")
             }
 
-            log.error("HUZZAH! $actualChecksum == ${chunksReceived.expectedChecksum}")
-
-            chunksCombinedCallback!!.onChunksCombined(chunk.identifier.toCorda(), path)
+            chunksCombinedCallback!!.onChunksCombined(Paths.get(chunk.fileName), path)
         }
     }
 
-    private fun getPath(filename: String): Path = destDir.resolve(filename)
+    private fun getPath(fileName: String): Path = destDir.resolve(fileName)
 
     override fun onComplete(chunksCombinedCallback: ChunksCombined) {
         this.chunksCombinedCallback = chunksCombinedCallback
