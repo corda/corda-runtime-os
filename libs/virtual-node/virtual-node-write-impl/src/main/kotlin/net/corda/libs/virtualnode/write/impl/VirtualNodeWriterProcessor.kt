@@ -1,6 +1,8 @@
 package net.corda.libs.virtualnode.write.impl
 
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.crypto.SecureHash
+import net.corda.data.packaging.CPIIdentifier
 import net.corda.data.virtualnode.VirtualNodeCreationRequest
 import net.corda.data.virtualnode.VirtualNodeCreationResponse
 import net.corda.data.virtualnode.VirtualNodeInfo
@@ -8,9 +10,11 @@ import net.corda.libs.virtualnode.write.VirtualNodeWriterException
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
+import net.corda.packaging.CPI
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
+import java.nio.ByteBuffer
 
 /**
  * An RPC responder processor that handles virtual node creation requests.
@@ -102,5 +106,11 @@ internal class VirtualNodeWriterProcessor(
             holdingId?.id
         )
         return respFuture.complete(response)
+    }
+
+    /** Converts a [CPI.Identifier] to its Avro representation. */
+    private fun CPI.Identifier.toAvro(): CPIIdentifier {
+        val secureHashAvro = SecureHash(signerSummaryHash?.algorithm, ByteBuffer.wrap(signerSummaryHash?.bytes))
+        return CPIIdentifier(name, version, secureHashAvro)
     }
 }
