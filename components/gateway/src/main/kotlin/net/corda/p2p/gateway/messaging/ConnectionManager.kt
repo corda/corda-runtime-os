@@ -47,7 +47,8 @@ class ConnectionManager(
                 sslConfiguration,
                 writeGroup,
                 nettyGroup,
-                connectionConfiguration.acquireTimeout
+                connectionConfiguration.acquireTimeout,
+                connectionConfiguration.retryDelay,
             )
             client.start()
             client

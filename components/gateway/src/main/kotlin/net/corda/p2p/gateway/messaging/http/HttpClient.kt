@@ -10,6 +10,7 @@ import io.netty.channel.EventLoopGroup
 import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioSocketChannel
 import io.netty.handler.codec.http.HttpClientCodec
+import io.netty.util.concurrent.ScheduledFuture
 import net.corda.lifecycle.Lifecycle
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import org.bouncycastle.asn1.x500.X500Name
@@ -18,6 +19,7 @@ import java.net.URI
 import java.time.Duration
 import java.util.LinkedList
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 import javax.net.ssl.TrustManagerFactory
 import kotlin.concurrent.withLock
@@ -47,6 +49,7 @@ class HttpClient(
     private val writeGroup: EventLoopGroup,
     private val nettyGroup: EventLoopGroup,
     private val connectionTimeout: Duration,
+    private val startRetryDelay: Duration,
     private val listener: HttpConnectionListener? = null,
 ) : Lifecycle, HttpClientListener {
 
@@ -81,6 +84,12 @@ class HttpClient(
     @Volatile
     private var explicitlyClosed: Boolean = false
 
+    @Volatile
+    private var retryDelay = startRetryDelay
+
+    @Volatile
+    private var retryFuture: ScheduledFuture<*>? = null
+
     private val connectListener = ChannelFutureListener { future ->
         if (!future.isSuccess) {
             logger.warn("Failed to connect to ${destinationInfo.uri}: ${future.cause().message}", future.cause())
@@ -105,6 +114,8 @@ class HttpClient(
     override fun stop() {
         lock.withLock {
             logger.info("Stopping HTTP client to ${destinationInfo.uri}")
+            retryFuture?.cancel(true)
+            retryFuture = null
             explicitlyClosed = true
             clientChannel?.close()?.sync()
             writeProcessor = null
@@ -165,6 +176,8 @@ class HttpClient(
                 }
                 logger.debug("Sent HTTP request $request")
             }
+
+            retryDelay = startRetryDelay
         }
         listener?.onOpen(event)
     }
@@ -185,8 +198,17 @@ class HttpClient(
 
             // If the connection wasn't explicitly closed on our side, we try to reconnect.
             if (!explicitlyClosed) {
-                logger.info("Previous connection to ${destinationInfo.uri} was closed, a new attempt will be made to connect again.")
-                connect()
+                logger.info(
+                    "Previous connection to ${destinationInfo.uri} was closed, " +
+                        "a new attempt will be made to connect again in ${retryDelay.seconds} seconds."
+                )
+                retryFuture?.cancel(true)
+
+                retryFuture = writeProcessor?.schedule({
+                    connect()
+                }, retryDelay.toMillis(), TimeUnit.MILLISECONDS)
+
+                retryDelay = retryDelay.plus(retryDelay)
             }
         }
         listener?.onClose(event)

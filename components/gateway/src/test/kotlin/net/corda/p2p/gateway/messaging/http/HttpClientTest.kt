@@ -16,6 +16,7 @@ import io.netty.handler.codec.http.DefaultFullHttpRequest
 import io.netty.handler.codec.http.HttpClientCodec
 import io.netty.handler.codec.http.HttpMethod
 import io.netty.handler.ssl.SslHandler
+import io.netty.util.concurrent.ScheduledFuture
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
 import net.corda.p2p.gateway.messaging.SslConfiguration
@@ -41,6 +42,7 @@ import java.net.URI
 import java.security.KeyStore
 import java.security.cert.PKIXBuilderParameters
 import java.util.concurrent.ExecutionException
+import java.util.concurrent.TimeUnit
 import javax.net.ssl.TrustManagerFactory
 
 class HttpClientTest {
@@ -92,8 +94,9 @@ class HttpClientTest {
     }
 
     private val connectionTimeout = 1.seconds
+    private val retryTimeout = 1.seconds
     private val client = HttpClient(
-        destinationInfo, sslConfiguration, writeGroup, nettyGroup, connectionTimeout, listener
+        destinationInfo, sslConfiguration, writeGroup, nettyGroup, connectionTimeout, retryTimeout, listener
     )
 
     @Test
@@ -176,6 +179,18 @@ class HttpClientTest {
     }
 
     @Test
+    fun `close will cancel any retry future`() {
+        val future = mock<ScheduledFuture<*>>()
+        whenever(loop.schedule(any(), any(), any())).doReturn(future)
+        client.start()
+        client.onClose(HttpConnectionEvent(channel))
+
+        client.close()
+
+        verify(future).cancel(true)
+    }
+
+    @Test
     fun `write will write the correct data and populate future when response is received`() {
         val request = argumentCaptor<DefaultFullHttpRequest>()
         whenever(channel.writeAndFlush(request.capture())).doReturn(mock())
@@ -255,6 +270,11 @@ class HttpClientTest {
 
     @Test
     fun `onClose will try to reconnect if the client was not stopped`() {
+        whenever(loop.schedule(any(), any(), any())).doAnswer {
+            val runnable = it.arguments[0] as Runnable
+            runnable.run()
+            mock()
+        }
         client.start()
         client.onClose(HttpConnectionEvent(channel))
 
@@ -266,12 +286,45 @@ class HttpClientTest {
 
     @Test
     fun `onClose will not try to reconnect if the client was stopped`() {
+        whenever(loop.schedule(any(), any(), any())).doAnswer {
+            val runnable = it.arguments[0] as Runnable
+            runnable.run()
+            mock()
+        }
         client.start()
         client.stop()
         client.onClose(HttpConnectionEvent(channel))
 
         assertThat(bootstrap.constructed()).hasSize(1)
         verify(bootstrap.constructed().first()).connect("www.r3.com", 3023)
+    }
+
+    @Test
+    fun `onClose will cancel previous reconnection requests`() {
+        val future = mock<ScheduledFuture<*>>()
+        whenever(loop.schedule(any(), any(), any())).doReturn(future)
+        client.start()
+        client.onClose(HttpConnectionEvent(channel))
+
+        client.onClose(HttpConnectionEvent(channel))
+        client.onClose(HttpConnectionEvent(channel))
+
+        verify(future, times(2)).cancel(true)
+    }
+
+    @Test
+    fun `onClose will double the delay between reconnections`() {
+        val future = mock<ScheduledFuture<*>>()
+        whenever(loop.schedule(any(), any(), any())).doReturn(future)
+        client.start()
+        client.onClose(HttpConnectionEvent(channel))
+
+        client.onClose(HttpConnectionEvent(channel))
+        client.onClose(HttpConnectionEvent(channel))
+
+        verify(loop).schedule(any(), eq(1000), eq(TimeUnit.MILLISECONDS))
+        verify(loop).schedule(any(), eq(2000), eq(TimeUnit.MILLISECONDS))
+        verify(loop).schedule(any(), eq(4000), eq(TimeUnit.MILLISECONDS))
     }
 
     @Test

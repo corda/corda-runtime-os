@@ -155,7 +155,8 @@ class GatewayTest : TestBase() {
                     bobSslConfig,
                     NioEventLoopGroup(1),
                     NioEventLoopGroup(1),
-                    2.seconds
+                    2.seconds,
+                    1.seconds,
                 ).use { client ->
                     client.start()
                     val httpResponse = client.write(gatewayMessage.toByteBuffer().array()).get()
@@ -263,7 +264,8 @@ class GatewayTest : TestBase() {
                             aliceSslConfig,
                             NioEventLoopGroup(1),
                             NioEventLoopGroup(1),
-                            2.seconds
+                            2.seconds,
+                            1.seconds,
                         ).use { secondInboundClient ->
                             secondInboundClient.start()
 
@@ -310,7 +312,7 @@ class GatewayTest : TestBase() {
                 it.startAndWaitForStarted()
                 (1..clientNumber).map { index ->
                     val serverInfo = DestinationInfo(serverAddress, aliceSNI[1], null)
-                    val client = HttpClient(serverInfo, bobSslConfig, threadPool, threadPool, 2.seconds)
+                    val client = HttpClient(serverInfo, bobSslConfig, threadPool, threadPool, 2.seconds, 1.seconds)
                     client.start()
                     val p2pOutMessage = LinkInMessage(authenticatedP2PMessage("Client-$index"))
                     val gatewayMessage = GatewayMessage("msg-${msgNumber.getAndIncrement()}", p2pOutMessage.payload)
