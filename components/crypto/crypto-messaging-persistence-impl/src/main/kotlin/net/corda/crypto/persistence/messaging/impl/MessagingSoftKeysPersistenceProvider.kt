@@ -49,10 +49,13 @@ class MessagingSoftKeysPersistenceProvider @Activate constructor(
     private val lifecycleCoordinator =
         coordinatorFactory.createCoordinator<SoftKeysPersistenceProvider>(::eventHandler)
 
+    @Volatile
     private var configHandle: AutoCloseable? = null
 
+    @Volatile
     private var registrationHandle: RegistrationHandle? = null
 
+    @Volatile
     private var impl: Impl? = null
 
     override val isRunning: Boolean get() = lifecycleCoordinator.isRunning
@@ -76,14 +79,13 @@ class MessagingSoftKeysPersistenceProvider @Activate constructor(
         impl?.getInstance(tenantId, mutator)
             ?: throw IllegalStateException("The provider haven't been initialised yet.")
 
-    @Suppress("UNUSED_PARAMETER")
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         logger.info("Received event {}", event)
         when (event) {
             is StartEvent -> {
                 logger.info("Received start event, starting wait for UP event from dependencies.")
                 registrationHandle?.close()
-                registrationHandle = lifecycleCoordinator.followStatusChangesByName(
+                registrationHandle = coordinator.followStatusChangesByName(
                     setOf(LifecycleCoordinatorName.forComponent<ConfigurationReadService>())
                 )
             }
@@ -98,16 +100,21 @@ class MessagingSoftKeysPersistenceProvider @Activate constructor(
                 if (event.status == LifecycleStatus.UP) {
                     logger.info("Registering for configuration updates.")
                     configHandle = configurationReadService.registerComponentForUpdates(
-                        lifecycleCoordinator,
+                        coordinator,
                         setOf(CRYPTO_CONFIG, MESSAGING_CONFIG, BOOT_CONFIG)
                     )
                 } else {
                     configHandle?.close()
+                    configHandle = null
+                    deleteResources()
+                    logger.info("Setting status DOWN.")
+                    coordinator.updateStatus(LifecycleStatus.DOWN)
                 }
             }
             is ConfigChangedEvent -> {
                 createResources(event)
-                setStatusUp()
+                logger.info("Setting status UP.")
+                coordinator.updateStatus(LifecycleStatus.UP)
             }
             else -> {
                 logger.error("Unexpected event $event!")
@@ -132,11 +139,6 @@ class MessagingSoftKeysPersistenceProvider @Activate constructor(
         val current = impl
         impl = null
         current?.close()
-    }
-
-    private fun setStatusUp() {
-        logger.info("Setting status UP.")
-        lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
     }
 
     private class Impl(

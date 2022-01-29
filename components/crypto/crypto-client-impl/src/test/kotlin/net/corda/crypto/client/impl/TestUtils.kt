@@ -1,5 +1,9 @@
 package net.corda.crypto.client.impl
 
+import com.typesafe.config.ConfigFactory
+import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -9,6 +13,8 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.records.Record
+import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.Companion.MESSAGING_CONFIG
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.allOf
@@ -95,10 +101,12 @@ data class SendActResult<REQUEST, RESPONSE>(
 }
 
 abstract class ComponentTestsBase<COMPONENT: Lifecycle> {
-    protected var coordinatorIsRunning = false
-    protected lateinit var coordinator: LifecycleCoordinator
+    private var coordinatorIsRunning = false
+    private lateinit var coordinator: LifecycleCoordinator
     protected lateinit var coordinatorFactory: LifecycleCoordinatorFactory
+    protected lateinit var configurationReadService: ConfigurationReadService
     protected lateinit var component: COMPONENT
+    private val emptyConfig = SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
 
     fun setup(componentFactory: () -> COMPONENT) {
         coordinator = mock {
@@ -121,12 +129,22 @@ abstract class ComponentTestsBase<COMPONENT: Lifecycle> {
         coordinatorFactory = mock {
             on { createCoordinator(any(), any()) } doReturn coordinator
         }
+        configurationReadService = mock()
         component = componentFactory()
         component.start()
         coordinator.postEvent(
             RegistrationStatusChangeEvent(
                 registration = mock(),
                 status = LifecycleStatus.UP
+            )
+        )
+        coordinator.postEvent(
+            ConfigChangedEvent(
+                setOf(BOOT_CONFIG, MESSAGING_CONFIG),
+                mapOf(
+                    BOOT_CONFIG to emptyConfig,
+                    MESSAGING_CONFIG to emptyConfig
+                )
             )
         )
     }

@@ -1,5 +1,7 @@
 package net.corda.crypto.service.impl.rpc
 
+import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.service.CryptoOpsService
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
@@ -14,10 +16,13 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
+import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.Companion.MESSAGING_CONFIG
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -30,7 +35,9 @@ class CryptoOpsServiceImpl @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = SigningServiceFactory::class)
-    private val signingFactory: SigningServiceFactory
+    private val signingFactory: SigningServiceFactory,
+    @Reference(service = ConfigurationReadService::class)
+    private val configurationReadService: ConfigurationReadService
 ) : CryptoOpsService {
     private companion object {
         private val logger = contextLogger()
@@ -41,8 +48,13 @@ class CryptoOpsServiceImpl @Activate constructor(
     private val lifecycleCoordinator =
         coordinatorFactory.createCoordinator<CryptoOpsService>(::eventHandler)
 
+    @Volatile
+    private var configHandle: AutoCloseable? = null
+
+    @Volatile
     private var registrationHandle: RegistrationHandle? = null
 
+    @Volatile
     private var subscription: RPCSubscription<RpcOpsRequest, RpcOpsResponse>? = null
 
     override val isRunning: Boolean get() = lifecycleCoordinator.isRunning
@@ -59,32 +71,42 @@ class CryptoOpsServiceImpl @Activate constructor(
         lifecycleCoordinator.stop()
     }
 
-    @Suppress("UNUSED_PARAMETER")
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         logger.info("Received event {}", event)
         when (event) {
             is StartEvent -> {
                 logger.info("Received start event, starting wait for UP event from dependencies.")
                 registrationHandle?.close()
-                registrationHandle = lifecycleCoordinator.followStatusChangesByName(
+                registrationHandle = coordinator.followStatusChangesByName(
                     setOf(LifecycleCoordinatorName.forComponent<SigningServiceFactory>())
                 )
             }
             is StopEvent -> {
                 registrationHandle?.close()
                 registrationHandle = null
+                configHandle?.close()
+                configHandle = null
                 deleteResources()
             }
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
-                    createResources()
-                    logger.info("Setting status UP.")
-                    lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+                    logger.info("Registering for configuration updates.")
+                    configHandle = configurationReadService.registerComponentForUpdates(
+                        coordinator,
+                        setOf(MESSAGING_CONFIG, BOOT_CONFIG)
+                    )
                 } else {
+                    configHandle?.close()
+                    configHandle = null
                     deleteResources()
                     logger.info("Setting status DOWN.")
-                    lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+                    coordinator.updateStatus(LifecycleStatus.DOWN)
                 }
+            }
+            is ConfigChangedEvent -> {
+                createResources(event)
+                logger.info("Setting status UP.")
+                coordinator.updateStatus(LifecycleStatus.UP)
             }
             else -> {
                 logger.error("Unexpected event $event!")
@@ -98,8 +120,9 @@ class CryptoOpsServiceImpl @Activate constructor(
         current?.close()
     }
 
-    private fun createResources() {
+    private fun createResources(event: ConfigChangedEvent) {
         logger.info("Creating RPC subscription for '{}' topic", Schemas.Crypto.RPC_OPS_MESSAGE_TOPIC)
+        val messagingConfig = event.config.toMessagingConfig()
         val processor = CryptoOpsRpcProcessor(signingFactory)
         val current = subscription
         subscription = subscriptionFactory.createRPCSubscription(
@@ -110,7 +133,8 @@ class CryptoOpsServiceImpl @Activate constructor(
                 requestType = RpcOpsRequest::class.java,
                 responseType = RpcOpsResponse::class.java
             ),
-            responderProcessor = processor
+            responderProcessor = processor,
+            nodeConfig = messagingConfig
         ).also { it.start() }
         current?.close()
     }
