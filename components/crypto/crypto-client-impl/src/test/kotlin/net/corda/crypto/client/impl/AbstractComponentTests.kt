@@ -10,7 +10,8 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
-import net.corda.schema.configuration.ConfigKeys
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
 import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.Companion.MESSAGING_CONFIG
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -43,9 +44,11 @@ class AbstractComponentTests {
         coordinator = mock {
             on { start() } doAnswer {
                 coordinatorIsRunning = true
+                coordinator.postEvent(StartEvent())
             }
             on { stop() } doAnswer {
                 coordinatorIsRunning = false
+                coordinator.postEvent(StopEvent())
             }
             on { isRunning }.thenAnswer { coordinatorIsRunning }
             on { postEvent(any()) } doAnswer {

@@ -62,12 +62,10 @@ class CryptoOpsServiceImpl @Activate constructor(
     override fun start() {
         logger.info("Starting...")
         lifecycleCoordinator.start()
-        lifecycleCoordinator.postEvent(StartEvent())
     }
 
     override fun stop() {
         logger.info("Stopping...")
-        lifecycleCoordinator.postEvent(StopEvent())
         lifecycleCoordinator.stop()
     }
 

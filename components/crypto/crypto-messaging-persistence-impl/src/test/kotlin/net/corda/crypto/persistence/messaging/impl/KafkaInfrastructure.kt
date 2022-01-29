@@ -78,6 +78,7 @@ class KafkaInfrastructure {
     }
     private val configurationReadService: ConfigurationReadService = mock {
         on { registerForUpdates(any()) } doReturn registrationHandle
+        on { registerComponentForUpdates(any(), any()) } doReturn registrationHandle
     }
     val subscriptionFactory: SubscriptionFactory =
         InMemSubscriptionFactory(topicService, rpcTopicService, coordinatorFactory)
