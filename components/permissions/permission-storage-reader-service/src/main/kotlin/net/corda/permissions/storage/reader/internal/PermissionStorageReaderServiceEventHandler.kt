@@ -20,7 +20,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.orm.EntitiesSet
+import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.permissions.cache.PermissionCacheService
 import net.corda.v5.base.annotations.VisibleForTesting
@@ -35,9 +35,9 @@ class PermissionStorageReaderServiceEventHandler(
     private val publisherFactory: PublisherFactory,
     private val configurationReadService: ConfigurationReadService,
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
-    private val allEntitiesSets: List<EntitiesSet>,
+    private val allEntitiesSets: List<JpaEntitiesSet>,
     private val entityManagerFactoryCreationFn:
-        KFunction3<SmartConfig, EntityManagerFactoryFactory, EntitiesSet, EntityManagerFactory> =
+        KFunction3<SmartConfig, EntityManagerFactoryFactory, JpaEntitiesSet, EntityManagerFactory> =
         DbUtils::obtainEntityManagerFactory
 ) : LifecycleEventHandler {
 
@@ -128,7 +128,7 @@ class PermissionStorageReaderServiceEventHandler(
                 entityManagerFactoryCreationFn(
                     dbConfig,
                     entityManagerFactoryFactory,
-                    allEntitiesSets.single { it.name == DbSchema.RPC_RBAC })
+                    allEntitiesSets.single { it.persistenceUnitName == DbSchema.RPC_RBAC })
 
             permissionStorageReader = permissionStorageReaderFactory.create(
                 checkNotNull(permissionCacheService.permissionCache) {

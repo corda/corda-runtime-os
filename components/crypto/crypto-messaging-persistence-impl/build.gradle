@@ -1,0 +1,41 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+description "Crypto messaging based persistence"
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
+    implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-config-schema"
+    implementation "net.corda:corda-topic-schema"
+    implementation "net.corda:corda-crypto"
+    implementation "net.i2p.crypto:eddsa:$eddsaVersion"
+    implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
+    implementation "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion"
+
+    implementation project(':libs:crypto:crypto-client')
+    implementation project(":libs:messaging:messaging")
+    implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":components:crypto:crypto-persistence")
+    implementation project(":components:configuration:configuration-read-service")
+
+    testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    testImplementation project(":libs:lifecycle:lifecycle-impl")
+    testImplementation project(":testing:test-utilities")
+    testImplementation project(":libs:messaging:inmemory-messaging-impl")
+    testImplementation project(":libs:configuration:configuration-core")
+}
+
+

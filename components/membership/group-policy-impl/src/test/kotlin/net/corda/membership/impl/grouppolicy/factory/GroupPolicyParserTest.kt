@@ -1,6 +1,6 @@
 package net.corda.membership.impl.grouppolicy.factory
 
-import net.corda.membership.staticmemberlist.StaticMemberTemplateExtension.Companion.mgmKeyAlias
+import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.mgmKeyAlias
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.uncheckedCast
 import org.junit.jupiter.api.Assertions.assertEquals

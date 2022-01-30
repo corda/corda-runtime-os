@@ -19,5 +19,5 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "net.corda:corda-cipher-suite"
-    testImplementation project(":libs:crypto:crypto-internal")
+    testImplementation project(":libs:crypto:crypto-client")
 }

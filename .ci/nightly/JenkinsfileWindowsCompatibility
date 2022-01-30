@@ -1,6 +1,6 @@
 @Library('corda-shared-build-pipeline-steps@5.0') _
 
 windowsCompatibility(
-    runIntegrationTests: false,
+    runIntegrationTests: true,
     dailyBuildCron: 'H 03 * * *'
     )

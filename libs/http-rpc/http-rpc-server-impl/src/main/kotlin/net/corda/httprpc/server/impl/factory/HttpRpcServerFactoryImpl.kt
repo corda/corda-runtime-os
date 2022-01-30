@@ -10,15 +10,15 @@ import net.corda.httprpc.RpcOps
 import org.osgi.service.component.annotations.Component
 
 @Component(immediate = true, service = [HttpRpcServerFactory::class])
+@Suppress("Unused")
 class HttpRpcServerFactoryImpl : HttpRpcServerFactory {
 
     override fun createHttpRpcServer(
         rpcOpsImpls: List<PluggableRPCOps<out RpcOps>>,
         rpcSecurityManager: RPCSecurityManager,
-        httpRpcSettings: HttpRpcSettings,
-        devMode: Boolean
+        httpRpcSettings: HttpRpcSettings
     ): HttpRpcServer {
 
-        return HttpRpcServerImpl(rpcOpsImpls, rpcSecurityManager, httpRpcSettings, devMode)
+        return HttpRpcServerImpl(rpcOpsImpls, rpcSecurityManager, httpRpcSettings, devMode = false)
     }
 }
