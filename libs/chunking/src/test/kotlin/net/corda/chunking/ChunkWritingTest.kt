@@ -30,7 +30,7 @@ class ChunkWritingTest {
     }
 
     private fun createFile(fileSize: Long): Path {
-        val path = fs.getPath(UUID.randomUUID().toString())
+        val path = randomFileName()
         Files.newByteChannel(path, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW).apply {
             position(fileSize)
             write(ByteBuffer.wrap(ByteArray(0)))
