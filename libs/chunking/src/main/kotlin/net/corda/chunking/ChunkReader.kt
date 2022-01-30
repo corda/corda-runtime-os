@@ -14,7 +14,9 @@ interface ChunkReader {
     fun read(chunk: Chunk)
 
     /**
-     * Called when a complete set of chunks have been received.
+     * This method is used to register a [ChunksCombined] callback to the [ChunkReader].
+     *
+     * [ChunksCombined.onChunksCombined] will be called when a complete set of chunks will have been received.
      *
      * @throws CordaRuntimeException if on complete callback is already set.
      */
