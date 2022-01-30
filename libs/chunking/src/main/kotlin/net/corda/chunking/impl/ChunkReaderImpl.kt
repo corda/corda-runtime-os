@@ -77,6 +77,9 @@ internal class ChunkReaderImpl(private val destDir: Path) : ChunkReader {
     private fun getPath(fileName: String): Path = destDir.resolve(fileName)
 
     override fun onComplete(chunksCombinedCallback: ChunksCombined) {
+        if (this.chunksCombinedCallback != null) {
+            throw CordaRuntimeException("On complete callback is already set")
+        }
         this.chunksCombinedCallback = chunksCombinedCallback
     }
 }

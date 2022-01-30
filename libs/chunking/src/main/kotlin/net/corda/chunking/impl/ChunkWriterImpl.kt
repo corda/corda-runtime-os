@@ -107,6 +107,9 @@ internal class ChunkWriterImpl(val chunkSize: Int) : ChunkWriter {
     )
 
     override fun onChunk(onChunkWriteCallback: ChunkWriteCallback) {
+        if (chunkWriteCallback != null) {
+            throw CordaRuntimeException("On chunk callback is already set")
+        }
         chunkWriteCallback = onChunkWriteCallback
     }
 }
