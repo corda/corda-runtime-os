@@ -17,7 +17,7 @@ import java.util.UUID
 /**
  * Chunks up a binary into smaller parts and passes them to the supplied callback.
  */
-class ChunkWriterImpl(val chunkSize: Int) : ChunkWriter {
+internal class ChunkWriterImpl(val chunkSize: Int) : ChunkWriter {
     companion object {
         const val KB = 1024
         const val MB = 1024 * KB
