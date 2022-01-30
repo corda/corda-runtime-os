@@ -16,7 +16,7 @@ import java.nio.file.StandardOpenOption
  * Receives binary chunks and reassembles full binary and executes completed
  * callback when binary is assembled.
  */
-class ChunkReaderImpl(private val destDir: Path) : ChunkReader {
+internal class ChunkReaderImpl(private val destDir: Path) : ChunkReader {
     companion object {
         val log = contextLogger()
     }
