@@ -1,5 +1,6 @@
 package net.corda.chunking
 
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.io.InputStream
 import java.nio.file.Path
 
@@ -16,6 +17,8 @@ interface ChunkWriter {
      *
      * The total number of times this method is called for a given binary is unknown until the [InputStream] used by
      * [write] is fully consumed, and the final zero-sized [Chunk] is written.
+     *
+     * @throws CordaRuntimeException if on chunk callback is already set.
      */
     fun onChunk(onChunkWriteCallback: ChunkWriteCallback)
 }
