@@ -5,7 +5,6 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
-import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -29,7 +28,7 @@ import java.util.concurrent.ConcurrentHashMap
 class TrustStoresContainer(
     private val subscriptionFactory: SubscriptionFactory,
     private val publisherFactory: PublisherFactory,
-    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val linkManagerNetworkMap: LinkManagerNetworkMap,
     private val linkManagerHostingMap: LinkManagerHostingMap,
     private val configuration: SmartConfig,

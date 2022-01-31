@@ -79,7 +79,7 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
                 throw IllegalStateException("getTrustedCertificates operation invoked while component was stopped.")
             }
 
-            processor.netMapEntriesByGroupIdPublicKeyHash[groupId]?.values?.first()?.trustedCertificates
+            processor.netMapEntriesByGroupIdPublicKeyHash[groupId]?.values?.firstOrNull()?.trustedCertificates
         }
     }
 
@@ -140,13 +140,13 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
         }
 
         private fun addEntry(networkMapEntry: NetworkMapEntry) {
-            if (!netMapEntriesByGroupIdPublicKeyHash.containsKey(networkMapEntry.holdingIdentity.groupId)) {
-                netMapEntriesByGroupIdPublicKeyHash[networkMapEntry.holdingIdentity.groupId] = ConcurrentHashMap()
+            netMapEntriesByGroupIdPublicKeyHash.computeIfAbsent(networkMapEntry.holdingIdentity.groupId) {
+                ConcurrentHashMap()
+            }.let {
+                val publicKeyHash = calculateHash(networkMapEntry.publicKey.array())
+                it[ByteBuffer.wrap(publicKeyHash)] = networkMapEntry
+                netmapEntriesByHoldingIdentity[networkMapEntry.holdingIdentity.toLMHoldingIdentity()] = networkMapEntry
             }
-
-            val publicKeyHash = calculateHash(networkMapEntry.publicKey.array())
-            netMapEntriesByGroupIdPublicKeyHash[networkMapEntry.holdingIdentity.groupId]!![ByteBuffer.wrap(publicKeyHash)] = networkMapEntry
-            netmapEntriesByHoldingIdentity[networkMapEntry.holdingIdentity.toLMHoldingIdentity()] = networkMapEntry
         }
 
         private fun HoldingIdentity.toLMHoldingIdentity(): LinkManagerNetworkMap.HoldingIdentity {
