@@ -166,7 +166,7 @@ internal class HttpRpcServerInternal(
         val principal = authorizingSubject.principal
         log.trace { "Authorize \"$principal\" for \"$fullPath\"." }
         if (!authorizingSubject.isPermitted(fullPath))
-            throw ForbiddenResponse("Method '$fullPath' not allowed for '$principal'.")
+            throw ForbiddenResponse("User not authorized.")
         log.trace { "Authorize \"$principal\" for \"$fullPath\" completed." }
     }
 
