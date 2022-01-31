@@ -51,7 +51,7 @@ The ["read" algorithm](https://github.com/corda/corda-runtime-os/blob/89b2944816
 writes the chunks to a file at the _specified offset_ in the `Chunk`.  This allows us to write out of order chunks 
 to a file in the case of reordering.
 
-The "read" is complete when we receive a zero-sized chunk, the number of chunks received must be equal to 
+The "read" is complete when we have received a zero-sized chunk and the number of chunks received are equal to 
 the zero-sized chunk's `partNumber + 1`. 
 
 We additionally check the checksum (in the zero-sized chunk) against what we have written to file.
