@@ -13,7 +13,6 @@ dependencies {
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-datamodel')
     implementation project(":libs:lifecycle:lifecycle")
-    implementation project(":libs:permissions:permission-datamodel")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-base'

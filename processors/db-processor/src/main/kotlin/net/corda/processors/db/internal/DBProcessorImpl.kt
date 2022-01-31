@@ -1,17 +1,16 @@
 package net.corda.processors.db.internal
 
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.write.ConfigWriteService
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.ClassloaderChangeLog.ChangeLogResourceFiles
-import net.corda.db.core.HikariDataSourceFactory
+import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.db.connection.manager.DbConnectionsRepository
+import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.datamodel.ConfigAuditEntity
-import net.corda.libs.configuration.datamodel.ConfigEntity
+import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -20,9 +19,9 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.orm.DbEntityManagerConfiguration
-import net.corda.orm.EntityManagerFactoryFactory
+import net.corda.orm.JpaEntitiesRegistry
 import net.corda.permissions.cache.PermissionCacheService
+import net.corda.permissions.model.RpcRbacEntitiesSet
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
 import net.corda.permissions.storage.writer.PermissionStorageWriterService
 import net.corda.processors.db.DBProcessor
@@ -41,14 +40,14 @@ import javax.sql.DataSource
 class DBProcessorImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = DbConnectionManager::class)
+    private val dbConnectionManager: DbConnectionManager,
+    @Reference(service = JpaEntitiesRegistry::class)
+    private val entitiesRegistry: JpaEntitiesRegistry,
     @Reference(service = ConfigWriteService::class)
     private val configWriteService: ConfigWriteService,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
-    @Reference(service = EntityManagerFactoryFactory::class)
-    private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
-    @Reference(service = LiquibaseSchemaMigrator::class)
-    private val schemaMigrator: LiquibaseSchemaMigrator,
     @Reference(service = PermissionCacheService::class)
     private val permissionCacheService: PermissionCacheService,
     @Reference(service = PermissionStorageReaderService::class)
@@ -56,15 +55,28 @@ class DBProcessorImpl @Activate constructor(
     @Reference(service = PermissionStorageWriterService::class)
     private val permissionStorageWriterService: PermissionStorageWriterService,
     @Reference(service = VirtualNodeWriteService::class)
-    private val virtualNodeWriteService: VirtualNodeWriteService
+    private val virtualNodeWriteService: VirtualNodeWriteService,
+    // TODO: remove this when DB migration is not needed anymore in this processor.
+    @Reference(service = DbConnectionsRepository::class)
+    private val dbConnectionsRepository: DbConnectionsRepository,
+    @Reference(service = LiquibaseSchemaMigrator::class)
+    private val schemaMigrator: LiquibaseSchemaMigrator,
 ) : DBProcessor {
-
+    init {
+        // define the different DB Entity Sets
+        //  entities can be in different packages, but all JPA classes must be passed in.
+        // TODO - add VNode entities, for example.
+        entitiesRegistry.register(CordaDb.CordaCluster.persistenceUnitName, ConfigurationEntities.classes)
+        // TODO - refactor RpcRbacEntitiesSet
+        entitiesRegistry.register(CordaDb.RBAC.persistenceUnitName, RpcRbacEntitiesSet().classes)
+    }
     companion object {
         private val log = contextLogger()
     }
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<DBProcessorImpl>(::eventHandler)
     private val dependentComponents = DependentComponents.of(
+        ::dbConnectionManager,
         ::configWriteService,
         ::configurationReadService,
         ::permissionCacheService,
@@ -96,13 +108,20 @@ class DBProcessorImpl @Activate constructor(
                 coordinator.updateStatus(event.status)
             }
             is BootConfigEvent -> {
-                val dataSource = createDataSource(event.config)
-                checkDatabaseConnection(dataSource)
-                migrateDatabase(dataSource)
+
+                log.info("Bootstrapping DB connection Manager")
+                dbConnectionManager.bootstrap(event.config)
+
+                // TODO - DB migration to be removed when part of cluster bootstrapping
+                log.info("Running DB Migration")
+                migrateDatabase(dbConnectionsRepository.clusterDataSource)
 
                 val instanceId = event.config.getInt(CONFIG_INSTANCE_ID)
-                val entityManagerFactory = createEntityManagerFactory(dataSource)
-                configWriteService.startProcessing(event.config, instanceId, entityManagerFactory)
+                log.info("Bootstrapping Config Write Service with instance ID: $instanceId")
+                configWriteService.startProcessing(
+                    event.config,
+                    instanceId,
+                    dbConnectionManager.clusterDbEntityManagerFactory)
 
                 configurationReadService.bootstrapConfig(event.config)
             }
@@ -113,17 +132,6 @@ class DBProcessorImpl @Activate constructor(
                 log.error("Unexpected event $event!")
             }
         }
-    }
-
-    /**
-     * Checks that it is possible to connect to the cluster database using the [dataSource].
-     *
-     * @throws DBProcessorException If the cluster database cannot be connected to.
-     */
-    private fun checkDatabaseConnection(dataSource: DataSource) = try {
-        dataSource.connection.close()
-    } catch (e: Exception) {
-        throw DBProcessorException("Could not connect to cluster database.", e)
     }
 
     /**
@@ -158,41 +166,6 @@ class DBProcessorImpl @Activate constructor(
             }
         }
     }
-
-    /** Creates an `EntityManagerFactory` using the [dataSource]. */
-    private fun createEntityManagerFactory(dataSource: DataSource) = entityManagerFactoryFactory.create(
-        PERSISTENCE_UNIT_NAME,
-        listOf(ConfigEntity::class.java, ConfigAuditEntity::class.java),
-        DbEntityManagerConfiguration(dataSource)
-    )
-
-    /** Creates a [DataSource] using the [config]. */
-    private fun createDataSource(config: SmartConfig): DataSource {
-        val fallbackConfig = ConfigFactory.empty()
-            .withValue(CONFIG_DB_DRIVER, ConfigValueFactory.fromAnyRef(CONFIG_DB_DRIVER_DEFAULT))
-            .withValue(CONFIG_JDBC_URL, ConfigValueFactory.fromAnyRef(CONFIG_JDBC_URL_DEFAULT))
-            .withValue(CONFIG_MAX_POOL_SIZE, ConfigValueFactory.fromAnyRef(CONFIG_MAX_POOL_SIZE_DEFAULT))
-        val configWithFallback = config.withFallback(fallbackConfig)
-
-        val driver = configWithFallback.getString(CONFIG_DB_DRIVER)
-        val jdbcUrl = configWithFallback.getString(CONFIG_JDBC_URL)
-        val maxPoolSize = configWithFallback.getInt(CONFIG_MAX_POOL_SIZE)
-        
-        val username = getConfigStringOrNull(config, CONFIG_DB_USER) ?: throw DBProcessorException(
-            "No username provided to connect to cluster database. Pass the `-d cluster.user` flag at worker startup." +
-                    "Provided config: ${config.root().render()}"
-        )
-        val password = getConfigStringOrNull(config, CONFIG_DB_PASS) ?: throw DBProcessorException(
-            "No password provided to connect to cluster database. Pass the `-d cluster.pass` flag at worker startup." +
-                    "Provided config: ${config.root().render()}"
-        )
-
-        return HikariDataSourceFactory().create(driver, jdbcUrl, username, password, false, maxPoolSize)
-    }
-
-    /** Returns the string at [path] from [config], or null if the path doesn't exist. */
-    private fun getConfigStringOrNull(config: SmartConfig, path: String) =
-        if (config.hasPath(path)) config.getString(path) else null
 }
 
 data class BootConfigEvent(val config: SmartConfig) : LifecycleEvent
