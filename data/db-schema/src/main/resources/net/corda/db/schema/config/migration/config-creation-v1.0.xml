@@ -80,10 +80,6 @@
             <column name="update_actor" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
-            <column name="privilege" type="VARCHAR(3)">
-                <!-- DDL or DML -->
-                <constraints nullable="false"  />
-            </column>
             <column name="description" type="VARCHAR(255)">
                 <constraints nullable="true"/>
             </column>
