@@ -219,14 +219,16 @@ class DominoTile(
                             configReady = true
                             when (state) {
                                 State.StoppedDueToBadConfig -> {
-                                    logger.info("Config ready for $name.")
+                                    logger.info("Received valid config for $name, this was previously invalid.")
                                     startDependenciesIfNeeded()
                                 }
                                 State.Created, State.StoppedByParent -> {
-                                    logger.info("Config ready for $name.")
+                                    logger.info("Received valid config for $name.")
                                     setStartedIfCan()
                                 }
-                                State.StoppedDueToError, State.Started -> {} // Do nothing
+                                State.StoppedDueToError, State.Started -> {
+                                    logger.info("Received valid config for $name.")
+                                } // Do nothing
                             }
                         }
                         is ConfigUpdateResult.Error -> {
@@ -261,12 +263,12 @@ class DominoTile(
         val newConfiguration = try {
             configurationChangeHandler.configFactory(config)
         } catch (e: Exception) {
+            logger.debug("Exception when $name processed config change posting this to the coordinator.")
             configApplied(ConfigUpdateResult.Error(e))
             return
         }
-        logger.info("Got configuration $name")
         if (newConfiguration == configurationChangeHandler.lastConfiguration) {
-            logger.info("Configuration had not changed $name")
+            logger.debug("Configuration change did not update $name posting this to the coordinator.")
             configApplied(ConfigUpdateResult.NoUpdate)
         } else {
             val future = configurationChangeHandler.applyNewConfiguration(
@@ -276,13 +278,14 @@ class DominoTile(
             )
             future.whenComplete { _, exception ->
                 if (exception != null) {
+                    logger.debug("Asynchronous exception when $name processed config change posting this to the coordinator.")
                     configApplied(ConfigUpdateResult.Error(exception))
                 } else {
+                    logger.debug("$name processed config change successfully posting this to the coordinator.")
                     configApplied(ConfigUpdateResult.Success)
                 }
             }
             configurationChangeHandler.lastConfiguration = newConfiguration
-            logger.info("Reconfigured $name")
         }
     }
 
