@@ -1,4 +1,4 @@
-package net.corda.db.connection.manager.impl
+package net.corda.db.connection.manager
 
 import net.corda.v5.base.exceptions.CordaRuntimeException
 

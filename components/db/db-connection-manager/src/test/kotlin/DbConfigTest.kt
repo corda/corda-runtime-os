@@ -1,30 +1,25 @@
 import com.typesafe.config.ConfigFactory
-import net.corda.db.connection.manager.impl.CONFIG_DB_DRIVER
-import net.corda.db.connection.manager.impl.CONFIG_DB_DRIVER_DEFAULT
-import net.corda.db.connection.manager.impl.CONFIG_DB_PASS
-import net.corda.db.connection.manager.impl.CONFIG_DB_USER
-import net.corda.db.connection.manager.impl.CONFIG_JDBC_URL
-import net.corda.db.connection.manager.impl.CONFIG_DB_JDBC_URL_DEFAULT
-import net.corda.db.connection.manager.impl.CONFIG_DB_MAX_POOL_SIZE
-import net.corda.db.connection.manager.impl.CONFIG_DB_MAX_POOL_SIZE_DEFAULT
-import net.corda.db.connection.manager.impl.DBConfigurationException
-import net.corda.db.connection.manager.impl.createFromConfig
+import net.corda.db.connection.manager.DBConfigurationException
+import net.corda.db.connection.manager.DEFAULT_JDBC_URL
+import net.corda.db.connection.manager.createFromConfig
 import net.corda.db.core.DataSourceFactory
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.schema.configuration.ConfigDefaults
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import net.corda.schema.configuration.ConfigKeys
 
 class DbConfigTest {
     private val dataSourceFactory =  mock<DataSourceFactory>()
 
     private val fullConfig = """
-$CONFIG_DB_DRIVER=driver
-$CONFIG_JDBC_URL=url
-$CONFIG_DB_MAX_POOL_SIZE=99
-$CONFIG_DB_USER=user
-$CONFIG_DB_PASS=pass
+        ${ConfigKeys.Companion.JDBC_DRIVER}=driver
+        ${ConfigKeys.Companion.JDBC_URL}=url
+        ${ConfigKeys.Companion.DB_POOL_MAX_SIZE}=99
+        ${ConfigKeys.Companion.DB_USER}=user
+        ${ConfigKeys.Companion.DB_PASS}=pass
     """.trimIndent()
     private val fullSmartConfig = SmartConfigImpl(
         ConfigFactory.parseString(fullConfig),
@@ -33,8 +28,8 @@ $CONFIG_DB_PASS=pass
     )
 
     private val minimalConfig = """
-$CONFIG_DB_USER=user
-$CONFIG_DB_PASS=pass
+        ${ConfigKeys.Companion.DB_USER}=user
+        ${ConfigKeys.Companion.DB_PASS}=pass
     """.trimIndent()
     private val minimalSmartConfig = SmartConfigImpl(
         ConfigFactory.parseString(minimalConfig),
@@ -60,19 +55,19 @@ $CONFIG_DB_PASS=pass
         dataSourceFactory.createFromConfig(minimalSmartConfig)
 
         verify(dataSourceFactory).create(
-            CONFIG_DB_DRIVER_DEFAULT,
-            CONFIG_DB_JDBC_URL_DEFAULT,
+            ConfigDefaults.JDBC_DRIVER,
+            DEFAULT_JDBC_URL,
             "user",
             "pass",
             false,
-            CONFIG_DB_MAX_POOL_SIZE_DEFAULT)
+            ConfigDefaults.DB_POOL_MAX_SIZE)
     }
 
     @Test
     fun `when username missing throw`() {
         assertThrows<DBConfigurationException> {
             dataSourceFactory.createFromConfig(SmartConfigImpl(
-                ConfigFactory.parseString("$CONFIG_DB_PASS=pass"),
+                ConfigFactory.parseString("${ConfigKeys.Companion.DB_PASS}=pass"),
                 mock(),
                 mock()))
         }
@@ -82,7 +77,7 @@ $CONFIG_DB_PASS=pass
     fun `when pass missing throw`() {
         assertThrows<DBConfigurationException> {
             dataSourceFactory.createFromConfig(SmartConfigImpl(
-                ConfigFactory.parseString("$CONFIG_DB_USER=user"),
+                ConfigFactory.parseString("${ConfigKeys.Companion.DB_PASS}=user"),
                 mock(),
                 mock()))
         }
