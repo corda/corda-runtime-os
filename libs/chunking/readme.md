@@ -16,7 +16,7 @@ The structure of the message can be seen in the Avro schema, but is essentially:
 class Chunk {
     val requestId: String
     val checksum
-    val partNumber: Int // chunk number
+    val partNumber: Int // chunk number - zero indexed
     val data: ByteBuffer  // chunk payload and size via limit()
     val offset:  Long // offset of this chunk from 0            
 }
