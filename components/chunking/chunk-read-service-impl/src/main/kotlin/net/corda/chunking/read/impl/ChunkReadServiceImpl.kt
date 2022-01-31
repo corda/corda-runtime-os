@@ -1,0 +1,117 @@
+package net.corda.chunking.read.impl
+
+import net.corda.chunking.db.ChunkDbWriter
+import net.corda.chunking.db.ChunkDbWriterFactory
+import net.corda.chunking.read.ChunkReadService
+import net.corda.configuration.read.ConfigurationHandler
+import net.corda.configuration.read.ConfigurationReadService
+import net.corda.db.connection.manager.EntityManagerFactoryCache
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleEventHandler
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
+import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
+import net.corda.lifecycle.createCoordinator
+import net.corda.schema.configuration.ConfigKeys
+import net.corda.v5.base.util.contextLogger
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
+import org.slf4j.Logger
+
+@Suppress("UNUSED")
+@Component(service = [ChunkReadService::class])
+class ChunkReadServiceImpl @Activate constructor(
+    @Reference(service = LifecycleCoordinatorFactory::class)
+    coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = ChunkDbWriterFactory::class)
+    private val chunkDbWriterFactory: ChunkDbWriterFactory,
+    @Reference(service = ConfigurationReadService::class)
+    private val configurationReadService: ConfigurationReadService,
+    @Reference(service = EntityManagerFactoryCache::class)
+    private val entityManagerFactoryCache: EntityManagerFactoryCache,
+) : ChunkReadService, LifecycleEventHandler, ConfigurationHandler {
+    companion object {
+        val log: Logger = contextLogger()
+    }
+
+    private val coordinator = coordinatorFactory.createCoordinator<ChunkReadService>(this)
+
+    private var chunkDbWriter: ChunkDbWriter? = null
+    private var registration: RegistrationHandle? = null
+    private var configSubscription: AutoCloseable? = null
+
+    class BootstrapConfigChangedEvent(val config: SmartConfig) : LifecycleEvent
+
+    override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+        when (event) {
+            is StartEvent -> onStartEvent(coordinator)
+            is StopEvent -> onStop(coordinator)
+            is BootstrapConfigChangedEvent -> onBootstrapConfigChangedEvent(event, coordinator)
+            is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event)
+        }
+    }
+
+    override val isRunning get() = coordinator.isRunning
+
+    override fun start() = coordinator.start()
+
+    override fun stop() = coordinator.stop()
+
+    private fun onStartEvent(coordinator: LifecycleCoordinator) {
+        configurationReadService.start()
+        registration?.close()
+        registration =
+            coordinator.followStatusChangesByName(setOf(
+                LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                LifecycleCoordinatorName.forComponent<EntityManagerFactoryCache>()
+            ))
+    }
+
+    private fun onStop(coordinator: LifecycleCoordinator) {
+        chunkDbWriter?.stop()
+        chunkDbWriter = null
+        coordinator.updateStatus(LifecycleStatus.DOWN)
+    }
+
+    private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent) {
+        if (event.status == LifecycleStatus.UP) {
+            configSubscription = configurationReadService.registerForUpdates(this)
+        } else {
+            configSubscription?.close()
+        }
+    }
+
+    private fun onBootstrapConfigChangedEvent(event: BootstrapConfigChangedEvent, coordinator: LifecycleCoordinator) {
+        val bootstrapConfig = event.config
+        chunkDbWriter?.close()
+        chunkDbWriter = chunkDbWriterFactory
+            .create(
+                bootstrapConfig,
+                bootstrapConfig.getInt(INSTANCE_ID),
+                entityManagerFactoryCache.clusterDbEntityManagerFactory
+            )
+            .apply { start() }
+        coordinator.updateStatus(LifecycleStatus.UP)
+    }
+
+    override fun close() {
+        configSubscription?.close()
+        registration?.close()
+        chunkDbWriter?.close()
+    }
+
+    /** received a new configuration from the configuration service (not the event loop) */
+    override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
+        if (ConfigKeys.BOOT_CONFIG in changedKeys) {
+            coordinator.postEvent(BootstrapConfigChangedEvent(config[ConfigKeys.BOOT_CONFIG]!!))
+        }
+    }
+}

@@ -1,0 +1,45 @@
+plugins {
+    id 'corda.common-library'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+}
+
+description 'Chunk database writer impl'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'javax.persistence:javax.persistence-api'
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'net.corda:corda-base'
+    implementation "net.corda:corda-avro-schema"
+    implementation 'net.corda:corda-db-schema'
+    implementation 'net.corda:corda-topic-schema'
+
+    implementation project(':libs:chunking:chunking-datamodel')
+    implementation project(':libs:chunking:chunking-core')
+    implementation project(':libs:configuration:configuration-core')
+    implementation project(':libs:db:db-core')
+    implementation project(':libs:db:db-orm')
+    implementation project(':libs:lifecycle:lifecycle')
+    implementation project(":libs:messaging:messaging")
+    implementation project(':components:chunking:chunk-db-write')
+
+    testImplementation project(':libs:db:db-admin')
+    testImplementation project(':libs:db:db-admin-impl')
+    testImplementation project(':libs:db:db-orm-impl')
+    testImplementation project(':testing:db-testkit')
+
+    testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    testRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+    testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+}
+
+tasks.named('jar', Jar) {
+    bnd '''\
+DynamicImport-Package: org.hibernate.proxy
+'''
+}
