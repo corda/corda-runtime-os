@@ -51,7 +51,9 @@ class CpiUploadRPCOpsImpl @Activate constructor(
     }
 
     override fun createAndStartRpcSender(config: SmartConfig) {
+        rpcSender?.close()
         rpcSender = publisherFactory.createRPCSender(RPC_CONFIG)
+        rpcSender!!.start()
     }
 
     override fun setHttpRequestTimeout(httpRequestTimeout: Duration) {
