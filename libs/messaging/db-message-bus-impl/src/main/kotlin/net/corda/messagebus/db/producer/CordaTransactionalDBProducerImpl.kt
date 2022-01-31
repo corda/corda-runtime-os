@@ -5,7 +5,7 @@ import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.db.persistence.CommittedOffsetEntry
-import net.corda.messagebus.db.persistence.DBWriter
+import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.persistence.TopicRecordEntry
 import net.corda.messagebus.db.persistence.TransactionRecordEntry
 import net.corda.messagebus.db.toCordaRecord
@@ -22,7 +22,7 @@ import kotlin.math.abs
 class CordaTransactionalDBProducerImpl(
     private val schemaRegistry: AvroSchemaRegistry,
     private val topicService: TopicService,
-    private val dbWriterImpl: DBWriter
+    private val dbAccessImpl: DBAccess
 ) : CordaProducer {
 
     companion object {
@@ -30,7 +30,7 @@ class CordaTransactionalDBProducerImpl(
     }
 
     private val defaultTimeout: Duration = Duration.ofSeconds(1)
-    private val topicPartitionMap = dbWriterImpl.getTopicPartitionMap()
+    private val topicPartitionMap = dbAccessImpl.getTopicPartitionMap()
 
     private val transactionalRecords = ThreadLocal.withInitial { mutableListOf<TopicRecordEntry>() }
     private val transaction = AtomicReference<TransactionRecordEntry?>()
@@ -94,7 +94,7 @@ class CordaTransactionalDBProducerImpl(
         recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>
     ) {
         // First try adding to DB as it has the possibility of failing
-        dbWriterImpl.writeRecords(dbRecords)
+        dbAccessImpl.writeRecords(dbRecords)
         // Topic service shouldn't fail but if it does the DB will still rollback from here
         recordsWithPartitions.forEach {
             topicService.addRecordsToPartition(listOf(it.second.toCordaRecord()), it.first)
@@ -107,7 +107,7 @@ class CordaTransactionalDBProducerImpl(
         }
         val newTransaction = TransactionRecordEntry(UUID.randomUUID().toString(), false)
         transaction.set(newTransaction)
-        dbWriterImpl.writeTransactionId(newTransaction)
+        dbAccessImpl.writeTransactionId(newTransaction)
     }
 
     override fun sendRecordOffsetsToTransaction(
@@ -131,7 +131,7 @@ class CordaTransactionalDBProducerImpl(
                         )
                     }
 
-                dbWriterImpl.writeOffsets(offsets)
+                dbAccessImpl.writeOffsets(offsets)
             }
     }
 
@@ -149,12 +149,12 @@ class CordaTransactionalDBProducerImpl(
                 offset
             )
         }
-        dbWriterImpl.writeOffsets(offsets)
+        dbAccessImpl.writeOffsets(offsets)
     }
 
     override fun commitTransaction() {
         verifyInTransaction()
-        dbWriterImpl.makeRecordsVisible(transactionId)
+        dbAccessImpl.makeRecordsVisible(transactionId)
         transactionalRecords.get().clear()
         transaction.set(null)
     }

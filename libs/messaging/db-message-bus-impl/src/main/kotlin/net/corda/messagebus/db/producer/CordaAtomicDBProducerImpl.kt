@@ -4,7 +4,7 @@ import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
-import net.corda.messagebus.db.persistence.DBWriter
+import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.persistence.TopicRecordEntry
 import net.corda.messagebus.db.persistence.TransactionRecordEntry
 import net.corda.messagebus.db.toCordaRecord
@@ -17,7 +17,7 @@ import kotlin.math.abs
 class CordaAtomicDBProducerImpl(
     private val schemaRegistry: AvroSchemaRegistry,
     private val topicService: TopicService,
-    private val dbWriterImpl: DBWriter
+    private val dbAccessImpl: DBAccess
 ) : CordaProducer {
 
     companion object {
@@ -25,7 +25,7 @@ class CordaAtomicDBProducerImpl(
     }
 
     private val defaultTimeout: Duration = Duration.ofSeconds(1)
-    private val topicPartitionMap = dbWriterImpl.getTopicPartitionMap()
+    private val topicPartitionMap = dbAccessImpl.getTopicPartitionMap()
 
     override fun send(record: CordaProducerRecord<*, *>, callback: CordaProducer.Callback?) {
         sendRecords(listOf(record))
@@ -78,9 +78,9 @@ class CordaAtomicDBProducerImpl(
         recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>
     ) {
         // First try adding to DB as it has the possibility of failing.
-        dbWriterImpl.writeTransactionId(ATOMIC_TRANSACTION)
-        dbWriterImpl.writeRecords(dbRecords)
-        dbWriterImpl.makeRecordsVisible(ATOMIC_TRANSACTION.transaction_id)
+        dbAccessImpl.writeTransactionId(ATOMIC_TRANSACTION)
+        dbAccessImpl.writeRecords(dbRecords)
+        dbAccessImpl.makeRecordsVisible(ATOMIC_TRANSACTION.transaction_id)
         // Topic service shouldn't fail but if it does the DB will still rollback from here
         recordsWithPartitions.forEach {
             topicService.addRecordsToPartition(listOf(it.second.toCordaRecord()), it.first)

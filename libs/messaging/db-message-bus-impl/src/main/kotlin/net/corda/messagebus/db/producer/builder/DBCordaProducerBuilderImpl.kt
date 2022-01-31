@@ -5,12 +5,11 @@ import net.corda.db.core.PostgresDataSourceFactory
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messagebus.db.persistence.CommittedOffsetEntry
-import net.corda.messagebus.db.persistence.DBWriter
+import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.persistence.TopicEntry
 import net.corda.messagebus.db.persistence.TopicRecordEntry
 import net.corda.messagebus.db.producer.CordaAtomicDBProducerImpl
 import net.corda.messagebus.db.producer.CordaTransactionalDBProducerImpl
-import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
@@ -21,11 +20,7 @@ import org.osgi.service.component.annotations.Reference
 import javax.persistence.EntityManagerFactory
 
 /**
- * Builder for a Kafka Producer.
- * Initialises producer for transactions if publisherConfig contains an instanceId.
- * Producer uses avro for serialization.
- * If fatal exception is thrown in the construction of a KafKaProducer
- * then it is closed and exception is thrown as [CordaMessageAPIFatalException].
+ * Builder for a DB Producer.
  */
 @Component(service = [CordaProducerBuilder::class])
 class DBCordaProducerBuilderImpl @Activate constructor(
@@ -36,11 +31,11 @@ class DBCordaProducerBuilderImpl @Activate constructor(
 ) : CordaProducerBuilder {
     override fun createProducer(producerConfig: Config): CordaProducer {
         val isTransactional = producerConfig.hasPath("instanceId")
-        val dbWriter = DBWriter(
+        val dbAccess = DBAccess(
             obtainEntityManagerFactory(
                 producerConfig,
                 entityManagerFactoryFactory,
-                    "blah",
+                    "blah",  // TODO: What's the name here?
                     listOf(TopicRecordEntry::class.java, CommittedOffsetEntry::class.java, TopicEntry::class.java)
             )
         )
@@ -48,13 +43,13 @@ class DBCordaProducerBuilderImpl @Activate constructor(
             CordaTransactionalDBProducerImpl(
                 avroSchemaRegistry,
                 TopicServiceImpl(),
-                dbWriter
+                dbAccess
             )
         } else {
             CordaAtomicDBProducerImpl(
                 avroSchemaRegistry,
                 TopicServiceImpl(),
-                dbWriter
+                dbAccess
             )
         }
     }

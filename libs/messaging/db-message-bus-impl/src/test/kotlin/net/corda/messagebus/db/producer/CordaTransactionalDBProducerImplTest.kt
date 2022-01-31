@@ -3,7 +3,7 @@ package net.corda.messagebus.db.producer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
-import net.corda.messagebus.db.persistence.DBWriter
+import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.persistence.TopicRecordEntry
 import net.corda.messagebus.db.persistence.TransactionRecordEntry
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
@@ -31,13 +31,13 @@ internal class CordaTransactionalDBProducerImplTest {
 
     @Test
     fun `transactional producer doesn't allow sends when not transaction`() {
-        val dbWriter: DBWriter = mock()
+        val dbAccess: DBAccess = mock()
         val topicService: TopicService = mock()
 
         val producer = CordaTransactionalDBProducerImpl(
             mock(),
             topicService,
-            dbWriter
+            dbAccess
         ) as CordaProducer
 
         val record = CordaProducerRecord(topic, key, value)
@@ -72,8 +72,8 @@ internal class CordaTransactionalDBProducerImplTest {
 
     @Test
     fun `transactional producer sends correct entry to database and topic`() {
-        val dbWriter: DBWriter = mock()
-        whenever(dbWriter.getTopicPartitionMap()).thenReturn(mapOf(topic to 1))
+        val dbAccess: DBAccess = mock()
+        whenever(dbAccess.getTopicPartitionMap()).thenReturn(mapOf(topic to 1))
         val topicService: TopicService = mock()
         whenever(topicService.getLatestOffsets(eq(topic))).thenReturn(mapOf(1 to 5))
         val schemaRegistry: AvroSchemaRegistry = mock()
@@ -81,7 +81,7 @@ internal class CordaTransactionalDBProducerImplTest {
         whenever(schemaRegistry.serialize(eq(value))).thenReturn(ByteBuffer.wrap(serializedValue))
         val callback: CordaProducer.Callback = mock()
 
-        val producer = CordaTransactionalDBProducerImpl(schemaRegistry, topicService, dbWriter)
+        val producer = CordaTransactionalDBProducerImpl(schemaRegistry, topicService, dbAccess)
         val cordaRecord = CordaProducerRecord(topic, key, value)
 
         producer.beginTransaction()
@@ -92,9 +92,9 @@ internal class CordaTransactionalDBProducerImplTest {
         val dbTransaction = argumentCaptor<TransactionRecordEntry>()
         val dbTransactionId = argumentCaptor<String>()
         // For transactions the records must *not* be immediately visible
-        verify(dbWriter).writeRecords(dbRecordList.capture())
-        verify(dbWriter).writeTransactionId(dbTransaction.capture())
-        verify(dbWriter).makeRecordsVisible(dbTransactionId.capture())
+        verify(dbAccess).writeRecords(dbRecordList.capture())
+        verify(dbAccess).writeTransactionId(dbTransaction.capture())
+        verify(dbAccess).makeRecordsVisible(dbTransactionId.capture())
         verify(callback).onCompletion(null)
         val record = dbRecordList.firstValue.single()
         assertThat(record.topic).isEqualTo(topic)

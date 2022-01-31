@@ -1,7 +1,6 @@
 plugins {
     id 'corda.common-library'
     id 'com.r3.internal.gradle.plugins.r3Publish'
-//    id "corda.osgi-test-conventions"
 }
 
 description 'Database Message Bus Implementation'

@@ -1,7 +1,6 @@
 package net.corda.messagebus.db.persistence
 
 import net.corda.orm.utils.transaction
-import net.corda.v5.base.annotations.VisibleForTesting
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Instant
@@ -10,7 +9,7 @@ import javax.persistence.EntityManagerFactory
 
 /**
  */
-class DBWriter(
+class DBAccess(
     private val entityManagerFactory: EntityManagerFactory,
 ) {
 
@@ -165,8 +164,7 @@ class DBWriter(
      * Executes the specified operation with the necessary error handling.
      * If an error arises during execution, the transaction is rolled back and the exception is re-thrown.
      */
-    @VisibleForTesting
-    internal fun executeWithErrorHandling(
+    private fun executeWithErrorHandling(
         operationName: String,
         operation: (emf: EntityManager) -> Unit,
     ) {
@@ -175,7 +173,7 @@ class DBWriter(
                 operation(it)
             }
         } catch (e: Exception) {
-            log.error("Error while trying to $operationName. Transaction will be rolled back.", e)
+            log.error("Error while trying to $operationName. Transaction has been rolled back.", e)
             throw e
         }
     }

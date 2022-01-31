@@ -17,7 +17,7 @@ import java.time.Instant
 import javax.persistence.EntityManagerFactory
 
 
-class DBWriterIntegrationTest {
+class DBAccessIntegrationTest {
 
     companion object {
         private val logger: Logger = LoggerFactory.getLogger("DBWriterTest")
@@ -41,7 +41,7 @@ class DBWriterIntegrationTest {
                     ClassloaderChangeLog.ChangeLogResourceFiles(
                         "DBWriterTest",
                         listOf("migration/db.changelog-master.xml"),
-                        classLoader = DBWriterIntegrationTest::class.java.classLoader
+                        classLoader = DBAccessIntegrationTest::class.java.classLoader
                     ),
                 )
             )
@@ -85,8 +85,6 @@ class DBWriterIntegrationTest {
 
     @Test
     fun `DBWriter writes topic records`() {
-        // Atomic writes have a transaction id of null which means they're immediately available
-
         val timestamp = Instant.parse("2022-01-01T00:00:00.00Z")
 
         val records = listOf(
@@ -97,8 +95,8 @@ class DBWriterIntegrationTest {
             TopicRecordEntry(topic, 3, 0, "key5".toByteArray(), "value5".toByteArray(), "id", timestamp = timestamp),
         )
 
-        val dbWriter = DBWriter(emf)
-        dbWriter.writeRecords(records)
+        val dbAccess = DBAccess(emf)
+        dbAccess.writeRecords(records)
 
         val results = query(TopicRecordEntry::class.java, "from topic_record order by partition, offset")
         assertThat(results).size().isEqualTo(records.size)
@@ -112,20 +110,18 @@ class DBWriterIntegrationTest {
 
     @Test
     fun `DBWriter writes transactional records and makes them visible`() {
-
         val transactionRecordEntry = TransactionRecordEntry("id", false)
 
-        val dbWriter = DBWriter(emf)
-        dbWriter.writeTransactionId(transactionRecordEntry)
+        val dbAccess = DBAccess(emf)
+        dbAccess.writeTransactionId(transactionRecordEntry)
 
-        // Atomic writes have a transaction id of null which means they're immediately available
         val nonCommittedResults = query(TransactionRecordEntry::class.java, "from transaction_record")
         nonCommittedResults.forEach { result ->
             assertThat(result.transaction_id).isEqualTo("id")
             assertThat(result.visible).isFalse()
         }
 
-        dbWriter.makeRecordsVisible(transactionRecordEntry.transaction_id)
+        dbAccess.makeRecordsVisible(transactionRecordEntry.transaction_id)
         val committedResults = query(TransactionRecordEntry::class.java, "from transaction_record")
         committedResults.forEach { result ->
             assertThat(result.transaction_id).isEqualTo("id")
@@ -145,8 +141,8 @@ class DBWriterIntegrationTest {
             CommittedOffsetEntry(topic, consumerGroup, 1, 5, timestamp),
         )
 
-        val dbWriter = DBWriter(emf)
-        dbWriter.writeOffsets(offsets)
+        val dbAccess = DBAccess(emf)
+        dbAccess.writeOffsets(offsets)
 
         val results = query(CommittedOffsetEntry::class.java, "from topic_consumer_offset order by partition, offset")
         assertThat(results).size().isEqualTo(offsets.size)
@@ -157,15 +153,15 @@ class DBWriterIntegrationTest {
 
     @Test
     fun `DBWriter can create new topics and return the correct topic partition map`() {
-        val dbWriter = DBWriter(emf)
-        dbWriter.createTopic(topic2, 10)
+        val dbAccess = DBAccess(emf)
+        dbAccess.createTopic(topic2, 10)
 
         val results = query(TopicEntry::class.java, "from topic order by topic")
         assertThat(results.size).isEqualTo(2)
         assertThat(results[1].topic).isEqualTo(topic2)
         assertThat(results[1].numPartitions).isEqualTo(10)
 
-        val map = dbWriter.getTopicPartitionMap()
+        val map = dbAccess.getTopicPartitionMap()
         assertThat(map.size).isEqualTo(2)
         assertThat(map[topic]).isEqualTo(4)
         assertThat(map[topic2]).isEqualTo(10)
