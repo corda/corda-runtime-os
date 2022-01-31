@@ -83,7 +83,8 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
             CryptoOpsClientComponent(
                 coordinatorFactory = coordinatorFactory,
                 publisherFactory = publisherFactory,
-                schemeMetadata = schemeMetadata
+                schemeMetadata = schemeMetadata,
+                configurationReadService = configurationReadService
             )
         }
     }

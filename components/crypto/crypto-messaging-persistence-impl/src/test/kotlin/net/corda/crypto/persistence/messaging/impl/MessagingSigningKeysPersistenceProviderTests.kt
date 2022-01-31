@@ -40,7 +40,7 @@ class MessagingSigningKeysPersistenceProviderTests : ProviderTestsBase<Messaging
     fun `Should return instances using same processor instance until config is changed regardless of tenant`() {
         coordinator.postEvent(
             ConfigChangedEvent(
-                setOf(CRYPTO_CONFIG),
+                setOf(CRYPTO_CONFIG, BOOT_CONFIG, MESSAGING_CONFIG),
                 mapOf(
                     CRYPTO_CONFIG to emptyConfig,
                     BOOT_CONFIG to emptyConfig,
@@ -54,7 +54,7 @@ class MessagingSigningKeysPersistenceProviderTests : ProviderTestsBase<Messaging
             if (i % 3 == 2) {
                 coordinator.postEvent(
                     ConfigChangedEvent(
-                        setOf(CRYPTO_CONFIG),
+                        setOf(CRYPTO_CONFIG, BOOT_CONFIG, MESSAGING_CONFIG),
                         mapOf(
                             CRYPTO_CONFIG to emptyConfig,
                             BOOT_CONFIG to emptyConfig,
@@ -82,7 +82,7 @@ class MessagingSigningKeysPersistenceProviderTests : ProviderTestsBase<Messaging
     fun `Should concurrently return instances regardless of tenant`() {
         coordinator.postEvent(
             ConfigChangedEvent(
-                setOf(CRYPTO_CONFIG),
+                setOf(CRYPTO_CONFIG, BOOT_CONFIG, MESSAGING_CONFIG),
                 mapOf(
                     CRYPTO_CONFIG to emptyConfig,
                     BOOT_CONFIG to emptyConfig,
