@@ -1,10 +1,13 @@
 package net.corda.crypto.client.impl
 
+import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.CryptoPublishResult
 import net.corda.crypto.HSMRegistrationClient
 import net.corda.data.crypto.config.HSMConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -17,10 +20,13 @@ class HSMRegistrationClientComponent @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory
+    private val publisherFactory: PublisherFactory,
+    @Reference(service = ConfigurationReadService::class)
+    configurationReadService: ConfigurationReadService
 ) : AbstractComponent<HSMRegistrationClientComponent.Resources>(
-        coordinatorFactory,
-        LifecycleCoordinatorName.forComponent<HSMRegistrationClientComponent>()
+    coordinatorFactory,
+    LifecycleCoordinatorName.forComponent<HSMRegistrationClientComponent>(),
+    configurationReadService
 ), HSMRegistrationClient {
     companion object {
         const val CLIENT_ID = "crypto.registration.hsm"
@@ -43,12 +49,16 @@ class HSMRegistrationClientComponent @Activate constructor(
     ): CryptoPublishResult =
         resources.instance.assignSoftHSM(tenantId, category, passphrase, defaultSignatureScheme)
 
-    override fun allocateResources(): Resources = Resources(publisherFactory)
+    override fun allocateResources(event: ConfigChangedEvent): Resources = Resources(publisherFactory, event)
 
     class Resources(
-        publisherFactory: PublisherFactory
+        publisherFactory: PublisherFactory,
+        event: ConfigChangedEvent
     ) : AutoCloseable {
-        private val publisher: Publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID))
+        private val publisher: Publisher = publisherFactory.createPublisher(
+            PublisherConfig(CLIENT_ID),
+            event.config.toMessagingConfig()
+        )
         internal val registrar: HSMRegistrationClientImpl = HSMRegistrationClientImpl(publisher)
         override fun close() {
             publisher.close()

@@ -4,10 +4,10 @@ import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.config.Configuration
 import net.corda.data.flow.FlowKey
+import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartRPCFlow
 import net.corda.data.flow.event.mapper.FlowMapperEvent
-import net.corda.data.flow.event.mapper.MessageDirection
 import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
@@ -85,8 +85,8 @@ class FlowMapperServiceIntegrationTest {
         val flowKey = FlowKey(testId, HoldingIdentity(testId, testId))
         val sessionInitEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
-                MessageDirection.OUTBOUND,
-                SessionEvent(currentTimeMillis(), 1, SessionInit(testId, testId, flowKey, identity))
+                SessionEvent(MessageDirection.OUTBOUND, currentTimeMillis(), testId, 1, SessionInit(testId, testId, flowKey, identity,
+                    identity, null))
             )
         )
         publisher.publish(listOf(sessionInitEvent, sessionInitEvent))
@@ -104,8 +104,7 @@ class FlowMapperServiceIntegrationTest {
         //send data back
         val sessionDataEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
-                MessageDirection.INBOUND,
-                SessionEvent(currentTimeMillis(), 2, SessionData())
+                SessionEvent(MessageDirection.INBOUND, currentTimeMillis(), testId, 2, SessionData())
             )
         )
         publisher.publish(listOf(sessionDataEvent))
@@ -130,7 +129,6 @@ class FlowMapperServiceIntegrationTest {
         val identity =HoldingIdentity(testId, testId)
         val startRPCEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
-                MessageDirection.INBOUND,
                 StartRPCFlow(testId, testId, testId, identity, Instant.now(), null)
             )
         )
@@ -147,7 +145,6 @@ class FlowMapperServiceIntegrationTest {
         //cleanup
         val cleanup = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
-                MessageDirection.INBOUND,
                 ScheduleCleanup(currentTimeMillis())
             )
         )
@@ -173,8 +170,7 @@ class FlowMapperServiceIntegrationTest {
         //send data, no state
         val sessionDataEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
-                MessageDirection.OUTBOUND,
-                SessionEvent(currentTimeMillis(), 1, SessionData())
+                SessionEvent(MessageDirection.OUTBOUND, currentTimeMillis(), testId, 1, SessionData())
             )
         )
         publisher.publish( listOf(sessionDataEvent))

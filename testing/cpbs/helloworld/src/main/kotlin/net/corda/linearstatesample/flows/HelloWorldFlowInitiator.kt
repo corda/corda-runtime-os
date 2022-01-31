@@ -16,6 +16,7 @@ class HelloWorldFlowInitiator(private val jsonArg: String) : Flow<Boolean> {
         val log = contextLogger()
     }
 
+
     @CordaInject
     lateinit var flowEngine: FlowEngine
 

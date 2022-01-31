@@ -2,7 +2,6 @@ package net.corda.session.mapper.service.executor
 
 import net.corda.data.flow.event.mapper.ExecuteCleanup
 import net.corda.data.flow.event.mapper.FlowMapperEvent
-import net.corda.data.flow.event.mapper.MessageDirection
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.messaging.api.records.Record
@@ -40,7 +39,6 @@ class FlowMapperListener(
                         listOf(
                             Record(
                                 FLOW_MAPPER_EVENT_TOPIC, key, FlowMapperEvent(
-                                    MessageDirection.INBOUND,
                                     ExecuteCleanup()
                                 )
                             )
@@ -83,7 +81,6 @@ class FlowMapperListener(
             {
                 log.debug { "Clearing up mapper state for key $eventKey" }
                 publisher?.publish(listOf(Record(FLOW_MAPPER_EVENT_TOPIC, eventKey, FlowMapperEvent(
-                    MessageDirection.INBOUND,
                     ExecuteCleanup()
                 ))))
             },

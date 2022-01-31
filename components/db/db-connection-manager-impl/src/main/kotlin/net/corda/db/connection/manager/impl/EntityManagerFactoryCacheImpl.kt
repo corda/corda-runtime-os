@@ -1,8 +1,10 @@
 package net.corda.db.connection.manager.impl
 
-import net.corda.db.connection.manager.CordaDb
+import net.corda.db.connection.manager.DBConfigurationException
 import net.corda.db.connection.manager.DbConnectionsRepository
 import net.corda.db.connection.manager.EntityManagerFactoryCache
+import net.corda.db.core.DbPrivilege
+import net.corda.db.schema.CordaDb
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesSet
@@ -10,7 +12,6 @@ import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import javax.persistence.EntityManagerFactory
 import javax.sql.DataSource
@@ -32,28 +33,29 @@ class EntityManagerFactoryCacheImpl @Activate constructor(
     }
 
     // TODO - replace with caffeine cache
-    private val cache = ConcurrentHashMap<UUID, EntityManagerFactory>()
+    private val cache = ConcurrentHashMap<Pair<String,DbPrivilege>, EntityManagerFactory>()
 
     override val clusterDbEntityManagerFactory: EntityManagerFactory by lazy {
         createManagerFactory(CordaDb.CordaCluster.persistenceUnitName, dbConnectionsRepository.clusterDataSource)
     }
 
-    override fun getOrCreate(db: CordaDb): EntityManagerFactory {
+    override fun getOrCreate(db: CordaDb, privilege: DbPrivilege): EntityManagerFactory {
         val entitiesSet =
             allEntitiesSets.singleOrNull { it.persistenceUnitName == db.persistenceUnitName } ?:
             throw DBConfigurationException("Entity set for ${db.persistenceUnitName} not found")
 
         return getOrCreate(
-            db.id ?: throw DBConfigurationException("Details for ${db.persistenceUnitName} cannot " +
-                "be loaded because ID is missing") ,
+            db.persistenceUnitName,
+            privilege,
             entitiesSet)
     }
 
-    override fun getOrCreate(id: UUID, entitiesSet: JpaEntitiesSet): EntityManagerFactory {
-        return cache.computeIfAbsent(id) {
-            // TODO - use clusterDbEntityManagerFactory to load DB connection details from DB.
-            logger.info("Loading DB connection details for ${entitiesSet.persistenceUnitName}[$id]")
-            throw NotImplementedError("TODO")
+    override fun getOrCreate(name: String, privilege: DbPrivilege, entitiesSet: JpaEntitiesSet): EntityManagerFactory {
+        return cache.computeIfAbsent(Pair(name,privilege)) {
+            logger.info("Loading DB connection details for ${entitiesSet.persistenceUnitName}/$privilege")
+            val ds = dbConnectionsRepository.get(name, privilege) ?:
+                throw DBConfigurationException("Details for $name/$privilege cannot be found")
+            createManagerFactory(name, ds)
         }
     }
 

@@ -1,5 +1,7 @@
 package net.corda.crypto.client.impl
 
+import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.CryptoOpsClient
 import net.corda.data.crypto.config.HSMInfo
 import net.corda.data.crypto.wire.ops.rpc.HSMKeyDetails
@@ -7,6 +9,7 @@ import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -28,10 +31,13 @@ class CryptoOpsClientComponent @Activate constructor(
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
     @Reference(service = CipherSchemeMetadata::class)
-    private val schemeMetadata: CipherSchemeMetadata
+    private val schemeMetadata: CipherSchemeMetadata,
+    @Reference(service = ConfigurationReadService::class)
+    configurationReadService: ConfigurationReadService
 ) : AbstractComponent<CryptoOpsClientComponent.Resources>(
-        coordinatorFactory,
-        LifecycleCoordinatorName.forComponent<CryptoOpsClient>()
+    coordinatorFactory,
+    LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
+    configurationReadService,
 ), CryptoOpsClient {
     companion object {
         const val CLIENT_ID = "crypto.ops.rpc"
@@ -102,14 +108,15 @@ class CryptoOpsClientComponent @Activate constructor(
     override fun findHSM(tenantId: String, category: String): HSMInfo? =
         resources.instance.findHSM(tenantId, category)
 
-    override fun allocateResources(): Resources {
+    override fun allocateResources(event: ConfigChangedEvent): Resources {
         logger.info("Creating ${Resources::class.java.name}")
-        return Resources(publisherFactory, schemeMetadata)
+        return Resources(publisherFactory, schemeMetadata, event)
     }
 
     class Resources(
         publisherFactory: PublisherFactory,
-        schemeMetadata: CipherSchemeMetadata
+        schemeMetadata: CipherSchemeMetadata,
+        event: ConfigChangedEvent
     ) : AutoCloseable {
         private val sender: RPCSender<RpcOpsRequest, RpcOpsResponse> = publisherFactory.createRPCSender(
             RPCConfig(
@@ -118,7 +125,8 @@ class CryptoOpsClientComponent @Activate constructor(
                 requestTopic = Schemas.Crypto.RPC_OPS_MESSAGE_TOPIC,
                 requestType = RpcOpsRequest::class.java,
                 responseType = RpcOpsResponse::class.java
-            )
+            ),
+            event.config.toMessagingConfig()
         ).also { it.start() }
 
         internal val ops: CryptoOpsClientImpl = CryptoOpsClientImpl(
