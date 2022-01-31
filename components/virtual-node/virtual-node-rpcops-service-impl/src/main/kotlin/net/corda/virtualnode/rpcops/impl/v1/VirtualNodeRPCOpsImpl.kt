@@ -48,8 +48,8 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
     override val targetInterface = VirtualNodeRPCOps::class.java
     override val protocolVersion = 1
     private var rpcSender: RPCSender<VirtualNodeCreationRequest, VirtualNodeCreationResponse>? = null
-    private var httpRequestTimeout: Duration? = null
-    override val isRunning get() = rpcSender?.isRunning ?: false && httpRequestTimeout != null
+    private var rpcRequestTimeout: Duration? = null
+    override val isRunning get() = rpcSender?.isRunning ?: false && rpcRequestTimeout != null
 
     override fun start() = Unit
 
@@ -64,8 +64,8 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
         rpcSender!!.start()
     }
 
-    override fun setHttpRequestTimeout(httpRequestTimeout: Duration) {
-        this.httpRequestTimeout = httpRequestTimeout
+    override fun setRpcRequestTimeout(rpcRequestTimeout: Duration) {
+        this.rpcRequestTimeout = rpcRequestTimeout
     }
 
     override fun createVirtualNode(request: HTTPCreateVirtualNodeRequest): HTTPCreateVirtualNodeResponse {
@@ -108,7 +108,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
         val nonNullRPCSender = rpcSender ?: throw VirtualNodeRPCOpsServiceException(
             "Configuration update request could not be sent as no RPC sender has been created."
         )
-        val nonNullRequestTimeout = httpRequestTimeout ?: throw VirtualNodeRPCOpsServiceException(
+        val nonNullRequestTimeout = rpcRequestTimeout ?: throw VirtualNodeRPCOpsServiceException(
             "Configuration update request could not be sent as the request timeout has not been set."
         )
         return try {

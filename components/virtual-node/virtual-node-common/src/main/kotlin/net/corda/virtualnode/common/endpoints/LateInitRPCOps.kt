@@ -8,9 +8,9 @@ import java.time.Duration
 /** An [RpcOps] with late init properties. */
 interface LateInitRPCOps : RpcOps, Lifecycle {
 
-    /** RPC sender that handles incoming HTTP RPC requests. */
+    /** Creates and starts RPC sender. RPC sender puts RPC requests to Kafka. */
     fun createAndStartRpcSender(config: SmartConfig)
 
-    /** Timeout for incoming HTTP RPC requests to [millis]. */
-    fun setHttpRequestTimeout(httpRequestTimeout: Duration)
+    /** Sets timeout for RPC requests. */
+    fun setRpcRequestTimeout(rpcRequestTimeout: Duration)
 }

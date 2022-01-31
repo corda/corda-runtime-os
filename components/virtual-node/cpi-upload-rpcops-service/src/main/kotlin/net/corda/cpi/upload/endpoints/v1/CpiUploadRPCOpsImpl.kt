@@ -21,7 +21,7 @@ class CpiUploadRPCOpsImpl @Activate constructor(
 ) : CpiUploadRPCOpsInternal, PluggableRPCOps<CpiUploadRPCOps> {
 
     override val protocolVersion: Int = 1
-    private var httpRequestTimeout: Duration? = null
+    private var rpcRequestTimeout: Duration? = null
 
     override val targetInterface: Class<CpiUploadRPCOps> = CpiUploadRPCOps::class.java
 
@@ -31,7 +31,7 @@ class CpiUploadRPCOpsImpl @Activate constructor(
 
     private var rpcSender: RPCSender<Any, Any>?  = null
 
-    override val isRunning get() = rpcSender?.isRunning ?: false && httpRequestTimeout != null
+    override val isRunning get() = rpcSender?.isRunning ?: false && rpcRequestTimeout != null
 
     override fun start() {
         rpcSender?.start() ?: throw CpiUploadRPCOpsException("RPC sender has not been created")
@@ -52,12 +52,12 @@ class CpiUploadRPCOpsImpl @Activate constructor(
 
     override fun createAndStartRpcSender(config: SmartConfig) {
         rpcSender?.close()
-        rpcSender = publisherFactory.createRPCSender(RPC_CONFIG)
+        rpcSender = publisherFactory.createRPCSender(RPC_CONFIG, config)
         rpcSender!!.start()
     }
 
-    override fun setHttpRequestTimeout(httpRequestTimeout: Duration) {
-        this.httpRequestTimeout = httpRequestTimeout
+    override fun setRpcRequestTimeout(rpcRequestTimeout: Duration) {
+        this.rpcRequestTimeout = rpcRequestTimeout
     }
 }
 
