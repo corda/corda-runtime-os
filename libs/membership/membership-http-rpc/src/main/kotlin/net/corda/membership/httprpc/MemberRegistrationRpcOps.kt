@@ -38,10 +38,10 @@ interface MemberRegistrationRpcOps : RpcOps {
     ): RegistrationRequestProgress
 
     /**
-     * GET endpoint which checks the latest known status of registration based on a members own local data and without
+     * GET endpoint which checks the latest known status of registration based on a member's own local data and without
      * outwards communication.
      *
-     * @param virtualNodeId The ID of the virtual node to check on behalf of.
+     * @param virtualNodeId The ID of the virtual node to be checked.
      * @return [RegistrationRequestProgress] to indicate the last known status of the registration request based on
      *  local member data.
      */
