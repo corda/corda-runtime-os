@@ -1,5 +1,6 @@
 package net.corda.membership.impl.read.reader
 
+import net.corda.membership.GroupPolicy
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_1
 import net.corda.membership.impl.read.TestProperties.Companion.aliceName
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -38,7 +40,10 @@ class MembershipGroupReaderFactoryTest {
     val cache: MembershipGroupReadCache = mock<MembershipGroupReadCache>().apply {
         doReturn(this@MembershipGroupReaderFactoryTest.groupReaderCache).whenever(this).groupReaderCache
     }
-    private val groupPolicyProvider: GroupPolicyProvider = mock()
+    private val groupPolicyProvider: GroupPolicyProvider = mock {
+        val policy: GroupPolicy = mock()
+        on { getGroupPolicy(any()) } doReturn policy
+    }
 
     @BeforeEach
     fun setUp() {
