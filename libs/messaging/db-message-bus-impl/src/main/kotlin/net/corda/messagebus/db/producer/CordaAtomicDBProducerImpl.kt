@@ -5,13 +5,12 @@ import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.db.persistence.DBWriter
-import net.corda.messagebus.db.persistence.RecordDbEntry
+import net.corda.messagebus.db.persistence.TopicRecordEntry
+import net.corda.messagebus.db.persistence.TransactionRecordEntry
 import net.corda.messagebus.db.toCordaRecord
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.emulation.topic.service.TopicService
 import net.corda.schema.registry.AvroSchemaRegistry
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.time.Duration
 import kotlin.math.abs
 
@@ -22,7 +21,7 @@ class CordaAtomicDBProducerImpl(
 ) : CordaProducer {
 
     companion object {
-        private val log: Logger = LoggerFactory.getLogger(this::class.java)
+        val ATOMIC_TRANSACTION: TransactionRecordEntry = TransactionRecordEntry("Atomic Transaction", true)
     }
 
     private val defaultTimeout: Duration = Duration.ofSeconds(1)
@@ -51,6 +50,7 @@ class CordaAtomicDBProducerImpl(
 
     override fun sendRecordsToPartitions(recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>) {
         val dbRecords = recordsWithPartitions.map { (partition, record) ->
+            // TODO: Could we move this out and optimize?
             val offset = topicService.getLatestOffsets(record.topic)[partition]
                 ?: throw CordaMessageAPIFatalException("Cannot find offset for ${record.topic}, partition $partition")
 
@@ -60,12 +60,13 @@ class CordaAtomicDBProducerImpl(
             } else {
                 null
             }
-            RecordDbEntry(
+            TopicRecordEntry(
                 record.topic,
                 partition,
                 offset,
                 serialisedKey,
                 serialisedValue,
+                ATOMIC_TRANSACTION.transaction_id,
             )
         }
 
@@ -73,11 +74,13 @@ class CordaAtomicDBProducerImpl(
     }
 
     private fun doSendRecordsToTopicAndDB(
-        dbRecords: List<RecordDbEntry>,
+        dbRecords: List<TopicRecordEntry>,
         recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>
     ) {
-        // First try adding to DB as it has the possibility of failing
-        dbWriterImpl.writeRecords(dbRecords, immediatelyVisible = true)
+        // First try adding to DB as it has the possibility of failing.
+        dbWriterImpl.writeTransactionId(ATOMIC_TRANSACTION)
+        dbWriterImpl.writeRecords(dbRecords)
+        dbWriterImpl.makeRecordsVisible(ATOMIC_TRANSACTION.transaction_id)
         // Topic service shouldn't fail but if it does the DB will still rollback from here
         recordsWithPartitions.forEach {
             topicService.addRecordsToPartition(listOf(it.second.toCordaRecord()), it.first)
@@ -85,25 +88,29 @@ class CordaAtomicDBProducerImpl(
     }
 
     override fun beginTransaction() {
-        throw CordaMessageAPIFatalException("Non transactional producer can't open transactions.")
+        throwNonTransactionalLogic()
     }
 
     override fun sendRecordOffsetsToTransaction(
         consumer: CordaConsumer<*, *>,
         records: List<CordaConsumerRecord<*, *>>
     ) {
-        throw CordaMessageAPIFatalException("Non transactional producer can't do transactional logic.")
+        throwNonTransactionalLogic()
     }
 
     override fun sendAllOffsetsToTransaction(consumer: CordaConsumer<*, *>) {
-        throw CordaMessageAPIFatalException("Non transactional producer can't do transactional logic.")
+        throwNonTransactionalLogic()
     }
 
     override fun commitTransaction() {
-        throw CordaMessageAPIFatalException("Non transactional producer can't do transactional logic.")
+        throwNonTransactionalLogic()
     }
 
     override fun abortTransaction() {
+        throwNonTransactionalLogic()
+    }
+
+    private fun throwNonTransactionalLogic() {
         throw CordaMessageAPIFatalException("Non transactional producer can't do transactional logic.")
     }
 

@@ -4,8 +4,10 @@ import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
+import net.corda.messagebus.db.persistence.CommittedOffsetEntry
 import net.corda.messagebus.db.persistence.DBWriter
-import net.corda.messagebus.db.persistence.RecordDbEntry
+import net.corda.messagebus.db.persistence.TopicRecordEntry
+import net.corda.messagebus.db.persistence.TransactionRecordEntry
 import net.corda.messagebus.db.toCordaRecord
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.emulation.topic.service.TopicService
@@ -13,6 +15,8 @@ import net.corda.schema.registry.AvroSchemaRegistry
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
+import java.util.*
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.abs
 
 class CordaTransactionalDBProducerImpl(
@@ -28,9 +32,12 @@ class CordaTransactionalDBProducerImpl(
     private val defaultTimeout: Duration = Duration.ofSeconds(1)
     private val topicPartitionMap = dbWriterImpl.getTopicPartitionMap()
 
-    private val transactionalRecords = ThreadLocal.withInitial { mutableListOf<RecordDbEntry>() }
+    private val transactionalRecords = ThreadLocal.withInitial { mutableListOf<TopicRecordEntry>() }
+    private val transaction = AtomicReference<TransactionRecordEntry?>()
+    private val transactionId: String
+        get() = transaction.get()?.transaction_id ?: throw CordaMessageAPIFatalException("Bug in producer!")
     private val inTransaction: Boolean
-        get() = transactionalRecords.get().isNotEmpty()
+        get() = transaction.get() != null
 
     override fun send(record: CordaProducerRecord<*, *>, callback: CordaProducer.Callback?) {
         verifyInTransaction()
@@ -48,7 +55,7 @@ class CordaTransactionalDBProducerImpl(
         verifyInTransaction()
         sendRecordsToPartitions(records.map {
             // Determine the partition
-            val topic = it.key
+            val topic = it.topic
             val numberOfPartitions = topicPartitionMap[topic]
                 ?: throw CordaMessageAPIFatalException("Cannot find topic: $topic")
             val partition = getPartition(topic.hashCode(), numberOfPartitions)
@@ -59,6 +66,7 @@ class CordaTransactionalDBProducerImpl(
     override fun sendRecordsToPartitions(recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>) {
         verifyInTransaction()
         val dbRecords = recordsWithPartitions.map { (partition, record) ->
+            // TODO: Could we move this out and optimize?
             val offset = topicService.getLatestOffsets(record.topic)[partition]
                 ?: throw CordaMessageAPIFatalException("Cannot find offset for ${record.topic}, partition $partition")
 
@@ -68,12 +76,13 @@ class CordaTransactionalDBProducerImpl(
             } else {
                 null
             }
-            RecordDbEntry(
+            TopicRecordEntry(
                 record.topic,
                 partition,
                 offset,
                 serialisedKey,
                 serialisedValue,
+                transactionId,
             )
         }
 
@@ -81,11 +90,11 @@ class CordaTransactionalDBProducerImpl(
     }
 
     private fun doSendRecordsToTopicAndDB(
-        dbRecords: List<RecordDbEntry>,
+        dbRecords: List<TopicRecordEntry>,
         recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>
     ) {
         // First try adding to DB as it has the possibility of failing
-        dbWriterImpl.writeRecords(dbRecords, immediatelyVisible = !inTransaction)
+        dbWriterImpl.writeRecords(dbRecords)
         // Topic service shouldn't fail but if it does the DB will still rollback from here
         recordsWithPartitions.forEach {
             topicService.addRecordsToPartition(listOf(it.second.toCordaRecord()), it.first)
@@ -96,6 +105,9 @@ class CordaTransactionalDBProducerImpl(
         if (inTransaction) {
             throw CordaMessageAPIFatalException("Cannot start a new transaction when one is already in progress.")
         }
+        val newTransaction = TransactionRecordEntry(UUID.randomUUID().toString(), false)
+        transaction.set(newTransaction)
+        dbWriterImpl.writeTransactionId(newTransaction)
     }
 
     override fun sendRecordOffsetsToTransaction(
@@ -107,38 +119,44 @@ class CordaTransactionalDBProducerImpl(
         records
             .groupBy { it.topic }
             .forEach { (topic, recordList) ->
-
-                val offsetsPerPartition = recordList
+                val offsets = recordList
                     .groupBy { it.partition }
                     .mapValues { it.value.maxOf { record -> record.offset } }
+                    .map { (partition, offset) ->
+                        CommittedOffsetEntry(
+                            topic,
+                            consumer.toString(), // TODO: Need the ConsumerGroup!!!
+                            partition,
+                            offset
+                        )
+                    }
 
-                dbWriterImpl.writeOffsets(
-                    topic,
-                    consumer.toString(), // TODO: Need the ConsumerGroup!!!
-                    offsetsPerPartition,
-                )
+                dbWriterImpl.writeOffsets(offsets)
             }
     }
 
     override fun sendAllOffsetsToTransaction(consumer: CordaConsumer<*, *>) {
         verifyInTransaction()
         val topicPartitions = consumer.assignment()
-        topicPartitions.forEach { (topic, partition) ->
+        val offsets = topicPartitions.map { (topic, partition) ->
+            // TODO: Could we move this out and optimize?
             val offset = topicService.getLatestOffsets(topic)[partition]
                 ?: throw CordaMessageAPIFatalException("Cannot find offset for (topic, partition): ($topic, $partition)")
-
-            dbWriterImpl.writeOffsets(
+            CommittedOffsetEntry(
                 topic,
                 consumer.toString(), // TODO: Need the ConsumerGroup!!!
-                mapOf(partition to offset),
+                partition,
+                offset
             )
         }
+        dbWriterImpl.writeOffsets(offsets)
     }
 
     override fun commitTransaction() {
         verifyInTransaction()
-        dbWriterImpl.commitRecords(transactionalRecords.get())
+        dbWriterImpl.makeRecordsVisible(transactionId)
         transactionalRecords.get().clear()
+        transaction.set(null)
     }
 
     override fun abortTransaction() {
@@ -160,6 +178,7 @@ class CordaTransactionalDBProducerImpl(
             throw CordaMessageAPIFatalException("No transaction is available for the command.")
         }
     }
+
     private fun getPartition(key: Any, numberOfPartitions: Int): Int {
         require(numberOfPartitions > 0)
         return abs(key.hashCode() % numberOfPartitions) + 1

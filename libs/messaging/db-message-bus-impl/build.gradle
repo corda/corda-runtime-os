@@ -1,48 +1,50 @@
 plugins {
     id 'corda.common-library'
     id 'com.r3.internal.gradle.plugins.r3Publish'
+//    id "corda.osgi-test-conventions"
 }
 
 description 'Database Message Bus Implementation'
 
 dependencies {
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-base"
     compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
+    api "javax.persistence:javax.persistence-api"
+
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+
+    implementation project(":libs:configuration:configuration-core")
+    implementation project(':libs:configuration:configuration-schema:messaging-configuration')
+    implementation project(':libs:db:db-admin')
+    implementation project(':libs:db:db-core')
+    implementation project(':libs:db:db-orm')
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:messaging:message-bus")
     implementation project(":libs:messaging:inmemory-messaging-impl")
     implementation project(":libs:schema-registry:schema-registry")
-    implementation project(":libs:configuration:configuration-core")
-    implementation project(':libs:configuration:configuration-schema:messaging-configuration')
 
-    implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "net.corda:corda-base"
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
-
-    implementation "com.zaxxer:HikariCP:$hikariCpVersion"
-    implementation "com.google.guava:guava:$guavaVersion"
-
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
-
+    testImplementation project(":libs:lifecycle:registry")
+    testImplementation project(":testing:test-utilities")
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation project(":testing:test-utilities")
 
-    testImplementation project(":libs:lifecycle:registry")
+    integrationTestImplementation project(":libs:db:db-admin-impl")
+    integrationTestImplementation project(":libs:db:db-orm-impl")
     integrationTestImplementation project(":libs:lifecycle:lifecycle-impl")
     integrationTestImplementation project(":libs:utilities")
-    integrationTestImplementation "com.h2database:h2:$h2Version"
-    integrationTestImplementation "org.postgresql:postgresql:$postgresDriverVersion"
-    integrationTestImplementation "com.microsoft.sqlserver:mssql-jdbc:$sqlServerDriverVersion"
-    integrationTestImplementation "com.oracle.database.jdbc:ojdbc6:$oracleDriverVersion"
-    integrationTestImplementation "org.testcontainers:testcontainers:$testContainersVersion"
-    integrationTestImplementation "org.testcontainers:mssqlserver:$sqlServerTestContainersVersion"
-    integrationTestImplementation "org.testcontainers:postgresql:$postgresTestContainersVersion"
-    integrationTestImplementation "org.testcontainers:oracle-xe:$oracleTestContainersVersion"
-    integrationTestImplementation "io.dropwizard.metrics:metrics-core:$dropwizardMetricsVersion"
-    integrationTestImplementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    integrationTestImplementation project(":testing:db-testkit")
+
+    integrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
+
+    integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
+    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 }

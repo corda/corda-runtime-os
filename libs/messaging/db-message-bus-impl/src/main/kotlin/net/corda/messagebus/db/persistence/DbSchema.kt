@@ -15,7 +15,7 @@ class DbSchema {
 
             const val maxOffsetsStatement = """
                 select $TOPIC_COLUMN_NAME, ${PARTITION_COLUMN_NAME}, max($RECORD_OFFSET_COLUMN_NAME)
-                    from $TABLE_NAME
+                    from $TABLE_NAME, ${CommittedOffsetsTable.TABLE_NAME}
                     group by $TOPIC_COLUMN_NAME, $PARTITION_COLUMN_NAME
                 """
 
@@ -122,7 +122,7 @@ class DbSchema {
 
     class TopicsTable {
         companion object {
-            const val TABLE_NAME = "topics"
+            const val TABLE_NAME = "topic"
 
             const val TOPIC_COLUMN_NAME = "topic_name"
             const val PARTITIONS_COLUMN_NAME = "partitions_number"

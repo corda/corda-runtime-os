@@ -3,7 +3,8 @@ package net.corda.messagebus.db.producer
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.db.persistence.DBWriter
-import net.corda.messagebus.db.persistence.RecordDbEntry
+import net.corda.messagebus.db.persistence.TopicRecordEntry
+import net.corda.messagebus.db.persistence.TransactionRecordEntry
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.emulation.topic.service.TopicService
@@ -29,7 +30,7 @@ internal class CordaAtomicDBProducerImplTest {
     private val serializedValue = value.toByteArray()
 
     @Test
-    fun `atomic producer sends correct entry to database`() {
+    fun `atomic producer sends correct entry to database and topic`() {
         val dbWriter: DBWriter = mock()
         whenever(dbWriter.getTopicPartitionMap()).thenReturn(mapOf(topic to 1))
         val topicService: TopicService = mock()
@@ -44,9 +45,12 @@ internal class CordaAtomicDBProducerImplTest {
 
         producer.send(cordaRecord, callback)
 
-        val dbRecordList = argumentCaptor<List<RecordDbEntry>>()
-        // For atomic transactions the records must be immediately visible
-        verify(dbWriter).writeRecords(dbRecordList.capture(), eq(true))
+        val dbRecordList = argumentCaptor<List<TopicRecordEntry>>()
+        val dbTransaction = argumentCaptor<TransactionRecordEntry>()
+        val dbTransactionId = argumentCaptor<String>()
+        verify(dbWriter).writeRecords(dbRecordList.capture())
+        verify(dbWriter).writeTransactionId(dbTransaction.capture())
+        verify(dbWriter).makeRecordsVisible(dbTransactionId.capture())
         verify(callback).onCompletion(null)
         val record = dbRecordList.firstValue.single()
         assertThat(record.topic).isEqualTo(topic)
@@ -54,6 +58,9 @@ internal class CordaAtomicDBProducerImplTest {
         assertThat(record.value).isEqualTo(serializedValue)
         assertThat(record.offset).isEqualTo(5)
         assertThat(record.partition).isEqualTo(1)
+        assertThat(record.transactionId).isEqualTo(CordaAtomicDBProducerImpl.ATOMIC_TRANSACTION.transaction_id)
+        assertThat(dbTransaction.firstValue).isEqualTo(CordaAtomicDBProducerImpl.ATOMIC_TRANSACTION)
+        assertThat(dbTransactionId.firstValue).isEqualTo(CordaAtomicDBProducerImpl.ATOMIC_TRANSACTION.transaction_id)
 
         val topicRecordList = argumentCaptor<List<Record<*, *>>>()
         verify(topicService).addRecordsToPartition(topicRecordList.capture() , eq(1))
@@ -72,7 +79,6 @@ internal class CordaAtomicDBProducerImplTest {
         val schemaRegistry: AvroSchemaRegistry = mock()
         whenever(schemaRegistry.serialize(eq(key))).thenReturn(ByteBuffer.wrap(serializedKey))
         whenever(schemaRegistry.serialize(eq(value))).thenReturn(ByteBuffer.wrap(serializedValue))
-        val argumentCaptor = argumentCaptor<List<RecordDbEntry>>()
         val callback: CordaProducer.Callback = mock()
 
         val producer = CordaAtomicDBProducerImpl(schemaRegistry, topicService, dbWriter)
@@ -80,15 +86,22 @@ internal class CordaAtomicDBProducerImplTest {
 
         producer.send(cordaRecord, 0, callback)
 
-        // For atomic transactions the records must be immediately visible
-        verify(dbWriter).writeRecords(argumentCaptor.capture(), eq(true))
+        val dbRecordList = argumentCaptor<List<TopicRecordEntry>>()
+        val dbTransaction = argumentCaptor<TransactionRecordEntry>()
+        val dbTransactionId = argumentCaptor<String>()
+        verify(dbWriter).writeRecords(dbRecordList.capture())
+        verify(dbWriter).writeTransactionId(dbTransaction.capture())
+        verify(dbWriter).makeRecordsVisible(dbTransactionId.capture())
         verify(callback).onCompletion(null)
-        val record = argumentCaptor.firstValue.first()
+        val record = dbRecordList.firstValue.first()
         assertThat(record.topic).isEqualTo(topic)
         assertThat(record.key).isEqualTo(serializedKey)
         assertThat(record.value).isEqualTo(serializedValue)
         assertThat(record.offset).isEqualTo(2)
         assertThat(record.partition).isEqualTo(0)
+        assertThat(record.transactionId).isEqualTo(CordaAtomicDBProducerImpl.ATOMIC_TRANSACTION.transaction_id)
+        assertThat(dbTransaction.allValues.single()).isEqualTo(CordaAtomicDBProducerImpl.ATOMIC_TRANSACTION)
+        assertThat(dbTransactionId.allValues.single()).isEqualTo(CordaAtomicDBProducerImpl.ATOMIC_TRANSACTION.transaction_id)
 
         val topicRecordList = argumentCaptor<List<Record<*, *>>>()
         verify(topicService).addRecordsToPartition(topicRecordList.capture() , eq(0))

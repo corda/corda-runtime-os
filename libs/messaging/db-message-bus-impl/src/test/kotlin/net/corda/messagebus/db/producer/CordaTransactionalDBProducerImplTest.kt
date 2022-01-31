@@ -4,12 +4,22 @@ import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.db.persistence.DBWriter
+import net.corda.messagebus.db.persistence.TopicRecordEntry
+import net.corda.messagebus.db.persistence.TransactionRecordEntry
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.messaging.api.records.Record
 import net.corda.messaging.emulation.topic.service.TopicService
+import net.corda.schema.registry.AvroSchemaRegistry
+import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 
 internal class CordaTransactionalDBProducerImplTest {
 
@@ -58,5 +68,54 @@ internal class CordaTransactionalDBProducerImplTest {
         }
         // If we didn't commit we shouldn't send to the cache either
         verifyNoInteractions(topicService)
+    }
+
+    @Test
+    fun `transactional producer sends correct entry to database and topic`() {
+        val dbWriter: DBWriter = mock()
+        whenever(dbWriter.getTopicPartitionMap()).thenReturn(mapOf(topic to 1))
+        val topicService: TopicService = mock()
+        whenever(topicService.getLatestOffsets(eq(topic))).thenReturn(mapOf(1 to 5))
+        val schemaRegistry: AvroSchemaRegistry = mock()
+        whenever(schemaRegistry.serialize(eq(key))).thenReturn(ByteBuffer.wrap(serializedKey))
+        whenever(schemaRegistry.serialize(eq(value))).thenReturn(ByteBuffer.wrap(serializedValue))
+        val callback: CordaProducer.Callback = mock()
+
+        val producer = CordaTransactionalDBProducerImpl(schemaRegistry, topicService, dbWriter)
+        val cordaRecord = CordaProducerRecord(topic, key, value)
+
+        producer.beginTransaction()
+        producer.send(cordaRecord, callback)
+        producer.commitTransaction()
+
+        val dbRecordList = argumentCaptor<List<TopicRecordEntry>>()
+        val dbTransaction = argumentCaptor<TransactionRecordEntry>()
+        val dbTransactionId = argumentCaptor<String>()
+        // For transactions the records must *not* be immediately visible
+        verify(dbWriter).writeRecords(dbRecordList.capture())
+        verify(dbWriter).writeTransactionId(dbTransaction.capture())
+        verify(dbWriter).makeRecordsVisible(dbTransactionId.capture())
+        verify(callback).onCompletion(null)
+        val record = dbRecordList.firstValue.single()
+        assertThat(record.topic).isEqualTo(topic)
+        assertThat(record.key).isEqualTo(serializedKey)
+        assertThat(record.value).isEqualTo(serializedValue)
+        assertThat(record.offset).isEqualTo(5)
+        assertThat(record.partition).isEqualTo(1)
+        assertThat(record.transactionId).isNotEmpty()
+        assertThat(record.transactionId).isNotEqualTo(CordaAtomicDBProducerImpl.ATOMIC_TRANSACTION)
+
+        val initialTransactionRecord = dbTransaction.allValues.single()
+        assertThat(record.transactionId).isEqualTo(initialTransactionRecord.transaction_id)
+        assertThat(initialTransactionRecord.visible).isFalse()
+
+        assertThat(dbTransactionId.allValues.single()).isEqualTo(initialTransactionRecord.transaction_id)
+
+        val topicRecordList = argumentCaptor<List<Record<*, *>>>()
+        verify(topicService).addRecordsToPartition(topicRecordList.capture() , eq(1))
+        val topicRecord = topicRecordList.firstValue.single()
+        assertThat(topicRecord.topic).isEqualTo(topic)
+        assertThat(topicRecord.key).isEqualTo(key)
+        assertThat(topicRecord.value).isEqualTo(value)
     }
 }
