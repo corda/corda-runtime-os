@@ -12,11 +12,9 @@ import net.corda.httprpc.ResponseCode
 import net.corda.httprpc.exception.HttpApiException
 import net.corda.httprpc.server.impl.exception.MissingParameterException
 import net.corda.v5.application.flows.BadRpcStartFlowRequestException
-import org.slf4j.LoggerFactory
+import net.corda.v5.base.exceptions.CordaRuntimeException
 
 internal object HttpExceptionMapper {
-
-    private val logger = LoggerFactory.getLogger(this::class.java)
 
     fun mapToResponse(e: Exception): HttpResponseException {
         return when (e) {
@@ -53,15 +51,17 @@ internal object HttpExceptionMapper {
                 e.details.addResponseCode(e.responseCode)
             )
 
-            else -> {
-                logger.error("Unexpected error occurred and was unmapped by http exception mapper.", e)
-                val message = e.message ?: "Unexpected error occurred."
-                HttpResponseException(
-                    ResponseCode.UNEXPECTED_ERROR.statusCode,
-                    message,
-                    buildExceptionCauseDetails(e).addResponseCode(ResponseCode.UNEXPECTED_ERROR)
-                )
-            }
+            is CordaRuntimeException -> HttpResponseException(
+                ResponseCode.INTERNAL_SERVER_ERROR.statusCode,
+                "Internal server error.",
+                buildExceptionCauseDetails(e).addResponseCode(ResponseCode.INTERNAL_SERVER_ERROR)
+            )
+
+            else -> HttpResponseException(
+                ResponseCode.UNEXPECTED_ERROR.statusCode,
+                "Unexpected error occurred.",
+                buildExceptionCauseDetails(e).addResponseCode(ResponseCode.UNEXPECTED_ERROR)
+            )
         }
     }
 

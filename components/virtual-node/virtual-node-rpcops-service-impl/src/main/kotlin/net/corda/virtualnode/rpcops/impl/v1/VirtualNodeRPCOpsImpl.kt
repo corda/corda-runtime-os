@@ -21,6 +21,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.time.Duration
 import net.corda.httprpc.exception.InternalServerException
+import net.corda.v5.base.util.contextLogger
 
 /** An implementation of [VirtualNodeRPCOpsInternal]. */
 @Suppress("Unused")
@@ -38,6 +39,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
             VirtualNodeCreationRequest::class.java,
             VirtualNodeCreationResponse::class.java
         )
+        val logger = contextLogger()
     }
 
     override val targetInterface = VirtualNodeRPCOps::class.java
@@ -71,8 +73,11 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
             HTTPCreateVirtualNodeResponse("", cpiId, "", "", "")
         } else {
             val exception = response.exception
-                ?: throw InternalServerException("Request was unsuccessful but no exception was provided.")
-            // TODO - CORE-3304 - Return richer exception (e.g. containing the config and version currently in the DB).
+            if(exception == null) {
+                logger.warn("Configuration Management request was unsuccessful but no exception was provided.")
+                throw InternalServerException("Request was unsuccessful but no exception was provided.")
+            }
+            logger.warn("Remote request to create virtual node responded with exception: ${exception.errorType}: ${exception.errorMessage}")
             throw InternalServerException("${exception.errorType}: ${exception.errorMessage}")
         }
     }

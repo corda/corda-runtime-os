@@ -10,7 +10,7 @@ import net.corda.httprpc.ResponseCode
  * @param message the response message
  * @param details additional problem details
  */
-open class InternalServerException(
+class InternalServerException(
     message: String = "Internal server error.",
     details: Map<String, String> = emptyMap()
 ) : HttpApiException(

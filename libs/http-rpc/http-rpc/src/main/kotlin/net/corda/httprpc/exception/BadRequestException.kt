@@ -8,7 +8,7 @@ import net.corda.httprpc.ResponseCode
  * @param message the response message
  * @param details additional problem details
  */
-open class BadRequestException(message: String, details: Map<String, String> = emptyMap()) : HttpApiException(
+class BadRequestException(message: String, details: Map<String, String> = emptyMap()) : HttpApiException(
     ResponseCode.BAD_REQUEST,
     message,
     details

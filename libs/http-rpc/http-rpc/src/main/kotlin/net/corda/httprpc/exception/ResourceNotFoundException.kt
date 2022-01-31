@@ -7,7 +7,7 @@ import net.corda.httprpc.ResponseCode
  *
  * @param message the exception message
  */
-open class ResourceNotFoundException(message: String) : HttpApiException(ResponseCode.RESOURCE_NOT_FOUND, message) {
+class ResourceNotFoundException(message: String) : HttpApiException(ResponseCode.RESOURCE_NOT_FOUND, message) {
     /**
      * @param resource The resource which could not be found.
      * @param id The ID of the resource.

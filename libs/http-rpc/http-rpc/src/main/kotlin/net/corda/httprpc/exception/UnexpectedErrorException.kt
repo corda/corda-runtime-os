@@ -8,7 +8,7 @@ import net.corda.httprpc.ResponseCode
  * @param message the response message
  * @param details additional problem details
  */
-open class UnexpectedErrorException(message: String = "Unexpected internal error occurred.", details: Map<String, String> = emptyMap()) :
+class UnexpectedErrorException(message: String = "Unexpected internal error occurred.", details: Map<String, String> = emptyMap()) :
     HttpApiException(
         ResponseCode.UNEXPECTED_ERROR,
         message,

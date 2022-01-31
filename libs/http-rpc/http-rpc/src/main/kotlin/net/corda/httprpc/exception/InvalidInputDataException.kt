@@ -8,7 +8,7 @@ import net.corda.httprpc.ResponseCode
  * @param message the response message
  * @param details additional problem details
  */
-open class InvalidInputDataException(message: String = "Invalid input data.", details: Map<String, String> = emptyMap()) : HttpApiException(
+class InvalidInputDataException(message: String = "Invalid input data.", details: Map<String, String> = emptyMap()) : HttpApiException(
     ResponseCode.INVALID_INPUT_DATA,
     message,
     details

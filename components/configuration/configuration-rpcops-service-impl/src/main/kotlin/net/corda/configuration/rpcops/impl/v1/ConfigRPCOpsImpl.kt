@@ -25,6 +25,7 @@ import java.time.Duration
 import net.corda.configuration.rpcops.impl.exception.ConfigVersionException
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InternalServerException
+import net.corda.v5.base.util.contextLogger
 
 /** An implementation of [ConfigRPCOpsInternal]. */
 @Suppress("Unused")
@@ -42,6 +43,7 @@ internal class ConfigRPCOpsImpl @Activate constructor(
             ConfigurationManagementRequest::class.java,
             ConfigurationManagementResponse::class.java
         )
+        val logger = contextLogger()
     }
 
     override val targetInterface = ConfigRPCOps::class.java
@@ -77,7 +79,11 @@ internal class ConfigRPCOpsImpl @Activate constructor(
             HTTPUpdateConfigResponse(response.section, response.config, response.schemaVersion, response.version)
         } else {
             val exception = response.exception
-                ?: throw InternalServerException("Request was unsuccessful but no exception was provided.")
+            if(exception == null){
+                logger.warn("Configuration Management request was unsuccessful but no exception was provided.")
+                throw InternalServerException("Request was unsuccessful but no exception was provided.")
+            }
+            logger.warn("Remote request to update config responded with exception: ${exception.errorType}: ${exception.errorMessage}")
             throw ConfigVersionException(
                 exception.errorType,
                 exception.errorMessage,
