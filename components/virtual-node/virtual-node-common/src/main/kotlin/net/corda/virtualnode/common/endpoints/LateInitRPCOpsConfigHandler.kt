@@ -47,7 +47,7 @@ internal class LateInitRPCOpsConfigHandler(
 
         if (config.hasPath(RPC_ENDPOINT_TIMEOUT_MILLIS)) {
             val timeoutMillis = config.getInt(RPC_ENDPOINT_TIMEOUT_MILLIS)
-            lateInitRPCOps.setHttpRequestTimeout(Duration.ofMillis(timeoutMillis.toLong()))
+            lateInitRPCOps.setRpcRequestTimeout(Duration.ofMillis(timeoutMillis.toLong()))
         }
 
         if (config.hasPath(BOOTSTRAP_SERVERS)) {
