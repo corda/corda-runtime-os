@@ -50,7 +50,7 @@ class CpiUploadRPCOpsImpl @Activate constructor(
         return HTTPCpiUploadRequestId(5)
     }
 
-    override fun createRpcSender(config: SmartConfig) {
+    override fun createAndStartRpcSender(config: SmartConfig) {
         rpcSender = publisherFactory.createRPCSender(RPC_CONFIG)
     }
 
