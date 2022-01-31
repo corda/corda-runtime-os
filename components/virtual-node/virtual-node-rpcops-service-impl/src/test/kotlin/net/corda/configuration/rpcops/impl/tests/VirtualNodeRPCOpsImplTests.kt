@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Duration
@@ -154,7 +153,7 @@ class VirtualNodeRPCOpsImplTests {
             VirtualNodeCreationResponse(false, exception, "", mock(), "", "", mock(), "")
         }
 
-        vnodeRPCOps.createRpcSender(mock())
+        vnodeRPCOps.createAndStartRpcSender(mock())
         vnodeRPCOps.start()
         vnodeRPCOps.setHttpRequestTimeout(httpRequestTimeoutDuration)
 
@@ -172,7 +171,7 @@ class VirtualNodeRPCOpsImplTests {
             VirtualNodeCreationResponse(false, null, "", mock(), "", "", mock(), "")
         }
 
-        vnodeRPCOps.createRpcSender(mock())
+        vnodeRPCOps.createAndStartRpcSender(mock())
         vnodeRPCOps.start()
         vnodeRPCOps.setHttpRequestTimeout(httpRequestTimeoutDuration)
 
@@ -204,7 +203,7 @@ class VirtualNodeRPCOpsImplTests {
     fun `createVirtualNode throws if request timeout is not set`() {
         val (_, vnodeRPCOps) = getVirtualNodeRPCOps()
 
-        vnodeRPCOps.createRpcSender(mock())
+        vnodeRPCOps.createAndStartRpcSender(mock())
 
         val e = assertThrows<VirtualNodeRPCOpsServiceException> {
             vnodeRPCOps.createVirtualNode(httpCreateVNRequest)
@@ -221,7 +220,7 @@ class VirtualNodeRPCOpsImplTests {
         val vnCreateResponse =  { throw IllegalStateException() }
         val (_, vnodeRPCOps) = getVirtualNodeRPCOps(vnCreateResponse)
 
-        vnodeRPCOps.createRpcSender(mock())
+        vnodeRPCOps.createAndStartRpcSender(mock())
         vnodeRPCOps.start()
         vnodeRPCOps.setHttpRequestTimeout(httpRequestTimeoutDuration)
 
@@ -242,7 +241,7 @@ class VirtualNodeRPCOpsImplTests {
     @Test
     fun `is not running if RPC sender is not running`() {
         val (_, vnodeRPCOps) = getVirtualNodeRPCOps()
-        vnodeRPCOps.createRpcSender(mock())
+        vnodeRPCOps.createAndStartRpcSender(mock())
         vnodeRPCOps.setHttpRequestTimeout(httpRequestTimeoutDuration)
         assertFalse(vnodeRPCOps.isRunning)
     }
@@ -250,7 +249,7 @@ class VirtualNodeRPCOpsImplTests {
     @Test
     fun `is not running if RPC timeout is not set`() {
         val (_, vnodeRPCOps) = getVirtualNodeRPCOps()
-        vnodeRPCOps.createRpcSender(mock())
+        vnodeRPCOps.createAndStartRpcSender(mock())
         vnodeRPCOps.start()
         assertFalse(vnodeRPCOps.isRunning)
     }
@@ -260,7 +259,7 @@ class VirtualNodeRPCOpsImplTests {
         val (rpcSender, vnodeRPCOps) = getVirtualNodeRPCOps()
         whenever(rpcSender.isRunning).thenReturn(true)
 
-        vnodeRPCOps.createRpcSender(mock())
+        vnodeRPCOps.createAndStartRpcSender(mock())
         vnodeRPCOps.start()
         vnodeRPCOps.setHttpRequestTimeout(httpRequestTimeoutDuration)
         assertTrue(vnodeRPCOps.isRunning)
