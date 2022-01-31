@@ -44,7 +44,7 @@ class LateInitRPCOpsConfigHandlerTests {
 
         configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config))
 
-        verify(configRPCOps).setHttpRequestTimeout(Duration.ofMillis(timeout.toLong()))
+        verify(configRPCOps).setRpcRequestTimeout(Duration.ofMillis(timeout.toLong()))
     }
 
     @Test
