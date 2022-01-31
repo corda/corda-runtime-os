@@ -5,7 +5,7 @@ import net.corda.crypto.persistence.KeyValuePersistence
 import net.corda.crypto.persistence.messaging.impl.KafkaInfrastructure.Companion.wait
 import net.corda.data.crypto.persistence.SigningKeysRecord
 import net.corda.schema.Schemas
-import net.corda.v5.base.types.toHexString
+import net.corda.v5.crypto.calculateHash
 import net.corda.v5.crypto.sha256Bytes
 import org.bouncycastle.util.encoders.Base32
 import org.junit.jupiter.api.AfterEach
@@ -43,8 +43,8 @@ class MessagingSigningKeysPersistenceSnapshotTests {
         publicKey2 = "Hello World2".toByteArray()
         alias1 = UUID.randomUUID().toString()
         alias2 = UUID.randomUUID().toString()
-        keyDerivedId1 = "$tenantId:${publicKey1.sha256Bytes().toHexString()}"
-        keyDerivedId2 = "$tenantId:${publicKey2.sha256Bytes().toHexString()}"
+        keyDerivedId1 = "$tenantId:${publicKey1.calculateHash()}"
+        keyDerivedId2 = "$tenantId:${publicKey2.calculateHash()}"
         aliasDerivedId2 = "$tenantId:$alias2"
         kafka = KafkaInfrastructure()
         original1 = SigningKeysRecord(
