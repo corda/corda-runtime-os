@@ -22,7 +22,7 @@ interface MembershipGroupReaderFactory {
      * Default implementation.
      */
     class Impl(
-        private val membershipGroupReadCache: MembershipGroupReadCache,
+        private val membershipGroupReadCache: MembershipGroupReadCache
     ) : MembershipGroupReaderFactory {
         private val groupReaderCache get() = membershipGroupReadCache.groupReaderCache
 
