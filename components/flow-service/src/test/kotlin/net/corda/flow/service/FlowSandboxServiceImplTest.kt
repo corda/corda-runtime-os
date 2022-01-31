@@ -9,9 +9,9 @@ import net.corda.sandbox.service.SandboxService
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContextInitializer
 import net.corda.sandboxgroupcontext.putObjectByKey
-import net.corda.serialization.CheckpointSerializer
-import net.corda.serialization.CheckpointSerializerBuilder
-import net.corda.serialization.factory.CheckpointSerializerBuilderFactory
+import net.corda.serialization.checkpoint.CheckpointSerializer
+import net.corda.serialization.checkpoint.CheckpointSerializerBuilder
+import net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFactory
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat

@@ -9,7 +9,7 @@ import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.putObjectByKey
-import net.corda.serialization.factory.CheckpointSerializerBuilderFactory
+import net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFactory
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component

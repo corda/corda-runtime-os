@@ -1,4 +1,4 @@
-package net.corda.serialization
+package net.corda.serialization.checkpoint
 
 import net.corda.v5.serialization.SingletonSerializeAsToken
 

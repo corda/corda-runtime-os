@@ -5,7 +5,7 @@ import net.corda.kryoserialization.TestClass.Companion.TEST_INT
 import net.corda.kryoserialization.TestClass.Companion.TEST_STRING
 import net.corda.kryoserialization.resolver.CordaClassResolver
 import net.corda.kryoserialization.serializers.ClassSerializer
-import net.corda.serialization.CheckpointInternalCustomSerializer
+import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows

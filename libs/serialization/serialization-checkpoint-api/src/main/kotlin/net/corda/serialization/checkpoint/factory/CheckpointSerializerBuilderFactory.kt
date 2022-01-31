@@ -1,7 +1,7 @@
-package net.corda.serialization.factory
+package net.corda.serialization.checkpoint.factory
 
 import net.corda.sandbox.SandboxGroup
-import net.corda.serialization.CheckpointSerializerBuilder
+import net.corda.serialization.checkpoint.CheckpointSerializerBuilder
 
 interface CheckpointSerializerBuilderFactory {
     /**

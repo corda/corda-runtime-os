@@ -1,4 +1,4 @@
-package net.corda.serialization
+package net.corda.serialization.checkpoint
 
 /*
  Marker interface used to guard against accidental serialisation of types
