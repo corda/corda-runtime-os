@@ -38,7 +38,8 @@ class MessagingSoftKeysPersistenceProcessor(
     private val sub: CompactedSubscription<String, SoftKeysRecord> =
         subscriptionFactory.createCompactedSubscription(
             SubscriptionConfig(GROUP_NAME, Schemas.Crypto.SOFT_HSM_PERSISTENCE_TOPIC),
-            this
+            this,
+            messagingConfig
         ).also { it.start() }
 
     override val keyClass: Class<String> = String::class.java

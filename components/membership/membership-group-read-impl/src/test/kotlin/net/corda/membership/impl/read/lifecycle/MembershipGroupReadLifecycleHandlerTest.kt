@@ -51,7 +51,12 @@ class MembershipGroupReadLifecycleHandlerTest {
     }
     private val converter: PropertyConverter = mock()
     private val membershipGroupReadService: MembershipGroupReaderProviderImpl = MembershipGroupReaderProviderImpl(
-        virtualNodeInfoReadService, cpiInfoReader, configurationReadService, mock(), coordinatorFactory, converter
+        virtualNodeInfoReadService,
+        cpiInfoReader,
+        configurationReadService,
+        mock(),
+        coordinatorFactory,
+        converter
     )
     private val membershipGroupReadSubscriptions: MembershipGroupReadSubscriptions = mock()
 

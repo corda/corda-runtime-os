@@ -1,22 +1,21 @@
-import net.corda.db.connection.manager.CordaDb
 import net.corda.db.connection.manager.impl.BootstrapConfigProvided
 import net.corda.db.connection.manager.impl.DbConnectionManagerImpl
 import net.corda.db.connection.manager.impl.DbConnectionsRepositoryImpl
 import net.corda.db.connection.manager.impl.EntityManagerFactoryCacheImpl
+import net.corda.db.core.DbPrivilege
+import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.util.UUID
 import javax.persistence.EntityManagerFactory
 
 class DbConnectionManagerImplTest {
@@ -109,13 +108,13 @@ class DbConnectionManagerImplTest {
             jpaEntitiesRegistry)
 
         val emf = mock<EntityManagerFactory>()
-        whenever(entityManagerFactoryCache.getOrCreate(CordaDb.RBAC)).doReturn(emf)
+        whenever(entityManagerFactoryCache.getOrCreate(CordaDb.RBAC, DbPrivilege.DDL)).doReturn(emf)
 
-        assertThat(mgr.getOrCreateEntityManagerFactory(CordaDb.RBAC)).isSameAs(emf)
+        assertThat(mgr.getOrCreateEntityManagerFactory(CordaDb.RBAC, DbPrivilege.DDL)).isSameAs(emf)
     }
 
     @Test
-    fun `when getOrCreateEntityManagerFactory with UUID fetch from cache`() {
+    fun `when getOrCreateEntityManagerFactory with name fetch from cache`() {
         val mgr = DbConnectionManagerImpl(
             lifecycleCoordinatorFactory,
             dbConnectionsRepository,
@@ -125,10 +124,11 @@ class DbConnectionManagerImplTest {
         val entitiesSet = mock<JpaEntitiesSet>()
 
         val emf = mock<EntityManagerFactory>()
-        val id = UUID.randomUUID()
-        whenever(entityManagerFactoryCache.getOrCreate(id, entitiesSet)).doReturn(emf)
+        val name = "test config"
+        val priv = DbPrivilege.DDL
+        whenever(entityManagerFactoryCache.getOrCreate(name, priv, entitiesSet)).doReturn(emf)
 
-        assertThat(mgr.getOrCreateEntityManagerFactory(id, entitiesSet)).isSameAs(emf)
+        assertThat(mgr.getOrCreateEntityManagerFactory(name, priv, entitiesSet)).isSameAs(emf)
     }
 
     @Test
@@ -140,21 +140,12 @@ class DbConnectionManagerImplTest {
             jpaEntitiesRegistry)
 
         val config = mock<SmartConfig>()
-        val id = UUID.randomUUID()
-        mgr.putConnection(id, config)
+        val name = "test config"
+        val priv = DbPrivilege.DDL
+        val description = "A really awesome database"
+        val actor = "Spiderman"
+        mgr.putConnection(name, priv, config, description, actor)
 
-        verify(dbConnectionsRepository).put(id, config)
-    }
-
-    @Test
-    @Disabled
-    fun `when put persist connection`() {
-        TODO()
-    }
-
-    @Test
-    @Disabled
-    fun `when get connection`() {
-        TODO()
+        verify(dbConnectionsRepository).put(name, priv, config, description, actor)
     }
 }

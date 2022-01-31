@@ -4,5 +4,6 @@ object ConfigurationEntities {
     val classes = setOf(
         ConfigAuditEntity::class.java,
         ConfigEntity::class.java,
+        DbConnectionConfig::class.java,
     )
 }

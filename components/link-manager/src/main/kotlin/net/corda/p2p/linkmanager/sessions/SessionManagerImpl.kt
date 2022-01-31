@@ -252,8 +252,8 @@ open class SessionManagerImpl(
 
     private fun destroyOutboundSession(sessionKey: SessionKey, sessionId: String) {
         sessionNegotiationLock.write {
-            sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId(sessionId))
-            sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId(sessionId))
+            sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId(sessionId), sessionKey)
+            sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId(sessionId), sessionKey)
             activeOutboundSessions.remove(sessionKey)
             activeOutboundSessionsById.remove(sessionId)
             pendingOutboundSessions.remove(sessionId)
@@ -314,7 +314,8 @@ open class SessionManagerImpl(
                 sessionKey.ourId,
                 sessionKey.responderId,
                 heartbeatManager::sessionMessageSent
-            )
+            ),
+            sessionKey
         )
 
         val responderMemberInfo = networkMap.getMemberInfo(sessionKey.responderId)
@@ -370,7 +371,7 @@ open class SessionManagerImpl(
             return null
         }
 
-        sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId(message.header.sessionId))
+        sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId(message.header.sessionId), sessionInfo)
         heartbeatManager.messageAcknowledged(message.header.sessionId)
 
         sessionReplayer.addMessageForReplay(
@@ -381,7 +382,8 @@ open class SessionManagerImpl(
                 sessionInfo.ourId,
                 sessionInfo.responderId,
                 heartbeatManager::sessionMessageSent
-            )
+            ),
+            sessionInfo
         )
 
         val networkType = networkMap.getNetworkType(ourMemberInfo.holdingIdentity.groupId)
@@ -419,7 +421,7 @@ open class SessionManagerImpl(
             return null
         }
         val authenticatedSession = session.getSession()
-        sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId(message.header.sessionId))
+        sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId(message.header.sessionId), sessionInfo)
         heartbeatManager.messageAcknowledged(message.header.sessionId)
         sessionNegotiationLock.write {
             activeOutboundSessions[sessionInfo] = authenticatedSession

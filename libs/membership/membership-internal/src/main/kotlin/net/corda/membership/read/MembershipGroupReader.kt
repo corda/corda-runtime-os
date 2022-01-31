@@ -2,6 +2,7 @@ package net.corda.membership.read
 
 import net.corda.membership.CPIWhiteList
 import net.corda.membership.GroupPolicy
+import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.identity.MemberInfo
 import net.corda.v5.membership.identity.MemberX500Name
@@ -41,9 +42,9 @@ interface MembershipGroupReader {
      * belonging to the member.
      * If the member is not found then the null value is returned.
      *
-     * @param publicKeyHash Public key hash as a ByteArray for the member to lookup.
+     * @param publicKeyHash Public key hash for the member to lookup.
      */
-    fun lookup(publicKeyHash: ByteArray): MemberInfo?
+    fun lookup(publicKeyHash: PublicKeyHash): MemberInfo?
 
     /**
      * Looks up a group member of the specified group by the MemberX500Name
