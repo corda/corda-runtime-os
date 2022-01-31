@@ -2,6 +2,7 @@ package net.corda.p2p.gateway.messaging
 
 import com.typesafe.config.Config
 import net.corda.v5.base.util.hours
+import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.minutes
 import net.corda.v5.base.util.seconds
 import net.corda.v5.base.util.toBase64
@@ -41,7 +42,7 @@ class GatewayConfigurationTest {
                     keyStorePassword = "pass1",
                     trustStorePassword = "pass2",
                     revocationCheck =
-                    RevocationConfig(RevocationConfigMode.HARD_FAIL)
+                    RevocationConfig(RevocationConfigMode.HARD_FAIL),
                 )
             )
         )
@@ -55,6 +56,8 @@ class GatewayConfigurationTest {
             on { getDuration("connectionIdleTimeout") } doReturn 10.hours
             on { getDuration("responseTimeout") } doReturn 20.seconds
             on { getDuration("retryDelay") } doReturn 21.minutes
+            on { getDuration("maximalReconnectionDelay") } doReturn 15.minutes
+            on { getDuration("initialReconnectionDelay") } doReturn 11.millis
         }
         val sslConfig = mock<Config> {
             on { getEnum(RevocationConfigMode::class.java, "revocationCheck.mode") } doReturn RevocationConfigMode.HARD_FAIL
@@ -83,7 +86,9 @@ class GatewayConfigurationTest {
                     acquireTimeout = 5.minutes,
                     connectionIdleTimeout = 10.hours,
                     responseTimeout = 20.seconds,
-                    retryDelay = 21.minutes
+                    retryDelay = 21.minutes,
+                    initialReconnectionDelay = 11.millis,
+                    maximalReconnectionDelay = 15.minutes,
                 ),
                 sslConfig = SslConfiguration(
                     rawTrustStore = byteArrayOf(4, 5),

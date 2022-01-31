@@ -12,11 +12,11 @@ import io.netty.channel.socket.nio.NioSocketChannel
 import io.netty.handler.codec.http.HttpClientCodec
 import io.netty.util.concurrent.ScheduledFuture
 import net.corda.lifecycle.Lifecycle
+import net.corda.p2p.gateway.messaging.ConnectionConfiguration
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import org.bouncycastle.asn1.x500.X500Name
 import org.slf4j.LoggerFactory
 import java.net.URI
-import java.time.Duration
 import java.util.LinkedList
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
@@ -40,6 +40,7 @@ import kotlin.concurrent.withLock
  * @param sslConfiguration the configuration to be used for the one-way TLS handshake
  * @param writeGroup event loop group (thread pool) for processing message writes and reconnects
  * @param nettyGroup event loop group (thread pool) for processing netty callbacks
+ * @param connectionConfiguration the connection configuration
  * @param listener an (optional) listener that can be used to be informed when connection is established/closed.
  */
 @Suppress("LongParameterList")
@@ -48,8 +49,7 @@ class HttpClient(
     private val sslConfiguration: SslConfiguration,
     private val writeGroup: EventLoopGroup,
     private val nettyGroup: EventLoopGroup,
-    private val connectionTimeout: Duration,
-    private val startRetryDelay: Duration,
+    private val connectionConfiguration: ConnectionConfiguration,
     private val listener: HttpConnectionListener? = null,
 ) : Lifecycle, HttpClientListener {
 
@@ -85,7 +85,7 @@ class HttpClient(
     private var explicitlyClosed: Boolean = false
 
     @Volatile
-    private var retryDelay = startRetryDelay
+    private var retryDelay = connectionConfiguration.initialReconnectionDelay
 
     @Volatile
     private var retryFuture: ScheduledFuture<*>? = null
@@ -156,7 +156,10 @@ class HttpClient(
         logger.info("Connecting to ${destinationInfo.uri}")
         val bootstrap = Bootstrap()
         bootstrap.group(nettyGroup)
-            .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, connectionTimeout.toMillis().toInt())
+            .option(
+                ChannelOption.CONNECT_TIMEOUT_MILLIS,
+                connectionConfiguration.acquireTimeout.toMillis().toInt()
+            )
             .channel(NioSocketChannel::class.java)
             .handler(ClientChannelInitializer())
         val clientFuture = bootstrap.connect(destinationInfo.uri.host, destinationInfo.uri.port)
@@ -177,7 +180,7 @@ class HttpClient(
                 logger.debug("Sent HTTP request $request")
             }
 
-            retryDelay = startRetryDelay
+            retryDelay = connectionConfiguration.initialReconnectionDelay
         }
         listener?.onOpen(event)
     }
@@ -208,7 +211,10 @@ class HttpClient(
                     connect()
                 }, retryDelay.toMillis(), TimeUnit.MILLISECONDS)
 
-                retryDelay = retryDelay.plus(retryDelay)
+                retryDelay += retryDelay
+                if (retryDelay > connectionConfiguration.maximalReconnectionDelay) {
+                    retryDelay = connectionConfiguration.maximalReconnectionDelay
+                }
             }
         }
         listener?.onClose(event)

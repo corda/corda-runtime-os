@@ -17,10 +17,10 @@ import io.netty.handler.codec.http.HttpClientCodec
 import io.netty.handler.codec.http.HttpMethod
 import io.netty.handler.ssl.SslHandler
 import io.netty.util.concurrent.ScheduledFuture
+import net.corda.p2p.gateway.messaging.ConnectionConfiguration
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
 import net.corda.p2p.gateway.messaging.SslConfiguration
-import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.SoftAssertions.assertSoftly
@@ -93,10 +93,9 @@ class HttpClientTest {
         bootstrap.close()
     }
 
-    private val connectionTimeout = 1.seconds
-    private val retryTimeout = 1.seconds
+    private val config = ConnectionConfiguration()
     private val client = HttpClient(
-        destinationInfo, sslConfiguration, writeGroup, nettyGroup, connectionTimeout, retryTimeout, listener
+        destinationInfo, sslConfiguration, writeGroup, nettyGroup, config, listener
     )
 
     @Test
@@ -105,7 +104,10 @@ class HttpClientTest {
 
         verify(writeGroup).next()
         verify(bootstrap.constructed().first()).group(nettyGroup)
-        verify(bootstrap.constructed().first()).option(ChannelOption.CONNECT_TIMEOUT_MILLIS, connectionTimeout.toMillis().toInt())
+        verify(bootstrap.constructed().first()).option(
+            ChannelOption.CONNECT_TIMEOUT_MILLIS,
+            config.acquireTimeout.toMillis().toInt()
+        )
         verify(bootstrap.constructed().first()).channel(NioSocketChannel::class.java)
         verify(bootstrap.constructed().first()).connect("www.r3.com", 3023)
     }
@@ -325,6 +327,20 @@ class HttpClientTest {
         verify(loop).schedule(any(), eq(1000), eq(TimeUnit.MILLISECONDS))
         verify(loop).schedule(any(), eq(2000), eq(TimeUnit.MILLISECONDS))
         verify(loop).schedule(any(), eq(4000), eq(TimeUnit.MILLISECONDS))
+    }
+
+    @Test
+    fun `onClose will stop doubling after reaching the maxmimal value`() {
+        val future = mock<ScheduledFuture<*>>()
+        whenever(loop.schedule(any(), any(), any())).doReturn(future)
+        client.start()
+
+        (1..10).forEach {
+            client.onClose(HttpConnectionEvent(channel))
+        }
+
+        // 6 times -> 10 - 4 ( = 1 second, 2 second, 4 seconds, 8 seconds)
+        verify(loop, times(6)).schedule(any(), eq(16000), eq(TimeUnit.MILLISECONDS))
     }
 
     @Test
