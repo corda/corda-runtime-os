@@ -7,10 +7,9 @@ import net.corda.data.permissions.management.permission.CreatePermissionRequest
 import net.corda.libs.permissions.storage.common.converter.toDbModelPermissionType
 import net.corda.libs.permissions.storage.common.converter.toAvroPermission
 import net.corda.libs.permissions.storage.writer.impl.permission.PermissionWriter
-import net.corda.libs.permissions.storage.writer.impl.validation.requireEntityExists
+import net.corda.libs.permissions.storage.writer.impl.validation.EntityValidationUtil
 import net.corda.orm.utils.transaction
 import net.corda.permissions.model.ChangeAudit
-import net.corda.permissions.model.Group
 import net.corda.permissions.model.RPCPermissionOperation
 import net.corda.permissions.model.Permission
 import net.corda.v5.base.util.contextLogger
@@ -31,13 +30,9 @@ class PermissionWriterImpl(
         log.debug { "Received request to create new permission: $permissionName." }
 
         return entityManagerFactory.transaction { entityManager ->
-            val groupVisibility = if (request.groupVisibility != null) {
-                requireEntityExists(entityManager.find(Group::class.java, request.groupVisibility)) {
-                    "Group '${request.groupVisibility}' not found."
-                }
-            } else {
-                null
-            }
+
+            val validator = EntityValidationUtil(entityManager)
+            val groupVisibility = validator.validateAndGetOptionalParentGroup(request.groupVisibility)
 
             val updateTimestamp = Instant.now()
             val permission = Permission(

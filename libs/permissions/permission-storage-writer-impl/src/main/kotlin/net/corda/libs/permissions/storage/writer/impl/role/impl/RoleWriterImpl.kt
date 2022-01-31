@@ -8,12 +8,9 @@ import net.corda.data.permissions.management.role.CreateRoleRequest
 import net.corda.data.permissions.management.role.RemovePermissionFromRoleRequest
 import net.corda.libs.permissions.storage.common.converter.toAvroRole
 import net.corda.libs.permissions.storage.writer.impl.role.RoleWriter
-import net.corda.libs.permissions.storage.writer.impl.validation.requireEntityAssociationDoesNotExist
-import net.corda.libs.permissions.storage.writer.impl.validation.requireEntityAssociationExists
-import net.corda.libs.permissions.storage.writer.impl.validation.requireEntityExists
+import net.corda.libs.permissions.storage.writer.impl.validation.EntityValidationUtil
 import net.corda.orm.utils.transaction
 import net.corda.permissions.model.ChangeAudit
-import net.corda.permissions.model.Group
 import net.corda.permissions.model.Permission
 import net.corda.permissions.model.RPCPermissionOperation
 import net.corda.permissions.model.Role
@@ -36,13 +33,9 @@ class RoleWriterImpl(
         log.debug { "Received request to create new role: $roleName." }
 
         return entityManagerFactory.transaction { entityManager ->
-            val groupVisibility = if (request.groupVisibility != null) {
-                requireEntityExists(entityManager.find(Group::class.java, request.groupVisibility)) {
-                    "Group '${request.groupVisibility}' not found."
-                }
-            } else {
-                null
-            }
+
+            val validator = EntityValidationUtil(entityManager)
+            val groupVisibility = validator.validateAndGetOptionalParentGroup(request.groupVisibility)
 
             val updateTimestamp = Instant.now()
             val role = Role(
@@ -76,17 +69,10 @@ class RoleWriterImpl(
 
         return entityManagerFactory.transaction { entityManager ->
 
-            val role = requireEntityExists(entityManager.find(Role::class.java, request.roleId)) {
-                "Role '${request.roleId}' not found."
-            }
-
-            requireEntityAssociationDoesNotExist(role.rolePermAssociations.none { it.permission.id == request.permissionId }) {
-                "Permission '${request.permissionId}' is already associated with Role '${request.roleId}'."
-            }
-
-            val permission = requireEntityExists(entityManager.find(Permission::class.java, request.permissionId)) {
-                "Permission '${request.permissionId}' not found."
-            }
+            val validator = EntityValidationUtil(entityManager)
+            val role = validator.requireEntityExists(Role::class.java, request.roleId)
+            validator.requirePermissionNotAssociatedWithRole(role.rolePermAssociations, request.permissionId, request.roleId)
+            val permission = validator.requireEntityExists(Permission::class.java, request.permissionId)
 
             val updateTimestamp = Instant.now()
 
@@ -120,14 +106,10 @@ class RoleWriterImpl(
 
         return entityManagerFactory.transaction { entityManager ->
 
-            val role = requireEntityExists(entityManager.find(Role::class.java, request.roleId)) {
-                "Role '${request.roleId}' not found."
-            }
-
+            val validator = EntityValidationUtil(entityManager)
+            val role = validator.requireEntityExists(Role::class.java, request.roleId)
             val rolePermissionAssociation =
-                requireEntityAssociationExists(role.rolePermAssociations.find { it.permission.id == request.permissionId }) {
-                    "Permission '${request.permissionId}' is not associated with Role '${role.id}'."
-                }
+                validator.requireRoleAssociatedWithPermission(role.rolePermAssociations, request.permissionId, request.roleId)
 
             val updateTimestamp = Instant.now()
 
