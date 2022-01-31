@@ -304,7 +304,8 @@ class RoleWriterImplTest {
         val request = RemovePermissionFromRoleRequest(roleId, "oddPermId")
         assertThatThrownBy {
             roleWriter.removePermissionFromRole(request, requestUserId)
-        }.isInstanceOf(EntityAssociationDoesNotExistException::class.java).hasMessageContaining("Permission 'oddPermId' is not associated with Role 'roleId'.")
+        }.isInstanceOf(EntityAssociationDoesNotExistException::class.java)
+            .hasMessageContaining("Permission 'oddPermId' is not associated with Role 'roleId'.")
 
         inOrder(entityTransaction) {
             verify(entityTransaction).begin()

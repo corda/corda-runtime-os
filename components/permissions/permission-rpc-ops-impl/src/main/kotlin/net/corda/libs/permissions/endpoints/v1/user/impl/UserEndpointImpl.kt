@@ -13,7 +13,6 @@ import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
-import net.corda.libs.permissions.manager.response.UserResponseDto
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator

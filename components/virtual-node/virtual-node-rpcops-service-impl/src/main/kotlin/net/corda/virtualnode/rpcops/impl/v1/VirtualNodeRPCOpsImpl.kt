@@ -3,7 +3,6 @@ package net.corda.virtualnode.rpcops.impl.v1
 import net.corda.data.virtualnode.VirtualNodeCreationRequest
 import net.corda.data.virtualnode.VirtualNodeCreationResponse
 import net.corda.httprpc.PluggableRPCOps
-import net.corda.httprpc.exception.HttpApiException
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRPCOps
 import net.corda.libs.virtualnode.endpoints.v1.types.CPIIdentifierHttp

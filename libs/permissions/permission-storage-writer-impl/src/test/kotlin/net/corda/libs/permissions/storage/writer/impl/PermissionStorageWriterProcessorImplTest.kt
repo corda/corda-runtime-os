@@ -19,9 +19,7 @@ import net.corda.libs.permissions.storage.writer.impl.role.RoleWriter
 import net.corda.libs.permissions.storage.writer.impl.user.UserWriter
 import net.corda.v5.base.concurrent.getOrThrow
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
