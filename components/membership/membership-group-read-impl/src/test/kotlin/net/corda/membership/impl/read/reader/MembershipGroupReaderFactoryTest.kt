@@ -1,5 +1,6 @@
 package net.corda.membership.impl.read.reader
 
+import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_1
 import net.corda.membership.impl.read.TestProperties.Companion.aliceName
 import net.corda.membership.impl.read.TestProperties.Companion.bobName
@@ -37,10 +38,11 @@ class MembershipGroupReaderFactoryTest {
     val cache: MembershipGroupReadCache = mock<MembershipGroupReadCache>().apply {
         doReturn(this@MembershipGroupReaderFactoryTest.groupReaderCache).whenever(this).groupReaderCache
     }
+    private val groupPolicyProvider: GroupPolicyProvider = mock()
 
     @BeforeEach
     fun setUp() {
-        membershipGroupReaderFactory = MembershipGroupReaderFactory.Impl(cache)
+        membershipGroupReaderFactory = MembershipGroupReaderFactory.Impl(cache, groupPolicyProvider)
     }
 
     @Test
