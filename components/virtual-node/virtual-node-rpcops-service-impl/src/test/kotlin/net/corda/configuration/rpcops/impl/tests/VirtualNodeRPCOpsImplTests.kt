@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Duration
@@ -117,34 +118,34 @@ class VirtualNodeRPCOpsImplTests {
         assertEquals(INVALID_INPUT_DATA, e.responseCode)
     }
 
-//    @Test
-//    fun `createAndStartRPCSender starts new RPC sender`() {
-//        val (rpcSender, vnodeRPCOps) = getVirtualNodeRPCOps()
-//
-//        vnodeRPCOps.createAndStartRPCSender(mock())
-//
-//        verify(rpcSender).start()
-//    }
+    @Test
+    fun `createAndStartRPCSender starts new RPC sender`() {
+        val (rpcSender, vnodeRPCOps) = getVirtualNodeRPCOps()
 
-//    @Test
-//    fun `createAndStartRPCSender closes existing RPC sender if one exists`() {
-//        val (rpcSender, vnodeRPCOps) = getVirtualNodeRPCOps()
-//
-//        vnodeRPCOps.createAndStartRPCSender(mock())
-//        vnodeRPCOps.createAndStartRPCSender(mock())
-//
-//        verify(rpcSender).close()
-//    }
+        vnodeRPCOps.createAndStartRpcSender(mock())
 
-//    @Test
-//    fun `stop closes existing RPC sender if one exists`() {
-//        val (rpcSender, vnodeRPCOps) = getVirtualNodeRPCOps()
-//
-//        vnodeRPCOps.createAndStartRPCSender(mock())
-//        vnodeRPCOps.stop()
-//
-//        verify(rpcSender).close()
-//    }
+        verify(rpcSender).start()
+    }
+
+    @Test
+    fun `createAndStartRPCSender closes existing RPC sender if one exists`() {
+        val (rpcSender, vnodeRPCOps) = getVirtualNodeRPCOps()
+
+        vnodeRPCOps.createAndStartRpcSender(mock())
+        vnodeRPCOps.createAndStartRpcSender(mock())
+
+        verify(rpcSender).close()
+    }
+
+    @Test
+    fun `stop closes existing RPC sender if one exists`() {
+        val (rpcSender, vnodeRPCOps) = getVirtualNodeRPCOps()
+
+        vnodeRPCOps.createAndStartRpcSender(mock())
+        vnodeRPCOps.stop()
+
+        verify(rpcSender).close()
+    }
 
     @Test
     fun `createVirtualNode throws HttpApiException if response is failure`() {
