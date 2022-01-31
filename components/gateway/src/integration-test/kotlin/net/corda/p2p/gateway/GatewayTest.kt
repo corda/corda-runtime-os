@@ -555,7 +555,6 @@ class GatewayTest : TestBase() {
     inner class BadConfigurationTests {
         @Test
         @Timeout(120)
-        @Disabled("Disabled temporarily until we identify the reason for the flakiness and remove it.")
         fun `Gateway can recover from bad configuration`() {
             val configPublisher = ConfigPublisher()
             val host = "www.alice.net"

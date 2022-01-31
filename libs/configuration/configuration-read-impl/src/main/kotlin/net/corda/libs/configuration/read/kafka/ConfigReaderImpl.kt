@@ -112,7 +112,7 @@ class ConfigReaderImpl(
             val smartConfig = smartConfigFactory.create(ConfigFactory.parseString(config.value.value))
             configMap[config.key] = smartConfig
             logger.info("Received configuration for key ${config.key}: " +
-                smartConfig.toSafeConfig().root().render(ConfigRenderOptions.concise())
+                smartConfig.toSafeConfig().root().render(ConfigRenderOptions.concise().setFormatted(true))
             )
         }
         configurationRepository.storeConfiguration(configMap)
@@ -129,7 +129,7 @@ class ConfigReaderImpl(
         val config = smartConfigFactory.create(ConfigFactory.parseString(newRecord.value?.value))
         configurationRepository.updateConfiguration(newRecord.key, config)
         logger.info("Received configuration for key ${newRecord.key}: " +
-            config.toSafeConfig().root().render(ConfigRenderOptions.concise())
+            config.toSafeConfig().root().render(ConfigRenderOptions.concise().setFormatted(true))
         )
         val tempConfigMap = configurationRepository.getConfigurations()
         configUpdates.forEach { it.value.onUpdate(setOf(newRecord.key), tempConfigMap) }
