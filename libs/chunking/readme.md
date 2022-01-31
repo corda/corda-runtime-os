@@ -35,7 +35,7 @@ The ["write" algorithm](https://github.com/corda/corda-runtime-os/blob/89b294481
 offset = 0
 while (true)
     bytes = readBytesFromStream(stream, maxBytesToRead)
-    if (no more bytes) break
+    if (end of stream is reached) break
     write( chunk(offset, bytes) )
     offset = offset + number of bytes read
 end-while 
