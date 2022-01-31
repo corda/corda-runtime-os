@@ -86,6 +86,12 @@ class NetworkMapCreator @Activate constructor(
                 val publicKeyAlgo = dataConfig.getString("publicKeyAlgo")
                 val address = dataConfig.getString("address")
                 val networkType = parseNetworkType(dataConfig.getString("networkType"))
+                val trustStoreCertificates = dataConfig.getList("dataConfig")
+                    .unwrapped()
+                    .filterIsInstance<String>()
+                    .map {
+                    File(it)
+                }.map { it.readText() }
 
                 val (keyAlgo, publicKey) = readKey(publicKeyStoreFile, publicKeyAlgo, publicKeyAlias, keystorePassword)
                 val networkMapEntry = NetworkMapEntry(
@@ -93,7 +99,8 @@ class NetworkMapCreator @Activate constructor(
                     ByteBuffer.wrap(publicKey.encoded),
                     keyAlgo,
                     address,
-                    networkType
+                    networkType,
+                    trustStoreCertificates
                 )
                 Record(topic, "$x500Name-$groupId", networkMapEntry)
             }

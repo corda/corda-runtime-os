@@ -56,10 +56,6 @@ To run the application use:
                           Revocation Check mode (one of: SOFT_FAIL, HARD_FAIL,
                             OFF)
                             Default: OFF
-      --trustStore=<trustStoreFile>
-                          The path to the trust store file
-      --trustStorePassword=<trustStorePassword>
-                          The trust store password
 ```
 #### Link manager Arguments:
 ```

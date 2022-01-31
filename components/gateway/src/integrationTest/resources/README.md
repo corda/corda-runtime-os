@@ -26,7 +26,7 @@ OCSP responder.
 ## With support of revocation (using tinycert)
 
 TinyCert provides CRL and OCSP endpoints and an easy way to revoke certificates via their web interface, so it can be used in scenarios where certification revocation needs to be tested. However, it provides only the option of creating RSA certificates.
-
+// TODO: Change this!
 ### Create the CA and certificates
 
 1. Create a new CA using the tinycert dashboard.

@@ -121,7 +121,7 @@ class ConfigureAll : Runnable {
         }
     }
 
-    private val trustStoreFile = File(keyStoreDir.absolutePath, "truststore.jks")
+    private val trustStoreFile = File(keyStoreDir.absolutePath, "truststore.pem")
 
     private fun publishMySelfToOthers() {
         val configurationFile = File.createTempFile("network-map.", ".conf").also {
@@ -137,7 +137,8 @@ class ConfigureAll : Runnable {
                     "keystorePassword" to "password",
                     "publicKeyAlgo" to "ECDSA",
                     "address" to "http://$host:${Port.Gateway.port}",
-                    "networkType" to "CORDA_5"
+                    "networkType" to "CORDA_5",
+                    "trustStoreCertificates" to listOf(trustStoreFile.path)
                 )
             )
 
@@ -254,8 +255,6 @@ class ConfigureAll : Runnable {
                 "--port=${Port.Gateway.port}",
                 "--keyStore=${sslKeyStore.absolutePath}",
                 "--keyStorePassword=password",
-                "--trustStore=${trustStoreFile.absolutePath}",
-                "--trustStorePassword=password",
             ) + gatewayArguments
         ).run()
     }
