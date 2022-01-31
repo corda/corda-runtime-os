@@ -2,7 +2,6 @@ package net.corda.applications.flowworker.setup.helper
 
 import net.corda.data.flow.event.StartRPCFlow
 import net.corda.data.flow.event.mapper.FlowMapperEvent
-import net.corda.data.flow.event.mapper.MessageDirection
 import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.identity.HoldingIdentity
 import net.corda.messaging.api.records.Record
@@ -54,7 +53,7 @@ fun getStartRPCEventRecord(clientId: String, cpiId: String, flowName: String, x5
     val identity = HoldingIdentity(x500Name, groupId)
     val flowKey = "$clientId.$x500Name.$groupId"
     val rpcStartFlow = StartRPCFlow(clientId, cpiId, flowName, identity, Instant.now(), jsonArgs)
-    return Record(FLOW_MAPPER_EVENT_TOPIC, flowKey, FlowMapperEvent(MessageDirection.INBOUND, rpcStartFlow))
+    return Record(FLOW_MAPPER_EVENT_TOPIC, flowKey, FlowMapperEvent(rpcStartFlow))
 }
 
 fun getHelloWorldScheduleCleanupEvent(): Record<*, *> {
@@ -64,7 +63,6 @@ fun getHelloWorldScheduleCleanupEvent(): Record<*, *> {
 fun getScheduleCleanupEvent(clientId: String, x500Name: String, groupId: String): Record<*, *> {
     return Record(
         FLOW_MAPPER_EVENT_TOPIC, "$clientId.$x500Name.$groupId", FlowMapperEvent(
-            MessageDirection.INBOUND,
             ScheduleCleanup(
                 System.currentTimeMillis() +
                         5000L

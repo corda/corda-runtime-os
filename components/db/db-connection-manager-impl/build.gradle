@@ -1,0 +1,28 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+description "DB Connection Manager Implemenation"
+
+dependencies {
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+
+    implementation project(":components:db:db-connection-manager")
+    implementation project(':libs:db:db-core')
+    implementation project(':libs:configuration:configuration-core')
+    implementation project(':libs:configuration:configuration-datamodel')
+    implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:permissions:permission-datamodel")
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-base"
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'net.corda:corda-config-schema'
+
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+
+    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}
