@@ -57,6 +57,7 @@ class MembershipGroupReaderFactoryTest {
 
         verify(groupReaderCache).get(eq(aliceIdGroup1))
         verify(groupReaderCache, never()).put(eq(aliceIdGroup1), eq(result))
+        verify(groupPolicyProvider, never()).getGroupPolicy(eq(aliceIdGroup1))
     }
 
     @Test
@@ -66,5 +67,6 @@ class MembershipGroupReaderFactoryTest {
 
         verify(groupReaderCache).get(eq(bobIdGroup1))
         verify(groupReaderCache).put(eq(bobIdGroup1), eq(result))
+        verify(groupPolicyProvider).getGroupPolicy(eq(bobIdGroup1))
     }
 }

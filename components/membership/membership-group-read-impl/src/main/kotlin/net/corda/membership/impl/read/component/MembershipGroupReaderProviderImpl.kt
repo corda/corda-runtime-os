@@ -50,7 +50,7 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
     @Reference(service = PropertyConverter::class)
     val converter: PropertyConverter,
     @Reference(service = GroupPolicyProvider::class)
-    val groupPolicyProvider: GroupPolicyProvider
+    groupPolicyProvider: GroupPolicyProvider
 ) : MembershipGroupReaderProvider, Lifecycle {
 
     companion object {
