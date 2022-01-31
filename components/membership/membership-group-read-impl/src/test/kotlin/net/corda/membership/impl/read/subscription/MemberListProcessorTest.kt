@@ -1,6 +1,6 @@
 package net.corda.membership.impl.read.subscription
 
-import net.corda.data.crypto.wire.WireSignatureWithKey
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.membership.conversion.PropertyConverterImpl
@@ -59,7 +59,7 @@ class MemberListProcessorTest {
                 PublicKeyConverter(keyEncodingService),
             )
         )
-        private val signature = WireSignatureWithKey(
+        private val signature = CryptoSignatureWithKey(
             ByteBuffer.wrap(byteArrayOf()),
             ByteBuffer.wrap(byteArrayOf()),
         )
