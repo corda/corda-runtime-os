@@ -2,7 +2,6 @@ package net.corda.httprpc.server.impl.internal
 
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.module.kotlin.MissingKotlinParameterException
-import io.javalin.http.BadRequestResponse
 import io.javalin.http.HttpResponseException
 import io.javalin.http.InternalServerErrorResponse
 import io.javalin.http.UnauthorizedResponse
@@ -21,10 +20,10 @@ internal object HttpExceptionMapper {
             // the code has already thrown the appropriate Javalin response exception.
             is HttpResponseException -> e
 
-            is BadRpcStartFlowRequestException -> BadRequestResponse("Operation failed due to bad RPC StartFlow request.")
-            is MissingKotlinParameterException -> BadRequestResponse("Missing or invalid field in JSON request body.")
-            is JsonProcessingException -> BadRequestResponse("Error during processing of request JSON.")
-            is MissingParameterException -> BadRequestResponse(e.message)
+            is BadRpcStartFlowRequestException -> buildBadRequestResponse("Operation failed due to bad RPC StartFlow request.", e)
+            is MissingKotlinParameterException -> buildBadRequestResponse("Missing or invalid field in JSON request body.", e)
+            is JsonProcessingException -> buildBadRequestResponse("Error during processing of request JSON.", e)
+            is MissingParameterException -> buildBadRequestResponse("Missing parameter in request.", e)
             // TODO restore these when possible
             //  is StartFlowPermissionException -> ForbiddenResponse(loggedMessage)
             //  is FlowNotFoundException -> NotFoundResponse(loggedMessage)
@@ -65,11 +64,31 @@ internal object HttpExceptionMapper {
         }
     }
 
+    /**
+     * Since javalin's BadRequestResponse does not allow extra details, we'll manually build the HttpResponseException with a BAD_REQUEST
+     * status code, a message, and extra exception details that includes the original exception type and message to help the user fix their
+     * request.
+     */
+    private fun buildBadRequestResponse(message: String, e: Exception): HttpResponseException {
+        return HttpResponseException(
+            ResponseCode.BAD_REQUEST.statusCode,
+            message,
+            buildExceptionCauseDetails(e).addResponseCode(ResponseCode.BAD_REQUEST)
+        )
+    }
+
+    /**
+     * We'll add the name of the exception and the exception's message to the extra details map. This will give the user extra information
+     * to resolving their issue.
+     */
     private fun buildExceptionCauseDetails(e: Exception) = mapOf(
-        "cause" to e::javaClass.name,
+        "cause" to e::class.java.name,
         "reason" to (e.message ?: "")
     )
 
+    /**
+     * We'll add the code to the response.
+     */
     private fun Map<String, String>.addResponseCode(responseCode: ResponseCode): Map<String, String> {
         val mutable = this.toMutableMap()
         mutable["code"] = responseCode.name
