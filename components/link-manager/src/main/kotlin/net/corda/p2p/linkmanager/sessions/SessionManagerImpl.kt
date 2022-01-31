@@ -34,7 +34,7 @@ import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.LinkManagerCryptoService
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
-import net.corda.p2p.linkmanager.TrustStoresContainer
+import net.corda.p2p.linkmanager.MessageHeaderFactory
 import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.createLinkOutMessage
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromHeartbeat
@@ -76,14 +76,14 @@ open class SessionManagerImpl(
     private val configurationReaderService: ConfigurationReadService,
     coordinatorFactory: LifecycleCoordinatorFactory,
     configuration: SmartConfig,
-    private val trustStoresContainer: TrustStoresContainer,
+    private val messageHeaderFactory: MessageHeaderFactory,
     private val protocolFactory: ProtocolFactory = CryptoProtocolFactory(),
     private val sessionReplayer: InMemorySessionReplayer = InMemorySessionReplayer(
         publisherFactory,
         configurationReaderService,
         coordinatorFactory,
         configuration,
-        trustStoresContainer,
+        messageHeaderFactory,
     ),
 ) : SessionManager {
 
@@ -115,7 +115,7 @@ open class SessionManagerImpl(
         configurationReaderService,
         coordinatorFactory,
         configuration,
-        trustStoresContainer,
+        messageHeaderFactory,
         ::destroyOutboundSession,
     )
 
@@ -320,7 +320,7 @@ open class SessionManagerImpl(
         }
         heartbeatManager.sessionMessageSent(sessionKey, sessionId)
 
-        val header = trustStoresContainer.createLinkOutHeader(sessionKey.ourId, responderMemberInfo.holdingIdentity) ?: return null
+        val header = messageHeaderFactory.createLinkOutHeader(sessionKey.ourId, responderMemberInfo.holdingIdentity) ?: return null
 
         return createLinkOutMessage(sessionInitPayload, header).let {
             sessionId to it
@@ -380,7 +380,7 @@ open class SessionManagerImpl(
             )
         )
 
-        val header = trustStoresContainer.createLinkOutHeader(
+        val header = messageHeaderFactory.createLinkOutHeader(
             ourMemberInfo.holdingIdentity,
             responderMemberInfo.holdingIdentity
         ) ?: return null
@@ -427,7 +427,7 @@ open class SessionManagerImpl(
                 sessionInfo,
                 authenticatedSession,
                 networkMap,
-                trustStoresContainer
+                messageHeaderFactory
             )
         }
         logger.info("Outbound session ${authenticatedSession.sessionId} established " +
@@ -458,7 +458,7 @@ open class SessionManagerImpl(
             return null
         }
 
-        val header = trustStoresContainer.createLinkOutHeader(peer.holdingIdentity) ?: return null
+        val header = messageHeaderFactory.createLinkOutHeader(peer.holdingIdentity) ?: return null
 
         logger.info("Remote identity ${peer.holdingIdentity} initiated new session ${message.header.sessionId}.")
         return createLinkOutMessage(responderHello, header)
@@ -507,7 +507,7 @@ open class SessionManagerImpl(
             return null
         }
 
-        val header = trustStoresContainer.createLinkOutHeader(ourMemberInfo.holdingIdentity, peer.holdingIdentity) ?: return null
+        val header = messageHeaderFactory.createLinkOutHeader(ourMemberInfo.holdingIdentity, peer.holdingIdentity) ?: return null
 
 
         val response = try {
@@ -542,7 +542,7 @@ open class SessionManagerImpl(
         private val configurationReaderService: ConfigurationReadService,
         coordinatorFactory: LifecycleCoordinatorFactory,
         configuration: SmartConfig,
-        private var trustStoresContainer: TrustStoresContainer,
+        private var messageHeaderFactory: MessageHeaderFactory,
         private val destroySession: (key: SessionKey, sessionId: String) -> Any,
     ) : LifecycleWithDominoTile {
 
@@ -728,7 +728,7 @@ open class SessionManagerImpl(
 
         private fun sendHeartbeatMessage(source: HoldingIdentity, dest: HoldingIdentity, session: Session) {
             val heartbeatMessage = HeartbeatMessage()
-            val message = linkOutMessageFromHeartbeat(source, dest, heartbeatMessage, session, trustStoresContainer)
+            val message = linkOutMessageFromHeartbeat(source, dest, heartbeatMessage, session, messageHeaderFactory)
             if (message == null) {
                 logger.warn("Failed to send a Heartbeat between $source and $dest.")
                 return

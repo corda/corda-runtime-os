@@ -110,6 +110,12 @@ class LinkManager(
         instanceId,
     )
 
+    private val messageHeaderFactory = MessageHeaderFactory(
+        trustStoreContainer,
+        linkManagerNetworkMap,
+        lifecycleCoordinatorFactory,
+    )
+
     private val messagesPendingSession = PendingSessionMessageQueuesImpl(
         publisherFactory,
         lifecycleCoordinatorFactory,
@@ -124,14 +130,14 @@ class LinkManager(
         configurationReaderService,
         lifecycleCoordinatorFactory,
         configuration,
-        trustStoreContainer,
+        messageHeaderFactory,
     )
 
     private val outboundMessageProcessor = OutboundMessageProcessor(
         sessionManager,
         linkManagerHostingMap,
         inboundAssignmentListener,
-        trustStoreContainer
+        messageHeaderFactory
     )
 
     private val deliveryTracker = DeliveryTracker(
@@ -151,7 +157,7 @@ class LinkManager(
         InboundMessageProcessor(
             sessionManager,
             inboundAssignmentListener,
-            trustStoreContainer,
+            messageHeaderFactory,
         ),
         configuration,
         partitionAssignmentListener = inboundAssignmentListener
@@ -200,7 +206,7 @@ class LinkManager(
         children = setOf(
             inboundDominoTile,
             messagesPendingSession.dominoTile,
-            trustStoreContainer.dominoTile,
+            messageHeaderFactory.dominoTile,
         ) + commonChildren
     )
 
@@ -214,7 +220,7 @@ class LinkManager(
         private val sessionManager: SessionManager,
         private val linkManagerHostingMap: LinkManagerHostingMap,
         private val inboundAssignmentListener: InboundAssignmentListener,
-        private val trustStoresContainer: TrustStoresContainer,
+        private val messageHeaderFactory: MessageHeaderFactory,
     ) : EventLogProcessor<String, AppMessage> {
 
         override val keyClass = String::class.java
@@ -256,7 +262,7 @@ class LinkManager(
             return if (linkManagerHostingMap.isHostedLocally(message.header.destination.toHoldingIdentity())) {
                 listOf(Record(P2P_IN_TOPIC, generateKey(), AppMessage(message)))
             } else {
-                val linkOutMessage = linkOutFromUnauthenticatedMessage(message, trustStoresContainer)
+                val linkOutMessage = linkOutFromUnauthenticatedMessage(message, messageHeaderFactory)
                 listOf(Record(LINK_OUT_TOPIC, generateKey(), linkOutMessage))
             }
         }
@@ -329,7 +335,7 @@ class LinkManager(
                 sessionManager,
                 state.session,
                 messageAndKey,
-                trustStoresContainer
+                messageHeaderFactory,
             )
         }
 
@@ -353,7 +359,7 @@ class LinkManager(
     class InboundMessageProcessor(
         private val sessionManager: SessionManager,
         private val inboundAssignmentListener: InboundAssignmentListener,
-        private val trustStoreContainer: TrustStoresContainer,
+        private val messageHeaderFactory: MessageHeaderFactory,
     ) :
         EventLogProcessor<String, LinkInMessage> {
 
@@ -523,7 +529,7 @@ class LinkManager(
                 ackSource,
                 ackDest,
                 session,
-                trustStoreContainer,
+                messageHeaderFactory,
             ) ?: return null
             return Record(
                 LINK_OUT_TOPIC,
@@ -541,7 +547,7 @@ class LinkManager(
                 ackSource,
                 ackDest,
                 session,
-                trustStoreContainer,
+                messageHeaderFactory,
             ) ?: return null
             return Record(
                 LINK_OUT_TOPIC,
@@ -569,7 +575,7 @@ class LinkManager(
             key: SessionKey,
             session: Session,
             networkMap: LinkManagerNetworkMap,
-            trustStoreContainer: TrustStoresContainer,
+            messageHeaderFactory: MessageHeaderFactory,
         )
         fun destroyQueue(key: SessionKey)
         fun destroyAllQueues()
@@ -616,7 +622,7 @@ class LinkManager(
             key: SessionKey,
             session: Session,
             networkMap: LinkManagerNetworkMap,
-            trustStoreContainer: TrustStoresContainer,
+            messageHeaderFactory: MessageHeaderFactory,
         ) {
             publisher.dominoTile.withLifecycleLock {
                 if (!isRunning) {
@@ -635,7 +641,7 @@ class LinkManager(
                             sessionManager,
                             session,
                             message,
-                            trustStoreContainer
+                            messageHeaderFactory
                         )
                     )
                 }
@@ -657,12 +663,12 @@ fun recordsForSessionEstablished(
     sessionManager: SessionManager,
     session: Session,
     messageAndKey: AuthenticatedMessageAndKey,
-    trustStoreContainer: TrustStoresContainer,
+    messageHeaderFactory: MessageHeaderFactory,
 ): List<Record<String, *>> {
     val records = mutableListOf<Record<String, *>>()
     val key = LinkManager.generateKey()
     sessionManager.dataMessageSent(session)
-    linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, session, trustStoreContainer)?. let {
+    linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, session, messageHeaderFactory)?. let {
         records.add(Record(LINK_OUT_TOPIC, key, it))
     }
     return records

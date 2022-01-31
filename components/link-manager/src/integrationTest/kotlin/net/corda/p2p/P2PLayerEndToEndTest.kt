@@ -55,6 +55,7 @@ import net.corda.v5.base.util.seconds
 import net.corda.v5.base.util.toBase64
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.nio.ByteBuffer
@@ -378,11 +379,11 @@ class P2PLayerEndToEndTest {
                 assertThat(configReadService.isRunning).isTrue
             }
 
-            linkManager.start()
-            gateway.start()
-
             publishConfig()
             publishNetworkMapAndKeys(otherHost)
+
+            linkManager.start()
+            gateway.start()
 
             eventually(30.seconds) {
                 assertThat(linkManager.isRunning).isTrue

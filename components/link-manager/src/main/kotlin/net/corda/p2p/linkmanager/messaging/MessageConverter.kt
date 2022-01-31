@@ -16,7 +16,7 @@ import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.DecryptionFailedError
 import net.corda.p2p.crypto.protocol.api.InvalidMac
 import net.corda.p2p.crypto.protocol.api.Session
-import net.corda.p2p.linkmanager.TrustStoresContainer
+import net.corda.p2p.linkmanager.MessageHeaderFactory
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.DataMessage
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.SessionAndMessage
 import org.apache.avro.AvroRuntimeException
@@ -56,7 +56,7 @@ class MessageConverter {
             source: HoldingIdentity,
             destination: HoldingIdentity,
             session: Session,
-            trustStores: TrustStoresContainer,
+            factory: MessageHeaderFactory,
         ): LinkOutMessage? {
             val serializedMessage = try {
                 message.toByteBuffer()
@@ -64,13 +64,13 @@ class MessageConverter {
                 logger.error("Could not serialize message type ${message::class.java.simpleName}. The message was discarded.")
                 return null
             }
-            return createLinkOutMessageFromPayload(serializedMessage, source, destination, session, trustStores)
+            return createLinkOutMessageFromPayload(serializedMessage, source, destination, session, factory)
         }
 
         fun linkOutMessageFromAuthenticatedMessageAndKey(
             message: AuthenticatedMessageAndKey,
             session: Session,
-            trustStores: TrustStoresContainer,
+            factory: MessageHeaderFactory,
         ): LinkOutMessage? {
             val serializedMessage = try {
                 DataMessagePayload(message).toByteBuffer()
@@ -83,7 +83,7 @@ class MessageConverter {
                 message.message.header.source,
                 message.message.header.destination,
                 session,
-                trustStores,
+                factory,
             )
         }
 
@@ -92,7 +92,7 @@ class MessageConverter {
             destination: HoldingIdentity,
             message: HeartbeatMessage,
             session: Session,
-            trustStores: TrustStoresContainer,
+            factory: MessageHeaderFactory,
         ): LinkOutMessage? {
             val serializedMessage = try {
                 DataMessagePayload(message).toByteBuffer()
@@ -105,15 +105,15 @@ class MessageConverter {
                 source,
                 destination,
                 session,
-                trustStores
+                factory,
             )
         }
 
         fun linkOutFromUnauthenticatedMessage(
             message: UnauthenticatedMessage,
-            trustStores: TrustStoresContainer,
+            factory: MessageHeaderFactory,
         ): LinkOutMessage? {
-            val header = trustStores.createLinkOutHeader(message.header.destination) ?: return null
+            val header = factory.createLinkOutHeader(message.header.destination) ?: return null
             return createLinkOutMessage(message, header)
         }
 
@@ -122,7 +122,7 @@ class MessageConverter {
             source: HoldingIdentity,
             destination: HoldingIdentity,
             session: Session,
-            trustStores: TrustStoresContainer,
+            factory: MessageHeaderFactory,
         ): LinkOutMessage? {
             val result = when (session) {
                 is AuthenticatedSession -> {
@@ -145,7 +145,7 @@ class MessageConverter {
                 }
             }
 
-            val header = trustStores.createLinkOutHeader(source, destination) ?: return null
+            val header = factory.createLinkOutHeader(source, destination) ?: return null
 
             return createLinkOutMessage(result, header)
         }

@@ -12,6 +12,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
+import net.corda.p2p.linkmanager.MessageHeaderFactory
 import net.corda.p2p.linkmanager.TrustStoresContainer
 import net.corda.p2p.linkmanager.messaging.MessageConverter
 import net.corda.p2p.linkmanager.sessions.SessionManager
@@ -26,7 +27,7 @@ class InMemorySessionReplayer(
     configurationReaderService: ConfigurationReadService,
     coordinatorFactory: LifecycleCoordinatorFactory,
     configuration: SmartConfig,
-    private val trustStoresContainer: TrustStoresContainer,
+    private val headerFactory: MessageHeaderFactory,
 ): LifecycleWithDominoTile {
 
     companion object {
@@ -48,7 +49,7 @@ class InMemorySessionReplayer(
     override val dominoTile = DominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
-        children = setOf(replayScheduler.dominoTile, publisher.dominoTile, trustStoresContainer.dominoTile)
+        children = setOf(replayScheduler.dominoTile, publisher.dominoTile, headerFactory.dominoTile)
     )
 
     data class SessionMessageReplay(
@@ -82,7 +83,7 @@ class InMemorySessionReplayer(
     private fun replayMessage(
         messageReplay: SessionMessageReplay,
     ) {
-        val header = trustStoresContainer.createLinkOutHeader(messageReplay.dest)
+        val header = headerFactory.createLinkOutHeader(messageReplay.dest)
         if(header == null)
         {
             logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName})" +
