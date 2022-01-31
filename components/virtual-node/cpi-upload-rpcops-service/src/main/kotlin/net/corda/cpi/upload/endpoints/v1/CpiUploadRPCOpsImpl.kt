@@ -33,12 +33,11 @@ class CpiUploadRPCOpsImpl @Activate constructor(
 
     override val isRunning get() = rpcSender?.isRunning ?: false && rpcRequestTimeout != null
 
-    override fun start() {
-        rpcSender?.start() ?: throw CpiUploadRPCOpsException("RPC sender has not been created")
-    }
+    override fun start() = Unit
 
     override fun stop() {
-        rpcSender?.stop() ?: throw CpiUploadRPCOpsException("RPC sender has not been created")
+        rpcSender?.close()
+        rpcSender = null
     }
 
     override fun cpi(file: ByteArray): HTTPCpiUploadRequestId {
