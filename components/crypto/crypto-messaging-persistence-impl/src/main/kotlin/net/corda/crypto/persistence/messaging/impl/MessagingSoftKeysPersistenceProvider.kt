@@ -115,7 +115,7 @@ class MessagingSoftKeysPersistenceProvider @Activate constructor(
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
             else -> {
-                logger.error("Unexpected event $event!")
+                logger.warn("Unexpected event $event!")
             }
         }
     }
