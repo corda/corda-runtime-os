@@ -236,7 +236,8 @@ class SessionManagerTest {
         argumentCaptor<InMemorySessionReplayer.SessionMessageReplay> {
             verify(sessionReplayer).addMessageForReplay(
                 any(),
-                this.capture()
+                this.capture(),
+                eq(SessionManager.SessionKey(OUR_PARTY, PEER_PARTY))
             )
             assertThat(this.allValues.size).isEqualTo(1)
             assertThat(this.firstValue.source).isEqualTo(OUR_PARTY)
@@ -251,7 +252,7 @@ class SessionManagerTest {
 
         val sessionState = sessionManager.processOutboundMessage(message)
         assertThat(sessionState).isInstanceOf(SessionManager.SessionState.CannotEstablishSession::class.java)
-        verify(sessionReplayer, never()).addMessageForReplay(any(), any())
+        verify(sessionReplayer, never()).addMessageForReplay(any(), any(), any())
         loggingInterceptor.assertSingleWarning("Could not find the network type in the NetworkMap for groupId $GROUP_ID." +
                 " The sessionInit message was not sent.")
     }
@@ -262,7 +263,7 @@ class SessionManagerTest {
 
         val sessionState = sessionManager.processOutboundMessage(message)
         assertThat(sessionState).isInstanceOf(SessionManager.SessionState.CannotEstablishSession::class.java)
-        verify(sessionReplayer, never()).addMessageForReplay(any(), any())
+        verify(sessionReplayer, never()).addMessageForReplay(any(), any(), any())
         loggingInterceptor.assertSingleWarning("Attempted to start session negotiation with peer $PEER_PARTY " +
                 "but our identity $OUR_PARTY is not in the network map. The sessionInit message was not sent.")
     }
@@ -279,7 +280,8 @@ class SessionManagerTest {
         argumentCaptor<InMemorySessionReplayer.SessionMessageReplay> {
             verify(sessionReplayer).addMessageForReplay(
                 any(),
-                this.capture()
+                this.capture(),
+                any()
             )
             assertThat(this.allValues.size).isEqualTo(1)
             assertThat(this.firstValue.source).isEqualTo(OUR_PARTY)
@@ -421,11 +423,15 @@ class SessionManagerTest {
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(responderHello))
 
         assertThat(responseMessage!!.payload).isEqualTo(initiatorHandshakeMsg)
-        verify(sessionReplayer).removeMessageFromReplay("${sessionState.sessionId}_${InitiatorHelloMessage::class.java.simpleName}")
+        verify(sessionReplayer).removeMessageFromReplay(
+            "${sessionState.sessionId}_${InitiatorHelloMessage::class.java.simpleName}",
+            SessionManager.SessionKey(OUR_PARTY, PEER_PARTY)
+        )
         argumentCaptor<InMemorySessionReplayer.SessionMessageReplay> {
             verify(sessionReplayer).addMessageForReplay(
                 eq("${sessionState.sessionId}_${InitiatorHandshakeMessage::class.java.simpleName}"),
-                this.capture()
+                this.capture(),
+                eq(SessionManager.SessionKey(OUR_PARTY, PEER_PARTY))
             )
             assertThat(this.allValues.size).isEqualTo(1)
             assertThat(this.firstValue.source).isEqualTo(OUR_PARTY)
@@ -755,7 +761,10 @@ class SessionManagerTest {
             .isInstanceOfSatisfying(SessionManager.SessionDirection.Outbound::class.java) {
                 assertThat(it.session).isEqualTo(session)
             }
-        verify(sessionReplayer).removeMessageFromReplay("${sessionState.sessionId}_${InitiatorHandshakeMessage::class.java.simpleName}")
+        verify(sessionReplayer).removeMessageFromReplay(
+            "${sessionState.sessionId}_${InitiatorHandshakeMessage::class.java.simpleName}",
+            SessionManager.SessionKey(OUR_PARTY, PEER_PARTY)
+        )
         verify(pendingSessionMessageQueues)
             .sessionNegotiatedCallback(sessionManager, SessionManager.SessionKey(OUR_PARTY, PEER_PARTY), session, networkMap)
     }
@@ -778,7 +787,8 @@ class SessionManagerTest {
                 assertThat(it.session).isEqualTo(session)
             }
         verify(sessionReplayer).removeMessageFromReplay(
-            "${sessionState.sessionId}_${InitiatorHandshakeMessage::class.java.simpleName}"
+            "${sessionState.sessionId}_${InitiatorHandshakeMessage::class.java.simpleName}",
+            SessionManager.SessionKey(OUR_PARTY, PEER_PARTY)
         )
         verify(pendingSessionMessageQueues)
             .sessionNegotiatedCallback(sessionManager, SessionManager.SessionKey(OUR_PARTY, PEER_PARTY), session, networkMap)
