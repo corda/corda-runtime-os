@@ -335,7 +335,7 @@ class HttpClientTest {
         whenever(loop.schedule(any(), any(), any())).doReturn(future)
         client.start()
 
-        (1..10).forEach {
+        repeat(10) {
             client.onClose(HttpConnectionEvent(channel))
         }
 
