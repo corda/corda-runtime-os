@@ -9,7 +9,7 @@ import java.time.Duration
 interface LateInitRPCOps : RpcOps, Lifecycle {
 
     /** RPC sender that handles incoming HTTP RPC requests. */
-    fun createRpcSender(config: SmartConfig)
+    fun createAndStartRpcSender(config: SmartConfig)
 
     /** Timeout for incoming HTTP RPC requests to [millis]. */
     fun setHttpRequestTimeout(httpRequestTimeout: Duration)

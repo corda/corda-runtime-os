@@ -47,17 +47,17 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
     private var httpRequestTimeout: Duration? = null
     override val isRunning get() = rpcSender?.isRunning ?: false && httpRequestTimeout != null
 
-    override fun start() =
-        rpcSender?.start() ?: throw VirtualNodeRPCOpsServiceException("RPC sender has not been created")
+    override fun start() = Unit
 
     override fun stop() {
         rpcSender?.close()
         rpcSender = null
     }
 
-    override fun createRpcSender(config: SmartConfig) {
+    override fun createAndStartRpcSender(config: SmartConfig) {
         rpcSender?.close()
         rpcSender = publisherFactory.createRPCSender(RPC_CONFIG, config)
+        rpcSender!!.start()
     }
 
     override fun setHttpRequestTimeout(httpRequestTimeout: Duration) {

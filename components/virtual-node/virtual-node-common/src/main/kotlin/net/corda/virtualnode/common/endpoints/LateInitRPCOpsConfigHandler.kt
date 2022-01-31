@@ -52,7 +52,7 @@ internal class LateInitRPCOpsConfigHandler(
 
         if (config.hasPath(BOOTSTRAP_SERVERS)) {
             try {
-                lateInitRPCOps.createRpcSender(config)
+                lateInitRPCOps.createAndStartRpcSender(config)
             } catch (e: Exception) {
                 coordinator.updateStatus(ERROR)
                 throw LateInitRPCOpsServiceException(
