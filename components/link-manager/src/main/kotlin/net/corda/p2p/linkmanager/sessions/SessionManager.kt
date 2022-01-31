@@ -15,10 +15,9 @@ interface SessionManager: LifecycleWithDominoTile {
     fun dataMessageSent(session: Session)
     fun messageAcknowledged(sessionId: String)
 
-    //On the Outbound side there is a single unique session per SessionKey.
-    data class SessionKey(
+    data class SessionCounterparties(
         val ourId: LinkManagerNetworkMap.HoldingIdentity,
-        val responderId: LinkManagerNetworkMap.HoldingIdentity
+        val counterpartyId: LinkManagerNetworkMap.HoldingIdentity
     )
 
     sealed class SessionState {
@@ -29,8 +28,8 @@ interface SessionManager: LifecycleWithDominoTile {
     }
 
     sealed class SessionDirection {
-        data class Inbound(val key: SessionKey, val session: Session): SessionDirection()
-        data class Outbound(val key: SessionKey, val session: Session): SessionDirection()
+        data class Inbound(val counterparties: SessionCounterparties, val session: Session): SessionDirection()
+        data class Outbound(val counterparties: SessionCounterparties, val session: Session): SessionDirection()
         object NoSession: SessionDirection()
     }
 }

@@ -55,24 +55,24 @@ class InMemorySessionReplayer(
         val sessionId: String,
         val source: LinkManagerNetworkMap.HoldingIdentity,
         val dest: LinkManagerNetworkMap.HoldingIdentity,
-        val sentSessionMessageCallback: (key: SessionManager.SessionKey, sessionId: String) -> Unit
+        val sentSessionMessageCallback: (counterparties: SessionManager.SessionCounterparties, sessionId: String) -> Unit
     )
 
     fun addMessageForReplay(
         uniqueId: String,
         messageReplay: SessionMessageReplay,
-        sessionKey: SessionManager.SessionKey
+        counterparties: SessionManager.SessionCounterparties
     ) {
         dominoTile.withLifecycleLock {
             if (!isRunning) {
                 throw IllegalStateException("A message was added for replay before the InMemorySessionReplayer was started.")
             }
-            replayScheduler.addForReplay(Instant.now().toEpochMilli(), uniqueId, messageReplay, sessionKey)
+            replayScheduler.addForReplay(Instant.now().toEpochMilli(), uniqueId, messageReplay, counterparties)
         }
     }
 
-    fun removeMessageFromReplay(uniqueId: String, sessionKey: SessionManager.SessionKey) {
-        replayScheduler.removeFromReplay(uniqueId, sessionKey)
+    fun removeMessageFromReplay(uniqueId: String, counterparties: SessionManager.SessionCounterparties) {
+        replayScheduler.removeFromReplay(uniqueId, counterparties)
     }
 
     fun removeAllMessagesFromReplay() {
@@ -101,7 +101,7 @@ class InMemorySessionReplayer(
         logger.debug { "Replaying session message ${message.payload.javaClass} for session ${messageReplay.sessionId}." }
         publisher.publish(listOf(Record(LINK_OUT_TOPIC, LinkManager.generateKey(), message)))
         messageReplay.sentSessionMessageCallback(
-            SessionManager.SessionKey(messageReplay.source, messageReplay.dest),
+            SessionManager.SessionCounterparties(messageReplay.source, messageReplay.dest),
             messageReplay.sessionId
         )
     }
