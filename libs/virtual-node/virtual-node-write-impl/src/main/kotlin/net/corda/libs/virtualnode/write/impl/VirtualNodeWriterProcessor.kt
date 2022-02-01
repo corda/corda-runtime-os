@@ -15,6 +15,7 @@ import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import java.nio.ByteBuffer
+import java.util.concurrent.CompletableFuture
 
 /**
  * An RPC responder processor that handles virtual node creation requests.
@@ -22,21 +23,25 @@ import java.nio.ByteBuffer
  * For each virtual node creation request, persists the created virtual node to the cluster database publishes it to
  * Kafka.
  *
- * @property publisher Used to publish to Kafka.
+ * @property vnodePublisher Used to publish to Kafka.
  * @property cpiRepository Temporary stub used for retrieving CPI data and holding identities.
  */
 internal class VirtualNodeWriterProcessor(
-    private val publisher: Publisher,
+    private val vnodePublisher: Publisher,
     private val cpiRepository: CPIRepository
 ) : RPCResponderProcessor<VirtualNodeCreationRequest, VirtualNodeCreationResponse> {
 
     /**
      * For each [request], the processor attempts to commit a new virtual node to the cluster database. If successful,
-     * the created virtual node is then published by the [publisher] to the `VIRTUAL_NODE_INFO_TOPIC` topic.
+     * the created virtual node is then published by the [vnodePublisher] to the `VIRTUAL_NODE_INFO_TOPIC` topic.
      *
      * If both steps succeed, [respFuture] is completed successfully. Otherwise, it is completed unsuccessfully.
      */
-    override fun onNext(request: VirtualNodeCreationRequest, respFuture: VirtualNodeCreationResponseFuture) {
+    override fun onNext(
+        request: VirtualNodeCreationRequest,
+        respFuture: CompletableFuture<VirtualNodeCreationResponse>
+    ) {
+
         val cpiMetadata = cpiRepository.getCPIMetadata(request.cpiIdHash)
         if (cpiMetadata == null) {
             val errMsg = "CPI with hash ${request.cpiIdHash} was not found."
@@ -62,9 +67,11 @@ internal class VirtualNodeWriterProcessor(
 
         val virtualNodeInfo = VirtualNodeInfo(holdingId.toAvro(), cpiMetadata.id.toAvro())
         val virtualNodeRecord = Record(VIRTUAL_NODE_INFO_TOPIC, virtualNodeInfo.holdingIdentity, virtualNodeInfo)
-        val future = publisher.publish(listOf(virtualNodeRecord)).first()
+        // TODO - CORE-3319 - Strategy for DB and Kafka retries.
+        val future = vnodePublisher.publish(listOf(virtualNodeRecord)).first()
 
         try {
+            // TODO - CORE-3730 - Define timeout policy.
             future.get()
         } catch (e: Exception) {
             val errMsg = "Record $virtualNodeRecord was written to the database, but couldn't be published. Cause: $e"
@@ -88,7 +95,7 @@ internal class VirtualNodeWriterProcessor(
     /** Completes the [respFuture] with an [ExceptionEnvelope]. */
     @Suppress("LongParameterList")
     private fun handleException(
-        respFuture: VirtualNodeCreationResponseFuture,
+        respFuture: CompletableFuture<VirtualNodeCreationResponse>,
         errMsg: String,
         errClassName: String,
         cpiMetadata: CPIMetadata?,

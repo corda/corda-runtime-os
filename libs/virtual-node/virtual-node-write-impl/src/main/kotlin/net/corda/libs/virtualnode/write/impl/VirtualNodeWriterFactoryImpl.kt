@@ -9,6 +9,7 @@ import net.corda.libs.virtualnode.write.VirtualNodeWriterFactory
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_CREATION_REQUEST_TOPIC
@@ -27,9 +28,9 @@ internal class VirtualNodeWriterFactoryImpl @Activate constructor(
 ) : VirtualNodeWriterFactory {
 
     override fun create(config: SmartConfig, instanceId: Int): VirtualNodeWriter {
-        val publisher = createPublisher(config, instanceId)
-        val subscription = createRPCSubscription(config, publisher)
-        return VirtualNodeWriterImpl(subscription, publisher)
+        val vnodePublisher = createPublisher(config, instanceId)
+        val subscription = createRPCSubscription(config, vnodePublisher)
+        return VirtualNodeWriterImpl(subscription, vnodePublisher)
     }
 
     /**
@@ -47,15 +48,16 @@ internal class VirtualNodeWriterFactoryImpl @Activate constructor(
     }
 
     /**
-     * Creates a [VirtualNodeCreationRPCSubscription] using the provided [config]. The subscription is to the
-     * [VIRTUAL_NODE_CREATION_REQUEST_TOPIC] topic, and handles requests using a [VirtualNodeWriterProcessor].
+     * Creates a [RPCSubscription]<VirtualNodeCreationRequest, VirtualNodeCreationResponse> using the provided
+     * [config]. The subscription is to the [VIRTUAL_NODE_CREATION_REQUEST_TOPIC] topic, and handles requests using a
+     * [VirtualNodeWriterProcessor].
      *
      * @throws VirtualNodeWriterException If the subscription cannot be set up.
      */
     private fun createRPCSubscription(
         config: SmartConfig,
-        publisher: Publisher
-    ): VirtualNodeCreationRPCSubscription {
+        vnodePublisher: Publisher
+    ): RPCSubscription<VirtualNodeCreationRequest, VirtualNodeCreationResponse> {
 
         val rpcConfig = RPCConfig(
             GROUP_NAME,
@@ -64,7 +66,7 @@ internal class VirtualNodeWriterFactoryImpl @Activate constructor(
             VirtualNodeCreationRequest::class.java,
             VirtualNodeCreationResponse::class.java,
         )
-        val processor = VirtualNodeWriterProcessor(publisher, CPIRepository())
+        val processor = VirtualNodeWriterProcessor(vnodePublisher, CPIRepository())
 
         return try {
             subscriptionFactory.createRPCSubscription(rpcConfig, config, processor)

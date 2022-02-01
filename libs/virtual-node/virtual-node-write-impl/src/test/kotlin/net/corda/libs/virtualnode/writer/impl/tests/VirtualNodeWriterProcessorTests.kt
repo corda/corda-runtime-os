@@ -8,7 +8,6 @@ import net.corda.data.virtualnode.VirtualNodeCreationResponse
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.libs.virtualnode.write.VirtualNodeWriterException
 import net.corda.libs.virtualnode.write.impl.CPIRepository
-import net.corda.libs.virtualnode.write.impl.VirtualNodeCreationResponseFuture
 import net.corda.libs.virtualnode.write.impl.VirtualNodeWriterProcessor
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.publisher.Publisher
@@ -62,7 +61,7 @@ class VirtualNodeWriterProcessorTests {
         req: VirtualNodeCreationRequest
     ): VirtualNodeCreationResponse {
 
-        val respFuture = VirtualNodeCreationResponseFuture()
+        val respFuture = CompletableFuture<VirtualNodeCreationResponse>()
         processor.onNext(req, respFuture)
         return respFuture.get()
     }
