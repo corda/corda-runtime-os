@@ -5,7 +5,7 @@ import net.corda.crypto.persistence.KeyValuePersistence
 import net.corda.crypto.persistence.messaging.impl.KafkaInfrastructure.Companion.wait
 import net.corda.data.crypto.persistence.SigningKeysRecord
 import net.corda.schema.Schemas
-import net.corda.v5.base.types.toHexString
+import net.corda.v5.crypto.calculateHash
 import net.corda.v5.crypto.sha256Bytes
 import org.bouncycastle.util.encoders.Base32
 import org.junit.jupiter.api.AfterEach
@@ -13,7 +13,10 @@ import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import java.nio.ByteBuffer
+import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
 import kotlin.test.assertEquals
@@ -28,23 +31,27 @@ class MessagingSigningKeysPersistenceSnapshotTests {
     private lateinit var signingPersistence: KeyValuePersistence<SigningKeysRecord, SigningKeysRecord>
     private lateinit var alias1: String
     private lateinit var keyDerivedId1: String
-    private lateinit var publicKey1: ByteArray
+    private lateinit var publicKey1: PublicKey
     private lateinit var original1: SigningKeysRecord
     private lateinit var alias2: String
     private lateinit var keyDerivedId2: String
     private lateinit var aliasDerivedId2: String
-    private lateinit var publicKey2: ByteArray
+    private lateinit var publicKey2: PublicKey
     private lateinit var original2: SigningKeysRecord
 
     @BeforeEach
     fun setup() {
         tenantId = UUID.randomUUID().toString()
-        publicKey1 = "Hello World1".toByteArray()
-        publicKey2 = "Hello World2".toByteArray()
+        publicKey1 = mock {
+            on { encoded } doReturn "Hello World 1".toByteArray()
+        }
+        publicKey2 = mock {
+            on { encoded } doReturn "Hello World 2".toByteArray()
+        }
         alias1 = UUID.randomUUID().toString()
         alias2 = UUID.randomUUID().toString()
-        keyDerivedId1 = "$tenantId:${publicKey1.sha256Bytes().toHexString()}"
-        keyDerivedId2 = "$tenantId:${publicKey2.sha256Bytes().toHexString()}"
+        keyDerivedId1 = "$tenantId:${publicKey1.calculateHash()}"
+        keyDerivedId2 = "$tenantId:${publicKey2.calculateHash()}"
         aliasDerivedId2 = "$tenantId:$alias2"
         kafka = KafkaInfrastructure()
         original1 = SigningKeysRecord(
@@ -52,7 +59,7 @@ class MessagingSigningKeysPersistenceSnapshotTests {
             CryptoConsts.Categories.LEDGER,
             alias1,
             Base32.toBase32String((tenantId + alias1).encodeToByteArray().sha256Bytes()).take(30).toLowerCase(),
-            ByteBuffer.wrap(publicKey1),
+            ByteBuffer.wrap(publicKey1.encoded),
             ByteBuffer.wrap("material1".toByteArray()),
             "CODE",
             "MK",
@@ -65,7 +72,7 @@ class MessagingSigningKeysPersistenceSnapshotTests {
             CryptoConsts.Categories.LEDGER,
             alias2,
             Base32.toBase32String((tenantId + alias2).encodeToByteArray().sha256Bytes()).take(30).toLowerCase(),
-            ByteBuffer.wrap(publicKey2),
+            ByteBuffer.wrap(publicKey2.encoded),
             null,
             "CODE",
             null,
