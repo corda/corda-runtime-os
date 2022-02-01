@@ -6,12 +6,42 @@ pluginManagement {
 
     plugins {
         id 'org.jetbrains.kotlin.jvm' version kotlinVersion
+        id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
     }
 }
 
 dependencyResolutionManagement {
     repositories {
         mavenCentral()
+
+        def cordaUseCache = System.getenv("CORDA_USE_CACHE")
+        if (cordaUseCache != null) {
+            maven {
+                url = "$artifactoryContextUrl/$cordaUseCache"
+                name = "R3 Maven remote repositories"
+                authentication {
+                    basic(BasicAuthentication)
+                }
+                credentials {
+                    username = System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                    password = System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+                }
+            }
+        } else {
+            mavenCentral()
+
+            maven {
+                url = "$artifactoryContextUrl/corda-dependencies"
+            }
+
+            maven {
+                url = "$artifactoryContextUrl/${System.getenv('CORDA_CONSUME_REPOSITORY_KEY') ?: 'corda-os-maven'}"
+                credentials {
+                    username = settings.ext.find('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                    password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+                }
+            }
+        }
     }
 }
 
