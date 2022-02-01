@@ -96,7 +96,11 @@ class RPCTopicServiceImpl(
              */
             try {
                 synchronized(consumerList) {
-                    consumerList[currentConsumer++]
+                    val consumer = consumerList[currentConsumer++]
+                    if (currentConsumer >= consumerList.size) {
+                        currentConsumer = 0
+                    }
+                    consumer
                 }.onNext(request, responseCompletion)
             } catch (e: Throwable) {
                 responseCompletion.completeExceptionally(
@@ -105,10 +109,6 @@ class RPCTopicServiceImpl(
                         e
                     )
                 )
-            }
-
-            if (currentConsumer >= consumerList.size) {
-                currentConsumer = 0
             }
         }
     }
