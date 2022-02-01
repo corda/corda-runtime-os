@@ -79,10 +79,20 @@ allprojects {
     }
 
     tasks.withType(Test).configureEach {
-        useJUnitPlatform()
+        useJUnitPlatform(){
+            excludeTags project.hasProperty('runUnstableTests') ? 'runAllTestsNoExclusions' : 'Unstable'
+        }
 
         doFirst {
             systemProperty 'java.io.tmpdir', buildDir.absolutePath
+        }
+
+        testLogging {
+            afterSuite { desc, result ->
+                if (!desc.parent) { // will match the outermost suite
+                    println "Results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} successes, ${result.failedTestCount} failures, ${result.skippedTestCount} skipped)"
+                }
+            }
         }
     }
 

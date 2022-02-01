@@ -1,0 +1,8 @@
+//catch all job for flaky tests
+@Library('corda-shared-build-pipeline-steps@5.0') _
+
+cordaPipeline(
+    runIntegrationTests: true,
+    createPostgresDb: true,
+    gradleAdditionalArgs: "-PrunUnstableTests"
+    )
