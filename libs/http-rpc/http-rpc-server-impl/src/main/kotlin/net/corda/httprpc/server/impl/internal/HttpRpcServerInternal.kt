@@ -41,6 +41,7 @@ import org.osgi.framework.wiring.BundleWiring
 import java.io.OutputStream
 import java.io.PrintStream
 import javax.security.auth.login.FailedLoginException
+import javax.servlet.MultipartConfigElement
 
 @Suppress("TooManyFunctions", "TooGenericExceptionThrown")
 internal class HttpRpcServerInternal(
@@ -175,7 +176,11 @@ internal class HttpRpcServerInternal(
         fun registerHandlerForRoute(routeInfo: RouteInfo, handlerType: HandlerType) {
             try {
                 log.info("Add \"$handlerType\" handler for \"${routeInfo.fullPath}\".")
-                addHandler(handlerType, routeInfo.fullPath, routeInfo.invokeMethod())
+                if (routeInfo.fullPath == "//api/v1/cpi//") {
+                    addHandler(handlerType, routeInfo.fullPath, routeInfo.invokeMultiPartMethod())
+                } else {
+                    addHandler(handlerType, routeInfo.fullPath, routeInfo.invokeMethod())
+                }
                 log.debug { "Add \"$handlerType\" handler for \"${routeInfo.fullPath}\" completed." }
             } catch (e: Exception) {
                 "Error during Add GET and POST routes".let {
@@ -259,6 +264,31 @@ internal class HttpRpcServerInternal(
         }
     }
 
+    // TODO
+    //  1. read the multiparts which should live locally
+    //  2. open a stream against it and call our endpoint
+    private fun RouteInfo.invokeMultiPartMethod(): (Context) -> Unit {
+        return { ctx ->
+
+            val multipartConfig = MultipartConfigElement(System.getProperty("user.dir"), 1024, 1024, 20_000_000)
+
+            ctx.req.setAttribute("org.eclipse.jetty.multipartConfig", multipartConfig)
+            val multipartParts = ctx.req.parts
+            if (multipartParts == null || multipartParts.isEmpty()) {
+                throw IllegalStateException("Parts were null")
+            }
+
+            try {
+                val stream = multipartParts.single().inputStream
+                val result = invokeDelegatedMethod(stream)
+                if (result != null) {
+                    ctx.json(result)
+                }
+            } catch(e: Exception) {
+                mapToResponse("Error at calling multipart method", e)
+            }
+        }
+    }
 
     fun start() {
         val existingSystemErrStream = System.err
