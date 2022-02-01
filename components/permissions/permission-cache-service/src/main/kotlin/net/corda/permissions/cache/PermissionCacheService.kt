@@ -97,10 +97,12 @@ class PermissionCacheService @Activate constructor(
             is RegistrationStatusChangeEvent -> {
                 log.info("Registration status change received: ${event.status.name}.")
                 if (event.status == LifecycleStatus.UP) {
-                    log.info("Registering for configuration updates.")
-                    configHandle = configurationReadService.registerForUpdates(::onConfigChange)
+                    if (configHandle == null) {
+                        log.info("Registering for configuration updates.")
+                        configHandle = configurationReadService.registerForUpdates(::onConfigChange)
+                    }
                 } else {
-                    configHandle?.close()
+                    downTransition()
                 }
             }
             is NewConfigurationReceivedEvent -> {
@@ -129,29 +131,34 @@ class PermissionCacheService @Activate constructor(
             }
             is StopEvent -> {
                 log.info("Stop event received, stopping dependencies and setting status to DOWN.")
-                topicsRegistration?.close()
-                topicsRegistration = null
                 configRegistration?.close()
                 configRegistration = null
-                configHandle?.close()
-                configHandle = null
-                userSubscription?.stop()
-                userSubscription = null
-                groupSubscription?.stop()
-                groupSubscription = null
-                roleSubscription?.stop()
-                roleSubscription = null
-                permissionSubscription?.stop()
-                permissionSubscription = null
+                downTransition()
                 _permissionCache?.stop()
                 _permissionCache = null
-                userSnapshotReceived = false
-                groupSnapshotReceived = false
-                roleSnapshotReceived = false
-                permissionSnapshotReceived = false
                 coordinator.updateStatus(LifecycleStatus.DOWN)
             }
         }
+    }
+
+    private fun downTransition() {
+        configHandle?.close()
+        configHandle = null
+        topicsRegistration?.close()
+        topicsRegistration = null
+        userSubscription?.stop()
+        userSubscription = null
+        groupSubscription?.stop()
+        groupSubscription = null
+        roleSubscription?.stop()
+        roleSubscription = null
+        permissionSubscription?.stop()
+        permissionSubscription = null
+
+        userSnapshotReceived = false
+        groupSnapshotReceived = false
+        permissionSnapshotReceived = false
+        roleSnapshotReceived = false
     }
 
     private fun setStatusUp() {
