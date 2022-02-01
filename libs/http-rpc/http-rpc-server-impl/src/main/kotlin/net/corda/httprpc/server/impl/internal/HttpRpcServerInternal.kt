@@ -264,6 +264,7 @@ internal class HttpRpcServerInternal(
         }
     }
 
+    // TODO the following method should be integrated to the normal RPC handlers registering flow (i.e. `RouteInfo.invokeMethod`)
     private fun RouteInfo.invokeMultiPartMethod(): (Context) -> Unit {
         return { ctx ->
             try {
