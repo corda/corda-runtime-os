@@ -6,12 +6,11 @@ import net.corda.data.flow.event.StartRPCFlow
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.manager.fiber.FlowIORequest
-import net.corda.flow.manager.mock.MockFlowFiber
-import net.corda.flow.manager.mock.filterOutputFlowTopicEventPayloads
-import net.corda.flow.manager.mock.filterOutputFlowTopicEvents
-import net.corda.flow.manager.mock.filterOutputFlowTopicRecords
-import net.corda.flow.manager.mock.flowEventDSL
-import net.corda.flow.manager.mock.mockFlowEventProcessor
+import net.corda.flow.manager.impl.acceptance.dsl.MockFlowFiber
+import net.corda.flow.manager.impl.acceptance.dsl.filterOutputFlowTopicEventPayloads
+import net.corda.flow.manager.impl.acceptance.dsl.filterOutputFlowTopicEvents
+import net.corda.flow.manager.impl.acceptance.dsl.filterOutputFlowTopicRecords
+import net.corda.flow.manager.impl.acceptance.dsl.flowEventDSL
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.uncheckedCast
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -19,6 +18,7 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import java.time.Instant
+import net.corda.flow.manager.impl.acceptance.dsl.mockFlowEventProcessor
 
 class FlowWakeupEventTest {
 
