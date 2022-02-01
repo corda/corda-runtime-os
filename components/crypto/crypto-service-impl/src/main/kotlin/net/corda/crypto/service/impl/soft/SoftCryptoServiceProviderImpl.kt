@@ -120,7 +120,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
             logger.info(
                 "Creating instance of the {} for member {} and category",
                 SoftCryptoService::class.java.name,
-                context.memberId,
+                context.tenantId,
                 context.category
             )
             return SoftCryptoService(
@@ -135,7 +135,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
             schemeMetadata: CipherSchemeMetadata
         ): SoftCryptoKeyCache {
             return SoftCryptoKeyCacheImpl(
-                tenantId = context.memberId,
+                tenantId = context.tenantId,
                 passphrase = context.config.passphrase,
                 salt = context.config.salt,
                 schemeMetadata = schemeMetadata,
