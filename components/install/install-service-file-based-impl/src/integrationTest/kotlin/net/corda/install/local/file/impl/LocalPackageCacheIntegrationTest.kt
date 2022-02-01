@@ -66,13 +66,17 @@ class LocalPackageCacheIntegrationTest {
         installService.stop()
         configReadService.stop()
 
+        Files.walk(testDir)
+            .sorted(Comparator.reverseOrder())
+            .forEach { println("Before: $it")}
+
         Files.walk(cpiDir)
             .sorted(Comparator.reverseOrder())
             .forEach(Files::delete)
 
         Files.walk(testDir)
             .sorted(Comparator.reverseOrder())
-            .forEach(::println)
+            .forEach { println("After: $it")}
     }
 
 
