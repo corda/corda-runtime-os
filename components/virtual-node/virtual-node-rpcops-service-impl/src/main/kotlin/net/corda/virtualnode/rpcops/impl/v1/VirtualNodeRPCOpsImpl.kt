@@ -3,9 +3,11 @@ package net.corda.virtualnode.rpcops.impl.v1
 import net.corda.data.virtualnode.VirtualNodeCreationRequest
 import net.corda.data.virtualnode.VirtualNodeCreationResponse
 import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.exception.InternalServerException
+import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRPCOps
-import net.corda.libs.virtualnode.endpoints.v1.types.CPIIdentifierHttp
+import net.corda.libs.virtualnode.endpoints.v1.types.CPIIdentifier
 import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeResponse
 import net.corda.messaging.api.publisher.RPCSender
@@ -13,6 +15,8 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_CREATION_REQUEST_TOPIC
 import net.corda.v5.base.concurrent.getOrThrow
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.membership.identity.MemberX500Name
 import net.corda.virtualnode.rpcops.VirtualNodeRPCOpsServiceException
 import net.corda.virtualnode.rpcops.impl.CLIENT_NAME_HTTP
 import net.corda.virtualnode.rpcops.impl.GROUP_NAME
@@ -20,8 +24,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.time.Duration
-import net.corda.httprpc.exception.InternalServerException
-import net.corda.v5.base.util.contextLogger
 
 /** An implementation of [VirtualNodeRPCOpsInternal]. */
 @Suppress("Unused")
@@ -65,21 +67,33 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
     }
 
     override fun createVirtualNode(request: HTTPCreateVirtualNodeRequest): HTTPCreateVirtualNodeResponse {
-        val rpcRequest = VirtualNodeCreationRequest("", "")
-        val response =  sendRequest(rpcRequest)
+        val rpcRequest = VirtualNodeCreationRequest(request.x500Name, request.cpiIdHash)
+        validateX500Name(rpcRequest.x500Name)
+        val resp = sendRequest(rpcRequest)
 
-        return if (response.success) {
-            val cpiId = CPIIdentifierHttp("", "", "")
-            HTTPCreateVirtualNodeResponse("", cpiId, "", "", "")
+        return if (resp.success) {
+            val cpiId = CPIIdentifier.fromAvro(resp.cpiIdentifier)
+            HTTPCreateVirtualNodeResponse(
+                resp.x500Name, cpiId, resp.cpiIdentifierHash, resp.mgmGroupId, resp.holdingIdentifierHash
+            )
         } else {
-            val exception = response.exception
-            if(exception == null) {
+            val exception = resp.exception
+            if (exception == null) {
                 logger.warn("Configuration Management request was unsuccessful but no exception was provided.")
                 throw InternalServerException("Request was unsuccessful but no exception was provided.")
             }
             logger.warn("Remote request to create virtual node responded with exception: ${exception.errorType}: ${exception.errorMessage}")
             throw InternalServerException("${exception.errorType}: ${exception.errorMessage}")
         }
+    }
+
+    /** Validates the [x500Name]. */
+    private fun validateX500Name(x500Name: String) = try {
+        MemberX500Name.parse(x500Name)
+    } catch (e: Exception) {
+        logger.warn("Configuration Management  X500 name \"$x500Name\" could not be parsed. Cause: ${e.message}")
+        val message = "X500 name \"$x500Name\" could not be parsed. Cause: ${e.message}"
+        throw InvalidInputDataException(message)
     }
 
     /**
