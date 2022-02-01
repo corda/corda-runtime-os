@@ -3,6 +3,7 @@ package net.corda.p2p.deployment.commands
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.p2p.deployment.DeploymentException
 import net.corda.p2p.deployment.Yaml
+import net.corda.p2p.deployment.getAndCheckEnv
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
@@ -30,19 +31,19 @@ class CreateStores : Runnable {
         names = ["-k", "--tinycert-api-key"],
         description = ["The TinyCert API Key"]
     )
-    private var apiKey = System.getenv("TINYCERT_API_KEY")
+    private var apiKey = getAndCheckEnv("TINYCERT_API_KEY")
 
     @Option(
         names = ["-p", "--tinycert-passphrase"],
         description = ["The TinyCert Pass phrase"]
     )
-    private var passPhrase = System.getenv("TINYCERT_PASS_PHRASE")
+    private var passPhrase = getAndCheckEnv("TINYCERT_PASS_PHRASE")
 
     @Option(
         names = ["-e", "--tinycert-email"],
         description = ["The TinyCert email"]
     )
-    private var email = System.getenv("TINYCERT_EMAIL") ?: System.getenv("CORDA_ARTIFACTORY_USERNAME")
+    private var email = getAndCheckEnv("TINYCERT_EMAIL")
 
     @Option(
         names = ["--hosts"],

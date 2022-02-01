@@ -31,5 +31,5 @@ dependencies {
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation project(":libs:crypto:crypto-internal")
+    testImplementation project(":libs:crypto:crypto-client")
 }

@@ -1,41 +1,29 @@
 package net.corda.crypto.testkit
 
-import net.corda.crypto.impl.CipherSchemeMetadataProviderImpl
-import net.corda.crypto.impl.dev.InMemoryKeyValuePersistenceFactoryProvider
-import net.corda.crypto.impl.persistence.KeyValuePersistenceFactory
+import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
+import net.corda.crypto.impl.components.DigestServiceImpl
+import net.corda.crypto.impl.components.SignatureVerificationServiceImpl
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.cipher.suite.schemes.SignatureScheme
+import net.corda.v5.crypto.DigestService
+import net.corda.v5.crypto.SignatureVerificationService
 
-class CryptoMocks(
-    schemeMetadataOverride: CipherSchemeMetadata? = null
-) {
-    val persistenceFactoryProvider = InMemoryKeyValuePersistenceFactoryProvider()
-    val persistenceFactory: KeyValuePersistenceFactory = persistenceFactoryProvider.get()
+class CryptoMocks {
 
-    val schemeMetadata: CipherSchemeMetadata =
-        schemeMetadataOverride ?: CipherSchemeMetadataProviderImpl().getInstance()
+    val schemeMetadata: CipherSchemeMetadata by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        CipherSchemeMetadataImpl()
+    }
 
-    val factories = Factories(this)
+    val verifier: SignatureVerificationService by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        SignatureVerificationServiceImpl(
+            schemeMetadata = schemeMetadata,
+            hashingService = digestService
+        )
+    }
 
-    class Factories(
-        private val mocks: CryptoMocks,
-        defaultSignatureSchemeCodeName: String = ECDSA_SECP256R1_CODE_NAME,
-        defaultFreshKeySignatureSchemeCodeName: String = ECDSA_SECP256R1_CODE_NAME,
-    ) {
-        val defaultSignatureScheme: SignatureScheme =
-            mocks.schemeMetadata.findSignatureScheme(defaultSignatureSchemeCodeName)
-
-        val defaultFreshKeySignatureScheme: SignatureScheme =
-            mocks.schemeMetadata.findSignatureScheme(defaultFreshKeySignatureSchemeCodeName)
-
-        val cipherSuite = MockCipherSuiteFactory(mocks)
-
-        val cryptoServices = MockCryptoFactory(mocks, defaultSignatureScheme, defaultFreshKeySignatureScheme)
-
-        val cryptoLibrary = MockCryptoLibraryFactory(mocks)
-
-        fun cryptoClients(memberId: String): MockCryptoLibraryClientsFactory =
-            MockCryptoLibraryClientsFactory(mocks, memberId)
+    val digestService: DigestService by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        DigestServiceImpl(
+            schemeMetadata = schemeMetadata,
+            customFactoriesProvider = null
+        )
     }
 }

@@ -1,7 +1,6 @@
 package net.corda.membership.impl.read.reader
 
-import net.corda.membership.GroupPolicy
-import net.corda.membership.impl.GroupPolicyImpl
+import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.virtualnode.HoldingIdentity
@@ -23,6 +22,7 @@ interface MembershipGroupReaderFactory {
      */
     class Impl(
         private val membershipGroupReadCache: MembershipGroupReadCache,
+        private val groupPolicyProvider: GroupPolicyProvider
     ) : MembershipGroupReaderFactory {
         private val groupReaderCache get() = membershipGroupReadCache.groupReaderCache
 
@@ -34,25 +34,10 @@ interface MembershipGroupReaderFactory {
             holdingIdentity: HoldingIdentity
         ) = MembershipGroupReaderImpl(
             holdingIdentity,
-            getGroupPolicy(holdingIdentity),
+            groupPolicyProvider.getGroupPolicy(holdingIdentity),
             membershipGroupReadCache
         ).apply {
             groupReaderCache.put(holdingIdentity, this)
-        }
-
-        /**
-         * Retrieves the GroupPolicy JSON string from the CPI metadata and parses it into a [GroupPolicy] object.
-         * Stub until actual implementation exists.
-         */
-        private fun getGroupPolicy(
-            holdingIdentity: HoldingIdentity
-        ): GroupPolicy {
-            return GroupPolicyImpl(
-                mapOf(
-                    "groupId" to holdingIdentity.groupId,
-                    "owningMember" to holdingIdentity.x500Name
-                )
-            )
         }
     }
 }

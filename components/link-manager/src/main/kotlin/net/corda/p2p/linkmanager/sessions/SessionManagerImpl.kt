@@ -254,8 +254,8 @@ open class SessionManagerImpl(
 
     private fun destroyOutboundSession(sessionKey: SessionKey, sessionId: String) {
         sessionNegotiationLock.write {
-            sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId(sessionId))
-            sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId(sessionId))
+            sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId(sessionId), sessionKey)
+            sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId(sessionId), sessionKey)
             activeOutboundSessions.remove(sessionKey)
             activeOutboundSessionsById.remove(sessionId)
             pendingOutboundSessions.remove(sessionId)
@@ -273,11 +273,11 @@ open class SessionManagerImpl(
         return sessionId + "_" + InitiatorHandshakeMessage::class.java.simpleName
     }
 
-    private fun addToReplay(
-        session: AuthenticationProtocolInitiator,
+    private fun addInitMessageToReplay(
+        sessionKey: SessionKey,
         sessionId: String,
-        sessionKey: SessionKey
-    ) : InitiatorHelloMessage {
+        session: AuthenticationProtocolInitiator
+    ): InitiatorHelloMessage {
         val sessionInitPayload = session.generateInitiatorHello()
         sessionReplayer.addMessageForReplay(
             initiatorHelloUniqueId(sessionId),
@@ -287,7 +287,8 @@ open class SessionManagerImpl(
                 sessionKey.ourId,
                 sessionKey.responderId,
                 heartbeatManager::sessionMessageSent
-            )
+            ),
+            sessionKey
         )
         return sessionInitPayload
     }
@@ -317,23 +318,24 @@ open class SessionManagerImpl(
         pendingOutboundSessions[sessionId] = Pair(sessionKey, session)
         logger.info("Local identity (${sessionKey.ourId}) initiating new session $sessionId with remote identity ${sessionKey.responderId}")
 
+
         val responderMemberInfo = networkMap.getMemberInfo(sessionKey.responderId)
         if (responderMemberInfo == null) {
             logger.warn(
                 "Attempted to start session negotiation with peer " +
-                    "${sessionKey.responderId.toHoldingIdentity()} " +
-                    "which is not in the network map. " +
-                    "The sessionInit message was not sent."
+                        "${sessionKey.responderId.toHoldingIdentity()} " +
+                        "which is not in the network map. " +
+                        "The sessionInit message was not sent."
             )
-            addToReplay(
-                session, sessionId, sessionKey
+            addInitMessageToReplay(
+                sessionKey, sessionId, session
             )
             return null
         }
         val header = messageHeaderFactory.createLinkOutHeader(sessionKey.ourId, responderMemberInfo.holdingIdentity) ?: return null
 
-        val sessionInitPayload = addToReplay(
-            session, sessionId, sessionKey
+        val sessionInitPayload = addInitMessageToReplay(
+            sessionKey, sessionId, session
         )
 
         heartbeatManager.sessionMessageSent(sessionKey, sessionId)
@@ -382,7 +384,7 @@ open class SessionManagerImpl(
             return null
         }
 
-        sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId(message.header.sessionId))
+        sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId(message.header.sessionId), sessionInfo)
         heartbeatManager.messageAcknowledged(message.header.sessionId)
 
         sessionReplayer.addMessageForReplay(
@@ -393,7 +395,8 @@ open class SessionManagerImpl(
                 sessionInfo.ourId,
                 sessionInfo.responderId,
                 heartbeatManager::sessionMessageSent
-            )
+            ),
+            sessionInfo
         )
 
         val header = messageHeaderFactory.createLinkOutHeader(
@@ -431,7 +434,7 @@ open class SessionManagerImpl(
             return null
         }
         val authenticatedSession = session.getSession()
-        sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId(message.header.sessionId))
+        sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId(message.header.sessionId), sessionInfo)
         heartbeatManager.messageAcknowledged(message.header.sessionId)
         sessionNegotiationLock.write {
             activeOutboundSessions[sessionInfo] = authenticatedSession

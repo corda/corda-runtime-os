@@ -4,7 +4,7 @@ import net.corda.kryoserialization.TestClass.Companion.TEST_INT
 import net.corda.kryoserialization.TestClass.Companion.TEST_STRING
 import net.corda.kryoserialization.impl.KryoCheckpointSerializerBuilderImpl
 import net.corda.sandbox.SandboxGroup
-import net.corda.serialization.CheckpointSerializerBuilder
+import net.corda.serialization.checkpoint.CheckpointSerializerBuilder
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.i2p.crypto.eddsa.EdDSAPrivateKey

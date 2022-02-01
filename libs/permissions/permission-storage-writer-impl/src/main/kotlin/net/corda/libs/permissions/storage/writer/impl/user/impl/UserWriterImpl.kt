@@ -9,6 +9,7 @@ import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
 import net.corda.libs.permissions.storage.common.converter.toAvroUser
 import net.corda.libs.permissions.storage.writer.impl.user.UserWriter
+import net.corda.libs.permissions.storage.writer.impl.validation.EntityValidationUtil
 import net.corda.orm.utils.transaction
 import net.corda.permissions.model.ChangeAudit
 import net.corda.permissions.model.Group
@@ -33,8 +34,9 @@ class UserWriterImpl(
         log.debug { "Received request to create new user: $loginName" }
         return entityManagerFactory.transaction { entityManager ->
 
-            validateUserDoesNotAlreadyExist(entityManager, request)
-            val parentGroup = validateAndGetOptionalParentGroup(request, entityManager)
+            val validator = EntityValidationUtil(entityManager)
+            validator.validateUserDoesNotAlreadyExist(request.loginName)
+            val parentGroup = validator.validateAndGetOptionalParentGroup(request.parentGroupId)
 
             val user = persistNewUser(request, parentGroup, entityManager, requestUserId, loginName)
             user.toAvroUser()
@@ -45,9 +47,10 @@ class UserWriterImpl(
         log.debug { "Received request to add Role ${request.roleId} to User ${request.loginName}" }
         return entityManagerFactory.transaction { entityManager ->
 
-            val user = validateAndGetUniqueUser(entityManager, request.loginName)
-            val role = validateAndGetUniqueRole(entityManager, request.roleId)
-            validateRoleNotAlreadyAssignedToUser(entityManager, user, request.roleId)
+            val validator = EntityValidationUtil(entityManager)
+            val user = validator.validateAndGetUniqueUser(request.loginName)
+            val role = validator.validateAndGetUniqueRole(request.roleId)
+            validator.validateRoleNotAlreadyAssignedToUser(user, request.roleId)
 
             val resultUser = persistUserRoleAssociation(entityManager, requestUserId, user, role)
 
@@ -59,75 +62,13 @@ class UserWriterImpl(
         log.debug { "Received request to remove Role ${request.roleId} from User ${request.loginName}" }
         return entityManagerFactory.transaction { entityManager ->
 
-            val user = validateAndGetUniqueUser(entityManager, request.loginName)
-            val association = validateAndGetRoleAssociatedWithUser(entityManager, user, request.roleId)
+            val validator = EntityValidationUtil(entityManager)
+            val user = validator.validateAndGetUniqueUser(request.loginName)
+            val association = validator.validateAndGetRoleAssociatedWithUser(user, request.roleId)
 
             val resultUser = removeUserRoleAssociation(entityManager, requestUserId, user, request.roleId, association)
 
             resultUser.toAvroUser()
-        }
-    }
-
-    private fun validateUserDoesNotAlreadyExist(entityManager: EntityManager, request: CreateUserRequest) {
-        val count = entityManager
-            .createQuery("SELECT count(1) FROM User WHERE loginName = :loginName")
-            .setParameter("loginName", request.loginName)
-            .singleResult as Long
-
-        require(count == 0L) {
-            entityManager.transaction.setRollbackOnly()
-            "User with login '${request.loginName}' already exists."
-        }
-    }
-
-    private fun validateAndGetOptionalParentGroup(request: CreateUserRequest, entityManager: EntityManager): Group? {
-        val parentGroup = if (request.parentGroupId != null) {
-            requireNotNull(entityManager.find(Group::class.java, request.parentGroupId)) {
-                entityManager.transaction.setRollbackOnly()
-                "The specified parent group '${request.parentGroupId}' does not exist."
-            }
-        } else {
-            null
-        }
-        return parentGroup
-    }
-
-    private fun validateAndGetUniqueUser(entityManager: EntityManager, loginName: String): User {
-        val users = entityManager
-            .createQuery("FROM User WHERE loginName = :loginName", User::class.java)
-            .setParameter("loginName", loginName)
-            .resultList
-
-        require(users.size == 1) {
-            entityManager.transaction.setRollbackOnly()
-            "User '$loginName' does not exist."
-        }
-
-        return users.first()
-    }
-
-    private fun validateAndGetUniqueRole(entityManager: EntityManager, roleId: String): Role {
-        val role = entityManager.find(Role::class.java, roleId)
-
-        requireNotNull(role) {
-            entityManager.transaction.setRollbackOnly()
-            "Role '$roleId' does not exist."
-        }
-
-        return role
-    }
-
-    private fun validateRoleNotAlreadyAssignedToUser(entityManager: EntityManager, user: User, roleId: String) {
-        require(user.roleUserAssociations.none { it.role.id == roleId }) {
-            entityManager.transaction.setRollbackOnly()
-            "Role '$roleId' is already associated with User '${user.loginName}'."
-        }
-    }
-
-    private fun validateAndGetRoleAssociatedWithUser(entityManager: EntityManager, user: User, roleId: String): RoleUserAssociation {
-        return requireNotNull(user.roleUserAssociations.singleOrNull { it.role.id == roleId }) {
-            entityManager.transaction.setRollbackOnly()
-            "Role '$roleId' is not associated with User '${user.loginName}'."
         }
     }
 
@@ -175,7 +116,8 @@ class UserWriterImpl(
             updateTimestamp = updateTimestamp,
             actorUser = requestUserId,
             changeType = RPCPermissionOperation.ADD_ROLE_TO_USER,
-            details = "Role '${role.id}' assigned to User '${user.id}' by '$requestUserId'."
+            details = "Role '${role.id}' assigned to User '${user.loginName}' by '$requestUserId'. " +
+                    "Created RoleUserAssociation '${association.id}'."
         )
 
         user.roleUserAssociations.add(association)
@@ -200,7 +142,8 @@ class UserWriterImpl(
             updateTimestamp = updateTimestamp,
             actorUser = requestUserId,
             changeType = RPCPermissionOperation.DELETE_ROLE_FROM_USER,
-            details = "Role '$roleId' unassigned from User '${user.id}' by '$requestUserId'."
+            details = "Role '$roleId' unassigned from User '${user.loginName}' by '$requestUserId'. " +
+                    "Removed RoleUserAssociation '${association.id}'."
         )
 
         user.roleUserAssociations.remove(association)

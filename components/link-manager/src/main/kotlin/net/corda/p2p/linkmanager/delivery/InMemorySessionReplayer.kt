@@ -43,7 +43,7 @@ class InMemorySessionReplayer(
     )
 
     private val replayScheduler = ReplayScheduler(coordinatorFactory, configurationReaderService,
-        LinkManagerConfiguration.MESSAGE_REPLAY_PERIOD_KEY, ::replayMessage)
+        false, LinkManagerConfiguration.MESSAGE_REPLAY_KEY_PREFIX, ::replayMessage)
 
     override val dominoTile = DominoTile(
         this::class.java.simpleName,
@@ -61,18 +61,19 @@ class InMemorySessionReplayer(
 
     fun addMessageForReplay(
         uniqueId: String,
-        messageReplay: SessionMessageReplay
+        messageReplay: SessionMessageReplay,
+        sessionKey: SessionManager.SessionKey
     ) {
         dominoTile.withLifecycleLock {
             if (!isRunning) {
                 throw IllegalStateException("A message was added for replay before the InMemorySessionReplayer was started.")
             }
-            replayScheduler.addForReplay(Instant.now().toEpochMilli(), uniqueId, messageReplay)
+            replayScheduler.addForReplay(Instant.now().toEpochMilli(), uniqueId, messageReplay, sessionKey)
         }
     }
 
-    fun removeMessageFromReplay(uniqueId: String) {
-        replayScheduler.removeFromReplay(uniqueId)
+    fun removeMessageFromReplay(uniqueId: String, sessionKey: SessionManager.SessionKey) {
+        replayScheduler.removeFromReplay(uniqueId, sessionKey)
     }
 
     fun removeAllMessagesFromReplay() {

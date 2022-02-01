@@ -25,7 +25,7 @@ import net.corda.kryoserialization.serializers.StackTraceSerializer
 import net.corda.kryoserialization.serializers.ThrowableSerializer
 import net.corda.kryoserialization.serializers.X509CertificateSerializer
 import net.corda.kryoserialization.serializers.NonSerializableSerializer
-import net.corda.serialization.NonSerializable
+import net.corda.serialization.checkpoint.NonSerializable
 import net.corda.utilities.LazyMappedList
 import org.objenesis.instantiator.ObjectInstantiator
 import org.objenesis.strategy.InstantiatorStrategy

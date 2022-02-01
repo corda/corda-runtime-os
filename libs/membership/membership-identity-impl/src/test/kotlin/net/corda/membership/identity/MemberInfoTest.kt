@@ -1,8 +1,7 @@
 package net.corda.membership.identity
 
-import net.corda.crypto.CryptoLibraryFactory
 import net.corda.data.KeyValuePairList
-import net.corda.data.crypto.wire.WireSignatureWithKey
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.v5.membership.conversion.parse
 import net.corda.v5.membership.conversion.parseList
@@ -31,7 +30,7 @@ import net.corda.membership.identity.converter.PublicKeyConverter
 import net.corda.membership.testkit.DummyConverter
 import net.corda.membership.testkit.DummyObjectWithNumberAndText
 import net.corda.membership.testkit.DummyObjectWithText
-import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.membership.conversion.ValueNotFoundException
 import net.corda.v5.membership.identity.EndpointInfo
 import net.corda.v5.membership.identity.MemberInfo
@@ -47,7 +46,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
-import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.io.File
 import java.lang.ClassCastException
@@ -60,10 +58,7 @@ import kotlin.test.assertNull
 @Suppress("MaxLineLength")
 class MemberInfoTest {
     companion object {
-        private val keyEncodingService = Mockito.mock(KeyEncodingService::class.java)
-        private val cryptoLibraryFactory: CryptoLibraryFactory = mock<CryptoLibraryFactory>().apply {
-            whenever(getKeyEncodingService()).thenReturn(keyEncodingService)
-        }
+        private val keyEncodingService = Mockito.mock(CipherSchemeMetadata::class.java)
         private const val KEY = "12345"
         private val key = Mockito.mock(PublicKey::class.java)
 
@@ -84,7 +79,7 @@ class MemberInfoTest {
         private val converter = PropertyConverterImpl(
             listOf(
                 EndpointInfoConverter(),
-                PublicKeyConverter(cryptoLibraryFactory),
+                PublicKeyConverter(keyEncodingService),
                 DummyConverter()
             )
         )
@@ -155,7 +150,7 @@ class MemberInfoTest {
 
         private val avroMemberInfo = File("avro-member-info.avro")
 
-        private val signature = WireSignatureWithKey(
+        private val signature = CryptoSignatureWithKey(
             ByteBuffer.wrap(byteArrayOf()),
             ByteBuffer.wrap(byteArrayOf()),
         )

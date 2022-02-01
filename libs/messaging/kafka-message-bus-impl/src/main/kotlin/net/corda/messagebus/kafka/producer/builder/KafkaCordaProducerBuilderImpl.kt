@@ -1,7 +1,6 @@
 package net.corda.messagebus.kafka.producer.builder
 
 import com.typesafe.config.Config
-import net.corda.data.CordaAvroSerializationFactory
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messagebus.kafka.producer.CordaKafkaProducerImpl
@@ -27,8 +26,6 @@ import org.slf4j.Logger
  */
 @Component(service = [CordaProducerBuilder::class])
 class KafkaCordaProducerBuilderImpl @Activate constructor(
-    @Reference(service = CordaAvroSerializationFactory::class)
-    private val avroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = AvroSchemaRegistry::class)
     private val avroSchemaRegistry: AvroSchemaRegistry
 ) : CordaProducerBuilder {

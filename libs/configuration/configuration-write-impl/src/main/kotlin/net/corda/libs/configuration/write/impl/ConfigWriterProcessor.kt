@@ -80,6 +80,7 @@ internal class ConfigWriterProcessor(
         val future = publisher.publish(listOf(configRecord)).first()
 
         try {
+            // TODO - CORE-3730 - Define timeout policy.
             future.get()
         } catch (e: Exception) {
             val errMsg = "Record $configRecord was written to the database, but couldn't be published. Cause: $e"
@@ -93,11 +94,7 @@ internal class ConfigWriterProcessor(
         respFuture.complete(response)
     }
 
-    /**
-     * Completes the [respFuture] with an [ExceptionEnvelope].
-     *
-     * @throws IllegalStateException If the current configuration cannot be read back from the cluster database.
-     */
+    /** Completes the [respFuture] with an [ExceptionEnvelope]. */
     @Suppress("LongParameterList")
     private fun handleException(
         respFuture: ConfigurationManagementResponseFuture,
