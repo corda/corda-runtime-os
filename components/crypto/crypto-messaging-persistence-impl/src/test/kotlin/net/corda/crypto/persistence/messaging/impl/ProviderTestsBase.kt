@@ -11,6 +11,8 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -40,6 +42,7 @@ abstract class ProviderTestsBase<PROVIDER: Lifecycle> {
         registrationHandle = mock()
         configurationReadService = mock {
             on { registerForUpdates(any()) } doReturn registrationHandle
+            on { registerComponentForUpdates(any(), any()) } doReturn registrationHandle
         }
         sub = mock()
         pub = mock()
@@ -57,9 +60,11 @@ abstract class ProviderTestsBase<PROVIDER: Lifecycle> {
         coordinator = mock {
             on { start() } doAnswer {
                 coordinatorIsRunning = true
+                coordinator.postEvent(StartEvent())
             }
             on { stop() } doAnswer {
                 coordinatorIsRunning = false
+                coordinator.postEvent(StopEvent())
             }
             on { isRunning }.thenAnswer { coordinatorIsRunning }
             on { postEvent(any()) } doAnswer {

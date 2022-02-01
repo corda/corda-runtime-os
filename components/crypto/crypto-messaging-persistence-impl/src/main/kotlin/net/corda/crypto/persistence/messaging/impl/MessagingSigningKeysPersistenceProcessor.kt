@@ -38,7 +38,8 @@ class MessagingSigningKeysPersistenceProcessor(
     private val sub: CompactedSubscription<String, SigningKeysRecord> =
         subscriptionFactory.createCompactedSubscription(
             SubscriptionConfig(GROUP_NAME, Schemas.Crypto.SIGNING_KEY_PERSISTENCE_TOPIC),
-            this
+            this,
+            messagingConfig
         ).also { it.start() }
 
     override val keyClass: Class<String> = String::class.java

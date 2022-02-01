@@ -34,6 +34,9 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicBoolean
+import net.corda.libs.permissions.common.exception.EntityAssociationAlreadyExistsException
+import net.corda.libs.permissions.common.exception.EntityAssociationDoesNotExistException
+import net.corda.libs.permissions.common.exception.EntityNotFoundException
 
 class RoleWriterImplTest {
 
@@ -54,7 +57,6 @@ class RoleWriterImplTest {
         whenever(entityManager.transaction).thenReturn(entityTransaction)
         whenever(entityManagerFactory.createEntityManager()).thenReturn(entityManager)
         val rollBack = AtomicBoolean(false)
-        whenever(entityTransaction.setRollbackOnly()).then { rollBack.set(true) }
         whenever(entityTransaction.rollbackOnly).then { rollBack.get() }
     }
 
@@ -67,12 +69,12 @@ class RoleWriterImplTest {
 
         whenever(entityManager.find(eq(Group::class.java), eq("group1"))).thenReturn(null)
 
-        val e = assertThrows<IllegalArgumentException> {
+        val e = assertThrows<EntityNotFoundException> {
             roleWriter.createRole(createRoleRequestWithGroupVis, requestUserId)
         }
 
         verify(entityTransaction).begin()
-        assertEquals("Failed to create new Role: role2 as the specified group visibility: group1 does not exist.", e.message)
+        assertEquals("Group 'group1' not found.", e.message)
     }
 
     @Test
@@ -180,11 +182,10 @@ class RoleWriterImplTest {
         val request = AddPermissionToRoleRequest(roleId, "permId")
         assertThatThrownBy {
             roleWriter.addPermissionToRole(request, requestUserId)
-        }.isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("Unable to find Role with Id")
+        }.isInstanceOf(EntityNotFoundException::class.java).hasMessageContaining("Role 'roleId' not found.")
 
         inOrder(entityTransaction) {
             verify(entityTransaction).begin()
-            verify(entityTransaction).rollback()
         }
     }
 
@@ -200,11 +201,10 @@ class RoleWriterImplTest {
         val request = AddPermissionToRoleRequest(roleId, permId)
         assertThatThrownBy {
             roleWriter.addPermissionToRole(request, requestUserId)
-        }.isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("Unable to find Permission with Id")
+        }.isInstanceOf(EntityNotFoundException::class.java).hasMessageContaining("Permission 'permId' not found.")
 
         inOrder(entityTransaction) {
             verify(entityTransaction).begin()
-            verify(entityTransaction).rollback()
         }
     }
 
@@ -223,11 +223,12 @@ class RoleWriterImplTest {
         val request = AddPermissionToRoleRequest(roleId, permId)
         assertThatThrownBy {
             roleWriter.addPermissionToRole(request, requestUserId)
-        }.isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("is already associated with Role")
+        }
+            .isInstanceOf(EntityAssociationAlreadyExistsException::class.java)
+            .hasMessageContaining("Permission 'permId' is already associated with Role 'roleId'.")
 
         inOrder(entityTransaction, entityManager) {
             verify(entityTransaction).begin()
-            verify(entityTransaction).rollback()
         }
     }
 
@@ -280,11 +281,10 @@ class RoleWriterImplTest {
         val request = RemovePermissionFromRoleRequest(roleId, "permId")
         assertThatThrownBy {
             roleWriter.removePermissionFromRole(request, requestUserId)
-        }.isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("Unable to find Role with Id")
+        }.isInstanceOf(EntityNotFoundException::class.java).hasMessageContaining("Role 'roleId' not found.")
 
         inOrder(entityTransaction) {
             verify(entityTransaction).begin()
-            verify(entityTransaction).rollback()
         }
     }
 
@@ -304,11 +304,11 @@ class RoleWriterImplTest {
         val request = RemovePermissionFromRoleRequest(roleId, "oddPermId")
         assertThatThrownBy {
             roleWriter.removePermissionFromRole(request, requestUserId)
-        }.isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("is not associated with a role")
+        }.isInstanceOf(EntityAssociationDoesNotExistException::class.java)
+            .hasMessageContaining("Permission 'oddPermId' is not associated with Role 'roleId'.")
 
         inOrder(entityTransaction) {
             verify(entityTransaction).begin()
-            verify(entityTransaction).rollback()
         }
     }
 }

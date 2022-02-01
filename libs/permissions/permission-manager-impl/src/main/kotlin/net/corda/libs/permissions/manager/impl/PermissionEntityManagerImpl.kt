@@ -7,7 +7,6 @@ import net.corda.data.permissions.management.permission.CreatePermissionRequest
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.permissions.cache.PermissionCache
 import net.corda.libs.permissions.manager.PermissionEntityManager
-import net.corda.libs.permissions.manager.exception.PermissionManagerException
 import net.corda.libs.permissions.manager.impl.SmartConfigUtil.getEndpointTimeout
 import net.corda.libs.permissions.manager.impl.converter.convertToResponseDto
 import net.corda.libs.permissions.manager.impl.converter.toAvroType
@@ -15,7 +14,6 @@ import net.corda.libs.permissions.manager.request.CreatePermissionRequestDto
 import net.corda.libs.permissions.manager.request.GetPermissionRequestDto
 import net.corda.libs.permissions.manager.response.PermissionResponseDto
 import net.corda.messaging.api.publisher.RPCSender
-import net.corda.v5.base.concurrent.getOrThrow
 
 class PermissionEntityManagerImpl(
     config: SmartConfig,
@@ -26,7 +24,9 @@ class PermissionEntityManagerImpl(
     private val writerTimeout = config.getEndpointTimeout()
 
     override fun createPermission(createPermissionRequestDto: CreatePermissionRequestDto): PermissionResponseDto {
-        val future = rpcSender.sendRequest(
+        val result = sendPermissionWriteRequest<Permission>(
+            rpcSender,
+            writerTimeout,
             PermissionManagementRequest(
                 createPermissionRequestDto.requestedBy,
                 createPermissionRequestDto.virtualNode,
@@ -37,12 +37,6 @@ class PermissionEntityManagerImpl(
                 )
             )
         )
-
-        val futureResponse = future.getOrThrow(writerTimeout)
-
-        val result = futureResponse.response
-        if (result !is Permission)
-            throw PermissionManagerException("Unknown response for Create Permission operation: $result")
 
         return result.convertToResponseDto()
     }
