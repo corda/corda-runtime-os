@@ -266,15 +266,9 @@ internal class HttpRpcServerInternal(
 
     private fun RouteInfo.invokeMultiPartMethod(): (Context) -> Unit {
         return { ctx ->
-
-            // TODO - kyriakos - replace following static values with configuration
-            val multipartConfig = MultipartConfigElement("", 1024, 1024, 20_000_000)
-            ctx.req.setAttribute("org.eclipse.jetty.multipartConfig", multipartConfig)
-
             try {
-                val multipartParts = ctx.req.parts
-                // TODO - kyriakos multipartParts can be more than one
-                val stream = multipartParts.single().inputStream
+                // TODO - kyriakos uploadedFiles can be more than one
+                val stream = ctx.uploadedFiles().single().content
                 val result = invokeDelegatedMethod(stream)
                 if (result != null) {
                     ctx.json(result)
