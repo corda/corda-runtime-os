@@ -276,13 +276,11 @@ internal class HttpRpcServerInternal(
         }
     }
 
-    // TODO
-    //  1. read the multiparts which should live locally
-    //  2. open a stream against it and call our endpoint
     private fun RouteInfo.invokeMultiPartMethod(): (Context) -> Unit {
         return { ctx ->
 
-            val multipartConfig = MultipartConfigElement(System.getProperty("user.dir"), 1024, 1024, 20_000_000)
+            // TODO - kyriakos - replace following static values with configuration
+            val multipartConfig = MultipartConfigElement("", 1024, 1024, 20_000_000)
 
             ctx.req.setAttribute("org.eclipse.jetty.multipartConfig", multipartConfig)
             val multipartParts = ctx.req.parts
@@ -291,6 +289,7 @@ internal class HttpRpcServerInternal(
             }
 
             try {
+                // TODO - kyriakos multipartParts can be more than one
                 val stream = multipartParts.single().inputStream
                 val result = invokeDelegatedMethod(stream)
                 if (result != null) {
