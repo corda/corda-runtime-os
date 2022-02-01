@@ -102,26 +102,33 @@ class ConfigureAll : Runnable {
         keyStoreFile(host)
     }
 
-    private val sslKeyStore by lazy {
-        File(keyStoreDir.absolutePath, "$host.ssl.keystore.jks").also { keyStoreFile ->
-            if (!keyStoreFile.exists()) {
-                keyStoreDir.mkdirs()
-                val creator = CreateStores()
-                creator.sslStoreFile = keyStoreFile
-                creator.hosts = listOf(host)
-                creator.trustStoreFile = trustStoreFile.let {
-                    if (it.exists()) {
-                        null
-                    } else {
-                        it
-                    }
+    private val sslKeys by lazy {
+        val keyStoreFile = File(keyStoreDir.absolutePath, "$host.ssl.keystore.jks")
+        val trustStoreFile = File(keyStoreDir.absolutePath, "truststore.pem")
+        if ((!keyStoreFile.exists()) || (!trustStoreFile.exists())) {
+            keyStoreDir.mkdirs()
+            val creator = CreateStores()
+            creator.sslStoreFile = keyStoreFile
+            creator.hosts = listOf(host)
+            creator.trustStoreFile = trustStoreFile.let {
+                if (it.exists()) {
+                    null
+                } else {
+                    it
                 }
-                creator.run()
             }
+            creator.run()
         }
+        keyStoreFile to trustStoreFile
     }
 
-    private val trustStoreFile = File(keyStoreDir.absolutePath, "truststore.pem")
+    private val sslKeyStore by lazy {
+        sslKeys.first
+    }
+
+    private val trustStoreFile by lazy {
+        sslKeys.second
+    }
 
     private fun publishMySelfToOthers() {
         val configurationFile = File.createTempFile("network-map.", ".conf").also {
@@ -138,7 +145,7 @@ class ConfigureAll : Runnable {
                     "publicKeyAlgo" to "ECDSA",
                     "address" to "http://$host:${Port.Gateway.port}",
                     "networkType" to "CORDA_5",
-                    "trustStoreCertificates" to listOf(trustStoreFile.path)
+                    "trustStoreCertificates" to listOf(trustStoreFile.absolutePath),
                 )
             )
 
@@ -181,7 +188,8 @@ class ConfigureAll : Runnable {
                         "keystorePassword" to "password",
                         "publicKeyAlgo" to "ECDSA",
                         "address" to "http://$host:${Port.Gateway.port}",
-                        "networkType" to "CORDA_5"
+                        "networkType" to "CORDA_5",
+                        "trustStoreCertificates" to listOf(trustStoreFile.absolutePath),
                     )
                 )
             }

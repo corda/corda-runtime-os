@@ -86,7 +86,7 @@ class NetworkMapCreator @Activate constructor(
                 val publicKeyAlgo = dataConfig.getString("publicKeyAlgo")
                 val address = dataConfig.getString("address")
                 val networkType = parseNetworkType(dataConfig.getString("networkType"))
-                val trustStoreCertificates = dataConfig.getList("dataConfig")
+                val trustStoreCertificates = dataConfig.getList("trustStoreCertificates")
                     .unwrapped()
                     .filterIsInstance<String>()
                     .map {
