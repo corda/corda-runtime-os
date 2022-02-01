@@ -65,6 +65,10 @@ class LocalPackageCacheIntegrationTest {
     fun afterEach() {
         installService.stop()
         configReadService.stop()
+
+        Files.walk(cpiDir)
+            .sorted(Comparator.reverseOrder())
+            .forEach(Files::delete)
     }
 
 
