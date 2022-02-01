@@ -1,6 +1,7 @@
 package net.corda.messaging.kafka.integration.subscription
 
 import com.typesafe.config.ConfigValueFactory
+import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinator
@@ -15,8 +16,10 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.kafka.integration.IntegrationTestProperties
+import net.corda.messaging.kafka.integration.TopicTemplates
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.TEST_TOPIC_PREFIX
 import net.corda.messaging.kafka.integration.getDemoRecords
+import net.corda.messaging.kafka.integration.getKafkaProperties
 import net.corda.messaging.kafka.integration.processors.TestEventLogProcessor
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.millis
@@ -26,6 +29,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
@@ -38,6 +42,7 @@ class KafkaEventLogSubscriptionIntegrationTest {
     private lateinit var publisherConfig: PublisherConfig
     private lateinit var publisher: Publisher
     private lateinit var kafkaConfig: SmartConfig
+    private val kafkaProperties = getKafkaProperties()
 
     private companion object {
         const val CLIENT_ID = "eventLogTestPublisher"
@@ -54,6 +59,9 @@ class KafkaEventLogSubscriptionIntegrationTest {
     lateinit var subscriptionFactory: SubscriptionFactory
 
     @InjectService(timeout = 4000)
+    lateinit var topicAdmin: KafkaTopicAdmin
+
+    @InjectService(timeout = 4000)
     lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 
     @BeforeEach
@@ -67,7 +75,10 @@ class KafkaEventLogSubscriptionIntegrationTest {
     }
 
     @Test
+    @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `asynch publish records and then start durable subscription`() {
+        topicAdmin.createTopics(kafkaProperties, TopicTemplates.EVENT_LOG_TOPIC1_TEMPLATE)
+
         publisherConfig = PublisherConfig(CLIENT_ID + TOPIC1)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         val futures = publisher.publish(getDemoRecords(TOPIC1, 5, 2))
@@ -115,7 +126,10 @@ class KafkaEventLogSubscriptionIntegrationTest {
 
 
     @Test
+    @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `transactional publish records, start two durable subscription, stop subs, publish again and start subs`() {
+        topicAdmin.createTopics(kafkaProperties, TopicTemplates.EVENT_LOG_TOPIC2_TEMPLATE)
+
         publisherConfig = PublisherConfig(CLIENT_ID + TOPIC2, 1)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         val futures = publisher.publish(getDemoRecords(TOPIC2, 5, 2))
