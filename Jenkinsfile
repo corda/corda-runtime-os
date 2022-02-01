@@ -1,6 +1,7 @@
-@Library('corda-shared-build-pipeline-steps@ronanb/CORE-3412/moving-nexus-scan') _
+@Library('corda-shared-build-pipeline-steps@5.0') _
 
 cordaPipeline(
+    nexusAppId: 'flow-worker-5.0',
     runIntegrationTests: true,
     publishRepoPrefix: 'corda-ent-maven',
     createPostgresDb: true,
