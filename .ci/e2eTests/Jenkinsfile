@@ -14,6 +14,9 @@ pipeline {
         }
     }
 
+        triggers {
+            cron '@midnight'
+        }
 
     environment {
         ARTIFACTORY_CREDENTIALS = credentials('artifactory-credentials')
