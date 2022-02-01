@@ -26,7 +26,7 @@ Delete topics only
 `java -jar build/bin/corda-flow-worker-setup-5.0.0.0-SNAPSHOT.jar DeleteAllTopics`
 
 Full restart  
-`java -jar build/bin/corda-flow-worker-setup-5.0.0.0-SNAPSHOT.jar DeleteAllTopics CreateTopics SetupVirtualNode 
-PublishConfig StartFlow --cpiDir C:/ows/git-repo/corda-runtime-os-build/testing/cpbs/helloworld/build/libs 
---config config.conf
+`
+java -jar build/bin/corda-flow-worker-setup-5.0.0.0-SNAPSHOT.jar DeleteAllTopics CreateTopics SetupVirtualNode 
+PublishConfig StartFlow --cpiDir ./../../../testing/cpbs/helloworld/build/libs --config config.conf
 `

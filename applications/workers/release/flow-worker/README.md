@@ -25,7 +25,8 @@ docker-compose -f single-kafka-cluster.yml down
 
 ```shell
 cd applications\tools\flow-worker-setup
-java -jar build/bin/corda-flow-worker-setup-5.0.0.0-SNAPSHOT.jar --config config.conf --topic topics.conf --instanceId=1 
+java -jar build/bin/corda-flow-worker-setup-5.0.0.0-SNAPSHOT.jar DeleteAllTopics CreateTopics SetupVirtualNode \
+PublishConfig StartFlow --cpiDir ./../../../testing/cpbs/helloworld/build/libs --config config.conf
 ```
 
 ### Run Test App
