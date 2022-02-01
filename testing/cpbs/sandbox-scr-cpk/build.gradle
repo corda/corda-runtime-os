@@ -1,5 +1,5 @@
 plugins {
-    id 'net.corda.plugins.cordapp-cpk'
+    id 'net.corda.plugins.cordapp-cpb'
 }
 
 description 'Corda Sandbox SCR-Using CPK'

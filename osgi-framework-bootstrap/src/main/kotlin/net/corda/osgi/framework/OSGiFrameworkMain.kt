@@ -4,6 +4,7 @@ import net.corda.osgi.framework.OSGiFrameworkMain.Companion.main
 import org.slf4j.LoggerFactory
 import org.slf4j.bridge.SLF4JBridgeHandler
 import java.nio.file.Files
+import java.security.Policy
 
 /**
  * This class provided the main entry point for the applications built with the `corda.common-app` plugin.
@@ -91,6 +92,12 @@ class OSGiFrameworkMain {
          */
         @JvmStatic
         fun main(args: Array<String>) {
+            /**
+             * Set the Java security policy programmatically, as required by OSGi Security.
+             * @See https://felix.apache.org/documentation/subprojects/apache-felix-framework-security.html
+             */
+            Policy.setPolicy(AllPermissionsPolicy())
+
             /**
              * `java.util.logging` logs directly to the console for Apache Aries and Liquibase (at least),
              *  but we can intercept and redirect that here to use our logger.
