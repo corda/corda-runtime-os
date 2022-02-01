@@ -219,14 +219,16 @@ class DominoTile(
                             configReady = true
                             when (state) {
                                 State.StoppedDueToBadConfig -> {
-                                    logger.info("Config ready for $name.")
+                                    logger.info("Received valid config for $name, which was previously stopped due to invalid config.")
                                     startDependenciesIfNeeded()
                                 }
                                 State.Created, State.StoppedByParent -> {
-                                    logger.info("Config ready for $name.")
+                                    logger.info("Received valid config for $name.")
                                     setStartedIfCan()
                                 }
-                                State.StoppedDueToError, State.Started -> {} // Do nothing
+                                State.StoppedDueToError, State.Started -> {
+                                    logger.info("Received valid config for $name.")
+                                } // Do nothing
                             }
                         }
                         is ConfigUpdateResult.Error -> {
@@ -264,9 +266,7 @@ class DominoTile(
             configApplied(ConfigUpdateResult.Error(e))
             return
         }
-        logger.info("Got configuration $name")
         if (newConfiguration == configurationChangeHandler.lastConfiguration) {
-            logger.info("Configuration had not changed $name")
             configApplied(ConfigUpdateResult.NoUpdate)
         } else {
             val future = configurationChangeHandler.applyNewConfiguration(
@@ -282,7 +282,6 @@ class DominoTile(
                 }
             }
             configurationChangeHandler.lastConfiguration = newConfiguration
-            logger.info("Reconfigured $name")
         }
     }
 

@@ -60,7 +60,7 @@ internal fun Config.toGatewayConfiguration(): GatewayConfiguration {
         connectionConfig = connectionConfig
     )
 }
-internal fun Config.toConnectionConfig(): ConnectionConfiguration {
+private fun Config.toConnectionConfig(): ConnectionConfiguration {
     return ConnectionConfiguration(
         maxClientConnections = this.getLong("maxClientConnections"),
         acquireTimeout = this.getDuration("acquireTimeout"),

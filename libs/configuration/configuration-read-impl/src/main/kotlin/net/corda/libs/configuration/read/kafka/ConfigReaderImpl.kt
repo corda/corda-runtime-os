@@ -1,6 +1,7 @@
 package net.corda.libs.configuration.read.kafka
 
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigRenderOptions
 import net.corda.data.config.Configuration
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -11,6 +12,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.v5.base.util.contextLogger
 import java.util.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -25,6 +27,7 @@ class ConfigReaderImpl(
     companion object {
         private const val CONFIG_TOPIC_PATH = "config.topic.name"
         internal const val CONFIGURATION_READER = "CONFIGURATION_READER"
+        private val logger = contextLogger()
     }
 
     @Volatile
@@ -106,7 +109,11 @@ class ConfigReaderImpl(
     override fun onSnapshot(currentData: Map<String, Configuration>) {
         val configMap = mutableMapOf<String, SmartConfig>()
         for (config in currentData) {
-            configMap[config.key] = smartConfigFactory.create(ConfigFactory.parseString(config.value.value))
+            val smartConfig = smartConfigFactory.create(ConfigFactory.parseString(config.value.value))
+            configMap[config.key] = smartConfig
+            logger.info("Received configuration for key ${config.key}: " +
+                smartConfig.toSafeConfig().root().render(ConfigRenderOptions.concise().setFormatted(true))
+            )
         }
         configurationRepository.storeConfiguration(configMap)
         snapshotReceived = true
@@ -121,6 +128,9 @@ class ConfigReaderImpl(
     ) {
         val config = smartConfigFactory.create(ConfigFactory.parseString(newRecord.value?.value))
         configurationRepository.updateConfiguration(newRecord.key, config)
+        logger.info("Received configuration for key ${newRecord.key}: " +
+            config.toSafeConfig().root().render(ConfigRenderOptions.concise().setFormatted(true))
+        )
         val tempConfigMap = configurationRepository.getConfigurations()
         configUpdates.forEach { it.value.onUpdate(setOf(newRecord.key), tempConfigMap) }
 
