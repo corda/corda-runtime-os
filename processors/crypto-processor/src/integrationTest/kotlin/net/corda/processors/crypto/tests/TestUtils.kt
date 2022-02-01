@@ -18,6 +18,7 @@ import net.corda.test.util.eventually
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.slf4j.Logger
+import java.time.Duration
 import java.time.Instant
 import kotlin.random.Random
 import kotlin.reflect.KFunction
@@ -113,7 +114,7 @@ class TestLifecycleDependenciesTrackingCoordinator(
     }
 
     fun waitUntilAllUp() {
-        eventually {
+        eventually(duration = Duration.ofSeconds(30)) {
             assertTrue(allApp)
         }
     }
