@@ -4,6 +4,8 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit.DAYS
 import net.corda.applications.workers.rpc.http.TestToolkitProperty
 import net.corda.httprpc.client.exceptions.InternalErrorException
+import net.corda.httprpc.client.exceptions.MissingRequestedResourceException
+import net.corda.httprpc.client.exceptions.RequestErrorException
 import net.corda.libs.permissions.endpoints.v1.role.RoleEndpoint
 import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
@@ -84,8 +86,8 @@ class UserRoleAssociationE2eTest {
 
             // add a fake role to assert validation of role ID being real.
             Assertions.assertThatThrownBy { proxy.addRole(userName, "fakeRoleId") }
-                .isInstanceOf(InternalErrorException::class.java)
-                .hasMessageContaining("Role 'fakeRoleId' does not exist.")
+                .isInstanceOf(MissingRequestedResourceException::class.java)
+                .hasMessageContaining("Role 'fakeRoleId' not found.")
 
             // add the role to the user
             with(proxy.addRole(userName, roleId)) {
@@ -98,7 +100,7 @@ class UserRoleAssociationE2eTest {
 
             // add the role again to assert validation
             Assertions.assertThatThrownBy { proxy.addRole(userName, roleId) }
-                .isInstanceOf(InternalErrorException::class.java)
+                .isInstanceOf(RequestErrorException::class.java)
                 .hasMessageContaining("Role '$roleId' is already associated with User '$userName'.")
 
             // remove role
@@ -124,12 +126,12 @@ class UserRoleAssociationE2eTest {
 
             // remove the role again to assert validation of role being associated.
             Assertions.assertThatThrownBy { proxy.removeRole(userName, roleId) }
-                .isInstanceOf(InternalErrorException::class.java)
+                .isInstanceOf(RequestErrorException::class.java)
                 .hasMessageContaining("Role '$roleId' is not associated with User '$userName'.")
 
             // remove a fake role to assert validation does not expose role names in the system.
             Assertions.assertThatThrownBy { proxy.removeRole(userName, "fakeRoleId") }
-                .isInstanceOf(InternalErrorException::class.java)
+                .isInstanceOf(RequestErrorException::class.java)
                 .hasMessageContaining("Role 'fakeRoleId' is not associated with User '$userName'.")
 
         }

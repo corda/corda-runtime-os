@@ -3,6 +3,7 @@ package net.corda.applications.workers.rpc
 import net.corda.applications.workers.rpc.http.TestToolkitProperty
 import net.corda.httprpc.client.exceptions.InternalErrorException
 import net.corda.httprpc.client.exceptions.MissingRequestedResourceException
+import net.corda.httprpc.client.exceptions.RequestErrorException
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
@@ -36,7 +37,7 @@ class CreateRoleE2eTest {
 
             // Check the role does not exist yet
             assertThatThrownBy { proxy.getRole("fakeId") }.isInstanceOf(MissingRequestedResourceException::class.java)
-                .hasMessageContaining("Role fakeId not found")
+                .hasMessageContaining("Role 'fakeId' not found.")
 
             // Create role
             val createRoleType = CreateRoleType(name, null)
@@ -71,8 +72,8 @@ class CreateRoleE2eTest {
 
             // Try to create a role with a group that does not exist
             assertThatThrownBy { proxy.createRole(CreateRoleType(name2, groupName)) }
-                .isInstanceOf(InternalErrorException::class.java)
-                .hasMessageContaining("Failed to create new Role: $name2 as the specified group visibility: $groupName does not exist.")
+                .isInstanceOf(MissingRequestedResourceException::class.java)
+                .hasMessageContaining("Group '$groupName' not found.")
 
             sharedRoleId = roleId
         }
@@ -111,8 +112,8 @@ class CreateRoleE2eTest {
             val proxy = client.start().proxy
 
             // Try to remove association when it does not exist
-            assertThatThrownBy { proxy.removePermission(roleId, permId) }.isInstanceOf(InternalErrorException::class.java)
-                .hasMessageContaining("not associated with a role")
+            assertThatThrownBy { proxy.removePermission(roleId, permId) }.isInstanceOf(RequestErrorException::class.java)
+                .hasMessageContaining("Permission '$permId' is not associated with Role '$roleId'.")
 
             val roleWithPermission = proxy.addPermission(roleId, permId)
             assertEquals(permId, roleWithPermission.permissions[0].id)
@@ -127,7 +128,7 @@ class CreateRoleE2eTest {
             }
 
             // Try to add same association again when it already exists
-            assertThatThrownBy { proxy.addPermission(roleId, permId) }.isInstanceOf(InternalErrorException::class.java)
+            assertThatThrownBy { proxy.addPermission(roleId, permId) }.isInstanceOf(RequestErrorException::class.java)
                 .hasMessageContaining("Permission '$permId' is already associated with Role '$roleId'.")
 
             val roleWithPermissionRemoved = proxy.removePermission(roleId, permId)

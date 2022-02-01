@@ -9,15 +9,12 @@ import net.corda.data.permissions.management.role.RemovePermissionFromRoleReques
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.permissions.cache.PermissionCache
 import net.corda.libs.permissions.manager.PermissionRoleManager
-import net.corda.libs.permissions.manager.exception.PermissionManagerException
 import net.corda.libs.permissions.manager.impl.SmartConfigUtil.getEndpointTimeout
 import net.corda.libs.permissions.manager.impl.converter.convertToResponseDto
 import net.corda.libs.permissions.manager.request.CreateRoleRequestDto
 import net.corda.libs.permissions.manager.request.GetRoleRequestDto
 import net.corda.libs.permissions.manager.response.RoleResponseDto
 import net.corda.messaging.api.publisher.RPCSender
-import net.corda.v5.base.concurrent.getOrThrow
-
 class PermissionRoleManagerImpl(
     config: SmartConfig,
     private val rpcSender: RPCSender<PermissionManagementRequest, PermissionManagementResponse>,
@@ -27,7 +24,9 @@ class PermissionRoleManagerImpl(
     private val writerTimeout = config.getEndpointTimeout()
 
     override fun createRole(createRoleRequestDto: CreateRoleRequestDto): RoleResponseDto {
-        val future = rpcSender.sendRequest(
+        val result = sendPermissionWriteRequest<Role>(
+            rpcSender,
+            writerTimeout,
             PermissionManagementRequest(
                 createRoleRequestDto.requestedBy,
                 null,
@@ -38,12 +37,6 @@ class PermissionRoleManagerImpl(
             )
         )
 
-        val futureResponse = future.getOrThrow(writerTimeout)
-
-        val result = futureResponse.response
-        if (result !is Role)
-            throw PermissionManagerException("Unknown response for Create Role operation: $result")
-
         return result.convertToResponseDto()
     }
 
@@ -53,7 +46,9 @@ class PermissionRoleManagerImpl(
     }
 
     override fun addPermissionToRole(roleId: String, permissionId: String, principal: String): RoleResponseDto {
-        val future = rpcSender.sendRequest(
+        val result = sendPermissionWriteRequest<Role>(
+            rpcSender,
+            writerTimeout,
             PermissionManagementRequest(
                 principal,
                 null,
@@ -64,17 +59,13 @@ class PermissionRoleManagerImpl(
             )
         )
 
-        val futureResponse = future.getOrThrow(writerTimeout)
-
-        val result = futureResponse.response
-        if (result !is Role)
-            throw PermissionManagerException("Unknown response for Add Permission to Role: $result")
-
         return result.convertToResponseDto()
     }
 
     override fun removePermissionFromRole(roleId: String, permissionId: String, principal: String): RoleResponseDto {
-        val future = rpcSender.sendRequest(
+        val result = sendPermissionWriteRequest<Role>(
+            rpcSender,
+            writerTimeout,
             PermissionManagementRequest(
                 principal,
                 null,
@@ -84,12 +75,6 @@ class PermissionRoleManagerImpl(
                 )
             )
         )
-
-        val futureResponse = future.getOrThrow(writerTimeout)
-
-        val result = futureResponse.response
-        if (result !is Role)
-            throw PermissionManagerException("Unknown response for Remove Permission from Role: $result")
 
         return result.convertToResponseDto()
     }
