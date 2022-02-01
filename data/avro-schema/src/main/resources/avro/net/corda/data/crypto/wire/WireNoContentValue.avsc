@@ -1,8 +1,0 @@
-{
-  "type": "record",
-  "name": "WireNoContentValue",
-  "namespace": "net.corda.data.crypto.wire",
-  "doc": "Defines over-the-wire response for operation which don't have any return value (e.g. Unit/void)",
-  "fields": [
-  ]
-}

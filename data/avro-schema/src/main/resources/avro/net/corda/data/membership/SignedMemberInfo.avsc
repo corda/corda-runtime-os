@@ -17,12 +17,12 @@
     {
       "name": "memberSignature",
       "doc": "Signature of the member over the memberContext.",
-      "type": "net.corda.data.crypto.wire.WireSignatureWithKey"
+      "type": "net.corda.data.crypto.wire.CryptoSignatureWithKey"
     },
     {
       "name": "mgmSignature",
       "doc": "Signature of the MGM over both the mgmContext and memberContext using MerkleTree.",
-      "type": "net.corda.data.crypto.wire.WireSignatureWithKey"
+      "type": "net.corda.data.crypto.wire.CryptoSignatureWithKey"
     }
   ]
 }

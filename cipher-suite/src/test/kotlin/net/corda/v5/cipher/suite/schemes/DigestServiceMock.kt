@@ -1,4 +1,4 @@
-package net.corda.v5.cipher.suite.mocks
+package net.corda.v5.cipher.suite.schemes
 
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigestService

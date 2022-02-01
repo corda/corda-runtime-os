@@ -1,8 +1,0 @@
-{
-  "type": "record",
-  "name": "WireSigningGetSupportedSchemes",
-  "namespace": "net.corda.data.crypto.wire.signing",
-  "doc": "Request which signature schemes are supported by the service instance",
-  "fields": [
-  ]
-}

@@ -3,6 +3,8 @@ package net.corda.v5.cipher.suite
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.exceptions.CryptoServiceException
+import net.corda.v5.crypto.sha256Bytes
+import org.bouncycastle.util.encoders.Base32
 import java.security.PublicKey
 
 /**
@@ -138,4 +140,20 @@ interface CryptoService {
         data: ByteArray,
         context: Map<String, String>
     ): ByteArray
+
+    /**
+     * Computes an alias based on the value supplied by the tenant. As the HSM can be shared across several tenants
+     * that will provide a level of separation.
+     *
+     * The default implementation computes SHA256 hash for concatenation of tenant's id and their alias than transforms
+     * it to base32 and takes first 30 characters of that result converting all to lowercase.
+     *
+     * @param tenantId The tenant's id which the [alias] belongs to
+     * @param alias Alias as supplied by the [tenantId]
+     *
+     * @return computed alias which must be unique and must be deterministic, e.g. for the same
+     * inputs ([tenantId] and [alias]) always produce the same output.
+     */
+    fun computeHSMAlias(tenantId: String, alias: String): String
+            = Base32.toBase32String((tenantId + alias).encodeToByteArray().sha256Bytes()).take(30).toLowerCase()
 }
