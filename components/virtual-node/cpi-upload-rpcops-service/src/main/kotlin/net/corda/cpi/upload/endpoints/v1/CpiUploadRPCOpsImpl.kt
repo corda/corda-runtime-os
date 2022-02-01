@@ -12,6 +12,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.io.InputStream
 import java.time.Duration
 
 @Component(service = [CpiUploadRPCOpsInternal::class, PluggableRPCOps::class], immediate = true)
@@ -40,7 +41,7 @@ class CpiUploadRPCOpsImpl @Activate constructor(
         rpcSender = null
     }
 
-    override fun cpi(file: ByteArray): HTTPCpiUploadRequestId {
+    override fun cpi(file: InputStream): HTTPCpiUploadRequestId {
         // TODO - kyriakos - fix the endpoint to actually receive the file - needs corda rpc framework extended
         // TODO - kyriakos - validation of CPI -> check it is well formed - maybe in a subsequent PR
         // TODO - kyriakos - split it in chunks and put it on kafka
