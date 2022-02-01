@@ -69,6 +69,10 @@ class LocalPackageCacheIntegrationTest {
         Files.walk(cpiDir)
             .sorted(Comparator.reverseOrder())
             .forEach(Files::delete)
+
+        Files.walk(testDir)
+            .sorted(Comparator.reverseOrder())
+            .forEach(::println)
     }
 
 
