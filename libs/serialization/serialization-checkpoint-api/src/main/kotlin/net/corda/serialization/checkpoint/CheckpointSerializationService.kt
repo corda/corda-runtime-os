@@ -1,4 +1,4 @@
-package net.corda.serialization
+package net.corda.serialization.checkpoint
 
 /**
  * Interface of the service used to serialize and deserialize checkpoints

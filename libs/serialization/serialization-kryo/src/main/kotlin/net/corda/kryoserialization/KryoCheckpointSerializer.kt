@@ -1,7 +1,7 @@
 package net.corda.kryoserialization
 
 import com.esotericsoftware.kryo.Kryo
-import net.corda.serialization.CheckpointSerializer
+import net.corda.serialization.checkpoint.CheckpointSerializer
 import net.corda.v5.base.util.uncheckedCast
 import java.io.ByteArrayInputStream
 
