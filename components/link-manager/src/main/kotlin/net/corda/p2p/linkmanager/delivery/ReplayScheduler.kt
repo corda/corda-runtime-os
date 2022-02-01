@@ -6,9 +6,7 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.DominoTile
-import net.corda.lifecycle.domino.logic.DominoTileV2
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
-import net.corda.lifecycle.domino.logic.LifecycleWithDominoTileV2
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.linkmanager.utilities.AutoClosableScheduledExecutorService
 import net.corda.v5.base.util.contextLogger
@@ -32,9 +30,9 @@ class ReplayScheduler<M>(
     private val replayPeriodKey: String,
     private val replayMessage: (message: M) -> Unit,
     private val currentTimestamp: () -> Long = { Instant.now().toEpochMilli() },
-    ) : LifecycleWithDominoTileV2 {
+    ) : LifecycleWithDominoTile {
 
-    override val dominoTile = DominoTileV2(
+    override val dominoTile = DominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
         ::createResources,

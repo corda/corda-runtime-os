@@ -9,7 +9,6 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.DominoTile
-import net.corda.lifecycle.domino.logic.DominoTileV2
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
@@ -22,7 +21,7 @@ class ConfigBasedLinkManagerHostingMap(
     coordinatorFactory: LifecycleCoordinatorFactory
 ): LinkManagerHostingMap {
 
-    override val dominoTile = DominoTileV2(
+    override val dominoTile = DominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
         configurationChangeHandler = HostingMapConfigurationChangeHandler()

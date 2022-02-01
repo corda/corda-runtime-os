@@ -17,14 +17,13 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
-import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeast
-import org.mockito.kotlin.clearInvocations
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
@@ -66,7 +65,7 @@ class DominoTileTest {
 
             tile.start()
 
-            assertThat(tile.state).isEqualTo(DominoTile.State.Started)
+            Assertions.assertThat(tile.state).isEqualTo(DominoTile.State.Started)
         }
 
         @Test
@@ -83,7 +82,7 @@ class DominoTileTest {
             val tile = tile()
             tile.stop()
 
-            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedByParent)
+            Assertions.assertThat(tile.state).isEqualTo(DominoTile.State.StoppedByParent)
         }
 
         @Test
@@ -93,7 +92,7 @@ class DominoTileTest {
 
             tile.stop()
 
-            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedByParent)
+            Assertions.assertThat(tile.state).isEqualTo(DominoTile.State.StoppedByParent)
         }
 
         @Test
@@ -101,7 +100,7 @@ class DominoTileTest {
             val tile = tile()
             tile.start()
 
-            assertThat(tile.isRunning).isTrue
+            Assertions.assertThat(tile.isRunning).isTrue
         }
 
         @Test
@@ -121,7 +120,7 @@ class DominoTileTest {
 
             handler.lastValue.processEvent(ErrorEvent(Exception("")), coordinator)
 
-            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
+            Assertions.assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
         }
 
         @Test
@@ -168,7 +167,7 @@ class DominoTileTest {
 
             tile.close()
 
-            assertThat(tile.state).isEqualTo(DominoTile.State.Created)
+            Assertions.assertThat(tile.state).isEqualTo(DominoTile.State.Created)
         }
 
         @Test
@@ -188,7 +187,7 @@ class DominoTileTest {
                 33
             }
 
-            assertThat(data).isEqualTo(33)
+            Assertions.assertThat(data).isEqualTo(33)
         }
 
         @Test
@@ -198,7 +197,7 @@ class DominoTileTest {
 
             tile.start()
 
-            assertThat(tile.state).isNotEqualTo(DominoTile.State.Started)
+            Assertions.assertThat(tile.state).isNotEqualTo(DominoTile.State.Started)
         }
     }
 
@@ -217,7 +216,7 @@ class DominoTileTest {
             val tile = DominoTile(TILE_NAME, factory, ::createResources)
             tile.start()
 
-            assertThat(createResourceCalled).isEqualTo(1)
+            Assertions.assertThat(createResourceCalled).isEqualTo(1)
         }
 
         @Test
@@ -231,7 +230,7 @@ class DominoTileTest {
             val tile = DominoTile(TILE_NAME, factory, ::createResources)
             tile.start()
 
-            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
+            Assertions.assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
         }
 
         @Test
@@ -244,9 +243,9 @@ class DominoTileTest {
             val tile = DominoTile(TILE_NAME, factory, ::createResources)
             tile.start()
 
-            assertThat(tile.state).isEqualTo(DominoTile.State.Created)
+            Assertions.assertThat(tile.state).isEqualTo(DominoTile.State.Created)
             future.complete(Unit)
-            assertThat(tile.state).isEqualTo(DominoTile.State.Started)
+            Assertions.assertThat(tile.state).isEqualTo(DominoTile.State.Started)
         }
 
         @Test
@@ -259,9 +258,9 @@ class DominoTileTest {
             val tile = DominoTile(TILE_NAME, factory, ::createResources)
             tile.start()
 
-            assertThat(tile.state).isEqualTo(DominoTile.State.Created)
+            Assertions.assertThat(tile.state).isEqualTo(DominoTile.State.Created)
             future.completeExceptionally(RuntimeException("Ohh no"))
-            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
+            Assertions.assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
         }
 
         @Test
@@ -275,11 +274,11 @@ class DominoTileTest {
             tile.start()
             tile.stop()
 
-            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedByParent)
+            Assertions.assertThat(tile.state).isEqualTo(DominoTile.State.StoppedByParent)
             tile.start()
-            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedByParent)
+            Assertions.assertThat(tile.state).isEqualTo(DominoTile.State.StoppedByParent)
             future.complete(Unit)
-            assertThat(tile.state).isEqualTo(DominoTile.State.Started)
+            Assertions.assertThat(tile.state).isEqualTo(DominoTile.State.Started)
         }
 
         @Test
@@ -302,7 +301,7 @@ class DominoTileTest {
             tile.start()
             tile.stop()
 
-            assertThat(actions).isEqualTo(listOf(3, 2, 1))
+            Assertions.assertThat(actions).isEqualTo(listOf(3, 2, 1))
         }
 
         @Test
@@ -325,7 +324,7 @@ class DominoTileTest {
             tile.start()
             tile.stop()
 
-            assertThat(actions).isEqualTo(listOf(3, 1))
+            Assertions.assertThat(actions).isEqualTo(listOf(3, 1))
         }
 
         @Test
@@ -345,7 +344,7 @@ class DominoTileTest {
             tile.stop()
             tile.stop()
 
-            assertThat(actions).isEqualTo(listOf(1))
+            Assertions.assertThat(actions).isEqualTo(listOf(1))
         }
 
         @Test
@@ -361,7 +360,7 @@ class DominoTileTest {
 
             tile.start()
 
-            assertThat(called).hasValue(1)
+            Assertions.assertThat(called).hasValue(1)
         }
 
         @Test
@@ -377,7 +376,7 @@ class DominoTileTest {
 
             tile.start()
 
-            assertThat(called).hasValue(1)
+            Assertions.assertThat(called).hasValue(1)
         }
 
         @Test
@@ -392,7 +391,7 @@ class DominoTileTest {
             tile.stop()
             tile.start()
 
-            assertThat(called).hasValue(2)
+            Assertions.assertThat(called).hasValue(2)
         }
 
         @Test
@@ -404,7 +403,7 @@ class DominoTileTest {
             })
             tile.start()
 
-            assertThat(tile.state).isEqualTo(DominoTile.State.Started)
+            Assertions.assertThat(tile.state).isEqualTo(DominoTile.State.Started)
         }
 
         @Test
@@ -416,7 +415,7 @@ class DominoTileTest {
 
             outerFuture.complete(Unit)
 
-            assertThat(tile.state).isEqualTo(DominoTile.State.Started)
+            Assertions.assertThat(tile.state).isEqualTo(DominoTile.State.Started)
         }
     }
 
@@ -487,7 +486,7 @@ class DominoTileTest {
 
             tile.stop()
 
-            assertThat(handler.lastConfiguration).isNull()
+            Assertions.assertThat(handler.lastConfiguration).isNull()
         }
 
         @Test
@@ -499,7 +498,7 @@ class DominoTileTest {
 
             tile.close()
 
-            assertThat(handler.lastConfiguration).isNull()
+            Assertions.assertThat(handler.lastConfiguration).isNull()
         }
 
         @Test
@@ -540,11 +539,11 @@ class DominoTileTest {
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to config))
             outerConfigUpdateResult!!.completeExceptionally(RuntimeException("Bad config"))
 
-            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToBadConfig)
+            Assertions.assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToBadConfig)
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to config))
 
-            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToBadConfig)
-            assertThat(tile.isRunning).isFalse
+            Assertions.assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToBadConfig)
+            Assertions.assertThat(tile.isRunning).isFalse
         }
 
         @Test
@@ -557,7 +556,7 @@ class DominoTileTest {
 
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to config))
 
-            assertThat(calledNewConfigurations)
+            Assertions.assertThat(calledNewConfigurations)
                 .hasSize(1)
                 .contains(Configuration(33) to null)
         }
@@ -572,12 +571,12 @@ class DominoTileTest {
 
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to config))
 
-            assertThat(tile.state).isEqualTo(DominoTile.State.Created)
+            Assertions.assertThat(tile.state).isEqualTo(DominoTile.State.Created)
 
             outerConfigUpdateResult!!.complete(Unit)
 
-            assertThat(tile.state).isEqualTo(DominoTile.State.Started)
-            assertThat(tile.isRunning).isTrue
+            Assertions.assertThat(tile.state).isEqualTo(DominoTile.State.Started)
+            Assertions.assertThat(tile.isRunning).isTrue
         }
 
         @Test
@@ -594,7 +593,7 @@ class DominoTileTest {
 
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to config2))
 
-            assertThat(calledNewConfigurations)
+            Assertions.assertThat(calledNewConfigurations)
                 .hasSize(1)
                 .contains(Configuration(33) to null)
         }
@@ -613,7 +612,7 @@ class DominoTileTest {
 
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to config2))
 
-            assertThat(calledNewConfigurations)
+            Assertions.assertThat(calledNewConfigurations)
                 .hasSize(2)
                 .contains(Configuration(33) to null)
                 .contains(Configuration(25) to Configuration(33))
@@ -631,7 +630,7 @@ class DominoTileTest {
             }
             tile()
 
-            assertThat(calledNewConfigurations)
+            Assertions.assertThat(calledNewConfigurations)
                 .isEmpty()
         }
 
@@ -648,13 +647,13 @@ class DominoTileTest {
             tile.start()
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to badConfig))
             outerConfigUpdateResult!!.completeExceptionally(RuntimeException("Bad config"))
-            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToBadConfig)
+            Assertions.assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToBadConfig)
 
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to goodConfig))
             outerConfigUpdateResult!!.complete(Unit)
-            assertThat(tile.state).isEqualTo(DominoTile.State.Started)
+            Assertions.assertThat(tile.state).isEqualTo(DominoTile.State.Started)
 
-            assertThat(calledNewConfigurations).contains(Configuration(17) to Configuration(5))
+            Assertions.assertThat(calledNewConfigurations).contains(Configuration(17) to Configuration(5))
         }
 
         @Test
@@ -671,7 +670,7 @@ class DominoTileTest {
 
             tile.start()
 
-            assertThat(calledNewConfigurations)
+            Assertions.assertThat(calledNewConfigurations)
                 .hasSize(1)
                 .contains(Configuration(11) to null)
         }
@@ -682,7 +681,7 @@ class DominoTileTest {
 
             tile.start()
 
-            assertThat(calledNewConfigurations)
+            Assertions.assertThat(calledNewConfigurations)
                 .isEmpty()
         }
 
@@ -720,7 +719,7 @@ class DominoTileTest {
 
             tile.start()
 
-            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToBadConfig)
+            Assertions.assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToBadConfig)
         }
 
         @Test
@@ -746,28 +745,30 @@ class DominoTileTest {
 
             tile.start()
 
-            assertThat(resourceCreated).hasValue(1)
+            Assertions.assertThat(resourceCreated).hasValue(1)
         }
     }
 
     @Nested
     inner class InternalTileTest {
-        private fun tile(children: Collection<DominoTile>): DominoTile = DominoTile(
+        private fun tile(dependentChildren: Collection<DominoTile>, managedChildren: Collection<DominoTile>): DominoTile = DominoTile(
             TILE_NAME,
             factory,
-            children = children
+            dependentChildren = dependentChildren,
+            managedChildren = managedChildren
         )
 
         @Nested
         inner class StartTileTests {
+
             @Test
-            fun `startTile will register to follow all the tiles on the first run`() {
+            fun `startTile will register to follow all the dependent tiles on the first run`() {
                 val children = arrayOf<Pair<StubDominoTile, RegistrationHandle>>(
                     StubDominoTile(LifecycleCoordinatorName("component", "1")) to mock(),
                     StubDominoTile(LifecycleCoordinatorName("component", "2")) to mock(),
                     StubDominoTile(LifecycleCoordinatorName("component", "3")) to mock(),
                 )
-                val tile = tile(children.map { it.first.dominoTile })
+                val tile = tile(children.map { it.first.dominoTile }, emptyList())
 
                 tile.start()
 
@@ -783,7 +784,7 @@ class DominoTileTest {
                     StubDominoTile(LifecycleCoordinatorName("component", "2")) to mock(),
                     StubDominoTile(LifecycleCoordinatorName("component", "3")) to mock(),
                 )
-                val tile = tile(children.map { it.first.dominoTile })
+                val tile = tile(children.map { it.first.dominoTile }, emptyList())
 
                 tile.start()
                 tile.start()
@@ -794,14 +795,14 @@ class DominoTileTest {
             }
 
             @Test
-            fun `startTile will start all the children`() {
+            fun `startTile will start all the managed children`() {
                 val children = arrayOf<Pair<StubDominoTile, RegistrationHandle>>(
                     StubDominoTile(LifecycleCoordinatorName("component", "1")) to mock(),
                     StubDominoTile(LifecycleCoordinatorName("component", "2")) to mock(),
                     StubDominoTile(LifecycleCoordinatorName("component", "3")) to mock(),
                 )
                 registerChildren(coordinator, children)
-                val tile = tile(children.map { it.first.dominoTile })
+                val tile = tile(emptyList(), children.map { it.first.dominoTile })
 
                 tile.start()
 
@@ -814,54 +815,6 @@ class DominoTileTest {
         @Nested
         inner class StartDependenciesIfNeededTests {
             @Test
-            fun `parent will start stopped children if errored child recovers`() {
-                val children = arrayOf<Pair<StubDominoTile, RegistrationHandle>>(
-                    StubDominoTile(LifecycleCoordinatorName("component", "1")) to mock(),
-                    StubDominoTile(LifecycleCoordinatorName("component", "2")) to mock(),
-                    StubDominoTile(LifecycleCoordinatorName("component", "3")) to mock(),
-                )
-                registerChildren(coordinator, children)
-
-                val tile = tile(children.map { it.first.dominoTile })
-                tile.start()
-
-                // simulate children starting
-                children[0].first.setState(DominoTile.State.Started)
-                handler.lastValue.processEvent(CustomEvent(children[0].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.Started)), coordinator)
-                children[1].first.setState(DominoTile.State.Started)
-                handler.lastValue.processEvent(CustomEvent(children[1].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.Started)), coordinator)
-                children[2].first.setState(DominoTile.State.Started)
-                handler.lastValue.processEvent(CustomEvent(children[2].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.Started)), coordinator)
-                // simulate child failing
-                children[2].first.setState(DominoTile.State.StoppedDueToError)
-                handler.lastValue.processEvent(CustomEvent(children[2].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.StoppedDueToError)), coordinator)
-
-                // verify other children stopped
-                verify(children[0].first.dominoTile).stop()
-                verify(children[1].first.dominoTile).stop()
-                children[0].first.setState(DominoTile.State.StoppedByParent)
-                handler.lastValue.processEvent(CustomEvent(children[0].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.StoppedByParent)), coordinator)
-                children[1].first.setState(DominoTile.State.StoppedByParent)
-                handler.lastValue.processEvent(CustomEvent(children[1].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.StoppedByParent)), coordinator)
-
-                // simulate errored child recovering
-                children.forEach { clearInvocations(it.first.dominoTile) }
-                children[2].first.setState(DominoTile.State.Started)
-                handler.lastValue.processEvent(CustomEvent(children[2].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.Started)), coordinator)
-
-
-                verify(children[0].first.dominoTile).start()
-                verify(children[1].first.dominoTile).start()
-            }
-
-            @Test
             fun `parent status will be set to started if all are running`() {
                 val children = arrayOf<Pair<StubDominoTile, RegistrationHandle>>(
                     StubDominoTile(LifecycleCoordinatorName("component", "1")) to mock(),
@@ -870,7 +823,7 @@ class DominoTileTest {
                 )
                 registerChildren(coordinator, children)
 
-                val tile = tile(children.map { it.first.dominoTile })
+                val tile = tile(children.map { it.first.dominoTile }, emptyList())
                 tile.start()
 
                 // simulate children starting
@@ -884,73 +837,8 @@ class DominoTileTest {
                 handler.lastValue.processEvent(CustomEvent(children[2].second,
                     DominoTile.StatusChangeEvent(DominoTile.State.Started)), coordinator)
 
-                assertThat(tile.isRunning).isTrue
-            }
-
-            @Test
-            fun `parent will stop a child that recovers from error if there are still errored children`() {
-                val children = arrayOf<Pair<StubDominoTile, RegistrationHandle>>(
-                    StubDominoTile(LifecycleCoordinatorName("component" , "1")) to mock(),
-                    StubDominoTile(LifecycleCoordinatorName("component" , "2")) to mock(),
-                    StubDominoTile(LifecycleCoordinatorName("component" , "3")) to mock(),
-                )
-                registerChildren(coordinator, children)
-
-                val tile = tile(children.map { it.first.dominoTile })
-                tile.start()
-
-                // simulate children starting
-                children[0].first.setState(DominoTile.State.Started)
-                handler.lastValue.processEvent(CustomEvent(children[0].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.Started)), coordinator)
-                children[1].first.setState(DominoTile.State.Started)
-                handler.lastValue.processEvent(CustomEvent(children[1].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.Started)), coordinator)
-                children[2].first.setState(DominoTile.State.Started)
-                handler.lastValue.processEvent(CustomEvent(children[2].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.Started)), coordinator)
-                // simulate two children failing
-                children[0].first.setState(DominoTile.State.StoppedDueToError)
-                handler.lastValue.processEvent(CustomEvent(children[0].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.StoppedDueToError)), coordinator)
-                children[1].first.setState(DominoTile.State.StoppedDueToError)
-                handler.lastValue.processEvent(CustomEvent(children[1].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.StoppedDueToError)), coordinator)
-
-
-                clearInvocations(children[0].first.dominoTile)
-                // simulate one child recovering
-                children[0].first.setState(DominoTile.State.Started)
-                handler.lastValue.processEvent(CustomEvent(children[0].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.Started)), coordinator)
-
-                verify(children[0].first.dominoTile).stop()
-            }
-
-            @Test
-            fun `parent status will be set to Started if all the children are started`() {
-                val children = arrayOf<Pair<StubDominoTile, RegistrationHandle>>(
-                    StubDominoTile(LifecycleCoordinatorName("component" , "1")) to mock(),
-                    StubDominoTile(LifecycleCoordinatorName("component" , "2")) to mock(),
-                    StubDominoTile(LifecycleCoordinatorName("component" , "3")) to mock(),
-                )
-                registerChildren(coordinator, children)
-
-                val tile = tile(children.map { it.first.dominoTile })
-                tile.start()
-
-                // simulate children starting
-                children[0].first.setState(DominoTile.State.Started)
-                handler.lastValue.processEvent(CustomEvent(children[0].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.Started)), coordinator)
-                children[1].first.setState(DominoTile.State.Started)
-                handler.lastValue.processEvent(CustomEvent(children[1].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.Started)), coordinator)
-                children[2].first.setState(DominoTile.State.Started)
-                handler.lastValue.processEvent(CustomEvent(children[2].second,
-                    DominoTile.StatusChangeEvent(DominoTile.State.Started)), coordinator)
-
-                assertThat(tile.state).isEqualTo(DominoTile.State.Started)
+                Assertions.assertThat(tile.isRunning).isTrue
+                Assertions.assertThat(tile.state).isEqualTo(DominoTile.State.Started)
             }
 
             @Test
@@ -962,7 +850,7 @@ class DominoTileTest {
                 )
                 registerChildren(coordinator, children)
 
-                val tile = tile(children.map { it.first.dominoTile })
+                val tile = tile(children.map { it.first.dominoTile }, emptyList())
                 tile.start()
 
                 // simulate only 2 out of 3 children starting
@@ -973,8 +861,8 @@ class DominoTileTest {
                 handler.lastValue.processEvent(CustomEvent(children[1].second,
                     DominoTile.StatusChangeEvent(DominoTile.State.Started)), coordinator)
 
-                assertThat(tile.state).isEqualTo(DominoTile.State.Created)
-                assertThat(tile.isRunning).isFalse()
+                Assertions.assertThat(tile.state).isEqualTo(DominoTile.State.Created)
+                Assertions.assertThat(tile.isRunning).isFalse
             }
 
             @Test
@@ -986,7 +874,7 @@ class DominoTileTest {
                 )
                 registerChildren(coordinator, children)
 
-                val tile = tile(children.map { it.first.dominoTile })
+                val tile = tile(children.map { it.first.dominoTile }, emptyList())
                 tile.start()
 
                 // simulate children starting
@@ -994,9 +882,7 @@ class DominoTileTest {
                 handler.lastValue.processEvent(CustomEvent(children[0].second,
                     DominoTile.StatusChangeEvent(DominoTile.State.StoppedByParent)), coordinator)
 
-                assertThat(tile.state).isEqualTo(DominoTile.State.StoppedByParent)
-                verify(children[1].first.dominoTile).stop()
-                verify(children[2].first.dominoTile).stop()
+                Assertions.assertThat(tile.state).isEqualTo(DominoTile.State.DownDueToChildDown)
             }
         }
 
@@ -1008,7 +894,7 @@ class DominoTileTest {
                 val children = listOf<DominoTile>(
                     mock(),
                 )
-                tile(children)
+                tile(children, emptyList())
                 class Event : LifecycleEvent
 
                 assertDoesNotThrow {
@@ -1020,7 +906,7 @@ class DominoTileTest {
             }
 
             @Test
-            fun `when a child goes down with error, the parent also stops due to error`() {
+            fun `when a dependent child goes down with error, the parent will stop`() {
                 val children = arrayOf<Pair<StubDominoTile, RegistrationHandle>>(
                     StubDominoTile(LifecycleCoordinatorName("component", "1")) to mock(),
                     StubDominoTile(LifecycleCoordinatorName("component", "2")) to mock(),
@@ -1028,21 +914,21 @@ class DominoTileTest {
                 )
                 registerChildren(coordinator, children)
 
-                val tile = tile(children.map { it.first.dominoTile })
+                val tile = tile(children.map { it.first.dominoTile }, emptyList())
                 tile.start()
 
                 children[0].first.setState(DominoTile.State.StoppedDueToError)
                 handler.lastValue.processEvent(CustomEvent(children[0].second,
                     DominoTile.StatusChangeEvent(DominoTile.State.StoppedDueToError)), coordinator)
 
-                assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
+                Assertions.assertThat(tile.state).isEqualTo(DominoTile.State.DownDueToChildDown)
             }
         }
 
         @Nested
         inner class StopTileTests {
             @Test
-            fun `stopTile will stop all the children`() {
+            fun `stopTile will stop all the managed children`() {
                 val children = arrayOf<Pair<StubDominoTile, RegistrationHandle>>(
                     StubDominoTile(LifecycleCoordinatorName("component", "1")) to mock(),
                     StubDominoTile(LifecycleCoordinatorName("component", "2")) to mock(),
@@ -1050,7 +936,7 @@ class DominoTileTest {
                 )
                 registerChildren(coordinator, children)
 
-                val tile = tile(children.map { it.first.dominoTile })
+                val tile = tile(emptyList(), children.map { it.first.dominoTile })
                 tile.start()
 
                 tile.stop()
@@ -1069,11 +955,11 @@ class DominoTileTest {
                 )
                 registerChildren(coordinator, children)
 
-                val tile = tile(children.map { it.first.dominoTile })
+                val tile = tile(children.map { it.first.dominoTile }, emptyList())
                 tile.start()
 
                 tile.close()
-                verify(children[0].first.dominoTile).close()
+                verify(children[0].second).close()
             }
 
             @Test
@@ -1083,20 +969,20 @@ class DominoTileTest {
                 )
                 registerChildren(coordinator, children)
 
-                val tile = tile(children.map { it.first.dominoTile })
+                val tile = tile(children.map { it.first.dominoTile }, emptyList())
                 tile.close()
 
                 verify(coordinator).close()
             }
 
             @Test
-            fun `close will close the children`() {
+            fun `close will close the managed children`() {
                 val children = arrayOf<Pair<StubDominoTile, RegistrationHandle>>(
                     StubDominoTile(LifecycleCoordinatorName("component", "1")) to mock()
                 )
                 registerChildren(coordinator, children)
 
-                val tile = tile(children.map { it.first.dominoTile })
+                val tile = tile(emptyList(), children.map { it.first.dominoTile })
                 tile.start()
 
                 tile.close()
@@ -1113,7 +999,7 @@ class DominoTileTest {
                 )
                 val registration = mock<RegistrationHandle>()
                 whenever(coordinator.followStatusChangesByName(any())).thenReturn(registration)
-                val tile = tile(children)
+                val tile = tile(emptyList(), children)
 
                 tile.start()
                 tile.close()
@@ -1171,7 +1057,7 @@ class DominoTileTest {
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to mock()))
             outerConfigUpdateResult.complete(Unit)
 
-            assertThat(tile.state).isEqualTo(DominoTile.State.Started)
+            Assertions.assertThat(tile.state).isEqualTo(DominoTile.State.Started)
         }
 
         @Test
@@ -1188,7 +1074,7 @@ class DominoTileTest {
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to mock()))
             outerConfigUpdateResult.completeExceptionally(IOException())
 
-            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToBadConfig)
+            Assertions.assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToBadConfig)
         }
 
         @Test
@@ -1205,7 +1091,7 @@ class DominoTileTest {
             outerConfigUpdateResult.completeExceptionally(IOException())
             resourceFuture.complete(Unit)
 
-            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToBadConfig)
+            Assertions.assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToBadConfig)
         }
 
         @Test
@@ -1222,7 +1108,7 @@ class DominoTileTest {
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to mock()))
             outerConfigUpdateResult.complete(Unit)
 
-            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
+            Assertions.assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
         }
 
         @Test
@@ -1239,7 +1125,7 @@ class DominoTileTest {
             outerConfigUpdateResult.complete(Unit)
             resourceFuture.completeExceptionally(IOException())
 
-            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
+            Assertions.assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
         }
 
         @Test
@@ -1256,7 +1142,7 @@ class DominoTileTest {
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to mock()))
             outerConfigUpdateResult.completeExceptionally(IOException())
 
-            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToBadConfig)
+            Assertions.assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToBadConfig)
         }
 
         @Test
@@ -1273,7 +1159,7 @@ class DominoTileTest {
             outerConfigUpdateResult.completeExceptionally(IOException())
             resourceFuture.completeExceptionally(IOException())
 
-            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToBadConfig)
+            Assertions.assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
         }
     }
 

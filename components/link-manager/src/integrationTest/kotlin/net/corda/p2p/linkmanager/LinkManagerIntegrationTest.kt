@@ -8,7 +8,6 @@ import net.corda.libs.configuration.publish.CordaConfigurationVersion
 import net.corda.libs.configuration.publish.impl.ConfigPublisherImpl
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.lifecycle.domino.logic.DominoTile
-import net.corda.lifecycle.domino.logic.DominoTileV2
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -16,7 +15,6 @@ import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
 import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
-import net.corda.p2p.P2PLayerEndToEndTest
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.schema.Schemas
 import net.corda.test.util.eventually
@@ -118,7 +116,7 @@ class LinkManagerIntegrationTest {
                 invalidConfig
             )
             eventually {
-                assertThat(linkManager.dominoTile.state).isEqualTo(DominoTileV2.State.DownDueToChildDown)
+                assertThat(linkManager.dominoTile.state).isEqualTo(DominoTile.State.DownDueToChildDown)
             }
 
             logger.info("Publishing valid configuration again")

@@ -7,9 +7,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.DominoTile
-import net.corda.lifecycle.domino.logic.DominoTileV2
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
-import net.corda.lifecycle.domino.logic.LifecycleWithDominoTileV2
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
@@ -47,7 +45,7 @@ internal class OutboundMessageHandler(
     subscriptionFactory: SubscriptionFactory,
     nodeConfiguration: SmartConfig,
     instanceId: Int,
-) : EventLogProcessor<String, LinkOutMessage>, LifecycleWithDominoTileV2 {
+) : EventLogProcessor<String, LinkOutMessage>, LifecycleWithDominoTile {
     companion object {
         private val logger = LoggerFactory.getLogger(OutboundMessageHandler::class.java)
         const val MAX_RETRIES = 1
@@ -60,7 +58,7 @@ internal class OutboundMessageHandler(
         configurationReaderService
     )
 
-    override val dominoTile = DominoTileV2(
+    override val dominoTile = DominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         dependentChildren = listOf(connectionManager.dominoTile),

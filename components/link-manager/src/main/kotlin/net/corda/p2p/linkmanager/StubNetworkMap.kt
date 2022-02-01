@@ -4,7 +4,6 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
-import net.corda.lifecycle.domino.logic.DominoTileV2
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
@@ -33,7 +32,7 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val keyDeserialiser = KeyDeserialiser()
 
     private val readyFuture = AtomicReference<CompletableFuture<Unit>>()
-    override val dominoTile = DominoTileV2(this::class.java.simpleName, lifecycleCoordinatorFactory, ::createResources)
+    override val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, ::createResources)
 
     private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
         val future = CompletableFuture<Unit>()

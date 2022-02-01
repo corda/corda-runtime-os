@@ -7,9 +7,7 @@ import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
-import net.corda.lifecycle.domino.logic.DominoTileV2
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
-import net.corda.lifecycle.domino.logic.LifecycleWithDominoTileV2
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -43,7 +41,7 @@ internal class InboundMessageHandler(
     subscriptionFactory: SubscriptionFactory,
     nodeConfiguration: SmartConfig,
     instanceId: Int,
-    ) : HttpServerListener, LifecycleWithDominoTileV2 {
+    ) : HttpServerListener, LifecycleWithDominoTile {
 
     companion object {
         private val logger = contextLogger()
@@ -62,7 +60,7 @@ internal class InboundMessageHandler(
         instanceId
     )
     private val server = ReconfigurableHttpServer(lifecycleCoordinatorFactory, configurationReaderService, this)
-    override val dominoTile = DominoTileV2(
+    override val dominoTile = DominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         dependentChildren = listOf(sessionPartitionMapper.dominoTile, p2pInPublisher.dominoTile, server.dominoTile),
