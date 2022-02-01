@@ -93,7 +93,7 @@ class GatewayConfiguration : ConfigProducer() {
         names = ["--connectionMaximalReconnectionDelaySec"],
         description = ["The maximal duration (in seconds) to delay before trying to reconnect"]
     )
-    var connectionMaximalReconnectionDelaySec = 16L
+    var connectionMaximalReconnectionDelaySec = 10L
 
     @Option(
         names = ["--responseTimeoutMilliSecs"],

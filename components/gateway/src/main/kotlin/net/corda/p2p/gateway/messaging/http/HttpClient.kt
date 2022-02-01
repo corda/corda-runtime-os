@@ -211,9 +211,8 @@ class HttpClient(
                     connect()
                 }, retryDelay.toMillis(), TimeUnit.MILLISECONDS)
 
-                retryDelay += retryDelay
-                if (retryDelay > connectionConfiguration.maximalReconnectionDelay) {
-                    retryDelay = connectionConfiguration.maximalReconnectionDelay
+                if (retryDelay <= connectionConfiguration.maximalReconnectionDelay.dividedBy(2)) {
+                    retryDelay += retryDelay
                 }
             }
         }

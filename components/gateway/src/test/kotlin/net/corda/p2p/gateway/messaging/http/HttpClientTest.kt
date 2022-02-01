@@ -339,8 +339,8 @@ class HttpClientTest {
             client.onClose(HttpConnectionEvent(channel))
         }
 
-        // 6 times -> 10 - 4 ( = 1 second, 2 second, 4 seconds, 8 seconds)
-        verify(loop, times(6)).schedule(any(), eq(16000), eq(TimeUnit.MILLISECONDS))
+        // 7 times -> 10 - 3 ( = 1 second, 2 second, 4 seconds)
+        verify(loop, times(7)).schedule(any(), eq(8000), eq(TimeUnit.MILLISECONDS))
     }
 
     @Test

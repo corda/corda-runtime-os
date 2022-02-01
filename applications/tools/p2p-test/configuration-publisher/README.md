@@ -44,7 +44,7 @@ To run the application use:
         ySec>
                          The maximal duration (in seconds) to delay before
                            trying to reconnect
-                           Default: 16
+                           Default: 10
   -h, --help             display this help message
       --hostAddress=<hostAddress>
                          The host name or IP address where the HTTP server will

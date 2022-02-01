@@ -54,7 +54,7 @@ data class ConnectionConfiguration(
     /**
      * The maximal duration to wait for reconnection.
      */
-    val maximalReconnectionDelay: Duration = Duration.ofSeconds(16),
+    val maximalReconnectionDelay: Duration = Duration.ofSeconds(10),
 )
 
 internal fun Config.toGatewayConfiguration(): GatewayConfiguration {
