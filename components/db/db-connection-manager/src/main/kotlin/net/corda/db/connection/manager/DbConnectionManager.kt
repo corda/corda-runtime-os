@@ -1,23 +1,11 @@
 package net.corda.db.connection.manager
 
+import net.corda.db.core.DbPrivilege
+import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.orm.JpaEntitiesSet
-import java.util.UUID
 import javax.persistence.EntityManagerFactory
-
-// TODO - move to API repo
-/**
- * Corda DB Types
- *
- * When UUID is set, it is the PK for the connection details to be fetched from the cluster DB.
- */
-enum class CordaDb(val persistenceUnitName: String, val id: UUID? = null) {
-    CordaCluster("corda-cluster"),
-    RBAC("corda-rbac", UUID.fromString("fd301442-7ac7-11ec-90d6-0242ac120003")),
-    Vault("corda-vault"),
-    Crypto("corda-crypto"),
-}
 
 /**
  * The [DbConnectionManager] is responsible for creating and managing [EntityManagerFactory] objects
@@ -35,31 +23,41 @@ enum class CordaDb(val persistenceUnitName: String, val id: UUID? = null) {
 interface DbConnectionManager : Lifecycle {
 
     /**
-     * Get an instance of [EntityManagerFactory] for the named [DbConnectionID] from cache or create one if necessary.
+     * Get an instance of [EntityManagerFactory] for the named [db] from cache or create one if necessary.
      *
      * @param db Predefined [db] to be used.
      * @return
      */
-    fun getOrCreateEntityManagerFactory(db: CordaDb): EntityManagerFactory
+    fun getOrCreateEntityManagerFactory(db: CordaDb, privilege: DbPrivilege): EntityManagerFactory
 
     /**
      * Get an instance of [EntityManagerFactory] for the connection ID. Use cache or create one if necessary.
      *
-     * @param connectionID ID for the connection to be used. This corresponds ot the ID in the connections DB.
+     * @param name name for the connection to be used.
+     * @param privilege required.
      * @param entitiesSet to used with the EntityManager.
      * @return
      */
-    fun getOrCreateEntityManagerFactory(connectionID: UUID, entitiesSet: JpaEntitiesSet): EntityManagerFactory
+    fun getOrCreateEntityManagerFactory(name: String, privilege: DbPrivilege, entitiesSet: JpaEntitiesSet): EntityManagerFactory
 
     /**
      * Persist new DB connection with given [config].
      *
      * Replaces if the connection already exists.
      *
-     * @param connectionID
-     * @param config
+     * @param name name for the connection to be used.
+     * @param privilege required.
+     * @param config smart config object to be used to create a DataSource using the
+     *      [DataSourceFactory.createFromConfig] extension method
+     * @param description (optional)
+     * @param name of the actor responsible for the insert or update.
      */
-    fun putConnection(connectionID: UUID, config: SmartConfig)
+    fun putConnection(
+        name: String,
+        privilege: DbPrivilege,
+        config: SmartConfig,
+        description: String?,
+        updateActor: String)
 
     /**
      * Return the [EntityManagerFactory] object for the cluster DB.
@@ -74,7 +72,7 @@ interface DbConnectionManager : Lifecycle {
      * cannot connect to the Cluster DB.
      *
      * @param config The bootstrap configuration to connect to the cluster DB.
-     * @throws ConfigurationException If the bootstrap configuration is provided a second time
+     * @throws DBConfigurationException If the bootstrap configuration is provided a second time
      *                                  or if the configuration does not allow access.
      */
     fun bootstrap(config: SmartConfig)

@@ -1,6 +1,7 @@
 package net.corda.libs.permissions.storage.writer.impl
 
 import java.util.concurrent.CompletableFuture
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.data.permissions.management.permission.CreatePermissionRequest
@@ -43,8 +44,7 @@ class PermissionStorageWriterProcessorImpl(
                     avroRole
                 }
                 is CreatePermissionRequest -> {
-                    val avroPermission = permissionWriter.createPermission(permissionRequest, request.requestUserId,
-                        request.virtualNodeId)
+                    val avroPermission = permissionWriter.createPermission(permissionRequest, request.requestUserId, request.virtualNodeId)
                     permissionStorageReader.publishNewPermission(avroPermission)
                     avroPermission
                 }
@@ -68,12 +68,16 @@ class PermissionStorageWriterProcessorImpl(
                     permissionStorageReader.publishUpdatedRole(avroRole)
                     avroRole
                 }
-                else -> throw IllegalArgumentException("Received invalid permission request type")
+                else -> throw IllegalArgumentException("Received invalid permission request type.")
             }
             respFuture.complete(PermissionManagementResponse(response))
         } catch (e: Exception) {
-            log.warn(e.message)
-            respFuture.completeExceptionally(e)
+            log.warn("Failed to execute permission write request.", e)
+            respFuture.complete(
+                PermissionManagementResponse(
+                    ExceptionEnvelope(e::class.java.name, e.message),
+                )
+            )
         }
     }
 }

@@ -24,7 +24,7 @@ class CreatePermissionE2eTest {
             // Check that permission does not exist yet
             with("randomID") {
                 assertThatThrownBy { proxy.getPermission(this) }.isInstanceOf(MissingRequestedResourceException::class.java)
-                    .hasMessageContaining("Permission $this not found")
+                    .hasMessageContaining("Permission '$this' not found")
             }
 
             // Create permission

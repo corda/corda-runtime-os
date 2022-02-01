@@ -32,9 +32,9 @@ import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.fail
@@ -43,27 +43,17 @@ import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.ByteBuffer
 import java.util.concurrent.CancellationException
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class)
 class RPCSubscriptionIntegrationTest {
 
     private lateinit var rpcConfig: RPCConfig<String, String>
     private lateinit var kafkaConfig: SmartConfig
+    private val kafkaProperties = getKafkaProperties()
 
     private companion object {
         const val CLIENT_ID = "integrationTestRPCSender"
-
-        @InjectService(timeout = 4000)
-        lateinit var topicAdmin: KafkaTopicAdmin
-
-        private val kafkaProperties = getKafkaProperties()
-
-        @BeforeAll
-        @JvmStatic
-        fun beforeAll() {
-            topicAdmin.createTopics(kafkaProperties, TopicTemplates.RPC_TOPIC_TEMPLATE)
-            topicAdmin.createTopics(kafkaProperties, TopicTemplates.RPC_RESPONSE_TOPIC_TEMPLATE)
-        }
     }
 
     @InjectService(timeout = 4000)
@@ -71,6 +61,9 @@ class RPCSubscriptionIntegrationTest {
 
     @InjectService(timeout = 4000)
     lateinit var subscriptionFactory: SubscriptionFactory
+
+    @InjectService(timeout = 4000)
+    lateinit var topicAdmin: KafkaTopicAdmin
 
     @InjectService(timeout = 4000)
     lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
@@ -90,11 +83,15 @@ class RPCSubscriptionIntegrationTest {
     }
 
     @Test
+    @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `start rpc sender and responder, send message, complete correctly`() {
+        topicAdmin.createTopics(kafkaProperties, TopicTemplates.RPC_TOPIC1_TEMPLATE)
+        topicAdmin.createTopics(kafkaProperties, TopicTemplates.RPC_RESPONSE_TOPIC1_TEMPLATE)
+
         rpcConfig = RPCConfig(
             CLIENT_ID + 1,
             CLIENT_ID,
-            TopicTemplates.RPC_TOPIC,
+            TopicTemplates.RPC_TOPIC1,
             String::class.java,
             String::class.java
         )
@@ -170,11 +167,15 @@ class RPCSubscriptionIntegrationTest {
     }
 
     @Test
+    @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `start rpc sender and responder, send avro message, complete correctly`() {
+        topicAdmin.createTopics(kafkaProperties, TopicTemplates.RPC_TOPIC2_TEMPLATE)
+        topicAdmin.createTopics(kafkaProperties, TopicTemplates.RPC_RESPONSE_TOPIC2_TEMPLATE)
+
         val rpcConfig = RPCConfig(
             CLIENT_ID + 2,
             CLIENT_ID,
-            TopicTemplates.RPC_TOPIC,
+            TopicTemplates.RPC_TOPIC2,
             RPCRequest::class.java,
             RPCResponse::class.java
         )
@@ -222,11 +223,15 @@ class RPCSubscriptionIntegrationTest {
     }
 
     @Test
+    @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `start rpc sender and responder, send message, complete exceptionally`() {
+        topicAdmin.createTopics(kafkaProperties, TopicTemplates.RPC_TOPIC3_TEMPLATE)
+        topicAdmin.createTopics(kafkaProperties, TopicTemplates.RPC_RESPONSE_TOPIC3_TEMPLATE)
+
         rpcConfig = RPCConfig(
             CLIENT_ID + 3,
             CLIENT_ID,
-            TopicTemplates.RPC_TOPIC,
+            TopicTemplates.RPC_TOPIC3,
             String::class.java,
             String::class.java
         )
@@ -261,11 +266,14 @@ class RPCSubscriptionIntegrationTest {
     }
 
     @Test
+    @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `start rpc sender and responder, send message, complete with cancellation`() {
+        topicAdmin.createTopics(kafkaProperties, TopicTemplates.RPC_TOPIC4_TEMPLATE)
+        topicAdmin.createTopics(kafkaProperties, TopicTemplates.RPC_RESPONSE_TOPIC4_TEMPLATE)
         rpcConfig = RPCConfig(
-            CLIENT_ID + 5,
+            CLIENT_ID + 4,
             CLIENT_ID,
-            TopicTemplates.RPC_TOPIC,
+            TopicTemplates.RPC_TOPIC4,
             String::class.java,
             String::class.java
         )
@@ -300,11 +308,14 @@ class RPCSubscriptionIntegrationTest {
     }
 
     @Test
+    @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `start rpc sender and responder, send message, complete exceptionally due to repartition`() {
+        topicAdmin.createTopics(kafkaProperties, TopicTemplates.RPC_TOPIC5_TEMPLATE)
+        topicAdmin.createTopics(kafkaProperties, TopicTemplates.RPC_RESPONSE_TOPIC5_TEMPLATE)
         rpcConfig = RPCConfig(
-            CLIENT_ID + 6,
+            CLIENT_ID + 5,
             CLIENT_ID,
-            TopicTemplates.RPC_TOPIC,
+            TopicTemplates.RPC_TOPIC5,
             String::class.java,
             String::class.java
         )
