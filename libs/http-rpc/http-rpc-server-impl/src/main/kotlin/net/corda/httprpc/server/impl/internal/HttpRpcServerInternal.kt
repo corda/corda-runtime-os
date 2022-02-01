@@ -176,6 +176,7 @@ internal class HttpRpcServerInternal(
         fun registerHandlerForRoute(routeInfo: RouteInfo, handlerType: HandlerType) {
             try {
                 log.info("Add \"$handlerType\" handler for \"${routeInfo.fullPath}\".")
+                // TODO the following hardcoded handler registration is only meant for Scaffold and needs change once "multipart/form-data" gets implemented correctly.
                 if (routeInfo.fullPath == "//api/v1/cpi//") {
                     addHandler(handlerType, routeInfo.fullPath, routeInfo.invokeMultiPartMethod())
                 } else {
@@ -268,7 +269,7 @@ internal class HttpRpcServerInternal(
     private fun RouteInfo.invokeMultiPartMethod(): (Context) -> Unit {
         return { ctx ->
             try {
-                // TODO - kyriakos uploadedFiles can be more than one
+                // TODO uploadedFiles can be more than one
                 val stream = ctx.uploadedFiles().single().content
                 val result = invokeDelegatedMethod(stream)
                 if (result != null) {
