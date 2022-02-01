@@ -269,14 +269,10 @@ internal class HttpRpcServerInternal(
 
             // TODO - kyriakos - replace following static values with configuration
             val multipartConfig = MultipartConfigElement("", 1024, 1024, 20_000_000)
-
             ctx.req.setAttribute("org.eclipse.jetty.multipartConfig", multipartConfig)
-            val multipartParts = ctx.req.parts
-            if (multipartParts == null || multipartParts.isEmpty()) {
-                throw IllegalStateException("Parts were null")
-            }
 
             try {
+                val multipartParts = ctx.req.parts
                 // TODO - kyriakos multipartParts can be more than one
                 val stream = multipartParts.single().inputStream
                 val result = invokeDelegatedMethod(stream)
