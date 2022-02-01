@@ -148,7 +148,7 @@ class ConfigWriterProcessorTests {
     }
 
     @Test
-    fun `returns exception envelope if there is no existing configuration for the given section when sending RPC failure response`() {
+    fun `sends RPC failure response if there is no existing configuration for the given section when sending RPC failure response`() {
         val expectedEnvelope = ExceptionEnvelope(
             RollbackException::class.java.name,
             "New configuration represented by $configMgmtReq couldn't be written to the database. Cause: " +
@@ -168,7 +168,7 @@ class ConfigWriterProcessorTests {
     }
 
     @Test
-    fun `returns exception envelope if configuration for the given section cannot be read back when sending RPC failure response`() {
+    fun `sends RPC failure response if configuration for the given section cannot be read back when sending RPC failure response`() {
         val expectedEnvelope = ExceptionEnvelope(
             RollbackException::class.java.name,
             "New configuration represented by $configMgmtReq couldn't be written to the database. Cause: " +

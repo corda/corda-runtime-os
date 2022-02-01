@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager.delivery
 
+import net.corda.data.identity.HoldingIdentity
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
@@ -11,6 +12,10 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.AuthenticatedMessageDeliveryState
+import net.corda.p2p.app.AuthenticatedMessage
+import net.corda.p2p.app.AuthenticatedMessageHeader
+import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
+import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
@@ -28,6 +33,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -40,6 +46,7 @@ class DeliveryTrackerTest {
 
     companion object {
         const val timeStamp = 2635L
+        const val groupId = "group"
 
         lateinit var loggingInterceptor: LoggingInterceptor
 
@@ -71,6 +78,19 @@ class DeliveryTrackerTest {
     }
 
     private val replayScheduler = Mockito.mockConstruction(ReplayScheduler::class.java)
+
+    private val source = HoldingIdentity("Source", groupId)
+    private val dest = HoldingIdentity("Dest", groupId)
+    private val header = mock<AuthenticatedMessageHeader> {
+        on { source } doReturn source
+        on { destination } doReturn dest
+    }
+    private val message = mock<AuthenticatedMessage> {
+        on { header } doReturn header
+    }
+    private val messageAndKey = mock<AuthenticatedMessageAndKey> {
+        on { message } doReturn message
+    }
 
     class MockStateAndEventSubscription<K : Any, S: Any, E: Any>: StateAndEventSubscription<K, S, E> {
         @Volatile
@@ -134,7 +154,6 @@ class DeliveryTrackerTest {
         val (tracker, processor) = createTracker()
         tracker.start()
         val messageId = UUID.randomUUID().toString()
-        val messageAndKey = Mockito.mock(AuthenticatedMessageAndKey::class.java)
         val event = Record("topic", messageId, AppMessageMarker(LinkManagerSentMarker(messageAndKey), timeStamp))
         val response = processor.onNext(null, event)
         tracker.stop()
@@ -165,12 +184,16 @@ class DeliveryTrackerTest {
         tracker.start()
 
         val messageId = UUID.randomUUID().toString()
-        val messageAndKey = Mockito.mock(AuthenticatedMessageAndKey::class.java)
         val state = AuthenticatedMessageDeliveryState(messageAndKey, Instant.now().toEpochMilli())
         listener.onPostCommit(mapOf(messageId to state))
         @Suppress("UNCHECKED_CAST")
         verify(replayScheduler.constructed().last() as ReplayScheduler<AuthenticatedMessageAndKey>)
-            .addForReplay(any(), eq(messageId), eq(messageAndKey))
+            .addForReplay(
+                any(),
+                eq(messageId),
+                eq(messageAndKey),
+                eq(SessionManager.SessionKey(source.toHoldingIdentity(), dest.toHoldingIdentity()))
+            )
         tracker.stop()
     }
 
@@ -181,12 +204,16 @@ class DeliveryTrackerTest {
         tracker.start()
 
         val messageId = UUID.randomUUID().toString()
-        val messageAndKey = Mockito.mock(AuthenticatedMessageAndKey::class.java)
         val state = AuthenticatedMessageDeliveryState(messageAndKey, Instant.now().toEpochMilli())
         listener.onPartitionSynced(mapOf(messageId to state))
         @Suppress("UNCHECKED_CAST")
         verify(replayScheduler.constructed().last() as ReplayScheduler<AuthenticatedMessageAndKey>)
-            .addForReplay(any(), eq(messageId), eq(messageAndKey))
+            .addForReplay(
+                any(),
+                eq(messageId),
+                eq(messageAndKey),
+                eq(SessionManager.SessionKey(source.toHoldingIdentity(), dest.toHoldingIdentity()))
+            )
         tracker.stop()
     }
 
@@ -196,17 +223,22 @@ class DeliveryTrackerTest {
         tracker.start()
 
         val messageId = UUID.randomUUID().toString()
-        val messageAndKey = Mockito.mock(AuthenticatedMessageAndKey::class.java)
+
         val state = AuthenticatedMessageDeliveryState(messageAndKey, Instant.now().toEpochMilli())
         listener.onPartitionSynced(mapOf(messageId to state))
         @Suppress("UNCHECKED_CAST")
         verify(replayScheduler.constructed().last() as ReplayScheduler<AuthenticatedMessageAndKey>)
-            .addForReplay(any(), eq(messageId), eq(messageAndKey))
+            .addForReplay(
+                any(),
+                eq(messageId),
+                eq(messageAndKey),
+                eq(SessionManager.SessionKey(source.toHoldingIdentity(), dest.toHoldingIdentity()))
+            )
 
         listener.onPostCommit(mapOf(messageId to null))
         @Suppress("UNCHECKED_CAST")
         verify(replayScheduler.constructed().last() as ReplayScheduler<AuthenticatedMessageAndKey>)
-            .removeFromReplay(messageId)
+            .removeFromReplay(messageId, SessionManager.SessionKey(source.toHoldingIdentity(), dest.toHoldingIdentity()))
         tracker.stop()
     }
 
@@ -216,17 +248,21 @@ class DeliveryTrackerTest {
         tracker.start()
 
         val messageId = UUID.randomUUID().toString()
-        val messageAndKey = Mockito.mock(AuthenticatedMessageAndKey::class.java)
         val state = AuthenticatedMessageDeliveryState(messageAndKey, Instant.now().toEpochMilli())
         listener.onPartitionSynced(mapOf(messageId to state))
         @Suppress("UNCHECKED_CAST")
         verify(replayScheduler.constructed().last() as ReplayScheduler<AuthenticatedMessageAndKey>)
-            .addForReplay(any(), eq(messageId), eq(messageAndKey))
+            .addForReplay(
+                any(),
+                eq(messageId),
+                eq(messageAndKey),
+                eq(SessionManager.SessionKey(source.toHoldingIdentity(), dest.toHoldingIdentity()))
+            )
 
         listener.onPartitionLost(mapOf(messageId to state))
         @Suppress("UNCHECKED_CAST")
         verify(replayScheduler.constructed().last() as ReplayScheduler<AuthenticatedMessageAndKey>)
-            .removeFromReplay(messageId)
+            .removeFromReplay(messageId, SessionManager.SessionKey(source.toHoldingIdentity(), dest.toHoldingIdentity()))
         tracker.stop()
     }
 }

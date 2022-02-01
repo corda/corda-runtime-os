@@ -1,7 +1,8 @@
 package net.corda.db.connection.manager
 
+import net.corda.db.core.DbPrivilege
+import net.corda.db.schema.CordaDb
 import net.corda.orm.JpaEntitiesSet
-import java.util.UUID
 import javax.persistence.EntityManagerFactory
 
 interface EntityManagerFactoryCache {
@@ -13,17 +14,19 @@ interface EntityManagerFactoryCache {
     /**
      * Get the [EntityManagerFactory] related to the given [db] from cache or create one if necessary.
      *
-     * @param db
+     * @param db to get the connection for
+     * @param privilege DDL or DML connection
      * @return
      */
-    fun getOrCreate(db: CordaDb): EntityManagerFactory
+    fun getOrCreate(db: CordaDb, privilege: DbPrivilege): EntityManagerFactory
 
     /**
      * Get the [EntityManagerFactory] related to the given [id] and [entitiesSet] from cache or create one if necessary.
      *
-     * @param id
+     * @param name of the connection
+     * @param privilege required privilege for the connecction
      * @param entitiesSet
      * @return
      */
-    fun getOrCreate(id: UUID, entitiesSet: JpaEntitiesSet): EntityManagerFactory
+    fun getOrCreate(name: String, privilege: DbPrivilege, entitiesSet: JpaEntitiesSet): EntityManagerFactory
 }

@@ -69,7 +69,7 @@ class SandboxGroupContextServiceImpl(
         return ctx
     }
 
-    override fun hasCpks(cpkIdentifiers: Set<CPK.Identifier>): Boolean {
+    override fun hasCpks(cpkIdentifiers: Set<CPK.Identifier>) : Boolean {
         // This needs to be updated when the CPK service is introduced.
         return true
     }

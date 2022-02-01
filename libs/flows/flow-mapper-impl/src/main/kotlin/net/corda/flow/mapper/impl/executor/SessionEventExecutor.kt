@@ -2,9 +2,9 @@ package net.corda.flow.mapper.impl.executor
 
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
-import net.corda.data.flow.event.mapper.MessageDirection
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
@@ -18,7 +18,6 @@ import net.corda.v5.base.util.contextLogger
 
 class SessionEventExecutor(
     private val eventKey: String,
-    private val messageDirection: MessageDirection,
     private val sessionEvent: SessionEvent,
     private val flowMapperState: FlowMapperState?,
 ) : FlowMapperEventExecutor {
@@ -28,6 +27,7 @@ class SessionEventExecutor(
     }
 
     private val flowKeyGenerator = FlowKeyGenerator()
+    private val messageDirection = sessionEvent.messageDirection
     private val outputTopic = getSessionEventOutputTopic(messageDirection)
 
     override fun execute(): FlowMapperResult {
@@ -57,7 +57,7 @@ class SessionEventExecutor(
 
     private fun processOtherSessionEvents(flowMapperState: FlowMapperState): FlowMapperResult {
         val (recordKey, recordValue) = if (messageDirection == MessageDirection.OUTBOUND) {
-            Pair(generateOutboundSessionId(eventKey), FlowMapperEvent(messageDirection, sessionEvent))
+            Pair(generateOutboundSessionId(eventKey), FlowMapperEvent(sessionEvent))
         } else {
             Pair(flowMapperState.flowKey, FlowEvent(flowMapperState.flowKey, sessionEvent))
         }
@@ -80,7 +80,6 @@ class SessionEventExecutor(
         } else {
             sessionInit.initiatedIdentity
         }
-
 
         val (flowKey, outputRecordKey, outputRecordValue) =
             getSessionInitOutputs(
@@ -118,14 +117,16 @@ class SessionEventExecutor(
         } else {
             //reusing SessionInit object for inbound and outbound traffic rather than creating a new object identical to SessionInit
             //with an extra field of flowKey. set flowkey to null to not expose it on outbound messages
+            val sessionId = generateOutboundSessionId(sessionKey)
             val tmpFLowEventKey = sessionInit.flowKey
             sessionInit.flowKey = null
             sessionEvent.payload = sessionInit
+            sessionEvent.sessionId = sessionId
 
             SessionInitOutputs(
                 tmpFLowEventKey,
-                generateOutboundSessionId(sessionKey),
-                FlowMapperEvent(MessageDirection.OUTBOUND, sessionEvent)
+                sessionId,
+                FlowMapperEvent(sessionEvent)
             )
         }
     }

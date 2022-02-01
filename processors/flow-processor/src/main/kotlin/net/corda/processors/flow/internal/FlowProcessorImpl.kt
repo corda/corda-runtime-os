@@ -1,6 +1,7 @@
 package net.corda.processors.flow.internal
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.flow.service.FlowService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.DependentComponents
@@ -12,10 +13,11 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.processors.flow.FlowProcessor
-import net.corda.sandbox.service.SandboxService
+import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.session.mapper.service.FlowMapperService
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -32,8 +34,12 @@ class FlowProcessorImpl @Activate constructor(
     private val flowService: FlowService,
     @Reference(service = FlowMapperService::class)
     private val flowMapperService: FlowMapperService,
-    @Reference(service = SandboxService::class)
-    private val sandboxService: SandboxService
+    @Reference(service = VirtualNodeInfoReadService::class)
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    @Reference(service = CpiInfoReadService::class)
+    private val cpiInfoReadService: CpiInfoReadService,
+    @Reference(service = SandboxGroupContextComponent::class)
+    private val sandboxGroupContextComponent: SandboxGroupContextComponent,
 ) : FlowProcessor {
 
     private companion object {
@@ -45,8 +51,9 @@ class FlowProcessorImpl @Activate constructor(
         ::configurationReadService,
         ::flowService,
         ::flowMapperService,
-        // TODO - This needs to change to use SandboxGroupContextService
-        ::sandboxService
+        ::virtualNodeInfoReadService,
+        ::cpiInfoReadService,
+        ::sandboxGroupContextComponent
     )
 
     override fun start(bootConfig: SmartConfig) {

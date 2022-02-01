@@ -2,8 +2,6 @@ package net.corda.membership.staticnetwork
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.CryptoLibraryClientsFactoryProvider
-import net.corda.crypto.CryptoLibraryFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -34,8 +32,6 @@ class RegistrationServiceLifecycleHandlerTest {
     private val configHandle: AutoCloseable = mock()
 
     private val groupPolicyProvider: GroupPolicyProvider = mock()
-    private val cryptoLibraryFactory: CryptoLibraryFactory = mock()
-    private val cryptoLibraryClientsFactoryProvider: CryptoLibraryClientsFactoryProvider = mock()
 
     private val configurationReadService: ConfigurationReadService = mock {
         on { registerComponentForUpdates(any(), any()) } doReturn configHandle
@@ -60,8 +56,8 @@ class RegistrationServiceLifecycleHandlerTest {
     private val staticMemberRegistrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
         publisherFactory,
-        cryptoLibraryFactory,
-        cryptoLibraryClientsFactoryProvider,
+        mock(),
+        mock(),
         configurationReadService,
         coordinatorFactory,
         converter
