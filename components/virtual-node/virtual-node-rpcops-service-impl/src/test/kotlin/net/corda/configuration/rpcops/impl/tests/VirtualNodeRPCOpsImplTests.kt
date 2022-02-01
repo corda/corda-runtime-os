@@ -5,6 +5,7 @@ import net.corda.data.crypto.SecureHash
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.virtualnode.VirtualNodeCreationRequest
 import net.corda.data.virtualnode.VirtualNodeCreationResponse
+import net.corda.httprpc.ResponseCode
 import net.corda.httprpc.exception.HttpApiException
 import net.corda.libs.virtualnode.endpoints.v1.types.CPIIdentifier
 import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeRequest
@@ -112,7 +113,7 @@ class VirtualNodeRPCOpsImplTests {
             "X500 name \"$badX500\" could not be parsed. Cause: improperly specified input name: $badX500",
             e.message
         )
-        assertEquals(400, e.statusCode)
+        assertEquals(400, e.responseCode)
     }
 
     @Test
@@ -132,7 +133,7 @@ class VirtualNodeRPCOpsImplTests {
         }
 
         assertEquals("ErrorType: ErrorMessage.", e.message)
-        assertEquals(500, e.statusCode)
+        assertEquals(ResponseCode.INTERNAL_SERVER_ERROR, e.responseCode)
     }
 
     @Test
@@ -148,7 +149,7 @@ class VirtualNodeRPCOpsImplTests {
         }
 
         assertEquals("Request was unsuccessful but no exception was provided.", e.message)
-        assertEquals(500, e.statusCode)
+        assertEquals(ResponseCode.INTERNAL_SERVER_ERROR, e.responseCode)
     }
 
     @Test

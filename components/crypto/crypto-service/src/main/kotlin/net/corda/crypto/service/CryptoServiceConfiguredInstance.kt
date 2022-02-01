@@ -5,8 +5,6 @@ import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.WrappedKeyPair
 import net.corda.v5.cipher.suite.WrappedPrivateKey
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
-import net.corda.v5.crypto.sha256Bytes
-import org.bouncycastle.util.encoders.Base32
 import java.security.PublicKey
 
 /**
@@ -42,5 +40,5 @@ class CryptoServiceConfiguredInstance(
         = instance.sign(wrappedKey, data, context)
 
     fun computeHSMAlias(alias: String): String
-        = Base32.toBase32String((tenantId + alias).encodeToByteArray().sha256Bytes()).take(30).toLowerCase()
+        = instance.computeHSMAlias(tenantId, alias)
 }
