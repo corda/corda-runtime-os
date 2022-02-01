@@ -18,9 +18,20 @@ cd testing/introspiciere/introspiciere-server
 # compile
 ../../../gradlew jar -x test 
 
+# init minikube. It only needs to be done once
+minikube start
+eval $(minikube docker-env)
+kubectl apply -f - << END
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: corda-sc
+provisioner: k8s.io/minikube-hostpath
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+END
+
 # build image and add it to minikube image repository
-minikube start                  # if not done yet
-eval $(minikube docker-env)     # if not done yet
 docker build -t introspiciere-server .
 
 # create namespace (if necessary)
