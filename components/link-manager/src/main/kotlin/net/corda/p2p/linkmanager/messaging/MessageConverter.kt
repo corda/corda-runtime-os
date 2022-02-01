@@ -16,6 +16,7 @@ import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.DecryptionFailedError
 import net.corda.p2p.crypto.protocol.api.InvalidMac
 import net.corda.p2p.crypto.protocol.api.Session
+import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.MessageHeaderFactory
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.DataMessage
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.SessionAndMessage
@@ -145,7 +146,34 @@ class MessageConverter {
                 }
             }
 
-            val header = factory.createLinkOutHeader(source, destination) ?: return null
+            val header = factory.createLinkOutHeader(
+                source,
+                destination,
+                reporter = object : MessageHeaderFactory.ReportIssue {
+                    override fun report(
+                        type: MessageHeaderFactory.ErrorType,
+                        identity: LinkManagerNetworkMap.HoldingIdentity,
+                    ) {
+                        when (type) {
+                            MessageHeaderFactory.ErrorType.NoInfo ->
+                                logger.warn(
+                                    "Attempted to send message to peer $destination which " +
+                                        "is not in the network map. The message was discarded."
+                                )
+                            MessageHeaderFactory.ErrorType.NoTrustStore ->
+                                logger.warn(
+                                    "Could not find the trust store in the NetworkMap " +
+                                        "for $destination. The message was discarded."
+                                )
+                            MessageHeaderFactory.ErrorType.NoType ->
+                                logger.warn(
+                                    "Could not find the network type in the NetworkMap" +
+                                        " for our identity = $source. The message was discarded."
+                                )
+                        }
+                    }
+                }
+            ) ?: return null
 
             return createLinkOutMessage(result, header)
         }

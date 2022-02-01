@@ -273,6 +273,25 @@ open class SessionManagerImpl(
         return sessionId + "_" + InitiatorHandshakeMessage::class.java.simpleName
     }
 
+    private fun addToReplay(
+        session: AuthenticationProtocolInitiator,
+        sessionId: String,
+        sessionKey: SessionKey
+    ) : InitiatorHelloMessage {
+        val sessionInitPayload = session.generateInitiatorHello()
+        sessionReplayer.addMessageForReplay(
+            initiatorHelloUniqueId(sessionId),
+            InMemorySessionReplayer.SessionMessageReplay(
+                sessionInitPayload,
+                sessionId,
+                sessionKey.ourId,
+                sessionKey.responderId,
+                heartbeatManager::sessionMessageSent
+            )
+        )
+        return sessionInitPayload
+    }
+
     private fun getSessionInitMessage(sessionKey: SessionKey): Pair<String, LinkOutMessage>? {
         val sessionId = UUID.randomUUID().toString()
 
@@ -298,29 +317,26 @@ open class SessionManagerImpl(
         pendingOutboundSessions[sessionId] = Pair(sessionKey, session)
         logger.info("Local identity (${sessionKey.ourId}) initiating new session $sessionId with remote identity ${sessionKey.responderId}")
 
-        val sessionInitPayload = session.generateInitiatorHello()
-        sessionReplayer.addMessageForReplay(
-            initiatorHelloUniqueId(sessionId),
-            InMemorySessionReplayer.SessionMessageReplay(
-                sessionInitPayload,
-                sessionId,
-                sessionKey.ourId,
-                sessionKey.responderId,
-                heartbeatManager::sessionMessageSent
-            )
-        )
-
         val responderMemberInfo = networkMap.getMemberInfo(sessionKey.responderId)
         if (responderMemberInfo == null) {
             logger.warn(
-                "Attempted to start session negotiation with peer ${sessionKey.responderId} which is not in the network map. " +
-                        "The sessionInit message was not sent."
+                "Attempted to start session negotiation with peer " +
+                    "${sessionKey.responderId.toHoldingIdentity()} " +
+                    "which is not in the network map. " +
+                    "The sessionInit message was not sent."
+            )
+            addToReplay(
+                session, sessionId, sessionKey
             )
             return null
         }
-        heartbeatManager.sessionMessageSent(sessionKey, sessionId)
-
         val header = messageHeaderFactory.createLinkOutHeader(sessionKey.ourId, responderMemberInfo.holdingIdentity) ?: return null
+
+        val sessionInitPayload = addToReplay(
+            session, sessionId, sessionKey
+        )
+
+        heartbeatManager.sessionMessageSent(sessionKey, sessionId)
 
         return createLinkOutMessage(sessionInitPayload, header).let {
             sessionId to it

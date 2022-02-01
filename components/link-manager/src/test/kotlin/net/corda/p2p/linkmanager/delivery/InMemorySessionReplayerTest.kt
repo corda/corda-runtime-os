@@ -9,6 +9,7 @@ import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.MessageHeaderFactory
+import net.corda.p2p.linkmanager.TrustStoresContainer
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.linkmanager.utilities.MockNetworkMap
@@ -70,7 +71,16 @@ class InMemorySessionReplayerTest {
     }
 
     private val netMap = MockNetworkMap(listOf(US, COUNTER_PARTY)).getSessionNetworkMapForNode(US)
-    private val messageHeaderFactory = mock<MessageHeaderFactory>()
+    private val trustStoresContainer = mock<TrustStoresContainer> {
+        on { get(any()) } doReturn "hash"
+    }
+    private val messageHeaderFactory by lazy {
+        MessageHeaderFactory(
+            trustStoresContainer,
+            netMap,
+            mock()
+        )
+    }
 
     @Test
     fun `The InMemorySessionReplacer adds a message to be replayed (by the replayScheduler) when addMessageForReplay`() {
@@ -152,6 +162,10 @@ class InMemorySessionReplayerTest {
         val mockNetworkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
         Mockito.`when`(mockNetworkMap.getNetworkType(any())).thenReturn(null).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
         Mockito.`when`(mockNetworkMap.getMemberInfo(COUNTER_PARTY)).thenReturn(netMap.getMemberInfo(COUNTER_PARTY))
+        val trustStoresContainer = mock<TrustStoresContainer> {
+            on { get(any()) } doReturn "hash"
+        }
+        val messageHeaderFactory = MessageHeaderFactory(trustStoresContainer, mockNetworkMap, mock())
 
         InMemorySessionReplayer(mock(), mock(), mock(), mock(), messageHeaderFactory)
         val id = UUID.randomUUID().toString()
@@ -177,6 +191,11 @@ class InMemorySessionReplayerTest {
         val mockNetworkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
         Mockito.`when`(mockNetworkMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
         Mockito.`when`(mockNetworkMap.getMemberInfo(COUNTER_PARTY)).thenReturn(null).thenReturn(netMap.getMemberInfo(COUNTER_PARTY))
+        val messageHeaderFactory = MessageHeaderFactory(
+            trustStoresContainer,
+            mockNetworkMap,
+            mock()
+        )
 
         InMemorySessionReplayer(mock(), mock(), mock(), mock(), messageHeaderFactory)
         val id = UUID.randomUUID().toString()
@@ -216,6 +235,8 @@ class InMemorySessionReplayerTest {
     }
 
     private fun setRunning() {
-        whenever(dominoTile.constructed().first().isRunning).doReturn(true)
+        dominoTile.constructed().forEach {
+            whenever(it.isRunning).doReturn(true)
+        }
     }
 }

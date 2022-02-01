@@ -2,6 +2,10 @@ package net.corda.p2p.linkmanager.messaging
 
 import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.data.identity.HoldingIdentity
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.RegistrationHandle
+import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.app.UnauthenticatedMessageHeader
 import net.corda.p2p.crypto.AuthenticatedDataMessage
@@ -16,6 +20,7 @@ import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdenti
 import net.corda.p2p.linkmanager.LinkManagerTest.Companion.authenticatedMessageAndKey
 import net.corda.p2p.linkmanager.LinkManagerTest.Companion.createSessionPair
 import net.corda.p2p.linkmanager.MessageHeaderFactory
+import net.corda.p2p.linkmanager.TrustStoresContainer
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.SessionAndMessage
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -25,7 +30,9 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 
@@ -50,8 +57,6 @@ class MessageConverterTest {
     fun resetLogging() {
         loggingInterceptor.reset()
     }
-
-    private val messageHeaderFactory = mock<MessageHeaderFactory>()
 
     @Test
     fun `convertAuthenticatedEncryptedMessageToFlowMessage returns null (with appropriate logging) if authentication fails`() {
@@ -96,6 +101,7 @@ class MessageConverterTest {
         val peer = HoldingIdentity("Imposter", "")
         val networkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
         Mockito.`when`(networkMap.getMemberInfo(any())).thenReturn(null)
+        val messageHeaderFactory = createHeaderFactory(networkMap)
         val flowMessage = authenticatedMessageAndKey(HoldingIdentity("", ""), peer, ByteBuffer.wrap("DATA".toByteArray()))
         assertNull(MessageConverter.linkOutMessageFromAuthenticatedMessageAndKey(flowMessage, session, messageHeaderFactory))
         loggingInterceptor.assertSingleWarning(
@@ -119,6 +125,7 @@ class MessageConverterTest {
             )
         )
         val flowMessage = authenticatedMessageAndKey(us, peer, ByteBuffer.wrap("DATA".toByteArray()))
+        val messageHeaderFactory = createHeaderFactory(networkMap)
         assertNull(MessageConverter.linkOutMessageFromAuthenticatedMessageAndKey(flowMessage, session, messageHeaderFactory))
         loggingInterceptor.assertSingleWarning(
             "Could not find the network type in the NetworkMap for our identity = $us." +
@@ -135,6 +142,7 @@ class MessageConverterTest {
 
         val networkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
         Mockito.`when`(networkMap.getMemberInfo(any())).thenReturn(null)
+        val messageHeaderFactory = createHeaderFactory(networkMap)
         assertNull(MessageConverter.linkOutFromUnauthenticatedMessage(unauthenticatedMsg, messageHeaderFactory))
         loggingInterceptor.assertSingleWarning(
             "Attempted to send message to peer $peer which is not in the network map." +
@@ -158,10 +166,30 @@ class MessageConverterTest {
                 LinkManagerNetworkMap.EndPoint("")
             )
         )
+        val messageHeaderFactory = createHeaderFactory(networkMap)
         assertNull(MessageConverter.linkOutFromUnauthenticatedMessage(unauthenticatedMsg, messageHeaderFactory))
         loggingInterceptor.assertSingleWarning(
             "Could not find the network type in the NetworkMap for $peer." +
                 " The message was discarded."
         )
+    }
+
+    private fun createHeaderFactory(networkMap: LinkManagerNetworkMap): MessageHeaderFactory {
+        val mockDominoTile = mock<DominoTile> {
+            on { name } doReturn mock()
+        }
+        whenever(networkMap.dominoTile).doReturn(mockDominoTile)
+        val handler = mock< RegistrationHandle>()
+        val coordinator = mock<LifecycleCoordinator> {
+            on { followStatusChangesByName(any()) } doReturn handler
+        }
+        val coordinatorFactory = mock<LifecycleCoordinatorFactory> {
+            on { createCoordinator(any(), any()) } doReturn coordinator
+        }
+        val trustStoresContainer = mock<TrustStoresContainer> {
+            on { get(any()) } doReturn ""
+            on { dominoTile } doReturn mockDominoTile
+        }
+        return MessageHeaderFactory(trustStoresContainer, networkMap, coordinatorFactory)
     }
 }

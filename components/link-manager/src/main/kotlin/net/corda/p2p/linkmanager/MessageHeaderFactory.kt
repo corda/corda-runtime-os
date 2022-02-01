@@ -14,6 +14,39 @@ class MessageHeaderFactory(
     private val linkManagerNetworkMap: LinkManagerNetworkMap,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
 ) : LifecycleWithDominoTile {
+    enum class ErrorType {
+        NoInfo,
+        NoTrustStore,
+        NoType,
+    }
+    interface ReportIssue {
+        fun report(type: ErrorType, identity: LinkManagerNetworkMap.HoldingIdentity)
+    }
+
+    private class DefaultReporter : ReportIssue {
+        override fun report(type: ErrorType, identity: LinkManagerNetworkMap.HoldingIdentity) {
+            when (type) {
+                ErrorType.NoInfo -> {
+                    logger.warn(
+                        "Attempted to send message to peer ${identity.toHoldingIdentity()} " +
+                            "which is not in the network map. The message was discarded."
+                    )
+                }
+                ErrorType.NoTrustStore -> {
+                    logger.warn(
+                        "Attempted to send message to peer ${identity.groupId} " +
+                            "which has no trust store. The message was discarded."
+                    )
+                }
+                ErrorType.NoType -> {
+                    logger.warn(
+                        "Could not find the network type in the NetworkMap for" +
+                            " ${identity.toHoldingIdentity()}. The message was discarded."
+                    )
+                }
+            }
+        }
+    }
     companion object {
         private val logger = contextLogger()
     }
@@ -21,31 +54,34 @@ class MessageHeaderFactory(
     fun createLinkOutHeader(
         source: HoldingIdentity,
         destination: HoldingIdentity = source,
+        reporter: ReportIssue? = DefaultReporter(),
     ): LinkOutHeader? {
         return createLinkOutHeader(
             source.toHoldingIdentity(),
             destination.toHoldingIdentity(),
+            reporter,
         )
     }
 
     fun createLinkOutHeader(
         source: LinkManagerNetworkMap.HoldingIdentity,
         destination: LinkManagerNetworkMap.HoldingIdentity = source,
+        reporter: ReportIssue? = DefaultReporter()
     ): LinkOutHeader? {
         val destMemberInfo = linkManagerNetworkMap.getMemberInfo(destination)
         if (destMemberInfo == null) {
-            logger.warn("Attempted to send message to peer $destination which is not in the network map. The message was discarded.")
+            reporter?.report(ErrorType.NoInfo, destination)
             return null
         }
         val trustStoreHash = trustStoresContainer[source]
         if (trustStoreHash == null) {
-            logger.warn("Attempted to send message to peer $destination which has no trust store. The message was discarded.")
+            reporter?.report(ErrorType.NoTrustStore, source)
             return null
         }
 
         val networkType = linkManagerNetworkMap.getNetworkType(source.groupId)
         if (networkType == null) {
-            logger.warn("Could not find the network type in the NetworkMap for $source. The message was discarded.")
+            reporter?.report(ErrorType.NoType, source)
             return null
         }
 
