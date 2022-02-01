@@ -234,10 +234,7 @@ class DominoTileV2(
                             }
                             State.StoppedDueToBadConfig, State.StoppedDueToError, State.Stopped, State.DownDueToChildDown -> {
                                 logger.info("Status change: child ${child.name} went down (${statusChangeEvent.newState}).")
-                                stopResources()
-                                stopListeningForConfig()
-                                configReady = false
-                                updateState(State.DownDueToChildDown)
+                                handleChildDown()
                             }
                             State.Created -> { }
                         }
@@ -251,7 +248,7 @@ class DominoTileV2(
                     when (event.configUpdateResult) {
                         ConfigUpdateResult.Success -> {
                             configReady = true
-                            createResourcesAndStart()
+                            setStartedIfCan()
                         }
                         is ConfigUpdateResult.Error -> {
                             logger.warn("Config error ${event.configUpdateResult.e}")
@@ -313,14 +310,18 @@ class DominoTileV2(
 
     private fun handleChildStarted() {
         if (!isRunning) {
-            when {
-                dependentChildren.all { latestChildStateMap[it] == State.Started } -> {
-                    logger.info("Starting resources, since all children are now up.")
-                    createResourcesAndStart()
-                }
-                else -> {}
+            if (dependentChildren.all { latestChildStateMap[it] == State.Started }) {
+                logger.info("Starting resources, since all children are now up.")
+                createResourcesAndStart()
             }
         }
+    }
+
+    private fun handleChildDown() {
+        stopResources()
+        stopListeningForConfig()
+        configReady = false
+        updateState(State.DownDueToChildDown)
     }
 
     private fun startDependenciesIfNeeded() {
@@ -379,14 +380,10 @@ class DominoTileV2(
         }
     }
 
-    private fun stopTile(stopConfigListener: Boolean = true) {
+    private fun stopTile() {
         stopResources()
-
-        if (stopConfigListener) {
-            stopListeningForConfig()
-        }
+        stopListeningForConfig()
         configReady = false
-
         stopChildren()
     }
 
@@ -443,6 +440,7 @@ class DominoTileV2(
     }
 
     override fun toString(): String {
-        return "$name (state: $state, children: $dependentChildren)"
+        return "$name (state: $state, dependent children: ${dependentChildren.map { it.name }}, " +
+                "managed children: ${managedChildren.map { it.name }})"
     }
 }
