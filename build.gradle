@@ -47,8 +47,8 @@ subprojects {
     apply plugin: 'io.gitlab.arturbosch.detekt'
 
     detekt {
-        baseline = file("$projectDir/detekt-baseline.xml")
-        config.setFrom(files("./detekt-config.yml"))
+        baseline = file("detekt-baseline.xml")
+        config.setFrom(files("$projectDir/detekt-config.yml"))
         parallel = true
         reports {
             xml {
