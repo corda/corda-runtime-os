@@ -12,6 +12,7 @@ dependencies {
     implementation 'javax.persistence:javax.persistence-api'
     implementation 'net.corda:corda-db-schema'
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation project(':libs:db:db-core')
 
     integrationTestImplementation project(':libs:db:db-admin')
     integrationTestImplementation project(':libs:db:db-admin-impl')
@@ -19,7 +20,8 @@ dependencies {
     integrationTestImplementation project(':libs:db:db-orm-impl')
     integrationTestImplementation project(':testing:db-testkit')
 
-    integrationTestRuntime "org.hsqldb:hsqldb:$hsqldbVersion"
+    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 }
 
 tasks.named('jar', Jar) {

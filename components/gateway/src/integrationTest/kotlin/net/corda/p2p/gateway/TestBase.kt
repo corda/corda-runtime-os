@@ -95,7 +95,7 @@ open class TestBase {
         }
         private val configurationTopicService = TopicServiceImpl()
         private val rpcTopicService = RPCTopicServiceImpl()
-        private val topicName = "config.${UUID.randomUUID().toString().replace("-", "")}"
+        private val configPublisherClientId = "config.${UUID.randomUUID().toString().replace("-", "")}"
 
         val readerService by lazy {
             ConfigurationReadServiceImpl(
@@ -125,7 +125,7 @@ open class TestBase {
                 .withValue("connectionConfig.acquireTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.acquireTimeout))
                 .withValue("connectionConfig.responseTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.responseTimeout))
                 .withValue("connectionConfig.retryDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.retryDelay))
-            CordaPublisherFactory(configurationTopicService, rpcTopicService, lifecycleCoordinatorFactory).createPublisher(PublisherConfig((topicName))).use { publisher ->
+            CordaPublisherFactory(configurationTopicService, rpcTopicService, lifecycleCoordinatorFactory).createPublisher(PublisherConfig((configPublisherClientId))).use { publisher ->
                 val configurationPublisher = ConfigPublisherImpl(CONFIG_TOPIC, publisher)
                 configurationPublisher.updateConfiguration(
                     CordaConfigurationKey(
@@ -141,9 +141,9 @@ open class TestBase {
             val publishConfig = ConfigFactory.empty()
                 .withValue("hello", ConfigValueFactory.fromAnyRef("world"))
             CordaPublisherFactory(configurationTopicService, rpcTopicService, lifecycleCoordinatorFactory)
-                .createPublisher(PublisherConfig((topicName)))
+                .createPublisher(PublisherConfig((configPublisherClientId)))
                 .use { publisher ->
-                    val configurationPublisher = ConfigPublisherImpl(topicName, publisher)
+                    val configurationPublisher = ConfigPublisherImpl(CONFIG_TOPIC, publisher)
                     configurationPublisher.updateConfiguration(
                         CordaConfigurationKey(
                             "myKey",

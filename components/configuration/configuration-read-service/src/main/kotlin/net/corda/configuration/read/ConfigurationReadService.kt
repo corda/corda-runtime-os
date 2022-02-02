@@ -33,6 +33,10 @@ interface ConfigurationReadService : Lifecycle {
      * event to the component on configuration change. See [registerComponentForUpdates] for an alternative registration
      * mechanism that automates this.
      *
+     * Invoking this before the service is started will result in the registration being lost, so ensure that the service
+     * is started before calling this API. For most components, this can be assumed as the processor should start the
+     * config read service very early in its lifecycle.
+     *
      * @param configHandler The user configuration handler. See [ConfigurationHandler].
      * @return A handle for this registration, which may be closed to unregister from the configuration read service.
      */

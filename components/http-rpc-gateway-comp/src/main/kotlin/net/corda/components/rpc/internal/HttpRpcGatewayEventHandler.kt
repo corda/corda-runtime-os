@@ -156,8 +156,7 @@ internal class HttpRpcGatewayEventHandler(
         server = httpRpcServerFactory.createHttpRpcServer(
             rpcOpsImpls = dynamicRpcOps.toList(),
             rpcSecurityManager = rbacSecurityManagerService.securityManager,
-            httpRpcSettings = httpRpcSettings,
-            devMode = true
+            httpRpcSettings = httpRpcSettings
         ).also { it.start() }
 
         val numberOfRpcOps = dynamicRpcOps.filterIsInstance<Lifecycle>()

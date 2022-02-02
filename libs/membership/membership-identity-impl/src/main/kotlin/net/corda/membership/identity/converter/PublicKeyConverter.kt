@@ -1,8 +1,8 @@
 package net.corda.membership.identity.converter
 
-import net.corda.crypto.CryptoLibraryFactory
 import net.corda.membership.identity.MemberContextImpl
 import net.corda.membership.identity.MemberInfoExtension.Companion.PARTY_OWNING_KEY
+import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.membership.conversion.ConversionContext
 import net.corda.v5.membership.conversion.CustomPropertyConverter
 import org.osgi.service.component.annotations.Activate
@@ -13,13 +13,13 @@ import java.security.PublicKey
 /**
  * Converter class, converting from String to [PublicKey] object.
  *
- * @property cryptoLibraryFactory to convert the strings into PublicKeys
+ * @property cipherSuiteFactory to convert the strings into PublicKeys
  */
 @Component(service = [CustomPropertyConverter::class])
 class PublicKeyConverter @Activate constructor(
-    @Reference(service = CryptoLibraryFactory::class)
-    private val cryptoLibraryFactory: CryptoLibraryFactory
-    ): CustomPropertyConverter<PublicKey> {
+    @Reference(service = KeyEncodingService::class)
+    private val keyEncodingService: KeyEncodingService
+): CustomPropertyConverter<PublicKey> {
     override val type: Class<PublicKey>
         get() = PublicKey::class.java
 
@@ -31,7 +31,7 @@ class PublicKeyConverter @Activate constructor(
         return when(context.storeClass) {
             MemberContextImpl::class.java -> {
                 val keyOrOwningKey = context.store.entries.singleOrNull()?.value ?: context.store[PARTY_OWNING_KEY]
-                keyOrOwningKey?.let { cryptoLibraryFactory.getKeyEncodingService().decodePublicKey(it) }
+                keyOrOwningKey?.let { keyEncodingService.decodePublicKey(it) }
             }
             else -> throw IllegalArgumentException("Unknown class '${context.store::class.java.name}'.")
         }

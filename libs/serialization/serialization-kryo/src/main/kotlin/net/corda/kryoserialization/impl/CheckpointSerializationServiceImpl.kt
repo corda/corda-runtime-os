@@ -1,7 +1,7 @@
 package net.corda.kryoserialization.impl
 
-import net.corda.serialization.CheckpointSerializationService
-import net.corda.serialization.CheckpointSerializer
+import net.corda.serialization.checkpoint.CheckpointSerializationService
+import net.corda.serialization.checkpoint.CheckpointSerializer
 
 class CheckpointSerializationServiceImpl(
     private val serializer: CheckpointSerializer
