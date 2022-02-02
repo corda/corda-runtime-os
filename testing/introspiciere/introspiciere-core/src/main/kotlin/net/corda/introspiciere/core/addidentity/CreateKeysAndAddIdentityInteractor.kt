@@ -38,4 +38,3 @@ class CreateKeysAndAddIdentityInteractor(private val cryptoKeySender: CryptoKeyS
         cryptoKeySender.send(input.alias, keyPairEntry)
     }
 }
-

@@ -2,21 +2,27 @@ package net.corda.introspiciere.junit
 
 import net.corda.introspiciere.http.HelloWorldReq
 import net.corda.introspiciere.http.IdentitiesRequester
+import net.corda.introspiciere.http.Topics
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.AfterEachCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import java.io.File
-import java.util.*
+import java.time.LocalDateTime
+import java.util.Base64
 
 class DeployCluster(
     private val name: String,
 ) : BeforeAllCallback, BeforeEachCallback, AfterEachCallback, AfterAllCallback {
-
     private val introspiciereEndpoint = "http://localhost:7070"
-    fun helloworld(): String {
+
+    fun helloWorld(): String {
         return HelloWorldReq(introspiciereEndpoint).greetings()
+    }
+
+    fun fetchTopics(): String {
+        return Topics(introspiciereEndpoint).fetch()
     }
 
     fun createKeyAndAddIdentity(alias: String, algorithm: String) {
@@ -43,7 +49,7 @@ class DeployCluster(
 
     private fun delete() {
         if (::portForwarding.isInitialized) portForwarding.destroy()
-        exec("kubectl delete namespace $name --wait=false")
+        exec("kubectl delete namespace $name --wait=true")
     }
 
     private fun deploy() {
@@ -64,31 +70,35 @@ class DeployCluster(
                 }
             } 
         """.trimIndent())
-        exec("kubectl create secret generic test-docker-registry-cred " +
+        exec("kubectl create secret generic docker-registry-cred " +
                 "--from-file=.dockerconfigjson=auths.json --type=kubernetes.io/dockerconfigjson -n $name")
         authsJson.delete()
 
         exec("corda-cli cluster configure k8s $name")
 
+        // Add introspiciere-server to the cluster
+        println("${LocalDateTime.now()} deploy introspiciere-server")
+        exec("kubectl apply -f ../introspiciere-server/k8s-introspiciere-server.yaml -n $name")
+
+        // Add the rest of the items to the cluster
+        println("${LocalDateTime.now()} deploy rest of cluster")
         val simpleCluster = File("simple-cluster.yaml")
         simpleCluster.writeText("""
             cluster:
-              zookeepers: 1
-              brokers: 1
+              kafka:
+                zookeepers: 1
+                brokers: 3
               workers:
-                P2PWorker:
-                P2PLinkWorker:
+                p2p-worker: {}
+                p2p-link-worker: {}
         """.trimIndent())
         exec("corda-cli cluster deploy -f simple-cluster.yaml -c $name | kubectl apply -f -")
         simpleCluster.delete()
-
-        exec("corda-cli cluster status -c $name")
-
-        exec("kubectl apply -f ../introspiciere-server/k8s-introspiciere-server.yaml -n $name")
-        Thread.sleep(30000) // wait for pod to start running
-        portForwarding = exec("kubectl port-forward service/introspiciere-server 7070:7070 -n $name", ensureSuccess = false)
-
         exec("corda-cli cluster wait -c $name")
+
+        // Forward ports for introspiciere-server
+        println("${LocalDateTime.now()} port forward introspiciere-server")
+        portForwarding = exec("kubectl port-forward service/introspiciere-server 7070:7070 -n $name", ensureSuccess = false)
     }
 
     private fun exec(command: String, workDir: File? = null, ensureSuccess: Boolean = true): Process {

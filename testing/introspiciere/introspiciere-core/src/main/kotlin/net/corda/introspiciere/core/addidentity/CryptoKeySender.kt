@@ -9,7 +9,6 @@ interface CryptoKeySender {
 }
 
 class CryptoKeySenderImpl(private val kafka: SimpleKafkaClient) : CryptoKeySender {
-
     companion object {
         const val topicName: String = CRYPTO_KEYS_TOPIC
     }

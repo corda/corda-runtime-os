@@ -17,7 +17,6 @@ import java.time.Duration
 import java.util.*
 
 class SimpleKafkaClient(val servers: List<String>) {
-
     fun createTopic(name: String, partitions: Int = 1, replicationFactor: Short = 1) {
         val properties = Properties()
         properties[AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG] = servers.joinToString(",")
@@ -31,10 +30,28 @@ class SimpleKafkaClient(val servers: List<String>) {
         Reflections("net.corda").getSubTypesOf(SpecificRecordBase::class.java)
     }
 
+    fun fetchTopics(): String {
+        val properties = Properties()
+        properties[AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG] = servers.joinToString(",")
+        //properties[AdminClientConfig.RETRIES_CONFIG] = 5//Int.MAX_VALUE
+        //properties[AdminClientConfig.DEFAULT_API_TIMEOUT_MS_CONFIG] = 20000 //Must be equal or bigger than REQUEST_TIMEOUT_MS_CONFIG
+        //properties[AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG] = 5000
+
+        val topicNamesList = Admin.create(properties).use {
+            it.listTopics().names().get()
+        }
+
+        // TODO make this json
+        val topicNames = topicNamesList.joinToString()
+
+        println("Topics: $topicNames")
+        return topicNames
+    }
+
     fun <K : Any, V : Any> send(topic: String, key: K, value: V) {
         val config = Properties()
         config[ConsumerConfig.CLIENT_ID_CONFIG] = InetAddress.getLocalHost().hostName
-        config[ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG] = servers.joinToString(":")
+        config[ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG] = servers.joinToString(",")
         config["acks"] = "all"
 
         val record = ProducerRecord(topic, key, value)
@@ -82,4 +99,3 @@ class SimpleKafkaClient(val servers: List<String>) {
         }
     }
 }
-

@@ -14,7 +14,10 @@ import org.apache.avro.Schema
 import org.apache.avro.SchemaNormalization
 import org.apache.avro.io.DecoderFactory
 import org.apache.avro.io.EncoderFactory
-import org.apache.avro.specific.*
+import org.apache.avro.specific.SpecificData
+import org.apache.avro.specific.SpecificDatumReader
+import org.apache.avro.specific.SpecificDatumWriter
+import org.apache.avro.specific.SpecificRecordBase
 import org.osgi.service.component.annotations.Component
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
