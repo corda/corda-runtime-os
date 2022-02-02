@@ -176,7 +176,7 @@ internal class HttpRpcServerInternal(
         fun registerHandlerForRoute(routeInfo: RouteInfo, handlerType: HandlerType) {
             try {
                 log.info("Add \"$handlerType\" handler for \"${routeInfo.fullPath}\".")
-                // TODO the following hardcoded handler registration is only meant for Scaffold and needs change once "multipart/form-data" gets implemented correctly.
+                // TODO the following hardcoded handler registration is only meant for Scaffold and needs change once "multipart/form-data" support gets implemented correctly.
                 if (routeInfo.fullPath == "//api/v1/cpi//") {
                     addHandler(handlerType, routeInfo.fullPath, routeInfo.invokeMultiPartMethod())
                 } else {
