@@ -5,5 +5,5 @@ cordaPipeline(
 
     runIntegrationTests: false,
     dailyBuildCron: 'H 03 * * *',
-    publishRepoPrefix: 'engineering-tools-maven-stable-local'
+    publishRepoPrefix: 'engineering-tools-maven'
 )
