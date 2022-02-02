@@ -33,7 +33,7 @@ class HttpServerChannelHandler(private val serverListener: HttpServerListener,
                         "Protocol version: ${msg.protocolVersion()}\n" +
                         "Hostname: ${msg.headers()[HttpHeaderNames.HOST]?:"unknown"}\n" +
                         "Request URI: ${msg.uri()}\n and the response code was $responseCode.")
-                val response:HttpResponse = createResponse(null, responseCode!!)
+                val response = createResponse(null, responseCode!!)
                 ctx.writeAndFlush(response)
                     .addListener(ChannelFutureListener.CLOSE)
                 return
