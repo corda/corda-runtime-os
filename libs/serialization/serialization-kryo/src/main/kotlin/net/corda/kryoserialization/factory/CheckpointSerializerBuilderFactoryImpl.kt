@@ -2,8 +2,8 @@ package net.corda.kryoserialization.factory
 
 import net.corda.kryoserialization.impl.KryoCheckpointSerializerBuilderImpl
 import net.corda.sandbox.SandboxGroup
-import net.corda.serialization.CheckpointSerializerBuilder
-import net.corda.serialization.factory.CheckpointSerializerBuilderFactory
+import net.corda.serialization.checkpoint.CheckpointSerializerBuilder
+import net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFactory
 import net.corda.v5.cipher.suite.KeyEncodingService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component

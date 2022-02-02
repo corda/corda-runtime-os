@@ -2,7 +2,7 @@ package net.corda.flow.manager
 
 import net.corda.data.flow.FlowStackItem
 import net.corda.data.flow.state.Checkpoint
-import net.corda.serialization.NonSerializable
+import net.corda.serialization.checkpoint.NonSerializable
 import net.corda.v5.application.flows.Flow
 
 /**
