@@ -8,9 +8,11 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.manager.fiber.FlowIORequest
 import net.corda.flow.manager.impl.acceptance.dsl.filterOutputFlowTopicEventPayloads
 import net.corda.flow.manager.impl.acceptance.dsl.flowEventDSL
+import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
+import java.lang.IllegalStateException
 import java.time.Instant
 
 class FlowEventDSLTest {
@@ -176,6 +178,50 @@ class FlowEventDSLTest {
                 Wakeup(),
                 output.last { it.updatedState?.flowKey?.flowId == ANOTHER_FLOW_ID }.filterOutputFlowTopicEventPayloads().single()
             )
+        }
+    }
+
+    @Test
+    fun `cannot process one step when no events are input`() {
+        flowEventDSL {
+
+            flowFiber(FLOW_ID) {
+                queueSuspension(FlowIORequest.ForceCheckpoint)
+            }
+
+            Assertions.assertThatThrownBy { processOne() }
+                .isInstanceOf(IllegalStateException::class.java)
+                .hasMessageContaining("No input flow events have been setup")
+        }
+    }
+
+    @Test
+    fun `cannot process multiple steps when no events are input`() {
+        flowEventDSL {
+
+            flowFiber(FLOW_ID) {
+                queueSuspension(FlowIORequest.ForceCheckpoint)
+            }
+
+            Assertions.assertThatThrownBy { processAll() }
+                .isInstanceOf(IllegalStateException::class.java)
+                .hasMessageContaining("No input flow events have been setup")
+        }
+    }
+
+    @Test
+    fun `inputLastOutputEvent requires existing output events when processing`() {
+        flowEventDSL {
+
+            flowFiber(FLOW_ID) {
+                queueSuspension(FlowIORequest.ForceCheckpoint)
+            }
+
+            inputLastOutputEvent()
+
+            Assertions.assertThatThrownBy { processAll() }
+                .isInstanceOf(IllegalStateException::class.java)
+                .hasMessageContaining("Trying to process an output flow event returned from the processor but none exist")
         }
     }
 }

@@ -5,6 +5,7 @@ import net.corda.data.flow.state.Checkpoint
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
+import java.util.UUID
 
 fun flowEventDSL(dsl: FlowEventDSL.() -> Unit) {
     FlowEventDSL().run(dsl)
@@ -32,14 +33,14 @@ class FlowEventDSL {
         return fiber
     }
 
-    fun flowFiber(flowId: String, fiber: MockFlowFiber.() -> Unit): MockFlowFiber {
+    fun flowFiber(flowId: String = UUID.randomUUID().toString(), fiber: MockFlowFiber.() -> Unit): MockFlowFiber {
         return MockFlowFiber(flowId).apply {
             fiber(this)
             processor.addFlowFiber(this)
         }
     }
 
-    fun startedFlowFiber(flowId: String, fiber: MockFlowFiber.() -> Unit): MockFlowFiber {
+    fun startedFlowFiber(flowId: String = UUID.randomUUID().toString(), fiber: MockFlowFiber.() -> Unit): MockFlowFiber {
         val (mockFlowFiber, response) = processor.startFlow(flowId)
         updateDSLStateWithEventResponse(flowId, response)
         fiber(mockFlowFiber)
@@ -50,7 +51,7 @@ class FlowEventDSL {
         val event = when (val input = checkNotNull(inputFlowEvents.removeFirstOrNull()) { "No input flow events have been setup" }) {
             ProcessLastOutputFlowEvent -> {
                 checkNotNull(outputFlowEvents.removeFirstOrNull()) {
-                    "Trying to process the the older output flow event returned from the processor but none exist"
+                    "Trying to process an output flow event returned from the processor but none exist"
                 }
             }
             is FlowEvent -> input
@@ -64,7 +65,7 @@ class FlowEventDSL {
     }
 
     fun processAll(): List<StateAndEventProcessor.Response<Checkpoint>> {
-        // Copy [inputs] and throw it away for code simplicity
+        check(inputFlowEvents.isNotEmpty()) { "No input flow events have been setup" }
         return inputFlowEvents.toList().map { processOne() }
     }
 
