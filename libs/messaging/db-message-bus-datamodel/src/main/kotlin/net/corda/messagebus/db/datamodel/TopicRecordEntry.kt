@@ -10,6 +10,7 @@ import javax.persistence.Id
 import javax.persistence.IdClass
 import javax.persistence.Table
 
+@Suppress("LongParameterList")
 @Entity(name = "topic_record")
 @Table(name = "topic_record")
 @IdClass(TopicRecordEntryKey::class)

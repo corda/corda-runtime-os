@@ -9,6 +9,7 @@ import javax.persistence.Id
 import javax.persistence.IdClass
 import javax.persistence.Table
 
+@Suppress("LongParameterList")
 @Entity(name = "topic_consumer_offset")
 @Table(name = "topic_consumer_offset")
 @IdClass(CommittedOffsetEntryKey::class)
