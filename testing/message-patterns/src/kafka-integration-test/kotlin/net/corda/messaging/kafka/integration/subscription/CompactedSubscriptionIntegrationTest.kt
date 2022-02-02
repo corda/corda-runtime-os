@@ -35,6 +35,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
@@ -62,7 +63,6 @@ class CompactedSubscriptionIntegrationTest {
     @InjectService(timeout = 4000)
     lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 
-
     @InjectService(timeout = 4000)
     lateinit var topicAdmin: KafkaTopicAdmin
 
@@ -74,6 +74,7 @@ class CompactedSubscriptionIntegrationTest {
     }
 
     @Test
+    @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `create compacted topic, publish records, start compacted sub, publish again`() {
         topicAdmin.createTopics(kafkaProperties, COMPACTED_TOPIC1_TEMPLATE)
 
@@ -124,6 +125,7 @@ class CompactedSubscriptionIntegrationTest {
     }
 
     @Test
+    @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `create compacted topic, publish wrong records, start compacted sub`() {
         topicAdmin.createTopics(kafkaProperties, COMPACTED_TOPIC2_TEMPLATE)
 

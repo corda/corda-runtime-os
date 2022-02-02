@@ -50,27 +50,27 @@ class DevCryptoServiceProviderImpl @Activate constructor(
         logger.info(
             "Creating instance of the {} for member {} and category {}",
             DevCryptoService::class.java.name,
-            context.memberId,
+            context.tenantId,
             context.category
         )
-        val cryptoServiceCache = devKeysCache.getOrPut(context.memberId) {
+        val cryptoServiceCache = devKeysCache.getOrPut(context.tenantId) {
             SoftCryptoKeyCacheImpl(
-                tenantId = context.memberId,
+                tenantId = context.tenantId,
                 passphrase = passphrase,
                 salt = salt,
                 schemeMetadata = schemeMetadata,
                 persistenceFactory = softPersistenceFactory
             )
         }
-        val signingKeyCache = signingCache.getOrPut(context.memberId) {
+        val signingKeyCache = signingCache.getOrPut(context.tenantId) {
             SigningKeyCacheImpl(
-                tenantId = context.memberId,
+                tenantId = context.tenantId,
                 keyEncoder = schemeMetadata,
                 persistenceFactory = signingPersistenceFactory
             )
         }
         return DevCryptoService(
-            tenantId = context.memberId,
+            tenantId = context.tenantId,
             category = context.category,
             keyCache = cryptoServiceCache,
             signingCache = signingKeyCache,

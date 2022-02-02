@@ -8,9 +8,9 @@ import net.corda.data.permissions.management.role.CreateRoleRequest
 import net.corda.data.permissions.management.role.RemovePermissionFromRoleRequest
 import net.corda.libs.permissions.storage.common.converter.toAvroRole
 import net.corda.libs.permissions.storage.writer.impl.role.RoleWriter
+import net.corda.libs.permissions.storage.writer.impl.validation.EntityValidationUtil
 import net.corda.orm.utils.transaction
 import net.corda.permissions.model.ChangeAudit
-import net.corda.permissions.model.Group
 import net.corda.permissions.model.Permission
 import net.corda.permissions.model.RPCPermissionOperation
 import net.corda.permissions.model.Role
@@ -33,13 +33,9 @@ class RoleWriterImpl(
         log.debug { "Received request to create new role: $roleName." }
 
         return entityManagerFactory.transaction { entityManager ->
-            val groupVisibility = if (request.groupVisibility != null) {
-                requireNotNull(entityManager.find(Group::class.java, request.groupVisibility)) {
-                    "Failed to create new Role: $roleName as the specified group visibility: ${request.groupVisibility} does not exist."
-                }
-            } else {
-                null
-            }
+
+            val validator = EntityValidationUtil(entityManager)
+            val groupVisibility = validator.validateAndGetOptionalParentGroup(request.groupVisibility)
 
             val updateTimestamp = Instant.now()
             val role = Role(
@@ -56,12 +52,12 @@ class RoleWriterImpl(
                 updateTimestamp = updateTimestamp,
                 actorUser = requestUserId,
                 changeType = RPCPermissionOperation.ROLE_INSERT,
-                details = "Role '${role.name}' created by '$requestUserId'."
+                details = "Role '${role.id}' with name '$roleName' created by '$requestUserId'."
             )
 
             entityManager.persist(auditLog)
 
-            log.info("Successfully created new role: $roleName.")
+            log.info("Successfully created new role: ${role.id} ($roleName).")
 
             role.toAvroRole()
         }
@@ -73,20 +69,10 @@ class RoleWriterImpl(
 
         return entityManagerFactory.transaction { entityManager ->
 
-            val role = requireNotNull(entityManager.find(Role::class.java, request.roleId)) {
-                entityManager.transaction.setRollbackOnly()
-                "Unable to find Role with Id: ${request.roleId}"
-            }
-
-            require(role.rolePermAssociations.none { it.permission.id == request.permissionId }) {
-                entityManager.transaction.setRollbackOnly()
-                "Permission '${request.permissionId}' is already associated with Role '${request.roleId}'."
-            }
-
-            val permission = requireNotNull(entityManager.find(Permission::class.java, request.permissionId)) {
-                entityManager.transaction.setRollbackOnly()
-                "Unable to find Permission with Id: ${request.permissionId}"
-            }
+            val validator = EntityValidationUtil(entityManager)
+            val role = validator.requireEntityExists(Role::class.java, request.roleId)
+            validator.requirePermissionNotAssociatedWithRole(role.rolePermAssociations, request.permissionId, request.roleId)
+            val permission = validator.requireEntityExists(Permission::class.java, request.permissionId)
 
             val updateTimestamp = Instant.now()
 
@@ -104,8 +90,7 @@ class RoleWriterImpl(
                 updateTimestamp = updateTimestamp,
                 actorUser = requestUserId,
                 changeType = RPCPermissionOperation.ADD_PERMISSION_TO_ROLE,
-                details = "Permission '${permission.id}' assigned to Role '${role.id}' by '$requestUserId'. " +
-                        "Created RolePermissionAssociation '${rolePermissionAssociation.id}'."
+                details = "Role '${role.id}' got permission assigned '${permission.id}' by '$requestUserId'."
             )
 
             entityManager.persist(auditLog)
@@ -121,16 +106,10 @@ class RoleWriterImpl(
 
         return entityManagerFactory.transaction { entityManager ->
 
-            val role = requireNotNull(entityManager.find(Role::class.java, request.roleId)) {
-                entityManager.transaction.setRollbackOnly()
-                "Unable to find Role with Id: ${request.roleId}"
-            }
-
+            val validator = EntityValidationUtil(entityManager)
+            val role = validator.requireEntityExists(Role::class.java, request.roleId)
             val rolePermissionAssociation =
-                requireNotNull(role.rolePermAssociations.find { it.permission.id == request.permissionId }) {
-                    entityManager.transaction.setRollbackOnly()
-                    "Permission with Id: ${request.permissionId} is not associated with a role: ${role.id}."
-                }
+                validator.requireRoleAssociatedWithPermission(role.rolePermAssociations, request.permissionId, request.roleId)
 
             val updateTimestamp = Instant.now()
 
@@ -144,8 +123,7 @@ class RoleWriterImpl(
                 updateTimestamp = updateTimestamp,
                 actorUser = requestUserId,
                 changeType = RPCPermissionOperation.DELETE_PERMISSION_FROM_ROLE,
-                details = "Permission '${request.permissionId} removed from Role '${role.id}' by '$requestUserId'. " +
-                        "Removed RolePermissionAssociation '${rolePermissionAssociation.id}'."
+                details = "Role '${role.id}' got permission removed '${request.permissionId}' by '$requestUserId'."
             )
 
             entityManager.persist(auditLog)

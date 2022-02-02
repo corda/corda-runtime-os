@@ -16,7 +16,7 @@ import java.nio.file.StandardOpenOption
  * Receives binary chunks and reassembles full binary and executes completed
  * callback when binary is assembled.
  */
-class ChunkReaderImpl(private val destDir: Path) : ChunkReader {
+internal class ChunkReaderImpl(private val destDir: Path) : ChunkReader {
     companion object {
         val log = contextLogger()
     }
@@ -77,6 +77,9 @@ class ChunkReaderImpl(private val destDir: Path) : ChunkReader {
     private fun getPath(fileName: String): Path = destDir.resolve(fileName)
 
     override fun onComplete(chunksCombinedCallback: ChunksCombined) {
+        if (this.chunksCombinedCallback != null) {
+            throw CordaRuntimeException("On complete callback is already set")
+        }
         this.chunksCombinedCallback = chunksCombinedCallback
     }
 }

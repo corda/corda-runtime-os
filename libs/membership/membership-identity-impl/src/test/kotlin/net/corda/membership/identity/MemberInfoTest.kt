@@ -1,7 +1,7 @@
 package net.corda.membership.identity
 
 import net.corda.data.KeyValuePairList
-import net.corda.data.crypto.wire.WireSignatureWithKey
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.v5.membership.conversion.parse
 import net.corda.v5.membership.conversion.parseList
@@ -150,7 +150,7 @@ class MemberInfoTest {
 
         private val avroMemberInfo = File("avro-member-info.avro")
 
-        private val signature = WireSignatureWithKey(
+        private val signature = CryptoSignatureWithKey(
             ByteBuffer.wrap(byteArrayOf()),
             ByteBuffer.wrap(byteArrayOf()),
         )

@@ -78,6 +78,7 @@ class KafkaInfrastructure {
     }
     private val configurationReadService: ConfigurationReadService = mock {
         on { registerForUpdates(any()) } doReturn registrationHandle
+        on { registerComponentForUpdates(any(), any()) } doReturn registrationHandle
     }
     val subscriptionFactory: SubscriptionFactory =
         InMemSubscriptionFactory(topicService, rpcTopicService, coordinatorFactory)
@@ -105,7 +106,7 @@ class KafkaInfrastructure {
             )
             coordinator?.postEvent(
                 ConfigChangedEvent(
-                    setOf(CRYPTO_CONFIG),
+                    setOf(CRYPTO_CONFIG, BOOT_CONFIG, MESSAGING_CONFIG),
                     mapOf(
                         CRYPTO_CONFIG to emptyConfig,
                         BOOT_CONFIG to emptyConfig,
@@ -137,7 +138,7 @@ class KafkaInfrastructure {
             )
             coordinator?.postEvent(
                 ConfigChangedEvent(
-                    setOf(CRYPTO_CONFIG),
+                    setOf(CRYPTO_CONFIG, BOOT_CONFIG, MESSAGING_CONFIG),
                     mapOf(
                         CRYPTO_CONFIG to emptyConfig,
                         BOOT_CONFIG to emptyConfig,

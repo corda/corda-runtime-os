@@ -1,9 +1,19 @@
 package net.corda.crypto.client.impl
 
+import com.typesafe.config.ConfigFactory
+import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
+import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.Companion.MESSAGING_CONFIG
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
@@ -23,18 +33,22 @@ import kotlin.test.assertEquals
 class AbstractComponentTests {
     private lateinit var coordinator: LifecycleCoordinator
     private lateinit var coordinatorFactory: LifecycleCoordinatorFactory
+    private lateinit var configurationReadService: ConfigurationReadService
     private lateinit var resourcesToAllocate: Resources
     private lateinit var testComponent: TestAbstractComponent
     private var coordinatorIsRunning = false
+    private val emptyConfig = SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
 
     @BeforeEach
     fun setup() {
         coordinator = mock {
             on { start() } doAnswer {
                 coordinatorIsRunning = true
+                coordinator.postEvent(StartEvent())
             }
             on { stop() } doAnswer {
                 coordinatorIsRunning = false
+                coordinator.postEvent(StopEvent())
             }
             on { isRunning }.thenAnswer { coordinatorIsRunning }
             on { postEvent(any()) } doAnswer {
@@ -49,11 +63,13 @@ class AbstractComponentTests {
         coordinatorFactory = mock {
             on { createCoordinator(any(), any()) } doReturn coordinator
         }
+        configurationReadService = mock {  }
         resourcesToAllocate = Resources()
         testComponent = TestAbstractComponent(
             resourcesToAllocate,
             coordinatorFactory,
-            LifecycleCoordinatorName.forComponent<TestAbstractComponent>()
+            LifecycleCoordinatorName.forComponent<TestAbstractComponent>(),
+            configurationReadService
         )
     }
 
@@ -63,6 +79,21 @@ class AbstractComponentTests {
         assertFalse(testComponent.isRunning)
         assertNull(testComponent.resources)
         testComponent.start()
+        coordinator.postEvent(
+            RegistrationStatusChangeEvent(
+                registration = mock(),
+                status = LifecycleStatus.UP
+            )
+        )
+        coordinator.postEvent(
+            ConfigChangedEvent(
+                setOf(BOOT_CONFIG, MESSAGING_CONFIG),
+                mapOf(
+                    BOOT_CONFIG to emptyConfig,
+                    MESSAGING_CONFIG to emptyConfig
+                )
+            )
+        )
         assertTrue(testComponent.isRunning)
         assertNotNull(testComponent.resources)
     }
@@ -71,6 +102,21 @@ class AbstractComponentTests {
     @Timeout(5)
     fun `Should cleanup created resources when component is stopped`() {
         testComponent.start()
+        coordinator.postEvent(
+            RegistrationStatusChangeEvent(
+                registration = mock(),
+                status = LifecycleStatus.UP
+            )
+        )
+        coordinator.postEvent(
+            ConfigChangedEvent(
+                setOf(BOOT_CONFIG, MESSAGING_CONFIG),
+                mapOf(
+                    BOOT_CONFIG to emptyConfig,
+                    MESSAGING_CONFIG to emptyConfig
+                )
+            )
+        )
         assertTrue(testComponent.isRunning)
         assertNotNull(testComponent.resources)
         testComponent.stop()
@@ -98,8 +144,9 @@ class AbstractComponentTests {
     class TestAbstractComponent(
         private val resourcesToAllocate: Resources,
         coordinatorFactory: LifecycleCoordinatorFactory,
-        coordinatorName: LifecycleCoordinatorName
-    ) : AbstractComponent<Resources>(coordinatorFactory, coordinatorName) {
-        override fun allocateResources(): Resources = resourcesToAllocate
+        coordinatorName: LifecycleCoordinatorName,
+        configurationReadService: ConfigurationReadService
+    ) : AbstractComponent<Resources>(coordinatorFactory, coordinatorName, configurationReadService) {
+        override fun allocateResources(event: ConfigChangedEvent): Resources = resourcesToAllocate
     }
 }

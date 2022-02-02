@@ -3,11 +3,14 @@ package net.corda.configuration.rpcops.impl.tests
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.crypto.SecureHash
 import net.corda.data.identity.HoldingIdentity
-import net.corda.data.packaging.CPIIdentifier
 import net.corda.data.virtualnode.VirtualNodeCreationRequest
 import net.corda.data.virtualnode.VirtualNodeCreationResponse
+import net.corda.httprpc.ResponseCode.INTERNAL_SERVER_ERROR
+import net.corda.httprpc.ResponseCode.INVALID_INPUT_DATA
 import net.corda.httprpc.exception.HttpApiException
+import net.corda.libs.virtualnode.endpoints.v1.types.CPIIdentifier
 import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeResponse
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.virtualnode.rpcops.VirtualNodeRPCOpsServiceException
@@ -25,28 +28,31 @@ import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
+import net.corda.data.packaging.CPIIdentifier as CPIIdAvro
 
-// TODO - Expand these tests to cover success responses once these contain meaningful data.
 /** Tests of [VirtualNodeRPCOpsImpl]. */
 class VirtualNodeRPCOpsImplTests {
-    private val cpiId = CPIIdentifier("cpiName", "1.0.0", SecureHash("SHA-256", ByteBuffer.wrap("a".toByteArray())))
-    private val holdingId = HoldingIdentity("holdingIdName", "groupId")
+    private val holdingIdHash = "holdingIdHash"
+    private val cpiIdAvro = CPIIdAvro("cpiName", "1.0.0", SecureHash("SHA-256", ByteBuffer.wrap("a".toByteArray())))
+    private val cpiId = CPIIdentifier(cpiIdAvro.name, cpiIdAvro.version, cpiIdAvro.signerSummaryHash.toString())
+    private val holdingId = HoldingIdentity("o=test,l=test,c=GB", "mgmGroupId")
 
-    private val httpCreateVNRequest = HTTPCreateVirtualNodeRequest("name", "hash")
+    private val httpCreateVNRequest = HTTPCreateVirtualNodeRequest(holdingId.x500Name, "hash")
     private val vnCreateSuccessfulResponse = VirtualNodeCreationResponse(
         true,
         null,
         httpCreateVNRequest.x500Name,
-        cpiId,
+        cpiIdAvro,
         httpCreateVNRequest.cpiIdHash,
-        "mgmGroupId",
+        holdingId.groupId,
         holdingId,
-        "holdingIdHash"
+        holdingIdHash
     )
+
     private val rpcRequestTimeoutDuration = Duration.ofMillis(1000.toLong())
 
     @Test
-    fun `createAndStartRPCSender starts new RPC sender`() {
+    fun `createAndStartRpcSender starts new RPC sender`() {
         val (rpcSender, vnodeRPCOps) = getVirtualNodeRPCOps()
 
         vnodeRPCOps.createAndStartRpcSender(mock())
@@ -55,7 +61,7 @@ class VirtualNodeRPCOpsImplTests {
     }
 
     @Test
-    fun `createAndStartRPCSender closes existing RPC sender if one exists`() {
+    fun `createAndStartRpcSender closes existing RPC sender if one exists`() {
         val (rpcSender, vnodeRPCOps) = getVirtualNodeRPCOps()
 
         vnodeRPCOps.createAndStartRpcSender(mock())
@@ -75,6 +81,51 @@ class VirtualNodeRPCOpsImplTests {
     }
 
     @Test
+    fun `createVirtualNode sends the correct request to the RPC sender`() {
+        val rpcRequest = httpCreateVNRequest.run { VirtualNodeCreationRequest(x500Name, cpiIdHash) }
+
+        val (rpcSender, vnodeRPCOps) = getVirtualNodeRPCOps()
+
+        vnodeRPCOps.createAndStartRpcSender(mock())
+        vnodeRPCOps.setRpcRequestTimeout(rpcRequestTimeoutDuration)
+        vnodeRPCOps.createVirtualNode(httpCreateVNRequest)
+
+        verify(rpcSender).sendRequest(rpcRequest)
+    }
+
+    @Test
+    fun `createVirtualNode returns VirtualNodeCreationResponse if response is success`() {
+        val successResponse =
+            HTTPCreateVirtualNodeResponse(holdingId.x500Name, cpiId, httpCreateVNRequest.cpiIdHash, holdingId.groupId, holdingIdHash)
+        val (_, vnodeRPCOps) = getVirtualNodeRPCOps()
+
+        vnodeRPCOps.createAndStartRpcSender(mock())
+        vnodeRPCOps.setRpcRequestTimeout(rpcRequestTimeoutDuration)
+
+        assertEquals(successResponse, vnodeRPCOps.createVirtualNode(httpCreateVNRequest))
+    }
+
+    @Test
+    fun `createVirtualNode throws HttpApiException if X500 name is invalid`() {
+        val (_, vnodeRPCOps) = getVirtualNodeRPCOps()
+
+        val badX500 = "invalid"
+        val badX500Req = HTTPCreateVirtualNodeRequest(badX500, "hash")
+
+        vnodeRPCOps.createAndStartRpcSender(mock())
+        vnodeRPCOps.setRpcRequestTimeout(rpcRequestTimeoutDuration)
+        val e = assertThrows<HttpApiException> {
+            vnodeRPCOps.createVirtualNode(badX500Req)
+        }
+
+        assertEquals(
+            "X500 name \"$badX500\" could not be parsed. Cause: improperly specified input name: $badX500",
+            e.message
+        )
+        assertEquals(INVALID_INPUT_DATA, e.responseCode)
+    }
+
+    @Test
     fun `createVirtualNode throws HttpApiException if response is failure`() {
         val exception = ExceptionEnvelope("ErrorType", "errorMessage")
         val (_, vnodeRPCOps) = getVirtualNodeRPCOps{
@@ -90,7 +141,7 @@ class VirtualNodeRPCOpsImplTests {
         }
 
         assertEquals("ErrorType: errorMessage", e.message)
-        assertEquals(500, e.statusCode)
+        assertEquals(INTERNAL_SERVER_ERROR, e.responseCode)
     }
 
     @Test
@@ -108,7 +159,7 @@ class VirtualNodeRPCOpsImplTests {
         }
 
         assertEquals("Request was unsuccessful but no exception was provided.", e.message)
-        assertEquals(500, e.statusCode)
+        assertEquals(INTERNAL_SERVER_ERROR, e.responseCode)
     }
 
     @Test

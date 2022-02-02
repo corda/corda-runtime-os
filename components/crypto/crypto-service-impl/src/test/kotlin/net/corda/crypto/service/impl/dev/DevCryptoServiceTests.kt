@@ -9,14 +9,12 @@ import net.corda.crypto.service.impl.TestSigningKeysPersistenceProvider
 import net.corda.crypto.service.impl.TestSoftKeysPersistenceProvider
 import net.corda.data.crypto.persistence.SigningKeysRecord
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.cipher.suite.CryptoServiceContext
 import net.corda.v5.cipher.suite.WrappedPrivateKey
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.NaSignatureSpec
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.crypto.CompositeKey
-import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.OID_COMPOSITE_KEY_IDENTIFIER
 import net.corda.v5.crypto.SignatureVerificationService
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
@@ -80,14 +78,8 @@ class DevCryptoServiceTests {
             )
             cryptoService = devCryptoServiceProvider.getInstance(
                 CryptoServiceContext(
-                    memberId = services.tenantId,
+                    tenantId = services.tenantId,
                     category = CryptoConsts.Categories.LEDGER,
-                    cipherSuiteFactory = object : CipherSuiteFactory {
-                        override fun getDigestService(): DigestService = throw NotImplementedError()
-                        override fun getSchemeMap(): CipherSchemeMetadata = throw NotImplementedError()
-                        override fun getSignatureVerificationService(): SignatureVerificationService =
-                            throw NotImplementedError()
-                    },
                     config = DevCryptoServiceConfig()
                 )
             ) as DevCryptoService
@@ -214,14 +206,8 @@ class DevCryptoServiceTests {
         )
         val cryptoService2 = devCryptoServiceProvider2.getInstance(
             CryptoServiceContext(
-                memberId = services.tenantId,
+                tenantId = services.tenantId,
                 category = CryptoConsts.Categories.LEDGER,
-                cipherSuiteFactory = object : CipherSuiteFactory {
-                    override fun getDigestService(): DigestService = throw NotImplementedError()
-                    override fun getSchemeMap(): CipherSchemeMetadata = throw NotImplementedError()
-                    override fun getSignatureVerificationService(): SignatureVerificationService =
-                        throw NotImplementedError()
-                },
                 config = DevCryptoServiceConfig()
             )
         ) as DevCryptoService

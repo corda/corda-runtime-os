@@ -9,6 +9,8 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
     api project(':libs:http-rpc:http-rpc')
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda:corda-avro-schema'
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 }
