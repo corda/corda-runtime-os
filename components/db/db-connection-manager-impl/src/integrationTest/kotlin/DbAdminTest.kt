@@ -12,6 +12,7 @@ import net.corda.libs.configuration.SmartConfigFactory.Companion.SECRET_SALT_KEY
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.testing.bundles.cats.Cat
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assumptions
@@ -39,7 +40,8 @@ class DbAdminTest {
         @JvmStatic
         private fun prepareDatabase() {
 
-            System.setProperty("postgresPort", "5432")
+            // uncomment this to run the test against local Postgres
+//            System.setProperty("postgresPort", "5432")
 
             val dbConfig = DbUtils.getEntityManagerConfiguration("configuration_db")
 
@@ -102,6 +104,14 @@ class DbAdminTest {
             it.createStatement().execute("INSERT INTO superhero(name) VALUES('batman')")
             it.commit()
         }
+
+        // validate the DDL user can run DB migrations
+        val cl = ClassloaderChangeLog(
+            linkedSetOf(
+                ClassloaderChangeLog.ChangeLogResourceFiles(
+                    Cat::class.java.packageName, listOf("migration/db.changelog-master.xml"), Cat::class.java.classLoader),
+            ))
+        LiquibaseSchemaMigratorImpl().updateDb(dbConfig.connection, cl)
 
         // DML
         dba.createDbAndUser(
