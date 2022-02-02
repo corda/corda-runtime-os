@@ -48,7 +48,7 @@ subprojects {
 
     detekt {
         baseline = file("$projectDir/detekt-baseline.xml")
-        config.setFrom(files("$rootProjectDir/detekt-config.yml"))
+        config.setFrom(files("./detekt-config.yml"))
         parallel = true
         reports {
             xml {
