@@ -6,6 +6,7 @@ plugins {
     id 'base'
     id 'io.gitlab.arturbosch.detekt' apply false
     id 'jacoco' // test coverage
+    id 'maven-publish'
 }
 
 ext.pluginsDir = "$buildDir/plugins"
@@ -48,6 +49,7 @@ subprojects {
 
     apply plugin: 'io.gitlab.arturbosch.detekt'
     apply plugin: 'jacoco'
+    apply plugin: 'maven-publish'
 
     detekt {
 //        baseline = file("detekt-baseline.xml")

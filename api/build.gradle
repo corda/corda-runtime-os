@@ -3,6 +3,8 @@ plugins {
     id 'maven-publish'
 }
 
+group = "net.corda.cli.api"
+
 dependencies {
     api "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
     compileOnly "org.pf4j:pf4j:${pf4jVersion}"

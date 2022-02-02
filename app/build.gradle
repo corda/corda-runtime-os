@@ -19,6 +19,8 @@ dependencies {
     testImplementation "com.github.stefanbirkner:system-lambda:1.2.1"
 }
 
+group = "net.corda.cli.host"
+
 test {
     useJUnitPlatform()
 }
@@ -60,4 +62,13 @@ def fatJar = tasks.register('fatJar', Jar) {
 
 artifacts {
     archives fatJar
+}
+
+publishing {
+    publications {
+        cliapi(MavenPublication){
+            from components.kotlin
+            artifactId 'corda-cli-api'
+        }
+    }
 }
