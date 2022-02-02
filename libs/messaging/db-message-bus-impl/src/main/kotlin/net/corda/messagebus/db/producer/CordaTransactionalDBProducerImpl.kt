@@ -4,6 +4,7 @@ import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
+import net.corda.messagebus.db.consumer.DBCordaConsumerImpl
 import net.corda.messagebus.db.conversions.toCordaRecord
 import net.corda.messagebus.db.datamodel.CommittedOffsetEntry
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
@@ -22,7 +23,7 @@ import kotlin.math.abs
 class CordaTransactionalDBProducerImpl(
     private val schemaRegistry: AvroSchemaRegistry,
     private val topicService: TopicService,
-    private val dbAccessImpl: DBAccess
+    private val dbAccess: DBAccess
 ) : CordaProducer {
 
     companion object {
@@ -30,7 +31,7 @@ class CordaTransactionalDBProducerImpl(
     }
 
     private val defaultTimeout: Duration = Duration.ofSeconds(1)
-    private val topicPartitionMap = dbAccessImpl.getTopicPartitionMap()
+    private val topicPartitionMap = dbAccess.getTopicPartitionMap()
 
     private val transactionalRecords = ThreadLocal.withInitial { mutableListOf<TopicRecordEntry>() }
     private val transaction = AtomicReference<TransactionRecordEntry?>()
@@ -66,7 +67,6 @@ class CordaTransactionalDBProducerImpl(
     override fun sendRecordsToPartitions(recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>) {
         verifyInTransaction()
         val dbRecords = recordsWithPartitions.map { (partition, record) ->
-            // TODO: Could we move this out and optimize?
             val offset = topicService.getLatestOffsets(record.topic)[partition]
                 ?: throw CordaMessageAPIFatalException("Cannot find offset for ${record.topic}, partition $partition")
 
@@ -94,7 +94,7 @@ class CordaTransactionalDBProducerImpl(
         recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>
     ) {
         // First try adding to DB as it has the possibility of failing
-        dbAccessImpl.writeRecords(dbRecords)
+        dbAccess.writeRecords(dbRecords)
         // Topic service shouldn't fail but if it does the DB will still rollback from here
         recordsWithPartitions.forEach {
             topicService.addRecordsToPartition(listOf(it.second.toCordaRecord()), it.first)
@@ -107,7 +107,7 @@ class CordaTransactionalDBProducerImpl(
         }
         val newTransaction = TransactionRecordEntry(UUID.randomUUID().toString(), false)
         transaction.set(newTransaction)
-        dbAccessImpl.writeTransactionId(newTransaction)
+        dbAccess.writeTransactionId(newTransaction)
     }
 
     override fun sendRecordOffsetsToTransaction(
@@ -125,13 +125,13 @@ class CordaTransactionalDBProducerImpl(
                     .map { (partition, offset) ->
                         CommittedOffsetEntry(
                             topic,
-                            consumer.toString(), // TODO: Need the ConsumerGroup!!!
+                            (consumer as DBCordaConsumerImpl).getConsumerGroup(),
                             partition,
                             offset
                         )
                     }
 
-                dbAccessImpl.writeOffsets(offsets)
+                dbAccess.writeOffsets(offsets)
             }
     }
 
@@ -139,22 +139,21 @@ class CordaTransactionalDBProducerImpl(
         verifyInTransaction()
         val topicPartitions = consumer.assignment()
         val offsets = topicPartitions.map { (topic, partition) ->
-            // TODO: Could we move this out and optimize?
             val offset = topicService.getLatestOffsets(topic)[partition]
                 ?: throw CordaMessageAPIFatalException("Cannot find offset for (topic, partition): ($topic, $partition)")
             CommittedOffsetEntry(
                 topic,
-                consumer.toString(), // TODO: Need the ConsumerGroup!!!
+                (consumer as DBCordaConsumerImpl).getConsumerGroup(),
                 partition,
                 offset
             )
         }
-        dbAccessImpl.writeOffsets(offsets)
+        dbAccess.writeOffsets(offsets)
     }
 
     override fun commitTransaction() {
         verifyInTransaction()
-        dbAccessImpl.makeRecordsVisible(transactionId)
+        dbAccess.makeRecordsVisible(transactionId)
         transactionalRecords.get().clear()
         transaction.set(null)
     }

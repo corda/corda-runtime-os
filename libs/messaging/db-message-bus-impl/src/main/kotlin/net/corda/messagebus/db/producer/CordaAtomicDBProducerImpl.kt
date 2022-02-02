@@ -50,7 +50,6 @@ class CordaAtomicDBProducerImpl(
 
     override fun sendRecordsToPartitions(recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>) {
         val dbRecords = recordsWithPartitions.map { (partition, record) ->
-            // TODO: Could we move this out and optimize?
             val offset = topicService.getLatestOffsets(record.topic)[partition]
                 ?: throw CordaMessageAPIFatalException("Cannot find offset for ${record.topic}, partition $partition")
 

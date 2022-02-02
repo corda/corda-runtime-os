@@ -7,6 +7,7 @@ import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
 import java.time.Duration
 
+@Suppress("TooManyFunctions")
 class DBCordaConsumerImpl<K : Any, V: Any>: CordaConsumer<K, V> {
     override fun subscribe(topics: Collection<String>, listener: CordaConsumerRebalanceListener?) {
         TODO("Not yet implemented")
@@ -90,5 +91,10 @@ class DBCordaConsumerImpl<K : Any, V: Any>: CordaConsumer<K, V> {
 
     override fun setDefaultRebalanceListener(defaultListener: CordaConsumerRebalanceListener) {
         TODO("Not yet implemented")
+    }
+
+    // Will be implemented (or changed) in the next PR
+    fun getConsumerGroup(): String {
+        return ""
     }
 }

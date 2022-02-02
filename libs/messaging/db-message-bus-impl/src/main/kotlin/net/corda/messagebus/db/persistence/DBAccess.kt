@@ -24,13 +24,14 @@ class DBAccess(
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun getMaxCommittedOffset(topic: String, consumerGroup: String, partitions: Set<Int>): Map<Int, Long?> {
         if (partitions.isEmpty()) {
             return emptyMap()
         }
 
         val maxOffsets: MutableMap<Int, Long?> = partitions.associateWith { null }.toMutableMap()
-        executeWithErrorHandling("retrieve max committed offsets for consumer group $consumerGroup on topic $topic and partitions $partitions") {
+        executeWithErrorHandling("max committed offsets") {
 //            val partitionsList = MutableList(partitions.size) { "?" }.joinToString(", ", "(", ")")
 //            val sqlStatement = maxCommittedOffsetsStmt.replace("[partitions_list]", partitionsList)
 //            val stmt = it.prepareStatement(sqlStatement)
