@@ -275,7 +275,7 @@ internal class HttpRpcServerInternal(
                     ctx.json(result)
                 }
             } catch(e: Exception) {
-                mapToResponse("Error at calling multipart method", e)
+                throw HttpExceptionMapper.mapToResponse(e)
             }
         }
     }
