@@ -257,6 +257,7 @@ include 'libs:serialization:serialization-kryo:src:integrationTest:cpks:serializ
 include 'libs:serialization:serialization-kryo:src:integrationTest:cpks:serializable-cpk-two'
 include 'libs:utilities'
 include 'libs:virtual-node:sandbox-group-context'
+include 'libs:virtual-node:virtual-node-datamodel'
 include 'libs:virtual-node:virtual-node-endpoints'
 include 'libs:virtual-node:virtual-node-info'
 include 'libs:virtual-node:virtual-node-manager'

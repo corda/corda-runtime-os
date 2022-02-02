@@ -24,11 +24,11 @@ import java.util.concurrent.CompletableFuture
  * Kafka.
  *
  * @property vnodePublisher Used to publish to Kafka.
- * @property cpiRepository Temporary stub used for retrieving CPI data and holding identities.
+ * @property entityRepository Used to retrieve and store virtual nodes and related entities.
  */
 internal class VirtualNodeWriterProcessor(
     private val vnodePublisher: Publisher,
-    private val cpiRepository: CPIRepository
+    private val entityRepository: EntityRepository
 ) : RPCResponderProcessor<VirtualNodeCreationRequest, VirtualNodeCreationResponse> {
 
     /**
@@ -42,7 +42,7 @@ internal class VirtualNodeWriterProcessor(
         respFuture: CompletableFuture<VirtualNodeCreationResponse>
     ) {
 
-        val cpiMetadata = cpiRepository.getCPIMetadata(request.cpiIdHash)
+        val cpiMetadata = entityRepository.getCPIMetadata(request.cpiIdHash)
         if (cpiMetadata == null) {
             val errMsg = "CPI with hash ${request.cpiIdHash} was not found."
             handleException(respFuture, errMsg, VirtualNodeWriterException::class.java.name, null, null)
@@ -50,9 +50,9 @@ internal class VirtualNodeWriterProcessor(
         }
 
         val holdingId = HoldingIdentity(request.x500Name, cpiMetadata.mgmGroupId)
-        val storedHoldingId = cpiRepository.getHoldingIdentity(holdingId.id)
+        val storedHoldingId = entityRepository.getHoldingIdentity(holdingId.id)
         if (storedHoldingId == null) {
-            cpiRepository.putHoldingIdentity(request.x500Name, cpiMetadata.mgmGroupId)
+            entityRepository.putHoldingIdentity(request.x500Name, cpiMetadata.mgmGroupId)
         } else {
             // We check whether the non-null stored holding ID is different to the one we just constructed.
             if (storedHoldingId != holdingId) {
@@ -63,7 +63,7 @@ internal class VirtualNodeWriterProcessor(
             }
         }
 
-        // TODO - Write virtual node to database.
+        entityRepository.putVirtualNode(holdingId, cpiMetadata.id)
 
         val virtualNodeInfo = VirtualNodeInfo(holdingId.toAvro(), cpiMetadata.id.toAvro())
         val virtualNodeRecord = Record(VIRTUAL_NODE_INFO_TOPIC, virtualNodeInfo.holdingIdentity, virtualNodeInfo)

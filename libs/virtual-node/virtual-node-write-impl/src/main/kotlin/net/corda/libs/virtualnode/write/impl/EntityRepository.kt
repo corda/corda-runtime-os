@@ -1,11 +1,13 @@
 package net.corda.libs.virtualnode.write.impl
 
+import net.corda.libs.virtualnode.datamodel.VirtualNodeEntity
 import net.corda.packaging.CPI
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 
-/** Contains stubs of methods to read and write CPIs and holding identities to and from the cluster database. */
-internal class CPIRepository {
+// TODO - Replace these stubs with implementations that interact with the database.
+/** Reads and writes CPIs, holding identities and virtual nodes to and from the cluster database. */
+internal class EntityRepository {
     /** Stub for reading CPI metadata from the database that returns a dummy value. */
     @Suppress("Unused_parameter", "RedundantNullableReturnType")
     internal fun getCPIMetadata(cpiIdShortHash: String): CPIMetadata? {
@@ -23,4 +25,11 @@ internal class CPIRepository {
     /** No-op stub for writing a holding identity to the database. */
     @Suppress("Unused_parameter")
     internal fun putHoldingIdentity(x500Name: String, mgmGroupId: String) = Unit
+
+    /** No-op stub for writing a virtual node to the database. */
+    @Suppress("Unused_parameter")
+    internal fun putVirtualNode(holdingId: HoldingIdentity, cpiId: CPI.Identifier) {
+        // TODO - Joel - Put this entity in the database.
+        VirtualNodeEntity(holdingId.id, cpiId.name, cpiId.version, cpiId.signerSummaryHash.toString())
+    }
 }

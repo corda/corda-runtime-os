@@ -112,7 +112,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
         return try {
             nonNullRPCSender.sendRequest(request).getOrThrow(nonNullRequestTimeout)
         } catch (e: Exception) {
-            throw VirtualNodeRPCOpsServiceException("Could not create virtual node.", e)
+            throw VirtualNodeRPCOpsServiceException("Could not complete virtual node creation request.", e)
         }
     }
 }

@@ -52,8 +52,8 @@ internal class ConfigWriterFactoryImpl @Activate constructor(
     }
 
     /**
-     * Creates a [ConfigurationManagementRPCSubscription] using the provided [config] and [instanceId]. The
-     * subscription is for the [CONFIG_MGMT_REQUEST_TOPIC] topic, and handles requests using a [ConfigWriterProcessor].
+     * Creates a [ConfigurationManagementRPCSubscription] using the provided [config]. The subscription is for the
+     * [CONFIG_MGMT_REQUEST_TOPIC] topic, and handles requests using a [ConfigWriterProcessor].
      *
      * @throws ConfigWriterException If the subscription cannot be set up.
      */
