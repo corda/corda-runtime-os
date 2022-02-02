@@ -5,5 +5,7 @@ cordaPipeline(
     runIntegrationTests: true,
     createPostgresDb: true,
     gradleAdditionalArgs: '-PrunUnstableTests',
-    dailyBuildCron: 'H */4 * * *'
+    dailyBuildCron: 'H */4 * * *',
+    publishRepoPrefix: '',
+    runE2eTests: false
     )
