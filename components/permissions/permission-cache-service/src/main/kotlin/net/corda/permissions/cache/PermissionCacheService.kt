@@ -136,12 +136,13 @@ class PermissionCacheService @Activate constructor(
                 downTransition()
                 _permissionCache?.stop()
                 _permissionCache = null
-                coordinator.updateStatus(LifecycleStatus.DOWN)
             }
         }
     }
 
     private fun downTransition() {
+        coordinator.updateStatus(LifecycleStatus.DOWN)
+
         configHandle?.close()
         configHandle = null
         topicsRegistration?.close()
