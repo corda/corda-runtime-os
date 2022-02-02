@@ -19,6 +19,7 @@ class MembershipGroupReaderImpl(
 
     companion object {
         const val IDENTITY_KEY_HASHES = "corda.identityKeyHashes"
+        const val IDENTITY_KEY_HASHES_KEY = "corda.identityKeyHashes.%s"
 
         @JvmStatic
         val MemberInfo.identityKeyHashes: List<PublicKeyHash>

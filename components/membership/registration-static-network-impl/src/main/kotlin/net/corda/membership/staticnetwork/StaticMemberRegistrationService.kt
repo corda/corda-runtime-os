@@ -23,6 +23,7 @@ import net.corda.membership.identity.MemberInfoExtension.Companion.SOFTWARE_VERS
 import net.corda.membership.identity.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.identity.MemberInfoExtension.Companion.groupId
 import net.corda.membership.identity.MemberInfoImpl
+import net.corda.membership.impl.read.reader.MembershipGroupReaderImpl.Companion.IDENTITY_KEY_HASHES_KEY
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.SUBMITTED
@@ -42,6 +43,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.crypto.calculateHash
 import net.corda.v5.membership.conversion.PropertyConverter
 import net.corda.v5.membership.identity.EndpointInfo
 import net.corda.v5.membership.identity.MemberInfo
@@ -150,6 +152,7 @@ class StaticMemberRegistrationService @Activate constructor(
                             PARTY_OWNING_KEY to owningKey,
                             GROUP_ID to policy.groupId,
                             *generateIdentityKeys(owningKey).toTypedArray(),
+                            *generateIdentityKeyHashes(owningKey).toTypedArray(),
                             *convertEndpoints(staticMember).toTypedArray(),
                             SOFTWARE_VERSION to (staticMember[STATIC_SOFTWARE_VERSION] ?: DEFAULT_SOFTWARE_VERSION),
                             PLATFORM_VERSION to (staticMember[STATIC_PLATFORM_VERSION] ?: DEFAULT_PLATFORM_VERSION),
@@ -247,6 +250,23 @@ class StaticMemberRegistrationService @Activate constructor(
                 MemberInfoExtension.IDENTITY_KEYS_KEY,
                 index
             ) to identityKey
+        }
+    }
+
+    /**
+     * Only going to contain hash of the owningKey for passing the checks on the MemberInfo creation side.
+     * For the static network we don't need hashes of the rotated keys.
+     */
+    private fun generateIdentityKeyHashes(
+        owningKey: String
+    ): List<Pair<String, String>> {
+        val identityKeys = listOf(owningKey)
+        return identityKeys.mapIndexed { index, identityKey ->
+            val hash = keyEncodingService.decodePublicKey(identityKey).calculateHash()
+            String.format(
+                IDENTITY_KEY_HASHES_KEY,
+                index
+            ) to hash.toString()
         }
     }
 }

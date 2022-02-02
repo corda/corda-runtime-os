@@ -28,6 +28,7 @@ dependencies {
     implementation "net.corda:corda-membership-identity"
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-topic-schema"
+    implementation project(":components:membership:membership-group-read-impl")
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
