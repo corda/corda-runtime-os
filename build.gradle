@@ -7,6 +7,7 @@ plugins {
     id 'io.gitlab.arturbosch.detekt' apply false
     id 'jacoco' // test coverage
     id 'maven-publish'
+    id 'com.r3.internal.gradle.plugins.r3ArtifactoryPublish'
 }
 
 ext.pluginsDir = "$buildDir/plugins"

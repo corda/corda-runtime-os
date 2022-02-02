@@ -1,6 +1,7 @@
 plugins {
     id 'org.jetbrains.kotlin.jvm' 
     id 'application'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
 }
 
 dependencies {
@@ -62,13 +63,4 @@ def fatJar = tasks.register('fatJar', Jar) {
 
 artifacts {
     archives fatJar
-}
-
-publishing {
-    publications {
-        clihost(MavenPublication){
-            from components.kotlin
-            artifactId 'corda-cli-api'
-        }
-    }
 }
