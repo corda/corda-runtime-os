@@ -16,7 +16,7 @@ internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProv
 
     private companion object {
         private val logger = contextLogger()
-        private val REGISTERED_SCHEMES = listOf("https, http")
+        private val REGISTERED_SCHEMES = listOf("https", "http")
     }
 
     private val schemaFactory = buildSchemaFactory()
