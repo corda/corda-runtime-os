@@ -86,7 +86,7 @@ class LateInitRPCOpsConfigHandlerTests {
 
         verify(coordinator).updateStatus(ERROR)
         assertEquals(
-            "Could not start the RPC sender for incoming HTTP RPC virtual node management requests",
+            "Could not start the RPC sender for incoming HTTP RPC requests",
             e.message
         )
     }
