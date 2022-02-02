@@ -1,4 +1,4 @@
-package net.corda.libs.configuration
+package net.corda.libs.configuration.secret
 
 import com.typesafe.config.Config
 

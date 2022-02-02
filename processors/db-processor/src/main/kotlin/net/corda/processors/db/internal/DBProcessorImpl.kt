@@ -5,16 +5,21 @@ import net.corda.configuration.write.ConfigWriteService
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.ClassloaderChangeLog.ChangeLogResourceFiles
+import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.DbConnectionsRepository
+import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
@@ -26,6 +31,7 @@ import net.corda.permissions.storage.reader.PermissionStorageReaderService
 import net.corda.permissions.storage.writer.PermissionStorageWriterService
 import net.corda.processors.db.DBProcessor
 import net.corda.processors.db.DBProcessorException
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.write.db.VirtualNodeWriteService
@@ -33,6 +39,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.sql.SQLException
+import java.util.UUID
 import javax.sql.DataSource
 
 @Suppress("Unused", "LongParameterList")
@@ -56,11 +63,13 @@ class DBProcessorImpl @Activate constructor(
     private val permissionStorageWriterService: PermissionStorageWriterService,
     @Reference(service = VirtualNodeWriteService::class)
     private val virtualNodeWriteService: VirtualNodeWriteService,
-    // TODO: remove this when DB migration is not needed anymore in this processor.
+    // TODO - remove this when DB migration is not needed anymore in this processor.
     @Reference(service = DbConnectionsRepository::class)
     private val dbConnectionsRepository: DbConnectionsRepository,
     @Reference(service = LiquibaseSchemaMigrator::class)
     private val schemaMigrator: LiquibaseSchemaMigrator,
+    @Reference(service = DbAdmin::class)
+    private val dbAdmin: DbAdmin,
 ) : DBProcessor {
     init {
         // define the different DB Entity Sets
@@ -84,6 +93,11 @@ class DBProcessorImpl @Activate constructor(
         ::permissionStorageWriterService,
         ::virtualNodeWriteService
     )
+    // keeping track of the DB Managers registration handler specifically because the bootstrap process needs to be split
+    //  into 2 parts.
+    private var dbManagerRegistrationHandler: RegistrationHandle? = null
+    private var bootstrapConfig: SmartConfig? = null
+    private var instanceId: Int? = null
 
     override fun start(bootConfig: SmartConfig) {
         log.info("DB processor starting.")
@@ -102,31 +116,40 @@ class DBProcessorImpl @Activate constructor(
         when (event) {
             is StartEvent -> {
                 dependentComponents.registerAndStartAll(coordinator)
+                dbManagerRegistrationHandler = lifecycleCoordinator.followStatusChangesByName(
+                    setOf(LifecycleCoordinatorName.forComponent<DbConnectionManager>()))
             }
             is RegistrationStatusChangeEvent -> {
-                log.info("DB processor is ${event.status}")
-                coordinator.updateStatus(event.status)
+                if (event.registration == dbManagerRegistrationHandler) {
+                    log.info("DB Connection Manager has been initialised")
+
+                    // TODO - remove this when cluster bootstrapping is implemented
+                    tempDbInitProcess(bootstrapConfig!!.factory)
+
+                    // ready to continue bootstrapping processor
+                    log.info("Bootstrapping Config Write Service with instance ID: $instanceId")
+                    configWriteService.startProcessing(
+                        bootstrapConfig!!,
+                        bootstrapConfig!!.getInt(CONFIG_INSTANCE_ID),
+                        dbConnectionManager.clusterDbEntityManagerFactory)
+
+                    configurationReadService.bootstrapConfig(bootstrapConfig!!)
+                } else {
+                    log.info("DB processor is ${event.status}")
+                    coordinator.updateStatus(event.status)
+                }
             }
             is BootConfigEvent -> {
+                bootstrapConfig = event.config
+                instanceId = event.config.getInt(CONFIG_INSTANCE_ID)
 
                 log.info("Bootstrapping DB connection Manager")
-                dbConnectionManager.bootstrap(event.config)
-
-                // TODO - DB migration to be removed when part of cluster bootstrapping
-                log.info("Running DB Migration")
-                migrateDatabase(dbConnectionsRepository.clusterDataSource)
-
-                val instanceId = event.config.getInt(CONFIG_INSTANCE_ID)
-                log.info("Bootstrapping Config Write Service with instance ID: $instanceId")
-                configWriteService.startProcessing(
-                    event.config,
-                    instanceId,
-                    dbConnectionManager.clusterDbEntityManagerFactory)
-
-                configurationReadService.bootstrapConfig(event.config)
+                dbConnectionManager.bootstrap(event.config.getConfig(ConfigKeys.DB_CONFIG))
             }
             is StopEvent -> {
                 dependentComponents.stopAll()
+                dbManagerRegistrationHandler?.close()
+                dbManagerRegistrationHandler = null
             }
             else -> {
                 log.error("Unexpected event $event!")
@@ -134,36 +157,82 @@ class DBProcessorImpl @Activate constructor(
         }
     }
 
+    private fun tempDbInitProcess(factory: SmartConfigFactory) {
+        log.info("Running Cluster DB Migration")
+        migrateDatabase(dbConnectionsRepository.clusterDataSource, listOf(
+            "net/corda/db/schema/config/db.changelog-master.xml"
+        ))
+
+        // Creating RBAC DB configurations
+        if(null == dbConnectionsRepository.get(CordaDb.RBAC.persistenceUnitName, DbPrivilege.DDL)) {
+            val ddlRbacUser = "rbac_ddl"
+            val ddlRbacPassword = UUID.randomUUID().toString()
+            dbAdmin.createDbAndUser(
+                CordaDb.RBAC.persistenceUnitName,
+                DbSchema.RPC_RBAC,
+                ddlRbacUser,
+                ddlRbacPassword,
+                "$CONFIG_JDBC_URL_DEFAULT?currentSchema=${DbSchema.RPC_RBAC}",
+                DbPrivilege.DDL,
+                factory
+            )
+        }
+
+        if(null == dbConnectionsRepository.get(CordaDb.RBAC.persistenceUnitName, DbPrivilege.DML)) {
+            val dmlRbacUser = "rbac_dml"
+            val dmlRbacPassword = UUID.randomUUID().toString()
+            dbAdmin.createDbAndUser(
+                CordaDb.RBAC.persistenceUnitName,
+                DbSchema.RPC_RBAC,
+                dmlRbacUser,
+                dmlRbacPassword,
+                "$CONFIG_JDBC_URL_DEFAULT?currentSchema=${DbSchema.RPC_RBAC}",
+                DbPrivilege.DML,
+                factory
+            )
+        }
+
+        log.info("Running RBAC DB Migration")
+        /** TODO - this is a bit hacky
+         *   We can't really use the DDL user created above because it does not have CREATE privileges
+         *   on the public schema, therefore, it cannot create new schemas and our Liquibase migration
+         *   currently has a IF NOT EXIST CREATE SCHEMA ... which fails if the permission is missing.
+         *   For this reason, for VNode Vault and Crypto DBs, we should not use schemas but assume the
+         *   "default" schema that is specified in the connection details.
+         *
+         *   For RBAC, CONFIG etc, we need to have a discussion and decision on how we handle this.
+         *   Maybe it doesn't actually make sense to keep DDL connection details for RBAC, and maybe we
+         *   can always assume the DB Migrations for system tables (i.e. not vault) are always handled
+         *   externally?
+         *
+         *   Until then, just use the cluster DB.
+         */
+        migrateDatabase(
+            dbConnectionsRepository.clusterDataSource,
+            listOf("net/corda/db/schema/rbac/db.changelog-master.xml"),
+            DbSchema.RPC_RBAC)
+    }
+
     /**
      * Uses the [dataSource] to apply the Liquibase schema migrations for each of the entities.
      *
      * @throws DBProcessorException If the cluster database cannot be connected to.
      */
-    private fun migrateDatabase(dataSource: DataSource) {
-        val dbChanges = listOf(
-            "net/corda/db/schema/config/db.changelog-master.xml",
-            "net/corda/db/schema/rbac/db.changelog-master.xml"
-        ).map {
-            ClassloaderChangeLog(setOf(DbSchema::class.java).mapTo(LinkedHashSet()) { klass ->
-                ChangeLogResourceFiles(
-                    klass.packageName,
-                    listOf(it),
-                    klass.classLoader
-                )
-            })
+    private fun migrateDatabase(dataSource: DataSource, dbChangeFiles: List<String>, controlTableSchema: String? = null) {
+        val changeLogResourceFiles = setOf(DbSchema::class.java).mapTo(LinkedHashSet()) { klass ->
+            ChangeLogResourceFiles(klass.packageName, dbChangeFiles, klass.classLoader)
         }
+        val dbChange = ClassloaderChangeLog(changeLogResourceFiles)
 
-        // Applying DB Changes independently as we cannot bundle them into a single change log
-        // since there is a clash on the variables we use like `schema.name` in our Liquibase files
-        // If it is defined once by one file and cannot be re-defined by the following.
-        dbChanges.forEach { dbChange ->
-            try {
-                dataSource.connection.use { connection ->
+        try {
+            dataSource.connection.use { connection ->
+                if(null == controlTableSchema)
                     schemaMigrator.updateDb(connection, dbChange)
-                }
-            } catch (e: SQLException) {
-                throw DBProcessorException("Could not connect to cluster database.", e)
+                else
+                    schemaMigrator.updateDb(connection, dbChange, controlTableSchema)
             }
+        } catch (e: SQLException) {
+            throw DBProcessorException("Could not connect to cluster database.", e)
         }
     }
 }

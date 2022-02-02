@@ -68,5 +68,9 @@ fun EntityManager.findDbConnectionByNameAndPrivilege(name: String, privilege: Db
     val q = this.createNamedQuery(QUERY_FIND_BY_NAME_AND_PRIVILEGE)
     q.setParameter(QUERY_PARAM_NAME, name)
     q.setParameter(QUERY_PARAM_PRIVILEGE, privilege)
-    return q.singleResult as DbConnectionConfig?
+    // NOTE: need to use resultList here rather than singleResult as we need to return null when none is found
+    val obj = q.resultList
+    if (obj.isEmpty())
+        return null
+    return obj.first() as DbConnectionConfig
 }

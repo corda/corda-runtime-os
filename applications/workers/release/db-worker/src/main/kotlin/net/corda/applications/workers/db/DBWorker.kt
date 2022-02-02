@@ -10,6 +10,7 @@ import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setUp
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.db.DBProcessor
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -31,7 +32,6 @@ class DBWorker @Activate constructor(
 
     private companion object {
         private val logger = contextLogger()
-        private const val DB_CONFIG_PATH = "database"
     }
 
     /** Parses the arguments, then initialises and starts the [processor]. */
@@ -42,7 +42,7 @@ class DBWorker @Activate constructor(
         if (printHelpOrVersion(params.defaultParams, DBWorker::class.java, shutDownService)) return
         setUpHealthMonitor(healthMonitor, params.defaultParams)
 
-        val databaseConfig = PathAndConfig(DB_CONFIG_PATH, params.databaseParams)
+        val databaseConfig = PathAndConfig(ConfigKeys.DB_CONFIG, params.databaseParams)
         val config = getBootstrapConfig(params.defaultParams, listOf(databaseConfig))
 
         processor.start(config)
