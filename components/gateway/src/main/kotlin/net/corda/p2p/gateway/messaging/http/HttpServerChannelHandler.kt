@@ -2,6 +2,7 @@ package net.corda.p2p.gateway.messaging.http
 
 import io.netty.buffer.ByteBuf
 import io.netty.buffer.Unpooled
+import io.netty.channel.ChannelFutureListener
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.http.DefaultFullHttpResponse
 import io.netty.handler.codec.http.HttpContent
@@ -20,25 +21,31 @@ import java.lang.IndexOutOfBoundsException
 
 class HttpServerChannelHandler(private val serverListener: HttpServerListener,
                                private val logger: Logger): BaseHttpChannelHandler(serverListener, logger) {
-
-    private var responseCode: HttpResponseStatus? = null
-
     /**
      * Reads the HTTP objects into a [ByteBuf] and publishes them to all subscribers
      */
     @Suppress("ComplexMethod")
     override fun channelRead0(ctx: ChannelHandlerContext, msg: HttpObject) {
         if (msg is HttpRequest) {
-            responseCode = msg.validate()
-            logger.info("Received HTTP request from ${ctx.channel().remoteAddress()}\n" +
+            val responseCode: HttpResponseStatus = msg.validate()
+            if (responseCode != HttpResponseStatus.OK) {
+                logger.warn ("Received HTTP request from ${ctx.channel().remoteAddress()}\n" +
+                        "Protocol version: ${msg.protocolVersion()}\n" +
+                        "Hostname: ${msg.headers()[HttpHeaderNames.HOST]?:"unknown"}\n" +
+                        "Request URI: ${msg.uri()}\n and the response code was $responseCode.")
+                val response:HttpResponse = createResponse(null, responseCode)
+                ctx.writeAndFlush(response)
+                    .addListener(ChannelFutureListener.CLOSE)
+                return
+            }
+
+            logger.debug ("Received HTTP request from ${ctx.channel().remoteAddress()}\n" +
                     "Protocol version: ${msg.protocolVersion()}\n" +
                     "Hostname: ${msg.headers()[HttpHeaderNames.HOST]?:"unknown"}\n" +
                     "Request URI: ${msg.uri()}\n" +
-                    "Content length: ${msg.headers()[HttpHeaderNames.CONTENT_LENGTH]?:"missing"}\n")
+                    "Content length: ${msg.headers()[HttpHeaderNames.CONTENT_LENGTH]}\n")
             // initialise byte array to read the request into
-            if (responseCode!! != HttpResponseStatus.LENGTH_REQUIRED) {
-                allocateBodyBuffer(ctx, msg.headers()[HttpHeaderNames.CONTENT_LENGTH].toInt())
-            }
+            allocateBodyBuffer(ctx, msg.headers()[HttpHeaderNames.CONTENT_LENGTH].toInt())
 
             if (HttpUtil.is100ContinueExpected(msg)) {
                 send100Continue(ctx)
@@ -62,21 +69,10 @@ class HttpServerChannelHandler(private val serverListener: HttpServerListener,
         if (msg is LastHttpContent) {
             logger.debug("Read end of response body $msg")
             val returnByteArray = readBytesFromBodyBuffer()
-
-            when(responseCode) {
-                HttpResponseStatus.OK -> {
-                    val sourceAddress = ctx.channel().remoteAddress()
-                    val targetAddress = ctx.channel().localAddress()
-                    serverListener.onRequest(HttpRequest(returnByteArray, sourceAddress, targetAddress))
-                }
-                else -> {
-                    val response = createResponse(null, responseCode!!)
-                    ctx.writeAndFlush(response)
-                }
-            }
-
+            val sourceAddress = ctx.channel().remoteAddress()
+            val targetAddress = ctx.channel().localAddress()
+            serverListener.onRequest(HttpRequest(returnByteArray, sourceAddress, targetAddress))
             releaseBodyBuffer()
-            responseCode = null
         }
     }
 
