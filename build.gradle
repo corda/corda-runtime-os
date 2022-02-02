@@ -44,6 +44,8 @@ subprojects {
         task.dependsOn tasks.withType(AbstractCompile)
     }
 
+    apply plugin: 'io.gitlab.arturbosch.detekt'
+
     detekt {
         baseline = file("$projectDir/detekt-baseline.xml")
         config.setFrom(files("$rootProjectDir/detekt-config.yml"))
