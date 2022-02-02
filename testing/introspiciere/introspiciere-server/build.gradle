@@ -15,7 +15,10 @@ dependencies {
 
 jar {
     // not sure why the dependency is not building automatically
-//    dependsOn ':testing:introspiciere:introspiciere-core:build'
+    dependsOn ':testing:introspiciere:introspiciere-core:jar'
+    dependsOn ':testing:introspiciere:introspiciere-http:jar'
+    dependsOn ':testing:introspiciere:introspiciere-junit:jar'
+    dependsOn ':testing:introspiciere:introspiciere-cli:jar'
 
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
