@@ -1,18 +1,23 @@
 import net.corda.db.connection.manager.impl.BootstrapConfigProvided
-import net.corda.db.connection.manager.impl.DBConfigurationException
+import net.corda.db.connection.manager.DBConfigurationException
 import net.corda.db.connection.manager.impl.DbConnectionManagerEventHandler
 import net.corda.db.connection.manager.impl.DbConnectionsRepositoryImpl
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 
 class DbConnectionManagerEventHandlerTest {
     private val dbConnectionsRepository = mock< DbConnectionsRepositoryImpl>()
-    private val config = mock<SmartConfig>()
+    private val configFactory = mock<SmartConfigFactory>()
+    private val config = mock<SmartConfig>() {
+        on { this.factory }.doReturn(configFactory)
+    }
     private val coordinator = mock<LifecycleCoordinator>()
 
     @Test

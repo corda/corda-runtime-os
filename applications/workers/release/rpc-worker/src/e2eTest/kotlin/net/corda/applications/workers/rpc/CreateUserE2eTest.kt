@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import java.time.Instant
 import java.time.temporal.ChronoUnit.DAYS
+import net.corda.httprpc.client.exceptions.RequestErrorException
 
 class CreateUserE2eTest {
 
@@ -25,7 +26,7 @@ class CreateUserE2eTest {
 
             // Check the user does not exist yet
             assertThatThrownBy { proxy.getUser(userName) }.isInstanceOf(MissingRequestedResourceException::class.java)
-                .hasMessageContaining("User $userName not found")
+                .hasMessageContaining("User '$userName' not found")
 
             // Create user
             val password = testToolkit.uniqueName
@@ -54,8 +55,8 @@ class CreateUserE2eTest {
 
             // Try to create a user with the same login name again and verify that it fails
             assertThatThrownBy { proxy.createUser(createUserType.copy(fullName = "Alice")) }
-                .isInstanceOf(InternalErrorException::class.java)
-                .hasMessageContaining("User with login '$userName' already exists.")
+                .isInstanceOf(RequestErrorException::class.java)
+                .hasMessageContaining("User '$userName' already exists.")
         }
     }
 }

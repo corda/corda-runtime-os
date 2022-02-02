@@ -12,7 +12,7 @@ import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.permissions.cache.PermissionCache
-import net.corda.libs.permissions.manager.exception.PermissionManagerException
+import net.corda.libs.permissions.manager.exception.UnexpectedPermissionResponseException
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
 import net.corda.messaging.api.publisher.RPCSender
@@ -163,7 +163,7 @@ class PermissionUserManagerImplTest {
         val requestCaptor = argumentCaptor<PermissionManagementRequest>()
         whenever(rpcSender.sendRequest(requestCaptor.capture())).thenReturn(future)
 
-        assertThrows(PermissionManagerException::class.java) { manager.createUser(createUserRequestDto) }
+        assertThrows(UnexpectedPermissionResponseException::class.java) { manager.createUser(createUserRequestDto) }
     }
 
     @Test

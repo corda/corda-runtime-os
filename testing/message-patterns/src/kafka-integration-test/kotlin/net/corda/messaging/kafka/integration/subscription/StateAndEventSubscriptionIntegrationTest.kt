@@ -102,6 +102,7 @@ class StateAndEventSubscriptionIntegrationTest {
     }
 
     @Test
+    @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `create topic with two partitions, start two statevent sub, publish records with two keys, no outputs`() {
         topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC1_TEMPLATE)
 
@@ -174,6 +175,7 @@ class StateAndEventSubscriptionIntegrationTest {
     }
 
     @Test
+    @Timeout(value = 60, unit = TimeUnit.SECONDS)
     fun `create topics, start one statevent sub, publish records with two keys, update state and output records and verify`() {
         topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC2_TEMPLATE)
 
@@ -206,6 +208,7 @@ class StateAndEventSubscriptionIntegrationTest {
     }
 
     @Test
+    @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `create topics, start statevent sub, fail processor on first attempt, publish 2 records, verify listener and outputs`() {
         topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC3_TEMPLATE)
 
@@ -318,17 +321,19 @@ class StateAndEventSubscriptionIntegrationTest {
     }
 
     @Test
+    @Timeout(value = 120, unit = TimeUnit.SECONDS)
     fun `create topics, start one statevent sub, publish records, slow processor for first record, 1 record sent DLQ and verify`() {
         topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC5_TEMPLATE)
 
         val shortIntervalTimeoutConfig = kafkaConfig
-            .withValue("$MESSAGING_KAFKA.$CONSUMER_MAX_POLL_INTERVAL", ConfigValueFactory.fromAnyRef(20000))
+            .withValue("$MESSAGING_KAFKA.$CONSUMER_MAX_POLL_INTERVAL", ConfigValueFactory.fromAnyRef(15000))
 
         val stateAndEventLatch = CountDownLatch(10)
         val stateEventSub1 = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("$EVENT_TOPIC5-group", EVENT_TOPIC5, 1),
-            TestStateEventProcessorStrings(stateAndEventLatch, true, false, EVENTSTATE_OUTPUT5, 30000),
-            shortIntervalTimeoutConfig, TestStateAndEventListenerStrings()
+            TestStateEventProcessorStrings(stateAndEventLatch, true, false, EVENTSTATE_OUTPUT5, 20000),
+            shortIntervalTimeoutConfig,
+            TestStateAndEventListenerStrings()
         )
         stateEventSub1.start()
 
@@ -366,6 +371,7 @@ class StateAndEventSubscriptionIntegrationTest {
     }
 
     @Test
+    @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `create topics, start one statevent sub, publish records, slow processor and listener, all records successful`() {
         topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC6_TEMPLATE)
 
@@ -374,7 +380,7 @@ class StateAndEventSubscriptionIntegrationTest {
         publisher.publish(getStringRecords(EVENT_TOPIC6, 1, 3)).forEach { it.get() }
 
         val shortIntervalTimeoutConfig = kafkaConfig
-            .withValue("$MESSAGING_KAFKA.$CONSUMER_MAX_POLL_INTERVAL", ConfigValueFactory.fromAnyRef(20000))
+            .withValue("$MESSAGING_KAFKA.$CONSUMER_MAX_POLL_INTERVAL", ConfigValueFactory.fromAnyRef(11000))
 
         val stateAndEventLatch = CountDownLatch(3)
         val onCommitLatch = CountDownLatch(3)
@@ -405,6 +411,7 @@ class StateAndEventSubscriptionIntegrationTest {
     }
 
     @Test
+    @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `create topics, start one statevent sub, publish incorrect records with two keys, update state and output records and verify`() {
         topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC7_TEMPLATE)
 

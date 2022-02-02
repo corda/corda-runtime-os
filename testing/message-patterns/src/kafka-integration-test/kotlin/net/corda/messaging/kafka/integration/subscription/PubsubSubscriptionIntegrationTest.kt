@@ -1,6 +1,7 @@
 package net.corda.messaging.kafka.integration.subscription
 
 import com.typesafe.config.ConfigValueFactory
+import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinator
@@ -17,8 +18,10 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.BOOTSTRAP_SERVERS_VALUE
 import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.KAFKA_COMMON_BOOTSTRAP_SERVER
 import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.TOPIC_PREFIX
+import net.corda.messaging.kafka.integration.TopicTemplates
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.TEST_TOPIC_PREFIX
 import net.corda.messaging.kafka.integration.getDemoRecords
+import net.corda.messaging.kafka.integration.getKafkaProperties
 import net.corda.messaging.kafka.integration.processors.TestPubsubProcessor
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.millis
@@ -39,10 +42,11 @@ class PubsubSubscriptionIntegrationTest {
     private lateinit var publisherConfig: PublisherConfig
     private lateinit var publisher: Publisher
     private lateinit var kafkaConfig: SmartConfig
+    private val kafkaProperties = getKafkaProperties()
 
     private companion object {
-        const val CLIENT_ID = "integrationTestPubsubPublisher"
-        const val PUBSUB_TOPIC1 = "PubsubTopic1"
+        const val CLIENT_ID = "integrationTestPubSubPublisher"
+        const val PUBSUB_TOPIC1 = "PubSubTopic1"
     }
 
     @InjectService(timeout = 4000)
@@ -50,6 +54,9 @@ class PubsubSubscriptionIntegrationTest {
 
     @InjectService(timeout = 4000)
     lateinit var subscriptionFactory: SubscriptionFactory
+
+    @InjectService(timeout = 4000)
+    lateinit var topicAdmin: KafkaTopicAdmin
 
     @InjectService(timeout = 4000)
     lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
@@ -62,10 +69,11 @@ class PubsubSubscriptionIntegrationTest {
     }
 
     @Test
-    @Timeout(value = 10000, unit = TimeUnit.MILLISECONDS)
+    @Timeout(value = 10, unit = TimeUnit.SECONDS)
     fun `start pubsub subscription and publish records`() {
-        val latch = CountDownLatch(1)
+        topicAdmin.createTopics(kafkaProperties, TopicTemplates.PUBSUB_TOPIC1_TEMPLATE)
 
+        val latch = CountDownLatch(1)
         val coordinator =
             lifecycleCoordinatorFactory.createCoordinator(LifecycleCoordinatorName("pubSubTest"))
             { event: LifecycleEvent, coordinator: LifecycleCoordinator ->
@@ -82,7 +90,7 @@ class PubsubSubscriptionIntegrationTest {
         coordinator.start()
 
         val pubsubSub = subscriptionFactory.createPubSubSubscription(
-            SubscriptionConfig("pubsub2", PUBSUB_TOPIC1),
+            SubscriptionConfig("pubSub1", PUBSUB_TOPIC1),
             TestPubsubProcessor(latch),
             null,
             kafkaConfig

@@ -50,7 +50,8 @@ class HSMRegistrationClientComponentTests : ComponentTestsBase<HSMRegistrationCl
         }
         HSMRegistrationClientComponent(
             coordinatorFactory = coordinatorFactory,
-            publisherFactory = publisherFactory
+            publisherFactory = publisherFactory,
+            configurationReadService = configurationReadService
         )
     }
 

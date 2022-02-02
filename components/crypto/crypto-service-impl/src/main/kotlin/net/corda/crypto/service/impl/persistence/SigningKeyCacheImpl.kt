@@ -5,11 +5,10 @@ import net.corda.crypto.persistence.EntityKeyInfo
 import net.corda.crypto.persistence.KeyValuePersistence
 import net.corda.crypto.persistence.SigningKeysPersistenceProvider
 import net.corda.data.crypto.persistence.SigningKeysRecord
-import net.corda.v5.base.types.toHexString
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.cipher.suite.WrappedKeyPair
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
-import net.corda.v5.crypto.sha256Bytes
+import net.corda.v5.crypto.calculateHash
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
@@ -101,7 +100,7 @@ class SigningKeyCacheImpl(
     private fun mutate(entity: SigningKeysRecord): SigningKeysRecord = entity
 
     private fun toKeyDerivedId(publicKey: PublicKey): String =
-        "$tenantId:${publicKey.sha256Bytes().toHexString()}"
+        "$tenantId:${publicKey.calculateHash()}"
 
     private fun toAliasDerivedId(alias: String) =
         "$tenantId:$alias"
