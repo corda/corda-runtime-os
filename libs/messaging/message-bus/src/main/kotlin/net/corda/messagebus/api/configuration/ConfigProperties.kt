@@ -32,7 +32,8 @@ class ConfigProperties {
 
         const val TRANSACTIONAL_ID = "transactional.id"
         const val GROUP_ID = "group.id"
-        const val PRODUCER_CLIENT_ID = "producer.client.id"
+        const val CLIENT_ID = "client.id"
+        const val PRODUCER_CLIENT_ID = "producer.$CLIENT_ID"
         const val CONSUMER_GROUP_ID = "consumer.group.id"
         const val CONSUMER_MAX_POLL_INTERVAL = "consumer.max.poll.interval.ms"
         const val PRODUCER_TRANSACTIONAL_ID = "producer.$TRANSACTIONAL_ID"

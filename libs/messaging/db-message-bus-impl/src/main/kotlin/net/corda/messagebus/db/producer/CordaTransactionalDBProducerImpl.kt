@@ -4,11 +4,11 @@ import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
-import net.corda.messagebus.db.persistence.CommittedOffsetEntry
+import net.corda.messagebus.db.conversions.toCordaRecord
+import net.corda.messagebus.db.datamodel.CommittedOffsetEntry
+import net.corda.messagebus.db.datamodel.TopicRecordEntry
+import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.messagebus.db.persistence.DBAccess
-import net.corda.messagebus.db.persistence.TopicRecordEntry
-import net.corda.messagebus.db.persistence.TransactionRecordEntry
-import net.corda.messagebus.db.toCordaRecord
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.emulation.topic.service.TopicService
 import net.corda.schema.registry.AvroSchemaRegistry

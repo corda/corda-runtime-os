@@ -21,7 +21,6 @@ dependencies {
     implementation project(':libs:db:db-core')
     implementation project(':libs:db:db-orm')
     implementation project(":libs:lifecycle:lifecycle")
-    implementation project(":libs:messaging:db-message-bus-datamodel")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:messaging:message-bus")
     // We need this for the TopicService, at least until we figure out where to put it

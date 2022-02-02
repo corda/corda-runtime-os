@@ -3,6 +3,10 @@ package net.corda.messagebus.db.persistence
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.testkit.DbUtils.getEntityManagerConfiguration
+import net.corda.messagebus.db.datamodel.CommittedOffsetEntry
+import net.corda.messagebus.db.datamodel.TopicEntry
+import net.corda.messagebus.db.datamodel.TopicRecordEntry
+import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
 import net.corda.test.util.LoggingUtils.emphasise

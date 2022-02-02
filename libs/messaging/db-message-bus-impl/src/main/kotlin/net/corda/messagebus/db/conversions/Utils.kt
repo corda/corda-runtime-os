@@ -1,4 +1,4 @@
-package net.corda.messagebus.db
+package net.corda.messagebus.db.conversions
 
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.api.records.Record

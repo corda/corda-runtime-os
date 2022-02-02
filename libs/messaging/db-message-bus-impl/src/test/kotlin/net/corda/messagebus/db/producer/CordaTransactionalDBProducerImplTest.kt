@@ -3,9 +3,9 @@ package net.corda.messagebus.db.producer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
+import net.corda.messagebus.db.datamodel.TopicRecordEntry
+import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.messagebus.db.persistence.DBAccess
-import net.corda.messagebus.db.persistence.TopicRecordEntry
-import net.corda.messagebus.db.persistence.TransactionRecordEntry
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.emulation.topic.service.TopicService

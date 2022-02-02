@@ -1,4 +1,4 @@
-package net.corda.messagebus.db.persistence
+package net.corda.messagebus.db.datamodel
 
 import javax.persistence.Column
 import javax.persistence.Entity

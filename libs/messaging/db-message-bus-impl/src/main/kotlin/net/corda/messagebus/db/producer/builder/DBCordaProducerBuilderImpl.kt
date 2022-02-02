@@ -2,12 +2,13 @@ package net.corda.messagebus.db.producer.builder
 
 import com.typesafe.config.Config
 import net.corda.db.core.PostgresDataSourceFactory
+import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CLIENT_ID
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
-import net.corda.messagebus.db.persistence.CommittedOffsetEntry
+import net.corda.messagebus.db.datamodel.CommittedOffsetEntry
+import net.corda.messagebus.db.datamodel.TopicEntry
+import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.persistence.DBAccess
-import net.corda.messagebus.db.persistence.TopicEntry
-import net.corda.messagebus.db.persistence.TopicRecordEntry
 import net.corda.messagebus.db.producer.CordaAtomicDBProducerImpl
 import net.corda.messagebus.db.producer.CordaTransactionalDBProducerImpl
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
@@ -35,7 +36,7 @@ class DBCordaProducerBuilderImpl @Activate constructor(
             obtainEntityManagerFactory(
                 producerConfig,
                 entityManagerFactoryFactory,
-                    "blah",  // TODO: What's the name here?
+                    "DB Producer for ${producerConfig.getString(CLIENT_ID)}",
                     listOf(TopicRecordEntry::class.java, CommittedOffsetEntry::class.java, TopicEntry::class.java)
             )
         )

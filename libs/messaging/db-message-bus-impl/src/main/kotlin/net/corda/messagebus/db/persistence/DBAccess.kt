@@ -1,5 +1,9 @@
 package net.corda.messagebus.db.persistence
 
+import net.corda.messagebus.db.datamodel.CommittedOffsetEntry
+import net.corda.messagebus.db.datamodel.TopicEntry
+import net.corda.messagebus.db.datamodel.TopicRecordEntry
+import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.orm.utils.transaction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -8,6 +12,9 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
 /**
+ * Class for DB reads and writes.  Handles the query execution.
+ *
+ * @param entityManagerFactory Provides the underlying DB connection
  */
 class DBAccess(
     private val entityManagerFactory: EntityManagerFactory,
@@ -69,20 +76,20 @@ class DBAccess(
     }
 
     fun createTopic(topic: String, partitions: Int) {
-        executeWithErrorHandling("create the topic $topic") { em ->
-            em.persist(TopicEntry(topic, partitions))
+        executeWithErrorHandling("create the topic $topic") { entityManager ->
+            entityManager.persist(TopicEntry(topic, partitions))
         }
     }
 
     fun getTopicPartitionMap(): Map<String, Int> {
         val partitionsPerTopic = mutableMapOf<String, Int>()
 
-        executeWithErrorHandling("retrieve all the topics") { em ->
-            val builder = em.criteriaBuilder
+        executeWithErrorHandling("retrieve all the topics") { entityManager ->
+            val builder = entityManager.criteriaBuilder
             val query = builder.createQuery(TopicEntry::class.java)
             val root = query.from(TopicEntry::class.java)
-            query.multiselect(root.get<String>("topic"), root.get<Int>("numPartitions"))
-            val results = em.createQuery(query).resultList
+            query.multiselect(root.get<String>(TopicEntry::topic.name), root.get<Int>(TopicEntry::numPartitions.name))
+            val results = entityManager.createQuery(query).resultList
             partitionsPerTopic.putAll(results.associate { it.topic to it.numPartitions })
         }
 
@@ -90,51 +97,51 @@ class DBAccess(
     }
 
     fun deleteRecordsOlderThan(topic: String, timestamp: Instant) {
-        executeWithErrorHandling("clean up records older than $timestamp") { em ->
-            val builder = em.criteriaBuilder
+        executeWithErrorHandling("clean up records older than $timestamp") { entityManager ->
+            val builder = entityManager.criteriaBuilder
             val delete = builder.createCriteriaDelete(TopicRecordEntry::class.java)
             val root = delete.from(TopicRecordEntry::class.java)
             delete.where(
                 builder.and(
                     builder.equal(
-                        root.get<String>("topic"),
+                        root.get<String>(TopicRecordEntry::topic.name),
                         topic
                     ),
                     builder.lessThan(
-                        root.get("timestamp"),
+                        root.get(TopicRecordEntry::timestamp.name),
                         timestamp
                     )
                 )
             )
-            em.createQuery(delete).executeUpdate()
+            entityManager.createQuery(delete).executeUpdate()
         }
     }
 
     fun deleteOffsetsOlderThan(topic: String, timestamp: Instant) {
-        executeWithErrorHandling("clean up offsets older than $timestamp") { em ->
-            val builder = em.criteriaBuilder
+        executeWithErrorHandling("clean up offsets older than $timestamp") { entityManager ->
+            val builder = entityManager.criteriaBuilder
             val delete = builder.createCriteriaDelete(CommittedOffsetEntry::class.java)
             val root = delete.from(CommittedOffsetEntry::class.java)
             delete.where(
                 builder.and(
                     builder.equal(
-                        root.get<String>("topic"),
+                        root.get<String>(CommittedOffsetEntry::topic.name),
                         topic
                     ),
                     builder.lessThan(
-                        root.get("timestamp"),
+                        root.get(CommittedOffsetEntry::timestamp.name),
                         timestamp
                     )
                 )
             )
-            em.createQuery(delete).executeUpdate()
+            entityManager.createQuery(delete).executeUpdate()
         }
     }
 
     fun writeOffsets(offsets: List<CommittedOffsetEntry>) {
-        executeWithErrorHandling("write offsets") { em ->
+        executeWithErrorHandling("write offsets") { entityManager ->
             offsets.forEach { offset ->
-                em.persist(offset)
+                entityManager.persist(offset)
             }
         }
     }
@@ -146,8 +153,8 @@ class DBAccess(
     }
 
     fun makeRecordsVisible(transactionId: String) {
-        executeWithErrorHandling("commitRecords") { em ->
-            val recordTransaction = em.find(TransactionRecordEntry::class.java, transactionId)
+        executeWithErrorHandling("commitRecords") { entityManager ->
+            val recordTransaction = entityManager.find(TransactionRecordEntry::class.java, transactionId)
             recordTransaction.visible = true
         }
     }

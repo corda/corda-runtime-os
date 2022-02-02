@@ -1,4 +1,4 @@
-package net.corda.messagebus.db.persistence
+package net.corda.messagebus.db.datamodel
 
 import java.io.Serializable
 import java.time.Instant

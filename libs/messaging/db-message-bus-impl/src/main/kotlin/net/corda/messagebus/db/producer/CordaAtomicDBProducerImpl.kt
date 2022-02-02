@@ -4,10 +4,10 @@ import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
+import net.corda.messagebus.db.conversions.toCordaRecord
+import net.corda.messagebus.db.datamodel.TopicRecordEntry
+import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.messagebus.db.persistence.DBAccess
-import net.corda.messagebus.db.persistence.TopicRecordEntry
-import net.corda.messagebus.db.persistence.TransactionRecordEntry
-import net.corda.messagebus.db.toCordaRecord
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.emulation.topic.service.TopicService
 import net.corda.schema.registry.AvroSchemaRegistry
@@ -17,15 +17,15 @@ import kotlin.math.abs
 class CordaAtomicDBProducerImpl(
     private val schemaRegistry: AvroSchemaRegistry,
     private val topicService: TopicService,
-    private val dbAccessImpl: DBAccess
+    private val dbAccess: DBAccess
 ) : CordaProducer {
 
     companion object {
-        val ATOMIC_TRANSACTION: TransactionRecordEntry = TransactionRecordEntry("Atomic Transaction", true)
+        internal val ATOMIC_TRANSACTION = TransactionRecordEntry("Atomic Transaction", true)
     }
 
     private val defaultTimeout: Duration = Duration.ofSeconds(1)
-    private val topicPartitionMap = dbAccessImpl.getTopicPartitionMap()
+    private val topicPartitionMap = dbAccess.getTopicPartitionMap()
 
     override fun send(record: CordaProducerRecord<*, *>, callback: CordaProducer.Callback?) {
         sendRecords(listOf(record))
@@ -78,9 +78,9 @@ class CordaAtomicDBProducerImpl(
         recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>
     ) {
         // First try adding to DB as it has the possibility of failing.
-        dbAccessImpl.writeTransactionId(ATOMIC_TRANSACTION)
-        dbAccessImpl.writeRecords(dbRecords)
-        dbAccessImpl.makeRecordsVisible(ATOMIC_TRANSACTION.transaction_id)
+        dbAccess.writeTransactionId(ATOMIC_TRANSACTION)
+        dbAccess.writeRecords(dbRecords)
+        dbAccess.makeRecordsVisible(ATOMIC_TRANSACTION.transaction_id)
         // Topic service shouldn't fail but if it does the DB will still rollback from here
         recordsWithPartitions.forEach {
             topicService.addRecordsToPartition(listOf(it.second.toCordaRecord()), it.first)
