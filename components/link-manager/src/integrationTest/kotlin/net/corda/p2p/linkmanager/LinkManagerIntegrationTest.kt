@@ -7,6 +7,7 @@ import net.corda.libs.configuration.publish.CordaConfigurationKey
 import net.corda.libs.configuration.publish.CordaConfigurationVersion
 import net.corda.libs.configuration.publish.impl.ConfigPublisherImpl
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
+import net.corda.lifecycle.domino.logic.DependenciesVerifier
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
@@ -21,6 +22,7 @@ import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions.*
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 
 class LinkManagerIntegrationTest {
 
@@ -133,4 +135,38 @@ class LinkManagerIntegrationTest {
             }
         }
     }
+
+    @Test
+    fun `domino logic dependencies are setup successfully for link manager`() {
+        val linkManager = LinkManager(
+            subscriptionFactory,
+            publisherFactory,
+            lifecycleCoordinatorFactory,
+            configReadService,
+            bootstrapConfig,
+            1,
+            StubNetworkMap(
+                lifecycleCoordinatorFactory,
+                subscriptionFactory,
+                1,
+                bootstrapConfig
+            ),
+            ConfigBasedLinkManagerHostingMap(
+                configReadService,
+                lifecycleCoordinatorFactory
+            ),
+            StubCryptoService(
+                lifecycleCoordinatorFactory,
+                subscriptionFactory,
+                1,
+                bootstrapConfig
+            )
+        )
+
+        val verifier = DependenciesVerifier()
+        assertDoesNotThrow {
+            verifier.verify(linkManager.dominoTile)
+        }
+    }
+
 }

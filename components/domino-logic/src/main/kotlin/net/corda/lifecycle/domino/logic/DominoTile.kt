@@ -45,8 +45,8 @@ class DominoTile(
     componentName: String,
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val createResources: ((resources: ResourcesHolder) -> CompletableFuture<Unit>)? = null,
-    private val dependentChildren: Collection<DominoTile> = emptySet(),
-    private val managedChildren: Collection<DominoTile> = emptySet(),
+    val dependentChildren: Collection<DominoTile> = emptySet(),
+    val managedChildren: Collection<DominoTile> = emptySet(),
     private val configurationChangeHandler: ConfigurationChangeHandler<*>? = null,
 ) : Lifecycle {
 

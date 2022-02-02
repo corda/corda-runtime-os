@@ -5,6 +5,7 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.lifecycle.domino.logic.DependenciesVerifier
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
@@ -618,6 +619,27 @@ class GatewayTest : TestBase() {
                     Socket(host, 10006).close()
                 }
 
+            }
+        }
+    }
+
+    @Nested
+    inner class DominoLogicTests {
+        @Test
+        fun `domino logic dependencies are setup successfully for gateway`() {
+            val configPublisher = ConfigPublisher()
+            val gateway = Gateway(
+                configPublisher.readerService,
+                alice.subscriptionFactory,
+                alice.publisherFactory,
+                lifecycleCoordinatorFactory,
+                nodeConfig,
+                instanceId.incrementAndGet(),
+            )
+
+            val verifier = DependenciesVerifier()
+            assertDoesNotThrow {
+                verifier.verify(gateway.dominoTile)
             }
         }
     }
