@@ -10,10 +10,10 @@ import java.security.spec.AlgorithmParameterSpec
 import java.security.spec.PSSParameterSpec
 
 internal class DelegatedSignature(
-    defaultHash: DelegatedSigner.Hash?,
+    defaultHash: Hash?,
 ) : SignatureSpi() {
     private val data = ByteArrayOutputStream()
-    private var hash: DelegatedSigner.Hash? = defaultHash
+    private var hash: Hash? = defaultHash
     private var signingKey: DelegatedPrivateKey? = null
 
     override fun engineInitSign(privateKey: PrivateKey) {
@@ -37,7 +37,7 @@ internal class DelegatedSignature(
             )
             key.signer.sign(
                 key.publicKey,
-                hash ?: throw SecurityException(
+                hash?.getAlgorithm(key.publicKey) ?: throw SecurityException(
                     "'engineSign' invoked without a hash having been assigned previously via 'engineSetParameter'"
                 ),
                 data.toByteArray()
@@ -49,7 +49,7 @@ internal class DelegatedSignature(
 
     override fun engineSetParameter(params: AlgorithmParameterSpec?) {
         if (params is PSSParameterSpec) {
-            hash = DelegatedSigner.Hash
+            hash = Hash
                 .values()
                 .firstOrNull {
                     it.hashName == params.digestAlgorithm

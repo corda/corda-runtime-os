@@ -1,6 +1,6 @@
 package net.corda.crypto.delegated.signing
 
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -23,7 +23,7 @@ class DelegatedSignatureTest {
     ) {
         init {
             putService(SignatureTestService(this, null))
-            DelegatedSigner.Hash.values().forEach {
+            Hash.values().forEach {
                 putService(SignatureTestService(this, it))
             }
         }
@@ -32,7 +32,7 @@ class DelegatedSignatureTest {
     private inner class SignatureTestService(
         provider: Provider,
         private val defaultHash:
-            DelegatedSigner.Hash?
+            Hash?
     ) : Provider.Service(
         provider,
         "Signature",
@@ -69,13 +69,15 @@ class DelegatedSignatureTest {
 
     @Test
     fun `engineSign returns data from service`() {
-        val hash = DelegatedSigner.Hash.SHA384
-        val mockPublicKey = mock<PublicKey>()
+        val hash = Hash.SHA384
+        val mockPublicKey = mock<PublicKey> {
+            on { algorithm } doReturn "EC"
+        }
         val data = "data".toByteArray()
         val sign = "sign".toByteArray()
         val signature = Signature.getInstance("test-$hash")
         val service = mock<DelegatedSigner> {
-            on { sign(mockPublicKey, hash, data) } doReturn sign
+            on { sign(mockPublicKey, hash.ecName, data) } doReturn sign
         }
         val privateKey = mock<DelegatedPrivateKey> {
             on { publicKey } doReturn mockPublicKey
@@ -84,7 +86,28 @@ class DelegatedSignatureTest {
         signature.initSign(privateKey)
         signature.update(data)
 
-        Assertions.assertThat(signature.sign()).isEqualTo(sign)
+        assertThat(signature.sign()).isEqualTo(sign)
+    }
+
+    @Test
+    fun `engineSign with unknown algorithm will fail`() {
+        val hash = Hash.SHA384
+        val mockPublicKey = mock<PublicKey> {
+            on { algorithm } doReturn "NOP"
+        }
+        val data = "data".toByteArray()
+        val signature = Signature.getInstance("test-$hash")
+        val service = mock<DelegatedSigner>()
+        val privateKey = mock<DelegatedPrivateKey> {
+            on { publicKey } doReturn mockPublicKey
+            on { signer } doReturn service
+        }
+        signature.initSign(privateKey)
+        signature.update(data)
+
+        assertThrows<SecurityException> {
+            signature.sign()
+        }
     }
 
     @Test
@@ -105,12 +128,14 @@ class DelegatedSignatureTest {
 
     @Test
     fun `engineSetParameter set the correct hash`() {
-        val hash = DelegatedSigner.Hash.SHA384
-        val mockPublicKey = mock<PublicKey>()
+        val hash = Hash.SHA384
+        val mockPublicKey = mock<PublicKey> {
+            on { algorithm } doReturn "RSA"
+        }
         val data = "data".toByteArray()
         val signature = Signature.getInstance("test-null")
         val service = mock<DelegatedSigner> {
-            on { sign(mockPublicKey, hash, data) } doReturn ByteArray(0)
+            on { sign(mockPublicKey, hash.rsaName, data) } doReturn ByteArray(0)
         }
         val privateKey = mock<DelegatedPrivateKey> {
             on { signer } doReturn service
@@ -124,7 +149,7 @@ class DelegatedSignatureTest {
         }
         signature.sign()
 
-        verify(service).sign(mockPublicKey, hash, data)
+        verify(service).sign(mockPublicKey, hash.rsaName, data)
     }
 
     @Test
@@ -151,17 +176,17 @@ class DelegatedSignatureTest {
     fun `engineGetParameter will return null by default`() {
         val signature = Signature.getInstance("test-null")
 
-        Assertions.assertThat(signature.parameters).isNull()
+        assertThat(signature.parameters).isNull()
     }
 
     @Test
     fun `engineGetParameter will return valid parameter if set`() {
-        val hash = DelegatedSigner.Hash.SHA512
+        val hash = Hash.SHA512
         val signature = Signature.getInstance("test-$hash")
 
         val parameters = signature.parameters
 
-        Assertions.assertThat(parameters?.algorithm).isEqualTo("RSASSA-PSS")
+        assertThat(parameters?.algorithm).isEqualTo("RSASSA-PSS")
     }
 
     @Test
@@ -186,7 +211,7 @@ class DelegatedSignatureTest {
 
     @Test
     fun `engineInitVerify will throws an exception`() {
-        val hash = DelegatedSigner.Hash.SHA512
+        val hash = Hash.SHA512
         val signature = Signature.getInstance("test-$hash")
 
         assertThrows<UnsupportedOperationException> {
