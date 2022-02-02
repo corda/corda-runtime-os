@@ -5,6 +5,7 @@ plugins {
     id 'org.jetbrains.kotlin.jvm' apply false
     id 'base'
     id 'io.gitlab.arturbosch.detekt' apply false
+    id 'jacoco' // test coverage
 }
 
 ext.pluginsDir = "$buildDir/plugins"
@@ -15,6 +16,7 @@ subprojects {
 
     pluginManager.withPlugin('org.jetbrains.kotlin.jvm'){
         apply plugin: 'io.gitlab.arturbosch.detekt'
+
 
         dependencies {
             detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:$detektPluginVersion"
@@ -45,6 +47,7 @@ subprojects {
     }
 
     apply plugin: 'io.gitlab.arturbosch.detekt'
+    apply plugin: 'jacoco'
 
     detekt {
 //        baseline = file("detekt-baseline.xml")
@@ -62,17 +65,6 @@ subprojects {
             txt {
                 enabled = false
             }
-        }
-    }
-    tasks.named('jacocoTestReport') {
-        def jacocoExecutionDataFiles = fileTree(buildDir).include("/jacoco/*.exec")
-        executionData.setFrom(jacocoExecutionDataFiles)
-
-        dependsOn tasks.named('test') // tests are required to run before generating the report
-
-        reports {
-            xml.enabled true
-            html.enabled true
         }
     }
 }
