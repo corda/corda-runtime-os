@@ -3,9 +3,7 @@
 cordaPipeline(
 //nexusAppId: 'net.corda-api-5.0',
 
-runIntegrationTests: false,
-
-dailyBuildCron: 'H 03 * * *'
-
-publishRepoPrefix: 'engineering-tools-maven-stable-local'
+    runIntegrationTests: false,
+    dailyBuildCron: 'H 03 * * *',
+    publishRepoPrefix: 'engineering-tools-maven-stable-local'
 )
