@@ -6,9 +6,7 @@ import net.corda.data.flow.event.StartRPCFlow
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.manager.FlowEventProcessor
-import net.corda.flow.manager.fiber.FlowContinuation
 import net.corda.flow.manager.fiber.FlowIORequest
-import net.corda.flow.manager.impl.FlowEventContext
 import net.corda.flow.manager.impl.FlowEventProcessorImpl
 import net.corda.flow.manager.impl.handlers.events.StartRPCFlowEventHandler
 import net.corda.flow.manager.impl.handlers.events.WakeUpEventHandler
@@ -25,15 +23,12 @@ import net.corda.flow.manager.impl.handlers.requests.SubFlowFailedRequestHandler
 import net.corda.flow.manager.impl.handlers.requests.SubFlowFinishedRequestHandler
 import net.corda.flow.manager.impl.handlers.requests.WaitForSessionConfirmationsRequestHandler
 import net.corda.flow.manager.impl.pipeline.factory.FlowEventPipelineFactoryImpl
-import net.corda.flow.manager.impl.runner.FlowRunner
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.v5.base.util.uncheckedCast
 import java.time.Instant
 import java.util.UUID
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.Future
 
 fun mockFlowEventProcessor(): MockFlowEventProcessor {
     val mockFlowRunner = MockFlowRunner()

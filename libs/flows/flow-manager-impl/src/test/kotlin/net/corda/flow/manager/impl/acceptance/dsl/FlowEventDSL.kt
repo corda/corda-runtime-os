@@ -48,14 +48,17 @@ class FlowEventDSL {
     }
 
     fun processOne(): StateAndEventProcessor.Response<Checkpoint> {
-        val event = when (val input = checkNotNull(inputFlowEvents.removeFirstOrNull()) { "No input flow events have been setup" }) {
+        val input = checkNotNull(inputFlowEvents.removeFirstOrNull()) { "No input flow events have been setup" }
+        val event = when (input) {
             ProcessLastOutputFlowEvent -> {
                 checkNotNull(outputFlowEvents.removeFirstOrNull()) {
                     "Trying to process an output flow event returned from the processor but none exist"
                 }
             }
             is FlowEvent -> input
-            else -> throw IllegalStateException("Must be a ${FlowEvent::class.simpleName} or ${ProcessLastOutputFlowEvent::class.simpleName}")
+            else -> {
+                throw IllegalStateException("Must be a ${FlowEvent::class.simpleName} or ${ProcessLastOutputFlowEvent::class.simpleName}")
+            }
         }
         val flowId = event.flowKey.flowId
         return processor.onNext(
