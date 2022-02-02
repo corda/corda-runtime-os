@@ -50,6 +50,7 @@ subprojects {
 //        baseline = file("detekt-baseline.xml")
         config.setFrom(files("$rootDir/detekt-config.yml"))
         parallel = true
+        ignoreFailures = true
         reports {
             xml {
                 enabled = true
