@@ -15,5 +15,7 @@ dependencies {
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation project(":libs:configuration:configuration-core")
 
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "com.networknt:json-schema-validator:$networkntJsonSchemaVersion"
 }
