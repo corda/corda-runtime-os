@@ -70,7 +70,7 @@ class LimitedUserAuthorizationE2eTest {
         Assertions.assertThatThrownBy {
             limitedUserTestHelper.createRole("this-rolename-should-not-be-persisted")
         }.isInstanceOf(PermissionException::class.java)
-            .hasMessageContaining("Method '//api/v1/role/createrole' not allowed for '$limitedUserLogin'.")
+            .hasMessageContaining("User not authorized.")
     }
 
     @Test
@@ -78,7 +78,7 @@ class LimitedUserAuthorizationE2eTest {
         Assertions.assertThatThrownBy {
             limitedUserTestHelper.addRoleToUser(limitedUserLogin, creatorRoleId)
         }.isInstanceOf(PermissionException::class.java)
-            .hasMessageContaining("Method '//api/v1/user/addrole' not allowed for '$limitedUserLogin'.")
+            .hasMessageContaining("User not authorized.")
     }
 
     @Test
@@ -86,7 +86,7 @@ class LimitedUserAuthorizationE2eTest {
         Assertions.assertThatThrownBy {
             limitedUserTestHelper.removeRoleFromUser(limitedUserLogin, creatorRoleId)
         }.isInstanceOf(PermissionException::class.java)
-            .hasMessageContaining("Method '//api/v1/user/removerole' not allowed for '$limitedUserLogin'.")
+            .hasMessageContaining("User not authorized.")
     }
 
     @Test
@@ -109,6 +109,6 @@ class LimitedUserAuthorizationE2eTest {
         Assertions.assertThatThrownBy {
             newUserTestHelper.getPermission(allowUserOperationsPermId)
         }.isInstanceOf(PermissionException::class.java)
-            .hasMessageContaining("Method '//api/v1/permission/getpermission' not allowed for '$newUser'.")
+            .hasMessageContaining("User not authorized.")
     }
 }

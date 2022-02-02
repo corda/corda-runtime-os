@@ -10,6 +10,10 @@ import javax.persistence.TypedQuery
 import net.corda.data.permissions.management.user.AddRoleToUserRequest
 import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
+import net.corda.libs.permissions.common.exception.EntityAlreadyExistsException
+import net.corda.libs.permissions.common.exception.EntityAssociationAlreadyExistsException
+import net.corda.libs.permissions.common.exception.EntityAssociationDoesNotExistException
+import net.corda.libs.permissions.common.exception.EntityNotFoundException
 import net.corda.libs.permissions.storage.writer.impl.user.impl.UserWriterImpl
 import net.corda.permissions.model.ChangeAudit
 import net.corda.permissions.model.Group
@@ -67,7 +71,6 @@ internal class UserWriterImplTest {
         whenever(entityManager.transaction).thenReturn(entityTransaction)
         whenever(entityManagerFactory.createEntityManager()).thenReturn(entityManager)
         val rollBack = AtomicBoolean(false)
-        whenever(entityTransaction.setRollbackOnly()).then { rollBack.set(true) }
         whenever(entityTransaction.rollbackOnly).then { rollBack.get() }
     }
 
@@ -78,12 +81,12 @@ internal class UserWriterImplTest {
         whenever(query.setParameter(eq("loginName"), eq("lankydan"))).thenReturn(query)
         whenever(query.singleResult).thenReturn(1L)
 
-        val e = assertThrows<IllegalArgumentException> {
+        val e = assertThrows<EntityAlreadyExistsException> {
             userWriter.createUser(createUserRequest, requestUserId)
         }
 
         verify(entityTransaction).begin()
-        assertEquals("User with login 'lankydan' already exists.", e.message)
+        assertEquals("User 'lankydan' already exists.", e.message)
     }
 
     @Test
@@ -154,13 +157,11 @@ internal class UserWriterImplTest {
         whenever(userQuery.setParameter("loginName", "userLogin1")).thenReturn(userQuery)
         whenever(userQuery.resultList).thenReturn(emptyList<User>())
 
-        val e = assertThrows<IllegalArgumentException> {
+        val e = assertThrows<EntityNotFoundException> {
             userWriter.addRoleToUser(AddRoleToUserRequest("userLogin1", "role1"), "requestUserId")
         }
 
-        verify(entityManager.transaction, times(2)).setRollbackOnly()
-
-        assertEquals("User 'userLogin1' does not exist.", e.message)
+        assertEquals("User 'userLogin1' not found.", e.message)
     }
 
     @Test
@@ -171,13 +172,11 @@ internal class UserWriterImplTest {
 
         whenever(entityManager.find(Role::class.java, "role1")).thenReturn(null)
 
-        val e = assertThrows<IllegalArgumentException> {
+        val e = assertThrows<EntityNotFoundException> {
             userWriter.addRoleToUser(AddRoleToUserRequest("userLogin1", "role1"), "requestUserId")
         }
 
-        verify(entityManager.transaction, times(2)).setRollbackOnly()
-
-        assertEquals("Role 'role1' does not exist.", e.message)
+        assertEquals("Role 'role1' not found.", e.message)
     }
 
     @Test
@@ -190,11 +189,9 @@ internal class UserWriterImplTest {
 
         user.roleUserAssociations.add(RoleUserAssociation("assoc1", role, user, Instant.now()))
 
-        val e = assertThrows<IllegalArgumentException> {
+        val e = assertThrows<EntityAssociationAlreadyExistsException> {
             userWriter.addRoleToUser(AddRoleToUserRequest("userLogin1", "role1"), "requestUserId")
         }
-
-        verify(entityManager.transaction, times(2)).setRollbackOnly()
 
         assertEquals("Role 'role1' is already associated with User 'userLogin1'.", e.message)
     }
@@ -211,7 +208,6 @@ internal class UserWriterImplTest {
 
         val capture = argumentCaptor<Any>()
 
-        verify(entityManager.transaction, times(0)).setRollbackOnly()
         inOrder(entityTransaction, entityManager) {
             verify(entityTransaction).begin()
             verify(entityManager, times(1)).merge(capture.capture())
@@ -247,13 +243,11 @@ internal class UserWriterImplTest {
         whenever(userQuery.setParameter("loginName", "userLogin1")).thenReturn(userQuery)
         whenever(userQuery.resultList).thenReturn(emptyList<User>())
 
-        val e = assertThrows<IllegalArgumentException> {
+        val e = assertThrows<EntityNotFoundException> {
             userWriter.removeRoleFromUser(RemoveRoleFromUserRequest("userLogin1", "role1"), "requestUserId")
         }
 
-        verify(entityManager.transaction, times(2)).setRollbackOnly()
-
-        assertEquals("User 'userLogin1' does not exist.", e.message)
+        assertEquals("User 'userLogin1' not found.", e.message)
     }
 
     @Test
@@ -262,11 +256,9 @@ internal class UserWriterImplTest {
         whenever(userQuery.setParameter("loginName", "userLogin1")).thenReturn(userQuery)
         whenever(userQuery.resultList).thenReturn(listOf(user))
 
-        val e = assertThrows<IllegalArgumentException> {
+        val e = assertThrows<EntityAssociationDoesNotExistException> {
             userWriter.removeRoleFromUser(RemoveRoleFromUserRequest("userLogin1", "role1"), "requestUserId")
         }
-
-        verify(entityManager.transaction, times(2)).setRollbackOnly()
 
         assertEquals("Role 'role1' is not associated with User 'userLogin1'.", e.message)
     }
@@ -285,7 +277,6 @@ internal class UserWriterImplTest {
 
         val capture = argumentCaptor<Any>()
 
-        verify(entityManager.transaction, times(0)).setRollbackOnly()
         inOrder(entityTransaction, entityManager) {
             verify(entityTransaction).begin()
             verify(entityManager, times(1)).remove(capture.capture())
