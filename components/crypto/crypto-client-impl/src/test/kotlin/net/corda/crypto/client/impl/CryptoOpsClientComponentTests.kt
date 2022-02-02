@@ -340,7 +340,10 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
         val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         val data = UUID.randomUUID().toString().toByteArray()
         val signature = signData(schemeMetadata, keyPair, data)
-        val spec = SignatureSpec("NONEwithECDSA", DigestAlgorithmName.SHA2_256)
+        val spec = SignatureSpec(
+            signatureName = "NONEwithECDSA",
+            customDigestName = DigestAlgorithmName.SHA2_256
+        )
         setupCompletedResponse {
             CryptoSignatureWithKey(
                 ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(keyPair.public)),
@@ -398,7 +401,10 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     fun `Should sign by referencing key alias and using custom signature spec`() {
         val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         val data = UUID.randomUUID().toString().toByteArray()
-        val spec = SignatureSpec("NONEwithECDSA", DigestAlgorithmName.SHA2_256)
+        val spec = SignatureSpec(
+            signatureName =  "NONEwithECDSA",
+            customDigestName = DigestAlgorithmName.SHA2_256
+        )
         val signature = signData(schemeMetadata, keyPair, data)
         setupCompletedResponse {
             CryptoSignature(

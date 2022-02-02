@@ -262,7 +262,10 @@ class CryptoFlowOpsTransformerTests {
 
     @Test
     fun `Should create command to sign data with explicit signature spec`() {
-        val spec = SignatureSpec("NONEwithECDSA", DigestAlgorithmName.SHA2_256)
+        val spec = SignatureSpec(
+            signatureName = "NONEwithECDSA",
+            customDigestName = DigestAlgorithmName.SHA2_256
+        )
         val publicKey = mockPublicKey()
         val data = "Hello World!".toByteArray()
         val result = act {
@@ -283,7 +286,10 @@ class CryptoFlowOpsTransformerTests {
 
     @Test
     fun `Should create command to sign data with explicit signature spec and with empty operation context`() {
-        val spec = SignatureSpec("NONEwithECDSA", DigestAlgorithmName.SHA2_256)
+        val spec = SignatureSpec(
+            signatureName = "NONEwithECDSA",
+            customDigestName = DigestAlgorithmName.SHA2_256
+        )
         val publicKey = mockPublicKey()
         val data = "Hello World!".toByteArray()
         val result = act {
