@@ -287,7 +287,7 @@ internal class HttpRpcServerInternal(
                 if (result != null) {
                     ctx.json(result)
                 }
-            } catch(e: Exception) {
+            } catch (e: Exception) {
                 throw HttpExceptionMapper.mapToResponse(e)
             } finally {
                 // Remove all the parts and associated file storage once we are done with them
