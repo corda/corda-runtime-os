@@ -23,7 +23,7 @@ class DelegatedSignatureTest {
     ) {
         init {
             putService(SignatureTestService(this, null))
-            DelegatedSigner.Hash.values().forEach {
+            Hash.values().forEach {
                 putService(SignatureTestService(this, it))
             }
         }
@@ -32,7 +32,7 @@ class DelegatedSignatureTest {
     private inner class SignatureTestService(
         provider: Provider,
         private val defaultHash:
-            DelegatedSigner.Hash?
+            Hash?
     ) : Provider.Service(
         provider,
         "Signature",
@@ -69,7 +69,7 @@ class DelegatedSignatureTest {
 
     @Test
     fun `engineSign returns data from service`() {
-        val hash = DelegatedSigner.Hash.SHA384
+        val hash = Hash.SHA384
         val mockPublicKey = mock<PublicKey>()
         val data = "data".toByteArray()
         val sign = "sign".toByteArray()
@@ -105,7 +105,7 @@ class DelegatedSignatureTest {
 
     @Test
     fun `engineSetParameter set the correct hash`() {
-        val hash = DelegatedSigner.Hash.SHA384
+        val hash = Hash.SHA384
         val mockPublicKey = mock<PublicKey>()
         val data = "data".toByteArray()
         val signature = Signature.getInstance("test-null")
@@ -156,7 +156,7 @@ class DelegatedSignatureTest {
 
     @Test
     fun `engineGetParameter will return valid parameter if set`() {
-        val hash = DelegatedSigner.Hash.SHA512
+        val hash = Hash.SHA512
         val signature = Signature.getInstance("test-$hash")
 
         val parameters = signature.parameters
@@ -186,7 +186,7 @@ class DelegatedSignatureTest {
 
     @Test
     fun `engineInitVerify will throws an exception`() {
-        val hash = DelegatedSigner.Hash.SHA512
+        val hash = Hash.SHA512
         val signature = Signature.getInstance("test-$hash")
 
         assertThrows<UnsupportedOperationException> {

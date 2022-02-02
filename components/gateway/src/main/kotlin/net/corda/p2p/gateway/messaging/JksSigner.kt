@@ -2,6 +2,8 @@ package net.corda.p2p.gateway.messaging
 
 import net.corda.crypto.delegated.signing.DelegatedSigner
 import net.corda.crypto.delegated.signing.DelegatedSignerInstaller
+import net.corda.crypto.delegated.signing.Hash
+import net.corda.crypto.delegated.signing.SigningParameter
 import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.Signature
@@ -11,7 +13,7 @@ internal class JksSigner(
 ) : DelegatedSigner {
     private fun signEc(
         privateKey: PrivateKey,
-        hash: DelegatedSigner.Hash,
+        hash: Hash,
         data: ByteArray
     ): ByteArray {
         val signature = Signature.getInstance(
@@ -25,7 +27,7 @@ internal class JksSigner(
 
     private fun signRsa(
         privateKey: PrivateKey,
-        hash: DelegatedSigner.Hash,
+        hash: Hash,
         data: ByteArray
     ): ByteArray {
         val signature = Signature.getInstance(
@@ -41,10 +43,11 @@ internal class JksSigner(
 
     override fun sign(
         publicKey: PublicKey,
-        hash: DelegatedSigner.Hash,
+        parameter: SigningParameter,
         data: ByteArray
     ): ByteArray {
         val privateKey = publicKeyToPrivateKey[publicKey] ?: throw SecurityException("Could not find private key")
+        val hash = parameter as? Hash ?: throw SecurityException("Unsupported parameter $parameter")
 
         return when (publicKey.algorithm) {
             "RSA" -> signRsa(privateKey, hash, data)

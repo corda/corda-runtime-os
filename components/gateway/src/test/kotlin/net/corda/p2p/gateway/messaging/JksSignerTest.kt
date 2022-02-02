@@ -1,6 +1,7 @@
 package net.corda.p2p.gateway.messaging
 
-import net.corda.crypto.delegated.signing.DelegatedSigner
+import net.corda.crypto.delegated.signing.Hash
+import net.corda.crypto.delegated.signing.SigningParameter
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Nested
@@ -50,7 +51,7 @@ class JksSignerTest {
         @Test
         fun `rsa sign return the signature`() {
             val data = "data".toByteArray()
-            val hash = DelegatedSigner.Hash.SHA256
+            val hash = Hash.SHA256
 
             val sign = testObject.sign(rsaPublicKey, hash, data)
 
@@ -60,7 +61,7 @@ class JksSignerTest {
         @Test
         fun `rsa sign sends the correct data`() {
             val data = "data".toByteArray()
-            val hash = DelegatedSigner.Hash.SHA512
+            val hash = Hash.SHA512
 
             testObject.sign(rsaPublicKey, hash, data)
 
@@ -75,7 +76,7 @@ class JksSignerTest {
         @Test
         fun `ec sign return the signature`() {
             val data = "data".toByteArray()
-            val hash = DelegatedSigner.Hash.SHA256
+            val hash = Hash.SHA256
 
             val sign = testObject.sign(ecPublicKey, hash, data)
 
@@ -85,7 +86,7 @@ class JksSignerTest {
         @Test
         fun `ec sign sends the correct data`() {
             val data = "data".toByteArray()
-            val hash = DelegatedSigner.Hash.SHA256
+            val hash = Hash.SHA256
 
             testObject.sign(ecPublicKey, hash, data)
 
@@ -97,10 +98,20 @@ class JksSignerTest {
     @Test
     fun `sign throws exception for unknown public key`() {
         val data = "data".toByteArray()
-        val hash = DelegatedSigner.Hash.SHA256
+        val hash = Hash.SHA256
 
         assertThrows<SecurityException> {
             testObject.sign(mock(), hash, data)
+        }
+    }
+
+    @Test
+    fun `sign throws exception for unknown parameter`() {
+        val data = "data".toByteArray()
+        val parameter = object : SigningParameter {}
+
+        assertThrows<SecurityException> {
+            testObject.sign(ecPublicKey, parameter, data)
         }
     }
 
@@ -110,7 +121,7 @@ class JksSignerTest {
             on { algorithm } doReturn "NOP"
         }
         val data = "data".toByteArray()
-        val hash = DelegatedSigner.Hash.SHA256
+        val hash = Hash.SHA256
         val testObject =
             JksSigner(
                 mapOf(
@@ -128,7 +139,7 @@ class JksSignerTest {
             on { algorithm } doReturn null
         }
         val data = "data".toByteArray()
-        val hash = DelegatedSigner.Hash.SHA256
+        val hash = Hash.SHA256
         val testObject =
             JksSigner(
                 mapOf(

@@ -26,7 +26,7 @@ internal class DelegatedKeystoreProvider : Provider(
     fun putServices(name: String, signer: DelegatedSigner, certificatesStores: DelegatedCertificateStore) {
         if (getService("Signature", RSA_SIGNING_ALGORITHM) == null) {
             putService(DelegatedSignatureService(RSA_SIGNING_ALGORITHM, null))
-            DelegatedSigner.Hash.values().forEach {
+            Hash.values().forEach {
                 putService(DelegatedSignatureService(it.ecName, it))
             }
         }
@@ -52,7 +52,7 @@ internal class DelegatedKeystoreProvider : Provider(
     }
     private inner class DelegatedSignatureService(
         algorithm: String,
-        private val defaultHash: DelegatedSigner.Hash?,
+        private val defaultHash: Hash?,
     ) : Service(
         this@DelegatedKeystoreProvider,
         "Signature",
