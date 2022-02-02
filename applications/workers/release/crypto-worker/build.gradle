@@ -15,6 +15,8 @@ dependencies {
     implementation "info.picocli:picocli:$picocliVersion"
     implementation 'net.corda:corda-base'
 
+    runtimeOnly project(":libs:messaging:kafka-message-bus-impl")
+
     runtimeOnly "com.typesafe:config:$typeSafeConfigVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"

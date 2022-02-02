@@ -12,8 +12,8 @@ import net.corda.kryoserialization.serializers.ClassSerializer
 import net.corda.kryoserialization.serializers.PublicKeySerializer
 import net.corda.kryoserialization.serializers.SingletonSerializeAsTokenSerializer
 import net.corda.sandbox.SandboxGroup
-import net.corda.serialization.CheckpointInternalCustomSerializer
-import net.corda.serialization.CheckpointSerializerBuilder
+import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
+import net.corda.serialization.checkpoint.CheckpointSerializerBuilder
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.serialization.SingletonSerializeAsToken

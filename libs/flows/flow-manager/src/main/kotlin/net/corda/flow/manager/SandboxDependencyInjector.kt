@@ -1,6 +1,6 @@
 package net.corda.flow.manager
 
-import net.corda.serialization.NonSerializable
+import net.corda.serialization.checkpoint.NonSerializable
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.injection.CordaInject
 import net.corda.v5.serialization.SingletonSerializeAsToken
