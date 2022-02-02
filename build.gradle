@@ -64,6 +64,17 @@ subprojects {
             }
         }
     }
+    tasks.named('jacocoTestReport') {
+        def jacocoExecutionDataFiles = fileTree(buildDir).include("/jacoco/*.exec")
+        executionData.setFrom(jacocoExecutionDataFiles)
+
+        dependsOn tasks.named('test') // tests are required to run before generating the report
+
+        reports {
+            xml.enabled true
+            html.enabled true
+        }
+    }
 }
 
 wrapper {
