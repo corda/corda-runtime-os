@@ -23,11 +23,10 @@ import net.corda.membership.identity.MemberInfoExtension.Companion.SOFTWARE_VERS
 import net.corda.membership.identity.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.identity.MemberInfoExtension.Companion.groupId
 import net.corda.membership.identity.MemberInfoImpl
-import net.corda.membership.impl.read.reader.MembershipGroupReaderImpl.Companion.IDENTITY_KEY_HASHES_KEY
 import net.corda.membership.registration.MemberRegistrationService
-import net.corda.membership.registration.MembershipRequestRegistrationResult
-import net.corda.membership.registration.MembershipRequestRegistrationOutcome.SUBMITTED
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.NOT_SUBMITTED
+import net.corda.membership.registration.MembershipRequestRegistrationOutcome.SUBMITTED
+import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_PROTOCOL
 import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_URL
 import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.KEY_ALIAS
@@ -264,7 +263,7 @@ class StaticMemberRegistrationService @Activate constructor(
         return identityKeys.mapIndexed { index, identityKey ->
             val hash = keyEncodingService.decodePublicKey(identityKey).calculateHash()
             String.format(
-                IDENTITY_KEY_HASHES_KEY,
+                MemberInfoExtension.IDENTITY_KEY_HASHES_KEY,
                 index
             ) to hash.toString()
         }

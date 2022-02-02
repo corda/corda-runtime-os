@@ -11,13 +11,13 @@ import net.corda.membership.identity.MemberInfoExtension.Companion.MEMBER_STATUS
 import net.corda.membership.identity.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.identity.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.identity.MemberInfoExtension.Companion.groupId
+import net.corda.membership.identity.MemberInfoExtension.Companion.identityKeyHashes
 import net.corda.membership.identity.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.identity.MemberInfoExtension.Companion.softwareVersion
 import net.corda.membership.identity.MemberInfoExtension.Companion.status
 import net.corda.membership.identity.converter.EndpointInfoConverter
 import net.corda.membership.identity.converter.PublicKeyConverter
 import net.corda.membership.identity.converter.PublicKeyHashConverter
-import net.corda.membership.impl.read.reader.MembershipGroupReaderImpl.Companion.identityKeyHashes
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.NOT_SUBMITTED
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.SUBMITTED
 import net.corda.membership.registration.MembershipRequestRegistrationResult

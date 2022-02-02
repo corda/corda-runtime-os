@@ -1,8 +1,8 @@
 package net.corda.membership.identity
 
 import net.corda.membership.conversion.PropertyConverterImpl
+import net.corda.membership.identity.MemberInfoExtension.Companion.IDENTITY_KEY_HASHES
 import net.corda.membership.identity.converter.PublicKeyHashConverter
-import net.corda.membership.impl.read.reader.MembershipGroupReaderImpl.Companion.IDENTITY_KEY_HASHES
 import net.corda.membership.testkit.createContext
 import net.corda.v5.crypto.PublicKeyHash
 import org.junit.jupiter.api.Test
