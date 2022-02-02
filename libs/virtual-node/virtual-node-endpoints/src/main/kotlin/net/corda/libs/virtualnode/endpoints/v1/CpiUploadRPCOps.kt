@@ -4,6 +4,7 @@ import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
+import java.io.InputStream
 
 data class HTTPCpiUploadRequestId(val id: Int)
 
@@ -20,5 +21,5 @@ interface CpiUploadRPCOps : RpcOps {
         description = "Uploads a CPI",
         responseDescription = "The request Id calculated for a CPI upload request"
     )
-    fun cpi(@HttpRpcRequestBodyParameter file: ByteArray): HTTPCpiUploadRequestId
+    fun cpi(@HttpRpcRequestBodyParameter file: InputStream): HTTPCpiUploadRequestId
 }
