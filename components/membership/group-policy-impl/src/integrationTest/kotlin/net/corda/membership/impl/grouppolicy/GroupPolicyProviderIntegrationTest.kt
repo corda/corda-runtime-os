@@ -17,7 +17,7 @@ import net.corda.packaging.converters.toAvro
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.VirtualNode.Companion.CPI_INFO_TOPIC
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
-import net.corda.schema.configuration.ConfigKeys.Companion.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.test.util.eventually
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash

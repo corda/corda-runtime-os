@@ -1,6 +1,6 @@
 package net.corda.processors.rpc.internal
 
-import net.corda.schema.configuration.ConfigKeys.Companion.RPC_ENDPOINT_TIMEOUT_MILLIS
+import net.corda.schema.configuration.ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS
 
 internal val CONFIG_HTTP_RPC =
     """address="0.0.0.0:8888"

@@ -15,11 +15,11 @@ class DbConfigTest {
     private val dataSourceFactory =  mock<DataSourceFactory>()
 
     private val fullConfig = """
-        ${ConfigKeys.Companion.JDBC_DRIVER}=driver
-        ${ConfigKeys.Companion.JDBC_URL}=url
-        ${ConfigKeys.Companion.DB_POOL_MAX_SIZE}=99
-        ${ConfigKeys.Companion.DB_USER}=user
-        ${ConfigKeys.Companion.DB_PASS}=pass
+        ${ConfigKeys.JDBC_DRIVER}=driver
+        ${ConfigKeys.JDBC_URL}=url
+        ${ConfigKeys.DB_POOL_MAX_SIZE}=99
+        ${ConfigKeys.DB_USER}=user
+        ${ConfigKeys.DB_PASS}=pass
     """.trimIndent()
     private val fullSmartConfig = SmartConfigImpl(
         ConfigFactory.parseString(fullConfig),
@@ -28,8 +28,8 @@ class DbConfigTest {
     )
 
     private val minimalConfig = """
-        ${ConfigKeys.Companion.DB_USER}=user
-        ${ConfigKeys.Companion.DB_PASS}=pass
+        ${ConfigKeys.DB_USER}=user
+        ${ConfigKeys.DB_PASS}=pass
     """.trimIndent()
     private val minimalSmartConfig = SmartConfigImpl(
         ConfigFactory.parseString(minimalConfig),
@@ -67,7 +67,7 @@ class DbConfigTest {
     fun `when username missing throw`() {
         assertThrows<DBConfigurationException> {
             dataSourceFactory.createFromConfig(SmartConfigImpl(
-                ConfigFactory.parseString("${ConfigKeys.Companion.DB_PASS}=pass"),
+                ConfigFactory.parseString("${ConfigKeys.DB_PASS}=pass"),
                 mock(),
                 mock()))
         }
@@ -77,7 +77,7 @@ class DbConfigTest {
     fun `when pass missing throw`() {
         assertThrows<DBConfigurationException> {
             dataSourceFactory.createFromConfig(SmartConfigImpl(
-                ConfigFactory.parseString("${ConfigKeys.Companion.DB_PASS}=user"),
+                ConfigFactory.parseString("${ConfigKeys.DB_PASS}=user"),
                 mock(),
                 mock()))
         }
