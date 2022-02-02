@@ -7,6 +7,7 @@ import io.javalin.http.Context
 import io.javalin.http.ForbiddenResponse
 import io.javalin.http.HandlerType
 import io.javalin.http.UnauthorizedResponse
+import io.javalin.http.util.MultipartUtil
 import io.javalin.http.util.RedirectToLowercasePathPlugin
 import io.javalin.plugin.json.JavalinJackson
 import net.corda.httprpc.security.Actor
@@ -65,7 +66,7 @@ internal class HttpRpcServerInternal(
         internal const val INSECURE_SERVER_DEV_MODE_WARNING =
             "Creating insecure (HTTP) server is only permitted when using `devMode=true` in the node configuration."
         internal const val CORDA_X500_NAME = "O=Http RPC Server, L=New York, C=US"
-        internal const val CONTENT_LENGTH_EXCEEEDS_LIMIT = "Content length is %d which exceeds the maximum limit of %d."
+        internal const val CONTENT_LENGTH_EXCEEDS_LIMIT = "Content length is %d which exceeds the maximum limit of %d."
     }
 
     init {
@@ -114,6 +115,16 @@ internal class HttpRpcServerInternal(
     }.apply {
         addRoutes()
         addOpenApiRoute()
+        // In order for multipart content to be stored onto disk, we need to override some properties
+        // which are set by default by Javalin such that entire content is read into memory
+        MultipartUtil.preUploadFunction = { req ->
+            req.setAttribute("org.eclipse.jetty.multipartConfig",
+                MultipartConfigElement(
+                    System.getProperty("java.io.tmpdir"),
+                    configurationsProvider.maxContentLength().toLong(),
+                    configurationsProvider.maxContentLength().toLong(),
+                    1024))
+        }
     }
 
     //https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/WWW-Authenticate
@@ -206,7 +217,7 @@ internal class HttpRpcServerInternal(
                 before(routeInfo.fullPath) {
                     with(configurationsProvider.maxContentLength()) {
                         if (it.contentLength() > this) throw BadRequestResponse(
-                            CONTENT_LENGTH_EXCEEEDS_LIMIT.format(
+                            CONTENT_LENGTH_EXCEEDS_LIMIT.format(
                                 it.contentLength(),
                                 this
                             )
