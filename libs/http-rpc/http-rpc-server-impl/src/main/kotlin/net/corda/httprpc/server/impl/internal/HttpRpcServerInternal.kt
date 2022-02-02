@@ -289,6 +289,15 @@ internal class HttpRpcServerInternal(
                 }
             } catch(e: Exception) {
                 throw HttpExceptionMapper.mapToResponse(e)
+            } finally {
+                // Remove all the parts and associated file storage once we are done with them
+                ctx.req.parts.forEach { part ->
+                    try {
+                        part.delete()
+                    } catch (e: Exception) {
+                        log.warn("Could not delete part: ${part.name}", e)
+                    }
+                }
             }
         }
     }
