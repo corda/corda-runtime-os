@@ -32,7 +32,6 @@ class PathUtilsTest {
         assertThat(path).doesNotExist()
     }
 
-    @Tag("Unstable")
     @ParameterizedTest
     @MethodSource("provideTempDir")
     fun `deleteRecursively - file`(tempDir: Path) {
