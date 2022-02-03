@@ -3,6 +3,7 @@ package net.corda.utilities
 import com.google.common.jimfs.Configuration
 import com.google.common.jimfs.Jimfs
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
@@ -12,6 +13,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.stream.Stream
 
+@Tag("Unstable")
 class PathUtilsTest {
 
     companion object {
