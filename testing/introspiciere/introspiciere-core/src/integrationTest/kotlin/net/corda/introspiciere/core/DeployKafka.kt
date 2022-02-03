@@ -24,6 +24,9 @@ class DeployKafka(
     }
 
     private fun deploy() {
+        exec("kubectl cluster-info")
+        exec("kubectl config view")
+
         exec("kubectl create namespace $name")
 
         val proc = exec("kubectl apply -f - -n $name", ensureSuccess = false)
