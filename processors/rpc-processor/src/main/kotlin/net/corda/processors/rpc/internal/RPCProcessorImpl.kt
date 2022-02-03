@@ -3,7 +3,7 @@ package net.corda.processors.rpc.internal
 import net.corda.components.rpc.HttpRpcGateway
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.rpcops.ConfigRPCOpsService
-import net.corda.cpi.upload.endpoints.CpiUploadRPCOpsService
+import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.data.config.Configuration
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.DependentComponents

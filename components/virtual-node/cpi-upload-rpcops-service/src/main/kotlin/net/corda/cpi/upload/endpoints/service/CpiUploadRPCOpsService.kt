@@ -1,4 +1,4 @@
-package net.corda.cpi.upload.endpoints
+package net.corda.cpi.upload.endpoints.service
 
 import net.corda.lifecycle.Lifecycle
 
