@@ -55,12 +55,11 @@ class UserEndpointImpl @Activate constructor(
         return createUserResult!!.convertToEndpointType()
     }
 
-
     override fun getUser(loginName: String): UserResponseType {
         val principal = getRpcThreadLocalContext()
 
         val userResponseDto = withPermissionManager(permissionServiceComponent.permissionManager, logger) {
-            getUser(GetUserRequestDto(principal, loginName))
+            getUser(GetUserRequestDto(principal, loginName.toLowerCase()))
         }
 
         return userResponseDto?.convertToEndpointType() ?: throw ResourceNotFoundException("User", loginName)
@@ -70,7 +69,7 @@ class UserEndpointImpl @Activate constructor(
         val principal = getRpcThreadLocalContext()
 
         val result = withPermissionManager(permissionServiceComponent.permissionManager, logger) {
-            addRoleToUser(AddRoleToUserRequestDto(principal, loginName, roleId))
+            addRoleToUser(AddRoleToUserRequestDto(principal, loginName.toLowerCase(), roleId))
         }
         return result!!.convertToEndpointType()
     }
@@ -79,7 +78,7 @@ class UserEndpointImpl @Activate constructor(
         val principal = getRpcThreadLocalContext()
 
         val result = withPermissionManager(permissionServiceComponent.permissionManager, logger) {
-            removeRoleFromUser(RemoveRoleFromUserRequestDto(principal, loginName, roleId))
+            removeRoleFromUser(RemoveRoleFromUserRequestDto(principal, loginName.toLowerCase(), roleId))
         }
         return result!!.convertToEndpointType()
     }
