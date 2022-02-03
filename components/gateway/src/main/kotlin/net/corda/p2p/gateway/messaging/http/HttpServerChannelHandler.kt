@@ -29,7 +29,7 @@ class HttpServerChannelHandler(private val serverListener: HttpServerListener,
         if (msg is HttpRequest) {
             val responseCode: HttpResponseStatus = msg.validate()
             if (responseCode != HttpResponseStatus.OK) {
-                logger.warn ("Received HTTP request from ${ctx.channel().remoteAddress()}\n" +
+                logger.warn ("Received invalid HTTP request from ${ctx.channel().remoteAddress()}\n" +
                         "Protocol version: ${msg.protocolVersion()}\n" +
                         "Hostname: ${msg.headers()[HttpHeaderNames.HOST]?:"unknown"}\n" +
                         "Request URI: ${msg.uri()}\n and the response code was $responseCode.")
