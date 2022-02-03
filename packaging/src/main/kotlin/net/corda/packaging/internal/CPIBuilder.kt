@@ -57,7 +57,7 @@ internal class CPIBuilder(
     private fun index(roots: Iterable<Path>,
                       existingIndex : NavigableMap<CPK.Identifier, CPKData> = TreeMap()) : NavigableMap<CPK.Identifier, CPKData> {
         for(root in roots) {
-            val cpk = CPK.Metadata.from(Files.newInputStream(root), cpkLocation = root.toString(), useSignatures)
+            val cpk = Files.newInputStream(root).use { CPK.Metadata.from(it, cpkLocation = root.toString(), useSignatures) }
             val previous = existingIndex.put(cpk.id, CPKData(cpk, root))
             if(previous != null) throw DependencyResolutionException(
                     "Detected two CPKs with the same identifier ${cpk.id}: '$root' and '${previous.path}'")
