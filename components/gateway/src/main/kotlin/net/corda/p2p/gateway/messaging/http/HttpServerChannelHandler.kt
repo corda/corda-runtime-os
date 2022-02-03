@@ -27,7 +27,7 @@ class HttpServerChannelHandler(private val serverListener: HttpServerListener,
     @Suppress("ComplexMethod")
     override fun channelRead0(ctx: ChannelHandlerContext, msg: HttpObject) {
         if (msg is HttpRequest) {
-            val responseCode: HttpResponseStatus = msg.validate()
+            val responseCode = msg.validate()
             if (responseCode != HttpResponseStatus.OK) {
                 logger.warn ("Received invalid HTTP request from ${ctx.channel().remoteAddress()}\n" +
                         "Protocol version: ${msg.protocolVersion()}\n" +
