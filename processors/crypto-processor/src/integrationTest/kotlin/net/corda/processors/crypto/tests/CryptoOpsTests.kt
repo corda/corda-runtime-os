@@ -22,6 +22,8 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.security.PublicKey
+import java.security.spec.MGF1ParameterSpec
+import java.security.spec.PSSParameterSpec
 import java.util.UUID
 import kotlin.reflect.KFunction
 
@@ -220,7 +222,16 @@ class CryptoOpsTests {
         val data = randomDataByteArray()
         val signatureSpec = when (params.second.algorithm) {
             "EC" -> SignatureSpec("SHA512withECDSA")
-            "RSA" -> SignatureSpec("SHA512withECDSA")
+            "RSA" -> SignatureSpec(
+                "RSASSA-PSS",
+                params = PSSParameterSpec(
+                    "SHA-256",
+                    "MGF1",
+                    MGF1ParameterSpec.SHA256,
+                    32,
+                    1
+                )
+            )
             else -> throw IllegalArgumentException("Test supports only RSA or ECDSA")
         }
         val signature = client.sign(

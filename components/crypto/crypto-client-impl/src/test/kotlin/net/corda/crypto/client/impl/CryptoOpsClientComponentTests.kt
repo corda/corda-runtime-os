@@ -54,6 +54,8 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import java.security.spec.MGF1ParameterSpec
+import java.security.spec.PSSParameterSpec
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
@@ -361,8 +363,49 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
         assertArrayEquals(schemeMetadata.encodeAsByteArray(keyPair.public), command.publicKey.array())
         assertArrayEquals(data, command.bytes.array())
         assertEquals(spec.signatureName, command.signatureSpec.signatureName)
-        assertNotNull(spec.customDigestName)
+        assertNull(command.signatureSpec.params)
+        assertNotNull(command.signatureSpec.customDigestName)
         assertEquals(spec.customDigestName!!.name, command.signatureSpec.customDigestName)
+        assertOperationContext(command.context)
+        assertRequestContext(result)
+    }
+
+    @Test
+    @Timeout(5)
+    fun `Should sign by referencing public key and using custom signature spec with signature params`() {
+        val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
+        val data = UUID.randomUUID().toString().toByteArray()
+        val signature = signData(schemeMetadata, keyPair, data)
+        val spec = SignatureSpec(
+            signatureName = "RSASSA-PSS",
+            params = PSSParameterSpec(
+                "SHA-256",
+                "MGF1",
+                MGF1ParameterSpec.SHA256,
+                32,
+                1
+            )
+        )
+        setupCompletedResponse {
+            CryptoSignatureWithKey(
+                ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(keyPair.public)),
+                ByteBuffer.wrap(signature)
+            )
+        }
+        val result = sender.act {
+            component.sign(knownTenantId, keyPair.public, spec, data, knownOperationContext)
+        }
+        assertNotNull(result.value)
+        assertEquals(keyPair.public, result.value!!.by)
+        assertArrayEquals(signature, result.value.bytes)
+        val command = assertOperationType<SignWithSpecRpcCommand>(result)
+        assertNotNull(command)
+        assertArrayEquals(schemeMetadata.encodeAsByteArray(keyPair.public), command.publicKey.array())
+        assertArrayEquals(data, command.bytes.array())
+        assertEquals(spec.signatureName, command.signatureSpec.signatureName)
+        assertNotNull(command.signatureSpec.params)
+        assertEquals(PSSParameterSpec::class.java.name, command.signatureSpec.params.className)
+        assertTrue(command.signatureSpec.params.bytes.array().isNotEmpty())
         assertOperationContext(command.context)
         assertRequestContext(result)
     }
@@ -427,8 +470,53 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
         assertEquals(knownAlias, command.alias)
         assertArrayEquals(data, command.bytes.array())
         assertEquals(spec.signatureName, command.signatureSpec.signatureName)
-        assertNotNull(spec.customDigestName)
+        assertNull(command.signatureSpec.params)
+        assertNotNull(command.signatureSpec.customDigestName)
         assertEquals(spec.customDigestName!!.name, command.signatureSpec.customDigestName)
+        assertOperationContext(command.context)
+        assertRequestContext(result)
+    }
+
+    @Test
+    @Timeout(5)
+    fun `Should sign by referencing key alias and using custom signature spec with signature params`() {
+        val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
+        val data = UUID.randomUUID().toString().toByteArray()
+        val spec = SignatureSpec(
+            signatureName = "RSASSA-PSS",
+            params = PSSParameterSpec(
+                "SHA-256",
+                "MGF1",
+                MGF1ParameterSpec.SHA256,
+                32,
+                1
+            )
+        )
+        val signature = signData(schemeMetadata, keyPair, data)
+        setupCompletedResponse {
+            CryptoSignature(
+                ByteBuffer.wrap(signature)
+            )
+        }
+        val result = sender.act {
+            component.sign(
+                tenantId = knownTenantId,
+                alias = knownAlias,
+                signatureSpec = spec,
+                data = data,
+                context = knownOperationContext
+            )
+        }
+        assertNotNull(result.value)
+        assertArrayEquals(signature, result.value)
+        val command = assertOperationType<SignWithAliasSpecRpcCommand>(result)
+        assertNotNull(command)
+        assertEquals(knownAlias, command.alias)
+        assertArrayEquals(data, command.bytes.array())
+        assertEquals(spec.signatureName, command.signatureSpec.signatureName)
+        assertNotNull(command.signatureSpec.params)
+        assertEquals(PSSParameterSpec::class.java.name, command.signatureSpec.params.className)
+        assertTrue(command.signatureSpec.params.bytes.array().isNotEmpty())
         assertOperationContext(command.context)
         assertRequestContext(result)
     }
