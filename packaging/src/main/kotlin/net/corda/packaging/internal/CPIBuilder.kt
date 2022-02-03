@@ -43,11 +43,13 @@ internal class CPIBuilder(
         val index = TreeMap<CPK.Identifier, CPKData>()
         index(roots, index)
         val rootIdentifiers = index.keys.toList()
-        for(archivePath in archivePaths) {
-            val cpkFiles = Files.list(archivePath).asSequence()
-                .filter { it.toRealPath() !in rootSet }
-                .filter { it.fileName.toString().toLowerCase().endsWith(CPK.fileExtension) }
-                .toList()
+        for (archivePath in archivePaths) {
+            val cpkFiles = Files.list(archivePath).use { stream ->
+                stream.asSequence()
+                    .filter { it.toRealPath() !in rootSet }
+                    .filter { it.fileName.toString().toLowerCase().endsWith(CPK.fileExtension) }
+                    .toList()
+            }
             index(cpkFiles, index)
         }
         val dependencyMap = index.entries.associateByTo(TreeMap(), {it.key}, {it.value.cpkMetadata.dependencies})
