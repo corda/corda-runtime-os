@@ -19,4 +19,6 @@ dependencies {
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "com.networknt:json-schema-validator:$networkntJsonSchemaVersion"
+
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

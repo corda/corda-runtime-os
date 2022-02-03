@@ -6,9 +6,10 @@ import com.networknt.schema.JsonSchemaFactory
 import com.networknt.schema.SpecVersion
 import com.typesafe.config.ConfigRenderOptions
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.validation.ConfigurationSchemaFetchException
 import net.corda.libs.configuration.validation.ConfigurationValidationException
 import net.corda.libs.configuration.validation.ConfigurationValidator
-import net.corda.schema.configuration.SchemaProvider
+import net.corda.schema.configuration.provider.SchemaProvider
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 
@@ -30,8 +31,16 @@ internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProv
             }"
         }
         val schemaInput = schemaProvider.getSchema(key)
-        val schema = schemaFactory.getSchema(schemaInput)
-        val errors = schema.validate(config.toJsonNode())
+        val errors = try {
+            // Note that the JSON schema library does lazy schema loading, so schema retrieval issues may not manifest
+            // until the validation stage.
+            val schema = schemaFactory.getSchema(schemaInput)
+            schema.validate(config.toJsonNode())
+        } catch (e: Exception) {
+            val message = "Could not retrieve the schema for key $key: ${e.message}"
+            logger.error(message, e)
+            throw ConfigurationSchemaFetchException(message, e)
+        }
         if (errors.isNotEmpty()) {
             val errorSet = errors.map { it.message }.toSet()
             logger.error(
@@ -52,7 +61,7 @@ internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProv
 
     private fun buildSchemaFactory(): JsonSchemaFactory {
         val builder = JsonSchemaFactory.builder(JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7))
-        builder.uriFetcher(CordaURIFetcher(), REGISTERED_SCHEMES)
+        builder.uriFetcher(CordaURIFetcher(schemaProvider), REGISTERED_SCHEMES)
         return builder.build()
     }
 }
