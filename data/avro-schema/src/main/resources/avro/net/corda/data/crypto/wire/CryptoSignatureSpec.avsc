@@ -16,6 +16,14 @@
         "string"
       ],
       "doc": "An optional digest algorithm name, set to non null value if the hash should be precalculated before passing to the provider (e.g. \"SHA512\"), note that the signatureName should not contain the digest (e.g. \"NONEwithECDSA\")."
+    },
+    {
+      "name": "params",
+      "type": [
+        "null",
+        "net.corda.data.crypto.wire.CryptoSignatureParameterSpec"
+      ],
+      "doc": "An optional signature parameters."
     }
   ]
 }

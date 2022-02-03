@@ -13,7 +13,7 @@ import java.util.*
  * Service which provides metadata about cipher suite, such as available signature schemes,
  * digests and security providers.
  */
-interface CipherSchemeMetadata : KeyEncodingService {
+interface CipherSchemeMetadata : KeyEncodingService, AlgorithmParameterSpecEncodingService {
     companion object {
         @JvmField
         val BANNED_DIGESTS: Set<String> = Collections.unmodifiableSet(setOf(
