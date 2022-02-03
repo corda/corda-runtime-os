@@ -20,6 +20,9 @@ cd testing/introspiciere/introspiciere-server
 
 # init minikube. It only needs to be done once
 minikube start
+minikube ssh
+sudo ip link set docker0 promisc on
+exit
 eval $(minikube docker-env)
 kubectl apply -f - << END
 apiVersion: storage.k8s.io/v1
@@ -30,6 +33,8 @@ provisioner: k8s.io/minikube-hostpath
 reclaimPolicy: Delete
 volumeBindingMode: Immediate
 END
+
+
 
 # build image and add it to minikube image repository
 docker build -t introspiciere-server .

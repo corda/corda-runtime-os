@@ -13,36 +13,32 @@ fun main() {
     val kafka = SimpleKafkaClient(servers)
 
     app.get("/helloworld") { ctx ->
-        try {
+        wrapException {
             val greeting = HelloWorld().greeting()
             ctx.result(greeting)
-        } catch (t: Throwable) {
-            throw InternalServerErrorResponse(details = mapOf(
-                "Exception" to t.stackTraceToString()
-            ))
         }
     }
 
     app.get("/topics") { ctx ->
-        try {
+        wrapException {
             val topics = kafka.fetchTopics()
             ctx.result(topics)
-        } catch (t: Throwable) {
-            throw InternalServerErrorResponse(details = mapOf(
-                "Exception" to t.stackTraceToString()
-            ))
         }
     }
 
     app.post("/identities") { ctx ->
-        try {
+        wrapException {
             val input = ctx.bodyAsClass<CreateKeysAndAddIdentityInteractor.Input>()
             CreateKeysAndAddIdentityInteractor(CryptoKeySenderImpl(kafka)).execute(input)
             ctx.result("OK")
-        } catch (t: Throwable) {
-            throw InternalServerErrorResponse(details = mapOf(
-                "Exception" to t.stackTraceToString()
-            ))
         }
+    }
+}
+
+private fun <R> wrapException(action: () -> R): R {
+    try {
+        return action()
+    } catch (t: Throwable) {
+        throw InternalServerErrorResponse(details = mapOf("Exception" to t.stackTraceToString()))
     }
 }
