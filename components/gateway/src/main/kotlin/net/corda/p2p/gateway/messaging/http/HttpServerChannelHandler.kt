@@ -2,6 +2,7 @@ package net.corda.p2p.gateway.messaging.http
 
 import io.netty.buffer.ByteBuf
 import io.netty.buffer.Unpooled
+import io.netty.channel.ChannelFutureListener
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.http.DefaultFullHttpResponse
 import io.netty.handler.codec.http.HttpContent
@@ -28,8 +29,19 @@ class HttpServerChannelHandler(private val serverListener: HttpServerListener,
     @Suppress("ComplexMethod")
     override fun channelRead0(ctx: ChannelHandlerContext, msg: HttpObject) {
         if (msg is HttpRequest) {
-            responseCode = msg.validate()
-            logger.debug("Received HTTP request from ${ctx.channel().remoteAddress()}\n" +
+            val responseCode = msg.validate()
+            if (responseCode != HttpResponseStatus.OK) {
+                logger.warn ("Received invalid HTTP request from ${ctx.channel().remoteAddress()}\n" +
+                        "Protocol version: ${msg.protocolVersion()}\n" +
+                        "Hostname: ${msg.headers()[HttpHeaderNames.HOST]?:"unknown"}\n" +
+                        "Request URI: ${msg.uri()}\n and the response code was $responseCode.")
+                val response = createResponse(null, responseCode)
+                ctx.writeAndFlush(response)
+                    .addListener(ChannelFutureListener.CLOSE)
+                return
+            }
+
+            logger.debug ("Received HTTP request from ${ctx.channel().remoteAddress()}\n" +
                     "Protocol version: ${msg.protocolVersion()}\n" +
                     "Hostname: ${msg.headers()[HttpHeaderNames.HOST]?:"unknown"}\n" +
                     "Request URI: ${msg.uri()}\n" +
