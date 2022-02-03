@@ -59,7 +59,7 @@ pipeline {
             steps {
                echo "add steps"
                sh './corda-cli/bin/corda-cli cluster configure k8s "${NAME_SPACE}"'
-               sh 'echo """cluster:""" | ./corda-cli/bin/corda-cli --stacktrace cluster deploy -t "${BASE_IMAGE}" -c "${NAME_SPACE}" -f /dev/stdin | kubectl apply -f /dev/stdin'
+               sh 'echo """cluster:""" | ./corda-cli/bin/corda-cli --stacktrace cluster deploy -t "${BASE_IMAGE}" -c "${NAME_SPACE}" -f /dev/stdin | tee spec.yaml | kubectl apply -f /dev/stdin'
             }
         }
         stage('Wait for network') {
