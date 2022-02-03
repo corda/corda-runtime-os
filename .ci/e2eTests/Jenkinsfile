@@ -49,12 +49,6 @@ pipeline {
                 sh "./corda-cli/bin/corda-cli -v"
             }
         }
-        stage('Build') {
-            steps {
-               echo "add steps"
-               echo "${NAME_SPACE}"
-            }
-        }
         stage('Setup network') {
             steps {
                echo "add steps"
@@ -106,6 +100,7 @@ pipeline {
                 junit allowEmptyResults: true, testResults: '**/test-results/e2eTest/TEST-*.xml'
                 archiveArtifacts artifacts: 'forward.txt', allowEmptyArchive: true, fingerprint: true
                 sh 'rm -f forward.txt'
+                sh 'kubectl delete ns "${NAME_SPACE}"'
             }
     }
 }
