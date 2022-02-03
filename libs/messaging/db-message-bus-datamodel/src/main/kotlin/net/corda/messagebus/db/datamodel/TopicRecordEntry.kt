@@ -22,7 +22,7 @@ class TopicRecordEntry(
     @Column
     val partition: Int,
     @Id
-    @Column
+    @Column(name = "offset")
     val offset: Long,
     @Column
     val key: ByteArray,
