@@ -1,12 +1,10 @@
-package net.corda.libs.virtualnode.endpoints.v1
+package net.corda.libs.cpiupload.endpoints.v1
 
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 import java.io.InputStream
-
-data class HTTPCpiUploadRequestId(val id: Int)
 
 @HttpRpcResource(
     name = "CpiUploadRPCOps",
@@ -23,3 +21,5 @@ interface CpiUploadRPCOps : RpcOps {
     )
     fun cpi(@HttpRpcRequestBodyParameter file: InputStream): HTTPCpiUploadRequestId
 }
+
+data class HTTPCpiUploadRequestId(val id: Int)
