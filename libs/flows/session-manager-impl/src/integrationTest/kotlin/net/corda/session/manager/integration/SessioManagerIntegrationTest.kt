@@ -7,8 +7,6 @@ import org.junit.jupiter.api.Test
 class SessionManagerIntegrationTest {
 
 
-    //TODO more elaborate test cases. these are in place to illustrate the use of the api
-
     @Test
     fun testFullSessionSendAndReceive() {
         val (alice, bob) = initiateNewSession()
@@ -136,6 +134,32 @@ class SessionManagerIntegrationTest {
         alice.processNextReceivedMessage(sendMessages = true)
 
         //bob process ack
+        bob.processNextReceivedMessage()
+
+        assertThat(alice.sessionState?.status).isEqualTo(SessionStateType.CLOSED)
+        assertThat(bob.sessionState?.status).isEqualTo(SessionStateType.CLOSED)
+    }
+
+    @Test
+    fun testOutOfOrderCloseMessageWithDuplicateClose() {
+        val (alice, bob) = initiateNewSession()
+
+        alice.processNewOutgoingMessage(SessionMessageType.DATA)
+        alice.processNewOutgoingMessage(SessionMessageType.CLOSE, sendMessages = true)
+        //bob loses data messages
+        bob.dropInboundMessage(0)
+        alice.sendMessages() //Bob inbound queue is now CLOSE, DATA, CLOSE
+
+        bob.processAllReceivedMessages(sendMessages = true)
+
+        //alice process acks for data and close
+        alice.processAllReceivedMessages()
+
+        //bob send close to alice
+        bob.processNewOutgoingMessage(SessionMessageType.CLOSE, sendMessages = true)
+        //alice receive close and send ack to bob
+        alice.processNextReceivedMessage(sendMessages = true)
+        //bob process ack for close
         bob.processNextReceivedMessage()
 
         assertThat(alice.sessionState?.status).isEqualTo(SessionStateType.CLOSED)

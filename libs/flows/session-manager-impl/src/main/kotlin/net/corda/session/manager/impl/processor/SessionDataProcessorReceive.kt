@@ -1,13 +1,13 @@
 package net.corda.session.manager.impl.processor
 
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateAckEvent
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
+import net.corda.session.manager.impl.processor.helper.recalcReceivedProcessState
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import java.time.Instant
@@ -53,7 +53,7 @@ class SessionDataProcessorReceive(
 
         return when {
             seqNum >= expectedNextSeqNum -> {
-                getSessionStateForDataEvent(sessionState, sessionId, seqNum, expectedNextSeqNum)
+                getSessionStateForDataEvent(sessionState, sessionId, seqNum)
             }
             seqNum < expectedNextSeqNum -> {
                 sessionState.apply {
@@ -74,18 +74,17 @@ class SessionDataProcessorReceive(
     private fun getSessionStateForDataEvent(
         sessionState: SessionState,
         sessionId: String,
-        seqNum: Int,
-        expectedNextSeqNum: Int
+        seqNum: Int
     ): SessionState {
         val receivedEventState = sessionState.receivedEventsState
-        val undeliveredMessages = receivedEventState.undeliveredMessages?.toMutableList() ?: mutableListOf()
         val currentStatus = sessionState.status
 
         //store data event received regardless of current state status
-        undeliveredMessages.add(sessionEvent)
+        receivedEventState.undeliveredMessages = receivedEventState.undeliveredMessages.plus(sessionEvent)
 
-        //If in state of CLOSING/WAIT_FOR_FINAL_ACK/CLOSED we should not be receiving data messages with a valid seqNum
-        return if (currentStatus != SessionStateType.CONFIRMED && currentStatus != SessionStateType.CREATED) {
+        //If in state of WAIT_FOR_FINAL_ACK/CLOSED we should not be receiving data messages with a valid seqNum
+        return if (currentStatus == SessionStateType.WAIT_FOR_FINAL_ACK || currentStatus == SessionStateType.ERROR
+            || currentStatus == SessionStateType.CLOSED) {
             val errorMessage ="Received data message on key $key with sessionId $sessionId with sequence number of $seqNum when status" +
                         " is $currentStatus. Session mismatch error. SessionState: $sessionState"
             logger.error(errorMessage)
@@ -97,32 +96,11 @@ class SessionDataProcessorReceive(
             }
         } else {
             sessionState.apply {
-                receivedEventsState = updateSessionProcessState(expectedNextSeqNum, undeliveredMessages)
+                receivedEventsState = recalcReceivedProcessState(receivedEventsState)
                 sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.plus(
                     generateAckEvent(seqNum, sessionId, instant)
                 )
             }
         }
-    }
-
-    /**
-     * Update and return the session state. Set the last processed sequence number of the received events state to the last contiguous event
-     * in the sequence of [undeliveredMessages].
-     */
-    private fun updateSessionProcessState(
-        expectedNextSeqNum: Int,
-        undeliveredMessages: MutableList<SessionEvent>
-    ): SessionProcessState {
-        var nextSeqNum = expectedNextSeqNum
-        val sortedEvents = undeliveredMessages.distinctBy { it.sequenceNum }.sortedBy { it.sequenceNum }
-        for (undeliveredMessage in sortedEvents) {
-            if (undeliveredMessage.sequenceNum == nextSeqNum) {
-                nextSeqNum++
-            } else {
-                break
-            }
-        }
-
-        return SessionProcessState(nextSeqNum - 1, sortedEvents)
     }
 }
