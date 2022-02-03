@@ -23,6 +23,7 @@ internal class TrustStores(
     subscriptionFactory: SubscriptionFactory,
     nodeConfiguration: SmartConfig,
     instanceId: Int,
+    private val certificateFactory: CertificateFactory = CertificateFactory.getInstance("X.509"),
 ) :
     CompactedProcessor<String, GatewayTruststore>,
     LifecycleWithDominoTile {
@@ -34,15 +35,14 @@ internal class TrustStores(
     override val keyClass = String::class.java
     override val valueClass = GatewayTruststore::class.java
 
-    class Truststore(pemCertificates: Collection<String>) {
+    inner class Truststore(pemCertificates: Collection<String>) {
 
         val trustStore: KeyStore by lazy {
             KeyStore.getInstance("JKS").also { keyStore ->
                 keyStore.load(null, null)
                 pemCertificates.withIndex().forEach { (index, pemCertificate) ->
                     val certificate = ByteArrayInputStream(pemCertificate.toByteArray()).use {
-                        CertificateFactory.getInstance("X.509")
-                            .generateCertificate(it)
+                        certificateFactory.generateCertificate(it)
                     }
                     keyStore.setCertificateEntry("gateway-$index", certificate)
                 }
