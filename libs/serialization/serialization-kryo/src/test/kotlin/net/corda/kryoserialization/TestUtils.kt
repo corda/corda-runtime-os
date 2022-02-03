@@ -6,7 +6,7 @@ import net.corda.kryoserialization.serializers.ClassSerializer
 import net.corda.kryoserialization.serializers.SingletonSerializeAsTokenSerializer
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
-import net.corda.serialization.CheckpointInternalCustomSerializer
+import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.mockito.Mockito.`when`
 import org.mockito.kotlin.any

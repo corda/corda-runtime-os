@@ -6,7 +6,7 @@ import net.corda.libs.permissions.storage.common.ConfigKeys.DB_PASSWORD
 import net.corda.libs.permissions.storage.common.ConfigKeys.DB_URL
 import net.corda.libs.permissions.storage.common.ConfigKeys.DB_USER
 import net.corda.orm.DbEntityManagerConfiguration
-import net.corda.orm.EntitiesSet
+import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.EntityManagerFactoryFactory
 import org.slf4j.LoggerFactory
 import javax.persistence.EntityManagerFactory
@@ -17,7 +17,7 @@ object DbUtils {
 
     fun obtainEntityManagerFactory(
         dbConfig: SmartConfig, entityManagerFactoryFactory: EntityManagerFactoryFactory,
-        entitiesSet: EntitiesSet
+        entitiesSet: JpaEntitiesSet
     ): EntityManagerFactory {
 
         val jdbcUrl = dbConfig.getString(DB_URL)
@@ -32,8 +32,8 @@ object DbUtils {
         )
 
         return entityManagerFactoryFactory.create(
-            entitiesSet.name,
-            entitiesSet.content.toList(),
+            entitiesSet.persistenceUnitName,
+            entitiesSet.classes.toList(),
             DbEntityManagerConfiguration(dbSource),
         )
     }

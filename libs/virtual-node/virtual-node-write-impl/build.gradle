@@ -9,6 +9,8 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
+    api project(':libs:virtual-node:virtual-node-info')
+
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-datamodel')

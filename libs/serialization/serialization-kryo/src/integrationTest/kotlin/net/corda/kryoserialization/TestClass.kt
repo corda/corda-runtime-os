@@ -1,8 +1,8 @@
 package net.corda.kryoserialization
 
-import net.corda.serialization.CheckpointInput
-import net.corda.serialization.CheckpointInternalCustomSerializer
-import net.corda.serialization.CheckpointOutput
+import net.corda.serialization.checkpoint.CheckpointInput
+import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
+import net.corda.serialization.checkpoint.CheckpointOutput
 
 internal class TestClass(
     val someInt: Int,

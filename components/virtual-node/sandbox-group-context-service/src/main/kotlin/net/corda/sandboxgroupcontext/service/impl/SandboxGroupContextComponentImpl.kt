@@ -17,11 +17,14 @@ import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContextInitializer
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
+import net.corda.sandboxgroupcontext.service.helper.initPublicSandboxes
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import org.osgi.service.cm.ConfigurationAdmin
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.nio.file.Paths
 
 /**
  * Sandbox group context service component... with lifecycle, since it depends on a CPK service
@@ -35,7 +38,9 @@ class SandboxGroupContextComponentImpl @Activate constructor(
     @Reference(service = SandboxCreationService::class)
     private val sandboxCreationService: SandboxCreationService,
     @Reference(service = LifecycleCoordinatorFactory::class)
-    private val coordinatorFactory: LifecycleCoordinatorFactory
+    private val coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = ConfigurationAdmin::class)
+    private val configurationAdmin: ConfigurationAdmin
 ) : SandboxGroupContextComponent {
     companion object {
         private val logger = contextLogger()
@@ -86,6 +91,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
 
     private fun onStart(coordinator: LifecycleCoordinator) {
         logger.debug { "${javaClass.name} starting" }
+        initialiseSandboxContext()
         registrationHandle?.close()
         registrationHandle = coordinator.followStatusChangesByName(
             setOf(
@@ -99,5 +105,10 @@ class SandboxGroupContextComponentImpl @Activate constructor(
         registrationHandle?.close()
         registrationHandle = null
         coordinator.updateStatus(LifecycleStatus.DOWN)
+    }
+
+    private fun initialiseSandboxContext(){
+        val baseDirectory = Paths.get(System.getProperty("base.directory")?: "").toAbsolutePath().toString()
+        initPublicSandboxes(configurationAdmin, sandboxCreationService, baseDirectory)
     }
 }

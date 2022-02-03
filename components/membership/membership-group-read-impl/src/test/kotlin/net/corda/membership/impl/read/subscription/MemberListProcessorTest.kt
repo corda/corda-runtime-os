@@ -1,7 +1,6 @@
 package net.corda.membership.impl.read.subscription
 
-import net.corda.crypto.CryptoLibraryFactory
-import net.corda.data.crypto.wire.WireSignatureWithKey
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.membership.conversion.PropertyConverterImpl
@@ -29,7 +28,7 @@ import net.corda.membership.identity.converter.EndpointInfoConverter
 import net.corda.membership.identity.converter.PublicKeyConverter
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.messaging.api.records.Record
-import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.membership.identity.EndpointInfo
 import net.corda.v5.membership.identity.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -45,10 +44,7 @@ import java.time.Instant
 
 class MemberListProcessorTest {
     companion object {
-        private val keyEncodingService: KeyEncodingService = mock()
-        private val cryptoLibraryFactory: CryptoLibraryFactory = mock<CryptoLibraryFactory>().apply {
-            whenever(getKeyEncodingService()).thenReturn(keyEncodingService)
-        }
+        private val keyEncodingService: CipherSchemeMetadata = mock()
         private val knownKey: PublicKey = mock()
         private const val knownKeyAsString = "12345"
         private val modifiedTime = Instant.now()
@@ -60,10 +56,10 @@ class MemberListProcessorTest {
         private val converter = PropertyConverterImpl(
             listOf(
                 EndpointInfoConverter(),
-                PublicKeyConverter(cryptoLibraryFactory),
+                PublicKeyConverter(keyEncodingService),
             )
         )
-        private val signature = WireSignatureWithKey(
+        private val signature = CryptoSignatureWithKey(
             ByteBuffer.wrap(byteArrayOf()),
             ByteBuffer.wrap(byteArrayOf()),
         )

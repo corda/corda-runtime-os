@@ -189,15 +189,17 @@ internal class CordaPackageFileBasedPersistenceImpl @Activate constructor(
         val cpksById = ConcurrentHashMap<CPK.Identifier, CPK>()
         val cpksByHash = ConcurrentHashMap<SecureHash, CPK>()
 
-        Files.list(cpkDirectory)
-                .filter { it.fileName.toString().endsWith(CPK.fileExtension) }
+        Files.list(cpkDirectory).use { stream ->
+            stream.filter { it.fileName.toString().endsWith(CPK.fileExtension) }
                 .forEach { cpkPath ->
-            val cpk = CPK.from(Files.newInputStream(cpkPath),
-                    cacheDir = expansionDirectory.resolve(cpkPath.fileName),
-                    cpkLocation = cpkPath.toString(), true)
-            addCpk(cpksById, cpksByHash, cpk)
+                    val cpk = CPK.from(
+                        Files.newInputStream(cpkPath),
+                        cacheDir = expansionDirectory.resolve(cpkPath.fileName),
+                        cpkLocation = cpkPath.toString(), true
+                    )
+                    addCpk(cpksById, cpksByHash, cpk)
+                }
         }
         return StoredArchives(cpksById = cpksById, cpksByHash = cpksByHash)
     }
 }
-
