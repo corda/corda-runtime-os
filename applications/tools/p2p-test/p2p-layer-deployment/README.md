@@ -95,7 +95,6 @@ java \
 --kafka-servers kafka-broker-1.p2p-layer:9093 \
 gateway \
 --keyStore ./components/gateway/src/integration-test/resources/sslkeystore_alice.jks \
---trustStore ./components/gateway/src/integration-test/resources/truststore.jks \
 --port 1433 \
 ```
 Please note, the port number need to be 1433, the host name should be one of the host names from the deploy (default to www.alice.net).

@@ -98,11 +98,9 @@ java \
 gateway \
 --keyStore ./components/gateway/src/integration-test/resources/sslkeystore_alice.jks \
 --keyStorePassword password \
---trustStore ./components/gateway/src/integration-test/resources/truststore.jks \
---trustStorePassword password \
 --port 3123
 ```
-The `keyStore` and `trustStore` are valid stores used in the integration tests.
+The `keyStore` and is valid stores used in the integration tests.
 
 Or, one can load the configuration from an arguments file. For example, from [gateway-args-example](gateway-args-example.txt):
 ```bash
@@ -123,7 +121,7 @@ You can configure the image using those environment variables:
 * `KAFKA_SERVERS` - The list of Kafka server
 * `TOPIC_PREFIX` - The topic prefix (default to empty string)
 
-You can pass the key store, the trust store and the argument file using docker `--volume` or `--mount`.
+You can pass the key store and the argument file using docker `--volume` or `--mount`.
 
 ### Example Using a file
 1. Before starting the application, run a kafka cluster. See examples in [here](../../../../testing/message-patterns/README.md).
@@ -136,14 +134,13 @@ docker run \
  --network kafka-docker_default \
  -v "$(pwd)/applications/tools/p2p-test/p2p-configuration-publisher/docker-args-example.txt:/args.txt" \
  -v "$(pwd)/components/gateway/src/integration-test/resources/sslkeystore_alice.jks:/keystore.jks" \
- -v "$(pwd)/components/gateway/src/integration-test/resources/truststore.jks:/truststore.jks" \
  corda-os-docker-dev.software.r3.com/corda-os-configuration-publisher:5.0.0.0-SNAPSHOT \
  @/args.txt
 ```
 Please note:
 * The image need to be able to talk with the kafka broker, hence the network and `KAFKA_SERVERS` environment variable.
 * The argument file we are using is [this one](docker-args-example.txt).
-*  Since the keystore and truststore are getting mounted to the correct name, there is no need to add them to the arguments.
+*  Since the keystore is getting mounted to the correct name, there is no need to add them to the arguments.
 
 ### Example without a file
 1. Before starting the application, run a kafka cluster. See examples in [here](../../../../testing/message-patterns/README.md).
@@ -155,15 +152,12 @@ docker run \
  -e KAFKA_SERVERS="broker1:9093" \
  --network kafka-docker_default \
  -v "$(pwd)/components/gateway/src/integration-test/resources/sslkeystore_alice.jks:/keystore.jks" \
- -v "$(pwd)/components/gateway/src/integration-test/resources/truststore.jks:/truststore.jks" \
  corda-os-docker-dev.software.r3.com/corda-os-configuration-publisher:5.0.0.0-SNAPSHOT \
  gateway \
  --keyStore /keystore.jks \
  --keyStorePassword password \
- --trustStore /truststore.jks \
- --trustStorePassword password \
  --port 24123
 ```
 Please note:
 * The image need to be able to talk with the kafka broker, hence the network and `KAFKA_SERVERS` environment variable.
-*  Since the keystore and truststore are getting mounted to the correct name, there is no need to add them to the arguments.
+*  Since the keystore is getting mounted to the correct name, there is no need to add them to the arguments.
