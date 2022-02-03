@@ -3,8 +3,8 @@ package net.corda.cpi.upload.endpoints.v1
 import net.corda.cpi.upload.endpoints.common.CpiUploadRPCOpsHandler
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.httprpc.PluggableRPCOps
-import net.corda.libs.virtualnode.endpoints.v1.CpiUploadRPCOps
-import net.corda.libs.virtualnode.endpoints.v1.HTTPCpiUploadRequestId
+import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
+import net.corda.libs.cpiupload.endpoints.v1.HTTPCpiUploadRequestId
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
