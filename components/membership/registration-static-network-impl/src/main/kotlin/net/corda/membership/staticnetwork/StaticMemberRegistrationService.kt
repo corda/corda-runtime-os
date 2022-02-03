@@ -3,7 +3,7 @@ package net.corda.membership.staticnetwork
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.CryptoConsts
 import net.corda.crypto.CryptoOpsClient
-import net.corda.data.crypto.wire.WireSignatureWithKey
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
@@ -161,7 +161,7 @@ class StaticMemberRegistrationService @Activate constructor(
                         PARTY_OWNING_KEY to encodedMemberKey,
                         GROUP_ID to groupId,
                         *generateIdentityKeys(encodedMemberKey).toTypedArray(),
-                        *generateIdentityKeyHashes(owningKey).toTypedArray(),
+                        *generateIdentityKeyHashes(memberKey).toTypedArray(),
                         *convertEndpoints(staticMember).toTypedArray(),
                         SOFTWARE_VERSION to (staticMember[STATIC_SOFTWARE_VERSION] ?: DEFAULT_SOFTWARE_VERSION),
                         PLATFORM_VERSION to (staticMember[STATIC_PLATFORM_VERSION] ?: DEFAULT_PLATFORM_VERSION),
@@ -297,11 +297,11 @@ class StaticMemberRegistrationService @Activate constructor(
      * For the static network we don't need hashes of the rotated keys.
      */
     private fun generateIdentityKeyHashes(
-        owningKey: String
+        owningKey: PublicKey
     ): List<Pair<String, String>> {
         val identityKeys = listOf(owningKey)
         return identityKeys.mapIndexed { index, identityKey ->
-            val hash = keyEncodingService.decodePublicKey(identityKey).calculateHash()
+            val hash = identityKey.calculateHash()
             String.format(
                 MemberInfoExtension.IDENTITY_KEY_HASHES_KEY,
                 index
@@ -325,20 +325,20 @@ class StaticMemberRegistrationService @Activate constructor(
             mgmContextBF,
             memberContextBF
                 .array()
-                .toWireSignatureWithKey(memberId, memberKey),
+                .toCryptoSignatureWithKey(memberId, memberKey),
             buildMerkleTree(
                 mgmContextBF,
                 memberContextBF,
                 digestService
-            ).hash.bytes.toWireSignatureWithKey(memberId, mgmKey)
+            ).hash.bytes.toCryptoSignatureWithKey(memberId, mgmKey)
         )
     }
 
     private fun ByteArray.toByteBuffer(): ByteBuffer = ByteBuffer.wrap(this)
-    private fun ByteArray.toWireSignatureWithKey(
+    private fun ByteArray.toCryptoSignatureWithKey(
         memberId: String,
         signingKey: PublicKey
-    ) = WireSignatureWithKey(
+    ) = CryptoSignatureWithKey(
         keyEncodingService.encodeAsByteArray(signingKey).toByteBuffer(),
         cryptoOpsClient.sign(memberId, signingKey, this).bytes.toByteBuffer()
     )

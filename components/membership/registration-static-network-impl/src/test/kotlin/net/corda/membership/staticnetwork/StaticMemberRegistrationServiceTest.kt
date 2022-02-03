@@ -36,7 +36,6 @@ import net.corda.membership.staticnetwork.TestUtils.Companion.daisyName
 import net.corda.membership.staticnetwork.TestUtils.Companion.ericName
 import net.corda.membership.staticnetwork.TestUtils.Companion.frankieName
 import net.corda.membership.staticnetwork.TestUtils.Companion.groupPolicyWithDuplicateMembers
-import net.corda.membership.staticnetwork.TestUtils.Companion.groupPolicyWithDuplicateMembers
 import net.corda.membership.staticnetwork.TestUtils.Companion.groupPolicyWithInvalidStaticNetworkTemplate
 import net.corda.membership.staticnetwork.TestUtils.Companion.groupPolicyWithStaticNetwork
 import net.corda.membership.staticnetwork.TestUtils.Companion.groupPolicyWithoutMgm
@@ -48,11 +47,10 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.crypto.calculateHash
-import net.corda.v5.membership.identity.MemberInfo
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.crypto.calculateHash
 import net.corda.virtualnode.HoldingIdentity
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -69,8 +67,10 @@ import kotlin.test.assertTrue
 
 class StaticMemberRegistrationServiceTest {
     companion object {
+        private const val DEFAULT_KEY = "3456"
         private const val ALICE_KEY = "1234"
         private const val BOB_KEY = "2345"
+        private const val CHARLIE_KEY = "6789"
     }
 
     private val alice = HoldingIdentity(aliceName.toString(), DUMMY_GROUP_ID)
@@ -79,11 +79,17 @@ class StaticMemberRegistrationServiceTest {
     private val daisy = HoldingIdentity(daisyName.toString(), DUMMY_GROUP_ID)
     private val eric = HoldingIdentity(ericName.toString(), DUMMY_GROUP_ID)
     private val frankie = HoldingIdentity(frankieName.toString(), DUMMY_GROUP_ID)
+    private val defaultKey: PublicKey = mock {
+        on { encoded } doReturn DEFAULT_KEY.toByteArray()
+    }
     private val aliceKey: PublicKey = mock {
         on { encoded } doReturn ALICE_KEY.toByteArray()
     }
     private val bobKey: PublicKey = mock {
         on { encoded } doReturn BOB_KEY.toByteArray()
+    }
+    private val charlieKey: PublicKey = mock {
+        on { encoded } doReturn CHARLIE_KEY.toByteArray()
     }
 
     private val groupPolicyProvider: GroupPolicyProvider = mock {
@@ -108,16 +114,14 @@ class StaticMemberRegistrationServiceTest {
     }
 
     private val keyEncodingService: KeyEncodingService = mock {
-        val key: PublicKey = mock {
-            on { encoded } doReturn "3456".toByteArray()
-        }
-        on { decodePublicKey(any<String>()) } doReturn key
+        on { decodePublicKey(any<String>()) } doReturn defaultKey
         on { decodePublicKey(ALICE_KEY) } doReturn aliceKey
         on { decodePublicKey(BOB_KEY) } doReturn bobKey
 
-        on { encodeAsString(any()) } doReturn "1"
+        on { encodeAsString(any()) } doReturn DEFAULT_KEY
         on { encodeAsString(aliceKey) } doReturn ALICE_KEY
         on { encodeAsString(bobKey) } doReturn BOB_KEY
+        on { encodeAsString(charlieKey) } doReturn CHARLIE_KEY
 
         on { encodeAsByteArray(any()) } doReturn ByteArray(1)
     }
@@ -125,10 +129,11 @@ class StaticMemberRegistrationServiceTest {
     private val signature: DigitalSignature.WithKey = DigitalSignature.WithKey(mock(), ByteArray(1))
 
     private val cryptoOpsClient: CryptoOpsClient = mock {
-        on { generateKeyPair(any(), any(), any(), any()) } doReturn mock()
+        on { generateKeyPair(any(), any(), any(), any()) } doReturn defaultKey
         on { generateKeyPair(any(), any(), eq("alice-alias"), any()) } doReturn aliceKey
         // when no keyAlias is defined in static template, we are using the HoldingIdentity's id
         on { generateKeyPair(any(), any(), eq(bob.id), any()) } doReturn bobKey
+        on { generateKeyPair(any(), any(), eq(charlie.id), any()) } doReturn charlieKey
         on { sign(any(), any<PublicKey>(), any<ByteArray>(), any()) } doReturn signature
     }
 
