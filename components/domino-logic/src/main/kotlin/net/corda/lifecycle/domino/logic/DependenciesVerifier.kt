@@ -32,7 +32,8 @@ class DependenciesVerifier {
 
         dominoTile.managedChildren.forEach {
             if (managedTiles.contains(it)) {
-                throw InvalidTileConfigurationException("The domino tile ${it.name} is being managed by two parent tiles: ${managedTiles[it]!!.name} and ${dominoTile.name}")
+                throw InvalidTileConfigurationException("The domino tile ${it.name} is being managed by two parent tiles: " +
+                        "${managedTiles[it]!!.name} and ${dominoTile.name}")
             }
 
             managedTiles[it] = dominoTile

@@ -190,7 +190,6 @@ class DominoTile(
                 is ErrorEvent -> {
                     stopResources()
                     stopListeningForConfig()
-                    configReady = false
                     updateState(State.StoppedDueToError)
                 }
                 is StartEvent -> {
@@ -263,7 +262,6 @@ class DominoTile(
                         is ConfigUpdateResult.Error -> {
                             logger.warn("Config error ${event.configUpdateResult.e}")
                             stopResources()
-                            configReady = false
                             updateState(State.StoppedDueToBadConfig)
                         }
                         ConfigUpdateResult.NoUpdate -> {
@@ -330,7 +328,6 @@ class DominoTile(
     private fun handleChildDown() {
         stopResources()
         stopListeningForConfig()
-        configReady = false
         updateState(State.DownDueToChildDown)
     }
 
@@ -359,8 +356,12 @@ class DominoTile(
         return createResources == null || resourcesReady
     }
 
+    private fun shouldNotWaitForChildren(): Boolean {
+        return dependentChildren.all { latestChildStateMap[it] == State.Started }
+    }
+
     private fun createResourcesAndStart() {
-        if (createResources != null) {
+        if (createResources != null && !resourcesReady) {
             resources.close()
             logger.info("Starting resources")
             val future = createResources.invoke(resources)
@@ -385,7 +386,7 @@ class DominoTile(
     }
 
     private fun setStartedIfCan() {
-        if (shouldNotWaitForResource() && shouldNotWaitForConfig()) {
+        if (shouldNotWaitForResource() && shouldNotWaitForConfig() && shouldNotWaitForChildren()) {
             updateState(State.Started)
         }
     }
@@ -393,7 +394,6 @@ class DominoTile(
     private fun stopTile() {
         stopResources()
         stopListeningForConfig()
-        configReady = false
         stopChildren()
     }
 
@@ -417,6 +417,7 @@ class DominoTile(
         configurationChangeHandler?.lastConfiguration = null
         configRegistration = null
         configurationChangeHandler?.lastConfiguration = null
+        configReady = false
     }
 
     override fun close() {
