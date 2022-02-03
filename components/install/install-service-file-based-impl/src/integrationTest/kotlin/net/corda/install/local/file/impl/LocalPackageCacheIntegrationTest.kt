@@ -69,12 +69,6 @@ class LocalPackageCacheIntegrationTest {
         configReadService.stop()
     }
 
-    /**
-     * Some "bug" on Windows prevents teardown from deleting the `cpi` folder
-     * on the build server with [AccessDeniedException]
-     * Not reproducible on a local machine AFAIK.
-     */
-//    @EnabledOnOs(OS.LINUX, OS.MAC)
     @Test
     @Timeout(value = 10, unit = TimeUnit.SECONDS)
     fun `check all advertised CPIs are available`() {
