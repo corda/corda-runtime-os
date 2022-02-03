@@ -100,7 +100,8 @@ pipeline {
                 junit allowEmptyResults: true, testResults: '**/test-results/e2eTest/TEST-*.xml'
                 archiveArtifacts artifacts: 'forward.txt', allowEmptyArchive: true, fingerprint: true
                 sh 'rm -f forward.txt'
-                sh 'kubectl delete ns "${NAME_SPACE}"'
+                // We can just let this take care of itself - worst case scenario it'll be pruned
+                sh 'kubectl delete ns "${NAME_SPACE}" &'
             }
     }
 }
