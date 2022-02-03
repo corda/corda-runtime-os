@@ -8,7 +8,7 @@
         <createTable tableName="topic_record">
             <column name="topic" type="VARCHAR(255)"/>
             <column name="partition" type="INTEGER"/>
-            <column name="offset" type="INTEGER"/>
+            <column name="offset" type="BIGINT"/>
             <column name="key" type="BLOB"/>
             <column name="value" type="BLOB">
                 <constraints nullable="true"/>
@@ -29,7 +29,7 @@
             <column name="topic" type="VARCHAR(255)"/>
             <column name="consumer_group" type="VARCHAR(255)"/>
             <column name="partition" type="VARCHAR(255)"/>
-            <column name="offset" type="INTEGER"/>
+            <column name="offset" type="BIGINT"/>
             <column name="timestamp" type="TIMESTAMP"/>
             <column name="committed" type="BOOLEAN"/>
         </createTable>
