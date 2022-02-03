@@ -53,6 +53,9 @@ class DeployCluster(
     }
 
     private fun deploy() {
+        exec("kubectl cluster-info")
+        exec("kubectl config view")
+
         exec("kubectl create namespace $name")
 
         val username = System.getenv("CORDA_ARTIFACTORY_USERNAME")

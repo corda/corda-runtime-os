@@ -34,8 +34,6 @@ reclaimPolicy: Delete
 volumeBindingMode: Immediate
 END
 
-
-
 # build image and add it to minikube image repository
 docker build -t introspiciere-server .
 
