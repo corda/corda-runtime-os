@@ -117,7 +117,7 @@ class DBAccessIntegrationTest {
         val transactionRecordEntry = TransactionRecordEntry("id", false)
 
         val dbAccess = DBAccess(emf)
-        dbAccess.writeTransactionId(transactionRecordEntry)
+        dbAccess.writeTransactionRecord(transactionRecordEntry)
 
         val nonCommittedResults = query(TransactionRecordEntry::class.java, "from transaction_record")
         nonCommittedResults.forEach { result ->

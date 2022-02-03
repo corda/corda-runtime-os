@@ -93,7 +93,7 @@ internal class CordaTransactionalDBProducerImplTest {
         val dbTransactionId = argumentCaptor<String>()
         // For transactions the records must *not* be immediately visible
         verify(dbAccess).writeRecords(dbRecordList.capture())
-        verify(dbAccess).writeTransactionId(dbTransaction.capture())
+        verify(dbAccess).writeTransactionRecord(dbTransaction.capture())
         verify(dbAccess).makeRecordsVisible(dbTransactionId.capture())
         verify(callback).onCompletion(null)
         val record = dbRecordList.firstValue.single()

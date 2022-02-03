@@ -29,6 +29,24 @@ internal class CordaAtomicDBProducerImplTest {
     private val serializedKey = key.toByteArray()
     private val serializedValue = value.toByteArray()
 
+
+    @Test
+    fun `atomic producer inserts atomic transaction record on initialization`() {
+        val dbAccess: DBAccess = mock()
+        whenever(dbAccess.getTopicPartitionMap()).thenReturn(mapOf(topic to 1))
+        val topicService: TopicService = mock()
+        whenever(topicService.getLatestOffsets(eq(topic))).thenReturn(mapOf(1 to 5))
+        val schemaRegistry: AvroSchemaRegistry = mock()
+        whenever(schemaRegistry.serialize(eq(key))).thenReturn(ByteBuffer.wrap(serializedKey))
+        whenever(schemaRegistry.serialize(eq(value))).thenReturn(ByteBuffer.wrap(serializedValue))
+
+        val dbTransaction = argumentCaptor<TransactionRecordEntry>()
+        CordaAtomicDBProducerImpl(schemaRegistry, topicService, dbAccess)
+
+        verify(dbAccess).writeTransactionRecord(dbTransaction.capture())
+        assertThat(dbTransaction.allValues.single()).isEqualTo(CordaAtomicDBProducerImpl.ATOMIC_TRANSACTION)
+    }
+
     @Test
     fun `atomic producer sends correct entry to database and topic`() {
         val dbAccess: DBAccess = mock()
@@ -46,11 +64,7 @@ internal class CordaAtomicDBProducerImplTest {
         producer.send(cordaRecord, callback)
 
         val dbRecordList = argumentCaptor<List<TopicRecordEntry>>()
-        val dbTransaction = argumentCaptor<TransactionRecordEntry>()
-        val dbTransactionId = argumentCaptor<String>()
         verify(dbAccess).writeRecords(dbRecordList.capture())
-        verify(dbAccess).writeTransactionId(dbTransaction.capture())
-        verify(dbAccess).makeRecordsVisible(dbTransactionId.capture())
         verify(callback).onCompletion(null)
         val record = dbRecordList.firstValue.single()
         assertThat(record.topic).isEqualTo(topic)
@@ -59,8 +73,6 @@ internal class CordaAtomicDBProducerImplTest {
         assertThat(record.offset).isEqualTo(5)
         assertThat(record.partition).isEqualTo(1)
         assertThat(record.transactionId).isEqualTo(CordaAtomicDBProducerImpl.ATOMIC_TRANSACTION.transaction_id)
-        assertThat(dbTransaction.firstValue).isEqualTo(CordaAtomicDBProducerImpl.ATOMIC_TRANSACTION)
-        assertThat(dbTransactionId.firstValue).isEqualTo(CordaAtomicDBProducerImpl.ATOMIC_TRANSACTION.transaction_id)
 
         val topicRecordList = argumentCaptor<List<Record<*, *>>>()
         verify(topicService).addRecordsToPartition(topicRecordList.capture() , eq(1))
@@ -87,11 +99,7 @@ internal class CordaAtomicDBProducerImplTest {
         producer.send(cordaRecord, 0, callback)
 
         val dbRecordList = argumentCaptor<List<TopicRecordEntry>>()
-        val dbTransaction = argumentCaptor<TransactionRecordEntry>()
-        val dbTransactionId = argumentCaptor<String>()
         verify(dbAccess).writeRecords(dbRecordList.capture())
-        verify(dbAccess).writeTransactionId(dbTransaction.capture())
-        verify(dbAccess).makeRecordsVisible(dbTransactionId.capture())
         verify(callback).onCompletion(null)
         val record = dbRecordList.firstValue.first()
         assertThat(record.topic).isEqualTo(topic)
@@ -100,8 +108,6 @@ internal class CordaAtomicDBProducerImplTest {
         assertThat(record.offset).isEqualTo(2)
         assertThat(record.partition).isEqualTo(0)
         assertThat(record.transactionId).isEqualTo(CordaAtomicDBProducerImpl.ATOMIC_TRANSACTION.transaction_id)
-        assertThat(dbTransaction.allValues.single()).isEqualTo(CordaAtomicDBProducerImpl.ATOMIC_TRANSACTION)
-        assertThat(dbTransactionId.allValues.single()).isEqualTo(CordaAtomicDBProducerImpl.ATOMIC_TRANSACTION.transaction_id)
 
         val topicRecordList = argumentCaptor<List<Record<*, *>>>()
         verify(topicService).addRecordsToPartition(topicRecordList.capture() , eq(0))
@@ -139,6 +145,7 @@ internal class CordaAtomicDBProducerImplTest {
         }
         verifyNoInteractions(topicService)
         verify(dbAccess).getTopicPartitionMap()
+        verify(dbAccess).writeTransactionRecord(eq(CordaAtomicDBProducerImpl.ATOMIC_TRANSACTION))
         verifyNoMoreInteractions(dbAccess)
     }
 }

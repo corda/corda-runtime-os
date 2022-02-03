@@ -147,7 +147,7 @@ class DBAccess(
         }
     }
 
-    fun writeTransactionId(entry: TransactionRecordEntry) {
+    fun writeTransactionRecord(entry: TransactionRecordEntry) {
         executeWithErrorHandling("write records") { entityManager ->
             entityManager.persist(entry)
         }

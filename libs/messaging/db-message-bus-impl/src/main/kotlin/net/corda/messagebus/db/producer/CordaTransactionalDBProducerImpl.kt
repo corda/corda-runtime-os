@@ -107,7 +107,7 @@ class CordaTransactionalDBProducerImpl(
         }
         val newTransaction = TransactionRecordEntry(UUID.randomUUID().toString(), false)
         transaction.set(newTransaction)
-        dbAccess.writeTransactionId(newTransaction)
+        dbAccess.writeTransactionRecord(newTransaction)
     }
 
     override fun sendRecordOffsetsToTransaction(

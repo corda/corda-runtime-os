@@ -24,6 +24,11 @@ class CordaAtomicDBProducerImpl(
         internal val ATOMIC_TRANSACTION = TransactionRecordEntry("Atomic Transaction", true)
     }
 
+    init {
+        // Write the transaction record for all atomic transactions
+        dbAccess.writeTransactionRecord(ATOMIC_TRANSACTION)
+    }
+
     private val defaultTimeout: Duration = Duration.ofSeconds(1)
     private val topicPartitionMap = dbAccess.getTopicPartitionMap()
 
@@ -77,9 +82,7 @@ class CordaAtomicDBProducerImpl(
         recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>
     ) {
         // First try adding to DB as it has the possibility of failing.
-        dbAccess.writeTransactionId(ATOMIC_TRANSACTION)
         dbAccess.writeRecords(dbRecords)
-        dbAccess.makeRecordsVisible(ATOMIC_TRANSACTION.transaction_id)
         // Topic service shouldn't fail but if it does the DB will still rollback from here
         recordsWithPartitions.forEach {
             topicService.addRecordsToPartition(listOf(it.second.toCordaRecord()), it.first)
