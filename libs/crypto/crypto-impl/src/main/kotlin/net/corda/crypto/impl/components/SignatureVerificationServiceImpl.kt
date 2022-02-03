@@ -92,10 +92,13 @@ class SignatureVerificationServiceImpl @Activate constructor(
             cipher.init(Cipher.DECRYPT_MODE, publicKey)
             cipher.doFinal(signatureBytes).contentEquals(signingData)
         } else {
-            signatureInstances.withSignature(effectiveSignatureScheme) { signature ->
-                signature.initVerify(publicKey)
-                signature.update(signingData)
-                signature.verify(signatureBytes)
+            signatureInstances.withSignature(effectiveSignatureScheme) {
+                if(effectiveSignatureScheme.signatureSpec.params != null) {
+                    it.setParameter(effectiveSignatureScheme.signatureSpec.params)
+                }
+                it.initVerify(publicKey)
+                it.update(signingData)
+                it.verify(signatureBytes)
             }
         }
     }
