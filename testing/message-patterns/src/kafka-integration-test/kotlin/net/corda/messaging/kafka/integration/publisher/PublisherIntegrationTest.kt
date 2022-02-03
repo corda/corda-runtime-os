@@ -18,6 +18,7 @@ import net.corda.v5.base.concurrent.getOrThrow
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
@@ -53,6 +54,7 @@ class PublisherIntegrationTest {
     }
 
     @Test
+    @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `publisher can publish records to partitions non-transactionally successfully`() {
         publisherConfig = PublisherConfig(CLIENT_ID)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
@@ -76,6 +78,7 @@ class PublisherIntegrationTest {
     }
 
     @Test
+    @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `publisher can publish records to partitions transactionally successfully`() {
         publisherConfig = PublisherConfig(CLIENT_ID, 1)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
@@ -99,6 +102,7 @@ class PublisherIntegrationTest {
     }
 
     @Test
+    @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `publisher can publish records to partitions transactionally successfully from multiple threads`() {
         publisherConfig = PublisherConfig(CLIENT_ID, 2)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)

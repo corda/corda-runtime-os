@@ -13,7 +13,7 @@ dependencies {
     api "net.corda:corda-packaging"
 
     api project(':libs:virtual-node:virtual-node-info')
-    api project(':libs:serialization:checkpoint-serialization-api')
+    api project(':libs:serialization:serialization-checkpoint-api')
     api project(':libs:sandbox')
 
     runtimeOnly project(':libs:crypto:crypto-impl')

@@ -17,7 +17,6 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import javax.security.auth.login.FailedLoginException
-import net.corda.httprpc.security.read.RPCSecurityException
 import org.junit.jupiter.api.Assertions.assertEquals
 
 interface TestRpcOps : RpcOps {
@@ -77,11 +76,11 @@ class SecurityManagerTest {
     }
 
     @Test
-    fun `authenticate providers last throws RPCSecurityException that gets rethrown as FailedLoginException`() {
+    fun `authenticate providers last throws FailedLoginException that gets rethrown as FailedLoginException`() {
         whenever(authenticationProvider2.supports(any<UsernamePasswordAuthenticationCredentials>())).thenReturn(true)
 
-        whenever(authenticationProvider1.authenticate(any())).thenAnswer { throw RPCSecurityException("failed to login1") }
-        whenever(authenticationProvider2.authenticate(any())).thenAnswer { throw RPCSecurityException("failed to login2") }
+        whenever(authenticationProvider1.authenticate(any())).thenAnswer { throw FailedLoginException("failed to login1") }
+        whenever(authenticationProvider2.authenticate(any())).thenAnswer { throw FailedLoginException("failed to login2") }
 
         val e = assertThrows(FailedLoginException::class.java) {
             securityManager.authenticate(UsernamePasswordAuthenticationCredentials("guest", password))
@@ -90,8 +89,8 @@ class SecurityManagerTest {
     }
 
     @Test
-    fun `authenticate provider throws RPCSecurityException that gets rethrown as FailedLoginException`() {
-        whenever(authenticationProvider1.authenticate(any())).thenAnswer { throw RPCSecurityException("failed to login1") }
+    fun `authenticate provider throws FailedLoginException that gets rethrown as FailedLoginException`() {
+        whenever(authenticationProvider1.authenticate(any())).thenAnswer { throw FailedLoginException("failed to login1") }
 
         val e = assertThrows(FailedLoginException::class.java) {
             securityManager.authenticate(UsernamePasswordAuthenticationCredentials("guest", password))

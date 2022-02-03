@@ -36,7 +36,8 @@ class InMemorySessionReplayerTest {
         private const val GROUP_ID = "myGroup"
         private val US = LinkManagerNetworkMap.HoldingIdentity("Us",GROUP_ID)
         private val COUNTER_PARTY = LinkManagerNetworkMap.HoldingIdentity("CounterParty", GROUP_ID)
-        private val MAX_MESSAGE_SIZE = 100000
+        private val SESSION_COUNTERPARTIES = SessionManager.SessionCounterparties(US, COUNTER_PARTY)
+        private const val MAX_MESSAGE_SIZE = 100000
         lateinit var loggingInterceptor: LoggingInterceptor
 
         private val KEY_PAIR = KeyPairGenerator.getInstance("EC", BouncyCastleProvider()).genKeyPair()
@@ -65,7 +66,7 @@ class InMemorySessionReplayerTest {
     private lateinit var replayCallback: (message: InMemorySessionReplayer.SessionMessageReplay) -> Unit
     private val replayScheduler = Mockito.mockConstruction(ReplayScheduler::class.java) { _, context ->
         @Suppress("UNCHECKED_CAST")
-        replayCallback = context.arguments()[3] as (message: InMemorySessionReplayer.SessionMessageReplay) -> Unit
+        replayCallback = context.arguments()[4] as (message: InMemorySessionReplayer.SessionMessageReplay) -> Unit
     }
 
     val netMap = MockNetworkMap(listOf(US, COUNTER_PARTY)).getSessionNetworkMapForNode(US)
@@ -85,10 +86,10 @@ class InMemorySessionReplayerTest {
 
         setRunning()
         val messageReplay = InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, US, COUNTER_PARTY) { _,_ -> }
-        replayer.addMessageForReplay(id, messageReplay)
+        replayer.addMessageForReplay(id, messageReplay, SESSION_COUNTERPARTIES)
         @Suppress("UNCHECKED_CAST")
         verify(replayScheduler.constructed().last() as ReplayScheduler<InMemorySessionReplayer.SessionMessageReplay>)
-            .addForReplay(any(), eq(id), eq(messageReplay))
+            .addForReplay(any(), eq(id), eq(messageReplay), eq(SESSION_COUNTERPARTIES))
     }
 
     @Test
@@ -97,10 +98,10 @@ class InMemorySessionReplayerTest {
 
         val id = UUID.randomUUID().toString()
         setRunning()
-        replayer.removeMessageFromReplay(id)
+        replayer.removeMessageFromReplay(id, SESSION_COUNTERPARTIES)
         @Suppress("UNCHECKED_CAST")
         verify(replayScheduler.constructed().last() as ReplayScheduler<InMemorySessionReplayer.SessionMessageReplay>)
-            .removeFromReplay(id)
+            .removeFromReplay(id, SESSION_COUNTERPARTIES)
     }
 
     @Test
@@ -128,9 +129,9 @@ class InMemorySessionReplayerTest {
 
         setRunning()
         var sessionId: String? = null
-        var sessionKey: SessionManager.SessionKey? = null
+        var counterparties: SessionManager.SessionCounterparties? = null
         val messageReplay = InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, US, COUNTER_PARTY) { key, callbackId  ->
-            sessionKey = key
+            counterparties = key
             sessionId = callbackId
         }
         replayCallback(messageReplay)
@@ -140,8 +141,8 @@ class InMemorySessionReplayerTest {
         val record = recordsCapture.allValues.single().single()
         assertThat(record.topic).isEqualTo(LINK_OUT_TOPIC)
         assertThat((record.value as? LinkOutMessage)?.payload).isEqualTo(helloMessage)
-        assertThat(sessionKey!!.ourId).isEqualTo(US)
-        assertThat(sessionKey!!.responderId).isEqualTo(COUNTER_PARTY)
+        assertThat(counterparties!!.ourId).isEqualTo(US)
+        assertThat(counterparties!!.counterpartyId).isEqualTo(COUNTER_PARTY)
         assertThat(sessionId).isEqualTo(id)
     }
 
@@ -208,7 +209,8 @@ class InMemorySessionReplayerTest {
         assertThrows<IllegalStateException> {
             replayer.addMessageForReplay(
                 "",
-                InMemorySessionReplayer.SessionMessageReplay(helloMessage, "", US, COUNTER_PARTY) {_, _->}
+                InMemorySessionReplayer.SessionMessageReplay(helloMessage, "", US, COUNTER_PARTY) {_, _->},
+                SESSION_COUNTERPARTIES
             )
         }
     }

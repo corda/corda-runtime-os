@@ -70,7 +70,7 @@ class RpcRbacEntitiesTest {
 
             val entitiesSet = RpcRbacEntitiesSet()
 
-            emf = entityManagerFactoryFactory.create(entitiesSet.name, entitiesSet.content.toList(), dbConfig)
+            emf = entityManagerFactoryFactory.create(entitiesSet.persistenceUnitName, entitiesSet.classes.toList(), dbConfig)
         }
 
         @Suppress("unused")

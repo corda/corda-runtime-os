@@ -39,9 +39,7 @@
 # the artifacts and/or their dependencies change.
 -runbundles: \
 	avro;version='[1.11.0,1.11.1)',\
-	bcpkix;version='[1.69.0,1.69.1)',\
 	bcprov;version='[1.69.0,1.69.1)',\
-	bcutil;version='[1.69.0,1.69.1)',\
 	com.fasterxml.jackson.core.jackson-annotations;version='[2.13.1,2.13.2)',\
 	com.fasterxml.jackson.core.jackson-core;version='[2.13.1,2.13.2)',\
 	com.fasterxml.jackson.core.jackson-databind;version='[2.13.1,2.13.2)',\
@@ -60,7 +58,7 @@
 	net.corda.cipher-suite;version='[5.0.0,5.0.1)',\
 	net.corda.configuration-core;version='[5.0.0,5.0.1)',\
 	net.corda.crypto;version='[5.0.0,5.0.1)',\
-	net.corda.crypto-internal;version='[5.0.0,5.0.1)',\
+	net.corda.crypto-client;version='[5.0.0,5.0.1)',\
 	net.corda.kafka-message-bus-impl;version='[5.0.0,5.0.1)',\
 	net.corda.kafka-topic-admin;version='[5.0.0,5.0.1)',\
 	net.corda.kotlin-stdlib-jdk7.osgi-bundle;version='[1.4.32,1.4.33)',\

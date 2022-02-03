@@ -2,11 +2,11 @@ package net.corda.flow.mapper.integration
 
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartRPCFlow
 import net.corda.data.flow.event.mapper.ExecuteCleanup
 import net.corda.data.flow.event.mapper.FlowMapperEvent
-import net.corda.data.flow.event.mapper.MessageDirection
 import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
@@ -35,7 +35,7 @@ class FlowMapperIntegrationTest {
     @Test
     fun sendStartRPC() {
         val startRPCFlow = StartRPCFlow("clientId", "cpiId", "flowName", HoldingIdentity("x500", "group"), Instant.now(), "args")
-        val flowMapperEvent = FlowMapperEvent(null, startRPCFlow)
+        val flowMapperEvent = FlowMapperEvent(startRPCFlow)
         val inputKey = "key1"
         val result = onNext(null, Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
 
@@ -51,9 +51,10 @@ class FlowMapperIntegrationTest {
     @Test
     fun sendScheduleCleanup() {
         val scheduleCleanup = ScheduleCleanup(Long.MAX_VALUE)
-        val flowMapperEvent = FlowMapperEvent(null, scheduleCleanup)
+        val flowMapperEvent = FlowMapperEvent(scheduleCleanup)
         val inputKey = "sessionId"
-        val result = onNext(FlowMapperState(FlowKey(), null, FlowMapperStateType.OPEN), Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
+        val result =
+            onNext(FlowMapperState(FlowKey(), null, FlowMapperStateType.OPEN), Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
 
         val state = result.updatedState
         val outputEvent = result.responseEvents
@@ -66,9 +67,10 @@ class FlowMapperIntegrationTest {
     @Test
     fun sendExecuteCleanup() {
         val executeCleanup = ExecuteCleanup()
-        val flowMapperEvent = FlowMapperEvent(null, executeCleanup)
+        val flowMapperEvent = FlowMapperEvent(executeCleanup)
         val inputKey = "sessionId"
-        val result = onNext(FlowMapperState(FlowKey(), null, FlowMapperStateType.OPEN), Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
+        val result =
+            onNext(FlowMapperState(FlowKey(), null, FlowMapperStateType.OPEN), Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
 
         val state = result.updatedState
         val outputEvent = result.responseEvents
@@ -80,9 +82,15 @@ class FlowMapperIntegrationTest {
     @Test
     fun sendSessionInit() {
         val flowKey = FlowKey("flowId", HoldingIdentity("x500-1", "group"))
-        val sessionInit = SessionEvent(1L, 1, SessionInit("flowName", "cpiId", flowKey, HoldingIdentity("x500-2", "group")))
-        val flowMapperEvent = FlowMapperEvent(MessageDirection.OUTBOUND, sessionInit)
         val inputKey = "sessionId"
+        val sessionInit = SessionEvent(
+            MessageDirection.OUTBOUND, 1L, inputKey, 1, SessionInit(
+                "flowName", "cpiId", flowKey,
+                HoldingIdentity("x500-2", "group"),
+                HoldingIdentity("x500-1", "group"), null
+            )
+        )
+        val flowMapperEvent = FlowMapperEvent(sessionInit)
         val result = onNext(null, Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
 
         val state = result.updatedState
@@ -99,9 +107,10 @@ class FlowMapperIntegrationTest {
 
     @Test
     fun receiveSessionInit() {
-        val sessionInit = SessionEvent(1L, 1, SessionInit("flowName", "cpiId", null, HoldingIdentity("x500-2", "group")))
-        val flowMapperEvent = FlowMapperEvent(MessageDirection.INBOUND, sessionInit)
         val inputKey = "sessionId-INITIATED"
+        val sessionInit = SessionEvent(MessageDirection.INBOUND, 1L, inputKey, 1, SessionInit("flowName", "cpiId", null, HoldingIdentity
+            ("x500-2", "group"), HoldingIdentity("x500-1", "group"), null))
+        val flowMapperEvent = FlowMapperEvent(sessionInit)
         val result = onNext(null, Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
 
         val state = result.updatedState
@@ -119,10 +128,10 @@ class FlowMapperIntegrationTest {
     @Test
     fun sendSessionDataAsInitiator() {
         val flowKey = FlowKey("flowId", HoldingIdentity("x500-1", "group"))
-        val sessionData = SessionEvent(1L, 3, SessionData(null))
-        val flowMapperEvent = FlowMapperEvent(MessageDirection.OUTBOUND, sessionData)
-        val flowMapperState = FlowMapperState(flowKey, null, FlowMapperStateType.OPEN)
         val inputKey = "sessionId"
+        val sessionData = SessionEvent(MessageDirection.OUTBOUND, 1L, inputKey, 3, SessionData(null))
+        val flowMapperEvent = FlowMapperEvent(sessionData)
+        val flowMapperState = FlowMapperState(flowKey, null, FlowMapperStateType.OPEN)
         val result = onNext(flowMapperState, Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
 
         val outputEvent = result.responseEvents.first()
@@ -136,10 +145,10 @@ class FlowMapperIntegrationTest {
     @Test
     fun receiveSessionDataAsInitiator() {
         val flowKey = FlowKey("flowId", HoldingIdentity("x500-2", "group"))
-        val sessionData = SessionEvent(1L, 3, SessionData(null))
-        val flowMapperEvent = FlowMapperEvent(MessageDirection.INBOUND, sessionData)
-        val flowMapperState = FlowMapperState(flowKey, null, FlowMapperStateType.OPEN)
         val inputKey = "sessionId"
+        val sessionData = SessionEvent(MessageDirection.INBOUND, 1L, "sessionId", 3, SessionData(null))
+        val flowMapperEvent = FlowMapperEvent(sessionData)
+        val flowMapperState = FlowMapperState(flowKey, null, FlowMapperStateType.OPEN)
         val result = onNext(flowMapperState, Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
 
         val outputEvent = result.responseEvents.first()
@@ -153,10 +162,10 @@ class FlowMapperIntegrationTest {
     @Test
     fun sendSessionDataAsInitiated() {
         val flowKey = FlowKey("flowId", HoldingIdentity("x500-1", "group"))
-        val sessionData = SessionEvent(1L, 3, SessionData(null))
-        val flowMapperEvent = FlowMapperEvent(MessageDirection.OUTBOUND, sessionData)
-        val flowMapperState = FlowMapperState(flowKey, null, FlowMapperStateType.OPEN)
         val inputKey = "sessionId-INITIATED"
+        val sessionData = SessionEvent(MessageDirection.OUTBOUND, 1L, inputKey, 3, SessionData(null))
+        val flowMapperEvent = FlowMapperEvent(sessionData)
+        val flowMapperState = FlowMapperState(flowKey, null, FlowMapperStateType.OPEN)
         val result = onNext(flowMapperState, Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
 
         val outputEvent = result.responseEvents.first()
@@ -170,10 +179,10 @@ class FlowMapperIntegrationTest {
     @Test
     fun receiveSessionDataAsInitiated() {
         val flowKey = FlowKey("flowId", HoldingIdentity("x500-2", "group"))
-        val sessionData = SessionEvent(1L, 3, SessionData(null))
-        val flowMapperEvent = FlowMapperEvent(MessageDirection.INBOUND, sessionData)
-        val flowMapperState = FlowMapperState(flowKey, null, FlowMapperStateType.OPEN)
         val inputKey = "sessionId-INITIATED"
+        val sessionData = SessionEvent(MessageDirection.INBOUND, 1L, inputKey, 3, SessionData(null))
+        val flowMapperEvent = FlowMapperEvent(sessionData)
+        val flowMapperState = FlowMapperState(flowKey, null, FlowMapperStateType.OPEN)
         val result = onNext(flowMapperState, Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
 
         val outputEvent = result.responseEvents.first()

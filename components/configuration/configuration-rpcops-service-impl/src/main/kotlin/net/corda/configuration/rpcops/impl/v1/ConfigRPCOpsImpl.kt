@@ -8,7 +8,6 @@ import net.corda.configuration.rpcops.impl.GROUP_NAME
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.httprpc.PluggableRPCOps
-import net.corda.httprpc.exception.HttpApiException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.endpoints.v1.ConfigRPCOps
@@ -23,6 +22,10 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.time.Duration
+import net.corda.configuration.rpcops.impl.exception.ConfigVersionException
+import net.corda.httprpc.exception.BadRequestException
+import net.corda.httprpc.exception.InternalServerException
+import net.corda.v5.base.util.contextLogger
 
 /** An implementation of [ConfigRPCOpsInternal]. */
 @Suppress("Unused")
@@ -40,6 +43,7 @@ internal class ConfigRPCOpsImpl @Activate constructor(
             ConfigurationManagementRequest::class.java,
             ConfigurationManagementResponse::class.java
         )
+        val logger = contextLogger()
     }
 
     override val targetInterface = ConfigRPCOps::class.java
@@ -75,9 +79,17 @@ internal class ConfigRPCOpsImpl @Activate constructor(
             HTTPUpdateConfigResponse(response.section, response.config, response.schemaVersion, response.version)
         } else {
             val exception = response.exception
-                ?: throw HttpApiException("Request was unsuccessful but no exception was provided.", 500)
-            // TODO - CORE-3304 - Return richer exception (e.g. containing the config and version currently in the DB).
-            throw HttpApiException("${exception.errorType}: ${exception.errorMessage}", 500)
+            if(exception == null){
+                logger.warn("Configuration Management request was unsuccessful but no exception was provided.")
+                throw InternalServerException("Request was unsuccessful but no exception was provided.")
+            }
+            logger.warn("Remote request to update config responded with exception: ${exception.errorType}: ${exception.errorMessage}")
+            throw ConfigVersionException(
+                exception.errorType,
+                exception.errorMessage,
+                response.schemaVersion,
+                response.config
+            )
         }
     }
 
@@ -86,7 +98,7 @@ internal class ConfigRPCOpsImpl @Activate constructor(
         ConfigFactory.parseString(config)
     } catch (e: ConfigException.Parse) {
         val message = "Configuration \"$config\" could not be parsed. Valid JSON or HOCON expected. Cause: ${e.message}"
-        throw HttpApiException(message, 400)
+        throw BadRequestException(message)
     }
 
     /**

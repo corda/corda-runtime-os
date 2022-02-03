@@ -12,12 +12,9 @@
     </appenders>
 
     <loggers>
-        <logger name="Console">
-            <appender-ref ref="Console" level="info"/>
-        </logger>
-
         <root level="debug">
             <appender-ref ref="App" level="info"/>
+            <appender-ref ref="Console" level="info"/>
         </root>
     </loggers>
 </configuration>
