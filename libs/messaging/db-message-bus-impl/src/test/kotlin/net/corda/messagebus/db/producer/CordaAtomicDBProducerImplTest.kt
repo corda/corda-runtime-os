@@ -72,7 +72,7 @@ internal class CordaAtomicDBProducerImplTest {
         assertThat(record.value).isEqualTo(serializedValue)
         assertThat(record.offset).isEqualTo(5)
         assertThat(record.partition).isEqualTo(1)
-        assertThat(record.transactionId).isEqualTo(CordaAtomicDBProducerImpl.ATOMIC_TRANSACTION.transaction_id)
+        assertThat(record.transactionId).isEqualTo(CordaAtomicDBProducerImpl.ATOMIC_TRANSACTION.transactionId)
 
         val topicRecordList = argumentCaptor<List<Record<*, *>>>()
         verify(topicService).addRecordsToPartition(topicRecordList.capture() , eq(1))
@@ -107,7 +107,7 @@ internal class CordaAtomicDBProducerImplTest {
         assertThat(record.value).isEqualTo(serializedValue)
         assertThat(record.offset).isEqualTo(2)
         assertThat(record.partition).isEqualTo(0)
-        assertThat(record.transactionId).isEqualTo(CordaAtomicDBProducerImpl.ATOMIC_TRANSACTION.transaction_id)
+        assertThat(record.transactionId).isEqualTo(CordaAtomicDBProducerImpl.ATOMIC_TRANSACTION.transactionId)
 
         val topicRecordList = argumentCaptor<List<Record<*, *>>>()
         verify(topicService).addRecordsToPartition(topicRecordList.capture() , eq(0))

@@ -19,7 +19,8 @@ class CommittedOffsetEntry (
     val topic: String,
 
     @Id
-    val consumer_group: String,
+    @Column(name = "consumer_group")
+    val consumerGroup: String,
 
     @Id
     val partition: Int,
@@ -37,7 +38,8 @@ class CommittedOffsetEntry (
 @Embeddable
 data class CommittedOffsetEntryKey(
     val topic: String,
-    val consumer_group: String,
+    @Column(name = "consumer_group")
+    val consumerGroup: String,
     val partition: Int,
     val offset: Long
 ): Serializable

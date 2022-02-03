@@ -106,10 +106,10 @@ internal class CordaTransactionalDBProducerImplTest {
         assertThat(record.transactionId).isNotEqualTo(CordaAtomicDBProducerImpl.ATOMIC_TRANSACTION)
 
         val initialTransactionRecord = dbTransaction.allValues.single()
-        assertThat(record.transactionId).isEqualTo(initialTransactionRecord.transaction_id)
+        assertThat(record.transactionId).isEqualTo(initialTransactionRecord.transactionId)
         assertThat(initialTransactionRecord.visible).isFalse()
 
-        assertThat(dbTransactionId.allValues.single()).isEqualTo(initialTransactionRecord.transaction_id)
+        assertThat(dbTransactionId.allValues.single()).isEqualTo(initialTransactionRecord.transactionId)
 
         val topicRecordList = argumentCaptor<List<Record<*, *>>>()
         verify(topicService).addRecordsToPartition(topicRecordList.capture() , eq(1))

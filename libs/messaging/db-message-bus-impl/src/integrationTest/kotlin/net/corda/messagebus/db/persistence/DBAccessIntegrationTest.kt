@@ -59,7 +59,12 @@ class DBAccessIntegrationTest {
 
             emf = entityManagerFactoryFactory.create(
                 "test",
-                listOf(TopicRecordEntry::class.java, CommittedOffsetEntry::class.java, TopicEntry::class.java, TransactionRecordEntry::class.java),
+                listOf(
+                    TopicRecordEntry::class.java,
+                    CommittedOffsetEntry::class.java,
+                    TopicEntry::class.java,
+                    TransactionRecordEntry::class.java,
+                ),
                 dbConfig,
             )
 
@@ -77,7 +82,7 @@ class DBAccessIntegrationTest {
             emf.close()
         }
 
-        fun <T> query(clazz: Class<T>, ql: String): MutableList<T> {
+        fun <T> query(clazz: Class<T>, ql: String): List<T> {
             val em = emf.createEntityManager()
             return try {
                 em.createQuery(ql, clazz).resultList
@@ -121,14 +126,14 @@ class DBAccessIntegrationTest {
 
         val nonCommittedResults = query(TransactionRecordEntry::class.java, "from transaction_record")
         nonCommittedResults.forEach { result ->
-            assertThat(result.transaction_id).isEqualTo("id")
+            assertThat(result.transactionId).isEqualTo("id")
             assertThat(result.visible).isFalse()
         }
 
-        dbAccess.makeRecordsVisible(transactionRecordEntry.transaction_id)
+        dbAccess.makeRecordsVisible(transactionRecordEntry.transactionId)
         val committedResults = query(TransactionRecordEntry::class.java, "from transaction_record")
         committedResults.forEach { result ->
-            assertThat(result.transaction_id).isEqualTo("id")
+            assertThat(result.transactionId).isEqualTo("id")
             assertThat(result.visible).isTrue()
         }
     }

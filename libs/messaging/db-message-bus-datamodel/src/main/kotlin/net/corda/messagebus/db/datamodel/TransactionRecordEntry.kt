@@ -9,7 +9,8 @@ import javax.persistence.Table
 @Table(name = "transaction_record")
 class TransactionRecordEntry(
     @Id
-    val transaction_id: String,
+    @Column(name = "transaction_id")
+    val transactionId: String,
 
     @Column
     var visible: Boolean

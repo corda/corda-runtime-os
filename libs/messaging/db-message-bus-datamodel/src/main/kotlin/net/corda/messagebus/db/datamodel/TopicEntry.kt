@@ -11,6 +11,6 @@ class TopicEntry(
     @Id
     val topic: String,
 
-    @Column
+    @Column(name = "num_partitions")
     val numPartitions: Int
 )

@@ -36,7 +36,7 @@ class CordaTransactionalDBProducerImpl(
     private val transactionalRecords = ThreadLocal.withInitial { mutableListOf<TopicRecordEntry>() }
     private val transaction = AtomicReference<TransactionRecordEntry?>()
     private val transactionId: String
-        get() = transaction.get()?.transaction_id ?: throw CordaMessageAPIFatalException("Bug in producer!")
+        get() = transaction.get()?.transactionId ?: throw CordaMessageAPIFatalException("Bug in producer!")
     private val inTransaction: Boolean
         get() = transaction.get() != null
 

@@ -70,7 +70,7 @@ class CordaAtomicDBProducerImpl(
                 offset,
                 serialisedKey,
                 serialisedValue,
-                ATOMIC_TRANSACTION.transaction_id,
+                ATOMIC_TRANSACTION.transactionId,
             )
         }
 

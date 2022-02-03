@@ -28,7 +28,7 @@ class TopicRecordEntry(
     val key: ByteArray,
     @Column
     val value: ByteArray?,
-    @Column
+    @Column(name = "transaction_id")
     val transactionId: String,
     @Column
     val timestamp: Instant = Instant.now().truncatedTo(ChronoUnit.MILLIS),
