@@ -1,12 +1,11 @@
 package net.corda.cpi.upload.endpoints.v1
 
-import net.corda.cpi.upload.endpoints.common.CpiUploadManager
 import net.corda.cpi.upload.endpoints.common.CpiUploadRPCOpsHandler
+import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.libs.virtualnode.endpoints.v1.CpiUploadRPCOps
 import net.corda.libs.virtualnode.endpoints.v1.HTTPCpiUploadRequestId
 import net.corda.lifecycle.Lifecycle
-import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.v5.base.util.contextLogger
@@ -19,13 +18,15 @@ import java.io.InputStream
 class CpiUploadRPCOpsImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = CpiUploadManager::class)
-    private val cpiUploadManager: CpiUploadManager
+    @Reference(service = CpiUploadRPCOpsService::class)
+    private val cpiUploadRPCOpsService: CpiUploadRPCOpsService
 ) : CpiUploadRPCOps, PluggableRPCOps<CpiUploadRPCOps>, Lifecycle {
 
     private val coordinator = coordinatorFactory.createCoordinator<CpiUploadRPCOps>(
         CpiUploadRPCOpsHandler()
     )
+
+    private val cpiUploadManager get() = cpiUploadRPCOpsService.cpiUploadManager
 
     companion object {
         val log = contextLogger()
@@ -48,6 +49,7 @@ class CpiUploadRPCOpsImpl @Activate constructor(
             "CpiUploadRPCOpsImpl is not running yet!"
         }
 
+        //cpiUploadManager.sendCpiChunk()
         // TODO - kyriakos - fix the endpoint to actually receive the file - needs corda rpc framework extended
         // TODO - kyriakos - validation of CPI -> check it is well formed - maybe in a subsequent PR
         // TODO - kyriakos - split it in chunks and put it on kafka

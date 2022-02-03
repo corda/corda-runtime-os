@@ -41,5 +41,6 @@ dependencies {
     runtimeOnly project(':libs:permissions:permission-validation-impl')
     runtimeOnly project(':libs:schema-registry:schema-registry-impl')
 
+    runtimeOnly project(':libs:virtual-node:cpi-upload-manager-impl')
     runtimeOnly project(':components:virtual-node:cpi-upload-rpcops-service')
 }
