@@ -22,7 +22,6 @@ import org.bouncycastle.jce.spec.ECPrivateKeySpec
 import org.bouncycastle.jce.spec.ECPublicKeySpec
 import org.bouncycastle.math.ec.ECConstants
 import org.bouncycastle.math.ec.FixedPointCombMultiplier
-import org.bouncycastle.util.encoders.Base32
 import java.math.BigInteger
 import java.security.KeyPair
 import java.security.MessageDigest
@@ -204,7 +203,7 @@ class DevCryptoService(
                     scheme = signatureScheme,
                     category = category,
                     alias = alias,
-                    hsmAlias = computeHSMAlias(alias)
+                    hsmAlias = computeHSMAlias(tenantId, alias)
                 )
             }
             keyPair.public
@@ -241,7 +240,4 @@ class DevCryptoService(
     }
 
     private fun isSupported(scheme: SignatureScheme): Boolean = scheme.codeName in supportedSchemeCodes
-
-    private fun computeHSMAlias(alias: String): String
-            = Base32.toBase32String((tenantId + alias).encodeToByteArray().sha256Bytes()).take(30).toLowerCase()
 }

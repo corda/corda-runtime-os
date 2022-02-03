@@ -4,7 +4,7 @@ import net.corda.bundle1.Cash
 import net.corda.install.InstallService
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxException
-import net.corda.serialization.factory.CheckpointSerializerBuilderFactory
+import net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.AfterAll

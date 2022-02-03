@@ -39,9 +39,7 @@
 # the artifacts and/or their dependencies change.
 -runbundles: \
 	avro;version='[1.11.0,1.11.1)',\
-	bcpkix;version='[1.69.0,1.69.1)',\
 	bcprov;version='[1.69.0,1.69.1)',\
-	bcutil;version='[1.69.0,1.69.1)',\
 	com.fasterxml.jackson.core.jackson-annotations;version='[2.13.1,2.13.2)',\
 	com.fasterxml.jackson.core.jackson-core;version='[2.13.1,2.13.2)',\
 	com.fasterxml.jackson.core.jackson-databind;version='[2.13.1,2.13.2)',\

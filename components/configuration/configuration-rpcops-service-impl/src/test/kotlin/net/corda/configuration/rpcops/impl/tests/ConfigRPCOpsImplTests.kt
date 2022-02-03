@@ -24,6 +24,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.util.concurrent.CompletableFuture
+import net.corda.httprpc.ResponseCode
 
 /** Tests of [ConfigRPCOpsImpl]. */
 class ConfigRPCOpsImplTests {
@@ -111,7 +112,7 @@ class ConfigRPCOpsImplTests {
         }
 
         assertEquals(expectedMessage, e.message)
-        assertEquals(400, e.statusCode)
+        assertEquals(ResponseCode.BAD_REQUEST, e.responseCode)
     }
 
     @Test
@@ -131,7 +132,7 @@ class ConfigRPCOpsImplTests {
         }
 
         assertEquals("ErrorType: ErrorMessage.", e.message)
-        assertEquals(500, e.statusCode)
+        assertEquals(ResponseCode.INTERNAL_SERVER_ERROR, e.responseCode)
     }
 
     @Test
@@ -147,7 +148,7 @@ class ConfigRPCOpsImplTests {
         }
 
         assertEquals("Request was unsuccessful but no exception was provided.", e.message)
-        assertEquals(500, e.statusCode)
+        assertEquals(ResponseCode.INTERNAL_SERVER_ERROR, e.responseCode)
     }
 
     @Test

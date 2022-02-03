@@ -25,8 +25,11 @@ docker-compose -f single-kafka-cluster.yml down
 
 ```shell
 cd applications\tools\flow-worker-setup
-java -jar build/bin/corda-flow-worker-setup-5.0.0.0-SNAPSHOT.jar --config config.conf --topic topics.conf --instanceId=1 
+java -jar build/bin/corda-flow-worker-setup-5.0.0.0-SNAPSHOT.jar DeleteAllTopics CreateTopics SetupVirtualNode \
+PublishConfig StartFlow --cpiDir C:/ows/git-repo/corda-runtime-os-build/testing/cpbs/helloworld/build/libs --config config.conf
 ```
+
+Note the absolute path. Update it to reflect your own as relative causes NPE
 
 ### Run Test App
 There are two options for passing the CPK Cache directory to the worker, either it can be published on the configuration kafka topic
@@ -35,8 +38,7 @@ or it can be specified as an optional param on the command line (see example bel
 
 ```shell
 cd applications\workers\release\flow-worker
-java -jar build/bin/corda-flow-worker-5.0.0.0-SNAPSHOT.jar  --instanceId 1 \
---additionalParams corda.cpi.cacheDir="./../../../testing/cpbs/helloworld/build/libs"
+java -jar build/bin/corda-flow-worker-5.0.0.0-SNAPSHOT.jar --instanceId 1
 ```
 
 You may find it helpful to in Intellij to create a "JAR Application configuration" to run this step, and additionally

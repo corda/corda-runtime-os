@@ -15,11 +15,13 @@ import net.corda.membership.identity.MemberInfoExtension.Companion.MEMBER_STATUS
 import net.corda.membership.identity.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.identity.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.identity.MemberInfoExtension.Companion.groupId
+import net.corda.membership.identity.MemberInfoExtension.Companion.identityKeyHashes
 import net.corda.membership.identity.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.identity.MemberInfoExtension.Companion.softwareVersion
 import net.corda.membership.identity.MemberInfoExtension.Companion.status
 import net.corda.membership.identity.converter.EndpointInfoConverter
 import net.corda.membership.identity.converter.PublicKeyConverter
+import net.corda.membership.identity.converter.PublicKeyHashConverter
 import net.corda.membership.identity.toMemberInfo
 import net.corda.membership.identity.toSortedMap
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.NOT_SUBMITTED
@@ -34,6 +36,7 @@ import net.corda.membership.staticnetwork.TestUtils.Companion.daisyName
 import net.corda.membership.staticnetwork.TestUtils.Companion.ericName
 import net.corda.membership.staticnetwork.TestUtils.Companion.frankieName
 import net.corda.membership.staticnetwork.TestUtils.Companion.groupPolicyWithDuplicateMembers
+import net.corda.membership.staticnetwork.TestUtils.Companion.groupPolicyWithDuplicateMembers
 import net.corda.membership.staticnetwork.TestUtils.Companion.groupPolicyWithInvalidStaticNetworkTemplate
 import net.corda.membership.staticnetwork.TestUtils.Companion.groupPolicyWithStaticNetwork
 import net.corda.membership.staticnetwork.TestUtils.Companion.groupPolicyWithoutMgm
@@ -45,6 +48,8 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.crypto.calculateHash
+import net.corda.v5.membership.identity.MemberInfo
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
@@ -74,8 +79,12 @@ class StaticMemberRegistrationServiceTest {
     private val daisy = HoldingIdentity(daisyName.toString(), DUMMY_GROUP_ID)
     private val eric = HoldingIdentity(ericName.toString(), DUMMY_GROUP_ID)
     private val frankie = HoldingIdentity(frankieName.toString(), DUMMY_GROUP_ID)
-    private val aliceKey: PublicKey = mock()
-    private val bobKey: PublicKey = mock()
+    private val aliceKey: PublicKey = mock {
+        on { encoded } doReturn ALICE_KEY.toByteArray()
+    }
+    private val bobKey: PublicKey = mock {
+        on { encoded } doReturn BOB_KEY.toByteArray()
+    }
 
     private val groupPolicyProvider: GroupPolicyProvider = mock {
         on { getGroupPolicy(alice) } doReturn groupPolicyWithStaticNetwork
@@ -99,7 +108,10 @@ class StaticMemberRegistrationServiceTest {
     }
 
     private val keyEncodingService: KeyEncodingService = mock {
-        on { decodePublicKey(any<String>()) } doReturn mock()
+        val key: PublicKey = mock {
+            on { encoded } doReturn "3456".toByteArray()
+        }
+        on { decodePublicKey(any<String>()) } doReturn key
         on { decodePublicKey(ALICE_KEY) } doReturn aliceKey
         on { decodePublicKey(BOB_KEY) } doReturn bobKey
 
@@ -142,7 +154,7 @@ class StaticMemberRegistrationServiceTest {
     }
 
     private val converter: PropertyConverterImpl = PropertyConverterImpl(
-        listOf(EndpointInfoConverter(), PublicKeyConverter(keyEncodingService))
+        listOf(EndpointInfoConverter(), PublicKeyConverter(keyEncodingService), PublicKeyHashConverter())
     )
 
     private val digestService: DigestService = mock {
@@ -212,17 +224,22 @@ class StaticMemberRegistrationServiceTest {
                 aliceName -> {
                     assertEquals(aliceKey, memberPublished.owningKey)
                     assertEquals(1, memberPublished.identityKeys.size)
+                    assertEquals(1, memberPublished.identityKeyHashes.size)
+                    assertEquals(aliceKey.calculateHash(), memberPublished.identityKeyHashes.first())
                     assertEquals(MEMBER_STATUS_ACTIVE, memberPublished.status)
                     assertEquals(1, memberPublished.endpoints.size)
                 }
                 bobName -> {
                     assertEquals(bobKey, memberPublished.owningKey)
                     assertEquals(1, memberPublished.identityKeys.size)
+                    assertEquals(1, memberPublished.identityKeyHashes.size)
+                    assertEquals(bobKey.calculateHash(), memberPublished.identityKeyHashes.first())
                     assertNotNull(memberPublished.status)
                     assertNotNull(memberPublished.endpoints)
                 }
                 charlieName -> {
                     assertEquals(1, memberPublished.identityKeys.size)
+                    assertEquals(1, memberPublished.identityKeyHashes.size)
                     assertEquals(MEMBER_STATUS_SUSPENDED, memberPublished.status)
                     assertEquals(2, memberPublished.endpoints.size)
                 }

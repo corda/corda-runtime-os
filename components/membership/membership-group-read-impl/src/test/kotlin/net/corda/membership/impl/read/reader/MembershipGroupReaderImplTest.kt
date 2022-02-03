@@ -1,11 +1,11 @@
 package net.corda.membership.impl.read.reader
 
 import net.corda.membership.GroupPolicy
+import net.corda.membership.identity.MemberInfoExtension.Companion.IDENTITY_KEY_HASHES
 import net.corda.membership.impl.read.TestProperties
 import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_1
 import net.corda.membership.impl.read.cache.MemberListCache
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
-import net.corda.membership.impl.read.reader.MembershipGroupReaderImpl.Companion.IDENTITY_KEY_HASHES
 import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.crypto.sha256Bytes
 import net.corda.v5.membership.identity.MemberContext

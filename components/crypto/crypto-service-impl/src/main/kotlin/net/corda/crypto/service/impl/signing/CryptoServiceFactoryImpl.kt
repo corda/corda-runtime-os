@@ -12,12 +12,9 @@ import net.corda.data.crypto.config.HSMConfig
 import net.corda.data.crypto.config.TenantHSMConfig
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceContext
 import net.corda.v5.cipher.suite.CryptoServiceProvider
-import net.corda.v5.crypto.DigestService
-import net.corda.v5.crypto.SignatureVerificationService
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -117,13 +114,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
         ): CryptoService {
             val context = CryptoServiceContext(
                 category = category,
-                memberId = tenantId,
-                cipherSuiteFactory = object : CipherSuiteFactory { // TODO2 delete that
-                    override fun getDigestService(): DigestService = throw  NotImplementedError()
-                    override fun getSchemeMap(): CipherSchemeMetadata = throw  NotImplementedError()
-                    override fun getSignatureVerificationService(): SignatureVerificationService =
-                        throw  NotImplementedError()
-                },
+                tenantId = tenantId,
                 config = objectMapper.readValue(config.hsm.serviceConfig.array(), provider.configType)
             )
             return CryptoServiceDecorator(
