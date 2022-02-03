@@ -26,7 +26,7 @@ class FakeSecurityManager : RPCSecurityManager {
 
     override fun authenticate(principal: String, password: Password): AuthorizingSubject {
         return "admin".let {
-            if (it == principal && password == Password(it)) {
+            if (it == principal.toLowerCase() && password == Password(it)) {
                 AdminSubject(principal)
             } else {
                 throw FailedLoginException("No provisions for: $principal")
