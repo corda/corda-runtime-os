@@ -1,18 +1,15 @@
 package net.corda.session.manager.integration
 
-import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.state.session.SessionState
 import net.corda.session.manager.impl.SessionManagerImpl
 import java.time.Instant
-import java.util.*
 
 class SessionParty (
-    var otherParty: SessionParty? = null,
-    var sessionState: SessionState? = null,
-    var inboundMessages: LinkedList<SessionEvent> = LinkedList<SessionEvent>()
-) : SessionInteractions, BusInteractions {
+    private val inboundMessages: MessageBus,
+    private val outboundMessages: MessageBus,
+    var sessionState: SessionState? = null
+) : SessionInteractions, BusInteractions by inboundMessages {
 
     private val sessionManager = SessionManagerImpl()
 
@@ -28,7 +25,7 @@ class SessionParty (
     override fun sendMessages() {
         val (updatedState, outputMessages) = sessionManager.getMessagesToSend(sessionState!!)
         sessionState = updatedState
-        otherParty?.receiveMessages(outputMessages)
+        outboundMessages.addMessages(outputMessages)
     }
 
     private fun generateMessage(messageType: SessionMessageType) : SessionEvent {
@@ -60,15 +57,6 @@ class SessionParty (
         }
     }
 
-    override fun processReceivedMessage(seqNum: Int, sendMessages: Boolean, isAck: Boolean) {
-        val nextMessage = if (isAck) getInboundAck(seqNum) else getInboundMessage(seqNum)
-        processAndAcknowledgeEventsInSequence(nextMessage)
-
-        if (sendMessages) {
-            sendMessages()
-        }
-    }
-
     private fun processAndAcknowledgeEventsInSequence(nextMessage: SessionEvent?) {
         if (nextMessage != null) {
             sessionState = sessionManager.processMessageReceived("key", sessionState, nextMessage, Instant.now())
@@ -79,35 +67,5 @@ class SessionParty (
                 message = sessionManager.getNextReceivedEvent(sessionState!!)
             }
         }
-    }
-
-    override fun receiveMessages(sessionEvents: List<SessionEvent>) {
-        sessionEvents.map { it.messageDirection = MessageDirection.INBOUND }
-        inboundMessages.addAll(sessionEvents)
-    }
-
-    override fun getNextInboundMessage() : SessionEvent? {
-        return inboundMessages.poll()
-    }
-
-    override fun getInboundMessage(seqNum: Int) : SessionEvent? {
-        val message = inboundMessages.find { it.sequenceNum == seqNum }
-        inboundMessages.remove(message)
-        return message
-    }
-
-    override fun getInboundAck(seqNum: Int) : SessionEvent? {
-        val ack = inboundMessages.find { it.payload::class.java == SessionAck::class.java
-                && (it.payload as SessionAck).sequenceNum == seqNum }
-        inboundMessages.remove(ack)
-        return ack
-    }
-
-    override fun randomShuffleInboundMessages() {
-        inboundMessages.shuffle()
-    }
-
-    override fun reverseInboundMessages() {
-        inboundMessages.reverse()
     }
 }

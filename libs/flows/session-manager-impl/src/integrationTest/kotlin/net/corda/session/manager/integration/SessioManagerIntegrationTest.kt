@@ -112,8 +112,8 @@ class SessionManagerIntegrationTest {
 
         //bob receive data out of order and send 1 ack back
         bob.apply {
-            processReceivedMessage(3, sendMessages = true)
-            processReceivedMessage(2)
+            dropNextMessage()
+            processNextReceivedMessage(sendMessages = true)
         }
 
         alice.apply {

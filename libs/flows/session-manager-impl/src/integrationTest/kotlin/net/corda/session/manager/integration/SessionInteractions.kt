@@ -29,13 +29,4 @@ interface SessionInteractions {
      */
     fun processAllReceivedMessages(sendMessages: Boolean = false)
 
-
-    /**
-     * Get a specific message from the bus.
-     * Get messages by [seqNum].
-     * If the message to get is an ack set [isAck] to true
-     * Set [sendMessages] to true to send any queued messages to the counterparty.
-     * This call will also trigger the client lib to mark any contiguous messages received events as delivered automatically.
-     */
-    fun processReceivedMessage(seqNum: Int, sendMessages: Boolean = false, isAck: Boolean = false)
 }

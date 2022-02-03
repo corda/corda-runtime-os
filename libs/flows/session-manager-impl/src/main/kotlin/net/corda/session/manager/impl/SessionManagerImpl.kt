@@ -2,6 +2,7 @@ package net.corda.session.manager.impl
 
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionAck
+import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.SessionManager
@@ -30,8 +31,9 @@ class SessionManagerImpl : SessionManager {
         val status = sessionState.status
         return when {
             //must be an active session
-            (status != SessionStateType.CONFIRMED && status != SessionStateType.CLOSING) -> null
             undeliveredMessages.isEmpty() -> null
+            status == SessionStateType.CREATED || status == SessionStateType.WAIT_FOR_FINAL_ACK -> null
+            status == SessionStateType.CLOSED && undeliveredMessages.first().payload !is SessionClose -> null
             undeliveredMessages.first().sequenceNum <= receivedEvents.lastProcessedSequenceNum -> undeliveredMessages.first()
             else -> null
         }

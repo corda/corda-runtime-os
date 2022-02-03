@@ -10,14 +10,24 @@ interface BusInteractions {
     fun getNextInboundMessage() : SessionEvent?
 
     /**
-     * Get a specific session event from the bus by [seqNum]
+     * Get a specific session event from the bus by [position]
      */
-    fun getInboundMessage(seqNum: Int) : SessionEvent?
+    fun getInboundMessage(position: Int) : SessionEvent
 
     /**
-     * Get a specific session ack from the bus by [seqNum]
+     * Remove the next message from the inbound messages
      */
-    fun getInboundAck(seqNum: Int) : SessionEvent?
+    fun dropNextMessage()
+
+    /**
+     * Remove the message from the inbound messages at a certain [position]
+     */
+    fun dropInboundMessage(position: Int)
+
+    /**
+     * Drop all messages
+     */
+    fun dropAllInboundMessages()
 
     /**
      * Randomly shuffle the messages on the bus
@@ -32,5 +42,5 @@ interface BusInteractions {
     /**
      * Receive a list of [sessionEvents] to be stored on the bus
      */
-    fun receiveMessages(sessionEvents: List<SessionEvent>)
+    fun addMessages(sessionEvents: List<SessionEvent>)
 }
