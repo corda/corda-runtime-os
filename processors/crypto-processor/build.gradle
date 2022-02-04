@@ -22,7 +22,6 @@ dependencies {
     implementation "net.i2p.crypto:eddsa:$eddsaVersion"
     implementation "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion"
     implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
-    implementation "org.slf4j:slf4j-api"
 
     implementation project(':components:configuration:configuration-read-service')
     implementation project(':components:crypto:crypto-persistence')
@@ -33,7 +32,6 @@ dependencies {
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(":libs:messaging:messaging")
 
-    testImplementation "org.slf4j:slf4j-simple:$slf4jVersion"
     testImplementation project(":testing:test-utilities")
 
     runtimeOnly project(":components:configuration:configuration-read-service-impl")
@@ -45,10 +43,10 @@ dependencies {
     runtimeOnly project(":libs:messaging:messaging-impl")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
 
-    runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 
+    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
     integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")
 }
