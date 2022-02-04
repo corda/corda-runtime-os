@@ -1,19 +1,15 @@
 package net.corda.httprpc.client.stream
 
-import com.google.common.jimfs.Jimfs
 import net.corda.utilities.div
 import net.corda.v5.base.stream.PositionManager
 import org.assertj.core.api.AbstractThrowableAssert
 import org.assertj.core.api.Assertions
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.ByteBuffer
 import java.nio.channels.ClosedChannelException
 import java.nio.channels.FileChannel
 import java.nio.channels.OverlappingFileLockException
-import java.nio.file.FileSystem
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import kotlin.test.assertEquals
@@ -21,21 +17,12 @@ import kotlin.test.assertTrue
 
 class FilePositionManagerTest {
 
-    lateinit var fs: FileSystem
-
-    @BeforeEach
-    private fun beforeEach() {
-        fs = Jimfs.newFileSystem()
-    }
-
-    @AfterEach
-    private fun afterEach() {
-        fs.close()
-    }
+    @TempDir
+    lateinit var tempFolder: Path
 
     @Test
     fun readWriteTest() {
-        val filePath = fs.getPath("readWriteTest.txt")
+        val filePath = tempFolder / "readWriteTest.txt"
         val filePositionManager = FilePositionManager(filePath)
         filePositionManager.use { instance ->
             assertEquals(PositionManager.MIN_POSITION, instance.get())
@@ -61,24 +48,19 @@ class FilePositionManagerTest {
         }.isInstanceOf<ClosedChannelException>()
     }
 
-    @TempDir
-    lateinit var tempFolder: Path
-
     @Test
     fun doubleCreateTest() {
-        // JimFS doesn't handle file locks as expected, so falling back to actual fs.
-        //   https://github.com/google/jimfs/issues/67
         val filePath = tempFolder / "doubleCreate.txt"
         FilePositionManager(filePath).use {
             Assertions.assertThatThrownBy {
-                FilePositionManager(filePath).close()
+                FilePositionManager(filePath)
             }.isInstanceOf<OverlappingFileLockException>()
         }
     }
 
     @Test
     fun existingContent() {
-        val filePath = fs.getPath("existingContent.txt")
+        val filePath = tempFolder / "existingContent.txt"
         val value = 101L
         FileChannel.open(filePath, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE).use {
             it.write(ByteBuffer.wrap(value.toString().toByteArray()))
@@ -90,7 +72,7 @@ class FilePositionManagerTest {
 
     @Test
     fun unparseableFile() {
-        val filePath = fs.getPath("wrongContent.txt")
+        val filePath = tempFolder / "wrongContent.txt"
         FileChannel.open(filePath, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE).use {
             it.write(ByteBuffer.wrap("fooBar".toByteArray()))
         }
@@ -103,7 +85,7 @@ class FilePositionManagerTest {
 
     @Test
     fun multiThreadedTest() {
-        val filePath = fs.getPath("multiThreadedTest.txt")
+        val filePath = tempFolder / "multiThreadedTest.txt"
         FilePositionManager(filePath).use { fpm ->
             val maxPos = 10_000
             (1..maxPos).toList().stream().parallel().forEach {
