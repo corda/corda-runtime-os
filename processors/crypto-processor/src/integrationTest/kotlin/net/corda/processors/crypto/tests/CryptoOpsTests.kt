@@ -91,8 +91,18 @@ class CryptoOpsTests {
     fun setup() {
         tenantId = UUID.randomUUID().toString()
 
+        logger.info("Starting ${client::class.java.simpleName}")
+        client.startAndWait()
+
         logger.info("Starting ${processor::class.java.simpleName}")
         processor.startAndWait(makeBootstrapConfig(BOOT_CONFIGURATION))
+
+        testDependencies = TestLifecycleDependenciesTrackingCoordinator(
+            LifecycleCoordinatorName.forComponent<CryptoOpsTests>(),
+            coordinatorFactory,
+            CryptoOpsClient::class.java,
+            CryptoProcessor::class.java
+        ).also { it.startAndWait() }
 
         logger.info("Publishing configs for $CRYPTO_CONFIG and $MESSAGING_CONFIG")
         with(publisherFactory.createPublisher(PublisherConfig(CLIENT_ID))) {
@@ -111,16 +121,6 @@ class CryptoOpsTests {
                 )
             )
         }
-        
-        testDependencies = TestLifecycleDependenciesTrackingCoordinator(
-            LifecycleCoordinatorName.forComponent<CryptoOpsTests>(),
-            coordinatorFactory,
-            CryptoOpsClient::class.java,
-            CryptoProcessor::class.java
-        ).also { it.startAndWait() }
-
-        logger.info("Starting ${client::class.java.simpleName}")
-        client.startAndWait()
 
         testDependencies.waitUntilAllUp(Duration.ofSeconds(10))
     }
