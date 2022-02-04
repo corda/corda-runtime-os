@@ -87,8 +87,10 @@ class CryptoOpsTests {
     fun setup() {
         tenantId = UUID.randomUUID().toString()
 
+        logger.info("Starting crypto processor")
         processor.start(makeBootstrapConfig(BOOT_CONFIGURATION))
 
+        logger.info("Starting ${client::class.java.name}")
         client.startAndWait()
 
         testDependencies = TestLifecycleDependenciesTrackingCoordinator(
@@ -98,6 +100,7 @@ class CryptoOpsTests {
             CryptoProcessor::class.java
         ).also { it.startAndWait() }
 
+        logger.info("Publishing configs for $CRYPTO_CONFIG and $MESSAGING_CONFIG")
         publisherFactory.publishConfig(
             CLIENT_ID,
             CRYPTO_CONFIGURATION to CRYPTO_CONFIG,
