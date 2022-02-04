@@ -32,6 +32,8 @@ dependencies {
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(":libs:messaging:messaging")
 
+    testImplementation "org.slf4j:slf4j-simple:$slf4jVersion"
+
     testImplementation project(":testing:test-utilities")
 
     runtimeOnly project(":components:configuration:configuration-read-service-impl")
