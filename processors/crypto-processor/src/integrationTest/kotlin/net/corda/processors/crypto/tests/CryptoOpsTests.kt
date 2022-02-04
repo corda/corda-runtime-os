@@ -95,15 +95,15 @@ class CryptoOpsTests {
 
         processor.start(makeBootstrapConfig(BOOT_CONFIGURATION))
 
+        client.startAndWait()
+
         testDependencies = TestLifecycleDependenciesTrackingCoordinator(
             LifecycleCoordinatorName.forComponent<CryptoOpsTests>(),
             coordinatorFactory,
             CryptoOpsClient::class.java,
             CryptoProcessor::class.java
-        ).also { it.start() }
+        ).also { it.startAndWait() }
 
-        client.startAndWait()
-        //Thread.sleep(10000)
         testDependencies.waitUntilAllUp(Duration.ofSeconds(30))
     }
 
