@@ -10,6 +10,7 @@ dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "org.osgi:osgi.annotation"
 
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation "net.corda:corda-avro-schema"
@@ -18,7 +19,6 @@ dependencies {
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-crypto"
     implementation "net.corda:corda-topic-schema"
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "net.i2p.crypto:eddsa:$eddsaVersion"
     implementation "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion"
     implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
@@ -48,7 +48,6 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 
-    testImplementation 'org.slf4j:slf4j-simple:1.7.35'
-
+    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
     integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")
 }
