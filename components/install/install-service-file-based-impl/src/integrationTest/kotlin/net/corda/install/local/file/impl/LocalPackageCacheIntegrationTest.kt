@@ -16,6 +16,8 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import org.junit.jupiter.api.condition.EnabledOnOs
+import org.junit.jupiter.api.condition.OS
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.test.common.annotation.InjectService
@@ -66,7 +68,6 @@ class LocalPackageCacheIntegrationTest {
         installService.stop()
         configReadService.stop()
     }
-
 
     @Test
     @Timeout(value = 10, unit = TimeUnit.SECONDS)

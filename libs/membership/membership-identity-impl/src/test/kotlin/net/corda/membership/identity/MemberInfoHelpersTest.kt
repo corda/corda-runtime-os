@@ -7,7 +7,7 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
-class SerializerHelpersTest {
+class MemberInfoHelpersTest {
     @Test
     fun `key order validation passes when map is ordered`() {
         val orderedMap = listOf(

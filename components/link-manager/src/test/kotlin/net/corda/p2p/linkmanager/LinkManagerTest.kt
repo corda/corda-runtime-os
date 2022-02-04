@@ -46,7 +46,7 @@ import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMes
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromAuthenticatedMessageAndKey
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
-import net.corda.p2p.linkmanager.sessions.SessionManagerImpl.Companion.getSessionKeyFromMessage
+import net.corda.p2p.linkmanager.sessions.SessionManagerImpl.Companion.getSessionCounterpartiesFromMessage
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.linkmanager.utilities.MockNetworkMap
 import net.corda.p2p.markers.AppMessageMarker
@@ -314,13 +314,13 @@ class LinkManagerTest {
 
         val message1 = authenticatedMessageAndKey(FIRST_SOURCE, FIRST_DEST, payload1, messageIds[0])
         val message2 = authenticatedMessageAndKey(FIRST_SOURCE, FIRST_DEST, payload2, messageIds[1])
-        val key1 = getSessionKeyFromMessage(message1.message)
+        val sessionCounterparties1 = getSessionCounterpartiesFromMessage(message1.message)
 
         // Messages 3, 4, 5 can share another session
         val message3 = authenticatedMessageAndKey(SECOND_SOURCE, SECOND_DEST, payload3, messageIds[2])
         val message4 = authenticatedMessageAndKey(SECOND_SOURCE, SECOND_DEST, payload4, messageIds[3])
         val message5 = authenticatedMessageAndKey(SECOND_SOURCE, SECOND_DEST, payload5, messageIds[4])
-        val key2 = getSessionKeyFromMessage(message3.message)
+        val sessionCounterparties2 = getSessionCounterpartiesFromMessage(message3.message)
 
         val publisher = TestListBasedPublisher()
         val mockPublisherFactory = Mockito.mock(PublisherFactory::class.java)
@@ -336,16 +336,16 @@ class LinkManagerTest {
         queue.start()
         createResources!!(mock())
 
-        queue.queueMessage(message1, key1)
-        queue.queueMessage(message2, key1)
+        queue.queueMessage(message1, sessionCounterparties1)
+        queue.queueMessage(message2, sessionCounterparties1)
 
-        queue.queueMessage(message3, key2)
-        queue.queueMessage(message4, key2)
-        queue.queueMessage(message5, key2)
+        queue.queueMessage(message3, sessionCounterparties2)
+        queue.queueMessage(message4, sessionCounterparties2)
+        queue.queueMessage(message5, sessionCounterparties2)
 
         // Session is ready for messages 3, 4, 5
         val sessionPair = createSessionPair()
-        queue.sessionNegotiatedCallback(sessionManager, key2, sessionPair.initiatorSession, mockNetworkMap, messageHeaderFactory)
+        queue.sessionNegotiatedCallback(sessionManager, sessionCounterparties2, sessionPair.initiatorSession, mockNetworkMap, messageHeaderFactory)
         assertThat(publisher.list.map{ extractPayload(sessionPair.responderSession, it.value as LinkOutMessage) })
             .hasSize(3).containsExactlyInAnyOrder(payload3, payload4, payload5)
 
@@ -353,7 +353,7 @@ class LinkManagerTest {
 
         publisher.list = mutableListOf()
         // Session is ready for messages 1, 2
-        queue.sessionNegotiatedCallback(sessionManager, key1, sessionPair.initiatorSession, mockNetworkMap, messageHeaderFactory)
+        queue.sessionNegotiatedCallback(sessionManager, sessionCounterparties1, sessionPair.initiatorSession, mockNetworkMap, messageHeaderFactory)
         assertThat(publisher.list.map{ extractPayload(sessionPair.responderSession, it.value as LinkOutMessage) })
             .hasSize(2).containsExactlyInAnyOrder(payload1, payload2)
 
@@ -732,7 +732,7 @@ class LinkManagerTest {
 
         val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
         Mockito.`when`(mockSessionManager.getSessionById(any())).thenReturn(
-            SessionManager.SessionDirection.Inbound(SessionManager.SessionKey(
+            SessionManager.SessionDirection.Inbound(SessionManager.SessionCounterparties(
                 FIRST_DEST.toHoldingIdentity(),
                 FIRST_SOURCE.toHoldingIdentity()),
                 session.responderSession
@@ -801,7 +801,7 @@ class LinkManagerTest {
         val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
         Mockito.`when`(mockSessionManager.getSessionById(any()))
             .thenReturn(SessionManager.SessionDirection.Outbound(
-                SessionManager.SessionKey(FIRST_SOURCE.toHoldingIdentity(), FIRST_DEST.toHoldingIdentity()),
+                SessionManager.SessionCounterparties(FIRST_SOURCE.toHoldingIdentity(), FIRST_DEST.toHoldingIdentity()),
                 session.responderSession
             )
         )
@@ -829,7 +829,7 @@ class LinkManagerTest {
         val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
         Mockito.`when`(mockSessionManager.getSessionById(any()))
             .thenReturn(SessionManager.SessionDirection.Outbound(
-                SessionManager.SessionKey(FIRST_SOURCE.toHoldingIdentity(), FIRST_DEST.toHoldingIdentity()),
+                SessionManager.SessionCounterparties(FIRST_SOURCE.toHoldingIdentity(), FIRST_DEST.toHoldingIdentity()),
                 session.responderSession
             )
         )
@@ -868,7 +868,7 @@ class LinkManagerTest {
         val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
         Mockito.`when`(mockSessionManager.getSessionById(any())).thenReturn(
             SessionManager.SessionDirection.Inbound(
-                SessionManager.SessionKey(FIRST_DEST.toHoldingIdentity(), FIRST_SOURCE.toHoldingIdentity()),
+                SessionManager.SessionCounterparties(FIRST_DEST.toHoldingIdentity(), FIRST_SOURCE.toHoldingIdentity()),
                 session.responderSession
             )
         )
@@ -944,7 +944,7 @@ class LinkManagerTest {
         val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
         Mockito.`when`(mockSessionManager.getSessionById(any())).thenReturn(
             SessionManager.SessionDirection.Outbound(
-                SessionManager.SessionKey(FIRST_SOURCE.toHoldingIdentity(), FIRST_DEST.toHoldingIdentity()),
+                SessionManager.SessionCounterparties(FIRST_SOURCE.toHoldingIdentity(), FIRST_DEST.toHoldingIdentity()),
                 session.responderSession
             )
         )
@@ -973,7 +973,7 @@ class LinkManagerTest {
         val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
         Mockito.`when`(mockSessionManager.getSessionById(any()))
             .thenReturn(SessionManager.SessionDirection.Inbound(
-                SessionManager.SessionKey(FIRST_DEST.toHoldingIdentity(), FIRST_SOURCE.toHoldingIdentity()),
+                SessionManager.SessionCounterparties(FIRST_DEST.toHoldingIdentity(), FIRST_SOURCE.toHoldingIdentity()),
                 session.responderSession
             )
         )
@@ -1000,7 +1000,7 @@ class LinkManagerTest {
 
         val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
         Mockito.`when`(mockSessionManager.getSessionById(any())).thenReturn(
-            SessionManager.SessionDirection.Inbound(SessionManager.SessionKey(
+            SessionManager.SessionDirection.Inbound(SessionManager.SessionCounterparties(
                 FIRST_DEST.toHoldingIdentity(),
                 FIRST_SOURCE.toHoldingIdentity()),
                 session.responderSession

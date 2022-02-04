@@ -42,7 +42,7 @@ import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMes
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromAuthenticatedMessageAndKey
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionDirection
-import net.corda.p2p.linkmanager.sessions.SessionManager.SessionKey
+import net.corda.p2p.linkmanager.sessions.SessionManager.SessionCounterparties
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.markers.AppMessageMarker
@@ -430,7 +430,9 @@ class LinkManager(
             val messages = mutableListOf<Record<*, *>>()
             when (val sessionDirection = sessionManager.getSessionById(sessionId)) {
                 is SessionDirection.Inbound -> {
-                    messages.addAll(processLinkManagerPayload(sessionDirection.key, sessionDirection.session, sessionId, message))
+                    messages.addAll(
+                        processLinkManagerPayload(sessionDirection.counterparties, sessionDirection.session, sessionId, message)
+                    )
                 }
                 is SessionDirection.Outbound -> {
                     extractPayload(sessionDirection.session, sessionId, message, MessageAck::fromByteBuffer)?.let {
@@ -459,13 +461,13 @@ class LinkManager(
         }
 
         private fun checkIdentityBeforeProcessing(
-            sessionKey: SessionKey,
+            counterparties: SessionCounterparties,
             innerMessage: AuthenticatedMessageAndKey,
             session: Session,
             messages: MutableList<Record<*, *>>
         ) {
-            val sessionSource = sessionKey.responderId.toHoldingIdentity()
-            val sessionDestination = sessionKey.ourId.toHoldingIdentity()
+            val sessionSource = counterparties.counterpartyId.toHoldingIdentity()
+            val sessionDestination = counterparties.ourId.toHoldingIdentity()
             val messageDestination = innerMessage.message.header.destination
             val messageSource = innerMessage.message.header.source
             if (sessionSource == messageSource && sessionDestination == messageDestination) {
@@ -492,7 +494,7 @@ class LinkManager(
         }
 
         private fun processLinkManagerPayload(
-            sessionKey: SessionKey,
+            counterparties: SessionCounterparties,
             session: Session,
             sessionId: String,
             message: DataMessage
@@ -502,11 +504,11 @@ class LinkManager(
                 when (val innerMessage = it.message) {
                     is HeartbeatMessage -> {
                         logger.debug { "Processing heartbeat message from session $sessionId" }
-                        makeAckMessageForHeartbeatMessage(sessionKey, session)?.let { ack -> messages.add(ack) }
+                        makeAckMessageForHeartbeatMessage(counterparties, session)?.let { ack -> messages.add(ack) }
                     }
                     is AuthenticatedMessageAndKey -> {
                         checkIdentityBeforeProcessing(
-                            sessionKey,
+                            counterparties,
                             innerMessage,
                             session,
                             messages
@@ -519,11 +521,11 @@ class LinkManager(
         }
 
         private fun makeAckMessageForHeartbeatMessage(
-            key: SessionKey,
+            counterparties: SessionCounterparties,
             session: Session
         ): Record<String, LinkOutMessage>? {
-            val ackDest = key.responderId.toHoldingIdentity()
-            val ackSource = key.ourId.toHoldingIdentity()
+            val ackDest = counterparties.counterpartyId.toHoldingIdentity()
+            val ackSource = counterparties.ourId.toHoldingIdentity()
             val ack = linkOutMessageFromAck(
                 MessageAck(HeartbeatMessageAck()),
                 ackSource,
@@ -569,15 +571,15 @@ class LinkManager(
     }
 
     interface PendingSessionMessageQueues {
-        fun queueMessage(message: AuthenticatedMessageAndKey, key: SessionKey)
+        fun queueMessage(message: AuthenticatedMessageAndKey, counterparties: SessionCounterparties)
         fun sessionNegotiatedCallback(
             sessionManager: SessionManager,
-            key: SessionKey,
+            counterparties: SessionCounterparties,
             session: Session,
             networkMap: LinkManagerNetworkMap,
             messageHeaderFactory: MessageHeaderFactory,
         )
-        fun destroyQueue(key: SessionKey)
+        fun destroyQueue(counterparties: SessionCounterparties)
         fun destroyAllQueues()
         val dominoTile: DominoTile
     }
@@ -592,7 +594,7 @@ class LinkManager(
             private val logger = contextLogger()
         }
 
-        private val queuedMessagesPendingSession = HashMap<SessionKey, Queue<AuthenticatedMessageAndKey>>()
+        private val queuedMessagesPendingSession = HashMap<SessionCounterparties, Queue<AuthenticatedMessageAndKey>>()
         private val publisher = PublisherWithDominoLogic(
             publisherFactory,
             coordinatorFactory,
@@ -605,12 +607,12 @@ class LinkManager(
          * Either adds a [FlowMessage] to a queue for a session which is pending (has started but hasn't finished
          * negotiation with the destination) or adds the message to a new queue if we need to negotiate a new session.
          */
-        override fun queueMessage(message: AuthenticatedMessageAndKey, key: SessionKey) {
-            val oldQueue = queuedMessagesPendingSession.putIfAbsent(key, LinkedList())
+        override fun queueMessage(message: AuthenticatedMessageAndKey, counterparties: SessionCounterparties) {
+            val oldQueue = queuedMessagesPendingSession.putIfAbsent(counterparties, LinkedList())
             if (oldQueue != null) {
                 oldQueue.add(message)
             } else {
-                queuedMessagesPendingSession[key]?.add(message)
+                queuedMessagesPendingSession[counterparties]?.add(message)
             }
         }
 
@@ -619,7 +621,7 @@ class LinkManager(
          */
         override fun sessionNegotiatedCallback(
             sessionManager: SessionManager,
-            key: SessionKey,
+            counterparties: SessionCounterparties,
             session: Session,
             networkMap: LinkManagerNetworkMap,
             messageHeaderFactory: MessageHeaderFactory,
@@ -628,20 +630,18 @@ class LinkManager(
                 if (!isRunning) {
                     throw IllegalStateException("sessionNegotiatedCallback was called before the PendingSessionMessageQueues was started.")
                 }
-                val queuedMessages = queuedMessagesPendingSession[key] ?: return@withLifecycleLock
+                val queuedMessages = queuedMessagesPendingSession[counterparties] ?: return@withLifecycleLock
                 val records = mutableListOf<Record<String, *>>()
                 while (queuedMessages.isNotEmpty()) {
                     val message = queuedMessages.poll()
-                    logger.debug {
-                        "Sending queued message ${message.message.header.messageId} " +
-                            "to newly established session ${session.sessionId} with ${key.responderId}"
-                    }
+                    logger.debug { "Sending queued message ${message.message.header.messageId} " +
+                            "to newly established session ${session.sessionId} with ${counterparties.counterpartyId}" }
                     records.addAll(
                         recordsForSessionEstablished(
                             sessionManager,
                             session,
                             message,
-                            messageHeaderFactory
+                            messageHeaderFactory,
                         )
                     )
                 }
@@ -649,8 +649,8 @@ class LinkManager(
             }
         }
 
-        override fun destroyQueue(key: SessionKey) {
-            queuedMessagesPendingSession.remove(key)
+        override fun destroyQueue(counterparties: SessionCounterparties) {
+            queuedMessagesPendingSession.remove(counterparties)
         }
 
         override fun destroyAllQueues() {

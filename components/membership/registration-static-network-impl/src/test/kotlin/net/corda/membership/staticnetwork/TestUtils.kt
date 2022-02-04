@@ -40,6 +40,10 @@ class TestUtils {
         val bobName = MemberX500Name("Bob", "London", "GB")
         val charlieName = MemberX500Name("Charlie", "London", "GB")
         val daisyName = MemberX500Name("Daisy", "London", "GB")
+        val ericName = MemberX500Name("Eric", "London", "GB")
+        val frankieName = MemberX500Name("Frankie", "London", "GB")
+
+        private val dummyMap = mapOf("key" to "value")
 
         private val staticMemberTemplate: List<Map<String, String>> =
             listOf(
@@ -80,13 +84,13 @@ class TestUtils {
                 )
             )
 
+        private val staticMgmTemplate = mapOf("keyAlias" to MGM_KEY_ALIAS)
+
         val groupPolicyWithStaticNetwork = GroupPolicyImpl(
             mapOf(
                 GROUP_ID to DUMMY_GROUP_ID,
                 STATIC_NETWORK_TEMPLATE to mapOf(
-                    STATIC_MGM to mapOf(
-                        "keyAlias" to MGM_KEY_ALIAS
-                    ),
+                    STATIC_MGM to staticMgmTemplate,
                     STATIC_MEMBERS to staticMemberTemplate
                 )
             )
@@ -95,7 +99,7 @@ class TestUtils {
         val groupPolicyWithCastingFailure = GroupPolicyImpl(
             mapOf(
                 STATIC_NETWORK_TEMPLATE to mapOf(
-                    STATIC_MEMBERS to mapOf("key" to "value")
+                    STATIC_MEMBERS to dummyMap
                 )
             )
         )
@@ -103,7 +107,7 @@ class TestUtils {
         val groupPolicyWithInvalidStaticNetworkTemplate = GroupPolicyImpl(
             mapOf(
                 STATIC_NETWORK_TEMPLATE to mapOf(
-                    STATIC_MEMBERS to listOf(mapOf("key" to "value"))
+                    STATIC_MEMBERS to listOf(dummyMap)
                 )
             )
         )
@@ -114,7 +118,27 @@ class TestUtils {
             mapOf(
                 GROUP_ID to DUMMY_GROUP_ID,
                 STATIC_NETWORK_TEMPLATE to mapOf(
+                    STATIC_MGM to staticMgmTemplate,
                     STATIC_MEMBERS to staticMemberTemplateWithDuplicateMembers
+                )
+            )
+        )
+
+        val groupPolicyWithoutMgm = GroupPolicyImpl(
+            mapOf(
+                GROUP_ID to DUMMY_GROUP_ID,
+                STATIC_NETWORK_TEMPLATE to mapOf(
+                    STATIC_MEMBERS to staticMemberTemplate
+                )
+            )
+        )
+
+        val groupPolicyWithoutMgmKeyAlias = GroupPolicyImpl(
+            mapOf(
+                GROUP_ID to DUMMY_GROUP_ID,
+                STATIC_NETWORK_TEMPLATE to mapOf(
+                    STATIC_MGM to dummyMap,
+                    STATIC_MEMBERS to staticMemberTemplate
                 )
             )
         )

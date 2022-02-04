@@ -192,7 +192,7 @@ class DeliveryTrackerTest {
                 any(),
                 eq(messageId),
                 eq(messageAndKey),
-                eq(SessionManager.SessionKey(source.toHoldingIdentity(), dest.toHoldingIdentity()))
+                eq(SessionManager.SessionCounterparties(source.toHoldingIdentity(), dest.toHoldingIdentity()))
             )
         tracker.stop()
     }
@@ -212,7 +212,7 @@ class DeliveryTrackerTest {
                 any(),
                 eq(messageId),
                 eq(messageAndKey),
-                eq(SessionManager.SessionKey(source.toHoldingIdentity(), dest.toHoldingIdentity()))
+                eq(SessionManager.SessionCounterparties(source.toHoldingIdentity(), dest.toHoldingIdentity()))
             )
         tracker.stop()
     }
@@ -232,13 +232,13 @@ class DeliveryTrackerTest {
                 any(),
                 eq(messageId),
                 eq(messageAndKey),
-                eq(SessionManager.SessionKey(source.toHoldingIdentity(), dest.toHoldingIdentity()))
+                eq(SessionManager.SessionCounterparties(source.toHoldingIdentity(), dest.toHoldingIdentity()))
             )
 
         listener.onPostCommit(mapOf(messageId to null))
         @Suppress("UNCHECKED_CAST")
         verify(replayScheduler.constructed().last() as ReplayScheduler<AuthenticatedMessageAndKey>)
-            .removeFromReplay(messageId, SessionManager.SessionKey(source.toHoldingIdentity(), dest.toHoldingIdentity()))
+            .removeFromReplay(messageId, SessionManager.SessionCounterparties(source.toHoldingIdentity(), dest.toHoldingIdentity()))
         tracker.stop()
     }
 
@@ -256,13 +256,13 @@ class DeliveryTrackerTest {
                 any(),
                 eq(messageId),
                 eq(messageAndKey),
-                eq(SessionManager.SessionKey(source.toHoldingIdentity(), dest.toHoldingIdentity()))
+                eq(SessionManager.SessionCounterparties(source.toHoldingIdentity(), dest.toHoldingIdentity()))
             )
 
         listener.onPartitionLost(mapOf(messageId to state))
         @Suppress("UNCHECKED_CAST")
         verify(replayScheduler.constructed().last() as ReplayScheduler<AuthenticatedMessageAndKey>)
-            .removeFromReplay(messageId, SessionManager.SessionKey(source.toHoldingIdentity(), dest.toHoldingIdentity()))
+            .removeFromReplay(messageId, SessionManager.SessionCounterparties(source.toHoldingIdentity(), dest.toHoldingIdentity()))
         tracker.stop()
     }
 }

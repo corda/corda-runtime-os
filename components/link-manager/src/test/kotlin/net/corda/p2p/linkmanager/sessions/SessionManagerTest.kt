@@ -245,7 +245,7 @@ class SessionManagerTest {
             verify(sessionReplayer).addMessageForReplay(
                 any(),
                 this.capture(),
-                eq(SessionManager.SessionKey(OUR_PARTY, PEER_PARTY))
+                eq(SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY))
             )
             assertThat(this.allValues.size).isEqualTo(1)
             assertThat(this.firstValue.source).isEqualTo(OUR_PARTY)
@@ -310,7 +310,7 @@ class SessionManagerTest {
         sessionManager.processOutboundMessage(message)
         val sessionState = sessionManager.processOutboundMessage(message)
         assertThat(sessionState).isInstanceOf(SessionManager.SessionState.SessionAlreadyPending::class.java)
-        verify(pendingSessionMessageQueues, times(2)).queueMessage(message, SessionManager.SessionKey(OUR_PARTY, PEER_PARTY))
+        verify(pendingSessionMessageQueues, times(2)).queueMessage(message, SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY))
     }
 
     @Test
@@ -436,13 +436,13 @@ class SessionManagerTest {
         assertThat(responseMessage!!.payload).isEqualTo(initiatorHandshakeMsg)
         verify(sessionReplayer).removeMessageFromReplay(
             "${sessionState.sessionId}_${InitiatorHelloMessage::class.java.simpleName}",
-            SessionManager.SessionKey(OUR_PARTY, PEER_PARTY)
+            SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY)
         )
         argumentCaptor<InMemorySessionReplayer.SessionMessageReplay> {
             verify(sessionReplayer).addMessageForReplay(
                 eq("${sessionState.sessionId}_${InitiatorHandshakeMessage::class.java.simpleName}"),
                 this.capture(),
-                eq(SessionManager.SessionKey(OUR_PARTY, PEER_PARTY))
+                eq(SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY))
             )
             assertThat(this.allValues.size).isEqualTo(1)
             assertThat(this.firstValue.source).isEqualTo(OUR_PARTY)
@@ -776,12 +776,12 @@ class SessionManagerTest {
             }
         verify(sessionReplayer).removeMessageFromReplay(
             "${sessionState.sessionId}_${InitiatorHandshakeMessage::class.java.simpleName}",
-            SessionManager.SessionKey(OUR_PARTY, PEER_PARTY)
+            SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY)
         )
         verify(pendingSessionMessageQueues)
             .sessionNegotiatedCallback(
                 sessionManager,
-                SessionManager.SessionKey(OUR_PARTY, PEER_PARTY),
+                SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY),
                 session,
                 networkMap,
                 messageHeaderFactory
@@ -807,12 +807,12 @@ class SessionManagerTest {
             }
         verify(sessionReplayer).removeMessageFromReplay(
             "${sessionState.sessionId}_${InitiatorHandshakeMessage::class.java.simpleName}",
-            SessionManager.SessionKey(OUR_PARTY, PEER_PARTY)
+            SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY)
         )
         verify(pendingSessionMessageQueues)
             .sessionNegotiatedCallback(
                 sessionManager,
-                SessionManager.SessionKey(OUR_PARTY, PEER_PARTY),
+                SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY),
                 session,
                 networkMap,
                 messageHeaderFactory
