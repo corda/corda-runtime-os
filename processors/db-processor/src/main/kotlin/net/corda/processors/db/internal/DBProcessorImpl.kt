@@ -172,7 +172,7 @@ class DBProcessorImpl @Activate constructor(
                 DbSchema.RPC_RBAC,
                 ddlRbacUser,
                 ddlRbacPassword,
-                "$CONFIG_JDBC_URL_DEFAULT?currentSchema=${DbSchema.RPC_RBAC}",
+                CONFIG_JDBC_URL_DEFAULT,
                 DbPrivilege.DDL,
                 factory
             )
@@ -186,7 +186,7 @@ class DBProcessorImpl @Activate constructor(
                 DbSchema.RPC_RBAC,
                 dmlRbacUser,
                 dmlRbacPassword,
-                "$CONFIG_JDBC_URL_DEFAULT?currentSchema=${DbSchema.RPC_RBAC}",
+                CONFIG_JDBC_URL_DEFAULT,
                 DbPrivilege.DML,
                 factory
             )
