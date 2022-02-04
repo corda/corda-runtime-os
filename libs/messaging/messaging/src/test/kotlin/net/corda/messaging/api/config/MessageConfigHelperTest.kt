@@ -3,8 +3,8 @@ package net.corda.messaging.api.config
 import com.typesafe.config.ConfigFactory
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messaging.api.exception.CordaMessageAPIConfigException
-import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
-import net.corda.schema.configuration.ConfigKeys.Companion.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
