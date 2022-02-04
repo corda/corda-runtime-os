@@ -345,7 +345,13 @@ class LinkManagerTest {
 
         // Session is ready for messages 3, 4, 5
         val sessionPair = createSessionPair()
-        queue.sessionNegotiatedCallback(sessionManager, sessionCounterparties2, sessionPair.initiatorSession, mockNetworkMap, messageHeaderFactory)
+        queue.sessionNegotiatedCallback(
+            sessionManager,
+            sessionCounterparties2,
+            sessionPair.initiatorSession,
+            mockNetworkMap,
+            messageHeaderFactory,
+        )
         assertThat(publisher.list.map{ extractPayload(sessionPair.responderSession, it.value as LinkOutMessage) })
             .hasSize(3).containsExactlyInAnyOrder(payload3, payload4, payload5)
 
@@ -353,7 +359,13 @@ class LinkManagerTest {
 
         publisher.list = mutableListOf()
         // Session is ready for messages 1, 2
-        queue.sessionNegotiatedCallback(sessionManager, sessionCounterparties1, sessionPair.initiatorSession, mockNetworkMap, messageHeaderFactory)
+        queue.sessionNegotiatedCallback(
+            sessionManager,
+            sessionCounterparties1,
+            sessionPair.initiatorSession,
+            mockNetworkMap,
+            messageHeaderFactory,
+        )
         assertThat(publisher.list.map{ extractPayload(sessionPair.responderSession, it.value as LinkOutMessage) })
             .hasSize(2).containsExactlyInAnyOrder(payload1, payload2)
 

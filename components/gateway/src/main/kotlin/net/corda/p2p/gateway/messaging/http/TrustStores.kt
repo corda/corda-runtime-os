@@ -35,7 +35,10 @@ internal class TrustStores(
     override val keyClass = String::class.java
     override val valueClass = GatewayTruststore::class.java
 
-    inner class Truststore(pemCertificates: Collection<String>) {
+    class Truststore(
+        pemCertificates: Collection<String>,
+        certificateFactory: CertificateFactory = CertificateFactory.getInstance("X.509"),
+    ) {
 
         val trustStore: KeyStore by lazy {
             KeyStore.getInstance("JKS").also { keyStore ->
@@ -55,7 +58,7 @@ internal class TrustStores(
     override fun onSnapshot(currentData: Map<String, GatewayTruststore>) {
         hashToActualStore.putAll(
             currentData.mapValues {
-                Truststore(it.value.trustedCertificates)
+                Truststore(it.value.trustedCertificates, certificateFactory)
             }
         )
         ready.get()?.complete(Unit)
@@ -75,7 +78,7 @@ internal class TrustStores(
         currentData: Map<String, GatewayTruststore>,
     ) {
         val store = newRecord.value?.let {
-            Truststore(it.trustedCertificates)
+            Truststore(it.trustedCertificates, certificateFactory)
         }
 
         if (store != null) {
