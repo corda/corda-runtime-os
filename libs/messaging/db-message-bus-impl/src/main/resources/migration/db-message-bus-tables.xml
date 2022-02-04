@@ -16,7 +16,7 @@
             <column name="timestamp" type="TIMESTAMP"/>
             <column name="transaction_id" type="VARCHAR(255)"/>
         </createTable>
-        <addPrimaryKey columnNames="topic, partition, offset" constraintName="topic_record_pk"
+        <addPrimaryKey columnNames="topic, partition, record_offset" constraintName="topic_record_pk"
                        tableName="topic_record"/>
 
         <createTable tableName="transaction_record">
@@ -33,7 +33,7 @@
             <column name="timestamp" type="TIMESTAMP"/>
             <column name="committed" type="BOOLEAN"/>
         </createTable>
-        <addPrimaryKey columnNames="topic, consumer_group, partition, offset" constraintName="topic_consumer_offset_pk"
+        <addPrimaryKey columnNames="topic, consumer_group, partition, record_offset" constraintName="topic_consumer_offset_pk"
                        tableName="topic_consumer_offset"/>
 
         <createTable tableName="topic">
