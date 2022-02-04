@@ -3,7 +3,7 @@ package net.corda.virtualnode.rpcops.impl
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
-import net.corda.virtualnode.common.endpoints.LateInitRPCOpsEventHandler
+import net.corda.virtualnode.common.endpoints.RPCOpsEventHandler
 import net.corda.virtualnode.rpcops.VirtualNodeRPCOpsService
 import net.corda.virtualnode.rpcops.impl.internal.VirtualNodeRPCOpsInternal
 import org.osgi.service.component.annotations.Activate
@@ -22,7 +22,7 @@ internal class VirtualNodeRPCOpsServiceImpl @Activate constructor(
 ) : VirtualNodeRPCOpsService {
 
     private val coordinator = let {
-        val eventHandler = LateInitRPCOpsEventHandler(configReadService, virtualNodeRPCOps)
+        val eventHandler = RPCOpsEventHandler(configReadService, virtualNodeRPCOps)
         coordinatorFactory.createCoordinator<VirtualNodeRPCOpsService>(eventHandler)
     }
 
