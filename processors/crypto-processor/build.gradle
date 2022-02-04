@@ -48,7 +48,7 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 
-    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    testImplementation 'org.slf4j:slf4j-simple:1.7.35'
 
     integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")
 }
