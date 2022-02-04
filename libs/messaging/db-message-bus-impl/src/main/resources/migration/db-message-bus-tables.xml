@@ -9,8 +9,8 @@
             <column name="topic" type="VARCHAR(255)"/>
             <column name="partition" type="INTEGER"/>
             <column name="record_offset" type="BIGINT"/>
-            <column name="key" type="BLOB"/>
-            <column name="value" type="BLOB">
+            <column name="record_key" type="BLOB"/>
+            <column name="record_value" type="BLOB">
                 <constraints nullable="true"/>
             </column>
             <column name="timestamp" type="TIMESTAMP"/>
