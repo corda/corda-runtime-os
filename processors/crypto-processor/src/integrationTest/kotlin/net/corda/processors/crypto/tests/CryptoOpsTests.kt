@@ -3,6 +3,7 @@ package net.corda.processors.crypto.tests
 import net.corda.crypto.CryptoConsts
 import net.corda.crypto.CryptoOpsClient
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.processors.crypto.CryptoProcessor
 import net.corda.schema.configuration.ConfigKeys.Companion.CRYPTO_CONFIG
@@ -22,6 +23,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.security.PublicKey
+import java.time.Duration
 import java.security.spec.MGF1ParameterSpec
 import java.security.spec.PSSParameterSpec
 import java.util.UUID
@@ -94,20 +96,21 @@ class CryptoOpsTests {
         processor.start(makeBootstrapConfig(BOOT_CONFIGURATION))
 
         testDependencies = TestLifecycleDependenciesTrackingCoordinator(
-            logger,
+            LifecycleCoordinatorName.forComponent<CryptoOpsTests>(),
             coordinatorFactory,
             CryptoOpsClient::class.java,
             CryptoProcessor::class.java
-        )
+        ).also { it.start() }
 
         client.startAndWait()
-        testDependencies.waitUntilAllUp()
+        //Thread.sleep(10000)
+        testDependencies.waitUntilAllUp(Duration.ofSeconds(30))
     }
 
     @AfterEach
     fun cleanup() {
         client.stopAndWait()
-        testDependencies.close()
+        testDependencies.stop()
     }
 
     @Test
