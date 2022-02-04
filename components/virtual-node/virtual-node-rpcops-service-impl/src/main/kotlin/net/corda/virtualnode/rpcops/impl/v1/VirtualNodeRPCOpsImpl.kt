@@ -48,7 +48,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
     override val protocolVersion = 1
     private var rpcSender: RPCSender<VirtualNodeCreationRequest, VirtualNodeCreationResponse>? = null
     private var requestTimeout: Duration? = null
-    override val isRunning get() = rpcSender?.isRunning ?: false && rpcRequestTimeout != null
+    override val isRunning get() = rpcSender?.isRunning ?: false && requestTimeout != null
 
     override fun start() = Unit
 
