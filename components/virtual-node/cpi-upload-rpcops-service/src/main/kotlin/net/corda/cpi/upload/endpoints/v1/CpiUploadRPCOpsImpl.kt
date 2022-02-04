@@ -38,10 +38,12 @@ class CpiUploadRPCOpsImpl @Activate constructor(
 
     override val isRunning get() = coordinator.isRunning
 
-    override fun start() = Unit
+    override fun start() {
+        coordinator.start()
+    }
 
     override fun stop() {
-        cpiUploadManager.close()
+        coordinator.close()
     }
 
     override fun cpi(file: InputStream): HTTPCpiUploadRequestId {
