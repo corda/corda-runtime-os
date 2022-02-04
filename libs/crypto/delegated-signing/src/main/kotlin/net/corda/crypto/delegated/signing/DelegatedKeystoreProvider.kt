@@ -25,9 +25,9 @@ internal class DelegatedKeystoreProvider : Provider(
 
     fun putServices(name: String, signer: DelegatedSigner, certificatesStores: DelegatedCertificateStore) {
         if (getService("Signature", RSA_SIGNING_ALGORITHM) == null) {
-            putService(DelegatedSignatureService(RSA_SIGNING_ALGORITHM, null))
-            DelegatedSigner.Hash.values().forEach {
-                putService(DelegatedSignatureService(it.ecName, it))
+            putService(DelegatedSignatureService(RSA_SIGNING_ALGORITHM))
+            Hash.values().forEach {
+                putService(DelegatedSignatureService(it.ecSignatureName))
             }
         }
 
@@ -52,7 +52,6 @@ internal class DelegatedKeystoreProvider : Provider(
     }
     private inner class DelegatedSignatureService(
         algorithm: String,
-        private val defaultHash: DelegatedSigner.Hash?,
     ) : Service(
         this@DelegatedKeystoreProvider,
         "Signature",
@@ -62,7 +61,7 @@ internal class DelegatedKeystoreProvider : Provider(
         mapOf("SupportedKeyClasses" to DelegatedPrivateKey::class.java.name)
     ) {
         override fun newInstance(constructorParameter: Any?): Any {
-            return DelegatedSignature(defaultHash)
+            return DelegatedSignature(algorithm)
         }
     }
 }

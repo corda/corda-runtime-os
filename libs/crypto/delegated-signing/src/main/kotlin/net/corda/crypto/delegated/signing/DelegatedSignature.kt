@@ -1,20 +1,19 @@
 package net.corda.crypto.delegated.signing
 
-import net.corda.crypto.delegated.signing.DelegatedSignerInstaller.Companion.RSA_SIGNING_ALGORITHM
+import net.corda.v5.crypto.SignatureSpec
 import java.io.ByteArrayOutputStream
 import java.security.AlgorithmParameters
 import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.SignatureSpi
 import java.security.spec.AlgorithmParameterSpec
-import java.security.spec.PSSParameterSpec
 
 internal class DelegatedSignature(
-    defaultHash: DelegatedSigner.Hash?,
+    private val signatureName: String,
 ) : SignatureSpi() {
     private val data = ByteArrayOutputStream()
-    private var hash: DelegatedSigner.Hash? = defaultHash
     private var signingKey: DelegatedPrivateKey? = null
+    private var parameterSpec: AlgorithmParameterSpec? = null
 
     override fun engineInitSign(privateKey: PrivateKey) {
         require(privateKey is DelegatedPrivateKey)
@@ -31,15 +30,17 @@ internal class DelegatedSignature(
     }
 
     override fun engineSign(): ByteArray? {
+        val spec = SignatureSpec(
+            signatureName = signatureName,
+            params = parameterSpec
+        )
         return try {
             val key = signingKey ?: throw SecurityException(
                 "'engineSign' invoked without a key having been assigned previously via 'engineInitSign'"
             )
             key.signer.sign(
                 key.publicKey,
-                hash ?: throw SecurityException(
-                    "'engineSign' invoked without a hash having been assigned previously via 'engineSetParameter'"
-                ),
+                spec,
                 data.toByteArray()
             )
         } finally {
@@ -48,19 +49,13 @@ internal class DelegatedSignature(
     }
 
     override fun engineSetParameter(params: AlgorithmParameterSpec?) {
-        if (params is PSSParameterSpec) {
-            hash = DelegatedSigner.Hash
-                .values()
-                .firstOrNull {
-                    it.hashName == params.digestAlgorithm
-                }
-        }
+        parameterSpec = params
     }
 
     override fun engineGetParameters(): AlgorithmParameters? {
-        return hash?.let { hash ->
-            AlgorithmParameters.getInstance(RSA_SIGNING_ALGORITHM).also {
-                it.init(hash.rsaParameter)
+        return parameterSpec?.let { parameter ->
+            AlgorithmParameters.getInstance(signatureName).also {
+                it.init(parameter)
             }
         }
     }
