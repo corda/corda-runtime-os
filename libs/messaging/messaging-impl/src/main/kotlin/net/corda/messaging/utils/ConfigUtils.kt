@@ -11,7 +11,6 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.properties.ConfigProperties
 import net.corda.messaging.properties.ConfigProperties.Companion.GROUP
 import net.corda.messaging.properties.ConfigProperties.Companion.TOPIC
-import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.Bundle
 import org.osgi.framework.FrameworkUtil
 import java.net.URL
@@ -22,7 +21,6 @@ class ConfigUtils {
     companion object {
         private val enforced = ConfigFactory.parseURL(getResourceURL("messaging-enforced.conf"))
         private val defaults = ConfigFactory.parseURL(getResourceURL("messaging-defaults.conf"))
-        private val logger = contextLogger()
 
         fun resolvePublisherConfiguration(
             subscriptionConfiguration: Config,
@@ -31,16 +29,13 @@ class ConfigUtils {
             pattern: String
         ): Config {
             // turn enforced in to a SmartConfig like kafkaConfig first so everything is a "smart" config
-            val fullConfig = kafkaConfig.convert(enforced)
+            val config = kafkaConfig.convert(enforced)
                 .withFallback(subscriptionConfiguration)
                 .withValue(ConfigProperties.CLIENT_ID_COUNTER, ConfigValueFactory.fromAnyRef(clientIdCounter))
                 .withFallback(kafkaConfig)
                 .withFallback(defaults)
                 .resolve()
-
-            logger.info("Messaging configuration fully resolved: ${fullConfig.root().render(ConfigRenderOptions.concise())}")
-
-            val config = fullConfig.getConfig(pattern)
+                .getConfig(pattern)
 
             return if (!subscriptionConfiguration.hasPath(INSTANCE_ID)) {
                 // No instance id - remove the transactional Id as we don't want to do transactions
@@ -57,16 +52,13 @@ class ConfigUtils {
             pattern: String
         ): Config {
             // turn enforced in to a SmartConfig like kafkaConfig first so everything is a "smart" config
-            val fullConfig = kafkaConfig.convert(enforced)
+            return  kafkaConfig.convert(enforced)
                 .withFallback(subscriptionConfiguration)
                 .withValue(ConfigProperties.CLIENT_ID_COUNTER, ConfigValueFactory.fromAnyRef(clientIdCounter))
                 .withFallback(kafkaConfig)
                 .withFallback(defaults)
                 .resolve()
-
-            logger.info("Messaging configuration fully resolved: ${fullConfig.root().render(ConfigRenderOptions.concise())}")
-
-            return fullConfig.getConfig(pattern)
+                .getConfig(pattern)
         }
 
         /**
