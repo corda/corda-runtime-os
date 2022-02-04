@@ -20,7 +20,6 @@ import net.corda.v5.membership.identity.MemberX500Name
 import net.corda.virtualnode.rpcops.VirtualNodeRPCOpsServiceException
 import net.corda.virtualnode.rpcops.impl.CLIENT_NAME_HTTP
 import net.corda.virtualnode.rpcops.impl.GROUP_NAME
-import net.corda.virtualnode.rpcops.impl.internal.VirtualNodeRPCOpsInternal
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -48,7 +47,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
     override val targetInterface = VirtualNodeRPCOps::class.java
     override val protocolVersion = 1
     private var rpcSender: RPCSender<VirtualNodeCreationRequest, VirtualNodeCreationResponse>? = null
-    private var rpcRequestTimeout: Duration? = null
+    private var requestTimeout: Duration? = null
     override val isRunning get() = rpcSender?.isRunning ?: false && rpcRequestTimeout != null
 
     override fun start() = Unit
@@ -58,14 +57,13 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
         rpcSender = null
     }
 
-    override fun createAndStartRpcSender(config: SmartConfig) {
+    override fun createAndStartRPCSender(config: SmartConfig) {
         rpcSender?.close()
-        rpcSender = publisherFactory.createRPCSender(RPC_CONFIG, config)
-        rpcSender!!.start()
+        rpcSender = publisherFactory.createRPCSender(RPC_CONFIG, config).apply { start() }
     }
 
-    override fun setRpcRequestTimeout(rpcRequestTimeout: Duration) {
-        this.rpcRequestTimeout = rpcRequestTimeout
+    override fun setTimeout(millis: Int) {
+        this.requestTimeout = Duration.ofMillis(millis.toLong())
     }
 
     override fun createVirtualNode(request: HTTPCreateVirtualNodeRequest): HTTPCreateVirtualNodeResponse {
@@ -108,7 +106,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
         val nonNullRPCSender = rpcSender ?: throw VirtualNodeRPCOpsServiceException(
             "Configuration update request could not be sent as no RPC sender has been created."
         )
-        val nonNullRequestTimeout = rpcRequestTimeout ?: throw VirtualNodeRPCOpsServiceException(
+        val nonNullRequestTimeout = requestTimeout ?: throw VirtualNodeRPCOpsServiceException(
             "Configuration update request could not be sent as the request timeout has not been set."
         )
         return try {

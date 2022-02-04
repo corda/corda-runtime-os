@@ -1,4 +1,4 @@
-package net.corda.virtualnode.common.endpoints
+package net.corda.cpi.upload.endpoints.internal
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinator
@@ -13,9 +13,9 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 
 /** Handles incoming [LifecycleCoordinator] events for [VirtualNodeRPCOpsServiceImpl]. */
-class RPCOpsEventHandler(
+class CpiUploadRPCOpsEventHandler(
     private val configReadService: ConfigurationReadService,
-    private val cpiUploadRPCOps: LateInitRPCOps
+    private val cpiUploadRPCOps: CpiUploadRPCOpsInternal
 ) : LifecycleEventHandler {
 
     private var configReadServiceRegistrationHandle: RegistrationHandle? = null
@@ -45,8 +45,7 @@ class RPCOpsEventHandler(
         if (event.registration == configReadServiceRegistrationHandle) {
             when (event.status) {
                 UP -> {
-                    val configHandler =
-                        RPCOpsConfigHandler(coordinator, cpiUploadRPCOps)
+                    val configHandler = CpiUploadRPCOpsConfigHandler(coordinator, cpiUploadRPCOps)
                     configUpdateHandle?.close()
                     configUpdateHandle = configReadService.registerForUpdates(configHandler)
                 }

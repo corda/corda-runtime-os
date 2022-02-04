@@ -53,7 +53,6 @@ class CpiUploadRPCOpsImpl @Activate constructor(
 
         //cpiUploadManager.sendCpiChunk()
         // TODO - kyriakos - fix the endpoint to actually receive the file - needs corda rpc framework extended
-        // TODO - kyriakos - validation of CPI -> check it is well formed - maybe in a subsequent PR
         // TODO - kyriakos - split it in chunks and put it on kafka
         // TODO - kyriakos - should i then be waiting for some response from kafka here?
         // TODO - kyriakos - return HTTP response to user

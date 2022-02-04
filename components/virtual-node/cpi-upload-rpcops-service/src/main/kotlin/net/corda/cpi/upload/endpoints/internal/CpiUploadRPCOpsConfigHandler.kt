@@ -1,4 +1,4 @@
-package net.corda.virtualnode.common.endpoints
+package net.corda.cpi.upload.endpoints.internal
 
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.libs.configuration.SmartConfig
@@ -9,12 +9,11 @@ import net.corda.schema.configuration.ConfigKeys.Companion.BOOTSTRAP_SERVERS
 import net.corda.schema.configuration.ConfigKeys.Companion.RPC_CONFIG
 import net.corda.schema.configuration.ConfigKeys.Companion.RPC_ENDPOINT_TIMEOUT_MILLIS
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import java.time.Duration
 
 /** Processes configuration changes for `VirtualNodeRPCOpsService`. */
-internal class RPCOpsConfigHandler(
+internal class CpiUploadRPCOpsConfigHandler(
     private val coordinator: LifecycleCoordinator,
-    private val cpiUploadRPCOps: LateInitRPCOps
+    private val cpiUploadRPCOps: CpiUploadRPCOpsInternal
 ) : ConfigurationHandler {
 
     /**
@@ -47,12 +46,12 @@ internal class RPCOpsConfigHandler(
 
         if (config.hasPath(RPC_ENDPOINT_TIMEOUT_MILLIS)) {
             val timeoutMillis = config.getInt(RPC_ENDPOINT_TIMEOUT_MILLIS)
-            cpiUploadRPCOps.setHttpRequestTimeout(Duration.ofMillis(timeoutMillis.toLong()))
+            cpiUploadRPCOps.setTimeout(timeoutMillis)
         }
 
         if (config.hasPath(BOOTSTRAP_SERVERS)) {
             try {
-                cpiUploadRPCOps.createRpcSender(config)
+                cpiUploadRPCOps.createAndStartRPCSender(config)
             } catch (e: Exception) {
                 coordinator.updateStatus(ERROR)
                 throw RPCOpsServiceException(
