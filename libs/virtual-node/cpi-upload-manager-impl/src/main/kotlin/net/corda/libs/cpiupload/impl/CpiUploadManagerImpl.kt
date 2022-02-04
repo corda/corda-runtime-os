@@ -19,15 +19,14 @@ class CpiUploadManagerImpl(
         TODO("Not yet implemented")
     }
 
-    override val isRunning: Boolean
-        get() = TODO("Not yet implemented")
+    override val isRunning get() = _isRunning
+    private var _isRunning = false
 
     override fun start() {
-        TODO("Not yet implemented")
+        _isRunning = true
     }
 
     override fun stop() {
-        TODO("Not yet implemented")
+        _isRunning = false
     }
-
 }

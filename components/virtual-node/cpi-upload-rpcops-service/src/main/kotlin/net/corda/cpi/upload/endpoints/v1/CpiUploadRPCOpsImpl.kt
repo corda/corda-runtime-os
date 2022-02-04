@@ -7,12 +7,14 @@ import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
 import net.corda.libs.cpiupload.endpoints.v1.HTTPCpiUploadRequestId
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.createCoordinator
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.io.InputStream
+import java.lang.IllegalStateException
 
 @Component(service = [PluggableRPCOps::class])
 class CpiUploadRPCOpsImpl @Activate constructor(
@@ -36,7 +38,8 @@ class CpiUploadRPCOpsImpl @Activate constructor(
 
     override val targetInterface: Class<CpiUploadRPCOps> = CpiUploadRPCOps::class.java
 
-    override val isRunning get() = coordinator.isRunning
+    // Need to check again coordinator.isRunning vs coordinator.status
+    override val isRunning get() = coordinator.status == LifecycleStatus.UP
 
     override fun start() {
         coordinator.start()
@@ -47,8 +50,8 @@ class CpiUploadRPCOpsImpl @Activate constructor(
     }
 
     override fun cpi(file: InputStream): HTTPCpiUploadRequestId {
-        require(isRunning) {
-            "CpiUploadRPCOpsImpl is not running yet!"
+        if (!isRunning) {
+            throw IllegalStateException("CpiUploadRPCOpsImpl is not running! Its status is ${coordinator.status}")
         }
 
         //cpiUploadManager.sendCpiChunk()
