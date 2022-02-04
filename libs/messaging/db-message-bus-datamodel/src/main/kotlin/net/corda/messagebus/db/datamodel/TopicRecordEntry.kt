@@ -24,9 +24,9 @@ class TopicRecordEntry(
     @Id
     @Column(name = "record_offset")
     val offset: Long,
-    @Column
+    @Column(name = "record_key")
     val key: ByteArray,
-    @Column
+    @Column(name = "record_value")
     val value: ByteArray?,
     @Column(name = "transaction_id")
     val transactionId: String,
