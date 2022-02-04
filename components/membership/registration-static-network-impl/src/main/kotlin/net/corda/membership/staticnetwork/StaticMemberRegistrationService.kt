@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.CryptoConsts
 import net.corda.crypto.CryptoOpsClient
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
@@ -52,6 +53,7 @@ import net.corda.v5.membership.conversion.PropertyConverter
 import net.corda.v5.membership.identity.EndpointInfo
 import net.corda.v5.membership.identity.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -136,8 +138,8 @@ class StaticMemberRegistrationService @Activate constructor(
      * Parses the static member list template as SignedMemberInfo objects and creates the records for the
      * kafka publisher.
      */
-    private fun parseMemberTemplate(member: HoldingIdentity): List<Record<String, SignedMemberInfo>> {
-        val members = mutableListOf<Record<String, SignedMemberInfo>>()
+    private fun parseMemberTemplate(member: HoldingIdentity): List<Record<String, PersistentMemberInfo>> {
+        val members = mutableListOf<Record<String, PersistentMemberInfo>>()
 
         val policy = groupPolicyProvider.getGroupPolicy(member)
         val groupId = policy.groupId
@@ -177,16 +179,12 @@ class StaticMemberRegistrationService @Activate constructor(
                     converter
                 )
             )
+            val signedMemberInfo = signMemberInfo(memberId, memberInfo, memberKey, mgmKey)
             members.add(
                 Record(
                     topic,
                     member.id + "-" + memberId,
-                    signMemberInfo(
-                        memberId,
-                        memberInfo,
-                        memberKey,
-                        mgmKey,
-                    )
+                    PersistentMemberInfo(member.toAvro(), signedMemberInfo)
                 )
             )
             processedMembers.add(memberName)
