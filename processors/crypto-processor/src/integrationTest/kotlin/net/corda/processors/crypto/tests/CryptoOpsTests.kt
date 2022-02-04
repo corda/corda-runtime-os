@@ -87,12 +87,6 @@ class CryptoOpsTests {
     fun setup() {
         tenantId = UUID.randomUUID().toString()
 
-        publisherFactory.publishConfig(
-            CLIENT_ID,
-            CRYPTO_CONFIGURATION to CRYPTO_CONFIG,
-            MESSAGING_CONFIGURATION to MESSAGING_CONFIG
-        )
-
         processor.start(makeBootstrapConfig(BOOT_CONFIGURATION))
 
         client.startAndWait()
@@ -104,7 +98,13 @@ class CryptoOpsTests {
             CryptoProcessor::class.java
         ).also { it.startAndWait() }
 
-        testDependencies.waitUntilAllUp(Duration.ofSeconds(30))
+        publisherFactory.publishConfig(
+            CLIENT_ID,
+            CRYPTO_CONFIGURATION to CRYPTO_CONFIG,
+            MESSAGING_CONFIGURATION to MESSAGING_CONFIG
+        )
+
+        testDependencies.waitUntilAllUp(Duration.ofSeconds(10))
     }
 
     @AfterEach
