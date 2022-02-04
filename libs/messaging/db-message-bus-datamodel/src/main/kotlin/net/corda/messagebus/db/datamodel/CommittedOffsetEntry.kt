@@ -26,7 +26,7 @@ class CommittedOffsetEntry (
     val partition: Int,
 
     @Id
-    @Column(name = "offset")
+    @Column(name = "record_offset")
     val offset: Long,
 
     @Column
