@@ -13,7 +13,6 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -103,9 +102,6 @@ class TestLifecycleDependenciesTrackingCoordinator(
     @Volatile
     private var registrationHandle: RegistrationHandle? = null
 
-    @Volatile
-    private var allApp = false
-
     private val coordinator = coordinatorFactory.createCoordinator(coordinatorName, ::eventHandler)
 
     override val isRunning: Boolean
@@ -128,7 +124,7 @@ class TestLifecycleDependenciesTrackingCoordinator(
 
     fun waitUntilAllUp(duration: Duration) {
         eventually(duration = duration) {
-            assertTrue(allApp)
+            assertTrue(coordinator.status == LifecycleStatus.UP)
         }
     }
 
@@ -145,8 +141,7 @@ class TestLifecycleDependenciesTrackingCoordinator(
             }
             is RegistrationStatusChangeEvent -> {
                 coordinator.updateStatus(event.status)
-                allApp = event.status == LifecycleStatus.UP
-                if(allApp) {
+                if(event.status == LifecycleStatus.UP) {
                     logger.info("All required dependencies are UP...")
                 } else {
                     logger.info("Some or all required dependencies are DOWN...")
