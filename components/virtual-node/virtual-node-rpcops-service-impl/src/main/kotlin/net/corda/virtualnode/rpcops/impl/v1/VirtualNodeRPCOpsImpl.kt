@@ -57,7 +57,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
         rpcSender = null
     }
 
-    override fun createAndStartRPCSender(config: SmartConfig) {
+    override fun createAndStartRpcSender(config: SmartConfig) {
         rpcSender?.close()
         rpcSender = publisherFactory.createRPCSender(RPC_CONFIG, config).apply { start() }
     }
