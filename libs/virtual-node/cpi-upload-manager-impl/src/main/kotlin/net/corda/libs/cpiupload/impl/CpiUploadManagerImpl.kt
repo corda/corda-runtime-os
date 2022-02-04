@@ -5,6 +5,8 @@ import net.corda.data.chunking.ChunkAck
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.cpiupload.CpiUploadManager
 import net.corda.messaging.api.publisher.RPCSender
+import net.corda.v5.base.concurrent.getOrThrow
+import net.corda.v5.base.util.seconds
 import java.time.Duration
 
 class CpiUploadManagerImpl(
@@ -16,7 +18,9 @@ class CpiUploadManagerImpl(
     private val timeout = Duration.ofMillis(1000) // TODO replace with config
 
     override fun sendCpiChunk(chunk: Chunk): ChunkAck {
-        TODO("Not yet implemented")
+        val chunkAckFuture = rpcSender.sendRequest(chunk)
+        // TODO kyriakos could get a dummy response and respond
+        return chunkAckFuture.getOrThrow(20.seconds)
     }
 
     override val isRunning get() = _isRunning

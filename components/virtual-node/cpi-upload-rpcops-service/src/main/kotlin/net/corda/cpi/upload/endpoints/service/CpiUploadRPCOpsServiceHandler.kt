@@ -31,6 +31,9 @@ class CpiUploadRPCOpsServiceHandler(
 
     companion object {
         val log = contextLogger()
+
+        //TODO: need to move this in corda-api repo [Schemas]
+        const val CPI_UPLOAD_TOPIC = "cpi.upload"
     }
 
     private var configReadServiceRegistrationHandle: RegistrationHandle? = null
@@ -86,7 +89,7 @@ class CpiUploadRPCOpsServiceHandler(
         val rpcConfig = RPCConfig(
             "todo",
             "todo",
-            "todo",
+            CPI_UPLOAD_TOPIC,
             Chunk::class.java,
             ChunkAck::class.java
         )
