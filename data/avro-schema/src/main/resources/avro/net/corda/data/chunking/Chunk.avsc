@@ -16,7 +16,10 @@
     },
     {
       "name": "checksum",
-      "type": "net.corda.data.crypto.SecureHash",
+      "type": [
+        "null",
+        "net.corda.data.crypto.SecureHash"
+        ],
       "doc": "checksum of assembled chunks"
     },
     {
