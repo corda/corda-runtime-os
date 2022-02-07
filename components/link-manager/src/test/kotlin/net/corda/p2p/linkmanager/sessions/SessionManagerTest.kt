@@ -68,7 +68,7 @@ import java.security.KeyPairGenerator
 import java.security.MessageDigest
 import java.time.Duration
 import java.time.Instant
-import java.util.*
+import java.util.Collections
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -898,7 +898,7 @@ class SessionManagerTest {
         val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
         sessionManager.processSessionMessage(LinkInMessage(responderHello))
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionAlreadyPending)
-        eventually(configWithHeartbeat.sessionTimeout.multipliedBy(4), 5.millis) {
+        eventually(configWithHeartbeat.sessionTimeout.multipliedBy(10), 5.millis) {
             assertThat(sessionManager.processOutboundMessage(message)).isInstanceOf(NewSessionNeeded::class.java)
         }
         sessionManager.stop()
@@ -944,7 +944,7 @@ class SessionManagerTest {
 
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
 
-        eventually(configWithHeartbeat.sessionTimeout.multipliedBy(4), 5.millis) {
+        eventually(configWithHeartbeat.sessionTimeout.multipliedBy(10), 5.millis) {
             assertThat(sessionManager.processOutboundMessage(message)).isInstanceOf(NewSessionNeeded::class.java)
         }
         verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())
@@ -1008,7 +1008,7 @@ class SessionManagerTest {
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
         sessionManager.dataMessageSent(authenticatedSession)
 
-        eventually(configWithHeartbeat.sessionTimeout.multipliedBy(4), 5.millis) {
+        eventually(configWithHeartbeat.sessionTimeout.multipliedBy(10), 5.millis) {
             assertThat(sessionManager.processOutboundMessage(message)).isInstanceOf(NewSessionNeeded::class.java)
         }
         verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())

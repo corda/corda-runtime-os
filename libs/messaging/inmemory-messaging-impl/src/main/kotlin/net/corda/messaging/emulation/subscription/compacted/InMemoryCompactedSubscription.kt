@@ -109,13 +109,13 @@ class InMemoryCompactedSubscription<K : Any, V : Any>(
         logger.debug { "Starting compacted subscription with config: $subscriptionConfig" }
         startStopLock.withLock {
             if (currentConsumption == null) {
+                lifecycleCoordinator.start()
+                lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
                 val consumer = CompactedConsumer(this)
                 if (waitingForPartitions.isEmpty()) {
                     processor.onSnapshot(knownValues)
                 }
                 currentConsumption = topicService.createConsumption(consumer)
-                lifecycleCoordinator.start()
-                lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
             }
         }
     }
