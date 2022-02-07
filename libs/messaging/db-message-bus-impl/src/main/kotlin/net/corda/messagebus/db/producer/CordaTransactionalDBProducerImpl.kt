@@ -105,7 +105,7 @@ class CordaTransactionalDBProducerImpl(
         if (inTransaction) {
             throw CordaMessageAPIFatalException("Cannot start a new transaction when one is already in progress.")
         }
-        val newTransaction = TransactionRecordEntry(UUID.randomUUID().toString(), false)
+        val newTransaction = TransactionRecordEntry(UUID.randomUUID().toString())
         transaction.set(newTransaction)
         dbAccess.writeTransactionRecord(newTransaction)
     }

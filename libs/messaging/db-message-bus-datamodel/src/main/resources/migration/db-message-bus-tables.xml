@@ -21,7 +21,7 @@
 
         <createTable tableName="transaction_record">
             <column name="transaction_id" type="VARCHAR(255)"/>
-            <column name="visible" type="BOOLEAN"/>
+            <column name="state" type="integer"/>
         </createTable>
         <addPrimaryKey tableName="transaction_record" columnNames="transaction_id" constraintName="transaction_record_pk" />
 

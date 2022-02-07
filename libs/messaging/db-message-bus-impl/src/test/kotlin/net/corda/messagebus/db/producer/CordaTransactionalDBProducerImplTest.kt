@@ -5,6 +5,7 @@ import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionRecordEntry
+import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.records.Record
@@ -100,14 +101,14 @@ internal class CordaTransactionalDBProducerImplTest {
         assertThat(record.topic).isEqualTo(topic)
         assertThat(record.key).isEqualTo(serializedKey)
         assertThat(record.value).isEqualTo(serializedValue)
-        assertThat(record.offset).isEqualTo(5)
+        assertThat(record.recordOffset).isEqualTo(5)
         assertThat(record.partition).isEqualTo(1)
         assertThat(record.transactionId).isNotEmpty()
         assertThat(record.transactionId).isNotEqualTo(CordaAtomicDBProducerImpl.ATOMIC_TRANSACTION)
 
         val initialTransactionRecord = dbTransaction.allValues.single()
         assertThat(record.transactionId).isEqualTo(initialTransactionRecord.transactionId)
-        assertThat(initialTransactionRecord.visible).isFalse()
+        assertThat(initialTransactionRecord.state).isEqualTo(TransactionState.PENDING)
 
         assertThat(dbTransactionId.allValues.single()).isEqualTo(initialTransactionRecord.transactionId)
 

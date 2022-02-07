@@ -5,6 +5,10 @@ import javax.persistence.Entity
 import javax.persistence.Id
 import javax.persistence.Table
 
+enum class TransactionState {
+    PENDING, COMMITTED, ABORTED
+}
+
 @Entity(name = "transaction_record")
 @Table(name = "transaction_record")
 class TransactionRecordEntry(
@@ -13,5 +17,5 @@ class TransactionRecordEntry(
     val transactionId: String,
 
     @Column
-    var visible: Boolean
+    var state: TransactionState = TransactionState.PENDING,
 )

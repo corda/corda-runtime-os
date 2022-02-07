@@ -7,6 +7,7 @@ import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.db.conversions.toCordaRecord
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionRecordEntry
+import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.emulation.topic.service.TopicService
@@ -21,7 +22,7 @@ class CordaAtomicDBProducerImpl(
 ) : CordaProducer {
 
     companion object {
-        internal val ATOMIC_TRANSACTION = TransactionRecordEntry("Atomic Transaction", true)
+        internal val ATOMIC_TRANSACTION = TransactionRecordEntry("Atomic Transaction", TransactionState.COMMITTED)
     }
 
     init {

@@ -7,6 +7,7 @@ import net.corda.messagebus.db.datamodel.CommittedOffsetEntry
 import net.corda.messagebus.db.datamodel.TopicEntry
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionRecordEntry
+import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
 import net.corda.test.util.LoggingUtils.emphasise
@@ -107,7 +108,7 @@ class DBAccessIntegrationTest {
         val dbAccess = DBAccess(emf)
         dbAccess.writeRecords(records)
 
-        val results = query(TopicRecordEntry::class.java, "from topic_record order by partition, offset")
+        val results = query(TopicRecordEntry::class.java, "from topic_record order by partition, record_offset")
         assertThat(results).size().isEqualTo(records.size)
         results.forEachIndexed { index, topicRecordEntry ->
             assertThat(topicRecordEntry).isEqualToComparingFieldByField(records[index])
@@ -119,7 +120,7 @@ class DBAccessIntegrationTest {
 
     @Test
     fun `DBWriter writes transactional records and makes them visible`() {
-        val transactionRecordEntry = TransactionRecordEntry("id", false)
+        val transactionRecordEntry = TransactionRecordEntry("id")
 
         val dbAccess = DBAccess(emf)
         dbAccess.writeTransactionRecord(transactionRecordEntry)
@@ -127,14 +128,36 @@ class DBAccessIntegrationTest {
         val nonCommittedResults = query(TransactionRecordEntry::class.java, "from transaction_record")
         nonCommittedResults.forEach { result ->
             assertThat(result.transactionId).isEqualTo("id")
-            assertThat(result.visible).isFalse()
+            assertThat(result.state).isEqualTo(TransactionState.PENDING)
         }
 
         dbAccess.makeRecordsVisible(transactionRecordEntry.transactionId)
         val committedResults = query(TransactionRecordEntry::class.java, "from transaction_record")
         committedResults.forEach { result ->
             assertThat(result.transactionId).isEqualTo("id")
-            assertThat(result.visible).isTrue()
+            assertThat(result.state).isEqualTo(TransactionState.COMMITTED)
+        }
+    }
+
+
+    @Test
+    fun `DBWriter makes aborted transactional records invisible`() {
+        val transactionRecordEntry = TransactionRecordEntry("id")
+
+        val dbAccess = DBAccess(emf)
+        dbAccess.writeTransactionRecord(transactionRecordEntry)
+
+        val nonCommittedResults = query(TransactionRecordEntry::class.java, "from transaction_record")
+        nonCommittedResults.forEach { result ->
+            assertThat(result.transactionId).isEqualTo("id")
+            assertThat(result.state).isEqualTo(TransactionState.PENDING)
+        }
+
+        dbAccess.makeRecordsInvisible(transactionRecordEntry.transactionId)
+        val committedResults = query(TransactionRecordEntry::class.java, "from transaction_record")
+        committedResults.forEach { result ->
+            assertThat(result.transactionId).isEqualTo("id")
+            assertThat(result.state).isEqualTo(TransactionState.ABORTED)
         }
     }
 

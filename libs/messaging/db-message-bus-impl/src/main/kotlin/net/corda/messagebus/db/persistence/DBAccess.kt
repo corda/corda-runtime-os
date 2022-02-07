@@ -4,6 +4,7 @@ import net.corda.messagebus.db.datamodel.CommittedOffsetEntry
 import net.corda.messagebus.db.datamodel.TopicEntry
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionRecordEntry
+import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.orm.utils.transaction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -156,7 +157,14 @@ class DBAccess(
     fun makeRecordsVisible(transactionId: String) {
         executeWithErrorHandling("commitRecords") { entityManager ->
             val recordTransaction = entityManager.find(TransactionRecordEntry::class.java, transactionId)
-            recordTransaction.visible = true
+            recordTransaction.state = TransactionState.COMMITTED
+        }
+    }
+
+    fun makeRecordsInvisible(transactionId: String) {
+        executeWithErrorHandling("commitRecords") { entityManager ->
+            val recordTransaction = entityManager.find(TransactionRecordEntry::class.java, transactionId)
+            recordTransaction.state = TransactionState.ABORTED
         }
     }
 

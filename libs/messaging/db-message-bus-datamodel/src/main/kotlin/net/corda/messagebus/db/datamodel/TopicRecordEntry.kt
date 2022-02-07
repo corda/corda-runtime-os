@@ -23,7 +23,7 @@ class TopicRecordEntry(
     val partition: Int,
     @Id
     @Column(name = "record_offset")
-    val offset: Long,
+    val recordOffset: Long,
     @Column(name = "record_key")
     val key: ByteArray,
     @Column(name = "record_value")
@@ -38,5 +38,5 @@ class TopicRecordEntry(
 data class TopicRecordEntryKey(
     val topic: String,
     val partition: Int,
-    val offset: Long,
+    val recordOffset: Long,
 ): Serializable

@@ -70,7 +70,7 @@ internal class CordaAtomicDBProducerImplTest {
         assertThat(record.topic).isEqualTo(topic)
         assertThat(record.key).isEqualTo(serializedKey)
         assertThat(record.value).isEqualTo(serializedValue)
-        assertThat(record.offset).isEqualTo(5)
+        assertThat(record.recordOffset).isEqualTo(5)
         assertThat(record.partition).isEqualTo(1)
         assertThat(record.transactionId).isEqualTo(CordaAtomicDBProducerImpl.ATOMIC_TRANSACTION.transactionId)
 
@@ -105,7 +105,7 @@ internal class CordaAtomicDBProducerImplTest {
         assertThat(record.topic).isEqualTo(topic)
         assertThat(record.key).isEqualTo(serializedKey)
         assertThat(record.value).isEqualTo(serializedValue)
-        assertThat(record.offset).isEqualTo(2)
+        assertThat(record.recordOffset).isEqualTo(2)
         assertThat(record.partition).isEqualTo(0)
         assertThat(record.transactionId).isEqualTo(CordaAtomicDBProducerImpl.ATOMIC_TRANSACTION.transactionId)
 
