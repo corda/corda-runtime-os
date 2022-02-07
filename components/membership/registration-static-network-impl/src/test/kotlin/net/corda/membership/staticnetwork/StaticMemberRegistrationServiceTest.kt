@@ -4,7 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.CryptoOpsClient
 import net.corda.data.KeyValuePairList
-import net.corda.data.membership.SignedMemberInfo
+import net.corda.data.membership.PersistentMemberInfo
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.conversion.PropertyConverterImpl
@@ -104,7 +104,7 @@ class StaticMemberRegistrationServiceTest {
     @Suppress("UNCHECKED_CAST")
     private val mockPublisher: Publisher = mock {
         on { publish(any()) } doAnswer {
-            publishedList.addAll(it.arguments.first() as List<Record<String, SignedMemberInfo>>)
+            publishedList.addAll(it.arguments.first() as List<Record<String, PersistentMemberInfo>>)
             listOf(CompletableFuture.completedFuture(Unit))
         }
     }
@@ -139,7 +139,7 @@ class StaticMemberRegistrationServiceTest {
 
     private val configurationReadService: ConfigurationReadService = mock()
 
-    private val publishedList = mutableListOf<Record<String, SignedMemberInfo>>()
+    private val publishedList = mutableListOf<Record<String, PersistentMemberInfo>>()
 
     private var coordinatorIsRunning = false
     private val coordinator: LifecycleCoordinator = mock {
@@ -208,14 +208,14 @@ class StaticMemberRegistrationServiceTest {
         publishedList.forEach {
             assertEquals(Schemas.Membership.MEMBER_LIST_TOPIC, it.topic)
             assertTrue { it.key.startsWith(alice.id) }
-            val signedMemberPublished = it.value as SignedMemberInfo
+            val signedMemberPublished = it.value?.signedMemberInfo
             val memberPublished = toMemberInfo(
                 MemberContextImpl(
-                    KeyValuePairList.fromByteBuffer(signedMemberPublished.memberContext).toSortedMap(),
+                    KeyValuePairList.fromByteBuffer(signedMemberPublished?.memberContext).toSortedMap(),
                     converter
                 ),
                 MGMContextImpl(
-                    KeyValuePairList.fromByteBuffer(signedMemberPublished.mgmContext).toSortedMap(),
+                    KeyValuePairList.fromByteBuffer(signedMemberPublished?.mgmContext).toSortedMap(),
                     converter
                 )
             )
