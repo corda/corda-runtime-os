@@ -4,9 +4,9 @@ import net.corda.flow.manager.SandboxDependencyInjector
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 
 /**
- * The DependencyInjectionBuilderFactory is responsible for creating instances of the [SandboxDependencyInjectionBuilder]
+ * The [SandboxDependencyInjectorFactory] is responsible for creating instances of the [SandboxDependencyInjector]
  */
-interface SandboxDependencyInjectionFactory {
+interface SandboxDependencyInjectorFactory {
 
     /**
      * Creates a new instance of the [SandboxDependencyInjector]

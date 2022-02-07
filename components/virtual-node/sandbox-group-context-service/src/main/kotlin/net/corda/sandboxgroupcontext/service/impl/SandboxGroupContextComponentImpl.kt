@@ -20,17 +20,19 @@ import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.sandboxgroupcontext.service.helper.initPublicSandboxes
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import org.osgi.framework.BundleContext
 import org.osgi.service.cm.ConfigurationAdmin
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.runtime.ServiceComponentRuntime
 import java.nio.file.Paths
 
 /**
  * Sandbox group context service component... with lifecycle, since it depends on a CPK service
  * that has a lifecycle.
  */
-@Suppress("Unused")
+@Suppress("Unused", "LongParameterList")
 @Component(service = [SandboxGroupContextComponent::class])
 class SandboxGroupContextComponentImpl @Activate constructor(
     @Reference(service = InstallService::class)
@@ -40,19 +42,33 @@ class SandboxGroupContextComponentImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationAdmin::class)
-    private val configurationAdmin: ConfigurationAdmin
+    private val configurationAdmin: ConfigurationAdmin,
+    @Reference
+    private val serviceComponentRuntime: ServiceComponentRuntime,
+    bundleContext: BundleContext
 ) : SandboxGroupContextComponent {
     companion object {
         private val logger = contextLogger()
     }
 
-    private val sandboxGroupContextServiceImpl = SandboxGroupContextServiceImpl(sandboxCreationService, installService)
+    private val sandboxGroupContextServiceImpl = SandboxGroupContextServiceImpl(
+        sandboxCreationService,
+        installService,
+        serviceComponentRuntime,
+        bundleContext
+    )
     private val coordinator = coordinatorFactory.createCoordinator<SandboxGroupContextComponent>(::eventHandler)
     private var registrationHandle: RegistrationHandle? = null
 
     override fun getOrCreate(
         virtualNodeContext: VirtualNodeContext, initializer: SandboxGroupContextInitializer
     ): SandboxGroupContext = sandboxGroupContextServiceImpl.getOrCreate(virtualNodeContext, initializer)
+
+    override fun registerMetadataServices(
+        sandboxGroupContext: SandboxGroupContext,
+        serviceNames: (CPK.Metadata) -> Iterable<String>,
+        isMetadataService: (Class<*>) -> Boolean
+    ): AutoCloseable = sandboxGroupContextServiceImpl.registerMetadataServices(sandboxGroupContext, serviceNames, isMetadataService)
 
     override fun hasCpks(cpkIdentifiers: Set<CPK.Identifier>): Boolean =
         sandboxGroupContextServiceImpl.hasCpks(cpkIdentifiers)
