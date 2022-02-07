@@ -1,41 +1,47 @@
 package net.corda.httprpc.client.stream
 
-import com.google.common.jimfs.Jimfs
+import net.corda.utilities.deleteRecursively
 import net.corda.utilities.div
 import net.corda.v5.base.stream.PositionManager
+import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.AbstractThrowableAssert
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.io.TempDir
 import java.nio.ByteBuffer
 import java.nio.channels.ClosedChannelException
 import java.nio.channels.FileChannel
 import java.nio.channels.OverlappingFileLockException
-import java.nio.file.FileSystem
-import java.nio.file.Path
+import java.nio.file.Files
 import java.nio.file.StandardOpenOption
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class FilePositionManagerTest {
 
-    lateinit var fs: FileSystem
-
-    @BeforeEach
-    private fun beforeEach() {
-        fs = Jimfs.newFileSystem()
+    private companion object {
+        val log = contextLogger()
     }
 
+    private val tempFolder = Files.createTempDirectory(this::class.java.simpleName)
+
     @AfterEach
-    private fun afterEach() {
-        fs.close()
+    fun teardown() {
+        // When executed on CI with K8s on Windows, the file operations seems to be quite slow/asynchronous.
+        // In particular when it comes to deleting of directories and their content, it may lead to
+        // having a directory structure in the inconsistent state. Therefore, being a bit more lenient here
+        // by catching any exception and logging them rather than failing the test as `@TempDir` would do.
+        try {
+            tempFolder.deleteRecursively()
+
+        } catch (th: Throwable) {
+            log.warn("Error whilst cleaning-up directories", th)
+        }
     }
 
     @Test
     fun readWriteTest() {
-        val filePath = fs.getPath("readWriteTest.txt")
+        val filePath = tempFolder / "readWriteTest.txt"
         val filePositionManager = FilePositionManager(filePath)
         filePositionManager.use { instance ->
             assertEquals(PositionManager.MIN_POSITION, instance.get())
@@ -61,24 +67,19 @@ class FilePositionManagerTest {
         }.isInstanceOf<ClosedChannelException>()
     }
 
-    @TempDir
-    lateinit var tempFolder: Path
-
     @Test
     fun doubleCreateTest() {
-        // JimFS doesn't handle file locks as expected, so falling back to actual fs.
-        //   https://github.com/google/jimfs/issues/67
         val filePath = tempFolder / "doubleCreate.txt"
         FilePositionManager(filePath).use {
             Assertions.assertThatThrownBy {
-                FilePositionManager(filePath).close()
+                FilePositionManager(filePath)
             }.isInstanceOf<OverlappingFileLockException>()
         }
     }
 
     @Test
     fun existingContent() {
-        val filePath = fs.getPath("existingContent.txt")
+        val filePath = tempFolder / "existingContent.txt"
         val value = 101L
         FileChannel.open(filePath, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE).use {
             it.write(ByteBuffer.wrap(value.toString().toByteArray()))
@@ -90,7 +91,7 @@ class FilePositionManagerTest {
 
     @Test
     fun unparseableFile() {
-        val filePath = fs.getPath("wrongContent.txt")
+        val filePath = tempFolder / "wrongContent.txt"
         FileChannel.open(filePath, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE).use {
             it.write(ByteBuffer.wrap("fooBar".toByteArray()))
         }
@@ -103,7 +104,7 @@ class FilePositionManagerTest {
 
     @Test
     fun multiThreadedTest() {
-        val filePath = fs.getPath("multiThreadedTest.txt")
+        val filePath = tempFolder / "multiThreadedTest.txt"
         FilePositionManager(filePath).use { fpm ->
             val maxPos = 10_000
             (1..maxPos).toList().stream().parallel().forEach {
@@ -116,6 +117,6 @@ class FilePositionManagerTest {
         }
     }
 
-    inline fun <reified TYPE : Throwable> AbstractThrowableAssert<*, *>.isInstanceOf(): AbstractThrowableAssert<*, *> =
+    private inline fun <reified TYPE : Throwable> AbstractThrowableAssert<*, *>.isInstanceOf(): AbstractThrowableAssert<*, *> =
         isInstanceOf(TYPE::class.java)
 }
