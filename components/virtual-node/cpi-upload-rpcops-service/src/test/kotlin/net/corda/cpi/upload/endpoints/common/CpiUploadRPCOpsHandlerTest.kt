@@ -28,7 +28,7 @@ class CpiUploadRPCOpsHandlerTest {
     }
 
     @Test
-    fun `on Start event follow CpiUploadRPCOpsService for changes`() {
+    fun `on Start event follows CpiUploadRPCOpsService for changes`() {
         val registrationHandle = mock<RegistrationHandle>()
         whenever(coordinator.followStatusChangesByName(
             setOf(
@@ -42,14 +42,14 @@ class CpiUploadRPCOpsHandlerTest {
     }
 
     @Test
-    fun `on RegistrationStatusChangeEvent UP event update coordinator status to UP`() {
+    fun `on RegistrationStatusChangeEvent UP event updates coordinator status to UP`() {
         val event = RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP)
         rpcOpsHandler.processEvent(event, coordinator)
         verify(coordinator).updateStatus(LifecycleStatus.UP)
     }
 
     @Test
-    fun `on RegistrationStatusChangeEvent ERROR event close resources and update coordinator status to ERROR`(){
+    fun `on RegistrationStatusChangeEvent ERROR event closes resources and updates coordinator status to ERROR`(){
         val event = RegistrationStatusChangeEvent(mock(), LifecycleStatus.ERROR)
         val registrationHandle = mock<RegistrationHandle>()
         rpcOpsHandler.cpiUploadRPCOpsServiceRegistrationHandle = registrationHandle
@@ -60,7 +60,7 @@ class CpiUploadRPCOpsHandlerTest {
     }
 
     @Test
-    fun `on StopEvent event close resources and set coordinator status to DOWN`() {
+    fun `on StopEvent event closes resources and sets coordinator status to DOWN`() {
         val registrationHandle = mock<RegistrationHandle>()
         rpcOpsHandler.cpiUploadRPCOpsServiceRegistrationHandle = registrationHandle
         rpcOpsHandler.processEvent(StopEvent(), coordinator)
