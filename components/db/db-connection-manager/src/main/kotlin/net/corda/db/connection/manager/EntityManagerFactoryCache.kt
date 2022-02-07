@@ -5,6 +5,9 @@ import net.corda.db.schema.CordaDb
 import net.corda.orm.JpaEntitiesSet
 import javax.persistence.EntityManagerFactory
 
+/**
+ * Cache of [EntityManagerFactory] objects.
+ */
 interface EntityManagerFactoryCache {
     /**
      * Get the [EntityManagerFactory] related to the cluster DB.
@@ -12,21 +15,24 @@ interface EntityManagerFactoryCache {
     val clusterDbEntityManagerFactory: EntityManagerFactory
 
     /**
-     * Get the [EntityManagerFactory] related to the given [db] from cache or create one if necessary.
+     * Get the [EntityManagerFactory] related to the given [db] and [privilege] from cache or create one if necessary.
      *
-     * @param db to get the connection for
-     * @param privilege DDL or DML connection
-     * @return
+     * @param db Name of the DB to use.
+     * @param privilege [DbPrivilege] required (DML or DDL).
+     * @throws [DBConfigurationException] if connection details for the requested DB/Privilege does not exist
+     *              or if entities associated to the DB are not defined.
      */
     fun getOrCreate(db: CordaDb, privilege: DbPrivilege): EntityManagerFactory
 
     /**
-     * Get the [EntityManagerFactory] related to the given [id] and [entitiesSet] from cache or create one if necessary.
+     * Get the [EntityManagerFactory] related to the given [name], [privilege] and [entitiesSet] from cache
+     * or create one if necessary.
      *
-     * @param name of the connection
-     * @param privilege required privilege for the connecction
-     * @param entitiesSet
-     * @return
+     * @param name Name of the DB to use.
+     * @param privilege [DbPrivilege] required (DML or DDL).
+     * @param entitiesSet Set of all entities managed by [javax.persistence.EntityManager]s created by the
+     *                  [EntityManagerFactory] returned
+     * @throws [DBConfigurationException] if connection details for the requested DB/Privilege does not exist.
      */
     fun getOrCreate(name: String, privilege: DbPrivilege, entitiesSet: JpaEntitiesSet): EntityManagerFactory
 }
