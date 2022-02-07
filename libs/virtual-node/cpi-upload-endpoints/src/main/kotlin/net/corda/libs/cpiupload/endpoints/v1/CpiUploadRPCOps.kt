@@ -22,4 +22,4 @@ interface CpiUploadRPCOps : RpcOps {
     fun cpi(@HttpRpcRequestBodyParameter file: InputStream): HTTPCpiUploadRequestId
 }
 
-data class HTTPCpiUploadRequestId(val id: Int)
+data class HTTPCpiUploadRequestId(val id: String)
