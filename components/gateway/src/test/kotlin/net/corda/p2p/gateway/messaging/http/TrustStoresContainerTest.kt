@@ -27,7 +27,7 @@ import java.security.KeyStore
 import java.security.cert.Certificate
 import java.security.cert.CertificateFactory
 
-class TrustStoresTest {
+class TrustStoresContainerTest {
     private val subscription = mock<CompactedSubscription<String, GatewayTruststore>>()
     private val lifecycleEventHandler = argumentCaptor<LifecycleEventHandler>()
     private val coordinator = mock< LifecycleCoordinator> {
@@ -38,8 +38,9 @@ class TrustStoresTest {
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory> {
         on { createCoordinator(any(), lifecycleEventHandler.capture()) } doReturn coordinator
     }
+    private val processor = argumentCaptor<CompactedProcessor<String, GatewayTruststore>>()
     private val subscriptionFactory = mock<SubscriptionFactory> {
-        on { createCompactedSubscription(any(), any<CompactedProcessor<String, GatewayTruststore>>(), any()) } doReturn subscription
+        on { createCompactedSubscription(any(), processor.capture(), any()) } doReturn subscription
     }
     private val nodeConfiguration = mock<SmartConfig>()
     private val certificate = mock<Certificate>()
@@ -58,7 +59,7 @@ class TrustStoresTest {
         mockKeyStore.close()
     }
 
-    private val testObject = TrustStores(
+    private val testObject = TrustStoresContainer(
         lifecycleCoordinatorFactory,
         subscriptionFactory,
         nodeConfiguration,
@@ -84,7 +85,7 @@ class TrustStoresTest {
     fun `onSnapshot will mark as ready`() {
         testObject.start()
 
-        testObject.onSnapshot(emptyMap())
+        processor.firstValue.onSnapshot(emptyMap())
 
         assertThat(testObject.isRunning).isTrue
     }
@@ -92,7 +93,7 @@ class TrustStoresTest {
     @Test
     fun `stop will stop the subscription`() {
         testObject.start()
-        testObject.onSnapshot(emptyMap())
+        processor.firstValue.onSnapshot(emptyMap())
 
         testObject.stop()
 
@@ -102,58 +103,58 @@ class TrustStoresTest {
     @Test
     fun `onNext with value will add store`() {
         testObject.start()
-        testObject.onSnapshot(emptyMap())
+        processor.firstValue.onSnapshot(emptyMap())
 
-        testObject.onNext(
+        processor.firstValue.onNext(
             Record(Schemas.P2P.GATEWAY_TLS_TRUSTSTORES, "hash", GatewayTruststore(listOf("one"))),
             null,
             emptyMap(),
         )
 
-        assertThat(testObject.trustStore("hash")).isEqualTo(keyStore)
+        assertThat(testObject.getTrustStore("hash")).isEqualTo(keyStore)
     }
 
     @Test
     fun `onNext without value will remove store`() {
         testObject.start()
-        testObject.onSnapshot(
+        processor.firstValue.onSnapshot(
             mapOf(
                 "hash" to GatewayTruststore(listOf("one"))
             )
         )
 
-        testObject.onNext(
+        processor.firstValue.onNext(
             Record(Schemas.P2P.GATEWAY_TLS_TRUSTSTORES, "hash", null),
             null,
             emptyMap(),
         )
 
         assertThrows<IllegalArgumentException> {
-            testObject.trustStore("hash")
+            testObject.getTrustStore("hash")
         }
     }
 
     @Test
     fun `onSnapshot save the data`() {
-        testObject.onSnapshot(
+        processor.firstValue.onSnapshot(
             mapOf(
                 "hash" to GatewayTruststore(listOf("one"))
             )
         )
 
-        assertThat(testObject.trustStore("hash")).isEqualTo(keyStore)
+        assertThat(testObject.getTrustStore("hash")).isEqualTo(keyStore)
     }
 
     @Test
     fun `trust store add certificates to keystore`() {
         testObject.start()
-        testObject.onSnapshot(
+        processor.firstValue.onSnapshot(
             mapOf(
                 "a" to GatewayTruststore(listOf("one", "two")),
             )
         )
 
-        testObject.trustStore("a")
+        testObject.getTrustStore("a")
 
         verify(keyStore).setCertificateEntry("gateway-0", certificate)
         verify(keyStore).setCertificateEntry("gateway-1", certificate)
@@ -162,13 +163,13 @@ class TrustStoresTest {
     @Test
     fun `trust store will load the keystore`() {
         testObject.start()
-        testObject.onSnapshot(
+        processor.firstValue.onSnapshot(
             mapOf(
                 "a" to GatewayTruststore(listOf("one", "two")),
             )
         )
 
-        testObject.trustStore("a")
+        testObject.getTrustStore("a")
 
         verify(keyStore).load(null, null)
     }
@@ -178,13 +179,13 @@ class TrustStoresTest {
         val data = argumentCaptor<InputStream>()
         whenever(certificateFactory.generateCertificate(data.capture())).doReturn(certificate)
         testObject.start()
-        testObject.onSnapshot(
+        processor.firstValue.onSnapshot(
             mapOf(
                 "a" to GatewayTruststore(listOf("one", "two")),
             )
         )
 
-        testObject.trustStore("a")
+        testObject.getTrustStore("a")
 
         assertThat(data.firstValue.reader().readText()).isEqualTo("one")
         assertThat(data.secondValue.reader().readText()).isEqualTo("two")

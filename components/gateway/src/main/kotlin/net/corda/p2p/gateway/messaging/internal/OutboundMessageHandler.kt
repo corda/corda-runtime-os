@@ -23,7 +23,7 @@ import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpResponse
 import net.corda.p2p.gateway.messaging.http.SniCalculator
-import net.corda.p2p.gateway.messaging.http.TrustStores
+import net.corda.p2p.gateway.messaging.http.TrustStoresContainer
 import net.corda.p2p.gateway.messaging.toGatewayConfiguration
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.v5.base.util.debug
@@ -59,7 +59,7 @@ internal class OutboundMessageHandler(
         configurationReaderService
     )
 
-    private val trustStores = TrustStores(
+    private val trustStores = TrustStoresContainer(
         lifecycleCoordinatorFactory,
         subscriptionFactory,
         nodeConfiguration,
@@ -92,7 +92,7 @@ internal class OutboundMessageHandler(
             val pendingRequests = events.mapNotNull { evt ->
                 evt.value?.let { peerMessage ->
                     try {
-                        val trustStore = trustStores.trustStore(peerMessage.header.trustStoreHash)
+                        val trustStore = trustStores.getTrustStore(peerMessage.header.trustStoreHash)
 
                         val sni = SniCalculator.calculateSni(
                             peerMessage.header.destinationX500Name,

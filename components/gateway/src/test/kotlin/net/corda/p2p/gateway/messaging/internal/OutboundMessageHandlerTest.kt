@@ -28,7 +28,7 @@ import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.p2p.gateway.messaging.http.HttpResponse
-import net.corda.p2p.gateway.messaging.http.TrustStores
+import net.corda.p2p.gateway.messaging.http.TrustStoresContainer
 import net.corda.v5.base.util.millis
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x500.X500Name
@@ -81,7 +81,7 @@ class OutboundMessageHandlerTest {
         on { connectionConfig } doAnswer { connectionConfig }
     }
     private val connectionManager = mockConstruction(ReconfigurableConnectionManager::class.java)
-    private val trustStores = mockConstruction(TrustStores::class.java)
+    private val trustStores = mockConstruction(TrustStoresContainer::class.java)
     private val truststore = mock<KeyStore>()
 
     private val sentMessages = mutableListOf<GatewayMessage>()
@@ -467,7 +467,7 @@ class OutboundMessageHandlerTest {
     }
 
     private fun startHandler() {
-        whenever(trustStores.constructed().first().trustStore(any())).doReturn(truststore)
+        whenever(trustStores.constructed().first().getTrustStore(any())).doReturn(truststore)
         whenever(connectionManager.constructed().first().isRunning).doReturn(true)
         whenever(dominoTile.constructed().first().isRunning).doReturn(true)
         handler.start()
