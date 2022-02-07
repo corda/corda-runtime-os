@@ -50,7 +50,7 @@ class ChunkWritingTest {
 
         val path = createFile((2 * MB).toLong())
 
-        chunkWriter.write(randomFileName(), Files.newInputStream(path))
+        Files.newInputStream(path).use { chunkWriter.write(randomFileName(), it) }
 
         assertThat(chunkWrittenCount).isGreaterThan(0)
     }
@@ -63,7 +63,7 @@ class ChunkWritingTest {
 
         val path = createFile((2 * MB).toLong())
 
-        chunkWriter.write(randomFileName(), Files.newInputStream(path))
+        Files.newInputStream(path).use { chunkWriter.write(randomFileName(), it) }
 
         assertThat(0).isEqualTo(lastChunkSize)
     }

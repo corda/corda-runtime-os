@@ -17,11 +17,12 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
 import kotlin.random.Random
 
-class EntityManagerFactoryFactoryIntegrationTest {
+class ConfigEntityManagerIntegrationTest {
     private companion object {
         private const val MIGRATION_FILE_LOCATION = "net/corda/db/schema/config/db.changelog-master.xml"
         private lateinit var entityManagerFactory: EntityManagerFactory
@@ -59,7 +60,9 @@ class EntityManagerFactoryFactoryIntegrationTest {
 
     @Test
     fun `can persist and read back config entities`() {
-        val config = ConfigEntity("${random.nextInt()}", "a=b", 999, Instant.now(), "actor")
+        val config = ConfigEntity("${random.nextInt()}", "a=b", 999,
+            // truncating to millis as on windows builds the micros are lost after fetching the data from Postgres
+            Instant.now().truncatedTo( ChronoUnit.MILLIS ), "actor")
 
         entityManagerFactory.createEntityManager().transaction { em ->
             em.persist(config)
@@ -73,7 +76,9 @@ class EntityManagerFactoryFactoryIntegrationTest {
 
     @Test
     fun `can persist and read back config audit entities`() {
-        val config = ConfigEntity("${random.nextInt()}", "a=b", 999, Instant.now(), "joel")
+        val config = ConfigEntity("${random.nextInt()}", "a=b", 999,
+            // truncating to millis as on windows builds the micros are lost after fetching the data from Postgres
+            Instant.now().truncatedTo( ChronoUnit.MILLIS ), "joel")
         val configAudit = ConfigAuditEntity(config)
 
         entityManagerFactory.createEntityManager().transaction { em ->
@@ -92,7 +97,8 @@ class EntityManagerFactoryFactoryIntegrationTest {
             UUID.randomUUID(),
             "batman",
             DbPrivilege.DDL,
-            Instant.now(),
+            // truncating to millis as on windows builds the micros are lost after fetching the data from Postgres
+            Instant.now().truncatedTo( ChronoUnit.MILLIS ),
             "the joker",
             "The Night Is Darkest Right Before The Dawn.",
             """

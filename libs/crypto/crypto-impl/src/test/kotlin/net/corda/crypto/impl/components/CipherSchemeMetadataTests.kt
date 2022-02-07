@@ -11,6 +11,7 @@ import net.corda.v5.cipher.suite.schemes.GOST3410_GOST3411_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.RSA_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.SM2_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.SPHINCS256_CODE_NAME
+import net.corda.v5.cipher.suite.schemes.SerializedAlgorithmParameterSpec
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.SignatureSpec
@@ -21,6 +22,7 @@ import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeAll
@@ -29,7 +31,12 @@ import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
+import org.mockito.kotlin.mock
 import java.security.PublicKey
+import java.security.spec.AlgorithmParameterSpec
+import java.security.spec.MGF1ParameterSpec
+import java.security.spec.PSSParameterSpec
+import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 
@@ -62,6 +69,17 @@ class CipherSchemeMetadataTests {
 
         @JvmStatic
         fun schemes(): Array<SignatureScheme> = schemeMetadata.schemes
+
+        @JvmStatic
+        fun supportedSignatureParamSpecs(): Array<AlgorithmParameterSpec> = arrayOf(
+            PSSParameterSpec(
+                "SHA-256",
+                "MGF1",
+                MGF1ParameterSpec.SHA256,
+                32,
+                1
+            )
+        )
     }
 
     @Test
@@ -219,6 +237,36 @@ class CipherSchemeMetadataTests {
     ) {
         val factory = schemeMetadata.findKeyFactory(signatureScheme)
         assertEquals(signatureScheme.providerName, factory.provider.name)
+    }
+
+    @ParameterizedTest
+    @MethodSource("supportedSignatureParamSpecs")
+    @Timeout(30)
+    fun `Should round trip serialize and deserialize supported signature param specs`(params: AlgorithmParameterSpec) {
+        val data = schemeMetadata.serialize(params)
+        val result = schemeMetadata.deserialize(data)
+        assertInstanceOf(params::class.java, result)
+    }
+
+    @Test
+    @Timeout(5)
+    fun `Should throw IllegalArgumentException when serializing unsupported signature param spec`() {
+        assertThrows<IllegalArgumentException> {
+            schemeMetadata.serialize(mock())
+        }
+    }
+
+    @Test
+    @Timeout(5)
+    fun `Should throw IllegalArgumentException when deserializing unsupported signature param spec`() {
+        assertThrows<IllegalArgumentException> {
+            schemeMetadata.deserialize(
+                SerializedAlgorithmParameterSpec(
+                    clazz = UUID.randomUUID().toString(),
+                    bytes = ByteArray(100)
+                )
+            )
+        }
     }
 
     class UnsupportedPublicKey : PublicKey {
