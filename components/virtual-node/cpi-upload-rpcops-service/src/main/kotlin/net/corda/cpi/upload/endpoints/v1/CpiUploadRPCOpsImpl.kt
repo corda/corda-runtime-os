@@ -99,7 +99,7 @@ class CpiUploadRPCOpsImpl @Activate constructor(
         }
         chunkWriter.write(fileName, file)
 
-        todoSentChecksum = lastChunk!!.checksum.toCorda() // copying for now - to be replaced with send checksum
+        todoSentChecksum = lastChunk!!.checksum.toCorda() // copying for now - to be replaced with sent checksum
         log.debug("Successfully sent CPI: $todoSentChecksum to db worker")
 
         validateCpiChecksum(lastChunk!!.checksum.toCorda(),  todoSentChecksum)
