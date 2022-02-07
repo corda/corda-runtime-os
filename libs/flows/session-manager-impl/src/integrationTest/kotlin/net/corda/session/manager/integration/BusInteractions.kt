@@ -17,7 +17,7 @@ interface BusInteractions {
     /**
      * Remove the next message from the inbound messages
      */
-    fun dropNextMessage()
+    fun dropNextInboundMessage()
 
     /**
      * Remove the message from the inbound messages at a certain [position]

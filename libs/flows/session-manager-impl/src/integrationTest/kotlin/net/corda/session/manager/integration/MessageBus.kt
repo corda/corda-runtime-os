@@ -16,7 +16,7 @@ class MessageBus : BusInteractions {
         return inboundMessages.removeAt(position)
     }
 
-    override fun dropNextMessage() {
+    override fun dropNextInboundMessage() {
         inboundMessages.poll()
     }
 

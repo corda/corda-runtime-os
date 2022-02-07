@@ -1,11 +1,16 @@
-package net.corda.session.manager.integration
+package net.corda.session.manager.integration.tests
 
 import net.corda.data.flow.state.session.SessionStateType
-import org.assertj.core.api.Assertions.assertThat
+import net.corda.session.manager.integration.SessionMessageType
+import net.corda.session.manager.integration.helper.assertAllMessagesDelivered
+import net.corda.session.manager.integration.helper.assertLastReceivedSeqNum
+import net.corda.session.manager.integration.helper.assertLastSentSeqNum
+import net.corda.session.manager.integration.helper.assertStatus
+import net.corda.session.manager.integration.helper.closeSession
+import net.corda.session.manager.integration.helper.initiateNewSession
 import org.junit.jupiter.api.Test
 
 class SessionManagerIntegrationTest {
-
 
     @Test
     fun testFullSessionSendAndReceive() {
@@ -18,10 +23,48 @@ class SessionManagerIntegrationTest {
         //process ack
         alice.processNextReceivedMessage()
 
+        assertAllMessagesDelivered(alice)
+        assertAllMessagesDelivered(bob)
+
         closeSession(alice, bob)
 
-        assertThat(alice.sessionState?.status).isEqualTo(SessionStateType.CLOSED)
-        assertThat(bob.sessionState?.status).isEqualTo(SessionStateType.CLOSED)
+        assertLastSentSeqNum(alice, 3)
+        assertLastReceivedSeqNum(bob, 3)
+        assertLastSentSeqNum(bob, 1)
+        assertLastReceivedSeqNum(alice, 1)
+    }
+
+    @Test
+    fun testSimultaneousClose() {
+        val (alice, bob) = initiateNewSession()
+
+        //bob and alice send close
+        bob.processNewOutgoingMessage(SessionMessageType.CLOSE, sendMessages = true)
+        alice.processNewOutgoingMessage(SessionMessageType.CLOSE, sendMessages = true)
+        assertStatus(alice, SessionStateType.CLOSING)
+        assertStatus(bob, SessionStateType.CLOSING)
+
+        //bob receive Close and send ack back aswell as resend close
+        bob.processNextReceivedMessage(sendMessages = true)
+        //alice receive close and send ack back, also resend close to bob as ack not yet received
+        alice.processNextReceivedMessage(sendMessages = true)
+        assertStatus(bob, SessionStateType.WAIT_FOR_FINAL_ACK)
+        assertStatus(alice, SessionStateType.WAIT_FOR_FINAL_ACK)
+
+        //alice and bob process duplicate closes as well as acks
+        alice.processAllReceivedMessages(sendMessages = true)
+        assertStatus(alice, SessionStateType.CLOSED)
+        bob.processAllReceivedMessages(sendMessages = true)
+        assertStatus(bob, SessionStateType.CLOSED)
+        alice.processAllReceivedMessages()
+
+        assertAllMessagesDelivered(alice)
+        assertAllMessagesDelivered(bob)
+
+        assertLastSentSeqNum(alice, 2)
+        assertLastReceivedSeqNum(bob, 2)
+        assertLastSentSeqNum(bob, 1)
+        assertLastReceivedSeqNum(alice, 1)
     }
 
     @Test
@@ -56,9 +99,15 @@ class SessionManagerIntegrationTest {
         //process acks
         alice.processAllReceivedMessages()
 
+        assertAllMessagesDelivered(alice)
+        assertAllMessagesDelivered(bob)
+
         closeSession(alice, bob)
-        assertThat(alice.sessionState?.status).isEqualTo(SessionStateType.CLOSED)
-        assertThat(bob.sessionState?.status).isEqualTo(SessionStateType.CLOSED)
+
+        assertLastSentSeqNum(alice, 8)
+        assertLastReceivedSeqNum(bob, 8)
+        assertLastSentSeqNum(bob, 7)
+        assertLastReceivedSeqNum(alice, 7)
     }
 
     @Test
@@ -93,9 +142,15 @@ class SessionManagerIntegrationTest {
         //process acks
         alice.processAllReceivedMessages()
 
+        assertAllMessagesDelivered(alice)
+        assertAllMessagesDelivered(bob)
+
         closeSession(alice, bob)
-        assertThat(alice.sessionState?.status).isEqualTo(SessionStateType.CLOSED)
-        assertThat(bob.sessionState?.status).isEqualTo(SessionStateType.CLOSED)
+
+        assertLastSentSeqNum(alice, 8)
+        assertLastReceivedSeqNum(bob, 8)
+        assertLastSentSeqNum(bob, 7)
+        assertLastReceivedSeqNum(alice, 7)
     }
 
     @Test
@@ -110,7 +165,7 @@ class SessionManagerIntegrationTest {
 
         //bob receive data out of order and send 1 ack back
         bob.apply {
-            dropNextMessage()
+            dropNextInboundMessage()
             processNextReceivedMessage(sendMessages = true)
         }
 
@@ -123,21 +178,20 @@ class SessionManagerIntegrationTest {
 
         //bob receive duplicate data message + close
         bob.processAllReceivedMessages(sendMessages = true)
-
         //alice process acks for data and close
         alice.processAllReceivedMessages()
-
         //bob send close to alice
         bob.processNewOutgoingMessage(SessionMessageType.CLOSE, sendMessages = true)
-
         //alice receive close and send ack to bob
         alice.processNextReceivedMessage(sendMessages = true)
-
         //bob process ack
         bob.processNextReceivedMessage()
 
-        assertThat(alice.sessionState?.status).isEqualTo(SessionStateType.CLOSED)
-        assertThat(bob.sessionState?.status).isEqualTo(SessionStateType.CLOSED)
+
+        assertLastSentSeqNum(alice, 4)
+        assertLastReceivedSeqNum(bob, 4)
+        assertLastSentSeqNum(bob, 1)
+        assertLastReceivedSeqNum(alice, 1)
     }
 
     @Test
@@ -162,42 +216,12 @@ class SessionManagerIntegrationTest {
         //bob process ack for close
         bob.processNextReceivedMessage()
 
-        assertThat(alice.sessionState?.status).isEqualTo(SessionStateType.CLOSED)
-        assertThat(bob.sessionState?.status).isEqualTo(SessionStateType.CLOSED)
+        assertStatus(alice, SessionStateType.CLOSED)
+        assertStatus(bob, SessionStateType.CLOSED)
+
+        assertLastSentSeqNum(alice, 3)
+        assertLastReceivedSeqNum(bob, 3)
+        assertLastSentSeqNum(bob, 1)
+        assertLastReceivedSeqNum(alice, 1)
     }
 }
-
-
-fun initiateNewSession(): Pair<SessionParty, SessionParty> {
-    val (initiator, initiated) = SessionPartyFactory().createSessionParties()
-
-    //send init
-    initiator.processNewOutgoingMessage(SessionMessageType.INIT, sendMessages = true)
-    //receive init and send ack
-    initiated.processNextReceivedMessage(sendMessages = true)
-    //process ack
-    initiator.processNextReceivedMessage()
-
-    return Pair(initiator, initiated)
-}
-
-fun closeSession(
-    alice: SessionParty,
-    bob: SessionParty
-) {
-    //alice send close
-    alice.processNewOutgoingMessage(SessionMessageType.CLOSE, sendMessages = true)
-    //bob receive Close and send ack to alice
-    bob.processNextReceivedMessage(sendMessages = true)
-    //alice process ack
-    alice.processNextReceivedMessage()
-
-
-    //bob send close to alice
-    bob.processNewOutgoingMessage(SessionMessageType.CLOSE, sendMessages = true)
-    //alice receive close and send ack to bob
-    alice.processNextReceivedMessage(sendMessages = true)
-    //bob process ack
-    bob.processNextReceivedMessage()
-}
-

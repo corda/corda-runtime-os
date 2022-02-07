@@ -3,6 +3,10 @@ package net.corda.session.manager.integration
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.state.session.SessionState
 import net.corda.session.manager.impl.SessionManagerImpl
+import net.corda.session.manager.integration.helper.generateClose
+import net.corda.session.manager.integration.helper.generateData
+import net.corda.session.manager.integration.helper.generateError
+import net.corda.session.manager.integration.helper.generateInit
 import java.time.Instant
 
 class SessionParty (

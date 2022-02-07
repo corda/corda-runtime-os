@@ -1,4 +1,4 @@
-package net.corda.session.manager.integration
+package net.corda.session.manager.integration.helper
 
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.MessageDirection

@@ -29,11 +29,12 @@ class SessionManagerImpl : SessionManager {
         val receivedEvents = sessionState.receivedEventsState ?: return null
         val undeliveredMessages = receivedEvents.undeliveredMessages
         val status = sessionState.status
+        val incorrectSessionState = status == SessionStateType.CREATED || status == SessionStateType.ERROR
         return when {
             //must be an active session
             undeliveredMessages.isEmpty() -> null
-            //dont allow data messages to be consumed when session is not fully established or if there is a session mismatch problem
-            status == SessionStateType.CREATED || status == SessionStateType.WAIT_FOR_FINAL_ACK -> null
+            //don't allow data messages to be consumed when session is not fully established or if there is an error
+            incorrectSessionState -> null
             //only allow client to see a close message after the session is closed on both sides
             status != SessionStateType.CLOSED && undeliveredMessages.first().payload is SessionClose -> null
             //return the next valid message
