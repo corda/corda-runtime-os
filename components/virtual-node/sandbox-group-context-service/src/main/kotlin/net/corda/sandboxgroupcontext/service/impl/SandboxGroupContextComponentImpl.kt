@@ -17,16 +17,15 @@ import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContextInitializer
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
-import net.corda.sandboxgroupcontext.service.helper.initPublicSandboxes
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
-import org.osgi.service.cm.ConfigurationAdmin
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.runtime.ServiceComponentRuntime
-import java.nio.file.Paths
+import java.util.Collections.unmodifiableList
 
 /**
  * Sandbox group context service component... with lifecycle, since it depends on a CPK service
@@ -41,14 +40,31 @@ class SandboxGroupContextComponentImpl @Activate constructor(
     private val sandboxCreationService: SandboxCreationService,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = ConfigurationAdmin::class)
-    private val configurationAdmin: ConfigurationAdmin,
     @Reference
     private val serviceComponentRuntime: ServiceComponentRuntime,
-    bundleContext: BundleContext
+    private val bundleContext: BundleContext
 ) : SandboxGroupContextComponent {
     companion object {
         private val logger = contextLogger()
+
+        private val PLATFORM_PUBLIC_BUNDLE_NAMES: List<String> = unmodifiableList(listOf(
+            "javax.persistence-api",
+            "jcl.over.slf4j",
+            "net.corda.application",
+            "net.corda.base",
+            "net.corda.cipher-suite",
+            "net.corda.crypto",
+            "net.corda.kotlin-stdlib-jdk7.osgi-bundle",
+            "net.corda.kotlin-stdlib-jdk8.osgi-bundle",
+            "net.corda.persistence",
+            "net.corda.serialization",
+            "org.apache.aries.spifly.dynamic.bundle",
+            "org.apache.felix.framework",
+            "org.apache.felix.scr",
+            "org.hibernate.orm.core",
+            "org.jetbrains.kotlin.osgi-bundle",
+            "slf4j.api"
+        ))
     }
 
     private val sandboxGroupContextServiceImpl = SandboxGroupContextServiceImpl(
@@ -107,7 +123,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
 
     private fun onStart(coordinator: LifecycleCoordinator) {
         logger.debug { "${javaClass.name} starting" }
-        initialiseSandboxContext()
+        initialiseSandboxContext(bundleContext.bundles)
         registrationHandle?.close()
         registrationHandle = coordinator.followStatusChangesByName(
             setOf(
@@ -123,8 +139,10 @@ class SandboxGroupContextComponentImpl @Activate constructor(
         coordinator.updateStatus(LifecycleStatus.DOWN)
     }
 
-    private fun initialiseSandboxContext(){
-        val baseDirectory = Paths.get(System.getProperty("base.directory")?: "").toAbsolutePath().toString()
-        initPublicSandboxes(configurationAdmin, sandboxCreationService, baseDirectory)
+    private fun initialiseSandboxContext(allBundles: Array<Bundle>){
+        val (publicBundles, privateBundles) = allBundles.partition { bundle ->
+            bundle.symbolicName in PLATFORM_PUBLIC_BUNDLE_NAMES
+        }
+        sandboxCreationService.createPublicSandbox(publicBundles, privateBundles)
     }
 }
