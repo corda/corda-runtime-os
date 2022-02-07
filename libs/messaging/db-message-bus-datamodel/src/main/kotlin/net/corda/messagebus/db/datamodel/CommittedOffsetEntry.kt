@@ -27,7 +27,7 @@ class CommittedOffsetEntry (
 
     @Id
     @Column(name = "record_offset")
-    val offset: Long,
+    val recordOffset: Long,
 
     @Column
     val timestamp: Instant = Instant.now(),
@@ -42,5 +42,6 @@ data class CommittedOffsetEntryKey(
     @Column(name = "consumer_group")
     val consumerGroup: String,
     val partition: Int,
-    val offset: Long
+    @Column(name = "record_offset")
+    val recordOffset: Long
 ): Serializable

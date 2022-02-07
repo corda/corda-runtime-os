@@ -153,7 +153,7 @@ class DBAccessIntegrationTest {
         val dbAccess = DBAccess(emf)
         dbAccess.writeOffsets(offsets)
 
-        val results = query(CommittedOffsetEntry::class.java, "from topic_consumer_offset order by partition, offset")
+        val results = query(CommittedOffsetEntry::class.java, "from topic_consumer_offset order by partition, record_offset")
         assertThat(results).size().isEqualTo(offsets.size)
         results.forEachIndexed { index, topicRecordEntry ->
             assertThat(topicRecordEntry).isEqualToComparingFieldByField(offsets[index])
