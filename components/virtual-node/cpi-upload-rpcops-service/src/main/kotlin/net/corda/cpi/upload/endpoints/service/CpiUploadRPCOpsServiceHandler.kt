@@ -20,6 +20,7 @@ import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 
@@ -36,8 +37,10 @@ class CpiUploadRPCOpsServiceHandler(
         const val CPI_UPLOAD_TOPIC = "cpi.upload"
     }
 
-    private var configReadServiceRegistrationHandle: RegistrationHandle? = null
-    private var rpcSender: RPCSender<Chunk, ChunkAck>? = null
+    @VisibleForTesting
+    internal var configReadServiceRegistrationHandle: RegistrationHandle? = null
+    @VisibleForTesting
+    internal var rpcSender: RPCSender<Chunk, ChunkAck>? = null
     internal var cpiUploadManager: CpiUploadManager? = null
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
@@ -59,7 +62,7 @@ class CpiUploadRPCOpsServiceHandler(
                         setOf(ConfigKeys.RPC_CONFIG)
                     )
                 } else {
-                    log.info("Received ${event.status} event from ConfigurationReadService. Going DOWN as well.")
+                    log.info("Received ${event.status} event from ConfigurationReadService. Switching to ${event.status} as well.")
                     closeResources()
                     coordinator.updateStatus(event.status)
                 }
@@ -107,5 +110,7 @@ class CpiUploadRPCOpsServiceHandler(
         rpcSender = null
         configReadServiceRegistrationHandle?.close()
         configReadServiceRegistrationHandle = null
+        cpiUploadManager?.close()
+        cpiUploadManager = null
     }
 }

@@ -16,7 +16,7 @@ import net.corda.v5.base.util.contextLogger
 class CpiUploadRPCOpsHandler : LifecycleEventHandler {
 
     @VisibleForTesting
-    var cpiUploadRPCOpsServiceRegistrationHandle: RegistrationHandle? = null
+    internal var cpiUploadRPCOpsServiceRegistrationHandle: RegistrationHandle? = null
 
     companion object {
         val log = contextLogger()
