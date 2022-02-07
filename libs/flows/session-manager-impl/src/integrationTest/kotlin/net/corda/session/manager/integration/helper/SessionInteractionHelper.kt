@@ -20,6 +20,12 @@ fun initiateNewSession(): Pair<SessionParty, SessionParty> {
     initiator.processNextReceivedMessage()
     assertStatus(initiator, SessionStateType.CONFIRMED)
 
+    assertIsInitiator(initiator, true)
+    assertIsInitiator(initiated, false)
+
+    assertAllMessagesDelivered(initiated)
+    assertAllMessagesDelivered(initiator)
+
     return Pair(initiator, initiated)
 }
 

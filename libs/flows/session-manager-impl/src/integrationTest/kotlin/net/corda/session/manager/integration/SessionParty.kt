@@ -9,6 +9,9 @@ import net.corda.session.manager.integration.helper.generateError
 import net.corda.session.manager.integration.helper.generateInit
 import java.time.Instant
 
+/**
+ * Helper class to encapsulate a party involved in a session and the message bus in which it sends and receives session events.
+ */
 class SessionParty (
     private val inboundMessages: MessageBus,
     private val outboundMessages: MessageBus,

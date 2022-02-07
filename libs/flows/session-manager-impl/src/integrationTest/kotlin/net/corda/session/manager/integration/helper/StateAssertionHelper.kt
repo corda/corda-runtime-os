@@ -8,6 +8,10 @@ fun assertStatus(sessionParty: SessionParty, expectedStatus: SessionStateType) {
     assertThat(sessionParty.sessionState?.status).isEqualTo(expectedStatus)
 }
 
+fun assertIsInitiator(sessionParty: SessionParty, isInitiator: Boolean) {
+    assertThat(sessionParty.sessionState?.isInitiator).isEqualTo(isInitiator)
+}
+
 fun assertAllMessagesDelivered(sessionParty: SessionParty) {
     assertSentMessagesDelivered(sessionParty)
     assertReceivedMessagesDelivered(sessionParty)
