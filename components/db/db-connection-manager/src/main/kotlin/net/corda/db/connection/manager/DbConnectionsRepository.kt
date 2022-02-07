@@ -32,11 +32,15 @@ interface DbConnectionsRepository {
      *
      * @param name
      * @param privilege
+     * @return The [DataSource] or null if the connection cannot be found.
+     * @throws [DBConfigurationException] if the cluster DB cannot be connected to.
      */
     fun get(name: String, privilege: DbPrivilege): DataSource?
 
     /**
      * Get the main cluster DB connection.
+     *
+     * @throws [DBConfigurationException] if the cluster DB cannot be connected to.
      */
     val clusterDataSource: DataSource
 }

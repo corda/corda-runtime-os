@@ -5,6 +5,7 @@ import net.corda.applications.workers.workercommon.HealthMonitor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.db.DBProcessor
+import net.corda.schema.configuration.ConfigKeys
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.osgi.framework.Bundle
@@ -35,7 +36,7 @@ class ConfigTests {
             KEY_TOPIC_PREFIX,
             "$CUSTOM_CONFIG_PATH.$CUSTOM_KEY_ONE",
             "$MSG_CONFIG_PATH.$MSG_KEY_ONE",
-            "$DB_CONFIG_PATH.$DB_KEY_ONE"
+            "${ConfigKeys.DB_CONFIG}.$DB_KEY_ONE"
         )
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
         assertEquals(expectedKeys, actualKeys)
@@ -43,7 +44,7 @@ class ConfigTests {
         assertEquals(VAL_INSTANCE_ID.toInt(), config.getAnyRef(KEY_INSTANCE_ID))
         assertEquals(VALUE_TOPIC_PREFIX, config.getAnyRef(KEY_TOPIC_PREFIX))
         assertEquals(MSG_VAL_ONE, config.getAnyRef("$MSG_CONFIG_PATH.$MSG_KEY_ONE"))
-        assertEquals(DB_VAL_ONE, config.getAnyRef("$DB_CONFIG_PATH.$DB_KEY_ONE"))
+        assertEquals(DB_VAL_ONE, config.getAnyRef("${ConfigKeys.DB_CONFIG}.$DB_KEY_ONE"))
         assertEquals(CUSTOM_VAL_ONE, config.getAnyRef("$CUSTOM_CONFIG_PATH.$CUSTOM_KEY_ONE"))
     }
 
@@ -106,8 +107,8 @@ class ConfigTests {
         dbWorker.startup(args)
         val config = processor.config!!
 
-        assertEquals(DB_VAL_ONE, config.getAnyRef("$DB_CONFIG_PATH.$DB_KEY_ONE"))
-        assertEquals(DB_VAL_TWO, config.getAnyRef("$DB_CONFIG_PATH.$DB_KEY_TWO"))
+        assertEquals(DB_VAL_ONE, config.getAnyRef("${ConfigKeys.DB_CONFIG}.$DB_KEY_ONE"))
+        assertEquals(DB_VAL_TWO, config.getAnyRef("${ConfigKeys.DB_CONFIG}.$DB_KEY_TWO"))
     }
 
     @Test

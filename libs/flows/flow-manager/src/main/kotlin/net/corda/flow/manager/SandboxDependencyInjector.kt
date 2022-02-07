@@ -8,7 +8,7 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 /**
  * The Sandbox dependency injector is responsible for injecting services into CordApp flows.
  */
-interface SandboxDependencyInjector : NonSerializable {
+interface SandboxDependencyInjector : AutoCloseable, NonSerializable {
 
     /**
      * Set any property on the flow marked with @[CordaInject] with an instance of the type specified.
