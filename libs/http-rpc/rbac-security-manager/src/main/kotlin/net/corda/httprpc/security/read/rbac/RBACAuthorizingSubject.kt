@@ -16,7 +16,7 @@ class RBACAuthorizingSubject(
      */
     override fun isPermitted(action: String, vararg arguments: String): Boolean {
         // for now, admin is a super admin and can do anything
-        if (principal == "admin") return true
+        if ("admin".equals(principal, true)) return true
 
         return permissionValidator.authorizeUser(principal, action)
     }

@@ -1,7 +1,6 @@
 package net.corda.applications.workers.rpc
 
 import net.corda.applications.workers.rpc.http.TestToolkitProperty
-import net.corda.httprpc.client.exceptions.InternalErrorException
 import net.corda.httprpc.client.exceptions.MissingRequestedResourceException
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
@@ -35,7 +34,7 @@ class CreateUserE2eTest {
 
             with(proxy.createUser(createUserType)) {
                 assertSoftly {
-                    it.assertThat(loginName).isEqualTo(userName)
+                    it.assertThat(loginName).isEqualToIgnoringCase(userName)
                     it.assertThat(passwordExpiry).isEqualTo(passwordExpirySet)
                 }
             }
@@ -46,7 +45,7 @@ class CreateUserE2eTest {
                 assertDoesNotThrow {
                     with(proxy.getUser(userName)) {
                         assertSoftly {
-                            it.assertThat(loginName).isEqualTo(userName)
+                            it.assertThat(loginName).isEqualToIgnoringCase(userName)
                             it.assertThat(passwordExpiry).isEqualTo(passwordExpirySet)
                         }
                     }
@@ -56,7 +55,7 @@ class CreateUserE2eTest {
             // Try to create a user with the same login name again and verify that it fails
             assertThatThrownBy { proxy.createUser(createUserType.copy(fullName = "Alice")) }
                 .isInstanceOf(RequestErrorException::class.java)
-                .hasMessageContaining("User '$userName' already exists.")
+                .hasMessageContaining("User '${userName.toLowerCase()}' already exists.")
         }
     }
 }
