@@ -2,6 +2,7 @@
 package net.corda.sandbox.internal
 
 import net.corda.packaging.CPK
+import net.corda.sandbox.RequireSandboxHooks
 import net.corda.sandbox.SandboxContextService
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxException
@@ -27,6 +28,7 @@ import kotlin.streams.asSequence
 
 /** An implementation of [SandboxCreationService] and [SandboxContextService]. */
 @Component(service = [SandboxCreationService::class, SandboxContextService::class])
+@RequireSandboxHooks
 internal class SandboxServiceImpl @Activate constructor(
     @Reference
     private val bundleUtils: BundleUtils
