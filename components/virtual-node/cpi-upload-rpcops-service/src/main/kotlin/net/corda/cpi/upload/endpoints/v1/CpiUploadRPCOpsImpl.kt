@@ -65,7 +65,7 @@ class CpiUploadRPCOpsImpl @Activate constructor(
     // TODO - kyriakos - this method needs to also take the checksum of the file.
     override fun cpi(file: InputStream): HTTPCpiUploadRequestId {
         // TODO to be added to method's parameters
-        var todoSentChecksum: SecureHash? = null
+        val todoSentChecksum: SecureHash
 
         if (!isRunning) {
             throw IllegalStateException("CpiUploadRPCOpsImpl is not running! Its status is ${coordinator.status}")

@@ -30,7 +30,7 @@ class CpiUploadManagerImpl(
 
     override fun sendCpiChunk(chunk: Chunk): ChunkAck {
         // TODO - Wait on the future once db worker part is implemented.
-        val chunkAckFuture = rpcSender.sendRequest(chunk)
+        rpcSender.sendRequest(chunk)
 
         return createDummyChunkAck(
             chunk.requestId,
