@@ -100,7 +100,7 @@ gateway \
 --keyStorePassword password \
 --port 3123
 ```
-The `keyStore` and is valid stores used in the integration tests.
+The `keyStore` is valid stores used in the integration tests.
 
 Or, one can load the configuration from an arguments file. For example, from [gateway-args-example](gateway-args-example.txt):
 ```bash
@@ -140,7 +140,7 @@ docker run \
 Please note:
 * The image need to be able to talk with the kafka broker, hence the network and `KAFKA_SERVERS` environment variable.
 * The argument file we are using is [this one](docker-args-example.txt).
-*  Since the keystore is getting mounted to the correct name, there is no need to add them to the arguments.
+*  Since the keystore is getting mounted to the default name, there is no need to add them to the arguments to the config command.
 
 ### Example without a file
 1. Before starting the application, run a kafka cluster. See examples in [here](../../../../testing/message-patterns/README.md).
@@ -160,4 +160,4 @@ docker run \
 ```
 Please note:
 * The image need to be able to talk with the kafka broker, hence the network and `KAFKA_SERVERS` environment variable.
-*  Since the keystore is getting mounted to the correct name, there is no need to add them to the arguments.
+*  Since the keystore is getting mounted to the default name, there is no need to add them to the arguments of the config command.

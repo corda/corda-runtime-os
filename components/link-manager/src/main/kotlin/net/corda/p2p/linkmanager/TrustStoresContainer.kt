@@ -114,7 +114,9 @@ class TrustStoresContainer(
                 val record = Record(GATEWAY_TLS_TRUSTSTORES, key, GatewayTruststore(certificates))
                 publisher.publish(
                     listOf(record)
-                )
+                ).forEach {
+                    it.join()
+                }
                 key
             } else {
                 if (value == certificates) {
