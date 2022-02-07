@@ -1,7 +1,13 @@
 package net.corda.cpi.upload.endpoints.common
 
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
-import net.corda.lifecycle.*
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.RegistrationHandle
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.StopEvent
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
