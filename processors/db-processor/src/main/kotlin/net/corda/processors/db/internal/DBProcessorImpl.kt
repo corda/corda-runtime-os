@@ -26,7 +26,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.permissions.cache.PermissionCacheService
-import net.corda.permissions.model.RpcRbacEntitiesSet
+import net.corda.permissions.model.RbacEntities
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
 import net.corda.permissions.storage.writer.PermissionStorageWriterService
 import net.corda.processors.db.DBProcessor
@@ -77,7 +77,7 @@ class DBProcessorImpl @Activate constructor(
         // TODO - add VNode entities, for example.
         entitiesRegistry.register(CordaDb.CordaCluster.persistenceUnitName, ConfigurationEntities.classes)
         // TODO - refactor RpcRbacEntitiesSet
-        entitiesRegistry.register(CordaDb.RBAC.persistenceUnitName, RpcRbacEntitiesSet().classes)
+        entitiesRegistry.register(CordaDb.RBAC.persistenceUnitName, RbacEntities.classes)
     }
     companion object {
         private val log = contextLogger()
