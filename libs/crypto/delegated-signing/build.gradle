@@ -8,6 +8,7 @@ dependencies {
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation 'net.corda:corda-base'
     implementation "net.corda:corda-crypto"
+    implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion") {
