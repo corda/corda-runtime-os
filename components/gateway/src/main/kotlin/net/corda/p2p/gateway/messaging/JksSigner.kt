@@ -9,7 +9,7 @@ import java.security.Signature
 internal class JksSigner(
     private val publicKeyToPrivateKey: Map<PublicKey, PrivateKey>
 ) : DelegatedSigner {
-    override fun sign(publicKey: PublicKey, sepc: SignatureSpec, data: ByteArray): ByteArray {
+    override fun sign(publicKey: PublicKey, spec: SignatureSpec, data: ByteArray): ByteArray {
         val privateKey = publicKeyToPrivateKey[publicKey] ?: throw SecurityException("Could not find private key")
         val providerName = when (publicKey.algorithm) {
             "RSA" -> "SunRsaSign"
@@ -17,11 +17,11 @@ internal class JksSigner(
             else -> throw SecurityException("Unsupported algorithm ${publicKey.algorithm}")
         }
         val signature = Signature.getInstance(
-            sepc.signatureName,
+            spec.signatureName,
             providerName
         )
         signature.initSign(privateKey)
-        signature.setParameter(sepc.params)
+        signature.setParameter(spec.params)
         signature.update(data)
         return signature.sign()
     }
