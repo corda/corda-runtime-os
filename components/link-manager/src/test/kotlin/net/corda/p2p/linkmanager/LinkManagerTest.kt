@@ -130,7 +130,7 @@ class LinkManagerTest {
         data class SessionPair(val initiatorSession: Session, val responderSession: Session)
 
         private val trustStoresContainer = mock<TrustStoresContainer> {
-            on { get(any()) } doReturn "hash"
+            on { computeTrustStoreHash(any()) } doReturn "hash"
         }
         private val netMap = MockNetworkMap(
             listOf(

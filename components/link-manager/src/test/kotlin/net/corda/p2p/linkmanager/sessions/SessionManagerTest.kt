@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager.sessions
 
-import net.corda.data.identity.HoldingIdentity
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
@@ -165,7 +164,7 @@ class SessionManagerTest {
         on { getMemberInfo(messageDigest.hash(PEER_KEY.public.encoded), GROUP_ID) } doReturn PEER_MEMBER_INFO
     }
     private val trustStoresContainer = mock<TrustStoresContainer> {
-        on { get(any()) } doReturn "hash"
+        on { computeTrustStoreHash(any()) } doReturn "hash"
     }
     private val messageHeaderFactory = MessageHeaderFactory(trustStoresContainer, networkMap, mock())
     private val cryptoService = mock<LinkManagerCryptoService> {

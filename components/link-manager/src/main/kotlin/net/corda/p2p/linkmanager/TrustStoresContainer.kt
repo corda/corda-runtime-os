@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager
 
-import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
@@ -32,6 +31,23 @@ class TrustStoresContainer(
     private val configuration: SmartConfig,
     private val instanceId: Int,
 ) : LifecycleWithDominoTile {
+
+    /**
+     * Return a hash of the identity trust store.
+     * If the identity is not locally hosted, will return null.
+     */
+    fun computeTrustStoreHash(identity: LinkManagerNetworkMap.HoldingIdentity): String? {
+        return groupIdToHash.compute(identity.groupId) { groupId, hash ->
+            if ((hash == null) &&
+                (linkManagerHostingMap.locallyHostedIdentities.any { it.groupId == groupId })
+            ) {
+                generateHash(groupId)
+            } else {
+                hash
+            }
+        }
+    }
+
     companion object {
         private const val READ_CURRENT_DATA = "linkmanager_truststore_reader"
         private const val WRITE_MISSING_DATA = "linkmanager_truststore_writer"
@@ -56,7 +72,7 @@ class TrustStoresContainer(
         override fun onSnapshot(currentData: Map<String, GatewayTruststore>) {
             publishedData.putAll(currentData)
             linkManagerHostingMap.locallyHostedIdentities.forEach {
-                get(it)
+                computeTrustStoreHash(it)
             }
             ready.complete(Unit)
         }
@@ -86,19 +102,7 @@ class TrustStoresContainer(
         )
     )
 
-    operator fun get(identity: LinkManagerNetworkMap.HoldingIdentity): String? {
-        return groupIdToHash.compute(identity.groupId) { groupId, hash ->
-            if ((hash == null) &&
-                (linkManagerHostingMap.locallyHostedIdentities.any { it.groupId == groupId })
-            ) {
-                getHash(groupId)
-            } else {
-                hash
-            }
-        }
-    }
-
-    private fun getHash(groupId: String): String? {
+    private fun generateHash(groupId: String): String? {
         val certificates = linkManagerNetworkMap.getTrustedCertificates(groupId) ?: return null
         messageDigest.reset()
         certificates.forEach {

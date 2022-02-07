@@ -50,10 +50,12 @@ interface LinkManagerNetworkMap: LifecycleWithDominoTile {
      */
     fun getTrustedCertificates(groupId: String): List<String>?
 
-    data class MemberInfo(val holdingIdentity: HoldingIdentity,
-                          val publicKey: PublicKey,
-                          val publicKeyAlgorithm: KeyAlgorithm,
-                          val endPoint: EndPoint)
+    data class MemberInfo(
+        val holdingIdentity: HoldingIdentity,
+        val publicKey: PublicKey,
+        val publicKeyAlgorithm: KeyAlgorithm,
+        val endPoint: EndPoint,
+    )
 
     data class EndPoint(val address: String)
 

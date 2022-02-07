@@ -73,7 +73,7 @@ class MessageHeaderFactory(
             reporter?.report(ErrorType.NoInfo, destination)
             return null
         }
-        val trustStoreHash = trustStoresContainer[source]
+        val trustStoreHash = trustStoresContainer.computeTrustStoreHash(source)
         if (trustStoreHash == null) {
             reporter?.report(ErrorType.NoTrustStore, source)
             return null

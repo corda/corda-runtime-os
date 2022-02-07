@@ -187,7 +187,7 @@ class MessageConverterTest {
             on { createCoordinator(any(), any()) } doReturn coordinator
         }
         val trustStoresContainer = mock<TrustStoresContainer> {
-            on { get(any()) } doReturn ""
+            on { computeTrustStoreHash(any()) } doReturn ""
             on { dominoTile } doReturn mockDominoTile
         }
         return MessageHeaderFactory(trustStoresContainer, networkMap, coordinatorFactory)

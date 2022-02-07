@@ -73,7 +73,7 @@ class InMemorySessionReplayerTest {
 
     private val netMap = MockNetworkMap(listOf(US, COUNTER_PARTY)).getSessionNetworkMapForNode(US)
     private val trustStoresContainer = mock<TrustStoresContainer> {
-        on { get(any()) } doReturn "hash"
+        on { computeTrustStoreHash(any()) } doReturn "hash"
     }
     private val messageHeaderFactory by lazy {
         MessageHeaderFactory(
@@ -164,7 +164,7 @@ class InMemorySessionReplayerTest {
         Mockito.`when`(mockNetworkMap.getNetworkType(any())).thenReturn(null).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
         Mockito.`when`(mockNetworkMap.getMemberInfo(COUNTER_PARTY)).thenReturn(netMap.getMemberInfo(COUNTER_PARTY))
         val trustStoresContainer = mock<TrustStoresContainer> {
-            on { get(any()) } doReturn "hash"
+            on { computeTrustStoreHash(any()) } doReturn "hash"
         }
         val messageHeaderFactory = MessageHeaderFactory(trustStoresContainer, mockNetworkMap, mock())
 
