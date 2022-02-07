@@ -54,9 +54,9 @@ class CpiUploadRPCOpsHandlerTest {
         val registrationHandle = mock<RegistrationHandle>()
         rpcOpsHandler.cpiUploadRPCOpsServiceRegistrationHandle = registrationHandle
         rpcOpsHandler.processEvent(event, coordinator)
-        verify(coordinator).updateStatus(LifecycleStatus.ERROR)
         verify(registrationHandle).close()
         assertNull(rpcOpsHandler.cpiUploadRPCOpsServiceRegistrationHandle)
+        verify(coordinator).updateStatus(LifecycleStatus.ERROR)
     }
 
     @Test
@@ -64,8 +64,8 @@ class CpiUploadRPCOpsHandlerTest {
         val registrationHandle = mock<RegistrationHandle>()
         rpcOpsHandler.cpiUploadRPCOpsServiceRegistrationHandle = registrationHandle
         rpcOpsHandler.processEvent(StopEvent(), coordinator)
-        verify(coordinator).updateStatus(LifecycleStatus.DOWN)
         verify(registrationHandle).close()
         assertNull(rpcOpsHandler.cpiUploadRPCOpsServiceRegistrationHandle)
+        verify(coordinator).updateStatus(LifecycleStatus.DOWN)
     }
 }
