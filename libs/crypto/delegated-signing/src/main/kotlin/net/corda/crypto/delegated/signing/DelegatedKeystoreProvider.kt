@@ -26,7 +26,7 @@ internal class DelegatedKeystoreProvider : Provider(
     fun putServices(name: String, signer: DelegatedSigner, certificatesStores: DelegatedCertificateStore) {
         if (getService("Signature", RSA_SIGNING_ALGORITHM) == null) {
             putService(DelegatedSignatureService(RSA_SIGNING_ALGORITHM))
-            Hash.values().forEach {
+            DelegatedHash.values().forEach {
                 putService(DelegatedSignatureService(it.ecSignatureName))
             }
         }
