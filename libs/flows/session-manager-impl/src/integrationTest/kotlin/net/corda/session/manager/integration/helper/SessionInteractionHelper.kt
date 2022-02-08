@@ -11,21 +11,21 @@ fun initiateNewSession(config: SmartConfig): Pair<SessionParty, SessionParty> {
 
     //send init
     initiator.processNewOutgoingMessage(SessionMessageType.INIT, sendMessages = true)
-    assertStatus(initiator, SessionStateType.CREATED)
+    initiator.assertStatus(SessionStateType.CREATED)
 
     //receive init and send ack
     initiated.processNextReceivedMessage(sendMessages = true)
-    assertStatus(initiated, SessionStateType.CONFIRMED)
+    initiated.assertStatus(SessionStateType.CONFIRMED)
 
     //process ack
     initiator.processNextReceivedMessage()
-    assertStatus(initiator, SessionStateType.CONFIRMED)
+    initiator.assertStatus(SessionStateType.CONFIRMED)
 
-    assertIsInitiator(initiator, true)
-    assertIsInitiator(initiated, false)
+    initiator.assertIsInitiator(true)
+    initiated.assertIsInitiator(false)
 
-    assertAllMessagesDelivered(initiated)
-    assertAllMessagesDelivered(initiator)
+    initiated.assertAllMessagesDelivered()
+    initiator.assertAllMessagesDelivered()
 
     return Pair(initiator, initiated)
 }
@@ -36,25 +36,25 @@ fun closeSession(
 ) {
     //partyA send close
     partyA.processNewOutgoingMessage(SessionMessageType.CLOSE, sendMessages = true)
-    assertStatus(partyA, SessionStateType.CLOSING)
+    partyA.assertStatus(SessionStateType.CLOSING)
 
     //partyB receive Close and send ack to partyA
     partyB.processNextReceivedMessage(sendMessages = true)
-    assertStatus(partyB, SessionStateType.CLOSING)
+    partyB.assertStatus(SessionStateType.CLOSING)
     //partyA process ack
     partyA.processNextReceivedMessage()
-    assertStatus(partyA, SessionStateType.CLOSING)
+    partyA.assertStatus(SessionStateType.CLOSING)
 
 
     //partyB send close to partyA
     partyB.processNewOutgoingMessage(SessionMessageType.CLOSE, sendMessages = true)
-    assertStatus(partyB, SessionStateType.WAIT_FOR_FINAL_ACK)
+    partyB.assertStatus(SessionStateType.WAIT_FOR_FINAL_ACK)
     //partyA receive close and send ack to partyB
     partyA.processNextReceivedMessage(sendMessages = true)
-    assertStatus(partyA, SessionStateType.CLOSED)
+    partyA.assertStatus(SessionStateType.CLOSED)
 
     //partyB process ack
     partyB.processNextReceivedMessage()
-    assertStatus(partyB, SessionStateType.CLOSED)
+    partyB.assertStatus(SessionStateType.CLOSED)
 }
 

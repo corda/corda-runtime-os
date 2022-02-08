@@ -14,7 +14,9 @@ interface SessionInteractions {
     /**
      * Send messages to the counterparty of the session.
      * Sends all new messages stored in the SessionState that have been queued.
-     * Resend any messages which have not been acknowledged after the configured time window
+     * Resends any messages which have not been acknowledged after the configured time window
+     * Duplicate messages can be added to the bus be calling this multiple times with subsequent calls using an [instant] set to a time in
+     * the future greater than the configurable message resend window + the previous instant.
      * comparing against the time provided via [instant]
      */
     fun sendMessages(instant: Instant = Instant.now())

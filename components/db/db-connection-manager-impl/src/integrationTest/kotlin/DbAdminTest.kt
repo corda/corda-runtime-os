@@ -64,6 +64,7 @@ class DbAdminTest {
             )
         }
 
+        @Suppress("Unused")
         @AfterAll
         @JvmStatic
         private fun cleanup() {
@@ -126,11 +127,13 @@ class DbAdminTest {
 
         // validate the DML User can query a table
         dbConfig.connection.use {
+            it.createStatement().execute("INSERT INTO $schema.superhero(name) VALUES('hulk')")
+            it.commit()
             val heros = it
                 .createStatement()
-                .executeQuery("SELECT COUNT(*) as count FROM superhero")
+                .executeQuery("SELECT COUNT(*) as count FROM $schema.superhero")
             if(heros.next()) {
-                assertThat(heros.getInt("count")).isGreaterThanOrEqualTo(1)
+                assertThat(heros.getInt("count")).isGreaterThanOrEqualTo(2)
             }
         }
     }
