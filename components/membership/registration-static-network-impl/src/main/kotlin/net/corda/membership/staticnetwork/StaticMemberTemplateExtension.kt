@@ -50,7 +50,7 @@ class StaticMemberTemplateExtension {
         @JvmStatic
         @Suppress("UNCHECKED_CAST")
         val GroupPolicy.staticNetwork: Map<String, Any>
-            get() = if(containsKey(STATIC_NETWORK_TEMPLATE)) {
+            get() = if (containsKey(STATIC_NETWORK_TEMPLATE)) {
                 get(STATIC_NETWORK_TEMPLATE) as? Map<String, Any>
                     ?: throw ClassCastException("Casting failed for static network from group policy JSON.")
             } else {
@@ -61,8 +61,8 @@ class StaticMemberTemplateExtension {
         @JvmStatic
         @Suppress("UNCHECKED_CAST")
         val GroupPolicy.staticMgm: Map<String, String>
-            get() = if(staticNetwork.containsKey(STATIC_MGM)) {
-                staticNetwork.get(STATIC_MGM) as? Map<String, String>
+            get() = if (staticNetwork.containsKey(STATIC_MGM)) {
+                staticNetwork[STATIC_MGM] as? Map<String, String>
                     ?: throw ClassCastException("Casting failed for static mgm from group policy JSON.")
             } else {
                 emptyMap()
@@ -71,9 +71,9 @@ class StaticMemberTemplateExtension {
         /** Static members. */
         @JvmStatic
         @Suppress("UNCHECKED_CAST")
-        val GroupPolicy.staticMembers: List<Map<String, String>>
-            get() = if(staticNetwork.containsKey(STATIC_MEMBERS)) {
-                staticNetwork[STATIC_MEMBERS] as? List<Map<String, String>>
+        val GroupPolicy.staticMembers: List<StaticMember>
+            get() = if (staticNetwork.containsKey(STATIC_MEMBERS)) {
+                (staticNetwork[STATIC_MEMBERS] as? List<Map<String, Any>>)?.map { StaticMember(it) }
                     ?: throw ClassCastException("Casting failed for static members from group policy JSON.")
             } else {
                 emptyList()
@@ -82,8 +82,8 @@ class StaticMemberTemplateExtension {
         /** Static MGM's private key alias. */
         @JvmStatic
         val GroupPolicy.mgmKeyAlias: String?
-            get() = if(staticMgm.containsKey(MGM_KEY_ALIAS)) {
-                staticMgm.get(MGM_KEY_ALIAS)
+            get() = if (staticMgm.containsKey(MGM_KEY_ALIAS)) {
+                staticMgm[MGM_KEY_ALIAS]
             } else {
                 null
             }
