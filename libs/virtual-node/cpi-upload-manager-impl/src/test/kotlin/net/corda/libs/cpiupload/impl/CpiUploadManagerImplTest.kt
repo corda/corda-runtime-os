@@ -9,9 +9,11 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.kotlin.mock
 import java.io.ByteArrayInputStream
 import java.security.MessageDigest
+import java.util.UUID
 
 class CpiUploadManagerImplTest {
     private lateinit var cpiUploadManagerImpl: CpiUploadManagerImpl
@@ -31,11 +33,12 @@ class CpiUploadManagerImplTest {
     }
 
     @Test
-    fun `on successfully uploading CPI to Kafka returns CPI's checksum`() {
+    fun `on successfully uploading CPI to Kafka returns CPI's request Id and checksum`() {
         val cpiBytes = "dummyCPI".toByteArray()
         val expectedChecksum = calculateChecksum(cpiBytes)
         val checksum = cpiUploadManagerImpl.uploadCpi(ByteArrayInputStream(cpiBytes))
-        assertEquals(expectedChecksum, checksum)
+        assertDoesNotThrow { UUID.fromString(checksum.requestId) }
+        assertEquals(expectedChecksum, checksum.checksum)
     }
 
     @Test
