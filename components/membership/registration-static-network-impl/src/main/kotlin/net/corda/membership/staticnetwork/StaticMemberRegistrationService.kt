@@ -8,7 +8,6 @@ import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.createCoordinator
 import net.corda.membership.GroupPolicy
 import net.corda.membership.conversion.toWire
 import net.corda.membership.grouppolicy.GroupPolicyProvider
@@ -77,10 +76,6 @@ class StaticMemberRegistrationService @Activate constructor(
         private val logger: Logger = contextLogger()
         private val endpointUrlIdentifier = ENDPOINT_URL.substringBefore("-")
         private val endpointProtocolIdentifier = ENDPOINT_PROTOCOL.substringBefore("-")
-
-        internal const val DEFAULT_SOFTWARE_VERSION = "5.0.0"
-        internal const val DEFAULT_PLATFORM_VERSION = "10"
-        internal const val DEFAULT_SERIAL = "1"
     }
 
     private val topic = Schemas.Membership.MEMBER_LIST_TOPIC
@@ -89,8 +84,10 @@ class StaticMemberRegistrationService @Activate constructor(
     private val lifecycleHandler = RegistrationServiceLifecycleHandler(this)
 
     // Component lifecycle coordinator
-    private val coordinator =
-        coordinatorFactory.createCoordinator<StaticMemberRegistrationService>(lifecycleHandler)
+    private val coordinator = coordinatorFactory.createCoordinator(
+        lifecycleCoordinatorName,
+        lifecycleHandler
+    )
 
     override val isRunning: Boolean
         get() = coordinator.isRunning

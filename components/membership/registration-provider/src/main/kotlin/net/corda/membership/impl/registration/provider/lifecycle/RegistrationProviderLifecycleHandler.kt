@@ -21,9 +21,10 @@ class RegistrationProviderLifecycleHandler(
         const val UP_REASON_READY = "All dependencies for RegistrationServiceProvider are up so component is ready."
         const val DOWN_REASON_STOPPED = "RegistrationServiceProvider was stopped."
         const val DOWN_REASON_NOT_READY = "Dependencies of RegistrationServiceProvider are down."
-
-        val dependencies = setOf(LifecycleCoordinatorName.forComponent<GroupPolicyProvider>())
     }
+
+    val dependencies = setOf(LifecycleCoordinatorName.forComponent<GroupPolicyProvider>()) +
+            registrationServices.map { it.lifecycleCoordinatorName }
 
     private var dependencyStatusChangeHandle: AutoCloseable? = null
 

@@ -23,9 +23,11 @@ class RegistrationProviderLifecycleHandlerTest {
 
     lateinit var registrationProviderLifecycleHandler: RegistrationProviderLifecycleHandler
 
-    val registrationProtocol1 = mock<MemberRegistrationService>()
-    val registrationProtocol2 = mock<MemberRegistrationService>()
-    val registrationProtocols: List<MemberRegistrationService> = listOf(registrationProtocol1, registrationProtocol2)
+    interface RegistrationService1 : MemberRegistrationService
+    interface RegistrationService2 : MemberRegistrationService
+    val registrationProtocol1 = mock<RegistrationService1>()
+    val registrationProtocol2 = mock<RegistrationService2>()
+    val registrationProtocols = listOf(registrationProtocol1, registrationProtocol2)
 
     val registrationStatusHandle: RegistrationHandle = mock()
     val coordinator: LifecycleCoordinator = mock {
@@ -44,6 +46,8 @@ class RegistrationProviderLifecycleHandlerTest {
         verify(coordinator).followStatusChangesByName(
             setOf(
                 LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
+                registrationProtocol1.lifecycleCoordinatorName,
+                registrationProtocol2.lifecycleCoordinatorName
             )
         )
         verify(registrationStatusHandle, never()).close()
@@ -61,6 +65,8 @@ class RegistrationProviderLifecycleHandlerTest {
         verify(coordinator, times(2)).followStatusChangesByName(
             setOf(
                 LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
+                registrationProtocol1.lifecycleCoordinatorName,
+                registrationProtocol2.lifecycleCoordinatorName
             )
         )
         verify(registrationStatusHandle).close()

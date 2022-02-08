@@ -2,9 +2,6 @@ package net.corda.membership.staticnetwork
 
 import net.corda.membership.identity.EndpointInfoImpl
 import net.corda.membership.identity.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
-import net.corda.membership.staticnetwork.StaticMemberRegistrationService.Companion.DEFAULT_PLATFORM_VERSION
-import net.corda.membership.staticnetwork.StaticMemberRegistrationService.Companion.DEFAULT_SERIAL
-import net.corda.membership.staticnetwork.StaticMemberRegistrationService.Companion.DEFAULT_SOFTWARE_VERSION
 import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_PROTOCOL
 import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_URL
 import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.MEMBER_STATUS
@@ -20,6 +17,13 @@ import java.time.Instant
  * to map to Map<String, String>. This class provides access to properties always as strings.
  */
 class StaticMember(private val staticMemberData: Map<String, Any>) : Map<String, Any> by staticMemberData {
+
+    private companion object {
+        const val DEFAULT_SOFTWARE_VERSION = "5.0.0"
+        const val DEFAULT_PLATFORM_VERSION = "10"
+        const val DEFAULT_SERIAL = "1"
+    }
+
     val name: String?
         get() = getStringValue(StaticMemberTemplateExtension.NAME)
 
