@@ -1,12 +1,13 @@
 package net.corda.session.manager.integration.helper
 
 import net.corda.data.flow.state.session.SessionStateType
+import net.corda.libs.configuration.SmartConfig
 import net.corda.session.manager.integration.SessionMessageType
 import net.corda.session.manager.integration.SessionParty
 import net.corda.session.manager.integration.SessionPartyFactory
 
-fun initiateNewSession(): Pair<SessionParty, SessionParty> {
-    val (initiator, initiated) = SessionPartyFactory().createSessionParties()
+fun initiateNewSession(config: SmartConfig): Pair<SessionParty, SessionParty> {
+    val (initiator, initiated) = SessionPartyFactory().createSessionParties(config)
 
     //send init
     initiator.processNewOutgoingMessage(SessionMessageType.INIT, sendMessages = true)

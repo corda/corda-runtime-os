@@ -1,5 +1,7 @@
 package net.corda.session.manager.integration
 
+import java.time.Instant
+
 interface SessionInteractions {
 
     /**
@@ -11,9 +13,11 @@ interface SessionInteractions {
 
     /**
      * Send messages to the counterparty of the session.
-     * Sends all messages stored in the SessionState that have been queued.
+     * Sends all new messages stored in the SessionState that have been queued.
+     * Resend any messages which have not been acknowledged after the configured time window
+     * comparing against the time provided via [instant]
      */
-    fun sendMessages()
+    fun sendMessages(instant: Instant = Instant.now())
 
     /**
      * Get the next message from the bus and process it with the session manager.

@@ -2,6 +2,7 @@ package net.corda.session.manager
 
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.state.session.SessionState
+import net.corda.libs.configuration.SmartConfig
 import java.time.Instant
 
 /**
@@ -69,7 +70,9 @@ interface SessionManager {
      * If the messages contain any SessionAck messages will be removed immediately from the state when this is called.
      * Other SessionEvent messages will be removed from the session state when SessionAcks are received from counterparties.
      * @param sessionState The session state.
+     * @param instant The time to check against when determining which messages need to be sent
+     * @param config The config containing the flow session config values such as the resend time window
      * @return The updated [SessionState] with acks removed from the messagesToSend list is returned as well the messages to send.
      */
-    fun getMessagesToSend(sessionState: SessionState) : Pair<SessionState, List<SessionEvent>>
+    fun getMessagesToSend(sessionState: SessionState, instant: Instant, config: SmartConfig) : Pair<SessionState, List<SessionEvent>>
 }

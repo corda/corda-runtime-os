@@ -1,16 +1,25 @@
 package net.corda.session.manager.impl
 
+import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.state.session.SessionStateType
+import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.schema.configuration.FlowConfig
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import java.time.Instant
 
 class SessionManagerImplTest {
 
     private val sessionManager = SessionManagerImpl()
+    private val testConfig = ConfigFactory.empty()
+        .withValue("flow.${FlowConfig.SESSION_MESSAGE_RESEND_WINDOW}", ConfigValueFactory.fromAnyRef(5000))
+    private val configFactory = SmartConfigFactory.create(testConfig)
+    private val testSmartConfig = configFactory.create(testConfig)
 
     @Test
     fun testGetNextReceivedEvent() {
@@ -78,7 +87,7 @@ class SessionManagerImplTest {
             ),
 
         )
-        val (outputState, messagesToSend) = sessionManager.getMessagesToSend(sessionState)
+        val (outputState, messagesToSend) = sessionManager.getMessagesToSend(sessionState, Instant.now(), testSmartConfig)
         assertThat(messagesToSend.size).isEqualTo(3)
         assertThat(outputState.sendEventsState.undeliveredMessages.size).isEqualTo(2)
         assertThat(outputState.sendEventsState.undeliveredMessages.find{ it.payload::class.java == SessionAck::class.java}).isNull()
