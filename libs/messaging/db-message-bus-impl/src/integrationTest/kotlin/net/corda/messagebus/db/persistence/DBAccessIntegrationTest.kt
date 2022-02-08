@@ -19,6 +19,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.StringWriter
 import java.time.Instant
+import java.util.*
 import javax.persistence.EntityManagerFactory
 
 
@@ -91,6 +92,8 @@ class DBAccessIntegrationTest {
                 em.close()
             }
         }
+
+        fun randomId() = UUID.randomUUID().toString()
     }
 
     @Test
@@ -120,21 +123,22 @@ class DBAccessIntegrationTest {
 
     @Test
     fun `DBWriter writes transactional records and makes them visible`() {
-        val transactionRecordEntry = TransactionRecordEntry("id")
+        val transactionId = randomId()
+        val transactionRecordEntry = TransactionRecordEntry(transactionId)
 
         val dbAccess = DBAccess(emf)
         dbAccess.writeTransactionRecord(transactionRecordEntry)
 
         val nonCommittedResults = query(TransactionRecordEntry::class.java, "from transaction_record")
         nonCommittedResults.forEach { result ->
-            assertThat(result.transactionId).isEqualTo("id")
+            assertThat(result.transactionId).isEqualTo(transactionId)
             assertThat(result.state).isEqualTo(TransactionState.PENDING)
         }
 
         dbAccess.makeRecordsVisible(transactionRecordEntry.transactionId)
         val committedResults = query(TransactionRecordEntry::class.java, "from transaction_record")
         committedResults.forEach { result ->
-            assertThat(result.transactionId).isEqualTo("id")
+            assertThat(result.transactionId).isEqualTo(transactionId)
             assertThat(result.state).isEqualTo(TransactionState.COMMITTED)
         }
     }
@@ -142,21 +146,22 @@ class DBAccessIntegrationTest {
 
     @Test
     fun `DBWriter makes aborted transactional records invisible`() {
-        val transactionRecordEntry = TransactionRecordEntry("id")
+        val transactionId = randomId()
+        val transactionRecordEntry = TransactionRecordEntry(transactionId)
 
         val dbAccess = DBAccess(emf)
         dbAccess.writeTransactionRecord(transactionRecordEntry)
 
         val nonCommittedResults = query(TransactionRecordEntry::class.java, "from transaction_record")
         nonCommittedResults.forEach { result ->
-            assertThat(result.transactionId).isEqualTo("id")
+            assertThat(result.transactionId).isEqualTo(transactionId)
             assertThat(result.state).isEqualTo(TransactionState.PENDING)
         }
 
         dbAccess.makeRecordsInvisible(transactionRecordEntry.transactionId)
         val committedResults = query(TransactionRecordEntry::class.java, "from transaction_record")
         committedResults.forEach { result ->
-            assertThat(result.transactionId).isEqualTo("id")
+            assertThat(result.transactionId).isEqualTo(transactionId)
             assertThat(result.state).isEqualTo(TransactionState.ABORTED)
         }
     }
@@ -184,18 +189,18 @@ class DBAccessIntegrationTest {
     }
 
     @Test
-    fun `DBWriter can create new topics and return the correct topic partition map`() {
+    fun `DBWriter can create new topics and return the correct topics`() {
         val dbAccess = DBAccess(emf)
-        dbAccess.createTopic(topic2, 10)
+        dbAccess.createTopic(topic2, 10, 10)
 
         val results = query(TopicEntry::class.java, "from topic order by topic")
         assertThat(results.size).isEqualTo(2)
         assertThat(results[1].topic).isEqualTo(topic2)
         assertThat(results[1].numPartitions).isEqualTo(10)
 
-        val map = dbAccess.getTopicPartitionMap()
-        assertThat(map.size).isEqualTo(2)
-        assertThat(map[topic]).isEqualTo(4)
-        assertThat(map[topic2]).isEqualTo(10)
+        val topics = dbAccess.getTopics()
+        assertThat(topics.size).isEqualTo(2)
+        assertThat(topics[topic]!!.numPartitions).isEqualTo(4)
+        assertThat(topics[topic2]!!.numPartitions).isEqualTo(10)
     }
 }
