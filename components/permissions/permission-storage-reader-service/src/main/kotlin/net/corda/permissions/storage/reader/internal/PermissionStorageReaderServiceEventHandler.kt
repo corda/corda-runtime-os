@@ -120,7 +120,7 @@ class PermissionStorageReaderServiceEventHandler(
                     "The ${PermissionCacheService::class.java} should be up and ready to provide the cache"
                 },
                 checkNotNull(publisher) { "The ${Publisher::class.java} must be initialised" },
-                entityManagerFactoryFactory()
+                entityManagerFactoryCreator()
             ).also {
                 it.start()
             }

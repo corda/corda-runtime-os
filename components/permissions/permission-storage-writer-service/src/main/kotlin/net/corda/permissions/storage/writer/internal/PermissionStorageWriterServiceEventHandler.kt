@@ -96,7 +96,7 @@ class PermissionStorageWriterServiceEventHandler(
                 ),
                 nodeConfig = bootstrapConfig,
                 responderProcessor = permissionStorageWriterProcessorFactory.create(
-                    entityManagerFactoryFactory(),
+                    entityManagerFactoryCreator(),
                     readerService.permissionStorageReader!!
                 )
             ).also {

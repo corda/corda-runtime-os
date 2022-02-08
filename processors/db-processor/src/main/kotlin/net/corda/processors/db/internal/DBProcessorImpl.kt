@@ -76,7 +76,6 @@ class DBProcessorImpl @Activate constructor(
         //  entities can be in different packages, but all JPA classes must be passed in.
         // TODO - add VNode entities, for example.
         entitiesRegistry.register(CordaDb.CordaCluster.persistenceUnitName, ConfigurationEntities.classes)
-        // TODO - refactor RpcRbacEntitiesSet
         entitiesRegistry.register(CordaDb.RBAC.persistenceUnitName, RbacEntities.classes)
     }
     companion object {
