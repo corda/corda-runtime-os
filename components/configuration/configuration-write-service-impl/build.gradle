@@ -10,6 +10,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':components:configuration:configuration-write-service')
+    implementation project(':components:db:db-connection-manager')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-datamodel')
     implementation project(':libs:db:db-orm')
@@ -19,6 +20,7 @@ dependencies {
     implementation 'javax.persistence:javax.persistence-api'
     implementation 'net.corda:corda-avro-schema'
     implementation 'net.corda:corda-base'
+    implementation 'net.corda:corda-db-schema'
     implementation 'net.corda:corda-topic-schema'
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation 'org.slf4j:slf4j-api'

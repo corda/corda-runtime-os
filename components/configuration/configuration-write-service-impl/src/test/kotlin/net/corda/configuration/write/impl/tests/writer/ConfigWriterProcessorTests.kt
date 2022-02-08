@@ -1,6 +1,6 @@
 package net.corda.configuration.write.impl.tests.writer
 
-import net.corda.configuration.write.impl.writer.ConfigEntityRepository
+import net.corda.configuration.write.impl.writer.ConfigEntityWriter
 import net.corda.configuration.write.impl.writer.ConfigWriterProcessor
 import net.corda.configuration.write.impl.writer.ConfigurationManagementResponseFuture
 import net.corda.data.ExceptionEnvelope
@@ -34,9 +34,8 @@ class ConfigWriterProcessorTests {
         ConfigurationManagementRequest(section, config, schemaVersion, updateActor, version)
     }
 
-    private val configEntityRepository = mock<ConfigEntityRepository>().apply {
+    private val configEntityWriter = mock<ConfigEntityWriter>().apply {
         whenever(writeEntities(configMgmtReq, clock)).thenReturn(config)
-        whenever(readConfigEntity(config.section)).thenReturn(config)
     }
     private val publisherError = CordaMessageAPIIntermittentException("Error.")
 
@@ -65,10 +64,10 @@ class ConfigWriterProcessorTests {
 
     @Test
     fun `writes correct configuration and audit data to the database`() {
-        val processor = ConfigWriterProcessor(getPublisher(), configEntityRepository, clock)
+        val processor = ConfigWriterProcessor(getPublisher(), configEntityWriter, clock)
         processRequest(processor, configMgmtReq)
 
-        verify(configEntityRepository).writeEntities(configMgmtReq, clock)
+        verify(configEntityWriter).writeEntities(configMgmtReq, clock)
     }
 
     @Test
@@ -80,7 +79,7 @@ class ConfigWriterProcessorTests {
         )
 
         val publisher = getPublisher()
-        val processor = ConfigWriterProcessor(publisher, configEntityRepository, clock)
+        val processor = ConfigWriterProcessor(publisher, configEntityWriter, clock)
         processRequest(processor, configMgmtReq)
 
         verify(publisher).publish(listOf(expectedRecord))
@@ -92,7 +91,7 @@ class ConfigWriterProcessorTests {
             ConfigurationManagementResponse(true, null, section, config, schemaVersion, version)
         }
 
-        val processor = ConfigWriterProcessor(getPublisher(), configEntityRepository, clock)
+        val processor = ConfigWriterProcessor(getPublisher(), configEntityWriter, clock)
         val resp = processRequest(processor, configMgmtReq)
 
         assertEquals(expectedResp, resp)
@@ -100,10 +99,10 @@ class ConfigWriterProcessorTests {
 
     @Test
     fun `writes configuration and audit data to the database even if publication to Kafka fails`() {
-        val processor = ConfigWriterProcessor(getErroringPublisher(), configEntityRepository, clock)
+        val processor = ConfigWriterProcessor(getErroringPublisher(), configEntityWriter, clock)
         processRequest(processor, configMgmtReq)
 
-        verify(configEntityRepository).writeEntities(configMgmtReq, clock)
+        verify(configEntityWriter).writeEntities(configMgmtReq, clock)
     }
 
     @Test
@@ -117,11 +116,10 @@ class ConfigWriterProcessorTests {
             ConfigurationManagementResponse(false, expectedEnvelope, section, config, schemaVersion, version)
         }
 
-        val configEntityRepository = mock<ConfigEntityRepository>().apply {
+        val configEntityWriter = mock<ConfigEntityWriter>().apply {
             whenever(writeEntities(any(), any())).thenThrow(RollbackException())
-            whenever(readConfigEntity(config.section)).thenReturn(config)
         }
-        val processor = ConfigWriterProcessor(getPublisher(), configEntityRepository, clock)
+        val processor = ConfigWriterProcessor(getPublisher(), configEntityWriter, clock)
         val resp = processRequest(processor, configMgmtReq)
 
         assertEquals(expectedResp, resp)
@@ -141,7 +139,7 @@ class ConfigWriterProcessorTests {
             ConfigurationManagementResponse(false, expectedEnvelope, section, config, schemaVersion, version)
         }
 
-        val processor = ConfigWriterProcessor(getErroringPublisher(), configEntityRepository, clock)
+        val processor = ConfigWriterProcessor(getErroringPublisher(), configEntityWriter, clock)
         val resp = processRequest(processor, configMgmtReq)
 
         assertEquals(expectedResp, resp)
@@ -158,10 +156,10 @@ class ConfigWriterProcessorTests {
             ConfigurationManagementResponse(false, expectedEnvelope, section, config, schemaVersion, version)
         }
 
-        val configEntityRepository = mock<ConfigEntityRepository>().apply {
+        val configEntityWriter = mock<ConfigEntityWriter>().apply {
             whenever(writeEntities(any(), any())).thenThrow(RollbackException())
         }
-        val processor = ConfigWriterProcessor(getPublisher(), configEntityRepository, clock)
+        val processor = ConfigWriterProcessor(getPublisher(), configEntityWriter, clock)
         val resp = processRequest(processor, configMgmtReq)
 
         assertEquals(expectedResp, resp)
@@ -178,11 +176,10 @@ class ConfigWriterProcessorTests {
             ConfigurationManagementResponse(false, expectedEnvelope, section, config, schemaVersion, version)
         }
 
-        val configEntityRepository = mock<ConfigEntityRepository>().apply {
+        val configEntityWriter = mock<ConfigEntityWriter>().apply {
             whenever(writeEntities(any(), any())).thenThrow(RollbackException())
-            whenever(readConfigEntity(any())).thenThrow(IllegalStateException())
         }
-        val processor = ConfigWriterProcessor(getPublisher(), configEntityRepository, clock)
+        val processor = ConfigWriterProcessor(getPublisher(), configEntityWriter, clock)
         val resp = processRequest(processor, configMgmtReq)
 
         assertEquals(expectedResp, resp)

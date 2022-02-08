@@ -18,12 +18,12 @@ import java.time.Clock
  * and publishes the updated configuration to Kafka.
  *
  * @property publisher The publisher used to publish to Kafka.
- * @property configEntityRepository The interface for interacting with configuration entities in the cluster database.
+ * @property configEntityWriter The interface for interacting with configuration entities in the cluster database.
  * @property clock Controls how the current instant is determined, so it can be injected during testing.
  */
 internal class ConfigWriterProcessor(
     private val publisher: Publisher,
-    private val configEntityRepository: ConfigEntityRepository,
+    private val configEntityWriter: ConfigEntityWriter,
     private val clock: Clock = Clock.systemUTC()
 ) : RPCResponderProcessor<ConfigurationManagementRequest, ConfigurationManagementResponse> {
 
@@ -56,7 +56,7 @@ internal class ConfigWriterProcessor(
         respFuture: ConfigurationManagementResponseFuture
     ): ConfigEntity? {
         return try {
-            configEntityRepository.writeEntities(req, clock)
+            configEntityWriter.writeEntities(req, clock)
         } catch (e: Exception) {
             val errMsg = "New configuration represented by $req couldn't be written to the database. Cause: $e"
             handleException(respFuture, errMsg, e, req.section, req.config, req.schemaVersion, req.version)

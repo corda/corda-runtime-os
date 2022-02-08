@@ -14,24 +14,23 @@ import javax.persistence.EntityManagerFactory
 /** A factory for [ConfigWriter]s. */
 internal class ConfigWriterFactory(
     private val subscriptionFactory: SubscriptionFactory,
-    private val publisherFactory: PublisherFactory
+    private val publisherFactory: PublisherFactory,
+    private val entityManagerFactoryCreator: () -> EntityManagerFactory
 ) {
     /**
      * Creates a [ConfigWriter].
      *
      * @param config Config to be used by the subscription.
      * @param instanceId The instance ID to use for subscribing to Kafka.
-     * @param entityManagerFactory The factory to be used by the config writer to create entity managers.
      *
      * @throws ConfigWriterException If the required Kafka publishers and subscriptions cannot be set up.
      */
     internal fun create(
         config: SmartConfig,
-        instanceId: Int,
-        entityManagerFactory: EntityManagerFactory
+        instanceId: Int
     ): ConfigWriter {
         val publisher = createPublisher(config, instanceId)
-        val subscription = createRPCSubscription(config, publisher, entityManagerFactory)
+        val subscription = createRPCSubscription(config, publisher)
         return ConfigWriter(subscription, publisher)
     }
 
@@ -57,8 +56,7 @@ internal class ConfigWriterFactory(
      */
     private fun createRPCSubscription(
         config: SmartConfig,
-        publisher: Publisher,
-        entityManagerFactory: EntityManagerFactory
+        publisher: Publisher
     ): ConfigurationManagementRPCSubscription {
 
         val rpcConfig = RPCConfig(
@@ -68,8 +66,8 @@ internal class ConfigWriterFactory(
             ConfigurationManagementRequest::class.java,
             ConfigurationManagementResponse::class.java,
         )
-        val configEntityRepository = ConfigEntityRepository(entityManagerFactory)
-        val processor = ConfigWriterProcessor(publisher, configEntityRepository)
+        val configEntityWriter = ConfigEntityWriter(entityManagerFactoryCreator)
+        val processor = ConfigWriterProcessor(publisher, configEntityWriter)
 
         return try {
             subscriptionFactory.createRPCSubscription(rpcConfig, config, processor)
