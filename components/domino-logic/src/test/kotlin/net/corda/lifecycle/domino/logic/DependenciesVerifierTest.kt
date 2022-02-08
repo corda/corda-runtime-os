@@ -10,7 +10,6 @@ import org.mockito.kotlin.mock
 
 class DependenciesVerifierTest {
 
-    private val verifier = DependenciesVerifier()
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory> {
         on { createCoordinator(any(), any()) } doReturn mock()
     }
@@ -29,8 +28,8 @@ class DependenciesVerifierTest {
         val tileD = tile("D", listOf(tileB, tileC), listOf(tileB, tileC))
 
         assertThatThrownBy {
-            verifier.verify(tileD)
-        }.isInstanceOf(DependenciesVerifier.InvalidTileConfigurationException::class.java)
+            DependenciesVerifier.verify(tileD)
+        }.isInstanceOf(InvalidTileConfigurationException::class.java)
          .hasMessageContaining("being managed by two parent tiles")
     }
 
@@ -48,8 +47,8 @@ class DependenciesVerifierTest {
         val tileD = tile("D", listOf(tileB, tileC), listOf(tileB, tileC))
 
         assertThatThrownBy {
-            verifier.verify(tileD)
-        }.isInstanceOf(DependenciesVerifier.InvalidTileConfigurationException::class.java)
+            DependenciesVerifier.verify(tileD)
+        }.isInstanceOf(InvalidTileConfigurationException::class.java)
             .hasMessageContaining("is not being managed by any parent tile")
     }
 
@@ -67,7 +66,7 @@ class DependenciesVerifierTest {
         val tileD = tile("D", listOf(tileB, tileC), listOf(tileB, tileC))
 
         assertDoesNotThrow {
-            verifier.verify(tileD)
+            DependenciesVerifier.verify(tileD)
         }
     }
 

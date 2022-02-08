@@ -637,9 +637,8 @@ class GatewayIntegrationTest : TestBase() {
                 instanceId.incrementAndGet(),
             )
 
-            val verifier = DependenciesVerifier()
             assertDoesNotThrow {
-                verifier.verify(gateway.dominoTile)
+                DependenciesVerifier.verify(gateway.dominoTile)
             }
         }
     }

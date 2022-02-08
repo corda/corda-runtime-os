@@ -176,9 +176,8 @@ class LinkManagerIntegrationTest {
             )
         )
 
-        val verifier = DependenciesVerifier()
         assertDoesNotThrow {
-            verifier.verify(linkManager.dominoTile)
+            DependenciesVerifier.verify(linkManager.dominoTile)
         }
     }
 

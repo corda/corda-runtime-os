@@ -2,7 +2,7 @@ package net.corda.lifecycle.domino.logic
 
 import java.lang.IllegalStateException
 
-class DependenciesVerifier {
+object DependenciesVerifier {
 
     /**
      * Verifies that wiring of tile dependencies is valid.
@@ -42,6 +42,6 @@ class DependenciesVerifier {
         tilesNotSeenYet.forEach { visit(it, allTiles, managedTiles) }
     }
 
-    class InvalidTileConfigurationException(msg: String): IllegalStateException(msg)
-
 }
+
+class InvalidTileConfigurationException(msg: String): IllegalStateException(msg)
