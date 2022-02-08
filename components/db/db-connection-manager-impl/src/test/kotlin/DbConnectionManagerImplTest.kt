@@ -7,7 +7,6 @@ import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -25,7 +24,6 @@ class DbConnectionManagerImplTest {
     }
     private val dbConnectionsRepository = mock< DbConnectionsRepositoryImpl>()
     private val entityManagerFactoryCache = mock<EntityManagerFactoryCacheImpl>()
-    private val jpaEntitiesRegistry = mock<JpaEntitiesRegistry>()
 
     private val config = mock<SmartConfig>()
 
@@ -34,8 +32,7 @@ class DbConnectionManagerImplTest {
         val mgr = DbConnectionManagerImpl(
             lifecycleCoordinatorFactory,
             dbConnectionsRepository,
-            entityManagerFactoryCache,
-            jpaEntitiesRegistry)
+            entityManagerFactoryCache)
         mgr.bootstrap(config)
         verify(lifecycleCoordinator).postEvent(BootstrapConfigProvided(config))
     }
@@ -45,8 +42,7 @@ class DbConnectionManagerImplTest {
         val mgr = DbConnectionManagerImpl(
             lifecycleCoordinatorFactory,
             dbConnectionsRepository,
-            entityManagerFactoryCache,
-            jpaEntitiesRegistry)
+            entityManagerFactoryCache)
         mgr.start()
         verify(lifecycleCoordinator).start()
     }
@@ -56,8 +52,7 @@ class DbConnectionManagerImplTest {
         val mgr = DbConnectionManagerImpl(
             lifecycleCoordinatorFactory,
             dbConnectionsRepository,
-            entityManagerFactoryCache,
-            jpaEntitiesRegistry)
+            entityManagerFactoryCache)
         mgr.stop()
         verify(lifecycleCoordinator).stop()
     }
@@ -67,8 +62,7 @@ class DbConnectionManagerImplTest {
         val mgr = DbConnectionManagerImpl(
             lifecycleCoordinatorFactory,
             dbConnectionsRepository,
-            entityManagerFactoryCache,
-            jpaEntitiesRegistry)
+            entityManagerFactoryCache)
         mgr.close()
         verify(lifecycleCoordinator).close()
     }
@@ -78,8 +72,7 @@ class DbConnectionManagerImplTest {
         val mgr = DbConnectionManagerImpl(
             lifecycleCoordinatorFactory,
             dbConnectionsRepository,
-            entityManagerFactoryCache,
-            jpaEntitiesRegistry)
+            entityManagerFactoryCache)
         mgr.isRunning
         verify(lifecycleCoordinator).isRunning
     }
@@ -89,9 +82,7 @@ class DbConnectionManagerImplTest {
         val mgr = DbConnectionManagerImpl(
             lifecycleCoordinatorFactory,
             dbConnectionsRepository,
-            entityManagerFactoryCache,
-            jpaEntitiesRegistry
-        )
+            entityManagerFactoryCache)
 
         val emf = mock<EntityManagerFactory>()
         whenever(entityManagerFactoryCache.clusterDbEntityManagerFactory).doReturn(emf)
@@ -104,8 +95,7 @@ class DbConnectionManagerImplTest {
         val mgr = DbConnectionManagerImpl(
             lifecycleCoordinatorFactory,
             dbConnectionsRepository,
-            entityManagerFactoryCache,
-            jpaEntitiesRegistry)
+            entityManagerFactoryCache)
 
         val emf = mock<EntityManagerFactory>()
         whenever(entityManagerFactoryCache.getOrCreate(CordaDb.RBAC, DbPrivilege.DDL)).doReturn(emf)
@@ -118,8 +108,7 @@ class DbConnectionManagerImplTest {
         val mgr = DbConnectionManagerImpl(
             lifecycleCoordinatorFactory,
             dbConnectionsRepository,
-            entityManagerFactoryCache,
-            jpaEntitiesRegistry)
+            entityManagerFactoryCache)
 
         val entitiesSet = mock<JpaEntitiesSet>()
 
@@ -136,8 +125,7 @@ class DbConnectionManagerImplTest {
         val mgr = DbConnectionManagerImpl(
             lifecycleCoordinatorFactory,
             dbConnectionsRepository,
-            entityManagerFactoryCache,
-            jpaEntitiesRegistry)
+            entityManagerFactoryCache)
 
         val config = mock<SmartConfig>()
         val name = "test config"

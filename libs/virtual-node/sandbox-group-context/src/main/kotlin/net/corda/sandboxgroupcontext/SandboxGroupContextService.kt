@@ -64,6 +64,37 @@ interface SandboxGroupContextService {
     ): SandboxGroupContext
 
     /**
+     * This function registers instances of the service classes
+     * identified within the [SandboxGroup]'s [CPK.Metadata].
+     * Each OSGi service will be a singleton containing an extra
+     * `corda.sandbox=true` service property.
+     *
+     * Each service is always registered as an instance of
+     * [VirtualNodeContext.serviceMarkerType]. If the service
+     * is already an OSGi component then it is also registered
+     * with that component's service interfaces. Otherwise it
+     * is also registered with the service's class.
+     *
+     * The OSGi framework itself will insist that each metadata
+     * service also implements [VirtualNodeContext.serviceMarkerType].
+     *
+     * You should register these metadata services as part of the
+     * [ServiceContextGroupInitializer].
+     *
+     * @param sandboxGroupContext
+     * @param serviceNames A lambda to extract the service class names from the CPK metadata.
+     * @param isMetadataService A lambda to validate that each class is compatible with this metadata service type.
+     *
+     * @return an [AutoCloseable] for unregistering the services.
+     *
+     */
+    fun registerMetadataServices(
+        sandboxGroupContext: SandboxGroupContext,
+        serviceNames: (CPK.Metadata) -> Iterable<String>,
+        isMetadataService: (Class<*>) -> Boolean
+    ): AutoCloseable
+
+    /**
      * Does the service 'contain' the cpks in its cache?
      *
      *     if (service.hasCpks(virtualNodeContext.cpkIdentifiers)) {

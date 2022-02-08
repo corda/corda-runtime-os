@@ -35,13 +35,14 @@ class CpkFileReader(private val commonCpkCacheDir: Path) : AutoCloseable {
         if (!Files.exists(cpkPath))
             return null
 
-        val cpk = CPK.from(
-            Files.newInputStream(cpkPath),
-            cacheDir,
-            cpkPath.toString(), // apparently is used in exceptions thrown via this `from` method.
-            verifySignature = true
-        )
-
+        val cpk = Files.newInputStream(cpkPath).use {
+            CPK.from(
+                it,
+                cacheDir,
+                cpkPath.toString(), // apparently is used in exceptions thrown via this `from` method.
+                verifySignature = true
+            )
+        }
         return cpk
     }
 

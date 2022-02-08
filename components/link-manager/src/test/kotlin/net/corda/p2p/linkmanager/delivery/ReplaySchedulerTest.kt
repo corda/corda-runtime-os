@@ -38,7 +38,7 @@ class ReplaySchedulerTest {
         private const val REPLAY_PERIOD_KEY = "REPLAY PERIOD"
         private const val MAX_REPLAYING_MESSAGES = 100
         private val replayPeriod = Duration.ofMillis(2)
-        private val sessionKey = SessionManager.SessionKey(
+        private val sessionCounterparties = SessionManager.SessionCounterparties(
             LinkManagerNetworkMap.HoldingIdentity("Source", DeliveryTrackerTest.groupId),
             LinkManagerNetworkMap.HoldingIdentity("Dest", DeliveryTrackerTest.groupId)
         )
@@ -78,7 +78,7 @@ class ReplaySchedulerTest {
     fun `The ReplayScheduler will not replay before start`() {
         val replayManager = ReplayScheduler(coordinatorFactory, service, false, REPLAY_PERIOD_KEY, { _: Any -> }) { 0 }
         assertThrows<IllegalStateException> {
-            replayManager.addForReplay(0,"", Any(), Mockito.mock(SessionManager.SessionKey::class.java))
+            replayManager.addForReplay(0,"", Any(), Mockito.mock(SessionManager.SessionCounterparties::class.java))
         }
     }
 
@@ -143,7 +143,7 @@ class ReplaySchedulerTest {
                 0,
                 messageId,
                 messageId,
-                sessionKey
+                sessionCounterparties
             )
         }
 
@@ -177,7 +177,7 @@ class ReplaySchedulerTest {
                 0,
                 messageId,
                 messageId,
-                sessionKey
+                sessionCounterparties
             )
         }
         tracker.await()
@@ -219,14 +219,14 @@ class ReplaySchedulerTest {
                 0,
                 messageId,
                 messageId,
-                sessionKey
+                sessionCounterparties
             )
         }
 
         tracker.await()
         //Acknowledge all even messages
         for (id in messageIdsToRemove) {
-            replayManager.removeFromReplay(id, sessionKey)
+            replayManager.removeFromReplay(id, sessionCounterparties)
         }
 
         //Wait some time to until the even messages should have stopped replaying
@@ -263,7 +263,7 @@ class ReplaySchedulerTest {
             configResourcesHolder
         )
 
-        replayManager.addForReplay(0, "", message, sessionKey)
+        replayManager.addForReplay(0, "", message, sessionCounterparties)
         tracker.await()
         loggingInterceptor.assertErrorContains(
             "An exception was thrown when replaying a message. The task will be retried again in ${replayPeriod.toMillis()} ms.")
@@ -287,7 +287,7 @@ class ReplaySchedulerTest {
         configHandler.applyNewConfiguration(mock(), null, configResourcesHolder)
 
         val messageId = UUID.randomUUID().toString()
-        replayManager.addForReplay(0, messageId, messageId, sessionKey)
+        replayManager.addForReplay(0, messageId, messageId, sessionCounterparties)
 
         configHandler.applyNewConfiguration(mock(), null, configResourcesHolder)
 
@@ -296,7 +296,7 @@ class ReplaySchedulerTest {
             0,
             messageIdAfterUpdate,
             messageIdAfterUpdate,
-            sessionKey
+            sessionCounterparties
         )
 
         eventually(5.seconds, 5.millis) {
@@ -332,7 +332,7 @@ class ReplaySchedulerTest {
         val addedMessages = mutableListOf<String>()
         for (i in 0 until 2 * messageCap) {
             val messageId = UUID.randomUUID().toString()
-            replayManager.addForReplay(0, messageId, messageId, sessionKey)
+            replayManager.addForReplay(0, messageId, messageId, sessionCounterparties)
             addedMessages.add(messageId)
         }
         firstBatchLatch.await()

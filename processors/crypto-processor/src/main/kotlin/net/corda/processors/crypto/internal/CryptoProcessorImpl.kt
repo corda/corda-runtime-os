@@ -55,6 +55,9 @@ class CryptoProcessorImpl @Activate constructor(
         ::softCryptoServiceProviders
     )
 
+    override val isRunning: Boolean
+        get() = lifecycleCoordinator.isRunning
+
     override fun start(bootConfig: SmartConfig) {
         log.info("Crypto processor starting.")
         lifecycleCoordinator.start()
@@ -66,7 +69,6 @@ class CryptoProcessorImpl @Activate constructor(
         lifecycleCoordinator.stop()
     }
 
-    @Suppress("UNUSED_PARAMETER")
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         log.debug { "Crypto processor received event $event." }
         when (event) {
@@ -84,7 +86,7 @@ class CryptoProcessorImpl @Activate constructor(
                 configurationReadService.bootstrapConfig(event.config)
             }
             else -> {
-                log.error("Unexpected event $event!")
+                log.warn("Unexpected event $event!")
             }
         }
     }

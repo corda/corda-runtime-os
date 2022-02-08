@@ -3,6 +3,7 @@ package net.corda.crypto.service.impl.rpc
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.service.impl.toMap
+import net.corda.crypto.service.impl.toSignatureSpec
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
 import net.corda.data.crypto.wire.CryptoPublicKeys
@@ -24,8 +25,6 @@ import net.corda.data.crypto.wire.ops.rpc.SignWithSpecRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.SupportedSchemesRpcQuery
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.slf4j.Logger
@@ -204,14 +203,7 @@ class CryptoOpsRpcProcessor(
     ) : RpcHandler<SignWithSpecRpcCommand> {
         override fun handle(context: CryptoRequestContext, request: SignWithSpecRpcCommand): Any {
             val publicKey = signingService.schemeMetadata.decodePublicKey(request.publicKey.array())
-            val spec = SignatureSpec(
-                signatureName = request.signatureSpec.signatureName,
-                customDigestName = if (request.signatureSpec.customDigestName.isNullOrBlank()) {
-                    null
-                } else {
-                    DigestAlgorithmName(request.signatureSpec.customDigestName)
-                }
-            )
+            val spec = request.signatureSpec.toSignatureSpec(signingService.schemeMetadata)
             val signature = signingService.sign(publicKey, spec, request.bytes.array(), request.context.items.toMap())
             return CryptoSignatureWithKey(
                 ByteBuffer.wrap(signingService.schemeMetadata.encodeAsByteArray(signature.by)),
@@ -237,14 +229,7 @@ class CryptoOpsRpcProcessor(
         private val signingService: SigningService
     ) : RpcHandler<SignWithAliasSpecRpcCommand> {
         override fun handle(context: CryptoRequestContext, request: SignWithAliasSpecRpcCommand): Any {
-            val spec = SignatureSpec(
-                signatureName = request.signatureSpec.signatureName,
-                customDigestName = if (request.signatureSpec.customDigestName.isNullOrBlank()) {
-                    null
-                } else {
-                    DigestAlgorithmName(request.signatureSpec.customDigestName)
-                }
-            )
+            val spec = request.signatureSpec.toSignatureSpec(signingService.schemeMetadata)
             val signature = signingService.sign(
                 request.alias,
                 spec,

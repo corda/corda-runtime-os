@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.db.core.DataSourceFactory
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.ConfigDefaults
 import net.corda.schema.configuration.ConfigKeys
 import javax.sql.DataSource
@@ -38,4 +39,26 @@ fun DataSourceFactory.createFromConfig(config: SmartConfig): DataSource {
         )
 
     return this.create(driver, jdbcUrl, username, password, false, maxPoolSize)
+}
+
+@Suppress("LongParameterList")
+fun createDbConfig(
+    smartConfigFactory: SmartConfigFactory,
+    username: String,
+    password: String,
+    jdbcDriver: String? = null,
+    jdbcUrl: String? = null,
+    maxPoolSize: Int? = null,
+): SmartConfig {
+    var config =
+        smartConfigFactory.makeSecret(password).atPath(ConfigKeys.DB_PASS)
+            .withValue(ConfigKeys.DB_USER, ConfigValueFactory.fromAnyRef(username))
+    if(null != jdbcDriver)
+        config = config.withValue(ConfigKeys.JDBC_DRIVER, ConfigValueFactory.fromAnyRef(jdbcDriver))
+    if(null != jdbcUrl)
+        config = config.withValue(ConfigKeys.JDBC_URL, ConfigValueFactory.fromAnyRef(jdbcUrl))
+    if(null != maxPoolSize)
+        config = config.withValue(ConfigKeys.DB_POOL_MAX_SIZE, ConfigValueFactory.fromAnyRef(maxPoolSize))
+    return config
+
 }

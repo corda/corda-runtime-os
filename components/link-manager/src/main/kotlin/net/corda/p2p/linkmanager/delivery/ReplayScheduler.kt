@@ -50,10 +50,12 @@ internal class ReplayScheduler<M>(
 
     private val replayCalculator = AtomicReference<ReplayCalculator>()
     data class ReplayInfo(val currentReplayPeriod: Duration, val future: ScheduledFuture<*>)
-    private val replayingMessageIdsPerSessionKey = ConcurrentHashMap<SessionManager.SessionKey, MutableSet<MessageId>>()
+    private val replayingMessageIdsPerSessionCounterparties =
+        ConcurrentHashMap<SessionManager.SessionCounterparties, MutableSet<MessageId>>()
     private val replayInfoPerMessageId = ConcurrentHashMap<MessageId, ReplayInfo>()
     data class QueuedMessage<M>(val originalAttemptTimestamp: Long, val uniqueId: MessageId, val message: M)
-    private val queuedMessagesPerSessionKey = ConcurrentHashMap<SessionManager.SessionKey, ConcurrentLinkedQueue<QueuedMessage<M>>>()
+    private val queuedMessagesPerSessionCounterparties =
+        ConcurrentHashMap<SessionManager.SessionCounterparties, ConcurrentLinkedQueue<QueuedMessage<M>>>()
 
     companion object {
         private val logger = contextLogger()
@@ -64,8 +66,8 @@ internal class ReplayScheduler<M>(
      * [baseReplayPeriod] The period between the original message being sent and a replay. This will double on every subsequent replay,
      * until [cutOff] is reached.
      * [cutOff] The maximum period between two replays of the same message.
-     * [maxReplayingMessages] The maximum number of replaying messages for each [SessionManager.SessionKey]. This limit is only applied
-     * if [limitTotalReplays] is true.
+     * [maxReplayingMessages] The maximum number of replaying messages for each [SessionManager.SessionCounterparties]. This limit is only
+     * applied if [limitTotalReplays] is true.
      */
     internal data class ReplaySchedulerConfig(
         val baseReplayPeriod: Duration,
@@ -93,9 +95,9 @@ internal class ReplayScheduler<M>(
             val newReplayCalculator = ReplayCalculator(limitTotalReplays, newConfiguration)
             replayCalculator.set(newReplayCalculator)
             val extraMessages = oldConfiguration?.maxReplayingMessages?.let { newReplayCalculator.extraMessagesToReplay(it) } ?: 0
-            queuedMessagesPerSessionKey.forEach { (sessionKey, queuedMessages) ->
+            queuedMessagesPerSessionCounterparties.forEach { (sessionCounterparties, queuedMessages) ->
                 for (i in 0 until extraMessages) {
-                    queuedMessages.poll()?.let { addForReplay(it.originalAttemptTimestamp, it.uniqueId, it.message, sessionKey) }
+                    queuedMessages.poll()?.let { addForReplay(it.originalAttemptTimestamp, it.uniqueId, it.message, sessionCounterparties) }
                 }
             }
             configUpdateResult.complete(Unit)
@@ -120,31 +122,36 @@ internal class ReplayScheduler<M>(
     }
 
     /**
-     * Add a [message] to be replayed at certain points in the future. The number of messages replaying is capped per [sessionKey],
+     * Add a [message] to be replayed at certain points in the future. The number of messages replaying is capped per [counterparties],
      * if this is exceeded then messages are queued in the order they are added.
      */
-    fun addForReplay(originalAttemptTimestamp: Long, messageId: MessageId, message: M, sessionKey: SessionManager.SessionKey) {
+    fun addForReplay(
+        originalAttemptTimestamp: Long,
+        messageId: MessageId,
+        message: M,
+        counterparties: SessionManager.SessionCounterparties
+    ) {
         dominoTile.withLifecycleLock {
             if (!isRunning) {
                 throw IllegalStateException("A message was added for replay before the ReplayScheduler was started.")
             }
-            replayingMessageIdsPerSessionKey.compute(sessionKey) { _, replayingMessagesForSessionKey ->
+            replayingMessageIdsPerSessionCounterparties.compute(counterparties) { _, replayingMessagesForSessionCounterparties ->
                 when {
-                    replayingMessagesForSessionKey == null -> {
+                    replayingMessagesForSessionCounterparties == null -> {
                         scheduleForReplay(originalAttemptTimestamp, messageId, message)
                         val set = ConcurrentHashMap.newKeySet<String>()
                         set.add(messageId)
                         set
                     }
-                    replayCalculator.get().shouldReplayMessage(replayingMessagesForSessionKey.size) -> {
+                    replayCalculator.get().shouldReplayMessage(replayingMessagesForSessionCounterparties.size) -> {
                         scheduleForReplay(originalAttemptTimestamp, messageId, message)
-                        replayingMessagesForSessionKey.add(messageId)
-                        replayingMessagesForSessionKey
+                        replayingMessagesForSessionCounterparties.add(messageId)
+                        replayingMessagesForSessionCounterparties
                     }
                     else -> {
-                        queuedMessagesPerSessionKey.computeIfAbsent(sessionKey) { ConcurrentLinkedQueue() }
+                        queuedMessagesPerSessionCounterparties.computeIfAbsent(counterparties) { ConcurrentLinkedQueue() }
                             .add(QueuedMessage(originalAttemptTimestamp, messageId, message))
-                        replayingMessagesForSessionKey
+                        replayingMessagesForSessionCounterparties
                     }
                 }
             }
@@ -158,28 +165,28 @@ internal class ReplayScheduler<M>(
         replayInfoPerMessageId[messageId] = ReplayInfo(firstReplayPeriod, future)
     }
 
-    fun removeFromReplay(messageId: MessageId, sessionKey: SessionManager.SessionKey) {
-        replayingMessageIdsPerSessionKey.compute(sessionKey) { _, replayingMessagesForSessionKey ->
+    fun removeFromReplay(messageId: MessageId, counterparties: SessionManager.SessionCounterparties) {
+        replayingMessageIdsPerSessionCounterparties.compute(counterparties) { _, replayingMessagesForSessionCounterparties ->
             val removed = replayInfoPerMessageId.remove(messageId)?.future?.cancel(false) ?: false
-            replayingMessagesForSessionKey?.remove(messageId)
+            replayingMessagesForSessionCounterparties?.remove(messageId)
             if (removed) {
-                queuedMessagesPerSessionKey[sessionKey]?.poll()?.let {
-                    addForReplay(it.originalAttemptTimestamp, it.uniqueId, it.message, sessionKey)
+                queuedMessagesPerSessionCounterparties[counterparties]?.poll()?.let {
+                    addForReplay(it.originalAttemptTimestamp, it.uniqueId, it.message, counterparties)
                 }
             }
-            if (replayingMessagesForSessionKey?.isEmpty() == true) {
-                queuedMessagesPerSessionKey.remove(sessionKey)
+            if (replayingMessagesForSessionCounterparties?.isEmpty() == true) {
+                queuedMessagesPerSessionCounterparties.remove(counterparties)
                 null
             } else {
-                replayingMessagesForSessionKey
+                replayingMessagesForSessionCounterparties
             }
         }
     }
 
     fun removeAllMessagesFromReplay() {
-        replayingMessageIdsPerSessionKey.forEach { (sessionKey, messageIds) ->
+        replayingMessageIdsPerSessionCounterparties.forEach { (sessionCounterparties, messageIds) ->
             messageIds.forEach { messageId ->
-                removeFromReplay(messageId, sessionKey)
+                removeFromReplay(messageId, sessionCounterparties)
             }
         }
     }

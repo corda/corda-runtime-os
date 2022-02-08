@@ -161,7 +161,7 @@ internal class UserEndpointImplTest {
 
         assertEquals(1, capture.allValues.size)
         assertEquals("anRpcUser", capture.firstValue.requestedBy)
-        assertEquals("userLogin1", capture.firstValue.loginName)
+        assertEquals("userlogin1", capture.firstValue.loginName)
         assertEquals("roleId1", capture.firstValue.roleId)
 
         assertNotNull(responseType)
@@ -203,7 +203,7 @@ internal class UserEndpointImplTest {
 
         assertEquals(1, capture.allValues.size)
         assertEquals("anRpcUser", capture.firstValue.requestedBy)
-        assertEquals("userLogin1", capture.firstValue.loginName)
+        assertEquals("userlogin1", capture.firstValue.loginName)
         assertEquals("roleId1", capture.firstValue.roleId)
 
         assertNotNull(responseType)

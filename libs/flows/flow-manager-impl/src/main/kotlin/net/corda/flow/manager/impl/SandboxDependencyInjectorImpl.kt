@@ -4,30 +4,39 @@ import net.corda.flow.manager.SandboxDependencyInjector
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.injection.CordaFlowInjectable
 import net.corda.v5.application.injection.CordaInject
-import net.corda.v5.serialization.SingletonSerializeAsToken
-import java.lang.reflect.Field
-import java.util.Collections.synchronizedMap
-import java.util.Collections.unmodifiableSet
 import net.corda.v5.application.injection.CordaServiceInjectable
 import net.corda.v5.application.services.CordaService
+import net.corda.v5.serialization.SingletonSerializeAsToken
+import org.osgi.framework.FrameworkUtil
+import java.lang.reflect.Field
+import java.util.Collections.unmodifiableMap
+import java.util.Collections.unmodifiableSet
 
 class SandboxDependencyInjectorImpl(
-    singletons: List<SingletonSerializeAsToken>
+    singletons: Map<SingletonSerializeAsToken, Array<String>>,
+    private val closeable: AutoCloseable
 ) : SandboxDependencyInjector {
     private companion object {
-        private val FORBIDDEN_INTERFACES: Set<Class<*>> = unmodifiableSet(setOf(
-            CordaFlowInjectable::class.java,
-            CordaServiceInjectable::class.java,
-            CordaService::class.java,
-            SingletonSerializeAsToken::class.java
+        private val FORBIDDEN_INTERFACES: Set<String> = unmodifiableSet(setOf(
+            CordaFlowInjectable::class.java.name,
+            CordaServiceInjectable::class.java.name,
+            CordaService::class.java.name,
+            SingletonSerializeAsToken::class.java.name
         ))
     }
 
-    private val serviceTypeMap: MutableMap<Class<*>, SingletonSerializeAsToken> =
-        synchronizedMap(mutableMapOf<Class<*>, SingletonSerializeAsToken>())
+    private val serviceTypeMap: Map<Class<*>, SingletonSerializeAsToken>
 
     init {
-        singletons.forEach(::registerService)
+        val serviceTypes = mutableMapOf<Class<*>, SingletonSerializeAsToken>()
+        singletons.forEach { singleton ->
+            registerService(singleton.key, singleton.value, serviceTypes)
+        }
+        serviceTypeMap = unmodifiableMap(serviceTypes)
+    }
+
+    override fun close() {
+        closeable.close()
     }
 
     override fun injectServices(flow: Flow<*>) {
@@ -82,13 +91,40 @@ class SandboxDependencyInjectorImpl(
         return superClasses
     }
 
-    private fun registerService(service: SingletonSerializeAsToken) {
-        val implementedServiceTypes = getTypesImplementedByService(service.javaClass)
-        implementedServiceTypes.forEach { registerServiceImplementation(service, it) }
+    private fun registerService(
+        serviceObj: SingletonSerializeAsToken,
+        serviceTypeNames: Array<String>,
+        serviceTypes: MutableMap<Class<*>, SingletonSerializeAsToken>
+    ) {
+        val serviceClass = serviceObj::class.java
+        val serviceClassLoader = serviceClass.classLoader
+        serviceTypeNames.filterNot(FORBIDDEN_INTERFACES::contains)
+            .mapNotNull { serviceTypeName ->
+                try {
+                    FrameworkUtil.getBundle(serviceClass)?.loadClass(serviceTypeName)
+                        ?: Class.forName(serviceTypeName, false, serviceClassLoader)
+                } catch (_: ClassNotFoundException) {
+                    null
+                }
+            }.filter { serviceType ->
+                // Check that serviceObj is assignable to serviceType.
+                // Technically speaking, the OSGi framework should
+                // already guarantee this for an OSGi service.
+                serviceType.isInstance(serviceObj)
+            }.ifEmpty {
+                // Fall back to using the object's own class.
+                listOf(serviceClass)
+            }.forEach { implementedServiceType ->
+                registerServiceImplementation(serviceObj, implementedServiceType, serviceTypes)
+            }
     }
 
-    private fun registerServiceImplementation(service: SingletonSerializeAsToken, implementedServiceType: Class<*>) {
-        val existingService = serviceTypeMap.putIfAbsent(implementedServiceType, service)
+    private fun registerServiceImplementation(
+        service: SingletonSerializeAsToken,
+        implementedServiceType: Class<*>,
+        serviceTypes: MutableMap<Class<*>, SingletonSerializeAsToken>
+    ) {
+        val existingService = serviceTypes.putIfAbsent(implementedServiceType, service)
         if (existingService != null) {
             throw IllegalArgumentException(
                 "An implementation of type '${implementedServiceType.name}' has been already been registered by " +
@@ -97,24 +133,4 @@ class SandboxDependencyInjectorImpl(
             )
         }
     }
-
-    private fun getTypesImplementedByService(serviceClass: Class<*>): List<Class<*>> {
-        /*
-        OSGI will pass in an implementation class, so we need to determine what abstract types the
-        services implement, for now we se a dumb reflection strategy, this might need to be improved at some point
-        and made explicit with a different approach.
-         */
-
-        return if (serviceClass.isInterface) {
-            // If the service type is an interface then assume it can be registered as is.
-            listOf(serviceClass)
-        } else {
-            // associate the service will all the interfaces it implements, excluding common shared types.
-            // Failing that, associate the service with its own implementation class.
-            serviceClass.interfaces.filterNot(FORBIDDEN_INTERFACES::contains).ifEmpty {
-                listOf(serviceClass)
-            }
-        }
-    }
 }
-
