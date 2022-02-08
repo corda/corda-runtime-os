@@ -2,8 +2,6 @@ package net.corda.configuration.write.impl.writer
 
 import net.corda.v5.base.exceptions.CordaRuntimeException
 
-// TODO - Joel - Merge with exceptions above.
-
 /** Exceptions related to the [ConfigWriter]. */
 open class ConfigWriterException(message: String, e: Exception? = null) : CordaRuntimeException(message, e)
 

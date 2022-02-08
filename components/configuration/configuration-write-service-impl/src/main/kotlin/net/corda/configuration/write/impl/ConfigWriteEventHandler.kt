@@ -10,11 +10,15 @@ import net.corda.lifecycle.LifecycleStatus.DOWN
 import net.corda.lifecycle.LifecycleStatus.ERROR
 import net.corda.lifecycle.LifecycleStatus.UP
 import net.corda.lifecycle.StopEvent
+import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 
 /** Handles incoming [LifecycleCoordinator] events for [ConfigWriteServiceImpl]. */
 internal class ConfigWriteEventHandler(
-    private val configWriterFactory: ConfigWriterFactory
+    subscriptionFactory: SubscriptionFactory, publisherFactory: PublisherFactory
 ) : LifecycleEventHandler {
+
+    private val configWriterFactory = ConfigWriterFactory(subscriptionFactory, publisherFactory)
     private var configWriter: ConfigWriter? = null
 
     /**
