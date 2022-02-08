@@ -25,10 +25,14 @@ class CreateUserTypeTest {
         Assertions.assertThatThrownBy {
             CreateUserType("abc".repeat(100), "abc".repeat(100), true, "abc".repeat(100), null,
                 "1234")
-        }.isInstanceOf(InvalidInputDataException::class.java).hasMessage(
-            "Invalid input for user creation: Full name exceed maximum length of 255. " +
-                    "Login name exceed maximum length of 255. Password name exceed maximum length of 255. " +
-                    "Invalid UUID string: 1234")
+        }.hasMessage("Invalid input data for user creation.").matches {
+            (it as InvalidInputDataException).details == mapOf(
+                "Error #1" to "Full name exceed maximum length of 255.",
+                "Error #2" to "Login name exceed maximum length of 255.",
+                "Error #3" to "Password name exceed maximum length of 255.",
+                "Error #4" to "Invalid UUID string: 1234"
+            )
+        }
     }
 
     @Test
@@ -36,11 +40,13 @@ class CreateUserTypeTest {
         Assertions.assertThatThrownBy {
             CreateUserType("abc{}", "def()", true, "passw+=", null,
                 "1234")
-        }.isInstanceOf(InvalidInputDataException::class.java).hasMessage(
-            "Invalid input for user creation: " +
-                    "Full name 'abc{}' contains invalid characters. Allowed characters are: 'a-zA-Z0-9.@\\-# '. " +
-                    "Login name 'def()' contains invalid characters. Allowed characters are: 'a-zA-Z0-9.@\\-#'. " +
-                    "Password contains invalid characters. Allowed characters are: 'a-zA-Z0-9.@\\-#!?,'. " +
-                    "Invalid UUID string: 1234")
+        }.hasMessage("Invalid input data for user creation.").matches {
+            (it as InvalidInputDataException).details == mapOf(
+                "Error #1" to "Full name contains invalid characters. Allowed characters are: 'a-zA-Z0-9.@\\-# '.",
+                "Error #2" to "Login name contains invalid characters. Allowed characters are: 'a-zA-Z0-9.@\\-#'.",
+                "Error #3" to "Password contains invalid characters. Allowed characters are: 'a-zA-Z0-9.@\\-#!?,'.",
+                "Error #4" to "Invalid UUID string: 1234"
+            )
+        }
     }
 }
