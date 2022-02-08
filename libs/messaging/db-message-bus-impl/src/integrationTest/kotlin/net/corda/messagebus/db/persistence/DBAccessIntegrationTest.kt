@@ -129,18 +129,20 @@ class DBAccessIntegrationTest {
         val dbAccess = DBAccess(emf)
         dbAccess.writeTransactionRecord(transactionRecordEntry)
 
-        val nonCommittedResults = query(TransactionRecordEntry::class.java, "from transaction_record")
-        nonCommittedResults.forEach { result ->
-            assertThat(result.transactionId).isEqualTo(transactionId)
-            assertThat(result.state).isEqualTo(TransactionState.PENDING)
-        }
+        val nonCommittedResult = query(
+            TransactionRecordEntry::class.java,
+            "from transaction_record where transactionId = '$transactionId'"
+        ).single()
+        assertThat(nonCommittedResult.transactionId).isEqualTo(transactionId)
+        assertThat(nonCommittedResult.state).isEqualTo(TransactionState.PENDING)
 
         dbAccess.makeRecordsVisible(transactionRecordEntry.transactionId)
-        val committedResults = query(TransactionRecordEntry::class.java, "from transaction_record")
-        committedResults.forEach { result ->
-            assertThat(result.transactionId).isEqualTo(transactionId)
-            assertThat(result.state).isEqualTo(TransactionState.COMMITTED)
-        }
+        val committedResult = query(
+            TransactionRecordEntry::class.java,
+            "from transaction_record where transactionId = '$transactionId'"
+        ).single()
+        assertThat(committedResult.transactionId).isEqualTo(transactionId)
+        assertThat(committedResult.state).isEqualTo(TransactionState.COMMITTED)
     }
 
 
@@ -152,18 +154,20 @@ class DBAccessIntegrationTest {
         val dbAccess = DBAccess(emf)
         dbAccess.writeTransactionRecord(transactionRecordEntry)
 
-        val nonCommittedResults = query(TransactionRecordEntry::class.java, "from transaction_record")
-        nonCommittedResults.forEach { result ->
-            assertThat(result.transactionId).isEqualTo(transactionId)
-            assertThat(result.state).isEqualTo(TransactionState.PENDING)
-        }
+        val nonCommittedResult = query(
+            TransactionRecordEntry::class.java,
+            "from transaction_record where transactionId = '$transactionId'"
+        ).single()
+        assertThat(nonCommittedResult.transactionId).isEqualTo(transactionId)
+        assertThat(nonCommittedResult.state).isEqualTo(TransactionState.PENDING)
 
         dbAccess.makeRecordsInvisible(transactionRecordEntry.transactionId)
-        val committedResults = query(TransactionRecordEntry::class.java, "from transaction_record")
-        committedResults.forEach { result ->
-            assertThat(result.transactionId).isEqualTo(transactionId)
-            assertThat(result.state).isEqualTo(TransactionState.ABORTED)
-        }
+        val committedResult = query(
+            TransactionRecordEntry::class.java,
+            "from transaction_record where transactionId = '$transactionId'"
+        ).single()
+        assertThat(committedResult.transactionId).isEqualTo(transactionId)
+        assertThat(committedResult.state).isEqualTo(TransactionState.ABORTED)
     }
 
     @Test
@@ -181,7 +185,8 @@ class DBAccessIntegrationTest {
         val dbAccess = DBAccess(emf)
         dbAccess.writeOffsets(offsets)
 
-        val results = query(CommittedOffsetEntry::class.java, "from topic_consumer_offset order by partition, record_offset")
+        val results =
+            query(CommittedOffsetEntry::class.java, "from topic_consumer_offset order by partition, record_offset")
         assertThat(results).size().isEqualTo(offsets.size)
         results.forEachIndexed { index, topicRecordEntry ->
             assertThat(topicRecordEntry).isEqualToComparingFieldByField(offsets[index])
@@ -191,16 +196,16 @@ class DBAccessIntegrationTest {
     @Test
     fun `DBWriter can create new topics and return the correct topics`() {
         val dbAccess = DBAccess(emf)
-        dbAccess.createTopic(topic2, 10, 10)
+        dbAccess.createTopic(topic2, 10)
 
         val results = query(TopicEntry::class.java, "from topic order by topic")
         assertThat(results.size).isEqualTo(2)
         assertThat(results[1].topic).isEqualTo(topic2)
         assertThat(results[1].numPartitions).isEqualTo(10)
 
-        val topics = dbAccess.getTopics()
+        val topics = dbAccess.getTopicPartitionMap()
         assertThat(topics.size).isEqualTo(2)
-        assertThat(topics[topic]!!.numPartitions).isEqualTo(4)
-        assertThat(topics[topic2]!!.numPartitions).isEqualTo(10)
+        assertThat(topics[topic]!!).isEqualTo(4)
+        assertThat(topics[topic2]!!).isEqualTo(10)
     }
 }
