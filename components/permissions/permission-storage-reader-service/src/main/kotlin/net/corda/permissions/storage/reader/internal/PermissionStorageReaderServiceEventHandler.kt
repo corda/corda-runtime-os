@@ -30,7 +30,7 @@ class PermissionStorageReaderServiceEventHandler(
     private val configurationReadService: ConfigurationReadService,
     // injecting factory creator so that this always fetches one from source rather than re-use one that may have been
     //   re-configured.
-    private val entityManagerFactoryFactory: () -> EntityManagerFactory,
+    private val entityManagerFactoryCreator: () -> EntityManagerFactory,
 ) : LifecycleEventHandler {
 
     private companion object {
