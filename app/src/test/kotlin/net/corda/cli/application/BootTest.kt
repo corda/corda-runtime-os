@@ -1,21 +1,22 @@
 package net.corda.cli.application
 
-import com.github.stefanbirkner.systemlambda.SystemLambda
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import picocli.CommandLine
+import java.io.PrintWriter
+import java.io.StringWriter
 
 class BootTest {
 
     @Test
     fun testNoArgs() {
 
-        val outText = SystemLambda.tapSystemErrNormalized {
-            CommandLine(
-                App()
-            ).execute("")
-        }
+        val cmd = CommandLine(App())
+        val sw = StringWriter()
+        cmd.err = PrintWriter(sw)
 
-        assertTrue(outText.contains("Usage: corda [COMMAND]"))
+        cmd.execute("")
+
+        assertTrue(sw.toString().contains("Usage: corda [COMMAND]"))
     }
 }
