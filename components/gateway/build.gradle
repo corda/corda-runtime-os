@@ -14,10 +14,12 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-topic-schema"
+    implementation "net.corda:corda-crypto"
     api project(":libs:messaging:messaging")
     api project(":libs:lifecycle:lifecycle")
     api project(":components:configuration:configuration-read-service")
     api project(':components:domino-logic')
+    api project(':libs:crypto:delegated-signing')
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "io.netty:netty-codec-http:$nettyVersion"

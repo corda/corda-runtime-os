@@ -1280,7 +1280,7 @@ class SessionManagerTest {
     fun `when sending a heartbeat, if an exception is thrown, the heartbeat is resent`() {
         val configLongTimeout = SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfig(
             Duration.ofMillis(100),
-            Duration.ofMillis(1000)
+            Duration.ofMillis(10000)
         )
         val publishLatch = CountDownLatch(2)
        var throwFirst = true

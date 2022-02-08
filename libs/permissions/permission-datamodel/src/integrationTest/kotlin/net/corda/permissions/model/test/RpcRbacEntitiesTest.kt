@@ -2,13 +2,14 @@ package net.corda.permissions.model.test
 
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
+import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
-import net.corda.permissions.model.RpcRbacEntitiesSet
+import net.corda.permissions.model.RbacEntities
 import net.corda.permissions.model.User
 import net.corda.test.util.LoggingUtils.emphasise
 import net.corda.v5.base.util.contextLogger
@@ -68,9 +69,7 @@ class RpcRbacEntitiesTest {
 
             logger.info("Create Entities".emphasise())
 
-            val entitiesSet = RpcRbacEntitiesSet()
-
-            emf = entityManagerFactoryFactory.create(entitiesSet.persistenceUnitName, entitiesSet.classes.toList(), dbConfig)
+            emf = entityManagerFactoryFactory.create(CordaDb.RBAC.persistenceUnitName, RbacEntities.classes.toList(), dbConfig)
         }
 
         @Suppress("unused")

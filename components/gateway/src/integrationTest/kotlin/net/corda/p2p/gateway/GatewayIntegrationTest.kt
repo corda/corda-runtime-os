@@ -61,7 +61,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.concurrent.thread
 
-class GatewayTest : TestBase() {
+class GatewayIntegrationTest : TestBase() {
     companion object {
         private val logger = contextLogger()
     }
