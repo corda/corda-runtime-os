@@ -28,7 +28,7 @@ class RbacE2eClientRequestHelper(
         val createUserType = CreateUserType(newUserName, newUserName, true, newUserPassword, newUserPasswordExpiry, null)
         with(proxy.createUser(createUserType)) {
             SoftAssertions.assertSoftly {
-                it.assertThat(loginName).isEqualTo(newUserName)
+                it.assertThat(loginName).isEqualToIgnoringCase(newUserName)
                 it.assertThat(this.passwordExpiry).isEqualTo(newUserPasswordExpiry)
             }
         }
@@ -40,7 +40,7 @@ class RbacE2eClientRequestHelper(
             assertDoesNotThrow {
                 with(proxy.getUser(userName)) {
                     SoftAssertions.assertSoftly {
-                        it.assertThat(loginName).isEqualTo(userName)
+                        it.assertThat(loginName).isEqualToIgnoringCase(userName)
                         it.assertThat(passwordExpiry).isEqualTo(passwordExpirySet)
                     }
                 }
@@ -148,7 +148,7 @@ class RbacE2eClientRequestHelper(
         val proxy = client.start().proxy
         return with(proxy.getUser(userLogin)) {
             SoftAssertions.assertSoftly {
-                it.assertThat(this.loginName).isEqualTo(userLogin)
+                it.assertThat(this.loginName).isEqualToIgnoringCase(userLogin)
             }
             this
         }

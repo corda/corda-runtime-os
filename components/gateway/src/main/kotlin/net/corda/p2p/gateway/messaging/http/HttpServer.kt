@@ -98,7 +98,7 @@ class HttpServer(
 
         init {
             configuration.sslConfig.run {
-                keyManagerFactory.init(this.keyStore, this.keyStorePassword.toCharArray())
+                keyManagerFactory.init(this.keyStore, "".toCharArray())
             }
         }
 

@@ -11,6 +11,7 @@ import org.osgi.framework.FrameworkUtil
 import org.osgi.service.cm.ConfigurationAdmin
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import java.io.InputStream
 import java.net.URI
@@ -77,6 +78,17 @@ class SandboxLoader @Activate constructor(
     fun createSandboxGroupFor(vararg cpkResources: String): SandboxGroup {
         val cpks = cpkResources.map(::loadCPK)
         return sandboxCreationService.createSandboxGroup(cpks)
+    }
+
+    fun destroySandboxGroup(group: SandboxGroup) {
+        sandboxCreationService.unloadSandboxGroup(group)
+    }
+
+    @Suppress("unused")
+    @Deactivate
+    fun done() {
+        destroySandboxGroup(group1)
+        destroySandboxGroup(group2)
     }
 
     private fun loadCPK(resourceName: String): CPK {

@@ -27,5 +27,4 @@ internal const val CUSTOM_VAL_TWO = "customValTwo"
 
 internal const val DEFAULT_TOPIC_PREFIX = ""
 internal const val MSG_CONFIG_PATH = "messaging"
-internal const val DB_CONFIG_PATH = "database"
 internal const val CUSTOM_CONFIG_PATH = "custom"
