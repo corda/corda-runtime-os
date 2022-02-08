@@ -29,6 +29,7 @@
 	antlr.osgi;version='[2.7.7,2.7.8)',\
 	com.fasterxml.classmate;version='[1.5.1,1.5.2)',\
 	com.sun.activation.javax.activation;version='[1.2.0,1.2.1)',\
+	com.typesafe.config;version='[1.4.1,1.4.2)',\
 	com.zaxxer.HikariCP;version='[5.0.0,5.0.1)',\
 	javax.activation-api;version='[1.2.0,1.2.1)',\
 	javax.interceptor-api;version='[1.2.0,1.2.1)',\
@@ -73,7 +74,7 @@
 	org.osgi.test.junit5;version='[1.0.0,1.0.1)',\
 	org.osgi.util.function;version='[1.1.0,1.1.1)',\
 	org.osgi.util.promise;version='[1.1.1,1.1.2)',\
-	org.postgresql.jdbc;version='[42.3.1,42.3.2)',\
+	org.postgresql.jdbc;version='[42.3.2,42.3.3)',\
 	permission-datamodel-tests;version='[5.0.0,5.0.1)',\
 	slf4j.api;version='[1.7.32,1.7.33)',\
 	slf4j.simple;version='[1.7.32,1.7.33)'
