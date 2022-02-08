@@ -4,32 +4,32 @@ import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.integration.SessionParty
 import org.assertj.core.api.Assertions.assertThat
 
-fun assertStatus(sessionParty: SessionParty, expectedStatus: SessionStateType) {
-    assertThat(sessionParty.sessionState?.status).isEqualTo(expectedStatus)
+fun SessionParty.assertStatus(expectedStatus: SessionStateType) {
+    assertThat(sessionState?.status).isEqualTo(expectedStatus)
 }
 
-fun assertIsInitiator(sessionParty: SessionParty, isInitiator: Boolean) {
-    assertThat(sessionParty.sessionState?.isInitiator).isEqualTo(isInitiator)
+fun SessionParty.assertIsInitiator( isInitiator: Boolean) {
+    assertThat(sessionState?.isInitiator).isEqualTo(isInitiator)
 }
 
-fun assertAllMessagesDelivered(sessionParty: SessionParty) {
-    assertSentMessagesDelivered(sessionParty)
-    assertReceivedMessagesDelivered(sessionParty)
+fun SessionParty.assertAllMessagesDelivered() {
+    this.assertSentMessagesDelivered()
+    this.assertReceivedMessagesDelivered()
 }
 
-fun assertLastSentSeqNum(sessionParty: SessionParty, expectedSeqNum: Int) {
-    assertThat(sessionParty.sessionState?.sendEventsState?.lastProcessedSequenceNum).isEqualTo(expectedSeqNum)
+fun SessionParty.assertLastSentSeqNum( expectedSeqNum: Int) {
+    assertThat(sessionState?.sendEventsState?.lastProcessedSequenceNum).isEqualTo(expectedSeqNum)
 }
 
-fun assertLastReceivedSeqNum(sessionParty: SessionParty, expectedSeqNum: Int) {
-    assertThat(sessionParty.sessionState?.receivedEventsState?.lastProcessedSequenceNum).isEqualTo(expectedSeqNum)
+fun SessionParty.assertLastReceivedSeqNum( expectedSeqNum: Int) {
+    assertThat(sessionState?.receivedEventsState?.lastProcessedSequenceNum).isEqualTo(expectedSeqNum)
 
 }
 
-fun assertSentMessagesDelivered(sessionParty: SessionParty) {
-    assertThat(sessionParty.sessionState?.sendEventsState?.undeliveredMessages).isEmpty()
+fun SessionParty.assertSentMessagesDelivered() {
+    assertThat(sessionState?.sendEventsState?.undeliveredMessages).isEmpty()
 }
 
-fun assertReceivedMessagesDelivered(sessionParty: SessionParty) {
-    assertThat(sessionParty.sessionState?.receivedEventsState?.undeliveredMessages).isEmpty()
+fun SessionParty.assertReceivedMessagesDelivered() {
+    assertThat(sessionState?.receivedEventsState?.undeliveredMessages).isEmpty()
 }

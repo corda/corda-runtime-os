@@ -12,6 +12,7 @@ interface SessionInteractions {
     /**
      * Send messages to the counterparty of the session.
      * Sends all messages stored in the SessionState that have been queued.
+     * Duplicate messages can be added to the bus be calling this multiple times.
      */
     fun sendMessages()
 

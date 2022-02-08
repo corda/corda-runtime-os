@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test
 class SessionManagerIntegrationTest {
 
     @Test
-    fun testFullSessionSendAndReceive() {
+    fun `Full Session Send And Receive`() {
         val (alice, bob) = initiateNewSession()
 
         //alice send data
@@ -23,52 +23,52 @@ class SessionManagerIntegrationTest {
         //process ack
         alice.processNextReceivedMessage()
 
-        assertAllMessagesDelivered(alice)
-        assertAllMessagesDelivered(bob)
+        alice.assertAllMessagesDelivered()
+        bob.assertAllMessagesDelivered()
 
         closeSession(alice, bob)
 
-        assertLastSentSeqNum(alice, 3)
-        assertLastReceivedSeqNum(bob, 3)
-        assertLastSentSeqNum(bob, 1)
-        assertLastReceivedSeqNum(alice, 1)
+        alice.assertLastSentSeqNum(3)
+        bob.assertLastReceivedSeqNum(3)
+        bob.assertLastSentSeqNum(1)
+        alice.assertLastReceivedSeqNum(1)
     }
 
     @Test
-    fun testSimultaneousClose() {
+    fun `Simultaneous Close`() {
         val (alice, bob) = initiateNewSession()
 
         //bob and alice send close
         bob.processNewOutgoingMessage(SessionMessageType.CLOSE, sendMessages = true)
         alice.processNewOutgoingMessage(SessionMessageType.CLOSE, sendMessages = true)
-        assertStatus(alice, SessionStateType.CLOSING)
-        assertStatus(bob, SessionStateType.CLOSING)
+        alice.assertStatus(SessionStateType.CLOSING)
+        bob.assertStatus(SessionStateType.CLOSING)
 
         //bob receive Close and send ack back aswell as resend close
         bob.processNextReceivedMessage(sendMessages = true)
         //alice receive close and send ack back, also resend close to bob as ack not yet received
         alice.processNextReceivedMessage(sendMessages = true)
-        assertStatus(bob, SessionStateType.WAIT_FOR_FINAL_ACK)
-        assertStatus(alice, SessionStateType.WAIT_FOR_FINAL_ACK)
+        bob.assertStatus(SessionStateType.WAIT_FOR_FINAL_ACK)
+        alice.assertStatus(SessionStateType.WAIT_FOR_FINAL_ACK)
 
         //alice and bob process duplicate closes as well as acks
         alice.processAllReceivedMessages(sendMessages = true)
-        assertStatus(alice, SessionStateType.CLOSED)
+        alice.assertStatus(SessionStateType.CLOSED)
         bob.processAllReceivedMessages(sendMessages = true)
-        assertStatus(bob, SessionStateType.CLOSED)
+        bob.assertStatus(SessionStateType.CLOSED)
         alice.processAllReceivedMessages()
 
-        assertAllMessagesDelivered(alice)
-        assertAllMessagesDelivered(bob)
+        alice.assertAllMessagesDelivered()
+        bob.assertAllMessagesDelivered()
 
-        assertLastSentSeqNum(alice, 2)
-        assertLastReceivedSeqNum(bob, 2)
-        assertLastSentSeqNum(bob, 1)
-        assertLastReceivedSeqNum(alice, 1)
+        alice.assertLastSentSeqNum(2)
+        bob.assertLastReceivedSeqNum(2)
+        bob.assertLastSentSeqNum(1)
+        alice.assertLastReceivedSeqNum(1)
     }
 
     @Test
-    fun testOutOfOrderRandomShuffle() {
+    fun `Out Of Order Random Shuffle`() {
         val (alice, bob) = initiateNewSession()
 
         alice.apply {
@@ -99,19 +99,19 @@ class SessionManagerIntegrationTest {
         //process acks
         alice.processAllReceivedMessages()
 
-        assertAllMessagesDelivered(alice)
-        assertAllMessagesDelivered(bob)
+        alice.assertAllMessagesDelivered()
+        bob.assertAllMessagesDelivered()
 
         closeSession(alice, bob)
 
-        assertLastSentSeqNum(alice, 8)
-        assertLastReceivedSeqNum(bob, 8)
-        assertLastSentSeqNum(bob, 7)
-        assertLastReceivedSeqNum(alice, 7)
+        alice.assertLastSentSeqNum(8)
+        bob.assertLastReceivedSeqNum(8)
+        bob.assertLastSentSeqNum(7)
+        alice.assertLastReceivedSeqNum(7)
     }
 
     @Test
-    fun testOutOfOrderReversedInbox() {
+    fun `Out Of Order Reversed Inbox`() {
         val (alice, bob) = initiateNewSession()
 
         alice.apply {
@@ -142,19 +142,19 @@ class SessionManagerIntegrationTest {
         //process acks
         alice.processAllReceivedMessages()
 
-        assertAllMessagesDelivered(alice)
-        assertAllMessagesDelivered(bob)
+        alice.assertAllMessagesDelivered()
+        bob.assertAllMessagesDelivered()
 
         closeSession(alice, bob)
 
-        assertLastSentSeqNum(alice, 8)
-        assertLastReceivedSeqNum(bob, 8)
-        assertLastSentSeqNum(bob, 7)
-        assertLastReceivedSeqNum(alice, 7)
+        alice.assertLastSentSeqNum(8)
+        bob.assertLastReceivedSeqNum(8)
+        bob.assertLastSentSeqNum(7)
+        alice.assertLastReceivedSeqNum(7)
     }
 
     @Test
-    fun testOutOfOrderDataWithDuplicateDataResends() {
+    fun `Out Of Order Data With Duplicate Data Resends`() {
         val (alice, bob) = initiateNewSession()
 
         //alice send 2 data
@@ -188,14 +188,14 @@ class SessionManagerIntegrationTest {
         bob.processNextReceivedMessage()
 
 
-        assertLastSentSeqNum(alice, 4)
-        assertLastReceivedSeqNum(bob, 4)
-        assertLastSentSeqNum(bob, 1)
-        assertLastReceivedSeqNum(alice, 1)
+        alice.assertLastSentSeqNum(4)
+        bob.assertLastReceivedSeqNum(4)
+        bob.assertLastSentSeqNum(1)
+        alice.assertLastReceivedSeqNum(1)
     }
 
     @Test
-    fun testOutOfOrderCloseMessageWithDuplicateClose() {
+    fun `Out Of Order Close Message With Duplicate Close`() {
         val (alice, bob) = initiateNewSession()
 
         alice.processNewOutgoingMessage(SessionMessageType.DATA)
@@ -216,12 +216,12 @@ class SessionManagerIntegrationTest {
         //bob process ack for close
         bob.processNextReceivedMessage()
 
-        assertStatus(alice, SessionStateType.CLOSED)
-        assertStatus(bob, SessionStateType.CLOSED)
+        alice.assertStatus(SessionStateType.CLOSED)
+        bob.assertStatus(SessionStateType.CLOSED)
 
-        assertLastSentSeqNum(alice, 3)
-        assertLastReceivedSeqNum(bob, 3)
-        assertLastSentSeqNum(bob, 1)
-        assertLastReceivedSeqNum(alice, 1)
+        alice.assertLastSentSeqNum(3)
+        bob.assertLastReceivedSeqNum(3)
+        bob.assertLastSentSeqNum(1)
+        alice.assertLastReceivedSeqNum(1)
     }
 }
