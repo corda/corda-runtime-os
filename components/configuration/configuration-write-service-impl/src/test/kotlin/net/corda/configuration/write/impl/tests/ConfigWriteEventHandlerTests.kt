@@ -3,9 +3,9 @@ package net.corda.configuration.write.impl.tests
 import net.corda.configuration.write.ConfigWriteServiceException
 import net.corda.configuration.write.impl.ConfigWriteEventHandler
 import net.corda.configuration.write.impl.StartProcessingEvent
-import net.corda.libs.configuration.write.ConfigWriter
-import net.corda.libs.configuration.write.ConfigWriterException
-import net.corda.libs.configuration.write.ConfigWriterFactory
+import net.corda.configuration.write.impl.writer.ConfigWriter
+import net.corda.configuration.write.impl.writer.ConfigWriterException
+import net.corda.configuration.write.impl.writer.ConfigWriterFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus.DOWN
 import net.corda.lifecycle.LifecycleStatus.ERROR

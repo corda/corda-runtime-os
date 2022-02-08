@@ -1,4 +1,4 @@
-package net.corda.libs.configuration.write.impl
+package net.corda.configuration.write.impl.writer
 
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.config.Configuration

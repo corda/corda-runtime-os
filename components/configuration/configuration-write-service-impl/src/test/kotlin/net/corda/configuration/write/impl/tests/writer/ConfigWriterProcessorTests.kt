@@ -1,13 +1,13 @@
-package net.corda.libs.configuration.write.impl.tests
+package net.corda.configuration.write.impl.tests.writer
 
+import net.corda.configuration.write.impl.writer.ConfigEntityRepository
+import net.corda.configuration.write.impl.writer.ConfigWriterProcessor
+import net.corda.configuration.write.impl.writer.ConfigurationManagementResponseFuture
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.libs.configuration.datamodel.ConfigEntity
-import net.corda.libs.configuration.write.impl.ConfigEntityRepository
-import net.corda.libs.configuration.write.impl.ConfigWriterProcessor
-import net.corda.libs.configuration.write.impl.ConfigurationManagementResponseFuture
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record

@@ -1,11 +1,8 @@
-package net.corda.libs.configuration.write.impl
+package net.corda.configuration.write.impl.writer
 
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.write.ConfigWriter
-import net.corda.libs.configuration.write.ConfigWriterException
-import net.corda.libs.configuration.write.ConfigWriterFactory
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -34,7 +31,7 @@ internal class ConfigWriterFactoryImpl @Activate constructor(
     ): ConfigWriter {
         val publisher = createPublisher(config, instanceId)
         val subscription = createRPCSubscription(config, publisher, entityManagerFactory)
-        return ConfigWriterImpl(subscription, publisher)
+        return ConfigWriter(subscription, publisher)
     }
 
     /**

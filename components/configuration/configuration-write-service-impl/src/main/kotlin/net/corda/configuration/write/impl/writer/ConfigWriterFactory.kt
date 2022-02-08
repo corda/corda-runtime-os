@@ -1,10 +1,10 @@
-package net.corda.libs.configuration.write
+package net.corda.configuration.write.impl.writer
 
 import net.corda.libs.configuration.SmartConfig
 import javax.persistence.EntityManagerFactory
 
 /** A factory for [ConfigWriter]s. */
-interface ConfigWriterFactory {
+internal interface ConfigWriterFactory {
     /**
      * Creates a [ConfigWriter].
      *

@@ -1,10 +1,10 @@
-package net.corda.libs.configuration.write.impl.tests
+package net.corda.configuration.write.impl.tests.writer
 
+import net.corda.configuration.write.impl.writer.ConfigEntityRepository
+import net.corda.configuration.write.impl.writer.WrongConfigVersionException
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.libs.configuration.datamodel.ConfigAuditEntity
 import net.corda.libs.configuration.datamodel.ConfigEntity
-import net.corda.libs.configuration.write.WrongVersionException
-import net.corda.libs.configuration.write.impl.ConfigEntityRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
@@ -71,7 +71,7 @@ class ConfigEntityRepositoryTests {
         val badVersionConfigMgmtReq = configMgmtReq.run {
             ConfigurationManagementRequest(section, config, schemaVersion, updateActor, version + 1)
         }
-        val e = assertThrows<WrongVersionException> {
+        val e = assertThrows<WrongConfigVersionException> {
             configEntityRepository.writeEntities(badVersionConfigMgmtReq, clock)
         }
 
@@ -98,7 +98,7 @@ class ConfigEntityRepositoryTests {
         val badVersionConfigMgmtReq = configMgmtReq.run {
             ConfigurationManagementRequest(section, config, schemaVersion, updateActor, version + 1)
         }
-        assertThrows<WrongVersionException> {
+        assertThrows<WrongConfigVersionException> {
             configEntityRepository.writeEntities(badVersionConfigMgmtReq, clock)
         }
 

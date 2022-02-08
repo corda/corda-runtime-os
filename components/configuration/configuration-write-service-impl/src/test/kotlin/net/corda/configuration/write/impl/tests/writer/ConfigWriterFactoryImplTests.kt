@@ -1,13 +1,13 @@
-package net.corda.libs.configuration.write.impl.tests
+package net.corda.configuration.write.impl.tests.writer
 
 import com.typesafe.config.ConfigFactory
+import net.corda.configuration.write.impl.writer.CLIENT_NAME_DB
+import net.corda.configuration.write.impl.writer.CLIENT_NAME_RPC
+import net.corda.configuration.write.impl.writer.ConfigWriterFactoryImpl
+import net.corda.configuration.write.impl.writer.GROUP_NAME
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.configuration.write.impl.CLIENT_NAME_DB
-import net.corda.libs.configuration.write.impl.CLIENT_NAME_RPC
-import net.corda.libs.configuration.write.impl.ConfigWriterFactoryImpl
-import net.corda.libs.configuration.write.impl.GROUP_NAME
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig

@@ -1,8 +1,8 @@
 package net.corda.configuration.write.impl
 
 import net.corda.configuration.write.ConfigWriteServiceException
-import net.corda.libs.configuration.write.ConfigWriter
-import net.corda.libs.configuration.write.ConfigWriterFactory
+import net.corda.configuration.write.impl.writer.ConfigWriter
+import net.corda.configuration.write.impl.writer.ConfigWriterFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler

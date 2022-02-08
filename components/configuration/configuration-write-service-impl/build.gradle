@@ -11,12 +11,16 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':components:configuration:configuration-write-service')
     implementation project(':libs:configuration:configuration-core')
-    implementation project(':libs:configuration:configuration-write')
+    implementation project(':libs:configuration:configuration-datamodel')
+    implementation project(':libs:db:db-orm')
     implementation project(':libs:lifecycle:lifecycle')
+    implementation project(":libs:messaging:messaging")
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation 'javax.persistence:javax.persistence-api'
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'net.corda:corda-avro-schema'
     implementation 'net.corda:corda-base'
+    implementation 'net.corda:corda-topic-schema'
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation 'org.slf4j:slf4j-api'
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
