@@ -41,7 +41,7 @@ class LinkManagerIntegrationTest {
         private val logger = contextLogger()
     }
 
-    val replayPeriod = 2000
+    private val replayPeriod = 2000
     private val linkManagerConfigTemplate = """
                 {
                     $LOCALLY_HOSTED_IDENTITIES_KEY: [
@@ -61,12 +61,12 @@ class LinkManagerIntegrationTest {
             """.trimIndent()
     private val bootstrapConfig = SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
 
-    val topicService = TopicServiceImpl()
-    val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
-    val subscriptionFactory = InMemSubscriptionFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
-    val publisherFactory = CordaPublisherFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
-    val configReadService = ConfigurationReadServiceImpl(lifecycleCoordinatorFactory, subscriptionFactory)
-    val configPublisher = publisherFactory.createPublisher(PublisherConfig("config-writer")).let {
+    private val topicService = TopicServiceImpl()
+    private val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
+    private val subscriptionFactory = InMemSubscriptionFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
+    private val publisherFactory = CordaPublisherFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
+    private val configReadService = ConfigurationReadServiceImpl(lifecycleCoordinatorFactory, subscriptionFactory)
+    private val configPublisher = publisherFactory.createPublisher(PublisherConfig("config-writer")).let {
         ConfigPublisherImpl(Schemas.Config.CONFIG_TOPIC, it)
     }
 
@@ -131,7 +131,7 @@ class LinkManagerIntegrationTest {
                 invalidConfig
             )
             eventually {
-                assertThat(linkManager.dominoTile.state).isEqualTo(DominoTile.State.DownDueToChildDown)
+                assertThat(linkManager.dominoTile.state).isEqualTo(DominoTile.State.StoppedDueToChildStopped)
             }
 
             logger.info("Publishing valid configuration again")

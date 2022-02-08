@@ -589,7 +589,7 @@ class GatewayTest : TestBase() {
                     )
                 )
                 eventually(duration = 20.seconds) {
-                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.DownDueToChildDown)
+                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.StoppedDueToChildStopped)
                 }
                 assertThrows<ConnectException> {
                     Socket(host, 10005).close()
@@ -613,7 +613,7 @@ class GatewayTest : TestBase() {
                 logger.info("Publishing bad config again")
                 configPublisher.publishBadConfig()
                 eventually(duration = 20.seconds) {
-                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.DownDueToChildDown)
+                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.StoppedDueToChildStopped)
                 }
                 assertThrows<ConnectException> {
                     Socket(host, 10006).close()

@@ -882,7 +882,7 @@ class DominoTileTest {
                 handler.lastValue.processEvent(CustomEvent(children[0].second,
                     DominoTile.StatusChangeEvent(DominoTile.State.StoppedByParent)), coordinator)
 
-                assertThat(tile.state).isEqualTo(DominoTile.State.DownDueToChildDown)
+                assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToChildStopped)
             }
         }
 
@@ -921,7 +921,7 @@ class DominoTileTest {
                 handler.lastValue.processEvent(CustomEvent(children[0].second,
                     DominoTile.StatusChangeEvent(DominoTile.State.StoppedDueToError)), coordinator)
 
-                assertThat(tile.state).isEqualTo(DominoTile.State.DownDueToChildDown)
+                assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToChildStopped)
             }
         }
 

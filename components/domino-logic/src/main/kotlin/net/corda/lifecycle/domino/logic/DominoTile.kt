@@ -63,7 +63,7 @@ class DominoTile(
         Started,
         StoppedDueToError,
         StoppedDueToBadConfig,
-        DownDueToChildDown,
+        StoppedDueToChildStopped,
         StoppedByParent
     }
     class StatusChangeEvent(val newState: State) : LifecycleEvent
@@ -172,7 +172,7 @@ class DominoTile(
         if (newState != oldState) {
             val status = when (newState) {
                 State.Started -> LifecycleStatus.UP
-                State.StoppedDueToBadConfig, State.StoppedByParent, State.DownDueToChildDown -> LifecycleStatus.DOWN
+                State.StoppedDueToBadConfig, State.StoppedByParent, State.StoppedDueToChildStopped -> LifecycleStatus.DOWN
                 State.StoppedDueToError -> LifecycleStatus.ERROR
                 State.Created -> null
             }
@@ -203,18 +203,15 @@ class DominoTile(
                     // We don't do anything when stopping the coordinator
                 }
                 is StopTile -> {
-                    when (state) {
-                        State.StoppedDueToBadConfig, State.StoppedDueToError, State.Started, State.Created, State.DownDueToChildDown -> {
-                            stopTile()
-                            updateState(State.StoppedByParent)
-                        }
-                        State.StoppedByParent -> {}
+                    if (state != State.StoppedByParent) {
+                        stopTile()
+                        updateState(State.StoppedByParent)
                     }
                 }
                 is StartTile -> {
                     when (state) {
                         State.Created, State.StoppedByParent -> startDependenciesIfNeeded()
-                        State.Started, State.DownDueToChildDown -> {} // Do nothing
+                        State.Started, State.StoppedDueToChildStopped -> {} // Do nothing
                         State.StoppedDueToError -> logger.warn("Can not start, since currently being stopped due to an error")
                         State.StoppedDueToBadConfig -> logger.warn("Can not start, since currently being stopped due to bad config")
                     }
@@ -241,7 +238,7 @@ class DominoTile(
                                 logger.info("Status change: child ${child.name} went up.")
                                 handleChildStarted()
                             }
-                            State.StoppedDueToBadConfig, State.StoppedDueToError, State.StoppedByParent, State.DownDueToChildDown -> {
+                            State.StoppedDueToBadConfig, State.StoppedDueToError, State.StoppedByParent, State.StoppedDueToChildStopped -> {
                                 logger.info("Status change: child ${child.name} went down (${statusChangeEvent.newState}).")
                                 handleChildDown()
                             }
@@ -328,7 +325,7 @@ class DominoTile(
     private fun handleChildDown() {
         stopResources()
         stopListeningForConfig()
-        updateState(State.DownDueToChildDown)
+        updateState(State.StoppedDueToChildStopped)
     }
 
     private fun startDependenciesIfNeeded() {
