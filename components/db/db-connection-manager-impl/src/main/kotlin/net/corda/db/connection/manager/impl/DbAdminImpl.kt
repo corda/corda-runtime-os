@@ -32,14 +32,15 @@ class DbAdminImpl @Activate constructor(
         //  for other DBs. So we may need to wrap this in a factory.
         log.info("Creating $schemaName $privilege User: $user")
         val permissions = if (privilege == DbPrivilege.DML) {
-            "SELECT, UPDATE, INSERT, DELETE ON ALL TABLES IN SCHEMA"
+            "ALTER DEFAULT PRIVILEGES IN SCHEMA $schemaName GRANT SELECT, UPDATE, INSERT, DELETE ON TABLES"
         } else {
-            "ALL ON SCHEMA"
+            "GRANT ALL ON SCHEMA $schemaName"
         }
         val sql = """
             CREATE SCHEMA IF NOT EXISTS $schemaName;
             CREATE USER $user WITH PASSWORD '$password';
-            GRANT $permissions $schemaName TO $user;
+            GRANT USAGE ON SCHEMA $schemaName to $user;
+            $permissions TO $user;
             """.trimIndent()
         dbConnectionsRepository.clusterDataSource.connection.use {
             it.createStatement().execute(sql)

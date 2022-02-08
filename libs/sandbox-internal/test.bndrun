@@ -19,7 +19,6 @@
 
 -runrequires: \
     bnd.identity;id='sandbox-internal-tests',\
-    bnd.identity;id='net.corda.sandbox-hooks',\
     bnd.identity;id='net.corda.sandbox-internal',\
     bnd.identity;id='net.corda.application',\
     bnd.identity;id='net.corda.cipher-suite',\

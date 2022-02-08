@@ -47,7 +47,11 @@ class DbAdminTest {
             configFactory
         )
 
-        verify(statement).execute(argThat { this.contains("GRANT ALL ON SCHEMA") })
+        verify(statement).execute(argThat {
+            this.contains("CREATE SCHEMA IF NOT EXISTS")
+                    && this.contains("CREATE USER test-user WITH PASSWORD 'test-password'")
+                    && this.contains("GRANT USAGE ON SCHEMA test-schema to test-user;")
+                    && this.contains("GRANT ALL ON SCHEMA") })
     }
 
     @Test
@@ -64,6 +68,11 @@ class DbAdminTest {
             configFactory
         )
 
-        verify(statement).execute(argThat { this.contains("GRANT SELECT, UPDATE, INSERT, DELETE ON ALL TABLES IN SCHEMA") })
+        verify(statement).execute(argThat {
+            this.contains("CREATE SCHEMA IF NOT EXISTS")
+                    && this.contains("CREATE USER test-user WITH PASSWORD 'test-password'")
+                    && this.contains("GRANT USAGE ON SCHEMA test-schema to test-user;")
+                    && this.contains("GRANT USAGE ON SCHEMA test-schema to test-user;")
+                    && this.contains("ALTER DEFAULT PRIVILEGES IN SCHEMA test-schema GRANT SELECT, UPDATE, INSERT, DELETE ON TABLES") })
     }
 }
