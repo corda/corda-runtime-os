@@ -7,7 +7,13 @@ import net.corda.data.chunking.ChunkAck
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.cpiupload.CpiUploadManager
 import net.corda.libs.cpiupload.CpiUploadManagerFactory
-import net.corda.lifecycle.*
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.RegistrationHandle
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.schema.configuration.ConfigKeys
