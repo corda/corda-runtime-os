@@ -1,51 +1,61 @@
 package net.corda.cpi.upload.endpoints.v1
 
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
+import net.corda.libs.cpiupload.CPIUploadResponse
 import net.corda.libs.cpiupload.CpiUploadManager
-import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
-import net.corda.libs.cpiupload.impl.CpiUploadManagerImpl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.createCoordinator
+import net.corda.v5.crypto.SecureHash
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.kotlin.any
-import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.io.ByteArrayInputStream
+import java.security.MessageDigest
 import java.util.*
 
 class CpiUploadRPCOpsImplTest {
     private lateinit var cpiUploadRPCOpsImpl: CpiUploadRPCOpsImpl
     private lateinit var coordinatorFactory: LifecycleCoordinatorFactory
+    private lateinit var cpiUploadManager: CpiUploadManager
 
-    private val cpiUploadManager = CpiUploadManagerImpl(mock(), mock())
-    private val cpiUploadRPCOpsService = mock<CpiUploadRPCOpsService>().also {
-        whenever(it.cpiUploadManager).thenReturn(cpiUploadManager)
+    private val cpiUploadRPCOpsService = mock<CpiUploadRPCOpsService>()
+
+    companion object {
+        private const val digestAlgorithm = "SHA-256"
+
+        fun calculateChecksum(bytes: ByteArray): SecureHash {
+            val md = MessageDigest.getInstance(digestAlgorithm)
+            return SecureHash(digestAlgorithm, md.digest(bytes))
+        }
     }
 
     @BeforeEach
     fun setUp() {
-        val coordinator = mock<LifecycleCoordinator>()
-        whenever(coordinator.status).thenReturn(LifecycleStatus.UP)
-
-        coordinatorFactory = mock()
-        whenever(coordinatorFactory.createCoordinator(any(), any())).thenReturn(coordinator)
-
+        val coordinator = mock<LifecycleCoordinator>().also {
+           whenever(it.status).thenReturn(LifecycleStatus.UP)
+        }
+        coordinatorFactory = mock<LifecycleCoordinatorFactory>().also {
+            whenever(it.createCoordinator(any(), any())).thenReturn(coordinator)
+        }
         cpiUploadRPCOpsImpl = CpiUploadRPCOpsImpl(coordinatorFactory, cpiUploadRPCOpsService)
+        cpiUploadManager = mock()
+        whenever(cpiUploadRPCOpsService.cpiUploadManager).thenReturn(cpiUploadManager)
     }
 
     @Test
-    fun ` returns request id mapping to a CPI uploading if the CPI was uploaded to Kafka successfully`() {
-        val bytes = "dummyCPI".toByteArray()
-        val httpResponse = cpiUploadRPCOpsImpl.cpi(ByteArrayInputStream(bytes))
+    fun ` returns request id mapping to a CPI uploading if the CPI was uploaded successfully to Kafka`() {
+        val cpiBytes = "dummyCPI".toByteArray()
+        val cpiInputStream = ByteArrayInputStream(cpiBytes)
+        val cpiUploadResponse = CPIUploadResponse(UUID.randomUUID().toString(), calculateChecksum(cpiBytes))
+        whenever(cpiUploadManager.uploadCpi(cpiInputStream)).thenReturn(cpiUploadResponse)
+
+        val httpResponse = cpiUploadRPCOpsImpl.cpi(cpiInputStream)
         assertNotNull(httpResponse)
-        assertDoesNotThrow {
-            UUID.fromString(httpResponse.id)
-        }
+        assertEquals(cpiUploadResponse.requestId, httpResponse.id)
     }
 }
