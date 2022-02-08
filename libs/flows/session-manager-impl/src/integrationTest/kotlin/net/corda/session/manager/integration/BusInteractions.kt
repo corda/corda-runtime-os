@@ -10,6 +10,11 @@ interface BusInteractions {
     fun getNextInboundMessage() : SessionEvent?
 
     /**
+     * Get the number of messages currently on the inbound message bus
+     */
+    fun getInboundMessageSize() : Int
+
+    /**
      * Get a specific session event from the bus by [position]
      */
     fun getInboundMessage(position: Int) : SessionEvent
