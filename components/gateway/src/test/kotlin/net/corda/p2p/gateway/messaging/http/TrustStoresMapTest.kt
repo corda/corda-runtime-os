@@ -27,7 +27,7 @@ import java.security.KeyStore
 import java.security.cert.Certificate
 import java.security.cert.CertificateFactory
 
-class TrustStoresContainerTest {
+class TrustStoresMapTest {
     private val subscription = mock<CompactedSubscription<String, GatewayTruststore>>()
     private val lifecycleEventHandler = argumentCaptor<LifecycleEventHandler>()
     private val coordinator = mock< LifecycleCoordinator> {
@@ -59,7 +59,7 @@ class TrustStoresContainerTest {
         mockKeyStore.close()
     }
 
-    private val testObject = TrustStoresContainer(
+    private val testObject = TrustStoresMap(
         lifecycleCoordinatorFactory,
         subscriptionFactory,
         nodeConfiguration,

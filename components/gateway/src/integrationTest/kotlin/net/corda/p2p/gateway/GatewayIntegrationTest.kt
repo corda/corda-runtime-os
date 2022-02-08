@@ -88,7 +88,7 @@ class GatewayIntegrationTest : TestBase() {
 
         init {
             publish(
-                Record(Schemas.P2P.GATEWAY_TLS_TRUSTSTORES, TRUST_STORE_HASH, GatewayTruststore(listOf(truststoreCertificate)))
+                Record(Schemas.P2P.GATEWAY_TLS_TRUSTSTORES, TRUST_STORE_HASH, GatewayTruststore(listOf(truststoreCertificatePem)))
             )
         }
 

@@ -23,7 +23,7 @@ import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpResponse
 import net.corda.p2p.gateway.messaging.http.SniCalculator
-import net.corda.p2p.gateway.messaging.http.TrustStoresContainer
+import net.corda.p2p.gateway.messaging.http.TrustStoresMap
 import net.corda.p2p.gateway.messaging.toGatewayConfiguration
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.v5.base.util.debug
@@ -59,7 +59,7 @@ internal class OutboundMessageHandler(
         configurationReaderService
     )
 
-    private val trustStores = TrustStoresContainer(
+    private val trustStores = TrustStoresMap(
         lifecycleCoordinatorFactory,
         subscriptionFactory,
         nodeConfiguration,

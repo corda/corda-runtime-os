@@ -18,7 +18,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
-internal class TrustStoresContainer(
+internal class TrustStoresMap(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     subscriptionFactory: SubscriptionFactory,
     nodeConfiguration: SmartConfig,
@@ -28,7 +28,7 @@ internal class TrustStoresContainer(
     LifecycleWithDominoTile {
 
     companion object {
-        private const val CONSUMER_GROUP_ID = "gateway_tls_truststores"
+        private const val CONSUMER_GROUP_ID = "gateway_tls_truststores_reader"
     }
 
     override val dominoTile = DominoTile(

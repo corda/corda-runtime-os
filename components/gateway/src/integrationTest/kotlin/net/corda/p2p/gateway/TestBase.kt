@@ -23,7 +23,7 @@ import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.gateway.messaging.http.SniCalculator
-import net.corda.p2p.gateway.messaging.http.TrustStoresContainer
+import net.corda.p2p.gateway.messaging.http.TrustStoresMap
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.seconds
@@ -37,17 +37,17 @@ open class TestBase {
         return javaClass.classLoader.getResource("$fileName.jks").readBytes()
     }
 
-    protected val truststoreCertificate by lazy {
+    protected val truststoreCertificatePem by lazy {
         javaClass.classLoader.getResource("truststore/certificate.pem").readText()
     }
-    protected val c4TruststoreCertificate by lazy {
+    private val c4TruststoreCertificatePem by lazy {
         javaClass.classLoader.getResource("truststore_c4/cordarootca.pem").readText()
     }
     protected val truststoreKeyStore by lazy {
-        TrustStoresContainer.Truststore(listOf(truststoreCertificate)).trustStore
+        TrustStoresMap.Truststore(listOf(truststoreCertificatePem)).trustStore
     }
     protected val c4TruststoreKeyStore by lazy {
-        TrustStoresContainer.Truststore(listOf(c4TruststoreCertificate)).trustStore
+        TrustStoresMap.Truststore(listOf(c4TruststoreCertificatePem)).trustStore
     }
 
     protected val clientMessageContent = "PING"

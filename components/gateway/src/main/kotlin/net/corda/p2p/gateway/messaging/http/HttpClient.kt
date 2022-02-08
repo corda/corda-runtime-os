@@ -231,6 +231,7 @@ class HttpClient(
  * @param uri the destination URI
  * @param sni the destination server name
  * @param legalName the destination legal name expected to be on the TLS certificate. If the value is *null*, the [HttpClient]
+ * @param trustStore Key store containing the certificates trusted for this specific destination.
  * will use standard target identity check
  */
 data class DestinationInfo(

@@ -100,7 +100,7 @@ gateway \
 --keyStorePassword password \
 --port 3123
 ```
-The `keyStore` is valid stores used in the integration tests.
+The `keyStore` is a valid store used in the integration tests.
 
 Or, one can load the configuration from an arguments file. For example, from [gateway-args-example](gateway-args-example.txt):
 ```bash
