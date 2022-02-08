@@ -14,5 +14,6 @@ dependencies {
     implementation project(':libs:configuration:configuration-core')
     implementation 'net.corda:corda-avro-schema'
     implementation 'net.corda:corda-base'
+    implementation 'net.corda:corda-crypto'
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 }

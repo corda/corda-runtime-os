@@ -41,10 +41,6 @@ class CpiUploadRPCOpsImpl @Activate constructor(
 
     companion object {
         val log = contextLogger()
-
-        // Should be moved hidden in [CpiUploadManagerImpl]?
-        private const val TODO_CHUNK_SIZE = 1024
-        private fun randomFileName(): Path = Paths.get("/tmp/${UUID.randomUUID()}")
     }
 
     override val protocolVersion: Int = 1
@@ -73,39 +69,14 @@ class CpiUploadRPCOpsImpl @Activate constructor(
 
         // TODO - kyriakos we need new topic to post the requestId -> which will be posted by the db worker when the processing is ready on the db worker
         // TODO - kyriakos - in later PR check the requestId topic if the CPI already has been processed so return fast
+        val cpiUploadResult = cpiUploadManager.uploadCpi(file)
+        val requestId = cpiUploadResult.requestId
+        val calculatedChecksum = cpiUploadResult.checksum
 
-        // Is is the fileName for the re-created blob on the db worker's file system?
-        val fileName = randomFileName()
-        val chunkWriter = ChunkWriterFactory.create(TODO_CHUNK_SIZE)
-
-        var lastChunk: Chunk? = null
-        chunkWriter.onChunk { chunk ->
-            cpiUploadManager.sendCpiChunk(chunk).also { chunkAck ->
-                val chunkAckUniqueId = "{${chunkAck.requestId}, ${chunkAck.partNumber}}"
-                if (chunkAck.success) {
-                    log.debug("Successful ACK for chunk: $chunkAckUniqueId")
-                } else {
-                    // If we received unsuccessful ACK for a chunk we stop sending more chunks.
-                    // The db worker should stop waiting chunks for this CPI and throw away received chunks(?).
-                    val errMsg = "Unsuccessful ACK for chunk: $chunkAckUniqueId"
-                    log.warn(errMsg)
-                    throw InternalServerException(errMsg)
-                }
-            }
-
-            if (chunk.data.limit() == 0) {
-                lastChunk = chunk
-            }
-        }
-        chunkWriter.write(fileName, file)
-
-        todoSentChecksum = lastChunk!!.checksum.toCorda() // copying for now - to be replaced with sent checksum
+        todoSentChecksum = calculatedChecksum // copying for now - to be replaced with sent checksum
         log.debug("Successfully sent CPI: $todoSentChecksum to db worker")
-
-        validateCpiChecksum(lastChunk!!.checksum.toCorda(),  todoSentChecksum)
+        validateCpiChecksum(calculatedChecksum,  todoSentChecksum)
         log.info("Successfully sent to db worker and validated CPI: $todoSentChecksum ")
-
-        val requestId = lastChunk!!.requestId
         return HTTPCpiUploadRequestId(requestId)
     }
 
