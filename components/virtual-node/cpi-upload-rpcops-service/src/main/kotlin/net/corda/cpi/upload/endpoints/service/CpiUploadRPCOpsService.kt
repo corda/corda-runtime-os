@@ -14,7 +14,7 @@ import org.osgi.service.component.annotations.Reference
 
 // This service should be responsible of just setting [CpiUploadRPCOps] internal components (i.e [CpiUploadManager]),
 // to be shared by [CpiUploadRPCOps] different versions.
-@Component(service = [CpiUploadRPCOpsService::class], immediate = true)
+@Component(service = [CpiUploadRPCOpsService::class])
 class CpiUploadRPCOpsService @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     configReadService: ConfigurationReadService,
