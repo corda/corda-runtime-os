@@ -50,7 +50,7 @@ class TrustStoresContainerTest {
     private val keyStore = mock<KeyStore>()
     private val mockKeyStore = mockStatic(KeyStore::class.java).also { mockKeyStore ->
         mockKeyStore.`when`<KeyStore> {
-            KeyStore.getInstance("JKS")
+            KeyStore.getInstance("PKCS12")
         }.doReturn(keyStore)
     }
 

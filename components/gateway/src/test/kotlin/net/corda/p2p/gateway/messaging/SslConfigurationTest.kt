@@ -5,13 +5,9 @@ import net.corda.v5.base.util.toBase64
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mockConstruction
-import org.mockito.Mockito.mockStatic
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.io.InputStream
 import java.security.KeyStore
 
 class SslConfigurationTest {
