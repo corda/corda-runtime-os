@@ -38,6 +38,9 @@ class CpiUploadManagerImpl(
         val chunkWriter = ChunkWriterFactory.create(TODO_CHUNK_SIZE)
         var lastChunk: Chunk? = null
         chunkWriter.onChunk { chunk ->
+            // TODO - Need to take care the case where RPCSender stops running amid CPI uploading.
+            //  We need to abort(?) and DB worker needs to get somehow notified so that it no longer
+            //  expects Chunks for this CPI.
             rpcSender.sendRequest(chunk).also {
                 // TODO - Wait on the future once db worker part is implemented.
                 //val chunkAck = it.getOrThrow(timeout)
