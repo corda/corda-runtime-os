@@ -33,6 +33,7 @@ class CpiUploadRPCOpsServiceHandler(
     companion object {
         val log = contextLogger()
 
+        @Suppress("ForbiddenComment")
         //TODO: need to move this in corda-api repo [Schemas]
         const val CPI_UPLOAD_TOPIC = "cpi.upload"
     }

@@ -60,7 +60,8 @@ class CpiUploadRPCOpsImpl @Activate constructor(
             throw IllegalStateException("CpiUploadRPCOpsImpl is not running! Its status is ${coordinator.status}")
         }
 
-        // TODO we need new topic to post the requestId -> which will be posted by the db worker when the processing is ready on the db worker
+        // TODO we need new topic to post the requestId -> which will be posted by the db worker
+        //  when the processing is ready on the db worker
         // TODO in later PR check the requestId topic if the CPI already has been processed so return fast
         val cpiUploadResult = cpiUploadManager.uploadCpi(file)
         val requestId = cpiUploadResult.requestId
