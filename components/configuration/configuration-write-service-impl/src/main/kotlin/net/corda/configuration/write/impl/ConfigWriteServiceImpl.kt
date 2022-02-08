@@ -25,7 +25,8 @@ internal class ConfigWriteServiceImpl @Activate constructor(
 ) : ConfigWriteService {
 
     private val coordinator = let {
-        val eventHandler = ConfigWriteEventHandler(subscriptionFactory, publisherFactory)
+        val configWriterFactory = ConfigWriterFactory(subscriptionFactory, publisherFactory)
+        val eventHandler = ConfigWriteEventHandler(configWriterFactory)
         coordinatorFactory.createCoordinator<ConfigWriteService>(eventHandler)
     }
 
