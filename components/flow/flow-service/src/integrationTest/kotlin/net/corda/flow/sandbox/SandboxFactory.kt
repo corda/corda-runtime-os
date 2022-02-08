@@ -2,6 +2,7 @@ package net.corda.flow.sandbox
 
 import net.corda.flow.manager.FlowSandboxService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.testing.sandboxes.SandboxLoader
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import org.osgi.service.component.annotations.Activate
@@ -15,27 +16,19 @@ class CloseableSandboxGroupContext(private val context: SandboxGroupContext)
     }
 }
 
-@Component(service = [ SandboxLoader::class ])
-class SandboxLoader @Activate constructor(
+@Component(service = [ SandboxFactory::class ])
+class SandboxFactory @Activate constructor(
     @Reference
-    private val loader: LoaderService,
-    @Reference
-    private val vnodeInfoService: VirtualNodeInfoService,
+    private val sandboxLoader: SandboxLoader,
     @Reference
     private val flowSandboxService: FlowSandboxService
 ) {
     fun loadCPI(resourceName: String, holdingIdentity: HoldingIdentity): VirtualNodeInfo {
-        val cpi = loader.loadCPI(resourceName)
-        return VirtualNodeInfo(holdingIdentity, cpi.metadata.id).also { vnodeInfo ->
-            vnodeInfoService.put(vnodeInfo)
-        }
+        return sandboxLoader.loadCPI(resourceName, holdingIdentity)
     }
 
     fun unloadCPI(virtualNodeInfo: VirtualNodeInfo) {
-        vnodeInfoService.remove(virtualNodeInfo)
-        val cpi = loader.get(virtualNodeInfo.cpiIdentifier).get()
-            ?: throw IllegalStateException("No such CPI ${virtualNodeInfo.cpiIdentifier}")
-        cpi.use(loader::unloadCPI)
+        sandboxLoader.unloadCPI(virtualNodeInfo)
     }
 
     fun getOrCreateSandbox(holdingIdentity: HoldingIdentity): CloseableSandboxGroupContext {
