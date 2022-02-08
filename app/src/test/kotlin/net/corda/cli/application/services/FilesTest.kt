@@ -16,18 +16,18 @@ class FilesTest {
                 Files.cliHomeDir().absolutePath
             )
         }
-
     }
 
     @Test
     fun testCliHomeDirWithEnvVar() {
 
-        withEnvironmentVariable("CORDA_CLI_HOME_DIR", "\\corda\\cli").execute {
+        val workingDir = Paths.get("").toAbsolutePath().toString()
+
+        withEnvironmentVariable("CORDA_CLI_HOME_DIR", ".\\corda\\cli").execute {
             assertEquals(
-                "C:\\corda\\cli",
+                Paths.get(workingDir,".\\corda\\cli").toString(),
                 Files.cliHomeDir().absolutePath
             )
         }
     }
-
 }
