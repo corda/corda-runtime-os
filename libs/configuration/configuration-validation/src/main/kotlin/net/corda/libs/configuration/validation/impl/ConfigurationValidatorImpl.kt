@@ -23,34 +23,35 @@ internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProv
     private val schemaFactory = buildSchemaFactory()
     private val objectMapper = ObjectMapper()
 
-    override fun validate(key: String, config: SmartConfig) {
-        logger.info("Validating config for key $key")
+    override fun validate(key: String, version: String, config: SmartConfig) {
+        logger.info("Validating config for key $key with schema version $version")
         logger.debug {
             "Configuration to validate: ${
                 config.toSafeConfig().root().render(ConfigRenderOptions.concise())
             }"
         }
-        val schemaInput = schemaProvider.getSchema(key)
         val errors = try {
             // Note that the JSON schema library does lazy schema loading, so schema retrieval issues may not manifest
             // until the validation stage.
+            val schemaInput = schemaProvider.getSchema(key, version)
             val schema = schemaFactory.getSchema(schemaInput)
+            logger.debug { "Schema to validate against: $schema" }
             schema.validate(config.toJsonNode())
         } catch (e: Exception) {
-            val message = "Could not retrieve the schema for key $key: ${e.message}"
+            val message = "Could not retrieve the schema for key $key at schema version $version: ${e.message}"
             logger.error(message, e)
             throw ConfigurationSchemaFetchException(message, e)
         }
         if (errors.isNotEmpty()) {
             val errorSet = errors.map { it.message }.toSet()
             logger.error(
-                "Configuration validation failed for key $key. Errors: $errorSet. Full config: ${
+                "Configuration validation failed for key $key at schema version $version. Errors: $errorSet. Full config: ${
                     config.toSafeConfig().root().render(
                         ConfigRenderOptions.concise()
                     )
                 }"
             )
-            throw ConfigurationValidationException(key, config, errorSet)
+            throw ConfigurationValidationException(key, version, config, errorSet)
         }
     }
 

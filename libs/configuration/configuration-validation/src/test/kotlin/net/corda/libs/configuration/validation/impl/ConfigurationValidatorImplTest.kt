@@ -28,16 +28,19 @@ class ConfigurationValidatorImplTest {
         private const val INVALID_SCHEMA = "schema/invalid/bad-schema.json"
         private const val BAD_REFERENCE = "schema/bad-reference/bad-reference.json"
         private const val DRAFT_V6 = "schema/wrong-draft/draft-v6.json"
+        private const val NO_FILE_EXISTS = "no-file-here"
 
         private const val VALID_DATA = "data/valid.conf"
         private const val INVALID_DATA = "data/invalid.conf"
+
+        private const val TEST_VERSION = "1.0"
     }
 
     @Test
     fun `valid document against test schema`() {
         val validator = createSchemaValidator()
         val json = loadData(VALID_DATA)
-        validator.validate(TEST_SCHEMA, json)
+        validator.validate(TEST_SCHEMA, TEST_VERSION, json)
     }
 
     @Test
@@ -45,7 +48,7 @@ class ConfigurationValidatorImplTest {
         val json = loadData(INVALID_DATA)
         val validator = createSchemaValidator()
         val exception = assertThrows<ConfigurationValidationException> {
-            validator.validate(TEST_SCHEMA, json)
+            validator.validate(TEST_SCHEMA, TEST_VERSION, json)
         }
         assertEquals(3, exception.errors.size)
         assertEquals(TEST_SCHEMA, exception.key)
@@ -55,7 +58,7 @@ class ConfigurationValidatorImplTest {
     fun `throws when schema is malformed`() {
         val validator = createSchemaValidator()
         assertThrows<ConfigurationSchemaFetchException> {
-            validator.validate(INVALID_SCHEMA, emptyConfig())
+            validator.validate(INVALID_SCHEMA, TEST_VERSION, emptyConfig())
         }
     }
 
@@ -65,7 +68,7 @@ class ConfigurationValidatorImplTest {
         assertThrows<ConfigurationSchemaFetchException> {
             // Validation will only try and resolve references as needed, so we need to provide some data that will
             // trigger reference resolution.
-            validator.validate(BAD_REFERENCE, loadData(VALID_DATA))
+            validator.validate(BAD_REFERENCE, TEST_VERSION, loadData(VALID_DATA))
         }
     }
 
@@ -73,7 +76,16 @@ class ConfigurationValidatorImplTest {
     fun `throws if the wrong schema draft is declared`() {
         val validator = createSchemaValidator()
         assertThrows<ConfigurationSchemaFetchException> {
-            validator.validate(DRAFT_V6, emptyConfig())
+            validator.validate(DRAFT_V6, TEST_VERSION, emptyConfig())
+        }
+    }
+
+    @Test
+
+    fun `throws if invalid schema file is requested`() {
+        val validator = createSchemaValidator()
+        assertThrows<ConfigurationSchemaFetchException> {
+            validator.validate(NO_FILE_EXISTS, TEST_VERSION, emptyConfig())
         }
     }
 
@@ -93,7 +105,7 @@ class ConfigurationValidatorImplTest {
     }
 
     private class TestSchemaProvider : SchemaProvider {
-        override fun getSchema(key: String): InputStream {
+        override fun getSchema(key: String, version: String): InputStream {
             return loadResource(key)
         }
 
