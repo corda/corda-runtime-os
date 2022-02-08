@@ -47,7 +47,7 @@ data class CreateUserType(
         }
 
         "a-zA-Z0-9.@\\-# ".let {
-            val regEx = Regex("[$it].*")
+            val regEx = Regex("[$it]*")
             if (!regEx.matches(fullName)) {
                 errors.add("Full name '$fullName' contains invalid characters. Allowed characters are: '$it'.")
             }
@@ -58,7 +58,7 @@ data class CreateUserType(
         }
 
         "a-zA-Z0-9.@\\-#".let {
-            val regEx = Regex("[$it].*")
+            val regEx = Regex("[$it]*")
             if (!regEx.matches(loginName)) {
                 errors.add("Login name '$loginName' contains invalid characters. Allowed characters are: '$it'.")
             }
@@ -69,8 +69,8 @@ data class CreateUserType(
                 errors.add("Password name exceed maximum length of 255.")
             }
 
-            "a-zA-Z0-9.@\\-#".let {
-                val regEx = Regex("[$it].*")
+            "a-zA-Z0-9.@\\-#!?,".let {
+                val regEx = Regex("[$it]*")
                 if (!regEx.matches(initialPassword)) {
                     errors.add("Password contains invalid characters. Allowed characters are: '$it'.")
                 }
