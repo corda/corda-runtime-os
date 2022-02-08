@@ -8,6 +8,7 @@ import net.corda.db.admin.impl.ClassloaderChangeLog.ChangeLogResourceFiles
 import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.DbConnectionsRepository
+import net.corda.db.connection.manager.dbFallbackConfig
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
@@ -123,7 +124,7 @@ class DBProcessorImpl @Activate constructor(
                     log.info("DB Connection Manager has been initialised")
 
                     // TODO - remove this when cluster bootstrapping is implemented
-                    tempDbInitProcess(bootstrapConfig!!.factory)
+                    tempDbInitProcess(bootstrapConfig!!)
 
                     // ready to continue bootstrapping processor
                     log.info("Bootstrapping Config Write Service with instance ID: $instanceId")
@@ -156,11 +157,13 @@ class DBProcessorImpl @Activate constructor(
         }
     }
 
-    private fun tempDbInitProcess(factory: SmartConfigFactory) {
+    private fun tempDbInitProcess(config: SmartConfig) {
         log.info("Running Cluster DB Migration")
         migrateDatabase(dbConnectionsRepository.clusterDataSource, listOf(
             "net/corda/db/schema/config/db.changelog-master.xml"
         ))
+
+        val dbConfig = config.withFallback(dbFallbackConfig)
 
         // Creating RBAC DB configurations
         if(null == dbConnectionsRepository.get(CordaDb.RBAC.persistenceUnitName, DbPrivilege.DDL)) {
@@ -171,9 +174,9 @@ class DBProcessorImpl @Activate constructor(
                 DbSchema.RPC_RBAC,
                 ddlRbacUser,
                 ddlRbacPassword,
-                CONFIG_JDBC_URL_DEFAULT,
+                dbConfig.getString(ConfigKeys.JDBC_URL),
                 DbPrivilege.DDL,
-                factory
+                config.factory
             )
         }
 
@@ -185,9 +188,9 @@ class DBProcessorImpl @Activate constructor(
                 DbSchema.RPC_RBAC,
                 dmlRbacUser,
                 dmlRbacPassword,
-                CONFIG_JDBC_URL_DEFAULT,
+                dbConfig.getString(ConfigKeys.JDBC_URL),
                 DbPrivilege.DML,
-                factory
+                config.factory
             )
         }
 
