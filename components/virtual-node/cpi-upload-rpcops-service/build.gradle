@@ -11,7 +11,6 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':components:configuration:configuration-read-service')
-    implementation project(':libs:chunking')
     implementation project(':libs:http-rpc:http-rpc')
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:messaging:messaging')
@@ -20,6 +19,7 @@ dependencies {
     implementation project(':libs:virtual-node:virtual-node-endpoints')
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'
+    implementation 'net.corda:corda-crypto'
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "net.corda:corda-avro-schema"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
