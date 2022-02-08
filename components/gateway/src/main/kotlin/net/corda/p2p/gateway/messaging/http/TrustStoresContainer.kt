@@ -75,7 +75,7 @@ internal class TrustStoresContainer(
         nodeConfiguration
     )
 
-    private class Truststore(
+    class Truststore(
         pemCertificates: Collection<String>,
         certificateFactory: CertificateFactory = CertificateFactory.getInstance("X.509"),
     ) {
