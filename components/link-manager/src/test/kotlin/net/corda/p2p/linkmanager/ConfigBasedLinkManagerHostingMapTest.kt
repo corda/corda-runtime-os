@@ -37,11 +37,11 @@ class ConfigBasedLinkManagerHostingMapTest {
             ${LinkManagerConfiguration.LOCALLY_HOSTED_IDENTITIES_KEY}: [
                 {
                     "${LinkManagerConfiguration.LOCALLY_HOSTED_IDENTITY_X500_NAME}": "${alice.x500Name}",
-                    "${LinkManagerConfiguration.LOCALLY_HOSTED_IDENTITY_GPOUP_ID}": "${alice.groupId}"
+                    "${LinkManagerConfiguration.LOCALLY_HOSTED_IDENTITY_GROUP_ID}": "${alice.groupId}"
                 },
                 {
                     "${LinkManagerConfiguration.LOCALLY_HOSTED_IDENTITY_X500_NAME}": "${bob.x500Name}",
-                    "${LinkManagerConfiguration.LOCALLY_HOSTED_IDENTITY_GPOUP_ID}": "${bob.groupId}"
+                    "${LinkManagerConfiguration.LOCALLY_HOSTED_IDENTITY_GROUP_ID}": "${bob.groupId}"
                 }
             ]
         """

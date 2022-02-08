@@ -15,7 +15,7 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.CUTOFF_REPLAY_KEY_POSTFIX
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.HEARTBEAT_MESSAGE_PERIOD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITIES_KEY
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_GPOUP_ID
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_GROUP_ID
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_X500_NAME
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_MESSAGE_SIZE_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_REPLAYING_MESSAGES_PER_PEER_POSTFIX
@@ -233,7 +233,7 @@ class P2PLayerEndToEndTest {
                     $LOCALLY_HOSTED_IDENTITIES_KEY: [
                         {
                             "$LOCALLY_HOSTED_IDENTITY_X500_NAME": "<x500-name>",
-                            "$LOCALLY_HOSTED_IDENTITY_GPOUP_ID": "$GROUP_ID"
+                            "$LOCALLY_HOSTED_IDENTITY_GROUP_ID": "$GROUP_ID"
                         }
                     ],
                     $MAX_MESSAGE_SIZE_KEY: 1000000,
