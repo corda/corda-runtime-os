@@ -10,10 +10,12 @@ import net.corda.db.core.DbPrivilege
 import net.corda.db.core.HikariDataSourceFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.libs.configuration.datamodel.findDbConnectionByNameAndPrivilege
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
+import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
@@ -58,7 +60,7 @@ class DbConnectionsRepositoryImpl(
         // special case EMF for fetching other DB connections
         entityManagerFactoryFactory.create(
             "DB Connections",
-            listOf(DbConnectionConfig::class.java),
+            ConfigurationEntities.classes.toList(),
             DbEntityManagerConfiguration(lateInitialisedClusterDataSource)
             )
     }
@@ -109,7 +111,7 @@ class DbConnectionsRepositoryImpl(
         description: String?,
         updateActor: String) {
         logger.debug("Saving $privilege DB connection for $name: ${config.root().render()}")
-        dbConnectionsEntityManagerFactory.use {
+        dbConnectionsEntityManagerFactory.transaction {
             val configAsString = config.root().render(ConfigRenderOptions.concise())
             val existingConfig = it.findDbConnectionByNameAndPrivilege(name, privilege)?.apply {
                 update(configAsString, description, updateActor)
@@ -123,6 +125,7 @@ class DbConnectionsRepositoryImpl(
                 configAsString
             )
             it.persist(existingConfig)
+            it.flush()
         }
     }
 

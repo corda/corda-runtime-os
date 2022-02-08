@@ -238,11 +238,14 @@ open class SoftCryptoService(
             val signingData = signatureSpec.getSigningData(hashingService, data)
             cipher.doFinal(signingData)
         } else {
-            signatureInstances.withSignature(signatureScheme) { signature ->
-                signature.initSign(privateKey, schemeMetadata.secureRandom)
+            signatureInstances.withSignature(signatureScheme) {
+                if(signatureScheme.signatureSpec.params != null) {
+                    it.setParameter(signatureScheme.signatureSpec.params)
+                }
+                it.initSign(privateKey, schemeMetadata.secureRandom)
                 val signingData = signatureSpec.getSigningData(hashingService, data)
-                signature.update(signingData)
-                signature.sign()
+                it.update(signingData)
+                it.sign()
             }
         }
         return signatureBytes

@@ -47,21 +47,20 @@ class CpkReadWriteServiceTests {
     lateinit var commonCpkDir: Path
     lateinit var cpkOnePath: Path
 
-    /** Simply return an [InputStream] for the given CPK path */
-    private fun getCpkFromPath(cpkPath: Path) = Files.newInputStream(cpkPath)
-
     /** Return the meta data for a cpk at a given path */
-    private fun getCpkMetaDataFromPath(cpkPath: Path): CPK.Metadata = CPK
-        .from(getCpkFromPath(cpkPath), perProcessCpkCacheDir, null, true)
-        .metadata
+    private fun getCpkMetaDataFromPath(cpkPath: Path): CPK.Metadata = Files.newInputStream(cpkPath).use {
+        CPK.from(it, perProcessCpkCacheDir, null, true).use {
+            it.metadata
+        }
+    }
 
     /** Simple bootstrap config that *should* match what we need for this service to run */
     private fun getBootstrapConfig(): SmartConfig {
 
-    // has "no secrets"
-    val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
+        // has "no secrets"
+        val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
 
-    return smartConfigFactory.create(
+        return smartConfigFactory.create(
             ConfigFactory.parseMap(
                 mapOf(
                     CpkServiceConfigKeys.CPK_CACHE_DIR to commonCpkDir.toString()
@@ -111,18 +110,20 @@ class CpkReadWriteServiceTests {
         waiter.waitForLifecycleStatusUp()
 
         val metadata = getCpkMetaDataFromPath(cpkOnePath)
-        val inputStream = getCpkFromPath(cpkOnePath)
 
         // Check that the cpk hasn't been written yet.
         val cpkBefore = reader.get(metadata)
         assertThat(cpkBefore).isNull()
 
         // Test write
-        writer.put(metadata, inputStream)
+        Files.newInputStream(cpkOnePath).use {
+            writer.put(metadata, it)
+        }
         assertThat(Files.exists(metadata.resolvePath(commonCpkDir))).isTrue
 
         // Test read
         val cpk = reader.get(metadata)!!
         assertThat(cpk.metadata).isEqualTo(metadata)
+        cpk.close()
     }
 }

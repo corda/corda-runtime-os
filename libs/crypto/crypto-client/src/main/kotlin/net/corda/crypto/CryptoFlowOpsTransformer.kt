@@ -6,7 +6,6 @@ import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
 import net.corda.data.crypto.wire.CryptoPublicKeys
 import net.corda.data.crypto.wire.CryptoRequestContext
-import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.ops.flow.FilterMyKeysFlowQuery
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
@@ -16,7 +15,6 @@ import net.corda.data.crypto.wire.ops.flow.SignFlowCommand
 import net.corda.data.crypto.wire.ops.flow.SignWithSpecFlowCommand
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.SignatureSpec
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
@@ -90,27 +88,6 @@ class CryptoFlowOpsTransformer(
             tenantId,
             SignFlowCommand(
                 ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
-                ByteBuffer.wrap(data),
-                context.toWire()
-            )
-        )
-    }
-
-    /**
-     * Generates [SignWithSpecFlowCommand]
-     */
-    fun createSign(
-        tenantId: String,
-        publicKey: PublicKey,
-        signatureSpec: SignatureSpec,
-        data: ByteArray,
-        context: Map<String, String> = EMPTY_CONTEXT
-    ): FlowOpsRequest {
-        return createRequest(
-            tenantId,
-            SignWithSpecFlowCommand(
-                ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
-                CryptoSignatureSpec(signatureSpec.signatureName, signatureSpec.customDigestName?.name),
                 ByteBuffer.wrap(data),
                 context.toWire()
             )

@@ -89,22 +89,26 @@ class LocalPackageCache @Activate constructor(
 
     private fun scanCPKs(packageRepository: Path): NavigableMap<CPK.Identifier, CPK> {
         return packageRepository.takeIf(Files::exists)?.let { path ->
-            Files.list(path).filter {
-                it.fileName.toString().endsWith(CPK.fileExtension)
-            }.map {
-                CPK.from(Files.newInputStream(it), cacheDir, it.toString(), true)
-            }.collect(cpkMapCollector)
+            Files.list(path).use { stream ->
+                stream.filter {
+                    it.fileName.toString().endsWith(CPK.fileExtension)
+                }.map {
+                    Files.newInputStream(it).use { str -> CPK.from(str, cacheDir, it.toString(), true) }
+                }.collect(cpkMapCollector)
+            }
         } ?: emptyNavigableMap()
     }
 
     private fun scanCPIs(packageRepository: Path): NavigableMap<CPI.Identifier, CPI> {
         return packageRepository.takeIf(Files::exists)?.let { path ->
-            Files.list(path).filter {
-                val fileName = it.fileName.toString()
-                CPI.fileExtensions.any(fileName::endsWith)
-            }.map {
-                CPI.from(Files.newInputStream(it), cacheDir, it.toString(), true)
-            }.collect(cpiMapCollector)
+            Files.list(path).use { stream ->
+                stream.filter {
+                    val fileName = it.fileName.toString()
+                    CPI.fileExtensions.any(fileName::endsWith)
+                }.map {
+                    Files.newInputStream(it).use { str -> CPI.from(str, cacheDir, it.toString(), true) }
+                }.collect(cpiMapCollector)
+            }
         } ?: emptyNavigableMap()
     }
 

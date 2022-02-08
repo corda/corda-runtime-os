@@ -7,6 +7,7 @@ import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
+import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
@@ -25,8 +26,8 @@ class EntityManagerFactoryCacheImpl @Activate constructor(
     private val dbConnectionsRepository: DbConnectionsRepository,
     @Reference(service = EntityManagerFactoryFactory::class)
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
-    @Reference(service = JpaEntitiesSet::class)
-    private val allEntitiesSets: List<JpaEntitiesSet>,
+    @Reference(service = JpaEntitiesRegistry::class)
+    private val entitiesRegistry: JpaEntitiesRegistry,
 ): EntityManagerFactoryCache {
     companion object {
         private val logger = contextLogger()
@@ -41,8 +42,8 @@ class EntityManagerFactoryCacheImpl @Activate constructor(
 
     override fun getOrCreate(db: CordaDb, privilege: DbPrivilege): EntityManagerFactory {
         val entitiesSet =
-            allEntitiesSets.singleOrNull { it.persistenceUnitName == db.persistenceUnitName } ?:
-            throw DBConfigurationException("Entity set for ${db.persistenceUnitName} not found")
+            entitiesRegistry.get(db.persistenceUnitName) ?:
+                throw DBConfigurationException("Entity set for ${db.persistenceUnitName} not found")
 
         return getOrCreate(
             db.persistenceUnitName,
@@ -62,7 +63,8 @@ class EntityManagerFactoryCacheImpl @Activate constructor(
     private fun createManagerFactory(name: String, dataSource: DataSource): EntityManagerFactory {
         return entityManagerFactoryFactory.create(
             name,
-            allEntitiesSets.single{it.persistenceUnitName == name}.classes.toList(),
+            entitiesRegistry.get(name)?.classes?.toList() ?:
+                throw DBConfigurationException("Entity set for $name not found"),
             DbEntityManagerConfiguration(dataSource),
         )
     }

@@ -37,6 +37,8 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
 import java.security.SignatureException
+import java.security.spec.MGF1ParameterSpec
+import java.security.spec.PSSParameterSpec
 import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -395,6 +397,56 @@ class CryptoOperationsTests {
         assertNotNull(keyPair)
         assertEquals(keyPair.private.algorithm, "RSA")
         assertEquals(keyPair.public.algorithm, "RSA")
+    }
+
+    @Test
+    @Timeout(5)
+    fun `Should generate RSA key pair and be able sign and verify using RSASSA-PSS signature`() {
+        val data = UUID.randomUUID().toString().toByteArray()
+        val alias = newAlias()
+        val signatureScheme = schemeMetadata.findSignatureScheme(RSA_CODE_NAME)
+        val signingService = services.createSigningService(signatureScheme)
+        val rsaPss = SignatureSpec(
+            signatureName = "RSASSA-PSS",
+            params = PSSParameterSpec(
+                "SHA-256",
+                "MGF1",
+                MGF1ParameterSpec.SHA256,
+                32,
+                1)
+        )
+        val publicKey = signingService.generateKeyPair(CryptoConsts.Categories.LEDGER, alias)
+        assertNotNull(publicKey)
+        assertEquals(publicKey.algorithm, "RSA")
+        val customSignature1 = signingService.sign(publicKey, rsaPss, data)
+        assertEquals(publicKey, customSignature1.by)
+        validateSignature(publicKey, rsaPss, customSignature1.bytes, data)
+        val customSignature2 = signingService.sign(alias, rsaPss, data)
+        assertFalse(customSignature1.bytes.contentEquals(customSignature2))
+        validateSignature(publicKey, rsaPss, customSignature2, data)
+    }
+
+    @Test
+    @Timeout(5)
+    fun `Should generate wrapped RSA key pair and be able sign and verify using RSASSA-PSS signature`() {
+        val data = UUID.randomUUID().toString().toByteArray()
+        val signatureScheme = schemeMetadata.findSignatureScheme(RSA_CODE_NAME)
+        val signingService = services.createSigningService(signatureScheme)
+        val rsaPss = SignatureSpec(
+            signatureName = "RSASSA-PSS",
+            params = PSSParameterSpec(
+                "SHA-256",
+                "MGF1",
+                MGF1ParameterSpec.SHA256,
+                32,
+                1)
+        )
+        val publicKey = signingService.freshKey()
+        assertNotNull(publicKey)
+        assertEquals(publicKey.algorithm, "RSA")
+        val customSignature = signingService.sign(publicKey, rsaPss, data)
+        assertEquals(publicKey, customSignature.by)
+        validateSignature(publicKey, rsaPss, customSignature.bytes, data)
     }
 
     @Test

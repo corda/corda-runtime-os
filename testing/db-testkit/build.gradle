@@ -8,9 +8,12 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'net.corda:corda-config-schema'
     implementation project(":testing:test-utilities")
     implementation project(":libs:db:db-core")
     implementation project(":libs:db:db-orm")
+
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
 }
 
 description 'Database Internal Testkit'
