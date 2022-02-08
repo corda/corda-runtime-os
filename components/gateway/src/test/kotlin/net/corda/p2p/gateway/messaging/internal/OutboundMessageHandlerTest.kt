@@ -54,6 +54,9 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 class OutboundMessageHandlerTest {
+    companion object {
+        private const val TRUST_STORE_HASH = "MyHash"
+    }
     private val coordinatorHandler = argumentCaptor<LifecycleEventHandler>()
     private val coordinator = mock<LifecycleCoordinator> {
         on { postEvent(any()) } doAnswer {
@@ -162,7 +165,12 @@ class OutboundMessageHandlerTest {
             )
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
-        val headers = LinkOutHeader("a", NetworkType.CORDA_5, "https://r3.com/", "")
+        val headers = LinkOutHeader(
+            "a",
+            NetworkType.CORDA_5,
+            "https://r3.com/",
+            TRUST_STORE_HASH,
+        )
         val message = LinkOutMessage(headers, payload)
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
 
@@ -186,7 +194,12 @@ class OutboundMessageHandlerTest {
             )
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
-        val headers = LinkOutHeader("a", NetworkType.CORDA_5, "https://r3.com/", "")
+        val headers = LinkOutHeader(
+            "a",
+            NetworkType.CORDA_5,
+            "https://r3.com/",
+            TRUST_STORE_HASH
+        )
         val message = LinkOutMessage(headers, msgPayload)
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
 
@@ -212,7 +225,12 @@ class OutboundMessageHandlerTest {
             )
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
-        val headers = LinkOutHeader("a", NetworkType.CORDA_5, "https://r3.com/", "")
+        val headers = LinkOutHeader(
+            "a",
+            NetworkType.CORDA_5,
+            "https://r3.com/",
+            TRUST_STORE_HASH,
+        )
         val message = LinkOutMessage(
             headers,
             payload,
@@ -247,7 +265,12 @@ class OutboundMessageHandlerTest {
             )
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
-        val headers = LinkOutHeader("O=PartyA, L=London, C=GB", NetworkType.CORDA_4, "https://r3.com/", "")
+        val headers = LinkOutHeader(
+            "O=PartyA, L=London, C=GB",
+            NetworkType.CORDA_4,
+            "https://r3.com/",
+            TRUST_STORE_HASH
+        )
         val message = LinkOutMessage(
             headers,
             payload,
@@ -282,7 +305,12 @@ class OutboundMessageHandlerTest {
             )
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
-        val headers = LinkOutHeader("aaa", NetworkType.CORDA_4, "https://r3.com/", "")
+        val headers = LinkOutHeader(
+            "aaa",
+            NetworkType.CORDA_4,
+            "https://r3.com/",
+            TRUST_STORE_HASH,
+        )
         val message = LinkOutMessage(
             headers,
             payload,
@@ -318,7 +346,12 @@ class OutboundMessageHandlerTest {
             )
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
-        val headers = LinkOutHeader("a", NetworkType.CORDA_5, "https://r3.com/", "")
+        val headers = LinkOutHeader(
+            "a",
+            NetworkType.CORDA_5,
+            "https://r3.com/",
+            TRUST_STORE_HASH
+        )
         val message = LinkOutMessage(headers, msgPayload)
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
 
@@ -360,7 +393,12 @@ class OutboundMessageHandlerTest {
             )
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
-        val headers = LinkOutHeader("a", NetworkType.CORDA_5, "https://r3.com/", "")
+        val headers = LinkOutHeader(
+            "a",
+            NetworkType.CORDA_5,
+            "https://r3.com/",
+            TRUST_STORE_HASH,
+        )
         val message = LinkOutMessage(headers, msgPayload)
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
 
@@ -405,7 +443,12 @@ class OutboundMessageHandlerTest {
             )
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
-        val headers = LinkOutHeader("a", NetworkType.CORDA_5, "https://r3.com/", "")
+        val headers = LinkOutHeader(
+            "a",
+            NetworkType.CORDA_5,
+            "https://r3.com/",
+            TRUST_STORE_HASH,
+        )
         val message = LinkOutMessage(headers, msgPayload)
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
 
@@ -449,7 +492,12 @@ class OutboundMessageHandlerTest {
             )
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
-        val headers = LinkOutHeader("a", NetworkType.CORDA_5, "https://r3.com/", "")
+        val headers = LinkOutHeader(
+            "a",
+            NetworkType.CORDA_5,
+            "https://r3.com/",
+            TRUST_STORE_HASH,
+        )
         val message = LinkOutMessage(headers, msgPayload)
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
 
@@ -467,7 +515,7 @@ class OutboundMessageHandlerTest {
     }
 
     private fun startHandler() {
-        whenever(trustStores.constructed().first().getTrustStore(any())).doReturn(truststore)
+        whenever(trustStores.constructed().first().getTrustStore(TRUST_STORE_HASH)).doReturn(truststore)
         whenever(connectionManager.constructed().first().isRunning).doReturn(true)
         whenever(dominoTile.constructed().first().isRunning).doReturn(true)
         handler.start()
