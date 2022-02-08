@@ -81,7 +81,7 @@ internal class TrustStoresContainer(
     ) {
 
         val trustStore: KeyStore by lazy {
-            KeyStore.getInstance("JKS").also { keyStore ->
+            KeyStore.getInstance("PKCS12").also { keyStore ->
                 keyStore.load(null, null)
                 pemCertificates.withIndex().forEach { (index, pemCertificate) ->
                     val certificate = ByteArrayInputStream(pemCertificate.toByteArray()).use {
