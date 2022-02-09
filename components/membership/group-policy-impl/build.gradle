@@ -1,7 +1,6 @@
 plugins {
     id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'corda.common-library'
-    id 'corda.osgi-test-conventions'
 }
 
 description 'Group policy provider component'
@@ -33,11 +32,4 @@ dependencies {
     testImplementation "net.corda:corda-topic-schema"
     testImplementation "net.corda:corda-config-schema"
     testImplementation "net.corda:corda-packaging-avro-converters"
-
-    integrationTestRuntimeOnly project(":components:virtual-node:cpi-info-read-service-impl")
-    integrationTestRuntimeOnly project(":components:virtual-node:cpi-info-write-service-impl")
-    integrationTestRuntimeOnly project(":components:configuration:configuration-read-service-impl")
-    integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")
-    integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
-    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 }

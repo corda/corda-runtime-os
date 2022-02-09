@@ -56,7 +56,13 @@ class DbConnectionsRepositoryTest {
     private val configObj = mock<SmartConfigObject>() {
         on { render(any<ConfigRenderOptions>()) }.doReturn("config=123")
     }
+
+    private val configRoot = mock<SmartConfigObject>() {
+        on { render(org.mockito.kotlin.any()) }.doReturn("[config]")
+    }
     private val otherDbConfig = mock<SmartConfig>() {
+        on { toSafeConfig() }.doReturn(this.mock)
+        on { root() }.doReturn(configRoot)
         on { withFallback(any()) }.doReturn(this.mock)
         on { hasPath(any()) }.doReturn(true)
         on { getString(any()) }.doReturn("other DB config")
@@ -66,6 +72,8 @@ class DbConnectionsRepositoryTest {
         on { create(config) }.doReturn(otherDbConfig)
     }
     private val clusterDbConfig = mock<SmartConfig>() {
+        on { toSafeConfig() }.doReturn(this.mock)
+        on { root() }.doReturn(configRoot)
         on { withFallback(any()) }.doReturn(this.mock)
         on { hasPath(any()) }.doReturn(true)
         on { getString(any()) }.doReturn("cluster DB config")

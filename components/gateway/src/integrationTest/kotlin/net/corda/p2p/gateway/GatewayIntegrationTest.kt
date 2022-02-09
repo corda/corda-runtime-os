@@ -5,6 +5,7 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.lifecycle.domino.logic.DependenciesVerifier
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
@@ -588,7 +589,7 @@ class GatewayIntegrationTest : TestBase() {
                     )
                 )
                 eventually(duration = 20.seconds) {
-                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.StoppedDueToError)
+                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.StoppedDueToChildStopped)
                 }
                 assertThrows<ConnectException> {
                     Socket(host, 10005).close()
@@ -612,12 +613,32 @@ class GatewayIntegrationTest : TestBase() {
                 logger.info("Publishing bad config again")
                 configPublisher.publishBadConfig()
                 eventually(duration = 20.seconds) {
-                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.StoppedDueToError)
+                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.StoppedDueToChildStopped)
                 }
                 assertThrows<ConnectException> {
                     Socket(host, 10006).close()
                 }
 
+            }
+        }
+    }
+
+    @Nested
+    inner class DominoLogicTests {
+        @Test
+        fun `domino logic dependencies are setup successfully for gateway`() {
+            val configPublisher = ConfigPublisher()
+            val gateway = Gateway(
+                configPublisher.readerService,
+                alice.subscriptionFactory,
+                alice.publisherFactory,
+                lifecycleCoordinatorFactory,
+                nodeConfig,
+                instanceId.incrementAndGet(),
+            )
+
+            assertDoesNotThrow {
+                DependenciesVerifier.verify(gateway.dominoTile)
             }
         }
     }
