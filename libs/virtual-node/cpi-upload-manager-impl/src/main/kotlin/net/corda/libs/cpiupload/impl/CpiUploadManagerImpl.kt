@@ -1,13 +1,12 @@
 package net.corda.libs.cpiupload.impl
 
 import net.corda.chunking.ChunkWriterFactory
-import net.corda.chunking.toCorda
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkAck
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.cpiupload.CPIUploadResponse
 import net.corda.libs.cpiupload.CpiUploadManager
 import net.corda.libs.cpiupload.CpiUploadManagerException
+import net.corda.libs.cpiupload.RequestId
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
@@ -15,7 +14,7 @@ import java.io.InputStream
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.Duration
-import java.util.*
+import java.util.UUID
 
 class CpiUploadManagerImpl(
     @Suppress("UNUSED_PARAMETER")
@@ -33,7 +32,7 @@ class CpiUploadManagerImpl(
 
     private val timeout = Duration.ofMillis(1000) // TODO Replace with config.
 
-    override fun uploadCpi(inputStream: InputStream): CPIUploadResponse {
+    override fun uploadCpi(inputStream: InputStream): RequestId {
         val fileName = randomFileName() // Maybe move to sendCpiChunk parameters?
         val chunkWriter = ChunkWriterFactory.create(TODO_CHUNK_SIZE)
         var lastChunk: Chunk? = null
@@ -66,7 +65,7 @@ class CpiUploadManagerImpl(
         }
         chunkWriter.write(fileName, inputStream)
 
-        return CPIUploadResponse(lastChunk!!.requestId, lastChunk!!.checksum.toCorda())
+        return lastChunk!!.requestId
     }
 
     override val isRunning get() = _isRunning

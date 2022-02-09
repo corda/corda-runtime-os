@@ -1,7 +1,6 @@
 package net.corda.cpi.upload.endpoints.v1
 
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
-import net.corda.libs.cpiupload.CPIUploadResponse
 import net.corda.libs.cpiupload.CpiUploadManager
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -16,7 +15,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.io.ByteArrayInputStream
 import java.security.MessageDigest
-import java.util.*
+import java.util.UUID
 
 class CpiUploadRPCOpsImplTest {
     private lateinit var cpiUploadRPCOpsImpl: CpiUploadRPCOpsImpl
@@ -42,20 +41,20 @@ class CpiUploadRPCOpsImplTest {
         coordinatorFactory = mock<LifecycleCoordinatorFactory>().also {
             whenever(it.createCoordinator(any(), any())).thenReturn(coordinator)
         }
-        cpiUploadRPCOpsImpl = CpiUploadRPCOpsImpl(coordinatorFactory, cpiUploadRPCOpsService)
+        cpiUploadRPCOpsImpl = CpiUploadRPCOpsImpl(coordinatorFactory, cpiUploadRPCOpsService, mock())
         cpiUploadManager = mock()
         whenever(cpiUploadRPCOpsService.cpiUploadManager).thenReturn(cpiUploadManager)
     }
 
     @Test
-    fun ` returns request id mapping to a CPI uploading if the CPI was uploaded successfully to Kafka`() {
+    fun `returns request id mapping to a CPI uploading if the CPI was uploaded successfully to Kafka`() {
         val cpiBytes = "dummyCPI".toByteArray()
         val cpiInputStream = ByteArrayInputStream(cpiBytes)
-        val cpiUploadResponse = CPIUploadResponse(UUID.randomUUID().toString(), calculateChecksum(cpiBytes))
-        whenever(cpiUploadManager.uploadCpi(cpiInputStream)).thenReturn(cpiUploadResponse)
+        val cpiUploadRequestId = UUID.randomUUID().toString()
+        whenever(cpiUploadManager.uploadCpi(cpiInputStream)).thenReturn(cpiUploadRequestId)
 
         val httpResponse = cpiUploadRPCOpsImpl.cpi(cpiInputStream)
         assertNotNull(httpResponse)
-        assertEquals(cpiUploadResponse.requestId, httpResponse.id)
+        assertEquals(cpiUploadRequestId, httpResponse.id)
     }
 }

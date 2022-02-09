@@ -18,27 +18,16 @@ import java.util.UUID
 class CpiUploadManagerImplTest {
     private lateinit var cpiUploadManagerImpl: CpiUploadManagerImpl
 
-    companion object {
-        private const val digestAlgorithm = "SHA-256"
-
-        fun calculateChecksum(bytes: ByteArray): SecureHash {
-            val md = MessageDigest.getInstance(digestAlgorithm)
-            return SecureHash(digestAlgorithm, md.digest(bytes))
-        }
-    }
-
     @BeforeEach
     fun setUp() {
         cpiUploadManagerImpl = CpiUploadManagerImpl(mock(), mock())
     }
 
     @Test
-    fun `on successfully uploading CPI to Kafka returns CPI's request Id and checksum`() {
+    fun `on successfully uploading CPI to Kafka returns CPI's request Id`() {
         val cpiBytes = "dummyCPI".toByteArray()
-        val expectedChecksum = calculateChecksum(cpiBytes)
-        val checksum = cpiUploadManagerImpl.uploadCpi(ByteArrayInputStream(cpiBytes))
-        assertDoesNotThrow { UUID.fromString(checksum.requestId) }
-        assertEquals(expectedChecksum, checksum.checksum)
+        val requestId = cpiUploadManagerImpl.uploadCpi(ByteArrayInputStream(cpiBytes))
+        assertDoesNotThrow { UUID.fromString(requestId) }
     }
 
     @Test

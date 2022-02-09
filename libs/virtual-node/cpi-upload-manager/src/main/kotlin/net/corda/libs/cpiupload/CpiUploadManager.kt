@@ -1,6 +1,5 @@
 package net.corda.libs.cpiupload
 
-import net.corda.v5.crypto.SecureHash
 import net.corda.lifecycle.Lifecycle
 import java.io.InputStream
 
@@ -9,15 +8,11 @@ import java.io.InputStream
  */
 interface CpiUploadManager : Lifecycle {
     /**
-     * Uploads the CPI ([inputStream]) to Kafka. During CPI uploading it calculates the [inputStream]'s checksum.
-     * It returns the request Id registered under for this CPI upload and the CPI's checksum ([CPIUploadResponse]).
+     * Uploads the CPI to Kafka. It returns the [RequestId] (UUID) registered for this CPI upload.
      *
      * @throws CpiUploadManagerException
      */
-    fun uploadCpi(inputStream: InputStream): CPIUploadResponse
+    fun uploadCpi(inputStream: InputStream): RequestId
 }
 
-data class CPIUploadResponse(
-    val requestId: String,
-    val checksum: SecureHash
-)
+typealias RequestId = String

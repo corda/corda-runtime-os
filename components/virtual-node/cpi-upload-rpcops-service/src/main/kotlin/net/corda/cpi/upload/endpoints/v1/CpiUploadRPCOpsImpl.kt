@@ -11,6 +11,8 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.createCoordinator
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -23,7 +25,9 @@ class CpiUploadRPCOpsImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = CpiUploadRPCOpsService::class)
-    private val cpiUploadRPCOpsService: CpiUploadRPCOpsService
+    private val cpiUploadRPCOpsService: CpiUploadRPCOpsService,
+    @Reference(service = DigestService::class)
+    private val digestService: DigestService
 ) : CpiUploadRPCOps, PluggableRPCOps<CpiUploadRPCOps>, Lifecycle {
 
     private val coordinator = coordinatorFactory.createCoordinator<CpiUploadRPCOps>(
@@ -54,31 +58,28 @@ class CpiUploadRPCOpsImpl @Activate constructor(
     // TODO this method needs to also take the checksum of the file.
     override fun cpi(file: InputStream): HTTPCpiUploadRequestId {
         // TODO to be added to method's parameters
-        val todoSentChecksum: SecureHash
+        val todoSentChecksumString = "SHA-384:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FD6FD061F9D5CFD13B8F961358E6ADBA4A"
 
         if (!isRunning) {
             throw IllegalStateException("CpiUploadRPCOpsImpl is not running! Its status is ${coordinator.status}")
         }
 
-        // TODO we need new topic to post the requestId -> which will be posted by the db worker
-        //  when the processing is ready on the db worker
-        // TODO in later PR check the requestId topic if the CPI already has been processed so return fast
-        val cpiUploadResult = cpiUploadManager.uploadCpi(file)
-        val requestId = cpiUploadResult.requestId
-        val calculatedChecksum = cpiUploadResult.checksum
-
-        todoSentChecksum = calculatedChecksum // copying for now - to be replaced with sent checksum
-        log.debug("Successfully sent CPI: $todoSentChecksum to db worker")
-        validateCpiChecksum(calculatedChecksum,  todoSentChecksum)
-        log.info("Successfully sent to db worker and validated CPI: $todoSentChecksum ")
-        return HTTPCpiUploadRequestId(requestId)
+        // TODO in a later PR check the requestId topic ("HTTP Status" topic) if the CPI already has been processed so return fast
+        // First validate CPI against http sent checksum. Then we should continue with uploading it.
+        //validateCpiChecksum(file, todoSentChecksumString) // Uncomment once we pass checksum to cpi method parameters
+        val cpiUploadRequestId = cpiUploadManager.uploadCpi(file)
+        log.info("Successfully sent CPI: $todoSentChecksumString to db worker")
+        return HTTPCpiUploadRequestId(cpiUploadRequestId)
     }
 
-    private fun validateCpiChecksum(calculatedChecksum: SecureHash, sentChecksum: SecureHash) {
+    private fun validateCpiChecksum(cpi: InputStream, sentChecksumStr: String) {
+        val sentChecksum = SecureHash.create(sentChecksumStr) // throws in case of malformed checksum
+        val calculatedChecksum = digestService.hash(cpi, DigestAlgorithmName(sentChecksum.algorithm))
         if (calculatedChecksum != sentChecksum) {
             val msg = "Calculated checksum: $calculatedChecksum was different to sent checksum: $sentChecksum"
-            log.warn(msg)
+            log.info(msg)
             throw InvalidInputDataException(msg)
         }
+        log.info("Successfully validated CPI against http sent checksum: $sentChecksumStr")
     }
 }
