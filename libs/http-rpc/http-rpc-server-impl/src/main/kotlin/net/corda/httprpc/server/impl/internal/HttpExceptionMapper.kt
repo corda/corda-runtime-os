@@ -44,11 +44,7 @@ internal object HttpExceptionMapper {
             )
 
             // Http API exceptions
-            is HttpApiException -> HttpResponseException(
-                e.responseCode.statusCode,
-                e.message,
-                e.details.addResponseCode(e.responseCode)
-            )
+            is HttpApiException -> e.asHttpResponseException()
 
             is CordaRuntimeException -> HttpResponseException(
                 ResponseCode.INTERNAL_SERVER_ERROR.statusCode,
@@ -64,13 +60,22 @@ internal object HttpExceptionMapper {
         }
     }
 
+    private fun HttpApiException.asHttpResponseException(): HttpResponseException {
+        return HttpResponseException(
+            responseCode.statusCode,
+            message,
+            details.addResponseCode(responseCode)
+        )
+    }
+
     /**
-     * Since javalin's BadRequestResponse does not allow extra details, we'll manually build the HttpResponseException with a BAD_REQUEST
+     * Since Javalin's 'BadRequestResponse' does not allow extra details, we'll manually build the HttpResponseException with a BAD_REQUEST
      * status code, a message, and extra exception details that includes the original exception type and message to help the user fix their
      * request.
+     * Unless details are already supplied by [HttpApiException].
      */
     private fun buildBadRequestResponse(message: String, e: Exception): HttpResponseException {
-        return HttpResponseException(
+        return (e.cause as? HttpApiException)?.asHttpResponseException() ?: HttpResponseException(
             ResponseCode.BAD_REQUEST.statusCode,
             message,
             buildExceptionCauseDetails(e).addResponseCode(ResponseCode.BAD_REQUEST)
@@ -78,8 +83,8 @@ internal object HttpExceptionMapper {
     }
 
     /**
-     * We'll add the name of the exception and the exception's message to the extra details map. This will give the user extra information
-     * to resolving their issue.
+     * We'll add the name of the exception and the exception's message to the extra details map.
+     * This will give the user extra information to resolving their issue.
      */
     private fun buildExceptionCauseDetails(e: Exception) = mapOf(
         "cause" to e::class.java.name,
