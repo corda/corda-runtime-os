@@ -81,7 +81,6 @@ class ConfigurationValidatorImplTest {
     }
 
     @Test
-
     fun `throws if invalid schema file is requested`() {
         val validator = createSchemaValidator()
         assertThrows<ConfigurationSchemaFetchException> {
