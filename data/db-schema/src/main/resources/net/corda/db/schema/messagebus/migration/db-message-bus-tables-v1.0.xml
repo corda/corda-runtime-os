@@ -1,0 +1,45 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+
+    <changeSet author="R3.Corda" id="db-message-bus-tables">
+
+        <createTable tableName="topic_record">
+            <column name="topic" type="VARCHAR(255)"/>
+            <column name="partition" type="INTEGER"/>
+            <column name="record_offset" type="BIGINT"/>
+            <column name="record_key" type="VARBINARY(33554432)"/>
+            <column name="record_value" type="VARBINARY(33554432)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="timestamp" type="TIMESTAMP"/>
+            <column name="transaction_id" type="VARCHAR(255)"/>
+        </createTable>
+        <addPrimaryKey columnNames="topic, partition, record_offset" constraintName="topic_record_pk"
+                       tableName="topic_record"/>
+
+        <createTable tableName="transaction_record">
+            <column name="transaction_id" type="VARCHAR(255)"/>
+            <column name="state" type="integer"/>
+        </createTable>
+        <addPrimaryKey tableName="transaction_record" columnNames="transaction_id" constraintName="transaction_record_pk" />
+
+        <createTable tableName="topic_consumer_offset">
+            <column name="topic" type="VARCHAR(255)"/>
+            <column name="consumer_group" type="VARCHAR(255)"/>
+            <column name="partition" type="VARCHAR(255)"/>
+            <column name="record_offset" type="BIGINT"/>
+            <column name="timestamp" type="TIMESTAMP"/>
+            <column name="transactionId" type="BOOLEAN"/>
+        </createTable>
+        <addPrimaryKey columnNames="topic, consumer_group, partition, record_offset" constraintName="topic_consumer_offset_pk"
+                       tableName="topic_consumer_offset"/>
+
+        <createTable tableName="topic">
+            <column name="topic" type="VARCHAR(255)"/>
+            <column name="num_partitions" type="INTEGER"/>
+        </createTable>
+        <addPrimaryKey columnNames="topic" constraintName="topic_pk" tableName="topic"/>
+    </changeSet>
+</databaseChangeLog>

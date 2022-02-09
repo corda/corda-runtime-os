@@ -14,4 +14,7 @@ object DbSchema {
     const val CONFIG_AUDIT_ID_SEQUENCE = "config_audit_id_seq"
     const val CONFIG_AUDIT_ID_SEQUENCE_ALLOC_SIZE = 1
     const val CONFIG_DB_CONNECTION_TABLE = "db_connection"
+
+    const val DB_MESSAGE_BUS = "DB_MESSAGE_BUS"
 }
+
