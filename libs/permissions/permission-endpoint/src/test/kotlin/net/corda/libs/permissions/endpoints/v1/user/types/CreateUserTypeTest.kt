@@ -48,8 +48,7 @@ class CreateUserTypeTest {
             (it as InvalidInputDataException).details == mapOf(
                 "Error #1" to "Full name contains invalid characters. Allowed characters are: 'a-zA-Z0-9.@\\-#\' '.",
                 "Error #2" to "Login name contains invalid characters. Allowed characters are: 'a-zA-Z0-9.@\\-#'.",
-                "Error #3" to "Password contains invalid characters. Allowed characters are: 'a-zA-Z0-9.@\\-#!?,\''.",
-                "Error #4" to "Invalid UUID string: 1234"
+                "Error #3" to "Invalid UUID string: 1234"
             )
         }
     }

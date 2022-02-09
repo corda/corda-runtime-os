@@ -71,13 +71,6 @@ data class CreateUserType(
             if (initialPassword.length > 255) {
                 errors[nextErrKey()] = "Password name exceed maximum length of 255."
             }
-
-            "a-zA-Z0-9.@\\-#!?,'".let {
-                val regEx = Regex("[$it]*")
-                if (!regEx.matches(initialPassword)) {
-                    errors[nextErrKey()] = "Password contains invalid characters. Allowed characters are: '$it'."
-                }
-            }
         }
 
         if (parentGroup != null) {
