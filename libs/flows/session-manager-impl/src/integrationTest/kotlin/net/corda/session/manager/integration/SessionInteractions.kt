@@ -9,7 +9,7 @@ interface SessionInteractions {
      * The session manager will queue this message inside its internal SessionState.
      * Queued messages are sent via sendMessages() when [sendMessages] is set to true.
      */
-    fun processNewOutgoingMessage(messageType: SessionMessageType, sendMessages: Boolean = false)
+    fun processNewOutgoingMessage(messageType: SessionMessageType, sendMessages: Boolean = false, instant: Instant = Instant.now())
 
     /**
      * Send messages to the counterparty of the session.

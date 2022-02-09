@@ -17,7 +17,7 @@ class SessionManagerImplTest {
 
     private val sessionManager = SessionManagerImpl()
     private val testConfig = ConfigFactory.empty()
-        .withValue("flow.${FlowConfig.SESSION_MESSAGE_RESEND_WINDOW}", ConfigValueFactory.fromAnyRef(5000))
+        .withValue(FlowConfig.SESSION_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(5000))
     private val configFactory = SmartConfigFactory.create(testConfig)
     private val testSmartConfig = configFactory.create(testConfig)
 

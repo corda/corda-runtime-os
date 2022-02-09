@@ -22,9 +22,9 @@ class SessionParty (
 
     private val sessionManager = SessionManagerImpl()
 
-    override fun processNewOutgoingMessage(messageType: SessionMessageType, sendMessages: Boolean) {
+    override fun processNewOutgoingMessage(messageType: SessionMessageType, sendMessages: Boolean, instant: Instant) {
         val sessionEvent = generateMessage(messageType)
-        sessionState = sessionManager.processMessageToSend("key", sessionState, sessionEvent, Instant.now())
+        sessionState = sessionManager.processMessageToSend("key", sessionState, sessionEvent, instant)
 
         if (sendMessages) {
             sendMessages()

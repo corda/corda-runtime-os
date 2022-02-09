@@ -21,14 +21,14 @@ class SessionManagerIntegrationTest {
     private companion object {
         private const val testResendWindow = 5000L
         private val testConfig = ConfigFactory.empty()
-            .withValue("${FlowConfig.SESSION_MESSAGE_RESEND_WINDOW}", ConfigValueFactory.fromAnyRef(testResendWindow))
+            .withValue(FlowConfig.SESSION_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(testResendWindow))
         private val configFactory = SmartConfigFactory.create(testConfig)
         private val testSmartConfig = configFactory.create(testConfig)
     }
 
     @Test
     fun `Full Session Send And Receive`() {
-        val (alice, bob) = initiateNewSession()
+        val (alice, bob) = initiateNewSession(testSmartConfig)
 
         //alice send data
         alice.processNewOutgoingMessage(SessionMessageType.DATA, sendMessages = true)
@@ -55,7 +55,7 @@ class SessionManagerIntegrationTest {
 
         val instant = Instant.now()
         //alice send data
-        alice.processNewOutgoingMessage(SessionMessageType.DATA)
+        alice.processNewOutgoingMessage(SessionMessageType.DATA, sendMessages = false, instant)
         alice.sendMessages(instant)
         assertThat(bob.getInboundMessageSize()).isEqualTo(1)
         alice.sendMessages(instant)
@@ -218,8 +218,8 @@ class SessionManagerIntegrationTest {
         //bob process ack
         bob.processNextReceivedMessage()
 
-        assertStatus(alice, SessionStateType.CLOSED)
-        assertStatus(bob, SessionStateType.CLOSED)
+        alice.assertStatus(SessionStateType.CLOSED)
+        bob.assertStatus(SessionStateType.CLOSED)
 
         alice.assertLastSentSeqNum(4)
         bob.assertLastReceivedSeqNum(4)
