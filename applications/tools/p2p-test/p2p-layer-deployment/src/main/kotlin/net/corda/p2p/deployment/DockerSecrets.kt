@@ -2,11 +2,25 @@ package net.corda.p2p.deployment
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import java.lang.System.getenv
+import kong.unirest.Unirest
 import java.util.Base64
 
 object DockerSecrets {
     const val name = "p2p-docker-secret"
     const val cordaHost = "corda-os-docker.software.r3.com"
+    val canUseRegistryCache by lazy {
+        Unirest.get("https://docker-remotes.software.r3.com/v2/library/alpine/tags/list")
+            .basicAuth(
+                getAndCheckEnv("CORDA_ARTIFACTORY_USERNAME"),
+                getAndCheckEnv("CORDA_ARTIFACTORY_PASSWORD"),
+            ).asString().isSuccess.also {
+                if (it) {
+                    println("Using R3 docker registry cache to access docker images.")
+                } else {
+                    println("Can not access R3 docker registry cache to access docker images. Will use docker directly.")
+                }
+            }
+    }
     const val cacheHost = "docker-remotes.software.r3.com"
     fun secret(namespace: String) = mapOf(
         "apiVersion" to "v1",
@@ -29,16 +43,25 @@ object DockerSecrets {
         ObjectMapper().writeValueAsString(config)
     }
     private val config by lazy {
-        mapOf(
-            "auths" to
-                mapOf(
-                    cordaHost to mapOf(
-                        "auth" to base64auth
-                    ),
-                    cacheHost to mapOf(
-                        "auth" to base64auth
-                    ),
+        val cache = if (canUseRegistryCache) {
+            mapOf(
+                cacheHost to mapOf(
+                    "auth" to base64auth
                 )
+            )
+        } else {
+            emptyMap()
+        }
+
+        val corda = mapOf(
+            cordaHost to mapOf(
+                "auth" to base64auth
+            )
+        )
+
+        cache + mapOf(
+            "auths" to
+                cache + corda
         )
     }
 
