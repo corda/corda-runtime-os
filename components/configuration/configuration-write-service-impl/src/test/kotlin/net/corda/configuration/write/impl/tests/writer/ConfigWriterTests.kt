@@ -1,7 +1,7 @@
-package net.corda.libs.configuration.write.impl.tests
+package net.corda.configuration.write.impl.tests.writer
 
-import net.corda.libs.configuration.write.impl.ConfigWriterImpl
-import net.corda.libs.configuration.write.impl.ConfigurationManagementRPCSubscription
+import net.corda.configuration.write.impl.writer.ConfigWriter
+import net.corda.configuration.write.impl.writer.ConfigurationManagementRPCSubscription
 import net.corda.messaging.api.publisher.Publisher
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -11,13 +11,13 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
-/** Tests of [ConfigWriterImpl]. */
-class ConfigWriterImplTests {
+/** Tests of [ConfigWriter]. */
+class ConfigWriterTests {
     @Test
     fun `the config writer's subscription and publisher are initially in an unstarted state`() {
         val subscription = mock<ConfigurationManagementRPCSubscription>()
         val publisher = mock<Publisher>()
-        ConfigWriterImpl(subscription, publisher)
+        ConfigWriter(subscription, publisher)
 
         verify(subscription, times(0)).start()
         verify(publisher, times(0)).start()
@@ -27,7 +27,7 @@ class ConfigWriterImplTests {
     fun `starting the config writer starts the subscription and publisher`() {
         val subscription = mock<ConfigurationManagementRPCSubscription>()
         val publisher = mock<Publisher>()
-        val configWriter = ConfigWriterImpl(subscription, publisher)
+        val configWriter = ConfigWriter(subscription, publisher)
         configWriter.start()
 
         verify(subscription).start()
@@ -38,7 +38,7 @@ class ConfigWriterImplTests {
     fun `stopping the config writer stops the subscription and publisher`() {
         val subscription = mock<ConfigurationManagementRPCSubscription>()
         val publisher = mock<Publisher>()
-        val configWriter = ConfigWriterImpl(subscription, publisher)
+        val configWriter = ConfigWriter(subscription, publisher)
         configWriter.start()
         configWriter.stop()
 
@@ -51,7 +51,7 @@ class ConfigWriterImplTests {
         val runningSubscription = mock<ConfigurationManagementRPCSubscription>().apply {
             whenever(isRunning).thenReturn(true)
         }
-        val configWriter = ConfigWriterImpl(runningSubscription, mock())
+        val configWriter = ConfigWriter(runningSubscription, mock())
         assertTrue(configWriter.isRunning)
     }
 
@@ -60,7 +60,7 @@ class ConfigWriterImplTests {
         val runningSubscription = mock<ConfigurationManagementRPCSubscription>().apply {
             whenever(isRunning).thenReturn(false)
         }
-        val configWriter = ConfigWriterImpl(runningSubscription, mock())
+        val configWriter = ConfigWriter(runningSubscription, mock())
         assertFalse(configWriter.isRunning)
     }
 }

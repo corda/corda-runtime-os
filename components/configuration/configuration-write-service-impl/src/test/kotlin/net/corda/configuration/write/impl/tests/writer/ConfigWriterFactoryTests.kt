@@ -1,13 +1,13 @@
-package net.corda.libs.configuration.write.impl.tests
+package net.corda.configuration.write.impl.tests.writer
 
 import com.typesafe.config.ConfigFactory
+import net.corda.configuration.write.impl.writer.CLIENT_NAME_DB
+import net.corda.configuration.write.impl.writer.CLIENT_NAME_RPC
+import net.corda.configuration.write.impl.writer.ConfigWriterFactory
+import net.corda.configuration.write.impl.writer.GROUP_NAME
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.configuration.write.impl.CLIENT_NAME_DB
-import net.corda.libs.configuration.write.impl.CLIENT_NAME_RPC
-import net.corda.libs.configuration.write.impl.ConfigWriterFactoryImpl
-import net.corda.libs.configuration.write.impl.GROUP_NAME
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -22,8 +22,8 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
-/** Tests of [ConfigWriterFactoryImpl]. */
-class ConfigWriterFactoryImplTests {
+/** Tests of [ConfigWriterFactory]. */
+class ConfigWriterFactoryTests {
     private val configFactory = SmartConfigFactory.create(ConfigFactory.empty())
 
     /** Returns a mock [SubscriptionFactory]. */
@@ -38,8 +38,8 @@ class ConfigWriterFactoryImplTests {
 
     @Test
     fun `factory does not start the config writer`() {
-        val configWriterFactory = ConfigWriterFactoryImpl(getSubscriptionFactory(), getPublisherFactory())
-        val configWriter = configWriterFactory.create(mock(), 0, mock())
+        val configWriterFactory = ConfigWriterFactory(getSubscriptionFactory(), getPublisherFactory(), mock())
+        val configWriter = configWriterFactory.create(mock(), 0)
         assertFalse(configWriter.isRunning)
     }
 
@@ -49,8 +49,8 @@ class ConfigWriterFactoryImplTests {
         val expectedConfig = configFactory.create(ConfigFactory.parseMap(mapOf("dummyKey" to "dummyValue")))
 
         val publisherFactory = getPublisherFactory()
-        val configWriterFactory = ConfigWriterFactoryImpl(getSubscriptionFactory(), publisherFactory)
-        configWriterFactory.create(expectedConfig, expectedPublisherConfig.instanceId!!, mock())
+        val configWriterFactory = ConfigWriterFactory(getSubscriptionFactory(), publisherFactory, mock())
+        configWriterFactory.create(expectedConfig, expectedPublisherConfig.instanceId!!)
 
         verify(publisherFactory).createPublisher(expectedPublisherConfig, expectedConfig)
     }
@@ -67,8 +67,8 @@ class ConfigWriterFactoryImplTests {
         val expectedConfig = configFactory.create(ConfigFactory.parseMap(mapOf("dummyKey" to "dummyValue")))
 
         val subscriptionFactory = getSubscriptionFactory()
-        val configWriterFactory = ConfigWriterFactoryImpl(subscriptionFactory, getPublisherFactory())
-        configWriterFactory.create(expectedConfig, 777, mock())
+        val configWriterFactory = ConfigWriterFactory(subscriptionFactory, getPublisherFactory(), mock())
+        configWriterFactory.create(expectedConfig, 777)
 
         verify(subscriptionFactory).createRPCSubscription(eq(expectedRPCConfig), eq(expectedConfig), any())
     }

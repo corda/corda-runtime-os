@@ -1,40 +1,37 @@
-package net.corda.libs.configuration.write.impl
+package net.corda.configuration.write.impl.writer
 
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
+import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.write.ConfigWriter
-import net.corda.libs.configuration.write.ConfigWriterException
-import net.corda.libs.configuration.write.ConfigWriterFactory
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Config.Companion.CONFIG_MGMT_REQUEST_TOPIC
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
-import javax.persistence.EntityManagerFactory
 
-/** An implementation of [ConfigWriterFactory]. */
-@Suppress("Unused")
-@Component(service = [ConfigWriterFactory::class])
-internal class ConfigWriterFactoryImpl @Activate constructor(
-    @Reference(service = SubscriptionFactory::class)
+/** A factory for [ConfigWriter]s. */
+internal class ConfigWriterFactory(
     private val subscriptionFactory: SubscriptionFactory,
-    @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory
-) : ConfigWriterFactory {
-
-    override fun create(
+    private val publisherFactory: PublisherFactory,
+    private val dbConnectionManager: DbConnectionManager
+) {
+    /**
+     * Creates a [ConfigWriter].
+     *
+     * @param config Config to be used by the subscription.
+     * @param instanceId The instance ID to use for subscribing to Kafka.
+     *
+     * @throws ConfigWriterException If the required Kafka publishers and subscriptions cannot be set up.
+     */
+    internal fun create(
         config: SmartConfig,
-        instanceId: Int,
-        entityManagerFactory: EntityManagerFactory
+        instanceId: Int
     ): ConfigWriter {
         val publisher = createPublisher(config, instanceId)
-        val subscription = createRPCSubscription(config, publisher, entityManagerFactory)
-        return ConfigWriterImpl(subscription, publisher)
+        val subscription = createRPCSubscription(config, publisher)
+        return ConfigWriter(subscription, publisher)
     }
 
     /**
@@ -52,15 +49,14 @@ internal class ConfigWriterFactoryImpl @Activate constructor(
     }
 
     /**
-     * Creates a [ConfigurationManagementRPCSubscription] using the provided [config] and [instanceId]. The
-     * subscription is for the [CONFIG_MGMT_REQUEST_TOPIC] topic, and handles requests using a [ConfigWriterProcessor].
+     * Creates a [ConfigurationManagementRPCSubscription] using the provided [config]. The subscription is for the
+     * [CONFIG_MGMT_REQUEST_TOPIC] topic, and handles requests using a [ConfigWriterProcessor].
      *
      * @throws ConfigWriterException If the subscription cannot be set up.
      */
     private fun createRPCSubscription(
         config: SmartConfig,
-        publisher: Publisher,
-        entityManagerFactory: EntityManagerFactory
+        publisher: Publisher
     ): ConfigurationManagementRPCSubscription {
 
         val rpcConfig = RPCConfig(
@@ -70,8 +66,8 @@ internal class ConfigWriterFactoryImpl @Activate constructor(
             ConfigurationManagementRequest::class.java,
             ConfigurationManagementResponse::class.java,
         )
-        val configEntityRepository = ConfigEntityRepository(entityManagerFactory)
-        val processor = ConfigWriterProcessor(publisher, configEntityRepository)
+        val configEntityWriter = ConfigEntityWriter(dbConnectionManager)
+        val processor = ConfigWriterProcessor(publisher, configEntityWriter)
 
         return try {
             subscriptionFactory.createRPCSubscription(rpcConfig, config, processor)
