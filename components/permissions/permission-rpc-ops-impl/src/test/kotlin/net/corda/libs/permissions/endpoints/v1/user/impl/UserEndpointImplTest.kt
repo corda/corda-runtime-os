@@ -28,17 +28,21 @@ import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
 import net.corda.libs.permissions.manager.response.RoleAssociationResponseDto
 import org.junit.jupiter.api.Assertions.assertTrue
+import java.util.*
+
 
 internal class UserEndpointImplTest {
 
     private val now = Instant.now()
+    private val parentGroup = UUID.randomUUID().toString()
+
     private val createUserType = CreateUserType(
         "fullName1",
         "loginName1",
         true,
         "initialPass",
         now,
-        "parentGroupId"
+        parentGroup
     )
 
     private val userResponseDto = UserResponseDto(
@@ -50,7 +54,7 @@ internal class UserEndpointImplTest {
         true,
         false,
         now,
-        "parentGroupId",
+        parentGroup,
         emptyList(),
         emptyList(),
     )
@@ -96,7 +100,7 @@ internal class UserEndpointImplTest {
         assertEquals("loginName1", responseType.loginName)
         assertEquals(true, responseType.enabled)
         assertEquals(now, responseType.passwordExpiry)
-        assertEquals("parentGroupId", responseType.parentGroup)
+        assertEquals(parentGroup, responseType.parentGroup)
     }
 
     @Test
@@ -117,7 +121,7 @@ internal class UserEndpointImplTest {
         assertEquals("loginName1", responseType.loginName)
         assertEquals(true, responseType.enabled)
         assertEquals(now, responseType.passwordExpiry)
-        assertEquals("parentGroupId", responseType.parentGroup)
+        assertEquals(parentGroup, responseType.parentGroup)
     }
 
     @Test
@@ -146,7 +150,7 @@ internal class UserEndpointImplTest {
             true,
             false,
             now,
-            "parentGroupId",
+            parentGroup,
             emptyList(),
             listOf(RoleAssociationResponseDto("roleId1", Instant.now()))
         )
@@ -172,7 +176,7 @@ internal class UserEndpointImplTest {
         assertEquals("loginName1", responseType.loginName)
         assertEquals(true, responseType.enabled)
         assertEquals(now, responseType.passwordExpiry)
-        assertEquals("parentGroupId", responseType.parentGroup)
+        assertEquals(parentGroup, responseType.parentGroup)
 
         assertEquals(1, responseType.roleAssociations.size)
         assertEquals("roleId1", responseType.roleAssociations.first().roleId)
@@ -214,7 +218,7 @@ internal class UserEndpointImplTest {
         assertEquals("loginName1", responseType.loginName)
         assertEquals(true, responseType.enabled)
         assertEquals(now, responseType.passwordExpiry)
-        assertEquals("parentGroupId", responseType.parentGroup)
+        assertEquals(parentGroup, responseType.parentGroup)
         assertTrue(responseType.roleAssociations.isEmpty())
     }
 

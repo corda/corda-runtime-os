@@ -1,15 +1,30 @@
 package net.corda.db.connection.manager
 
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
 import net.corda.db.core.DataSourceFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.ConfigDefaults
 import net.corda.schema.configuration.ConfigKeys
+import org.slf4j.LoggerFactory
 import javax.sql.DataSource
 
 internal const val DEFAULT_JDBC_URL = "jdbc:postgresql://cluster-db:5432/cordacluster"
+
+internal object DbConfigLogger {
+    val log = LoggerFactory.getLogger(DbConfigLogger::class.java)
+}
+
+/**
+ * TODO - this should go in corda-api
+ */
+val dbFallbackConfig: Config = ConfigFactory.empty()
+    .withValue(ConfigKeys.JDBC_DRIVER, ConfigValueFactory.fromAnyRef(ConfigDefaults.JDBC_DRIVER))
+    .withValue(ConfigKeys.JDBC_URL, ConfigValueFactory.fromAnyRef(DEFAULT_JDBC_URL))
+    .withValue(ConfigKeys.DB_POOL_MAX_SIZE, ConfigValueFactory.fromAnyRef(ConfigDefaults.DB_POOL_MAX_SIZE))
 
 /**
  * Creates a [DataSource] using the [config].
@@ -17,11 +32,10 @@ internal const val DEFAULT_JDBC_URL = "jdbc:postgresql://cluster-db:5432/cordacl
  * @throws DBConfigurationException If required configuration attributes are missing.
  */
 fun DataSourceFactory.createFromConfig(config: SmartConfig): DataSource {
-    val fallbackConfig = ConfigFactory.empty()
-        .withValue(ConfigKeys.JDBC_DRIVER, ConfigValueFactory.fromAnyRef(ConfigDefaults.JDBC_DRIVER))
-        .withValue(ConfigKeys.JDBC_URL, ConfigValueFactory.fromAnyRef(DEFAULT_JDBC_URL))
-        .withValue(ConfigKeys.DB_POOL_MAX_SIZE, ConfigValueFactory.fromAnyRef(ConfigDefaults.DB_POOL_MAX_SIZE))
-    val configWithFallback = config.withFallback(fallbackConfig)
+    val configWithFallback = config.withFallback(dbFallbackConfig)
+
+    DbConfigLogger.log.debug("Given configuration: ${config.toSafeConfig().root().render(ConfigRenderOptions.concise())}")
+    DbConfigLogger.log.debug("Fallback configuration: ${dbFallbackConfig.root().render(ConfigRenderOptions.concise())}")
 
     val driver = configWithFallback.getString(ConfigKeys.JDBC_DRIVER)
     val jdbcUrl = configWithFallback.getString(ConfigKeys.JDBC_URL)
@@ -38,6 +52,7 @@ fun DataSourceFactory.createFromConfig(config: SmartConfig): DataSource {
                     "Provided config: ${configWithFallback.root().render()}"
         )
 
+    DbConfigLogger.log.debug("Creating DB connection for: $driver, $jdbcUrl, $username, $maxPoolSize")
     return this.create(driver, jdbcUrl, username, password, false, maxPoolSize)
 }
 
