@@ -67,12 +67,13 @@ interface SessionManager {
 
     /**
      * Get any messages to send to a peer from the [sessionState].
-     * If the messages contain any SessionAck messages will be removed immediately from the state when this is called.
+     * All messages with a timestamp in the past will be returned.
+     * If these messages contain any SessionAcks they will be removed from the state when this is called.
      * Other SessionEvent messages will be removed from the session state when SessionAcks are received from counterparties.
      * @param sessionState The session state.
-     * @param instant The time to check against when determining which messages need to be sent
+     * @param instant The time to check session events against when determining which messages need to be sent
      * @param config The config containing the flow session config values such as the resend time window
-     * @return The updated [SessionState] with acks removed from the messagesToSend list is returned as well the messages to send.
+     * @return The updated [SessionState] as well as any messages to send.
      */
     fun getMessagesToSend(sessionState: SessionState, instant: Instant, config: SmartConfig) : Pair<SessionState, List<SessionEvent>>
 }

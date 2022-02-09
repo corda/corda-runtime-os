@@ -16,8 +16,9 @@ import java.time.Instant
 class SessionManagerImplTest {
 
     private val sessionManager = SessionManagerImpl()
+    private val testResendWindow = 5000L
     private val testConfig = ConfigFactory.empty()
-        .withValue(FlowConfig.SESSION_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(5000))
+        .withValue(FlowConfig.SESSION_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(testResendWindow))
     private val configFactory = SmartConfigFactory.create(testConfig)
     private val testSmartConfig = configFactory.create(testConfig)
 
@@ -74,22 +75,35 @@ class SessionManagerImplTest {
 
 
     @Test
-    fun testGetMessagesToSend() {
+    fun `Get messages with datas and acks with timestamps in the future and past`() {
+        val instant = Instant.now()
         val sessionState = buildSessionState(
             SessionStateType.CONFIRMED,
             0,
             listOf(),
             4,
             listOf(
-                SessionEvent(MessageDirection.OUTBOUND, 1, "sessionId", 2, SessionData()),
-                SessionEvent(MessageDirection.OUTBOUND, 1, "sessionId", 3, SessionData()),
-                SessionEvent(MessageDirection.OUTBOUND, 1, "sessionId", 4, SessionAck()),
+                SessionEvent(MessageDirection.OUTBOUND, instant.minusMillis(50).toEpochMilli(), "sessionId", 2, SessionData()),
+                SessionEvent(MessageDirection.OUTBOUND, instant.toEpochMilli(), "sessionId", 3, SessionData()),
+                SessionEvent(MessageDirection.OUTBOUND, instant.toEpochMilli(), "sessionId", null, SessionAck(1)),
+                SessionEvent(MessageDirection.OUTBOUND, instant.plusMillis(100).toEpochMilli(), "sessionId", null, SessionAck(2)),
+                SessionEvent(MessageDirection.OUTBOUND, instant.plusMillis(100).toEpochMilli(), "sessionId", 4, SessionData()),
             ),
-
-        )
-        val (outputState, messagesToSend) = sessionManager.getMessagesToSend(sessionState, Instant.now(), testSmartConfig)
+          )
+        //validate only messages with a timestamp in the past are returned.
+        val (outputState, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig)
         assertThat(messagesToSend.size).isEqualTo(3)
-        assertThat(outputState.sendEventsState.undeliveredMessages.size).isEqualTo(2)
-        assertThat(outputState.sendEventsState.undeliveredMessages.find{ it.payload::class.java == SessionAck::class.java}).isNull()
+        //validate ack with timestamp in the past is removed, ack with timestamp in the future remains
+        assertThat(outputState.sendEventsState.undeliveredMessages.size).isEqualTo(4)
+        assertThat(outputState.sendEventsState.undeliveredMessages.filter{ it.payload::class.java == SessionAck::class.java}.size)
+            .isEqualTo(1)
+
+        //Validate all acks removed after time has passed but unacked data messages remain in the state
+        val (secondOutputState, secondMessagesToSend) = sessionManager.getMessagesToSend(sessionState, instant.plusMillis(testResendWindow + 100),
+            testSmartConfig)
+        assertThat(secondMessagesToSend.size).isEqualTo(4)
+        assertThat(secondOutputState.sendEventsState.undeliveredMessages.size).isEqualTo(3)
+        assertThat(secondOutputState.sendEventsState.undeliveredMessages.filter{ it.payload::class.java == SessionAck::class.java}.size)
+            .isEqualTo(0)
     }
 }

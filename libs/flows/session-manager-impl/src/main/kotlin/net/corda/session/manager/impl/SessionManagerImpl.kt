@@ -59,12 +59,11 @@ class SessionManagerImpl : SessionManager {
     override fun getMessagesToSend(sessionState: SessionState, instant: Instant, config: SmartConfig): Pair<SessionState,
             List<SessionEvent>> {
         val instantInMillis = instant.toEpochMilli()
-        val messagesToReturn = sessionState.sendEventsState.undeliveredMessages.filter { it.timestamp <= instantInMillis || it
-            .payload is SessionAck}
+        val messagesToReturn = sessionState.sendEventsState.undeliveredMessages.filter { it.timestamp <= instantInMillis }
 
-        //remove SessionAcks and time increased
-        sessionState.sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.filter {
-            it.payload !is SessionAck
+        //remove SessionAcks with a timestamp in the past and increase timestamp of messages sent that are awaiting acknowledgement
+        sessionState.sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.filterNot {
+            it.payload is SessionAck && it.timestamp <= instantInMillis
         }.map {
             if (it.timestamp <= instantInMillis) {
                 it.timestamp = instantInMillis + config.getLong(SESSION_MESSAGE_RESEND_WINDOW)
