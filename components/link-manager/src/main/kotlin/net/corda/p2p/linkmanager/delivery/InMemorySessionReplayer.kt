@@ -47,7 +47,8 @@ class InMemorySessionReplayer(
     override val dominoTile = DominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
-        children = setOf(replayScheduler.dominoTile, publisher.dominoTile, networkMap.dominoTile)
+        dependentChildren = setOf(replayScheduler.dominoTile, publisher.dominoTile, networkMap.dominoTile),
+        managedChildren = setOf(replayScheduler.dominoTile, publisher.dominoTile)
     )
 
     data class SessionMessageReplay(
