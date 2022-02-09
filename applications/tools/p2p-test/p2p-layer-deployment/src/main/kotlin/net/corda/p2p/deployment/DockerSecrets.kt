@@ -1,8 +1,8 @@
 package net.corda.p2p.deployment
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import java.lang.System.getenv
 import kong.unirest.Unirest
+import java.lang.System.getenv
 import java.util.Base64
 
 object DockerSecrets {
@@ -11,8 +11,8 @@ object DockerSecrets {
     val canUseRegistryCache by lazy {
         Unirest.get("https://docker-remotes.software.r3.com/v2/library/alpine/tags/list")
             .basicAuth(
-                getAndCheckEnv("CORDA_ARTIFACTORY_USERNAME"),
-                getAndCheckEnv("CORDA_ARTIFACTORY_PASSWORD"),
+                getenv("CORDA_ARTIFACTORY_USERNAME"),
+                getenv("CORDA_ARTIFACTORY_PASSWORD"),
             ).asString().isSuccess.also {
                 if (it) {
                     println("Using R3 docker registry cache to access docker images.")
