@@ -95,7 +95,7 @@ class TrustStoresContainer(
         this.javaClass.simpleName,
         lifecycleCoordinatorFactory,
         createResources = ::createResources,
-        children = listOf(
+        dependentChildren = listOf(
             linkManagerNetworkMap.dominoTile,
             linkManagerHostingMap.dominoTile,
             publisher.dominoTile,

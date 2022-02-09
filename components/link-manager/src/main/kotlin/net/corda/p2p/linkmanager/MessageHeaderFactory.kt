@@ -96,7 +96,7 @@ class MessageHeaderFactory(
     override val dominoTile = DominoTile(
         this.javaClass.simpleName,
         lifecycleCoordinatorFactory,
-        children = listOf(
+        dependentChildren = listOf(
             linkManagerNetworkMap.dominoTile,
             trustStoresContainer.dominoTile,
         )

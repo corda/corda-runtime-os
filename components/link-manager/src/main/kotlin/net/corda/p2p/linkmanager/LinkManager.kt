@@ -211,8 +211,13 @@ class LinkManager(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         dependentChildren = setOf(inboundDominoTile, outboundDominoTile, deliveryTracker.dominoTile),
-        managedChildren = setOf(inboundDominoTile, outboundDominoTile, deliveryTracker.dominoTile, sessionManager.dominoTile, messageHeaderFactory.dominoTile)
-                + commonChildren
+        managedChildren = setOf(
+            inboundDominoTile,
+            outboundDominoTile,
+            deliveryTracker.dominoTile,
+            sessionManager.dominoTile,
+            messageHeaderFactory.dominoTile
+        ) + commonChildren
     )
 
     class OutboundMessageProcessor(
