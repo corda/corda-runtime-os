@@ -27,7 +27,7 @@ class SessionCloseProcessorReceiveTest {
     fun testOldSeqNum() {
         val sessionEvent = SessionEvent(MessageDirection.INBOUND, 1, "sessionId", 1, SessionClose())
         val inputState = buildSessionState(
-            SessionStateType.CLOSING, 2, emptyList(), 0, emptyList()
+            SessionStateType.CLOSING, 2, mutableListOf(sessionEvent), 0, mutableListOf()
         )
 
         val result = SessionCloseProcessorReceive("key", inputState, sessionEvent, Instant.now()).execute()
@@ -41,7 +41,7 @@ class SessionCloseProcessorReceiveTest {
     fun testErrorState() {
         val sessionEvent = SessionEvent(MessageDirection.INBOUND, 1, "sessionId", 1, SessionClose())
         val inputState = buildSessionState(
-            SessionStateType.ERROR, 0, emptyList(), 0, emptyList()
+            SessionStateType.ERROR, 0, mutableListOf(), 0, mutableListOf()
         )
 
         val result = SessionCloseProcessorReceive("key", inputState, sessionEvent, Instant.now()).execute()
@@ -55,7 +55,7 @@ class SessionCloseProcessorReceiveTest {
     fun testConfirmedState() {
         val sessionEvent = SessionEvent(MessageDirection.INBOUND, 1, "sessionId", 1, SessionClose())
         val inputState = buildSessionState(
-            SessionStateType.CONFIRMED, 0, emptyList(), 0, emptyList()
+            SessionStateType.CONFIRMED, 0, mutableListOf(), 0, mutableListOf()
         )
 
         val result = SessionCloseProcessorReceive("key", inputState, sessionEvent, Instant.now()).execute()
@@ -69,7 +69,7 @@ class SessionCloseProcessorReceiveTest {
     fun testClosingState() {
         val sessionEvent = SessionEvent(MessageDirection.INBOUND, 1, "sessionId", 1, SessionClose())
         val inputState = buildSessionState(
-            SessionStateType.CLOSING, 0, emptyList(), 0, emptyList()
+            SessionStateType.CLOSING, 0, mutableListOf(), 0, mutableListOf()
         )
 
         val result = SessionCloseProcessorReceive("key", inputState, sessionEvent, Instant.now()).execute()
@@ -83,7 +83,7 @@ class SessionCloseProcessorReceiveTest {
     fun testClosingStateUnackedMessages() {
         val sessionEvent = SessionEvent(MessageDirection.INBOUND, 1, "sessionId", 1, SessionClose())
         val inputState = buildSessionState(
-            SessionStateType.CLOSING, 0, emptyList(), 0, mutableListOf(SessionEvent())
+            SessionStateType.CLOSING, 0, mutableListOf(), 0, mutableListOf(SessionEvent())
         )
 
         val result = SessionCloseProcessorReceive("key", inputState, sessionEvent, Instant.now()).execute()

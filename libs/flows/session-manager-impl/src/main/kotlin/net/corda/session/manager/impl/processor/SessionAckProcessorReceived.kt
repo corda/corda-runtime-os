@@ -1,5 +1,6 @@
 package net.corda.session.manager.impl.processor
 
+import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.impl.SessionEventProcessor
@@ -38,11 +39,11 @@ class SessionAckProcessorReceived(
 
             sessionState.apply {
                 sendEventsState.undeliveredMessages.removeIf { it.sequenceNum == sequenceNum}
-
-                if (sessionState.status == SessionStateType.WAIT_FOR_FINAL_ACK && sendEventsState.undeliveredMessages.isEmpty()) {
+                val nonAckUndeliveredMessages = sendEventsState.undeliveredMessages.filter { it.payload !is SessionAck }
+                if (sessionState.status == SessionStateType.WAIT_FOR_FINAL_ACK && nonAckUndeliveredMessages.isEmpty()) {
                     logger.debug { "Updating session state to ${SessionStateType.CLOSED} for session state $sessionState" }
                     sessionState.status = SessionStateType.CLOSED
-                } else if (sessionState.status == SessionStateType.CREATED && sendEventsState.undeliveredMessages.isEmpty()) {
+                } else if (sessionState.status == SessionStateType.CREATED && nonAckUndeliveredMessages.isEmpty()) {
                     logger.debug { "Updating session state to ${SessionStateType.CONFIRMED} for session state $sessionState" }
                     sessionState.status = SessionStateType.CONFIRMED
                 }
