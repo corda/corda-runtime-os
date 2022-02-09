@@ -19,6 +19,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
+import net.corda.schema.Schemas.VirtualNode.Companion.CPI_UPLOAD_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -32,10 +33,6 @@ class CpiUploadRPCOpsServiceHandler(
 
     companion object {
         val log = contextLogger()
-
-        @Suppress("ForbiddenComment")
-        //TODO: need to move this in corda-api repo [Schemas]
-        const val CPI_UPLOAD_TOPIC = "cpi.upload"
     }
 
     @VisibleForTesting
