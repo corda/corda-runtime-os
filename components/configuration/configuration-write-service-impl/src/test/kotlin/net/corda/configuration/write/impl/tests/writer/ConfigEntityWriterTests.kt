@@ -3,6 +3,7 @@ package net.corda.configuration.write.impl.tests.writer
 import net.corda.configuration.write.impl.writer.ConfigEntityWriter
 import net.corda.configuration.write.impl.writer.WrongConfigVersionException
 import net.corda.data.config.ConfigurationManagementRequest
+import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.datamodel.ConfigAuditEntity
 import net.corda.libs.configuration.datamodel.ConfigEntity
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -37,15 +38,21 @@ class ConfigEntityWriterTests {
         whenever(find(ConfigEntity::class.java, config.section)).thenReturn(config)
     }
 
-    /** Creates a mock [EntityManagerFactory] that returns [entityManager] when asked to create an entity manager. */
-    private fun getEntityManagerFactory(entityManager: EntityManager) = mock<EntityManagerFactory>().apply {
-        whenever(createEntityManager()).thenReturn(entityManager)
+    /** Creates a mock [DbConnectionManager] that returns [entityManager] when asked to create an entity manager. */
+    private fun getDbConnectionManager(entityManager: EntityManager): DbConnectionManager {
+        val entityManagerFactory = mock<EntityManagerFactory>().apply {
+            whenever(createEntityManager()).thenReturn(entityManager)
+        }
+
+        return mock<DbConnectionManager>().apply {
+            whenever(clusterDbEntityManagerFactory).thenReturn(entityManagerFactory)
+        }
     }
 
     @Test
     fun `persists correct config and config audit for a new section`() {
         val entityManager = getEntityManager()
-        val configEntityWriter = ConfigEntityWriter(getEntityManagerFactory(entityManager))
+        val configEntityWriter = ConfigEntityWriter(getDbConnectionManager(entityManager))
         val mergedConfig = configEntityWriter.writeEntities(configMgmtReq, clock)
 
         assertEquals(config, mergedConfig)
@@ -54,9 +61,9 @@ class ConfigEntityWriterTests {
     }
 
     @Test
-    fun `persists correct config and config audit for an existent section`() {
+    fun `persists correct config and config audit for an existing section`() {
         val entityManager = getEntityManagerWithConfig()
-        val configEntityWriter = ConfigEntityWriter(getEntityManagerFactory(entityManager))
+        val configEntityWriter = ConfigEntityWriter(getDbConnectionManager(entityManager))
         val mergedConfig = configEntityWriter.writeEntities(configMgmtReq, clock)
 
         assertEquals(config, mergedConfig)
@@ -65,8 +72,8 @@ class ConfigEntityWriterTests {
     }
 
     @Test
-    fun `throws if asked to persist request with version that does not match existent section version`() {
-        val configEntityWriter = ConfigEntityWriter(getEntityManagerFactory(getEntityManagerWithConfig()))
+    fun `throws if asked to persist request with version that does not match existing section version`() {
+        val configEntityWriter = ConfigEntityWriter(getDbConnectionManager(getEntityManagerWithConfig()))
         val badVersionConfigMgmtReq = configMgmtReq.run {
             ConfigurationManagementRequest(section, config, schemaVersion, updateActor, version + 1)
         }
@@ -84,7 +91,7 @@ class ConfigEntityWriterTests {
     @Test
     fun `after persisting config and config audit, closes entity manager`() {
         val entityManager = getEntityManagerWithConfig()
-        val configEntityWriter = ConfigEntityWriter(getEntityManagerFactory(entityManager))
+        val configEntityWriter = ConfigEntityWriter(getDbConnectionManager(entityManager))
         configEntityWriter.writeEntities(configMgmtReq, clock)
 
         verify(entityManager).close()
@@ -93,7 +100,7 @@ class ConfigEntityWriterTests {
     @Test
     fun `after failing to persist config and config audit, closes entity manager`() {
         val entityManager = getEntityManagerWithConfig()
-        val configEntityWriter = ConfigEntityWriter(getEntityManagerFactory(entityManager))
+        val configEntityWriter = ConfigEntityWriter(getDbConnectionManager(entityManager))
         val badVersionConfigMgmtReq = configMgmtReq.run {
             ConfigurationManagementRequest(section, config, schemaVersion, updateActor, version + 1)
         }

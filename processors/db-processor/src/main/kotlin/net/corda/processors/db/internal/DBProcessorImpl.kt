@@ -157,35 +157,6 @@ class DBProcessorImpl @Activate constructor(
     }
 
     private fun tempDbInitProcess(factory: SmartConfigFactory) {
-        // Creating configuration DB configurations
-        if(null == dbConnectionsRepository.get(CordaDb.CordaCluster.persistenceUnitName, DbPrivilege.DDL)) {
-            val ddlRbacUser = "config_ddl"
-            val ddlRbacPassword = UUID.randomUUID().toString()
-            dbAdmin.createDbAndUser(
-                CordaDb.CordaCluster.persistenceUnitName,
-                DbSchema.CONFIG,
-                ddlRbacUser,
-                ddlRbacPassword,
-                CONFIG_JDBC_URL_DEFAULT,
-                DbPrivilege.DDL,
-                factory
-            )
-        }
-
-        if(null == dbConnectionsRepository.get(CordaDb.CordaCluster.persistenceUnitName, DbPrivilege.DML)) {
-            val dmlRbacUser = "config_dml"
-            val dmlRbacPassword = UUID.randomUUID().toString()
-            dbAdmin.createDbAndUser(
-                CordaDb.CordaCluster.persistenceUnitName,
-                DbSchema.CONFIG,
-                dmlRbacUser,
-                dmlRbacPassword,
-                CONFIG_JDBC_URL_DEFAULT,
-                DbPrivilege.DML,
-                factory
-            )
-        }
-
         log.info("Running Cluster DB Migration")
         migrateDatabase(dbConnectionsRepository.clusterDataSource, listOf(
             "net/corda/db/schema/config/db.changelog-master.xml"

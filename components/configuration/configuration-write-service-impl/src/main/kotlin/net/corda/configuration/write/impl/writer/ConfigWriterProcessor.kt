@@ -104,9 +104,9 @@ internal class ConfigWriterProcessor(
         config: String,
         schemaVersion: Int,
         version: Int
-    ): Boolean {
+    ) {
         val exception = ExceptionEnvelope(cause.javaClass.name, errMsg)
         val response = ConfigurationManagementResponse(false, exception, section, config, schemaVersion, version)
-        return respFuture.complete(response)
+        respFuture.complete(response)
     }
 }

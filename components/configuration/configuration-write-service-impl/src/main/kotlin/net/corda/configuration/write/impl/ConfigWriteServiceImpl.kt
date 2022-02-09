@@ -3,13 +3,12 @@ package net.corda.configuration.write.impl
 import net.corda.configuration.write.ConfigWriteService
 import net.corda.configuration.write.impl.writer.ConfigWriterFactory
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.db.core.DbPrivilege
-import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -29,11 +28,16 @@ internal class ConfigWriteServiceImpl @Activate constructor(
     dbConnectionManager: DbConnectionManager
 ) : ConfigWriteService {
 
+    companion object {
+        private val logger = contextLogger()
+    }
+
     private val coordinator = let {
         val configWriterFactory = ConfigWriterFactory(
             subscriptionFactory,
-            publisherFactory
-        ) { dbConnectionManager.getOrCreateEntityManagerFactory(CordaDb.RBAC, DbPrivilege.DML) }
+            publisherFactory,
+            dbConnectionManager
+        )
         val eventHandler = ConfigWriteEventHandler(configWriterFactory)
         coordinatorFactory.createCoordinator<ConfigWriteService>(eventHandler)
     }

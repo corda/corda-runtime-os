@@ -2,6 +2,7 @@ package net.corda.configuration.write.impl.writer
 
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
+import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -9,13 +10,12 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Config.Companion.CONFIG_MGMT_REQUEST_TOPIC
-import javax.persistence.EntityManagerFactory
 
 /** A factory for [ConfigWriter]s. */
 internal class ConfigWriterFactory(
     private val subscriptionFactory: SubscriptionFactory,
     private val publisherFactory: PublisherFactory,
-    private val entityManagerFactoryCreator: () -> EntityManagerFactory
+    private val dbConnectionManager: DbConnectionManager
 ) {
     /**
      * Creates a [ConfigWriter].
@@ -66,7 +66,7 @@ internal class ConfigWriterFactory(
             ConfigurationManagementRequest::class.java,
             ConfigurationManagementResponse::class.java,
         )
-        val configEntityWriter = ConfigEntityWriter(entityManagerFactoryCreator)
+        val configEntityWriter = ConfigEntityWriter(dbConnectionManager)
         val processor = ConfigWriterProcessor(publisher, configEntityWriter)
 
         return try {
