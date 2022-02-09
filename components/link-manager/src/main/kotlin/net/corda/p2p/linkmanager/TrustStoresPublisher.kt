@@ -13,16 +13,12 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.GatewayTruststore
-import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_TRUSTSTORES
-import net.corda.v5.base.util.toBase64
-import org.bouncycastle.jce.provider.BouncyCastleProvider
-import java.security.MessageDigest
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("LongParameterList")
-class TrustStoresContainer(
+class TrustStoresPublisher(
     private val subscriptionFactory: SubscriptionFactory,
     publisherFactory: PublisherFactory,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
@@ -32,30 +28,12 @@ class TrustStoresContainer(
     private val instanceId: Int,
 ) : LifecycleWithDominoTile {
 
-    /**
-     * Return a hash of the identity trust store.
-     * If the identity is not locally hosted, will return null.
-     */
-    fun computeTrustStoreHash(identity: LinkManagerNetworkMap.HoldingIdentity): String? {
-        return groupIdToHash.compute(identity.groupId) { groupId, hash ->
-            if ((hash == null) &&
-                (linkManagerHostingMap.locallyHostedIdentities.any { it.groupId == groupId })
-            ) {
-                generateHash(groupId)
-            } else {
-                hash
-            }
-        }
-    }
-
     companion object {
         private const val READ_CURRENT_DATA = "linkmanager_truststore_reader"
         private const val WRITE_MISSING_DATA = "linkmanager_truststore_writer"
     }
 
-    private val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, BouncyCastleProvider())
-
-    private val groupIdToHash = ConcurrentHashMap<String, String>()
+    private val publishedGroups = ConcurrentHashMap.newKeySet<String>()
 
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,
@@ -64,16 +42,34 @@ class TrustStoresContainer(
         configuration,
     )
 
-    private val publishedData = ConcurrentHashMap<String, GatewayTruststore>()
+    fun publishGroupIfNeeded(groupId: String) {
+        if ((!publishedGroups.contains(groupId)) && (
+            linkManagerHostingMap.locallyHostedIdentities.any { it.groupId == groupId }
+            )
+        ) {
+            val certificates = linkManagerNetworkMap.getTrustedCertificates(groupId) ?: return
+            val record = Record(GATEWAY_TLS_TRUSTSTORES, groupId, GatewayTruststore(certificates))
+            publisher.publish(
+                listOf(record)
+            ).forEach {
+                it.join()
+            }
+            publishedGroups += groupId
+        }
+    }
+
     private inner class PublishedDataProcessor : CompactedProcessor<String, GatewayTruststore> {
         val ready = CompletableFuture<Unit>()
         override val keyClass = String::class.java
         override val valueClass = GatewayTruststore::class.java
         override fun onSnapshot(currentData: Map<String, GatewayTruststore>) {
-            publishedData.putAll(currentData)
-            linkManagerHostingMap.locallyHostedIdentities.forEach {
-                computeTrustStoreHash(it)
-            }
+            publishedGroups.addAll(currentData.keys)
+            linkManagerHostingMap.locallyHostedIdentities
+                .map { it.groupId }
+                .toSet()
+                .forEach {
+                    publishGroupIfNeeded(it)
+                }
             ready.complete(Unit)
         }
 
@@ -82,11 +78,10 @@ class TrustStoresContainer(
             oldValue: GatewayTruststore?,
             currentData: Map<String, GatewayTruststore>,
         ) {
-            val value = newRecord.value
-            if (value == null) {
-                publishedData.remove(newRecord.key)
+            if (newRecord.value == null) {
+                publishedGroups.remove(newRecord.key)
             } else {
-                publishedData[newRecord.key] = value
+                publishedGroups += newRecord.key
             }
         }
     }
@@ -101,36 +96,6 @@ class TrustStoresContainer(
             publisher.dominoTile,
         )
     )
-
-    private fun generateHash(groupId: String): String? {
-        val certificates = linkManagerNetworkMap.getTrustedCertificates(groupId) ?: return null
-        messageDigest.reset()
-        certificates.forEach {
-            messageDigest.update(it.toByteArray())
-        }
-        val hashBase = messageDigest.digest().toBase64()
-        return generateSequence(1) { it + 1 }.map {
-            "$hashBase-$it"
-        }.map {
-            it to publishedData[it]?.trustedCertificates
-        }.mapNotNull { (key, value) ->
-            if (value == null) {
-                val record = Record(GATEWAY_TLS_TRUSTSTORES, key, GatewayTruststore(certificates))
-                publisher.publish(
-                    listOf(record)
-                ).forEach {
-                    it.join()
-                }
-                key
-            } else {
-                if (value == certificates) {
-                    key
-                } else {
-                    null
-                }
-            }
-        }.first()
-    }
 
     private fun createResources(resourcesHolder: ResourcesHolder): CompletableFuture<Unit> {
         val processor = PublishedDataProcessor()

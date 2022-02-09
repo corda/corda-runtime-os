@@ -44,7 +44,7 @@ internal class TrustStoresMap(
         override val valueClass = GatewayTruststore::class.java
 
         override fun onSnapshot(currentData: Map<String, GatewayTruststore>) {
-            hashToActualStore.putAll(
+            groupIdToActualStore.putAll(
                 currentData.mapValues {
                     Truststore(it.value.trustedCertificates, certificateFactory)
                 }
@@ -62,9 +62,9 @@ internal class TrustStoresMap(
             }
 
             if (store != null) {
-                hashToActualStore[newRecord.key] = store
+                groupIdToActualStore[newRecord.key] = store
             } else {
-                hashToActualStore.remove(newRecord.key)
+                groupIdToActualStore.remove(newRecord.key)
             }
         }
     }
@@ -93,9 +93,9 @@ internal class TrustStoresMap(
         }
     }
 
-    private val hashToActualStore = ConcurrentHashMap<String, Truststore>()
+    private val groupIdToActualStore = ConcurrentHashMap<String, Truststore>()
 
-    fun getTrustStore(hash: String) = hashToActualStore[hash]?.trustStore ?: throw IllegalArgumentException("Unknown trust store: $hash")
+    fun getTrustStore(groupId: String) = groupIdToActualStore[groupId]?.trustStore ?: throw IllegalArgumentException("Unknown trust store: $groupId")
 
     private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
         val resourceFuture = CompletableFuture<Unit>()

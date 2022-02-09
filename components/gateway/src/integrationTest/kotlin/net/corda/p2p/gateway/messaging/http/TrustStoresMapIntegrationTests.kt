@@ -19,7 +19,7 @@ import java.io.StringWriter
 
 class TrustStoresMapIntegrationTests : TestBase() {
     companion object {
-        private const val TRUST_STORE_HASH = "HASH"
+        private const val GROUP_ID = "Group-A"
         private const val instanceId = 32
     }
     private val topicService = TopicServiceImpl()
@@ -42,7 +42,7 @@ class TrustStoresMapIntegrationTests : TestBase() {
                 listOf(
                     Record(
                         Schemas.P2P.GATEWAY_TLS_TRUSTSTORES,
-                        TRUST_STORE_HASH,
+                        GROUP_ID,
                         GatewayTruststore(listOf(expectedCertificatePem))
                     )
                 )
@@ -57,7 +57,7 @@ class TrustStoresMapIntegrationTests : TestBase() {
             assertThat(map.isRunning).isTrue
 
             val store = assertDoesNotThrow {
-                map.getTrustStore(TRUST_STORE_HASH)
+                map.getTrustStore(GROUP_ID)
             }
 
             val certificate = store.aliases().toList().map {
