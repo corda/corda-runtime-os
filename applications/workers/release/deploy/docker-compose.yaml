@@ -57,6 +57,7 @@ services:
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic rpc.permissions.group --config "cleanup.policy=compact"
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic rpc.permissions.role --config "cleanup.policy=compact"
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic rpc.permissions.permission --config "cleanup.policy=compact"
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic permissions.user.summary --config "cleanup.policy=compact"
 
       echo -e 'Successfully created the following topics:'
       kafka-topics.sh --bootstrap-server kafka:9092 --list
