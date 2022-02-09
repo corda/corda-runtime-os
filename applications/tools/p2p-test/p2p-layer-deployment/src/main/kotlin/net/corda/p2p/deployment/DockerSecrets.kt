@@ -17,7 +17,7 @@ object DockerSecrets {
                 if (it) {
                     println("Using R3 docker registry cache to access docker images.")
                 } else {
-                    println("Can not access R3 docker registry cache to access docker images. Will use docker directly.")
+                    println("Can not access R3 docker registry cache to access docker images. Will use docker hub directly.")
                 }
             }
     }
@@ -59,7 +59,7 @@ object DockerSecrets {
             )
         )
 
-        cache + mapOf(
+        mapOf(
             "auths" to
                 cache + corda
         )
