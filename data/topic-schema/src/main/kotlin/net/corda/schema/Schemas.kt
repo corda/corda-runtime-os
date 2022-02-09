@@ -29,7 +29,7 @@ class Schemas {
          * [getStateAndEventStateTopic] returns the state and event state topic
          * [getRPCResponseTopic] returns the rpc response topic
          */
-        fun getStateAndEventDLQTopic(topic: String) = "$topic.state.DLQ"
+        fun getStateAndEventDLQTopic(topic: String) = "$topic.dlq"
         fun getStateAndEventStateTopic(topic: String) = "$topic.state"
         fun getRPCResponseTopic(topic: String) = "$topic.resp"
     }
