@@ -26,6 +26,7 @@ dependencies {
     implementation 'net.corda:corda-packaging'
     implementation 'net.corda:corda-serialization'
     implementation project(':libs:sandbox')
+    runtimeOnly project(':libs:sandbox-hooks')
 
     testCompileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     testImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"

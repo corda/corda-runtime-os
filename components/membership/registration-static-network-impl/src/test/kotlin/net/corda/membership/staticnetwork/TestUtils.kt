@@ -23,7 +23,7 @@ class TestUtils {
         const val MGM_KEY_ALIAS = "mgm-alias"
         const val DUMMY_GROUP_ID = "dummy_group"
 
-        private const val TEST_ENDPOINT_PROTOCOL = "1"
+        private const val TEST_ENDPOINT_PROTOCOL = 1
         private const val TEST_ENDPOINT_URL = "https://dummyurl.corda5.r3.com:10000"
 
         private val bootConfig: SmartConfig = mock()
@@ -45,7 +45,7 @@ class TestUtils {
 
         private val dummyMap = mapOf("key" to "value")
 
-        private val staticMemberTemplate: List<Map<String, String>> =
+        private val staticMemberTemplate: List<Map<String, Any>> =
             listOf(
                 mapOf(
                     NAME to aliceName.toString(),
@@ -70,7 +70,7 @@ class TestUtils {
                 )
             )
 
-        private val staticMemberTemplateWithDuplicateMembers: List<Map<String, String>> =
+        private val staticMemberTemplateWithDuplicateMembers: List<Map<String, Any>> =
             listOf(
                 mapOf(
                     NAME to daisyName.toString(),

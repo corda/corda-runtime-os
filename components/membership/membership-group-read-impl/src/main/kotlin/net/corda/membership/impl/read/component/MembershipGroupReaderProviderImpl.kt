@@ -2,7 +2,6 @@ package net.corda.membership.impl.read.component
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
@@ -51,7 +50,7 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
     val converter: PropertyConverter,
     @Reference(service = GroupPolicyProvider::class)
     groupPolicyProvider: GroupPolicyProvider
-) : MembershipGroupReaderProvider, Lifecycle {
+) : MembershipGroupReaderProvider {
 
     companion object {
         const val ACCESS_TOO_EARLY = "Tried to read group data before starting the component."

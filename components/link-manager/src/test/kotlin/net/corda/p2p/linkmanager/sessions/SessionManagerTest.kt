@@ -137,11 +137,11 @@ class SessionManagerTest {
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleWriteLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
-        if (context.arguments()[4] is SessionManagerImpl.SessionManagerConfigChangeHandler) {
-            configHandler = context.arguments()[4] as SessionManagerImpl.SessionManagerConfigChangeHandler
+        if (context.arguments()[5] is SessionManagerImpl.SessionManagerConfigChangeHandler) {
+            configHandler = context.arguments()[5] as SessionManagerImpl.SessionManagerConfigChangeHandler
         }
-        if (context.arguments()[4] is SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler) {
-            heartbeatConfigHandler = context.arguments()[4] as SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler
+        if (context.arguments()[5] is SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler) {
+            heartbeatConfigHandler = context.arguments()[5] as SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler
         }
         if (context.arguments()[2] != null) {
             @Suppress("UNCHECKED_CAST")
@@ -1310,7 +1310,7 @@ class SessionManagerTest {
     fun `when sending a heartbeat, if an exception is thrown, the heartbeat is resent`() {
         val configLongTimeout = SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfig(
             Duration.ofMillis(100),
-            Duration.ofMillis(1000)
+            Duration.ofMillis(10000)
         )
         val publishLatch = CountDownLatch(2)
        var throwFirst = true

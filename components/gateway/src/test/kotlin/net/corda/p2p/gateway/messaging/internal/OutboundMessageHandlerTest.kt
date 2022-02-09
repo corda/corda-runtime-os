@@ -108,7 +108,7 @@ class OutboundMessageHandlerTest {
         @Suppress("UNCHECKED_CAST")
         createResources = context.arguments()[2] as ((resources: ResourcesHolder) -> CompletableFuture<Unit>)
         @Suppress("UNCHECKED_CAST")
-        configHandler = (context.arguments()[4] as ConfigurationChangeHandler<GatewayConfiguration>)
+        configHandler = (context.arguments()[5] as ConfigurationChangeHandler<GatewayConfiguration>)
     }
 
     private val handler = OutboundMessageHandler(

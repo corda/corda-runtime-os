@@ -197,23 +197,22 @@ class LinkManager(
         "InboundProcessor",
         lifecycleCoordinatorFactory,
         ::createInboundResources,
-        children = commonChildren
+        dependentChildren = commonChildren
     )
     private val outboundDominoTile = DominoTile(
         "OutboundProcessor",
         lifecycleCoordinatorFactory,
         ::createOutboundResources,
-        children = setOf(
-            inboundDominoTile,
-            messagesPendingSession.dominoTile,
-            messageHeaderFactory.dominoTile,
-        ) + commonChildren
+        dependentChildren = setOf(inboundDominoTile, messagesPendingSession.dominoTile, messageHeaderFactory.dominoTile) + commonChildren,
+        managedChildren = setOf(messagesPendingSession.dominoTile)
     )
 
     override val dominoTile = DominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        children = setOf(inboundDominoTile, outboundDominoTile, deliveryTracker.dominoTile)
+        dependentChildren = setOf(inboundDominoTile, outboundDominoTile, deliveryTracker.dominoTile),
+        managedChildren = setOf(inboundDominoTile, outboundDominoTile, deliveryTracker.dominoTile, sessionManager.dominoTile, messageHeaderFactory.dominoTile)
+                + commonChildren
     )
 
     class OutboundMessageProcessor(

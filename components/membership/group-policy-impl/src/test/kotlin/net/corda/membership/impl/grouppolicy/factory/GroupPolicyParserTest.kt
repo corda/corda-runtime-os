@@ -29,8 +29,6 @@ class GroupPolicyParserTest {
         const val ROTATED_KEY_ALIAS_1 = "rotatedKeyAlias-1"
         const val ROTATED_KEY_ALIAS_2 = "rotatedKeyAlias-2"
         const val FILE_FORMAT_VERSION = "fileFormatVersion"
-        const val GROUP_ID = "groupId"
-        const val REGISTRATION_PROTOCOL_FACTORY = "registrationProtocolFactory"
         const val SYNC_PROTOCOL_FACTORY = "synchronisationProtocolFactory"
         const val PROTOCOL_PARAMETERS = "protocolParameters"
         const val STATIC_NETWORK = "staticNetwork"
@@ -80,8 +78,8 @@ class GroupPolicyParserTest {
 
         // Top level properties
         assertEquals(1, result[FILE_FORMAT_VERSION])
-        assertEquals(testGroupId, result[GROUP_ID])
-        assertEquals("net.corda.v5.mgm.MGMRegistrationProtocolFactory", result[REGISTRATION_PROTOCOL_FACTORY])
+        assertEquals(testGroupId, result.groupId)
+        assertEquals("net.corda.membership.staticnetwork.StaticMemberRegistrationService", result.registrationProtocol)
         assertEquals("net.corda.v5.mgm.MGMSynchronisationProtocolFactory", result[SYNC_PROTOCOL_FACTORY])
         assertTrue(result[PROTOCOL_PARAMETERS] is Map<*, *>)
         assertTrue(result[STATIC_NETWORK] is Map<*, *>)

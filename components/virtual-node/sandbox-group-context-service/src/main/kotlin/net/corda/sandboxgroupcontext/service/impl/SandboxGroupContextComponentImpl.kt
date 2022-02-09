@@ -12,6 +12,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.packaging.CPK
+import net.corda.sandbox.RequireSandboxHooks
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContextInitializer
@@ -33,6 +34,7 @@ import java.util.Collections.unmodifiableList
  */
 @Suppress("Unused", "LongParameterList")
 @Component(service = [SandboxGroupContextComponent::class])
+@RequireSandboxHooks
 class SandboxGroupContextComponentImpl @Activate constructor(
     @Reference(service = InstallService::class)
     private val installService: InstallService,

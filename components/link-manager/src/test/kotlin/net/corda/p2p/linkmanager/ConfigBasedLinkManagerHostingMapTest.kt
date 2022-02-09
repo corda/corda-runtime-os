@@ -19,7 +19,7 @@ class ConfigBasedLinkManagerHostingMapTest {
     private lateinit var configHandler: ConfigBasedLinkManagerHostingMap.HostingMapConfigurationChangeHandler
     private val dominoTile = Mockito.mockConstruction(DominoTile::class.java) { _, context ->
         @Suppress("UNCHECKED_CAST")
-        configHandler = context.arguments()[4] as ConfigBasedLinkManagerHostingMap.HostingMapConfigurationChangeHandler
+        configHandler = context.arguments()[5] as ConfigBasedLinkManagerHostingMap.HostingMapConfigurationChangeHandler
     }
 
     @AfterEach

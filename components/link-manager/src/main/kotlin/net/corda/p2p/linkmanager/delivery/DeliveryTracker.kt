@@ -61,13 +61,14 @@ class DeliveryTracker(
     )
 
     override val dominoTile = DominoTile(this::class.java.simpleName, coordinatorFactory, ::createResources,
-        setOf(
+        dependentChildren = setOf(
             replayScheduler.dominoTile,
             networkMap.dominoTile,
             cryptoService.dominoTile,
             sessionManager.dominoTile,
             appMessageReplayer.dominoTile
-        )
+        ),
+        managedChildren = setOf(replayScheduler.dominoTile, appMessageReplayer.dominoTile)
     )
 
     private val messageTracker = MessageTracker(replayScheduler)
