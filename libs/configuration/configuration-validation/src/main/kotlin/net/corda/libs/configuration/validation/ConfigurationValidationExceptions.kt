@@ -2,6 +2,7 @@ package net.corda.libs.configuration.validation
 
 import com.typesafe.config.ConfigRenderOptions
 import net.corda.libs.configuration.SmartConfig
+import net.corda.v5.base.versioning.Version
 
 /**
  * Exception thrown when configuration validation fails.
@@ -13,7 +14,7 @@ import net.corda.libs.configuration.SmartConfig
  */
 class ConfigurationValidationException(
     val key: String,
-    val schemaVersion: String,
+    val schemaVersion: Version,
     val config: SmartConfig,
     val errors: Set<String>
 ) : RuntimeException(

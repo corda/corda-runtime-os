@@ -7,6 +7,7 @@ import net.corda.libs.configuration.validation.ConfigurationSchemaFetchException
 import net.corda.libs.configuration.validation.ConfigurationValidationException
 import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.schema.configuration.provider.SchemaProvider
+import net.corda.v5.base.versioning.Version
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -33,7 +34,7 @@ class ConfigurationValidatorImplTest {
         private const val VALID_DATA = "data/valid.conf"
         private const val INVALID_DATA = "data/invalid.conf"
 
-        private const val TEST_VERSION = "1.0"
+        private val TEST_VERSION = Version.fromString("1.0")
     }
 
     @Test
@@ -104,7 +105,7 @@ class ConfigurationValidatorImplTest {
     }
 
     private class TestSchemaProvider : SchemaProvider {
-        override fun getSchema(key: String, version: String): InputStream {
+        override fun getSchema(key: String, version: Version): InputStream {
             return loadResource(key)
         }
 

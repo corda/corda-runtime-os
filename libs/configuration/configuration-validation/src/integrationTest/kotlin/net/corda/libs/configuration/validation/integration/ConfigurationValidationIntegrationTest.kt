@@ -7,6 +7,7 @@ import net.corda.libs.configuration.validation.ConfigurationSchemaFetchException
 import net.corda.libs.configuration.validation.ConfigurationValidationException
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.v5.base.versioning.Version
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -18,7 +19,7 @@ class ConfigurationValidationIntegrationTest {
     companion object {
         private const val MESSAGING_CONFIG_FILE = "messaging-config-example.conf"
 
-        private const val VERSION = "1.0"
+        private val VERSION = Version(1, 0)
     }
 
     @Test
@@ -50,7 +51,7 @@ class ConfigurationValidationIntegrationTest {
         val validator = ConfigurationValidatorFactory.getConfigValidator()
         val config = loadConfig(MESSAGING_CONFIG_FILE)
         assertThrows<ConfigurationSchemaFetchException> {
-            validator.validate(MESSAGING_CONFIG, "bad_version", config)
+            validator.validate(MESSAGING_CONFIG, Version(0, 0), config)
         }
     }
 

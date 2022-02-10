@@ -12,6 +12,7 @@ import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.schema.configuration.provider.SchemaProvider
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.v5.base.versioning.Version
 
 internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProvider) : ConfigurationValidator {
 
@@ -23,7 +24,7 @@ internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProv
     private val schemaFactory = buildSchemaFactory()
     private val objectMapper = ObjectMapper()
 
-    override fun validate(key: String, version: String, config: SmartConfig) {
+    override fun validate(key: String, version: Version, config: SmartConfig) {
         logger.info("Validating config for key $key with schema version $version")
         logger.debug {
             "Configuration to validate: ${

@@ -1,6 +1,7 @@
 package net.corda.libs.configuration.validation
 
 import net.corda.libs.configuration.SmartConfig
+import net.corda.v5.base.versioning.Version
 
 /**
  * Validator of configuration data against a configuration schema.
@@ -27,5 +28,5 @@ interface ConfigurationValidator {
      * @throws ConfigurationSchemaFetchException If some or all of the requested schema does not exist. This is most
      *                                           likely to happen due to an incorrect version being provided
      */
-    fun validate(key: String, version: String, config: SmartConfig)
+    fun validate(key: String, version: Version, config: SmartConfig)
 }
