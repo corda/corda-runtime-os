@@ -43,7 +43,7 @@ class HttpServerChannelHandler(private val serverListener: HttpServerListener,
                     "Content length: ${msg.headers()[HttpHeaderNames.CONTENT_LENGTH]}\n")
 
             // initialise byte array to read the request into
-            if (responseCode!! == HttpResponseStatus.OK) {
+            if (responseCode!! != HttpResponseStatus.LENGTH_REQUIRED) {
                 allocateBodyBuffer(ctx, msg.headers()[HttpHeaderNames.CONTENT_LENGTH].toInt())
             }
 
@@ -54,7 +54,7 @@ class HttpServerChannelHandler(private val serverListener: HttpServerListener,
 
         if (msg is HttpContent) {
             val content = msg.content()
-            if (content.isReadable && responseCode!! == HttpResponseStatus.OK) {
+            if (content.isReadable) {
                 logger.debug("Reading message content into local buffer of size ${content.readableBytes()}")
                 try {
                     readBytesIntoBodyBuffer(content)
