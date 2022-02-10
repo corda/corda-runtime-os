@@ -7,7 +7,6 @@ import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadId
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.createCoordinator
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate

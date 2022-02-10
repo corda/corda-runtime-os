@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.io.ByteArrayInputStream
@@ -37,11 +38,11 @@ class CpiUploadRPCOpsImplTest {
     @Test
     fun `returns request id mapping to a CPI uploading if the CPI was uploaded successfully to Kafka`() {
         val cpiBytes = "dummyCPI".toByteArray()
-        val cpiInputStream = ByteArrayInputStream(cpiBytes)
+        val cpiContent = ByteArrayInputStream(cpiBytes)
         val cpiUploadRequestId = UUID.randomUUID().toString()
-        whenever(cpiUploadManager.uploadCpi(any(), cpiInputStream)).thenReturn(cpiUploadRequestId)
+        whenever(cpiUploadManager.uploadCpi(any(), eq(cpiContent))).thenReturn(cpiUploadRequestId)
 
-        val httpResponse = cpiUploadRPCOpsImpl.cpi(cpiInputStream)
+        val httpResponse = cpiUploadRPCOpsImpl.cpi(cpiContent)
         assertNotNull(httpResponse)
         assertEquals(cpiUploadRequestId, httpResponse.id)
     }

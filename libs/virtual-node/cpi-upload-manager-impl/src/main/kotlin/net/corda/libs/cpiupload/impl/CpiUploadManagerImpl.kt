@@ -80,15 +80,4 @@ class CpiUploadManagerImpl(
             }
         }
     }
-
-    override val isRunning get() = _isRunning
-    private var _isRunning = false
-
-    override fun start() {
-        _isRunning = true
-    }
-
-    override fun stop() {
-        _isRunning = false
-    }
 }

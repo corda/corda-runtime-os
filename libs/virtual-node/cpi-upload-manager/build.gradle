@@ -9,7 +9,6 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:messaging:messaging')
     implementation project(':libs:configuration:configuration-core')
     implementation 'net.corda:corda-avro-schema'

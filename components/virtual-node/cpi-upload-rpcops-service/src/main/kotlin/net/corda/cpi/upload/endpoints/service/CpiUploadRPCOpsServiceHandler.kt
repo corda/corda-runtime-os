@@ -79,7 +79,6 @@ class CpiUploadRPCOpsServiceHandler(
                     val messagingConfig = event.config.toMessagingConfig()
                     log.info("Setting CpiUploadManager...")
                     rpcSender?.close()
-                    cpiUploadManager?.stop()
 
                     rpcSender = createAndStartRpcSender(messagingConfig)
                     cpiUploadManager = createAndStartCpiUploadManager(rpcConfig!!, rpcSender!!)
@@ -110,7 +109,6 @@ class CpiUploadRPCOpsServiceHandler(
 
     private fun createAndStartCpiUploadManager(smartConfig: SmartConfig, rpcSender: RPCSender<Chunk, ChunkAck>): CpiUploadManager {
         return cpiUploadManagerFactory.create(smartConfig, rpcSender)
-            .also { it.start() }
     }
 
     private fun closeResources() {
@@ -118,7 +116,6 @@ class CpiUploadRPCOpsServiceHandler(
         rpcSender = null
         configReadServiceRegistrationHandle?.close()
         configReadServiceRegistrationHandle = null
-        cpiUploadManager?.close()
         cpiUploadManager = null
     }
 }

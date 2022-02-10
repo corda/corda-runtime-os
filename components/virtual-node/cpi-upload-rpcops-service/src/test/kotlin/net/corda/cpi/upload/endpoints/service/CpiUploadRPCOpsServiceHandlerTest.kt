@@ -82,7 +82,6 @@ class CpiUploadRPCOpsServiceHandlerTest {
         cpiUploadRPCOpsServiceHandler.processEvent(event, coordinator)
         verify(configReadServiceRegistrationHandle).close()
         verify(rpcSender).close()
-        verify(cpiUploadManager).close()
         assertNull(cpiUploadRPCOpsServiceHandler.configReadServiceRegistrationHandle)
         assertNull(cpiUploadRPCOpsServiceHandler.rpcSender)
         assertNull(cpiUploadRPCOpsServiceHandler.cpiUploadManager)
@@ -108,7 +107,6 @@ class CpiUploadRPCOpsServiceHandlerTest {
         assertNotNull(cpiUploadRPCOpsServiceHandler.rpcSender)
         assertNotNull(cpiUploadRPCOpsServiceHandler.cpiUploadManager)
         verify(rpcSender).start()
-        verify(cpiUploadManager).start()
         verify(coordinator).updateStatus(LifecycleStatus.UP)
     }
 
@@ -125,7 +123,6 @@ class CpiUploadRPCOpsServiceHandlerTest {
         cpiUploadRPCOpsServiceHandler.processEvent(event, coordinator)
         verify(configReadServiceRegistrationHandle).close()
         verify(rpcSender).close()
-        verify(cpiUploadManager).close()
         assertNull(cpiUploadRPCOpsServiceHandler.configReadServiceRegistrationHandle)
         assertNull(cpiUploadRPCOpsServiceHandler.rpcSender)
         assertNull(cpiUploadRPCOpsServiceHandler.cpiUploadManager)
