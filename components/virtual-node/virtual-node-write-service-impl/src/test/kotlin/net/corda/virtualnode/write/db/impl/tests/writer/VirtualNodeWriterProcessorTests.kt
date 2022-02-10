@@ -1,4 +1,4 @@
-package net.corda.libs.virtualnode.writer.impl.tests
+package net.corda.virtualnode.write.db.impl.tests.writer
 
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.crypto.SecureHash
@@ -6,15 +6,15 @@ import net.corda.data.packaging.CPIIdentifier
 import net.corda.data.virtualnode.VirtualNodeCreationRequest
 import net.corda.data.virtualnode.VirtualNodeCreationResponse
 import net.corda.data.virtualnode.VirtualNodeInfo
-import net.corda.libs.virtualnode.write.VirtualNodeWriterException
-import net.corda.libs.virtualnode.write.impl.EntityRepository
-import net.corda.libs.virtualnode.write.impl.VirtualNodeWriterProcessor
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
+import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
+import net.corda.virtualnode.write.db.impl.writer.VirtualNodeEntityRepository
+import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriterProcessor
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -71,7 +71,7 @@ class VirtualNodeWriterProcessorTests {
         val expectedRecord = Record(VIRTUAL_NODE_INFO_TOPIC, vnodeInfo.holdingIdentity, vnodeInfo)
 
         val publisher = getPublisher()
-        val processor = VirtualNodeWriterProcessor(publisher, EntityRepository())
+        val processor = VirtualNodeWriterProcessor(publisher, VirtualNodeEntityRepository(mock()))
         processRequest(processor, vnodeCreationReq)
 
         verify(publisher).publish(listOf(expectedRecord))
@@ -90,7 +90,7 @@ class VirtualNodeWriterProcessorTests {
             holdingIdentity.id
         )
 
-        val processor = VirtualNodeWriterProcessor(getPublisher(), EntityRepository())
+        val processor = VirtualNodeWriterProcessor(getPublisher(), VirtualNodeEntityRepository(mock()))
         val resp = processRequest(processor, vnodeCreationReq)
 
         assertEquals(expectedResp, resp)
@@ -115,7 +115,7 @@ class VirtualNodeWriterProcessorTests {
             holdingIdentity.id
         )
 
-        val processor = VirtualNodeWriterProcessor(getErroringPublisher(), EntityRepository())
+        val processor = VirtualNodeWriterProcessor(getErroringPublisher(), VirtualNodeEntityRepository(mock()))
         val resp = processRequest(processor, vnodeCreationReq)
 
         assertEquals(expectedResp, resp)
@@ -126,15 +126,15 @@ class VirtualNodeWriterProcessorTests {
     @Test
     fun `sends RPC failure response if the CPI with the given ID is not stored on the node`() {
         val expectedEnvelope = ExceptionEnvelope(
-            VirtualNodeWriterException::class.java.name,
+            VirtualNodeWriteServiceException::class.java.name,
             "CPI with hash ${vnodeCreationReq.cpiIdHash} was not found."
         )
         val expectedResp = VirtualNodeCreationResponse(false, expectedEnvelope, null, null, null, null, null, null)
 
-        val EntityRepository = mock<EntityRepository>().apply {
+        val entityRepository = mock<VirtualNodeEntityRepository>().apply {
             whenever(getCPIMetadata(any())).thenReturn(null)
         }
-        val processor = VirtualNodeWriterProcessor(getPublisher(), EntityRepository)
+        val processor = VirtualNodeWriterProcessor(getPublisher(), entityRepository)
         val resp = processRequest(processor, vnodeCreationReq)
 
         assertEquals(expectedResp, resp)
@@ -143,15 +143,15 @@ class VirtualNodeWriterProcessorTests {
     @Test
     fun `sends RPC failure response if the there is a holding-identity collision`() {
         val expectedEnvelope = ExceptionEnvelope(
-            VirtualNodeWriterException::class.java.name,
+            VirtualNodeWriteServiceException::class.java.name,
             "CPI with hash ${vnodeCreationReq.cpiIdHash} was not found."
         )
         val expectedResp = VirtualNodeCreationResponse(false, expectedEnvelope, null, null, null, null, null, null)
 
-        val EntityRepository = mock<EntityRepository>().apply {
+        val entityRepository = mock<VirtualNodeEntityRepository>().apply {
             whenever(getHoldingIdentity(any())).thenReturn(mock())
         }
-        val processor = VirtualNodeWriterProcessor(getPublisher(), EntityRepository)
+        val processor = VirtualNodeWriterProcessor(getPublisher(), entityRepository)
         val resp = processRequest(processor, vnodeCreationReq)
 
         assertEquals(expectedResp, resp)

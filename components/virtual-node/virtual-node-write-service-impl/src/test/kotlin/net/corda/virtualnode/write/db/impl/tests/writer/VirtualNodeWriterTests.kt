@@ -1,10 +1,10 @@
-package net.corda.libs.virtualnode.writer.impl.tests
+package net.corda.virtualnode.write.db.impl.tests.writer
 
 import net.corda.data.virtualnode.VirtualNodeCreationRequest
 import net.corda.data.virtualnode.VirtualNodeCreationResponse
-import net.corda.libs.virtualnode.write.impl.VirtualNodeWriterImpl
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.subscription.RPCSubscription
+import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriter
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -13,13 +13,13 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
-/** Tests of [VirtualNodeWriterImpl]. */
-class VirtualNodeWriterImplTests {
+/** Tests of [VirtualNodeWriter]. */
+class VirtualNodeWriterTests {
     @Test
     fun `the config writer's subscription and publisher are initially in an unstarted state`() {
         val subscription = mock<RPCSubscription<VirtualNodeCreationRequest, VirtualNodeCreationResponse>>()
         val publisher = mock<Publisher>()
-        VirtualNodeWriterImpl(subscription, publisher)
+        VirtualNodeWriter(subscription, publisher)
 
         verify(subscription, times(0)).start()
         verify(publisher, times(0)).start()
@@ -29,7 +29,7 @@ class VirtualNodeWriterImplTests {
     fun `starting the config writer starts the subscription and publisher`() {
         val subscription = mock<RPCSubscription<VirtualNodeCreationRequest, VirtualNodeCreationResponse>>()
         val publisher = mock<Publisher>()
-        val configWriter = VirtualNodeWriterImpl(subscription, publisher)
+        val configWriter = VirtualNodeWriter(subscription, publisher)
         configWriter.start()
 
         verify(subscription).start()
@@ -40,7 +40,7 @@ class VirtualNodeWriterImplTests {
     fun `stopping the config writer stops the subscription and publisher`() {
         val subscription = mock<RPCSubscription<VirtualNodeCreationRequest, VirtualNodeCreationResponse>>()
         val publisher = mock<Publisher>()
-        val configWriter = VirtualNodeWriterImpl(subscription, publisher)
+        val configWriter = VirtualNodeWriter(subscription, publisher)
         configWriter.start()
         configWriter.stop()
 
@@ -54,7 +54,7 @@ class VirtualNodeWriterImplTests {
             .apply {
                 whenever(isRunning).thenReturn(true)
             }
-        val configWriter = VirtualNodeWriterImpl(runningSubscription, mock())
+        val configWriter = VirtualNodeWriter(runningSubscription, mock())
         assertTrue(configWriter.isRunning)
     }
 
@@ -64,7 +64,7 @@ class VirtualNodeWriterImplTests {
             .apply {
                 whenever(isRunning).thenReturn(false)
             }
-        val configWriter = VirtualNodeWriterImpl(runningSubscription, mock())
+        val configWriter = VirtualNodeWriter(runningSubscription, mock())
         assertFalse(configWriter.isRunning)
     }
 }

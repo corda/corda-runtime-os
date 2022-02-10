@@ -1,4 +1,4 @@
-package net.corda.libs.virtualnode.write.impl
+package net.corda.virtualnode.write.db.impl.writer
 
 import net.corda.packaging.CPI
 

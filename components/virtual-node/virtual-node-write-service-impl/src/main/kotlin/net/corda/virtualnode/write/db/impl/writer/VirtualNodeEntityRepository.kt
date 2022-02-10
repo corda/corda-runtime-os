@@ -1,5 +1,6 @@
-package net.corda.libs.virtualnode.write.impl
+package net.corda.virtualnode.write.db.impl.writer
 
+import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntity
 import net.corda.packaging.CPI
 import net.corda.v5.crypto.SecureHash
@@ -7,7 +8,7 @@ import net.corda.virtualnode.HoldingIdentity
 
 // TODO - Replace these stubs with implementations that interact with the database.
 /** Reads and writes CPIs, holding identities and virtual nodes to and from the cluster database. */
-internal class EntityRepository {
+internal class VirtualNodeEntityRepository(private val dbConnectionManager: DbConnectionManager) {
     /** Stub for reading CPI metadata from the database that returns a dummy value. */
     @Suppress("Unused_parameter", "RedundantNullableReturnType")
     internal fun getCPIMetadata(cpiIdShortHash: String): CPIMetadata? {

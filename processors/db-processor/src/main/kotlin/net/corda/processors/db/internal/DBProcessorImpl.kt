@@ -14,6 +14,7 @@ import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
+import net.corda.libs.virtualnode.datamodel.VirtualNodeEntities
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -74,8 +75,8 @@ class DBProcessorImpl @Activate constructor(
     init {
         // define the different DB Entity Sets
         //  entities can be in different packages, but all JPA classes must be passed in.
-        // TODO - add VNode entities, for example.
         entitiesRegistry.register(CordaDb.CordaCluster.persistenceUnitName, ConfigurationEntities.classes)
+        entitiesRegistry.register(CordaDb.CordaCluster.persistenceUnitName, VirtualNodeEntities.classes)
         entitiesRegistry.register(CordaDb.RBAC.persistenceUnitName, RbacEntities.classes)
     }
     companion object {

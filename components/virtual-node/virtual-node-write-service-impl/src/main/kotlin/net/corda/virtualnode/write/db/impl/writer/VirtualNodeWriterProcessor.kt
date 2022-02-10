@@ -1,4 +1,4 @@
-package net.corda.libs.virtualnode.write.impl
+package net.corda.virtualnode.write.db.impl.writer
 
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.crypto.SecureHash
@@ -6,7 +6,6 @@ import net.corda.data.packaging.CPIIdentifier
 import net.corda.data.virtualnode.VirtualNodeCreationRequest
 import net.corda.data.virtualnode.VirtualNodeCreationResponse
 import net.corda.data.virtualnode.VirtualNodeInfo
-import net.corda.libs.virtualnode.write.VirtualNodeWriterException
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -14,6 +13,7 @@ import net.corda.packaging.CPI
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
+import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import java.nio.ByteBuffer
 import java.util.concurrent.CompletableFuture
 
@@ -24,11 +24,11 @@ import java.util.concurrent.CompletableFuture
  * Kafka.
  *
  * @property vnodePublisher Used to publish to Kafka.
- * @property entityRepository Used to retrieve and store virtual nodes and related entities.
+ * @property virtualNodeEntityRepository Used to retrieve and store virtual nodes and related entities.
  */
 internal class VirtualNodeWriterProcessor(
     private val vnodePublisher: Publisher,
-    private val entityRepository: EntityRepository
+    private val virtualNodeEntityRepository: VirtualNodeEntityRepository
 ) : RPCResponderProcessor<VirtualNodeCreationRequest, VirtualNodeCreationResponse> {
 
     /**
@@ -42,28 +42,28 @@ internal class VirtualNodeWriterProcessor(
         respFuture: CompletableFuture<VirtualNodeCreationResponse>
     ) {
 
-        val cpiMetadata = entityRepository.getCPIMetadata(request.cpiIdHash)
+        val cpiMetadata = virtualNodeEntityRepository.getCPIMetadata(request.cpiIdHash)
         if (cpiMetadata == null) {
             val errMsg = "CPI with hash ${request.cpiIdHash} was not found."
-            handleException(respFuture, errMsg, VirtualNodeWriterException::class.java.name, null, null)
+            handleException(respFuture, errMsg, VirtualNodeWriteServiceException::class.java.name, null, null)
             return
         }
 
         val holdingId = HoldingIdentity(request.x500Name, cpiMetadata.mgmGroupId)
-        val storedHoldingId = entityRepository.getHoldingIdentity(holdingId.id)
+        val storedHoldingId = virtualNodeEntityRepository.getHoldingIdentity(holdingId.id)
         if (storedHoldingId == null) {
-            entityRepository.putHoldingIdentity(request.x500Name, cpiMetadata.mgmGroupId)
+            virtualNodeEntityRepository.putHoldingIdentity(request.x500Name, cpiMetadata.mgmGroupId)
         } else {
             // We check whether the non-null stored holding ID is different to the one we just constructed.
             if (storedHoldingId != holdingId) {
                 val errMsg = "New holding identity $holdingId has a short hash that collided with existing holding " +
                         "identity $storedHoldingId."
-                handleException(respFuture, errMsg, VirtualNodeWriterException::class.java.name, null, null)
+                handleException(respFuture, errMsg, VirtualNodeWriteServiceException::class.java.name, null, null)
                 return
             }
         }
 
-        entityRepository.putVirtualNode(holdingId, cpiMetadata.id)
+        virtualNodeEntityRepository.putVirtualNode(holdingId, cpiMetadata.id)
 
         val virtualNodeInfo = VirtualNodeInfo(holdingId.toAvro(), cpiMetadata.id.toAvro())
         val virtualNodeRecord = Record(VIRTUAL_NODE_INFO_TOPIC, virtualNodeInfo.holdingIdentity, virtualNodeInfo)
