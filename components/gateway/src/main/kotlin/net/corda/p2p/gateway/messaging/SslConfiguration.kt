@@ -31,11 +31,20 @@ data class SslConfiguration(
      */
     val revocationCheck: RevocationConfig,
 ) {
+    private val storeReader by lazy {
+        JksKeyStoreReader(
+            rawKeyStore,
+            keyStorePassword
+        )
+    }
     /**
      * The key store used for TLS connections
      */
     val keyStore: KeyStore by lazy {
-        readKeyStore(rawKeyStore, keyStorePassword)
+        KeyStoreFactory(
+            storeReader.signer,
+            storeReader.certificateStore,
+        ).createDelegatedKeyStore()
     }
     /**
      * The trust root key store used to validate the peer certificate

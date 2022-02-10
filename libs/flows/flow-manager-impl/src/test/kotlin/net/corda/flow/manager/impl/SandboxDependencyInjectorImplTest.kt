@@ -6,12 +6,22 @@ import net.corda.v5.application.injection.CordaInject
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
 
 class SandboxDependencyInjectorImplTest {
     private val s1 = Service1Impl()
     private val s2 = Service2Impl()
 
-    private var flowDependencyInjector = SandboxDependencyInjectorImpl(listOf(s1, s2))
+    private val serviceTypes1 = arrayOf(
+        Service1::class.java.name,
+        SingletonSerializeAsToken::class.java.name
+    )
+    private val serviceTypes2 = arrayOf(
+        Service2::class.java.name,
+        SingletonSerializeAsToken::class.java.name,
+        CordaFlowInjectable::class.java.name
+    )
+    private val flowDependencyInjector = SandboxDependencyInjectorImpl(mapOf(s1 to serviceTypes1, s2 to serviceTypes2), mock())
 
     @Test
     fun `get singletons returns all singletons`() {
@@ -24,8 +34,8 @@ class SandboxDependencyInjectorImplTest {
         val flow = ExampleFlow()
         flowDependencyInjector.injectServices(flow)
 
-        val service1 = flow.service1 as Service1Impl
-        val service2 = flow.service2 as Service2Impl
+        val service1 = flow.service1
+        val service2 = flow.service2
 
         Assertions.assertThat(service1).isNotNull
         Assertions.assertThat(service2).isNotNull
@@ -42,7 +52,10 @@ class SandboxDependencyInjectorImplTest {
     @Test
     fun `an exception is thrown if the same interface is implemented by more than once service`() {
         Assertions.assertThatIllegalArgumentException()
-            .isThrownBy { SandboxDependencyInjectorImpl(listOf(s2, DuplicateService2Impl())) }
+            .isThrownBy { SandboxDependencyInjectorImpl(mapOf(
+                s2 to serviceTypes2,
+                DuplicateService2Impl() to serviceTypes2
+            )) {} }
             .withMessage(
                 "An implementation of type 'net.corda.flow.manager.impl.Service2' has been already been " +
                         "registered by 'net.corda.flow.manager.impl.Service2Impl' it can't be registered again " +
@@ -61,7 +74,7 @@ class DuplicateService2Impl : Service2, SingletonSerializeAsToken, CordaFlowInje
 
 class ExampleFlow : Flow<String> {
     @CordaInject
-    lateinit var service1: Service1
+    internal lateinit var service1: Service1
 
     @CordaInject
     lateinit var service2: Service2

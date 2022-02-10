@@ -68,7 +68,7 @@ import java.security.KeyPairGenerator
 import java.security.MessageDigest
 import java.time.Duration
 import java.time.Instant
-import java.util.*
+import java.util.Collections
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -135,11 +135,11 @@ class SessionManagerTest {
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleWriteLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
-        if (context.arguments()[4] is SessionManagerImpl.SessionManagerConfigChangeHandler) {
-            configHandler = context.arguments()[4] as SessionManagerImpl.SessionManagerConfigChangeHandler
+        if (context.arguments()[5] is SessionManagerImpl.SessionManagerConfigChangeHandler) {
+            configHandler = context.arguments()[5] as SessionManagerImpl.SessionManagerConfigChangeHandler
         }
-        if (context.arguments()[4] is SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler) {
-            heartbeatConfigHandler = context.arguments()[4] as SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler
+        if (context.arguments()[5] is SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler) {
+            heartbeatConfigHandler = context.arguments()[5] as SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler
         }
         if (context.arguments()[2] != null) {
             @Suppress("UNCHECKED_CAST")
@@ -237,7 +237,7 @@ class SessionManagerTest {
             verify(sessionReplayer).addMessageForReplay(
                 any(),
                 this.capture(),
-                eq(SessionManager.SessionKey(OUR_PARTY, PEER_PARTY))
+                eq(SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY))
             )
             assertThat(this.allValues.size).isEqualTo(1)
             assertThat(this.firstValue.source).isEqualTo(OUR_PARTY)
@@ -300,7 +300,7 @@ class SessionManagerTest {
         sessionManager.processOutboundMessage(message)
         val sessionState = sessionManager.processOutboundMessage(message)
         assertThat(sessionState).isInstanceOf(SessionManager.SessionState.SessionAlreadyPending::class.java)
-        verify(pendingSessionMessageQueues, times(2)).queueMessage(message, SessionManager.SessionKey(OUR_PARTY, PEER_PARTY))
+        verify(pendingSessionMessageQueues, times(2)).queueMessage(message, SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY))
     }
 
     @Test
@@ -425,13 +425,13 @@ class SessionManagerTest {
         assertThat(responseMessage!!.payload).isEqualTo(initiatorHandshakeMsg)
         verify(sessionReplayer).removeMessageFromReplay(
             "${sessionState.sessionId}_${InitiatorHelloMessage::class.java.simpleName}",
-            SessionManager.SessionKey(OUR_PARTY, PEER_PARTY)
+            SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY)
         )
         argumentCaptor<InMemorySessionReplayer.SessionMessageReplay> {
             verify(sessionReplayer).addMessageForReplay(
                 eq("${sessionState.sessionId}_${InitiatorHandshakeMessage::class.java.simpleName}"),
                 this.capture(),
-                eq(SessionManager.SessionKey(OUR_PARTY, PEER_PARTY))
+                eq(SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY))
             )
             assertThat(this.allValues.size).isEqualTo(1)
             assertThat(this.firstValue.source).isEqualTo(OUR_PARTY)
@@ -763,10 +763,10 @@ class SessionManagerTest {
             }
         verify(sessionReplayer).removeMessageFromReplay(
             "${sessionState.sessionId}_${InitiatorHandshakeMessage::class.java.simpleName}",
-            SessionManager.SessionKey(OUR_PARTY, PEER_PARTY)
+            SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY)
         )
         verify(pendingSessionMessageQueues)
-            .sessionNegotiatedCallback(sessionManager, SessionManager.SessionKey(OUR_PARTY, PEER_PARTY), session, networkMap)
+            .sessionNegotiatedCallback(sessionManager, SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY), session, networkMap)
     }
 
     @Test
@@ -788,10 +788,10 @@ class SessionManagerTest {
             }
         verify(sessionReplayer).removeMessageFromReplay(
             "${sessionState.sessionId}_${InitiatorHandshakeMessage::class.java.simpleName}",
-            SessionManager.SessionKey(OUR_PARTY, PEER_PARTY)
+            SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY)
         )
         verify(pendingSessionMessageQueues)
-            .sessionNegotiatedCallback(sessionManager, SessionManager.SessionKey(OUR_PARTY, PEER_PARTY), session, networkMap)
+            .sessionNegotiatedCallback(sessionManager, SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY), session, networkMap)
 
         configHandler.applyNewConfiguration(
             SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
@@ -898,7 +898,7 @@ class SessionManagerTest {
         val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
         sessionManager.processSessionMessage(LinkInMessage(responderHello))
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionAlreadyPending)
-        eventually(configWithHeartbeat.sessionTimeout.multipliedBy(4), 5.millis) {
+        eventually(configWithHeartbeat.sessionTimeout.multipliedBy(10), 5.millis) {
             assertThat(sessionManager.processOutboundMessage(message)).isInstanceOf(NewSessionNeeded::class.java)
         }
         sessionManager.stop()
@@ -944,7 +944,7 @@ class SessionManagerTest {
 
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
 
-        eventually(configWithHeartbeat.sessionTimeout.multipliedBy(4), 5.millis) {
+        eventually(configWithHeartbeat.sessionTimeout.multipliedBy(10), 5.millis) {
             assertThat(sessionManager.processOutboundMessage(message)).isInstanceOf(NewSessionNeeded::class.java)
         }
         verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())
@@ -1008,7 +1008,7 @@ class SessionManagerTest {
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
         sessionManager.dataMessageSent(authenticatedSession)
 
-        eventually(configWithHeartbeat.sessionTimeout.multipliedBy(4), 5.millis) {
+        eventually(configWithHeartbeat.sessionTimeout.multipliedBy(10), 5.millis) {
             assertThat(sessionManager.processOutboundMessage(message)).isInstanceOf(NewSessionNeeded::class.java)
         }
         verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())
@@ -1280,7 +1280,7 @@ class SessionManagerTest {
     fun `when sending a heartbeat, if an exception is thrown, the heartbeat is resent`() {
         val configLongTimeout = SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfig(
             Duration.ofMillis(100),
-            Duration.ofMillis(1000)
+            Duration.ofMillis(10000)
         )
         val publishLatch = CountDownLatch(2)
        var throwFirst = true

@@ -31,3 +31,23 @@ fun generateErrorSessionStateFromSessionEvent(sessionId: String, errorMessage: S
     errorSessionState.status = SessionStateType.ERROR
     return errorSessionState
 }
+
+/**
+ * Update and return the received events session state. Set the last processed sequence number to the last
+ * contiguous event in the sequence of [undeliveredMessages].
+ */
+fun recalcReceivedProcessState(receivedEventsState: SessionProcessState) : SessionProcessState {
+    var nextSeqNum = receivedEventsState.lastProcessedSequenceNum+1
+    val undeliveredMessages = receivedEventsState.undeliveredMessages
+
+    val sortedEvents = undeliveredMessages.distinctBy { it.sequenceNum }.sortedBy { it.sequenceNum }
+    for (undeliveredMessage in sortedEvents) {
+        if (undeliveredMessage.sequenceNum == nextSeqNum) {
+            nextSeqNum++
+        } else {
+            break
+        }
+    }
+
+    return SessionProcessState(nextSeqNum - 1, sortedEvents)
+}

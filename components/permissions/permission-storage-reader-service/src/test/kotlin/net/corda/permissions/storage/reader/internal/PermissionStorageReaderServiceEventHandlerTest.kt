@@ -2,8 +2,6 @@ package net.corda.permissions.storage.reader.internal
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.db.schema.DbSchema
-import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.permissions.cache.PermissionCache
 import net.corda.libs.permissions.storage.common.ConfigKeys.BOOTSTRAP_CONFIG
@@ -21,13 +19,12 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.orm.JpaEntitiesSet
-import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.permissions.cache.PermissionCacheService
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -35,6 +32,10 @@ import javax.persistence.EntityManagerFactory
 
 class PermissionStorageReaderServiceEventHandlerTest {
 
+    private val entityManagerFactory = mock<EntityManagerFactory>()
+    private val entityManagerFactoryFactory = mock<() -> EntityManagerFactory>() {
+        on { this.invoke() }.doReturn(entityManagerFactory)
+    }
     private val permissionCache = mock<PermissionCache>()
     private val permissionCacheService = mock<PermissionCacheService>().apply {
         whenever(permissionCache).thenReturn(this@PermissionStorageReaderServiceEventHandlerTest.permissionCache)
@@ -53,18 +54,12 @@ class PermissionStorageReaderServiceEventHandlerTest {
         whenever(followStatusChangesByName(any())).thenReturn(registrationHandle)
     }
 
-    private val allEntitiesSets = listOf(mock<JpaEntitiesSet>().apply {
-        whenever(persistenceUnitName).thenReturn(DbSchema.RPC_RBAC)
-    })
-
     private val handler = PermissionStorageReaderServiceEventHandler(
         permissionCacheService,
         permissionStorageReaderFactory,
         publisherFactory,
         mock(),
-        mock(),
-        allEntitiesSets,
-        entityManagerFactoryCreationFn = ::testObtainEntityManagerFactory
+        entityManagerFactoryFactory,
     )
 
     private val configFactory = SmartConfigFactory.create(ConfigFactory.empty())
@@ -77,18 +72,6 @@ class PermissionStorageReaderServiceEventHandlerTest {
     )
 
     private val bootstrapConfig = mapOf(BOOTSTRAP_CONFIG to config)
-
-    private fun testObtainEntityManagerFactory(
-        dbConfig: SmartConfig, entityManagerFactoryFactory: EntityManagerFactoryFactory,
-        entitiesSet: JpaEntitiesSet
-    ): EntityManagerFactory {
-        Triple(
-            dbConfig,
-            entityManagerFactoryFactory,
-            entitiesSet
-        )
-        return mock()
-    }
 
     @Test
     fun `processing a start event causes the service to follow permission cache status changes`() {

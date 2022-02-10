@@ -14,9 +14,10 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.time.Duration
 
-@Component(service = [SingletonSerializeAsToken::class])
+@Component(service = [FlowEngine::class, SingletonSerializeAsToken::class], scope = PROTOTYPE)
 class FlowEngineImpl @Activate constructor(
     @Reference(service = FlowFiberService::class)
     private val flowFiberService: FlowFiberService

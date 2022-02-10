@@ -3,7 +3,6 @@ package net.corda.applications.workers.rpc
 import java.time.Instant
 import java.time.temporal.ChronoUnit.DAYS
 import net.corda.applications.workers.rpc.http.TestToolkitProperty
-import net.corda.httprpc.client.exceptions.InternalErrorException
 import net.corda.httprpc.client.exceptions.MissingRequestedResourceException
 import net.corda.httprpc.client.exceptions.RequestErrorException
 import net.corda.libs.permissions.endpoints.v1.role.RoleEndpoint
@@ -66,7 +65,7 @@ class UserRoleAssociationE2eTest {
             val createUserType = CreateUserType(userName, userName, true, password, passwordExpirySet, null)
             with(proxy.createUser(createUserType)) {
                 assertSoftly {
-                    it.assertThat(loginName).isEqualTo(userName)
+                    it.assertThat(loginName).isEqualToIgnoringCase(userName)
                     it.assertThat(passwordExpiry).isEqualTo(passwordExpirySet)
                 }
             }
@@ -77,7 +76,7 @@ class UserRoleAssociationE2eTest {
                 assertDoesNotThrow {
                     with(proxy.getUser(userName)) {
                         assertSoftly {
-                            it.assertThat(loginName).isEqualTo(userName)
+                            it.assertThat(loginName).isEqualToIgnoringCase(userName)
                             it.assertThat(passwordExpiry).isEqualTo(passwordExpirySet)
                         }
                     }
@@ -92,7 +91,7 @@ class UserRoleAssociationE2eTest {
             // add the role to the user
             with(proxy.addRole(userName, roleId)) {
                 assertSoftly {
-                    it.assertThat(loginName).isEqualTo(userName)
+                    it.assertThat(loginName).isEqualToIgnoringCase(userName)
                     it.assertThat(roleAssociations).hasSize(1)
                     it.assertThat(roleAssociations.first().roleId).isEqualTo(roleId)
                 }
@@ -101,12 +100,12 @@ class UserRoleAssociationE2eTest {
             // add the role again to assert validation
             Assertions.assertThatThrownBy { proxy.addRole(userName, roleId) }
                 .isInstanceOf(RequestErrorException::class.java)
-                .hasMessageContaining("Role '$roleId' is already associated with User '$userName'.")
+                .hasMessageContaining("Role '$roleId' is already associated with User '${userName.toLowerCase()}'.")
 
             // remove role
             with(proxy.removeRole(userName, roleId)) {
                 assertSoftly {
-                    it.assertThat(loginName).isEqualTo(userName)
+                    it.assertThat(loginName).isEqualToIgnoringCase(userName)
                     it.assertThat(roleAssociations).hasSize(0)
                 }
             }
@@ -116,7 +115,7 @@ class UserRoleAssociationE2eTest {
                 assertDoesNotThrow {
                     with(proxy.getUser(userName)) {
                         assertSoftly {
-                            it.assertThat(loginName).isEqualTo(userName)
+                            it.assertThat(loginName).isEqualToIgnoringCase(userName)
                             it.assertThat(passwordExpiry).isEqualTo(passwordExpirySet)
                             it.assertThat(roleAssociations.size).isEqualTo(0)
                         }
@@ -127,12 +126,12 @@ class UserRoleAssociationE2eTest {
             // remove the role again to assert validation of role being associated.
             Assertions.assertThatThrownBy { proxy.removeRole(userName, roleId) }
                 .isInstanceOf(RequestErrorException::class.java)
-                .hasMessageContaining("Role '$roleId' is not associated with User '$userName'.")
+                .hasMessageContaining("Role '$roleId' is not associated with User '${userName.toLowerCase()}'.")
 
             // remove a fake role to assert validation does not expose role names in the system.
             Assertions.assertThatThrownBy { proxy.removeRole(userName, "fakeRoleId") }
                 .isInstanceOf(RequestErrorException::class.java)
-                .hasMessageContaining("Role 'fakeRoleId' is not associated with User '$userName'.")
+                .hasMessageContaining("Role 'fakeRoleId' is not associated with User '${userName.toLowerCase()}'.")
 
         }
     }

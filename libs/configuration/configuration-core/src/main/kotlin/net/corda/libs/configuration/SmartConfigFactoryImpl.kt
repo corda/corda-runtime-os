@@ -1,10 +1,12 @@
 package net.corda.libs.configuration
 
 import com.typesafe.config.Config
+import net.corda.libs.configuration.secret.SecretsCreateService
 import net.corda.libs.configuration.secret.SecretsLookupService
 
 class SmartConfigFactoryImpl(
-    val secretsLookupService: SecretsLookupService
+    val secretsLookupService: SecretsLookupService,
+    private val secretsCreateService: SecretsCreateService,
 ): SmartConfigFactory {
     /**
      * Convert a regular [Config] object into a [SmartConfig] one that is able to resolve secrets
@@ -15,5 +17,9 @@ class SmartConfigFactoryImpl(
      */
     override fun create(config: Config): SmartConfig {
         return SmartConfigImpl(config, this, secretsLookupService)
+    }
+
+    override fun makeSecret(plainText: String): SmartConfig {
+        return SmartConfigImpl(secretsCreateService.createValue(plainText), this, secretsLookupService)
     }
 }

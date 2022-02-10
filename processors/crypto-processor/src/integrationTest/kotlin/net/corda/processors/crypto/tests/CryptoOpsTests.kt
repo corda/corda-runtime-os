@@ -2,9 +2,14 @@ package net.corda.processors.crypto.tests
 
 import net.corda.crypto.CryptoConsts
 import net.corda.crypto.CryptoOpsClient
+import net.corda.data.config.Configuration
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.records.Record
 import net.corda.processors.crypto.CryptoProcessor
+import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.util.contextLogger
@@ -22,6 +27,9 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.security.PublicKey
+import java.security.spec.MGF1ParameterSpec
+import java.security.spec.PSSParameterSpec
+import java.time.Duration
 import java.util.UUID
 import kotlin.reflect.KFunction
 
@@ -32,9 +40,9 @@ class CryptoOpsTests {
 
         private val CLIENT_ID = makeClientId<CryptoOpsTests>()
 
-        private const val CRYPTO_CONFIGURATION: String = ""
+        private const val CRYPTO_CONFIGURATION_VALUE: String = "{}"
 
-        private const val MESSAGING_CONFIGURATION: String =  """
+        private const val MESSAGING_CONFIGURATION_VALUE: String = """
             componentVersion="5.1"
             subscription {
                 consumer {
@@ -83,29 +91,44 @@ class CryptoOpsTests {
     fun setup() {
         tenantId = UUID.randomUUID().toString()
 
-        publisherFactory.publishConfig(
-            CLIENT_ID,
-            CRYPTO_CONFIGURATION to CRYPTO_CONFIG,
-            MESSAGING_CONFIGURATION to MESSAGING_CONFIG
-        )
+        logger.info("Starting ${client::class.java.simpleName}")
+        client.startAndWait()
 
-        processor.start(makeBootstrapConfig(BOOT_CONFIGURATION))
+        logger.info("Starting ${processor::class.java.simpleName}")
+        processor.startAndWait(makeBootstrapConfig(BOOT_CONFIGURATION))
 
         testDependencies = TestLifecycleDependenciesTrackingCoordinator(
-            logger,
+            LifecycleCoordinatorName.forComponent<CryptoOpsTests>(),
             coordinatorFactory,
             CryptoOpsClient::class.java,
             CryptoProcessor::class.java
-        )
+        ).also { it.startAndWait() }
 
-        client.startAndWait()
-        testDependencies.waitUntilAllUp()
+        logger.info("Publishing configs for $CRYPTO_CONFIG and $MESSAGING_CONFIG")
+        with(publisherFactory.createPublisher(PublisherConfig(CLIENT_ID))) {
+            publish(
+                listOf(
+                    Record(
+                        CONFIG_TOPIC,
+                        MESSAGING_CONFIG,
+                        Configuration(MESSAGING_CONFIGURATION_VALUE, "1")
+                    ),
+                    Record(
+                        CONFIG_TOPIC,
+                        CRYPTO_CONFIG,
+                        Configuration(CRYPTO_CONFIGURATION_VALUE, "1")
+                    )
+                )
+            )
+        }
+
+        testDependencies.waitUntilAllUp(Duration.ofSeconds(10))
     }
 
     @AfterEach
     fun cleanup() {
         client.stopAndWait()
-        testDependencies.close()
+        testDependencies.stopAndWait()
     }
 
     @Test
@@ -220,7 +243,16 @@ class CryptoOpsTests {
         val data = randomDataByteArray()
         val signatureSpec = when (params.second.algorithm) {
             "EC" -> SignatureSpec("SHA512withECDSA")
-            "RSA" -> SignatureSpec("SHA512withECDSA")
+            "RSA" -> SignatureSpec(
+                "RSASSA-PSS",
+                params = PSSParameterSpec(
+                    "SHA-256",
+                    "MGF1",
+                    MGF1ParameterSpec.SHA256,
+                    32,
+                    1
+                )
+            )
             else -> throw IllegalArgumentException("Test supports only RSA or ECDSA")
         }
         val signature = client.sign(
