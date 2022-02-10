@@ -24,12 +24,13 @@ class SessionManagerImplTest {
 
     @Test
     fun testGetNextReceivedEvent() {
-        val sessionState = buildSessionState(SessionStateType.CONFIRMED,
+        val sessionState = buildSessionState(
+            SessionStateType.CONFIRMED,
             1,
             listOf(
-                SessionEvent(MessageDirection.INBOUND, 1, "sessionId",1, null),
-                SessionEvent(MessageDirection.INBOUND, 1, "sessionId",3, null),
-                SessionEvent(MessageDirection.INBOUND, 1, "sessionId",4, null),
+                SessionEvent(MessageDirection.INBOUND, 1, "sessionId", 1, null),
+                SessionEvent(MessageDirection.INBOUND, 1, "sessionId", 3, null),
+                SessionEvent(MessageDirection.INBOUND, 1, "sessionId", 4, null),
             ),
             0,
             listOf()
@@ -41,11 +42,12 @@ class SessionManagerImplTest {
 
     @Test
     fun testGetNextReceivedEventOutOfOrder() {
-        val sessionState = buildSessionState(SessionStateType.CONFIRMED,
+        val sessionState = buildSessionState(
+            SessionStateType.CONFIRMED,
             1,
             listOf(
-                SessionEvent(MessageDirection.INBOUND, 1, "sessionId",3, null),
-                SessionEvent(MessageDirection.INBOUND, 1, "sessionId",4, null),
+                SessionEvent(MessageDirection.INBOUND, 1, "sessionId", 3, null),
+                SessionEvent(MessageDirection.INBOUND, 1, "sessionId", 4, null),
             ),
             0,
             listOf()
@@ -70,7 +72,7 @@ class SessionManagerImplTest {
         )
         val outputState = sessionManager.acknowledgeReceivedEvent(sessionState, 1)
         assertThat(outputState.receivedEventsState.undeliveredMessages.size).isEqualTo(2)
-        assertThat(outputState.receivedEventsState.undeliveredMessages.find{ it.sequenceNum == 1}).isNull()
+        assertThat(outputState.receivedEventsState.undeliveredMessages.find { it.sequenceNum == 1 }).isNull()
     }
 
 
@@ -89,19 +91,21 @@ class SessionManagerImplTest {
                 SessionEvent(MessageDirection.OUTBOUND, instant.plusMillis(100).toEpochMilli(), "sessionId", null, SessionAck(2)),
                 SessionEvent(MessageDirection.OUTBOUND, instant.plusMillis(100).toEpochMilli(), "sessionId", 4, SessionData()),
             ),
-          )
+        )
         //validate only messages with a timestamp in the past are returned.
         val (outputState, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig)
         assertThat(messagesToSend.size).isEqualTo(4)
         //validate ack with timestamp in the past is removed, ack with timestamp in the future remains
         assertThat(outputState.sendEventsState.undeliveredMessages.size).isEqualTo(3)
-        assertThat(outputState.sendEventsState.undeliveredMessages.filter{ it.payload::class.java == SessionAck::class.java}).isEmpty()
+        assertThat(outputState.sendEventsState.undeliveredMessages.filter { it.payload::class.java == SessionAck::class.java }).isEmpty()
 
         //Validate all acks removed after time has passed but unacked data messages remain in the state
-        val (secondOutputState, secondMessagesToSend) = sessionManager.getMessagesToSend(sessionState, instant.plusMillis(testResendWindow + 100),
-            testSmartConfig)
+        val (secondOutputState, secondMessagesToSend) = sessionManager.getMessagesToSend(
+            sessionState, instant.plusMillis(testResendWindow + 100),
+            testSmartConfig
+        )
         assertThat(secondMessagesToSend.size).isEqualTo(3)
         assertThat(secondOutputState.sendEventsState.undeliveredMessages.size).isEqualTo(3)
-        assertThat(secondOutputState.sendEventsState.undeliveredMessages.filter{ it.payload::class.java == SessionAck::class.java}).isEmpty()
+        assertThat(secondOutputState.sendEventsState.undeliveredMessages.filter { it.payload::class.java == SessionAck::class.java }).isEmpty()
     }
 }
