@@ -41,7 +41,7 @@ class CpiUploadRPCOpsImplTest {
         coordinatorFactory = mock<LifecycleCoordinatorFactory>().also {
             whenever(it.createCoordinator(any(), any())).thenReturn(coordinator)
         }
-        cpiUploadRPCOpsImpl = CpiUploadRPCOpsImpl(coordinatorFactory, cpiUploadRPCOpsService, mock())
+        cpiUploadRPCOpsImpl = CpiUploadRPCOpsImpl(coordinatorFactory, cpiUploadRPCOpsService)
         cpiUploadManager = mock()
         whenever(cpiUploadRPCOpsService.cpiUploadManager).thenReturn(cpiUploadManager)
     }
