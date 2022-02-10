@@ -12,10 +12,8 @@ import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import java.io.InputStream
-import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.Duration
-import java.util.UUID
 import java.util.concurrent.Future
 
 class CpiUploadManagerImpl(
