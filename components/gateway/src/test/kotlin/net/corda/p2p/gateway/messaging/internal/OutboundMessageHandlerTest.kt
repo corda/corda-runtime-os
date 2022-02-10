@@ -55,7 +55,7 @@ import java.util.concurrent.TimeUnit
 
 class OutboundMessageHandlerTest {
     companion object {
-        private const val TRUST_STORE_HASH = "MyHash"
+        private const val GROUP_ID = "My group ID"
     }
     private val coordinatorHandler = argumentCaptor<LifecycleEventHandler>()
     private val coordinator = mock<LifecycleCoordinator> {
@@ -169,7 +169,7 @@ class OutboundMessageHandlerTest {
             "a",
             NetworkType.CORDA_5,
             "https://r3.com/",
-            TRUST_STORE_HASH,
+            GROUP_ID,
         )
         val message = LinkOutMessage(headers, payload)
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
@@ -198,7 +198,7 @@ class OutboundMessageHandlerTest {
             "a",
             NetworkType.CORDA_5,
             "https://r3.com/",
-            TRUST_STORE_HASH
+            GROUP_ID
         )
         val message = LinkOutMessage(headers, msgPayload)
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
@@ -229,7 +229,7 @@ class OutboundMessageHandlerTest {
             "a",
             NetworkType.CORDA_5,
             "https://r3.com/",
-            TRUST_STORE_HASH,
+            GROUP_ID,
         )
         val message = LinkOutMessage(
             headers,
@@ -269,7 +269,7 @@ class OutboundMessageHandlerTest {
             "O=PartyA, L=London, C=GB",
             NetworkType.CORDA_4,
             "https://r3.com/",
-            TRUST_STORE_HASH
+            GROUP_ID
         )
         val message = LinkOutMessage(
             headers,
@@ -309,7 +309,7 @@ class OutboundMessageHandlerTest {
             "aaa",
             NetworkType.CORDA_4,
             "https://r3.com/",
-            TRUST_STORE_HASH,
+            GROUP_ID,
         )
         val message = LinkOutMessage(
             headers,
@@ -350,7 +350,7 @@ class OutboundMessageHandlerTest {
             "a",
             NetworkType.CORDA_5,
             "https://r3.com/",
-            TRUST_STORE_HASH
+            GROUP_ID
         )
         val message = LinkOutMessage(headers, msgPayload)
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
@@ -397,7 +397,7 @@ class OutboundMessageHandlerTest {
             "a",
             NetworkType.CORDA_5,
             "https://r3.com/",
-            TRUST_STORE_HASH,
+            GROUP_ID,
         )
         val message = LinkOutMessage(headers, msgPayload)
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
@@ -447,7 +447,7 @@ class OutboundMessageHandlerTest {
             "a",
             NetworkType.CORDA_5,
             "https://r3.com/",
-            TRUST_STORE_HASH,
+            GROUP_ID,
         )
         val message = LinkOutMessage(headers, msgPayload)
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
@@ -496,7 +496,7 @@ class OutboundMessageHandlerTest {
             "a",
             NetworkType.CORDA_5,
             "https://r3.com/",
-            TRUST_STORE_HASH,
+            GROUP_ID,
         )
         val message = LinkOutMessage(headers, msgPayload)
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
@@ -515,7 +515,7 @@ class OutboundMessageHandlerTest {
     }
 
     private fun startHandler() {
-        whenever(trustStores.constructed().first().getTrustStore(TRUST_STORE_HASH)).doReturn(truststore)
+        whenever(trustStores.constructed().first().getTrustStore(GROUP_ID)).doReturn(truststore)
         whenever(connectionManager.constructed().first().isRunning).doReturn(true)
         whenever(dominoTile.constructed().first().isRunning).doReturn(true)
         handler.start()

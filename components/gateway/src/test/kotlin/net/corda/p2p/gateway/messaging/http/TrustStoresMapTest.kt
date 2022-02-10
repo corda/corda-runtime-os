@@ -106,12 +106,12 @@ class TrustStoresMapTest {
         processor.firstValue.onSnapshot(emptyMap())
 
         processor.firstValue.onNext(
-            Record(Schemas.P2P.GATEWAY_TLS_TRUSTSTORES, "hash", GatewayTruststore(listOf("one"))),
+            Record(Schemas.P2P.GATEWAY_TLS_TRUSTSTORES, "group id 1", GatewayTruststore(listOf("one"))),
             null,
             emptyMap(),
         )
 
-        assertThat(testObject.getTrustStore("hash")).isEqualTo(keyStore)
+        assertThat(testObject.getTrustStore("group id 1")).isEqualTo(keyStore)
     }
 
     @Test
@@ -119,18 +119,18 @@ class TrustStoresMapTest {
         testObject.start()
         processor.firstValue.onSnapshot(
             mapOf(
-                "hash" to GatewayTruststore(listOf("one"))
+                "group id 1" to GatewayTruststore(listOf("one"))
             )
         )
 
         processor.firstValue.onNext(
-            Record(Schemas.P2P.GATEWAY_TLS_TRUSTSTORES, "hash", null),
+            Record(Schemas.P2P.GATEWAY_TLS_TRUSTSTORES, "group id 1", null),
             null,
             emptyMap(),
         )
 
         assertThrows<IllegalArgumentException> {
-            testObject.getTrustStore("hash")
+            testObject.getTrustStore("group id 1")
         }
     }
 
@@ -138,11 +138,11 @@ class TrustStoresMapTest {
     fun `onSnapshot save the data`() {
         processor.firstValue.onSnapshot(
             mapOf(
-                "hash" to GatewayTruststore(listOf("one"))
+                "group id 1" to GatewayTruststore(listOf("one"))
             )
         )
 
-        assertThat(testObject.getTrustStore("hash")).isEqualTo(keyStore)
+        assertThat(testObject.getTrustStore("group id 1")).isEqualTo(keyStore)
     }
 
     @Test

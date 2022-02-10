@@ -67,7 +67,7 @@ import kotlin.concurrent.thread
 class GatewayIntegrationTest : TestBase() {
     companion object {
         private val logger = contextLogger()
-        const val TRUST_STORE_HASH = "TRUST_STORE_HASH"
+        const val GROUP_ID = "Group - 1"
     }
 
     private val sessionId = "session-1"
@@ -89,7 +89,7 @@ class GatewayIntegrationTest : TestBase() {
 
         init {
             publish(
-                Record(Schemas.P2P.GATEWAY_TLS_TRUSTSTORES, TRUST_STORE_HASH, GatewayTruststore(listOf(truststoreCertificatePem)))
+                Record(Schemas.P2P.GATEWAY_TLS_TRUSTSTORES, GROUP_ID, GatewayTruststore(listOf(truststoreCertificatePem)))
             )
         }
 
@@ -199,7 +199,7 @@ class GatewayIntegrationTest : TestBase() {
 
             val linkInMessage = LinkInMessage(authenticatedP2PMessage(""))
             val linkOutMessage = LinkOutMessage.newBuilder().apply {
-                header = LinkOutHeader("", NetworkType.CORDA_5, recipientServerUrl.toString(), TRUST_STORE_HASH)
+                header = LinkOutHeader("", NetworkType.CORDA_5, recipientServerUrl.toString(), GROUP_ID)
                 payload = authenticatedP2PMessage("link out")
             }.build()
             val gatewayMessage = GatewayMessage("msg-id", linkInMessage.payload)
@@ -369,7 +369,7 @@ class GatewayIntegrationTest : TestBase() {
             }.onEach { serverUrl ->
                 repeat(messageCount) {
                     val msg = LinkOutMessage.newBuilder().apply {
-                        header = LinkOutHeader("", NetworkType.CORDA_5, serverUrl, TRUST_STORE_HASH)
+                        header = LinkOutHeader("", NetworkType.CORDA_5, serverUrl, GROUP_ID)
                         payload = authenticatedP2PMessage("Target-$serverUrl")
                     }.build()
                     alice.publish(Record(LINK_OUT_TOPIC, "key", msg))
@@ -529,7 +529,7 @@ class GatewayIntegrationTest : TestBase() {
                 )
             }.flatMap { (address, node) ->
                 val msg = LinkOutMessage.newBuilder().apply {
-                    header = LinkOutHeader("", NetworkType.CORDA_5, address, TRUST_STORE_HASH)
+                    header = LinkOutHeader("", NetworkType.CORDA_5, address, GROUP_ID)
                     payload = authenticatedP2PMessage("Target-$address")
                 }.build()
                 node.publish(Record(LINK_OUT_TOPIC, "key", msg))
