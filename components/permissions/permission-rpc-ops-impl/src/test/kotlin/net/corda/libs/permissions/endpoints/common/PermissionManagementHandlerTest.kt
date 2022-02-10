@@ -22,11 +22,12 @@ internal class PermissionManagementHandlerTest {
     @Test
     fun `test TimeoutException returns InternalServerException`() {
 
-        val e = assertThrows<InternalServerException>("Permission management operation timed out.") {
+        val e = assertThrows<InternalServerException> {
             withPermissionManager(permissionManager, logger){
                 throw TimeoutException("Timed out.")
             }
         }
+        assertEquals("Permission management operation timed out.", e.message)
         assertEquals(0, e.details.size)
     }
 
@@ -38,6 +39,7 @@ internal class PermissionManagementHandlerTest {
                 throw CordaRPCAPIResponderException("Responder exception")
             }
         }
+        assertEquals("Internal server error.", e.message)
         assertEquals(2, e.details.size)
         assertEquals(CordaRPCAPIResponderException::class.java.name, e.details["cause"])
         assertEquals("Responder exception", e.details["reason"])
@@ -46,11 +48,12 @@ internal class PermissionManagementHandlerTest {
     @Test
     fun `test CordaRPCAPIResponderException with throwable returns InternalServerException`() {
 
-        val e = assertThrows<InternalServerException>("Internal server error.") {
+        val e = assertThrows<InternalServerException> {
             withPermissionManager(permissionManager, logger){
                 throw CordaRPCAPIResponderException("Responder exception", IllegalArgumentException("illegal arg"))
             }
         }
+        assertEquals("Internal server error.", e.message)
         assertEquals(2, e.details.size)
         assertEquals("java.lang.IllegalArgumentException", e.details["cause"])
         assertEquals("illegal arg", e.details["reason"])
@@ -59,11 +62,12 @@ internal class PermissionManagementHandlerTest {
     @Test
     fun `test CordaRPCAPISenderException with throwable returns InternalServerException`() {
 
-        val e = assertThrows<InternalServerException>("Internal server error.") {
+        val e = assertThrows<InternalServerException> {
             withPermissionManager(permissionManager, logger){
                 throw CordaRPCAPISenderException("Sender exception", IllegalArgumentException("illegal arg"))
             }
         }
+        assertEquals("Internal server error.", e.message)
         assertEquals(2, e.details.size)
         assertEquals("java.lang.IllegalArgumentException", e.details["cause"])
         assertEquals("illegal arg", e.details["reason"])
@@ -72,11 +76,12 @@ internal class PermissionManagementHandlerTest {
     @Test
     fun `test CordaRPCAPISenderException with no throwable returns InternalServerException`() {
 
-        val e = assertThrows<InternalServerException>("Internal server error.") {
+        val e = assertThrows<InternalServerException> {
             withPermissionManager(permissionManager, logger){
                 throw CordaRPCAPISenderException("Sender exception")
             }
         }
+        assertEquals("Internal server error.", e.message)
         assertEquals(2, e.details.size)
         assertEquals(CordaRPCAPISenderException::class.java.name, e.details["cause"])
         assertEquals("Sender exception", e.details["reason"])
@@ -85,11 +90,12 @@ internal class PermissionManagementHandlerTest {
     @Test
     fun `test UnexpectedPermissionResponseException returns InternalServerException`() {
 
-        val e = assertThrows<InternalServerException>("Internal server error.") {
+        val e = assertThrows<InternalServerException> {
             withPermissionManager(permissionManager, logger){
                 throw UnexpectedPermissionResponseException("unexpected exception")
             }
         }
+        assertEquals("Internal server error.", e.message)
         assertEquals(2, e.details.size)
         assertEquals(UnexpectedPermissionResponseException::class.java.name, e.details["cause"])
         assertEquals("unexpected exception", e.details["reason"])
@@ -98,11 +104,12 @@ internal class PermissionManagementHandlerTest {
     @Test
     fun `test RemotePermissionManagementException returns exception type and message`() {
 
-        val e = assertThrows<InternalServerException>("JPA exception handled") {
+        val e = assertThrows<InternalServerException> {
             withPermissionManager(permissionManager, logger){
                 throw RemotePermissionManagementException("javax.persistence.OptimisticLockException", "JPA exception handled")
             }
         }
+        assertEquals("Internal server error.", e.message)
         assertEquals(2, e.details.size)
         assertEquals("javax.persistence.OptimisticLockException", e.details["cause"])
         assertEquals("JPA exception handled", e.details["reason"])
@@ -112,11 +119,12 @@ internal class PermissionManagementHandlerTest {
     @Test
     fun `test random exception returns UnexpectedErrorException`() {
 
-        val e = assertThrows<UnexpectedErrorException>("Unexpected permission management error occurred.") {
+        val e = assertThrows<UnexpectedErrorException> {
             withPermissionManager(permissionManager, logger){
                 throw Exception("random exception")
             }
         }
+        assertEquals("Unexpected permission management error occurred.", e.message)
         assertEquals(2, e.details.size)
         assertEquals(Exception::class.java.name, e.details["cause"])
         assertEquals("random exception", e.details["reason"])
