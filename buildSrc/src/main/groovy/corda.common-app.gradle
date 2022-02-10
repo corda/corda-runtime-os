@@ -402,7 +402,7 @@ def appJar = tasks.register('appJar', Jar) {
     inputs.files(configurations.bootstrapClasspath)
     finalizedBy verifyApp
 
-    archivesBaseName = appJarBaseName
+    archiveBaseName = appJarBaseName
     destinationDirectory = layout.buildDirectory.dir("bin")
 
     exclude "META-INF/MANIFEST.MF"
