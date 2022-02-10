@@ -1,8 +1,6 @@
 package net.corda.libs.virtualnode.datamodel
 
-import net.corda.db.schema.DbSchema
 import net.corda.db.schema.DbSchema.CONFIG
-import net.corda.db.schema.DbSchema.VNODE
 import net.corda.db.schema.DbSchema.VNODE_INSTANCE_DB_TABLE
 import java.io.Serializable
 import javax.persistence.Column

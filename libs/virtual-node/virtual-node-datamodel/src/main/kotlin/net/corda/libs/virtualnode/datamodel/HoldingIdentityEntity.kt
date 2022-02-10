@@ -2,7 +2,6 @@ package net.corda.libs.virtualnode.datamodel
 
 import net.corda.db.schema.DbSchema.CONFIG
 import net.corda.db.schema.DbSchema.HOLDING_IDENTITY_DB_TABLE
-import net.corda.db.schema.DbSchema.VNODE
 import java.util.UUID
 import javax.persistence.Column
 import javax.persistence.Entity
