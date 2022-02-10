@@ -18,7 +18,6 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.BOOTSTRAP_SERVERS_VALUE
 import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.KAFKA_COMMON_BOOTSTRAP_SERVER
 import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.TOPIC_PREFIX
-import net.corda.messaging.kafka.integration.TopicTemplates.Companion.DLQ_SUFFIX
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.EVENT_TOPIC1
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.EVENT_TOPIC1_TEMPLATE
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.EVENT_TOPIC2
@@ -28,10 +27,12 @@ import net.corda.messaging.kafka.integration.TopicTemplates.Companion.EVENT_TOPI
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.EVENT_TOPIC4
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.EVENT_TOPIC4_TEMPLATE
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.EVENT_TOPIC5
+import net.corda.messaging.kafka.integration.TopicTemplates.Companion.EVENT_TOPIC5_DLQ
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.EVENT_TOPIC5_TEMPLATE
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.EVENT_TOPIC6
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.EVENT_TOPIC6_TEMPLATE
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.EVENT_TOPIC7
+import net.corda.messaging.kafka.integration.TopicTemplates.Companion.EVENT_TOPIC7_DLQ
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.EVENT_TOPIC7_TEMPLATE
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.TEST_TOPIC_PREFIX
 import net.corda.messaging.kafka.integration.getDemoRecords
@@ -350,7 +351,7 @@ class StateAndEventSubscriptionIntegrationTest {
         //verify dead letter populated
         val deadLetterLatch = CountDownLatch(1)
         val deadLetterSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$EVENTSTATE_OUTPUT5-group-DLQ",  EVENT_TOPIC5 + DLQ_SUFFIX, 1),
+            SubscriptionConfig("$EVENTSTATE_OUTPUT5-group-DLQ",  EVENT_TOPIC5_DLQ, 1),
             TestDurableProcessorStrings(deadLetterLatch),
             kafkaConfig,
             null
@@ -441,7 +442,7 @@ class StateAndEventSubscriptionIntegrationTest {
             null
         )
         val dlqSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$EVENT_TOPIC7-group",  "$EVENT_TOPIC7.DLQ", 1),
+            SubscriptionConfig("$EVENT_TOPIC7-group",  EVENT_TOPIC7_DLQ, 1),
             TestDurableStringProcessor(dlqLatch),
             kafkaConfig,
             null

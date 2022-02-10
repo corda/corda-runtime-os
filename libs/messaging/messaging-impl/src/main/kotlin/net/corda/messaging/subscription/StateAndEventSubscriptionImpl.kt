@@ -23,6 +23,7 @@ import net.corda.messaging.utils.getEventsByBatch
 import net.corda.messaging.utils.toCordaProducerRecords
 import net.corda.messaging.utils.toRecord
 import net.corda.messaging.utils.tryGetResult
+import net.corda.schema.Schemas.Companion.getStateAndEventDLQTopic
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.LoggerFactory
@@ -68,7 +69,6 @@ class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val producerCloseTimeout = config.producerCloseTimeout
     private val consumerPollAndProcessMaxRetries = config.consumerPollAndProcessMaxRetries
     private val processorTimeout = config.processorTimeout
-    private val deadLetterQueueSuffix = config.deadLetterQueueSuffix
     private lateinit var deadLetterRecords: MutableList<ByteArray>
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
@@ -233,7 +233,7 @@ class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         {
             producer.sendRecords(deadLetterRecords.map {
                 CordaProducerRecord(
-                    eventTopic + deadLetterQueueSuffix,
+                    getStateAndEventDLQTopic(eventTopic),
                     UUID.randomUUID().toString(),
                     it
                 )
@@ -287,7 +287,7 @@ class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         val eventBytes =
             if (eventValue != null) ByteBuffer.wrap(cordaAvroSerializer.serialize(eventValue)) else null
         return Record(
-            eventTopic + deadLetterQueueSuffix, event.key,
+            getStateAndEventDLQTopic(eventTopic), event.key,
             StateAndEventDeadLetterRecord(clock.instant(), keyBytes, stateBytes, eventBytes)
         )
     }
