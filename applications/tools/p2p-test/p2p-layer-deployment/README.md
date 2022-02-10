@@ -220,7 +220,7 @@ minikube stop && minikube delete
 2. Make sure you have access to AWS. (see [here](https://engineering.r3.com/engineering-central/how-we-work/build-logistics-and-tooling/build-and-test/test/eks-cluster-getting-started/#obtaining-sso-access-to-aws))
 2.1 After using minikube, make sure to run:
 ```bash
-aws eks update-kubeconfig --name eks-e2e-03
+aws eks update-kubeconfig --name eks-e2e
 ```
 To switch back to minikube use:
 ```bash
