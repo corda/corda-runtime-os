@@ -10,22 +10,31 @@ import net.corda.sandboxgroupcontext.getUniqueObject
 import net.corda.sandboxgroupcontext.putUniqueObject
 import net.corda.sandboxgroupcontext.service.impl.SandboxGroupContextServiceImpl
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
+import org.osgi.framework.BundleContext
+import org.osgi.service.component.runtime.ServiceComponentRuntime
 import java.util.concurrent.CompletableFuture
 
-
-internal class SandboxGroupContextServiceImplTest {
+class SandboxGroupContextServiceImplTest {
 
     private lateinit var service: SandboxGroupContextServiceImpl
     private val holdingIdentity = HoldingIdentity("foo", "bar")
     private val mainBundle = "MAIN BUNDLE"
 
+    private val scr = mock<ServiceComponentRuntime>()
+    private val bundleContext = mock<BundleContext>()
     private val cpks = setOf(Helpers.mockTrivialCpk(mainBundle))
 
     private lateinit var virtualNodeContext: VirtualNodeContext
+
+    private fun createVirtualNodeContextForFlow(holdingIdentity: HoldingIdentity, cpks: Set<CPK.Identifier>): VirtualNodeContext {
+        return VirtualNodeContext(holdingIdentity, cpks, SandboxGroupType.FLOW, SingletonSerializeAsToken::class.java, null)
+    }
 
     private class InstallServiceImpl(private val cpks: Map<CPK.Identifier, CPK>) : InstallService {
         override fun get(id: CPI.Identifier): CompletableFuture<CPI?> {
@@ -70,8 +79,8 @@ internal class SandboxGroupContextServiceImplTest {
 
     @BeforeEach
     private fun beforeEach() {
-        service = SandboxGroupContextServiceImpl(Helpers.mockSandboxCreationService(listOf(cpks)), cpkServiceImpl)
-        virtualNodeContext = VirtualNodeContext(holdingIdentity, cpks.toIds(), SandboxGroupType.FLOW)
+        service = SandboxGroupContextServiceImpl(Helpers.mockSandboxCreationService(listOf(cpks)), cpkServiceImpl, scr, bundleContext)
+        virtualNodeContext = createVirtualNodeContextForFlow(holdingIdentity, cpks.toIds())
     }
 
     @Test
@@ -134,15 +143,15 @@ internal class SandboxGroupContextServiceImplTest {
         val cpks2 = setOf(Helpers.mockTrivialCpk("MAIN2"))
         val cpks3 = setOf(Helpers.mockTrivialCpk("MAIN3"))
 
-        val ctx1 = VirtualNodeContext(holdingIdentity1, cpks1.toIds(), SandboxGroupType.FLOW)
-        val ctx2 = VirtualNodeContext(holdingIdentity2, cpks2.toIds(), SandboxGroupType.FLOW)
-        val ctx3 = VirtualNodeContext(holdingIdentity3, cpks3.toIds(), SandboxGroupType.FLOW)
+        val ctx1 = createVirtualNodeContextForFlow(holdingIdentity1, cpks1.toIds())
+        val ctx2 = createVirtualNodeContextForFlow(holdingIdentity2, cpks2.toIds())
+        val ctx3 = createVirtualNodeContextForFlow(holdingIdentity3, cpks3.toIds())
 
         val sandboxCreationService = Helpers.mockSandboxCreationService(listOf(cpks1, cpks2, cpks3))
 
         val cpkService = InstallServiceImpl(cpks1.toMap() + cpks2.toMap() + cpks3.toMap())
 
-        val service = SandboxGroupContextServiceImpl(sandboxCreationService, cpkService)
+        val service = SandboxGroupContextServiceImpl(sandboxCreationService, cpkService, scr, bundleContext)
 
         val dog1 = Dog("Rover", "Woof!")
         val dog2 = Dog("Rover", "Bark!")
@@ -192,10 +201,10 @@ internal class SandboxGroupContextServiceImplTest {
     fun `closeables work as expected`() {
         val holdingIdentity1 = HoldingIdentity("OU=1", "bar")
         val cpks1 = setOf(Helpers.mockTrivialCpk("MAIN1"))
-        val ctx1 = VirtualNodeContext(holdingIdentity1, cpks1.toIds(), SandboxGroupType.FLOW)
+        val ctx1 = createVirtualNodeContextForFlow(holdingIdentity1, cpks1.toIds())
         val sandboxCreationService = Helpers.mockSandboxCreationService(listOf(cpks1))
         val cpkService = InstallServiceImpl(cpks1.toMap())
-        val service = SandboxGroupContextServiceImpl(sandboxCreationService, cpkService)
+        val service = SandboxGroupContextServiceImpl(sandboxCreationService, cpkService, scr, bundleContext)
         val dog1 = Dog("Rover", "Woof!")
 
         var isClosed = false

@@ -4,19 +4,17 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.CryptoConsts
 import net.corda.crypto.CryptoOpsClient
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.createCoordinator
 import net.corda.membership.GroupPolicy
 import net.corda.membership.conversion.toWire
 import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.membership.identity.EndpointInfoImpl
 import net.corda.membership.identity.MGMContextImpl
 import net.corda.membership.identity.MemberContextImpl
 import net.corda.membership.identity.MemberInfoExtension
 import net.corda.membership.identity.MemberInfoExtension.Companion.GROUP_ID
-import net.corda.membership.identity.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.identity.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.identity.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.identity.MemberInfoExtension.Companion.PARTY_OWNING_KEY
@@ -33,12 +31,6 @@ import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_PROTOCOL
 import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_URL
 import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.KEY_ALIAS
-import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.MEMBER_STATUS
-import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.NAME
-import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.STATIC_MODIFIED_TIME
-import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.STATIC_PLATFORM_VERSION
-import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.STATIC_SERIAL
-import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.STATIC_SOFTWARE_VERSION
 import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.staticMembers
 import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.staticMgm
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -52,13 +44,13 @@ import net.corda.v5.membership.conversion.PropertyConverter
 import net.corda.v5.membership.identity.EndpointInfo
 import net.corda.v5.membership.identity.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import java.nio.ByteBuffer
 import java.security.PublicKey
-import java.time.Instant
 
 @Suppress("LongParameterList")
 @Component(service = [MemberRegistrationService::class])
@@ -84,10 +76,6 @@ class StaticMemberRegistrationService @Activate constructor(
         private val logger: Logger = contextLogger()
         private val endpointUrlIdentifier = ENDPOINT_URL.substringBefore("-")
         private val endpointProtocolIdentifier = ENDPOINT_PROTOCOL.substringBefore("-")
-
-        internal const val DEFAULT_SOFTWARE_VERSION = "5.0.0"
-        internal const val DEFAULT_PLATFORM_VERSION = "10"
-        internal const val DEFAULT_SERIAL = "1"
     }
 
     private val topic = Schemas.Membership.MEMBER_LIST_TOPIC
@@ -96,8 +84,10 @@ class StaticMemberRegistrationService @Activate constructor(
     private val lifecycleHandler = RegistrationServiceLifecycleHandler(this)
 
     // Component lifecycle coordinator
-    private val coordinator =
-        coordinatorFactory.createCoordinator<MemberRegistrationService>(lifecycleHandler)
+    private val coordinator = coordinatorFactory.createCoordinator(
+        lifecycleCoordinatorName,
+        lifecycleHandler
+    )
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
@@ -136,8 +126,8 @@ class StaticMemberRegistrationService @Activate constructor(
      * Parses the static member list template as SignedMemberInfo objects and creates the records for the
      * kafka publisher.
      */
-    private fun parseMemberTemplate(member: HoldingIdentity): List<Record<String, SignedMemberInfo>> {
-        val members = mutableListOf<Record<String, SignedMemberInfo>>()
+    private fun parseMemberTemplate(member: HoldingIdentity): List<Record<String, PersistentMemberInfo>> {
+        val members = mutableListOf<Record<String, PersistentMemberInfo>>()
 
         val policy = groupPolicyProvider.getGroupPolicy(member)
         val groupId = policy.groupId
@@ -149,7 +139,7 @@ class StaticMemberRegistrationService @Activate constructor(
         @Suppress("SpreadOperator")
         staticMemberList.forEach { staticMember ->
             isValidStaticMemberDeclaration(processedMembers, staticMember)
-            val memberName = staticMember[NAME].toString()
+            val memberName = staticMember.name!!
             val memberId = HoldingIdentity(memberName, groupId).id
             val memberKey = generateOwningKey(staticMember, memberId)
             val encodedMemberKey = keyEncodingService.encodeAsString(memberKey)
@@ -163,30 +153,26 @@ class StaticMemberRegistrationService @Activate constructor(
                         *generateIdentityKeys(encodedMemberKey).toTypedArray(),
                         *generateIdentityKeyHashes(memberKey).toTypedArray(),
                         *convertEndpoints(staticMember).toTypedArray(),
-                        SOFTWARE_VERSION to (staticMember[STATIC_SOFTWARE_VERSION] ?: DEFAULT_SOFTWARE_VERSION),
-                        PLATFORM_VERSION to (staticMember[STATIC_PLATFORM_VERSION] ?: DEFAULT_PLATFORM_VERSION),
-                        SERIAL to (staticMember[STATIC_SERIAL] ?: DEFAULT_SERIAL),
+                        SOFTWARE_VERSION to staticMember.softwareVersion,
+                        PLATFORM_VERSION to staticMember.platformVersion,
+                        SERIAL to staticMember.serial,
                     ),
                     converter
                 ),
                 mgmProvidedContext = MGMContextImpl(
                     sortedMapOf(
-                        STATUS to (staticMember[MEMBER_STATUS] ?: MEMBER_STATUS_ACTIVE),
-                        MODIFIED_TIME to (staticMember[STATIC_MODIFIED_TIME] ?: Instant.now().toString()),
+                        STATUS to staticMember.status,
+                        MODIFIED_TIME to staticMember.modifiedTime,
                     ),
                     converter
                 )
             )
+            val signedMemberInfo = signMemberInfo(memberId, memberInfo, memberKey, mgmKey)
             members.add(
                 Record(
                     topic,
                     member.id + "-" + memberId,
-                    signMemberInfo(
-                        memberId,
-                        memberInfo,
-                        memberKey,
-                        mgmKey,
-                    )
+                    PersistentMemberInfo(member.toAvro(), signedMemberInfo)
                 )
             )
             processedMembers.add(memberName)
@@ -194,9 +180,10 @@ class StaticMemberRegistrationService @Activate constructor(
         return members
     }
 
-    private fun isValidStaticMemberDeclaration(processedMembers: List<String>, member: Map<String, String>) {
-        require(!member[NAME].isNullOrBlank()) { "Member's name is not provided." }
-        require(!processedMembers.contains(member[NAME]!!)) { "Duplicated static member declaration." }
+    private fun isValidStaticMemberDeclaration(processedMembers: List<String>, member: StaticMember) {
+        val memberName = member.name
+        require(!memberName.isNullOrBlank()) { "Member's name is not provided." }
+        require(!processedMembers.contains(memberName)) { "Duplicated static member declaration." }
         require(
             member.keys.any { it.startsWith(endpointUrlIdentifier) }
         ) { "Endpoint urls are not provided." }
@@ -209,10 +196,10 @@ class StaticMemberRegistrationService @Activate constructor(
      * If the keyAlias is not defined in the static template, we are going to use the id of the HoldingIdentity as default.
      */
     private fun generateOwningKey(
-        member: Map<String, String>,
+        member: StaticMember,
         memberId: String
     ): PublicKey {
-        var keyAlias = member[KEY_ALIAS]
+        var keyAlias = member.keyAlias
         if (keyAlias.isNullOrBlank()) {
             keyAlias = memberId
         }
@@ -246,16 +233,11 @@ class StaticMemberRegistrationService @Activate constructor(
     /**
      * Mapping the keys from the json format to the keys expected in the [MemberInfo].
      */
-    private fun convertEndpoints(member: Map<String, String>): List<Pair<String, String>> {
+    private fun convertEndpoints(member: StaticMember): List<Pair<String, String>> {
         val endpoints = mutableListOf<EndpointInfo>()
         member.keys.filter { it.startsWith(endpointUrlIdentifier) }.size.apply {
             for (index in 1..this) {
-                endpoints.add(
-                    EndpointInfoImpl(
-                        member[String.format(ENDPOINT_URL, index)].toString(),
-                        member[String.format(ENDPOINT_PROTOCOL, index)]!!.toInt()
-                    )
-                )
+                endpoints.add(member.getEndpoint(index))
             }
         }
         val result = mutableListOf<Pair<String, String>>()

@@ -12,6 +12,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':components:configuration:configuration-read-service')
     implementation project(':components:configuration:configuration-write-service')
+    implementation project(':components:db:db-connection-manager')
     implementation project(':components:permissions:permission-cache-service')
     implementation project(':components:permissions:permission-storage-reader-service')
     implementation project(':components:permissions:permission-storage-writer-service')
@@ -23,14 +24,16 @@ dependencies {
     implementation project(":libs:db:db-core")
     implementation project(':libs:db:db-orm')
     implementation project(':libs:lifecycle:lifecycle')
+    implementation project(":libs:permissions:permission-datamodel")
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation 'net.corda:corda-base'
+    implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-db-schema'
 
     runtimeOnly project(':components:configuration:configuration-write-service-impl')
     runtimeOnly project(':components:virtual-node:virtual-node-write-service-impl')
+    runtimeOnly project(':components:db:db-connection-manager-impl')
     runtimeOnly project(':libs:configuration:configuration-publish-impl')
-    runtimeOnly project(':libs:configuration:configuration-write-impl')
     runtimeOnly project(':libs:virtual-node:virtual-node-write-impl')
     runtimeOnly project(':libs:db:db-orm-impl')
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')

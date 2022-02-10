@@ -63,7 +63,7 @@ class ReplaySchedulerTest {
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
         @Suppress("UNCHECKED_CAST")
         createResources = context.arguments()[2] as ((ResourcesHolder) -> CompletableFuture<Unit>)
-        configHandler = context.arguments()[4] as ReplayScheduler<*>.ReplaySchedulerConfigurationChangeHandler
+        configHandler = context.arguments()[5] as ReplayScheduler<*>.ReplaySchedulerConfigurationChangeHandler
     }
 
     @AfterEach

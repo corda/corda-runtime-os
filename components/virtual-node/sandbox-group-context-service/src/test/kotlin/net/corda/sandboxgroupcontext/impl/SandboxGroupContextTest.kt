@@ -9,6 +9,7 @@ import net.corda.sandboxgroupcontext.getUniqueObject
 import net.corda.sandboxgroupcontext.putObjectByKey
 import net.corda.sandboxgroupcontext.putUniqueObject
 import net.corda.sandboxgroupcontext.service.impl.SandboxGroupContextImpl
+import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -39,7 +40,9 @@ class SandboxGroupContextTest {
 
     private val cpks = setOf(cpk)
 
-    private val virtualNodeContext = VirtualNodeContext(holdingIdentity, cpks.toIds(), SandboxGroupType.FLOW)
+    private val virtualNodeContext = VirtualNodeContext(
+        holdingIdentity, cpks.toIds(), SandboxGroupType.FLOW, SingletonSerializeAsToken::class.java, null
+    )
     private lateinit var sandboxGroupContext: SandboxGroupContextImpl
 
     @BeforeEach

@@ -1,8 +1,8 @@
 package net.corda.configuration.write.impl
 
 import net.corda.configuration.write.ConfigWriteServiceException
-import net.corda.libs.configuration.write.ConfigWriter
-import net.corda.libs.configuration.write.ConfigWriterFactory
+import net.corda.configuration.write.impl.writer.ConfigWriter
+import net.corda.configuration.write.impl.writer.ConfigWriterFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
@@ -12,9 +12,7 @@ import net.corda.lifecycle.LifecycleStatus.UP
 import net.corda.lifecycle.StopEvent
 
 /** Handles incoming [LifecycleCoordinator] events for [ConfigWriteServiceImpl]. */
-internal class ConfigWriteEventHandler(
-    private val configWriterFactory: ConfigWriterFactory
-) : LifecycleEventHandler {
+internal class ConfigWriteEventHandler(private val configWriterFactory: ConfigWriterFactory) : LifecycleEventHandler {
     private var configWriter: ConfigWriter? = null
 
     /**
@@ -34,9 +32,7 @@ internal class ConfigWriteEventHandler(
                 try {
                     // TODO - CORE-3316 - At worker start-up, read back configuration from database and check it
                     //  against Kafka topic.
-                    configWriter = configWriterFactory
-                        .create(event.config, event.instanceId, event.entityManagerFactory)
-                        .apply { start() }
+                    configWriter = configWriterFactory.create(event.config, event.instanceId).apply { start() }
                 } catch (e: Exception) {
                     coordinator.updateStatus(ERROR)
                     throw ConfigWriteServiceException("Could not subscribe to config management requests.", e)
