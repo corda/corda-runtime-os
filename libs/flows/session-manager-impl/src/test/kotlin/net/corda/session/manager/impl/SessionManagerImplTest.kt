@@ -95,11 +95,11 @@ class SessionManagerImplTest {
         //validate only messages with a timestamp in the past are returned.
         val (outputState, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig)
         assertThat(messagesToSend.size).isEqualTo(4)
-        //validate ack with timestamp in the past is removed, ack with timestamp in the future remains
+        //validate all acks removed
         assertThat(outputState.sendEventsState.undeliveredMessages.size).isEqualTo(3)
         assertThat(outputState.sendEventsState.undeliveredMessages.filter { it.payload::class.java == SessionAck::class.java }).isEmpty()
 
-        //Validate all acks removed after time has passed but unacked data messages remain in the state
+        //Validate all acks removed and normal session events are resent
         val (secondOutputState, secondMessagesToSend) = sessionManager.getMessagesToSend(
             sessionState, instant.plusMillis(testResendWindow + 100),
             testSmartConfig
