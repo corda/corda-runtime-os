@@ -56,7 +56,7 @@ class CpiUploadRPCOpsImpl @Activate constructor(
     }
 
     // TODO this method needs to also take the checksum of the file.
-    override fun cpi(file: InputStream): HTTPCpiUploadRequestId {
+    override fun cpi(cpi: InputStream): HTTPCpiUploadRequestId {
         // TODO to be added to method's parameters
         val todoSentChecksumString = "SHA-384:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FD6FD061F9D5CFD13B8F961358E6ADBA4A"
 
@@ -67,7 +67,8 @@ class CpiUploadRPCOpsImpl @Activate constructor(
         // TODO in a later PR check the requestId topic ("HTTP Status" topic) if the CPI already has been processed so return fast
         // First validate CPI against http sent checksum. Then we should continue with uploading it.
         //validateCpiChecksum(file, todoSentChecksumString) // Uncomment once we pass checksum to cpi method parameters
-        val cpiUploadRequestId = cpiUploadManager.uploadCpi(file)
+        // TODO - kyriakos make sure streams get closed
+        val cpiUploadRequestId = cpiUploadManager.uploadCpi(cpi)
         log.info("Successfully sent CPI: $todoSentChecksumString to db worker")
         return HTTPCpiUploadRequestId(cpiUploadRequestId)
     }
