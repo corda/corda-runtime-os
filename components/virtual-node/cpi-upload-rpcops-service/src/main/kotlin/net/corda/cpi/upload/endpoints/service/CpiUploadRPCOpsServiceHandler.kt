@@ -26,6 +26,10 @@ import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 
+/**
+ * Registers to [ConfigurationReadService] for config updates, and on new config updates creates a new [CpiUploadManager]
+ * which also exposes.
+ */
 class CpiUploadRPCOpsServiceHandler(
     private val cpiUploadManagerFactory: CpiUploadManagerFactory,
     private val configReadService: ConfigurationReadService,

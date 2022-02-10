@@ -12,8 +12,9 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
-// This service should be responsible of just setting [CpiUploadRPCOps] internal components (i.e [CpiUploadManager]),
-// to be shared by [CpiUploadRPCOps] different versions.
+/**
+ * This service is used for creating a new [CpiUploadManager] on new configuration through [CpiUploadRPCOpsServiceHandler].
+ */
 @Component(service = [CpiUploadRPCOpsService::class])
 class CpiUploadRPCOpsService @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
