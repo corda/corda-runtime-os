@@ -31,7 +31,7 @@
             <column name="partition" type="VARCHAR(255)"/>
             <column name="record_offset" type="BIGINT"/>
             <column name="timestamp" type="TIMESTAMP"/>
-            <column name="transaction_id" type="BOOLEAN"/>
+            <column name="transaction_id" type="VARCHAR(255)"/>
         </createTable>
         <addPrimaryKey columnNames="topic, consumer_group, partition, record_offset" constraintName="topic_consumer_offset_pk"
                        tableName="topic_consumer_offset"/>
