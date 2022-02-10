@@ -68,7 +68,7 @@ class CpiUploadRPCOpsImpl @Activate constructor(
         // First validate CPI against http sent checksum. Then we should continue with uploading it.
         //validateCpiChecksum(file, todoSentChecksumString) // Uncomment once we pass checksum to cpi method parameters
         // TODO - kyriakos make sure streams get closed
-        val cpiUploadRequestId = cpiUploadManager.uploadCpi(cpi)
+        val cpiUploadRequestId = cpi.use { cpiUploadManager.uploadCpi(it) }
         log.info("Successfully sent CPI: $todoSentChecksumString to db worker")
         return HTTPCpiUploadRequestId(cpiUploadRequestId)
     }
