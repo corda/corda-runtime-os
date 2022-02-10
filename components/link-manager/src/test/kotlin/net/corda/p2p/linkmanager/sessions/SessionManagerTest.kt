@@ -35,8 +35,6 @@ import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.LinkManagerCryptoService
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
-import net.corda.p2p.linkmanager.MessageHeaderFactory
-import net.corda.p2p.linkmanager.TrustStoresContainer
 import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionNeeded
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
@@ -163,10 +161,6 @@ class SessionManagerTest {
         on { getMemberInfo(PEER_PARTY) } doReturn PEER_MEMBER_INFO
         on { getMemberInfo(messageDigest.hash(PEER_KEY.public.encoded), GROUP_ID) } doReturn PEER_MEMBER_INFO
     }
-    private val trustStoresContainer = mock<TrustStoresContainer> {
-        on { computeTrustStoreHash(any()) } doReturn "hash"
-    }
-    private val messageHeaderFactory = MessageHeaderFactory(trustStoresContainer, networkMap, mock())
     private val cryptoService = mock<LinkManagerCryptoService> {
         on { signData(eq(OUR_KEY.public), any()) } doReturn "signature-from-A".toByteArray()
     }
@@ -178,7 +172,7 @@ class SessionManagerTest {
         on { createInitiator(any(), any(), any(), any(), any()) } doReturn protocolInitiator
         on { createResponder(any(), any(), any()) } doReturn protocolResponder
     }
-    private val resources = ResourcesHolder()
+    val resources = ResourcesHolder()
     private val sessionManager = SessionManagerImpl(
         networkMap,
         cryptoService,
@@ -187,9 +181,8 @@ class SessionManagerTest {
         mock(),
         mock(),
         mock(),
-        messageHeaderFactory,
         protocolFactory,
-        sessionReplayer,
+        sessionReplayer
     ).apply {
         setRunning()
         configHandler.applyNewConfiguration(
@@ -256,14 +249,12 @@ class SessionManagerTest {
     @Test
     fun `when no session exists, if network type is missing from network map no message is sent`() {
         whenever(networkMap.getNetworkType(GROUP_ID)).thenReturn(null)
-        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
 
         val sessionState = sessionManager.processOutboundMessage(message)
         assertThat(sessionState).isInstanceOf(SessionManager.SessionState.CannotEstablishSession::class.java)
         verify(sessionReplayer, never()).addMessageForReplay(any(), any(), any())
-        loggingInterceptor.assertSingleWarning(
-            "Could not find the network type in the NetworkMap for ${OUR_PARTY.toHoldingIdentity()}. The message was discarded."
-        )
+        loggingInterceptor.assertSingleWarning("Could not find the network type in the NetworkMap for groupId $GROUP_ID." +
+                " The sessionInit message was not sent.")
     }
 
     @Test
@@ -298,7 +289,7 @@ class SessionManagerTest {
             assertThat(this.firstValue.message).isEqualTo(initiatorHello)
         }
 
-        loggingInterceptor.assertSingleWarning("Attempted to start session negotiation with peer ${PEER_PARTY.toHoldingIdentity()} " +
+        loggingInterceptor.assertSingleWarning("Attempted to start session negotiation with peer $PEER_PARTY " +
                 "which is not in the network map. The sessionInit message was not sent.")
     }
 
@@ -404,9 +395,8 @@ class SessionManagerTest {
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHelloMsg))
 
         assertThat(responseMessage).isNull()
-        loggingInterceptor.assertSingleWarning(
-            "Could not find the network type in the NetworkMap for ${PEER_PARTY.toHoldingIdentity()}. The message was discarded."
-        )
+        loggingInterceptor.assertSingleWarning("Could not find the network type in the NetworkMap for groupId $GROUP_ID." +
+                " The ${InitiatorHelloMessage::class.java.simpleName} for sessionId $sessionId was discarded.")
     }
 
     @Test
@@ -513,9 +503,8 @@ class SessionManagerTest {
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(responderHello))
 
         assertThat(responseMessage).isNull()
-        loggingInterceptor.assertSingleWarningContains(
-            "Could not find the network type in the NetworkMap for ${OUR_PARTY.toHoldingIdentity()}. The message was discarded."
-        )
+        loggingInterceptor.assertSingleWarningContains("Could not find the network type in the NetworkMap for groupId $GROUP_ID." +
+                " The ${ResponderHelloMessage::class.java.simpleName} for sessionId ${sessionState.sessionId} was discarded.")
     }
 
     @Test
@@ -725,9 +714,8 @@ class SessionManagerTest {
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
 
         assertThat(responseMessage).isNull()
-        loggingInterceptor.assertSingleWarningContains(
-            "Could not find the network type in the NetworkMap for ${OUR_PARTY.toHoldingIdentity()}. The message was discarded."
-        )
+        loggingInterceptor.assertSingleWarningContains("Could not find the network type in the NetworkMap for groupId $GROUP_ID." +
+                " The ${InitiatorHandshakeMessage::class.java.simpleName} for sessionId $sessionId was discarded.")
     }
 
     @Test
@@ -778,13 +766,7 @@ class SessionManagerTest {
             SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY)
         )
         verify(pendingSessionMessageQueues)
-            .sessionNegotiatedCallback(
-                sessionManager,
-                SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY),
-                session,
-                networkMap,
-                messageHeaderFactory
-            )
+            .sessionNegotiatedCallback(sessionManager, SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY), session, networkMap)
     }
 
     @Test
@@ -809,13 +791,7 @@ class SessionManagerTest {
             SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY)
         )
         verify(pendingSessionMessageQueues)
-            .sessionNegotiatedCallback(
-                sessionManager,
-                SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY),
-                session,
-                networkMap,
-                messageHeaderFactory
-            )
+            .sessionNegotiatedCallback(sessionManager, SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY), session, networkMap)
 
         configHandler.applyNewConfiguration(
             SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
@@ -898,7 +874,6 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
-            messageHeaderFactory,
             protocolFactory,
             sessionReplayer
         ).apply {
@@ -941,7 +916,6 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
-            messageHeaderFactory,
             protocolFactory,
             sessionReplayer
         ).apply {
@@ -999,7 +973,6 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
-            messageHeaderFactory,
             protocolFactory,
             sessionReplayer
         ).apply {
@@ -1073,7 +1046,6 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
-            messageHeaderFactory,
             protocolFactory,
             sessionReplayer
         ).apply {
@@ -1162,7 +1134,6 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
-            messageHeaderFactory,
             protocolFactory,
             sessionReplayer
         ).apply {
@@ -1253,7 +1224,6 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
-            messageHeaderFactory,
             protocolFactory,
             sessionReplayer
         ).apply {
@@ -1332,7 +1302,6 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
-            messageHeaderFactory,
             protocolFactory,
             sessionReplayer
         ).apply {

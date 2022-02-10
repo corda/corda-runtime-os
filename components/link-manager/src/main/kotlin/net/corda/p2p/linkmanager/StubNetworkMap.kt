@@ -6,6 +6,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.CompactedProcessor
+import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -21,18 +22,33 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
-class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-                     subscriptionFactory: SubscriptionFactory,
-                     instanceId: Int,
-                     configuration: SmartConfig): LinkManagerNetworkMap {
+class StubNetworkMap(
+    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    subscriptionFactory: SubscriptionFactory,
+    publisherFactory: PublisherFactory,
+    instanceId: Int,
+    configuration: SmartConfig,
+) : LinkManagerNetworkMap {
 
     private val processor = NetworkMapEntryProcessor()
     private val subscriptionConfig = SubscriptionConfig("network-map", NETWORK_MAP_TOPIC, instanceId)
     private val subscription = subscriptionFactory.createCompactedSubscription(subscriptionConfig, processor, configuration)
     private val keyDeserialiser = KeyDeserialiser()
+    private val trustStoresPublisher = TrustStoresPublisher(
+        subscriptionFactory,
+        publisherFactory,
+        lifecycleCoordinatorFactory,
+        configuration,
+        instanceId
+    )
 
     private val readyFuture = AtomicReference<CompletableFuture<Unit>>()
-    override val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, ::createResources)
+    override val dominoTile = DominoTile(
+        this::class.java.simpleName,
+        lifecycleCoordinatorFactory,
+        ::createResources,
+        managedChildren = listOf(trustStoresPublisher.dominoTile),
+    )
 
     private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
         val future = CompletableFuture<Unit>()
@@ -69,17 +85,13 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
                 throw IllegalStateException("getNetworkType operation invoked while component was stopped.")
             }
 
-            processor.netMapEntriesByGroupIdPublicKeyHash[groupId]?.values?.first()?.networkType?.toLMNetworkType()
-        }
-    }
+            processor.netMapEntriesByGroupIdPublicKeyHash[groupId]
+                ?.values
+                ?.first()?.let { networkMapEntry ->
+                    trustStoresPublisher.publishGroupIfNeeded(groupId, networkMapEntry.trustedCertificates)
 
-    override fun getTrustedCertificates(groupId: String): List<String>? {
-        return dominoTile.withLifecycleLock {
-            if (!isRunning) {
-                throw IllegalStateException("getTrustedCertificates operation invoked while component was stopped.")
-            }
-
-            processor.netMapEntriesByGroupIdPublicKeyHash[groupId]?.values?.firstOrNull()?.trustedCertificates
+                    networkMapEntry.networkType?.toLMNetworkType()
+                }
         }
     }
 
@@ -140,13 +152,14 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
         }
 
         private fun addEntry(networkMapEntry: NetworkMapEntry) {
-            netMapEntriesByGroupIdPublicKeyHash.computeIfAbsent(networkMapEntry.holdingIdentity.groupId) {
-                ConcurrentHashMap()
-            }.let {
-                val publicKeyHash = calculateHash(networkMapEntry.publicKey.array())
-                it[ByteBuffer.wrap(publicKeyHash)] = networkMapEntry
-                netmapEntriesByHoldingIdentity[networkMapEntry.holdingIdentity.toLMHoldingIdentity()] = networkMapEntry
+            // publish trust store here!
+            if (!netMapEntriesByGroupIdPublicKeyHash.containsKey(networkMapEntry.holdingIdentity.groupId)) {
+                netMapEntriesByGroupIdPublicKeyHash[networkMapEntry.holdingIdentity.groupId] = ConcurrentHashMap()
             }
+
+            val publicKeyHash = calculateHash(networkMapEntry.publicKey.array())
+            netMapEntriesByGroupIdPublicKeyHash[networkMapEntry.holdingIdentity.groupId]!![ByteBuffer.wrap(publicKeyHash)] = networkMapEntry
+            netmapEntriesByHoldingIdentity[networkMapEntry.holdingIdentity.toLMHoldingIdentity()] = networkMapEntry
         }
 
         private fun HoldingIdentity.toLMHoldingIdentity(): LinkManagerNetworkMap.HoldingIdentity {

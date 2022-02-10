@@ -88,6 +88,7 @@ class LinkManagerIntegrationTest {
             StubNetworkMap(
                 lifecycleCoordinatorFactory,
                 subscriptionFactory,
+                publisherFactory,
                 1,
                 bootstrapConfig
             ),
@@ -161,6 +162,7 @@ class LinkManagerIntegrationTest {
             StubNetworkMap(
                 lifecycleCoordinatorFactory,
                 subscriptionFactory,
+                publisherFactory,
                 1,
                 bootstrapConfig
             ),

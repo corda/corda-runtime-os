@@ -22,8 +22,6 @@ class TrustStoresPublisher(
     private val subscriptionFactory: SubscriptionFactory,
     publisherFactory: PublisherFactory,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    private val linkManagerNetworkMap: LinkManagerNetworkMap,
-    private val linkManagerHostingMap: LinkManagerHostingMap,
     private val configuration: SmartConfig,
     private val instanceId: Int,
 ) : LifecycleWithDominoTile {
@@ -33,7 +31,7 @@ class TrustStoresPublisher(
         private const val WRITE_MISSING_DATA = "linkmanager_truststore_writer"
     }
 
-    private val publishedGroups = ConcurrentHashMap.newKeySet<String>()
+    private val publishedGroups = ConcurrentHashMap<String, List<String>>()
 
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,
@@ -42,19 +40,17 @@ class TrustStoresPublisher(
         configuration,
     )
 
-    fun publishGroupIfNeeded(groupId: String) {
-        if ((!publishedGroups.contains(groupId)) && (
-            linkManagerHostingMap.locallyHostedIdentities.any { it.groupId == groupId }
-            )
-        ) {
-            val certificates = linkManagerNetworkMap.getTrustedCertificates(groupId) ?: return
-            val record = Record(GATEWAY_TLS_TRUSTSTORES, groupId, GatewayTruststore(certificates))
-            publisher.publish(
-                listOf(record)
-            ).forEach {
-                it.join()
+    fun publishGroupIfNeeded(groupId: String, certificates: List<String>) {
+        publishedGroups.compute(groupId) { _, publishedCertificates ->
+            if (certificates != publishedCertificates) {
+                val record = Record(GATEWAY_TLS_TRUSTSTORES, groupId, GatewayTruststore(certificates))
+                publisher.publish(
+                    listOf(record)
+                ).forEach {
+                    it.join()
+                }
             }
-            publishedGroups += groupId
+            certificates
         }
     }
 
@@ -63,13 +59,11 @@ class TrustStoresPublisher(
         override val keyClass = String::class.java
         override val valueClass = GatewayTruststore::class.java
         override fun onSnapshot(currentData: Map<String, GatewayTruststore>) {
-            publishedGroups.addAll(currentData.keys)
-            linkManagerHostingMap.locallyHostedIdentities
-                .map { it.groupId }
-                .toSet()
-                .forEach {
-                    publishGroupIfNeeded(it)
+            publishedGroups.putAll(
+                currentData.mapValues {
+                    it.value.trustedCertificates
                 }
+            )
             ready.complete(Unit)
         }
 
@@ -78,10 +72,11 @@ class TrustStoresPublisher(
             oldValue: GatewayTruststore?,
             currentData: Map<String, GatewayTruststore>,
         ) {
-            if (newRecord.value == null) {
+            val certificates = newRecord.value?.trustedCertificates
+            if (certificates == null) {
                 publishedGroups.remove(newRecord.key)
             } else {
-                publishedGroups += newRecord.key
+                publishedGroups.put(newRecord.key, certificates)
             }
         }
     }
@@ -90,9 +85,7 @@ class TrustStoresPublisher(
         this.javaClass.simpleName,
         lifecycleCoordinatorFactory,
         createResources = ::createResources,
-        dependentChildren = listOf(
-            linkManagerNetworkMap.dominoTile,
-            linkManagerHostingMap.dominoTile,
+        managedChildren = listOf(
             publisher.dominoTile,
         )
     )

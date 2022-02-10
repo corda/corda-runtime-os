@@ -30,6 +30,11 @@ class SessionManagerWarnings {
                 " The message was discarded.")
         }
 
+        internal fun Logger.couldNotFindNetworkType(messageName: String, sessionId: String, groupId: String) {
+            this.warn("Could not find the network type in the NetworkMap for groupId $groupId." +
+                    " The $messageName for sessionId $sessionId was discarded.")
+        }
+
         internal fun Logger.validationFailedWarning(messageName: String, sessionId: String, error: String?) {
             this.warn("Received $messageName with sessionId $sessionId, which failed validation with: $error The message was discarded.")
         }

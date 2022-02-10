@@ -95,7 +95,10 @@ internal class TrustStoresMap(
 
     private val groupIdToActualStore = ConcurrentHashMap<String, Truststore>()
 
-    fun getTrustStore(groupId: String) = groupIdToActualStore[groupId]?.trustStore ?: throw IllegalArgumentException("Unknown trust store: $groupId")
+    fun getTrustStore(groupId: String) =
+        groupIdToActualStore[groupId]
+            ?.trustStore
+            ?: throw IllegalArgumentException("Unknown trust store: $groupId")
 
     private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
         val resourceFuture = CompletableFuture<Unit>()

@@ -27,4 +27,4 @@ OCSP responder.
   - Alternates: www.sender.net
   - ECDSA key
 
-For instructions on how to (re)create truststores/keystores, refer to the README file under the gateway integration tests [here](../../../../gateway/src/integrationTest/resources/README.md).
+For instructions on how to (re)create truststores/keystores, refer to the README file under the gateway integration tests [here](../../../../gateway/src/integration-test/resources/README.md).

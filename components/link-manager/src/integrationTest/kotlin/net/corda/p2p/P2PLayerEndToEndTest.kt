@@ -58,7 +58,6 @@ import net.corda.v5.base.util.seconds
 import net.corda.v5.base.util.toBase64
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.nio.ByteBuffer
@@ -289,6 +288,7 @@ class P2PLayerEndToEndTest {
                 StubNetworkMap(
                     lifecycleCoordinatorFactory,
                     subscriptionFactory,
+                    publisherFactory,
                     1,
                     bootstrapConfig
                 ),

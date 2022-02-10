@@ -17,7 +17,10 @@ import net.corda.p2p.crypto.protocol.api.DecryptionFailedError
 import net.corda.p2p.crypto.protocol.api.InvalidMac
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
-import net.corda.p2p.linkmanager.MessageHeaderFactory
+import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
+import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toNetworkType
+import net.corda.p2p.linkmanager.LinkManagerNetworkMap.MemberInfo
+import net.corda.p2p.linkmanager.LinkManagerNetworkMap.NetworkType
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.DataMessage
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.SessionAndMessage
 import org.apache.avro.AvroRuntimeException
@@ -35,8 +38,18 @@ class MessageConverter {
 
         private val logger = LoggerFactory.getLogger(this::class.java.name)
 
-        internal fun createLinkOutMessage(payload: Any, header: LinkOutHeader): LinkOutMessage {
+        internal fun createLinkOutMessage(payload: Any, dest: MemberInfo, networkType: NetworkType): LinkOutMessage {
+            val header = generateLinkOutHeaderFromPeer(dest, networkType)
             return LinkOutMessage(header, payload)
+        }
+
+        private fun generateLinkOutHeaderFromPeer(peer: MemberInfo, networkType: NetworkType): LinkOutHeader {
+            return LinkOutHeader(
+                peer.holdingIdentity.x500Name,
+                networkType.toNetworkType(),
+                peer.endPoint.address,
+                peer.holdingIdentity.groupId
+            )
         }
 
         private fun <T> deserializeHandleAvroErrors(deserialize: (ByteBuffer) -> T, data: ByteBuffer, sessionId: String): T? {
@@ -57,7 +70,7 @@ class MessageConverter {
             source: HoldingIdentity,
             destination: HoldingIdentity,
             session: Session,
-            factory: MessageHeaderFactory,
+            networkMap: LinkManagerNetworkMap
         ): LinkOutMessage? {
             val serializedMessage = try {
                 message.toByteBuffer()
@@ -65,13 +78,13 @@ class MessageConverter {
                 logger.error("Could not serialize message type ${message::class.java.simpleName}. The message was discarded.")
                 return null
             }
-            return createLinkOutMessageFromPayload(serializedMessage, source, destination, session, factory)
+            return createLinkOutMessageFromPayload(serializedMessage, source, destination, session, networkMap)
         }
 
         fun linkOutMessageFromAuthenticatedMessageAndKey(
             message: AuthenticatedMessageAndKey,
             session: Session,
-            factory: MessageHeaderFactory,
+            networkMap: LinkManagerNetworkMap
         ): LinkOutMessage? {
             val serializedMessage = try {
                 DataMessagePayload(message).toByteBuffer()
@@ -84,7 +97,7 @@ class MessageConverter {
                 message.message.header.source,
                 message.message.header.destination,
                 session,
-                factory,
+                networkMap
             )
         }
 
@@ -93,7 +106,7 @@ class MessageConverter {
             destination: HoldingIdentity,
             message: HeartbeatMessage,
             session: Session,
-            factory: MessageHeaderFactory,
+            networkMap: LinkManagerNetworkMap
         ): LinkOutMessage? {
             val serializedMessage = try {
                 DataMessagePayload(message).toByteBuffer()
@@ -106,16 +119,28 @@ class MessageConverter {
                 source,
                 destination,
                 session,
-                factory,
+                networkMap
             )
         }
 
         fun linkOutFromUnauthenticatedMessage(
             message: UnauthenticatedMessage,
-            factory: MessageHeaderFactory,
+            networkMap: LinkManagerNetworkMap
         ): LinkOutMessage? {
-            val header = factory.createLinkOutHeader(message.header.destination) ?: return null
-            return createLinkOutMessage(message, header)
+            val destination = message.header.destination
+            val destMemberInfo = networkMap.getMemberInfo(destination.toHoldingIdentity())
+            if (destMemberInfo == null) {
+                logger.warn("Attempted to send message to peer $destination which is not in the network map. The message was discarded.")
+                return null
+            }
+
+            val networkType = networkMap.getNetworkType(destination.toHoldingIdentity().groupId)
+            if (networkType == null) {
+                logger.warn("Could not find the network type in the NetworkMap for ${destination}. The message was discarded.")
+                return null
+            }
+
+            return createLinkOutMessage(message, destMemberInfo, networkType)
         }
 
         private fun createLinkOutMessageFromPayload(
@@ -123,7 +148,7 @@ class MessageConverter {
             source: HoldingIdentity,
             destination: HoldingIdentity,
             session: Session,
-            factory: MessageHeaderFactory,
+            networkMap: LinkManagerNetworkMap
         ): LinkOutMessage? {
             val result = when (session) {
                 is AuthenticatedSession -> {
@@ -146,36 +171,18 @@ class MessageConverter {
                 }
             }
 
-            val header = factory.createLinkOutHeader(
-                source,
-                destination,
-                reporter = object : MessageHeaderFactory.ReportIssue {
-                    override fun report(
-                        type: MessageHeaderFactory.ErrorType,
-                        identity: LinkManagerNetworkMap.HoldingIdentity,
-                    ) {
-                        when (type) {
-                            MessageHeaderFactory.ErrorType.NoInfo ->
-                                logger.warn(
-                                    "Attempted to send message to peer $destination which " +
-                                        "is not in the network map. The message was discarded."
-                                )
-                            MessageHeaderFactory.ErrorType.NoTrustStore ->
-                                logger.warn(
-                                    "Could not find the trust store in the NetworkMap " +
-                                        "for $destination. The message was discarded."
-                                )
-                            MessageHeaderFactory.ErrorType.NoType ->
-                                logger.warn(
-                                    "Could not find the network type in the NetworkMap" +
-                                        " for our identity = $source. The message was discarded."
-                                )
-                        }
-                    }
-                }
-            ) ?: return null
+            val destMemberInfo = networkMap.getMemberInfo(destination.toHoldingIdentity())
+            if (destMemberInfo == null) {
+                logger.warn("Attempted to send message to peer $destination which is not in the network map. The message was discarded.")
+                return null
+            }
+            val networkType = networkMap.getNetworkType(source.groupId)
+            if (networkType == null) {
+                logger.warn("Could not find the network type in the NetworkMap for our identity = ${source}. The message was discarded.")
+                return null
+            }
 
-            return createLinkOutMessage(result, header)
+            return createLinkOutMessage(result, destMemberInfo, networkType)
         }
 
         fun <T> extractPayload(session: Session, sessionId: String, message: DataMessage, deserialize: (ByteBuffer) -> T): T? {

@@ -61,30 +61,27 @@ import net.corda.v5.base.util.trace
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.time.Instant
-import java.util.LinkedList
-import java.util.Queue
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicReference
 
 @Suppress("LongParameterList")
-class LinkManager(
-    @Reference(service = SubscriptionFactory::class)
-    val subscriptionFactory: SubscriptionFactory,
-    @Reference(service = PublisherFactory::class)
-    val publisherFactory: PublisherFactory,
-    @Reference(service = LifecycleCoordinatorFactory::class)
-    val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = ConfigurationReadService::class)
-    val configurationReaderService: ConfigurationReadService,
-    private val configuration: SmartConfig,
-    private val instanceId: Int,
-    val linkManagerNetworkMap: LinkManagerNetworkMap =
-        StubNetworkMap(lifecycleCoordinatorFactory, subscriptionFactory, instanceId, configuration),
-    linkManagerHostingMap: LinkManagerHostingMap =
-        ConfigBasedLinkManagerHostingMap(configurationReaderService, lifecycleCoordinatorFactory),
-    linkManagerCryptoService: LinkManagerCryptoService =
-        StubCryptoService(lifecycleCoordinatorFactory, subscriptionFactory, instanceId, configuration)
+class LinkManager(@Reference(service = SubscriptionFactory::class)
+                  val subscriptionFactory: SubscriptionFactory,
+                  @Reference(service = PublisherFactory::class)
+                  val publisherFactory: PublisherFactory,
+                  @Reference(service = LifecycleCoordinatorFactory::class)
+                  val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+                  @Reference(service = ConfigurationReadService::class)
+                  val configurationReaderService: ConfigurationReadService,
+                  private val configuration: SmartConfig,
+                  private val instanceId: Int,
+                  val linkManagerNetworkMap: LinkManagerNetworkMap
+                      = StubNetworkMap(lifecycleCoordinatorFactory, subscriptionFactory, publisherFactory, instanceId, configuration),
+                  private val linkManagerHostingMap: LinkManagerHostingMap
+                      = ConfigBasedLinkManagerHostingMap(configurationReaderService, lifecycleCoordinatorFactory),
+                  private val linkManagerCryptoService: LinkManagerCryptoService
+                      = StubCryptoService(lifecycleCoordinatorFactory, subscriptionFactory, instanceId, configuration)
 ) : LifecycleWithDominoTile {
 
     companion object {
@@ -100,26 +97,10 @@ class LinkManager(
     private val inboundAssigned = AtomicReference<CompletableFuture<Unit>>()
     private var inboundAssignmentListener = InboundAssignmentListener(inboundAssigned)
 
-    private val trustStoreContainer = TrustStoresContainer(
-        subscriptionFactory,
-        publisherFactory,
-        lifecycleCoordinatorFactory,
-        linkManagerNetworkMap,
-        linkManagerHostingMap,
-        configuration,
-        instanceId,
-    )
-
-    private val messageHeaderFactory = MessageHeaderFactory(
-        trustStoreContainer,
-        linkManagerNetworkMap,
-        lifecycleCoordinatorFactory,
-    )
-
     private val messagesPendingSession = PendingSessionMessageQueuesImpl(
         publisherFactory,
         lifecycleCoordinatorFactory,
-        configuration,
+        configuration
     )
 
     private val sessionManager = SessionManagerImpl(
@@ -129,15 +110,14 @@ class LinkManager(
         publisherFactory,
         configurationReaderService,
         lifecycleCoordinatorFactory,
-        configuration,
-        messageHeaderFactory,
+        configuration
     )
 
     private val outboundMessageProcessor = OutboundMessageProcessor(
         sessionManager,
         linkManagerHostingMap,
+        linkManagerNetworkMap,
         inboundAssignmentListener,
-        messageHeaderFactory
     )
 
     private val deliveryTracker = DeliveryTracker(
@@ -154,11 +134,7 @@ class LinkManager(
 
     private val inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
         SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, LINK_IN_TOPIC, instanceId),
-        InboundMessageProcessor(
-            sessionManager,
-            inboundAssignmentListener,
-            messageHeaderFactory,
-        ),
+        InboundMessageProcessor(sessionManager, linkManagerNetworkMap, inboundAssignmentListener),
         configuration,
         partitionAssignmentListener = inboundAssignmentListener
     )
@@ -176,7 +152,7 @@ class LinkManager(
         inboundAssigned.set(future)
         inboundMessageSubscription.start()
         resources.keep { inboundMessageSubscription.stop() }
-        // We complete the future inside inboundAssignmentListener.
+        //We complete the future inside inboundAssignmentListener.
         return future
     }
 
@@ -189,10 +165,8 @@ class LinkManager(
         return outboundReady
     }
 
-    private val commonChildren = setOf(
-        linkManagerNetworkMap.dominoTile, linkManagerCryptoService.dominoTile,
-        linkManagerHostingMap.dominoTile
-    )
+    private val commonChildren = setOf(linkManagerNetworkMap.dominoTile, linkManagerCryptoService.dominoTile,
+        linkManagerHostingMap.dominoTile)
     private val inboundDominoTile = DominoTile(
         "InboundProcessor",
         lifecycleCoordinatorFactory,
@@ -203,28 +177,31 @@ class LinkManager(
         "OutboundProcessor",
         lifecycleCoordinatorFactory,
         ::createOutboundResources,
-        dependentChildren = setOf(inboundDominoTile, messagesPendingSession.dominoTile, messageHeaderFactory.dominoTile) + commonChildren,
+        dependentChildren = setOf(inboundDominoTile, messagesPendingSession.dominoTile) + commonChildren,
         managedChildren = setOf(messagesPendingSession.dominoTile)
     )
 
     override val dominoTile = DominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        dependentChildren = setOf(inboundDominoTile, outboundDominoTile, deliveryTracker.dominoTile),
+        dependentChildren = setOf(
+            inboundDominoTile,
+            outboundDominoTile,
+            deliveryTracker.dominoTile,
+        ),
         managedChildren = setOf(
             inboundDominoTile,
             outboundDominoTile,
             deliveryTracker.dominoTile,
             sessionManager.dominoTile,
-            messageHeaderFactory.dominoTile
         ) + commonChildren
     )
 
     class OutboundMessageProcessor(
         private val sessionManager: SessionManager,
         private val linkManagerHostingMap: LinkManagerHostingMap,
+        private val networkMap: LinkManagerNetworkMap,
         private val inboundAssignmentListener: InboundAssignmentListener,
-        private val messageHeaderFactory: MessageHeaderFactory,
     ) : EventLogProcessor<String, AppMessage> {
 
         override val keyClass = String::class.java
@@ -266,7 +243,7 @@ class LinkManager(
             return if (linkManagerHostingMap.isHostedLocally(message.header.destination.toHoldingIdentity())) {
                 listOf(Record(P2P_IN_TOPIC, generateKey(), AppMessage(message)))
             } else {
-                val linkOutMessage = linkOutFromUnauthenticatedMessage(message, messageHeaderFactory)
+                val linkOutMessage = linkOutFromUnauthenticatedMessage(message, networkMap)
                 listOf(Record(LINK_OUT_TOPIC, generateKey(), linkOutMessage))
             }
         }
@@ -281,34 +258,26 @@ class LinkManager(
             messageAndKey: AuthenticatedMessageAndKey,
             isReplay: Boolean = false
         ): List<Record<String, *>> {
-            logger.trace {
-                "Processing outbound ${messageAndKey.message.javaClass} with ID ${messageAndKey.message.header.messageId} " +
-                    "to ${messageAndKey.message.header.destination.toHoldingIdentity()}."
-            }
+            logger.trace{ "Processing outbound ${messageAndKey.message.javaClass} with ID ${messageAndKey.message.header.messageId} " +
+                    "to ${messageAndKey.message.header.destination.toHoldingIdentity()}." }
             val isHostedLocally = linkManagerHostingMap.isHostedLocally(messageAndKey.message.header.destination.toHoldingIdentity())
             return if (isHostedLocally) {
                 mutableListOf(Record(P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)))
             } else {
                 when (val state = sessionManager.processOutboundMessage(messageAndKey)) {
                     is SessionState.NewSessionNeeded -> {
-                        logger.trace {
-                            "No existing session with ${messageAndKey.message.header.destination.toHoldingIdentity()}. " +
-                                "Initiating a new one.."
-                        }
+                        logger.trace { "No existing session with ${messageAndKey.message.header.destination.toHoldingIdentity()}. " +
+                                "Initiating a new one.." }
                         recordsForNewSession(state)
                     }
                     is SessionState.SessionEstablished -> {
-                        logger.trace {
-                            "Session already established with ${messageAndKey.message.header.destination.toHoldingIdentity()}." +
-                                " Using this to send outbound message."
-                        }
+                        logger.trace { "Session already established with ${messageAndKey.message.header.destination.toHoldingIdentity()}." +
+                                " Using this to send outbound message." }
                         recordsForSessionEstablished(state, messageAndKey)
                     }
                     is SessionState.SessionAlreadyPending, SessionState.CannotEstablishSession -> {
-                        logger.trace {
-                            "Session already pending with ${messageAndKey.message.header.destination.toHoldingIdentity()}. " +
-                                "Message queued until session is established."
-                        }
+                        logger.trace { "Session already pending with ${messageAndKey.message.header.destination.toHoldingIdentity()}. " +
+                                "Message queued until session is established." }
                         emptyList()
                     }
                 }
@@ -317,11 +286,9 @@ class LinkManager(
 
         private fun recordsForNewSession(state: SessionState.NewSessionNeeded): List<Record<String, *>> {
             val partitions = inboundAssignmentListener.getCurrentlyAssignedPartitions(LINK_IN_TOPIC).toList()
-            return if (partitions.isEmpty()) {
-                logger.warn(
-                    "No partitions from topic $LINK_IN_TOPIC are currently assigned to the inbound message processor." +
-                        " Session ${state.sessionId} will not be initiated."
-                )
+            return if(partitions.isEmpty()) {
+                logger.warn("No partitions from topic $LINK_IN_TOPIC are currently assigned to the inbound message processor." +
+                        " Session ${state.sessionId} will not be initiated.")
                 emptyList()
             } else {
                 listOf(
@@ -335,12 +302,7 @@ class LinkManager(
             state: SessionState.SessionEstablished,
             messageAndKey: AuthenticatedMessageAndKey
         ): List<Record<String, *>> {
-            return recordsForSessionEstablished(
-                sessionManager,
-                state.session,
-                messageAndKey,
-                messageHeaderFactory,
-            )
+            return recordsForSessionEstablished(sessionManager, networkMap, state.session, messageAndKey)
         }
 
         private fun recordsForMarkers(messageAndKey: AuthenticatedMessageAndKey, isHostedLocally: Boolean): List<Record<String, *>> {
@@ -362,8 +324,8 @@ class LinkManager(
 
     class InboundMessageProcessor(
         private val sessionManager: SessionManager,
-        private val inboundAssignmentListener: InboundAssignmentListener,
-        private val messageHeaderFactory: MessageHeaderFactory,
+        private val networkMap: LinkManagerNetworkMap,
+        private val inboundAssignmentListener: InboundAssignmentListener
     ) :
         EventLogProcessor<String, LinkInMessage> {
 
@@ -415,8 +377,8 @@ class LinkManager(
                             )
                         } else {
                             logger.warn(
-                                "No partitions from topic $LINK_IN_TOPIC are currently assigned to the inbound message processor." +
-                                    " Not going to reply to session initiation for session ${payload.header.sessionId}."
+                                "No partitions from topic ${LINK_IN_TOPIC} are currently assigned to the inbound message processor." +
+                                        " Not going to reply to session initiation for session ${payload.header.sessionId}."
                             )
                             emptyList()
                         }
@@ -455,10 +417,8 @@ class LinkManager(
                     }
                 }
                 is SessionDirection.NoSession -> {
-                    logger.warn(
-                        "Received message with SessionId = $sessionId for which there is no active session." +
-                            " The message was discarded."
-                    )
+                    logger.warn("Received message with SessionId = $sessionId for which there is no active session." +
+                            " The message was discarded.")
                 }
             }
             return messages
@@ -469,31 +429,26 @@ class LinkManager(
             innerMessage: AuthenticatedMessageAndKey,
             session: Session,
             messages: MutableList<Record<*, *>>
-        ) {
+        )
+        {
             val sessionSource = counterparties.counterpartyId.toHoldingIdentity()
             val sessionDestination = counterparties.ourId.toHoldingIdentity()
             val messageDestination = innerMessage.message.header.destination
             val messageSource = innerMessage.message.header.source
-            if (sessionSource == messageSource && sessionDestination == messageDestination) {
-                logger.debug {
-                    "Processing message ${innerMessage.message.header.messageId} " +
-                        "of type ${innerMessage.message.javaClass} from session ${session.sessionId}"
-                }
+            if(sessionSource == messageSource && sessionDestination == messageDestination) {
+                logger.debug { "Processing message ${innerMessage.message.header.messageId} " +
+                        "of type ${innerMessage.message.javaClass} from session ${session.sessionId}" }
                 messages.add(Record(P2P_IN_TOPIC, innerMessage.key, AppMessage(innerMessage.message)))
                 makeAckMessageForFlowMessage(innerMessage.message, session)?.let { ack -> messages.add(ack) }
                 sessionManager.inboundSessionEstablished(session.sessionId)
-            } else if (sessionSource != messageSource) {
-                logger.warn(
-                    "The identity in the message's source header ($messageSource)" +
+            } else if(sessionSource != messageSource) {
+                logger.warn("The identity in the message's source header ($messageSource)" +
                         " does not match the session's source identity ($sessionSource)," +
-                        " which indicates a spoofing attempt! The message was discarded."
-                )
+                        " which indicates a spoofing attempt! The message was discarded.")
             } else {
-                logger.warn(
-                    "The identity in the message's destination header ($messageDestination)" +
+                logger.warn("The identity in the message's destination header ($messageDestination)" +
                         " does not match the session's destination identity ($sessionDestination)," +
-                        " which indicates a spoofing attempt! The message was discarded"
-                )
+                        " which indicates a spoofing attempt! The message was discarded")
             }
         }
 
@@ -507,7 +462,7 @@ class LinkManager(
             extractPayload(session, sessionId, message, DataMessagePayload::fromByteBuffer)?.let {
                 when (val innerMessage = it.message) {
                     is HeartbeatMessage -> {
-                        logger.debug { "Processing heartbeat message from session $sessionId" }
+                        logger.debug {"Processing heartbeat message from session $sessionId"}
                         makeAckMessageForHeartbeatMessage(counterparties, session)?.let { ack -> messages.add(ack) }
                     }
                     is AuthenticatedMessageAndKey -> {
@@ -515,8 +470,7 @@ class LinkManager(
                             counterparties,
                             innerMessage,
                             session,
-                            messages
-                        )
+                            messages)
                     }
                     else -> logger.warn("Unknown incoming message type: ${innerMessage.javaClass}. The message was discarded.")
                 }
@@ -535,7 +489,7 @@ class LinkManager(
                 ackSource,
                 ackDest,
                 session,
-                messageHeaderFactory,
+                networkMap
             ) ?: return null
             return Record(
                 LINK_OUT_TOPIC,
@@ -545,7 +499,7 @@ class LinkManager(
         }
 
         private fun makeAckMessageForFlowMessage(message: AuthenticatedMessage, session: Session): Record<String, LinkOutMessage>? {
-            // We route the ACK back to the original source
+            //We route the ACK back to the original source
             val ackDest = message.header.source
             val ackSource = message.header.destination
             val ack = linkOutMessageFromAck(
@@ -553,7 +507,7 @@ class LinkManager(
                 ackSource,
                 ackDest,
                 session,
-                messageHeaderFactory,
+                networkMap
             ) ?: return null
             return Record(
                 LINK_OUT_TOPIC,
@@ -581,7 +535,6 @@ class LinkManager(
             counterparties: SessionCounterparties,
             session: Session,
             networkMap: LinkManagerNetworkMap,
-            messageHeaderFactory: MessageHeaderFactory,
         )
         fun destroyQueue(counterparties: SessionCounterparties)
         fun destroyAllQueues()
@@ -591,8 +544,8 @@ class LinkManager(
     class PendingSessionMessageQueuesImpl(
         publisherFactory: PublisherFactory,
         coordinatorFactory: LifecycleCoordinatorFactory,
-        configuration: SmartConfig,
-    ) : PendingSessionMessageQueues, LifecycleWithDominoTile {
+        configuration: SmartConfig
+    ): PendingSessionMessageQueues, LifecycleWithDominoTile {
 
         companion object {
             private val logger = contextLogger()
@@ -610,7 +563,7 @@ class LinkManager(
         /**
          * Either adds a [FlowMessage] to a queue for a session which is pending (has started but hasn't finished
          * negotiation with the destination) or adds the message to a new queue if we need to negotiate a new session.
-         */
+        */
         override fun queueMessage(message: AuthenticatedMessageAndKey, counterparties: SessionCounterparties) {
             val oldQueue = queuedMessagesPendingSession.putIfAbsent(counterparties, LinkedList())
             if (oldQueue != null) {
@@ -628,7 +581,6 @@ class LinkManager(
             counterparties: SessionCounterparties,
             session: Session,
             networkMap: LinkManagerNetworkMap,
-            messageHeaderFactory: MessageHeaderFactory,
         ) {
             publisher.dominoTile.withLifecycleLock {
                 if (!isRunning) {
@@ -640,14 +592,7 @@ class LinkManager(
                     val message = queuedMessages.poll()
                     logger.debug { "Sending queued message ${message.message.header.messageId} " +
                             "to newly established session ${session.sessionId} with ${counterparties.counterpartyId}" }
-                    records.addAll(
-                        recordsForSessionEstablished(
-                            sessionManager,
-                            session,
-                            message,
-                            messageHeaderFactory,
-                        )
-                    )
+                    records.addAll(recordsForSessionEstablished(sessionManager, networkMap, session, message))
                 }
                 publisher.publish(records)
             }
@@ -660,19 +605,20 @@ class LinkManager(
         override fun destroyAllQueues() {
             queuedMessagesPendingSession.clear()
         }
+
     }
 }
 
 fun recordsForSessionEstablished(
     sessionManager: SessionManager,
+    networkMap: LinkManagerNetworkMap,
     session: Session,
-    messageAndKey: AuthenticatedMessageAndKey,
-    messageHeaderFactory: MessageHeaderFactory,
+    messageAndKey: AuthenticatedMessageAndKey
 ): List<Record<String, *>> {
     val records = mutableListOf<Record<String, *>>()
     val key = LinkManager.generateKey()
     sessionManager.dataMessageSent(session)
-    linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, session, messageHeaderFactory)?. let {
+    linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, session, networkMap)?. let {
         records.add(Record(LINK_OUT_TOPIC, key, it))
     }
     return records
