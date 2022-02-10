@@ -8,6 +8,7 @@ import net.corda.libs.cpiupload.CpiUploadManager
 import net.corda.libs.cpiupload.CpiUploadManagerException
 import net.corda.libs.cpiupload.RequestId
 import net.corda.messaging.api.publisher.RPCSender
+import net.corda.schema.configuration.ConfigKeys.Companion.RPC_ENDPOINT_TIMEOUT_MILLIS
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
@@ -17,7 +18,6 @@ import java.time.Duration
 import java.util.concurrent.Future
 
 class CpiUploadManagerImpl(
-    @Suppress("UNUSED_PARAMETER")
     config: SmartConfig,
     private val rpcSender: RPCSender<Chunk, ChunkAck>,
 ) : CpiUploadManager {
@@ -25,10 +25,19 @@ class CpiUploadManagerImpl(
     companion object {
         private const val TODO_CHUNK_SIZE = 1024 // TODO Replace with config.
 
+        // Should merge this with SmartConfigUtil.DEFAULT_ENDPOINT_TIMEOUT_MS.
+        private const val DEFAULT_ENDPOINT_TIMEOUT_MS = 10000L
+
         val log = contextLogger()
     }
 
-    private val timeout = Duration.ofMillis(1000) // TODO Replace with config.
+    private val requestTimeout = config.run {
+        if (this.hasPath(RPC_ENDPOINT_TIMEOUT_MILLIS)) {
+            Duration.ofMillis(getLong(RPC_ENDPOINT_TIMEOUT_MILLIS))
+        } else {
+            Duration.ofMillis(DEFAULT_ENDPOINT_TIMEOUT_MS)
+        }
+    }
 
     @VisibleForTesting
     internal data class ChunkId(val requestId: String, val partNumber: Int)
@@ -59,7 +68,7 @@ class CpiUploadManagerImpl(
     ) {
         // Check that all the chunks are received by the db worker and that their acks are successful.
         chunkAcksFutures.forEach {
-            val chunkAck = it.getOrThrow(timeout)
+            val chunkAck = it.getOrThrow(requestTimeout)
             val chunkId = ChunkId(chunkAck.requestId, chunkAck.partNumber)
 
             if (chunkId !in sentChunkIds) {
