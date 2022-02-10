@@ -106,6 +106,8 @@ class SessionManagerImplTest {
         )
         assertThat(secondMessagesToSend.size).isEqualTo(3)
         assertThat(secondOutputState.sendEventsState.undeliveredMessages.size).isEqualTo(3)
-        assertThat(secondOutputState.sendEventsState.undeliveredMessages.filter { it.payload::class.java == SessionAck::class.java }).isEmpty()
+        assertThat(secondOutputState.sendEventsState.undeliveredMessages.filter {
+            it.payload::class.java == SessionAck::class.java }
+        ).isEmpty()
     }
 }
