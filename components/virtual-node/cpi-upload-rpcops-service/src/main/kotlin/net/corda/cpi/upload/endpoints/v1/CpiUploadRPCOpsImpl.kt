@@ -25,9 +25,7 @@ class CpiUploadRPCOpsImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = CpiUploadRPCOpsService::class)
-    private val cpiUploadRPCOpsService: CpiUploadRPCOpsService,
-    @Reference(service = DigestService::class)
-    private val digestService: DigestService
+    private val cpiUploadRPCOpsService: CpiUploadRPCOpsService
 ) : CpiUploadRPCOps, PluggableRPCOps<CpiUploadRPCOps>, Lifecycle {
 
     private val coordinator = coordinatorFactory.createCoordinator<CpiUploadRPCOps>(
@@ -55,9 +53,8 @@ class CpiUploadRPCOpsImpl @Activate constructor(
         coordinator.close()
     }
 
-    // TODO this method needs to also take the checksum of the file.
     override fun cpi(cpi: InputStream): HTTPCpiUploadRequestId {
-        // TODO to be added to method's parameters
+        // TODO add checksum to method's parameters
         val todoSentChecksumString =
             "SHA-384:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FD6FD061F9D5CFD13B8F961358E6ADBA4A"
 
@@ -67,21 +64,9 @@ class CpiUploadRPCOpsImpl @Activate constructor(
 
         // TODO in a later PR check the requestId topic ("HTTP Status" topic) if the CPI already has been processed so return fast
         // First validate CPI against http sent checksum. Then we should continue with uploading it.
-        //validateCpiChecksum(file, todoSentChecksumString) // Uncomment once we pass checksum to cpi method parameters
-        // TODO - kyriakos make sure streams get closed
+        // TODO - validate CPI against sent checksum
         val cpiUploadRequestId = cpi.use { cpiUploadManager.uploadCpi(it) }
         log.info("Successfully sent CPI: $todoSentChecksumString to db worker")
         return HTTPCpiUploadRequestId(cpiUploadRequestId)
-    }
-
-    private fun validateCpiChecksum(cpi: InputStream, sentChecksumStr: String) {
-        val sentChecksum = SecureHash.create(sentChecksumStr) // throws in case of malformed checksum
-        val calculatedChecksum = digestService.hash(cpi, DigestAlgorithmName(sentChecksum.algorithm))
-        if (calculatedChecksum != sentChecksum) {
-            val msg = "Calculated checksum: $calculatedChecksum was different to sent checksum: $sentChecksum"
-            log.info(msg)
-            throw InvalidInputDataException(msg)
-        }
-        log.info("Successfully validated CPI against http sent checksum: $sentChecksumStr")
     }
 }
