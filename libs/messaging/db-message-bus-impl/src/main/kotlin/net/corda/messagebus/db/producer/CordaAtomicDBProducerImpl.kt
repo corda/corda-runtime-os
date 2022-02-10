@@ -1,37 +1,42 @@
 package net.corda.messagebus.db.producer
 
+import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
-import net.corda.messagebus.db.conversions.toCordaRecord
+import net.corda.messagebus.db.datamodel.ATOMIC_TRANSACTION
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
-import net.corda.messagebus.db.datamodel.TransactionRecordEntry
-import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messagebus.db.persistence.DBAccess
+import net.corda.messagebus.db.util.LatestOffsets
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
-import net.corda.messaging.emulation.topic.service.TopicService
 import net.corda.schema.registry.AvroSchemaRegistry
 import java.time.Duration
+import javax.persistence.RollbackException
 import kotlin.math.abs
 
+@Suppress("TooManyFunctions")
 class CordaAtomicDBProducerImpl(
     private val schemaRegistry: AvroSchemaRegistry,
-    private val topicService: TopicService,
     private val dbAccess: DBAccess
 ) : CordaProducer {
 
-    companion object {
-        internal val ATOMIC_TRANSACTION = TransactionRecordEntry("Atomic Transaction", TransactionState.COMMITTED)
+    private fun initialiseWithAtomicTransaction() {
+        try {
+            // Write the transaction record for all atomic transactions
+            dbAccess.writeTransactionRecord(ATOMIC_TRANSACTION)
+        } catch (e: RollbackException) {
+            // It's already been written so do nothing
+        }
     }
 
     init {
-        // Write the transaction record for all atomic transactions
-        dbAccess.writeTransactionRecord(ATOMIC_TRANSACTION)
+        initialiseWithAtomicTransaction()
     }
 
     private val defaultTimeout: Duration = Duration.ofSeconds(1)
     private val topicPartitionMap = dbAccess.getTopicPartitionMap()
+    private val latestOffsets = LatestOffsets(dbAccess.getMaxOffsetsPerTopicPartition())
 
     override fun send(record: CordaProducerRecord<*, *>, callback: CordaProducer.Callback?) {
         sendRecords(listOf(record))
@@ -49,16 +54,14 @@ class CordaAtomicDBProducerImpl(
             val topic = it.topic
             val numberOfPartitions = topicPartitionMap[topic]
                 ?: throw CordaMessageAPIFatalException("Cannot find topic: $topic")
-            val partition = getPartition(topic.hashCode(), numberOfPartitions)
+            val partition = getPartition(it.key, numberOfPartitions)
             Pair(partition, it)
         })
     }
 
     override fun sendRecordsToPartitions(recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>) {
         val dbRecords = recordsWithPartitions.map { (partition, record) ->
-            val offset = topicService.getLatestOffsets(record.topic)[partition]
-                ?: throw CordaMessageAPIFatalException("Cannot find offset for ${record.topic}, partition $partition")
-
+            val offset = latestOffsets.getNextOffsetFor(CordaTopicPartition(record.topic, partition))
             val serialisedKey = schemaRegistry.serialize(record.key).array()
             val serialisedValue = if (record.value != null) {
                 schemaRegistry.serialize(record.value!!).array()
@@ -75,19 +78,13 @@ class CordaAtomicDBProducerImpl(
             )
         }
 
-        doSendRecordsToTopicAndDB(dbRecords, recordsWithPartitions)
+        doSendRecordsToTopicAndDB(dbRecords)
     }
 
     private fun doSendRecordsToTopicAndDB(
-        dbRecords: List<TopicRecordEntry>,
-        recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>
+        dbRecords: List<TopicRecordEntry>
     ) {
-        // First try adding to DB as it has the possibility of failing.
         dbAccess.writeRecords(dbRecords)
-        // Topic service shouldn't fail but if it does the DB will still rollback from here
-        recordsWithPartitions.forEach {
-            topicService.addRecordsToPartition(listOf(it.second.toCordaRecord()), it.first)
-        }
     }
 
     override fun beginTransaction() {
@@ -113,14 +110,14 @@ class CordaAtomicDBProducerImpl(
         throwNonTransactionalLogic()
     }
 
-    private fun throwNonTransactionalLogic() {
-        throw CordaMessageAPIFatalException("Non transactional producer can't do transactional logic.")
-    }
-
     override fun close(timeout: Duration) {
     }
 
     override fun close() = close(defaultTimeout)
+
+    private fun throwNonTransactionalLogic() {
+        throw CordaMessageAPIFatalException("Non transactional producer can't do transactional logic.")
+    }
 
     private fun getPartition(key: Any, numberOfPartitions: Int): Int {
         require(numberOfPartitions > 0)

@@ -1,5 +1,6 @@
 package net.corda.messagebus.db.persistence
 
+import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.db.datamodel.CommittedOffsetEntry
 import net.corda.messagebus.db.datamodel.TopicEntry
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
@@ -53,25 +54,28 @@ class DBAccess(
         return maxOffsets
     }
 
-    fun getMaxOffsetsPerTopic(): Map<String, Map<Int, Long?>> {
-        val maxOffsetsPerTopic = mutableMapOf<String, MutableMap<Int, Long?>>()
+    fun getMaxOffsetsPerTopicPartition(): Map<CordaTopicPartition, Long> {
+        val maxOffsetsPerTopic = mutableMapOf<CordaTopicPartition, Long>()
 
-        executeWithErrorHandling("retrieve max offsets per topic") {
-
-            val partitionsPerTopic = getTopicPartitionMap()
-            partitionsPerTopic.forEach { (topic, partitions) ->
-                maxOffsetsPerTopic[topic] = mutableMapOf()
-                (1..partitions).forEach { partition -> maxOffsetsPerTopic[topic]!![partition] = null }
+        executeWithErrorHandling("retrieve max offsets per topic") { entityManager ->
+            data class Result(val topic: String, val partition: Int, val offset: Long)
+            val builder = entityManager.criteriaBuilder
+            val select = builder.createQuery(Result::class.java)
+            val root = select.from(TopicRecordEntry::class.java)
+            select.multiselect(
+                root.get<String>(TopicRecordEntry::topic.name),
+                root.get<Int>(TopicRecordEntry::partition.name),
+                builder.max(root.get<Long>(TopicRecordEntry::recordOffset.name))
+            )
+            select.groupBy(
+                root.get<String>(TopicRecordEntry::topic.name),
+                root.get<Int>(TopicRecordEntry::partition.name),
+            )
+            val results = entityManager.createQuery(select).resultList
+            results.forEach {
+                val topicPartition = CordaTopicPartition(it.topic, it.partition)
+                maxOffsetsPerTopic[topicPartition] = it.offset
             }
-
-//            val stmt = it.prepareStatement(maxOffsetsStatement)
-//            val result = stmt.executeQuery()
-//            while (result.next()) {
-//                val topic = result.getString(1)
-//                val partition = result.getInt(2)
-//                val maxOffset = result.getLong(3)
-//                maxOffsetsPerTopic[topic]!![partition] = maxOffset
-//            }
         }
 
         return maxOffsetsPerTopic
@@ -154,18 +158,12 @@ class DBAccess(
         }
     }
 
-    fun makeRecordsVisible(transactionId: String) {
-        executeWithErrorHandling("commitRecords") { entityManager ->
+    fun setTransactionRecordState(transactionId: String, state: TransactionState) {
+        executeWithErrorHandling("update transaction state with $state") { entityManager ->
             val recordTransaction = entityManager.find(TransactionRecordEntry::class.java, transactionId)
-            recordTransaction.state = TransactionState.COMMITTED
+            recordTransaction.state = state
         }
-    }
 
-    fun makeRecordsInvisible(transactionId: String) {
-        executeWithErrorHandling("commitRecords") { entityManager ->
-            val recordTransaction = entityManager.find(TransactionRecordEntry::class.java, transactionId)
-            recordTransaction.state = TransactionState.ABORTED
-        }
     }
 
     fun writeRecords(records: List<TopicRecordEntry>) {

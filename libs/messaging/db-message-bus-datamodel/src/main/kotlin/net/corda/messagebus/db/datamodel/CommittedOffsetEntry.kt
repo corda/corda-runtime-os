@@ -9,12 +9,18 @@ import javax.persistence.Id
 import javax.persistence.IdClass
 import javax.persistence.Table
 
+/**
+ * Database entry representing the consumer committed offsets which have been
+ * read and processed as part of a transaction.
+ *
+ * These will be used to ensure the read side of the messaging is kept up-to-date
+ * outside of transactions.
+ */
 @Suppress("LongParameterList")
 @Entity(name = "topic_consumer_offset")
 @Table(name = "topic_consumer_offset")
 @IdClass(CommittedOffsetEntryKey::class)
-class CommittedOffsetEntry (
-
+class CommittedOffsetEntry(
     @Id
     val topic: String,
 
@@ -29,11 +35,11 @@ class CommittedOffsetEntry (
     @Column(name = "record_offset")
     val recordOffset: Long,
 
-    @Column
-    val timestamp: Instant = Instant.now(),
+    @Column(name = "transaction_id")
+    val transactionId: String,
 
     @Column
-    val committed: Boolean = false
+    val timestamp: Instant = Instant.now(),
 )
 
 @Embeddable

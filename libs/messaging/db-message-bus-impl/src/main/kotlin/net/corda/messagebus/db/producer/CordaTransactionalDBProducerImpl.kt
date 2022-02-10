@@ -1,28 +1,27 @@
 package net.corda.messagebus.db.producer
 
+import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.db.consumer.DBCordaConsumerImpl
-import net.corda.messagebus.db.conversions.toCordaRecord
 import net.corda.messagebus.db.datamodel.CommittedOffsetEntry
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionRecordEntry
+import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messagebus.db.persistence.DBAccess
+import net.corda.messagebus.db.util.LatestOffsets
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
-import net.corda.messaging.emulation.topic.service.TopicService
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.*
-import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.abs
 
 class CordaTransactionalDBProducerImpl(
     private val schemaRegistry: AvroSchemaRegistry,
-    private val topicService: TopicService,
     private val dbAccess: DBAccess
 ) : CordaProducer {
 
@@ -32,11 +31,12 @@ class CordaTransactionalDBProducerImpl(
 
     private val defaultTimeout: Duration = Duration.ofSeconds(1)
     private val topicPartitionMap = dbAccess.getTopicPartitionMap()
+    private val latestOffsets = LatestOffsets(dbAccess.getMaxOffsetsPerTopicPartition())
 
-    private val transactionalRecords = ThreadLocal.withInitial { mutableListOf<TopicRecordEntry>() }
-    private val transaction = AtomicReference<TransactionRecordEntry?>()
+    private val transaction = ThreadLocal<TransactionRecordEntry>()
     private val transactionId: String
-        get() = transaction.get()?.transactionId ?: throw CordaMessageAPIFatalException("Bug in producer!")
+        get() = transaction.get()?.transactionId
+            ?: throw CordaMessageAPIFatalException("Transaction Id must be created before this point")
     private val inTransaction: Boolean
         get() = transaction.get() != null
 
@@ -59,7 +59,7 @@ class CordaTransactionalDBProducerImpl(
             val topic = it.topic
             val numberOfPartitions = topicPartitionMap[topic]
                 ?: throw CordaMessageAPIFatalException("Cannot find topic: $topic")
-            val partition = getPartition(topic.hashCode(), numberOfPartitions)
+            val partition = getPartition(it.key, numberOfPartitions)
             Pair(partition, it)
         })
     }
@@ -67,8 +67,7 @@ class CordaTransactionalDBProducerImpl(
     override fun sendRecordsToPartitions(recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>) {
         verifyInTransaction()
         val dbRecords = recordsWithPartitions.map { (partition, record) ->
-            val offset = topicService.getLatestOffsets(record.topic)[partition]
-                ?: throw CordaMessageAPIFatalException("Cannot find offset for ${record.topic}, partition $partition")
+            val offset = latestOffsets.getNextOffsetFor(CordaTopicPartition(record.topic, partition))
 
             val serialisedKey = schemaRegistry.serialize(record.key).array()
             val serialisedValue = if (record.value != null) {
@@ -86,19 +85,14 @@ class CordaTransactionalDBProducerImpl(
             )
         }
 
-        doSendRecordsToTopicAndDB(dbRecords, recordsWithPartitions)
+        doSendRecordsToTopicAndDB(dbRecords)
     }
 
     private fun doSendRecordsToTopicAndDB(
-        dbRecords: List<TopicRecordEntry>,
-        recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>
+        dbRecords: List<TopicRecordEntry>
     ) {
         // First try adding to DB as it has the possibility of failing
         dbAccess.writeRecords(dbRecords)
-        // Topic service shouldn't fail but if it does the DB will still rollback from here
-        recordsWithPartitions.forEach {
-            topicService.addRecordsToPartition(listOf(it.second.toCordaRecord()), it.first)
-        }
     }
 
     override fun beginTransaction() {
@@ -127,7 +121,8 @@ class CordaTransactionalDBProducerImpl(
                             topic,
                             (consumer as DBCordaConsumerImpl).getConsumerGroup(),
                             partition,
-                            offset
+                            offset,
+                            transactionId
                         )
                     }
 
@@ -139,13 +134,13 @@ class CordaTransactionalDBProducerImpl(
         verifyInTransaction()
         val topicPartitions = consumer.assignment()
         val offsets = topicPartitions.map { (topic, partition) ->
-            val offset = topicService.getLatestOffsets(topic)[partition]
-                ?: throw CordaMessageAPIFatalException("Cannot find offset for (topic, partition): ($topic, $partition)")
+            val offset = latestOffsets.getNextOffsetFor(CordaTopicPartition(topic, partition))
             CommittedOffsetEntry(
                 topic,
                 (consumer as DBCordaConsumerImpl).getConsumerGroup(),
                 partition,
-                offset
+                offset,
+                transactionId
             )
         }
         dbAccess.writeOffsets(offsets)
@@ -153,20 +148,19 @@ class CordaTransactionalDBProducerImpl(
 
     override fun commitTransaction() {
         verifyInTransaction()
-        dbAccess.makeRecordsVisible(transactionId)
-        transactionalRecords.get().clear()
+        dbAccess.setTransactionRecordState(transactionId, TransactionState.COMMITTED)
         transaction.set(null)
     }
 
     override fun abortTransaction() {
         verifyInTransaction()
-        transactionalRecords.get().clear()
+        dbAccess.setTransactionRecordState(transactionId, TransactionState.ABORTED)
     }
 
     override fun close(timeout: Duration) {
         if (inTransaction) {
-            log.error("Close called during transaction.  Some data may have been lost.")
-            transactionalRecords.get().clear()
+            log.error("Close called during transaction.  Some data may be lost.")
+            abortTransaction()
         }
     }
 
@@ -180,6 +174,6 @@ class CordaTransactionalDBProducerImpl(
 
     private fun getPartition(key: Any, numberOfPartitions: Int): Int {
         require(numberOfPartitions > 0)
-        return abs(key.hashCode() % numberOfPartitions) + 1
+        return abs(key.hashCode() % numberOfPartitions)
     }
 }

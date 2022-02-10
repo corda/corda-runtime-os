@@ -3,7 +3,7 @@ plugins {
     id 'com.r3.internal.gradle.plugins.r3Publish'
 }
 
-description 'Database Message Bus Implementation'
+description 'Database Message Bus Datamodel'
 
 dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
@@ -13,35 +13,4 @@ dependencies {
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
     api "javax.persistence:javax.persistence-api"
-
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
-
-    implementation project(":libs:configuration:configuration-core")
-    implementation project(':libs:db:db-admin')
-    implementation project(':libs:db:db-core')
-    implementation project(':libs:db:db-orm')
-    implementation project(":libs:lifecycle:lifecycle")
-    implementation project(":libs:messaging:messaging")
-    implementation project(":libs:messaging:message-bus")
-    // We need this for the TopicService, at least until we figure out where to put it
-    implementation project(":libs:messaging:inmemory-messaging-impl")
-    implementation project(":libs:schema-registry:schema-registry")
-
-    testImplementation project(":libs:lifecycle:registry")
-    testImplementation project(":testing:test-utilities")
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-
-    integrationTestImplementation project(":libs:db:db-admin-impl")
-    integrationTestImplementation project(":libs:db:db-orm-impl")
-    integrationTestImplementation project(":libs:utilities")
-    integrationTestImplementation project(":testing:db-testkit")
-
-    integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
-    integrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
-
-    integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
-    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
-    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 }

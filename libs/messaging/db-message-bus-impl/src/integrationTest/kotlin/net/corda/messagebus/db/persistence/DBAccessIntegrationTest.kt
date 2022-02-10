@@ -2,6 +2,7 @@ package net.corda.messagebus.db.persistence
 
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
+import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils.getEntityManagerConfiguration
 import net.corda.messagebus.db.datamodel.CommittedOffsetEntry
 import net.corda.messagebus.db.datamodel.TopicEntry
@@ -12,6 +13,7 @@ import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
 import net.corda.test.util.LoggingUtils.emphasise
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.from
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -47,7 +49,7 @@ class DBAccessIntegrationTest {
                     ClassloaderChangeLog.ChangeLogResourceFiles(
                         "DBWriterTest",
                         listOf("migration/db.changelog-master.xml"),
-                        classLoader = DBAccessIntegrationTest::class.java.classLoader
+                        classLoader = DbSchema.DB_MESSAGE_BUS::class.java.classLoader
                     ),
                 )
             )
@@ -70,6 +72,10 @@ class DBAccessIntegrationTest {
                 dbConfig,
             )
 
+            emf.transaction { entityManager ->
+                entityManager.createNativeQuery("CREATE DATABASE test")
+            }
+
             val topicEntry = TopicEntry(topic, 4)
 
             emf.transaction { em ->
@@ -81,6 +87,9 @@ class DBAccessIntegrationTest {
         @AfterAll
         @JvmStatic
         fun done() {
+            emf.transaction { entityManager ->
+                entityManager.createNativeQuery("DROP TABLE IF EXISTS test").executeUpdate()
+            }
             emf.close()
         }
 
@@ -111,18 +120,15 @@ class DBAccessIntegrationTest {
         val dbAccess = DBAccess(emf)
         dbAccess.writeRecords(records)
 
-        val results = query(TopicRecordEntry::class.java, "from topic_record order by partition, record_offset")
+        val results = query(TopicRecordEntry::class.java, "from topic_record where topic in ('$topic') order by partition, record_offset")
         assertThat(results).size().isEqualTo(records.size)
         results.forEachIndexed { index, topicRecordEntry ->
             assertThat(topicRecordEntry).isEqualToComparingFieldByField(records[index])
         }
-
-        val transactionTableResults = query(TransactionRecordEntry::class.java, "from transaction_record")
-        assertThat(transactionTableResults).isEmpty()
     }
 
     @Test
-    fun `DBWriter writes transactional records and makes them visible`() {
+    fun `DBWriter writes transactional records and correctly changes the state`() {
         val transactionId = randomId()
         val transactionRecordEntry = TransactionRecordEntry(transactionId)
 
@@ -136,7 +142,7 @@ class DBAccessIntegrationTest {
         assertThat(nonCommittedResult.transactionId).isEqualTo(transactionId)
         assertThat(nonCommittedResult.state).isEqualTo(TransactionState.PENDING)
 
-        dbAccess.makeRecordsVisible(transactionRecordEntry.transactionId)
+        dbAccess.setTransactionRecordState(transactionRecordEntry.transactionId, TransactionState.COMMITTED)
         val committedResult = query(
             TransactionRecordEntry::class.java,
             "from transaction_record where transactionId = '$transactionId'"
@@ -145,41 +151,16 @@ class DBAccessIntegrationTest {
         assertThat(committedResult.state).isEqualTo(TransactionState.COMMITTED)
     }
 
-
-    @Test
-    fun `DBWriter makes aborted transactional records invisible`() {
-        val transactionId = randomId()
-        val transactionRecordEntry = TransactionRecordEntry(transactionId)
-
-        val dbAccess = DBAccess(emf)
-        dbAccess.writeTransactionRecord(transactionRecordEntry)
-
-        val nonCommittedResult = query(
-            TransactionRecordEntry::class.java,
-            "from transaction_record where transactionId = '$transactionId'"
-        ).single()
-        assertThat(nonCommittedResult.transactionId).isEqualTo(transactionId)
-        assertThat(nonCommittedResult.state).isEqualTo(TransactionState.PENDING)
-
-        dbAccess.makeRecordsInvisible(transactionRecordEntry.transactionId)
-        val committedResult = query(
-            TransactionRecordEntry::class.java,
-            "from transaction_record where transactionId = '$transactionId'"
-        ).single()
-        assertThat(committedResult.transactionId).isEqualTo(transactionId)
-        assertThat(committedResult.state).isEqualTo(TransactionState.ABORTED)
-    }
-
     @Test
     fun `DBWriter writes commited offsets`() {
         val timestamp = Instant.parse("2022-01-01T00:00:00.00Z")
 
         val offsets = listOf(
-            CommittedOffsetEntry(topic, consumerGroup, 0, 0, timestamp),
-            CommittedOffsetEntry(topic, consumerGroup, 0, 1, timestamp),
-            CommittedOffsetEntry(topic, consumerGroup, 0, 2, timestamp),
-            CommittedOffsetEntry(topic, consumerGroup, 1, 0, timestamp),
-            CommittedOffsetEntry(topic, consumerGroup, 1, 5, timestamp),
+            CommittedOffsetEntry(topic, consumerGroup, 0, 0, "", timestamp),
+            CommittedOffsetEntry(topic, consumerGroup, 0, 1, "", timestamp),
+            CommittedOffsetEntry(topic, consumerGroup, 0, 2, "", timestamp),
+            CommittedOffsetEntry(topic, consumerGroup, 1, 0, "", timestamp),
+            CommittedOffsetEntry(topic, consumerGroup, 1, 5, "", timestamp),
         )
 
         val dbAccess = DBAccess(emf)
@@ -207,5 +188,51 @@ class DBAccessIntegrationTest {
         assertThat(topics.size).isEqualTo(2)
         assertThat(topics[topic]!!).isEqualTo(4)
         assertThat(topics[topic2]!!).isEqualTo(10)
+    }
+
+    @Test
+    fun `getMaxOffsetsPerTopic returns the correct map`() {
+        val timestamp = Instant.parse("2022-01-01T00:00:00.00Z")
+        val dbAccess = DBAccess(emf)
+
+        val topic3 = "topic3"
+        val topic4 = "topic4"
+
+        val records = listOf(
+            TopicRecordEntry(topic3, 0, 0, "key1".toByteArray(), "value1".toByteArray(), "id", timestamp = timestamp),
+            TopicRecordEntry(topic3, 0, 1, "key2".toByteArray(), "value2".toByteArray(), "id", timestamp = timestamp),
+            TopicRecordEntry(topic3, 1, 0, "key3".toByteArray(), "value3".toByteArray(), "id", timestamp = timestamp),
+            TopicRecordEntry(topic3, 1, 1, "key3".toByteArray(), "value3".toByteArray(), "id", timestamp = timestamp),
+            TopicRecordEntry(topic3, 1, 2, "key3".toByteArray(), "value3".toByteArray(), "id", timestamp = timestamp),
+            TopicRecordEntry(topic3, 1, 3, "key3".toByteArray(), "value3".toByteArray(), "id", timestamp = timestamp),
+            TopicRecordEntry(topic3, 2, 0, "key4".toByteArray(), "value4".toByteArray(), "id", timestamp = timestamp),
+            TopicRecordEntry(topic3, 2, 7, "key4".toByteArray(), "value4".toByteArray(), "id", timestamp = timestamp),
+            TopicRecordEntry(topic3, 3, 0, "key5".toByteArray(), "value5".toByteArray(), "id", timestamp = timestamp),
+            TopicRecordEntry(topic4, 0, 0, "key0".toByteArray(), "value1".toByteArray(), "id", timestamp = timestamp),
+            TopicRecordEntry(topic4, 1, 1, "key1".toByteArray(), "value2".toByteArray(), "id", timestamp = timestamp),
+            TopicRecordEntry(topic4, 2, 0, "key2".toByteArray(), "value3".toByteArray(), "id", timestamp = timestamp),
+            TopicRecordEntry(topic4, 3, 1, "key3".toByteArray(), "value3".toByteArray(), "id", timestamp = timestamp),
+            TopicRecordEntry(topic4, 4, 2, "key4".toByteArray(), "value3".toByteArray(), "id", timestamp = timestamp),
+        )
+
+        dbAccess.writeRecords(records)
+
+        val expectedResult = mapOf(
+            topic3 to mapOf(
+                0 to 1L,
+                1 to 3L,
+                2 to 7L,
+                3 to 0L,
+            ),
+            topic4 to mapOf(
+                0 to 0L,
+                1 to 1L,
+                2 to 0L,
+                3 to 1L,
+                4 to 2L,
+            )
+        )
+
+        assertThat(dbAccess).returns(expectedResult, from(DBAccess::getMaxOffsetsPerTopicPartition))
     }
 }

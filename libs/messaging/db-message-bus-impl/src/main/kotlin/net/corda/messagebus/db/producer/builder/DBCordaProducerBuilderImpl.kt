@@ -11,7 +11,6 @@ import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.producer.CordaAtomicDBProducerImpl
 import net.corda.messagebus.db.producer.CordaTransactionalDBProducerImpl
-import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.schema.registry.AvroSchemaRegistry
@@ -43,13 +42,11 @@ class DBCordaProducerBuilderImpl @Activate constructor(
         return if (isTransactional) {
             CordaTransactionalDBProducerImpl(
                 avroSchemaRegistry,
-                TopicServiceImpl(),
                 dbAccess
             )
         } else {
             CordaAtomicDBProducerImpl(
                 avroSchemaRegistry,
-                TopicServiceImpl(),
                 dbAccess
             )
         }
@@ -64,11 +61,12 @@ class DBCordaProducerBuilderImpl @Activate constructor(
 
         val jdbcUrl = dbConfig.getString("jdbc.url")
         val username = dbConfig.getString("user")
+        val pass = dbConfig.getString("pass")
 
         val dbSource = PostgresDataSourceFactory().create(
             jdbcUrl,
             username,
-            dbConfig.getString("pass")
+            pass
         )
 
         return entityManagerFactoryFactory.create(

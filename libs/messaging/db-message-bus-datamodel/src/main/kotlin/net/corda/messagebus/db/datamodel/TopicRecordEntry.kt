@@ -10,6 +10,12 @@ import javax.persistence.Id
 import javax.persistence.IdClass
 import javax.persistence.Table
 
+/**
+ * The entity represents the actual record entry.  In code, it will be partitioned by
+ * [topic] and [partition].  The primary fields are [key]/[value].  [transactionId]
+ * will map to the values in `transaction_record` (see [TransactionRecordEntry]) to
+ * determine if the record is part of a [PENDING], [COMMITTED], or [ABORTED] transaction.
+ */
 @Suppress("LongParameterList")
 @Entity(name = "topic_record")
 @Table(name = "topic_record")
@@ -24,6 +30,9 @@ class TopicRecordEntry(
     @Id
     @Column(name = "record_offset")
     val recordOffset: Long,
+    /**
+     * NOTE: All keys must end up on the same partition
+     */
     @Column(name = "record_key")
     val key: ByteArray,
     @Column(name = "record_value")

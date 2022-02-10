@@ -1,25 +1,26 @@
 package net.corda.messagebus.db.producer
 
+import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
+import net.corda.messagebus.db.datamodel.ATOMIC_TRANSACTION
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
-import net.corda.messaging.api.records.Record
-import net.corda.messaging.emulation.topic.service.TopicService
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import javax.persistence.RollbackException
 
 internal class CordaAtomicDBProducerImplTest {
 
@@ -34,31 +35,37 @@ internal class CordaAtomicDBProducerImplTest {
     fun `atomic producer inserts atomic transaction record on initialization`() {
         val dbAccess: DBAccess = mock()
         whenever(dbAccess.getTopicPartitionMap()).thenReturn(mapOf(topic to 1))
-        val topicService: TopicService = mock()
-        whenever(topicService.getLatestOffsets(eq(topic))).thenReturn(mapOf(1 to 5))
         val schemaRegistry: AvroSchemaRegistry = mock()
         whenever(schemaRegistry.serialize(eq(key))).thenReturn(ByteBuffer.wrap(serializedKey))
         whenever(schemaRegistry.serialize(eq(value))).thenReturn(ByteBuffer.wrap(serializedValue))
 
         val dbTransaction = argumentCaptor<TransactionRecordEntry>()
-        CordaAtomicDBProducerImpl(schemaRegistry, topicService, dbAccess)
+        CordaAtomicDBProducerImpl(schemaRegistry, dbAccess)
 
         verify(dbAccess).writeTransactionRecord(dbTransaction.capture())
-        assertThat(dbTransaction.allValues.single()).isEqualTo(CordaAtomicDBProducerImpl.ATOMIC_TRANSACTION)
+        assertThat(dbTransaction.allValues.single()).isEqualTo(ATOMIC_TRANSACTION)
+    }
+
+    @Test
+    fun `atomic producer is okay when db already has atomic transaction`() {
+        val dbAccess: DBAccess = mock()
+        whenever(dbAccess.writeTransactionRecord(any())).thenAnswer {
+            throw RollbackException("I already have this!")
+        }
+        CordaAtomicDBProducerImpl(mock(), dbAccess)
     }
 
     @Test
     fun `atomic producer sends correct entry to database and topic`() {
         val dbAccess: DBAccess = mock()
         whenever(dbAccess.getTopicPartitionMap()).thenReturn(mapOf(topic to 1))
-        val topicService: TopicService = mock()
-        whenever(topicService.getLatestOffsets(eq(topic))).thenReturn(mapOf(1 to 5))
+        whenever(dbAccess.getMaxOffsetsPerTopicPartition()).thenReturn(mapOf(CordaTopicPartition(topic, 1) to 5))
         val schemaRegistry: AvroSchemaRegistry = mock()
         whenever(schemaRegistry.serialize(eq(key))).thenReturn(ByteBuffer.wrap(serializedKey))
         whenever(schemaRegistry.serialize(eq(value))).thenReturn(ByteBuffer.wrap(serializedValue))
         val callback: CordaProducer.Callback = mock()
 
-        val producer = CordaAtomicDBProducerImpl(schemaRegistry, topicService, dbAccess)
+        val producer = CordaAtomicDBProducerImpl(schemaRegistry, dbAccess)
         val cordaRecord = CordaProducerRecord(topic, key, value)
 
         producer.send(cordaRecord, callback)
@@ -72,28 +79,20 @@ internal class CordaAtomicDBProducerImplTest {
         assertThat(record.value).isEqualTo(serializedValue)
         assertThat(record.recordOffset).isEqualTo(5)
         assertThat(record.partition).isEqualTo(1)
-        assertThat(record.transactionId).isEqualTo(CordaAtomicDBProducerImpl.ATOMIC_TRANSACTION.transactionId)
-
-        val topicRecordList = argumentCaptor<List<Record<*, *>>>()
-        verify(topicService).addRecordsToPartition(topicRecordList.capture() , eq(1))
-        val topicRecord = topicRecordList.firstValue.single()
-        assertThat(topicRecord.topic).isEqualTo(topic)
-        assertThat(topicRecord.key).isEqualTo(key)
-        assertThat(topicRecord.value).isEqualTo(value)
+        assertThat(record.transactionId).isEqualTo(ATOMIC_TRANSACTION.transactionId)
     }
 
     @Test
     fun `atomic producer sends correct entry to database when partition is specified`() {
         val dbAccess: DBAccess = mock()
         whenever(dbAccess.getTopicPartitionMap()).thenReturn(mapOf(topic to 2))
-        val topicService: TopicService = mock()
-        whenever(topicService.getLatestOffsets(eq(topic))).thenReturn(mapOf(0 to 2, 1 to 5))
+        whenever(dbAccess.getMaxOffsetsPerTopicPartition()).thenReturn(mapOf(CordaTopicPartition(topic, 0) to 2))
         val schemaRegistry: AvroSchemaRegistry = mock()
         whenever(schemaRegistry.serialize(eq(key))).thenReturn(ByteBuffer.wrap(serializedKey))
         whenever(schemaRegistry.serialize(eq(value))).thenReturn(ByteBuffer.wrap(serializedValue))
         val callback: CordaProducer.Callback = mock()
 
-        val producer = CordaAtomicDBProducerImpl(schemaRegistry, topicService, dbAccess)
+        val producer = CordaAtomicDBProducerImpl(schemaRegistry, dbAccess)
         val cordaRecord = CordaProducerRecord(topic, key, value)
 
         producer.send(cordaRecord, 0, callback)
@@ -107,24 +106,15 @@ internal class CordaAtomicDBProducerImplTest {
         assertThat(record.value).isEqualTo(serializedValue)
         assertThat(record.recordOffset).isEqualTo(2)
         assertThat(record.partition).isEqualTo(0)
-        assertThat(record.transactionId).isEqualTo(CordaAtomicDBProducerImpl.ATOMIC_TRANSACTION.transactionId)
-
-        val topicRecordList = argumentCaptor<List<Record<*, *>>>()
-        verify(topicService).addRecordsToPartition(topicRecordList.capture() , eq(0))
-        val topicRecord = topicRecordList.firstValue.single()
-        assertThat(topicRecord.topic).isEqualTo(topic)
-        assertThat(topicRecord.key).isEqualTo(key)
-        assertThat(topicRecord.value).isEqualTo(value)
+        assertThat(record.transactionId).isEqualTo(ATOMIC_TRANSACTION.transactionId)
     }
 
     @Test
     fun `atomic producer does not allow transactional calls`() {
         val dbAccess: DBAccess = mock()
-        val topicService: TopicService = mock()
 
         val producer = CordaAtomicDBProducerImpl(
             mock(),
-            topicService,
             dbAccess
         )
 
@@ -143,9 +133,9 @@ internal class CordaAtomicDBProducerImplTest {
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
             producer.sendRecordOffsetsToTransaction(mock(), mock())
         }
-        verifyNoInteractions(topicService)
         verify(dbAccess).getTopicPartitionMap()
-        verify(dbAccess).writeTransactionRecord(eq(CordaAtomicDBProducerImpl.ATOMIC_TRANSACTION))
+        verify(dbAccess).getMaxOffsetsPerTopicPartition()
+        verify(dbAccess).writeTransactionRecord(eq(ATOMIC_TRANSACTION))
         verifyNoMoreInteractions(dbAccess)
     }
 }
