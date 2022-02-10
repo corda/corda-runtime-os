@@ -41,7 +41,7 @@ class DbAdminTest {
         private fun prepareDatabase() {
 
             // uncomment this to run the test against local Postgres
-            System.setProperty("postgresPort", "5432")
+//            System.setProperty("postgresPort", "5432")
 
             val dbConfig = DbUtils.getEntityManagerConfiguration("configuration_db")
 
