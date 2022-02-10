@@ -94,6 +94,7 @@ internal class PermissionManagementHandlerTest {
         assertEquals("unexpected exception", e.details["reason"])
     }
 
+    @Suppress("TooGenericExceptionThrown")
     @Test
     fun `test random exception returns UnexpectedErrorException`() {
 
