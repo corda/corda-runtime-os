@@ -19,9 +19,11 @@ class SetCurrentNodeCommandTest {
     @Test
     fun setCurrentNodeUrlTest() {
 
+        val randomPrefix = UUID.randomUUID()
+
         withEnvironmentVariable(
             "CORDA_CLI_HOME_DIR",
-            "build/test-data/.cli-host/"
+            "build/test-data/.cli-host/${randomPrefix}/"
         ).execute {
             Files.cliHomeDir().mkdirs()
 
