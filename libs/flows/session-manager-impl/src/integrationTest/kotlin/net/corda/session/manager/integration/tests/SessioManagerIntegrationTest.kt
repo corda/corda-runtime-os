@@ -2,6 +2,7 @@ package net.corda.session.manager.integration.tests
 
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.integration.SessionMessageType
+import net.corda.session.manager.integration.SessionPartyFactory
 import net.corda.session.manager.integration.helper.assertAllMessagesDelivered
 import net.corda.session.manager.integration.helper.assertLastReceivedSeqNum
 import net.corda.session.manager.integration.helper.assertLastSentSeqNum
@@ -32,6 +33,16 @@ class SessionManagerIntegrationTest {
         bob.assertLastReceivedSeqNum(3)
         bob.assertLastSentSeqNum(1)
         alice.assertLastReceivedSeqNum(1)
+    }
+
+    @Test
+    fun `Test send data in state CREATED`() {
+        val (initiator, _) = SessionPartyFactory().createSessionParties()
+
+        initiator.processNewOutgoingMessage(SessionMessageType.INIT, sendMessages = true)
+        initiator.assertStatus(SessionStateType.CREATED)
+        initiator.processNewOutgoingMessage(SessionMessageType.DATA, sendMessages = true)
+        initiator.assertStatus(SessionStateType.ERROR)
     }
 
     @Test
