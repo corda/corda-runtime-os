@@ -76,7 +76,10 @@ class CryptoOpsServiceImpl @Activate constructor(
                 logger.info("Received start event, starting wait for UP event from dependencies.")
                 registrationHandle?.close()
                 registrationHandle = coordinator.followStatusChangesByName(
-                    setOf(LifecycleCoordinatorName.forComponent<SigningServiceFactory>())
+                    setOf(
+                        LifecycleCoordinatorName.forComponent<SigningServiceFactory>(),
+                        LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+                    )
                 )
             }
             is StopEvent -> {

@@ -1,5 +1,6 @@
 package net.corda.membership.conversion
 
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.membership.conversion.ConversionContext
 import net.corda.v5.membership.conversion.CustomPropertyConverter
 import net.corda.v5.membership.conversion.PropertyConverter
@@ -21,12 +22,24 @@ import java.time.Instant
 open class PropertyConverterImpl @Activate constructor(
     @Reference(
         service = CustomPropertyConverter::class,
-        cardinality = ReferenceCardinality.OPTIONAL,
+        cardinality = ReferenceCardinality.MULTIPLE,
         policyOption = ReferencePolicyOption.GREEDY
     )
     val customConverters: List<CustomPropertyConverter<out Any>>
 ) : PropertyConverter {
     private val converters = customConverters.associateBy { it.type }.toMutableMap()
+
+    companion object {
+        val logger = contextLogger()
+    }
+
+    init {
+        logger.info(customConverters.joinToString(
+            prefix = "Loaded custom property converters: [",
+            postfix = "]",
+            transform = { it.javaClass.name }
+        ))
+    }
 
     @Suppress("UNCHECKED_CAST", "ComplexMethod")
     override fun <T> convert(context: ConversionContext, clazz: Class<out T>): T? {

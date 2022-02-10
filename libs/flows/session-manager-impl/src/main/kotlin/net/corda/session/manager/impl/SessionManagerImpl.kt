@@ -2,6 +2,7 @@ package net.corda.session.manager.impl
 
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionAck
+import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.SessionManager
@@ -28,10 +29,15 @@ class SessionManagerImpl : SessionManager {
         val receivedEvents = sessionState.receivedEventsState ?: return null
         val undeliveredMessages = receivedEvents.undeliveredMessages
         val status = sessionState.status
+        val incorrectSessionState = status == SessionStateType.CREATED || status == SessionStateType.ERROR
         return when {
             //must be an active session
-            (status != SessionStateType.CONFIRMED && status != SessionStateType.CLOSING) -> null
             undeliveredMessages.isEmpty() -> null
+            //don't allow data messages to be consumed when session is not fully established or if there is an error
+            incorrectSessionState -> null
+            //only allow client to see a close message after the session is closed on both sides
+            status != SessionStateType.CLOSED && undeliveredMessages.first().payload is SessionClose -> null
+            //return the next valid message
             undeliveredMessages.first().sequenceNum <= receivedEvents.lastProcessedSequenceNum -> undeliveredMessages.first()
             else -> null
         }

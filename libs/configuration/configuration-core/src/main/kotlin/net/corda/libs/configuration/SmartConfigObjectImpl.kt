@@ -43,7 +43,7 @@ class SmartConfigObjectImpl(
     override fun render(options: ConfigRenderOptions?): String {
         if(secretsLookupService is MaskedSecretsLookupService)
             return typeSafeConfigObject.render(options)
-        return toSafeConfig().render()
+        return toSafeConfig().render(options)
     }
 
     override fun toConfig(): SmartConfig =

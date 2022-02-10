@@ -1,6 +1,8 @@
+@file:JvmName("SandboxServiceUtils")
 package net.corda.sandbox.internal
 
 import net.corda.packaging.CPK
+import net.corda.sandbox.RequireSandboxHooks
 import net.corda.sandbox.SandboxContextService
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxException
@@ -19,12 +21,14 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.io.InputStream
+import java.security.AccessController.doPrivileged
+import java.security.PrivilegedAction
 import java.util.UUID
 import kotlin.streams.asSequence
 
 /** An implementation of [SandboxCreationService] and [SandboxContextService]. */
 @Component(service = [SandboxCreationService::class, SandboxContextService::class])
-@Suppress("TooManyFunctions")
+@RequireSandboxHooks
 internal class SandboxServiceImpl @Activate constructor(
     @Reference
     private val bundleUtils: BundleUtils
@@ -101,19 +105,20 @@ internal class SandboxServiceImpl @Activate constructor(
     }
 
     override fun getCallingSandboxGroup(): SandboxGroup? {
-        val stackWalkerInstance = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
+        return doPrivileged(PrivilegedAction {
+            val stackWalkerInstance = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
 
-        return stackWalkerInstance.walk { stackFrameStream ->
-            stackFrameStream
-                .asSequence()
-                .mapNotNull { stackFrame ->
-                    val bundle = bundleUtils.getBundle(stackFrame.declaringClass)
-                    if (bundle != null) {
-                        bundleIdToSandboxGroup[bundle.bundleId]
-                    } else null
-                }
-                .firstOrNull()
-        }
+            stackWalkerInstance.walk { stackFrameStream ->
+                stackFrameStream
+                    .asSequence()
+                    .mapNotNull { stackFrame ->
+                        val bundle = bundleUtils.getBundle(stackFrame.declaringClass)
+                        if (bundle != null) {
+                            bundleIdToSandboxGroup[bundle.bundleId]
+                        } else null
+                    }.firstOrNull()
+            }
+        })
     }
 
     override fun isSandboxed(bundle: Bundle) = bundleIdToSandbox[bundle.bundleId] != null

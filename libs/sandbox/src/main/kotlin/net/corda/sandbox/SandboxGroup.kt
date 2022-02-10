@@ -2,6 +2,7 @@ package net.corda.sandbox
 
 import net.corda.packaging.CPK
 import net.corda.v5.serialization.SingletonSerializeAsToken
+import org.osgi.framework.Bundle
 
 /**
  * A group of sandboxes with visibility of one another.
@@ -10,6 +11,7 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
  */
 interface SandboxGroup: SingletonSerializeAsToken {
     val cpks: Collection<CPK>
+    val metadata: Map<Bundle, CPK.Metadata>
 
     /**
      * Attempts to load the [Class] with [className] from the main bundle of each sandbox in the

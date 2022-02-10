@@ -53,7 +53,7 @@ class ReconfigurableConnectionManagerTest {
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
         @Suppress("UNCHECKED_CAST")
-        configHandler = (context.arguments()[4] as ReconfigurableConnectionManager.ConnectionManagerConfigChangeHandler)
+        configHandler = (context.arguments()[5] as ReconfigurableConnectionManager.ConnectionManagerConfigChangeHandler)
     }
 
     private val connectionManager = ReconfigurableConnectionManager(factory, service) { _, _ -> manager }

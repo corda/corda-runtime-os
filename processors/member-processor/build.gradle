@@ -1,0 +1,55 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+    id 'corda.osgi-test-conventions'
+}
+
+description 'Member Processor'
+
+dependencies {
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "org.osgi:osgi.annotation"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda:corda-base'
+
+    implementation project(":libs:crypto:crypto-client")
+    implementation project(':libs:lifecycle:lifecycle')
+    implementation project(":libs:messaging:messaging")
+    implementation project(":libs:membership:membership-internal")
+
+    implementation project(':components:configuration:configuration-read-service')
+    implementation project(':components:membership:registration-provider')
+    implementation project(':components:virtual-node:virtual-node-info-read-service')
+    implementation project(':components:virtual-node:cpi-info-read-service')
+
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+
+    implementation project(':libs:configuration:configuration-core')
+
+    runtimeOnly project(":components:membership:group-policy-impl")
+    runtimeOnly project(":components:membership:registration-static-network-impl")
+    runtimeOnly project(":components:virtual-node:cpi-info-read-service-impl")
+    runtimeOnly project(":components:configuration:configuration-read-service-impl")
+    runtimeOnly project(":components:crypto:crypto-client-impl")
+    runtimeOnly project(":libs:crypto:crypto-impl")
+    runtimeOnly project(":libs:messaging:messaging-impl")
+    runtimeOnly project(":libs:membership:membership-application")
+    runtimeOnly project(":libs:membership:membership-conversion-impl")
+    runtimeOnly project(":libs:membership:membership-identity-impl")
+    runtimeOnly project(":libs:lifecycle:lifecycle-impl")
+    runtimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation project(":testing:test-utilities")
+    testImplementation "net.corda:corda-topic-schema"
+    testImplementation "net.corda:corda-config-schema"
+    testImplementation "net.corda:corda-packaging-avro-converters"
+    testImplementation "net.corda:corda-membership-identity"
+
+    integrationTestImplementation project(":processors:crypto-processor")
+
+    integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")
+    integrationTestRuntimeOnly project(":components:virtual-node:cpi-info-write-service-impl")
+    integrationTestRuntimeOnly project(":components:membership:membership-group-read-impl")
+}

@@ -18,7 +18,6 @@
     bnd.identity;id='virtual-node-manager-tests',\
     bnd.identity;id='net.corda.virtual-node-manager',\
     bnd.identity;id='net.corda.crypto-impl',\
-    bnd.identity;id='net.corda.sandbox-hooks',\
     bnd.identity;id='net.corda.sandbox-internal',\
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
