@@ -4,8 +4,6 @@ import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.libs.cpiupload.CpiUploadManager
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleStatus
-import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
@@ -14,7 +12,6 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.io.ByteArrayInputStream
-import java.security.MessageDigest
 import java.util.UUID
 
 class CpiUploadRPCOpsImplTest {
@@ -42,7 +39,7 @@ class CpiUploadRPCOpsImplTest {
         val cpiBytes = "dummyCPI".toByteArray()
         val cpiInputStream = ByteArrayInputStream(cpiBytes)
         val cpiUploadRequestId = UUID.randomUUID().toString()
-        whenever(cpiUploadManager.uploadCpi(cpiInputStream)).thenReturn(cpiUploadRequestId)
+        whenever(cpiUploadManager.uploadCpi(any(), cpiInputStream)).thenReturn(cpiUploadRequestId)
 
         val httpResponse = cpiUploadRPCOpsImpl.cpi(cpiInputStream)
         assertNotNull(httpResponse)

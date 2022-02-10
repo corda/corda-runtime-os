@@ -38,7 +38,6 @@ class CpiUploadRPCOpsImpl @Activate constructor(
 
     override val targetInterface: Class<CpiUploadRPCOps> = CpiUploadRPCOps::class.java
 
-    // Need to check again coordinator.isRunning vs coordinator.status
     override val isRunning get() = coordinator.isRunning
 
     override fun start() {
@@ -57,7 +56,7 @@ class CpiUploadRPCOpsImpl @Activate constructor(
         // TODO in a later PR check the requestId topic ("HTTP Status" topic) if the CPI already has been processed so return fast
         // First validate CPI against http sent checksum. Then we should continue with uploading it.
         // TODO - validate CPI against sent checksum
-        val cpiUploadRequestId = cpiContent.use { cpiUploadManager.uploadCpi(it) }
+        val cpiUploadRequestId = cpiContent.use { cpiUploadManager.uploadCpi("todoCpiFileName", it) }
         return CpiUploadId(cpiUploadRequestId)
     }
 }

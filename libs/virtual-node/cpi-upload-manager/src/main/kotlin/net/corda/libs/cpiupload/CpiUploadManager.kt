@@ -12,7 +12,7 @@ interface CpiUploadManager : Lifecycle {
      *
      * @throws CpiUploadManagerException
      */
-    fun uploadCpi(cpiContent: InputStream): RequestId
+    fun uploadCpi(cpiFileName: String, cpiContent: InputStream): RequestId
 }
 
 typealias RequestId = String

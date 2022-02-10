@@ -25,8 +25,6 @@ class CpiUploadManagerImpl(
 ) : CpiUploadManager {
 
     companion object {
-        private fun randomFileName(): Path = Paths.get("/tmp/${UUID.randomUUID()}")
-
         private const val TODO_CHUNK_SIZE = 1024 // TODO Replace with config.
 
         val log = contextLogger()
@@ -37,8 +35,7 @@ class CpiUploadManagerImpl(
     @VisibleForTesting
     internal data class ChunkId(val requestId: String, val partNumber: Int)
 
-    override fun uploadCpi(cpiContent: InputStream): RequestId {
-        val fileName = randomFileName() // Maybe move to sendCpiChunk parameters?
+    override fun uploadCpi(cpiFileName: String, cpiContent: InputStream): RequestId {
         val chunkWriter = ChunkWriterFactory.create(TODO_CHUNK_SIZE)
         val sentChunkIds = mutableSetOf<ChunkId>()
         val chunkAcksFutures = mutableListOf<Future<ChunkAck>>()
@@ -52,7 +49,7 @@ class CpiUploadManagerImpl(
             // Keep in memory only chunk's unique id so don't keep in memory its binary chunk.
             sentChunkIds.add(ChunkId(chunk.requestId, chunk.partNumber))
         }
-        chunkWriter.write(fileName, cpiContent)
+        chunkWriter.write(Paths.get(cpiFileName), cpiContent)
 
         checkChunksSuccessfullyReceived(chunkAcksFutures, sentChunkIds)
         return sentChunkIds.first().requestId

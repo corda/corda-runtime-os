@@ -23,6 +23,10 @@ class CpiUploadManagerImplTest {
     private lateinit var cpiUploadManagerImpl: CpiUploadManagerImpl
     private lateinit var rpcSender: RPCSender<Chunk, ChunkAck>
 
+    companion object {
+        const val DUMMY_FILE_NAME = "dummyFileName"
+    }
+
     @BeforeEach
     @Suppress("UNCHECKED_CAST")
     fun setUp() {
@@ -48,7 +52,7 @@ class CpiUploadManagerImplTest {
         }
 
         val cpiBytes = "dummyCPI".toByteArray()
-        val requestId = cpiUploadManagerImpl.uploadCpi(ByteArrayInputStream(cpiBytes))
+        val requestId = cpiUploadManagerImpl.uploadCpi(DUMMY_FILE_NAME, ByteArrayInputStream(cpiBytes))
         assertDoesNotThrow { UUID.fromString(requestId) }
     }
 
@@ -80,7 +84,7 @@ class CpiUploadManagerImplTest {
 
         val cpiBytes = "dummyCPI".toByteArray()
         val e = assertThrows<CpiUploadManagerException> {
-            cpiUploadManagerImpl.uploadCpi(ByteArrayInputStream(cpiBytes))
+            cpiUploadManagerImpl.uploadCpi(DUMMY_FILE_NAME, ByteArrayInputStream(cpiBytes))
         }
 
         assertNull(e.cause)
@@ -118,7 +122,7 @@ class CpiUploadManagerImplTest {
 
         val cpiBytes = "dummyCPI".toByteArray()
         val e = assertThrows<CpiUploadManagerException> {
-            cpiUploadManagerImpl.uploadCpi(ByteArrayInputStream(cpiBytes))
+            cpiUploadManagerImpl.uploadCpi(DUMMY_FILE_NAME, ByteArrayInputStream(cpiBytes))
         }
 
         assertNull(e.cause)
@@ -131,7 +135,7 @@ class CpiUploadManagerImplTest {
 
         val cpiBytes = "dummyCPI".toByteArray()
         val e = assertThrows<CpiUploadManagerException> {
-            cpiUploadManagerImpl.uploadCpi(ByteArrayInputStream(cpiBytes))
+            cpiUploadManagerImpl.uploadCpi(DUMMY_FILE_NAME, ByteArrayInputStream(cpiBytes))
         }
         assertEquals("RPCSender has stopped running. Aborting CPI uploading.", e.message)
     }
