@@ -46,21 +46,18 @@ fun <T : Any> withPermissionManager(
     } catch (e: CordaRPCAPISenderException) {
         logger.warn("Error during sending of permission management request.", e)
         throw InternalServerException(
-            details = buildExceptionCauseDetails(e)
+            details = buildExceptionCauseDetails(e.cause ?: e)
         )
 
     } catch (e: CordaRPCAPIResponderException) {
         logger.warn("Permission manager received error from responder: ${e.message}", e.cause)
         throw InternalServerException(
-            details = buildExceptionCauseDetails(e)
+            details = buildExceptionCauseDetails(e.cause ?: e)
         )
 
     } catch (e: TimeoutException) {
         logger.warn("Permission management operation timed out.", e)
-        throw InternalServerException(
-            "Permission management operation timed out.",
-            details = buildExceptionCauseDetails(e)
-        )
+        throw InternalServerException("Permission management operation timed out.")
 
     } catch (e: Exception) {
         logger.warn("Unexpected error during permission management operation.", e)
@@ -72,7 +69,7 @@ fun <T : Any> withPermissionManager(
     }
 }
 
-private fun buildExceptionCauseDetails(e: Exception) = mapOf(
-    "cause" to e::javaClass.name,
+private fun buildExceptionCauseDetails(e: Throwable) = mapOf(
+    "cause" to e::class.java.name,
     "reason" to (e.message ?: "")
 )
