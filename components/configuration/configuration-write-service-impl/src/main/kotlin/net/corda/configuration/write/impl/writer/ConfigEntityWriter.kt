@@ -1,5 +1,6 @@
 package net.corda.configuration.write.impl.writer
 
+import net.corda.configuration.write.WrongConfigVersionException
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.datamodel.ConfigAuditEntity
