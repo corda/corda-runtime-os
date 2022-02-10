@@ -4,43 +4,33 @@ import net.corda.packaging.CPI
 import net.corda.packaging.CPK
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
+import net.corda.testing.sandboxes.CpiLoaderService
 import net.corda.v5.application.flows.Flow
 import net.corda.virtualnode.manager.api.RuntimeRegistration
-import net.corda.virtualnode.manager.test.Constants.PLATFORM_PUBLIC_BUNDLE_NAMES
 import org.junit.jupiter.api.fail
 import org.osgi.framework.FrameworkUtil
-import java.io.InputStream
-import java.net.URL
-import java.nio.file.Files
-import java.nio.file.Path
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Deactivate
+import org.osgi.service.component.annotations.Reference
 
-class IntegrationTestService constructor(
+@Component(service = [ IntegrationTestService::class ])
+class IntegrationTestService @Activate constructor(
+    @Reference
+    private val loader: CpiLoaderService,
+    @Reference
     private val sandboxCreationService: SandboxCreationService,
-    private val registration: RuntimeRegistration,
-    private val baseDir: Path
+    @Reference
+    private val registration: RuntimeRegistration
 ) {
-    init {
-        val allBundles = FrameworkUtil.getBundle(this::class.java).bundleContext.bundles
-        val (publicBundles, privateBundles) = allBundles.partition { bundle ->
-            bundle.symbolicName in PLATFORM_PUBLIC_BUNDLE_NAMES
-        }
-        sandboxCreationService.createPublicSandbox(publicBundles, privateBundles)
+    @Suppress("unused")
+    @Deactivate
+    fun done() {
+        loader.stop()
     }
 
-    private fun getResource(resourceName: String): URL {
-        return (this::class.java.classLoader.getResource(resourceName)
-            ?: fail("Missing resource $resourceName"))
-    }
-
-    private fun getInputStream(resourceName: String): InputStream =
-        getResource(resourceName).openStream().buffered()
-
-    fun loadCPIFromResource(resourceName: String): CPI = getInputStream(resourceName).use {
-        CPI.from(
-            it,
-            expansionLocation = Files.createTempDirectory(baseDir, "cpb"),
-            verifySignature = true
-        )
+    fun loadCPIFromResource(resourceName: String): CPI {
+        return loader.loadCPI(resourceName)
     }
 
     fun createSandboxGroupFor(cpks: Set<CPK>): SandboxGroup =
@@ -54,18 +44,18 @@ class IntegrationTestService constructor(
         sandboxCreationService.unloadSandboxGroup(sandboxGroup)
     }
 
-    private fun <T, U : T> getServiceFor(serviceType: Class<T>, bundleClass: Class<U>): T {
-        val context = FrameworkUtil.getBundle(bundleClass).bundleContext
-        return context.getServiceReferences(serviceType, null)
-            .map(context::getService)
-            .filterIsInstance(bundleClass)
-            .firstOrNull() ?: fail("No service for $serviceType.")
-    }
-
-    internal fun <T : Any> runFlow(className: String, group: SandboxGroup): T {
+    fun <T : Any> runFlow(className: String, group: SandboxGroup): T {
         val workflowClass = group.loadClassFromMainBundles(className, Flow::class.java)
-        @Suppress("unchecked_cast")
-        return getServiceFor(Flow::class.java, workflowClass).call() as? T
-            ?: fail("Workflow did not return the correct type.")
+        val context = FrameworkUtil.getBundle(workflowClass).bundleContext
+        val reference = context.getServiceReferences(Flow::class.java, "(component.name=$className)")
+            .firstOrNull() ?: fail("No service found for $className.")
+        return context.getService(reference)?.let { service ->
+            try {
+                @Suppress("unchecked_cast")
+                service.call() as? T ?: fail("Workflow did not return the correct type.")
+            } finally {
+                context.ungetService(reference)
+            }
+        } ?: fail("$className service not available - OSGi error?")
     }
 }

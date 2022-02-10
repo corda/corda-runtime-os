@@ -6,7 +6,6 @@ plugins {
 description 'Corda Crypto Custom Digest Two'
 
 group 'org.example.crypto'
-version ''
 
 cordapp {
     targetPlatformVersion 999 as Integer

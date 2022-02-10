@@ -6,7 +6,6 @@ plugins {
 description 'Corda Crypto Custom Digest Consumer One'
 
 group 'com.example.crypto.consumer'
-version ''
 
 cordapp {
     targetPlatformVersion 999 as Integer

@@ -25,12 +25,13 @@ dependencies {
 
 tasks.named('jar', Jar) {
     osgi {
-        // We only want to export package 'net.corda.bundle3'.
+        // We only want to export packages 'net.corda.bundle3'
+        // and 'net.corda.bundle5'.
         // 'net.corda.bundle2' must be a private package.
         autoExport = false
     }
 }
 
-cpk {
+tasks.named('cpk', Jar) {
     archiveBaseName = 'TestSerializable3-workflows'
 }

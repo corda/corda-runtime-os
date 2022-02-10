@@ -1,4 +1,4 @@
-package net.corda.flow.sandbox
+package net.corda.testing.sandboxes.impl
 
 import java.util.concurrent.ConcurrentHashMap
 import net.corda.v5.base.util.loggerFor
@@ -10,7 +10,7 @@ import net.corda.virtualnode.write.VirtualNodeInfoWriteService
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.propertytypes.ServiceRanking
 
-interface VirtualNodeInfoService : VirtualNodeInfoReadService, VirtualNodeInfoWriteService
+interface VirtualNodeInfoService  : VirtualNodeInfoReadService, VirtualNodeInfoWriteService
 
 @Suppress("unused")
 @Component(service = [
