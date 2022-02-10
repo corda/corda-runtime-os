@@ -68,7 +68,7 @@ class SessionCloseProcessorReceive(
         seqNum: Int,
         sessionId: String
     ) = when (sessionState.status) {
-        SessionStateType.CONFIRMED -> {
+        SessionStateType.CONFIRMED, SessionStateType.CREATED -> {
             sessionState.apply {
                 status = SessionStateType.CLOSING
                 sendEventsState.undeliveredMessages =
