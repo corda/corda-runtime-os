@@ -23,9 +23,9 @@ class FilesTest {
 
         val workingDir = Paths.get("").toAbsolutePath().toString()
 
-        withEnvironmentVariable("CORDA_CLI_HOME_DIR", ".\\corda\\cli").execute {
+        withEnvironmentVariable("CORDA_CLI_HOME_DIR", "build/test-data/.cli-host/").execute {
             assertEquals(
-                Paths.get(workingDir,".\\corda\\cli").toString(),
+                Paths.get(workingDir,"build/test-data/.cli-host/").toString(),
                 Files.cliHomeDir().absolutePath
             )
         }

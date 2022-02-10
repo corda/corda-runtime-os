@@ -25,7 +25,6 @@ class SetCurrentNodeCommand : Callable<Int> {
         val writer = PrintWriter(Files.profile)
         yaml.dump(data, writer)
         writer.close()
-        println("Target URL updated.")
         return 0
     }
 }

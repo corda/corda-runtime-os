@@ -19,7 +19,10 @@ class SetCurrentNodeCommandTest {
     @Test
     fun setCurrentNodeUrlTest() {
 
-        withEnvironmentVariable("CORDA_CLI_HOME_DIR", kotlin.io.path.createTempDirectory(".corda-cli-test").toString()).execute {
+        withEnvironmentVariable(
+            "CORDA_CLI_HOME_DIR",
+            "build/test-data/.cli-host/"
+        ).execute {
             Files.cliHomeDir().mkdirs()
 
             val testUrl = "www.${UUID.randomUUID()}.com"
@@ -28,12 +31,9 @@ class SetCurrentNodeCommandTest {
 
             yaml.dump(data, FileWriter(Files.profile))
 
-            val outText = tapSystemOutNormalized {
-                CommandLine(
-                    App()
-                ).execute("set-node", "-t=$testUrl")
-            }
-            assertEquals("Target URL updated.\n", outText)
+            CommandLine(
+                App()
+            ).execute("set-node", "-t=$testUrl")
 
             data = yaml.load(FileInputStream(Files.profile))
             assertEquals(testUrl, data["url"])

@@ -53,7 +53,6 @@ subprojects {
     apply plugin: 'maven-publish'
 
     detekt {
-//        baseline = file("detekt-baseline.xml")
         config.setFrom(files("$rootDir/detekt-config.yml"))
         parallel = true
         ignoreFailures = true
