@@ -12,6 +12,10 @@ class MessageBus : BusInteractions {
         return inboundMessages.poll()
     }
 
+    override fun getInboundMessageSize(): Int {
+        return inboundMessages.size
+    }
+
     override fun getInboundMessage(position: Int) : SessionEvent {
         return inboundMessages.removeAt(position)
     }
