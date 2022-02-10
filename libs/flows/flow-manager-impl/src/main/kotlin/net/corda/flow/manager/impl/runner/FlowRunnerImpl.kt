@@ -89,7 +89,8 @@ class FlowRunnerImpl @Activate constructor(
             sandboxGroupContext.getDependencyInjector(),
             flowStackServiceFactory.create(checkpoint),
             sandboxGroupContext.getCheckpointSerializer(),
-            sandboxGroupContext
+            sandboxGroupContext,
+            checkpoint.flowStartContext.virtualNode.holdingIdentity
         )
     }
 

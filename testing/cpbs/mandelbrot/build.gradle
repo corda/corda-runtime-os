@@ -1,0 +1,23 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'net.corda.plugins.cordapp-cpb'
+}
+
+cordapp {
+    targetPlatformVersion platformVersion as Integer
+    minimumPlatformVersion platformVersion as Integer
+    workflow {
+        name "Mandelbrot"
+        versionId 1
+        vendor "R3"
+    }
+}
+
+dependencies {
+    cordaProvided platform(group: "net.corda", name: "corda-api", version: cordaApiVersion)
+    cordaProvided group: 'net.corda', name: 'corda-application'
+}
+
+tasks.named('jar', Jar) {
+    archiveBaseName = 'corda-mandelbrot-cpb'
+}
