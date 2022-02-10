@@ -9,7 +9,7 @@
       "doc": "List of the WireCpiVersion items.",
       "type": {
         "type": "array",
-        "items": "net.corda.data.membership.WireCpiVersion"
+        "items": "WireCpiVersion"
       }
     }
   ]

@@ -26,22 +26,22 @@
     {
       "name": "distributionMetaData",
       "doc": "Basic information about the data distribution, can also be a response to a sync.",
-      "type": "net.corda.data.membership.DistributionMetaData"
+      "type": "DistributionMetaData"
     },
     {
       "name": "memberships",
       "doc": "Membership updates.",
-      "type": ["null", "net.corda.data.membership.SignedMemberships"]
+      "type": ["null", "SignedMemberships"]
     },
     {
       "name": "groupParameters",
       "doc": "GroupParameters updates.",
-      "type": ["null", "net.corda.data.membership.WireGroupParameters"]
+      "type": ["null", "WireGroupParameters"]
     },
     {
       "name": "cpiWhitelist",
       "doc": "CpiWhiteList updates.",
-      "type": ["null", "net.corda.data.membership.WireCpiWhitelist"]
+      "type": ["null", "WireCpiWhitelist"]
     }
   ]
 }

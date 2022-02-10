@@ -1,0 +1,40 @@
+{
+  "type": "record",
+  "name": "RegistrationResponse",
+  "namespace": "net.corda.data.membership.rpc.response",
+  "doc": "Registration response to submitting the registration request.",
+  "fields": [
+    {
+      "name": "registrationSent",
+      "doc": "Time ([Instant]) in milliseconds when the registration request was sent.",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
+    },
+    {
+      "name": "registrationStatus",
+      "doc": "Status of the registration request.",
+      "type": {
+        "type": "enum",
+        "name": "RegistrationStatus",
+        "symbols": ["SUBMITTED", "NOT_SUBMITTED"]
+      }
+    },
+    {
+      "name": "registrationProtocolVersion",
+      "doc": "Registration protocol number.",
+      "type": "int"
+    },
+    {
+      "name": "memberProvidedContext",
+      "doc": "Member provided context submitted for registration.",
+      "type": "net.corda.data.KeyValuePairList"
+    },
+    {
+      "name": "additionalInfo",
+      "doc": "A map of generic additional information to help the Group Manager build the final signed MemberInfo. May include role and CPI version related information.",
+      "type": "net.corda.data.KeyValuePairList"
+    }
+  ]
+}

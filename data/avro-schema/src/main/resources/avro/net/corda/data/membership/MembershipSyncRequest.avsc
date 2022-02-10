@@ -7,7 +7,7 @@
     {
       "name": "distributionMetaData",
       "doc": "Basic information about the request.",
-      "type": "net.corda.data.membership.DistributionMetaData"
+      "type": "DistributionMetaData"
     },
     {
       "name": "membersHash",

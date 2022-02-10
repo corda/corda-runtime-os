@@ -9,7 +9,7 @@
       "doc": "List of the Pair items.",
       "type": {
         "type": "array",
-        "items": "net.corda.data.KeyValuePair"
+        "items": "KeyValuePair"
       }
     }
   ]

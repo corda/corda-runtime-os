@@ -14,7 +14,7 @@
       "doc": "List of signed membership updates.",
       "type": {
         "type": "array",
-        "items": "net.corda.data.membership.SignedMemberInfo"
+        "items": "SignedMemberInfo"
       }
     }
   ]

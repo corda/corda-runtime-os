@@ -11,7 +11,7 @@
     },
     {
       "name": "syncRequested",
-      "doc": "Time ([Instant]) in milliseconds when when the sync was requested.",
+      "doc": "Time ([Instant]) in milliseconds when the sync was requested.",
       "type": {
         "type": "long",
         "logicalType": "timestamp-millis"

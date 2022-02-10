@@ -1,0 +1,29 @@
+{
+  "type": "record",
+  "name": "MembershipRpcResponseContext",
+  "namespace": "net.corda.data.membership.rpc.response",
+  "doc": "Basic, common information about the RPC operations response for membership groups.",
+  "fields": [
+    {
+      "name": "requestId",
+      "doc": "ID of the request.",
+      "type": "string"
+    },
+    {
+      "name": "requestTimestamp",
+      "doc": "Time ([Instant]) in milliseconds when the request was issued.",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
+    },
+    {
+      "name": "responseTimestamp",
+      "doc": "Time ([Instant]) in milliseconds when the response was issued.",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
+    }
+  ]
+}

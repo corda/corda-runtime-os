@@ -1,0 +1,20 @@
+{
+  "type": "record",
+  "name": "MembershipRpcRequest",
+  "namespace": "net.corda.data.membership.rpc.request",
+  "doc": "RPC operations request for membership groups.",
+  "fields": [
+    {
+      "name": "requestContext",
+      "doc": "Request context.",
+      "type": "MembershipRpcRequestContext"
+    },
+    {
+      "name": "request",
+      "doc": "Request's payload, depends on the requested operation.",
+      "type": [
+        "RegistrationRequest"
+      ]
+    }
+  ]
+}

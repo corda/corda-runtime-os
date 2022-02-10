@@ -1,0 +1,21 @@
+{
+  "type": "record",
+  "name": "MembershipRpcRequestContext",
+  "namespace": "net.corda.data.membership.rpc.request",
+  "doc": "Basic, common information about the RPC operations request for membership groups.",
+  "fields": [
+    {
+      "name": "requestId",
+      "doc": "ID of the request.",
+      "type": "string"
+    },
+    {
+      "name": "requestTimestamp",
+      "doc": "Time ([Instant]) in milliseconds when the request was issued.",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
+    }
+  ]
+}

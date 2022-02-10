@@ -1,0 +1,20 @@
+{
+  "type": "record",
+  "name": "MembershipRpcResponse",
+  "namespace": "net.corda.data.membership.rpc.response",
+  "doc": "RPC operations response for membership groups.",
+  "fields": [
+    {
+      "name": "responseContext",
+      "doc": "Response context.",
+      "type": "MembershipRpcResponseContext"
+    },
+    {
+      "name": "response",
+      "doc": "Response's payload, depends on the requested operation.",
+      "type": [
+        "RegistrationResponse"
+      ]
+    }
+  ]
+}

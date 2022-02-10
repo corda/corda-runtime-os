@@ -12,7 +12,7 @@
     {
       "name": "signedMemberInfo",
       "doc": "Signed MemberInfo to be distributed and persisted.",
-      "type": "net.corda.data.membership.SignedMemberInfo"
+      "type": "SignedMemberInfo"
     }
   ]
 }
