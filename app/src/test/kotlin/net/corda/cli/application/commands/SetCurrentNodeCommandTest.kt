@@ -1,6 +1,5 @@
 package net.corda.cli.application.commands
 
-import com.github.stefanbirkner.systemlambda.SystemLambda.tapSystemOutNormalized
 import com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable
 import net.corda.cli.application.App
 import net.corda.cli.application.services.Files
@@ -11,9 +10,7 @@ import picocli.CommandLine
 import java.io.FileInputStream
 import java.io.FileWriter
 import java.util.*
-import kotlin.io.path.ExperimentalPathApi
 
-@ExperimentalPathApi
 class SetCurrentNodeCommandTest {
 
     @Test
