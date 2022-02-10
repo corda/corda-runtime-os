@@ -1,19 +1,13 @@
 plugins {
     id 'org.jetbrains.kotlin.jvm'
     id 'maven-publish'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
 }
+
+group = "net.corda.cli.host"
 
 dependencies {
     api "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
     compileOnly "org.pf4j:pf4j:${pf4jVersion}"
     api "info.picocli:picocli:$picoCliVersion"
-}
-
-publishing {
-    publications {
-        cliapi(MavenPublication){
-            from components.kotlin
-            artifactId 'corda-cli-api'
-        }
-    }
 }

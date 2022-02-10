@@ -4,6 +4,10 @@ import static org.gradle.api.JavaVersion.VERSION_11
 plugins {
     id 'org.jetbrains.kotlin.jvm' apply false
     id 'base'
+    id 'io.gitlab.arturbosch.detekt' apply false
+    id 'jacoco' // test coverage
+    id 'maven-publish'
+    id 'com.r3.internal.gradle.plugins.r3ArtifactoryPublish'
 }
 
 ext.pluginsDir = "$buildDir/plugins"
@@ -11,6 +15,15 @@ ext.pluginsDir = "$buildDir/plugins"
 subprojects {
     group = 'net.corda.cli'
     version = '0.0.1-beta'
+
+    pluginManager.withPlugin('org.jetbrains.kotlin.jvm'){
+        apply plugin: 'io.gitlab.arturbosch.detekt'
+
+
+        dependencies {
+            detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:$detektPluginVersion"
+        }
+    }
 
     tasks.withType(KotlinCompile).configureEach {
         kotlinOptions {
@@ -33,6 +46,28 @@ subprojects {
         description = "Compiles all the Kotlin and Java classes, including all of the test classes."
         group = "verification"
         task.dependsOn tasks.withType(AbstractCompile)
+    }
+
+    apply plugin: 'io.gitlab.arturbosch.detekt'
+    apply plugin: 'jacoco'
+    apply plugin: 'maven-publish'
+
+    detekt {
+        config.setFrom(files("$rootDir/detekt-config.yml"))
+        parallel = true
+        ignoreFailures = true
+        reports {
+            xml {
+                enabled = true
+                destination = file("$projectDir/build/detekt-report.xml")
+            }
+            html {
+                enabled = false
+            }
+            txt {
+                enabled = false
+            }
+        }
     }
 }
 

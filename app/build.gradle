@@ -1,6 +1,7 @@
 plugins {
     id 'org.jetbrains.kotlin.jvm' 
     id 'application'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
 }
 
 dependencies {
@@ -14,6 +15,15 @@ dependencies {
     implementation "org.yaml:snakeyaml:${snakeyamlVersion}"
     implementation "com.github.kittinunf.fuel:fuel:${fuelVersion}"
     implementation "com.github.kittinunf.fuel:fuel-json:${fuelVersion}"
+
+    testImplementation "org.junit.jupiter:junit-jupiter:5.8.2"
+    testImplementation "com.github.stefanbirkner:system-lambda:1.2.1"
+}
+
+group = "net.corda.cli.host"
+
+test {
+    useJUnitPlatform()
 }
 
 def appMainClass = "net.corda.cli.application.BootKt"
