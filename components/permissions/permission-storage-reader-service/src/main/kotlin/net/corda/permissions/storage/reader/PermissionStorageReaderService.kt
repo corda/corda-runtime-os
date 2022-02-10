@@ -32,7 +32,7 @@ class PermissionStorageReaderService @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     configurationReadService: ConfigurationReadService,
     @Reference(service = DbConnectionManager::class)
-    private val dbConnectionManager: DbConnectionManager,
+    dbConnectionManager: DbConnectionManager,
 ) : Lifecycle {
 
     val permissionStorageReader: PermissionStorageReader? get() = handler.permissionStorageReader

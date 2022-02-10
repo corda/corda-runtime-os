@@ -21,6 +21,7 @@ import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.assertThrows
 
 class MemberProcessorTestUtils {
@@ -63,6 +64,7 @@ class MemberProcessorTestUtils {
             groupPolicy: String = sampleGroupPolicy1,
             cpiVersion: String = "1.0"
         ) {
+            val previous = getVirtualNodeInfo(virtualNodeInfoReader)
             // Create test data
             val cpiMetadata = getCpiMetadata(
                 groupPolicy = groupPolicy,
@@ -75,14 +77,9 @@ class MemberProcessorTestUtils {
             publishVirtualNodeInfo(virtualNodeInfo)
 
             // wait for virtual node info reader to pick up changes
-            waitForVNodeInfoChange(virtualNodeInfoReader)
-        }
-
-        fun waitForVNodeInfoChange(virtualNodeInfoReader: VirtualNodeInfoReadService): VirtualNodeInfo? {
-            val previous = getVirtualNodeInfo(virtualNodeInfoReader)
-            return eventually {
+            eventually {
                 val newVNodeInfo = getVirtualNodeInfo(virtualNodeInfoReader)
-                Assertions.assertNotEquals(previous, newVNodeInfo)
+                assertNotEquals(previous, newVNodeInfo)
                 newVNodeInfo
             }
         }
@@ -118,14 +115,14 @@ class MemberProcessorTestUtils {
 
         fun assertGroupPolicy(new: GroupPolicy, old: GroupPolicy? = null) {
             old?.let {
-                Assertions.assertNotEquals(new, it)
+                assertNotEquals(new, it)
             }
             Assertions.assertEquals(groupId, new.groupId)
             Assertions.assertEquals(6, new.keys.size)
         }
 
         fun assertSecondGroupPolicy(new: GroupPolicy, old: GroupPolicy) {
-            Assertions.assertNotEquals(new, old)
+            assertNotEquals(new, old)
             Assertions.assertEquals("DEF456", new.groupId)
             Assertions.assertEquals(2, new.size)
         }

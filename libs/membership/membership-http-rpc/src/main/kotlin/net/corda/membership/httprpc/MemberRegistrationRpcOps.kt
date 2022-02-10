@@ -49,7 +49,7 @@ interface MemberRegistrationRpcOps : RpcOps {
         description = "Checks the status of the registration request.",
         path = ""
     )
-        fun checkRegistrationProgress(
+    fun checkRegistrationProgress(
         @HttpRpcQueryParameter(
             name = "virtualNodeId",
             description = "ID of the virtual node to be checked.",
