@@ -48,7 +48,6 @@ class HttpRpcServerLifecycleTest : HttpRpcServerTestBase() {
         }
     }
 
-
     @Test
     fun `GET hello name returns string greeting name`() {
 
