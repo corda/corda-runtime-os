@@ -29,6 +29,7 @@ internal class VirtualNodeWriteEventHandler(
      */
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
+            // TODO - Monitor the status of the `DbConnectionManager` and respond accordingly.
             is StartEvent -> followConfigReadServiceStatus(coordinator)
             is RegistrationStatusChangeEvent -> tryRegisteringForConfigUpdates(coordinator, event)
             is StopEvent -> stop()

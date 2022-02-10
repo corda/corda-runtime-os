@@ -121,7 +121,7 @@ class VirtualNodeWriterProcessorTests {
         assertEquals(expectedResp, resp)
     }
 
-    // TODO - Joel - Test when there's a holding ID collision.
+    // TODO - Test covering holding ID collision.
 
     @Test
     fun `sends RPC failure response if the CPI with the given ID is not stored on the node`() {

@@ -30,7 +30,7 @@ internal class VirtualNodeEntityRepository(private val dbConnectionManager: DbCo
     /** No-op stub for writing a virtual node to the database. */
     @Suppress("Unused_parameter")
     internal fun putVirtualNode(holdingId: HoldingIdentity, cpiId: CPI.Identifier) {
-        // TODO - Joel - Put this entity in the database.
+        // TODO - Store entity in the database.
         VirtualNodeEntity(holdingId.id, cpiId.name, cpiId.version, cpiId.signerSummaryHash.toString())
     }
 }
