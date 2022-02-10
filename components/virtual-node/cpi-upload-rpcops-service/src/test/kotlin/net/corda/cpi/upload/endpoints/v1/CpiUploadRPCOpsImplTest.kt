@@ -24,19 +24,10 @@ class CpiUploadRPCOpsImplTest {
 
     private val cpiUploadRPCOpsService = mock<CpiUploadRPCOpsService>()
 
-    companion object {
-        private const val digestAlgorithm = "SHA-256"
-
-        fun calculateChecksum(bytes: ByteArray): SecureHash {
-            val md = MessageDigest.getInstance(digestAlgorithm)
-            return SecureHash(digestAlgorithm, md.digest(bytes))
-        }
-    }
-
     @BeforeEach
     fun setUp() {
         val coordinator = mock<LifecycleCoordinator>().also {
-           whenever(it.status).thenReturn(LifecycleStatus.UP)
+           whenever(it.isRunning).thenReturn(true)
         }
         coordinatorFactory = mock<LifecycleCoordinatorFactory>().also {
             whenever(it.createCoordinator(any(), any())).thenReturn(coordinator)

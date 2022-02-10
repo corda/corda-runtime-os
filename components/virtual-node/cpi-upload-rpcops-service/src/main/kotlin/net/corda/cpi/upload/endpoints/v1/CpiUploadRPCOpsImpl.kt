@@ -39,7 +39,7 @@ class CpiUploadRPCOpsImpl @Activate constructor(
     override val targetInterface: Class<CpiUploadRPCOps> = CpiUploadRPCOps::class.java
 
     // Need to check again coordinator.isRunning vs coordinator.status
-    override val isRunning get() = coordinator.status == LifecycleStatus.UP
+    override val isRunning get() = coordinator.isRunning
 
     override fun start() {
         coordinator.start()
@@ -50,10 +50,6 @@ class CpiUploadRPCOpsImpl @Activate constructor(
     }
 
     override fun cpi(cpiContent: InputStream): CpiUploadId {
-        // TODO add checksum to method's parameters
-        val todoSentChecksumString =
-            "SHA-384:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FD6FD061F9D5CFD13B8F961358E6ADBA4A"
-
         if (!isRunning) {
             throw IllegalStateException("CpiUploadRPCOpsImpl is not running! Its status is ${coordinator.status}")
         }
@@ -62,7 +58,6 @@ class CpiUploadRPCOpsImpl @Activate constructor(
         // First validate CPI against http sent checksum. Then we should continue with uploading it.
         // TODO - validate CPI against sent checksum
         val cpiUploadRequestId = cpiContent.use { cpiUploadManager.uploadCpi(it) }
-        log.info("Successfully sent CPI: $todoSentChecksumString to db worker")
         return CpiUploadId(cpiUploadRequestId)
     }
 }
