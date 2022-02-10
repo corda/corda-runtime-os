@@ -1,7 +1,7 @@
 package net.corda.flow.mapper.impl.executor
 
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.event.StartRPCFlow
+import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.flow.mapper.FlowMapperResult
@@ -9,10 +9,10 @@ import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.contextLogger
 
-class StartRPCFlowExecutor(
+class StartFlowExecutor(
     private val eventKey: String,
     private val outputTopic: String,
-    private val startRPCFlow: StartRPCFlow,
+    private val startRPCFlow: StartFlow,
     private val flowMapperState: FlowMapperState?,
 ) : FlowMapperEventExecutor {
 
@@ -20,10 +20,9 @@ class StartRPCFlowExecutor(
         private val log = contextLogger()
     }
 
-
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
-            val identity = startRPCFlow.rpcUsername
+            val identity = startRPCFlow.startContext.virtualNode.holdingIdentity
             val flowKey = generateFlowKey(identity)
             val newState = FlowMapperState(flowKey, null, FlowMapperStateType.OPEN)
             val flowEvent = FlowEvent(flowKey, startRPCFlow)

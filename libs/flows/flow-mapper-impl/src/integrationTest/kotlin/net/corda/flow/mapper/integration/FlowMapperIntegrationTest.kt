@@ -1,10 +1,13 @@
 package net.corda.flow.mapper.integration
 
+import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
+import net.corda.data.flow.FlowStartContext
+import net.corda.data.flow.FlowStatusKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.StartRPCFlow
+import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.mapper.ExecuteCleanup
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
@@ -13,6 +16,7 @@ import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.data.identity.HoldingIdentity
+import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
@@ -29,12 +33,23 @@ import java.time.Instant
 @ExtendWith(ServiceExtension::class)
 class FlowMapperIntegrationTest {
 
+    private val identity = HoldingIdentity("x500", "grp1")
+    private val startRPCFlow = StartFlow(
+        FlowStartContext(
+            FlowStatusKey("a", identity),
+            FlowInitiatorType.RPC,
+            "clientId",
+            VirtualNodeInfo(identity, null),
+            "className",
+            Instant.MIN
+        ), null
+    )
+
     @InjectService(timeout = 4000)
     lateinit var executorFactory: FlowMapperEventExecutorFactory
 
     @Test
     fun sendStartRPC() {
-        val startRPCFlow = StartRPCFlow("clientId", "cpiId", "flowName", HoldingIdentity("x500", "group"), Instant.now(), "args")
         val flowMapperEvent = FlowMapperEvent(startRPCFlow)
         val inputKey = "key1"
         val result = onNext(null, Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))

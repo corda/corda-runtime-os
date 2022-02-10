@@ -14,6 +14,8 @@ import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -24,6 +26,10 @@ import kotlin.streams.toList
  * data to kafka when running independently of the formal components that manage and publish this information.
  */
 class SetupVirtualNode(private val context: TaskContext) : Task {
+
+    private companion object {
+        val log : Logger = LoggerFactory.getLogger("SetupVirtualNode")
+    }
 
     override fun execute() {
 
@@ -44,6 +50,8 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
         val cpi = cpis.first()
         val x500Name = context.startArgs.x500NName
         val vNode = VirtualNodeInfo(HoldingIdentity(x500Name, "1"), cpi.metadata.id)
+        val shortId = HoldingIdentity(x500Name, "1").id
+        log.info("Published Holding Identity with short ID='${shortId}'")
 
         /**
          * To support the temporary local package cache used by the sandbox API,

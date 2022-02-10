@@ -5,6 +5,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.rpcops.ConfigRPCOpsService
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.data.config.Configuration
+import net.corda.flow.rpcops.FlowRPCOpsService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
@@ -44,6 +45,8 @@ class RPCProcessorImpl @Activate constructor(
     private val publisherFactory: PublisherFactory,
     @Reference(service = VirtualNodeRPCOpsService::class)
     private val virtualNodeRPCOpsService: VirtualNodeRPCOpsService,
+    @Reference(service = FlowRPCOpsService::class)
+    private val flowRPCOpsService: FlowRPCOpsService,
     @Reference(service = CpiUploadRPCOpsService::class)
     private val cpiUploadRPCOpsService: CpiUploadRPCOpsService
 ) : RPCProcessor {
@@ -56,6 +59,7 @@ class RPCProcessorImpl @Activate constructor(
     private val dependentComponents = DependentComponents.of(
         ::configReadService,
         ::httpRpcGateway,
+        ::flowRPCOpsService,
         ::configRPCOpsService,
         ::virtualNodeRPCOpsService,
         ::cpiUploadRPCOpsService

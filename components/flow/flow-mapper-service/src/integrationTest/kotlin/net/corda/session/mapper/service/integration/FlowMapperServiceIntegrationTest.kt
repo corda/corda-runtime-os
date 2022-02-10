@@ -3,15 +3,20 @@ package net.corda.session.mapper.service.integration
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.config.Configuration
+import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
+import net.corda.data.flow.FlowStartContext
+import net.corda.data.flow.FlowStatusKey
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.StartRPCFlow
+import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.identity.HoldingIdentity
+import net.corda.data.packaging.CPIIdentifier
+import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.publisher.Publisher
@@ -54,7 +59,7 @@ class FlowMapperServiceIntegrationTest {
     lateinit var publisherFactory: PublisherFactory
 
     // no secrets needed -> empty config
-    val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
+    private val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
 
     @InjectService(timeout = 4000)
     lateinit var subscriptionFactory: SubscriptionFactory
@@ -81,12 +86,16 @@ class FlowMapperServiceIntegrationTest {
         val publisher = publisherFactory.createPublisher(PublisherConfig(testId))
 
         //send 2 session init, 1 is duplicate
-        val identity =HoldingIdentity(testId, testId)
+        val identity = HoldingIdentity(testId, testId)
         val flowKey = FlowKey(testId, HoldingIdentity(testId, testId))
         val sessionInitEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
-                SessionEvent(MessageDirection.OUTBOUND, currentTimeMillis(), testId, 1, SessionInit(testId, testId, flowKey, identity,
-                    identity, null))
+                SessionEvent(
+                    MessageDirection.OUTBOUND, currentTimeMillis(), testId, 1, SessionInit(
+                        testId, testId, flowKey, identity,
+                        identity, null
+                    )
+                )
             )
         )
         publisher.publish(listOf(sessionInitEvent, sessionInitEvent))
@@ -126,10 +135,21 @@ class FlowMapperServiceIntegrationTest {
         val publisher = publisherFactory.createPublisher(PublisherConfig(testId))
 
         //2 startRPCRecord, 1 duplicate
-        val identity =HoldingIdentity(testId, testId)
+        val identity = HoldingIdentity(testId, testId)
+        val context = FlowStartContext(
+            FlowStatusKey("clientId", identity),
+            FlowInitiatorType.RPC,
+            "clientId",
+            VirtualNodeInfo(identity,null),
+            "class name",
+            Instant.now())
+
         val startRPCEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
-                StartRPCFlow(testId, testId, testId, identity, Instant.now(), null)
+                StartFlow(
+                    context,
+                    null
+                )
             )
         )
         publisher.publish(listOf(startRPCEvent, startRPCEvent))
@@ -150,7 +170,7 @@ class FlowMapperServiceIntegrationTest {
         )
         publisher.publish(listOf(cleanup))
 
-        //assert duplicate start rpc didnt get processed (and also give the Execute cleanup time to run)
+        //assert duplicate start rpc didn't get processed (and also give Execute cleanup time to run)
         assertFalse(flowEventLatch.await(3, TimeUnit.SECONDS))
 
         //send same key start rpc again
@@ -173,7 +193,7 @@ class FlowMapperServiceIntegrationTest {
                 SessionEvent(MessageDirection.OUTBOUND, currentTimeMillis(), testId, 1, SessionData())
             )
         )
-        publisher.publish( listOf(sessionDataEvent))
+        publisher.publish(listOf(sessionDataEvent))
 
         //validate p2p out doesn't have any records
         val p2pLatch = CountDownLatch(1)
