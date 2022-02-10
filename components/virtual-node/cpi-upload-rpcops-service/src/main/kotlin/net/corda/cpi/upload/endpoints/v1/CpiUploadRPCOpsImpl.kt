@@ -3,7 +3,6 @@ package net.corda.cpi.upload.endpoints.v1
 import net.corda.cpi.upload.endpoints.common.CpiUploadRPCOpsHandler
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.httprpc.PluggableRPCOps
-import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
 import net.corda.libs.cpiupload.endpoints.v1.HTTPCpiUploadRequestId
 import net.corda.lifecycle.Lifecycle
@@ -11,9 +10,6 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.createCoordinator
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.DigestService
-import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
