@@ -4,6 +4,7 @@ import java.util.concurrent.TimeoutException
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.UnexpectedErrorException
 import net.corda.libs.permissions.manager.PermissionManager
+import net.corda.libs.permissions.manager.exception.RemotePermissionManagementException
 import net.corda.libs.permissions.manager.exception.UnexpectedPermissionResponseException
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
@@ -92,6 +93,19 @@ internal class PermissionManagementHandlerTest {
         assertEquals(2, e.details.size)
         assertEquals(UnexpectedPermissionResponseException::class.java.name, e.details["cause"])
         assertEquals("unexpected exception", e.details["reason"])
+    }
+
+    @Test
+    fun `test RemotePermissionManagementException returns exception type and message`() {
+
+        val e = assertThrows<InternalServerException>("JPA exception handled") {
+            withPermissionManager(permissionManager, logger){
+                throw RemotePermissionManagementException("javax.persistence.OptimisticLockException", "JPA exception handled")
+            }
+        }
+        assertEquals(2, e.details.size)
+        assertEquals("javax.persistence.OptimisticLockException", e.details["cause"])
+        assertEquals("JPA exception handled", e.details["reason"])
     }
 
     @Suppress("TooGenericExceptionThrown")
