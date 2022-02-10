@@ -75,8 +75,10 @@ class DBProcessorImpl @Activate constructor(
     init {
         // define the different DB Entity Sets
         //  entities can be in different packages, but all JPA classes must be passed in.
-        entitiesRegistry.register(CordaDb.CordaCluster.persistenceUnitName, ConfigurationEntities.classes)
-        entitiesRegistry.register(CordaDb.CordaCluster.persistenceUnitName, VirtualNodeEntities.classes)
+        entitiesRegistry.register(
+            CordaDb.CordaCluster.persistenceUnitName,
+            ConfigurationEntities.classes + VirtualNodeEntities.classes
+        )
         entitiesRegistry.register(CordaDb.RBAC.persistenceUnitName, RbacEntities.classes)
     }
     companion object {

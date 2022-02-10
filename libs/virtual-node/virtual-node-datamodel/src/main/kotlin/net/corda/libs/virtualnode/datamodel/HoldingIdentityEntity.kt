@@ -1,5 +1,6 @@
 package net.corda.libs.virtualnode.datamodel
 
+import net.corda.db.schema.DbSchema.CONFIG
 import net.corda.db.schema.DbSchema.HOLDING_IDENTITY_DB_TABLE
 import net.corda.db.schema.DbSchema.VNODE
 import java.util.UUID
@@ -22,7 +23,7 @@ import javax.persistence.Table
  * @param hsmConnectionId A pointer to the holding identity's entry in the HSM connection table.
  */
 @Entity
-@Table(name = HOLDING_IDENTITY_DB_TABLE, schema = VNODE)
+@Table(name = HOLDING_IDENTITY_DB_TABLE, schema = CONFIG)
 data class HoldingIdentityEntity(
     @Id
     @Column(name = "holding_identity_id", nullable = false)

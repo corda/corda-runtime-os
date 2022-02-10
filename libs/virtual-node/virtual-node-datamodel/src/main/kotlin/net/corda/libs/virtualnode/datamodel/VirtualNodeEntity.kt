@@ -1,5 +1,7 @@
 package net.corda.libs.virtualnode.datamodel
 
+import net.corda.db.schema.DbSchema
+import net.corda.db.schema.DbSchema.CONFIG
 import net.corda.db.schema.DbSchema.VNODE
 import net.corda.db.schema.DbSchema.VNODE_INSTANCE_DB_TABLE
 import java.io.Serializable
@@ -18,7 +20,7 @@ import javax.persistence.Table
  * @param cpiSignerSummaryHash The signer summary hash of the CPI the virtual node is created for.
  */
 @Entity
-@Table(name = VNODE_INSTANCE_DB_TABLE, schema = VNODE)
+@Table(name = VNODE_INSTANCE_DB_TABLE, schema = CONFIG)
 @IdClass(VirtualNodeEntityKey::class)
 data class VirtualNodeEntity(
     @Id
