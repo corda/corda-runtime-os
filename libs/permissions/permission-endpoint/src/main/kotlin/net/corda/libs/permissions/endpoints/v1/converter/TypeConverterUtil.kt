@@ -43,7 +43,7 @@ fun CreateUserType.convertToDto(requestedBy: String): CreateUserRequestDto {
     return CreateUserRequestDto(
         requestedBy,
         fullName,
-        loginName,
+        loginName.toLowerCase(),
         enabled,
         initialPassword,
         passwordExpiry,

@@ -61,13 +61,14 @@ class DeliveryTracker(
     )
 
     override val dominoTile = DominoTile(this::class.java.simpleName, coordinatorFactory, ::createResources,
-        setOf(
+        dependentChildren = setOf(
             replayScheduler.dominoTile,
             networkMap.dominoTile,
             cryptoService.dominoTile,
             sessionManager.dominoTile,
             appMessageReplayer.dominoTile
-        )
+        ),
+        managedChildren = setOf(replayScheduler.dominoTile, appMessageReplayer.dominoTile)
     )
 
     private val messageTracker = MessageTracker(replayScheduler)
@@ -157,39 +158,39 @@ class DeliveryTracker(
 
         val listener = object : StateAndEventListener<String, AuthenticatedMessageDeliveryState> {
 
-            private val trackedSessionKeys = ConcurrentHashMap<String, SessionManager.SessionKey>()
+            private val trackedSessionCounterparties = ConcurrentHashMap<String, SessionManager.SessionCounterparties>()
 
             override fun onPostCommit(updatedStates: Map<String, AuthenticatedMessageDeliveryState?>) {
                 for ((key, state) in updatedStates) {
                     if (state != null) {
-                        val sessionKey = sessionKeyFromState(state)
-                        trackedSessionKeys[key] = sessionKey
-                        replayScheduler.addForReplay(state.timestamp, key, state.message, sessionKey)
+                        val sessionCounterparties = sessionCounterpartiesFromState(state)
+                        trackedSessionCounterparties[key] = sessionCounterparties
+                        replayScheduler.addForReplay(state.timestamp, key, state.message, sessionCounterparties)
                     } else {
-                        val sessionKey = trackedSessionKeys.remove(key)
-                        sessionKey?.let { replayScheduler.removeFromReplay(key, sessionKey) }
+                        val sessionCounterparties = trackedSessionCounterparties.remove(key)
+                        sessionCounterparties?.let { replayScheduler.removeFromReplay(key, sessionCounterparties) }
                     }
                 }
             }
 
             override fun onPartitionLost(states: Map<String, AuthenticatedMessageDeliveryState>) {
                 for ((key, state) in states) {
-                    replayScheduler.removeFromReplay(key, sessionKeyFromState(state))
-                    trackedSessionKeys.remove(key)
+                    replayScheduler.removeFromReplay(key, sessionCounterpartiesFromState(state))
+                    trackedSessionCounterparties.remove(key)
                 }
             }
 
             override fun onPartitionSynced(states: Map<String, AuthenticatedMessageDeliveryState>) {
                 for ((key, state) in states) {
-                    val sessionKey = sessionKeyFromState(state)
-                    trackedSessionKeys[key] = sessionKey
-                    replayScheduler.addForReplay(state.timestamp, key, state.message, sessionKey)
+                    val sessionCounterparties = sessionCounterpartiesFromState(state)
+                    trackedSessionCounterparties[key] = sessionCounterparties
+                    replayScheduler.addForReplay(state.timestamp, key, state.message, sessionCounterparties)
                 }
             }
 
-            private fun sessionKeyFromState(state: AuthenticatedMessageDeliveryState): SessionManager.SessionKey {
+            private fun sessionCounterpartiesFromState(state: AuthenticatedMessageDeliveryState): SessionManager.SessionCounterparties {
                 val header = state.message.message.header
-                return SessionManager.SessionKey(
+                return SessionManager.SessionCounterparties(
                     header.source.toHoldingIdentity(),
                     header.destination.toHoldingIdentity()
                 )

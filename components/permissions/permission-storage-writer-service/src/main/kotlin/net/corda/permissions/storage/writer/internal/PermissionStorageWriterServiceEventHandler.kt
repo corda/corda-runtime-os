@@ -3,11 +3,8 @@ package net.corda.permissions.storage.writer.internal
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
-import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.permissions.storage.common.ConfigKeys
 import net.corda.libs.permissions.storage.common.ConfigKeys.BOOTSTRAP_CONFIG
-import net.corda.libs.permissions.storage.common.db.DbUtils
 import net.corda.libs.permissions.storage.writer.factory.PermissionStorageWriterProcessorFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
@@ -19,14 +16,11 @@ import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.orm.JpaEntitiesSet
-import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_MGMT_REQ_TOPIC
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import javax.persistence.EntityManagerFactory
-import kotlin.reflect.KFunction3
 
 @Suppress("LongParameterList")
 class PermissionStorageWriterServiceEventHandler(
@@ -34,11 +28,9 @@ class PermissionStorageWriterServiceEventHandler(
     private val permissionStorageWriterProcessorFactory: PermissionStorageWriterProcessorFactory,
     private val readerService: PermissionStorageReaderService,
     private val configurationReadService: ConfigurationReadService,
-    private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
-    private val allEntitiesSets: List<JpaEntitiesSet>,
-    private val entityManagerFactoryCreationFn:
-    KFunction3<SmartConfig, EntityManagerFactoryFactory, JpaEntitiesSet, EntityManagerFactory> =
-        DbUtils::obtainEntityManagerFactory
+    // injecting factory creator so that this always fetches one from source rather than re-use one that may have been
+    //   re-configured.
+    private val entityManagerFactoryCreator: () -> EntityManagerFactory,
 ) : LifecycleEventHandler {
 
     private companion object {
@@ -94,13 +86,6 @@ class PermissionStorageWriterServiceEventHandler(
 
             val bootstrapConfig = checkNotNull(currentConfigurationSnapshot[BOOTSTRAP_CONFIG])
 
-            val dbConfig = bootstrapConfig.getConfig(ConfigKeys.DB_CONFIG_KEY)
-            val entityManagerFactory =
-                entityManagerFactoryCreationFn(
-                    dbConfig,
-                    entityManagerFactoryFactory,
-                    allEntitiesSets.single { it.persistenceUnitName == DbSchema.RPC_RBAC })
-
             subscription = subscriptionFactory.createRPCSubscription(
                 rpcConfig = RPCConfig(
                     groupName = GROUP_NAME,
@@ -111,7 +96,7 @@ class PermissionStorageWriterServiceEventHandler(
                 ),
                 nodeConfig = bootstrapConfig,
                 responderProcessor = permissionStorageWriterProcessorFactory.create(
-                    entityManagerFactory,
+                    entityManagerFactoryCreator(),
                     readerService.permissionStorageReader!!
                 )
             ).also {

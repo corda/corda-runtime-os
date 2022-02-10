@@ -36,7 +36,11 @@ class LiquibaseSchemaMigratorImpl(
     }
 
     override fun updateDb(datasource: Connection, dbChange: DbChange) {
-        process(datasource, dbChange, sql = null, DEFAULT_DB_SCHEMA)
+        updateDb(datasource, dbChange, DEFAULT_DB_SCHEMA)
+    }
+
+    override fun updateDb(datasource: Connection, dbChange: DbChange, controlTablesSchema: String) {
+        process(datasource, dbChange, sql = null, controlTablesSchema)
     }
 
     /**
@@ -48,7 +52,11 @@ class LiquibaseSchemaMigratorImpl(
      * @param sql output
      */
     override fun createUpdateSql(datasource: Connection, dbChange: DbChange, sql: Writer) {
-        process(datasource, dbChange, sql, DEFAULT_DB_SCHEMA)
+        createUpdateSql(datasource, dbChange, DEFAULT_DB_SCHEMA, sql)
+    }
+
+    override fun createUpdateSql(datasource: Connection, dbChange: DbChange, controlTablesSchema: String, sql: Writer) {
+        process(datasource, dbChange, sql, controlTablesSchema)
     }
 
     private fun process(
@@ -58,7 +66,11 @@ class LiquibaseSchemaMigratorImpl(
         liquibaseSchemaName: String
     ) {
         val database = databaseFactory(datasource)
-        database.liquibaseSchemaName = liquibaseSchemaName
+
+        // only set the schema if it's not specified as the default
+        if(liquibaseSchemaName != DEFAULT_DB_SCHEMA)
+            database.liquibaseSchemaName = liquibaseSchemaName
+
         // use UUID as we want to ensure this is unique and doesn't clash with a user defined changelog file.
         val masterChangeLogFileName = "master-changelog-${UUID.randomUUID()}.xml"
         val lb = liquibaseFactory(
@@ -67,7 +79,6 @@ class LiquibaseSchemaMigratorImpl(
             database
         )
 
-//        Thread.currentThread().contextClassLoader = LiquibaseSchemaMigratorImpl::class.java.classLoader
         log.info("Updating ${database.databaseProductName} ${database.databaseProductVersion} DB Schema for ${database.connection.catalog}")
         if (null == sql)
             lb.update(Contexts())

@@ -1,23 +1,47 @@
 package net.corda.sandboxtests
 
+import java.nio.file.Path
 import net.corda.sandbox.SandboxException
+import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.v5.application.flows.Flow
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.io.TempDir
+import org.osgi.framework.BundleContext
 import org.osgi.framework.Constants.SYSTEM_BUNDLE_ID
 import org.osgi.framework.FrameworkUtil
+import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
+import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 
 /** Tests the use of class tags for serialisation and deserialisation. */
-@ExtendWith(ServiceExtension::class)
+@ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 class SandboxClassTagTests {
+    @Suppress("unused")
     companion object {
         @InjectService(timeout = 1000)
-        lateinit var sandboxLoader: SandboxLoader
+        lateinit var sandboxSetup: SandboxSetup
+
+        @JvmStatic
+        @BeforeAll
+        fun setup(@InjectBundleContext bundleContext: BundleContext, @TempDir testDirectory: Path) {
+            sandboxSetup.configure(bundleContext, testDirectory)
+        }
+
+        @JvmStatic
+        @AfterAll
+        fun done() {
+            sandboxSetup.shutdown()
+        }
     }
+
+    @InjectService(timeout = 1500)
+    lateinit var sandboxFactory: SandboxFactory
 
     @Test
     fun `can create class tags for a non-bundle class and use them to retrieve the class`() {
@@ -26,11 +50,11 @@ class SandboxClassTagTests {
             ClassLoader::class.java // Another system class.
         )
         nonBundleClasses.forEach { nonCpkClass ->
-            val staticTag = sandboxLoader.group1.getStaticTag(nonCpkClass)
-            val evolvableTag = sandboxLoader.group1.getEvolvableTag(nonCpkClass)
+            val staticTag = sandboxFactory.group1.getStaticTag(nonCpkClass)
+            val evolvableTag = sandboxFactory.group1.getEvolvableTag(nonCpkClass)
 
-            assertEquals(nonCpkClass, sandboxLoader.group1.getClass(nonCpkClass.name, staticTag))
-            assertEquals(nonCpkClass, sandboxLoader.group1.getClass(nonCpkClass.name, evolvableTag))
+            assertEquals(nonCpkClass, sandboxFactory.group1.getClass(nonCpkClass.name, staticTag))
+            assertEquals(nonCpkClass, sandboxFactory.group1.getClass(nonCpkClass.name, evolvableTag))
         }
     }
 
@@ -41,40 +65,40 @@ class SandboxClassTagTests {
             Flow::class.java // A class from a Corda bundle.
         )
         nonCpkClasses.forEach { nonCpkClass ->
-            val staticTag = sandboxLoader.group1.getStaticTag(nonCpkClass)
-            val evolvableTag = sandboxLoader.group1.getEvolvableTag(nonCpkClass)
+            val staticTag = sandboxFactory.group1.getStaticTag(nonCpkClass)
+            val evolvableTag = sandboxFactory.group1.getEvolvableTag(nonCpkClass)
 
-            assertEquals(nonCpkClass, sandboxLoader.group1.getClass(nonCpkClass.name, staticTag))
-            assertEquals(nonCpkClass, sandboxLoader.group1.getClass(nonCpkClass.name, evolvableTag))
+            assertEquals(nonCpkClass, sandboxFactory.group1.getClass(nonCpkClass.name, staticTag))
+            assertEquals(nonCpkClass, sandboxFactory.group1.getClass(nonCpkClass.name, evolvableTag))
         }
     }
 
     @Test
     fun `can create class tags for a CPK main bundle class and use them to retrieve the class`() {
-        val cpkClass = sandboxLoader.group1.loadClassFromMainBundles(SERVICES_FLOW_CPK_1)
-        val staticTag = sandboxLoader.group1.getStaticTag(cpkClass)
-        val evolvableTag = sandboxLoader.group1.getEvolvableTag(cpkClass)
+        val cpkClass = sandboxFactory.group1.loadClassFromMainBundles(SERVICES_FLOW_CPK_1)
+        val staticTag = sandboxFactory.group1.getStaticTag(cpkClass)
+        val evolvableTag = sandboxFactory.group1.getEvolvableTag(cpkClass)
 
-        assertEquals(cpkClass, sandboxLoader.group1.getClass(cpkClass.name, staticTag))
-        assertEquals(cpkClass, sandboxLoader.group1.getClass(cpkClass.name, evolvableTag))
+        assertEquals(cpkClass, sandboxFactory.group1.getClass(cpkClass.name, staticTag))
+        assertEquals(cpkClass, sandboxFactory.group1.getClass(cpkClass.name, evolvableTag))
     }
 
     @Test
     fun `can create static tag for a CPK library class and use it to retrieve the class`() {
-        val cpkFlowClass = sandboxLoader.group1.loadClassFromMainBundles(SERVICES_FLOW_CPK_1)
+        val cpkFlowClass = sandboxFactory.group1.loadClassFromMainBundles(SERVICES_FLOW_CPK_1)
         val cpkLibClass = FrameworkUtil.getBundle(cpkFlowClass).loadClass(LIBRARY_QUERY_CLASS)
-        val staticTag = sandboxLoader.group1.getStaticTag(cpkLibClass)
+        val staticTag = sandboxFactory.group1.getStaticTag(cpkLibClass)
 
-        assertEquals(cpkLibClass, sandboxLoader.group1.getClass(cpkLibClass.name, staticTag))
+        assertEquals(cpkLibClass, sandboxFactory.group1.getClass(cpkLibClass.name, staticTag))
     }
 
     @Test
     fun `throws if attempted to create evolvable tag for a CPK library class`() {
-        val cpkFlowClass = sandboxLoader.group1.loadClassFromMainBundles(SERVICES_FLOW_CPK_1)
+        val cpkFlowClass = sandboxFactory.group1.loadClassFromMainBundles(SERVICES_FLOW_CPK_1)
         val cpkLibClass = FrameworkUtil.getBundle(cpkFlowClass).loadClass(LIBRARY_QUERY_CLASS)
 
         assertThrows<SandboxException> {
-            sandboxLoader.group1.getEvolvableTag(cpkLibClass)
+            sandboxFactory.group1.getEvolvableTag(cpkLibClass)
         }
     }
 
@@ -83,10 +107,10 @@ class SandboxClassTagTests {
         val systemBundle = FrameworkUtil.getBundle(this::class.java).bundleContext.getBundle(SYSTEM_BUNDLE_ID)
         val systemBundleClass = systemBundle.loadClass(SYSTEM_BUNDLE_CLASS)
 
-        val staticTag = sandboxLoader.group1.getStaticTag(systemBundleClass)
-        val evolvableTag = sandboxLoader.group1.getEvolvableTag(systemBundleClass)
+        val staticTag = sandboxFactory.group1.getStaticTag(systemBundleClass)
+        val evolvableTag = sandboxFactory.group1.getEvolvableTag(systemBundleClass)
 
-        assertEquals(systemBundleClass, sandboxLoader.group1.getClass(systemBundleClass.name, staticTag))
-        assertEquals(systemBundleClass, sandboxLoader.group1.getClass(systemBundleClass.name, evolvableTag))
+        assertEquals(systemBundleClass, sandboxFactory.group1.getClass(systemBundleClass.name, staticTag))
+        assertEquals(systemBundleClass, sandboxFactory.group1.getClass(systemBundleClass.name, evolvableTag))
     }
 }

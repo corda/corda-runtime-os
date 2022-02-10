@@ -1,12 +1,14 @@
 package net.corda.session.manager.impl.processor
 
 import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateAckEvent
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
+import net.corda.session.manager.impl.processor.helper.recalcReceivedProcessState
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import java.time.Instant
@@ -42,10 +44,11 @@ class SessionCloseProcessorReceive(
             val seqNum = sessionEvent.sequenceNum
             val receivedEventsState = sessionState.receivedEventsState
             val lastProcessedSequenceNum = receivedEventsState.lastProcessedSequenceNum
-            if (seqNum <= lastProcessedSequenceNum) {
+            val undeliveredReceivedMessages = receivedEventsState.undeliveredMessages
+            if (undeliveredReceivedMessages.find { it.payload is SessionClose } != null) {
                 //duplicate
                 logger.debug {
-                    "Received SessionClose on key $key and sessionId $sessionId with seqNum of $seqNum " +
+                    "Received duplicate SessionClose on key $key and sessionId $sessionId with seqNum of $seqNum " +
                             "when last processed seqNum was $lastProcessedSequenceNum. Current SessionState: $sessionState"
                 }
                 sessionState.apply {
@@ -53,6 +56,8 @@ class SessionCloseProcessorReceive(
                         sessionState.sendEventsState.undeliveredMessages.plus(generateAckEvent(seqNum, sessionId, instant))
                 }
             } else {
+                undeliveredReceivedMessages.add(sessionEvent)
+                sessionState.receivedEventsState = recalcReceivedProcessState(receivedEventsState)
                 processCloseReceivedAndGetState(sessionState, seqNum, sessionId)
             }
         }

@@ -1,24 +1,43 @@
 package net.corda.httprpc.client.stream
 
+import net.corda.utilities.deleteRecursively
 import net.corda.utilities.div
 import net.corda.v5.base.stream.PositionManager
+import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.AbstractThrowableAssert
 import org.assertj.core.api.Assertions
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.io.TempDir
 import java.nio.ByteBuffer
 import java.nio.channels.ClosedChannelException
 import java.nio.channels.FileChannel
 import java.nio.channels.OverlappingFileLockException
-import java.nio.file.Path
+import java.nio.file.Files
 import java.nio.file.StandardOpenOption
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class FilePositionManagerTest {
 
-    @TempDir
-    lateinit var tempFolder: Path
+    private companion object {
+        val log = contextLogger()
+    }
+
+    private val tempFolder = Files.createTempDirectory(this::class.java.simpleName)
+
+    @AfterEach
+    fun teardown() {
+        // When executed on CI with K8s on Windows, the file operations seems to be quite slow/asynchronous.
+        // In particular when it comes to deleting of directories and their content, it may lead to
+        // having a directory structure in the inconsistent state. Therefore, being a bit more lenient here
+        // by catching any exception and logging them rather than failing the test as `@TempDir` would do.
+        try {
+            tempFolder.deleteRecursively()
+
+        } catch (th: Throwable) {
+            log.warn("Error whilst cleaning-up directories", th)
+        }
+    }
 
     @Test
     fun readWriteTest() {
@@ -98,6 +117,6 @@ class FilePositionManagerTest {
         }
     }
 
-    inline fun <reified TYPE : Throwable> AbstractThrowableAssert<*, *>.isInstanceOf(): AbstractThrowableAssert<*, *> =
+    private inline fun <reified TYPE : Throwable> AbstractThrowableAssert<*, *>.isInstanceOf(): AbstractThrowableAssert<*, *> =
         isInstanceOf(TYPE::class.java)
 }

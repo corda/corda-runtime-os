@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.util.*
 
 class TypeConverterUtilTest {
     @Test
@@ -30,7 +31,8 @@ class TypeConverterUtilTest {
     @Test
     fun `convert CreateUserType to CreateUserRequestDto`() {
         val now = Instant.now()
-        val type = CreateUserType("name1", "login1", true, "pass", now, "group1")
+        val parentGroup = UUID.randomUUID().toString()
+        val type = CreateUserType("name1", "login1", true, "pass", now, parentGroup)
 
         val dto = type.convertToDto("me")
 
@@ -40,7 +42,7 @@ class TypeConverterUtilTest {
         assertTrue(dto.enabled)
         assertEquals("pass", dto.initialPassword)
         assertEquals(now, dto.passwordExpiry)
-        assertEquals("group1", dto.parentGroup)
+        assertEquals(parentGroup, dto.parentGroup)
     }
 
     @Test

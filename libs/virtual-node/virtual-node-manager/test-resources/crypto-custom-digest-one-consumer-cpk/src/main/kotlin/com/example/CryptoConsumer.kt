@@ -14,7 +14,7 @@ import org.osgi.service.component.annotations.Reference
  *
  * DO NOT expect this to work in a real cordapp (or a future version of this).
  */
-@Component(name = "crypto.consumer.1")
+@Component
 class CryptoConsumer
 @Activate constructor(@Reference private val digestService: DigestService) : Flow<SecureHash> {
     override fun call(): SecureHash {

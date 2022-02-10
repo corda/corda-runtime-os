@@ -1,9 +1,12 @@
 package net.corda.crypto.impl.components
 
 import net.corda.crypto.impl.schememetadata.ProviderMap
+import net.corda.v5.cipher.suite.AlgorithmParameterSpecEncodingService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.cipher.suite.schemes.AlgorithmParameterSpecSerializer
 import net.corda.v5.cipher.suite.schemes.DigestScheme
+import net.corda.v5.cipher.suite.schemes.SerializedAlgorithmParameterSpec
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
@@ -29,10 +32,19 @@ import java.security.PrivateKey
 import java.security.Provider
 import java.security.PublicKey
 import java.security.SecureRandom
+import java.security.spec.AlgorithmParameterSpec
 import java.security.spec.PKCS8EncodedKeySpec
+import java.security.spec.PSSParameterSpec
 import java.security.spec.X509EncodedKeySpec
 
-@Component(service = [CipherSchemeMetadata::class, KeyEncodingService::class])
+@Component(
+    service = [
+        CipherSchemeMetadata::class,
+        KeyEncodingService::class,
+        AlgorithmParameterSpecEncodingService::class
+    ]
+)
+@Suppress("TooManyFunctions")
 class CipherSchemeMetadataImpl : CipherSchemeMetadata {
     companion object {
         val MESSAGE_DIGEST_TYPE: String = MessageDigest::class.java.simpleName
@@ -89,9 +101,24 @@ class CipherSchemeMetadataImpl : CipherSchemeMetadata {
         )
     }
 
+    private val paramSpecSerializers = mapOf<String, AlgorithmParameterSpecSerializer<out AlgorithmParameterSpec>>(
+        PSSParameterSpec::class.java.name to PSSParameterSpecSerializer()
+    )
+
     override fun findSignatureScheme(algorithm: AlgorithmIdentifier): SignatureScheme =
         algorithmMap[normaliseAlgorithmIdentifier(algorithm)]
             ?: throw IllegalArgumentException("Unrecognised algorithm: ${algorithm.algorithm.id}")
+
+    @Suppress("UNCHECKED_CAST")
+    override fun serialize(params: AlgorithmParameterSpec): SerializedAlgorithmParameterSpec {
+        val clazz = params::class.java.name
+        val serializer = paramSpecSerializers[clazz] as? AlgorithmParameterSpecSerializer<AlgorithmParameterSpec>
+            ?: throw IllegalArgumentException("$clazz is not supported.")
+        return SerializedAlgorithmParameterSpec(
+            clazz = clazz,
+            bytes = serializer.serialize(params)
+        )
+    }
 
     override fun findSignatureScheme(key: PublicKey): SignatureScheme {
         val keyInfo = SubjectPublicKeyInfo.getInstance(key.encoded)
@@ -130,8 +157,9 @@ class CipherSchemeMetadataImpl : CipherSchemeMetadata {
 
     override val secureRandom: SecureRandom get() = providerMap.secureRandom
 
-    override fun findSignatureScheme(codeName: String): SignatureScheme = schemes.firstOrNull { it.codeName == codeName }
-        ?: throw IllegalArgumentException("Unrecognised scheme code name: $codeName")
+    override fun findSignatureScheme(codeName: String): SignatureScheme =
+        schemes.firstOrNull { it.codeName == codeName }
+            ?: throw IllegalArgumentException("Unrecognised scheme code name: $codeName")
 
     override fun findKeyFactory(scheme: SignatureScheme): KeyFactory = providerMap.keyFactories[scheme]
 
@@ -156,6 +184,12 @@ class CipherSchemeMetadataImpl : CipherSchemeMetadata {
         throw e
     } catch (e: Throwable) {
         throw CryptoServiceLibraryException("Failed to decode public key", e)
+    }
+
+    override fun deserialize(params: SerializedAlgorithmParameterSpec): AlgorithmParameterSpec {
+        val serializer = paramSpecSerializers[params.clazz]
+            ?: throw IllegalArgumentException("${params.clazz} is not supported.")
+        return serializer.deserialize(params.bytes)
     }
 
     override fun encodeAsString(publicKey: PublicKey): String = try {

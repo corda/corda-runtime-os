@@ -15,14 +15,11 @@ import net.corda.data.crypto.wire.ops.flow.GenerateFreshKeyFlowCommand
 import net.corda.data.crypto.wire.ops.flow.SignFlowCommand
 import net.corda.data.crypto.wire.ops.flow.SignWithSpecFlowCommand
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.SignatureSpec
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.containsString
 import org.hamcrest.Matchers.empty
 import org.hamcrest.Matchers.instanceOf
-import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
@@ -257,48 +254,6 @@ class CryptoFlowOpsTransformerTests {
         assertArrayEquals(schemeMetadata.encodeAsByteArray(publicKey), command.publicKey.array())
         assertArrayEquals(data, command.bytes.array())
         assertRequestContext<SignFlowCommand>(result)
-        assertOperationContext(emptyMap(), command.context)
-    }
-
-    @Test
-    fun `Should create command to sign data with explicit signature spec`() {
-        val spec = SignatureSpec("NONEwithECDSA", DigestAlgorithmName.SHA2_256)
-        val publicKey = mockPublicKey()
-        val data = "Hello World!".toByteArray()
-        val result = act {
-            transformer.createSign(knownTenantId, publicKey, spec, data, knownOperationContext)
-        }
-        assertNotNull(result.value)
-        assertEquals(knownTenantId, result.value.context.tenantId)
-        assertInstanceOf(SignWithSpecFlowCommand::class.java, result.value.request)
-        val command = result.value.request as SignWithSpecFlowCommand
-        assertArrayEquals(schemeMetadata.encodeAsByteArray(publicKey), command.publicKey.array())
-        assertArrayEquals(data, command.bytes.array())
-        assertEquals(spec.signatureName, command.signatureSpec.signatureName)
-        Assertions.assertNotNull(spec.customDigestName)
-        assertEquals(spec.customDigestName!!.name, command.signatureSpec.customDigestName)
-        assertRequestContext<SignWithSpecFlowCommand>(result)
-        assertOperationContext(knownOperationContext, command.context)
-    }
-
-    @Test
-    fun `Should create command to sign data with explicit signature spec and with empty operation context`() {
-        val spec = SignatureSpec("NONEwithECDSA", DigestAlgorithmName.SHA2_256)
-        val publicKey = mockPublicKey()
-        val data = "Hello World!".toByteArray()
-        val result = act {
-            transformer.createSign(knownTenantId, publicKey, spec, data)
-        }
-        assertNotNull(result.value)
-        assertEquals(knownTenantId, result.value.context.tenantId)
-        assertInstanceOf(SignWithSpecFlowCommand::class.java, result.value.request)
-        val command = result.value.request as SignWithSpecFlowCommand
-        assertArrayEquals(schemeMetadata.encodeAsByteArray(publicKey), command.publicKey.array())
-        assertArrayEquals(data, command.bytes.array())
-        assertEquals(spec.signatureName, command.signatureSpec.signatureName)
-        Assertions.assertNotNull(spec.customDigestName)
-        assertEquals(spec.customDigestName!!.name, command.signatureSpec.customDigestName)
-        assertRequestContext<SignWithSpecFlowCommand>(result)
         assertOperationContext(emptyMap(), command.context)
     }
 

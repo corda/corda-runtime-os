@@ -1,10 +1,12 @@
 package net.corda.httprpc.server.impl.apigen.processing
 
 import net.corda.httprpc.durablestream.DurableStreamContext
+import net.corda.httprpc.exception.ServiceUnavailableException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.server.impl.apigen.models.InvocationMethod
 import net.corda.httprpc.server.impl.apigen.processing.streams.DurableReturnResult
 import net.corda.httprpc.server.impl.apigen.processing.streams.FiniteDurableReturnResult
+import net.corda.lifecycle.Lifecycle
 import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.base.stream.Cursor
 import net.corda.v5.base.util.contextLogger
@@ -30,6 +32,14 @@ internal open class DefaultMethodInvoker(private val invocationMethod: Invocatio
     override fun invoke(vararg args: Any?): Any? {
         log.trace { "Invoke method \"${invocationMethod.method.name}\" with args size: ${args.size}." }
         val instance = invocationMethod.instance
+
+        if ((instance as? Lifecycle)?.isRunning == false) {
+            "${instance.javaClass.simpleName} is not running. Unable to invoke \"${invocationMethod.method.name}\".".let {
+                log.warn(it)
+                throw ServiceUnavailableException(it)
+            }
+        }
+
         val method = invocationMethod.method
         @Suppress("SpreadOperator")
         return when (args.size) {

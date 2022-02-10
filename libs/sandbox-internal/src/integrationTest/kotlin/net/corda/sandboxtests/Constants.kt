@@ -1,34 +1,7 @@
 package net.corda.sandboxtests
 
-// The names of the bundles to place as public bundles in the sandbox service's platform sandbox.
-@JvmField
-val PLATFORM_PUBLIC_BUNDLE_NAMES = listOf(
-    "javax.persistence-api",
-    "jcl.over.slf4j",
-    "net.corda.application",
-    "net.corda.base",
-    "net.corda.crypto",
-    "net.corda.flows",
-    "net.corda.kotlin-stdlib-jdk7.osgi-bundle",
-    "net.corda.kotlin-stdlib-jdk8.osgi-bundle",
-    "net.corda.ledger",
-    "net.corda.persistence",
-    "net.corda.serialization",
-    "org.apache.aries.spifly.dynamic.bundle",
-    "org.apache.felix.framework",
-    "org.apache.felix.scr",
-    "org.hibernate.orm.core",
-    "org.jetbrains.kotlin.osgi-bundle",
-    "slf4j.api"
-)
-
-internal const val BASE_DIRECTORY_KEY = "baseDirectory"
-internal const val BLACKLISTED_KEYS_KEY = "blacklistedKeys"
-internal const val PLATFORM_VERSION_KEY = "platformVersion"
-
-internal const val CPK_ONE = "sandbox-cpk-one-cordapp.cpk"
-internal const val CPK_TWO = "sandbox-cpk-two-cordapp.cpk"
-internal const val CPK_THREE = "sandbox-cpk-three-cordapp.cpk"
+internal const val CPI_ONE = "META-INF/sandbox-cpk-one.cpb"
+internal const val CPI_THREE = "META-INF/sandbox-cpk-three.cpb"
 internal const val CPK_1_JODATIME_VERSION = "2.10.10"
 internal const val CPK_2_JODATIME_VERSION = "2.10.9"
 
@@ -57,5 +30,3 @@ internal const val LIBRARY_QUERY_IMPL_CLASS = "com.example.sandbox.library.impl.
 internal const val SYSTEM_BUNDLE_CLASS = "org.apache.felix.framework.BundleImpl"
 
 internal const val PRIVATE_WRAPPER_RETURN_VALUE = "String returned by WrapperImpl."
-
-internal const val SHA256 = "SHA-256"

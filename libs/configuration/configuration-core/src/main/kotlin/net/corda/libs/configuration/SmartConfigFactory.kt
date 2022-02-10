@@ -4,6 +4,7 @@ import com.typesafe.config.Config
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceImpl
 import net.corda.libs.configuration.secret.MaskedSecretsLookupService
 import net.corda.libs.configuration.secret.SecretsConfigurationException
+import net.corda.libs.configuration.secret.SecretsCreateService
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
 
@@ -29,12 +30,11 @@ interface SmartConfigFactory {
                 if(passphrase.isBlank() || salt.isBlank())
                     throw SecretsConfigurationException("Passphrase and Salt must not be blank or empty.")
                 // assuming default (only for now) SecretsLookupService implementation
-                return SmartConfigFactoryImpl(
-                    EncryptionSecretsServiceImpl(
+                val encryptionService = EncryptionSecretsServiceImpl(
                     passphrase,
                     salt,
                 )
-                )
+                return SmartConfigFactoryImpl(encryptionService, encryptionService)
             }
 
             // if nothing configured, fall back to MaskedSecretsLookupService
@@ -43,7 +43,13 @@ interface SmartConfigFactory {
                     "This means secrets configuration will not be supported and all configuration" +
                     "values that are marked as \"${SmartConfig.SECRET_KEY}\" will return " +
                     "\"${MaskedSecretsLookupService.MASK_VALUE}\" when resolved.")
-            return SmartConfigFactoryImpl(MaskedSecretsLookupService())
+            return SmartConfigFactoryImpl(
+                MaskedSecretsLookupService(),
+                object: SecretsCreateService {
+                    override fun createValue(plainText: String): Config {
+                        throw SecretsConfigurationException("This SmartConfigFactory does not support creating secrets.")
+                    }
+                })
         }
     }
     /**
@@ -54,4 +60,6 @@ interface SmartConfigFactory {
      * @return
      */
     fun create(config: Config): SmartConfig
+
+    fun makeSecret(plainText: String): SmartConfig
 }
