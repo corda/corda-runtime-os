@@ -9,8 +9,8 @@
             <column name="topic" type="VARCHAR(255)"/>
             <column name="partition" type="INTEGER"/>
             <column name="record_offset" type="BIGINT"/>
-            <column name="record_key" type="VARBINARY(33554432)"/>
-            <column name="record_value" type="VARBINARY(33554432)">
+            <column name="record_key" type="VARBINARY(1048576)"/>
+            <column name="record_value" type="VARBINARY(1048576)">
                 <constraints nullable="true"/>
             </column>
             <column name="timestamp" type="TIMESTAMP"/>
@@ -31,7 +31,7 @@
             <column name="partition" type="VARCHAR(255)"/>
             <column name="record_offset" type="BIGINT"/>
             <column name="timestamp" type="TIMESTAMP"/>
-            <column name="transactionId" type="BOOLEAN"/>
+            <column name="transaction_id" type="BOOLEAN"/>
         </createTable>
         <addPrimaryKey columnNames="topic, consumer_group, partition, record_offset" constraintName="topic_consumer_offset_pk"
                        tableName="topic_consumer_offset"/>
