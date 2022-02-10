@@ -34,13 +34,13 @@ class SessionDataProcessorSend(
             return generateErrorSessionStateFromSessionEvent(sessionId, errorMessage, "SessionData-NullSessionState", instant)
         }
 
-        return when(val currentStatus = sessionState.status) {
+        return when (val currentStatus = sessionState.status) {
             SessionStateType.ERROR -> {
                 val errorMessage = "Tried to send SessionData on key $key for sessionId with status of ${SessionStateType.ERROR}. "
                 logger.error(errorMessage)
                 sessionState
             }
-            SessionStateType.CONFIRMED ->{
+            SessionStateType.CONFIRMED -> {
                 val nextSeqNum = sessionState.sendEventsState.lastProcessedSequenceNum + 1
                 sessionEvent.apply {
                     sequenceNum = nextSeqNum
@@ -51,7 +51,8 @@ class SessionDataProcessorSend(
                     sendEventsState.lastProcessedSequenceNum = nextSeqNum
                     sendEventsState.undeliveredMessages = sendEventsState.undeliveredMessages.plus(sessionEvent)
                 }
-            } else -> {
+            }
+            else -> {
                 //If the session is in states CREATED, CLOSING, WAIT_FOR_FINAL_ACK or CLOSED then this indicates a session mismatch as no
                 // more data messages are expected to be sent. Send an error to the counterparty to inform it of the mismatch.
                 val errorMessage = "Tried to send SessionData on key $key for sessionId $sessionId when status was : $currentStatus. " +
@@ -60,7 +61,14 @@ class SessionDataProcessorSend(
                 sessionState.apply {
                     status = SessionStateType.ERROR
                     sendEventsState.undeliveredMessages =
-                        sendEventsState.undeliveredMessages.plus(generateErrorEvent(sessionId, errorMessage, "SessionData-InvalidStatus", instant))
+                        sendEventsState.undeliveredMessages.plus(
+                            generateErrorEvent(
+                                sessionId,
+                                errorMessage,
+                                "SessionData-InvalidStatus",
+                                instant
+                            )
+                        )
 
                 }
             }
