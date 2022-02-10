@@ -14,6 +14,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StopEvent
+import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.schema.configuration.ConfigKeys
@@ -64,7 +65,7 @@ class CpiUploadRPCOpsServiceHandlerTest {
         cpiUploadRPCOpsServiceHandler.processEvent(event, coordinator)
         verify(configReadService).registerComponentForUpdates(
             coordinator,
-            setOf(ConfigKeys.RPC_CONFIG)
+            setOf(ConfigKeys.MESSAGING_CONFIG, ConfigKeys.BOOT_CONFIG, ConfigKeys.RPC_CONFIG)
         )
     }
 
@@ -91,8 +92,11 @@ class CpiUploadRPCOpsServiceHandlerTest {
     @Test
     fun `on ConfigChangedEvent creates new RPCSender and CpiUploadManager and updates coordinator to UP`() {
         val config = mock<Map<String, SmartConfig>>()
+        whenever(config[ConfigKeys.MESSAGING_CONFIG]).thenReturn(mock())
+        whenever(config[ConfigKeys.BOOT_CONFIG]).thenReturn(mock())
         whenever(config[ConfigKeys.RPC_CONFIG]).thenReturn(mock())
-        val event = ConfigChangedEvent(mock(), config)
+        whenever(config.toMessagingConfig()).thenReturn(mock())
+
         val rpcSender = mock<RPCSender<Any, Any>>()
         whenever(publisherFactory.createRPCSender<Any, Any>(any(), any())).thenReturn(rpcSender)
         val cpiUploadManager = mock<CpiUploadManager>()
@@ -100,7 +104,7 @@ class CpiUploadRPCOpsServiceHandlerTest {
 
         assertNull(cpiUploadRPCOpsServiceHandler.rpcSender)
         assertNull(cpiUploadRPCOpsServiceHandler.cpiUploadManager)
-        cpiUploadRPCOpsServiceHandler.processEvent(event, coordinator)
+        cpiUploadRPCOpsServiceHandler.processEvent(ConfigChangedEvent(mock(), config), coordinator)
         assertNotNull(cpiUploadRPCOpsServiceHandler.rpcSender)
         assertNotNull(cpiUploadRPCOpsServiceHandler.cpiUploadManager)
         verify(rpcSender).start()

@@ -16,6 +16,7 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -41,6 +42,8 @@ class CpiUploadRPCOpsServiceHandler(
     internal var rpcSender: RPCSender<Chunk, ChunkAck>? = null
     internal var cpiUploadManager: CpiUploadManager? = null
 
+    private var previousRpcConfig: SmartConfig? = null
+
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
 
         when (event) {
@@ -57,7 +60,7 @@ class CpiUploadRPCOpsServiceHandler(
                     log.info("Registering to ConfigurationReadService to receive RPC configuration")
                     configReadService.registerComponentForUpdates(
                         coordinator,
-                        setOf(ConfigKeys.RPC_CONFIG)
+                        setOf(ConfigKeys.MESSAGING_CONFIG, ConfigKeys.BOOT_CONFIG, ConfigKeys.RPC_CONFIG)
                     )
                 } else {
                     log.info("Received ${event.status} event from ConfigurationReadService. Switching to ${event.status} as well.")
@@ -66,18 +69,21 @@ class CpiUploadRPCOpsServiceHandler(
                 }
             }
             is ConfigChangedEvent -> {
-                event.config[ConfigKeys.RPC_CONFIG]?.let {
+                // RPC_CONFIG is not currently being used (in `CpiUploadManagerImpl`).
+                val rpcConfig = event.config[ConfigKeys.RPC_CONFIG]?.also { previousRpcConfig = it } ?: previousRpcConfig
+                event.config[ConfigKeys.MESSAGING_CONFIG]?.let {
+                    val messagingConfig = event.config.toMessagingConfig()
                     log.info("Setting CpiUploadManager...")
                     rpcSender?.close()
                     cpiUploadManager?.stop()
 
-                    rpcSender = createAndStartRpcSender(it)
-                    cpiUploadManager = createAndStartCpiUploadManager(it, rpcSender!!)
+                    rpcSender = createAndStartRpcSender(messagingConfig)
+                    cpiUploadManager = createAndStartCpiUploadManager(rpcConfig!!, rpcSender!!)
 
                     coordinator.updateStatus(LifecycleStatus.UP)
                 }
                     // Should we throw here or send a StopEvent?
-                    ?: throw CordaRuntimeException("Expected RPC configuration")
+                    ?: throw CordaRuntimeException("Expected messaging configuration")
             }
             is StopEvent -> {
                 closeResources()
