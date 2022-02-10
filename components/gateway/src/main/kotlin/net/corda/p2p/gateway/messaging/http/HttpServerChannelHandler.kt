@@ -43,7 +43,7 @@ class HttpServerChannelHandler(private val serverListener: HttpServerListener,
                     "Content length: ${msg.headers()[HttpHeaderNames.CONTENT_LENGTH]}\n")
 
             // initialise byte array to read the request into
-            if (responseCode!! != HttpResponseStatus.LENGTH_REQUIRED) {
+            if (responseCode!! == HttpResponseStatus.OK) {
                 allocateBodyBuffer(ctx, msg.headers()[HttpHeaderNames.CONTENT_LENGTH].toInt())
             }
 
