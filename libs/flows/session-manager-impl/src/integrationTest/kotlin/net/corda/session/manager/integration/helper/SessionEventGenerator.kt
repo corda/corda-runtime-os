@@ -38,7 +38,7 @@ fun generateSessionEvent(payload: Any): SessionEvent {
     return SessionEvent.newBuilder()
         .setSessionId("sessionId")
         .setSequenceNum(null)
-        .setTimestamp(null)
+        .setTimestamp(0)
         .setMessageDirection(MessageDirection.OUTBOUND)
         .setPayload(payload)
         .build()
