@@ -4,7 +4,7 @@ import net.corda.cpi.upload.endpoints.common.CpiUploadRPCOpsHandler
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
-import net.corda.libs.cpiupload.endpoints.v1.HTTPCpiUploadRequestId
+import net.corda.libs.cpiupload.endpoints.v1.CpiUploadId
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
@@ -49,7 +49,7 @@ class CpiUploadRPCOpsImpl @Activate constructor(
         coordinator.close()
     }
 
-    override fun cpi(cpi: InputStream): HTTPCpiUploadRequestId {
+    override fun cpi(cpiContent: InputStream): CpiUploadId {
         // TODO add checksum to method's parameters
         val todoSentChecksumString =
             "SHA-384:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FD6FD061F9D5CFD13B8F961358E6ADBA4A"
@@ -61,8 +61,8 @@ class CpiUploadRPCOpsImpl @Activate constructor(
         // TODO in a later PR check the requestId topic ("HTTP Status" topic) if the CPI already has been processed so return fast
         // First validate CPI against http sent checksum. Then we should continue with uploading it.
         // TODO - validate CPI against sent checksum
-        val cpiUploadRequestId = cpi.use { cpiUploadManager.uploadCpi(it) }
+        val cpiUploadRequestId = cpiContent.use { cpiUploadManager.uploadCpi(it) }
         log.info("Successfully sent CPI: $todoSentChecksumString to db worker")
-        return HTTPCpiUploadRequestId(cpiUploadRequestId)
+        return CpiUploadId(cpiUploadRequestId)
     }
 }
