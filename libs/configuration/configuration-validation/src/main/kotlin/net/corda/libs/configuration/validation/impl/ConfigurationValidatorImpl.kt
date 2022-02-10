@@ -45,13 +45,11 @@ internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProv
         if (errors.isNotEmpty()) {
             val errorSet = errors.map { it.message }.toSet()
             logger.error(
-                "Configuration validation failed for key $key at schema version $version. Errors: $errorSet. Full config: ${
-                    config.toSafeConfig().root().render(
-                        ConfigRenderOptions.concise()
-                    )
-                }"
+                "Configuration validation failed for key $key at schema version $version. Errors: $errorSet."
             )
-            throw ConfigurationValidationException(key, version, config, errorSet)
+            throw ConfigurationValidationException(key, version, config, errorSet).also {
+                logger.debug { it.fullErrorDetail() }
+            }
         }
     }
 
