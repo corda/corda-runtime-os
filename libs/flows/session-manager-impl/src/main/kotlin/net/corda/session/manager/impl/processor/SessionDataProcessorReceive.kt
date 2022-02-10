@@ -51,22 +51,16 @@ class SessionDataProcessorReceive(
         val receivedEventState = sessionState.receivedEventsState
         val expectedNextSeqNum = receivedEventState.lastProcessedSequenceNum + 1
 
-        return when {
-            seqNum >= expectedNextSeqNum -> {
-                getSessionStateForDataEvent(sessionState, sessionId, seqNum)
+        return if (seqNum >= expectedNextSeqNum) {
+            getSessionStateForDataEvent(sessionState, sessionId, seqNum)
+        } else {
+            logger.debug {
+                "Duplicate message received on key $key with sessionId $sessionId with sequence number of $seqNum when next" +
+                        " expected seqNum is $expectedNextSeqNum"
             }
-            seqNum < expectedNextSeqNum -> {
-                sessionState.apply {
-                    sendEventsState.undeliveredMessages =
-                        sessionState.sendEventsState.undeliveredMessages.plus(generateAckEvent(seqNum, sessionId, instant))
-                }
-            }
-            else -> {
-                logger.debug {
-                    "Duplicate message on key $key with sessionId $sessionId with sequence number of $seqNum when next" +
-                            " expected seqNum is $expectedNextSeqNum"
-                }
-                sessionState
+            sessionState.apply {
+                sendEventsState.undeliveredMessages =
+                    sessionState.sendEventsState.undeliveredMessages.plus(generateAckEvent(seqNum, sessionId, instant))
             }
         }
     }
@@ -84,9 +78,10 @@ class SessionDataProcessorReceive(
 
         //If in state of WAIT_FOR_FINAL_ACK/CLOSED we should not be receiving data messages with a valid seqNum
         return if (currentStatus == SessionStateType.WAIT_FOR_FINAL_ACK || currentStatus == SessionStateType.ERROR
-            || currentStatus == SessionStateType.CLOSED) {
-            val errorMessage ="Received data message on key $key with sessionId $sessionId with sequence number of $seqNum when status" +
-                        " is $currentStatus. Session mismatch error. SessionState: $sessionState"
+            || currentStatus == SessionStateType.CLOSED
+        ) {
+            val errorMessage = "Received data message on key $key with sessionId $sessionId with sequence number of $seqNum when status" +
+                    " is $currentStatus. Session mismatch error. SessionState: $sessionState"
             logger.error(errorMessage)
             sessionState.apply {
                 status = SessionStateType.ERROR
