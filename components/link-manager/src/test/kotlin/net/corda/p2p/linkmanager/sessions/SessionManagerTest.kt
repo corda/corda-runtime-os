@@ -79,6 +79,7 @@ class SessionManagerTest {
         const val KEY = "KEY"
         const val GROUP_ID = "myGroup"
         const val MAX_MESSAGE_SIZE = 1024 * 1024
+        const val SESSIONS_PER_COUNTERPARTIES = 4
         val PROTOCOL_MODES = listOf(ProtocolMode.AUTHENTICATED_ENCRYPTION, ProtocolMode.AUTHENTICATION_ONLY)
         val RANDOM_BYTES = ByteBuffer.wrap("some-random-data".toByteArray())
 
@@ -186,7 +187,7 @@ class SessionManagerTest {
     ).apply {
         setRunning()
         configHandler.applyNewConfiguration(
-            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
+            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY), SESSIONS_PER_COUNTERPARTIES),
             null,
             mock(),
         )
@@ -311,7 +312,7 @@ class SessionManagerTest {
         val sessionState = sessionManager.processOutboundMessage(message)
         assertThat(sessionState).isInstanceOf(SessionManager.SessionState.SessionAlreadyPending::class.java)
         configHandler.applyNewConfiguration(
-            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
+            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY), SESSIONS_PER_COUNTERPARTIES),
             null,
             mock(),
         )
@@ -573,7 +574,7 @@ class SessionManagerTest {
         }
 
         configHandler.applyNewConfiguration(
-            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
+            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY), SESSIONS_PER_COUNTERPARTIES),
             null,
             mock(),
         )
@@ -794,7 +795,7 @@ class SessionManagerTest {
             .sessionNegotiatedCallback(sessionManager, SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY), session, networkMap)
 
         configHandler.applyNewConfiguration(
-            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
+            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY), SESSIONS_PER_COUNTERPARTIES),
             null,
             mock(),
         )
@@ -879,7 +880,11 @@ class SessionManagerTest {
         ).apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
+                SessionManagerImpl.SessionManagerConfig(
+                    MAX_MESSAGE_SIZE,
+                    setOf(ProtocolMode.AUTHENTICATION_ONLY),
+                    SESSIONS_PER_COUNTERPARTIES
+                ),
                 null,
                 mock(),
             )
@@ -921,7 +926,11 @@ class SessionManagerTest {
         ).apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
+                SessionManagerImpl.SessionManagerConfig(
+                    MAX_MESSAGE_SIZE,
+                    setOf(ProtocolMode.AUTHENTICATION_ONLY),
+                    SESSIONS_PER_COUNTERPARTIES
+                ),
                 null,
                 mock(),
             )
@@ -978,7 +987,11 @@ class SessionManagerTest {
         ).apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
+                SessionManagerImpl.SessionManagerConfig(
+                    MAX_MESSAGE_SIZE,
+                    setOf(ProtocolMode.AUTHENTICATION_ONLY),
+                    SESSIONS_PER_COUNTERPARTIES
+                ),
                 null,
                 mock(),
             )
@@ -1051,7 +1064,11 @@ class SessionManagerTest {
         ).apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
+                SessionManagerImpl.SessionManagerConfig(
+                    MAX_MESSAGE_SIZE,
+                    setOf(ProtocolMode.AUTHENTICATION_ONLY),
+                    SESSIONS_PER_COUNTERPARTIES
+                ),
                 null,
                 mock(),
             )
@@ -1139,7 +1156,11 @@ class SessionManagerTest {
         ).apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
+                SessionManagerImpl.SessionManagerConfig(
+                    MAX_MESSAGE_SIZE,
+                    setOf(ProtocolMode.AUTHENTICATION_ONLY),
+                    SESSIONS_PER_COUNTERPARTIES
+                ),
                 null,
                 mock(),
             )
@@ -1180,7 +1201,7 @@ class SessionManagerTest {
         }
 
         configHandler.applyNewConfiguration(
-            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
+            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY), SESSIONS_PER_COUNTERPARTIES),
             null,
             resourcesHolder,
         )
@@ -1229,7 +1250,11 @@ class SessionManagerTest {
         ).apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
+                SessionManagerImpl.SessionManagerConfig(
+                    MAX_MESSAGE_SIZE,
+                    setOf(ProtocolMode.AUTHENTICATION_ONLY),
+                    SESSIONS_PER_COUNTERPARTIES
+                ),
                 null,
                 mock(),
             )
@@ -1307,7 +1332,11 @@ class SessionManagerTest {
         ).apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
+                SessionManagerImpl.SessionManagerConfig(
+                    MAX_MESSAGE_SIZE,
+                    setOf(ProtocolMode.AUTHENTICATION_ONLY),
+                    SESSIONS_PER_COUNTERPARTIES
+                ),
                 null,
                 mock(),
             )

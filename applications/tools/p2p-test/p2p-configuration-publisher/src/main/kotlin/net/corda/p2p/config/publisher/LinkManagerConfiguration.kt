@@ -67,6 +67,12 @@ class LinkManagerConfiguration : ConfigProducer() {
     )
     var sessionTimeoutMilliSecs = 10_000L
 
+    @Option(
+        names = ["--sessionsPerCounterparties"],
+        description = ["The number of sessions between two peers"]
+    )
+    var sessionsPerCounterparties = 4L
+
     override val configuration by lazy {
         val locallyHostedIdentities = locallyHostedIdentity.map {
             it.split(":")
@@ -114,6 +120,10 @@ class LinkManagerConfiguration : ConfigProducer() {
             .withValue(
                 LinkManagerConfiguration.SESSION_TIMEOUT_KEY,
                 ConfigValueFactory.fromAnyRef(sessionTimeoutMilliSecs)
+            )
+            .withValue(
+                LinkManagerConfiguration.SESSIONS_PER_COUNTERPARTIES_KEY,
+                ConfigValueFactory.fromAnyRef(sessionsPerCounterparties)
             )
     }
 

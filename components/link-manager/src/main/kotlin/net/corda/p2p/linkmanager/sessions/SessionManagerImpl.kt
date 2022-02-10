@@ -139,6 +139,7 @@ open class SessionManagerImpl(
     internal data class SessionManagerConfig(
         val maxMessageSize: Int,
         val protocolModes: Set<ProtocolMode>,
+        val sessionsPerCounterparties: Int,
     )
 
     internal inner class SessionManagerConfigChangeHandler: ConfigurationChangeHandler<SessionManagerConfig>(
@@ -162,8 +163,11 @@ open class SessionManagerImpl(
     }
 
     private fun fromConfig(config: Config): SessionManagerConfig {
-        return SessionManagerConfig(config.getInt(LinkManagerConfiguration.MAX_MESSAGE_SIZE_KEY),
-        config.getEnumList(ProtocolMode::class.java, LinkManagerConfiguration.PROTOCOL_MODE_KEY).toSet())
+        return SessionManagerConfig(
+            config.getInt(LinkManagerConfiguration.MAX_MESSAGE_SIZE_KEY),
+            config.getEnumList(ProtocolMode::class.java, LinkManagerConfiguration.PROTOCOL_MODE_KEY).toSet(),
+            config.getInt(LinkManagerConfiguration.SESSIONS_PER_COUNTERPARTIES_KEY)
+        )
     }
 
     override fun processOutboundMessage(message: AuthenticatedMessageAndKey): SessionState {
