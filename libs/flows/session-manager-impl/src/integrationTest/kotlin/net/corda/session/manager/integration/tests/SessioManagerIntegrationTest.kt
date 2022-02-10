@@ -50,7 +50,7 @@ class SessionManagerIntegrationTest {
 
 
     @Test
-    fun testMessageResendWindow() {
+    fun `Check send message respects the resend window`() {
         val (alice, bob) = initiateNewSession(testSmartConfig)
 
         val instant = Instant.now()
