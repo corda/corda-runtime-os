@@ -18,7 +18,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("LongParameterList")
-class TrustStoresPublisher(
+internal class TrustStoresPublisher(
     private val subscriptionFactory: SubscriptionFactory,
     publisherFactory: PublisherFactory,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
@@ -90,7 +90,7 @@ class TrustStoresPublisher(
         )
     )
 
-    private fun createResources(resourcesHolder: ResourcesHolder): CompletableFuture<Unit> {
+    fun createResources(resourcesHolder: ResourcesHolder): CompletableFuture<Unit> {
         val processor = PublishedDataProcessor()
         val subscription = subscriptionFactory.createCompactedSubscription(
             SubscriptionConfig(READ_CURRENT_DATA, GATEWAY_TLS_TRUSTSTORES, instanceId),

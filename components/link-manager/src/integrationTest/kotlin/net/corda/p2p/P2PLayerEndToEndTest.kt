@@ -384,11 +384,11 @@ class P2PLayerEndToEndTest {
                 assertThat(configReadService.isRunning).isTrue
             }
 
-            publishConfig()
-            publishNetworkMapAndKeys(otherHost)
-
             linkManager.start()
             gateway.start()
+
+            publishConfig()
+            publishNetworkMapAndKeys(otherHost)
 
             eventually(30.seconds) {
                 assertThat(linkManager.isRunning).isTrue

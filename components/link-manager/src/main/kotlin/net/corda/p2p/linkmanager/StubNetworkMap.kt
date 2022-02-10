@@ -152,7 +152,6 @@ class StubNetworkMap(
         }
 
         private fun addEntry(networkMapEntry: NetworkMapEntry) {
-            // publish trust store here!
             if (!netMapEntriesByGroupIdPublicKeyHash.containsKey(networkMapEntry.holdingIdentity.groupId)) {
                 netMapEntriesByGroupIdPublicKeyHash[networkMapEntry.holdingIdentity.groupId] = ConcurrentHashMap()
             }

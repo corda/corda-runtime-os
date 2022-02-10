@@ -326,6 +326,36 @@ class OutboundMessageHandlerTest {
     }
 
     @Test
+    fun `onNext will get the trust store from the trust store map`() {
+        startHandler()
+        val payload = UnauthenticatedMessage.newBuilder().apply {
+            header = UnauthenticatedMessageHeader(
+                HoldingIdentity("A", "B"),
+                HoldingIdentity("C", "D")
+            )
+            payload = ByteBuffer.wrap(byteArrayOf())
+        }.build()
+        val headers = LinkOutHeader(
+            "aaa",
+            NetworkType.CORDA_4,
+            "https://r3.com/",
+            GROUP_ID,
+        )
+        val message = LinkOutMessage(
+            headers,
+            payload,
+        )
+
+        handler.onNext(
+            listOf(
+                EventLogRecord("", "", message, 1, 1L),
+            )
+        )
+
+        verify(trustStores.constructed().first()).getTrustStore(GROUP_ID)
+    }
+
+    @Test
     fun `when message times out, it is retried once`() {
         connectionConfig = ConnectionConfiguration().copy(responseTimeout = 10.millis, retryDelay = 10.millis)
         startHandler()
