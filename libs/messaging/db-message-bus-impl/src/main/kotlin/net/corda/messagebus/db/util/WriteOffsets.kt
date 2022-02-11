@@ -5,18 +5,18 @@ import net.corda.messagebus.api.CordaTopicPartition
 /**
  * Utility class for keeping track of the current offsets, stored by [CordaTopicPartition].
  */
-class LatestOffsets(
+class WriteOffsets(
     initialState: Map<CordaTopicPartition, Long>
 ) {
     companion object {
-        fun build(initialState: Map<String, Map<Int, Long>>): LatestOffsets {
+        fun build(initialState: Map<String, Map<Int, Long>>): WriteOffsets {
             val stateForObject = mutableMapOf<CordaTopicPartition, Long>()
             initialState.forEach { (topic, partitionOffsetMap) ->
                 partitionOffsetMap.forEach { (partition, offset) ->
                     stateForObject[CordaTopicPartition(topic, partition)] = offset
                 }
             }
-            return LatestOffsets(stateForObject)
+            return WriteOffsets(stateForObject)
         }
     }
 

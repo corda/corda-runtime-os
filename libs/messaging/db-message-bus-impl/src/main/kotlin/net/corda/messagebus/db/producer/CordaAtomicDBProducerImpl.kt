@@ -9,7 +9,7 @@ import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messagebus.db.persistence.DBAccess
-import net.corda.messagebus.db.util.LatestOffsets
+import net.corda.messagebus.db.util.WriteOffsets
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.contextLogger
@@ -46,7 +46,7 @@ class CordaAtomicDBProducerImpl(
 
     private val defaultTimeout: Duration = Duration.ofSeconds(1)
     private val topicPartitionMap = dbAccess.getTopicPartitionMap()
-    private val latestOffsets = LatestOffsets(dbAccess.getMaxOffsetsPerTopicPartition())
+    private val writeOffsets = WriteOffsets(dbAccess.getMaxOffsetsPerTopicPartition())
 
     override fun send(record: CordaProducerRecord<*, *>, callback: CordaProducer.Callback?) {
         sendRecords(listOf(record))
@@ -71,7 +71,7 @@ class CordaAtomicDBProducerImpl(
 
     override fun sendRecordsToPartitions(recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>) {
         val dbRecords = recordsWithPartitions.map { (partition, record) ->
-            val offset = latestOffsets.getNextOffsetFor(CordaTopicPartition(record.topic, partition))
+            val offset = writeOffsets.getNextOffsetFor(CordaTopicPartition(record.topic, partition))
             val serialisedKey = schemaRegistry.serialize(record.key).array()
             val serialisedValue = if (record.value != null) {
                 schemaRegistry.serialize(record.value!!).array()

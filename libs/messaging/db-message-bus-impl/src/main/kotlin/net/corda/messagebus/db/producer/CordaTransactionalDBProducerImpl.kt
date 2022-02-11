@@ -11,7 +11,7 @@ import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messagebus.db.persistence.DBAccess
-import net.corda.messagebus.db.util.LatestOffsets
+import net.corda.messagebus.db.util.WriteOffsets
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.slf4j.Logger
@@ -31,7 +31,7 @@ class CordaTransactionalDBProducerImpl(
 
     private val defaultTimeout: Duration = Duration.ofSeconds(1)
     private val topicPartitionMap = dbAccess.getTopicPartitionMap()
-    private val latestOffsets = LatestOffsets(dbAccess.getMaxOffsetsPerTopicPartition())
+    private val writeOffsets = WriteOffsets(dbAccess.getMaxOffsetsPerTopicPartition())
 
     private val transaction = ThreadLocal<TransactionRecordEntry>()
     private val transactionId: String
@@ -67,7 +67,7 @@ class CordaTransactionalDBProducerImpl(
     override fun sendRecordsToPartitions(recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>) {
         verifyInTransaction()
         val dbRecords = recordsWithPartitions.map { (partition, record) ->
-            val offset = latestOffsets.getNextOffsetFor(CordaTopicPartition(record.topic, partition))
+            val offset = writeOffsets.getNextOffsetFor(CordaTopicPartition(record.topic, partition))
 
             val serialisedKey = schemaRegistry.serialize(record.key).array()
             val serialisedValue = if (record.value != null) {
@@ -133,7 +133,7 @@ class CordaTransactionalDBProducerImpl(
         verifyInTransaction()
         val topicPartitions = consumer.assignment()
         val offsets = topicPartitions.map { (topic, partition) ->
-            val offset = latestOffsets.getNextOffsetFor(CordaTopicPartition(topic, partition))
+            val offset = writeOffsets.getNextOffsetFor(CordaTopicPartition(topic, partition))
             CommittedOffsetEntry(
                 topic,
                 (consumer as DBCordaConsumerImpl).getConsumerGroup(),
