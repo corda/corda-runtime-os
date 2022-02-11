@@ -39,7 +39,7 @@ fun <T : Any> withPermissionManager(
             EntityAssociationAlreadyExistsException::class.java.name -> throw InvalidInputDataException(e.message!!)
             EntityAlreadyExistsException::class.java.name -> throw InvalidInputDataException(e.message!!)
             else -> throw InternalServerException(
-                details = buildExceptionCauseDetails(e)
+                details = buildExceptionCauseDetails(e.exceptionType, e.message ?: "Remote permission management error occurred.")
             )
         }
 
@@ -72,4 +72,9 @@ fun <T : Any> withPermissionManager(
 private fun buildExceptionCauseDetails(e: Throwable) = mapOf(
     "cause" to e::class.java.name,
     "reason" to (e.message ?: "")
+)
+
+private fun buildExceptionCauseDetails(type: String, reason: String) = mapOf(
+    "cause" to type,
+    "reason" to reason
 )
