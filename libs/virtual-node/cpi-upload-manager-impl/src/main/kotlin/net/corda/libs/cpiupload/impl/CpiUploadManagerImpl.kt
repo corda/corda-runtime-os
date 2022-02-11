@@ -23,7 +23,8 @@ class CpiUploadManagerImpl(
 ) : CpiUploadManager {
 
     companion object {
-        private const val TODO_CHUNK_SIZE = 1024 // TODO Replace with config.
+        private const val KB = 1024
+        const val TODO_CHUNK_SIZE = 512 * KB // TODO Replace with config.
 
         // Should merge this with SmartConfigUtil.DEFAULT_ENDPOINT_TIMEOUT_MS.
         private const val DEFAULT_ENDPOINT_TIMEOUT_MS = 10000L
