@@ -67,7 +67,7 @@ class SessionManagerIntegrationTest {
 
     @Test
     fun `Test send data in state CREATED`() {
-        val (initiator, _) = SessionPartyFactory().createSessionParties()
+        val (initiator, _) = SessionPartyFactory().createSessionParties(testSmartConfig)
 
         initiator.processNewOutgoingMessage(SessionMessageType.INIT, sendMessages = true)
         initiator.assertStatus(SessionStateType.CREATED)
