@@ -2,7 +2,6 @@ package net.corda.libs.cpiupload.endpoints.v1
 
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcPOST
-import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 import java.io.InputStream
 
