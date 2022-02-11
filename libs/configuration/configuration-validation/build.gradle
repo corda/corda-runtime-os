@@ -1,0 +1,24 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.osgi-test-conventions'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+}
+
+description "Configuration validation library"
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:osgi.core'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-base"
+    implementation "net.corda:corda-config-schema"
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation project(":libs:configuration:configuration-core")
+
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation "com.networknt:json-schema-validator:$networkntJsonSchemaVersion"
+
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}

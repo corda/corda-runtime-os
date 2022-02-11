@@ -24,9 +24,9 @@ import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
-import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
-import net.corda.schema.configuration.ConfigKeys.Companion.FLOW_CONFIG
-import net.corda.schema.configuration.ConfigKeys.Companion.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.session.mapper.service.executor.FlowMapperListener
 import net.corda.session.mapper.service.executor.FlowMapperMessageProcessor
 import net.corda.session.mapper.service.executor.ScheduledTaskState
