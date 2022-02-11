@@ -15,6 +15,7 @@ dependencies {
     api project(':libs:sandbox')
     api project(':libs:virtual-node:virtual-node-info')
     api 'net.corda:corda-packaging'
+    api "org.junit.jupiter:junit-jupiter-api:$junit5Version"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'

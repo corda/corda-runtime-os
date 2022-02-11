@@ -11,7 +11,6 @@ import org.junit.jupiter.api.fail
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 
 @Component(service = [ IntegrationTestService::class ])
@@ -23,14 +22,12 @@ class IntegrationTestService @Activate constructor(
     @Reference
     private val registration: RuntimeRegistration
 ) {
-    @Suppress("unused")
-    @Deactivate
-    fun done() {
-        loader.stop()
-    }
-
     fun loadCPIFromResource(resourceName: String): CPI {
         return loader.loadCPI(resourceName)
+    }
+
+    fun unloadCPI(cpi: CPI) {
+        loader.unloadCPI(cpi)
     }
 
     fun createSandboxGroupFor(cpks: Set<CPK>): SandboxGroup =

@@ -30,8 +30,6 @@ class InstallServiceImpl @Activate constructor(
     properties: Map<String, Any?>
 ) : InstallService, CpiLoaderService {
     companion object {
-        private const val PARALLELISM_THRESHOLD = 10L
-
         const val BASE_DIRECTORY_KEY = "baseDirectory"
         const val TEST_BUNDLE_KEY = "testBundle"
     }
@@ -49,6 +47,10 @@ class InstallServiceImpl @Activate constructor(
         get() = cpis.values.flatMap(CPI::cpks)
 
     override val isRunning: Boolean get() = true
+
+    init {
+        logger.info("Activated")
+    }
 
     private fun getInputStream(resourceName: String): InputStream {
         return testBundle.getResource(resourceName)?.openStream()
@@ -103,7 +105,7 @@ class InstallServiceImpl @Activate constructor(
 
     @Deactivate
     override fun stop() {
-        cpis.forEachValue(PARALLELISM_THRESHOLD, ::unloadCPI)
+        ArrayList(cpis.values).forEach(::unloadCPI)
         logger.info("Stopped")
     }
 }

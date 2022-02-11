@@ -10,6 +10,8 @@ import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
 import net.corda.testing.sandboxes.SandboxSetup
+import net.corda.testing.sandboxes.fetchService
+import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
 import net.corda.utilities.copyTo
 import net.corda.utilities.div
 import net.corda.utilities.reflection.packageName_
@@ -17,13 +19,13 @@ import net.corda.v5.base.types.ByteSequence
 import net.corda.v5.base.types.OpaqueBytes
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.framework.BundleContext
 import org.osgi.test.common.annotation.InjectBundleContext
@@ -44,25 +46,23 @@ class AMQPwithOSGiSerializationTests {
     private val testSerializationContext = AMQP_STORAGE_CONTEXT
 
     companion object {
+        @RegisterExtension
+        private val lifecycle = AllTestsLifecycle()
+
         @InjectService(timeout = 1000)
         lateinit var sandboxSetup: SandboxSetup
+
+        lateinit var sandboxFactory: SandboxFactory
 
         @BeforeAll
         @JvmStatic
         fun setUp(@InjectBundleContext bundleContext: BundleContext, @TempDir testDirectory: Path) {
             sandboxSetup.configure(bundleContext, testDirectory)
-        }
-
-        @Suppress("unused")
-        @JvmStatic
-        @AfterAll
-        fun done() {
-            sandboxSetup.shutdown()
+            lifecycle.accept(sandboxSetup) { setup ->
+                sandboxFactory = setup.fetchService(timeout = 1000)
+            }
         }
     }
-
-    @InjectService(timeout = 1500)
-    lateinit var sandboxFactory: SandboxFactory
 
     private fun testDefaultFactory(sandboxGroup: SandboxGroup): SerializerFactory =
         SerializerFactoryBuilder.build(sandboxGroup, allowEvolution = true)
