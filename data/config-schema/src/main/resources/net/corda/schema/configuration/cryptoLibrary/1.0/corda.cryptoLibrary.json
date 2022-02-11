@@ -1,0 +1,8 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://corda.r3.com/net/corda/schema/configuration/cryptoLibrary/1.0/corda.cryptoLibrary.json",
+  "title": "Corda Crypto Library Configuration Schema",
+  "description": "Configuration schema for the crypto library subsection.",
+  "type": "object",
+  "properties": {}
+}

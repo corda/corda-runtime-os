@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://corda.r3.com/net/corda/schema/configuration/messaging/1.0/publisher.json",
+  "title": "Publisher configuration",
+  "description": "Configuration settings for all publishers that write to the message bus.",
+  "type": "object",
+  "properties": {
+    "close.timeout": {
+      "description": "Time in ms to wait when closing underlying bus objects on close.",
+      "type": "integer",
+      "minimum": 100,
+      "default": 600
+    }
+  },
+  "additionalProperties": false
+}

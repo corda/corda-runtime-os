@@ -1,0 +1,8 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://corda.r3.com/net/corda/schema/configuration/p2p/1.0/corda.p2p.json",
+  "title": "Corda P2P Configuration Schema",
+  "description": "Configuration schema for the P2P subsection.",
+  "type": "object",
+  "properties": {}
+}

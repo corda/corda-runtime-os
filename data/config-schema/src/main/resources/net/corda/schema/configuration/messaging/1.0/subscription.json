@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://corda.r3.com/net/corda/schema/configuration/messaging/1.0/subscription.json",
+  "title": "Common subscription configuration",
+  "description": "Configuration settings for all subscriptions to the message bus.",
+  "type": "object",
+  "properties": {
+    "close.timeout": {
+      "description": "Time in ms to wait when closing underlying bus objects for this subscription.",
+      "type": "integer",
+      "minimum": 100,
+      "default": 400
+    },
+    "poll.timeout": {
+      "description": "Time in ms to wait for a response from the bus when calling poll.",
+      "type": "integer",
+      "minimum": 100,
+      "default": 500
+    },
+    "thread.stop.timeout": {
+      "description": "Time in ms to wait for the subscription processing thread to terminate on close",
+      "type": "integer",
+      "minimum": 100,
+      "default": 10000
+    },
+    "processor.retries": {
+      "description": "Number of times to retry internal intermittent failures before throwing back to the client",
+      "type": "integer",
+      "minimum": 0,
+      "default": 3
+    },
+    "subscribe.retries": {
+      "description": "Number of times to attempt to subscribe to the underlying bus before throwing back to the client",
+      "type": "integer",
+      "minimum": 0,
+      "default": 3
+    },
+    "commit.retries": {
+      "description": "Number of times to attempt to commit a transaction before throwing back to the client",
+      "type": "integer",
+      "minimum": 0,
+      "default": 3
+    },
+    "processor.timeout": {
+      "description": "Time in ms to wait for an individual event to process. This is applied if the subscription must also maintain state that needs to be periodically serviced.",
+      "type": "integer",
+      "minimum": 1000,
+      "default": 15000
+    }
+  },
+  "additionalProperties": false
+}

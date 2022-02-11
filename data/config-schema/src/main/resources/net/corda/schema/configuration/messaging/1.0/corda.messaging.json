@@ -1,0 +1,80 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://corda.r3.com/net/corda/schema/configuration/messaging/1.0/corda.messaging.json",
+  "title": "Corda Messaging Configuration Schema",
+  "description": "Configuration schema for the messaging subsection. This configures the interactions of the workers with the underlying message bus.",
+  "type": "object",
+  "properties": {
+    "bus": {
+      "description": "Settings for the underlying bus implementation. Sets up connection details and how underlying bus objects behave.",
+      "type": "object",
+      "properties": {
+        "busType": {
+          "description": "Which bus implementation is currently in use.",
+          "enum": [
+            "KAFKA",
+            "DATABASE",
+            "INMEMORY"
+          ]
+        },
+        "additionalProperties": false
+      },
+      "$comment": "Polymorphic bus connection configuration. The valid section depends on which bus implementation is in use.",
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "busType": {
+                "const": "KAFKA"
+              }
+            },
+            "required": ["busType"]
+          },
+          "then": {
+            "properties": {
+              "kafkaProperties": {
+                "description": "Kafka connection properties to use to connect to the broker",
+                "$ref": "kafka-properties.json"
+              }
+            },
+            "required": ["busType","kafkaProperties"]
+          }
+        },
+        {
+          "if": {
+            "properties": {"busType": {"const": "DATABASE"}},
+            "required": ["busType"]
+          },
+          "then": {
+            "properties": {
+              "dbProperties": {
+                "type": "object",
+                "properties": {
+                  "jdbcUrl": {
+                    "description": "The JDBC database URL",
+                    "type": "string"
+                  },
+                  "username": {
+                    "description": "Cluster admin username to connect to the database with.",
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "required": ["busType","dbProperties"]
+          }
+        }
+      ]
+    },
+    "subscription": {
+      "description": "Configuration options for subscriptions that processs messages on the bus.",
+      "$ref": "subscription.json"
+    },
+    "publisher": {
+      "description": "Settings for publishers that write messages to the underlying bus",
+      "$ref": "publisher.json"
+    }
+  },
+  "additionalProperties": false
+}

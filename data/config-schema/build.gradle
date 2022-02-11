@@ -9,7 +9,11 @@ description 'Schema Definition for Configuration'
 dependencies {
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation platform(project(':corda-api'))
+    implementation project(":base")
 
     compileOnly 'org.osgi:osgi.annotation'
+    compileOnly "org.osgi:osgi.core"
+
+    testRuntimeOnly "org.osgi:osgi.core"
 }
 

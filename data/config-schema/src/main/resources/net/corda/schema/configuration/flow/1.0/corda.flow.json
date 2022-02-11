@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://corda.r3.com/net/corda/schema/configuration/flow/1.0/corda.flow.json",
+  "title": "Corda Flow Configuration Schema",
+  "description": "Configuration schema for the flow subsection.",
+  "type": "object",
+  "properties": {
+    "session": {
+      "description": "Settings for flow sessions",
+      "type": "object",
+      "properties": {
+        "messageResendWindow": {
+          "description": "Length of time to wait before resending unacknowledged flow session messages, in milliseconds",
+          "type": "integer",
+          "minimum": 100,
+          "default": 5000
+        }
+      }
+    }
+  }
+}
