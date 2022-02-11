@@ -4,7 +4,6 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.permissions.cache.PermissionCache
-import net.corda.libs.permissions.storage.common.ConfigKeys.DB_CONFIG_KEY
 import net.corda.libs.permissions.storage.common.ConfigKeys.DB_PASSWORD
 import net.corda.libs.permissions.storage.common.ConfigKeys.DB_URL
 import net.corda.libs.permissions.storage.common.ConfigKeys.DB_USER
@@ -20,6 +19,7 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.permissions.cache.PermissionCacheService
 import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.Companion.DB_CONFIG
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
@@ -66,7 +66,7 @@ class PermissionStorageReaderServiceEventHandlerTest {
     private val config = configFactory.create(
         ConfigFactory.empty()
             .withValue(
-                DB_CONFIG_KEY,
+                DB_CONFIG,
                 ConfigValueFactory.fromMap(mapOf(DB_URL to "dbUrl", DB_USER to "dbUser", DB_PASSWORD to "dbPass"))
             )
     )

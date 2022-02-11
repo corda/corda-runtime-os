@@ -16,6 +16,7 @@ import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
 import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.Companion.DB_CONFIG
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
@@ -56,7 +57,7 @@ class PermissionStorageWriterServiceEventHandlerTest {
     private val config = configFactory.create(
         ConfigFactory.empty()
             .withValue(
-                ConfigKeys.DB_CONFIG_KEY,
+                DB_CONFIG,
                 ConfigValueFactory.fromMap(
                     mapOf(
                         ConfigKeys.DB_URL to "dbUrl",
