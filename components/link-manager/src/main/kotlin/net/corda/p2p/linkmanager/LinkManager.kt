@@ -7,6 +7,7 @@ import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -94,8 +95,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         }
     }
 
-    private val inboundAssigned = AtomicReference<CompletableFuture<Unit>>()
-    private var inboundAssignmentListener = InboundAssignmentListener(inboundAssigned)
+    private var inboundAssignmentListener = InboundAssignmentListener(lifecycleCoordinatorFactory)
 
     private val messagesPendingSession = PendingSessionMessageQueuesImpl(
         publisherFactory,
@@ -146,46 +146,28 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         partitionAssignmentListener = null
     )
 
-    @VisibleForTesting
-    internal fun createInboundResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-        val future = CompletableFuture<Unit>()
-        inboundAssigned.set(future)
-        inboundMessageSubscription.start()
-        resources.keep { inboundMessageSubscription.stop() }
-        //We complete the future inside inboundAssignmentListener.
-        return future
-    }
-
-    @VisibleForTesting
-    internal fun createOutboundResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-        outboundMessageSubscription.start()
-        resources.keep { outboundMessageSubscription.stop() }
-        val outboundReady = CompletableFuture<Unit>()
-        outboundReady.complete(Unit)
-        return outboundReady
-    }
-
     private val commonChildren = setOf(linkManagerNetworkMap.dominoTile, linkManagerCryptoService.dominoTile,
         linkManagerHostingMap.dominoTile)
-    private val inboundDominoTile = DominoTile(
-        "InboundProcessor",
+    private val inboundSubscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
-        ::createInboundResources,
-        dependentChildren = commonChildren
+        inboundMessageSubscription,
+        inboundMessageSubscription.subscriptionName,
+        dependentChildren = commonChildren,
+        managedChildren = setOf(inboundAssignmentListener.dominoTile)
     )
-    private val outboundDominoTile = DominoTile(
-        "OutboundProcessor",
+    private val outboundSubscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
-        ::createOutboundResources,
-        dependentChildren = setOf(inboundDominoTile, messagesPendingSession.dominoTile) + commonChildren,
+        outboundMessageSubscription,
+        outboundMessageSubscription.subscriptionName,
+        dependentChildren = commonChildren + setOf(messagesPendingSession.dominoTile, inboundAssignmentListener.dominoTile),
         managedChildren = setOf(messagesPendingSession.dominoTile)
     )
 
     override val dominoTile = DominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        dependentChildren = setOf(inboundDominoTile, outboundDominoTile, deliveryTracker.dominoTile),
-        managedChildren = setOf(inboundDominoTile, outboundDominoTile, deliveryTracker.dominoTile, sessionManager.dominoTile)
+        dependentChildren = setOf(inboundSubscriptionTile, outboundSubscriptionTile, deliveryTracker.dominoTile),
+        managedChildren = setOf(inboundSubscriptionTile, outboundSubscriptionTile, deliveryTracker.dominoTile, sessionManager.dominoTile)
                 + commonChildren
     )
 

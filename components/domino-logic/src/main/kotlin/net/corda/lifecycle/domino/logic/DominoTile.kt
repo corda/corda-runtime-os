@@ -45,10 +45,10 @@ class DominoTile(
     componentName: String,
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val createResources: ((resources: ResourcesHolder) -> CompletableFuture<Unit>)? = null,
-    val dependentChildren: Collection<DominoTile> = emptySet(),
-    val managedChildren: Collection<DominoTile> = emptySet(),
+    override val dependentChildren: Collection<DominoTileInterface> = emptySet(),
+    override val managedChildren: Collection<DominoTileInterface> = emptySet(),
     private val configurationChangeHandler: ConfigurationChangeHandler<*>? = null,
-) : Lifecycle {
+) : DominoTileInterface {
 
     companion object {
         private val instancesIndex = ConcurrentHashMap<String, Int>()
@@ -58,17 +58,8 @@ class DominoTile(
     private data class ConfigApplied(val configUpdateResult: ConfigUpdateResult) : LifecycleEvent
     private data class NewConfig(val config: Config) : LifecycleEvent
     private object ResourcesCreated : LifecycleEvent
-    enum class State {
-        Created,
-        Started,
-        StoppedDueToError,
-        StoppedDueToBadConfig,
-        StoppedDueToChildStopped,
-        StoppedByParent
-    }
-    class StatusChangeEvent(val newState: State) : LifecycleEvent
 
-    val name: LifecycleCoordinatorName by lazy {
+    override val coordinatorName: LifecycleCoordinatorName by lazy {
         LifecycleCoordinatorName(
             componentName,
             instancesIndex.compute(componentName) { _, last ->
@@ -81,7 +72,7 @@ class DominoTile(
         )
     }
 
-    private val logger = LoggerFactory.getLogger(name.toString())
+    private val logger = LoggerFactory.getLogger(coordinatorName.toString())
 
     private val controlLock = ReentrantReadWriteLock()
 
@@ -106,18 +97,18 @@ class DominoTile(
         }
     }
 
-    private val coordinator = coordinatorFactory.createCoordinator(name, EventHandler())
+    private val coordinator = coordinatorFactory.createCoordinator(coordinatorName, EventHandler())
     private val resources = ResourcesHolder()
     private val configResources = ResourcesHolder()
 
-    private val registrationToChildMap: Map<RegistrationHandle, DominoTile> = dependentChildren.associateBy {
-        coordinator.followStatusChangesByName(setOf(it.name))
+    private val registrationToChildMap: Map<RegistrationHandle, DominoTileInterface> = dependentChildren.associateBy {
+        coordinator.followStatusChangesByName(setOf(it.coordinatorName))
     }
     private val latestChildStateMap = dependentChildren.associateWith {
         it.state
     }.toMutableMap()
 
-    private val currentState = AtomicReference(State.Created)
+    private val currentState = AtomicReference(DominoTileState.Created)
 
     private val isOpen = AtomicBoolean(true)
 
@@ -157,24 +148,24 @@ class DominoTile(
         }
     }
 
-    val state: State
+    override val state: DominoTileState
         get() = currentState.get()
 
     override val isRunning: Boolean
-        get() = state == State.Started
+        get() = state == DominoTileState.Started
 
     private fun newConfig(config: Config) {
         coordinator.postEvent(NewConfig(config))
     }
 
-    private fun updateState(newState: State) {
+    private fun updateState(newState: DominoTileState) {
         val oldState = currentState.getAndSet(newState)
         if (newState != oldState) {
             val status = when (newState) {
-                State.Started -> LifecycleStatus.UP
-                State.StoppedDueToBadConfig, State.StoppedByParent, State.StoppedDueToChildStopped -> LifecycleStatus.DOWN
-                State.StoppedDueToError -> LifecycleStatus.ERROR
-                State.Created -> null
+                DominoTileState.Started -> LifecycleStatus.UP
+                DominoTileState.StoppedDueToBadConfig, DominoTileState.StoppedByParent, DominoTileState.StoppedDueToChildStopped -> LifecycleStatus.DOWN
+                DominoTileState.StoppedDueToError -> LifecycleStatus.ERROR
+                DominoTileState.Created -> null
             }
             withLifecycleWriteLock {
                 status?.let { coordinator.updateStatus(it) }
@@ -190,7 +181,7 @@ class DominoTile(
                 is ErrorEvent -> {
                     stopResources()
                     stopListeningForConfig()
-                    updateState(State.StoppedDueToError)
+                    updateState(DominoTileState.StoppedDueToError)
                 }
                 is StartEvent -> {
                     // The coordinator had started, set the children state map - from
@@ -203,17 +194,17 @@ class DominoTile(
                     // We don't do anything when stopping the coordinator
                 }
                 is StopTile -> {
-                    if (state != State.StoppedByParent) {
+                    if (state != DominoTileState.StoppedByParent) {
                         stopTile()
-                        updateState(State.StoppedByParent)
+                        updateState(DominoTileState.StoppedByParent)
                     }
                 }
                 is StartTile -> {
                     when (state) {
-                        State.Created, State.StoppedByParent -> startDependenciesIfNeeded()
-                        State.Started, State.StoppedDueToChildStopped -> {} // Do nothing
-                        State.StoppedDueToError -> logger.warn("Can not start, since currently being stopped due to an error")
-                        State.StoppedDueToBadConfig -> logger.warn("Can not start, since currently being stopped due to bad config")
+                        DominoTileState.Created, DominoTileState.StoppedByParent -> startDependenciesIfNeeded()
+                        DominoTileState.Started, DominoTileState.StoppedDueToChildStopped -> {} // Do nothing
+                        DominoTileState.StoppedDueToError -> logger.warn("Can not start, since currently being stopped due to an error")
+                        DominoTileState.StoppedDueToBadConfig -> logger.warn("Can not start, since currently being stopped due to bad config")
                     }
                 }
                 is RegistrationStatusChangeEvent -> {
@@ -234,15 +225,15 @@ class DominoTile(
                         latestChildStateMap[child] = statusChangeEvent.newState
 
                         when (statusChangeEvent.newState) {
-                            State.Started -> {
-                                logger.info("Status change: child ${child.name} went up.")
+                            DominoTileState.Started -> {
+                                logger.info("Status change: child ${child.coordinatorName} went up.")
                                 handleChildStarted()
                             }
-                            State.StoppedDueToBadConfig, State.StoppedDueToError, State.StoppedByParent, State.StoppedDueToChildStopped -> {
-                                logger.info("Status change: child ${child.name} went down (${statusChangeEvent.newState}).")
+                            DominoTileState.StoppedDueToBadConfig, DominoTileState.StoppedDueToError, DominoTileState.StoppedByParent, DominoTileState.StoppedDueToChildStopped -> {
+                                logger.info("Status change: child ${child.coordinatorName} went down (${statusChangeEvent.newState}).")
                                 handleChildDown()
                             }
-                            State.Created -> { }
+                            DominoTileState.Created -> { }
                         }
                     }
                 }
@@ -259,7 +250,7 @@ class DominoTile(
                         is ConfigUpdateResult.Error -> {
                             logger.warn("Config error ${event.configUpdateResult.e}")
                             stopResources()
-                            updateState(State.StoppedDueToBadConfig)
+                            updateState(DominoTileState.StoppedDueToBadConfig)
                         }
                         ConfigUpdateResult.NoUpdate -> {
                             logger.info("Config applied with no update.")
@@ -315,7 +306,7 @@ class DominoTile(
 
     private fun handleChildStarted() {
         if (!isRunning) {
-            if (dependentChildren.all { latestChildStateMap[it] == State.Started }) {
+            if (dependentChildren.all { latestChildStateMap[it] == DominoTileState.Started }) {
                 logger.info("Starting resources, since all children are now up.")
                 createResourcesAndStart()
             }
@@ -325,12 +316,12 @@ class DominoTile(
     private fun handleChildDown() {
         stopResources()
         stopListeningForConfig()
-        updateState(State.StoppedDueToChildStopped)
+        updateState(DominoTileState.StoppedDueToChildStopped)
     }
 
     private fun startDependenciesIfNeeded() {
         managedChildren.forEach {
-            logger.info("Starting child ${it.name}")
+            logger.info("Starting child ${it.coordinatorName}")
             it.start()
         }
 
@@ -354,7 +345,7 @@ class DominoTile(
     }
 
     private fun shouldNotWaitForChildren(): Boolean {
-        return dependentChildren.all { latestChildStateMap[it] == State.Started }
+        return dependentChildren.all { latestChildStateMap[it] == DominoTileState.Started }
     }
 
     private fun createResourcesAndStart() {
@@ -384,7 +375,7 @@ class DominoTile(
 
     private fun setStartedIfCan() {
         if (shouldNotWaitForResource() && shouldNotWaitForConfig() && shouldNotWaitForChildren()) {
-            updateState(State.Started)
+            updateState(DominoTileState.Started)
         }
     }
 
@@ -403,7 +394,7 @@ class DominoTile(
 
     private fun stopChildren() {
         managedChildren.forEach {
-            logger.info("Stopping child ${it.name}")
+            logger.info("Stopping child ${it.coordinatorName}")
             it.stop()
         }
     }
@@ -442,13 +433,13 @@ class DominoTile(
             try {
                 it.close()
             } catch (e: Throwable) {
-                logger.warn("Could not close ${it.name}", e)
+                logger.warn("Could not close ${it.coordinatorName}", e)
             }
         }
     }
 
     override fun toString(): String {
-        return "$name (state: $state, dependent children: ${dependentChildren.map { it.name }}, " +
-                "managed children: ${managedChildren.map { it.name }})"
+        return "$coordinatorName (state: $state, dependent children: ${dependentChildren.map { it.coordinatorName }}, " +
+                "managed children: ${managedChildren.map { it.coordinatorName }})"
     }
 }

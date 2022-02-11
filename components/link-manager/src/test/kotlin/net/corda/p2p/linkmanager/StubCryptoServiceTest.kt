@@ -4,6 +4,7 @@ import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.ECDSA_SIGNATURE_ALGO
@@ -47,6 +48,7 @@ class StubCryptoServiceTest {
         createResources = context.arguments()[2] as ((ResourcesHolder) -> CompletableFuture<Unit>)
         whenever(mock.isRunning).doReturn(true)
     }
+    private val subscriptionTile = Mockito.mockConstruction(SubscriptionDominoTile::class.java)
 
     private val cryptoService = StubCryptoService(coordinatorFactory, subscriptionFactory, 0, SmartConfigImpl.empty()).apply {
         start()
@@ -64,6 +66,7 @@ class StubCryptoServiceTest {
     @AfterEach
     fun cleanUp() {
         dominoTile.close()
+        subscriptionTile.close()
         resourcesHolder.close()
     }
 
@@ -95,14 +98,6 @@ class StubCryptoServiceTest {
         ecdsaSignature.update(payload)
         assertTrue(ecdsaSignature.verify(signedData))
     }
-//TODOs : this will be refactored as part of CORE-3147
-//    @Test
-//    fun `create resource starts the subscription and adds it to the resource tracker`() {
-//        createResources(resourcesHolder)
-//        val capture = argumentCaptor<AutoCloseable>()
-//        verify(resourcesHolder).keep(capture.capture())
-//        verify(capture.lastValue as CompactedSubscription<*, *>).start()
-//    }
 
     @Test
     fun `onSnapshot completes the resource future`() {

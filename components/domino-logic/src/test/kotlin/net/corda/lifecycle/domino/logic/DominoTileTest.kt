@@ -773,7 +773,7 @@ class DominoTileTest {
                 tile.start()
 
                 children.forEach {
-                    verify(coordinator).followStatusChangesByName(setOf(it.first.dominoTile.name))
+                    verify(coordinator).followStatusChangesByName(setOf(it.first.dominoTile.coordinatorName))
                 }
             }
 
@@ -790,7 +790,7 @@ class DominoTileTest {
                 tile.start()
 
                 children.forEach {
-                    verify(coordinator).followStatusChangesByName(setOf(it.first.dominoTile.name))
+                    verify(coordinator).followStatusChangesByName(setOf(it.first.dominoTile.coordinatorName))
                 }
             }
 
@@ -994,7 +994,7 @@ class DominoTileTest {
                 val children = listOf<DominoTile>(
                     mock {
                         on { close() } doThrow RuntimeException("")
-                        on { name } doReturn LifecycleCoordinatorName("component", "1")
+                        on { coordinatorName } doReturn LifecycleCoordinatorName("component", "1")
                     }
                 )
                 val registration = mock<RegistrationHandle>()
@@ -1168,7 +1168,7 @@ class DominoTileTest {
         val dominoTile by lazy {
             mock<DominoTile> {
                 on { state } doAnswer { currentState }
-                on { name } doReturn coordinatorName
+                on { this.coordinatorName } doReturn coordinatorName
                 on { isRunning } doAnswer { currentState == DominoTile.State.Started }
             }
         }
@@ -1184,7 +1184,7 @@ class DominoTileTest {
         whenever(coordinator.followStatusChangesByName(any())).thenAnswer { answer ->
             @Suppress("UNCHECKED_CAST")
             val name = answer.arguments[0] as Set<LifecycleCoordinatorName>
-            val registration = children.first { it.first.dominoTile.name == name.single() }.second
+            val registration = children.first { it.first.dominoTile.coordinatorName == name.single() }.second
             registration
         }
     }

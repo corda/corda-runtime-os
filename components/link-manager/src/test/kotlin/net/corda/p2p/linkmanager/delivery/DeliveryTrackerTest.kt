@@ -4,6 +4,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -60,6 +61,7 @@ class DeliveryTrackerTest {
     @AfterEach
     fun cleanUp() {
         dominoTile.close()
+        subscriptionTile.close()
         replayScheduler.close()
         loggingInterceptor.reset()
     }
@@ -68,14 +70,11 @@ class DeliveryTrackerTest {
         return listOf(Record("TOPIC", "Key", messageAndKey))
     }
 
-    private val resourcesHolder = mock<ResourcesHolder>()
-    private lateinit var createResources: ((ResourcesHolder) -> CompletableFuture<Unit>)
-    private val dominoTile = Mockito.mockConstruction(DominoTile::class.java) { mock, context ->
+    private val dominoTile = Mockito.mockConstruction(DominoTile::class.java) { mock, _ ->
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
-        @Suppress("UNCHECKED_CAST")
-        createResources = context.arguments()[2] as ((ResourcesHolder) -> CompletableFuture<Unit>)
     }
+    private val subscriptionTile = Mockito.mockConstruction(SubscriptionDominoTile::class.java)
 
     private val replayScheduler = Mockito.mockConstruction(ReplayScheduler::class.java)
 
@@ -137,9 +136,6 @@ class DeliveryTrackerTest {
             1,
             ::processAuthenticatedMessage
         )
-        val future = createResources(resourcesHolder)
-        assertThat(future.isDone).isTrue
-        assertThat(future.isCompletedExceptionally).isFalse()
 
         val processorCaptor = argumentCaptor<StateAndEventProcessor<String, AuthenticatedMessageDeliveryState, AppMessageMarker>>()
         val listenerCaptor = argumentCaptor<StateAndEventListener<String, AuthenticatedMessageDeliveryState>>()

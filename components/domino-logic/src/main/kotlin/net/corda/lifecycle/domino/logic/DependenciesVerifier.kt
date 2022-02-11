@@ -13,27 +13,27 @@ object DependenciesVerifier {
      *
      * @throws InvalidTileConfigurationException if the configuration is invalid.
      */
-    fun verify(rootDominoTile: DominoTile) {
-        val allHierarchyTiles = mutableSetOf<DominoTile>()
-        val managedTileToParent = mutableMapOf<DominoTile, DominoTile>()
+    fun verify(rootDominoTile: DominoTileInterface) {
+        val allHierarchyTiles = mutableSetOf<DominoTileInterface>()
+        val managedTileToParent = mutableMapOf<DominoTileInterface, DominoTileInterface>()
 
         visit(rootDominoTile, allHierarchyTiles, managedTileToParent)
 
         allHierarchyTiles.forEach {
             if (!managedTileToParent.containsKey(it)) {
-                throw InvalidTileConfigurationException("The domino tile ${it.name} is not being managed by any parent tile.")
+                throw InvalidTileConfigurationException("The domino tile ${it.coordinatorName} is not being managed by any parent tile.")
             }
         }
     }
 
-    private fun visit(dominoTile: DominoTile, allTiles: MutableSet<DominoTile>, managedTiles: MutableMap<DominoTile, DominoTile>) {
+    private fun visit(dominoTile: DominoTileInterface, allTiles: MutableSet<DominoTileInterface>, managedTiles: MutableMap<DominoTileInterface, DominoTileInterface>) {
         val tilesNotSeenYet = dominoTile.dependentChildren.filter { !allTiles.contains(it) }
         allTiles.addAll(tilesNotSeenYet)
 
         dominoTile.managedChildren.forEach {
             if (managedTiles.contains(it)) {
-                throw InvalidTileConfigurationException("The domino tile ${it.name} is being managed by two parent tiles: " +
-                        "${managedTiles[it]!!.name} and ${dominoTile.name}")
+                throw InvalidTileConfigurationException("The domino tile ${it.coordinatorName} is being managed by two parent tiles: " +
+                        "${managedTiles[it]!!.coordinatorName} and ${dominoTile.coordinatorName}")
             }
 
             managedTiles[it] = dominoTile

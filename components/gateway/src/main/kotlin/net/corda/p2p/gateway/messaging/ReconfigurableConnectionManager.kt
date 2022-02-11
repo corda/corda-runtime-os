@@ -57,7 +57,7 @@ class ReconfigurableConnectionManager(
                 if (newConfiguration.sslConfig != oldConfiguration?.sslConfig ||
                     newConfiguration.connectionConfig != oldConfiguration.connectionConfig
                 ) {
-                    logger.info("New configuration, clients for ${dominoTile.name} will be reconnected")
+                    logger.info("New configuration, clients for ${dominoTile.coordinatorName} will be reconnected")
                     val newManager = managerFactory(newConfiguration.sslConfig, newConfiguration.connectionConfig)
                     resources.keep(newManager)
                     val oldManager = manager

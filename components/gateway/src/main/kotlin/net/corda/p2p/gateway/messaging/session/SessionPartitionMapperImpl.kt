@@ -5,6 +5,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -28,13 +29,24 @@ class SessionPartitionMapperImpl(
 
     private val sessionPartitionsMapping = ConcurrentHashMap<String, List<Int>>()
     private val processor = SessionPartitionProcessor()
-    override val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, ::createResources)
-    private val future = AtomicReference<CompletableFuture<Unit>>()
+    private val future = CompletableFuture<Unit>()
 
     private val sessionPartitionSubscription = subscriptionFactory.createCompactedSubscription(
         SubscriptionConfig(CONSUMER_GROUP_ID, SESSION_OUT_PARTITIONS, instanceId),
         processor,
         nodeConfiguration
+    )
+    private val sessionPartitionSubscriptionTile = SubscriptionDominoTile(
+        lifecycleCoordinatorFactory,
+        sessionPartitionSubscription,
+        sessionPartitionSubscription.subscriptionName,
+        emptySet(),
+        emptySet()
+    )
+
+    override val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, ::createResources,
+        dependentChildren = setOf(sessionPartitionSubscriptionTile),
+        managedChildren = setOf(sessionPartitionSubscriptionTile)
     )
 
     override fun getPartitions(sessionId: String): List<Int>? {
@@ -54,7 +66,7 @@ class SessionPartitionMapperImpl(
 
         override fun onSnapshot(currentData: Map<String, SessionPartitions>) {
             sessionPartitionsMapping.putAll(currentData.map { it.key to it.value.partitions })
-            future.get().complete(Unit)
+            future.complete(Unit)
         }
 
         override fun onNext(
@@ -70,11 +82,7 @@ class SessionPartitionMapperImpl(
         }
     }
 
-    fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-        val resourceFuture = CompletableFuture<Unit>()
-        future.set(resourceFuture)
-        sessionPartitionSubscription.start()
-        resources.keep { sessionPartitionSubscription.stop() }
-        return resourceFuture
+    fun createResources(@Suppress("UNUSED_PARAMETER") resources: ResourcesHolder): CompletableFuture<Unit> {
+        return future
     }
 }

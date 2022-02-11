@@ -1,12 +1,22 @@
 package net.corda.p2p.linkmanager
 
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.p2p.linkmanager.delivery.DeliveryTrackerTest
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.atomic.AtomicReference
 
 class InboundAssignmentListenerTest {
 
@@ -15,11 +25,26 @@ class InboundAssignmentListenerTest {
         const val TOPIC_2 = "anotherTopic"
     }
 
+    private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>()
+    private var createResources: ((resources: ResourcesHolder) -> CompletableFuture<Unit>)? = null
+    private val dominoTile = Mockito.mockConstruction(DominoTile::class.java) { mock, context ->
+        @Suppress("UNCHECKED_CAST")
+        whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
+        whenever(mock.isRunning).doReturn(true)
+        @Suppress("UNCHECKED_CAST")
+        whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName(context.arguments()[0] as String, ""))
+        @Suppress("UNCHECKED_CAST")
+        createResources = context.arguments()[2] as ((resources: ResourcesHolder) -> CompletableFuture<Unit>)?
+    }
+
+    @AfterEach
+    fun cleanUp() {
+        dominoTile.close()
+    }
+
     @Test
     fun `Partitions can be assigned and reassigned`() {
-        val reference = AtomicReference<CompletableFuture<Unit>>()
-        reference.set(mock())
-        val listener = InboundAssignmentListener(reference)
+        val listener = InboundAssignmentListener(lifecycleCoordinatorFactory)
         assertEquals(0, listener.getCurrentlyAssignedPartitions(TOPIC_1).size)
         val assign1 = listOf(1, 3, 5)
         val assign2 = listOf(2, 3, 4)
@@ -34,10 +59,8 @@ class InboundAssignmentListenerTest {
 
     @Test
     fun `the future completes when partitions are assigned`() {
-        val future = mock<CompletableFuture<Unit>>()
-        val reference = AtomicReference<CompletableFuture<Unit>>()
-        reference.set(future)
-        val listener = InboundAssignmentListener(reference)
+        val listener = InboundAssignmentListener(lifecycleCoordinatorFactory)
+        val readyFuture = createResources!!(mock<ResourcesHolder>())
         assertEquals(0, listener.getCurrentlyAssignedPartitions(TOPIC_1).size)
         val assign1 = listOf(1, 3, 5)
         val assign2 = listOf(2, 3, 4)
@@ -45,6 +68,6 @@ class InboundAssignmentListenerTest {
         listener.onPartitionsAssigned(firstAssignment)
         val secondAssignment = assign2.map { TOPIC_1 to it } + assign1.map { TOPIC_2 to it }
         listener.onPartitionsAssigned(secondAssignment)
-        verify(future).complete(Unit)
+        assertThat(readyFuture.isDone).isTrue
     }
 }
