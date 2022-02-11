@@ -15,7 +15,7 @@ interface CpiUploadRPCOps : RpcOps {
     /**
      * HTTP POST resource to upload a CPI to Kafka.
      *
-     * Please note that the owner of [cpiContent] is responsible to close it.
+     * Please note that this method will not close [cpiContent], its owner is responsible to close it.
      */
     @HttpRpcPOST(
         path = "/",
