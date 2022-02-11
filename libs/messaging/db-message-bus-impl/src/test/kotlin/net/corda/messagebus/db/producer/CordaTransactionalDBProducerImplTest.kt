@@ -116,7 +116,7 @@ internal class CordaTransactionalDBProducerImplTest {
         assertThat(record.topic).isEqualTo(topic)
         assertThat(record.key).isEqualTo(serializedKey)
         assertThat(record.value).isEqualTo(serializedValue)
-        assertThat(record.recordOffset).isEqualTo(5)
+        assertThat(record.recordOffset).isEqualTo(6)
         assertThat(record.partition).isEqualTo(0)
         assertThat(record.transactionId).isNotEmpty()
         assertThat(record.transactionId).isNotEqualTo(ATOMIC_TRANSACTION)

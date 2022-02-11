@@ -1,6 +1,8 @@
 package net.corda.messagebus.db.util
 
 import net.corda.messagebus.api.CordaTopicPartition
+import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Utility class for keeping track of the current offsets, stored by [CordaTopicPartition].
@@ -20,11 +22,11 @@ class WriteOffsets(
         }
     }
 
-    private val latestOffsets: MutableMap<CordaTopicPartition, Long> = initialState.toMutableMap()
+    private val latestOffsets: MutableMap<CordaTopicPartition, Long> = ConcurrentHashMap(initialState)
 
     fun getNextOffsetFor(topicPartition: CordaTopicPartition): Long {
-        val offset = latestOffsets.computeIfAbsent(topicPartition) { 0 }
-        latestOffsets[topicPartition] = offset + 1
-        return offset
+        return latestOffsets.compute(topicPartition) { _: CordaTopicPartition, offset: Long? ->
+            offset?.plus(1) ?: 0L
+        } ?: throw CordaMessageAPIFatalException("Next offset should never be null.")
     }
 }

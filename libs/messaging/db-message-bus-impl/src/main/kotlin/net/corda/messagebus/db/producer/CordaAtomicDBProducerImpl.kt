@@ -131,7 +131,7 @@ class CordaAtomicDBProducerImpl(
 
     private fun getPartition(key: Any, numberOfPartitions: Int): Int {
         require(numberOfPartitions > 0)
-        return abs(key.hashCode() % numberOfPartitions) + 1
+        return abs(key.hashCode() % numberOfPartitions)
     }
 
 }

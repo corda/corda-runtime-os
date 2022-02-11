@@ -59,7 +59,7 @@ internal class CordaAtomicDBProducerImplTest {
     fun `atomic producer sends correct entry to database and topic`() {
         val dbAccess: DBAccess = mock()
         whenever(dbAccess.getTopicPartitionMap()).thenReturn(mapOf(topic to 1))
-        whenever(dbAccess.getMaxOffsetsPerTopicPartition()).thenReturn(mapOf(CordaTopicPartition(topic, 1) to 5))
+        whenever(dbAccess.getMaxOffsetsPerTopicPartition()).thenReturn(mapOf(CordaTopicPartition(topic, 0) to 5))
         val schemaRegistry: AvroSchemaRegistry = mock()
         whenever(schemaRegistry.serialize(eq(key))).thenReturn(ByteBuffer.wrap(serializedKey))
         whenever(schemaRegistry.serialize(eq(value))).thenReturn(ByteBuffer.wrap(serializedValue))
@@ -77,8 +77,8 @@ internal class CordaAtomicDBProducerImplTest {
         assertThat(record.topic).isEqualTo(topic)
         assertThat(record.key).isEqualTo(serializedKey)
         assertThat(record.value).isEqualTo(serializedValue)
-        assertThat(record.recordOffset).isEqualTo(5)
-        assertThat(record.partition).isEqualTo(1)
+        assertThat(record.recordOffset).isEqualTo(6)
+        assertThat(record.partition).isEqualTo(0)
         assertThat(record.transactionId).isEqualTo(ATOMIC_TRANSACTION.transactionId)
     }
 
@@ -104,7 +104,7 @@ internal class CordaAtomicDBProducerImplTest {
         assertThat(record.topic).isEqualTo(topic)
         assertThat(record.key).isEqualTo(serializedKey)
         assertThat(record.value).isEqualTo(serializedValue)
-        assertThat(record.recordOffset).isEqualTo(2)
+        assertThat(record.recordOffset).isEqualTo(3)
         assertThat(record.partition).isEqualTo(0)
         assertThat(record.transactionId).isEqualTo(ATOMIC_TRANSACTION.transactionId)
     }
