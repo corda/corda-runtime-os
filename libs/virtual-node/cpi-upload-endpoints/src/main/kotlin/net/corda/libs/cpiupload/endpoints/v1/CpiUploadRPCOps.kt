@@ -19,7 +19,7 @@ interface CpiUploadRPCOps : RpcOps {
         description = "Uploads a CPI",
         responseDescription = "The request Id calculated for a CPI upload request"
     )
-    fun cpi(@HttpRpcRequestBodyParameter cpiContent: InputStream): CpiUploadId
+    fun cpi(cpiFileName: String, cpiContent: InputStream): CpiUploadId
 }
 
 data class CpiUploadId(val id: String)

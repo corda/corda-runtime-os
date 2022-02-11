@@ -282,8 +282,10 @@ internal class HttpRpcServerInternal(
         return { ctx ->
             try {
                 // TODO uploadedFiles can be more than one
-                val stream = ctx.uploadedFiles().single().content
-                val result = invokeDelegatedMethod(stream)
+                val uploadedFile = ctx.uploadedFiles().single()
+                val fileName = uploadedFile.filename
+                val stream = uploadedFile.content
+                val result = invokeDelegatedMethod(fileName, stream)
                 if (result != null) {
                     ctx.json(result)
                 }
