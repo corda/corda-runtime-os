@@ -18,7 +18,6 @@ configurations {
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly 'org.osgi:osgi.annotation'
-    compileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
 
     implementation project(":components:configuration:configuration-read-service")
     implementation project(":components:virtual-node:virtual-node-info-read-service")
@@ -38,7 +37,6 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
-    implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-application"
     implementation "net.corda:corda-avro-schema"
@@ -56,18 +54,9 @@ dependencies {
 
     cpks project(path: ':testing:cpbs:sandbox-cpk-inject', configuration: 'cordaCPB')
 
-    integrationTestImplementation project(':components:install:install-service')
-    integrationTestImplementation project(':components:virtual-node:cpi-info-read-service')
-    integrationTestImplementation project(':components:virtual-node:virtual-node-info-read-service')
-    integrationTestImplementation project(':components:virtual-node:virtual-node-info-write-service')
-    integrationTestCompileOnly 'org.osgi:osgi.core'
-    integrationTestCompileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
-    integrationTestCompileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
-    integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
+    integrationTestImplementation project(':testing:sandboxes')
     integrationTestRuntimeOnly project(':libs:flows:flow-manager-impl')
     integrationTestRuntimeOnly project(':libs:messaging:inmemory-messaging-impl')
-    integrationTestRuntimeOnly project(':libs:sandbox-hooks')
-    integrationTestRuntimeOnly project(':libs:sandbox-internal')
     integrationTestRuntimeOnly project(':libs:serialization:serialization-checkpoint-api')
     integrationTestRuntimeOnly project(':libs:serialization:serialization-kryo')
 }

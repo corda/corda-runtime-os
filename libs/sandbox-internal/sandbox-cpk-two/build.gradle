@@ -5,7 +5,6 @@ plugins {
 description 'Corda Sandbox CPK Two'
 
 group 'com.example.sandbox'
-version ''
 
 cordapp {
     targetPlatformVersion 999 as Integer

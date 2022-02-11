@@ -16,8 +16,8 @@ dependencies {
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-topic-schema"
 
+    api project(':libs:lifecycle:lifecycle')
     implementation project(":libs:configuration:configuration-core")
-    implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"

@@ -20,10 +20,8 @@ configurations {
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:osgi.core'
-    compileOnly "org.osgi:org.osgi.namespace.service:$osgiNamespaceServiceVersion"
     compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
-    compileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-topic-schema'
@@ -34,30 +32,23 @@ dependencies {
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation 'org.slf4j:slf4j-api'
 
+    implementation project(':testing:sandboxes')
     implementation project(':libs:flows:flow-manager')
     implementation project(':libs:messaging:messaging')
-    implementation project(':libs:sandbox')
     implementation project(':libs:virtual-node:sandbox-group-context')
     implementation project(':libs:virtual-node:virtual-node-manager')
     implementation project(':components:flow:flow-service')
-    implementation project(':components:install:install-service')
-    implementation project(':components:virtual-node:cpi-info-read-service')
-    implementation project(':components:virtual-node:cpi-info-write-service')
     implementation project(':components:virtual-node:sandbox-group-context-service')
-    implementation project(':components:virtual-node:virtual-node-info-read-service')
     implementation project(':components:virtual-node:virtual-node-info-write-service')
 
-    runtimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
-    runtimeOnly project(':components:configuration:configuration-read-service-impl')
     runtimeOnly project(':libs:crypto:crypto-impl')
     runtimeOnly project(':libs:flows:flow-manager-impl')
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')
     runtimeOnly project(':libs:messaging:inmemory-messaging-impl')
-    runtimeOnly project(':libs:sandbox-internal')
     runtimeOnly project(':libs:serialization:serialization-checkpoint-api')
     runtimeOnly project(':libs:serialization:serialization-kryo')
 

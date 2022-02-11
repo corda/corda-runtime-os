@@ -37,8 +37,8 @@ fun generateClose(): SessionEvent {
 fun generateSessionEvent(payload: Any): SessionEvent {
     return SessionEvent.newBuilder()
         .setSessionId("sessionId")
-        .setTimestamp(System.currentTimeMillis())
         .setSequenceNum(null)
+        .setTimestamp(0)
         .setMessageDirection(MessageDirection.OUTBOUND)
         .setPayload(payload)
         .build()
