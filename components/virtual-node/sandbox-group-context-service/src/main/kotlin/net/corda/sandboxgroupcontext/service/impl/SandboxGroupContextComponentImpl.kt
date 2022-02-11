@@ -85,8 +85,11 @@ class SandboxGroupContextComponentImpl @Activate constructor(
     override fun registerMetadataServices(
         sandboxGroupContext: SandboxGroupContext,
         serviceNames: (CPK.Metadata) -> Iterable<String>,
-        isMetadataService: (Class<*>) -> Boolean
-    ): AutoCloseable = sandboxGroupContextServiceImpl.registerMetadataServices(sandboxGroupContext, serviceNames, isMetadataService)
+        isMetadataService: (Class<*>) -> Boolean,
+        serviceMarkerType: Class<*>
+    ): AutoCloseable = sandboxGroupContextServiceImpl.registerMetadataServices(
+        sandboxGroupContext, serviceNames, isMetadataService, serviceMarkerType
+    )
 
     override fun hasCpks(cpkIdentifiers: Set<CPK.Identifier>): Boolean =
         sandboxGroupContextServiceImpl.hasCpks(cpkIdentifiers)
