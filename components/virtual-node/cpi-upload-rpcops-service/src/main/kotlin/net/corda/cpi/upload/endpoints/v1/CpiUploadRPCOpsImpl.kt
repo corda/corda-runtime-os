@@ -55,7 +55,7 @@ class CpiUploadRPCOpsImpl @Activate constructor(
         // TODO in a later PR check the requestId topic ("HTTP Status" topic) if the CPI already has been processed so return fast
         // First validate CPI against http sent checksum. Then we should continue with uploading it.
         // TODO - validate CPI against sent checksum
-        val cpiUploadRequestId = cpiContent.use { cpiUploadManager.uploadCpi(cpiFileName, it) }
+        val cpiUploadRequestId = cpiUploadManager.uploadCpi(cpiFileName, cpiContent)
         return CpiUploadId(cpiUploadRequestId)
     }
 }

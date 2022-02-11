@@ -12,6 +12,11 @@ import java.io.InputStream
 )
 interface CpiUploadRPCOps : RpcOps {
 
+    /**
+     * HTTP POST resource to upload a CPI to Kafka.
+     *
+     * Please note that the owner of [cpiContent] is responsible to close it.
+     */
     @HttpRpcPOST(
         path = "/",
         title = "Upload a CPI",

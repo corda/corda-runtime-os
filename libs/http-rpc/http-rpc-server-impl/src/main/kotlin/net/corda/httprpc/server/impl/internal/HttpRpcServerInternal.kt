@@ -285,7 +285,7 @@ internal class HttpRpcServerInternal(
                 val uploadedFile = ctx.uploadedFiles().single()
                 val fileName = uploadedFile.filename
                 val stream = uploadedFile.content
-                val result = invokeDelegatedMethod(fileName, stream)
+                val result = stream.use { invokeDelegatedMethod(fileName, it) }
                 if (result != null) {
                     ctx.json(result)
                 }
