@@ -38,6 +38,9 @@ class CpiUploadRPCOpsServiceHandler(
 
     companion object {
         val log = contextLogger()
+
+        const val CPI_UPLOAD_GROUP = "cpi.uploader"
+        const val CPI_UPLOAD_CLIENT_NAME = "$CPI_UPLOAD_GROUP.rpc"
     }
 
     @VisibleForTesting
@@ -97,8 +100,8 @@ class CpiUploadRPCOpsServiceHandler(
 
     private fun createAndStartRpcSender(config: SmartConfig): RPCSender<Chunk, ChunkAck> {
         val rpcConfig = RPCConfig(
-            "todo",
-            "todo",
+            CPI_UPLOAD_GROUP,
+            CPI_UPLOAD_CLIENT_NAME,
             CPI_UPLOAD_TOPIC,
             Chunk::class.java,
             ChunkAck::class.java
