@@ -67,6 +67,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
     }
 
     override fun createVirtualNode(request: HTTPCreateVirtualNodeRequest): HTTPCreateVirtualNodeResponse {
+        // TODO - Support for provided DB connection (rather than having it auto-generated).
         val rpcRequest = VirtualNodeCreationRequest(request.x500Name, request.cpiIdHash)
         validateX500Name(rpcRequest.x500Name)
         val resp = sendRequest(rpcRequest)
@@ -112,7 +113,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
         return try {
             nonNullRPCSender.sendRequest(request).getOrThrow(nonNullRequestTimeout)
         } catch (e: Exception) {
-            throw VirtualNodeRPCOpsServiceException("Could not create virtual node.", e)
+            throw VirtualNodeRPCOpsServiceException("Could not complete virtual node creation request.", e)
         }
     }
 }

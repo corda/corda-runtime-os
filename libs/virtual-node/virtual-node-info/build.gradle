@@ -14,8 +14,6 @@ dependencies {
 
     implementation "net.corda:corda-packaging-avro-converters"
 
-    runtimeOnly project(':libs:crypto:crypto-impl')
-
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

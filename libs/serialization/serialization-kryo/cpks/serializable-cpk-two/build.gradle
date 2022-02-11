@@ -1,0 +1,27 @@
+plugins {
+    id 'net.corda.plugins.cordapp-cpb'
+}
+
+description 'Corda Serialization CPK Two'
+
+group 'com.example.sandbox'
+version ''
+
+ext {
+    platformVersion = 999
+}
+
+cordapp {
+    targetPlatformVersion platformVersion as Integer
+    minimumPlatformVersion platformVersion as Integer
+    workflow {
+        name "Kryo Serializable CPK 2"
+        versionId 1
+        vendor "R3"
+    }
+}
+
+dependencies {
+    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+    cordaProvided 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+}

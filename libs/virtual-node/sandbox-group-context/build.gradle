@@ -16,8 +16,6 @@ dependencies {
     api project(':libs:serialization:serialization-checkpoint-api')
     api project(':libs:sandbox')
 
-    runtimeOnly project(':libs:crypto:crypto-impl')
-
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

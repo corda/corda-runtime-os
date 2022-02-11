@@ -8,7 +8,6 @@ import net.corda.messagebus.api.configuration.ConfigProperties.Companion.GROUP_I
 class ConfigProperties {
     companion object {
         const val TOPIC = "topic"
-        const val DEAD_LETTER_QUEUE_SUFFIX = "topic.deadLetterQueueSuffix"
         const val GROUP = "group"
         const val CLIENT_ID_COUNTER = "clientIdCounter"
 
