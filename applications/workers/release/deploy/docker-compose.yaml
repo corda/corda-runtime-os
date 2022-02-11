@@ -50,6 +50,7 @@ services:
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic virtual.node.creation.request
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic virtual.node.creation.request.resp
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic virtual.node.info --config "cleanup.policy=compact"
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic cpi.info --config "cleanup.policy=compact"
 
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic rpc.permissions.management
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic rpc.permissions.management.resp
@@ -58,6 +59,13 @@ services:
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic rpc.permissions.role --config "cleanup.policy=compact"
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic rpc.permissions.permission --config "cleanup.policy=compact"
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic permissions.user.summary --config "cleanup.policy=compact"
+
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic flow.event
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic flow.event.state --config "cleanup.policy=compact"
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic flow.event.dlq
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic flow.mapper.event
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic flow.mapper.event.state --config "cleanup.policy=compact"
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic flow.mapper.event.dlq
 
       echo -e 'Successfully created the following topics:'
       kafka-topics.sh --bootstrap-server kafka:9092 --list
