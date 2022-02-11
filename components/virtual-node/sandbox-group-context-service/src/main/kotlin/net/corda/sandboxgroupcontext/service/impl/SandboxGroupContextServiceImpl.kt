@@ -200,7 +200,8 @@ class SandboxGroupContextServiceImpl(
     override fun registerMetadataServices(
         sandboxGroupContext: SandboxGroupContext,
         serviceNames: (CPK.Metadata) -> Iterable<String>,
-        isMetadataService: (Class<*>) -> Boolean
+        isMetadataService: (Class<*>) -> Boolean,
+        serviceMarkerType: Class<*>
     ): AutoCloseable {
         val groupMetadata = sandboxGroupContext.sandboxGroup.metadata
         val services = groupMetadata.flatMap { (mainBundle, cpkMetadata) ->
@@ -210,10 +211,8 @@ class SandboxGroupContextServiceImpl(
             }
         }
 
-        val serviceMarkerTypeName = sandboxGroupContext.virtualNodeContext.serviceMarkerType.name
-
         // Register each metadata service as an OSGi service for its host main bundle.
-        val registrations = registerMetadataServices(serviceMarkerTypeName, services)
+        val registrations = registerMetadataServices(serviceMarkerType.name, services)
         return AutoCloseable {
             registrations.forEach { registration ->
                 runIgnoringExceptions(registration::close)

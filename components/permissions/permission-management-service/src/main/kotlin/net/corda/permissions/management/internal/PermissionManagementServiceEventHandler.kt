@@ -20,6 +20,8 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.permissions.cache.PermissionCacheService
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_MGMT_REQ_TOPIC
+import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.Companion.RPC_CONFIG
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 
@@ -36,8 +38,6 @@ internal class PermissionManagementServiceEventHandler(
         val log = contextLogger()
         const val GROUP_NAME = "rpc.permission.management"
         const val CLIENT_NAME = "rpc.permission.manager"
-        const val RPC_CONFIG = "corda.rpc"
-        const val BOOTSTRAP_CONFIG = "corda.boot"
     }
 
     @VisibleForTesting
@@ -104,9 +104,9 @@ internal class PermissionManagementServiceEventHandler(
         configSubscription?.close()
         configSubscription = configurationReadService.registerForUpdates { changedKeys: Set<String>, config: Map<String, SmartConfig> ->
             log.info("Received configuration update event, changedKeys: $changedKeys")
-            if (BOOTSTRAP_CONFIG in changedKeys && config.keys.contains(BOOTSTRAP_CONFIG)) {
+            if (BOOT_CONFIG in changedKeys && config.keys.contains(BOOT_CONFIG)) {
                 val rpcConfig: SmartConfig? = config[RPC_CONFIG]
-                val bootConfig = config[BOOTSTRAP_CONFIG]!!
+                val bootConfig = config[BOOT_CONFIG]!!
                 val newConfig = rpcConfig?.withFallback(bootConfig) ?: bootConfig
                 coordinator.postEvent(NewConfigurationReceivedEvent(newConfig))
             } else if (RPC_CONFIG in changedKeys && config.keys.contains(RPC_CONFIG)) {
