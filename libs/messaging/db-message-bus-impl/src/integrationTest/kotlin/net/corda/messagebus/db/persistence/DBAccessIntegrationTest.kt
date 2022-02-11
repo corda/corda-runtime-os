@@ -4,6 +4,7 @@ import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils.getEntityManagerConfiguration
+import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.db.datamodel.CommittedOffsetEntry
 import net.corda.messagebus.db.datamodel.TopicEntry
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
@@ -44,12 +45,15 @@ class DBAccessIntegrationTest {
         @BeforeAll
         fun setupEntities() {
             logger.info("Create Schema for ${dbConfig.dataSource.connection.metaData.url}".emphasise())
+            val schemaClass = DbSchema::class.java
+            val fullName = schemaClass.packageName + ".messagebus"
+            val resourcePrefix = fullName.replace('.', '/')
             val cl = ClassloaderChangeLog(
                 linkedSetOf(
                     ClassloaderChangeLog.ChangeLogResourceFiles(
                         "DBWriterTest",
-                        listOf("migration/db.changelog-master.xml"),
-                        classLoader = DbSchema.DB_MESSAGE_BUS::class.java.classLoader
+                        listOf("$resourcePrefix/db.changelog-master.xml"),
+                        classLoader = schemaClass.classLoader
                     ),
                 )
             )
@@ -87,9 +91,6 @@ class DBAccessIntegrationTest {
         @AfterAll
         @JvmStatic
         fun done() {
-            emf.transaction { entityManager ->
-                entityManager.createNativeQuery("DROP TABLE IF EXISTS test").executeUpdate()
-            }
             emf.close()
         }
 
@@ -218,19 +219,15 @@ class DBAccessIntegrationTest {
         dbAccess.writeRecords(records)
 
         val expectedResult = mapOf(
-            topic3 to mapOf(
-                0 to 1L,
-                1 to 3L,
-                2 to 7L,
-                3 to 0L,
-            ),
-            topic4 to mapOf(
-                0 to 0L,
-                1 to 1L,
-                2 to 0L,
-                3 to 1L,
-                4 to 2L,
-            )
+            CordaTopicPartition(topic3, 0) to 1L,
+            CordaTopicPartition(topic3, 1) to 3L,
+            CordaTopicPartition(topic3, 2) to 7L,
+            CordaTopicPartition(topic3, 3) to 0L,
+            CordaTopicPartition(topic4, 0) to 0L,
+            CordaTopicPartition(topic4, 1) to 1L,
+            CordaTopicPartition(topic4, 2) to 0L,
+            CordaTopicPartition(topic4, 3) to 1L,
+            CordaTopicPartition(topic4, 4) to 2L,
         )
 
         assertThat(dbAccess).returns(expectedResult, from(DBAccess::getMaxOffsetsPerTopicPartition))

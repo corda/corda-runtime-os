@@ -91,7 +91,6 @@ class CordaTransactionalDBProducerImpl(
     private fun doSendRecordsToTopicAndDB(
         dbRecords: List<TopicRecordEntry>
     ) {
-        // First try adding to DB as it has the possibility of failing
         dbAccess.writeRecords(dbRecords)
     }
 
@@ -155,6 +154,7 @@ class CordaTransactionalDBProducerImpl(
     override fun abortTransaction() {
         verifyInTransaction()
         dbAccess.setTransactionRecordState(transactionId, TransactionState.ABORTED)
+        transaction.set(null)
     }
 
     override fun close(timeout: Duration) {

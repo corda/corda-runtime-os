@@ -4,11 +4,11 @@ import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
-import net.corda.messagebus.db.datamodel.ATOMIC_TRANSACTION
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messagebus.db.persistence.DBAccess
+import net.corda.messagebus.db.producer.CordaAtomicDBProducerImpl.Companion.ATOMIC_TRANSACTION
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.assertj.core.api.Assertions.assertThat
@@ -73,12 +73,21 @@ internal class CordaTransactionalDBProducerImplTest {
         val schemaRegistry: AvroSchemaRegistry = mock()
         whenever(schemaRegistry.serialize(eq(key))).thenReturn(ByteBuffer.wrap(serializedKey))
         whenever(schemaRegistry.serialize(eq(value))).thenReturn(ByteBuffer.wrap(serializedValue))
+        val callback: CordaProducer.Callback = mock()
 
-//        val producer = CordaTransactionalDBProducerImpl(schemaRegistry, topicService, dbAccess)
-//        val cordaRecord = CordaProducerRecord(topic, key, value)
+        val producer = CordaTransactionalDBProducerImpl(schemaRegistry, dbAccess)
+        val cordaRecord = CordaProducerRecord(topic, key, value)
 
+        producer.beginTransaction()
+        producer.send(cordaRecord, callback)
+        producer.abortTransaction()
+
+        val dbTransaction = argumentCaptor<TransactionRecordEntry>()
+        verify(dbAccess).writeTransactionRecord(dbTransaction.capture())
+
+        val initialTransactionRecord = dbTransaction.allValues.single()
+        verify(dbAccess).setTransactionRecordState(eq(initialTransactionRecord.transactionId), eq(TransactionState.ABORTED))
     }
-
 
     @Test
     fun `transactional producer sends correct entry to database`() {
@@ -99,12 +108,9 @@ internal class CordaTransactionalDBProducerImplTest {
 
         val dbRecordList = argumentCaptor<List<TopicRecordEntry>>()
         val dbTransaction = argumentCaptor<TransactionRecordEntry>()
-        val dbTransactionId = argumentCaptor<String>()
-        val dbTransactionState = argumentCaptor<TransactionState>()
         // For transactions the records must *not* be immediately visible
         verify(dbAccess).writeRecords(dbRecordList.capture())
         verify(dbAccess).writeTransactionRecord(dbTransaction.capture())
-        verify(dbAccess).setTransactionRecordState(dbTransactionId.capture(), dbTransactionState.capture())
         verify(callback).onCompletion(null)
         val record = dbRecordList.firstValue.single()
         assertThat(record.topic).isEqualTo(topic)
@@ -119,7 +125,6 @@ internal class CordaTransactionalDBProducerImplTest {
         assertThat(record.transactionId).isEqualTo(initialTransactionRecord.transactionId)
         assertThat(initialTransactionRecord.state).isEqualTo(TransactionState.PENDING)
 
-        assertThat(dbTransactionId.allValues.single()).isEqualTo(initialTransactionRecord.transactionId)
-        assertThat(dbTransactionState.allValues.single()).isEqualTo(TransactionState.COMMITTED)
+        verify(dbAccess).setTransactionRecordState(eq(initialTransactionRecord.transactionId), eq(TransactionState.COMMITTED))
     }
 }

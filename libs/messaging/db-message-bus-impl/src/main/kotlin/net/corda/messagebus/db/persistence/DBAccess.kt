@@ -153,7 +153,7 @@ class DBAccess(
     }
 
     fun writeTransactionRecord(entry: TransactionRecordEntry) {
-        executeWithErrorHandling("write records") { entityManager ->
+        executeWithErrorHandling("write transaction records") { entityManager ->
             entityManager.persist(entry)
         }
     }

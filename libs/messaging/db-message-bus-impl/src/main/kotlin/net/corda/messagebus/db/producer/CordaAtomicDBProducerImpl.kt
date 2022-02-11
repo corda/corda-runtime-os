@@ -5,12 +5,15 @@ import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
-import net.corda.messagebus.db.datamodel.ATOMIC_TRANSACTION
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
+import net.corda.messagebus.db.datamodel.TransactionRecordEntry
+import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.util.LatestOffsets
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.schema.registry.AvroSchemaRegistry
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import java.time.Duration
 import javax.persistence.RollbackException
 import kotlin.math.abs
@@ -21,11 +24,18 @@ class CordaAtomicDBProducerImpl(
     private val dbAccess: DBAccess
 ) : CordaProducer {
 
+    companion object {
+        val log = contextLogger()
+
+        val ATOMIC_TRANSACTION = TransactionRecordEntry("Atomic Transaction", TransactionState.COMMITTED)
+    }
+
     private fun initialiseWithAtomicTransaction() {
         try {
             // Write the transaction record for all atomic transactions
             dbAccess.writeTransactionRecord(ATOMIC_TRANSACTION)
         } catch (e: RollbackException) {
+            log.debug { "ATOMIC_TRANSACTION already recorded in DB." }
             // It's already been written so do nothing
         }
     }
