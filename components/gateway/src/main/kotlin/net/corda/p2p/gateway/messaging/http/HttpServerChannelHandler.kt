@@ -8,6 +8,7 @@ import io.netty.handler.codec.http.HttpContent
 import io.netty.handler.codec.http.HttpHeaderNames
 import io.netty.handler.codec.http.HttpObject
 import io.netty.handler.codec.http.HttpRequest
+import io.netty.handler.codec.http.HttpResponse
 import io.netty.handler.codec.http.HttpResponseStatus
 import io.netty.handler.codec.http.HttpUtil
 import io.netty.handler.codec.http.HttpVersion
@@ -36,22 +37,25 @@ class HttpServerChannelHandler(private val serverListener: HttpServerListener,
 
             }
 
-            logger.debug ("Received HTTP request from ${ctx.channel().remoteAddress()}\n" +
-                    "Protocol version: ${msg.protocolVersion()}\n" +
-                    "Hostname: ${msg.headers()[HttpHeaderNames.HOST]?:"unknown"}\n" +
-                    "Request URI: ${msg.uri()}\n" +
-                    "Content length: ${msg.headers()[HttpHeaderNames.CONTENT_LENGTH]}\n")
-            // initialise byte array to read the request into
-            allocateBodyBuffer(ctx, msg.headers()[HttpHeaderNames.CONTENT_LENGTH].toInt())
+            if(responseCode == HttpResponseStatus.OK) {
+                logger.debug ("Received HTTP request from ${ctx.channel().remoteAddress()}\n" +
+                        "Protocol version: ${msg.protocolVersion()}\n" +
+                        "Hostname: ${msg.headers()[HttpHeaderNames.HOST]?:"unknown"}\n" +
+                        "Request URI: ${msg.uri()}\n" +
+                        "Content length: ${msg.headers()[HttpHeaderNames.CONTENT_LENGTH]}\n")
 
-            if (HttpUtil.is100ContinueExpected(msg)) {
-                send100Continue(ctx)
+                // initialise byte array to read the request into
+                allocateBodyBuffer(ctx, msg.headers()[HttpHeaderNames.CONTENT_LENGTH].toInt())
+
+                if (HttpUtil.is100ContinueExpected(msg)) {
+                    send100Continue(ctx)
+                }
             }
         }
 
         if (msg is HttpContent) {
             val content = msg.content()
-            if (content.isReadable) {
+            if (content.isReadable && responseCode == HttpResponseStatus.OK) {
                 logger.debug("Reading message content into local buffer of size ${content.readableBytes()}")
                 try {
                     readBytesIntoBodyBuffer(content)
@@ -64,11 +68,10 @@ class HttpServerChannelHandler(private val serverListener: HttpServerListener,
         // This message type indicates the entire Http object has been received and the body content can be forwarded to
         // the event processor. No trailing headers should exist
         if (msg is LastHttpContent) {
-            logger.debug("Read end of response body $msg")
-            val returnByteArray = readBytesFromBodyBuffer()
-
             when(responseCode) {
                 HttpResponseStatus.OK -> {
+                    logger.debug("Read end of response body $msg")
+                    val returnByteArray = readBytesFromBodyBuffer()
                     val sourceAddress = ctx.channel().remoteAddress()
                     val targetAddress = ctx.channel().localAddress()
                     serverListener.onRequest(HttpRequest(returnByteArray, sourceAddress, targetAddress))
