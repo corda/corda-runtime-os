@@ -11,8 +11,9 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
-    implementation "net.corda:corda-base"
     implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-base"
+    implementation "net.corda:corda-config-schema"
     implementation project(":components:configuration:configuration-read-service")
     implementation project(":components:rbac-security-manager-service")
     implementation project(':components:permissions:permission-service')

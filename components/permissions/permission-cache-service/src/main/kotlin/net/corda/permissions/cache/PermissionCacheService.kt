@@ -13,7 +13,6 @@ import net.corda.libs.permissions.cache.events.RoleTopicSnapshotReceived
 import net.corda.libs.permissions.cache.events.UserTopicSnapshotReceived
 import net.corda.libs.permissions.cache.factory.PermissionCacheFactory
 import net.corda.libs.permissions.cache.factory.PermissionCacheTopicProcessorFactory
-import net.corda.libs.permissions.storage.common.ConfigKeys.BOOTSTRAP_CONFIG
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -31,6 +30,7 @@ import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_ENTITY_TOPIC
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_GROUP_TOPIC
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_ROLE_TOPIC
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_USER_TOPIC
+import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -207,8 +207,8 @@ class PermissionCacheService @Activate constructor(
 
     private fun onConfigChange(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
         log.info("Received configuration update event, changedKeys: $changedKeys")
-        if (BOOTSTRAP_CONFIG in changedKeys){
-            coordinator.postEvent(NewConfigurationReceivedEvent(config[BOOTSTRAP_CONFIG]!!))
+        if (BOOT_CONFIG in changedKeys){
+            coordinator.postEvent(NewConfigurationReceivedEvent(config[BOOT_CONFIG]!!))
         }
     }
 
