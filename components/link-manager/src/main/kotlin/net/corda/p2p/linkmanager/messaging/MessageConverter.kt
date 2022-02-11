@@ -45,10 +45,9 @@ class MessageConverter {
 
         private fun generateLinkOutHeaderFromPeer(peer: MemberInfo, networkType: NetworkType): LinkOutHeader {
             return LinkOutHeader(
-                peer.holdingIdentity.x500Name,
+                peer.holdingIdentity.toHoldingIdentity(),
                 networkType.toNetworkType(),
                 peer.endPoint.address,
-                peer.holdingIdentity.groupId
             )
         }
 

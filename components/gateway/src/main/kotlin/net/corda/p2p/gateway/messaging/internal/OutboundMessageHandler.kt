@@ -93,17 +93,17 @@ internal class OutboundMessageHandler(
             val pendingRequests = events.mapNotNull { evt ->
                 evt.value?.let { peerMessage ->
                     try {
-                        val trustStore = trustStores.getTrustStore(peerMessage.header.groupId)
+                        val trustStore = trustStores.getTrustStore(peerMessage.header.destinationIdentity.groupId)
 
                         val sni = SniCalculator.calculateSni(
-                            peerMessage.header.destinationX500Name,
+                            peerMessage.header.destinationIdentity.x500Name,
                             peerMessage.header.destinationNetworkType,
                             peerMessage.header.address
                         )
                         val messageId = UUID.randomUUID().toString()
                         val gatewayMessage = GatewayMessage(messageId, peerMessage.payload)
                         val expectedX500Name = if (NetworkType.CORDA_4 == peerMessage.header.destinationNetworkType) {
-                            X500Name(peerMessage.header.destinationX500Name)
+                            X500Name(peerMessage.header.destinationIdentity.x500Name)
                         } else {
                             null
                         }

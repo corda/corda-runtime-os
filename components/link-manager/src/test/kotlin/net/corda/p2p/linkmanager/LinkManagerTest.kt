@@ -649,7 +649,11 @@ class LinkManagerTest {
     @Test
     fun `InboundMessageProcessor routes session messages to the session manager and sends the response to the gateway`() {
         val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
-        val response = LinkOutMessage(LinkOutHeader("", NetworkType.CORDA_5, FAKE_ADDRESS, GROUP_ID), initiatorHandshakeMessage())
+        val response = LinkOutMessage(LinkOutHeader(
+            HoldingIdentity("", GROUP_ID),
+            NetworkType.CORDA_5,
+            FAKE_ADDRESS,
+        ), initiatorHandshakeMessage())
         Mockito.`when`(mockSessionManager.processSessionMessage(any())).thenReturn(response)
 
         val mockMessage = Mockito.mock(InitiatorHandshakeMessage::class.java)
@@ -675,7 +679,11 @@ class LinkManagerTest {
     @Test
     fun `InboundMessageProcessor writes the mapping of a new session, when processing an initiator hello message`() {
         val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
-        val response = LinkOutMessage(LinkOutHeader("", NetworkType.CORDA_5, FAKE_ADDRESS, GROUP_ID), responderHelloMessage())
+        val response = LinkOutMessage(LinkOutHeader(
+            HoldingIdentity("", GROUP_ID),
+            NetworkType.CORDA_5,
+            FAKE_ADDRESS,
+        ), responderHelloMessage())
         Mockito.`when`(mockSessionManager.processSessionMessage(any())).thenReturn(response)
 
         val initiatorHelloMessage = initiatorHelloMessage()
@@ -1064,7 +1072,11 @@ class LinkManagerTest {
     @Test
     fun `InboundMessageProcessor warns if no partitions are assigned and does not map new session`() {
         val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
-        val response = LinkOutMessage(LinkOutHeader("", NetworkType.CORDA_5, FAKE_ADDRESS, GROUP_ID), responderHelloMessage())
+        val response = LinkOutMessage(LinkOutHeader(
+            HoldingIdentity("", GROUP_ID),
+            NetworkType.CORDA_5,
+            FAKE_ADDRESS,
+        ), responderHelloMessage())
         Mockito.`when`(mockSessionManager.processSessionMessage(any())).thenReturn(response)
 
         val initiatorHelloMessage = initiatorHelloMessage()

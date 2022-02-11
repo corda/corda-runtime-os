@@ -166,10 +166,9 @@ class OutboundMessageHandlerTest {
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
         val headers = LinkOutHeader(
-            "a",
+            HoldingIdentity("a",GROUP_ID),
             NetworkType.CORDA_5,
             "https://r3.com/",
-            GROUP_ID,
         )
         val message = LinkOutMessage(headers, payload)
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
@@ -195,10 +194,9 @@ class OutboundMessageHandlerTest {
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
         val headers = LinkOutHeader(
-            "a",
+            HoldingIdentity("a", GROUP_ID),
             NetworkType.CORDA_5,
             "https://r3.com/",
-            GROUP_ID
         )
         val message = LinkOutMessage(headers, msgPayload)
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
@@ -226,10 +224,9 @@ class OutboundMessageHandlerTest {
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
         val headers = LinkOutHeader(
-            "a",
+            HoldingIdentity("a",GROUP_ID),
             NetworkType.CORDA_5,
             "https://r3.com/",
-            GROUP_ID,
         )
         val message = LinkOutMessage(
             headers,
@@ -266,10 +263,9 @@ class OutboundMessageHandlerTest {
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
         val headers = LinkOutHeader(
-            "O=PartyA, L=London, C=GB",
+            HoldingIdentity("O=PartyA, L=London, C=GB", GROUP_ID),
             NetworkType.CORDA_4,
             "https://r3.com/",
-            GROUP_ID
         )
         val message = LinkOutMessage(
             headers,
@@ -306,10 +302,9 @@ class OutboundMessageHandlerTest {
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
         val headers = LinkOutHeader(
-            "aaa",
+            HoldingIdentity("aaa", GROUP_ID),
             NetworkType.CORDA_4,
             "https://r3.com/",
-            GROUP_ID,
         )
         val message = LinkOutMessage(
             headers,
@@ -336,11 +331,11 @@ class OutboundMessageHandlerTest {
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
         val headers = LinkOutHeader(
-            "aaa",
+            HoldingIdentity("aaa", GROUP_ID),
             NetworkType.CORDA_4,
             "https://r3.com/",
-            GROUP_ID,
         )
+
         val message = LinkOutMessage(
             headers,
             payload,
@@ -377,10 +372,9 @@ class OutboundMessageHandlerTest {
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
         val headers = LinkOutHeader(
-            "a",
+            HoldingIdentity("a",GROUP_ID),
             NetworkType.CORDA_5,
             "https://r3.com/",
-            GROUP_ID
         )
         val message = LinkOutMessage(headers, msgPayload)
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
@@ -424,10 +418,9 @@ class OutboundMessageHandlerTest {
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
         val headers = LinkOutHeader(
-            "a",
+            HoldingIdentity("a",GROUP_ID),
             NetworkType.CORDA_5,
             "https://r3.com/",
-            GROUP_ID,
         )
         val message = LinkOutMessage(headers, msgPayload)
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
@@ -474,10 +467,9 @@ class OutboundMessageHandlerTest {
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
         val headers = LinkOutHeader(
-            "a",
+            HoldingIdentity("a", GROUP_ID),
             NetworkType.CORDA_5,
             "https://r3.com/",
-            GROUP_ID,
         )
         val message = LinkOutMessage(headers, msgPayload)
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
@@ -523,10 +515,9 @@ class OutboundMessageHandlerTest {
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
         val headers = LinkOutHeader(
-            "a",
+            HoldingIdentity("a",GROUP_ID),
             NetworkType.CORDA_5,
             "https://r3.com/",
-            GROUP_ID,
         )
         val message = LinkOutMessage(headers, msgPayload)
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)

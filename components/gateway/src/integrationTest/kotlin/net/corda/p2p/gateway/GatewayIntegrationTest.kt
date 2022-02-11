@@ -2,6 +2,7 @@ package net.corda.p2p.gateway
 
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.handler.codec.http.HttpResponseStatus
+import net.corda.data.identity.HoldingIdentity
 import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.libs.configuration.SmartConfigImpl
@@ -199,7 +200,11 @@ class GatewayIntegrationTest : TestBase() {
 
             val linkInMessage = LinkInMessage(authenticatedP2PMessage(""))
             val linkOutMessage = LinkOutMessage.newBuilder().apply {
-                header = LinkOutHeader("", NetworkType.CORDA_5, recipientServerUrl.toString(), GROUP_ID)
+                header = LinkOutHeader(
+                    HoldingIdentity("", GROUP_ID),
+                    NetworkType.CORDA_5,
+                    recipientServerUrl.toString(),
+                )
                 payload = authenticatedP2PMessage("link out")
             }.build()
             val gatewayMessage = GatewayMessage("msg-id", linkInMessage.payload)
@@ -369,7 +374,11 @@ class GatewayIntegrationTest : TestBase() {
             }.onEach { serverUrl ->
                 repeat(messageCount) {
                     val msg = LinkOutMessage.newBuilder().apply {
-                        header = LinkOutHeader("", NetworkType.CORDA_5, serverUrl, GROUP_ID)
+                        header = LinkOutHeader(
+                            HoldingIdentity("", GROUP_ID),
+                            NetworkType.CORDA_5,
+                            serverUrl,
+                        )
                         payload = authenticatedP2PMessage("Target-$serverUrl")
                     }.build()
                     alice.publish(Record(LINK_OUT_TOPIC, "key", msg))
@@ -529,7 +538,11 @@ class GatewayIntegrationTest : TestBase() {
                 )
             }.flatMap { (address, node) ->
                 val msg = LinkOutMessage.newBuilder().apply {
-                    header = LinkOutHeader("", NetworkType.CORDA_5, address, GROUP_ID)
+                    header = LinkOutHeader(
+                        HoldingIdentity("", GROUP_ID),
+                        NetworkType.CORDA_5,
+                        address
+                    )
                     payload = authenticatedP2PMessage("Target-$address")
                 }.build()
                 node.publish(Record(LINK_OUT_TOPIC, "key", msg))
