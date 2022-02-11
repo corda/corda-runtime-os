@@ -26,7 +26,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.permissions.service.PermissionServiceComponent
-import net.corda.schema.configuration.ConfigKeys.Companion.RPC_CONFIG
+import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger

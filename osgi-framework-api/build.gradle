@@ -2,10 +2,6 @@ plugins {
     id 'org.jetbrains.kotlin.jvm'
 }
 
-repositories {
-    mavenCentral()
-}
-
 dependencies {
     compileOnly 'org.osgi:osgi.core'
 

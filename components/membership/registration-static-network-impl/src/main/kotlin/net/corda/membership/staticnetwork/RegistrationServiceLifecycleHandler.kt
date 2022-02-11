@@ -14,8 +14,8 @@ import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
-import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
-import net.corda.schema.configuration.ConfigKeys.Companion.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 
 class RegistrationServiceLifecycleHandler(
     staticMemberRegistrationService: StaticMemberRegistrationService

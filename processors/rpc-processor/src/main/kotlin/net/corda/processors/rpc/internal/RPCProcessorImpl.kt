@@ -18,8 +18,8 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.processors.rpc.RPCProcessor
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
-import net.corda.schema.configuration.ConfigKeys.Companion.BOOTSTRAP_SERVERS
-import net.corda.schema.configuration.ConfigKeys.Companion.RPC_CONFIG
+import net.corda.schema.configuration.ConfigKeys.BOOTSTRAP_SERVERS
+import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.rpcops.VirtualNodeRPCOpsService
