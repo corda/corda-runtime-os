@@ -41,11 +41,8 @@ class HttpServerChannelHandler(private val serverListener: HttpServerListener,
                     "Hostname: ${msg.headers()[HttpHeaderNames.HOST]?:"unknown"}\n" +
                     "Request URI: ${msg.uri()}\n" +
                     "Content length: ${msg.headers()[HttpHeaderNames.CONTENT_LENGTH]}\n")
-
             // initialise byte array to read the request into
-            if (responseCode!! == HttpResponseStatus.OK) {
-                allocateBodyBuffer(ctx, msg.headers()[HttpHeaderNames.CONTENT_LENGTH].toInt())
-            }
+            allocateBodyBuffer(ctx, msg.headers()[HttpHeaderNames.CONTENT_LENGTH].toInt())
 
             if (HttpUtil.is100ContinueExpected(msg)) {
                 send100Continue(ctx)
