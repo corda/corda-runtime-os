@@ -15,11 +15,11 @@ import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.permissions.cache.PermissionCacheService
-import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
-import net.corda.schema.configuration.ConfigKeys.Companion.DB_CONFIG
-import net.corda.schema.configuration.ConfigKeys.Companion.DB_PASS
-import net.corda.schema.configuration.ConfigKeys.Companion.DB_USER
-import net.corda.schema.configuration.ConfigKeys.Companion.JDBC_URL
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
+import net.corda.schema.configuration.ConfigKeys.DB_PASS
+import net.corda.schema.configuration.ConfigKeys.DB_USER
+import net.corda.schema.configuration.ConfigKeys.JDBC_URL
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
