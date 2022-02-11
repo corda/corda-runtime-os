@@ -21,7 +21,6 @@ import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
-import net.corda.messaging.properties.ConfigProperties.Companion.DEAD_LETTER_QUEUE_SUFFIX
 import net.corda.messaging.properties.ConfigProperties.Companion.KAFKA_CONSUMER
 import net.corda.messaging.properties.ConfigProperties.Companion.KAFKA_PRODUCER
 import net.corda.messaging.properties.ConfigProperties.Companion.TOPIC_NAME
@@ -30,6 +29,7 @@ import net.corda.messaging.subscription.consumer.listener.ForwardingRebalanceLis
 import net.corda.messaging.utils.render
 import net.corda.messaging.utils.toCordaProducerRecords
 import net.corda.messaging.utils.toEventLogRecord
+import net.corda.schema.Schemas.Companion.getStateAndEventDLQTopic
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
 import java.util.*
@@ -299,7 +299,7 @@ class EventLogSubscriptionImpl<K : Any, V : Any>(
             if(deadLetterRecords.isNotEmpty()) {
                 producer.sendRecords(deadLetterRecords.map {
                     CordaProducerRecord(
-                        topic + config.getString(DEAD_LETTER_QUEUE_SUFFIX),
+                        getStateAndEventDLQTopic(topic),
                         UUID.randomUUID().toString(),
                         it
                     )

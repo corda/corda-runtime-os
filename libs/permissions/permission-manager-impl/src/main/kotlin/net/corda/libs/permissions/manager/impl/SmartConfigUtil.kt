@@ -1,7 +1,7 @@
 package net.corda.libs.permissions.manager.impl
 
 import net.corda.libs.configuration.SmartConfig
-import net.corda.schema.configuration.ConfigKeys.Companion.RPC_ENDPOINT_TIMEOUT_MILLIS
+import net.corda.schema.configuration.ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS
 import java.time.Duration
 
 internal object SmartConfigUtil {

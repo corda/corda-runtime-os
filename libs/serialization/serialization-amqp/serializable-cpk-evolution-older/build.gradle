@@ -1,5 +1,5 @@
 plugins {
-    id 'net.corda.plugins.cordapp-cpk'
+    id 'net.corda.plugins.cordapp-cpb'
 }
 
 ext {
@@ -23,6 +23,6 @@ dependencies {
     cordaProvided 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 }
 
-cpk {
+tasks.named('cpk', Jar) {
     archiveBaseName = 'TestSerializableEvolutionOlder-workflows'
 }

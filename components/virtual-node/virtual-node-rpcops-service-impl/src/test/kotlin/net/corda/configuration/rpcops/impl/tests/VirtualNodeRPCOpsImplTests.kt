@@ -194,7 +194,7 @@ class VirtualNodeRPCOpsImplTests {
             vnodeRPCOps.createVirtualNode(req)
         }
 
-        assertEquals("Could not create virtual node.", e.message)
+        assertEquals("Could not complete virtual node creation request.", e.message)
     }
 
     @Test

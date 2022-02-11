@@ -84,6 +84,7 @@ interface SandboxGroupContextService {
      * @param sandboxGroupContext
      * @param serviceNames A lambda to extract the service class names from the CPK metadata.
      * @param isMetadataService A lambda to validate that each class is compatible with this metadata service type.
+     * @param serviceMarkerType A common base type that all service implementations must share.
      *
      * @return an [AutoCloseable] for unregistering the services.
      *
@@ -91,7 +92,8 @@ interface SandboxGroupContextService {
     fun registerMetadataServices(
         sandboxGroupContext: SandboxGroupContext,
         serviceNames: (CPK.Metadata) -> Iterable<String>,
-        isMetadataService: (Class<*>) -> Boolean
+        isMetadataService: (Class<*>) -> Boolean = { true },
+        serviceMarkerType: Class<*> = sandboxGroupContext.virtualNodeContext.serviceMarkerType
     ): AutoCloseable
 
     /**

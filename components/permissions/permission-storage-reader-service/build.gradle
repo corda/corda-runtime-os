@@ -12,6 +12,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
+    implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-db-schema'
 
     implementation project(':components:configuration:configuration-read-service')

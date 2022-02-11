@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-06/schema#",
+  "$id": "https://corda.r3.com/schema/wrong-draft/draft-v6.json",
+  "title": "Validation test schema",
+  "type": "object",
+  "properties": {
+    "testInteger": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 500,
+      "default": 7
+    },
+    "testString": {
+      "type": "string"
+    }
+  }
+}

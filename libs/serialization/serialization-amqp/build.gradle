@@ -9,7 +9,7 @@ plugins {
 description 'Corda AMQP serialization library'
 
 configurations {
-    cpks {
+    cpbs {
         canBeConsumed = false
         transitive = false
     }
@@ -28,7 +28,6 @@ dependencies {
     implementation "net.corda:corda-packaging"
     implementation "net.corda:corda-serialization"
     implementation project(':libs:serialization:serialization-internal')
-    implementation project(":components:install:install-legacy")
     implementation project(path: ':libs:kotlin-reflection', configuration: 'bundle')
     implementation project(":libs:sandbox")
     implementation project(path: ':libs:serialization:serialization-encoding', configuration: 'bundle')
@@ -48,42 +47,29 @@ dependencies {
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
     testRuntimeOnly 'org.osgi:osgi.core'
 
-    cpks project(path: ':libs:serialization:serialization-amqp:serializable-cpk-one', configuration: 'cordaCPK')
-    cpks project(path: ':libs:serialization:serialization-amqp:serializable-cpk-two', configuration: 'cordaCPK')
-    cpks project(path: ':libs:serialization:serialization-amqp:serializable-cpk-three', configuration: 'cordaCPK')
-    cpks project(path: ':libs:serialization:serialization-amqp:serializable-cpk-four', configuration: 'cordaCPK')
+    cpbs project(path: ':libs:serialization:serialization-amqp:serializable-cpk-four', configuration: 'cordaCPB')
 
-    cpks project(path: ':libs:serialization:serialization-amqp:serializable-cpk-using-lib', configuration: 'cordaCPK')
+    cpbs project(path: ':libs:serialization:serialization-amqp:serializable-cpk-using-lib', configuration: 'cordaCPB')
 
-    cpks project(path: ':libs:serialization:serialization-amqp:serializable-cpk-evolution-different-original', configuration: 'cordaCPK')
-    cpks project(path: ':libs:serialization:serialization-amqp:serializable-cpk-evolution-different-replacement', configuration: 'cordaCPK')
-    cpks project(path: ':libs:serialization:serialization-amqp:serializable-cpk-evolution-newer', configuration: 'cordaCPK')
-    cpks project(path: ':libs:serialization:serialization-amqp:serializable-cpk-evolution-older', configuration: 'cordaCPK')
+    cpbs project(path: ':libs:serialization:serialization-amqp:serializable-cpk-evolution-different-original', configuration: 'cordaCPB')
+    cpbs project(path: ':libs:serialization:serialization-amqp:serializable-cpk-evolution-different-replacement', configuration: 'cordaCPB')
+    cpbs project(path: ':libs:serialization:serialization-amqp:serializable-cpk-evolution-newer', configuration: 'cordaCPB')
+    cpbs project(path: ':libs:serialization:serialization-amqp:serializable-cpk-evolution-older', configuration: 'cordaCPB')
 
-    integrationTestCompileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
-    integrationTestCompileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
-    integrationTestImplementation "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+    integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation "net.corda:corda-application"
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
-    integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
     integrationTestRuntimeOnly project(':libs:crypto:crypto-client')
     integrationTestRuntimeOnly project(':libs:crypto:crypto-impl')
-    integrationTestRuntimeOnly project(':libs:sandbox-internal')
+    integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
+    integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")
 }
 
 def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {
-    from configurations.cpks
-}
-
-tasks.named('jar', Jar) {
-    archiveBaseName = 'corda-serialization-amqp'
-    bnd """\
-Bundle-Name: Corda AMQP serialization library
-Bundle-SymbolicName: \${project.group}.serialization.amqp
-Import-Package:\
-   sun.net.www.protocol.jar;resolution:=optional,\
-   *
-"""
+    from(configurations.cpbs) {
+        into 'META-INF'
+        rename "(.*)-\\Q${version}\\E-package.cpb", "\$1.cpb"
+    }
 }
 
 tasks.named('testingBundle', Bundle) {

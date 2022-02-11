@@ -1,11 +1,10 @@
 plugins {
-    id 'net.corda.plugins.cordapp-cpk'
+    id 'net.corda.plugins.cordapp-cpb'
 }
 
 description 'Corda Sandbox Irresolvable CPK'
 
 group 'com.example.sandbox'
-version ''
 
 cordapp {
     targetPlatformVersion 999 as Integer

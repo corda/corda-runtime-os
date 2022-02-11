@@ -4,7 +4,6 @@ import net.corda.configuration.write.ConfigWriteServiceException
 import net.corda.configuration.write.impl.ConfigWriteEventHandler
 import net.corda.configuration.write.impl.StartProcessingEvent
 import net.corda.configuration.write.impl.writer.ConfigWriter
-import net.corda.configuration.write.impl.writer.ConfigWriterException
 import net.corda.configuration.write.impl.writer.ConfigWriterFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus.DOWN
@@ -33,7 +32,7 @@ class ConfigWriteEventHandlerTests {
     @Test
     fun `StartProcessing event throws and sets coordinator status to error if config writer cannot be created`() {
         val erroringConfigWriterFactory = mock<ConfigWriterFactory>().apply {
-            whenever(create(any(), any())).thenThrow(ConfigWriterException(""))
+            whenever(create(any(), any())).thenThrow(ConfigWriteServiceException(""))
         }
         val eventHandler = ConfigWriteEventHandler(erroringConfigWriterFactory)
         val coordinator = mock<LifecycleCoordinator>()
@@ -48,7 +47,7 @@ class ConfigWriteEventHandlerTests {
     @Test
     fun `StartProcessing event throws and sets coordinator status to error if config writer cannot be started`() {
         val erroringConfigWriter = mock<ConfigWriter>().apply {
-            whenever(start()).thenThrow(ConfigWriterException(""))
+            whenever(start()).thenThrow(ConfigWriteServiceException(""))
         }
         val configWriterFactory = mock<ConfigWriterFactory>().apply {
             whenever(create(any(), any())).thenReturn(erroringConfigWriter)

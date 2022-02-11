@@ -4,11 +4,6 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.permissions.cache.PermissionCache
-import net.corda.libs.permissions.storage.common.ConfigKeys.BOOTSTRAP_CONFIG
-import net.corda.libs.permissions.storage.common.ConfigKeys.DB_CONFIG_KEY
-import net.corda.libs.permissions.storage.common.ConfigKeys.DB_PASSWORD
-import net.corda.libs.permissions.storage.common.ConfigKeys.DB_URL
-import net.corda.libs.permissions.storage.common.ConfigKeys.DB_USER
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
 import net.corda.libs.permissions.storage.reader.factory.PermissionStorageReaderFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -20,6 +15,11 @@ import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.permissions.cache.PermissionCacheService
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
+import net.corda.schema.configuration.ConfigKeys.DB_PASS
+import net.corda.schema.configuration.ConfigKeys.DB_USER
+import net.corda.schema.configuration.ConfigKeys.JDBC_URL
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
@@ -33,7 +33,7 @@ import javax.persistence.EntityManagerFactory
 class PermissionStorageReaderServiceEventHandlerTest {
 
     private val entityManagerFactory = mock<EntityManagerFactory>()
-    private val entityManagerFactoryFactory = mock<() -> EntityManagerFactory>() {
+    private val entityManagerFactoryFactory = mock<() -> EntityManagerFactory> {
         on { this.invoke() }.doReturn(entityManagerFactory)
     }
     private val permissionCache = mock<PermissionCache>()
@@ -66,12 +66,12 @@ class PermissionStorageReaderServiceEventHandlerTest {
     private val config = configFactory.create(
         ConfigFactory.empty()
             .withValue(
-                DB_CONFIG_KEY,
-                ConfigValueFactory.fromMap(mapOf(DB_URL to "dbUrl", DB_USER to "dbUser", DB_PASSWORD to "dbPass"))
+                DB_CONFIG,
+                ConfigValueFactory.fromMap(mapOf(JDBC_URL to "dbUrl", DB_USER to "dbUser", DB_PASS to "dbPass"))
             )
     )
 
-    private val bootstrapConfig = mapOf(BOOTSTRAP_CONFIG to config)
+    private val bootstrapConfig = mapOf(BOOT_CONFIG to config)
 
     @Test
     fun `processing a start event causes the service to follow permission cache status changes`() {
@@ -88,7 +88,7 @@ class PermissionStorageReaderServiceEventHandlerTest {
 
         handler.processEvent(StartEvent(), coordinator)
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
-        handler.onConfigurationUpdated(setOf(BOOTSTRAP_CONFIG), bootstrapConfig)
+        handler.onConfigurationUpdated(setOf(BOOT_CONFIG), bootstrapConfig)
 
         assertNotNull(handler.permissionStorageReader)
         verify(permissionStorageReader).start()
@@ -105,7 +105,7 @@ class PermissionStorageReaderServiceEventHandlerTest {
     fun `processing a DOWN event from the permission cache when the service is started stops the storage reader`() {
         handler.processEvent(StartEvent(), coordinator)
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
-        handler.onConfigurationUpdated(setOf(BOOTSTRAP_CONFIG), bootstrapConfig)
+        handler.onConfigurationUpdated(setOf(BOOT_CONFIG), bootstrapConfig)
 
         assertNotNull(handler.permissionStorageReader)
 
@@ -127,7 +127,7 @@ class PermissionStorageReaderServiceEventHandlerTest {
     fun `processing a stop event stops the service's dependencies`() {
         handler.processEvent(StartEvent(), coordinator)
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
-        handler.onConfigurationUpdated(setOf(BOOTSTRAP_CONFIG), bootstrapConfig)
+        handler.onConfigurationUpdated(setOf(BOOT_CONFIG), bootstrapConfig)
 
         assertNotNull(handler.registrationHandle)
         assertNotNull(handler.permissionStorageReader)

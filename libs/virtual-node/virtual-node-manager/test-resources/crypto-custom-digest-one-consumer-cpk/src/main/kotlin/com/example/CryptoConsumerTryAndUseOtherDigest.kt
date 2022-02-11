@@ -8,7 +8,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
-@Component(name = "crypto.consumer.2")
+@Component
 class CryptoConsumerTryAndUseOtherDigest
 @Activate constructor(@Reference private val digestService: DigestService) : Flow<SecureHash> {
     override fun call(): SecureHash {
