@@ -1,0 +1,25 @@
+{
+  "type": "record",
+  "name": "UserPermissionSummary",
+  "namespace": "net.corda.data.permissions.summary",
+  "fields": [
+    {
+      "name": "loginName",
+      "type": "string"
+    },
+    {
+      "name": "permissions",
+      "type": {
+        "type": "array",
+        "items": "net.corda.data.permissions.summary.PermissionSummary"
+      }
+    },
+    {
+      "name": "lastUpdateTimestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
+    }
+  ]
+}

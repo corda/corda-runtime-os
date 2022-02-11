@@ -83,6 +83,15 @@ class Schemas {
     }
 
     /**
+     * Permissions Message schema
+     */
+    class Permissions {
+        companion object {
+            const val PERMISSIONS_USER_SUMMARY_TOPIC = "permissions.user.summary"
+        }
+    }
+
+    /**
      * Virtual Node schema
      */
     class VirtualNode {
