@@ -20,6 +20,10 @@ class CpiUploadRPCOpsImplTest {
     private lateinit var coordinatorFactory: LifecycleCoordinatorFactory
     private lateinit var cpiUploadManager: CpiUploadManager
 
+    companion object {
+        const val DUMMY_FILE_NAME = "dummyFileName"
+    }
+
     private val cpiUploadRPCOpsService = mock<CpiUploadRPCOpsService>()
 
     @BeforeEach
@@ -42,7 +46,7 @@ class CpiUploadRPCOpsImplTest {
         val cpiUploadRequestId = UUID.randomUUID().toString()
         whenever(cpiUploadManager.uploadCpi(any(), eq(cpiContent))).thenReturn(cpiUploadRequestId)
 
-        val httpResponse = cpiUploadRPCOpsImpl.cpi(cpiContent)
+        val httpResponse = cpiUploadRPCOpsImpl.cpi(DUMMY_FILE_NAME, cpiContent)
         assertNotNull(httpResponse)
         assertEquals(cpiUploadRequestId, httpResponse.id)
     }
