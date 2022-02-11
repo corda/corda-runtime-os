@@ -1,7 +1,6 @@
 package net.corda.httprpc.server.impl.apigen.processing
 
 import net.corda.v5.base.util.contextLogger
-import net.corda.httprpc.rpc.proxies.RpcAuthHelper
 import net.corda.httprpc.server.impl.apigen.models.Endpoint
 import net.corda.httprpc.server.impl.apigen.models.EndpointMethod
 import net.corda.httprpc.server.impl.apigen.models.EndpointParameter
@@ -87,7 +86,6 @@ internal class RouteInfo(
     val parameters = mapEndpointParameters(endpoint.parameters)
     val fullPath get() = generateFullPath(resourcePath, endpoint.path)
     val method get() = endpoint.invocationMethod
-    val methodFullName get() = RpcAuthHelper.methodFullName(endpoint.invocationMethod.method)
     private val methodInvoker = when {
         endpoint.invocationMethod.method.isFiniteDurableStreamsMethod() ->
             FiniteDurableStreamsMethodInvoker(endpoint.invocationMethod)

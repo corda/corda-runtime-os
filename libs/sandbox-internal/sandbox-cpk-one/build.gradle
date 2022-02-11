@@ -1,11 +1,10 @@
 plugins {
-    id 'net.corda.plugins.cordapp-cpk'
+    id 'net.corda.plugins.cordapp-cpb'
 }
 
 description 'Corda Sandbox CPK One'
 
 group 'com.example.sandbox'
-version ''
 
 cordapp {
     targetPlatformVersion 999 as Integer
@@ -17,6 +16,7 @@ cordapp {
 }
 
 dependencies {
+    cpb project(':libs:sandbox-internal:sandbox-cpk-two')
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     compileOnly "org.osgi:org.osgi.service.component.annotations"
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"

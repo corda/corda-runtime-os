@@ -81,7 +81,7 @@ class DbAdminTest {
 
         Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
 
-        val random = Random.nextInt(1000)
+        val random = Random.nextLong(Long.MAX_VALUE)
         val persistenceUnitName = "test-$random"
         val schema = "test_schema_$random"
 

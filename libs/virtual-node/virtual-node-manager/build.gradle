@@ -33,15 +33,13 @@ dependencies {
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
-    integrationTestCompileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
+    integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation "net.corda:corda-application"
     integrationTestImplementation "net.corda:corda-crypto"
     integrationTestImplementation "net.corda:corda-cipher-suite"
-    integrationTestImplementation project(":libs:crypto:crypto-impl")
-
-    integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
-    integrationTestRuntimeOnly project(":libs:sandbox-hooks")
-    integrationTestRuntimeOnly project(":libs:sandbox-internal")
+    integrationTestRuntimeOnly project(':libs:crypto:crypto-impl')
+    integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:inmemory-messaging-impl')
 
     // Gather locations of CPIs to add into `resources`
     cpis project(path: 'test-resources:crypto-custom-digest-one-consumer-cpk', configuration: 'cordaCPB')
@@ -49,7 +47,10 @@ dependencies {
 }
 
 def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {
-    from configurations.cpis
+    from(configurations.cpis) {
+        into 'META-INF'
+        rename "(.*)-\\Q${version}\\E-package.cpb", "\$1.cpb"
+    }
 }
 
 tasks.named('testingBundle', Bundle) {

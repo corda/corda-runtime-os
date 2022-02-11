@@ -56,7 +56,7 @@ class SessionCloseProcessorReceive(
                         sessionState.sendEventsState.undeliveredMessages.plus(generateAckEvent(seqNum, sessionId, instant))
                 }
             } else {
-                undeliveredReceivedMessages.add(sessionEvent)
+                sessionState.receivedEventsState.undeliveredMessages = undeliveredReceivedMessages.plus(sessionEvent)
                 sessionState.receivedEventsState = recalcReceivedProcessState(receivedEventsState)
                 processCloseReceivedAndGetState(sessionState, seqNum, sessionId)
             }

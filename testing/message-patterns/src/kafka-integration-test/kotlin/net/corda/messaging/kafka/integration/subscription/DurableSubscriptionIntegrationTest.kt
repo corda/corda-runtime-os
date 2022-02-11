@@ -20,6 +20,7 @@ import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion
 import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.TOPIC_PREFIX
 import net.corda.messaging.kafka.integration.TopicTemplates
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.DURABLE_TOPIC1
+import net.corda.messaging.kafka.integration.TopicTemplates.Companion.DURABLE_TOPIC3_DLQ
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.TEST_TOPIC_PREFIX
 import net.corda.messaging.kafka.integration.getDemoRecords
 import net.corda.messaging.kafka.integration.getKafkaProperties
@@ -190,7 +191,7 @@ class DurableSubscriptionIntegrationTest {
             null
         )
         val dlqDurableSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$DURABLE_TOPIC3-group-dlq", "$DURABLE_TOPIC3.DLQ", 2),
+            SubscriptionConfig("$DURABLE_TOPIC3-group-dlq", DURABLE_TOPIC3_DLQ, 2),
             TestDurableStringProcessor(dlqLatch),
             kafkaConfig,
             null

@@ -25,6 +25,7 @@ dependencies {
     implementation project(':libs:db:db-orm')
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(":libs:permissions:permission-datamodel")
+    implementation project(":libs:virtual-node:virtual-node-datamodel")
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'
@@ -34,7 +35,6 @@ dependencies {
     runtimeOnly project(':components:virtual-node:virtual-node-write-service-impl')
     runtimeOnly project(':components:db:db-connection-manager-impl')
     runtimeOnly project(':libs:configuration:configuration-publish-impl')
-    runtimeOnly project(':libs:virtual-node:virtual-node-write-impl')
     runtimeOnly project(':libs:db:db-orm-impl')
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')
     runtimeOnly project(':libs:messaging:messaging-impl')

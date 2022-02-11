@@ -1,5 +1,6 @@
 -tester: biz.aQute.tester.junit-platform
 -runfw: org.apache.felix.framework
+-resolve.effective: resolve,active
 -runee: JavaSE-11
 -runtrace: true
 
@@ -34,6 +35,8 @@
 	com.fasterxml.jackson.core.jackson-annotations;version='[2.12.5,2.12.6)',\
 	com.fasterxml.jackson.core.jackson-core;version='[2.12.5,2.12.6)',\
 	com.fasterxml.jackson.core.jackson-databind;version='[2.12.5,2.12.6)',\
+	com.google.guava;version='[30.1.1,30.1.2)',\
+	com.google.guava.failureaccess;version='[1.0.1,1.0.2)',\
 	com.typesafe.config;version='[1.4.1,1.4.2)',\
 	junit-jupiter-api;version='[5.8.2,5.8.3)',\
 	junit-jupiter-engine;version='[5.8.2,5.8.3)',\
@@ -45,22 +48,37 @@
 	net.corda.avro-schema;version='[5.0.0,5.0.1)',\
 	net.corda.base;version='[5.0.0,5.0.1)',\
 	net.corda.cipher-suite;version='[5.0.0,5.0.1)',\
+	net.corda.configuration-core;version='[5.0.0,5.0.1)',\
+	net.corda.configuration-read-service;version='[5.0.0,5.0.1)',\
+	net.corda.configuration-read-service-impl;version='[5.0.0,5.0.1)',\
+	net.corda.cpi-info-read-service;version='[5.0.0,5.0.1)',\
 	net.corda.crypto;version='[5.0.0,5.0.1)',\
 	net.corda.crypto-client;version='[5.0.0,5.0.1)',\
 	net.corda.crypto-impl;version='[5.0.0,5.0.1)',\
+	net.corda.inmemory-messaging-impl;version='[5.0.0,5.0.1)',\
+	net.corda.install-service;version='[5.0.0,5.0.1)',\
 	net.corda.kotlin-stdlib-jdk7.osgi-bundle;version='[1.4.32,1.4.33)',\
 	net.corda.kotlin-stdlib-jdk8.osgi-bundle;version='[1.4.32,1.4.33)',\
 	net.corda.lifecycle;version='[5.0.0,5.0.1)',\
+	net.corda.lifecycle-impl;version='[5.0.0,5.0.1)',\
 	net.corda.membership;version='[5.0.0,5.0.1)',\
 	net.corda.membership-conversion;version='[5.0.0,5.0.1)',\
 	net.corda.membership-identity;version='[5.0.0,5.0.1)',\
+	net.corda.messaging;version='[5.0.0,5.0.1)',\
 	net.corda.packaging;version='[5.0.0,5.0.1)',\
+	net.corda.packaging-avro-converters;version='[5.0.0,5.0.1)',\
+	net.corda.registry;version='[5.0.0,5.0.1)',\
 	net.corda.sandbox;version='[5.0.0,5.0.1)',\
 	net.corda.sandbox-hooks;version='[5.0.0,5.0.1)',\
 	net.corda.sandbox-internal;version='[5.0.0,5.0.1)',\
+	net.corda.sandbox-testing;version='[5.0.0,5.0.1)',\
 	net.corda.serialization;version='[5.0.0,5.0.1)',\
 	net.corda.serialization-internal;version='[5.0.0,5.0.1)',\
 	net.corda.utilities;version='[5.0.0,5.0.1)',\
+	net.corda.virtual-node-common;version='[5.0.0,5.0.1)',\
+	net.corda.virtual-node-info;version='[5.0.0,5.0.1)',\
+	net.corda.virtual-node-info-read-service;version='[5.0.0,5.0.1)',\
+	net.corda.virtual-node-info-write-service;version='[5.0.0,5.0.1)',\
 	net.corda.virtual-node-manager;version='[5.0.0,5.0.1)',\
 	net.i2p.crypto.eddsa;version='[0.3.0,0.3.1)',\
 	org.apache.commons.commons-compress;version='[1.21.0,1.21.1)',\
@@ -69,8 +87,8 @@
 	org.apache.felix.scr;version='[2.1.28,2.1.29)',\
 	org.jetbrains.kotlin.osgi-bundle;version='[1.4.32,1.4.33)',\
 	org.opentest4j;version='[1.2.0,1.2.1)',\
-	org.osgi.test.common;version='[1.0.0,1.0.1)',\
-	org.osgi.test.junit5;version='[1.0.0,1.0.1)',\
+	org.osgi.test.common;version='[1.0.1,1.0.2)',\
+	org.osgi.test.junit5;version='[1.0.1,1.0.2)',\
 	org.osgi.util.function;version='[1.1.0,1.1.1)',\
 	org.osgi.util.promise;version='[1.1.1,1.1.2)',\
 	slf4j.api;version='[1.7.32,1.7.33)',\

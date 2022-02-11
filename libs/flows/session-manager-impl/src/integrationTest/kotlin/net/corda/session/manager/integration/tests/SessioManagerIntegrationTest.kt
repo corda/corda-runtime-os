@@ -1,6 +1,10 @@
 package net.corda.session.manager.integration.tests
 
+import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.state.session.SessionStateType
+import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.schema.configuration.FlowConfig
 import net.corda.session.manager.integration.SessionMessageType
 import net.corda.session.manager.integration.helper.assertAllMessagesDelivered
 import net.corda.session.manager.integration.helper.assertLastReceivedSeqNum
@@ -8,13 +12,23 @@ import net.corda.session.manager.integration.helper.assertLastSentSeqNum
 import net.corda.session.manager.integration.helper.assertStatus
 import net.corda.session.manager.integration.helper.closeSession
 import net.corda.session.manager.integration.helper.initiateNewSession
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import java.time.Instant
 
 class SessionManagerIntegrationTest {
 
+    private companion object {
+        private const val testResendWindow = 5000L
+        private val testConfig = ConfigFactory.empty()
+            .withValue(FlowConfig.SESSION_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(testResendWindow))
+        private val configFactory = SmartConfigFactory.create(testConfig)
+        private val testSmartConfig = configFactory.create(testConfig)
+    }
+
     @Test
     fun `Full Session Send And Receive`() {
-        val (alice, bob) = initiateNewSession()
+        val (alice, bob) = initiateNewSession(testSmartConfig)
 
         //alice send data
         alice.processNewOutgoingMessage(SessionMessageType.DATA, sendMessages = true)
@@ -34,9 +48,25 @@ class SessionManagerIntegrationTest {
         alice.assertLastReceivedSeqNum(1)
     }
 
+
+    @Test
+    fun `Check send message respects the resend window`() {
+        val (alice, bob) = initiateNewSession(testSmartConfig)
+
+        val instant = Instant.now()
+        //alice send data
+        alice.processNewOutgoingMessage(SessionMessageType.DATA, sendMessages = false, instant)
+        alice.sendMessages(instant)
+        assertThat(bob.getInboundMessageSize()).isEqualTo(1)
+        alice.sendMessages(instant)
+        assertThat(bob.getInboundMessageSize()).isEqualTo(1)
+        alice.sendMessages(instant.plusMillis(testResendWindow))
+        assertThat(bob.getInboundMessageSize()).isEqualTo(2)
+    }
+
     @Test
     fun `Simultaneous Close`() {
-        val (alice, bob) = initiateNewSession()
+        val (alice, bob) = initiateNewSession(testSmartConfig)
 
         //bob and alice send close
         bob.processNewOutgoingMessage(SessionMessageType.CLOSE, sendMessages = true)
@@ -69,7 +99,7 @@ class SessionManagerIntegrationTest {
 
     @Test
     fun `Out Of Order Random Shuffle`() {
-        val (alice, bob) = initiateNewSession()
+        val (alice, bob) = initiateNewSession(testSmartConfig)
 
         alice.apply {
             processNewOutgoingMessage(SessionMessageType.DATA)
@@ -112,7 +142,7 @@ class SessionManagerIntegrationTest {
 
     @Test
     fun `Out Of Order Reversed Inbox`() {
-        val (alice, bob) = initiateNewSession()
+        val (alice, bob) = initiateNewSession(testSmartConfig)
 
         alice.apply {
             processNewOutgoingMessage(SessionMessageType.DATA)
@@ -155,7 +185,7 @@ class SessionManagerIntegrationTest {
 
     @Test
     fun `Out Of Order Data With Duplicate Data Resends`() {
-        val (alice, bob) = initiateNewSession()
+        val (alice, bob) = initiateNewSession(testSmartConfig)
 
         //alice send 2 data
         alice.apply {
@@ -173,7 +203,8 @@ class SessionManagerIntegrationTest {
             //process 1 ack
             processNextReceivedMessage()
             //send close and RESEND data
-            processNewOutgoingMessage(SessionMessageType.CLOSE, sendMessages = true)
+            processNewOutgoingMessage(SessionMessageType.CLOSE)
+            sendMessages(Instant.now().plusMillis(testResendWindow))
         }
 
         //bob receive duplicate data message + close
@@ -187,6 +218,8 @@ class SessionManagerIntegrationTest {
         //bob process ack
         bob.processNextReceivedMessage()
 
+        alice.assertStatus(SessionStateType.CLOSED)
+        bob.assertStatus(SessionStateType.CLOSED)
 
         alice.assertLastSentSeqNum(4)
         bob.assertLastReceivedSeqNum(4)
@@ -196,13 +229,13 @@ class SessionManagerIntegrationTest {
 
     @Test
     fun `Out Of Order Close Message With Duplicate Close`() {
-        val (alice, bob) = initiateNewSession()
+        val (alice, bob) = initiateNewSession(testSmartConfig)
 
         alice.processNewOutgoingMessage(SessionMessageType.DATA)
         alice.processNewOutgoingMessage(SessionMessageType.CLOSE, sendMessages = true)
         //bob loses data messages
         bob.dropInboundMessage(0)
-        alice.sendMessages() //Bob inbound queue is now CLOSE, DATA, CLOSE
+        alice.sendMessages(Instant.now().plusMillis(testResendWindow)) //Bob inbound queue is now CLOSE, DATA, CLOSE
 
         bob.processAllReceivedMessages(sendMessages = true)
 

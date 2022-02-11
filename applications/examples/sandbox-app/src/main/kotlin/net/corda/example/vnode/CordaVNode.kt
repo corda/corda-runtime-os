@@ -1,3 +1,4 @@
+@file:JvmName("Constants")
 package net.corda.example.vnode
 
 import co.paralleluniverse.fibers.instrument.Retransform
@@ -41,8 +42,11 @@ import org.osgi.framework.ServicePermission.REGISTER
 import org.osgi.framework.wiring.BundleWiring
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.permissionadmin.PermissionAdmin
+
+val CPK.id: CPK.Identifier get() = metadata.id
 
 @Suppress("unused", "LongParameterList")
 @Component
@@ -59,6 +63,9 @@ class CordaVNode @Activate constructor(
     private val bundleContext: BundleContext
 ) : Application {
     private companion object {
+        private const val EXAMPLE_CPI_RESOURCE = "META-INF/example-cpi-package.cpb"
+        private const val X500_NAME = "CN=Testing, OU=Application, O=R3, L=London, C=GB"
+
         private const val TIMEOUT_MILLIS = 1000L
         private const val WAIT_MILLIS = 100L
     }
@@ -72,7 +79,14 @@ class CordaVNode @Activate constructor(
         HotSpotDiagnosticMXBean::class.java
     )
 
+    private val cleanups = mutableListOf<AutoCloseable>()
     private val vnode: VNodeService = fetchService(TIMEOUT_MILLIS)
+
+    @Deactivate
+    fun done() {
+        cleanups.forEach(AutoCloseable::close)
+        logger.info("Deactivated")
+    }
 
     private inline fun <reified T> fetchService(timeout: Long): T {
         return fetchService(T::class.java, timeout)
@@ -82,7 +96,9 @@ class CordaVNode @Activate constructor(
         var remainingMillis = timeout
         while (remainingMillis >= 0) {
             bundleContext.getServiceReference(serviceType)?.let { ref ->
-                return bundleContext.getService(ref)
+                return bundleContext.getService(ref).also {
+                    cleanups.add(AutoCloseable { bundleContext.ungetService(ref) })
+                }
             }
             val waitMillis = remainingMillis.coerceAtMost(WAIT_MILLIS)
             Thread.sleep(waitMillis)

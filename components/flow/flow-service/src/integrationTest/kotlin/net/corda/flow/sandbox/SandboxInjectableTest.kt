@@ -4,24 +4,30 @@ import java.nio.file.Path
 import java.util.UUID
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX_FILTER
+import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.fail
 import org.junit.jupiter.api.io.TempDir
+import org.osgi.framework.BundleContext
 import org.osgi.framework.Constants.SCOPE_SINGLETON
 import org.osgi.framework.Constants.SERVICE_SCOPE
 import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.ServiceReference
+import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
+import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 
-@ExtendWith(ServiceExtension::class)
+@ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 class SandboxInjectableTest {
+    @Suppress("unused")
     companion object {
         private const val CPB_INJECT = "sandbox-cpk-inject-package.cpb"
         private const val FLOW_CLASS_NAME = "com.example.sandbox.cpk.inject.ExampleFlow"
@@ -34,22 +40,27 @@ class SandboxInjectableTest {
         @InjectService(timeout = 1000)
         lateinit var sandboxSetup: SandboxSetup
 
-        @Suppress("unused")
         @BeforeAll
         @JvmStatic
-        fun setup(@TempDir baseDirectory: Path) {
-            sandboxSetup.configure(baseDirectory)
+        fun setup(@InjectBundleContext context: BundleContext, @TempDir baseDirectory: Path) {
+            sandboxSetup.configure(context, baseDirectory)
+        }
+
+        @AfterAll
+        @JvmStatic
+        fun done() {
+            sandboxSetup.shutdown()
         }
     }
 
     @InjectService(timeout = 1000)
-    lateinit var sandboxLoader: SandboxLoader
+    lateinit var sandboxFactory: SandboxFactory
 
     @Test
     fun testCordaInjectables() {
-        val vnodeInfo = sandboxLoader.loadCPI(CPB_INJECT, holdingIdentity)
+        val vnodeInfo = sandboxFactory.loadCPI(CPB_INJECT, holdingIdentity)
         try {
-            sandboxLoader.getOrCreateSandbox(holdingIdentity).use { sandboxContext ->
+            sandboxFactory.getOrCreateSandbox(holdingIdentity).use { sandboxContext ->
                 val sandbox = sandboxContext.sandboxGroup
                 val flowClass = sandbox.loadClassFromMainBundles(FLOW_CLASS_NAME)
                 val flowBundle = FrameworkUtil.getBundle(flowClass)
@@ -82,7 +93,7 @@ class SandboxInjectableTest {
                 assertThat(DigestService::class.java).isAssignableFrom(digestService.single())
             }
         } finally {
-            sandboxLoader.unloadCPI(vnodeInfo)
+            sandboxFactory.unloadCPI(vnodeInfo)
         }
     }
 

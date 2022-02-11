@@ -23,7 +23,7 @@ internal class ConfigWriterFactory(
      * @param config Config to be used by the subscription.
      * @param instanceId The instance ID to use for subscribing to Kafka.
      *
-     * @throws ConfigWriterException If the required Kafka publishers and subscriptions cannot be set up.
+     * @throws `CordaMessageAPIException` If the publisher cannot be set up.
      */
     internal fun create(
         config: SmartConfig,
@@ -37,22 +37,16 @@ internal class ConfigWriterFactory(
     /**
      * Creates a [Publisher] using the provided [config] and [instanceId].
      *
-     * @throws ConfigWriterException If the publisher cannot be set up.
+     * @throws `CordaMessageAPIException` If the publisher cannot be set up.
      */
     private fun createPublisher(config: SmartConfig, instanceId: Int): Publisher {
         val publisherConfig = PublisherConfig(CLIENT_NAME_DB, instanceId)
-        return try {
-            publisherFactory.createPublisher(publisherConfig, config)
-        } catch (e: Exception) {
-            throw ConfigWriterException("Could not create publisher to publish updated configuration.", e)
-        }
+        return publisherFactory.createPublisher(publisherConfig, config)
     }
 
     /**
      * Creates a [ConfigurationManagementRPCSubscription] using the provided [config]. The subscription is for the
      * [CONFIG_MGMT_REQUEST_TOPIC] topic, and handles requests using a [ConfigWriterProcessor].
-     *
-     * @throws ConfigWriterException If the subscription cannot be set up.
      */
     private fun createRPCSubscription(
         config: SmartConfig,
@@ -69,10 +63,6 @@ internal class ConfigWriterFactory(
         val configEntityWriter = ConfigEntityWriter(dbConnectionManager)
         val processor = ConfigWriterProcessor(publisher, configEntityWriter)
 
-        return try {
-            subscriptionFactory.createRPCSubscription(rpcConfig, config, processor)
-        } catch (e: Exception) {
-            throw ConfigWriterException("Could not create subscription to process configuration update requests.", e)
-        }
+        return subscriptionFactory.createRPCSubscription(rpcConfig, config, processor)
     }
 }

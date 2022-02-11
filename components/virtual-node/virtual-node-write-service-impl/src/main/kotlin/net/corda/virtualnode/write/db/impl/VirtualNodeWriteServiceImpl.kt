@@ -1,10 +1,13 @@
 package net.corda.virtualnode.write.db.impl
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.libs.virtualnode.write.VirtualNodeWriterFactory
+import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.virtualnode.write.db.VirtualNodeWriteService
+import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriterFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -17,12 +20,17 @@ internal class VirtualNodeWriteServiceImpl @Activate constructor(
     configReadService: ConfigurationReadService,
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = VirtualNodeWriterFactory::class)
-    virtualNodeWriterFactory: VirtualNodeWriterFactory
+    @Reference(service = SubscriptionFactory::class)
+    subscriptionFactory: SubscriptionFactory,
+    @Reference(service = PublisherFactory::class)
+    publisherFactory: PublisherFactory,
+    @Reference(service = DbConnectionManager::class)
+    dbConnectionManager: DbConnectionManager
 ) : VirtualNodeWriteService {
 
     private val coordinator = let {
-        val eventHandler = VirtualNodeWriteEventHandler(configReadService, virtualNodeWriterFactory)
+        val vnodeWriterFactory = VirtualNodeWriterFactory(subscriptionFactory, publisherFactory, dbConnectionManager)
+        val eventHandler = VirtualNodeWriteEventHandler(configReadService, vnodeWriterFactory)
         coordinatorFactory.createCoordinator<VirtualNodeWriteService>(eventHandler)
     }
 

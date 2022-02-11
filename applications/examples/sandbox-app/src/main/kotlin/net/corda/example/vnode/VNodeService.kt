@@ -2,9 +2,11 @@ package net.corda.example.vnode
 
 import net.corda.flow.manager.FlowSandboxService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.testing.sandboxes.CpiLoaderService
 import net.corda.v5.base.util.loggerFor
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.write.VirtualNodeInfoWriteService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -22,22 +24,22 @@ class VNodeServiceImpl @Activate constructor(
     private val flowSandboxService: FlowSandboxService,
 
     @Reference
-    private val loaderService: LoaderService,
+    private val loaderService: CpiLoaderService,
 
     @Reference
-    private val vnodeInfoService: VirtualNodeInfoService
+    private val vnodeInfoWriter: VirtualNodeInfoWriteService
 ) : VNodeService {
     private val logger = loggerFor<VNodeService>()
 
     override fun loadCPI(resourceName: String, holdingIdentity: HoldingIdentity): VirtualNodeInfo {
         val cpi = loaderService.loadCPI(resourceName)
         return VirtualNodeInfo(holdingIdentity, cpi.metadata.id).also { vnodeInfo ->
-            vnodeInfoService.put(vnodeInfo)
+            vnodeInfoWriter.put(vnodeInfo)
         }
     }
 
     override fun unloadCPI(virtualNodeInfo: VirtualNodeInfo) {
-        vnodeInfoService.remove(virtualNodeInfo)
+        vnodeInfoWriter.remove(virtualNodeInfo)
         val cpi = loaderService.get(virtualNodeInfo.cpiIdentifier).get()
             ?: throw IllegalStateException("No such CPI ${virtualNodeInfo.cpiIdentifier}")
         cpi.use(loaderService::unloadCPI)
