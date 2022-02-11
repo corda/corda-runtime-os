@@ -2,7 +2,6 @@ package net.corda.permissions.storage.reader.internal
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.permissions.storage.common.ConfigKeys.BOOTSTRAP_CONFIG
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
 import net.corda.libs.permissions.storage.reader.factory.PermissionStorageReaderFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -18,6 +17,7 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.permissions.cache.PermissionCacheService
+import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import javax.persistence.EntityManagerFactory
@@ -105,9 +105,9 @@ class PermissionStorageReaderServiceEventHandler(
     ) {
         log.info("Component received configuration update event, changedKeys: $changedKeys")
 
-        if (BOOTSTRAP_CONFIG in changedKeys) {
+        if (BOOT_CONFIG in changedKeys) {
 
-            val bootstrapConfig = checkNotNull(currentConfigurationSnapshot[BOOTSTRAP_CONFIG])
+            val bootstrapConfig = checkNotNull(currentConfigurationSnapshot[BOOT_CONFIG])
             publisher = publisherFactory.createPublisher(
                 publisherConfig = PublisherConfig(clientId = CLIENT_NAME),
                 kafkaConfig = bootstrapConfig

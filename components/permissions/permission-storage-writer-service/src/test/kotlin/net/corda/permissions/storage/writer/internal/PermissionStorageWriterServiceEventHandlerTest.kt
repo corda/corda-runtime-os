@@ -15,6 +15,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
+import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
@@ -28,7 +29,7 @@ import javax.persistence.EntityManagerFactory
 class PermissionStorageWriterServiceEventHandlerTest {
 
     private val entityManagerFactory = mock<EntityManagerFactory>()
-    private val entityManagerFactoryFactory = mock<() -> EntityManagerFactory>() {
+    private val entityManagerFactoryFactory = mock<() -> EntityManagerFactory> {
         on { this.invoke() }.doReturn(entityManagerFactory)
     }
     private val subscription = mock<RPCSubscription<PermissionManagementRequest, PermissionManagementResponse>>()
@@ -66,14 +67,14 @@ class PermissionStorageWriterServiceEventHandlerTest {
             )
     )
 
-    private val bootstrapConfig = mapOf(ConfigKeys.BOOTSTRAP_CONFIG to config)
+    private val bootstrapConfig = mapOf(BOOT_CONFIG to config)
 
     @Test
     fun `processing a stop event stops the permission storage writer`() {
         handler.processEvent(StartEvent(), mock())
         assertNull(handler.subscription)
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
-        handler.onConfigurationUpdated(setOf(ConfigKeys.BOOTSTRAP_CONFIG), bootstrapConfig)
+        handler.onConfigurationUpdated(setOf(BOOT_CONFIG), bootstrapConfig)
 
         assertNotNull(handler.subscription)
         verify(subscription).start()

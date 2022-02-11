@@ -1,8 +1,6 @@
 package net.corda.libs.permissions.storage.common
 
 object ConfigKeys {
-    const val BOOTSTRAP_CONFIG = "corda.boot"
-
     // Similar to `net.corda.processors.db.internal.ConstantsKt.CONFIG_JDBC_URL`
     // TODO - remove these when integrating with DbConnectionManager
     const val DB_CONFIG_KEY = "corda.db"
