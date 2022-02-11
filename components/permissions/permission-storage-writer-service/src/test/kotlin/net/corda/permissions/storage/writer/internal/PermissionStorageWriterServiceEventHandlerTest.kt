@@ -5,7 +5,6 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.permissions.storage.common.ConfigKeys
 import net.corda.libs.permissions.storage.writer.PermissionStorageWriterProcessor
 import net.corda.libs.permissions.storage.writer.factory.PermissionStorageWriterProcessorFactory
 import net.corda.lifecycle.LifecycleStatus
@@ -17,6 +16,9 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
 import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.Companion.DB_CONFIG
+import net.corda.schema.configuration.ConfigKeys.Companion.DB_PASS
+import net.corda.schema.configuration.ConfigKeys.Companion.DB_USER
+import net.corda.schema.configuration.ConfigKeys.Companion.JDBC_URL
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
@@ -60,9 +62,9 @@ class PermissionStorageWriterServiceEventHandlerTest {
                 DB_CONFIG,
                 ConfigValueFactory.fromMap(
                     mapOf(
-                        ConfigKeys.DB_URL to "dbUrl",
-                        ConfigKeys.DB_USER to "dbUser",
-                        ConfigKeys.DB_PASSWORD to "dbPass"
+                        JDBC_URL to "dbUrl",
+                        DB_USER to "dbUser",
+                        DB_PASS to "dbPass"
                     )
                 )
             )
