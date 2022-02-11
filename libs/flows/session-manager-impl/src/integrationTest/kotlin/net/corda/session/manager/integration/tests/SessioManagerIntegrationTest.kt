@@ -6,6 +6,7 @@ import net.corda.data.flow.state.session.SessionStateType
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.FlowConfig
 import net.corda.session.manager.integration.SessionMessageType
+import net.corda.session.manager.integration.SessionPartyFactory
 import net.corda.session.manager.integration.helper.assertAllMessagesDelivered
 import net.corda.session.manager.integration.helper.assertLastReceivedSeqNum
 import net.corda.session.manager.integration.helper.assertLastSentSeqNum
@@ -62,6 +63,16 @@ class SessionManagerIntegrationTest {
         assertThat(bob.getInboundMessageSize()).isEqualTo(1)
         alice.sendMessages(instant.plusMillis(testResendWindow))
         assertThat(bob.getInboundMessageSize()).isEqualTo(2)
+    }
+
+    @Test
+    fun `Test send data in state CREATED`() {
+        val (initiator, _) = SessionPartyFactory().createSessionParties(testSmartConfig)
+
+        initiator.processNewOutgoingMessage(SessionMessageType.INIT, sendMessages = true)
+        initiator.assertStatus(SessionStateType.CREATED)
+        initiator.processNewOutgoingMessage(SessionMessageType.DATA, sendMessages = true)
+        initiator.assertStatus(SessionStateType.ERROR)
     }
 
     @Test

@@ -4,6 +4,7 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.impl.SessionEventProcessor
+import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
 import net.corda.v5.base.util.contextLogger
 import java.time.Instant
@@ -33,13 +34,13 @@ class SessionDataProcessorSend(
             return generateErrorSessionStateFromSessionEvent(sessionId, errorMessage, "SessionData-NullSessionState", instant)
         }
 
-        return when(val currentStatus = sessionState.status) {
+        return when (val currentStatus = sessionState.status) {
             SessionStateType.ERROR -> {
                 val errorMessage = "Tried to send SessionData on key $key for sessionId with status of ${SessionStateType.ERROR}. "
                 logger.error(errorMessage)
                 sessionState
             }
-            SessionStateType.CREATED, SessionStateType.CONFIRMED ->{
+            SessionStateType.CONFIRMED -> {
                 val nextSeqNum = sessionState.sendEventsState.lastProcessedSequenceNum + 1
                 sessionEvent.apply {
                     sequenceNum = nextSeqNum
@@ -50,12 +51,26 @@ class SessionDataProcessorSend(
                     sendEventsState.lastProcessedSequenceNum = nextSeqNum
                     sendEventsState.undeliveredMessages = sendEventsState.undeliveredMessages.plus(sessionEvent)
                 }
-            } else -> {
-                //If the session is in states CLOSING, WAIT_FOR_FINAL_ACK or CLOSED then this indicates a session mismatch as no more data
-                // messages are expected to be sent. Send an error to the counterparty to inform it of the mismatch.
-                val errorMessage = "Tried to send SessionData on key $key for sessionId $sessionId with status of : $currentStatus"
+            }
+            else -> {
+                //If the session is in states CREATED, CLOSING, WAIT_FOR_FINAL_ACK or CLOSED then this indicates a session mismatch as no
+                // more data messages are expected to be sent. Send an error to the counterparty to inform it of the mismatch.
+                val errorMessage = "Tried to send SessionData on key $key for sessionId $sessionId when status was : $currentStatus. " +
+                        "SessionState: $sessionState"
                 logger.error(errorMessage)
-                generateErrorSessionStateFromSessionEvent(sessionId, errorMessage, "SessionData-InvalidStatus", instant)
+                sessionState.apply {
+                    status = SessionStateType.ERROR
+                    sendEventsState.undeliveredMessages =
+                        sendEventsState.undeliveredMessages.plus(
+                            generateErrorEvent(
+                                sessionId,
+                                errorMessage,
+                                "SessionData-InvalidStatus",
+                                instant
+                            )
+                        )
+
+                }
             }
         }
     }
