@@ -8,7 +8,7 @@ import net.corda.libs.cpiupload.CpiUploadManager
 import net.corda.libs.cpiupload.CpiUploadManagerException
 import net.corda.libs.cpiupload.RequestId
 import net.corda.messaging.api.publisher.RPCSender
-import net.corda.schema.configuration.ConfigKeys.Companion.RPC_ENDPOINT_TIMEOUT_MILLIS
+import net.corda.schema.configuration.ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
