@@ -30,7 +30,6 @@ import net.corda.messaging.subscription.RPCSubscriptionImpl
 import net.corda.messaging.subscription.StateAndEventSubscriptionImpl
 import net.corda.messaging.subscription.consumer.builder.CordaConsumerBuilder
 import net.corda.messaging.subscription.consumer.builder.StateAndEventBuilder
-import net.corda.messaging.utils.toConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -147,7 +146,7 @@ class CordaSubscriptionFactory @Activate constructor(
         stateAndEventListener: StateAndEventListener<K, S>?
     ): StateAndEventSubscription<K, S, E> {
 
-        val subscriptionConfiguration = subscriptionConfig.toConfig()
+//        val subscriptionConfiguration = subscriptionConfig.toConfig()
 //        val config = resolveSubscriptionConfiguration(
 //            subscriptionConfiguration,
 //            nodeConfig,
