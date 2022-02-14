@@ -4,14 +4,10 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkAck
 import net.corda.messaging.api.processor.RPCResponderProcessor
-import net.corda.messaging.api.publisher.Publisher
-import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas
 import net.corda.v5.base.util.contextLogger
 import java.util.concurrent.CompletableFuture
 
 internal class ChunkWriteToDbProcessor(
-    private val publisher: Publisher,
     private val queries: ChunkDbQueries
 ) : RPCResponderProcessor<Chunk, ChunkAck> {
     companion object {
@@ -83,7 +79,7 @@ internal class ChunkWriteToDbProcessor(
 
         // Check the checksum of the bytes match.  Further validation will occur after this
         // such as CPI unzipping, signature checks etc.
-        if (!queries.checksumIsValid(requestId)) return Status.VALID
+        if (queries.checksumIsValid(requestId)) return Status.VALID
 
         return Status.INVALID
     }
@@ -112,7 +108,6 @@ internal class ChunkWriteToDbProcessor(
         success: Boolean
     ) {
         val chunkAck = ChunkAck(request.requestId, request.partNumber, success, exceptionEnvelope)
-        publisher.publish(listOf(Record(Schemas.VirtualNode.CPI_UPLOAD_TOPIC, request.requestId, chunkAck)))
         respFuture.complete(chunkAck)
     }
 }

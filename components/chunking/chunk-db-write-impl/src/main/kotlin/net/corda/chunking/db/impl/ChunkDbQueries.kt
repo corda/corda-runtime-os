@@ -85,14 +85,14 @@ internal class ChunkDbQueries(private val entityManagerFactory: EntityManagerFac
 
             streamingResults.forEach { e ->
                 if (e.data == null) { // zero chunk
-                    if (e.checksum == null) throw CordaRuntimeException("This shouldn't happen")
+                    if (e.checksum == null) throw CordaRuntimeException("No checksum found in zero-sized chunk")
                     expectedChecksum = SecureHash.create(e.checksum!!)
                 } else { // non-zero chunk
                     messageDigest.update(e.data!!)
                 }
             }
 
-            if (expectedChecksum == null) throw CordaRuntimeException("This shouldn't happen either")
+            if (expectedChecksum == null) throw CordaRuntimeException("Expected checksum not set because no zero-sized chunk was found")
 
             actualChecksum = messageDigest.digest()
         }

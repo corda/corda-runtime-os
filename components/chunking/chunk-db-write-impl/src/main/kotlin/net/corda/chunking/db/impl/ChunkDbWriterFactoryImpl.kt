@@ -6,9 +6,6 @@ import net.corda.chunking.db.ChunkWriteException
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkAck
 import net.corda.libs.configuration.SmartConfig
-import net.corda.messaging.api.publisher.Publisher
-import net.corda.messaging.api.publisher.config.PublisherConfig
-import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -22,9 +19,7 @@ import javax.persistence.EntityManagerFactory
 @Component(service = [ChunkDbWriterFactory::class])
 class ChunkDbWriterFactoryImpl @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
-    private val subscriptionFactory: SubscriptionFactory,
-    @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory
+    private val subscriptionFactory: SubscriptionFactory
 ) : ChunkDbWriterFactory {
     companion object {
         internal const val GROUP_NAME = "chunk.writer"
@@ -37,23 +32,12 @@ class ChunkDbWriterFactoryImpl @Activate constructor(
         instanceId: Int,
         entityManagerFactory: EntityManagerFactory
     ): ChunkDbWriter {
-        val publisher = createPublisher(config, instanceId)
-        val subscription = createRPCSubscription(config, publisher, entityManagerFactory)
-        return ChunkDbWriterImpl(subscription, publisher)
-    }
-
-    private fun createPublisher(config: SmartConfig, instanceId: Int): Publisher {
-        val publisherConfig = PublisherConfig(CLIENT_NAME_DB, instanceId)
-        return try {
-            publisherFactory.createPublisher(publisherConfig, config)
-        } catch (e: Exception) {
-            throw ChunkWriteException("Could not create publisher to publish updated configuration.", e)
-        }
+        val subscription = createRPCSubscription(config, entityManagerFactory)
+        return ChunkDbWriterImpl(subscription)
     }
 
     private fun createRPCSubscription(
         config: SmartConfig,
-        publisher: Publisher,
         entityManagerFactory: EntityManagerFactory
     ): RPCSubscription<Chunk, ChunkAck> {
 
@@ -66,7 +50,7 @@ class ChunkDbWriterFactoryImpl @Activate constructor(
         )
 
         val queries = ChunkDbQueries(entityManagerFactory)
-        val processor = ChunkWriteToDbProcessor(publisher, queries)
+        val processor = ChunkWriteToDbProcessor(queries)
 
         return try {
             subscriptionFactory.createRPCSubscription(rpcConfig, config, processor)
