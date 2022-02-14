@@ -44,10 +44,10 @@ open class TestBase {
         javaClass.classLoader.getResource("truststore_c4/cordarootca.pem").readText()
     }
     protected val truststoreKeyStore by lazy {
-        TrustStoresMap.Truststore(listOf(truststoreCertificatePem)).trustStore
+        TrustStoresMap.TrustedCertificates(listOf(truststoreCertificatePem)).trustStore
     }
     protected val c4TruststoreKeyStore by lazy {
-        TrustStoresMap.Truststore(listOf(c4TruststoreCertificatePem)).trustStore
+        TrustStoresMap.TrustedCertificates(listOf(c4TruststoreCertificatePem)).trustStore
     }
 
     protected val clientMessageContent = "PING"

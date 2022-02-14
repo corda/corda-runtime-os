@@ -16,33 +16,37 @@ import net.corda.p2p.GatewayTruststore
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_TRUSTSTORES
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicReference
 
 @Suppress("LongParameterList")
 internal class TrustStoresPublisher(
-    private val subscriptionFactory: SubscriptionFactory,
+    subscriptionFactory: SubscriptionFactory,
     publisherFactory: PublisherFactory,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    private val configuration: SmartConfig,
-    private val instanceId: Int,
-) : LifecycleWithDominoTile {
+    configuration: SmartConfig,
+    instanceId: Int,
+    private val linkManagerHostingMap: LinkManagerHostingMap,
+    private val linkManagerNetworkMap: LinkManagerNetworkMap,
+) : LifecycleWithDominoTile, IdentityDataForwarder {
 
     companion object {
-        private const val READ_CURRENT_DATA = "linkmanager_truststore_reader"
-        private const val WRITE_MISSING_DATA = "linkmanager_truststore_writer"
+        private const val CURRENT_DATA_READER_GROUP_NAME = "linkmanager_truststore_reader"
+        private const val MISSING_DATA_WRITER_GORUP_NAME = "linkmanager_truststore_writer"
     }
 
-    private val publishedGroups = ConcurrentHashMap<String, List<String>>()
+    private val publishedGroups = ConcurrentHashMap<String, Set<PemCertificates>>()
 
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,
         lifecycleCoordinatorFactory,
-        PublisherConfig(WRITE_MISSING_DATA),
+        PublisherConfig(MISSING_DATA_WRITER_GORUP_NAME),
         configuration,
     )
 
-    fun publishGroupIfNeeded(groupId: String, certificates: List<String>) {
+    private fun publishGroupIfNeeded(groupId: String, certificates: List<PemCertificates>) {
         publishedGroups.compute(groupId) { _, publishedCertificates ->
-            if (certificates != publishedCertificates) {
+            val certificatesSet = certificates.toSet()
+            if (certificatesSet != publishedCertificates) {
                 val record = Record(GATEWAY_TLS_TRUSTSTORES, groupId, GatewayTruststore(certificates))
                 publisher.publish(
                     listOf(record)
@@ -50,21 +54,22 @@ internal class TrustStoresPublisher(
                     it.join()
                 }
             }
-            certificates
+            certificatesSet
         }
     }
 
-    private inner class PublishedDataProcessor : CompactedProcessor<String, GatewayTruststore> {
-        val ready = CompletableFuture<Unit>()
+    private val ready = AtomicReference<CompletableFuture<Unit>>()
+
+    private val processor = object : CompactedProcessor<String, GatewayTruststore> {
         override val keyClass = String::class.java
         override val valueClass = GatewayTruststore::class.java
         override fun onSnapshot(currentData: Map<String, GatewayTruststore>) {
             publishedGroups.putAll(
                 currentData.mapValues {
-                    it.value.trustedCertificates
+                    it.value.trustedCertificates.toSet()
                 }
             )
-            ready.complete(Unit)
+            ready.get()?.complete(Unit)
         }
 
         override fun onNext(
@@ -76,10 +81,15 @@ internal class TrustStoresPublisher(
             if (certificates == null) {
                 publishedGroups.remove(newRecord.key)
             } else {
-                publishedGroups.put(newRecord.key, certificates)
+                publishedGroups[newRecord.key] = certificates.toSet()
             }
         }
     }
+    private val subscription = subscriptionFactory.createCompactedSubscription(
+        SubscriptionConfig(CURRENT_DATA_READER_GROUP_NAME, GATEWAY_TLS_TRUSTSTORES, instanceId),
+        processor,
+        configuration,
+    )
 
     override val dominoTile = DominoTile(
         this.javaClass.simpleName,
@@ -87,19 +97,30 @@ internal class TrustStoresPublisher(
         createResources = ::createResources,
         managedChildren = listOf(
             publisher.dominoTile,
+        ),
+        dependentChildren = listOf(
+            linkManagerNetworkMap.dominoTile,
+            linkManagerHostingMap.dominoTile,
+            publisher.dominoTile,
         )
     )
 
     fun createResources(resourcesHolder: ResourcesHolder): CompletableFuture<Unit> {
-        val processor = PublishedDataProcessor()
-        val subscription = subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig(READ_CURRENT_DATA, GATEWAY_TLS_TRUSTSTORES, instanceId),
-            processor,
-            configuration,
-        )
+        val complete = CompletableFuture<Unit>()
+        ready.set(complete)
         resourcesHolder.keep(subscription)
         subscription.start()
 
-        return processor.ready
+        return complete
+    }
+
+    override fun identityAdded(identity: LinkManagerNetworkMap.HoldingIdentity) {
+        if (!linkManagerHostingMap.isHostedLocally(identity)) {
+            return
+        }
+        val groupId = identity.groupId
+        val certificates = linkManagerNetworkMap.getCertificates(groupId) ?: return
+
+        publishGroupIfNeeded(groupId, certificates)
     }
 }

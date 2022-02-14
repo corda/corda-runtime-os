@@ -88,7 +88,7 @@ class GatewayIntegrationTest : TestBase() {
             publisher.close()
         }
 
-        init {
+        fun publishTrustStore() {
             publish(
                 Record(Schemas.P2P.GATEWAY_TLS_TRUSTSTORES, GROUP_ID, GatewayTruststore(listOf(truststoreCertificatePem)))
             )
@@ -196,6 +196,7 @@ class GatewayIntegrationTest : TestBase() {
         fun `gateway reconfiguration`() {
             val configurationCount = 3
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
+            alice.publishTrustStore()
             val recipientServerUrl = URI.create("http://www.alice.net:10001")
 
             val linkInMessage = LinkInMessage(authenticatedP2PMessage(""))
@@ -364,6 +365,7 @@ class GatewayIntegrationTest : TestBase() {
         fun `gateway to multiple servers`() {
             val messageCount = 100
             val serversCount = 4
+            alice.publishTrustStore()
 
             // We first produce some messages which will be consumed by the Gateway.
             val deliveryLatch = CountDownLatch(serversCount * messageCount)
@@ -448,6 +450,8 @@ class GatewayIntegrationTest : TestBase() {
             val messageCount = 100
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
             bob.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
+            alice.publishTrustStore()
+            bob.publishTrustStore()
 
             val receivedLatch = CountDownLatch(messageCount * 2)
             var bobReceivedMessages = 0

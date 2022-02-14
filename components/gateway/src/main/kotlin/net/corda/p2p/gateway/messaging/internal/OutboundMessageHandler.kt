@@ -59,7 +59,7 @@ internal class OutboundMessageHandler(
         configurationReaderService
     )
 
-    private val trustStores = TrustStoresMap(
+    private val trustStoresMap = TrustStoresMap(
         lifecycleCoordinatorFactory,
         subscriptionFactory,
         nodeConfiguration,
@@ -69,8 +69,8 @@ internal class OutboundMessageHandler(
     override val dominoTile = DominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        dependentChildren = listOf(connectionManager.dominoTile, trustStores.dominoTile),
-        managedChildren = listOf(connectionManager.dominoTile, trustStores.dominoTile),
+        dependentChildren = listOf(connectionManager.dominoTile, trustStoresMap.dominoTile),
+        managedChildren = listOf(connectionManager.dominoTile, trustStoresMap.dominoTile),
         createResources = ::createResources,
         configurationChangeHandler = ConfigChangeHandler()
     )
@@ -93,7 +93,7 @@ internal class OutboundMessageHandler(
             val pendingRequests = events.mapNotNull { evt ->
                 evt.value?.let { peerMessage ->
                     try {
-                        val trustStore = trustStores.getTrustStore(peerMessage.header.destinationIdentity.groupId)
+                        val trustStore = trustStoresMap.getTrustStore(peerMessage.header.destinationIdentity.groupId)
 
                         val sni = SniCalculator.calculateSni(
                             peerMessage.header.destinationIdentity.x500Name,

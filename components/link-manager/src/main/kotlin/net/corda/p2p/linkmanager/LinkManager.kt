@@ -77,7 +77,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                   private val configuration: SmartConfig,
                   private val instanceId: Int,
                   val linkManagerNetworkMap: LinkManagerNetworkMap
-                      = StubNetworkMap(lifecycleCoordinatorFactory, subscriptionFactory, publisherFactory, instanceId, configuration),
+                      = StubNetworkMap(lifecycleCoordinatorFactory, subscriptionFactory, instanceId, configuration),
                   private val linkManagerHostingMap: LinkManagerHostingMap
                       = ConfigBasedLinkManagerHostingMap(configurationReaderService, lifecycleCoordinatorFactory),
                   private val linkManagerCryptoService: LinkManagerCryptoService
@@ -119,6 +119,19 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         linkManagerNetworkMap,
         inboundAssignmentListener,
     )
+
+    private val trustStoresPublisher = TrustStoresPublisher(
+        subscriptionFactory,
+        publisherFactory,
+        lifecycleCoordinatorFactory,
+        configuration,
+        instanceId,
+        linkManagerHostingMap,
+        linkManagerNetworkMap
+    ).also {
+        linkManagerHostingMap.registerDataForwarder(it)
+        linkManagerNetworkMap.registerDataForwarder(it)
+    }
 
     private val deliveryTracker = DeliveryTracker(
         lifecycleCoordinatorFactory,
@@ -194,6 +207,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             outboundDominoTile,
             deliveryTracker.dominoTile,
             sessionManager.dominoTile,
+            trustStoresPublisher.dominoTile,
         ) + commonChildren
     )
 

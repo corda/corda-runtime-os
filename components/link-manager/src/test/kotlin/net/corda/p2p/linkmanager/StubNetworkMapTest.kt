@@ -51,10 +51,7 @@ class StubNetworkMapTest {
         createResources = context.arguments()[2] as ((ResourcesHolder) -> CompletableFuture<Unit>)
         whenever(mock.isRunning).doReturn(true)
     }
-    private val publisherFactory = mock<PublisherFactory>()
-    private val mockTrustStoresPublisher = mockConstruction(TrustStoresPublisher::class.java)
-
-    private val networkMap = StubNetworkMap(mock(), subscriptionFactory, publisherFactory, 1, SmartConfigImpl.empty())
+    private val networkMap = StubNetworkMap(mock(), subscriptionFactory, 1, SmartConfigImpl.empty())
 
     private val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, BouncyCastleProvider())
     private val rsaKeyPairGenerator = KeyPairGenerator.getInstance("RSA")
@@ -82,7 +79,6 @@ class StubNetworkMapTest {
     fun cleanUp() {
         dominoTile.close()
         resourcesHolder.close()
-        mockTrustStoresPublisher.close()
     }
 
     @Test
@@ -115,9 +111,7 @@ class StubNetworkMapTest {
         clientProcessor!!.onNext(Record(NETWORK_MAP_TOPIC, charlieEntry.first, charlieEntry.second), null, snapshot + charlieEntry)
 
         assertThat(networkMap.getNetworkType(groupId1)).isEqualTo(LinkManagerNetworkMap.NetworkType.CORDA_4)
-        verify(mockTrustStoresPublisher.constructed().first()).publishGroupIfNeeded(groupId1, certificates1)
         assertThat(networkMap.getNetworkType(groupId2)).isEqualTo(LinkManagerNetworkMap.NetworkType.CORDA_5)
-        verify(mockTrustStoresPublisher.constructed().first()).publishGroupIfNeeded(groupId2, certificates2)
 
         val aliceMemberInfoByIdentity = networkMap.getMemberInfo(LinkManagerNetworkMap.HoldingIdentity(aliceName, groupId1))
         assertThat(aliceMemberInfoByIdentity!!.publicKey).isEqualTo(aliceKeyPair.public)

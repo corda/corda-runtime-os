@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicReference
 class StubNetworkMap(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     subscriptionFactory: SubscriptionFactory,
-    publisherFactory: PublisherFactory,
     instanceId: Int,
     configuration: SmartConfig,
 ) : LinkManagerNetworkMap {
@@ -34,20 +33,13 @@ class StubNetworkMap(
     private val subscriptionConfig = SubscriptionConfig("network-map", NETWORK_MAP_TOPIC, instanceId)
     private val subscription = subscriptionFactory.createCompactedSubscription(subscriptionConfig, processor, configuration)
     private val keyDeserialiser = KeyDeserialiser()
-    private val trustStoresPublisher = TrustStoresPublisher(
-        subscriptionFactory,
-        publisherFactory,
-        lifecycleCoordinatorFactory,
-        configuration,
-        instanceId
-    )
+    private val dataForwarders = ConcurrentHashMap.newKeySet<IdentityDataForwarder>()
 
     private val readyFuture = AtomicReference<CompletableFuture<Unit>>()
     override val dominoTile = DominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         ::createResources,
-        managedChildren = listOf(trustStoresPublisher.dominoTile),
     )
 
     private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
@@ -87,12 +79,16 @@ class StubNetworkMap(
 
             processor.netMapEntriesByGroupIdPublicKeyHash[groupId]
                 ?.values
-                ?.first()?.let { networkMapEntry ->
-                    trustStoresPublisher.publishGroupIfNeeded(groupId, networkMapEntry.trustedCertificates)
-
-                    networkMapEntry.networkType?.toLMNetworkType()
-                }
+                ?.first()?.networkType?.toLMNetworkType()
         }
+    }
+
+    override fun getCertificates(groupId: String): List<PemCertificates>? {
+        return processor.netMapEntriesByGroupIdPublicKeyHash[groupId]?.values?.first()?.trustedCertificates
+    }
+
+    override fun registerDataForwarder(forwarder: IdentityDataForwarder) {
+        dataForwarders += forwarder
     }
 
     private fun NetworkMapEntry.toMemberInfo():LinkManagerNetworkMap.MemberInfo {
@@ -157,8 +153,13 @@ class StubNetworkMap(
             }
 
             val publicKeyHash = calculateHash(networkMapEntry.publicKey.array())
+            val identity = networkMapEntry.holdingIdentity.toLMHoldingIdentity()
             netMapEntriesByGroupIdPublicKeyHash[networkMapEntry.holdingIdentity.groupId]!![ByteBuffer.wrap(publicKeyHash)] = networkMapEntry
-            netmapEntriesByHoldingIdentity[networkMapEntry.holdingIdentity.toLMHoldingIdentity()] = networkMapEntry
+            netmapEntriesByHoldingIdentity[identity] = networkMapEntry
+
+            dataForwarders.forEach {
+                it.identityAdded(networkMapEntry.holdingIdentity.toLMHoldingIdentity())
+            }
         }
 
         private fun HoldingIdentity.toLMHoldingIdentity(): LinkManagerNetworkMap.HoldingIdentity {
@@ -172,6 +173,4 @@ class StubNetworkMap(
         }
 
     }
-
-
 }

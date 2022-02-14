@@ -4,6 +4,8 @@ import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import java.security.PublicKey
 
+typealias PemCertificates = String
+
 /**
  * This interface defines the parts of the Network Map required by the LinkManager.
  */
@@ -44,6 +46,16 @@ interface LinkManagerNetworkMap: LifecycleWithDominoTile {
      * Returns the [NetworkType] for group identifier [groupId].
      */
     fun getNetworkType(groupId: String): NetworkType?
+
+    /**
+     * Returns the root certificates for group identifier [groupId] in a PEM format.
+     */
+    fun getCertificates(groupId: String): List<PemCertificates>?
+
+    /**
+     * register a data forwarder to be called when new identity is identified.
+     */
+    fun registerDataForwarder(forwarder: IdentityDataForwarder)
 
     data class MemberInfo(val holdingIdentity: HoldingIdentity,
                           val publicKey: PublicKey,

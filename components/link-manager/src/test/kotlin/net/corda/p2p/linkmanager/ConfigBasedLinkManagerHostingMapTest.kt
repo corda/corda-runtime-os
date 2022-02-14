@@ -63,6 +63,28 @@ class ConfigBasedLinkManagerHostingMapTest {
     }
 
     @Test
+    fun `registerDataForwarder will register a forwarder that will call all the identeties`() {
+        setRunning()
+        val identities = mutableMapOf<Int, Collection<LinkManagerNetworkMap.HoldingIdentity>>()
+        (1..3).forEach { id ->
+            val myIdentities = mutableListOf<LinkManagerNetworkMap.HoldingIdentity>()
+            identities[id] = myIdentities
+            val forwarder = object : IdentityDataForwarder {
+                override fun identityAdded(identity: LinkManagerNetworkMap.HoldingIdentity) {
+                    myIdentities += identity
+                }
+            }
+            hostingMap.registerDataForwarder(forwarder)
+        }
+
+        val typedConfig = configHandler.configFactory(config)
+        configHandler.applyNewConfiguration(typedConfig, null, configResourcesHolder)
+        assertThat(identities[1]).containsExactlyInAnyOrder(alice, bob)
+        assertThat(identities[2]).containsExactlyInAnyOrder(alice, bob)
+        assertThat(identities[3]).containsExactlyInAnyOrder(alice, bob)
+    }
+
+    @Test
     fun `if config is invalid the config factory throws an exception`() {
         assertThrows<Exception> {
             configHandler.configFactory(ConfigFactory.parseString(""))

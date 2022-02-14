@@ -44,9 +44,9 @@ internal class TrustStoresMap(
         override val valueClass = GatewayTruststore::class.java
 
         override fun onSnapshot(currentData: Map<String, GatewayTruststore>) {
-            groupIdToActualStore.putAll(
+            groupIdToTrustroots.putAll(
                 currentData.mapValues {
-                    Truststore(it.value.trustedCertificates, certificateFactory)
+                    TrustedCertificates(it.value.trustedCertificates, certificateFactory)
                 }
             )
             ready.get()?.complete(Unit)
@@ -58,13 +58,13 @@ internal class TrustStoresMap(
             currentData: Map<String, GatewayTruststore>,
         ) {
             val store = newRecord.value?.let {
-                Truststore(it.trustedCertificates, certificateFactory)
+                TrustedCertificates(it.trustedCertificates, certificateFactory)
             }
 
             if (store != null) {
-                groupIdToActualStore[newRecord.key] = store
+                groupIdToTrustroots[newRecord.key] = store
             } else {
-                groupIdToActualStore.remove(newRecord.key)
+                groupIdToTrustroots.remove(newRecord.key)
             }
         }
     }
@@ -75,7 +75,22 @@ internal class TrustStoresMap(
         nodeConfiguration
     )
 
-    class Truststore(
+    private val groupIdToTrustroots = ConcurrentHashMap<String, TrustedCertificates>()
+
+    fun getTrustStore(groupId: String) =
+        groupIdToTrustroots[groupId]
+            ?.trustStore
+            ?: throw IllegalArgumentException("Unknown trust store: $groupId")
+
+    private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
+        val resourceFuture = CompletableFuture<Unit>()
+        ready.set(resourceFuture)
+        subscription.start()
+        resources.keep { subscription.stop() }
+        return resourceFuture
+    }
+
+    class TrustedCertificates(
         pemCertificates: Collection<String>,
         certificateFactory: CertificateFactory = CertificateFactory.getInstance("X.509"),
     ) {
@@ -91,20 +106,5 @@ internal class TrustStoresMap(
                 }
             }
         }
-    }
-
-    private val groupIdToActualStore = ConcurrentHashMap<String, Truststore>()
-
-    fun getTrustStore(groupId: String) =
-        groupIdToActualStore[groupId]
-            ?.trustStore
-            ?: throw IllegalArgumentException("Unknown trust store: $groupId")
-
-    private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-        val resourceFuture = CompletableFuture<Unit>()
-        ready.set(resourceFuture)
-        subscription.start()
-        resources.keep { subscription.stop() }
-        return resourceFuture
     }
 }

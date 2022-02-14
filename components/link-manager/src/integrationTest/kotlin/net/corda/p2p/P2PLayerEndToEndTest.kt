@@ -288,7 +288,6 @@ class P2PLayerEndToEndTest {
                 StubNetworkMap(
                     lifecycleCoordinatorFactory,
                     subscriptionFactory,
-                    publisherFactory,
                     1,
                     bootstrapConfig
                 ),
