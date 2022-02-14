@@ -74,18 +74,17 @@ class HttpServerChannelHandler(private val serverListener: HttpServerListener,
                 val sourceAddress = ctx.channel().remoteAddress()
                 val targetAddress = ctx.channel().localAddress()
                 return serverListener.onRequest(HttpRequest(returnByteArray, sourceAddress, targetAddress))
-                } else {
-                    val response = createResponse(null, responseCode!!)
-                    ctx.writeAndFlush(response)
-                        .addListener(ChannelFutureListener.CLOSE)
-                    return
-                }
+            } else {
+                val response = createResponse(null, responseCode!!)
+                ctx.writeAndFlush(response)
+                    .addListener(ChannelFutureListener.CLOSE)
+                return
             }
-
+        }
             releaseBodyBuffer()
             responseCode = null
-        }
     }
+
 
     private fun send100Continue(ctx: ChannelHandlerContext) {
         val response = DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.CONTINUE, Unpooled.EMPTY_BUFFER)
