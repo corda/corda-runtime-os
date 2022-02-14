@@ -6,9 +6,6 @@ import net.corda.data.flow.event.StartRPCFlow
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.identity.HoldingIdentity
-import net.corda.flow.manager.FlowEventProcessor
-import net.corda.flow.manager.impl.acceptance.dsl.MockFlowEventProcessor
-import net.corda.flow.manager.impl.acceptance.dsl.MockFlowRunner
 import net.corda.flow.manager.impl.acceptance.dsl.filterOutputFlowTopicEventPayloads
 import net.corda.flow.manager.impl.acceptance.dsl.filterOutputFlowTopicEvents
 import net.corda.flow.manager.impl.acceptance.dsl.filterOutputFlowTopicRecords
@@ -18,31 +15,13 @@ import net.corda.schema.Schemas
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
 
-class MockFlowEventProcessorTest {
+class StateAndEventProcessorResponseUtilsTest {
 
     private companion object {
-        const val FLOW_ID = "flow id"
-        const val CLIENT_ID = "client id"
-
         val flowEventA = FlowEvent(FlowKey("a", HoldingIdentity("x500 name", "group id")), Wakeup())
         val flowEventB = FlowEvent(FlowKey("b", HoldingIdentity("x500 name", "group id")), StartRPCFlow())
         const val notAFlowEvent = "not a flow event"
-    }
-
-    private val runner = MockFlowRunner()
-    private val delegate: FlowEventProcessor = mock()
-    private val processor = MockFlowEventProcessor(delegate, runner)
-
-    @Test
-    fun `startFlow creates and executes the first step of a new flow`() {
-        whenever(delegate.onNext(eq(null), any())).thenReturn(StateAndEventProcessor.Response(Checkpoint(), emptyList()))
-        val (fiber, _) = processor.startFlow(FLOW_ID, CLIENT_ID)
-        assertEquals(FLOW_ID, fiber.flowId)
     }
 
     @Test
