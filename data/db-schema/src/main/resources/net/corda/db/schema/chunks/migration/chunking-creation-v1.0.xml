@@ -1,0 +1,43 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <!-- this schema is intentional -->
+    <property name="schema.name" value="CONFIG"/>
+    <property name="table.name" value="CHUNKS"/>
+
+    <changeSet author="R3.Corda" id="chunks-creation-v1.0">
+
+        <sql>
+            CREATE SCHEMA IF NOT EXISTS CONFIG;
+        </sql>
+
+        <createTable tableName="${table.name}" schemaName="${schema.name}">
+            <column name="request_id" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="filename" type="VARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="checksum" type="VARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="part_nr" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="offset" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <!-- 8 * 1024 * 1024 - if you change this field change the MAX_CHUNK_SIZE in corda-runtime-os -->
+            <!-- VARBINARY to allow Postgres to work as it doesn't like BLOB -->
+            <column name="data" type="VARBINARY(8388608)">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="${table.name}" columnNames="request_id, part_nr" constraintName="request_id_pk"
+                       schemaName="${schema.name}"/>
+
+    </changeSet>
+</databaseChangeLog>
