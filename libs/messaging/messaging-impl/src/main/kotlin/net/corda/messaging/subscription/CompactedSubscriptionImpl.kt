@@ -159,7 +159,7 @@ class CompactedSubscriptionImpl<K : Any, V : Any>(
         currentData.clear()
 
         while (snapshotEnds.isNotEmpty()) {
-            val consumerRecords = consumer.poll()
+            val consumerRecords = consumer.poll(config.pollTimeout)
 
             consumerRecords.forEach {
                 val value = it.value
@@ -183,7 +183,7 @@ class CompactedSubscriptionImpl<K : Any, V : Any>(
 
     private fun pollAndProcessRecords(consumer: CordaConsumer<K, V>) {
         while (!stopped) {
-            val consumerRecords = consumer.poll()
+            val consumerRecords = consumer.poll(config.pollTimeout)
             try {
                 processCompactedRecords(consumerRecords)
             } catch (ex: Exception) {

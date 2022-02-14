@@ -3,7 +3,6 @@ package net.corda.messaging.config
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.schema.configuration.MessagingKeys.Bus.BUS
-import net.corda.schema.configuration.MessagingKeys.Subscription.CLOSE_TIMEOUT
 import net.corda.schema.configuration.MessagingKeys.Subscription.COMMIT_RETRIES
 import net.corda.schema.configuration.MessagingKeys.Subscription.POLL_TIMEOUT
 import net.corda.schema.configuration.MessagingKeys.Subscription.PROCESSOR_RETRIES
@@ -17,7 +16,6 @@ data class ResolvedSubscriptionConfig(
     val group: String,
     val instanceId: String,
     val clientId: String,
-    val closeTimeout: Duration,
     val pollTimeout: Duration,
     val threadStopTimeout: Duration,
     val processorRetries: Int,
@@ -33,7 +31,6 @@ data class ResolvedSubscriptionConfig(
                 subscriptionConfig.groupName,
                 messagingConfig.getString("boot.instanceId"),
                 messagingConfig.getString("boot.clientId"), // TODO
-                Duration.ofMillis(messagingConfig.getLong(CLOSE_TIMEOUT)),
                 Duration.ofMillis(messagingConfig.getLong(POLL_TIMEOUT)),
                 Duration.ofMillis(messagingConfig.getLong(THREAD_STOP_TIMEOUT)),
                 messagingConfig.getInt(PROCESSOR_RETRIES),

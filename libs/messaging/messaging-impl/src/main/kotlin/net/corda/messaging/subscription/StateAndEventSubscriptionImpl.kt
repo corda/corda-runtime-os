@@ -42,7 +42,7 @@ class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val builder: StateAndEventBuilder,
     private val processor: StateAndEventProcessor<K, S, E>,
     private val cordaAvroSerializer: CordaAvroSerializer<Any>,
-    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val stateAndEventListener: StateAndEventListener<K, S>? = null,
     private val clock: Clock = Clock.systemUTC()
 ) : StateAndEventSubscription<K, S, E> {
@@ -177,12 +177,12 @@ class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     }
                 }
             } finally {
-                producer.close(config.closeTimeout)
+                producer.close()
                 stateAndEventConsumer.close()
             }
         }
         lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
-        producer.close(config.closeTimeout)
+        producer.close()
         stateAndEventConsumer.close()
     }
 

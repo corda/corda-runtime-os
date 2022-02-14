@@ -24,9 +24,6 @@ class ConfigProperties {
         const val CONSUMER_PROCESSOR_TIMEOUT = "consumer.processor.timeout"
         const val CONSUMER_POLL_AND_PROCESS_RETRIES = "consumer.processor.retries"
         const val POLL_TIMEOUT = "poll.timeout"
-        const val CONSUMER_POLL_TIMEOUT = "consumer.poll.timeout"
-        const val CONSUMER_SUBSCRIBE_MAX_RETRIES = "consumer.subscribe.retries"
-        const val CONSUMER_COMMIT_OFFSET_MAX_RETRIES = "consumer.commit.retries"
         const val SUBSCRIBE_MAX_RETRIES = "subscribe.retries"
         const val COMMIT_OFFSET_MAX_RETRIES = "commit.retries"
 

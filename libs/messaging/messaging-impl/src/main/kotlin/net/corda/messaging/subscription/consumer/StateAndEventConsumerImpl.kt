@@ -21,7 +21,7 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     private val config: ResolvedSubscriptionConfig,
     override val eventConsumer: CordaConsumer<K, E>,
     override val stateConsumer: CordaConsumer<K, S>,
-    private val partitionState: StateAndEventPartitionState<K, S>,
+    partitionState: StateAndEventPartitionState<K, S>,
     private val stateAndEventListener: StateAndEventListener<K, S>?
 ) : StateAndEventConsumer<K, S, E>, AutoCloseable {
 
@@ -80,8 +80,8 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     }
 
     override fun close() {
-        eventConsumer.close(config.closeTimeout)
-        stateConsumer.close(config.closeTimeout)
+        eventConsumer.close()
+        stateConsumer.close()
         executor.shutdown()
     }
 

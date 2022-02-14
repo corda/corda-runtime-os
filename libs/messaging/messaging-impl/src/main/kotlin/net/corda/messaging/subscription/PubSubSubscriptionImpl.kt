@@ -174,7 +174,7 @@ class PubSubSubscriptionImpl<K : Any, V : Any>(
         var attempts = 0
         while (!stopped) {
             try {
-                val consumerRecords = consumer.poll()
+                val consumerRecords = consumer.poll(config.pollTimeout)
                 processPubSubRecords(consumerRecords, consumer)
                 attempts = 0
             } catch (ex: Exception) {

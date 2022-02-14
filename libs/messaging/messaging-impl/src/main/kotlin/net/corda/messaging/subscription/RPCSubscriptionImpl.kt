@@ -145,7 +145,7 @@ class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
 
     private fun pollAndProcessRecords(consumer: CordaConsumer<String, RPCRequest>, producer: CordaProducer) {
         while (!stopped) {
-            val consumerRecords = consumer.poll()
+            val consumerRecords = consumer.poll(config.pollTimeout)
             try {
                 processRecords(consumerRecords, producer)
             } catch (ex: Exception) {

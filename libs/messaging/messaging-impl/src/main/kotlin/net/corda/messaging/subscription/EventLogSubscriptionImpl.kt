@@ -212,7 +212,7 @@ class EventLogSubscriptionImpl<K : Any, V : Any>(
         var attempts = 0
         while (!stopped) {
             try {
-                processDurableRecords(consumer.poll(), producer, consumer)
+                processDurableRecords(consumer.poll(config.pollTimeout), producer, consumer)
                 attempts = 0
             } catch (ex: Exception) {
                 when (ex) {
