@@ -35,9 +35,7 @@ class HttpServerChannelHandler(private val serverListener: HttpServerListener,
                         "Hostname: ${msg.headers()[HttpHeaderNames.HOST]?:"unknown"}\n" +
                         "Request URI: ${msg.uri()}\n and the response code was $responseCode.")
 
-            }
-
-            if(responseCode == HttpResponseStatus.OK) {
+            } else {
                 logger.debug ("Received HTTP request from ${ctx.channel().remoteAddress()}\n" +
                         "Protocol version: ${msg.protocolVersion()}\n" +
                         "Hostname: ${msg.headers()[HttpHeaderNames.HOST]?:"unknown"}\n" +
@@ -73,16 +71,16 @@ class HttpServerChannelHandler(private val serverListener: HttpServerListener,
                 val returnByteArray = readBytesFromBodyBuffer()
                 val sourceAddress = ctx.channel().remoteAddress()
                 val targetAddress = ctx.channel().localAddress()
-                return serverListener.onRequest(HttpRequest(returnByteArray, sourceAddress, targetAddress))
+                serverListener.onRequest(HttpRequest(returnByteArray, sourceAddress, targetAddress))
             } else {
                 val response = createResponse(null, responseCode!!)
                 ctx.writeAndFlush(response)
                     .addListener(ChannelFutureListener.CLOSE)
-                return
             }
-        }
             releaseBodyBuffer()
             responseCode = null
+        }
+
     }
 
 
