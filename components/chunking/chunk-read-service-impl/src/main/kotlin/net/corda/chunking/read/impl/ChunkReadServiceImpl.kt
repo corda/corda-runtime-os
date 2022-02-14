@@ -3,10 +3,9 @@ package net.corda.chunking.read.impl
 import net.corda.chunking.db.ChunkDbWriter
 import net.corda.chunking.db.ChunkDbWriterFactory
 import net.corda.chunking.read.ChunkReadService
-import net.corda.configuration.read.ConfigurationHandler
+import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
@@ -38,7 +37,7 @@ class ChunkReadServiceImpl @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = DbConnectionManager::class)
     private val dbConnectionManager: DbConnectionManager,
-) : ChunkReadService, LifecycleEventHandler, ConfigurationHandler {
+) : ChunkReadService, LifecycleEventHandler {
     companion object {
         val log: Logger = contextLogger()
     }
@@ -48,8 +47,6 @@ class ChunkReadServiceImpl @Activate constructor(
     private var chunkDbWriter: ChunkDbWriter? = null
     private var registration: RegistrationHandle? = null
     private var configSubscription: AutoCloseable? = null
-
-    class ConfigChangedEvent(val config: SmartConfig) : LifecycleEvent
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
@@ -93,14 +90,20 @@ class ChunkReadServiceImpl @Activate constructor(
 
     private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent) {
         if (event.status == LifecycleStatus.UP) {
-            configSubscription = configurationReadService.registerForUpdates(this)
+            configSubscription =
+                configurationReadService.registerComponentForUpdates(coordinator, setOf(ConfigKeys.BOOT_CONFIG))
         } else {
             configSubscription?.close()
         }
     }
 
     private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        val config = event.config
+        if (!event.keys.contains(ConfigKeys.BOOT_CONFIG)) {
+            log.warn("Unexpected config key change that we didn't register for:  ${event.keys}")
+            return
+        }
+
+        val config = event.config[ConfigKeys.BOOT_CONFIG]!!
         chunkDbWriter?.close()
         chunkDbWriter = chunkDbWriterFactory
             .create(
@@ -116,12 +119,5 @@ class ChunkReadServiceImpl @Activate constructor(
         configSubscription?.close()
         registration?.close()
         chunkDbWriter?.close()
-    }
-
-    /** received a new configuration from the configuration service (not the event loop) */
-    override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
-        if (ConfigKeys.BOOT_CONFIG in changedKeys) {
-            coordinator.postEvent(ConfigChangedEvent(config[ConfigKeys.BOOT_CONFIG]!!))
-        }
     }
 }
