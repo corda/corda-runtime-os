@@ -2,8 +2,12 @@ package net.corda.cli.plugins.mgm
 
 import com.fasterxml.jackson.core.util.DefaultIndenter
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter
+import com.fasterxml.jackson.databind.exc.MismatchedInputException
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
+import org.yaml.snakeyaml.Yaml
 import picocli.CommandLine
+import java.nio.file.Path
 
 /**
  * Subcommand for generating GroupPolicy.json file, containing the requirements for joining a group, can be used for
@@ -11,6 +15,40 @@ import picocli.CommandLine
  */
 @CommandLine.Command(name = "groupPolicy", description = ["Generates GroupPolicy.json file."])
 class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPolicyOutput()) : Runnable {
+
+    @CommandLine.Option(
+        names = ["--endpoint-url"],
+        arity = "0..1",
+        description = ["Endpoint base URL"]
+    )
+    var endpointUrl: String? = null
+
+    @CommandLine.Option(
+        names = ["--endpoint-protocol"],
+        arity = "0..1",
+        description = ["Version of end-to-end authentication protocol"]
+    )
+    var endpointProtocol: Int? = null
+
+    @CommandLine.Option(
+        names = ["--name"],
+        description = ["Member's X.500 name"]
+    )
+    var names: List<String>? = null
+
+    @CommandLine.Option(
+        names = ["--file", "-f"],
+        arity = "0..1",
+        description = ["Path to a JSON or YAML file that contains static network information"]
+    )
+    var file: Path? = null
+
+    companion object {
+        private const val KEY_ALIAS = "alias"
+        private const val ROTATED_KEY_ALIAS = "historic-alias-1"
+        private const val MEMBER_STATUS = "ACTIVE"
+    }
+
     override fun run() {
         val objectMapper = jacksonObjectMapper()
         val groupPolicy = generateGroupPolicyContent()
@@ -24,7 +62,7 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
     }
 
     /**
-     * Creates the content of the GroupPolicy json, for now it's just static group information, can be parameterized later.
+     * Creates the content of the GroupPolicy JSON.
      */
     private fun generateGroupPolicyContent(): Map<String, Any> {
         val groupPolicy = mutableMapOf<String, Any>()
@@ -96,36 +134,170 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
             "mgm" to mapOf(
                 "keyAlias" to "mgm-alias"
             ),
-            "members" to listOf(
-                mapOf(
-                    "name" to "C=GB, L=London, O=Alice",
-                    "keyAlias" to "alice-alias",
-                    "rotatedKeyAlias-1" to "alice-historic-alias-1",
-                    "memberStatus" to "ACTIVE",
-                    "endpointUrl-1" to "https://alice.corda5.r3.com:10000",
-                    "endpointProtocol-1" to 1
-                ),
-                mapOf(
-                    "name" to "C=GB, L=London, O=Bob",
-                    "keyAlias" to "bob-alias",
-                    "rotatedKeyAlias-1" to "bob-historic-alias-1",
-                    "rotatedKeyAlias-2" to "bob-historic-alias-2",
-                    "memberStatus" to "ACTIVE",
-                    "endpointUrl-1" to "https://bob.corda5.r3.com:10000",
-                    "endpointProtocol-1" to 1
-                ),
-                mapOf(
-                    "name" to "C=GB, L=London, O=Charlie",
-                    "keyAlias" to "charlie-alias",
-                    "memberStatus" to "SUSPENDED",
-                    "endpointUrl-1" to "https://charlie.corda5.r3.com:10000",
-                    "endpointProtocol-1" to 1,
-                    "endpointUrl-2" to "https://charlie-dr.corda5.r3.com:10001",
-                    "endpointProtocol-2" to 1
-                )
+            "members" to (
+                    memberListFromInput() ?: listOf(
+                        mapOf(
+                            "name" to "C=GB, L=London, O=Alice",
+                            "keyAlias" to "alice-alias",
+                            "rotatedKeyAlias-1" to "alice-historic-alias-1",
+                            "memberStatus" to "ACTIVE",
+                            "endpointUrl-1" to "https://alice.corda5.r3.com:10000",
+                            "endpointProtocol-1" to 1
+                        ),
+                        mapOf(
+                            "name" to "C=GB, L=London, O=Bob",
+                            "keyAlias" to "bob-alias",
+                            "rotatedKeyAlias-1" to "bob-historic-alias-1",
+                            "rotatedKeyAlias-2" to "bob-historic-alias-2",
+                            "memberStatus" to "ACTIVE",
+                            "endpointUrl-1" to "https://bob.corda5.r3.com:10000",
+                            "endpointProtocol-1" to 1
+                        ),
+                        mapOf(
+                            "name" to "C=GB, L=London, O=Charlie",
+                            "keyAlias" to "charlie-alias",
+                            "memberStatus" to "SUSPENDED",
+                            "endpointUrl-1" to "https://charlie.corda5.r3.com:10000",
+                            "endpointProtocol-1" to 1,
+                            "endpointUrl-2" to "https://charlie-dr.corda5.r3.com:10001",
+                            "endpointProtocol-2" to 1
+                        )
+                    )
             )
         )
         return groupPolicy
+    }
+
+    /**
+     * Returns a list of members generated from static network information provided via string parameters or file input.
+     *
+     * @throws IllegalArgumentException If both file input and string parameters are provided.
+     */
+    private fun memberListFromInput(): List<Map<String, Any>>? {
+        if (file != null) {
+            require(endpointUrl == null) { "Endpoint URL may not be specified when '--file' is set." }
+            require(endpointProtocol == null) { "Endpoint protocol may not be specified when '--file' is set." }
+            require(names == null) { "Member name(s) may not be specified when '--file' is set." }
+            return membersFromFile()
+        }
+        return membersFromStringParameters()
+    }
+
+    /**
+     * Creates a list of members from static network information provided via file input.
+     *
+     * @return Member list or null if no file was provided.
+     */
+    private fun membersFromFile(): List<Map<String, Any>>? {
+        val content = readAndValidateFile() ?: return null
+        val members = mutableListOf<Map<String, Any>>()
+        content["memberNames"]?.let {
+            (it as List<*>)
+            it.forEach { name ->
+                members.add(
+                    mapOf(
+                        "name" to name!!,
+                        "keyAlias" to KEY_ALIAS,
+                        "rotatedKeyAlias-1" to ROTATED_KEY_ALIAS,
+                        "memberStatus" to MEMBER_STATUS,
+                        "endpointUrl-1" to content["endpointUrl"]!!,
+                        "endpointProtocol-1" to content["endpointProtocol"]!!
+                    )
+                )
+            }
+        }
+        content["members"]?.let {
+            (it as List<*>)
+            it.forEach { member ->
+                (member as Map<*, *>)
+                members.add(
+                    mapOf(
+                        "name" to member["name"]!!,
+                        "keyAlias" to KEY_ALIAS,
+                        "rotatedKeyAlias-1" to ROTATED_KEY_ALIAS,
+                        "memberStatus" to (member["status"] ?: MEMBER_STATUS),
+                        "endpointUrl-1" to (member["endpointUrl"] ?: content["endpointUrl"]!!),
+                        "endpointProtocol-1" to (member["endpointProtocol"] ?: content["endpointProtocol"]!!)
+                    )
+                )
+            }
+        }
+        return members
+    }
+
+    /**
+     * Creates a list of members from static network information provided via string parameters.
+     *
+     * @return Member list or null if no parameters were provided.
+     */
+    private fun membersFromStringParameters(): List<Map<String, Any>>? {
+        validateStringParameters()
+        if (endpointUrl == null && endpointProtocol == null && names == null) {
+            return null
+        }
+        val members = mutableListOf<Map<String, Any>>()
+        names?.forEach { name ->
+            members.add(
+                mapOf(
+                    "name" to name,
+                    "keyAlias" to KEY_ALIAS,
+                    "rotatedKeyAlias-1" to ROTATED_KEY_ALIAS,
+                    "memberStatus" to MEMBER_STATUS,
+                    "endpointUrl-1" to endpointUrl!!,
+                    "endpointProtocol-1" to endpointProtocol!!
+                )
+            )
+        }
+        return members
+    }
+
+    /**
+     * Validates string parameters specified for generating GroupPolicy.
+     *
+     * @throws IllegalArgumentException If member name(s) are provided without specifying endpoint information.
+     */
+    private fun validateStringParameters() {
+        if (names != null) {
+            require(endpointUrl != null) { "Endpoint URL must be specified using '--endpoint-url'." }
+            require(endpointProtocol != null) { "Endpoint protocol must be specified using '--endpoint-protocol'." }
+        }
+    }
+
+    /**
+     * Reads and validates static network information from a JSON or YAML formatted file.
+     *
+     * @return Static network information as [Map], or null if no file was provided.
+     * @throws IllegalArgumentException If the input file format is not supported, the file is malformed, or the file contains an invalid combination of blocks e.g. both 'memberNames' and 'members' blocks are present.
+     */
+    private fun readAndValidateFile(): Map<String, Any>? {
+        file ?: return null
+        val parsed = file.toString().run {
+            when {
+                endsWith(".json") -> {
+                    try {
+                        jacksonObjectMapper().readValue<Map<String, Any>>(file!!.toFile())
+                    } catch (e: MismatchedInputException) {
+                        throw IllegalArgumentException("Could not read static network information from $file.")
+                    }
+                }
+                endsWith(".yaml") || endsWith(".yml") -> {
+                    Yaml().load(file!!.toFile().inputStream())
+                        ?: throw IllegalArgumentException("Could not read static network information from $file.")
+                }
+                else -> throw IllegalArgumentException("Input file format not supported.")
+            }.also { parsed ->
+                val hasMemberNames = parsed["memberNames"] != null
+                val hasMembers = parsed["members"] != null
+                if (hasMemberNames && hasMembers) {
+                    throw IllegalArgumentException("Only one of 'memberNames' and 'members' blocks may be specified.")
+                }
+                if (hasMemberNames || hasMembers) {
+                    require(parsed["endpointUrl"] != null) { "Endpoint URL must be specified." }
+                    require(parsed["endpointProtocol"] != null) { "Endpoint protocol must be specified." }
+                }
+            }
+        }
+        return parsed
     }
 }
 
