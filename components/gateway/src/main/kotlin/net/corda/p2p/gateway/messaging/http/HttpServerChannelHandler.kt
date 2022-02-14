@@ -68,15 +68,13 @@ class HttpServerChannelHandler(private val serverListener: HttpServerListener,
         // This message type indicates the entire Http object has been received and the body content can be forwarded to
         // the event processor. No trailing headers should exist
         if (msg is LastHttpContent) {
-            when(responseCode) {
-                HttpResponseStatus.OK -> {
-                    logger.debug("Read end of response body $msg")
-                    val returnByteArray = readBytesFromBodyBuffer()
-                    val sourceAddress = ctx.channel().remoteAddress()
-                    val targetAddress = ctx.channel().localAddress()
-                    serverListener.onRequest(HttpRequest(returnByteArray, sourceAddress, targetAddress))
-                }
-                else -> {
+            if(responseCode == HttpResponseStatus.OK) {
+                logger.debug("Read end of response body $msg")
+                val returnByteArray = readBytesFromBodyBuffer()
+                val sourceAddress = ctx.channel().remoteAddress()
+                val targetAddress = ctx.channel().localAddress()
+                serverListener.onRequest(HttpRequest(returnByteArray, sourceAddress, targetAddress))
+                } else {
                     val response = createResponse(null, responseCode!!)
                     ctx.writeAndFlush(response)
                         .addListener(ChannelFutureListener.CLOSE)
