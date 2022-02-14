@@ -11,4 +11,6 @@ dependencies {
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation "org.yaml:snakeyaml:${snakeyamlVersion}"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+    testImplementation "com.github.stefanbirkner:system-lambda:1.2.1"
+    testApi "info.picocli:picocli:${picoCliVersion}"
 }
