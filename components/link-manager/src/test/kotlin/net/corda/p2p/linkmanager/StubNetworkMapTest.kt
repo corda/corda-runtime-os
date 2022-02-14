@@ -5,7 +5,6 @@ import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.CompactedProcessor
-import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.NetworkType
@@ -23,7 +22,6 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator

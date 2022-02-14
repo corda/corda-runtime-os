@@ -66,7 +66,7 @@ class ConfigBasedLinkManagerHostingMapTest {
     fun `registerDataForwarder will register a forwarder that will call all the identeties`() {
         setRunning()
         val identities = mutableMapOf<Int, Collection<LinkManagerNetworkMap.HoldingIdentity>>()
-        (1..3).forEach { id ->
+        repeat(3) { id ->
             val myIdentities = mutableListOf<LinkManagerNetworkMap.HoldingIdentity>()
             identities[id] = myIdentities
             val forwarder = object : IdentityDataForwarder {
@@ -79,9 +79,9 @@ class ConfigBasedLinkManagerHostingMapTest {
 
         val typedConfig = configHandler.configFactory(config)
         configHandler.applyNewConfiguration(typedConfig, null, configResourcesHolder)
+        assertThat(identities[0]).containsExactlyInAnyOrder(alice, bob)
         assertThat(identities[1]).containsExactlyInAnyOrder(alice, bob)
         assertThat(identities[2]).containsExactlyInAnyOrder(alice, bob)
-        assertThat(identities[3]).containsExactlyInAnyOrder(alice, bob)
     }
 
     @Test

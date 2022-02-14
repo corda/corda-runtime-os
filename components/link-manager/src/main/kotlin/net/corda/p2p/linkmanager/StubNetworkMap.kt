@@ -6,7 +6,6 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.CompactedProcessor
-import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
