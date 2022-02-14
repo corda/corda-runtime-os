@@ -55,7 +55,7 @@ class GroupPolicyProviderImpl @Activate constructor(
     override fun getGroupPolicy(
         holdingIdentity: HoldingIdentity
     ): GroupPolicy {
-        return groupPolicies[holdingIdentity] ?: parseGroupPolicy(holdingIdentity)
+        return groupPolicies.computeIfAbsent(holdingIdentity) { parseGroupPolicy(holdingIdentity) }
     }
 
     override fun start() = coordinator.start()
@@ -87,9 +87,7 @@ class GroupPolicyProviderImpl @Activate constructor(
     ): GroupPolicy {
         val vNodeInfo = virtualNodeInfo ?: virtualNodeInfoReadService.get(holdingIdentity)
         val metadata = vNodeInfo?.cpiIdentifier?.let { cpiInfoReader.get(it) }
-        return groupPolicyParser
-            .parse(metadata?.groupPolicy)
-            .apply { groupPolicies[holdingIdentity] = this }
+        return groupPolicyParser.parse(metadata?.groupPolicy)
     }
 
     /**
@@ -184,6 +182,7 @@ class GroupPolicyProviderImpl @Activate constructor(
                 if (isRunning && isUp) {
                     changed.filter { snapshot[it] != null }.forEach {
                         parseGroupPolicy(it, virtualNodeInfo = snapshot[it])
+                            .apply { groupPolicies[it] = this }
                     }
                 }
             }
