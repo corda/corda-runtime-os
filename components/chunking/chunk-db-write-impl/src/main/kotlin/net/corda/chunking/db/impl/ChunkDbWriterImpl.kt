@@ -17,4 +17,8 @@ class ChunkDbWriterImpl internal constructor(
     override fun stop() {
         subscription.stop()
     }
+
+    override fun close() {
+        subscription.close()
+    }
 }

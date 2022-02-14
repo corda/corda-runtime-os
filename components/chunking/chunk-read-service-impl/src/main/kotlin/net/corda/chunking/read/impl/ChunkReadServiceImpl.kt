@@ -6,9 +6,9 @@ import net.corda.chunking.read.ChunkReadService
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.db.connection.manager.EntityManagerFactoryCache
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
+import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -66,19 +66,28 @@ class ChunkReadServiceImpl @Activate constructor(
 
     override fun stop() = coordinator.stop()
 
+    private val dependentComponents = DependentComponents.of(
+        ::configurationReadService,
+        ::dbConnectionManager
+    )
+
     private fun onStartEvent(coordinator: LifecycleCoordinator) {
         configurationReadService.start()
         registration?.close()
         registration =
-            coordinator.followStatusChangesByName(setOf(
-                LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                LifecycleCoordinatorName.forComponent<EntityManagerFactoryCache>()
-            ))
+            coordinator.followStatusChangesByName(
+                setOf(
+                    LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                    LifecycleCoordinatorName.forComponent<DbConnectionManager>()
+                )
+            )
+        dependentComponents.registerAndStartAll(coordinator)
     }
 
     private fun onStop(coordinator: LifecycleCoordinator) {
         chunkDbWriter?.stop()
         chunkDbWriter = null
+        dependentComponents.stopAll()
         coordinator.updateStatus(LifecycleStatus.DOWN)
     }
 
@@ -111,8 +120,8 @@ class ChunkReadServiceImpl @Activate constructor(
 
     /** received a new configuration from the configuration service (not the event loop) */
     override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
-        if (ConfigKeys.MESSAGING_CONFIG in changedKeys) {
-            coordinator.postEvent(ConfigChangedEvent(config[ConfigKeys.MESSAGING_CONFIG]!!))
+        if (ConfigKeys.BOOT_CONFIG in changedKeys) {
+            coordinator.postEvent(ConfigChangedEvent(config[ConfigKeys.BOOT_CONFIG]!!))
         }
     }
 }
