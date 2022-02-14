@@ -154,7 +154,21 @@ open class SessionManagerImpl(
             val configUpdateResult = CompletableFuture<Unit>()
             dominoTile.withLifecycleWriteLock {
                 config.set(newConfiguration)
-                if (oldConfiguration != null) destroyAllSessions()
+                if (oldConfiguration != null) {
+                    sessionReplayer.removeAllMessagesFromReplay()
+                    heartbeatManager.stopTrackingAllSessions()
+                    val tombstoneRecords = (outboundSessionPool.get().getAllSessionIds() + activeInboundSessions.keys
+                            + pendingInboundSessions.keys).map { Record(SESSION_OUT_PARTITIONS, it, null) }
+                    outboundSessionPool.get().clearPool()
+
+                    activeInboundSessions.clear()
+                    pendingInboundSessions.clear()
+                    //This is suboptimal we could instead restart session negotiation
+                    pendingOutboundSessionMessageQueues.destroyAllQueues()
+                    if (tombstoneRecords.isNotEmpty()) {
+                        publisher.publish(tombstoneRecords)
+                    }
+                }
                 outboundSessionPool.set(
                     OutboundSessionPool(newConfiguration.sessionsPerCounterparties, heartbeatManager::calculateWeightForSession)
                 )
@@ -236,22 +250,6 @@ open class SessionManagerImpl(
     override fun messageAcknowledged(sessionId: String) {
         dominoTile.withLifecycleLock {
             heartbeatManager.messageAcknowledged(sessionId)
-        }
-    }
-
-    private fun destroyAllSessions() {
-        sessionReplayer.removeAllMessagesFromReplay()
-        heartbeatManager.stopTrackingAllSessions()
-        val tombstoneRecords = (outboundSessionPool.get().getAllSessionIds() + activeInboundSessions.keys
-                + pendingInboundSessions.keys).map { Record(SESSION_OUT_PARTITIONS, it, null) }
-        outboundSessionPool.get().clearPool()
-
-        activeInboundSessions.clear()
-        pendingInboundSessions.clear()
-        //This is suboptimal we could instead restart session negotiation
-        pendingOutboundSessionMessageQueues.destroyAllQueues()
-        if (tombstoneRecords.isNotEmpty()) {
-            publisher.publish(tombstoneRecords)
         }
     }
 
@@ -671,6 +669,10 @@ open class SessionManagerImpl(
             HeartbeatManagerConfigChangeHandler(),
         )
 
+        /**
+         * Calculates a weight for a Session in the interval [0.0, 1.0].
+         * Sessions for which an acknowledgement was recently received have a large weight.
+         */
         fun calculateWeightForSession(sessionId: String): Double? {
             val timeSinceLastAck = trackedSessions[sessionId]?.lastAckTimestamp?.let { timeStamp() - it }
             var weight = timeSinceLastAck?.let {1.0 - it.toDouble() / config.get().sessionTimeout.toMillis()}

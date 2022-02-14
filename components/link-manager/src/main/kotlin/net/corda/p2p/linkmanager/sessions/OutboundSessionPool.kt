@@ -43,7 +43,7 @@ class OutboundSessionPool(
 
     @Suppress("ComplexMethod")
     fun getNextSession(sessionCounterparties: SessionManager.SessionCounterparties): SessionPoolStatus {
-        val weights = mutableListOf<Pair<Int, Double>>()
+        val indicesAndWeights = mutableListOf<Pair<Int, Double>>()
         var totalWeight = 0.0
         for (i in 0 until poolSize) {
             val session = outboundSessions[SessionKey(i, sessionCounterparties)]
@@ -51,7 +51,7 @@ class OutboundSessionPool(
                 val weight = calculateWeightForSession(session.session.sessionId) ?: 0.0
                 //Avoid division by small float problems
                 if (weight > PROB_CUT_OFF) {
-                    weights.add(i to weight)
+                    indicesAndWeights.add(i to weight)
                     totalWeight += weight
                 }
             }
@@ -60,9 +60,8 @@ class OutboundSessionPool(
         var foundPoolIndex = 0
         var totalProb = 0.0
         val randomNumber = genRandomNumber()
-        for ((poolIndex, weight) in weights) {
+        for ((poolIndex, weight) in indicesAndWeights) {
             totalProb += weight / totalWeight
-            logger.info("$poolIndex $totalProb")
             if (randomNumber <= totalProb) {
                 foundPoolIndex = poolIndex
                 break
@@ -76,7 +75,7 @@ class OutboundSessionPool(
             is SessionType.PendingSession -> {
                 SessionPoolStatus.SessionPending
             }
-            else -> {
+            null -> {
                 SessionPoolStatus.NewSessionsNeeded(poolSize)
             }
         }
