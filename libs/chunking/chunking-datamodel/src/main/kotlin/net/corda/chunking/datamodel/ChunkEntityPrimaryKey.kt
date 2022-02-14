@@ -8,4 +8,4 @@ import java.io.Serializable
  * querying.  We need to supply defaults so Kotlin creates the default
  * constructor that JPA seems to require.
  */
-data class ChunkEntityPrimaryKey(val requestId: String = "", var partNumber: Int = -1) : Serializable
+data class ChunkEntityPrimaryKey(var requestId: String = "", var partNumber: Int = -1) : Serializable
