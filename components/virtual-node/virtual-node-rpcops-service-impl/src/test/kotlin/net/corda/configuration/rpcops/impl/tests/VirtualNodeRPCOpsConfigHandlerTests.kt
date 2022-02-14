@@ -4,9 +4,9 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus.ERROR
 import net.corda.lifecycle.LifecycleStatus.UP
-import net.corda.schema.configuration.ConfigKeys.Companion.BOOTSTRAP_SERVERS
-import net.corda.schema.configuration.ConfigKeys.Companion.RPC_CONFIG
-import net.corda.schema.configuration.ConfigKeys.Companion.RPC_ENDPOINT_TIMEOUT_MILLIS
+import net.corda.schema.configuration.ConfigKeys.BOOTSTRAP_SERVERS
+import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
+import net.corda.schema.configuration.ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS
 import net.corda.virtualnode.rpcops.VirtualNodeRPCOpsServiceException
 import net.corda.virtualnode.rpcops.impl.VirtualNodeRPCOpsConfigHandler
 import net.corda.virtualnode.rpcops.impl.v1.VirtualNodeRPCOpsInternal
@@ -68,14 +68,14 @@ class VirtualNodeRPCOpsConfigHandlerTests {
         val configHandler = VirtualNodeRPCOpsConfigHandler(mock(), configRPCOps)
         configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config))
 
-        verify(configRPCOps).createAndStartRPCSender(config)
+        verify(configRPCOps).createAndStartRpcSender(config)
     }
 
     @Test
     fun `sets coordinator to down and throws if RPC sender cannot be created`() {
         val coordinator = mock<LifecycleCoordinator>()
         val configRPCOps = mock<VirtualNodeRPCOpsInternal>().apply {
-            whenever(createAndStartRPCSender(any())).thenAnswer { throw IllegalStateException() }
+            whenever(createAndStartRpcSender(any())).thenAnswer { throw IllegalStateException() }
         }
         val config = mock<SmartConfig>().apply {
             whenever(hasPath(BOOTSTRAP_SERVERS)).thenReturn(true)

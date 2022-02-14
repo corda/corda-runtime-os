@@ -48,7 +48,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
     override val protocolVersion = 1
     private var rpcSender: RPCSender<VirtualNodeCreationRequest, VirtualNodeCreationResponse>? = null
     private var requestTimeout: Duration? = null
-    override val isRunning get() = rpcSender != null && requestTimeout != null
+    override val isRunning get() = rpcSender?.isRunning ?: false && requestTimeout != null
 
     override fun start() = Unit
 
@@ -57,7 +57,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
         rpcSender = null
     }
 
-    override fun createAndStartRPCSender(config: SmartConfig) {
+    override fun createAndStartRpcSender(config: SmartConfig) {
         rpcSender?.close()
         rpcSender = publisherFactory.createRPCSender(RPC_CONFIG, config).apply { start() }
     }
@@ -67,6 +67,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
     }
 
     override fun createVirtualNode(request: HTTPCreateVirtualNodeRequest): HTTPCreateVirtualNodeResponse {
+        // TODO - Support for provided DB connection (rather than having it auto-generated).
         val rpcRequest = VirtualNodeCreationRequest(request.x500Name, request.cpiIdHash)
         validateX500Name(rpcRequest.x500Name)
         val resp = sendRequest(rpcRequest)
@@ -112,7 +113,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
         return try {
             nonNullRPCSender.sendRequest(request).getOrThrow(nonNullRequestTimeout)
         } catch (e: Exception) {
-            throw VirtualNodeRPCOpsServiceException("Could not create virtual node.", e)
+            throw VirtualNodeRPCOpsServiceException("Could not complete virtual node creation request.", e)
         }
     }
 }

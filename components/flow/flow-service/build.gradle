@@ -1,14 +1,23 @@
+import aQute.bnd.gradle.Bundle
+
 plugins {
     id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.osgi-test-conventions'
     id 'corda.common-library'
 }
 
 description "Flow service"
 
+configurations {
+    cpks {
+        canBeConsumed = false
+        transitive = false
+    }
+}
+
 dependencies {
-    compileOnly "org.osgi:org.osgi.service.component.annotations"
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly 'org.osgi:osgi.annotation'
-    compileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
 
     implementation project(":components:configuration:configuration-read-service")
     implementation project(":components:virtual-node:virtual-node-info-read-service")
@@ -24,10 +33,10 @@ dependencies {
     implementation project(":libs:sandbox")
     implementation project(":libs:serialization:serialization-checkpoint-api")
     implementation project(":libs:virtual-node:sandbox-group-context")
+    implementation project(":libs:virtual-node:virtual-node-manager")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
-    implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-application"
     implementation "net.corda:corda-avro-schema"
@@ -42,4 +51,20 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:registry")
+
+    cpks project(path: ':testing:cpbs:sandbox-cpk-inject', configuration: 'cordaCPB')
+
+    integrationTestImplementation project(':testing:sandboxes')
+    integrationTestRuntimeOnly project(':libs:flows:flow-manager-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:inmemory-messaging-impl')
+    integrationTestRuntimeOnly project(':libs:serialization:serialization-checkpoint-api')
+    integrationTestRuntimeOnly project(':libs:serialization:serialization-kryo')
+}
+
+def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {
+    from configurations.cpks
+}
+
+tasks.named('testingBundle', Bundle) {
+    dependsOn integrationTestResources
 }

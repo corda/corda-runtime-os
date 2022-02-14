@@ -8,7 +8,6 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigObject
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
-import net.corda.libs.configuration.datamodel.findDbConnectionByNameAndPrivilege
 import net.corda.orm.EntityManagerFactoryFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
@@ -33,7 +32,12 @@ import javax.persistence.Query
 import javax.sql.DataSource
 
 class DbConnectionsRepositoryTest {
-    private val entityManager = mock<EntityManager>()
+    private val q = mock<Query>() {
+        on { resultList }.doReturn(emptyList<DbConnectionConfig>())
+    }
+    private val entityManager = mock<EntityManager>() {
+        on { createNamedQuery(any()) }.doReturn(q)
+    }
     private val entityManagerFactory = mock<EntityManagerFactory>{
         on { createEntityManager() }.doReturn(entityManager)
     }
@@ -52,7 +56,13 @@ class DbConnectionsRepositoryTest {
     private val configObj = mock<SmartConfigObject>() {
         on { render(any<ConfigRenderOptions>()) }.doReturn("config=123")
     }
+
+    private val configRoot = mock<SmartConfigObject>() {
+        on { render(org.mockito.kotlin.any()) }.doReturn("[config]")
+    }
     private val otherDbConfig = mock<SmartConfig>() {
+        on { toSafeConfig() }.doReturn(this.mock)
+        on { root() }.doReturn(configRoot)
         on { withFallback(any()) }.doReturn(this.mock)
         on { hasPath(any()) }.doReturn(true)
         on { getString(any()) }.doReturn("other DB config")
@@ -62,6 +72,8 @@ class DbConnectionsRepositoryTest {
         on { create(config) }.doReturn(otherDbConfig)
     }
     private val clusterDbConfig = mock<SmartConfig>() {
+        on { toSafeConfig() }.doReturn(this.mock)
+        on { root() }.doReturn(configRoot)
         on { withFallback(any()) }.doReturn(this.mock)
         on { hasPath(any()) }.doReturn(true)
         on { getString(any()) }.doReturn("cluster DB config")
@@ -130,8 +142,7 @@ class DbConnectionsRepositoryTest {
 
         val query = mock<Query>()
         whenever(entityManager.createNamedQuery(any())).doReturn(query)
-        whenever(entityManager.findDbConnectionByNameAndPrivilege("test-connection", DbPrivilege.DDL))
-            .doReturn(connectionJPA)
+        whenever(query.resultList).doReturn(listOf(connectionJPA))
 
         val repository = DbConnectionsRepositoryImpl(entityManagerFactoryFactory, dataSourceFactory, duration, sleeper)
         repository.initialise(clusterDbConfig)
@@ -149,24 +160,25 @@ class DbConnectionsRepositoryTest {
     @ParameterizedTest
     @ValueSource(booleans = [true, false])
     fun `when put persist new connection`(existing: Boolean) {
-        val query = mock<Query>()
-        whenever(entityManager.createNamedQuery(any())).doReturn(query)
-        if(existing) {
-            val connectionJPA = DbConnectionConfig(
-                UUID.randomUUID(),
-                "test-connection",
-                DbPrivilege.DML,
-                Instant.now(),
-                "me",
-                "foo",
-                config.root().render()
-            )
-            whenever(entityManager.findDbConnectionByNameAndPrivilege("test-connection", DbPrivilege.DML))
-                .doReturn(connectionJPA)
-        } else {
-            whenever(entityManager.findDbConnectionByNameAndPrivilege("test-connection", DbPrivilege.DML))
-                .doReturn(null)
+        val query = mock<Query>() {
+            on { resultList }.doReturn(
+                if(existing) {
+                    val connectionJPA = DbConnectionConfig(
+                        UUID.randomUUID(),
+                        "test-connection",
+                        DbPrivilege.DML,
+                        Instant.now(),
+                        "me",
+                        "foo",
+                        config.root().render()
+                    )
+                    listOf(connectionJPA)
+                } else {
+                    emptyList<Any>()
+                })
         }
+        whenever(entityManager.createNamedQuery(any())).doReturn(query)
+        whenever(entityManager.transaction).doReturn(mock())
 
         val repository = DbConnectionsRepositoryImpl(entityManagerFactoryFactory, dataSourceFactory, duration, sleeper)
         repository.initialise(clusterDbConfig)

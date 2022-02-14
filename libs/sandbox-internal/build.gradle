@@ -10,7 +10,7 @@ plugins {
 description 'Corda Sandbox Internals'
 
 configurations {
-    cpks {
+    cpbs {
         canBeConsumed = false
         transitive = false
     }
@@ -26,28 +26,31 @@ dependencies {
     implementation 'net.corda:corda-packaging'
     implementation 'net.corda:corda-serialization'
     implementation project(':libs:sandbox')
+    runtimeOnly project(':libs:sandbox-hooks')
 
+    testCompileOnly 'org.osgi:osgi.core'
     testCompileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
-    testImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
     testRuntimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
+    testRuntimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 
-    cpks project(path: 'sandbox-cpk-one', configuration: 'cordaCPK')
-    cpks project(path: 'sandbox-cpk-two', configuration: 'cordaCPK')
-    cpks project(path: 'sandbox-cpk-three', configuration: 'cordaCPK')
-    cpks project(path: 'sandbox-irresolvable-cpk', configuration: 'cordaCPK')
+    cpbs project(path: 'sandbox-cpk-one', configuration: 'cordaCPB')
+    cpbs project(path: 'sandbox-cpk-three', configuration: 'cordaCPB')
+    cpbs project(path: 'sandbox-irresolvable-cpk', configuration: 'cordaCPB')
 
-    integrationTestCompileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
-    integrationTestCompileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
-    integrationTestImplementation project(":components:install:install-legacy")
+    integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation "net.corda:corda-application"
-    integrationTestImplementation 'net.corda:corda-packaging'
-    integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
-    integrationTestRuntimeOnly project(":libs:sandbox-hooks")
+    integrationTestRuntimeOnly project(':libs:crypto:crypto-impl')
+    integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:inmemory-messaging-impl')
 }
 
 def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {
-    from configurations.cpks
+    from(configurations.cpbs) {
+        into 'META-INF'
+        rename "(.*)-\\Q${version}\\E-package.cpb", "\$1.cpb"
+    }
 }
 
 tasks.named('testingBundle', Bundle) {

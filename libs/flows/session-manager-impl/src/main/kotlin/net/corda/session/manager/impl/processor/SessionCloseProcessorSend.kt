@@ -1,6 +1,7 @@
 package net.corda.session.manager.impl.processor
 
 import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.impl.SessionEventProcessor
@@ -48,8 +49,8 @@ class SessionCloseProcessorSend(
                     )
                 }
             }
-            //session mismatch error
-            sessionState.receivedEventsState.undeliveredMessages.isNotEmpty() -> {
+            //session mismatch error, ignore close messages as we only care about data messages not consumed by the client lib
+            sessionState.receivedEventsState.undeliveredMessages.any { it.payload !is SessionClose } -> {
                 val errorMessage = "Tried to send SessionClose on key $key and sessionId $sessionId, session status is " +
                         "${sessionState.status}, however there are still received events that have not been processed. " +
                         "Current SessionState: $sessionState. Sending error to counterparty"
@@ -72,13 +73,6 @@ class SessionCloseProcessorSend(
         sessionId: String,
         nextSeqNum: Int,
     ) = when (val currentState = sessionState.status) {
-        SessionStateType.CREATED -> {
-            sessionState.apply {
-                status = SessionStateType.CLOSING
-                sendEventsState.lastProcessedSequenceNum = nextSeqNum
-                sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.plus(sessionEvent)
-            }
-        }
         SessionStateType.CONFIRMED -> {
             sessionState.apply {
                 status = SessionStateType.CLOSING
@@ -93,14 +87,6 @@ class SessionCloseProcessorSend(
                 sendEventsState.lastProcessedSequenceNum = nextSeqNum
                 sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.plus(sessionEvent)
             }
-        }
-        SessionStateType.CLOSED -> {
-            //session is already completed successfully. Indicates bug. should we send an error back and change state to error
-            logger.error(
-                "Tried to send SessionClose on key $key and sessionId $sessionId, session status is " +
-                        "$currentState. Current SessionState: $sessionState"
-            )
-            sessionState
         }
         else -> {
             val errorMessage = "Tried to send SessionClose on key $key and sessionId $sessionId, session status is " +

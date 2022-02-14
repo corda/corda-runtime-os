@@ -8,10 +8,12 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
-import net.corda.schema.configuration.ConfigKeys.Companion.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -23,6 +25,9 @@ abstract class AbstractComponent<RESOURCE: AutoCloseable>(
     protected val logger: Logger = LoggerFactory.getLogger(this::class.java)
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator(coordinatorName, ::eventHandler)
+
+    @Volatile
+    private var registrationHandle: RegistrationHandle? = null
 
     @Volatile
     private var configHandle: AutoCloseable? = null
@@ -48,16 +53,31 @@ abstract class AbstractComponent<RESOURCE: AutoCloseable>(
         logger.info("LifecycleEvent received: $event")
         when (event) {
             is StartEvent -> {
-                logger.info("Registering for configuration updates.")
-                configHandle = configurationReadService.registerComponentForUpdates(
-                    coordinator,
-                    setOf(MESSAGING_CONFIG, BOOT_CONFIG)
+                registrationHandle?.close()
+                registrationHandle = coordinator.followStatusChangesByName(
+                    setOf(LifecycleCoordinatorName.forComponent<ConfigurationReadService>())
                 )
             }
             is StopEvent -> {
+                registrationHandle?.close()
+                registrationHandle = null
                 configHandle?.close()
                 configHandle = null
                 deleteResources()
+            }
+            is RegistrationStatusChangeEvent -> {
+                if (event.status == LifecycleStatus.UP) {
+                    logger.info("Registering for configuration updates.")
+                    configHandle = configurationReadService.registerComponentForUpdates(
+                        coordinator,
+                        setOf(MESSAGING_CONFIG, BOOT_CONFIG)
+                    )
+                } else {
+                    configHandle?.close()
+                    configHandle = null
+                    logger.info("Setting status DOWN.")
+                    coordinator.updateStatus(LifecycleStatus.DOWN)
+                }
             }
             is ConfigChangedEvent -> {
                 createResources(event)

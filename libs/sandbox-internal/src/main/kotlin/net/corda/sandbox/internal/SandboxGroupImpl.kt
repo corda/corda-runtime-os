@@ -1,5 +1,6 @@
 package net.corda.sandbox.internal
 
+import net.corda.packaging.CPK
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandbox.internal.classtag.ClassTagFactory
@@ -9,6 +10,9 @@ import net.corda.sandbox.internal.classtag.StaticTag
 import net.corda.sandbox.internal.sandbox.CpkSandbox
 import net.corda.sandbox.internal.sandbox.Sandbox
 import net.corda.sandbox.internal.utilities.BundleUtils
+import org.osgi.framework.Bundle
+import java.util.Collections.unmodifiableList
+import java.util.Collections.unmodifiableMap
 
 /**
  * An implementation of the [SandboxGroup] interface.
@@ -25,7 +29,10 @@ internal class SandboxGroupImpl(
     private val bundleUtils: BundleUtils
 ) : SandboxGroupInternal {
 
-    override val cpks = cpkSandboxes.map(CpkSandbox::cpk)
+    override val cpks: Collection<CPK> = unmodifiableList(cpkSandboxes.map(CpkSandbox::cpk))
+    override val metadata: Map<Bundle, CPK.Metadata> = unmodifiableMap(cpkSandboxes.associate { cpk ->
+        cpk.mainBundle to cpk.cpk.metadata
+    })
 
     override fun loadClassFromMainBundles(className: String): Class<*> {
         return cpkSandboxes.mapNotNullTo(HashSet()) { sandbox ->

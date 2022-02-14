@@ -79,7 +79,9 @@ allprojects {
     }
 
     tasks.withType(Test).configureEach {
-        useJUnitPlatform()
+        useJUnitPlatform(){
+            excludeTags project.hasProperty('runUnstableTests') ? 'runAllTestsNoExclusions' : 'Unstable'
+        }
 
         doFirst {
             systemProperty 'java.io.tmpdir', buildDir.absolutePath

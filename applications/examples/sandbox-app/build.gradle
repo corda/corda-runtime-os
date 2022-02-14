@@ -1,0 +1,75 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+    id 'corda.quasar-app'
+}
+
+description 'VNode Sandbox Example'
+
+osgiRun {
+    frameworkProperties.putAll(
+        'org.osgi.framework.security': 'osgi'
+    )
+}
+
+configurations {
+    cpis {
+        canBeConsumed = false
+    }
+}
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:osgi.core'
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda:corda-topic-schema'
+    implementation 'net.corda:corda-serialization'
+    implementation 'net.corda:corda-packaging'
+    implementation 'net.corda:corda-base'
+    implementation 'net.corda:corda-application'
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.slf4j:slf4j-api'
+
+    implementation project(':testing:sandboxes')
+    implementation project(':libs:flows:flow-manager')
+    implementation project(':libs:messaging:messaging')
+    implementation project(':libs:virtual-node:sandbox-group-context')
+    implementation project(':libs:virtual-node:virtual-node-manager')
+    implementation project(':components:flow:flow-service')
+    implementation project(':components:virtual-node:sandbox-group-context-service')
+    implementation project(':components:virtual-node:virtual-node-info-write-service')
+
+    runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
+    runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
+    runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
+    runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+    runtimeOnly project(':libs:crypto:crypto-impl')
+    runtimeOnly project(':libs:flows:flow-manager-impl')
+    runtimeOnly project(':libs:lifecycle:lifecycle-impl')
+    runtimeOnly project(':libs:messaging:inmemory-messaging-impl')
+    runtimeOnly project(':libs:serialization:serialization-checkpoint-api')
+    runtimeOnly project(':libs:serialization:serialization-kryo')
+
+    // Add OSGi security support.
+    implementation project(':libs:security-manager')
+    runtimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
+        exclude group: 'org.apache.felix'
+        exclude group: 'org.osgi'
+    }
+
+    cpis project(path: 'example-cpi', configuration: 'cordaCPB')
+}
+
+def resources = tasks.named('processResources', ProcessResources) {
+    from(configurations.cpis) {
+        rename 'example-cpi-(.*)', 'example-cpi-package.cpb'
+        into 'META-INF'
+        fileMode = 0444
+    }
+}
+
+tasks.named('jar', Jar) {
+    dependsOn resources
+}

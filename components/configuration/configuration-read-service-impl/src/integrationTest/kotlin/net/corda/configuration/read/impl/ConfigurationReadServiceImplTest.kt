@@ -12,8 +12,8 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
-import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
-import net.corda.schema.configuration.ConfigKeys.Companion.FLOW_CONFIG
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.seconds
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -24,6 +24,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -33,6 +34,8 @@ class ConfigurationReadServiceImplTest {
         private const val BOOT_CONFIG_STRING = """
             {}
         """
+
+        private const val TIMEOUT = 5000L
     }
 
     @InjectService(timeout = 4000)
@@ -63,7 +66,7 @@ class ConfigurationReadServiceImplTest {
             receivedConfig = config
             latch.countDown()
         }
-        latch.await()
+        latch.await(TIMEOUT, TimeUnit.MILLISECONDS)
         assertTrue(receivedKeys.contains(BOOT_CONFIG))
         assertEquals(bootConfig, receivedConfig[BOOT_CONFIG], "Incorrect config")
         latch = CountDownLatch(1)
@@ -72,7 +75,7 @@ class ConfigurationReadServiceImplTest {
         val flowConfig = smartConfigFactory.create(ConfigFactory.parseMap(mapOf("foo" to "bar")))
         val confString = flowConfig.root().render()
         publisher.publish(listOf(Record(CONFIG_TOPIC, FLOW_CONFIG, Configuration(confString, "1"))))
-        latch.await()
+        latch.await(TIMEOUT, TimeUnit.MILLISECONDS)
         assertTrue(receivedKeys.contains(FLOW_CONFIG))
         assertEquals(flowConfig, receivedConfig[FLOW_CONFIG], "Incorrect config")
         assertEquals(
@@ -107,7 +110,7 @@ class ConfigurationReadServiceImplTest {
                 prepareLatch.countDown()
             }
         }
-        prepareLatch.await()
+        prepareLatch.await(TIMEOUT, TimeUnit.MILLISECONDS)
         assertEquals(
             LifecycleStatus.UP,
             lifecycleRegistry.componentStatus()[LifecycleCoordinatorName.forComponent<ConfigurationReadService>()]?.status
@@ -123,7 +126,7 @@ class ConfigurationReadServiceImplTest {
             receivedConfig = config
             latch.countDown()
         }
-        latch.await()
+        latch.await(TIMEOUT, TimeUnit.MILLISECONDS)
         assertEquals(expectedKeys, receivedKeys, "Incorrect keys")
         assertEquals(expectedConfig, receivedConfig, "Incorrect config")
 

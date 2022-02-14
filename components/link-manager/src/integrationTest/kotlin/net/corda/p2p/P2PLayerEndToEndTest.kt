@@ -382,9 +382,6 @@ class P2PLayerEndToEndTest {
         fun startWith(otherHost: Host) {
             configReadService.start()
             configReadService.bootstrapConfig(bootstrapConfig)
-            eventually {
-                assertThat(configReadService.isRunning).isTrue
-            }
 
             linkManager.start()
             gateway.start()

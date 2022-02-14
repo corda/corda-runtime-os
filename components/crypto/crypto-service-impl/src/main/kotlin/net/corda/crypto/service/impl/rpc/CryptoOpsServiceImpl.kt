@@ -21,8 +21,8 @@ import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
-import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
-import net.corda.schema.configuration.ConfigKeys.Companion.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -76,7 +76,10 @@ class CryptoOpsServiceImpl @Activate constructor(
                 logger.info("Received start event, starting wait for UP event from dependencies.")
                 registrationHandle?.close()
                 registrationHandle = coordinator.followStatusChangesByName(
-                    setOf(LifecycleCoordinatorName.forComponent<SigningServiceFactory>())
+                    setOf(
+                        LifecycleCoordinatorName.forComponent<SigningServiceFactory>(),
+                        LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+                    )
                 )
             }
             is StopEvent -> {

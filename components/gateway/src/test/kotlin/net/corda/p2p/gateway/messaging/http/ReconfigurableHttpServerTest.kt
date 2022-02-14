@@ -54,7 +54,7 @@ class ReconfigurableHttpServerTest {
     private lateinit var configHandler: ReconfigurableHttpServer.ReconfigurableHttpServerConfigChangeHandler
     private val dominoTile = mockConstruction(DominoTile::class.java) { _, context ->
         @Suppress("UNCHECKED_CAST")
-        configHandler = (context.arguments()[4] as ReconfigurableHttpServer.ReconfigurableHttpServerConfigChangeHandler)
+        configHandler = (context.arguments()[5] as ReconfigurableHttpServer.ReconfigurableHttpServerConfigChangeHandler)
     }
 
     private val server = ReconfigurableHttpServer(

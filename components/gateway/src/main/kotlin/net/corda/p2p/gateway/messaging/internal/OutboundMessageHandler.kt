@@ -61,7 +61,8 @@ internal class OutboundMessageHandler(
     override val dominoTile = DominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        children = listOf(connectionManager.dominoTile),
+        dependentChildren = listOf(connectionManager.dominoTile),
+        managedChildren = listOf(connectionManager.dominoTile),
         createResources = ::createResources,
         configurationChangeHandler = ConfigChangeHandler()
     )

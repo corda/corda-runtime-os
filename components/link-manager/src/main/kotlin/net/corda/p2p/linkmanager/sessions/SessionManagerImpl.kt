@@ -127,10 +127,11 @@ open class SessionManagerImpl(
     override val dominoTile = DominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
-        children = setOf(
+        dependentChildren = setOf(
             heartbeatManager.dominoTile, sessionReplayer.dominoTile, networkMap.dominoTile, cryptoService.dominoTile,
             pendingOutboundSessionMessageQueues.dominoTile, publisher.dominoTile
         ),
+        managedChildren = setOf(heartbeatManager.dominoTile, sessionReplayer.dominoTile, publisher.dominoTile),
         configurationChangeHandler = SessionManagerConfigChangeHandler()
     )
 
@@ -621,7 +622,8 @@ open class SessionManagerImpl(
             this::class.java.simpleName,
             coordinatorFactory,
             ::createResources,
-            setOf(networkMap.dominoTile, publisher.dominoTile),
+            dependentChildren = setOf(networkMap.dominoTile, publisher.dominoTile),
+            managedChildren = setOf(publisher.dominoTile),
             HeartbeatManagerConfigChangeHandler(),
         )
 

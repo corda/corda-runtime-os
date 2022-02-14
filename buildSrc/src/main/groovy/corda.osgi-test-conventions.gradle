@@ -11,6 +11,10 @@ plugins {
 }
 
 configurations {
+    quasarBundles {
+        canBeConsumed = false
+        visible = false
+    }
     integrationTestApi.extendsFrom testApi
     integrationTestCompileOnly.extendsFrom testCompileOnly
     integrationTestImplementation.extendsFrom testImplementation
@@ -20,6 +24,12 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    // OSGi frameworks containing Quasar and Kryo must resolve
+    // the version of ASM as specified in the OSGi metadata.
+    quasarBundles "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
+    integrationTestRuntimeOnly "co.paralleluniverse:quasar-core-osgi:$quasarVersion:agent"
+    integrationTestRuntimeOnly files(configurations.quasarBundles)
 
     integrationTestImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     integrationTestImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"

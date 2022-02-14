@@ -14,4 +14,12 @@ data class VirtualNodeContext(
     val holdingIdentity: HoldingIdentity,
     val cpkIdentifiers: Set<CPK.Identifier>,
     val sandboxGroupType: SandboxGroupType,
-)
+    val serviceMarkerType: Class<*>,
+    val serviceFilter: String?
+) {
+    init {
+        require(serviceMarkerType.isInterface) {
+            "Service marker ${serviceMarkerType.name} must be an interface"
+        }
+    }
+}

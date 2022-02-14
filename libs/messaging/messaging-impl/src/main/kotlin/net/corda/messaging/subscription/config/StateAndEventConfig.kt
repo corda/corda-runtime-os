@@ -4,7 +4,6 @@ import com.typesafe.config.Config
 import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.libs.configuration.schema.messaging.TOPIC_PREFIX_PATH
 import net.corda.messagebus.api.configuration.ConfigProperties
-import net.corda.messaging.properties.ConfigProperties.Companion.DEAD_LETTER_QUEUE_SUFFIX
 import net.corda.messaging.properties.ConfigProperties.Companion.EVENT_CONSUMER
 import net.corda.messaging.properties.ConfigProperties.Companion.EVENT_CONSUMER_CLOSE_TIMEOUT
 import net.corda.messaging.properties.ConfigProperties.Companion.EVENT_CONSUMER_POLL_AND_PROCESS_RETRIES
@@ -28,7 +27,6 @@ data class StateAndEventConfig(
     val consumerPollAndProcessMaxRetries: Long,
     val maxPollInterval: Long,
     val processorTimeout: Long,
-    val deadLetterQueueSuffix: String,
     val stateConsumerConfig: Config,
     val eventConsumerConfig: Config,
     val producerConfig: Config
@@ -48,7 +46,6 @@ data class StateAndEventConfig(
             val consumerPollAndProcessMaxRetries = config.getLong(EVENT_CONSUMER_POLL_AND_PROCESS_RETRIES)
             val maxPollInterval = config.getLong(ConfigProperties.CONSUMER_MAX_POLL_INTERVAL.replace("consumer", "eventConsumer"))
             val processorTimeout = config.getLong(ConfigProperties.CONSUMER_PROCESSOR_TIMEOUT.replace("consumer", "eventConsumer"))
-            val deadLetterQueueSuffix = config.getString(DEAD_LETTER_QUEUE_SUFFIX)
             val eventConsumerConfig = config.getConfig(EVENT_CONSUMER)
             val stateConsumerConfig = config.getConfig(STATE_CONSUMER)
             val producerConfig = config.getConfig(ConfigProperties.CORDA_PRODUCER)
@@ -67,7 +64,6 @@ data class StateAndEventConfig(
                 consumerPollAndProcessMaxRetries,
                 maxPollInterval,
                 processorTimeout,
-                deadLetterQueueSuffix,
                 stateConsumerConfig,
                 eventConsumerConfig,
                 producerConfig

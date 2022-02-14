@@ -1,16 +1,16 @@
 package net.corda.virtualnode.write.db.impl.tests
 
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.virtualnode.write.VirtualNodeWriter
-import net.corda.libs.virtualnode.write.VirtualNodeWriterFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus.ERROR
 import net.corda.lifecycle.LifecycleStatus.UP
-import net.corda.schema.configuration.ConfigKeys.Companion.BOOTSTRAP_SERVERS
-import net.corda.schema.configuration.ConfigKeys.Companion.RPC_CONFIG
+import net.corda.schema.configuration.ConfigKeys.BOOTSTRAP_SERVERS
+import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.VirtualNodeWriteConfigHandler
 import net.corda.virtualnode.write.db.impl.VirtualNodeWriteEventHandler
+import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriter
+import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriterFactory
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
