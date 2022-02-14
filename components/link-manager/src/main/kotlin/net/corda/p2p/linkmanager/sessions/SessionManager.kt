@@ -21,7 +21,7 @@ interface SessionManager: LifecycleWithDominoTile {
     )
 
     sealed class SessionState {
-        data class NewSessionNeeded(val sessionId: String, val sessionInitMessage: LinkOutMessage): SessionState()
+        data class NewSessionsNeeded(val messages: List<Pair<String, LinkOutMessage>>): SessionState()
         object SessionAlreadyPending: SessionState()
         data class SessionEstablished(val session: Session): SessionState()
         object CannotEstablishSession: SessionState()
