@@ -1,4 +1,4 @@
-package net.corda.membership.impl.httprpc.lifecycle
+package net.corda.membership.impl.httprpc.v1.lifecycle
 
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -51,7 +51,6 @@ class RegistrationRpcOpsLifecycleHandlerTest {
 
     @Test
     fun `registration status UP sets coordinator status to UP`() {
-        println(coordinator.status)
         registrationRpcOpsLifecycleHandler.processEvent(
             RegistrationStatusChangeEvent(registrationHandle, LifecycleStatus.UP), coordinator
         )

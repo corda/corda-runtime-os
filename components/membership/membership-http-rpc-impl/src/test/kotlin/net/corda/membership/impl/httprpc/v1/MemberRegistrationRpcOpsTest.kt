@@ -1,4 +1,4 @@
-package net.corda.membership.impl.httprpc
+package net.corda.membership.impl.httprpc.v1
 
 import net.corda.httprpc.exception.ServiceUnavailableException
 import net.corda.lifecycle.LifecycleCoordinator
