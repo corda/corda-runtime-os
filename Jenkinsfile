@@ -8,4 +8,3 @@ cordaPipeline(
     publishOSGiImage: true,
     publishPreTestImage: false
     )
-
