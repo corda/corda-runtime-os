@@ -36,9 +36,6 @@ class GroupPolicyProviderImpl @Activate constructor(
 
     companion object {
         val logger = contextLogger()
-
-        const val ILLEGAL_ACCESS =
-            "Tried to access API before the component has started, after it has stopped, or while it is DOWN."
     }
 
     private var virtualNodeInfoCallbackHandle: AutoCloseable? = null
@@ -58,11 +55,7 @@ class GroupPolicyProviderImpl @Activate constructor(
     override fun getGroupPolicy(
         holdingIdentity: HoldingIdentity
     ): GroupPolicy {
-        return if (isRunning && isUp) {
-            groupPolicies[holdingIdentity] ?: parseGroupPolicy(holdingIdentity)
-        } else {
-            throw CordaRuntimeException(ILLEGAL_ACCESS)
-        }
+        return groupPolicies[holdingIdentity] ?: parseGroupPolicy(holdingIdentity)
     }
 
     override fun start() = coordinator.start()
@@ -104,6 +97,7 @@ class GroupPolicyProviderImpl @Activate constructor(
      */
     @Suppress("UNUSED_PARAMETER")
     private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+        logger.debug { "Group policy provider received event $event." }
         when (event) {
             is StartEvent -> handleStartEvent(coordinator)
             is StopEvent -> handleStopEvent(coordinator)
@@ -116,7 +110,7 @@ class GroupPolicyProviderImpl @Activate constructor(
      * function and setting up the cache map.
      */
     private fun handleStartEvent(coordinator: LifecycleCoordinator) {
-        startCache()
+        logger.debug { "Group policy provider starting." }
         startDependencyRegistrationHandle(coordinator)
     }
 
