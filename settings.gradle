@@ -99,5 +99,4 @@ include 'plugins'
 include 'plugins:mgm'
 include 'plugins:plugin1'
 include 'plugins:plugin2'
-include 'plugins:template'
 
