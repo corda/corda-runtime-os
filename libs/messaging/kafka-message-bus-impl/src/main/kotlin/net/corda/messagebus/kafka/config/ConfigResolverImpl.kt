@@ -4,6 +4,8 @@ import com.typesafe.config.ConfigFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messaging.api.exception.CordaMessageAPIConfigException
+import net.corda.schema.configuration.MessagingKeys.Bus.BUS_TYPE
+import net.corda.schema.configuration.MessagingKeys.Bus.KAFKA_PROPERTIES
 import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.Bundle
 import org.osgi.framework.FrameworkUtil
@@ -16,27 +18,32 @@ internal class ConfigResolverImpl(private val smartConfigFactory: SmartConfigFac
 
         private const val ENFORCED_CONFIG_FILE = "messaging-enforced.conf"
         private const val DEFAULT_CONFIG_FILE = "messaging-defaults.conf"
+
+        private const val EXPECTED_BUS_TYPE = "KAFKA"
     }
 
     private val defaults = getResourceConfig(DEFAULT_CONFIG_FILE)
     private val enforced = getResourceConfig(ENFORCED_CONFIG_FILE)
 
-    override fun resolve(config: SmartConfig, role: String): Properties {
+    override fun resolve(busConfig: SmartConfig, role: String, configParams: SmartConfig): Properties {
         // TODO fix paths here. Does the returned config when you do getConfig have the path stripped?
-        if (config.getString("bus.type") != "KAFKA") {
+        if (busConfig.getString(BUS_TYPE) != EXPECTED_BUS_TYPE) {
             throw CordaMessageAPIConfigException("foo")
         }
-        val busConfig = config.getConfig("bus.properties")
+
+        val kafkaParams = busConfig.getConfig(KAFKA_PROPERTIES)
         val resolvedConfig = enforced
-            .withFallback(busConfig)
+            .withFallback(kafkaParams)
+            .withFallback(configParams)
             .withFallback(defaults)
             .resolve()
 
         logger.info("Resolved kafka configuration: ${resolvedConfig.root().render()}")
 
+        // Trim down to just the Kafka config for the specified role.
         val roleConfig = resolvedConfig.getConfig(role)
         val properties = roleConfig.toKafkaProperties()
-        logger.info("Consumer properties: $properties")
+        logger.info("Kafka properties for role $role: $properties")
         return properties
     }
 

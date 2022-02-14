@@ -1,10 +1,7 @@
 package net.corda.messagebus.kafka.consumer
 
-import com.typesafe.config.Config
-import net.corda.libs.configuration.schema.messaging.TOPIC_PREFIX_PATH
 import net.corda.messagebus.api.CordaTopicPartition
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.COMMIT_OFFSET_MAX_RETRIES
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.SUBSCRIBE_MAX_RETRIES
+import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
@@ -14,7 +11,6 @@ import net.corda.messagebus.kafka.utils.toTopicPartition
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.v5.base.util.contextLogger
-import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.CommitFailedException
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.ConsumerGroupMetadata
@@ -38,7 +34,7 @@ import java.time.Duration
  */
 @Suppress("TooManyFunctions")
 class CordaKafkaConsumerImpl<K : Any, V : Any>(
-    config: Config,
+    private val config: ConsumerConfig,
     private val consumer: Consumer<K, V>,
     private var defaultListener: CordaConsumerRebalanceListener? = null,
 ) : CordaConsumer<K, V> {
@@ -47,16 +43,15 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         private val log: Logger = contextLogger()
     }
 
-    private val consumerSubscribeMaxRetries = config.getLong(SUBSCRIBE_MAX_RETRIES)
-    private val consumerCommitOffsetMaxRetries = config.getLong(COMMIT_OFFSET_MAX_RETRIES)
-    private val topicPrefix = config.getString(TOPIC_PREFIX_PATH)
-    private val groupName = config.getString(CommonClientConfigs.GROUP_ID_CONFIG)
+    // TODO: These should really be handled at the patterns level.
+    private val consumerSubscribeMaxRetries = 3L //config.getLong(SUBSCRIBE_MAX_RETRIES)
+    private val consumerCommitOffsetMaxRetries = 3L //config.getLong(COMMIT_OFFSET_MAX_RETRIES)
 
     override fun close() {
         try {
             consumer.close()
         } catch (ex: Exception) {
-            log.error("CordaKafkaConsumer failed to close consumer from group $groupName.", ex)
+            log.error("CordaKafkaConsumer failed to close consumer from group ${config.group}.", ex)
         }
     }
 
@@ -86,7 +81,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
         return consumerRecords.map {
             CordaConsumerRecord(
-                it.topic().removePrefix(topicPrefix),
+                it.topic().removePrefix(config.topicPrefix),
                 it.partition(),
                 it.offset(),
                 it.key(),
@@ -116,7 +111,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     override fun commitSyncOffsets(event: CordaConsumerRecord<K, V>, metaData: String?) {
         val offsets = mutableMapOf<TopicPartition, OffsetAndMetadata>()
-        val topicPartition = TopicPartition(topicPrefix + event.topic, event.partition)
+        val topicPartition = TopicPartition(config.topicPrefix + event.topic, event.partition)
         offsets[topicPartition] = OffsetAndMetadata(event.offset + 1, metaData)
         var attempts = 0L
         var attemptCommit = true
@@ -161,8 +156,8 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     override fun subscribe(topics: Collection<String>, listener: CordaConsumerRebalanceListener?) {
         val newTopics = topics.map {
-            if (!it.contains(topicPrefix)) {
-                topicPrefix + it
+            if (!it.contains(config.topicPrefix)) {
+                config.topicPrefix + it
             } else {
                 it
             }
@@ -174,7 +169,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 subscribeToTopics(listener, newTopics)
                 attemptSubscription = false
             } catch (ex: Exception) {
-                val message = "CordaKafkaConsumer failed to subscribe a consumer from group $groupName."
+                val message = "CordaKafkaConsumer failed to subscribe a consumer from group ${config.group}."
                 when (ex) {
                     is IllegalStateException -> {
                         logErrorAndThrowFatalException(
@@ -221,7 +216,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     override fun getPartitions(topic: String, timeout: Duration): List<CordaTopicPartition> {
         val listOfPartitions: List<PartitionInfo> = try {
-            consumer.partitionsFor(topicPrefix + topic, timeout)
+            consumer.partitionsFor(config.topicPrefix + topic, timeout)
         } catch (ex: Exception) {
             when (ex) {
                 is AuthenticationException,
@@ -245,7 +240,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
             ?: logWarningAndThrowIntermittentException("Partitions for topic $topic are null. Kafka may not have completed startup.")
 
         return listOfPartitions.map {
-            CordaTopicPartition(it.topic().removePrefix(topicPrefix), it.partition())
+            CordaTopicPartition(it.topic().removePrefix(config.topicPrefix), it.partition())
         }
     }
 
@@ -543,10 +538,10 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         this.defaultListener = defaultListener
     }
 
-    private fun CordaTopicPartition.toTopicPartition() = toTopicPartition(topicPrefix)
-    private fun Collection<CordaTopicPartition>.toTopicPartitions() = this.map { it.toTopicPartition(topicPrefix) }
-    private fun TopicPartition.toCordaTopicPartition() = toCordaTopicPartition(topicPrefix)
-    private fun Collection<TopicPartition>.toCordaTopicPartitions() = this.map { it.toCordaTopicPartition(topicPrefix) }
+    private fun CordaTopicPartition.toTopicPartition() = toTopicPartition(config.topicPrefix)
+    private fun Collection<CordaTopicPartition>.toTopicPartitions() = this.map { it.toTopicPartition(config.topicPrefix) }
+    private fun TopicPartition.toCordaTopicPartition() = toCordaTopicPartition(config.topicPrefix)
+    private fun Collection<TopicPartition>.toCordaTopicPartitions() = this.map { it.toCordaTopicPartition(config.topicPrefix) }
 }
 
 fun CordaConsumerRebalanceListener.toKafkaListener(): ConsumerRebalanceListener {
