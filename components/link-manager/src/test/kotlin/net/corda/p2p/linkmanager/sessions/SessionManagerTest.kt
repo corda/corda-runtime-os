@@ -1,80 +1,80 @@
 package net.corda.p2p.linkmanager.sessions
 
-import net.corda.lifecycle.domino.logic.DominoTile
-import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
-import net.corda.messaging.api.publisher.config.PublisherConfig
-import net.corda.messaging.api.records.Record
-import net.corda.p2p.AuthenticatedMessageAndKey
-import net.corda.p2p.DataMessagePayload
-import net.corda.p2p.HeartbeatMessage
-import net.corda.p2p.LinkInMessage
-import net.corda.p2p.LinkOutMessage
-import net.corda.p2p.app.AuthenticatedMessage
-import net.corda.p2p.app.AuthenticatedMessageHeader
-import net.corda.p2p.crypto.AuthenticatedDataMessage
-import net.corda.p2p.crypto.CommonHeader
-import net.corda.p2p.crypto.InitiatorHandshakeMessage
-import net.corda.p2p.crypto.InitiatorHelloMessage
-import net.corda.p2p.crypto.MessageType
-import net.corda.p2p.crypto.ProtocolMode
-import net.corda.p2p.crypto.ResponderHandshakeMessage
-import net.corda.p2p.crypto.ResponderHelloMessage
-import net.corda.p2p.crypto.internal.InitiatorHandshakeIdentity
-import net.corda.p2p.crypto.protocol.ProtocolConstants
-import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
-import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
-import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
-import net.corda.p2p.crypto.protocol.api.AuthenticationResult
-import net.corda.p2p.crypto.protocol.api.HandshakeIdentityData
-import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
-import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
-import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
-import net.corda.p2p.crypto.protocol.api.Session
-import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
-import net.corda.p2p.linkmanager.LinkManager
-import net.corda.p2p.linkmanager.LinkManagerCryptoService
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap
-import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
-import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionsNeeded
-import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
-import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
-import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
-import net.corda.test.util.eventually
-import net.corda.v5.base.util.millis
-import net.corda.v5.base.util.toBase64
-import org.assertj.core.api.Assertions.assertThat
-import org.bouncycastle.jce.provider.BouncyCastleProvider
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.fail
-import org.mockito.Mockito
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doAnswer
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
-import org.mockito.kotlin.times
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
-import java.nio.ByteBuffer
-import java.security.KeyPairGenerator
-import java.security.MessageDigest
-import java.time.Duration
-import java.time.Instant
-import java.util.Collections
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
+//import net.corda.lifecycle.domino.logic.DominoTile
+//import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
+//import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+//import net.corda.messaging.api.publisher.config.PublisherConfig
+//import net.corda.messaging.api.records.Record
+//import net.corda.p2p.AuthenticatedMessageAndKey
+//import net.corda.p2p.DataMessagePayload
+//import net.corda.p2p.HeartbeatMessage
+//import net.corda.p2p.LinkInMessage
+//import net.corda.p2p.LinkOutMessage
+//import net.corda.p2p.app.AuthenticatedMessage
+//import net.corda.p2p.app.AuthenticatedMessageHeader
+//import net.corda.p2p.crypto.AuthenticatedDataMessage
+//import net.corda.p2p.crypto.CommonHeader
+//import net.corda.p2p.crypto.InitiatorHandshakeMessage
+//import net.corda.p2p.crypto.InitiatorHelloMessage
+//import net.corda.p2p.crypto.MessageType
+//import net.corda.p2p.crypto.ProtocolMode
+//import net.corda.p2p.crypto.ResponderHandshakeMessage
+//import net.corda.p2p.crypto.ResponderHelloMessage
+//import net.corda.p2p.crypto.internal.InitiatorHandshakeIdentity
+//import net.corda.p2p.crypto.protocol.ProtocolConstants
+//import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
+//import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
+//import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
+//import net.corda.p2p.crypto.protocol.api.AuthenticationResult
+//import net.corda.p2p.crypto.protocol.api.HandshakeIdentityData
+//import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
+//import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
+//import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
+//import net.corda.p2p.crypto.protocol.api.Session
+//import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
+//import net.corda.p2p.linkmanager.LinkManager
+//import net.corda.p2p.linkmanager.LinkManagerCryptoService
+//import net.corda.p2p.linkmanager.LinkManagerNetworkMap
+//import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
+//import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionsNeeded
+//import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
+//import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
+//import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
+//import net.corda.test.util.eventually
+//import net.corda.v5.base.util.millis
+//import net.corda.v5.base.util.toBase64
+//import org.assertj.core.api.Assertions.assertThat
+//import org.bouncycastle.jce.provider.BouncyCastleProvider
+//import org.junit.jupiter.api.AfterEach
+//import org.junit.jupiter.api.Assertions.assertEquals
+//import org.junit.jupiter.api.Assertions.assertTrue
+//import org.junit.jupiter.api.BeforeAll
+//import org.junit.jupiter.api.BeforeEach
+//import org.junit.jupiter.api.Test
+//import org.junit.jupiter.api.fail
+//import org.mockito.Mockito
+//import org.mockito.kotlin.any
+//import org.mockito.kotlin.argumentCaptor
+//import org.mockito.kotlin.doAnswer
+//import org.mockito.kotlin.doReturn
+//import org.mockito.kotlin.eq
+//import org.mockito.kotlin.mock
+//import org.mockito.kotlin.never
+//import org.mockito.kotlin.times
+//import org.mockito.kotlin.verify
+//import org.mockito.kotlin.whenever
+//import java.nio.ByteBuffer
+//import java.security.KeyPairGenerator
+//import java.security.MessageDigest
+//import java.time.Duration
+//import java.time.Instant
+//import java.util.Collections
+//import java.util.concurrent.CompletableFuture
+//import java.util.concurrent.CountDownLatch
+//import java.util.concurrent.TimeUnit
 
 class SessionManagerTest {
-    
+
 //    companion object {
 //        const val KEY = "KEY"
 //        const val GROUP_ID = "myGroup"
@@ -187,7 +187,8 @@ class SessionManagerTest {
 //    ).apply {
 //        setRunning()
 //        configHandler.applyNewConfiguration(
-//            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY), SESSIONS_PER_COUNTERPARTIES),
+//            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY),
+//            SESSIONS_PER_COUNTERPARTIES),
 //            null,
 //            mock(),
 //        )
@@ -312,7 +313,8 @@ class SessionManagerTest {
 //        val sessionState = sessionManager.processOutboundMessage(message)
 //        assertThat(sessionState).isInstanceOf(SessionManager.SessionState.SessionAlreadyPending::class.java)
 //        configHandler.applyNewConfiguration(
-//            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY), SESSIONS_PER_COUNTERPARTIES),
+//            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY),
+//            SESSIONS_PER_COUNTERPARTIES),
 //            null,
 //            mock(),
 //        )
@@ -404,7 +406,8 @@ class SessionManagerTest {
 //    fun `when responder hello is received without an existing session, the message is dropped`() {
 //        val sessionId = "some-session-id"
 //        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionId, 4, Instant.now().toEpochMilli())
-//        val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
+//        val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded),
+//        ProtocolMode.AUTHENTICATED_ENCRYPTION)
 //        val responseMessage = sessionManager.processSessionMessage(LinkInMessage(responderHello))
 //
 //        assertThat(responseMessage).isNull()
@@ -420,7 +423,8 @@ class SessionManagerTest {
 //        val initiatorHandshakeMsg = mock<InitiatorHandshakeMessage>()
 //        whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), any())).thenReturn(initiatorHandshakeMsg)
 //        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
-//        val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
+//        val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded),
+//        ProtocolMode.AUTHENTICATED_ENCRYPTION)
 //        val responseMessage = sessionManager.processSessionMessage(LinkInMessage(responderHello))
 //
 //        assertThat(responseMessage!!.payload).isEqualTo(initiatorHandshakeMsg)
@@ -450,7 +454,8 @@ class SessionManagerTest {
 //        whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), any())).thenReturn(initiatorHandshakeMsg)
 //        whenever(networkMap.getMemberInfo(OUR_PARTY)).thenReturn(null)
 //        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
-//        val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
+//        val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded),
+//        ProtocolMode.AUTHENTICATED_ENCRYPTION)
 //        val responseMessage = sessionManager.processSessionMessage(LinkInMessage(responderHello))
 //
 //        assertThat(responseMessage).isNull()
@@ -467,7 +472,8 @@ class SessionManagerTest {
 //        whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), any())).thenReturn(initiatorHandshakeMsg)
 //        whenever(networkMap.getMemberInfo(PEER_PARTY)).thenReturn(null)
 //        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
-//        val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
+//        val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded),
+//        ProtocolMode.AUTHENTICATED_ENCRYPTION)
 //        val responseMessage = sessionManager.processSessionMessage(LinkInMessage(responderHello))
 //
 //        assertThat(responseMessage).isNull()
@@ -483,7 +489,8 @@ class SessionManagerTest {
 //        whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), any()))
 //            .thenThrow(LinkManagerCryptoService.NoPrivateKeyForGroupException(OUR_KEY.public))
 //        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
-//        val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
+//        val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded),
+//        ProtocolMode.AUTHENTICATED_ENCRYPTION)
 //        val responseMessage = sessionManager.processSessionMessage(LinkInMessage(responderHello))
 //
 //        assertThat(responseMessage).isNull()
@@ -500,7 +507,8 @@ class SessionManagerTest {
 //        whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), any())).thenReturn(initiatorHandshakeMsg)
 //        whenever(networkMap.getNetworkType(GROUP_ID)).thenReturn(null)
 //        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
-//        val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
+//        val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded),
+//        ProtocolMode.AUTHENTICATED_ENCRYPTION)
 //        val responseMessage = sessionManager.processSessionMessage(LinkInMessage(responderHello))
 //
 //        assertThat(responseMessage).isNull()
@@ -574,7 +582,8 @@ class SessionManagerTest {
 //        }
 //
 //        configHandler.applyNewConfiguration(
-//            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY), SESSIONS_PER_COUNTERPARTIES),
+//            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY),
+//            SESSIONS_PER_COUNTERPARTIES),
 //            null,
 //            mock(),
 //        )
@@ -795,7 +804,8 @@ class SessionManagerTest {
 //            .sessionNegotiatedCallback(sessionManager, SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY), session, networkMap)
 //
 //        configHandler.applyNewConfiguration(
-//            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY), SESSIONS_PER_COUNTERPARTIES),
+//            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY),
+//            SESSIONS_PER_COUNTERPARTIES),
 //            null,
 //            mock(),
 //        )
@@ -900,7 +910,8 @@ class SessionManagerTest {
 //        val initiatorHandshakeMsg = mock<InitiatorHandshakeMessage>()
 //        whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), any())).thenReturn(initiatorHandshakeMsg)
 //        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
-//        val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
+//        val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded),
+//        ProtocolMode.AUTHENTICATED_ENCRYPTION)
 //        sessionManager.processSessionMessage(LinkInMessage(responderHello))
 //        assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionAlreadyPending)
 //        eventually(configWithHeartbeat.sessionTimeout.multipliedBy(10), 5.millis) {
@@ -1201,7 +1212,8 @@ class SessionManagerTest {
 //        }
 //
 //        configHandler.applyNewConfiguration(
-//            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY), SESSIONS_PER_COUNTERPARTIES),
+//            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY),
+//            SESSIONS_PER_COUNTERPARTIES),
 //            null,
 //            resourcesHolder,
 //        )
