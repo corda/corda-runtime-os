@@ -73,7 +73,7 @@ class HttpServerChannelHandler(private val serverListener: HttpServerListener,
                 val returnByteArray = readBytesFromBodyBuffer()
                 val sourceAddress = ctx.channel().remoteAddress()
                 val targetAddress = ctx.channel().localAddress()
-                serverListener.onRequest(HttpRequest(returnByteArray, sourceAddress, targetAddress))
+                return serverListener.onRequest(HttpRequest(returnByteArray, sourceAddress, targetAddress))
                 } else {
                     val response = createResponse(null, responseCode!!)
                     ctx.writeAndFlush(response)
