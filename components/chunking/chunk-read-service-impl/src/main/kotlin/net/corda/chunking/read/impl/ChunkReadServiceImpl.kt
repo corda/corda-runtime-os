@@ -63,11 +63,6 @@ class ChunkReadServiceImpl @Activate constructor(
 
     override fun stop() = coordinator.stop()
 
-    private val dependentComponents = DependentComponents.of(
-        ::configurationReadService,
-        ::dbConnectionManager
-    )
-
     private fun onStartEvent(coordinator: LifecycleCoordinator) {
         configurationReadService.start()
         registration?.close()
@@ -78,13 +73,11 @@ class ChunkReadServiceImpl @Activate constructor(
                     LifecycleCoordinatorName.forComponent<DbConnectionManager>()
                 )
             )
-        dependentComponents.registerAndStartAll(coordinator)
     }
 
     private fun onStop(coordinator: LifecycleCoordinator) {
         chunkDbWriter?.stop()
         chunkDbWriter = null
-        dependentComponents.stopAll()
         coordinator.updateStatus(LifecycleStatus.DOWN)
     }
 
