@@ -50,7 +50,7 @@ class MessageBusConsumerBuilderImpl @Activate constructor(
         val kafkaProperties = resolver.resolve(busConfig, consumerConfig.role, consumerConfig.toSmartConfig(busConfig.factory))
         return try {
             val consumer = createKafkaConsumer(kafkaProperties, kClazz, vClazz, onSerializationError)
-            return CordaKafkaConsumerImpl(consumerConfig, consumer, listener)
+            CordaKafkaConsumerImpl(consumerConfig, consumer, listener)
         } catch (ex: KafkaException) {
             val message = "MessageBusConsumerBuilder failed to create consumer for group ${consumerConfig.group}"
             log.error(message, ex)

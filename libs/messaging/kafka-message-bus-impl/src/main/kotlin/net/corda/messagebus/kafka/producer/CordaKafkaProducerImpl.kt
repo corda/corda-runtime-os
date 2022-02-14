@@ -1,9 +1,6 @@
 package net.corda.messagebus.kafka.producer
 
-import com.typesafe.config.Config
-import net.corda.libs.configuration.schema.messaging.TOPIC_PREFIX_PATH
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CLOSE_TIMEOUT
-import net.corda.messagebus.api.configuration.getStringOrNull
+import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducer
@@ -13,13 +10,11 @@ import net.corda.messagebus.kafka.utils.toKafkaRecords
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.v5.base.util.contextLogger
-import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.CommitFailedException
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.clients.producer.Callback
 import org.apache.kafka.clients.producer.Producer
-import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.TopicPartition
@@ -32,7 +27,6 @@ import org.apache.kafka.common.errors.TimeoutException
 import org.apache.kafka.common.errors.UnsupportedForMessageFormatException
 import org.apache.kafka.common.errors.UnsupportedVersionException
 import org.slf4j.Logger
-import java.time.Duration
 
 /**
  * Wrapper for the CordaKafkaProducer.
@@ -41,16 +35,14 @@ import java.time.Duration
  */
 @Suppress("TooManyFunctions")
 class CordaKafkaProducerImpl(
-    config: Config,
+    private val config: ProducerConfig,
     private val producer: Producer<Any, Any>
 ) : CordaProducer {
-    private val closeTimeout = config.getLong(CLOSE_TIMEOUT)
-    private val topicPrefix = config.getString(TOPIC_PREFIX_PATH)
-    private val clientId = config.getString(CommonClientConfigs.CLIENT_ID_CONFIG)
-    private val transactionalId = config.getStringOrNull(ProducerConfig.TRANSACTIONAL_ID_CONFIG)
+    private val topicPrefix = config.topicPrefix
+    private val transactional = (config.instanceId != null)
 
     init {
-        if (transactionalId != null) {
+        if (transactional) {
             initTransactionForProducer()
         }
     }
@@ -142,20 +134,11 @@ class CordaKafkaProducerImpl(
      */
     override fun close() {
         try {
-            producer.close(Duration.ofMillis(closeTimeout))
+            producer.close()
         } catch (ex: Exception) {
-            log.error("CordaKafkaProducer failed to close producer safely. ClientId: $clientId", ex)
+            log.error("CordaKafkaProducer failed to close producer safely. ClientId: ${config.clientId}", ex)
         }
     }
-
-    override fun close(timeout: Duration) {
-        try {
-            producer.close(timeout)
-        } catch (ex: Exception) {
-            log.error("CordaKafkaProducer failed to close producer safely. ClientId: $clientId", ex)
-        }
-    }
-
 
     /**
      * Generate the consumer offsets.
@@ -195,14 +178,14 @@ class CordaKafkaProducerImpl(
         try {
             producer.initTransactions()
         } catch (ex: Exception) {
-            val message = "initializing producer with transactionId $transactionalId for transactions"
+            val message = "initializing producer with transactionId ${config.instanceId} for transactions"
             handleException(ex, message)
         }
     }
 
     @Suppress("ThrowsCount")
     private fun handleException(ex: Exception, operation: String, canAbort: Boolean = false) {
-        val errorString = "$operation for CordaKafkaProducer with clientId $clientId"
+        val errorString = "$operation for CordaKafkaProducer with clientId ${config.clientId}"
         when (ex) {
             is IllegalStateException,
             is ProducerFencedException,
