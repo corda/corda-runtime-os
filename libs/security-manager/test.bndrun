@@ -16,8 +16,7 @@
     order=sortbynameversion,\
     begin=-1
 -runproperties: \
-    org.osgi.framework.security=osgi,\
-    org.osgi.framework.bsnversion=multiple
+    org.osgi.framework.security=osgi
 -runbundles: \
 	bcprov;version='[1.69.0,1.69.1)',\
 	junit-jupiter-api;version='[5.8.2,5.8.3)',\
@@ -39,8 +38,8 @@
 	org.assertj.core;version='[3.12.2,3.12.3)',\
 	org.jetbrains.kotlin.osgi-bundle;version='[1.4.32,1.4.33)',\
 	org.opentest4j;version='[1.2.0,1.2.1)',\
-	org.osgi.test.common;version='[1.0.0,1.0.1)',\
-	org.osgi.test.junit5;version='[1.0.0,1.0.1)',\
+	org.osgi.test.common;version='[1.0.1,1.0.2)',\
+	org.osgi.test.junit5;version='[1.0.1,1.0.2)',\
 	org.osgi.util.function;version='[1.1.0,1.1.1)',\
 	org.osgi.util.promise;version='[1.1.1,1.1.2)',\
 	security-manager-tests;version='[5.0.0,5.0.1)',\

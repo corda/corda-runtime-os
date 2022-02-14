@@ -1,5 +1,5 @@
 plugins {
-    id 'net.corda.plugins.cordapp-cpk'
+    id 'net.corda.plugins.cordapp-cpb'
 }
 
 ext {
@@ -23,6 +23,6 @@ dependencies {
     implementation project(":libs:serialization:serialization-amqp:serialization-cpk-library")
 }
 
-cpk {
+tasks.named('cpk', Jar) {
     archiveBaseName = 'TestSerializableCpk-using-lib'
 }

@@ -20,4 +20,5 @@ dependencies {
     implementation project(":libs:http-rpc:http-rpc")
     implementation project(":libs:http-rpc:http-rpc-common")
     implementation project(":libs:serialization:serialization-amqp")
+    implementation project(":libs:lifecycle:lifecycle")
 }

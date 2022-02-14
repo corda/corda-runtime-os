@@ -1,11 +1,7 @@
 package net.corda.permissions.storage.reader.internal
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.permissions.storage.common.ConfigKeys.BOOTSTRAP_CONFIG
-import net.corda.libs.permissions.storage.common.ConfigKeys.DB_CONFIG_KEY
-import net.corda.libs.permissions.storage.common.db.DbUtils
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
 import net.corda.libs.permissions.storage.reader.factory.PermissionStorageReaderFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -20,13 +16,11 @@ import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.orm.EntitiesSet
-import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.permissions.cache.PermissionCacheService
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import javax.persistence.EntityManagerFactory
-import kotlin.reflect.KFunction3
 
 @Suppress("LongParameterList")
 class PermissionStorageReaderServiceEventHandler(
@@ -34,11 +28,9 @@ class PermissionStorageReaderServiceEventHandler(
     private val permissionStorageReaderFactory: PermissionStorageReaderFactory,
     private val publisherFactory: PublisherFactory,
     private val configurationReadService: ConfigurationReadService,
-    private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
-    private val allEntitiesSets: List<EntitiesSet>,
-    private val entityManagerFactoryCreationFn:
-        KFunction3<SmartConfig, EntityManagerFactoryFactory, EntitiesSet, EntityManagerFactory> =
-        DbUtils::obtainEntityManagerFactory
+    // injecting factory creator so that this always fetches one from source rather than re-use one that may have been
+    //   re-configured.
+    private val entityManagerFactoryCreator: () -> EntityManagerFactory,
 ) : LifecycleEventHandler {
 
     private companion object {
@@ -113,9 +105,9 @@ class PermissionStorageReaderServiceEventHandler(
     ) {
         log.info("Component received configuration update event, changedKeys: $changedKeys")
 
-        if (BOOTSTRAP_CONFIG in changedKeys) {
+        if (BOOT_CONFIG in changedKeys) {
 
-            val bootstrapConfig = checkNotNull(currentConfigurationSnapshot[BOOTSTRAP_CONFIG])
+            val bootstrapConfig = checkNotNull(currentConfigurationSnapshot[BOOT_CONFIG])
             publisher = publisherFactory.createPublisher(
                 publisherConfig = PublisherConfig(clientId = CLIENT_NAME),
                 kafkaConfig = bootstrapConfig
@@ -123,19 +115,12 @@ class PermissionStorageReaderServiceEventHandler(
                 it.start()
             }
 
-            val dbConfig = bootstrapConfig.getConfig(DB_CONFIG_KEY)
-            val entityManagerFactory =
-                entityManagerFactoryCreationFn(
-                    dbConfig,
-                    entityManagerFactoryFactory,
-                    allEntitiesSets.single { it.name == DbSchema.RPC_RBAC })
-
             permissionStorageReader = permissionStorageReaderFactory.create(
                 checkNotNull(permissionCacheService.permissionCache) {
                     "The ${PermissionCacheService::class.java} should be up and ready to provide the cache"
                 },
                 checkNotNull(publisher) { "The ${Publisher::class.java} must be initialised" },
-                entityManagerFactory
+                entityManagerFactoryCreator()
             ).also {
                 it.start()
             }

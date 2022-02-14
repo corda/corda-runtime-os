@@ -21,6 +21,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
+import net.corda.httprpc.ResponseCode
 
 internal class RoleEndpointImplTest {
 
@@ -96,8 +97,8 @@ internal class RoleEndpointImplTest {
         val e = assertThrows<ResourceNotFoundException> {
             endpoint.getRole("abc")
         }
-        assertEquals(null, e.statusCode, "Resource not found exception should not override any status codes.")
-        assertEquals("Role abc not found.", e.message)
+        assertEquals(ResponseCode.RESOURCE_NOT_FOUND, e.responseCode, "Resource not found exception should have appropriate response code.")
+        assertEquals("Role 'abc' not found.", e.message)
         assertEquals("abc", getRoleRequestDtoCapture.firstValue.roleId)
     }
 }

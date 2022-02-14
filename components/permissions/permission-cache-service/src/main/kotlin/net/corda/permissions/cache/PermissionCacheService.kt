@@ -13,7 +13,6 @@ import net.corda.libs.permissions.cache.events.RoleTopicSnapshotReceived
 import net.corda.libs.permissions.cache.events.UserTopicSnapshotReceived
 import net.corda.libs.permissions.cache.factory.PermissionCacheFactory
 import net.corda.libs.permissions.cache.factory.PermissionCacheTopicProcessorFactory
-import net.corda.libs.permissions.storage.common.ConfigKeys.BOOTSTRAP_CONFIG
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -31,6 +30,7 @@ import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_ENTITY_TOPIC
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_GROUP_TOPIC
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_ROLE_TOPIC
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_USER_TOPIC
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -70,7 +70,9 @@ class PermissionCacheService @Activate constructor(
     private var roleSubscription: CompactedSubscription<String, Role>? = null
     private var permissionSubscription: CompactedSubscription<String, Permission>? = null
     private var configHandle: AutoCloseable? = null
-    private var registration: RegistrationHandle? = null
+
+    private var configRegistration: RegistrationHandle? = null
+    private var topicsRegistration: RegistrationHandle? = null
 
     private var userSnapshotReceived: Boolean = false
     private var groupSnapshotReceived: Boolean = false
@@ -84,8 +86,8 @@ class PermissionCacheService @Activate constructor(
         when (event) {
             is StartEvent -> {
                 log.info("Received start event, waiting for UP event from ConfigurationReadService.")
-                registration?.close()
-                registration =
+                configRegistration?.close()
+                configRegistration =
                     coordinator.followStatusChangesByName(
                         setOf(
                             LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
@@ -93,12 +95,14 @@ class PermissionCacheService @Activate constructor(
                     )
             }
             is RegistrationStatusChangeEvent -> {
-                log.info("Registration status change received for ConfigurationReadService: ${event.status.name}.")
+                log.info("Registration status change received: ${event.status.name}.")
                 if (event.status == LifecycleStatus.UP) {
-                    log.info("Registering for configuration updates.")
-                    configHandle = configurationReadService.registerForUpdates(::onConfigChange)
+                    if (configHandle == null) {
+                        log.info("Registering for configuration updates.")
+                        configHandle = configurationReadService.registerForUpdates(::onConfigChange)
+                    }
                 } else {
-                    configHandle?.close()
+                    downTransition()
                 }
             }
             is NewConfigurationReceivedEvent -> {
@@ -127,25 +131,35 @@ class PermissionCacheService @Activate constructor(
             }
             is StopEvent -> {
                 log.info("Stop event received, stopping dependencies and setting status to DOWN.")
-                configHandle?.close()
-                configHandle = null
-                userSubscription?.stop()
-                userSubscription = null
-                groupSubscription?.stop()
-                groupSubscription = null
-                roleSubscription?.stop()
-                roleSubscription = null
-                permissionSubscription?.stop()
-                permissionSubscription = null
+                configRegistration?.close()
+                configRegistration = null
+                downTransition()
                 _permissionCache?.stop()
                 _permissionCache = null
-                userSnapshotReceived = false
-                groupSnapshotReceived = false
-                roleSnapshotReceived = false
-                permissionSnapshotReceived = false
-                coordinator.updateStatus(LifecycleStatus.DOWN)
             }
         }
+    }
+
+    private fun downTransition() {
+        coordinator.updateStatus(LifecycleStatus.DOWN)
+
+        configHandle?.close()
+        configHandle = null
+        topicsRegistration?.close()
+        topicsRegistration = null
+        userSubscription?.stop()
+        userSubscription = null
+        groupSubscription?.stop()
+        groupSubscription = null
+        roleSubscription?.stop()
+        roleSubscription = null
+        permissionSubscription?.stop()
+        permissionSubscription = null
+
+        userSnapshotReceived = false
+        groupSnapshotReceived = false
+        permissionSnapshotReceived = false
+        roleSnapshotReceived = false
     }
 
     private fun setStatusUp() {
@@ -158,22 +172,43 @@ class PermissionCacheService @Activate constructor(
         val groupData = ConcurrentHashMap<String, Group>()
         val roleData = ConcurrentHashMap<String, Role>()
         val permissionData = ConcurrentHashMap<String, Permission>()
-        userSubscription = createUserSubscription(userData, config)
-            .also { it.start() }
-        groupSubscription = createGroupSubscription(groupData, config)
-            .also { it.start() }
-        roleSubscription = createRoleSubscription(roleData, config)
-            .also { it.start() }
-        permissionSubscription = createPermissionSubscription(permissionData, config)
-            .also { it.start() }
+        val userSubscription = createUserSubscription(userData, config)
+            .also {
+                it.start()
+                userSubscription = it
+            }
+        val groupSubscription = createGroupSubscription(groupData, config)
+            .also {
+                it.start()
+                groupSubscription = it
+            }
+        val roleSubscription = createRoleSubscription(roleData, config)
+            .also {
+                it.start()
+                roleSubscription = it
+            }
+        val permissionSubscription = createPermissionSubscription(permissionData, config)
+            .also {
+                it.start()
+                permissionSubscription = it
+            }
+
+        topicsRegistration?.close()
+        topicsRegistration = coordinator.followStatusChangesByName(
+            setOf(
+                userSubscription.subscriptionName, groupSubscription.subscriptionName,
+                roleSubscription.subscriptionName, permissionSubscription.subscriptionName
+            )
+        )
+
         _permissionCache = permissionCacheFactory.createPermissionCache(userData, groupData, roleData, permissionData)
             .also { it.start() }
     }
 
     private fun onConfigChange(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
         log.info("Received configuration update event, changedKeys: $changedKeys")
-        if (BOOTSTRAP_CONFIG in changedKeys){
-            coordinator.postEvent(NewConfigurationReceivedEvent(config[BOOTSTRAP_CONFIG]!!))
+        if (BOOT_CONFIG in changedKeys){
+            coordinator.postEvent(NewConfigurationReceivedEvent(config[BOOT_CONFIG]!!))
         }
     }
 
@@ -234,11 +269,9 @@ class PermissionCacheService @Activate constructor(
 
     override fun start() {
         coordinator.start()
-        coordinator.postEvent(StartEvent())
     }
 
     override fun stop() {
-        coordinator.postEvent(StopEvent())
         coordinator.stop()
     }
 }

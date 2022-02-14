@@ -26,6 +26,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.permissions.service.PermissionServiceComponent
+import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger
@@ -42,7 +43,6 @@ internal class HttpRpcGatewayEventHandler(
 
     private companion object {
         val log = contextLogger()
-        const val RPC_CONFIG = "corda.rpc"
         const val RPC_ADDRESS_CONFIG = "address"
         const val RPC_DESCRIPTION_CONFIG = "context.description"
         const val RPC_TITLE_CONFIG = "context.title"
@@ -156,8 +156,7 @@ internal class HttpRpcGatewayEventHandler(
         server = httpRpcServerFactory.createHttpRpcServer(
             rpcOpsImpls = dynamicRpcOps.toList(),
             rpcSecurityManager = rbacSecurityManagerService.securityManager,
-            httpRpcSettings = httpRpcSettings,
-            devMode = true
+            httpRpcSettings = httpRpcSettings
         ).also { it.start() }
 
         val numberOfRpcOps = dynamicRpcOps.filterIsInstance<Lifecycle>()

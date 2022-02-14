@@ -1,0 +1,17 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    implementation project(':libs:configuration:configuration-core')
+    implementation project(":libs:messaging:messaging")
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation "net.corda:corda-base"
+    implementation "net.corda:corda-avro-schema"
+}
+
+description 'Session Manager API lib'

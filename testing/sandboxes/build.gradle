@@ -1,0 +1,37 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+description 'Creates sandboxes for testing purposes'
+
+dependencies {
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+    compileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:osgi.core'
+
+    api project(':libs:sandbox')
+    api project(':libs:virtual-node:virtual-node-info')
+    api 'net.corda:corda-packaging'
+    api "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation project(':components:install:install-service')
+    implementation project(':components:virtual-node:cpi-info-read-service')
+    implementation project(':components:virtual-node:virtual-node-info-read-service')
+    implementation project(':components:virtual-node:virtual-node-info-write-service')
+
+    runtimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
+    runtimeOnly project(':libs:sandbox-internal')
+}
+
+tasks.named('jar', Jar) {
+    bundle {
+        bnd '''\
+Bundle-SymbolicName: \${project.group}.sandbox-testing
+'''
+    }
+}

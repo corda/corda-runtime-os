@@ -1,60 +1,57 @@
 package net.corda.virtualnode.manager.test
 
 import net.corda.packaging.CPI
-import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
+import net.corda.testing.sandboxes.SandboxSetup
+import net.corda.testing.sandboxes.fetchService
+import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.v5.crypto.SecureHash
-import net.corda.virtualnode.manager.api.RuntimeRegistration
-import net.corda.virtualnode.manager.test.Constants.BASE_DIRECTORY_KEY
-import net.corda.virtualnode.manager.test.Constants.BLACKLISTED_KEYS_KEY
-import net.corda.virtualnode.manager.test.Constants.PLATFORM_VERSION_KEY
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.io.TempDir
-import org.osgi.service.cm.ConfigurationAdmin
+import org.osgi.framework.BundleContext
+import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
+import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.file.Path
-import java.util.Hashtable
 
-@ExtendWith(ServiceExtension::class)
+@ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 class CustomCryptoDigestTests {
 
+    @Suppress("unused")
     companion object {
         const val DIGEST_ONE_CLASSNAME = "com.example.CryptoConsumer"
         const val DIGEST_TWO_CLASSNAME = "org.example.CryptoConsumer"
 
-        @InjectService
-        lateinit var configAdmin: ConfigurationAdmin
+        const val DIGEST_CPB_ONE = "META-INF/crypto-custom-digest-one-consumer-cpk.cpb"
+        const val DIGEST_CPB_TWO = "META-INF/crypto-custom-digest-two-consumer-cpk.cpb"
 
-        @InjectService
-        lateinit var sandboxCreationService: SandboxCreationService
+        @RegisterExtension
+        private val lifecycle = EachTestLifecycle()
 
-        @InjectService
-        lateinit var connector: RuntimeRegistration
+        @InjectService(timeout = 1000)
+        lateinit var sandboxSetup: SandboxSetup
 
         lateinit var service: IntegrationTestService
 
         @JvmStatic
         @BeforeAll
-        fun setup(@TempDir testDirectory: Path) {
-            configAdmin.getConfiguration(ConfigurationAdmin::class.java.name)?.also { config ->
-                val properties = Hashtable<String, Any>()
-                properties[BASE_DIRECTORY_KEY] = testDirectory.toString()
-                properties[BLACKLISTED_KEYS_KEY] = emptyList<String>()
-                properties[PLATFORM_VERSION_KEY] = 999
-                config.update(properties)
+        fun setup(@InjectBundleContext bundleContext: BundleContext, @TempDir testDirectory: Path) {
+            sandboxSetup.configure(bundleContext, testDirectory, setOf("net.corda.crypto-impl"))
+            lifecycle.accept(sandboxSetup) { setup ->
+                service = setup.fetchService(timeout = 1000)
             }
-            service = IntegrationTestService(sandboxCreationService, connector, testDirectory)
         }
     }
 
     private val sandboxGroupsPerTest = mutableListOf<SandboxGroup>()
-    private val cpis = mutableListOf<CPI>()
+    private val cpis = mutableMapOf<String, CPI>()
 
     /**
      * After each test is run unload their sandboxes from the system.
@@ -68,22 +65,18 @@ class CustomCryptoDigestTests {
      */
     @AfterEach
     private fun teardown() {
-        sandboxGroupsPerTest.forEach(service::unloadSandboxGroup)
-        sandboxGroupsPerTest.clear()
-        for (cpi in cpis) {
-            cpi.close()
-        }
-        cpis.clear()
+        ArrayList(sandboxGroupsPerTest).forEach(::unloadSandboxGroup)
+        cpis.values.forEach(CPI::close)
     }
 
     private fun loadAndInstantiate(resourceDigestCpi: String): SandboxGroup {
         //  "Install" -  the CPKs 'into the system', i.e. copy cpk to disk somewhere and scan the manifests.
-        val cpi = service.loadCPIFromResource(resourceDigestCpi)
-        val cpks = cpi.cpks
-        cpis.add(cpi)
+        val cpi = cpis.computeIfAbsent(resourceDigestCpi) { key ->
+            service.loadCPIFromResource(key)
+        }
 
         //  Instantiate -  load the cpi (its cpks) into the process, and allow OSGi to wire up things.
-        val sandboxGroup = service.createSandboxGroupFor(cpks.toSet())
+        val sandboxGroup = service.createSandboxGroupFor(cpi.cpks.toSet())
 
         // "preExecute" or "postInstantiate" "configure" up various per-CPI services.
         service.registerCrypto(sandboxGroup)
@@ -93,19 +86,24 @@ class CustomCryptoDigestTests {
         return sandboxGroup
     }
 
+    private fun unloadSandboxGroup(sandboxGroup: SandboxGroup) {
+        service.unloadSandboxGroup(sandboxGroup)
+        sandboxGroupsPerTest.remove(sandboxGroup)
+    }
+
     /**
      *************  Tests  **************8
      */
     @Test
     fun `end to end crypto test for first cordapp as two cpks`() {
-        val sandboxGroup = loadAndInstantiate(Constants.DIGEST_CPB_ONE)
+        val sandboxGroup = loadAndInstantiate(DIGEST_CPB_ONE)
 
         service.runFlow<SecureHash>(DIGEST_ONE_CLASSNAME, sandboxGroup)
     }
 
     @Test
     fun `first consumer cannot use other CPI digest`() {
-        val sandboxGroup = loadAndInstantiate(Constants.DIGEST_CPB_ONE)
+        val sandboxGroup = loadAndInstantiate(DIGEST_CPB_ONE)
 
         assertThrows<IllegalArgumentException> {
             service.runFlow<SecureHash>("com.example.CryptoConsumerTryAndUseOtherDigest", sandboxGroup)
@@ -114,13 +112,13 @@ class CustomCryptoDigestTests {
 
     @Test
     fun `end to end crypto test for second cordapp as two cpks`() {
-        val sandboxGroup = loadAndInstantiate(Constants.DIGEST_CPB_TWO)
+        val sandboxGroup = loadAndInstantiate(DIGEST_CPB_TWO)
         service.runFlow<SecureHash>(DIGEST_TWO_CLASSNAME, sandboxGroup)
     }
 
     @Test
     fun `second consumer cannot use other CPI digest`() {
-        val sandboxGroup = loadAndInstantiate(Constants.DIGEST_CPB_TWO)
+        val sandboxGroup = loadAndInstantiate(DIGEST_CPB_TWO)
 
         assertThrows<IllegalArgumentException> {
             // NOTE the 'package' is >> org << not com for 'TWO'.
@@ -130,8 +128,8 @@ class CustomCryptoDigestTests {
 
     @Test
     fun `load two cpis side by side`() {
-        val sandboxGroupOne = loadAndInstantiate(Constants.DIGEST_CPB_ONE)
-        val sandboxGroupTwo = loadAndInstantiate(Constants.DIGEST_CPB_TWO)
+        val sandboxGroupOne = loadAndInstantiate(DIGEST_CPB_ONE)
+        val sandboxGroupTwo = loadAndInstantiate(DIGEST_CPB_TWO)
 
         service.runFlow<SecureHash>(DIGEST_ONE_CLASSNAME, sandboxGroupOne)
         service.runFlow<SecureHash>(DIGEST_TWO_CLASSNAME, sandboxGroupTwo)
@@ -139,8 +137,8 @@ class CustomCryptoDigestTests {
 
     @Test
     fun `load two cpis side by side cannot use each others custom digests`() {
-        val sandboxGroupOne = loadAndInstantiate(Constants.DIGEST_CPB_ONE)
-        val sandboxGroupTwo = loadAndInstantiate(Constants.DIGEST_CPB_TWO)
+        val sandboxGroupOne = loadAndInstantiate(DIGEST_CPB_ONE)
+        val sandboxGroupTwo = loadAndInstantiate(DIGEST_CPB_TWO)
 
         service.runFlow<SecureHash>(DIGEST_ONE_CLASSNAME, sandboxGroupOne)
         service.runFlow<SecureHash>(DIGEST_TWO_CLASSNAME, sandboxGroupTwo)
@@ -157,11 +155,11 @@ class CustomCryptoDigestTests {
 
     @Test
     fun `load cpi and then unload cpi`() {
-        val sandboxGroup = loadAndInstantiate(Constants.DIGEST_CPB_ONE)
+        val sandboxGroup = loadAndInstantiate(DIGEST_CPB_ONE)
 
         service.runFlow<SecureHash>(DIGEST_ONE_CLASSNAME, sandboxGroup)
 
-        service.unloadSandboxGroup(sandboxGroup)
+        unloadSandboxGroup(sandboxGroup)
 
         assertThrows<SandboxException> {
             service.runFlow<SecureHash>(DIGEST_ONE_CLASSNAME, sandboxGroup)
@@ -170,15 +168,15 @@ class CustomCryptoDigestTests {
 
     @Test
     fun `load two cpis then unload both`() {
-        val sandboxGroupOne = loadAndInstantiate(Constants.DIGEST_CPB_ONE)
-        val sandboxGroupTwo = loadAndInstantiate(Constants.DIGEST_CPB_TWO)
+        val sandboxGroupOne = loadAndInstantiate(DIGEST_CPB_ONE)
+        val sandboxGroupTwo = loadAndInstantiate(DIGEST_CPB_TWO)
 
         // We can use the two different custom cryptos
         service.runFlow<SecureHash>(DIGEST_ONE_CLASSNAME, sandboxGroupOne)
         service.runFlow<SecureHash>(DIGEST_TWO_CLASSNAME, sandboxGroupTwo)
 
         // explicitly unload sandboxGroupOne
-        service.unloadSandboxGroup(sandboxGroupOne)
+        unloadSandboxGroup(sandboxGroupOne)
 
         // we can still run "two"
         service.runFlow<SecureHash>(DIGEST_TWO_CLASSNAME, sandboxGroupTwo)
@@ -189,7 +187,7 @@ class CustomCryptoDigestTests {
         }
 
         // explicitly unload sandboxGroupTwo
-        service.unloadSandboxGroup(sandboxGroupTwo)
+        unloadSandboxGroup(sandboxGroupTwo)
 
         // and now we cannot run that.
         assertThrows<SandboxException> {
@@ -202,14 +200,14 @@ class CustomCryptoDigestTests {
      */
     @Test
     fun `load same cpis twice with different sandboxes then unload both`() {
-        val sandboxGroupOne = loadAndInstantiate(Constants.DIGEST_CPB_ONE)
-        val sandboxGroupTwo = loadAndInstantiate(Constants.DIGEST_CPB_ONE)
+        val sandboxGroupOne = loadAndInstantiate(DIGEST_CPB_ONE)
+        val sandboxGroupTwo = loadAndInstantiate(DIGEST_CPB_ONE)
 
         service.runFlow<SecureHash>(DIGEST_ONE_CLASSNAME, sandboxGroupOne)
         service.runFlow<SecureHash>(DIGEST_ONE_CLASSNAME, sandboxGroupTwo)
 
         // explicitly unwire *and* unload the first sandbox group
-        service.unloadSandboxGroup(sandboxGroupOne)
+        unloadSandboxGroup(sandboxGroupOne)
 
         // But we can still run the same identical custom crypto code in the second sandbox group
         service.runFlow<SecureHash>(DIGEST_ONE_CLASSNAME, sandboxGroupTwo)
@@ -220,7 +218,7 @@ class CustomCryptoDigestTests {
         }
 
         // Explicitly unwire *and* unload the second sandbox group
-        service.unloadSandboxGroup(sandboxGroupTwo)
+        unloadSandboxGroup(sandboxGroupTwo)
 
         // And now we cannot run anything in the second group.
         assertThrows<SandboxException> {

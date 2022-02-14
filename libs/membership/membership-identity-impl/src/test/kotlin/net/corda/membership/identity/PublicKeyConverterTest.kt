@@ -1,16 +1,14 @@
 package net.corda.membership.identity
 
-import net.corda.crypto.CryptoLibraryFactory
 import net.corda.membership.conversion.PropertyConverterImpl
 import net.corda.membership.identity.MemberInfoExtension.Companion.IDENTITY_KEYS
 import net.corda.membership.identity.MemberInfoExtension.Companion.PARTY_OWNING_KEY
 import net.corda.membership.identity.converter.PublicKeyConverter
 import net.corda.membership.testkit.createContext
-import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
-import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.lang.IllegalArgumentException
 import java.security.PublicKey
@@ -20,10 +18,7 @@ import kotlin.test.assertNotEquals
 
 class PublicKeyConverterTest {
     companion object {
-        private val keyEncodingService = Mockito.mock(KeyEncodingService::class.java)
-        private val cryptoLibraryFactory: CryptoLibraryFactory = mock<CryptoLibraryFactory>().apply {
-            whenever(getKeyEncodingService()).thenReturn(keyEncodingService)
-        }
+        private val keyEncodingService = Mockito.mock(CipherSchemeMetadata::class.java)
 
         private const val IDENTITY_KEY_KEY = "corda.identityKeys.1"
         private const val IDENTITY_KEY = "12345"
@@ -32,7 +27,7 @@ class PublicKeyConverterTest {
         private const val OWNING_KEY = "12378"
         private val owningKey = Mockito.mock(PublicKey::class.java)
 
-        private val converter = PropertyConverterImpl(listOf(PublicKeyConverter(cryptoLibraryFactory)))
+        private val converter = PropertyConverterImpl(listOf(PublicKeyConverter(keyEncodingService)))
         private val publicKeyConverter = converter.customConverters.first()
     }
 

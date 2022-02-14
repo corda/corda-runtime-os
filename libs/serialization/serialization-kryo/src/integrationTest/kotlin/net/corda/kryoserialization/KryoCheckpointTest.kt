@@ -1,67 +1,49 @@
 package net.corda.kryoserialization
 
 import net.corda.bundle1.Cash
-import net.corda.install.InstallService
-import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxException
-import net.corda.serialization.factory.CheckpointSerializerBuilderFactory
+import net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFactory
+import net.corda.testing.sandboxes.SandboxSetup
+import net.corda.testing.sandboxes.fetchService
+import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
-import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.io.TempDir
-import org.osgi.framework.FrameworkUtil
-import org.osgi.service.cm.ConfigurationAdmin
-import org.osgi.service.component.runtime.ServiceComponentRuntime
+import org.osgi.framework.BundleContext
+import org.osgi.test.junit5.context.BundleContextExtension
+import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.file.Path
-import java.util.Hashtable
 import java.util.concurrent.Executors
 
-@ExtendWith(ServiceExtension::class)
+@ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 class KryoCheckpointTest {
 
     companion object {
-        @InjectService
-        lateinit var configAdmin: ConfigurationAdmin
+        @RegisterExtension
+        private val lifecycle = AllTestsLifecycle()
 
-        @InjectService
-        lateinit var scr: ServiceComponentRuntime
-
-        @InjectService
-        lateinit var installService: InstallService
-
-        @InjectService
-        lateinit var sandboxCreationService: SandboxCreationService
-
-        @InjectService
+        @InjectService(timeout = 1000)
         lateinit var checkpointSerializerBuilderFactory: CheckpointSerializerBuilderFactory
+
+        @InjectService(timeout = 1000)
+        lateinit var sandboxSetup: SandboxSetup
 
         lateinit var sandboxManagementService: SandboxManagementService
 
+        @Suppress("unused")
         @JvmStatic
         @BeforeAll
-        fun setup(@TempDir testDirectory: Path) {
-            configAdmin.getConfiguration(ConfigurationAdmin::class.java.name)?.also { config ->
-                val properties = Hashtable<String, Any>()
-                properties[BASE_DIRECTORY_KEY] = testDirectory.toString()
-                properties[BLACKLISTED_KEYS_KEY] = emptyList<String>()
-                properties[PLATFORM_VERSION_KEY] = 999
-                config.update(properties)
+        fun setup(@InjectBundleContext bundleContext: BundleContext, @TempDir baseDirectory: Path) {
+            sandboxSetup.configure(bundleContext, baseDirectory)
+            lifecycle.accept(sandboxSetup) { setup ->
+                sandboxManagementService = setup.fetchService(timeout = 1000)
             }
-            sandboxManagementService = SandboxManagementService(installService, sandboxCreationService)
-        }
-
-        @JvmStatic
-        @AfterAll
-        fun done() {
-            // Deactivate the InstallService before JUnit removes the TempDir.
-            val installBundle = FrameworkUtil.getBundle(installService::class.java)
-            val dto = scr.getComponentDescriptionDTO(installBundle, installService::class.java.name)
-            scr.disableComponent(dto).value
         }
     }
 

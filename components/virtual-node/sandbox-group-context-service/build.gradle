@@ -6,8 +6,10 @@ plugins {
 description "Sandbox Context Group Service Reader"
 
 dependencies {
+    compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly "org.osgi:org.osgi.service.component.annotations"
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-packaging"
@@ -25,8 +27,8 @@ dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
     implementation project(':libs:virtual-node:sandbox-group-context')
-    implementation project(":libs:sandbox")
-    implementation project(":libs:sandbox-hooks")
+    implementation project(':libs:sandbox')
+    runtimeOnly project(':libs:sandbox-hooks')
 
     implementation project(":components:virtual-node:virtual-node-common")
     implementation project(":components:install:install-service")
@@ -42,5 +44,8 @@ dependencies {
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
+    testCompileOnly 'org.osgi:osgi.core'
     testRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
+    testRuntimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
+    testRuntimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 }

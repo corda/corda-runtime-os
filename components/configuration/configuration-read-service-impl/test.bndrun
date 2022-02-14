@@ -32,9 +32,7 @@
     
 -runbundles: \
 	avro;version='[1.11.0,1.11.1)',\
-	bcpkix;version='[1.69.0,1.69.1)',\
 	bcprov;version='[1.69.0,1.69.1)',\
-	bcutil;version='[1.69.0,1.69.1)',\
 	com.fasterxml.jackson.core.jackson-annotations;version='[2.12.5,2.12.6)',\
 	com.fasterxml.jackson.core.jackson-core;version='[2.12.5,2.12.6)',\
 	com.fasterxml.jackson.core.jackson-databind;version='[2.12.5,2.12.6)',\
@@ -55,7 +53,7 @@
 	net.corda.configuration-read-service;version='[5.0.0,5.0.1)',\
 	net.corda.configuration-read-service-impl;version='[5.0.0,5.0.1)',\
 	net.corda.crypto;version='[5.0.0,5.0.1)',\
-	net.corda.crypto-internal;version='[5.0.0,5.0.1)',\
+	net.corda.crypto-client;version='[5.0.0,5.0.1)',\
 	net.corda.inmemory-messaging-impl;version='[5.0.0,5.0.1)',\
 	net.corda.lifecycle;version='[5.0.0,5.0.1)',\
 	net.corda.lifecycle-impl;version='[5.0.0,5.0.1)',\
@@ -67,8 +65,8 @@
 	org.apache.felix.scr;version='[2.1.28,2.1.29)',\
 	org.jetbrains.kotlin.osgi-bundle;version='[1.4.32,1.4.33)',\
 	org.opentest4j;version='[1.2.0,1.2.1)',\
-	org.osgi.test.common;version='[1.0.0,1.0.1)',\
-	org.osgi.test.junit5;version='[1.0.0,1.0.1)',\
+	org.osgi.test.common;version='[1.0.1,1.0.2)',\
+	org.osgi.test.junit5;version='[1.0.1,1.0.2)',\
 	org.osgi.util.function;version='[1.1.0,1.1.1)',\
 	org.osgi.util.promise;version='[1.1.1,1.1.2)',\
 	slf4j.api;version='[1.7.32,1.7.33)',\

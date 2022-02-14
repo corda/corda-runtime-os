@@ -2,11 +2,11 @@ package net.corda.membership.impl.read.component
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.impl.read.lifecycle.MembershipGroupReadLifecycleHandler
 import net.corda.membership.impl.read.reader.MembershipGroupReaderFactory
@@ -47,8 +47,10 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = PropertyConverter::class)
-    val converter: PropertyConverter
-) : MembershipGroupReaderProvider, Lifecycle {
+    val converter: PropertyConverter,
+    @Reference(service = GroupPolicyProvider::class)
+    groupPolicyProvider: GroupPolicyProvider
+) : MembershipGroupReaderProvider {
 
     companion object {
         const val ACCESS_TOO_EARLY = "Tried to read group data before starting the component."
@@ -58,7 +60,8 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
     private val membershipGroupReadCache = MembershipGroupReadCache.Impl()
 
     // Factory responsible for creating group readers or taking existing instances from the cache.
-    private val membershipGroupReaderFactory = MembershipGroupReaderFactory.Impl(membershipGroupReadCache)
+    private val membershipGroupReaderFactory =
+        MembershipGroupReaderFactory.Impl(membershipGroupReadCache, groupPolicyProvider)
 
     // Membership group topic subscriptions
     private val membershipGroupReadSubscriptions = MembershipGroupReadSubscriptions.Impl(

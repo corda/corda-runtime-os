@@ -9,7 +9,7 @@ plugins {
 description 'Corda Kryo Serialization Library'
 
 configurations {
-    cpks {
+    cpbs {
         canBeConsumed = false
         transitive = false
     }
@@ -35,14 +35,14 @@ dependencies {
     implementation "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion"
     implementation "org.slf4j:slf4j-api"
 
-    implementation project(":libs:crypto:crypto-internal")
+    implementation project(":libs:crypto:crypto-client")
     implementation project(":libs:sandbox")
-    implementation project(":libs:serialization:checkpoint-serialization-api")
+    implementation project(":libs:serialization:serialization-checkpoint-api")
     implementation project(path: ':libs:serialization:serialization-encoding', configuration: 'bundle')
     implementation project(":libs:utilities")
 
-    cpks project(path: 'src:integrationTest:cpks:serializable-cpk-one', configuration: 'cordaCPK')
-    cpks project(path: 'src:integrationTest:cpks:serializable-cpk-two', configuration: 'cordaCPK')
+    cpbs project(path: 'cpks:serializable-cpk-one', configuration: 'cordaCPB')
+    cpbs project(path: 'cpks:serializable-cpk-two', configuration: 'cordaCPB')
 
     testCompileOnly 'org.osgi:osgi.core'
     testImplementation "org.assertj:assertj-core:$assertjVersion"
@@ -52,24 +52,20 @@ dependencies {
     testRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
     testRuntimeOnly "co.paralleluniverse:quasar-core-osgi:$quasarVersion:agent"
 
-    integrationTestImplementation project(":components:install:install-legacy")
-    integrationTestImplementation project("src:integrationTest:cpks:serializable-cpk-one")
+    integrationTestImplementation project(':testing:sandboxes')
+    integrationTestImplementation project('cpks:serializable-cpk-one')
     integrationTestImplementation "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
-    integrationTestCompileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
-    integrationTestCompileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
-    integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
     integrationTestRuntimeOnly "co.paralleluniverse:quasar-core-osgi:$quasarVersion:agent"
 
-    integrationTestImplementation project(":libs:crypto:crypto-impl")
-    integrationTestImplementation project(":libs:messaging:inmemory-messaging-impl")
-    integrationTestImplementation project(":libs:lifecycle:lifecycle-impl")
-    integrationTestRuntimeOnly project(":libs:sandbox-hooks")
-    integrationTestRuntimeOnly project(":libs:sandbox-internal")
+    integrationTestRuntimeOnly project(':libs:crypto:crypto-client')
+    integrationTestRuntimeOnly project(':libs:crypto:crypto-impl')
+    integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:inmemory-messaging-impl')
 }
 
 def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {
-    from configurations.cpks
+    from configurations.cpbs
 }
 
 tasks.named('testingBundle', Bundle) {

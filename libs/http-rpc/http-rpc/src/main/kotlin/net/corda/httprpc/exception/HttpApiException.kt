@@ -1,14 +1,19 @@
 package net.corda.httprpc.exception
 
+import net.corda.httprpc.ResponseCode
 import net.corda.v5.base.exceptions.CordaRuntimeException
 
 /**
- * Exception from HTTP APIs that allows optionally overriding the HTTP status code.
+ * Base class for HTTP exceptions.
  *
- * For subclasses that aren't expected to know about status codes, secondary constructor can be used leaving [statusCode] null.
+ * Inherit from this class and override the status code to create a HTTP response with a certain status code ([ResponseCode.statusCode]).
  *
- * Server implementation will be responsible for mapping subclasses to the correct exception response type, utilizing [statusCode] or not.
+ * @param responseCode HTTP error response code
+ * @param message the response message
+ * @param details additional problem details
  */
-open class HttpApiException(override val message: String, val statusCode: Int?) : CordaRuntimeException(message) {
-    constructor(message: String) : this(message, null)
-}
+abstract class HttpApiException(
+    val responseCode: ResponseCode,
+    override val message: String,
+    val details: Map<String, String> = emptyMap()
+) : CordaRuntimeException(message)

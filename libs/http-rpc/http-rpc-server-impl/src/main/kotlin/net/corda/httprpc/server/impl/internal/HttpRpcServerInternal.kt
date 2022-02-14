@@ -1,15 +1,13 @@
 package net.corda.httprpc.server.impl.internal
 
-import com.fasterxml.jackson.core.JsonProcessingException
 import io.javalin.Javalin
 import io.javalin.core.util.Header
 import io.javalin.http.BadRequestResponse
 import io.javalin.http.Context
 import io.javalin.http.ForbiddenResponse
 import io.javalin.http.HandlerType
-import io.javalin.http.HttpResponseException
-import io.javalin.http.NotFoundResponse
 import io.javalin.http.UnauthorizedResponse
+import io.javalin.http.util.MultipartUtil
 import io.javalin.http.util.RedirectToLowercasePathPlugin
 import io.javalin.plugin.json.JavalinJackson
 import net.corda.httprpc.security.Actor
@@ -21,20 +19,15 @@ import net.corda.httprpc.server.config.HttpRpcSettingsProvider
 import net.corda.httprpc.server.impl.apigen.processing.RouteInfo
 import net.corda.httprpc.server.impl.apigen.processing.RouteProvider
 import net.corda.httprpc.server.impl.apigen.processing.openapi.OpenApiInfoProvider
-import net.corda.httprpc.server.impl.exception.MissingParameterException
 import net.corda.httprpc.server.impl.security.HttpRpcSecurityManager
 import net.corda.httprpc.server.impl.security.provider.credentials.DefaultCredentialResolver
 import net.corda.httprpc.server.impl.utils.addHeaderValues
 import net.corda.httprpc.server.impl.utils.executeWithThreadContextClassLoader
-import net.corda.utilities.rootCause
-import net.corda.utilities.rootMessage
-import net.corda.v5.application.flows.BadRpcStartFlowRequestException
 import net.corda.v5.application.identity.CordaX500Name
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
-import org.eclipse.jetty.http.HttpStatus
 import org.eclipse.jetty.http2.HTTP2Cipher
 import org.eclipse.jetty.server.HttpConfiguration
 import org.eclipse.jetty.server.HttpConnectionFactory
@@ -49,8 +42,7 @@ import org.osgi.framework.wiring.BundleWiring
 import java.io.OutputStream
 import java.io.PrintStream
 import javax.security.auth.login.FailedLoginException
-import net.corda.httprpc.exception.HttpApiException
-import net.corda.httprpc.exception.ResourceNotFoundException
+import javax.servlet.MultipartConfigElement
 
 @Suppress("TooManyFunctions", "TooGenericExceptionThrown")
 internal class HttpRpcServerInternal(
@@ -74,7 +66,7 @@ internal class HttpRpcServerInternal(
         internal const val INSECURE_SERVER_DEV_MODE_WARNING =
             "Creating insecure (HTTP) server is only permitted when using `devMode=true` in the node configuration."
         internal const val CORDA_X500_NAME = "O=Http RPC Server, L=New York, C=US"
-        internal const val CONTENT_LENGTH_EXCEEEDS_LIMIT = "Content length is %d which exceeds the maximum limit of %d."
+        internal const val CONTENT_LENGTH_EXCEEDS_LIMIT = "Content length is %d which exceeds the maximum limit of %d."
     }
 
     init {
@@ -123,6 +115,16 @@ internal class HttpRpcServerInternal(
     }.apply {
         addRoutes()
         addOpenApiRoute()
+        // In order for multipart content to be stored onto disk, we need to override some properties
+        // which are set by default by Javalin such that entire content is read into memory
+        MultipartUtil.preUploadFunction = { req ->
+            req.setAttribute("org.eclipse.jetty.multipartConfig",
+                MultipartConfigElement(
+                    System.getProperty("java.io.tmpdir"),
+                    configurationsProvider.maxContentLength().toLong(),
+                    configurationsProvider.maxContentLength().toLong(),
+                    1024))
+        }
     }
 
     //https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/WWW-Authenticate
@@ -176,7 +178,7 @@ internal class HttpRpcServerInternal(
         val principal = authorizingSubject.principal
         log.trace { "Authorize \"$principal\" for \"$fullPath\"." }
         if (!authorizingSubject.isPermitted(fullPath))
-            throw ForbiddenResponse("Method '$fullPath' not allowed for '$principal'.")
+            throw ForbiddenResponse("User not authorized.")
         log.trace { "Authorize \"$principal\" for \"$fullPath\" completed." }
     }
 
@@ -185,7 +187,13 @@ internal class HttpRpcServerInternal(
         fun registerHandlerForRoute(routeInfo: RouteInfo, handlerType: HandlerType) {
             try {
                 log.info("Add \"$handlerType\" handler for \"${routeInfo.fullPath}\".")
-                addHandler(handlerType, routeInfo.fullPath, routeInfo.invokeMethod())
+                // TODO the following hardcoded handler registration is only meant for Scaffold and needs change
+                //  once "multipart/form-data" support gets implemented correctly.
+                if (routeInfo.fullPath == "//api/v1/cpi//") {
+                    addHandler(handlerType, routeInfo.fullPath, routeInfo.invokeMultiPartMethod())
+                } else {
+                    addHandler(handlerType, routeInfo.fullPath, routeInfo.invokeMethod())
+                }
                 log.debug { "Add \"$handlerType\" handler for \"${routeInfo.fullPath}\" completed." }
             } catch (e: Exception) {
                 "Error during Add GET and POST routes".let {
@@ -210,7 +218,7 @@ internal class HttpRpcServerInternal(
                 before(routeInfo.fullPath) {
                     with(configurationsProvider.maxContentLength()) {
                         if (it.contentLength() > this) throw BadRequestResponse(
-                            CONTENT_LENGTH_EXCEEEDS_LIMIT.format(
+                            CONTENT_LENGTH_EXCEEDS_LIMIT.format(
                                 it.contentLength(),
                                 this
                             )
@@ -263,37 +271,34 @@ internal class HttpRpcServerInternal(
                 }
                 log.debug { "Invoke method \"${this.method.method.name}\" for route info completed." }
             } catch (e: Exception) {
-                """Error during invoking method "${this.method.method.name}": ${e.rootMessage ?: e.rootCause}""".let {
-                    log.error(it, e)
-                    mapToResponse(it, e)
-                }
+                log.warn("Error invoking path '${this.fullPath}'.", e)
+                throw HttpExceptionMapper.mapToResponse(e)
             }
         }
     }
 
-    @Suppress("ThrowsCount", "ComplexMethod")
-    private fun mapToResponse(message: String, e: Exception) {
-        val messageEscaped = message.replace("\n", " ")
-        when (e) {
-            is HttpResponseException -> throw e
-
-            is BadRpcStartFlowRequestException -> throw BadRequestResponse(messageEscaped)
-            is JsonProcessingException -> throw BadRequestResponse(messageEscaped)
-//TODO restore these when possible
-//            is StartFlowPermissionException -> throw ForbiddenResponse(messageEscaped)
-//            is FlowNotFoundException -> throw NotFoundResponse(messageEscaped)
-            is MissingParameterException -> throw BadRequestResponse(messageEscaped)
-//            is InvalidCordaX500NameException -> throw BadRequestResponse(messageEscaped)
-//            is MemberNotFoundException -> throw NotFoundResponse(messageEscaped)
-
-            is ResourceNotFoundException -> throw NotFoundResponse(e.message)
-            is HttpApiException -> throw HttpResponseException(e.statusCode ?: 500, e.message)
-            else -> {
-                with(mutableMapOf<String, String>()) {
-                    this["exception"] = e.toString()
-                    this["rootCause"] = e.rootCause.toString()
-                    e.rootMessage?.let { this["rootMessage"] = it }
-                    throw HttpResponseException(HttpStatus.INTERNAL_SERVER_ERROR_500, messageEscaped, this)
+    // TODO the following method should be integrated to the normal RPC handlers registering flow (i.e. `RouteInfo.invokeMethod`)
+    private fun RouteInfo.invokeMultiPartMethod(): (Context) -> Unit {
+        return { ctx ->
+            try {
+                // TODO uploadedFiles can be more than one
+                val uploadedFile = ctx.uploadedFiles().single()
+                val fileName = uploadedFile.filename
+                val stream = uploadedFile.content
+                val result = stream.use { invokeDelegatedMethod(fileName, it) }
+                if (result != null) {
+                    ctx.json(result)
+                }
+            } catch (e: Exception) {
+                throw HttpExceptionMapper.mapToResponse(e)
+            } finally {
+                // Remove all the parts and associated file storage once we are done with them
+                ctx.req.parts.forEach { part ->
+                    try {
+                        part.delete()
+                    } catch (e: Exception) {
+                        log.warn("Could not delete part: ${part.name}", e)
+                    }
                 }
             }
         }

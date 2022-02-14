@@ -26,16 +26,19 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
 
-    testRuntimeOnly "org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion"
+    testRuntimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
+        exclude group: 'org.osgi'
+    }
 
     integrationTestCompileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
-    integrationTestImplementation project(":libs:security-manager")
     integrationTestImplementation "net.corda:corda-application"
     integrationTestImplementation 'org.slf4j:slf4j-api'
-    integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion"
+    integrationTestRuntimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
+        exclude group: 'org.osgi'
+    }
 
     // This is just the CPK's "main" jar.
-    cpks project(':libs:sandbox-internal:sandbox-scr-cpk')
+    cpks project(':testing:cpbs:sandbox-scr-cpk')
 }
 
 def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {

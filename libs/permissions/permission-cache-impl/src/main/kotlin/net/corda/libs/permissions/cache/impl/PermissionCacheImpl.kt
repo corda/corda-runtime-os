@@ -48,7 +48,7 @@ internal class PermissionCacheImpl(
 
     override fun getUser(loginName: String): User? {
         validateCacheIsRunning()
-        return users[loginName]
+        return users[loginName.toLowerCase()]
     }
 
     override fun getGroup(groupId: String): Group? {

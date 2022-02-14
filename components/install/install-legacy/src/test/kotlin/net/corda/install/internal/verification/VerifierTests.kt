@@ -14,7 +14,6 @@ import net.corda.packaging.CordappManifest.Companion.DEFAULT_MIN_PLATFORM_VERSIO
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.sha256Bytes
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.AfterEach
@@ -37,16 +36,11 @@ class VerifierTests {
     private lateinit var workflowCpk : CPK
     private lateinit var contractCpk : CPK
 
-    private lateinit var split1Cpk: CPK
-    private lateinit var split2Cpk: CPK
-
     @BeforeEach
     fun setup(@TempDir junitTestDir : Path) {
         flowsCpk = cpk("test.cpk.flows", junitTestDir)
         workflowCpk = cpk("test.cpk.workflow", junitTestDir)
         contractCpk = cpk("test.cpk.contract", junitTestDir)
-        split1Cpk = cpk("test.cpk.split1", junitTestDir)
-        split2Cpk = cpk("test.cpk.split2", junitTestDir)
     }
 
     @AfterEach
@@ -54,8 +48,6 @@ class VerifierTests {
         flowsCpk.close()
         workflowCpk.close()
         contractCpk.close()
-        split1Cpk.close()
-        split2Cpk.close()
     }
 
     private fun cpk(propertyName: String, rootDir: Path): CPK {
@@ -77,8 +69,8 @@ class VerifierTests {
     private val dummyCertificates = setOf(dummySigningKeyOne, dummySigningKeyTwo)
         .mapTo(LinkedHashSet(), ::createMockCertificate)
 
-    private val cryptoLibraryFactory = CryptoMocks().factories.cryptoLibrary
-    private val hashingService = cryptoLibraryFactory.getDigestService()
+    private val cryptoMocks = CryptoMocks()
+    private val hashingService = cryptoMocks.digestService
 
     private fun ByteArray.sha256(): SecureHash = hashingService.hash(this, DigestAlgorithmName.SHA2_256)
 
@@ -115,7 +107,7 @@ class VerifierTests {
         CpkFormatVerifier(),
         MinimumPlatformVersionVerifier(configAdmin),
         CordappInfoVerifier(),
-        CordappSignatureVerifier(configAdmin, cryptoLibraryFactory),
+        CordappSignatureVerifier(configAdmin, hashingService),
         DependenciesMetVerifier(),
         DuplicateCordappIdentifierVerifier(),
         DuplicateContractsVerifier(),
@@ -379,13 +371,5 @@ class VerifierTests {
         val cpkTwo = createDummyCpk(dependencies = sequenceOf(badSignersDependency).toCollection(TreeSet()))
 
         doesNotVerify(cpks = listOf(cpkOne, cpkTwo))
-    }
-
-    @Test
-    fun `two CPKs that split an exported package do not verify`() {
-        val ex = doesNotVerify(cpks = listOf(split1Cpk.metadata, split2Cpk.metadata))
-        assertThat(ex)
-            .hasMessageStartingWith("Package 'com.example.split.bundle1' exported by CPK ")
-            .hasMessageContaining(" is already exported by CPK ")
     }
 }

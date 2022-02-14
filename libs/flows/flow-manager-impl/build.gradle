@@ -7,13 +7,13 @@ description "Flow Manager Implemenation"
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
     implementation "com.esotericsoftware:kryo:$kryoVersion"
     implementation "net.corda:corda-application"
-    implementation project(":components:install:install-legacy")
     implementation "net.corda:corda-packaging"
     implementation project(":libs:sandbox")
     implementation "net.corda:corda-avro-schema"
@@ -21,11 +21,12 @@ dependencies {
 
     implementation project(':libs:flows:flow-manager')
     implementation project(':libs:messaging:messaging')
-    implementation project(':libs:serialization:checkpoint-serialization-api')
+    implementation project(':libs:serialization:serialization-checkpoint-api')
     implementation project(':libs:virtual-node:virtual-node-info')
     implementation project(':libs:virtual-node:sandbox-group-context')
     implementation project(':libs:application:application-impl')
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
 }

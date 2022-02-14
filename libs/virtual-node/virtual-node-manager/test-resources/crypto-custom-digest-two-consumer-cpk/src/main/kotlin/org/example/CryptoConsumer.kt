@@ -1,8 +1,8 @@
 package org.example
 
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SecureHash
 import org.example.crypto.QuadSha256Digest
 import org.osgi.service.component.annotations.Activate
@@ -14,11 +14,10 @@ import org.osgi.service.component.annotations.Reference
  *
  * DO NOT expect this to work in a real cordapp (or a future version of this).
  */
-@Component(name = "crypto.consumer.1")
+@Component
 class CryptoConsumer
-@Activate constructor(@Reference private val cipherSuiteFactory: CipherSuiteFactory) : Flow<SecureHash> {
+@Activate constructor(@Reference private val digestService: DigestService) : Flow<SecureHash> {
     override fun call(): SecureHash {
-        val digestService = cipherSuiteFactory.getDigestService()
         return digestService.hash("some random string for PoC".toByteArray(), DigestAlgorithmName(QuadSha256Digest.ALGORITHM))
     }
 }

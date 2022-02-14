@@ -1,7 +1,6 @@
 package net.corda.install.internal.verification
 
 import aQute.bnd.header.OSGiHeader
-import net.corda.crypto.CryptoLibraryFactory
 import net.corda.install.CpkVerificationException
 import net.corda.install.internal.CONFIG_ADMIN_BLACKLISTED_KEYS
 import net.corda.install.internal.CONFIG_ADMIN_PLATFORM_VERSION
@@ -11,6 +10,7 @@ import net.corda.packaging.CordappManifest.Companion.DEFAULT_MIN_PLATFORM_VERSIO
 import net.corda.packaging.CPK
 import net.corda.packaging.DependencyResolutionException
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.create
 import net.corda.v5.crypto.sha256Bytes
@@ -119,10 +119,8 @@ internal class CordappSignatureVerifier @Activate constructor(
         @Reference
         private val configAdmin: ConfigurationAdmin,
         @Reference
-        private val cryptoLibraryFactory: CryptoLibraryFactory
+        private val hashingService: DigestService
 ) : StandaloneCpkVerifier {
-
-    private val hashingService = cryptoLibraryFactory.getDigestService()
 
     private fun ByteArray.sha256(): SecureHash = hashingService.hash(this, DigestAlgorithmName.SHA2_256)
 

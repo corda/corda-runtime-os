@@ -1,0 +1,113 @@
+package net.corda.session.manager.impl.processor
+
+import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.session.SessionClose
+import net.corda.data.flow.state.session.SessionState
+import net.corda.data.flow.state.session.SessionStateType
+import net.corda.session.manager.impl.SessionEventProcessor
+import net.corda.session.manager.impl.processor.helper.generateAckEvent
+import net.corda.session.manager.impl.processor.helper.generateErrorEvent
+import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
+import net.corda.session.manager.impl.processor.helper.recalcReceivedProcessState
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
+import java.time.Instant
+
+
+/**
+ * Handle receipt of a [SessionClose] event.
+ * If the message is a duplicate send an Ack back as it may be from a resend.
+ * If the state is null, or status is ERROR, WAIT_FOR_FINAL_ACK or CLOSED send an error response to the counterparty.
+ * If the state is CONFIRMED/CREATED and the sequence number is valid then set the status to CLOSING and return a [SessionAck]
+ * If the state is CLOSING and it is not a duplicate then check the state and see if all sent messages have been acknowledged by the
+ * counterparty. If they have then set the status to be CLOSED. If they haven't then set the state to WAIT_FOR_FINAL_ACK
+ */
+class SessionCloseProcessorReceive(
+    private val key: Any,
+    private val sessionState: SessionState?,
+    private val sessionEvent: SessionEvent,
+    private val instant: Instant
+) : SessionEventProcessor {
+
+    private companion object {
+        private val logger = contextLogger()
+    }
+
+    override fun execute(): SessionState {
+        val sessionId = sessionEvent.sessionId
+
+        return if (sessionState == null) {
+            val errorMessage = "Received SessionClose on key $key and sessionId $sessionId  with null state"
+            logger.error(errorMessage)
+            generateErrorSessionStateFromSessionEvent(sessionId, errorMessage, "SessionClose-NullSessionState", instant)
+        } else {
+            val seqNum = sessionEvent.sequenceNum
+            val receivedEventsState = sessionState.receivedEventsState
+            val lastProcessedSequenceNum = receivedEventsState.lastProcessedSequenceNum
+            val undeliveredReceivedMessages = receivedEventsState.undeliveredMessages
+            if (undeliveredReceivedMessages.find { it.payload is SessionClose } != null) {
+                //duplicate
+                logger.debug {
+                    "Received duplicate SessionClose on key $key and sessionId $sessionId with seqNum of $seqNum " +
+                            "when last processed seqNum was $lastProcessedSequenceNum. Current SessionState: $sessionState"
+                }
+                sessionState.apply {
+                    sendEventsState.undeliveredMessages =
+                        sessionState.sendEventsState.undeliveredMessages.plus(generateAckEvent(seqNum, sessionId, instant))
+                }
+            } else {
+                sessionState.receivedEventsState.undeliveredMessages = undeliveredReceivedMessages.plus(sessionEvent)
+                sessionState.receivedEventsState = recalcReceivedProcessState(receivedEventsState)
+                processCloseReceivedAndGetState(sessionState, seqNum, sessionId)
+            }
+        }
+    }
+
+    private fun processCloseReceivedAndGetState(
+        sessionState: SessionState,
+        seqNum: Int,
+        sessionId: String
+    ) = when (sessionState.status) {
+        SessionStateType.CONFIRMED, SessionStateType.CREATED -> {
+            sessionState.apply {
+                status = SessionStateType.CLOSING
+                sendEventsState.undeliveredMessages =
+                    sendEventsState.undeliveredMessages.plus(generateAckEvent(seqNum, sessionId, instant))
+
+            }
+        }
+        SessionStateType.CLOSING -> {
+            sessionState.apply {
+                status = if (sendEventsState.undeliveredMessages.isNullOrEmpty()) {
+                    logger.debug { "Updating session state to ${SessionStateType.CLOSED} for session state $sessionState" }
+                    SessionStateType.CLOSED
+                } else {
+                    logger.debug { "Updating session state to ${SessionStateType.WAIT_FOR_FINAL_ACK} for session state $sessionState" }
+                    SessionStateType.WAIT_FOR_FINAL_ACK
+                }
+                sendEventsState.undeliveredMessages =
+                    sendEventsState.undeliveredMessages.plus(generateAckEvent(seqNum, sessionId, instant))
+            }
+        }
+        else -> {
+            val errorMessage = "Received SessionClose on key $key and sessionId $sessionId when session status was " +
+                    "${sessionState.status}. SessionState: $sessionState"
+            logAndGenerateErrorResult(errorMessage, sessionState, sessionId, "SessionClose-InvalidStatus")
+        }
+    }
+
+    private fun logAndGenerateErrorResult(
+        errorMessage: String,
+        sessionState: SessionState,
+        sessionId: String,
+        errorType: String
+    ): SessionState {
+        logger.error(errorMessage)
+        return sessionState.apply {
+            status = SessionStateType.ERROR
+            sendEventsState.undeliveredMessages =
+                sendEventsState.undeliveredMessages.plus(generateErrorEvent(sessionId, errorMessage, errorType, instant))
+
+        }
+    }
+}

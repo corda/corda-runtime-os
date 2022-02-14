@@ -278,8 +278,12 @@ class AppResolution extends DefaultTask {
 '''
             // Our launcher creates the Shutdown service dynamically, so
             // declare it as a system capability for the resolver's sake.
+            // The security manager's ConditionalPermissionAdmin must
+            // also be created dynamically, so include that too.
             writer.print '''\
--runsystemcapabilities: osgi.service;objectClass:List<String>='net.corda.osgi.api.Shutdown';effective:=active
+-runsystemcapabilities:\
+    osgi.service;objectClass:List<String>='net.corda.osgi.api.Shutdown';effective:=active,\
+    osgi.service;objectClass:List<String>='org.osgi.service.condpermadmin.ConditionalPermissionAdmin';effective:=active
 '''
             if (!systemProperties.isEmpty()) {
                 writer.print('-runsystempackages:')
@@ -398,7 +402,7 @@ def appJar = tasks.register('appJar', Jar) {
     inputs.files(configurations.bootstrapClasspath)
     finalizedBy verifyApp
 
-    archivesBaseName = appJarBaseName
+    archiveBaseName = appJarBaseName
     destinationDirectory = layout.buildDirectory.dir("bin")
 
     exclude "META-INF/MANIFEST.MF"

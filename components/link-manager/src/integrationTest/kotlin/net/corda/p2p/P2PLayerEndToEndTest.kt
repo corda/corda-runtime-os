@@ -11,12 +11,15 @@ import net.corda.libs.configuration.publish.CordaConfigurationKey
 import net.corda.libs.configuration.publish.CordaConfigurationVersion
 import net.corda.libs.configuration.publish.impl.ConfigPublisherImpl
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.BASE_REPLAY_PERIOD_KEY_POSTFIX
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.CUTOFF_REPLAY_KEY_POSTFIX
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.HEARTBEAT_MESSAGE_PERIOD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITIES_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_GPOUP_ID
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_X500_NAME
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_MESSAGE_SIZE_KEY
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MESSAGE_REPLAY_PERIOD_KEY
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_REPLAYING_MESSAGES_PER_PEER_POSTFIX
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MESSAGE_REPLAY_KEY_PREFIX
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.PROTOCOL_MODE_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
@@ -55,7 +58,6 @@ import net.corda.v5.base.util.seconds
 import net.corda.v5.base.util.toBase64
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.nio.ByteBuffer
@@ -122,7 +124,6 @@ class P2PLayerEndToEndTest {
     }
 
     @Test
-    @Disabled("Disabled due to flakiness in CI. Flakiness to be fixed and tests enabled in CORE-3621.")
     @Timeout(60)
     fun `two hosts can exchange data messages over p2p using RSA keys`() {
         Host(
@@ -151,7 +152,6 @@ class P2PLayerEndToEndTest {
     }
 
     @Test
-    @Disabled("Disabled due to flakiness in CI. Flakiness to be fixed and tests enabled in CORE-3621.")
     @Timeout(60)
     fun `two hosts can exchange data messages over p2p with ECDSA keys`() {
         Host(
@@ -238,7 +238,9 @@ class P2PLayerEndToEndTest {
                     ],
                     $MAX_MESSAGE_SIZE_KEY: 1000000,
                     $PROTOCOL_MODE_KEY: ["${ProtocolMode.AUTHENTICATION_ONLY}", "${ProtocolMode.AUTHENTICATED_ENCRYPTION}"],
-                    $MESSAGE_REPLAY_PERIOD_KEY: 2000,
+                    $MESSAGE_REPLAY_KEY_PREFIX$BASE_REPLAY_PERIOD_KEY_POSTFIX: 2000,
+                    $MESSAGE_REPLAY_KEY_PREFIX$CUTOFF_REPLAY_KEY_POSTFIX: 10000,
+                    $MESSAGE_REPLAY_KEY_PREFIX$MAX_REPLAYING_MESSAGES_PER_PEER_POSTFIX: 100,
                     $HEARTBEAT_MESSAGE_PERIOD_KEY: 2000,
                     $SESSION_TIMEOUT_KEY: 10000
                 }
@@ -380,9 +382,6 @@ class P2PLayerEndToEndTest {
         fun startWith(otherHost: Host) {
             configReadService.start()
             configReadService.bootstrapConfig(bootstrapConfig)
-            eventually {
-                assertThat(configReadService.isRunning).isTrue
-            }
 
             linkManager.start()
             gateway.start()

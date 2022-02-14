@@ -2,7 +2,7 @@ package net.corda.p2p.linkmanager.delivery
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MESSAGE_REPLAY_PERIOD_KEY
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MESSAGE_REPLAY_KEY_PREFIX
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
@@ -20,6 +20,7 @@ import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.AuthenticatedMessageDeliveryState
 import net.corda.p2p.linkmanager.LinkManagerCryptoService
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
+import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
@@ -29,6 +30,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("LongParameterList")
 class DeliveryTracker(
@@ -53,18 +55,20 @@ class DeliveryTracker(
     private val replayScheduler = ReplayScheduler(
         coordinatorFactory,
         configReadService,
-        MESSAGE_REPLAY_PERIOD_KEY,
+        true,
+        MESSAGE_REPLAY_KEY_PREFIX,
         appMessageReplayer::replayMessage,
     )
 
     override val dominoTile = DominoTile(this::class.java.simpleName, coordinatorFactory, ::createResources,
-        setOf(
+        dependentChildren = setOf(
             replayScheduler.dominoTile,
             networkMap.dominoTile,
             cryptoService.dominoTile,
             sessionManager.dominoTile,
             appMessageReplayer.dominoTile
-        )
+        ),
+        managedChildren = setOf(replayScheduler.dominoTile, appMessageReplayer.dominoTile)
     )
 
     private val messageTracker = MessageTracker(replayScheduler)
@@ -153,26 +157,43 @@ class DeliveryTracker(
         }
 
         val listener = object : StateAndEventListener<String, AuthenticatedMessageDeliveryState> {
+
+            private val trackedSessionCounterparties = ConcurrentHashMap<String, SessionManager.SessionCounterparties>()
+
             override fun onPostCommit(updatedStates: Map<String, AuthenticatedMessageDeliveryState?>) {
                 for ((key, state) in updatedStates) {
                     if (state != null) {
-                        replayScheduler.addForReplay(state.timestamp, key, state.message)
+                        val sessionCounterparties = sessionCounterpartiesFromState(state)
+                        trackedSessionCounterparties[key] = sessionCounterparties
+                        replayScheduler.addForReplay(state.timestamp, key, state.message, sessionCounterparties)
                     } else {
-                        replayScheduler.removeFromReplay(key)
+                        val sessionCounterparties = trackedSessionCounterparties.remove(key)
+                        sessionCounterparties?.let { replayScheduler.removeFromReplay(key, sessionCounterparties) }
                     }
                 }
             }
 
             override fun onPartitionLost(states: Map<String, AuthenticatedMessageDeliveryState>) {
-                for ((key, _) in states) {
-                    replayScheduler.removeFromReplay(key)
+                for ((key, state) in states) {
+                    replayScheduler.removeFromReplay(key, sessionCounterpartiesFromState(state))
+                    trackedSessionCounterparties.remove(key)
                 }
             }
 
             override fun onPartitionSynced(states: Map<String, AuthenticatedMessageDeliveryState>) {
                 for ((key, state) in states) {
-                    replayScheduler.addForReplay(state.timestamp, key, state.message)
+                    val sessionCounterparties = sessionCounterpartiesFromState(state)
+                    trackedSessionCounterparties[key] = sessionCounterparties
+                    replayScheduler.addForReplay(state.timestamp, key, state.message, sessionCounterparties)
                 }
+            }
+
+            private fun sessionCounterpartiesFromState(state: AuthenticatedMessageDeliveryState): SessionManager.SessionCounterparties {
+                val header = state.message.message.header
+                return SessionManager.SessionCounterparties(
+                    header.source.toHoldingIdentity(),
+                    header.destination.toHoldingIdentity()
+                )
             }
         }
     }
