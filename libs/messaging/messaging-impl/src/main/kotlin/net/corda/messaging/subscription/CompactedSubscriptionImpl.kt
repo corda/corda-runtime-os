@@ -1,48 +1,35 @@
 package net.corda.messaging.subscription
 
-import com.typesafe.config.Config
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CONSUMER_GROUP_ID
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
-import net.corda.messaging.properties.ConfigProperties
-import net.corda.messaging.properties.ConfigProperties.Companion.KAFKA_CONSUMER
-import net.corda.messaging.properties.ConfigProperties.Companion.TOPIC_NAME
+import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.subscription.consumer.builder.CordaConsumerBuilder
 import net.corda.messaging.subscription.factory.MapFactory
-import net.corda.messaging.utils.render
 import net.corda.messaging.utils.toRecord
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
-import java.time.Duration
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
 class CompactedSubscriptionImpl<K : Any, V : Any>(
-    private val config: Config,
+    private val config: ResolvedSubscriptionConfig,
     private val mapFactory: MapFactory<K, V>,
     private val cordaConsumerBuilder: CordaConsumerBuilder,
     private val processor: CompactedProcessor<K, V>,
-    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : CompactedSubscription<K, V> {
 
-    private val log = LoggerFactory.getLogger(
-        config.getString(CONSUMER_GROUP_ID)
-    )
+    private val log = LoggerFactory.getLogger(config.loggerName)
 
-    private val consumerThreadStopTimeout = config.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
-    private val groupName = config.getString(CONSUMER_GROUP_ID)
-    private val topic = config.getString(TOPIC_NAME)
-
-    private val errorMsg = "Failed to read records from group $groupName, topic $topic"
+    private val errorMsg = "Failed to read records from group ${config.group}, topic ${config.topic}"
 
     @Volatile
     private var stopped = false
@@ -50,9 +37,9 @@ class CompactedSubscriptionImpl<K : Any, V : Any>(
     private var consumeLoopThread: Thread? = null
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
-            "$groupName-KafkaCompactedSubscription-$topic",
+            "${config.topic}-KafkaCompactedSubscription-${config.group}",
             //we use clientIdCounter here instead of instanceId as this subscription is readOnly
-            config.getString(ConfigProperties.CLIENT_ID_COUNTER)
+            config.clientId
         )
     ) { _, _ -> }
 
@@ -81,11 +68,11 @@ class CompactedSubscriptionImpl<K : Any, V : Any>(
             consumeLoopThread = null
             threadTmp
         }
-        thread?.join(consumerThreadStopTimeout)
+        thread?.join(config.threadStopTimeout.toMillis())
     }
 
     override fun start() {
-        log.debug { "Starting subscription with config:\n${config.render()}" }
+        log.debug { "Starting subscription with config:\n${config}" }
         lock.withLock {
             if (consumeLoopThread == null) {
                 stopped = false
@@ -94,7 +81,7 @@ class CompactedSubscriptionImpl<K : Any, V : Any>(
                     start = true,
                     isDaemon = true,
                     contextClassLoader = null,
-                    name = "compacted subscription thread $groupName-$topic",
+                    name = "compacted subscription thread ${config.group}-${config.topic}",
                     priority = -1,
                     block = ::runConsumeLoop
                 )
@@ -117,14 +104,15 @@ class CompactedSubscriptionImpl<K : Any, V : Any>(
             try {
                 log.debug { "Creating compacted consumer.  Attempt: $attempts" }
                 cordaConsumerBuilder.createCompactedConsumer(
-                    config.getConfig(KAFKA_CONSUMER),
+                    config.busConfig,
                     processor.keyClass,
                     processor.valueClass,
                     ::onError
                 ).use {
                     val partitions = it.getPartitions(
-                        topic,
-                        Duration.ofSeconds(consumerThreadStopTimeout)
+                        config.topic,
+                        // TODO: This looks like the wrong timeout to me.
+                        config.threadStopTimeout
                     )
                     it.assign(partitions)
                     lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
@@ -149,7 +137,7 @@ class CompactedSubscriptionImpl<K : Any, V : Any>(
     }
 
     private fun onError(bytes: ByteArray) {
-        log.error("Failed to deserialize record from $topic with bytes $bytes")
+        log.error("Failed to deserialize record from ${config.topic} with bytes $bytes")
     }
 
     private fun getLatestValues(): MutableMap<K, V> {
@@ -206,7 +194,7 @@ class CompactedSubscriptionImpl<K : Any, V : Any>(
                     }
                     else -> {
                         throw CordaMessageAPIFatalException(
-                            "Failed to process records from topic $topic, group $groupName.", ex
+                            "Failed to process records from topic ${config.topic}, group ${config.group}.", ex
                         )
                     }
                 }

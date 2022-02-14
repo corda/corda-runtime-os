@@ -1,12 +1,8 @@
 package net.corda.messaging.subscription
 
-import com.typesafe.config.Config
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CONSUMER_GROUP_ID
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
@@ -14,11 +10,8 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.subscription.Subscription
-import net.corda.messaging.properties.ConfigProperties
-import net.corda.messaging.properties.ConfigProperties.Companion.KAFKA_CONSUMER
-import net.corda.messaging.properties.ConfigProperties.Companion.TOPIC_NAME
+import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.subscription.consumer.builder.CordaConsumerBuilder
-import net.corda.messaging.utils.render
 import net.corda.messaging.utils.toRecord
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.base.util.debug
@@ -42,34 +35,28 @@ import kotlin.concurrent.withLock
  *
  */
 class PubSubSubscriptionImpl<K : Any, V : Any>(
-    private val config: Config,
+    private val config: ResolvedSubscriptionConfig,
     private val cordaConsumerBuilder: CordaConsumerBuilder,
     private val processor: PubSubProcessor<K, V>,
     private val executor: ExecutorService?,
-    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : Subscription<K, V> {
 
-    private val log = LoggerFactory.getLogger(
-        config.getString(CONSUMER_GROUP_ID)
-    )
-
-    private val consumerThreadStopTimeout = config.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
-    private val consumerPollAndProcessRetries = config.getLong(CONSUMER_POLL_AND_PROCESS_RETRIES)
+    private val log = LoggerFactory.getLogger(config.loggerName)
 
     @Volatile
     private var stopped = false
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
-    private val topic = config.getString(TOPIC_NAME)
-    private val groupName = config.getString(CONSUMER_GROUP_ID)
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
-            "$groupName-CordaPubSubSubscription-$topic",
+            "${config.group}-CordaPubSubSubscription-${config.topic}",
             //we use clientIdCounter here instead of instanceId as this subscription is readOnly
-            config.getString(ConfigProperties.CLIENT_ID_COUNTER)
+            config.clientId
         )
     ) { _, _ -> }
-    private val errorMsg = "PubSubConsumer failed to create and subscribe consumer for group $groupName, topic $topic."
+    private val errorMsg = "PubSubConsumer failed to create and subscribe consumer for group ${config.group}, " +
+            "topic ${config.topic}."
 
     /**
      * Is the subscription running.
@@ -88,7 +75,7 @@ class PubSubSubscriptionImpl<K : Any, V : Any>(
      * @throws CordaMessageAPIFatalException if unrecoverable error occurs
      */
     override fun start() {
-        log.debug { "Starting subscription with config:\n${config.render()}" }
+        log.debug { "Starting subscription with config:\n$config" }
         lock.withLock {
             if (consumeLoopThread == null) {
                 stopped = false
@@ -97,7 +84,7 @@ class PubSubSubscriptionImpl<K : Any, V : Any>(
                     true,
                     isDaemon = true,
                     contextClassLoader = null,
-                    name = "pubsub processing thread $groupName-$topic",
+                    name = "pubsub processing thread ${config.group}-${config.topic}",
                     priority = -1,
                     block = ::runConsumeLoop
                 )
@@ -130,7 +117,7 @@ class PubSubSubscriptionImpl<K : Any, V : Any>(
             threadTmp
         }
         executor?.shutdown()
-        thread?.join(consumerThreadStopTimeout)
+        thread?.join(config.threadStopTimeout.toMillis())
     }
 
     /**
@@ -148,9 +135,9 @@ class PubSubSubscriptionImpl<K : Any, V : Any>(
             attempts++
             try {
                 cordaConsumerBuilder.createPubSubConsumer(
-                    config.getConfig(KAFKA_CONSUMER), processor.keyClass, processor.valueClass,::logFailedDeserialize
+                    config.busConfig, processor.keyClass, processor.valueClass,::logFailedDeserialize
                 ).use {
-                    it.subscribe(topic)
+                    it.subscribe(config.topic)
                     lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
                     pollAndProcessRecords(it)
                 }
@@ -192,15 +179,15 @@ class PubSubSubscriptionImpl<K : Any, V : Any>(
                 attempts = 0
             } catch (ex: Exception) {
                 attempts++
-                if (attempts <= consumerPollAndProcessRetries) {
+                if (attempts <= config.processorRetries) {
                     log.warn(
-                        "PubSubConsumer from group $groupName failed to read and process records from topic $topic." +
+                        "PubSubConsumer from group ${config.group} failed to read and process records from topic ${config.topic}." +
                                 "Resetting to last committed offset and retrying. Attempts: $attempts."
                     )
                     consumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.LATEST)
                 } else {
                     val message =
-                        "PubSubConsumer from group $groupName failed to read and process records from topic $topic." +
+                        "PubSubConsumer from group ${config.group} failed to read and process records from topic ${config.topic}." +
                                 "Max reties for poll and process exceeded. Recreating consumer and polling from latest position."
                     log.warn(message, ex)
                     throw CordaMessageAPIIntermittentException(message, ex)
@@ -226,6 +213,6 @@ class PubSubSubscriptionImpl<K : Any, V : Any>(
     }
 
     private fun logFailedDeserialize(data: ByteArray) {
-        log.error("Failed to deserialize a record on $topic: (${data.toHexString()}")
+        log.error("Failed to deserialize a record on ${config.topic}: (${data.toHexString()}")
     }
 }

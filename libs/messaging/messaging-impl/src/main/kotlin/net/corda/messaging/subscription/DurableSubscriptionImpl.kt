@@ -1,9 +1,7 @@
 package net.corda.messaging.subscription
 
-import com.typesafe.config.Config
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CONSUMER_GROUP_ID
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.EventLogProcessor
@@ -11,7 +9,7 @@ import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
-import net.corda.messaging.properties.ConfigProperties.Companion.PRODUCER_TRANSACTIONAL_ID
+import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.subscription.consumer.builder.CordaConsumerBuilder
 import org.slf4j.LoggerFactory
 
@@ -37,17 +35,15 @@ import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
 class DurableSubscriptionImpl<K : Any, V : Any>(
-    private val config: Config,
+    private val config: ResolvedSubscriptionConfig,
     private val cordaConsumerBuilder: CordaConsumerBuilder,
     private val cordaProducerBuilder: CordaProducerBuilder,
     private val processor: DurableProcessor<K, V>,
     private val partitionAssignmentListener: PartitionAssignmentListener?,
-    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : Subscription<K, V> {
 
-    private val log = LoggerFactory.getLogger(
-        "${config.getString(CONSUMER_GROUP_ID)}.${config.getString(PRODUCER_TRANSACTIONAL_ID)}"
-    )
+    private val log = LoggerFactory.getLogger(config.loggerName)
 
     private val subscription = EventLogSubscriptionImpl(config, cordaConsumerBuilder, cordaProducerBuilder,
         ForwardingEventLogProcessor(processor), partitionAssignmentListener, lifecycleCoordinatorFactory)
