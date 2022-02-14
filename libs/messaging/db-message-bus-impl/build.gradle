@@ -1,0 +1,42 @@
+plugins {
+    id 'corda.common-library'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+}
+
+description 'Database Message Bus Implementation'
+
+dependencies {
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-base"
+    compileOnly 'org.osgi:osgi.core'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'net.corda:corda-db-schema'
+
+    api "javax.persistence:javax.persistence-api"
+
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation project(":libs:configuration:configuration-core")
+    implementation project(':libs:db:db-admin')
+    implementation project(':libs:db:db-core')
+    implementation project(':libs:db:db-orm')
+    implementation project(":libs:messaging:db-message-bus-datamodel")
+    implementation project(":libs:messaging:messaging")
+    implementation project(":libs:messaging:message-bus")
+    implementation project(":libs:schema-registry:schema-registry")
+
+    testImplementation project(":testing:test-utilities")
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    integrationTestImplementation project(":libs:db:db-admin-impl")
+    integrationTestImplementation project(":libs:db:db-orm-impl")
+    integrationTestImplementation project(":libs:utilities")
+    integrationTestImplementation project(":testing:db-testkit")
+
+    integrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
+    integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
+    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+}

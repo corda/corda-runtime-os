@@ -48,7 +48,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
     override val protocolVersion = 1
     private var rpcSender: RPCSender<VirtualNodeCreationRequest, VirtualNodeCreationResponse>? = null
     private var requestTimeout: Duration? = null
-    override val isRunning get() = rpcSender != null && requestTimeout != null
+    override val isRunning get() = rpcSender?.isRunning ?: false && requestTimeout != null
 
     override fun start() = Unit
 
@@ -57,7 +57,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
         rpcSender = null
     }
 
-    override fun createAndStartRPCSender(config: SmartConfig) {
+    override fun createAndStartRpcSender(config: SmartConfig) {
         rpcSender?.close()
         rpcSender = publisherFactory.createRPCSender(RPC_CONFIG, config).apply { start() }
     }

@@ -7,7 +7,7 @@ import java.nio.file.Path
 interface ChunkWriter {
     /**
      * Break up an [InputStream] into chunks of some unspecified size (smaller than the default Kafka message size).
-     * The given [fileName] will be returned via the [ChunkWriter] and the [ChunksCombined] callback.
+     * The given [fileName] will be returned via the [ChunkReader] and the [ChunksCombined] callback.
      */
     fun write(fileName: Path, inputStream: InputStream)
 

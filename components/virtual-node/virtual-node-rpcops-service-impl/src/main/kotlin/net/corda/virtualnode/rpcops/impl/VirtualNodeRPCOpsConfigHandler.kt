@@ -27,7 +27,7 @@ internal class VirtualNodeRPCOpsConfigHandler(
      * configuration is provided in [config].
      */
     override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
-        if (RPC_CONFIG in changedKeys) processRPCConfig(config)
+        if (RPC_CONFIG in changedKeys) processRpcConfig(config)
         if (virtualNodeRPCOps.isRunning) coordinator.updateStatus(UP)
     }
 
@@ -40,7 +40,7 @@ internal class VirtualNodeRPCOpsConfigHandler(
      * @throws VirtualNodeRPCOpsServiceException If [configSnapshot] does not contain any config for key [RPC_CONFIG],
      * or if [virtualNodeRPCOps]'s RPC sender could not be started.
      */
-    private fun processRPCConfig(configSnapshot: Map<String, SmartConfig>) {
+    private fun processRpcConfig(configSnapshot: Map<String, SmartConfig>) {
         val config = configSnapshot[RPC_CONFIG] ?: throw VirtualNodeRPCOpsServiceException(
             "Was notified of an update to configuration key $RPC_CONFIG, but no such configuration was found."
         )
@@ -52,7 +52,7 @@ internal class VirtualNodeRPCOpsConfigHandler(
 
         if (config.hasPath(BOOTSTRAP_SERVERS)) {
             try {
-                virtualNodeRPCOps.createAndStartRPCSender(config)
+                virtualNodeRPCOps.createAndStartRpcSender(config)
             } catch (e: Exception) {
                 coordinator.updateStatus(ERROR)
                 throw VirtualNodeRPCOpsServiceException(

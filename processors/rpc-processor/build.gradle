@@ -17,6 +17,7 @@ dependencies {
 
     implementation project(':components:configuration:configuration-rpcops-service')
     implementation project(':components:configuration:configuration-read-service')
+    implementation project(':components:virtual-node:cpi-upload-rpcops-service')
     implementation project(':components:virtual-node:virtual-node-rpcops-service')
     implementation project(':components:http-rpc-gateway-comp')
 
@@ -39,4 +40,7 @@ dependencies {
     runtimeOnly project(':libs:permissions:permission-manager-impl')
     runtimeOnly project(':libs:permissions:permission-validation-impl')
     runtimeOnly project(':libs:schema-registry:schema-registry-impl')
+
+    runtimeOnly project(':libs:virtual-node:cpi-upload-manager-impl')
+    runtimeOnly project(':components:virtual-node:cpi-upload-rpcops-service')
 }
