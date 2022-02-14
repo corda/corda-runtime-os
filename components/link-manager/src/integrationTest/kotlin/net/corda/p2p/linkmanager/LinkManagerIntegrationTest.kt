@@ -11,13 +11,14 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.CUTOFF_REPLAY_KEY_POSTFIX
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.HEARTBEAT_MESSAGE_PERIOD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITIES_KEY
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_GPOUP_ID
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_GROUP_ID
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_X500_NAME
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_MESSAGE_SIZE_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_REPLAYING_MESSAGES_PER_PEER_POSTFIX
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MESSAGE_REPLAY_KEY_PREFIX
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.PROTOCOL_MODE_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_COUNTERPARTIES_KEY
 import net.corda.lifecycle.domino.logic.DependenciesVerifier
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
@@ -47,7 +48,7 @@ class LinkManagerIntegrationTest {
                     $LOCALLY_HOSTED_IDENTITIES_KEY: [
                         {
                             "${LOCALLY_HOSTED_IDENTITY_X500_NAME}": "O=Alice, L=London, C=GB",
-                            "${LOCALLY_HOSTED_IDENTITY_GPOUP_ID}": "group-1"
+                            "${LOCALLY_HOSTED_IDENTITY_GROUP_ID}": "group-1"
                         }
                     ],
                     $MAX_MESSAGE_SIZE_KEY: 1000000,
@@ -57,6 +58,7 @@ class LinkManagerIntegrationTest {
                     $MESSAGE_REPLAY_KEY_PREFIX$MAX_REPLAYING_MESSAGES_PER_PEER_POSTFIX: 100,
                     $HEARTBEAT_MESSAGE_PERIOD_KEY: 2000,
                     $SESSION_TIMEOUT_KEY: 10000
+                    $SESSIONS_PER_COUNTERPARTIES_KEY: 4
                 }
             """.trimIndent()
     private val bootstrapConfig = SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
