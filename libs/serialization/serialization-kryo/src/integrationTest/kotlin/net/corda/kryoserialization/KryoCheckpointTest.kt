@@ -4,12 +4,14 @@ import net.corda.bundle1.Cash
 import net.corda.sandbox.SandboxException
 import net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFactory
 import net.corda.testing.sandboxes.SandboxSetup
+import net.corda.testing.sandboxes.fetchService
+import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
-import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.framework.BundleContext
 import org.osgi.test.junit5.context.BundleContextExtension
@@ -23,29 +25,27 @@ import java.util.concurrent.Executors
 class KryoCheckpointTest {
 
     companion object {
+        @RegisterExtension
+        private val lifecycle = AllTestsLifecycle()
+
         @InjectService(timeout = 1000)
         lateinit var checkpointSerializerBuilderFactory: CheckpointSerializerBuilderFactory
 
         @InjectService(timeout = 1000)
         lateinit var sandboxSetup: SandboxSetup
 
+        lateinit var sandboxManagementService: SandboxManagementService
+
         @Suppress("unused")
         @JvmStatic
         @BeforeAll
         fun setup(@InjectBundleContext bundleContext: BundleContext, @TempDir baseDirectory: Path) {
             sandboxSetup.configure(bundleContext, baseDirectory)
-        }
-
-        @Suppress("unused")
-        @JvmStatic
-        @AfterAll
-        fun done() {
-            sandboxSetup.shutdown()
+            lifecycle.accept(sandboxSetup) { setup ->
+                sandboxManagementService = setup.fetchService(timeout = 1000)
+            }
         }
     }
-
-    @InjectService(timeout = 1500)
-    lateinit var sandboxManagementService: SandboxManagementService
 
     @Test
     fun `correct serialization of a simple object`() {

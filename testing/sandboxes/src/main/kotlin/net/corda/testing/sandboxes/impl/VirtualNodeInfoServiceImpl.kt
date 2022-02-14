@@ -10,17 +10,14 @@ import net.corda.virtualnode.write.VirtualNodeInfoWriteService
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.propertytypes.ServiceRanking
 
-interface VirtualNodeInfoService  : VirtualNodeInfoReadService, VirtualNodeInfoWriteService
-
 @Suppress("unused")
 @Component(service = [
-    VirtualNodeInfoService::class,
     VirtualNodeInfoReadService::class,
     VirtualNodeInfoWriteService::class
 ])
 @ServiceRanking(Int.MAX_VALUE)
-class VirtualNodeInfoServiceImpl : VirtualNodeInfoService {
-    private val logger = loggerFor<VirtualNodeInfoService>()
+class VirtualNodeInfoServiceImpl : VirtualNodeInfoReadService, VirtualNodeInfoWriteService {
+    private val logger = loggerFor<VirtualNodeInfoServiceImpl>()
     private val virtualNodeInfoMap = ConcurrentHashMap<HoldingIdentity, VirtualNodeInfo>()
 
     override val isRunning: Boolean

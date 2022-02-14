@@ -1,15 +1,18 @@
 package net.corda.virtualnode.manager.test
 
+import net.corda.packaging.CPI
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
 import net.corda.testing.sandboxes.SandboxSetup
+import net.corda.testing.sandboxes.fetchService
+import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.v5.crypto.SecureHash
-import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.framework.BundleContext
 import org.osgi.test.common.annotation.InjectBundleContext
@@ -29,26 +32,26 @@ class CustomCryptoDigestTests {
         const val DIGEST_CPB_ONE = "META-INF/crypto-custom-digest-one-consumer-cpk.cpb"
         const val DIGEST_CPB_TWO = "META-INF/crypto-custom-digest-two-consumer-cpk.cpb"
 
+        @RegisterExtension
+        private val lifecycle = EachTestLifecycle()
+
         @InjectService(timeout = 1000)
         lateinit var sandboxSetup: SandboxSetup
+
+        lateinit var service: IntegrationTestService
 
         @JvmStatic
         @BeforeAll
         fun setup(@InjectBundleContext bundleContext: BundleContext, @TempDir testDirectory: Path) {
             sandboxSetup.configure(bundleContext, testDirectory, setOf("net.corda.crypto-impl"))
-        }
-
-        @JvmStatic
-        @AfterAll
-        fun done() {
-            sandboxSetup.shutdown()
+            lifecycle.accept(sandboxSetup) { setup ->
+                service = setup.fetchService(timeout = 1000)
+            }
         }
     }
 
-    @InjectService(timeout = 1500)
-    lateinit var service: IntegrationTestService
-
     private val sandboxGroupsPerTest = mutableListOf<SandboxGroup>()
+    private val cpis = mutableMapOf<String, CPI>()
 
     /**
      * After each test is run unload their sandboxes from the system.
@@ -62,13 +65,15 @@ class CustomCryptoDigestTests {
      */
     @AfterEach
     private fun teardown() {
-        sandboxGroupsPerTest.forEach(service::unloadSandboxGroup)
-        sandboxGroupsPerTest.clear()
+        ArrayList(sandboxGroupsPerTest).forEach(::unloadSandboxGroup)
+        cpis.values.forEach(CPI::close)
     }
 
     private fun loadAndInstantiate(resourceDigestCpi: String): SandboxGroup {
         //  "Install" -  the CPKs 'into the system', i.e. copy cpk to disk somewhere and scan the manifests.
-        val cpi = service.loadCPIFromResource(resourceDigestCpi)
+        val cpi = cpis.computeIfAbsent(resourceDigestCpi) { key ->
+            service.loadCPIFromResource(key)
+        }
 
         //  Instantiate -  load the cpi (its cpks) into the process, and allow OSGi to wire up things.
         val sandboxGroup = service.createSandboxGroupFor(cpi.cpks.toSet())

@@ -8,6 +8,7 @@ import org.osgi.framework.BundleEvent
 import org.osgi.framework.ServiceEvent
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Deactivate
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.Collections.unmodifiableList
@@ -26,6 +27,11 @@ class SandboxQueryImpl @Activate constructor(
         logger.info("Activating!")
         context.addBundleListener(bundleEvents::add)
         context.addServiceListener(serviceEvents::add)
+    }
+
+    @Deactivate
+    fun done() {
+        logger.info("Deactivating!")
     }
 
     override fun getAllServiceClasses(): List<Class<out Any>> {

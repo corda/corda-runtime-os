@@ -31,7 +31,6 @@ import net.corda.v5.base.util.loggerFor
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.osgi.framework.AdminPermission
-import org.osgi.framework.BundleContext
 import org.osgi.framework.BundleReference
 import org.osgi.framework.PackagePermission
 import org.osgi.framework.PackagePermission.EXPORTONLY
@@ -40,16 +39,26 @@ import org.osgi.framework.ServicePermission
 import org.osgi.framework.ServicePermission.GET
 import org.osgi.framework.ServicePermission.REGISTER
 import org.osgi.framework.wiring.BundleWiring
+import org.osgi.service.component.ComponentContext
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.ReferenceCardinality.OPTIONAL
+import org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC
 import org.osgi.service.permissionadmin.PermissionAdmin
 
 val CPK.id: CPK.Identifier get() = metadata.id
+const val VNODE_SERVICE = "vnode"
 
 @Suppress("unused", "LongParameterList")
-@Component
+@Component(reference = [
+    Reference(
+        name = VNODE_SERVICE,
+        service = VNodeService::class,
+        cardinality = OPTIONAL,
+        policy = DYNAMIC
+    )
+])
 class CordaVNode @Activate constructor(
     @Reference
     private val flowEventProcessorFactory: FlowEventProcessorFactory,
@@ -60,7 +69,7 @@ class CordaVNode @Activate constructor(
     @Reference
     private val shutdown: Shutdown,
 
-    private val bundleContext: BundleContext
+    private val componentContext: ComponentContext
 ) : Application {
     private companion object {
         private const val EXAMPLE_CPI_RESOURCE = "META-INF/example-cpi-package.cpb"
@@ -79,26 +88,20 @@ class CordaVNode @Activate constructor(
         HotSpotDiagnosticMXBean::class.java
     )
 
-    private val cleanups = mutableListOf<AutoCloseable>()
-    private val vnode: VNodeService = fetchService(TIMEOUT_MILLIS)
+    private val vnode: VNodeService = fetchService(VNODE_SERVICE, TIMEOUT_MILLIS)
 
-    @Deactivate
-    fun done() {
-        cleanups.forEach(AutoCloseable::close)
-        logger.info("Deactivated")
+    private inline fun <reified T> fetchService(name: String, timeout: Long): T {
+        return fetchService(name, T::class.java, timeout)
     }
 
-    private inline fun <reified T> fetchService(timeout: Long): T {
-        return fetchService(T::class.java, timeout)
-    }
-
-    private fun <T> fetchService(serviceType: Class<T>, timeout: Long): T {
-        var remainingMillis = timeout
-        while (remainingMillis >= 0) {
-            bundleContext.getServiceReference(serviceType)?.let { ref ->
-                return bundleContext.getService(ref).also {
-                    cleanups.add(AutoCloseable { bundleContext.ungetService(ref) })
-                }
+    private fun <T> fetchService(name: String, serviceType: Class<T>, timeout: Long): T {
+        var remainingMillis = timeout.coerceAtLeast(0)
+        while (true) {
+            componentContext.locateService<T>(name)?.also { svc ->
+                return svc
+            }
+            if (remainingMillis <= 0) {
+                break
             }
             val waitMillis = remainingMillis.coerceAtMost(WAIT_MILLIS)
             Thread.sleep(waitMillis)
@@ -206,7 +209,7 @@ class CordaVNode @Activate constructor(
             executeSandbox("client-3", EXAMPLE_CPI_RESOURCE)
         } finally {
             dumpHeap("finished")
-            shutdown.shutdown(bundleContext.bundle)
+            shutdown.shutdown(componentContext.usingBundle)
 
             val instrumentor = Retransform.getInstrumentor()
             logger.info("Instrumentor: {}", instrumentor::class.java)
