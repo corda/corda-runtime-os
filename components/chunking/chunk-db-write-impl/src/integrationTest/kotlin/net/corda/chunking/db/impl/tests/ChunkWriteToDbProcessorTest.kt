@@ -5,7 +5,6 @@ import net.corda.chunking.db.impl.ChunkDbQueries
 import net.corda.chunking.db.impl.ChunkWriteToDbProcessor
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkAck
-import net.corda.messaging.api.publisher.Publisher
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -17,11 +16,6 @@ import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
 internal class ChunkWriteToDbProcessorTest {
-    /** Returns a mock [Publisher]. */
-    private fun getPublisher() = mock<Publisher>().apply {
-        whenever(publish(any())).thenReturn(listOf(CompletableFuture.completedFuture(Unit)))
-    }
-
     private val queries = mock<ChunkDbQueries>().apply {
         whenever(checksumIsValid(any())).thenReturn(true)
         whenever(persist(any())).thenReturn(AllChunksReceived.YES)
@@ -37,7 +31,7 @@ internal class ChunkWriteToDbProcessorTest {
 
     @Test
     fun `processor calls through to persist method`() {
-        val processor = ChunkWriteToDbProcessor(getPublisher(), queries)
+        val processor = ChunkWriteToDbProcessor(queries)
         val chunk = Chunk(randomString(), randomString(), null, 0, 0, ByteBuffer.wrap("1234".toByteArray()))
         val ack = processRequest(processor, chunk)
 
@@ -49,7 +43,7 @@ internal class ChunkWriteToDbProcessorTest {
 
     @Test
     fun `processor calls through to checksum method`() {
-        val processor = ChunkWriteToDbProcessor(getPublisher(), queries)
+        val processor = ChunkWriteToDbProcessor(queries)
         val chunk = Chunk(randomString(), randomString(), null, 0, 0, ByteBuffer.wrap("1234".toByteArray()))
         val ack = processRequest(processor, chunk)
 

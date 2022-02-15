@@ -29,7 +29,6 @@ class ChunkDbWriterFactoryImpl @Activate constructor(
 
     override fun create(
         config: SmartConfig,
-        instanceId: Int,
         entityManagerFactory: EntityManagerFactory
     ): ChunkDbWriter {
         val subscription = createRPCSubscription(config, entityManagerFactory)

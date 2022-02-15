@@ -6,8 +6,6 @@ import net.corda.chunking.read.ChunkReadService
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
-import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -19,6 +17,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
@@ -84,24 +83,23 @@ class ChunkReadServiceImpl @Activate constructor(
     private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent) {
         if (event.status == LifecycleStatus.UP) {
             configSubscription =
-                configurationReadService.registerComponentForUpdates(coordinator, setOf(ConfigKeys.BOOT_CONFIG))
+                configurationReadService.registerComponentForUpdates(
+                    coordinator, setOf(
+                        ConfigKeys.BOOT_CONFIG,
+                        ConfigKeys.MESSAGING_CONFIG,
+                    )
+                )
         } else {
             configSubscription?.close()
         }
     }
 
     private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        if (!event.keys.contains(ConfigKeys.BOOT_CONFIG)) {
-            log.warn("Unexpected config key change that we didn't register for:  ${event.keys}")
-            return
-        }
-
-        val config = event.config[ConfigKeys.BOOT_CONFIG]!!
+        val config = event.config.toMessagingConfig()
         chunkDbWriter?.close()
         chunkDbWriter = chunkDbWriterFactory
             .create(
                 config,
-                config.getInt(INSTANCE_ID),
                 dbConnectionManager.clusterDbEntityManagerFactory
             )
             .apply { start() }
