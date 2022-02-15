@@ -7,6 +7,7 @@ import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBo
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setUpHealthMonitor
+import net.corda.applications.workers.workercommon.JavaSerialisationFilter
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.rpc.RPCProcessor
@@ -37,6 +38,7 @@ class RPCWorker @Activate constructor(
     /** Parses the arguments, then initialises and starts the [processor]. */
     override fun startup(args: Array<String>) {
         logger.info("RPC worker starting.")
+        JavaSerialisationFilter.install()
 
         val params = getParams(args, RPCWorkerParams())
         if (printHelpOrVersion(params.defaultParams, RPCWorker::class.java, shutDownService)) return

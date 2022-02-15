@@ -7,6 +7,7 @@ import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBo
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setUpHealthMonitor
+import net.corda.applications.workers.workercommon.JavaSerialisationFilter
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.crypto.CryptoProcessor
@@ -47,6 +48,7 @@ class CombinedWorker @Activate constructor(
     /** Parses the arguments, then initialises and starts the processors. */
     override fun startup(args: Array<String>) {
         logger.info("Combined worker starting.")
+        JavaSerialisationFilter.install()
 
         val params = getParams(args, CombinedWorkerParams())
         if (printHelpOrVersion(params.defaultParams, CombinedWorker::class.java, shutDownService)) return
