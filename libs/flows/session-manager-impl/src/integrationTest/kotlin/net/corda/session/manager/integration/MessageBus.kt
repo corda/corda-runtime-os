@@ -13,9 +13,9 @@ class MessageBus : BusInteractions {
     }
 
     override fun duplicateMessage(position: Int) {
-        //TODO - this works for now as we dont modify data but this will point to the same object
         val message = inboundMessages[position]
-        inboundMessages.add(message)
+        val copy = message.specificData.deepCopy(message.schema, message)
+        inboundMessages.add(copy)
     }
 
     override fun getInboundMessageSize(): Int {
