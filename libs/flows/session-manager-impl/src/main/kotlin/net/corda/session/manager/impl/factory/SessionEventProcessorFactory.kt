@@ -10,7 +10,7 @@ import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionState
 import net.corda.session.manager.SessionManagerException
 import net.corda.session.manager.impl.SessionEventProcessor
-import net.corda.session.manager.impl.processor.SessionAckProcessorReceived
+import net.corda.session.manager.impl.processor.SessionAckProcessorReceive
 import net.corda.session.manager.impl.processor.SessionCloseProcessorReceive
 import net.corda.session.manager.impl.processor.SessionCloseProcessorSend
 import net.corda.session.manager.impl.processor.SessionDataProcessorReceive
@@ -48,7 +48,7 @@ class SessionEventProcessorFactory {
             is SessionData -> SessionDataProcessorReceive(key, sessionState, sessionEvent, instant)
             is SessionClose -> SessionCloseProcessorReceive(key, sessionState, sessionEvent, instant)
             is SessionError -> SessionErrorProcessorReceive(key, sessionState, sessionEvent, payload.errorMessage, instant)
-            is SessionAck -> SessionAckProcessorReceived(key, sessionState, sessionEvent.sessionId, payload.sequenceNum, instant)
+            is SessionAck -> SessionAckProcessorReceive(key, sessionState, sessionEvent.sessionId, payload.sequenceNum, instant)
             else -> throw NotImplementedError(
                 "The session event type '${payload.javaClass.name}' is not supported."
             )
