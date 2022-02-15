@@ -17,7 +17,7 @@ import java.time.Instant
  * If the current session state has a status of CREATED and the SessionInit has been acked then the session can be set to CONFIRMED
  *
  */
-class SessionAckProcessorReceived(
+class SessionAckProcessorReceive(
     private val key: Any,
     private val sessionState: SessionState?,
     private val sessionId: String,
@@ -38,7 +38,7 @@ class SessionAckProcessorReceived(
             logger.debug { "Received SessionAck on key $key for seqNum $sequenceNum for session state: $sessionState" }
 
             sessionState.apply {
-                sendEventsState.undeliveredMessages.removeIf { it.sequenceNum == sequenceNum}
+                sendEventsState.undeliveredMessages = sendEventsState.undeliveredMessages.filter { it.sequenceNum != sequenceNum}
                 val nonAckUndeliveredMessages = sendEventsState.undeliveredMessages.filter { it.payload !is SessionAck }
                 if (sessionState.status == SessionStateType.WAIT_FOR_FINAL_ACK && nonAckUndeliveredMessages.isEmpty()) {
                     logger.debug { "Updating session state to ${SessionStateType.CLOSED} for session state $sessionState" }
