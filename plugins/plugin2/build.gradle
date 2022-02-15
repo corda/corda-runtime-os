@@ -1,17 +1,12 @@
-import static org.gradle.api.JavaVersion.VERSION_11
-
 plugins {
     id 'org.jetbrains.kotlin.kapt'
-    id 'org.jetbrains.kotlin.jvm'
 }
 
 dependencies {
-    implementation project(":api")
-    api "info.picocli:picocli:${picoCliVersion}"
+    compileOnly project(":api")
 
     implementation "org.pf4j:pf4j:${pf4jVersion}"
     kapt "org.pf4j:pf4j:${pf4jVersion}"
-    implementation "org.apache.commons:commons-lang3:${commonsLangVersion}" // this is an examples for an external library included
 
     testImplementation project(":api")
     testImplementation "org.pf4j:pf4j:${pf4jVersion}"
@@ -21,16 +16,4 @@ dependencies {
 
 test {
     useJUnitPlatform()
-}
-
-compileKotlin {
-    kotlinOptions {
-        jvmTarget = VERSION_11
-    }
-}
-
-compileTestKotlin {
-    kotlinOptions {
-        jvmTarget = VERSION_11
-    }
 }

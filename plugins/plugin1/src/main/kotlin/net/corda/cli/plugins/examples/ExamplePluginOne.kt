@@ -28,7 +28,10 @@ class ExamplePluginOne(wrapper: PluginWrapper) : Plugin(wrapper) {
     }
 
     @Extension
-    @CommandLine.Command(name = "plugin-one", description = ["Example Plugin one using function based subcommands, and services"])
+    @CommandLine.Command(
+        name = "plugin-one",
+        description = ["Example Plugin one using function based subcommands, and services"]
+    )
     class ExamplePluginOneEntry : CordaCliPlugin, HttpServiceUser {
 
         @CommandLine.Mixin
@@ -40,7 +43,10 @@ class ExamplePluginOne(wrapper: PluginWrapper) : Plugin(wrapper) {
             println(System.getProperty("user.home"))
         }
 
-        @CommandLine.Command(name = "service-example", description = ["A subcommand that uses a service supplied by the host."])
+        @CommandLine.Command(
+            name = "service-example",
+            description = ["A subcommand that uses a service supplied by the host."]
+        )
         fun exampleServiceSubCommand() {
             service.get("exampleEndpoint")
         }
