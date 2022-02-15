@@ -898,7 +898,7 @@ class SessionManagerTest {
         val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
         sessionManager.processSessionMessage(LinkInMessage(responderHello))
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionAlreadyPending)
-        eventually(configWithHeartbeat.sessionTimeout.multipliedBy(10), 5.millis) {
+        eventually(configWithHeartbeat.sessionTimeout.multipliedBy(100), 5.millis) {
             assertThat(sessionManager.processOutboundMessage(message)).isInstanceOf(NewSessionNeeded::class.java)
         }
         sessionManager.stop()
@@ -944,7 +944,7 @@ class SessionManagerTest {
 
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
 
-        eventually(configWithHeartbeat.sessionTimeout.multipliedBy(10), 5.millis) {
+        eventually(configWithHeartbeat.sessionTimeout.multipliedBy(100), 5.millis) {
             assertThat(sessionManager.processOutboundMessage(message)).isInstanceOf(NewSessionNeeded::class.java)
         }
         verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())
@@ -1008,7 +1008,7 @@ class SessionManagerTest {
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
         sessionManager.dataMessageSent(authenticatedSession)
 
-        eventually(configWithHeartbeat.sessionTimeout.multipliedBy(10), 5.millis) {
+        eventually(configWithHeartbeat.sessionTimeout.multipliedBy(100), 5.millis) {
             assertThat(sessionManager.processOutboundMessage(message)).isInstanceOf(NewSessionNeeded::class.java)
         }
         verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())
@@ -1085,7 +1085,7 @@ class SessionManagerTest {
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
         sessionManager.dataMessageSent(authenticatedSession)
 
-        eventually(configVeryLongTimeout.heartbeatPeriod.multipliedBy(10), 5.millis) {
+        eventually(configVeryLongTimeout.heartbeatPeriod.multipliedBy(100), 5.millis) {
             assertThat(messages.size).isGreaterThanOrEqualTo(2)
         }
 
@@ -1096,12 +1096,12 @@ class SessionManagerTest {
         heartbeatConfigHandler.applyNewConfiguration(configFasterHeartbeat, null, mock())
         var messagesSentSoFar: Int? = null
 
-        eventually(configVeryLongTimeout.heartbeatPeriod.multipliedBy(10), 5.millis) {
+        eventually(configVeryLongTimeout.heartbeatPeriod.multipliedBy(100), 5.millis) {
             assertThat(messages.size).isGreaterThanOrEqualTo(3)
             messagesSentSoFar = messages.size
         }
 
-        eventually(configVeryLongTimeout.heartbeatPeriod.multipliedBy(10), 5.millis) {
+        eventually(configVeryLongTimeout.heartbeatPeriod.multipliedBy(100), 5.millis) {
             assertThat(messages.size).isGreaterThan(messagesSentSoFar!!)
         }
 
@@ -1175,7 +1175,7 @@ class SessionManagerTest {
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
         sessionManager.dataMessageSent(authenticatedSession)
 
-        eventually(configVeryLongTimeout.heartbeatPeriod.multipliedBy(10), 5.millis) {
+        eventually(configVeryLongTimeout.heartbeatPeriod.multipliedBy(100), 5.millis) {
             assertThat(linkOutMessages).isGreaterThanOrEqualTo(2)
         }
 
@@ -1262,7 +1262,7 @@ class SessionManagerTest {
 
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
         sessionManager.dataMessageSent(authenticatedSession)
-        assertTrue(publishLatch.await(configWithHeartbeat.sessionTimeout.multipliedBy(10).toMillis(), TimeUnit.MILLISECONDS))
+        assertTrue(publishLatch.await(configWithHeartbeat.sessionTimeout.multipliedBy(100).toMillis(), TimeUnit.MILLISECONDS))
 
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
 
@@ -1326,7 +1326,7 @@ class SessionManagerTest {
         sessionManager.dataMessageSent(authenticatedSession)
 
         assertTrue(publishLatch.await(
-            configLongTimeout.heartbeatPeriod.multipliedBy(20).toMillis(),
+            configLongTimeout.heartbeatPeriod.multipliedBy(200).toMillis(),
             TimeUnit.MILLISECONDS)
         )
         loggingInterceptor.assertSingleWarningContains("An exception was thrown when sending a heartbeat message.")
