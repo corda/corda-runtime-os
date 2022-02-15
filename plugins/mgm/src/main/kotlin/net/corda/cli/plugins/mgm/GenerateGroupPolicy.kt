@@ -44,9 +44,7 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
     var file: Path? = null
 
     companion object {
-        private const val KEY_ALIAS = "alias"
-        private const val ROTATED_KEY_ALIAS = "historic-alias-1"
-        private const val MEMBER_STATUS = "ACTIVE"
+        private const val MEMBER_STATUS_ACTIVE = "ACTIVE"
     }
 
     override fun run() {
@@ -68,7 +66,7 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
         val groupPolicy = mutableMapOf<String, Any>()
         groupPolicy["fileFormatVersion"] = 1
         groupPolicy["groupId"] = "ABC123"
-        groupPolicy["registrationProtocolFactory"] = "net.corda.v5.mgm.MGMRegistrationProtocolFactory"
+        groupPolicy["registrationProtocol"] = "net.corda.membership.staticnetwork.StaticMemberRegistrationService"
         groupPolicy["synchronisationProtocolFactory"] = "net.corda.v5.mgm.MGMSynchronisationProtocolFactory"
         groupPolicy["protocolParameters"] = mutableMapOf(
             "identityTrustStore" to listOf(
@@ -135,34 +133,34 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
                 "keyAlias" to "mgm-alias"
             ),
             "members" to (
-                    memberListFromInput() ?: listOf(
-                        mapOf(
-                            "name" to "C=GB, L=London, O=Alice",
-                            "keyAlias" to "alice-alias",
-                            "rotatedKeyAlias-1" to "alice-historic-alias-1",
-                            "memberStatus" to "ACTIVE",
-                            "endpointUrl-1" to "https://alice.corda5.r3.com:10000",
-                            "endpointProtocol-1" to 1
-                        ),
-                        mapOf(
-                            "name" to "C=GB, L=London, O=Bob",
-                            "keyAlias" to "bob-alias",
-                            "rotatedKeyAlias-1" to "bob-historic-alias-1",
-                            "rotatedKeyAlias-2" to "bob-historic-alias-2",
-                            "memberStatus" to "ACTIVE",
-                            "endpointUrl-1" to "https://bob.corda5.r3.com:10000",
-                            "endpointProtocol-1" to 1
-                        ),
-                        mapOf(
-                            "name" to "C=GB, L=London, O=Charlie",
-                            "keyAlias" to "charlie-alias",
-                            "memberStatus" to "SUSPENDED",
-                            "endpointUrl-1" to "https://charlie.corda5.r3.com:10000",
-                            "endpointProtocol-1" to 1,
-                            "endpointUrl-2" to "https://charlie-dr.corda5.r3.com:10001",
-                            "endpointProtocol-2" to 1
-                        )
+                memberListFromInput() ?: listOf(
+                    mapOf(
+                        "name" to "C=GB, L=London, O=Alice",
+                        "keyAlias" to "alice-alias",
+                        "rotatedKeyAlias-1" to "alice-historic-alias-1",
+                        "memberStatus" to "ACTIVE",
+                        "endpointUrl-1" to "https://alice.corda5.r3.com:10000",
+                        "endpointProtocol-1" to 1
+                    ),
+                    mapOf(
+                        "name" to "C=GB, L=London, O=Bob",
+                        "keyAlias" to "bob-alias",
+                        "rotatedKeyAlias-1" to "bob-historic-alias-1",
+                        "rotatedKeyAlias-2" to "bob-historic-alias-2",
+                        "memberStatus" to "ACTIVE",
+                        "endpointUrl-1" to "https://bob.corda5.r3.com:10000",
+                        "endpointProtocol-1" to 1
+                    ),
+                    mapOf(
+                        "name" to "C=GB, L=London, O=Charlie",
+                        "keyAlias" to "charlie-alias",
+                        "memberStatus" to "SUSPENDED",
+                        "endpointUrl-1" to "https://charlie.corda5.r3.com:10000",
+                        "endpointProtocol-1" to 1,
+                        "endpointUrl-2" to "https://charlie-dr.corda5.r3.com:10001",
+                        "endpointProtocol-2" to 1
                     )
+                )
             )
         )
         return groupPolicy
@@ -197,9 +195,9 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
                 members.add(
                     mapOf(
                         "name" to name!!,
-                        "keyAlias" to KEY_ALIAS,
-                        "rotatedKeyAlias-1" to ROTATED_KEY_ALIAS,
-                        "memberStatus" to MEMBER_STATUS,
+                        "keyAlias" to name,
+                        "rotatedKeyAlias-1" to name.toString() + "_old",
+                        "memberStatus" to MEMBER_STATUS_ACTIVE,
                         "endpointUrl-1" to content["endpointUrl"]!!,
                         "endpointProtocol-1" to content["endpointProtocol"]!!
                     )
@@ -210,14 +208,17 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
             (it as List<*>)
             it.forEach { member ->
                 (member as Map<*, *>)
+                val x500 = member["name"]?.toString() ?: throw IllegalArgumentException("No member name specified.")
                 members.add(
                     mapOf(
-                        "name" to member["name"]!!,
-                        "keyAlias" to KEY_ALIAS,
-                        "rotatedKeyAlias-1" to ROTATED_KEY_ALIAS,
-                        "memberStatus" to (member["status"] ?: MEMBER_STATUS),
-                        "endpointUrl-1" to (member["endpointUrl"] ?: content["endpointUrl"]!!),
-                        "endpointProtocol-1" to (member["endpointProtocol"] ?: content["endpointProtocol"]!!)
+                        "name" to x500,
+                        "keyAlias" to x500,
+                        "rotatedKeyAlias-1" to x500 + "_old",
+                        "memberStatus" to (member["status"] ?: MEMBER_STATUS_ACTIVE),
+                        "endpointUrl-1" to (member["endpointUrl"] ?: content["endpointUrl"]
+                        ?: throw IllegalArgumentException("No endpoint URL specified.")),
+                        "endpointProtocol-1" to (member["endpointProtocol"] ?: content["endpointProtocol"]
+                        ?: throw IllegalArgumentException("No endpoint protocol specified."))
                     )
                 )
             }
@@ -240,9 +241,9 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
             members.add(
                 mapOf(
                     "name" to name,
-                    "keyAlias" to KEY_ALIAS,
-                    "rotatedKeyAlias-1" to ROTATED_KEY_ALIAS,
-                    "memberStatus" to MEMBER_STATUS,
+                    "keyAlias" to name,
+                    "rotatedKeyAlias-1" to name + "_old",
+                    "memberStatus" to MEMBER_STATUS_ACTIVE,
                     "endpointUrl-1" to endpointUrl!!,
                     "endpointProtocol-1" to endpointProtocol!!
                 )
@@ -270,8 +271,7 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
      * @throws IllegalArgumentException If the input file format is not supported, the file is malformed, or the file contains an invalid combination of blocks e.g. both 'memberNames' and 'members' blocks are present.
      */
     private fun readAndValidateFile(): Map<String, Any>? {
-        file ?: return null
-        val parsed = file.toString().run {
+        return file?.toString()?.run {
             when {
                 endsWith(".json") -> {
                     try {
@@ -291,13 +291,12 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
                 if (hasMemberNames && hasMembers) {
                     throw IllegalArgumentException("Only one of 'memberNames' and 'members' blocks may be specified.")
                 }
-                if (hasMemberNames || hasMembers) {
+                if (hasMemberNames) {
                     require(parsed["endpointUrl"] != null) { "Endpoint URL must be specified." }
                     require(parsed["endpointProtocol"] != null) { "Endpoint protocol must be specified." }
                 }
             }
         }
-        return parsed
     }
 }
 

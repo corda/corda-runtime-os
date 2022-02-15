@@ -58,18 +58,22 @@ class GenerateGroupPolicyTest {
 
     @Test
     fun `when member name is specified, endpoint information is required`() {
-        val app = GenerateGroupPolicy()
-
         tapSystemErrAndOutNormalized {
-            CommandLine(app).execute("--name=XYZ")
+            CommandLine(GenerateGroupPolicy()).execute("--name=XYZ")
         }.apply {
             assertTrue(this.contains("Endpoint URL must be specified using '--endpoint-url'."))
         }
 
         tapSystemErrAndOutNormalized {
-            CommandLine(app).execute("--name=XYZ", "--endpoint-url=dummy")
+            CommandLine(GenerateGroupPolicy()).execute("--name=XYZ", "--endpoint-url=dummy")
         }.apply {
             assertTrue(this.contains("Endpoint protocol must be specified using '--endpoint-protocol'."))
+        }
+
+        tapSystemErrAndOutNormalized {
+            CommandLine(GenerateGroupPolicy()).execute("--name=XYZ", "--endpoint-protocol=5")
+        }.apply {
+            assertTrue(this.contains("Endpoint URL must be specified using '--endpoint-url'."))
         }
     }
 
@@ -210,7 +214,6 @@ class GenerateGroupPolicyTest {
         tapSystemErrAndOutNormalized {
             CommandLine(app).execute("--file=$filePath")
         }.apply {
-            println(this)
             assertTrue(
                 this.contains(
                     "\"members\" : [\n" +
@@ -277,13 +280,26 @@ class GenerateGroupPolicyTest {
     @Test
     fun `exception is thrown if file specifies 'members' or 'memberNames' but no endpoint information`() {
         val app = GenerateGroupPolicy()
-        val filePath = Files.createFile(tempDir.resolve("src.yaml"))
-        filePath.toFile().writeText("memberNames: [\"C=GB, L=London, O=Member1\", \"C=GB, L=London, O=Member2\"]")
+        val filePath1 = Files.createFile(tempDir.resolve("src.yaml"))
+        filePath1.toFile().writeText("memberNames: [\"C=GB, L=London, O=Member1\", \"C=GB, L=London, O=Member2\"]")
 
         tapSystemErrAndOutNormalized {
-            CommandLine(app).execute("--file=$filePath")
+            CommandLine(app).execute("--file=$filePath1")
         }.apply {
             assertTrue(this.contains("Endpoint URL must be specified."))
+        }
+
+        val filePath2 = Files.createFile(tempDir.resolve("src2.yaml"))
+        filePath2.toFile().writeText(
+            "members:\n" +
+                    "    - name: \"C=GB, L=London, O=Member1\"\n" +
+                    "      status: \"PENDING\""
+        )
+
+        tapSystemErrAndOutNormalized {
+            CommandLine(app).execute("--file=$filePath2")
+        }.apply {
+            assertTrue(this.contains("No endpoint URL specified."))
         }
     }
 
