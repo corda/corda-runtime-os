@@ -575,7 +575,7 @@ class GatewayIntegrationTest : TestBase() {
                     )
                 )
                 gateway.startAndWaitForStarted()
-                assertThat(gateway.dominoTile.state).isEqualTo(DominoTileState.Started)
+                assertThat(gateway.complexDominoTile.state).isEqualTo(DominoTileState.Started)
 
                 logger.info("Publishing bad config")
                 // -20 is invalid port, serer should fail
@@ -587,7 +587,7 @@ class GatewayIntegrationTest : TestBase() {
                     )
                 )
                 eventually(duration = 20.seconds) {
-                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTileState.StoppedDueToChildStopped)
+                    assertThat(gateway.complexDominoTile.state).isEqualTo(DominoTileState.StoppedDueToChildStopped)
                 }
                 assertThrows<ConnectException> {
                     Socket(host, 10005).close()
@@ -602,7 +602,7 @@ class GatewayIntegrationTest : TestBase() {
                     )
                 )
                 eventually(duration = 20.seconds) {
-                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTileState.Started)
+                    assertThat(gateway.complexDominoTile.state).isEqualTo(DominoTileState.Started)
                 }
                 assertDoesNotThrow {
                     Socket(host, 10006).close()
@@ -611,7 +611,7 @@ class GatewayIntegrationTest : TestBase() {
                 logger.info("Publishing bad config again")
                 configPublisher.publishBadConfig()
                 eventually(duration = 20.seconds) {
-                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTileState.StoppedDueToChildStopped)
+                    assertThat(gateway.complexDominoTile.state).isEqualTo(DominoTileState.StoppedDueToChildStopped)
                 }
                 assertThrows<ConnectException> {
                     Socket(host, 10006).close()
@@ -636,7 +636,7 @@ class GatewayIntegrationTest : TestBase() {
             )
 
             assertDoesNotThrow {
-                DependenciesVerifier.verify(gateway.dominoTile)
+                DependenciesVerifier.verify(gateway.complexDominoTile)
             }
         }
     }

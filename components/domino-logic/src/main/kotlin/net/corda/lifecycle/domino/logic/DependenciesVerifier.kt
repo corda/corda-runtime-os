@@ -13,9 +13,9 @@ object DependenciesVerifier {
      *
      * @throws InvalidTileConfigurationException if the configuration is invalid.
      */
-    fun verify(rootDominoTile: DominoTileInterface) {
-        val allHierarchyTiles = mutableSetOf<DominoTileInterface>()
-        val managedTileToParent = mutableMapOf<DominoTileInterface, DominoTileInterface>()
+    fun verify(rootDominoTile: DominoTile) {
+        val allHierarchyTiles = mutableSetOf<DominoTile>()
+        val managedTileToParent = mutableMapOf<DominoTile, DominoTile>()
 
         visit(rootDominoTile, allHierarchyTiles, managedTileToParent)
 
@@ -26,7 +26,7 @@ object DependenciesVerifier {
         }
     }
 
-    private fun visit(dominoTile: DominoTileInterface, allTiles: MutableSet<DominoTileInterface>, managedTiles: MutableMap<DominoTileInterface, DominoTileInterface>) {
+    private fun visit(dominoTile: DominoTile, allTiles: MutableSet<DominoTile>, managedTiles: MutableMap<DominoTile, DominoTile>) {
         val tilesNotSeenYet = dominoTile.dependentChildren.filter { !allTiles.contains(it) }
         allTiles.addAll(tilesNotSeenYet)
 

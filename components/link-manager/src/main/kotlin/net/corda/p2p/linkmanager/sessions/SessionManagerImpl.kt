@@ -7,7 +7,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
@@ -124,14 +124,14 @@ open class SessionManagerImpl(
         configuration
     )
 
-    override val dominoTile = DominoTile(
+    override val complexDominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
         dependentChildren = setOf(
-            heartbeatManager.dominoTile, sessionReplayer.dominoTile, networkMap.dominoTile, cryptoService.dominoTile,
-            pendingOutboundSessionMessageQueues.dominoTile, publisher.dominoTile
+            heartbeatManager.complexDominoTile, sessionReplayer.complexDominoTile, networkMap.complexDominoTile, cryptoService.complexDominoTile,
+            pendingOutboundSessionMessageQueues.complexDominoTile, publisher.complexDominoTile
         ),
-        managedChildren = setOf(heartbeatManager.dominoTile, sessionReplayer.dominoTile, publisher.dominoTile),
+        managedChildren = setOf(heartbeatManager.complexDominoTile, sessionReplayer.complexDominoTile, publisher.complexDominoTile),
         configurationChangeHandler = SessionManagerConfigChangeHandler()
     )
 
@@ -152,7 +152,7 @@ open class SessionManagerImpl(
             resources: ResourcesHolder,
         ): CompletableFuture<Unit> {
             val configUpdateResult = CompletableFuture<Unit>()
-            dominoTile.withLifecycleWriteLock {
+            complexDominoTile.withLifecycleWriteLock {
                 config.set(newConfiguration)
                 destroyAllSessions()
             }
@@ -167,7 +167,7 @@ open class SessionManagerImpl(
     }
 
     override fun processOutboundMessage(message: AuthenticatedMessageAndKey): SessionState {
-        return dominoTile.withLifecycleLock {
+        return complexDominoTile.withLifecycleLock {
             sessionNegotiationLock.read {
                 val key = getSessionCounterpartiesFromMessage(message.message)
 
@@ -187,7 +187,7 @@ open class SessionManagerImpl(
     }
 
     override fun getSessionById(uuid: String): SessionManager.SessionDirection {
-        return dominoTile.withLifecycleLock {
+        return complexDominoTile.withLifecycleLock {
             val inboundSession = activeInboundSessions[uuid]
             if (inboundSession != null) {
                 return@withLifecycleLock SessionManager.SessionDirection.Inbound(inboundSession.first, inboundSession.second)
@@ -202,7 +202,7 @@ open class SessionManagerImpl(
     }
 
     override fun processSessionMessage(message: LinkInMessage): LinkOutMessage? {
-        return dominoTile.withLifecycleLock {
+        return complexDominoTile.withLifecycleLock {
             when (val payload = message.payload) {
                 is ResponderHelloMessage -> processResponderHello(payload)
                 is ResponderHandshakeMessage -> processResponderHandshake(payload)
@@ -221,13 +221,13 @@ open class SessionManagerImpl(
     }
 
     override fun dataMessageSent(session: Session) {
-        dominoTile.withLifecycleLock {
+        complexDominoTile.withLifecycleLock {
             heartbeatManager.dataMessageSent(session)
         }
     }
 
     override fun messageAcknowledged(sessionId: String) {
-        dominoTile.withLifecycleLock {
+        complexDominoTile.withLifecycleLock {
             heartbeatManager.messageAcknowledged(sessionId)
         }
     }
@@ -618,12 +618,12 @@ open class SessionManagerImpl(
             configuration
         )
 
-        override val dominoTile = DominoTile(
+        override val complexDominoTile = ComplexDominoTile(
             this::class.java.simpleName,
             coordinatorFactory,
             ::createResources,
-            dependentChildren = setOf(networkMap.dominoTile, publisher.dominoTile),
-            managedChildren = setOf(publisher.dominoTile),
+            dependentChildren = setOf(networkMap.complexDominoTile, publisher.complexDominoTile),
+            managedChildren = setOf(publisher.complexDominoTile),
             HeartbeatManagerConfigChangeHandler(),
         )
 
@@ -649,7 +649,7 @@ open class SessionManagerImpl(
         }
 
         fun sessionMessageSent(counterparties: SessionCounterparties, sessionId: String) {
-            dominoTile.withLifecycleLock {
+            complexDominoTile.withLifecycleLock {
                 if (!isRunning) {
                     throw IllegalStateException("A session message was added before the HeartbeatManager was started.")
                 }
@@ -670,7 +670,7 @@ open class SessionManagerImpl(
         }
 
         fun dataMessageSent(session: Session) {
-            dominoTile.withLifecycleLock {
+            complexDominoTile.withLifecycleLock {
                 if (!isRunning) {
                     throw IllegalStateException("A message was sent before the HeartbeatManager was started.")
                 }
@@ -690,7 +690,7 @@ open class SessionManagerImpl(
         }
 
         fun messageAcknowledged(sessionId: String) {
-            dominoTile.withLifecycleLock {
+            complexDominoTile.withLifecycleLock {
                 if (!isRunning) {
                     throw IllegalStateException("A message was acknowledged before the HeartbeatManager was started.")
                 }

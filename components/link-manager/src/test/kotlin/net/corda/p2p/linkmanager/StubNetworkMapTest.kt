@@ -2,7 +2,7 @@ package net.corda.p2p.linkmanager
 
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfigImpl
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
@@ -43,7 +43,7 @@ class StubNetworkMapTest {
 
     private val resourcesHolder = mock<ResourcesHolder>()
     private lateinit var createResources: ((resources: ResourcesHolder) -> CompletableFuture<Unit>)
-    private val dominoTile = Mockito.mockConstruction(DominoTile::class.java) { mock, context ->
+    private val dominoTile = Mockito.mockConstruction(ComplexDominoTile::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
         @Suppress("UNCHECKED_CAST")

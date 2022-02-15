@@ -4,7 +4,7 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.gateway.Gateway
@@ -27,7 +27,7 @@ class ReconfigurableHttpServer(
     private var httpServer: HttpServer? = null
     private val serverLock = ReentrantReadWriteLock()
 
-    override val dominoTile = DominoTile(
+    override val complexDominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         configurationChangeHandler = ReconfigurableHttpServerConfigChangeHandler()
@@ -58,7 +58,7 @@ class ReconfigurableHttpServer(
             @Suppress("TooGenericExceptionCaught")
             try {
                 if (newConfiguration.hostPort == oldConfiguration?.hostPort) {
-                    logger.info("New server configuration for ${dominoTile.coordinatorName} on the same port, HTTP server will have to go down")
+                    logger.info("New server configuration for ${complexDominoTile.coordinatorName} on the same port, HTTP server will have to go down")
                     serverLock.write {
                         val oldServer = httpServer
                         httpServer = null
@@ -69,7 +69,7 @@ class ReconfigurableHttpServer(
                         httpServer = newServer
                     }
                 } else {
-                    logger.info("New server configuration, ${dominoTile.coordinatorName} will be connected to " +
+                    logger.info("New server configuration, ${complexDominoTile.coordinatorName} will be connected to " +
                         "${newConfiguration.hostAddress}:${newConfiguration.hostPort}")
                     val newServer = HttpServer(listener, newConfiguration)
                     newServer.start()

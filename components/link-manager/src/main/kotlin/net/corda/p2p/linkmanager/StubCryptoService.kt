@@ -2,7 +2,7 @@ package net.corda.p2p.linkmanager
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
@@ -19,7 +19,6 @@ import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.Signature
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.atomic.AtomicReference
 
 class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
                         subscriptionFactory: SubscriptionFactory,
@@ -46,7 +45,7 @@ class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
     private val ecdsaSignature = Signature.getInstance(ECDSA_SIGNATURE_ALGO)
 
     private var readyFuture = CompletableFuture<Unit>()
-    override val dominoTile = DominoTile(
+    override val complexDominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         ::createResources,
@@ -59,7 +58,7 @@ class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
     }
 
     override fun signData(publicKey: PublicKey, data: ByteArray): ByteArray {
-        return dominoTile.withLifecycleLock {
+        return complexDominoTile.withLifecycleLock {
             if (!isRunning) {
                 throw IllegalStateException("signData operation invoked while component was stopped.")
             }

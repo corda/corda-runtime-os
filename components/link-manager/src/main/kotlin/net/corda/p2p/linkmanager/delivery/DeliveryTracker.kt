@@ -4,10 +4,9 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MESSAGE_REPLAY_KEY_PREFIX
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.Response
@@ -30,7 +29,6 @@ import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("LongParameterList")
@@ -73,16 +71,16 @@ class DeliveryTracker(
         messageTrackerSubscription,
         messageTrackerSubscription.subscriptionName,
         setOf(
-            replayScheduler.dominoTile,
-            networkMap.dominoTile,
-            cryptoService.dominoTile,
-            sessionManager.dominoTile,
-            appMessageReplayer.dominoTile
+            replayScheduler.complexDominoTile,
+            networkMap.complexDominoTile,
+            cryptoService.complexDominoTile,
+            sessionManager.complexDominoTile,
+            appMessageReplayer.complexDominoTile
         ),
-        setOf(replayScheduler.dominoTile, appMessageReplayer.dominoTile)
+        setOf(replayScheduler.complexDominoTile, appMessageReplayer.complexDominoTile)
     )
 
-    override val dominoTile = DominoTile(this::class.java.simpleName, coordinatorFactory,
+    override val complexDominoTile = ComplexDominoTile(this::class.java.simpleName, coordinatorFactory,
         dependentChildren = setOf(messageTrackerSubscriptionTile),
         managedChildren = setOf(messageTrackerSubscriptionTile)
     )
@@ -106,10 +104,10 @@ class DeliveryTracker(
             configuration
         )
 
-        override val dominoTile = publisher.dominoTile
+        override val complexDominoTile = publisher.complexDominoTile
 
         fun replayMessage(message: AuthenticatedMessageAndKey) {
-            dominoTile.withLifecycleLock {
+            complexDominoTile.withLifecycleLock {
                 if (!isRunning) {
                     throw IllegalStateException("A message was added for replay before the DeliveryTracker was started.")
                 }

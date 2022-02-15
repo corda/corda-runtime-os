@@ -4,16 +4,16 @@ import net.corda.lifecycle.Lifecycle
 
 interface LifecycleWithDominoTile : Lifecycle {
 
-    val dominoTile: DominoTile
+    val complexDominoTile: ComplexDominoTile
 
     override val isRunning: Boolean
-        get() = dominoTile.isRunning
+        get() = complexDominoTile.isRunning
 
     override fun start() {
-        dominoTile.start()
+        complexDominoTile.start()
     }
 
     override fun stop() {
-        dominoTile.stop()
+        complexDominoTile.stop()
     }
 }

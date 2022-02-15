@@ -7,10 +7,10 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
-class LifecycleWithDominoTileTest {
-    val tile = mock<DominoTile>()
+class LifecycleWithComplexDominoTileTest {
+    val tile = mock<ComplexDominoTile>()
     val lifecycle = object : LifecycleWithDominoTile {
-        override val dominoTile = tile
+        override val complexDominoTile = tile
     }
 
     @Test

@@ -5,10 +5,8 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
@@ -17,14 +15,10 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.NetworkType
-import net.corda.p2p.gateway.Gateway
-import net.corda.p2p.gateway.messaging.ConnectionConfiguration
-import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpResponse
 import net.corda.p2p.gateway.messaging.http.SniCalculator
-import net.corda.p2p.gateway.messaging.toGatewayConfiguration
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.v5.base.util.debug
 import org.bouncycastle.asn1.x500.X500Name
@@ -69,11 +63,11 @@ internal class OutboundMessageHandler(
         lifecycleCoordinatorFactory,
         outboundSubscription,
         outboundSubscription.subscriptionName,
-        setOf(connectionManager.dominoTile, connectionConfigReader.dominoTile),
-        setOf(connectionManager.dominoTile, connectionConfigReader.dominoTile)
+        setOf(connectionManager.complexDominoTile, connectionConfigReader.complexDominoTile),
+        setOf(connectionManager.complexDominoTile, connectionConfigReader.complexDominoTile)
     )
 
-    override val dominoTile = DominoTile(
+    override val complexDominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         dependentChildren = listOf(outboundSubscriptionTile),
@@ -83,7 +77,7 @@ internal class OutboundMessageHandler(
     private val retryThreadPool = Executors.newSingleThreadScheduledExecutor()
 
     override fun onNext(events: List<EventLogRecord<String, LinkOutMessage>>): List<Record<*, *>> {
-        dominoTile.withLifecycleLock {
+        complexDominoTile.withLifecycleLock {
             if (!isRunning) {
                 throw IllegalStateException("Can not handle events")
             }

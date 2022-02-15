@@ -8,7 +8,7 @@ import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
-import net.corda.lifecycle.domino.logic.DominoTileInterface
+import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.DominoTileState
 import net.corda.lifecycle.domino.logic.StatusChangeEvent
 import net.corda.messaging.api.subscription.CompactedSubscription
@@ -19,9 +19,6 @@ import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
-import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.read
-import kotlin.concurrent.write
 
 /**
  * A class encapsulating the domino logic for subscriptions.
@@ -37,13 +34,13 @@ import kotlin.concurrent.write
  * @param managedChildren the children that the class will start, when it is started.
  */
 class SubscriptionDominoTile(
-    private val coordinatorFactory: LifecycleCoordinatorFactory,
+    coordinatorFactory: LifecycleCoordinatorFactory,
     // Lifecycle type is used, because there is no single type capturing all subscriptions. Type checks are executed at runtime.
     private val subscription: Lifecycle,
     private val subscriptionName: LifecycleCoordinatorName,
-    override val dependentChildren: Collection<DominoTileInterface>,
-    override val managedChildren: Collection<DominoTileInterface>
-): DominoTileInterface {
+    override val dependentChildren: Collection<DominoTile>,
+    override val managedChildren: Collection<DominoTile>
+): DominoTile {
 
     companion object {
         private val instancesIndex = ConcurrentHashMap<String, Int>()
@@ -85,7 +82,6 @@ class SubscriptionDominoTile(
     private val dependentChildrenRegistration = coordinator.followStatusChangesByName(dependentChildren.map { it.coordinatorName }.toSet())
     private val subscriptionRegistration = coordinator.followStatusChangesByName(setOf(subscriptionName))
 
-    private val controlLock = ReentrantReadWriteLock()
     private val logger = LoggerFactory.getLogger(coordinatorName.toString())
 
     override fun start() {
@@ -102,18 +98,6 @@ class SubscriptionDominoTile(
         isOpen.set(false)
     }
 
-    fun <T> withLifecycleLock(access: () -> T): T {
-        return controlLock.read {
-            access.invoke()
-        }
-    }
-
-    fun <T> withLifecycleWriteLock(access: () -> T): T {
-        return controlLock.write {
-            access.invoke()
-        }
-    }
-
     private fun updateState(newState: DominoTileState) {
         val oldState = currentState.getAndSet(newState)
         if (newState != oldState) {
@@ -123,10 +107,8 @@ class SubscriptionDominoTile(
                 DominoTileState.StoppedDueToError -> LifecycleStatus.ERROR
                 DominoTileState.Created -> null
             }
-            withLifecycleWriteLock {
-                status?.let { coordinator.updateStatus(it) }
-                coordinator.postCustomEventToFollowers(StatusChangeEvent(newState))
-            }
+            status?.let { coordinator.updateStatus(it) }
+            coordinator.postCustomEventToFollowers(StatusChangeEvent(newState))
             logger.info("State updated from $oldState to $newState")
         }
     }
@@ -137,9 +119,7 @@ class SubscriptionDominoTile(
                 return
             }
 
-            withLifecycleWriteLock {
-                handleEvent(event)
-            }
+            handleEvent(event)
         }
 
         private fun handleEvent(event: LifecycleEvent) {

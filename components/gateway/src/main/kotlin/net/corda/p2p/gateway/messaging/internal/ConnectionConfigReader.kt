@@ -3,7 +3,7 @@ package net.corda.p2p.gateway.messaging.internal
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.gateway.Gateway
@@ -24,7 +24,7 @@ class ConnectionConfigReader(
 
     var connectionConfig = ConnectionConfiguration()
 
-    override val dominoTile = DominoTile(
+    override val complexDominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         configurationChangeHandler = ConfigChangeHandler()

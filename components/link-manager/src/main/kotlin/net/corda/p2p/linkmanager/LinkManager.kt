@@ -3,10 +3,9 @@ package net.corda.p2p.linkmanager
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -55,7 +54,6 @@ import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
-import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
@@ -63,8 +61,6 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.*
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.atomic.AtomicReference
 
 @Suppress("LongParameterList")
 class LinkManager(@Reference(service = SubscriptionFactory::class)
@@ -146,28 +142,28 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         partitionAssignmentListener = null
     )
 
-    private val commonChildren = setOf(linkManagerNetworkMap.dominoTile, linkManagerCryptoService.dominoTile,
-        linkManagerHostingMap.dominoTile)
+    private val commonChildren = setOf(linkManagerNetworkMap.complexDominoTile, linkManagerCryptoService.complexDominoTile,
+        linkManagerHostingMap.complexDominoTile)
     private val inboundSubscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
         inboundMessageSubscription,
         inboundMessageSubscription.subscriptionName,
         dependentChildren = commonChildren,
-        managedChildren = setOf(inboundAssignmentListener.dominoTile)
+        managedChildren = setOf(inboundAssignmentListener.complexDominoTile)
     )
     private val outboundSubscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
         outboundMessageSubscription,
         outboundMessageSubscription.subscriptionName,
-        dependentChildren = commonChildren + setOf(messagesPendingSession.dominoTile, inboundAssignmentListener.dominoTile),
-        managedChildren = setOf(messagesPendingSession.dominoTile)
+        dependentChildren = commonChildren + setOf(messagesPendingSession.complexDominoTile, inboundAssignmentListener.complexDominoTile),
+        managedChildren = setOf(messagesPendingSession.complexDominoTile)
     )
 
-    override val dominoTile = DominoTile(
+    override val complexDominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        dependentChildren = setOf(inboundSubscriptionTile, outboundSubscriptionTile, deliveryTracker.dominoTile),
-        managedChildren = setOf(inboundSubscriptionTile, outboundSubscriptionTile, deliveryTracker.dominoTile, sessionManager.dominoTile)
+        dependentChildren = setOf(inboundSubscriptionTile, outboundSubscriptionTile, deliveryTracker.complexDominoTile),
+        managedChildren = setOf(inboundSubscriptionTile, outboundSubscriptionTile, deliveryTracker.complexDominoTile, sessionManager.complexDominoTile)
                 + commonChildren
     )
 
@@ -512,7 +508,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         )
         fun destroyQueue(counterparties: SessionCounterparties)
         fun destroyAllQueues()
-        val dominoTile: DominoTile
+        val complexDominoTile: ComplexDominoTile
     }
 
     class PendingSessionMessageQueuesImpl(
@@ -532,7 +528,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             PublisherConfig(LINK_MANAGER_PUBLISHER_CLIENT_ID),
             configuration
         )
-        override val dominoTile = publisher.dominoTile
+        override val complexDominoTile = publisher.complexDominoTile
 
         /**
          * Either adds a [FlowMessage] to a queue for a session which is pending (has started but hasn't finished
@@ -556,7 +552,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             session: Session,
             networkMap: LinkManagerNetworkMap,
         ) {
-            publisher.dominoTile.withLifecycleLock {
+            publisher.complexDominoTile.withLifecycleLock {
                 if (!isRunning) {
                     throw IllegalStateException("sessionNegotiatedCallback was called before the PendingSessionMessageQueues was started.")
                 }

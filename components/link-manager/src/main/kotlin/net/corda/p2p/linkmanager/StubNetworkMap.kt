@@ -3,7 +3,7 @@ package net.corda.p2p.linkmanager
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
@@ -20,7 +20,6 @@ import java.nio.ByteBuffer
 import java.security.MessageDigest
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicReference
 
 class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
                      subscriptionFactory: SubscriptionFactory,
@@ -40,7 +39,7 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val keyDeserialiser = KeyDeserialiser()
 
     private val readyFuture = CompletableFuture<Unit>()
-    override val dominoTile = DominoTile(
+    override val complexDominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         ::createResources,
@@ -54,7 +53,7 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
 
     @Suppress("TYPE_INFERENCE_ONLY_INPUT_TYPES_WARNING")
     override fun getMemberInfo(holdingIdentity: LinkManagerNetworkMap.HoldingIdentity): LinkManagerNetworkMap.MemberInfo? {
-        return dominoTile.withLifecycleLock {
+        return complexDominoTile.withLifecycleLock {
             if (!isRunning) {
                 throw IllegalStateException("getMemberInfo operation invoked while component was stopped.")
             }
@@ -64,7 +63,7 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     }
 
     override fun getMemberInfo(hash: ByteArray, groupId: String): LinkManagerNetworkMap.MemberInfo? {
-        return dominoTile.withLifecycleLock {
+        return complexDominoTile.withLifecycleLock {
             if (!isRunning) {
                 throw IllegalStateException("getMemberInfo operation invoked while component was stopped.")
             }
@@ -74,7 +73,7 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     }
 
     override fun getNetworkType(groupId: String): LinkManagerNetworkMap.NetworkType? {
-        return dominoTile.withLifecycleLock {
+        return complexDominoTile.withLifecycleLock {
             if (!isRunning) {
                 throw IllegalStateException("getNetworkType operation invoked while component was stopped.")
             }

@@ -2,7 +2,7 @@ package net.corda.p2p.gateway.messaging.session
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
@@ -14,7 +14,6 @@ import net.corda.p2p.SessionPartitions
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicReference
 
 class SessionPartitionMapperImpl(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
@@ -44,7 +43,7 @@ class SessionPartitionMapperImpl(
         emptySet()
     )
 
-    override val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, ::createResources,
+    override val complexDominoTile = ComplexDominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, ::createResources,
         dependentChildren = setOf(sessionPartitionSubscriptionTile),
         managedChildren = setOf(sessionPartitionSubscriptionTile)
     )

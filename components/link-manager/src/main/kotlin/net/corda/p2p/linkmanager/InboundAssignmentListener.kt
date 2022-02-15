@@ -1,7 +1,7 @@
 package net.corda.p2p.linkmanager
 
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
@@ -13,7 +13,7 @@ import kotlin.concurrent.write
 class InboundAssignmentListener(private val coordinatorFactory: LifecycleCoordinatorFactory):
     PartitionAssignmentListener, LifecycleWithDominoTile {
 
-    override val dominoTile = DominoTile(
+    override val complexDominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
         createResources = ::createResources

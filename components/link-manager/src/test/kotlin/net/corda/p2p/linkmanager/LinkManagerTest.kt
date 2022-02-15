@@ -3,7 +3,7 @@ package net.corda.p2p.linkmanager
 import net.corda.data.identity.HoldingIdentity
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.publisher.Publisher
@@ -71,7 +71,6 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.any
-import org.mockito.kotlin.anyVararg
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -186,7 +185,7 @@ class LinkManagerTest {
         }
     }
 
-    private val dominoTile = Mockito.mockConstruction(DominoTile::class.java) { mock, context ->
+    private val dominoTile = Mockito.mockConstruction(ComplexDominoTile::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
         whenever(mock.isRunning).doReturn(true)
@@ -197,14 +196,14 @@ class LinkManagerTest {
 
     private val testPublisher = TestListBasedPublisher()
     private val publisherTile = Mockito.mockConstruction(PublisherWithDominoLogic::class.java) { mock, _ ->
-        val dominoTile = mock<DominoTile> {
+        val dominoTile = mock<ComplexDominoTile> {
             on { isRunning } doReturn true
             @Suppress("UNCHECKED_CAST")
             on { withLifecycleLock(any<() -> Any>()) } doAnswer { (it.arguments.first() as () -> Any).invoke() }
         }
         @Suppress("UNCHECKED_CAST")
         whenever(mock.publish(any())).doAnswer { testPublisher.publish(it.arguments.first() as List<Record<*, *>>) }
-        whenever(mock.dominoTile).doReturn(dominoTile)
+        whenever(mock.complexDominoTile).doReturn(dominoTile)
     }
 
     @AfterEach
