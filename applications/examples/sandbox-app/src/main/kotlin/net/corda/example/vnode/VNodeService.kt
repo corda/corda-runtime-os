@@ -33,9 +33,8 @@ class VNodeServiceImpl @Activate constructor(
 
     override fun loadCPI(resourceName: String, holdingIdentity: HoldingIdentity): VirtualNodeInfo {
         val cpi = loaderService.loadCPI(resourceName)
-        return VirtualNodeInfo(holdingIdentity, cpi.metadata.id).also { vnodeInfo ->
-            vnodeInfoWriter.put(vnodeInfo)
-        }
+        return VirtualNodeInfo(holdingIdentity, cpi.metadata.id)
+            .also(vnodeInfoWriter::put)
     }
 
     override fun unloadCPI(virtualNodeInfo: VirtualNodeInfo) {

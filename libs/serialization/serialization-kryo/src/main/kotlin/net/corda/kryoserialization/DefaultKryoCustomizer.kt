@@ -35,7 +35,8 @@ import org.slf4j.LoggerFactory
 import java.lang.reflect.Modifier.isPublic
 import java.security.cert.CertPath
 import java.security.cert.X509Certificate
-import java.util.*
+import java.util.Arrays
+import java.util.BitSet
 
 class DefaultKryoCustomizer {
 

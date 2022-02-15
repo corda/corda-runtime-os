@@ -42,6 +42,8 @@ class InstallServiceImpl @Activate constructor(
     private val testBundle = (properties[TEST_BUNDLE_KEY] as? String)?.let(bundleContext::getBundle)
         ?: throw IllegalStateException("Test bundle not found")
 
+    private val resourceLookup = mutableMapOf<CPI.Identifier, String>()
+    private val cpiResources = mutableMapOf<String, CPI>()
     private val cpis = ConcurrentHashMap<CPI.Identifier, CPI>()
     private val cpks: Collection<CPK>
         get() = cpis.values.flatMap(CPI::cpks)
@@ -58,11 +60,18 @@ class InstallServiceImpl @Activate constructor(
     }
 
     override fun loadCPI(resourceName: String): CPI {
-        return getInputStream(resourceName).buffered().use { input ->
-            CPI.from(input, expansionLocation = cpkDir, verifySignature = true)
-        }.let { newCpi ->
-            val cpiId = newCpi.metadata.id
-            cpis.putIfAbsent(cpiId, newCpi)?.also { newCpi.close() } ?: newCpi
+        return cpiResources.computeIfAbsent(resourceName) { key ->
+            getInputStream(key).buffered().use { input ->
+                CPI.from(input, expansionLocation = cpkDir, verifySignature = true)
+            }.let { newCpi ->
+                val cpiId = newCpi.metadata.id
+                cpis.putIfAbsent(cpiId, newCpi)?.also {
+                    newCpi.close()
+                } ?: newCpi.also {
+                    // Also register this resource by CPI Id.
+                    resourceLookup[cpiId] = resourceName
+                }
+            }
         }
     }
 
@@ -71,8 +80,11 @@ class InstallServiceImpl @Activate constructor(
     }
 
     override fun remove(id: CPI.Identifier) {
-        logger.info("Removing CPI $id")
-        cpis.remove(id)?.close()
+        logger.info("Removing CPI {}", id)
+        cpis.remove(id)?.also { cpi ->
+            resourceLookup.remove(id)?.also(cpiResources::remove)
+            cpi.close()
+        }
     }
 
     override fun get(id: CPI.Identifier): CompletableFuture<CPI?> {

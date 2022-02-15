@@ -8,6 +8,7 @@ import net.corda.virtualnode.read.VirtualNodeInfoListener
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.write.VirtualNodeInfoWriteService
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.propertytypes.ServiceRanking
 
 @Suppress("unused")
@@ -32,7 +33,7 @@ class VirtualNodeInfoServiceImpl : VirtualNodeInfoReadService, VirtualNodeInfoWr
     }
 
     override fun put(virtualNodeInfo: VirtualNodeInfo) {
-        if (virtualNodeInfoMap.putIfAbsent(virtualNodeInfo.holdingIdentity,  virtualNodeInfo) != null) {
+        if (virtualNodeInfoMap.putIfAbsent(virtualNodeInfo.holdingIdentity, virtualNodeInfo) != null) {
             throw IllegalStateException("Virtual node $virtualNodeInfo already exists.")
         }
     }
@@ -49,7 +50,9 @@ class VirtualNodeInfoServiceImpl : VirtualNodeInfoReadService, VirtualNodeInfoWr
         logger.info("Started")
     }
 
+    @Deactivate
     override fun stop() {
+        virtualNodeInfoMap.clear()
         logger.info("Stopped")
     }
 }

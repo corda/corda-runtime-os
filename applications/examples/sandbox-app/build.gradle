@@ -36,7 +36,6 @@ dependencies {
     implementation project(':libs:flows:flow-manager')
     implementation project(':libs:messaging:messaging')
     implementation project(':libs:virtual-node:sandbox-group-context')
-    implementation project(':libs:virtual-node:virtual-node-manager')
     implementation project(':components:flow:flow-service')
     implementation project(':components:virtual-node:sandbox-group-context-service')
     implementation project(':components:virtual-node:virtual-node-info-write-service')

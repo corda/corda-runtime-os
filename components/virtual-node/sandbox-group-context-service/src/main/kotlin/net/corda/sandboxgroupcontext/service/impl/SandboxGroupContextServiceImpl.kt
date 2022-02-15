@@ -14,6 +14,7 @@ import net.corda.sandboxgroupcontext.SandboxGroupContextService
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandbox.SandboxException
 import net.corda.v5.base.util.loggerFor
+import net.corda.v5.cipher.suite.DigestAlgorithmFactory
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
 import org.osgi.framework.Constants.OBJECTCLASS
@@ -266,6 +267,14 @@ class SandboxGroupContextServiceImpl(
                 null
             }
         } + extraCloseables
+    }
+
+    override fun registerCustomCryptography(sandboxGroupContext: SandboxGroupContext): AutoCloseable {
+        return registerMetadataServices(
+            sandboxGroupContext,
+            serviceNames = { metadata -> metadata.cordappManifest.digestAlgorithmFactories },
+            serviceMarkerType = DigestAlgorithmFactory::class.java
+        )
     }
 
     override fun hasCpks(cpkIdentifiers: Set<CPK.Identifier>) : Boolean {

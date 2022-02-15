@@ -3,14 +3,14 @@ plugins {
     id 'org.jetbrains.kotlin.jvm'
 }
 
-description 'Corda Crypto Custom Digest Consumer Two'
+description 'Corda Crypto Custom Digest Consumer One'
 
-group 'org.example.crypto.consumer'
+group 'com.example.crypto.consumer'
 
 cordapp {
     targetPlatformVersion 999 as Integer
     workflow {
-        name 'Custom Crypto Digest Two Consumer CPK'
+        name 'Custom Crypto Digest One Consumer CPK'
         versionId 1
         vendor 'R3'
     }
@@ -24,5 +24,5 @@ dependencies {
     cordaProvided 'net.corda:corda-crypto'
     cordaProvided 'net.corda:corda-cipher-suite'
     cordaProvided 'org.slf4j:slf4j-api'
-    cordapp project(':libs:virtual-node:virtual-node-manager:test-resources:crypto-custom-digest-two-cpk')
+    cordapp project(':testing:cpbs:crypto-custom-digest-one-cpk')
 }

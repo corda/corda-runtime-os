@@ -104,6 +104,7 @@
 	net.corda.serialization;version='[5.0.0,5.0.1)',\
 	net.corda.serialization-internal;version='[5.0.0,5.0.1)',\
 	net.corda.test-utilities;version='[5.0.0,5.0.1)',\
+	net.corda.topic-schema;version='[5.0.0,5.0.1)',\
 	net.corda.utilities;version='[5.0.0,5.0.1)',\
 	net.corda.virtual-node-common;version='[5.0.0,5.0.1)',\
 	net.corda.virtual-node-info;version='[5.0.0,5.0.1)',\
