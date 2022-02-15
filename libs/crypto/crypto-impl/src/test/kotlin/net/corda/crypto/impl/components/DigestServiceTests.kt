@@ -83,7 +83,7 @@ class DigestServiceTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(30)
     fun `Should calculate sha2-256 secure hash`() {
         val hash = digestService.hash(byteArrayOf(0x64, -0x13, 0x42, 0x3a), SHA2_256)
         assertEquals(32, hash.size)
@@ -96,7 +96,7 @@ class DigestServiceTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(30)
     fun `Should calculate sha2-384 secure hash`() {
         val hash = digestService.hash(byteArrayOf(0x64, -0x13, 0x42, 0x3a), SHA2_384)
         assertEquals(48, hash.size)

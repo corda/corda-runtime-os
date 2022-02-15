@@ -249,7 +249,7 @@ class CipherSchemeMetadataTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(30)
     fun `Should throw IllegalArgumentException when serializing unsupported signature param spec`() {
         assertThrows<IllegalArgumentException> {
             schemeMetadata.serialize(mock())
@@ -257,7 +257,7 @@ class CipherSchemeMetadataTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(30)
     fun `Should throw IllegalArgumentException when deserializing unsupported signature param spec`() {
         assertThrows<IllegalArgumentException> {
             schemeMetadata.deserialize(

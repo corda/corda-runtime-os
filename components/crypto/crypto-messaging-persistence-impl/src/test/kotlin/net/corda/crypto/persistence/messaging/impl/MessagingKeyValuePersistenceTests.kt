@@ -7,7 +7,7 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 
 class MessagingKeyValuePersistenceTests {
-    @Timeout(5)
+    @Timeout(30)
     @Test
     fun `Should throw IllegalArgumentException when trying to put records without keys`() {
         val persistence = MessagingKeyValuePersistence<SigningKeysRecord, SigningKeysRecord>(

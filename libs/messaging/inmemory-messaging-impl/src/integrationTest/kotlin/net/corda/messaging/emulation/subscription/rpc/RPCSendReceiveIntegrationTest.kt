@@ -32,7 +32,7 @@ class RPCSendReceiveIntegrationTest {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(30)
     fun `Test simple request response exchange`() {
         val config = RPCConfig<String, String>(
             groupName = "g1",

@@ -90,13 +90,13 @@ class DevCryptoServiceTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(30)
     fun `Should require wrapping key`() {
         assertTrue(cryptoService.requiresWrappingKey())
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(30)
     fun `All supported schemes should be defined in cipher suite`() {
         assertTrue(cryptoService.supportedSchemes().isNotEmpty())
         cryptoService.supportedSchemes().forEach {
@@ -105,7 +105,7 @@ class DevCryptoServiceTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(30)
     fun `All supported wrapping schemes should be defined in cipher suite`() {
         assertTrue(cryptoService.supportedWrappingSchemes().isNotEmpty())
         cryptoService.supportedWrappingSchemes().forEach {
@@ -114,7 +114,7 @@ class DevCryptoServiceTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(30)
     fun `Should support only ECDSA`() {
         assertEquals(1, cryptoService.supportedSchemes().size)
         assertTrue(cryptoService.supportedSchemes().any { it.codeName == ECDSA_SECP256R1_CODE_NAME })

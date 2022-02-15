@@ -74,7 +74,7 @@ class AbstractComponentTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(30)
     fun `Should start component and create resources only after the component is up`() {
         assertFalse(testComponent.isRunning)
         assertNull(testComponent.resources)
@@ -99,7 +99,7 @@ class AbstractComponentTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(30)
     fun `Should cleanup created resources when component is stopped`() {
         testComponent.start()
         coordinator.postEvent(
@@ -126,7 +126,7 @@ class AbstractComponentTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(30)
     fun `Should not be able to create resources when component is not started`() {
         assertFalse(testComponent.isRunning)
         assertNull(testComponent.resources)

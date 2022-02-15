@@ -227,13 +227,13 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(30)
     fun `SoftCryptoService should require wrapping key`() {
         assertTrue(services.cryptoService.requiresWrappingKey())
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(30)
     fun `All supported by SoftCryptoService schemes should be defined in cipher suite`() {
         assertTrue(services.cryptoService.supportedSchemes().isNotEmpty())
         services.cryptoService.supportedSchemes().forEach {
@@ -242,7 +242,7 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(30)
     fun `All supported by SoftCryptoService wrapping schemes should be defined in cipher suite`() {
         assertTrue(services.cryptoService.supportedWrappingSchemes().isNotEmpty())
         services.cryptoService.supportedWrappingSchemes().forEach {
@@ -251,7 +251,7 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(30)
     fun `containsKey in SoftCryptoService should return false for unknown alias`() {
         val alias = newAlias()
         assertFalse(services.cryptoService.containsKey(alias))
@@ -342,7 +342,7 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(30)
     fun `Should generate non deterministic signatures for ECDSA`() {
         listOf(
             schemeMetadata.schemes.first { it.codeName == ECDSA_SECP256K1_CODE_NAME },
@@ -388,7 +388,7 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(30)
     fun `Should generate RSA key pair`() {
         val alias = newAlias()
         val scheme = schemeMetadata.findSignatureScheme(RSA_CODE_NAME)
@@ -400,7 +400,7 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(30)
     fun `Should generate RSA key pair and be able sign and verify using RSASSA-PSS signature`() {
         val data = UUID.randomUUID().toString().toByteArray()
         val alias = newAlias()
@@ -427,7 +427,7 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(30)
     fun `Should generate wrapped RSA key pair and be able sign and verify using RSASSA-PSS signature`() {
         val data = UUID.randomUUID().toString().toByteArray()
         val signatureScheme = schemeMetadata.findSignatureScheme(RSA_CODE_NAME)
@@ -450,7 +450,7 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(30)
     fun `Should generate ECDSA key pair with secp256k1 curve`() {
         val alias = newAlias()
         val scheme = schemeMetadata.findSignatureScheme(ECDSA_SECP256K1_CODE_NAME)
@@ -464,7 +464,7 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(30)
     fun `Should generate ECDSA key pair with secp256r1 curve`() {
         val alias = newAlias()
         val scheme = schemeMetadata.findSignatureScheme(ECDSA_SECP256R1_CODE_NAME)
@@ -478,7 +478,7 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(30)
     fun `Should generate EdDSA key pair with ED25519 curve`() {
         val alias = newAlias()
         val scheme = schemeMetadata.findSignatureScheme(EDDSA_ED25519_CODE_NAME)
@@ -492,7 +492,7 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(30)
     fun `Should generate SPHINCS-256 key pair`() {
         val alias = newAlias()
         val scheme = schemeMetadata.findSignatureScheme(SPHINCS256_CODE_NAME)
@@ -504,7 +504,7 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(30)
     fun `Should generate SM2 key pair`() {
         val alias = newAlias()
         val scheme = schemeMetadata.findSignatureScheme(SM2_CODE_NAME)
@@ -518,7 +518,7 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(30)
     fun `Should generate GOST3410_GOST3411 key pair`() {
         val alias = newAlias()
         val scheme = schemeMetadata.findSignatureScheme(GOST3410_GOST3411_CODE_NAME)

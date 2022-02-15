@@ -77,7 +77,7 @@ class HSMRegistrationClientComponentTests : ComponentTestsBase<HSMRegistrationCl
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(30)
     fun `Should publish command to add HSM configuration`() {
         val config = HSMConfig(
             HSMInfo(
@@ -114,7 +114,7 @@ class HSMRegistrationClientComponentTests : ComponentTestsBase<HSMRegistrationCl
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(30)
     fun `Should publish command to assign HSM`() {
         val result = publisher.act {
             component.assignHSM(

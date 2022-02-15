@@ -136,7 +136,7 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(30)
     fun `Should return supported scheme codes`() {
         setupCompletedResponse {
             CryptoSignatureSchemes(
@@ -157,7 +157,7 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(30)
     fun `Should find public key`() {
         val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         setupCompletedResponse {
