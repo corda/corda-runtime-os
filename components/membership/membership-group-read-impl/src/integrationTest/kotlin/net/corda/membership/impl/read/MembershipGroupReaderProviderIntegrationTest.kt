@@ -37,6 +37,7 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import kotlin.reflect.KFunction
 
 @ExtendWith(ServiceExtension::class)
 class MembershipGroupReaderProviderIntegrationTest {
@@ -137,50 +138,49 @@ class MembershipGroupReaderProviderIntegrationTest {
         }
     }
 
-    @Test
-    fun `test membership group reader provider component`() {
+    val tests = listOf(
+        ::`Cannot get group reader before starting the component`,
+        ::`After starting the group reader component it's possible to get a group reader`,
+        ::`Readers are cached and additional reads return the same instance`,
+        ::`Group readers can not be retrieved after component stops`,
+        ::`New instance is returned after provider restarts meaning the cache was cleared`,
+        ::`Stopping and starting dependency service configuration read service, stops and starts group read provider component`
+    )
 
-        /**
-         * Cannot get group reader before starting the component.
-         */
+    fun `Cannot get group reader before starting the component`() {
         membershipGroupReaderProvider.failGetAliceGroupReader()
         membershipGroupReaderProvider.isStopped()
+    }
 
-        /**
-         * After starting the group reader component it's possible to get a group reader.
-         */
+    fun `After starting the group reader component it's possible to get a group reader`() {
         membershipGroupReaderProvider.startAndWait()
-        val groupReader1 = membershipGroupReaderProvider.getAliceGroupReader()
+        membershipGroupReaderProvider.getAliceGroupReader()
+    }
 
-        /**
-         * Readers are cached and additional reads return the same instance.
-         */
+    fun `Readers are cached and additional reads return the same instance`() {
+        val groupReader1 = membershipGroupReaderProvider.getAliceGroupReader()
         val groupReader2 = membershipGroupReaderProvider.getAliceGroupReader()
         assertEquals(groupReader1, groupReader2)
+    }
 
-        /**
-         * Group readers can not be retrieved after component stops.
-         */
+    fun `Group readers can not be retrieved after component stops`() {
         membershipGroupReaderProvider.stopAndWait()
         membershipGroupReaderProvider.failGetAliceGroupReader()
-
-        /**
-         * New instance is returned after provider starts again meaning the cache was cleared.
-         */
         membershipGroupReaderProvider.startAndWait()
-        val groupReader3 = membershipGroupReaderProvider.getAliceGroupReader()
-        assertNotEquals(groupReader1, groupReader3)
-        assertNotEquals(groupReader2, groupReader3)
+    }
 
-        /**
-         * Stopping dependency service configuration read service, stops group read provider component.
-         */
+    fun `New instance is returned after provider restarts meaning the cache was cleared`() {
+        val groupReader1 = membershipGroupReaderProvider.getAliceGroupReader()
+        membershipGroupReaderProvider.stopAndWait()
+        membershipGroupReaderProvider.startAndWait()
+        val groupReader2 = membershipGroupReaderProvider.getAliceGroupReader()
+        assertNotEquals(groupReader1, groupReader2)
+    }
+
+    fun `Stopping and starting dependency service configuration read service, stops and starts group read provider component`() {
         configurationReadService.stopAndWait()
         eventually { membershipGroupReaderProvider.failGetAliceGroupReader() }
 
-        /**
-         * Starting dependency service configuration read service, starts group read provider component.
-         */
         configurationReadService.startAndWait()
         eventually {
             startableServices.all { it.isRunning }
@@ -188,14 +188,30 @@ class MembershipGroupReaderProviderIntegrationTest {
         }
     }
 
+    fun runTest(testFunction: KFunction<Unit>) {
+        logger.info("Running test: \"${testFunction.name}\"")
+        testFunction.call()
+    }
+
+    @Test
+    fun `Run all tests`() {
+        logger.info("Running multiple member group reader related integration tests under one test run.")
+        logger.info("Running ${MembershipGroupReaderProvider::class.simpleName} tests.")
+        for (test in tests) {
+            runTest(test)
+        }
+        logger.info("Finished test run.")
+        logger.info("Ran ${tests.size} tests.")
+    }
+
     private fun Lifecycle.startAndWait() {
-        logger.info("Starting component.")
+        logger.info("Starting component ${this::class.java.simpleName}.")
         start()
         eventually { assertTrue(isRunning) }
     }
 
     private fun Lifecycle.stopAndWait() {
-        logger.info("Stopping component.")
+        logger.info("Stopping component ${this::class.java.simpleName}.")
         stop()
         eventually { isStopped() }
     }
