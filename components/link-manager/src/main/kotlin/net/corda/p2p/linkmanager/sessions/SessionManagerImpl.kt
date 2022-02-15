@@ -129,7 +129,7 @@ open class SessionManagerImpl(
         coordinatorFactory,
         dependentChildren = setOf(
             heartbeatManager.dominoTile, sessionReplayer.dominoTile, networkMap.dominoTile, cryptoService.dominoTile,
-            pendingOutboundSessionMessageQueues.complexDominoTile, publisher.dominoTile
+            pendingOutboundSessionMessageQueues.dominoTile, publisher.dominoTile
         ),
         managedChildren = setOf(heartbeatManager.dominoTile, sessionReplayer.dominoTile, publisher.dominoTile),
         configurationChangeHandler = SessionManagerConfigChangeHandler()

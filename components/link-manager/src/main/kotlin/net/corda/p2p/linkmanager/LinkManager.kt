@@ -498,7 +498,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         override val valueClass = LinkInMessage::class.java
     }
 
-    interface PendingSessionMessageQueues {
+    interface PendingSessionMessageQueues: LifecycleWithDominoTile {
         fun queueMessage(message: AuthenticatedMessageAndKey, counterparties: SessionCounterparties)
         fun sessionNegotiatedCallback(
             sessionManager: SessionManager,
@@ -508,14 +508,13 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         )
         fun destroyQueue(counterparties: SessionCounterparties)
         fun destroyAllQueues()
-        val complexDominoTile: ComplexDominoTile
     }
 
     class PendingSessionMessageQueuesImpl(
         publisherFactory: PublisherFactory,
         coordinatorFactory: LifecycleCoordinatorFactory,
         configuration: SmartConfig
-    ): PendingSessionMessageQueues, LifecycleWithDominoTile {
+    ): PendingSessionMessageQueues {
 
         companion object {
             private val logger = contextLogger()
