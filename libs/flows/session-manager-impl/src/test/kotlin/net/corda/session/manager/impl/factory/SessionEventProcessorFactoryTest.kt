@@ -9,7 +9,7 @@ import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.session.manager.SessionManagerException
-import net.corda.session.manager.impl.processor.SessionAckProcessorReceived
+import net.corda.session.manager.impl.processor.SessionAckProcessorReceive
 import net.corda.session.manager.impl.processor.SessionCloseProcessorReceive
 import net.corda.session.manager.impl.processor.SessionCloseProcessorSend
 import net.corda.session.manager.impl.processor.SessionDataProcessorReceive
@@ -128,7 +128,7 @@ class SessionEventProcessorFactoryTest {
             ), null, Instant.now()
         )
 
-        assertThat(processor::class.java).isEqualTo(SessionAckProcessorReceived::class.java)
+        assertThat(processor::class.java).isEqualTo(SessionAckProcessorReceive::class.java)
     }
 
     @Test
