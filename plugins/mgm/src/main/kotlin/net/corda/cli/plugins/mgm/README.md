@@ -47,19 +47,20 @@ Note:
 }
 ```
 
-2. Sample JSON with `members` which all use a common endpoint URL and Member1 overrides the protocol version.
+2. Sample JSON with `members`
 ```json
 {
-  "endpointUrl": "http://dummy-url",
-  "endpointProtocol": 5,
   "members": [
     {
       "name": "C=GB, L=London, O=Member1",
       "status": "PENDING",
-      "endpointProtocol": 10
+      "endpointUrl": "http://dummy-url",
+      "endpointProtocol": 5
     },
     {
-      "name": "C=GB, L=London, O=Member2"
+      "name": "C=GB, L=London, O=Member2",
+      "endpointUrl": "http://dummy-url2",
+      "endpointProtocol": 5
     }
   ]
 }
@@ -72,7 +73,7 @@ endpointProtocol: 5
 memberNames: ["C=GB, L=London, O=Member1", "C=GB, L=London, O=Member2"]
 ```
 
-4. Sample YAML with `members` which all use a common endpoint URL and Member1 overrides the protocol version.
+4. Sample YAML with `members` which all use a common endpoint URL and Member1 overrides the protocol version
 ```yaml
 endpointUrl: "http://dummy-url"
 endpointProtocol: 5
