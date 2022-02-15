@@ -12,6 +12,12 @@ class MessageBus : BusInteractions {
         return inboundMessages.poll()
     }
 
+    override fun duplicateMessage(position: Int) {
+        //TODO - this works for now as we dont modify data but this will point to the same object
+        val message = inboundMessages[position]
+        inboundMessages.add(message)
+    }
+
     override fun getInboundMessageSize(): Int {
         return inboundMessages.size
     }
