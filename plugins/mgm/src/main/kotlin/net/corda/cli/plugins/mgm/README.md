@@ -43,11 +43,11 @@ Note:
 {
   "endpointUrl": "http://dummy-url",
   "endpointProtocol": 5,
-  "memberNames": ["C=GB, L=London, O=Member1", "C=GB, L=London, O=Member1"]
+  "memberNames": ["C=GB, L=London, O=Member1", "C=GB, L=London, O=Member2"]
 }
 ```
 
-2. Sample JSON with `members`
+2. Sample JSON with `members` which all use a common endpoint URL and Member1 overrides the protocol version.
 ```json
 {
   "endpointUrl": "http://dummy-url",
@@ -72,7 +72,7 @@ endpointProtocol: 5
 memberNames: ["C=GB, L=London, O=Member1", "C=GB, L=London, O=Member2"]
 ```
 
-4. Sample YAML with `members`
+4. Sample YAML with `members` which all use a common endpoint URL and Member1 overrides the protocol version.
 ```yaml
 endpointUrl: "http://dummy-url"
 endpointProtocol: 5
