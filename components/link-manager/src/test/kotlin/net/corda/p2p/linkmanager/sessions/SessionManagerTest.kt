@@ -1262,7 +1262,7 @@ class SessionManagerTest {
 
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
         sessionManager.dataMessageSent(authenticatedSession)
-        assertTrue(publishLatch.await(configWithHeartbeat.sessionTimeout.multipliedBy(4).toMillis(), TimeUnit.MILLISECONDS))
+        assertTrue(publishLatch.await(configWithHeartbeat.sessionTimeout.multipliedBy(10).toMillis(), TimeUnit.MILLISECONDS))
 
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
 
