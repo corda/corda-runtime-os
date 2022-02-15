@@ -114,12 +114,12 @@ class FlowEventPipelineImplTest {
 
     @Test
     fun `runOrContinue runs a flow when FlowContinuation#Error is returned by the FlowEventHandler`() {
-        whenever(flowEventHandler.runOrContinue(inputContext)).thenReturn(FlowContinuation.Run(Unit))
+        whenever(flowEventHandler.runOrContinue(inputContext)).thenReturn(FlowContinuation.Error(IllegalStateException("I'm broken")))
+        whenever(runFlowCompletion.get()).thenReturn(FlowIORequest.FlowFinished(Unit))
         pipeline.runOrContinue()
         verify(flowRunner).runFlow(any(), any())
         verify(flowEventHandler).runOrContinue(inputContext)
     }
-
 
     @Test
     fun `runOrContinue does not run a flow when FlowContinuation#Continue is returned by the FlowEventHandler`() {
