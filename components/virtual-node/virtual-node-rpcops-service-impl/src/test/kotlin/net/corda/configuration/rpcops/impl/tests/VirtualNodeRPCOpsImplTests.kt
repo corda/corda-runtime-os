@@ -48,7 +48,7 @@ class VirtualNodeRPCOpsImplTests {
         holdingIdHash
     )
 
-    private val rpcRequestTimeoutDuration = 1000
+    private val rpcRequestTimeoutDuration = 10000
 
     @Test
     fun `createAndStartRPCSender starts new RPC sender`() {
