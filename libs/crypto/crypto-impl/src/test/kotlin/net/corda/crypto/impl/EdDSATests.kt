@@ -20,7 +20,7 @@ import java.security.Signature
  */
 class EdDSATests {
     @Test
-    @Timeout(30)
+    @Timeout(300)
     fun `PureEdDSA Ed25519 test vectors`() {
         val edParams = EdDSANamedCurveTable.getByName("ED25519") as EdDSANamedCurveSpec
 

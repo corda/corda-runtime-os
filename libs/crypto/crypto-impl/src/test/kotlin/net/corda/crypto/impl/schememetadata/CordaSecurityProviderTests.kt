@@ -20,7 +20,7 @@ class CordaSecurityProviderTests {
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(300)
     fun `get security provider algorithm services`() {
         val keyFactoryType = "KeyFactory"
         val signatureType = "Signature"

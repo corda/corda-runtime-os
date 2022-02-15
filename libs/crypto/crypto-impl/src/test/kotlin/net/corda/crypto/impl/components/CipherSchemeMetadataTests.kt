@@ -83,13 +83,13 @@ class CipherSchemeMetadataTests {
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(300)
     fun `Should use SecureRandom provided by PlatformSecureRandomService`() {
         assertEquals(CordaSecureRandomService.algorithm, schemeMetadata.secureRandom.algorithm)
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(300)
     fun `SecureRandom should generate new random data each time it's used`() {
         val data1 = ByteArray(37)
         val data2 = ByteArray(37)
@@ -105,7 +105,7 @@ class CipherSchemeMetadataTests {
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(300)
     fun `Should not contain banned digest algorithms`() {
         schemeMetadata.digests.forEach {
             assertFalse(
@@ -116,7 +116,7 @@ class CipherSchemeMetadataTests {
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(300)
     fun `Should contain at least minimal set of digest algorithms`() {
         assertTrue(schemeMetadata.digests.size > 1)
         assertTrue(schemeMetadata.digests.any { it.algorithmName == "SHA-256" })
@@ -128,7 +128,7 @@ class CipherSchemeMetadataTests {
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(300)
     fun `Should contain predefined list of signature schemes`() {
         assertEquals(8, schemeMetadata.schemes.size)
         assertTrue(schemeMetadata.schemes.any { it.codeName == RSA_CODE_NAME })
@@ -142,7 +142,7 @@ class CipherSchemeMetadataTests {
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(300)
     fun `Should contain predefined list of providers`() {
         assertEquals(3, schemeMetadata.providers.size)
         assertTrue(schemeMetadata.providers.containsKey("Corda"))
@@ -151,7 +151,7 @@ class CipherSchemeMetadataTests {
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(300)
     fun `findScheme should throw IllegalArgumentException if the algorithm is not supported`() {
         assertThrows<IllegalArgumentException> {
             schemeMetadata.findSignatureScheme(AlgorithmIdentifier(PKCSObjectIdentifiers.RC2_CBC, null))
@@ -159,7 +159,7 @@ class CipherSchemeMetadataTests {
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(300)
     fun `findScheme should throw IllegalArgumentException if the scheme code name is not supported`() {
         assertThrows<IllegalArgumentException> {
             schemeMetadata.findSignatureScheme(unknownScheme.codeName)
@@ -167,7 +167,7 @@ class CipherSchemeMetadataTests {
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(300)
     fun `findScheme should throw IllegalArgumentException if the public key is not supported`() {
         val publicKey = UnsupportedPublicKey()
         assertThrows<IllegalArgumentException> {
@@ -177,7 +177,7 @@ class CipherSchemeMetadataTests {
 
     @ParameterizedTest
     @MethodSource("schemes")
-    @Timeout(30)
+    @Timeout(300)
     fun `Should find schemes for all supported scheme code names`(
         signatureScheme: SignatureScheme
     ) {
@@ -187,7 +187,7 @@ class CipherSchemeMetadataTests {
 
     @ParameterizedTest
     @MethodSource("schemes")
-    @Timeout(30)
+    @Timeout(300)
     fun `Should find schemes for all supported signing algorithms`(
         signatureScheme: SignatureScheme
     ) {

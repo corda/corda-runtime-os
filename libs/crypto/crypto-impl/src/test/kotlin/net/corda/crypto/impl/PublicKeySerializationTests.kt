@@ -13,7 +13,7 @@ import kotlin.test.assertEquals
 
 class PublicKeySerializationTests {
     @Test
-    @Timeout(30)
+    @Timeout(300)
     fun `Should serialize and then deserialize public key`() {
         val encodedPublicKey = ByteArray(1)
         val publicKey = mock<PublicKey> {

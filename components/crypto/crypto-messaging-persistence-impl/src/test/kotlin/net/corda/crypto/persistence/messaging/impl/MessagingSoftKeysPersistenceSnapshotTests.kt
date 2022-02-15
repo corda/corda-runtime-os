@@ -79,7 +79,7 @@ class MessagingSoftKeysPersistenceSnapshotTests {
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(300)
     fun `Should load snapshot and get default crypto cache value`() {
         val cachedRecord1 = persistence.wait(original1.alias)
         assertNotNull(cachedRecord1)

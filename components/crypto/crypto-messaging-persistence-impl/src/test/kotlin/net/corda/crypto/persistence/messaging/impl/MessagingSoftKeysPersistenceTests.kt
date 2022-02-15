@@ -53,14 +53,14 @@ class MessagingSoftKeysPersistenceTests {
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(300)
     fun `Should get default crypto cache null when it's not found`() {
         val cachedRecord = persistence.get(UUID.randomUUID().toString())
         assertNull(cachedRecord)
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(300)
     fun `Should round trip persist and get default crypto cache value`() {
         val alias = UUID.randomUUID().toString()
         val original = SoftKeysRecord(
@@ -87,7 +87,7 @@ class MessagingSoftKeysPersistenceTests {
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(300)
     fun `Should get default crypto cache record from subscription when it's not cached yet`() {
         val alias = UUID.randomUUID().toString()
         val original = SoftKeysRecord(

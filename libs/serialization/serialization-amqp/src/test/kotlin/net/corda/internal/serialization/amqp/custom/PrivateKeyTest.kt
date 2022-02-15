@@ -28,7 +28,7 @@ class PrivateKeyTest {
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(300)
     fun `Should throw IllegalCustomSerializerException when serializing a private key`() {
         val output = SerializationOutput(factory)
         val privateKey: PrivateKey = MockPrivateKey("", "", byteArrayOf())

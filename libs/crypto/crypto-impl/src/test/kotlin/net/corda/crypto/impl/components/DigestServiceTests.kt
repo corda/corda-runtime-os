@@ -55,7 +55,7 @@ class DigestServiceTests {
 
     @ParameterizedTest
     @MethodSource("bannedDigests")
-    @Timeout(30)
+    @Timeout(300)
     fun `Should not be using unsafe (banned) digest algorithms`(
         algorithmName: DigestAlgorithmName
     ) {
@@ -66,7 +66,7 @@ class DigestServiceTests {
 
     @ParameterizedTest
     @MethodSource("majorDigests")
-    @Timeout(30)
+    @Timeout(300)
     fun `Should support major digests algorithms`(
         algorithmName: DigestAlgorithmName
     ) {
@@ -83,7 +83,7 @@ class DigestServiceTests {
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(300)
     fun `Should calculate sha2-256 secure hash`() {
         val hash = digestService.hash(byteArrayOf(0x64, -0x13, 0x42, 0x3a), SHA2_256)
         assertEquals(32, hash.size)

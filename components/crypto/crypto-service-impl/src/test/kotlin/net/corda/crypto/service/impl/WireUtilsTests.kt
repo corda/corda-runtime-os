@@ -8,7 +8,7 @@ import kotlin.test.assertTrue
 
 class WireUtilsTests {
     @Test
-    @Timeout(30)
+    @Timeout(300)
     fun `Should transform non empty wire context list to map`() {
         val list = listOf(
             KeyValuePair("key1", "value1"),
@@ -22,7 +22,7 @@ class WireUtilsTests {
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(300)
     fun `Should transform empty wire context list to map`() {
         val list = emptyList<KeyValuePair>()
         val map = list.toMap()

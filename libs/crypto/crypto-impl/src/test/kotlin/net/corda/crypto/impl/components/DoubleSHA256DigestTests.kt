@@ -10,7 +10,7 @@ import kotlin.random.Random
 
 class DoubleSHA256DigestTests {
     @Test
-    @Timeout(30)
+    @Timeout(300)
     fun `Should calculate hash for array`() {
         val service = DoubleSHA256Digest()
         val random = Random(17)
@@ -27,7 +27,7 @@ class DoubleSHA256DigestTests {
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(300)
     fun `Should calculate hash for short input streams`() {
         val service = DoubleSHA256Digest()
         val random = Random(17)
@@ -45,7 +45,7 @@ class DoubleSHA256DigestTests {
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(300)
     fun `Should calculate hash for medium sized input streams`() {
         val service = DoubleSHA256Digest()
         val random = Random(17)

@@ -38,7 +38,7 @@ class CryptoServiceDecoratorTests {
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(300)
     fun `Should close wrapped service`() {
         val circuitBreaker = createCircuitBreaker()
         circuitBreaker.close()
@@ -46,7 +46,7 @@ class CryptoServiceDecoratorTests {
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(300)
     fun `Should execute requiresWrappingKey`() {
         val circuitBreaker = createCircuitBreaker()
         whenever(

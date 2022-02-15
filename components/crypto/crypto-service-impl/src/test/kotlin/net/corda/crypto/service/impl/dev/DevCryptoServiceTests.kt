@@ -90,13 +90,13 @@ class DevCryptoServiceTests {
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(300)
     fun `Should require wrapping key`() {
         assertTrue(cryptoService.requiresWrappingKey())
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(300)
     fun `All supported schemes should be defined in cipher suite`() {
         assertTrue(cryptoService.supportedSchemes().isNotEmpty())
         cryptoService.supportedSchemes().forEach {
@@ -105,7 +105,7 @@ class DevCryptoServiceTests {
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(300)
     fun `All supported wrapping schemes should be defined in cipher suite`() {
         assertTrue(cryptoService.supportedWrappingSchemes().isNotEmpty())
         cryptoService.supportedWrappingSchemes().forEach {
@@ -114,7 +114,7 @@ class DevCryptoServiceTests {
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(300)
     fun `Should support only ECDSA`() {
         assertEquals(1, cryptoService.supportedSchemes().size)
         assertTrue(cryptoService.supportedSchemes().any { it.codeName == ECDSA_SECP256R1_CODE_NAME })
@@ -259,7 +259,7 @@ class DevCryptoServiceTests {
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(300)
     fun `Should fail when generating key pair with unsupported signature scheme`() {
         val testData = UUID.randomUUID().toString().toByteArray()
         val alias = newAlias()
@@ -269,7 +269,7 @@ class DevCryptoServiceTests {
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(300)
     fun `Should fail when signing with unsupported signature scheme`() {
         val alias = newAlias()
         assertFailsWith<CryptoServiceBadRequestException> {
