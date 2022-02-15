@@ -82,7 +82,7 @@ class OutboundSessionPool(
     }
 
     fun getSession(sessionId: String): SessionType? {
-        val key = sessionIdToSessionKey[sessionId]
+        val key = sessionIdToSessionKey[sessionId] ?: return null
         return outboundSessions[key]
     }
 
