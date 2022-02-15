@@ -57,7 +57,7 @@ class CryptoServiceDecoratorTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should throw same CryptoServiceException from wrapped service when executing requiresWrappingKey`() {
         val circuitBreaker = createCircuitBreaker()
         val expected = CryptoServiceException("")
@@ -71,7 +71,7 @@ class CryptoServiceDecoratorTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should throw exception wrapped in CryptoServiceException when executing requiresWrappingKey`() {
         val circuitBreaker = createCircuitBreaker()
         val expected = RuntimeException()
@@ -85,7 +85,7 @@ class CryptoServiceDecoratorTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should execute supportedSchemes`() {
         val circuitBreaker = createCircuitBreaker()
         val expected = arrayOf<SignatureScheme>()
@@ -96,7 +96,7 @@ class CryptoServiceDecoratorTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should throw same CryptoServiceException from wrapped service when executing supportedSchemes`() {
         val circuitBreaker = createCircuitBreaker()
         val expected = CryptoServiceException("")
@@ -110,7 +110,7 @@ class CryptoServiceDecoratorTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should throw exception wrapped in CryptoServiceException  when executing supportedSchemes`() {
         val circuitBreaker = createCircuitBreaker()
         val expected = RuntimeException()
@@ -124,7 +124,7 @@ class CryptoServiceDecoratorTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should execute supportedWrappingSchemes`() {
         val circuitBreaker = createCircuitBreaker()
         val expected = arrayOf<SignatureScheme>()
@@ -135,7 +135,7 @@ class CryptoServiceDecoratorTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should throw same CryptoServiceException from wrapped service when executing supportedWrappingSchemes`() {
         val circuitBreaker = createCircuitBreaker()
         val expected = CryptoServiceException("")
@@ -149,7 +149,7 @@ class CryptoServiceDecoratorTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should throw exception wrapped in CryptoServiceException  when executing supportedWrappingSchemes`() {
         val circuitBreaker = createCircuitBreaker()
         val expected = RuntimeException()
@@ -163,7 +163,7 @@ class CryptoServiceDecoratorTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should execute containsKey`() {
         val circuitBreaker = createCircuitBreaker()
         val alias = UUID.randomUUID().toString()
@@ -175,7 +175,7 @@ class CryptoServiceDecoratorTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should throw same CryptoServiceException from wrapped service when executing containsKey`() {
         val circuitBreaker = createCircuitBreaker()
         val alias = UUID.randomUUID().toString()
@@ -190,7 +190,7 @@ class CryptoServiceDecoratorTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should throw exception wrapped in CryptoServiceException when executing containsKey`() {
         val circuitBreaker = createCircuitBreaker()
         val alias = UUID.randomUUID().toString()
@@ -205,7 +205,7 @@ class CryptoServiceDecoratorTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should execute findPublicKey`() {
         val circuitBreaker = createCircuitBreaker()
         val alias = UUID.randomUUID().toString()
@@ -217,7 +217,7 @@ class CryptoServiceDecoratorTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should throw same CryptoServiceException from wrapped service when executing findPublicKey`() {
         val circuitBreaker = createCircuitBreaker()
         val alias = UUID.randomUUID().toString()
@@ -232,7 +232,7 @@ class CryptoServiceDecoratorTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should throw exception wrapped in CryptoServiceException when executing findPublicKey`() {
         val circuitBreaker = createCircuitBreaker()
         val alias = UUID.randomUUID().toString()
@@ -247,7 +247,7 @@ class CryptoServiceDecoratorTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should execute createWrappingKey`() {
         val circuitBreaker = createCircuitBreaker()
         val alias = UUID.randomUUID().toString()
@@ -263,7 +263,7 @@ class CryptoServiceDecoratorTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should throw same CryptoServiceException from wrapped service when executing createWrappingKey`() {
         val circuitBreaker = createCircuitBreaker()
         val alias = UUID.randomUUID().toString()

@@ -50,7 +50,7 @@ class OffsetTrackerTest {
         offsetTracker.offsetReleased(thirdOffset)
         offsetTracker.offsetReleased(firstOffset)
 
-        eventually(waitBetween = 10.millis, waitBefore = 0.millis) {
+        eventually(waitBetween = 100.millis, waitBefore = 0.millis) {
             assertThat(offsetTracker.maxVisibleOffset()).isEqualTo(thirdOffset)
         }
     }
@@ -69,7 +69,7 @@ class OffsetTrackerTest {
     fun `if offset is not being advanced within the specified timeout, the awaiting method returns false`() {
         val newOffset = offsetTracker.getNextOffset()
 
-        assertFalse(offsetTracker.waitForOffset(newOffset, 5.millis))
+        assertFalse(offsetTracker.waitForOffset(newOffset, 50.millis))
     }
 
     @Test
@@ -77,14 +77,14 @@ class OffsetTrackerTest {
         val newOffset = offsetTracker.getNextOffset()
         offsetTracker.offsetReleased(newOffset)
 
-        assertTrue(offsetTracker.waitForOffset(newOffset, 5.millis))
+        assertTrue(offsetTracker.waitForOffset(newOffset, 50.millis))
     }
 
     @Test
     fun `if offset gets advanced before the timeout expires, the awaiting method returns true`() {
         val newOffset = offsetTracker.getNextOffset()
 
-        val waitResult = executorService.submit(Callable { offsetTracker.waitForOffset(newOffset, 50.millis) } )
+        val waitResult = executorService.submit(Callable { offsetTracker.waitForOffset(newOffset, 200.millis) } )
 
         offsetTracker.offsetReleased(newOffset)
 
@@ -100,7 +100,7 @@ class OffsetTrackerTest {
             executorService.submit { offsetTracker.offsetReleased(offset) }
         }
 
-        assertTrue(offsetTracker.waitForOffset(maxOffset, 150.millis))
+        assertTrue(offsetTracker.waitForOffset(maxOffset, 600.millis))
         assertThat(offsetTracker.maxVisibleOffset()).isEqualTo(maxOffset)
     }
 

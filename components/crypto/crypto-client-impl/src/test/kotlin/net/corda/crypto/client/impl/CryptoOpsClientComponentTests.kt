@@ -176,7 +176,7 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should return null when public key is not found`() {
         setupCompletedResponse {
             CryptoNoContentValue()
@@ -191,7 +191,7 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should filter my keys`() {
         val myPublicKeys = listOf(
             generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME).public,
@@ -219,7 +219,7 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should be able to handle empty filter my keys result`() {
         val myPublicKeys = listOf(
             generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME).public,
@@ -243,7 +243,7 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should generate key pair`() {
         val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         setupCompletedResponse {
@@ -269,7 +269,7 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should generate fresh key without external id`() {
         val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         setupCompletedResponse {
@@ -289,7 +289,7 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should generate fresh key with external id`() {
         val externalId = UUID.randomUUID()
         val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
@@ -311,7 +311,7 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should sign by referencing public key`() {
         val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         val data = UUID.randomUUID().toString().toByteArray()
@@ -337,7 +337,7 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should sign by referencing public key and using custom signature spec`() {
         val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         val data = UUID.randomUUID().toString().toByteArray()

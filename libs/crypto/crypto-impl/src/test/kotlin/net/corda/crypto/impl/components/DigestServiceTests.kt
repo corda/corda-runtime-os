@@ -112,7 +112,7 @@ class DigestServiceTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should calculate sha2-512 secure hash`() {
         val hash = digestService.hash(byteArrayOf(0x64, -0x13, 0x42, 0x3a), SHA2_512)
         assertEquals(64, hash.size)
@@ -127,7 +127,7 @@ class DigestServiceTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should calculate sha3-256 secure hash`() {
         assumeTrue(JavaVersion.isVersionAtLeast(JavaVersion.JAVA_11))
         val hash = digestService.hash(byteArrayOf(0x64, -0x13, 0x42, 0x3a), SHA3_256)
@@ -144,7 +144,7 @@ class DigestServiceTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should calculate sha3-384 secure hash`() {
         assumeTrue(JavaVersion.isVersionAtLeast(JavaVersion.JAVA_11))
         val hash = digestService.hash(byteArrayOf(0x64, -0x13, 0x42, 0x3a), SHA3_384)
@@ -162,7 +162,7 @@ class DigestServiceTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should calculate sha3-512 secure hash`() {
         assumeTrue(JavaVersion.isVersionAtLeast(JavaVersion.JAVA_11))
         val hash = digestService.hash(byteArrayOf(0x64, -0x13, 0x42, 0x3a), SHA3_512)
@@ -180,7 +180,7 @@ class DigestServiceTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should calculate secure hash using custom factory`() {
         val hash = digestService.hash(byteArrayOf(0x64, -0x13, 0x42, 0x3a), CUSTOM_DIGEST)
         assertEquals(32, hash.size)

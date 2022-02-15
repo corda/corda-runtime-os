@@ -121,14 +121,14 @@ class DevCryptoServiceTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should support only ECDSA for wrapping`() {
         assertEquals(1, cryptoService.supportedWrappingSchemes().size)
         assertTrue(cryptoService.supportedWrappingSchemes().any { it.codeName == ECDSA_SECP256R1_CODE_NAME })
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     @Suppress("MaxLineLength")
     fun `containsKey should return true for unknown alias as it generates key when not found`() {
         val testData = UUID.randomUUID().toString().toByteArray()
@@ -143,7 +143,7 @@ class DevCryptoServiceTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     @Suppress("MaxLineLength")
     fun `findPublicKey should return public for unknown alias as it generates key when not found and be able to sign and verify with the key`() {
         val testData = UUID.randomUUID().toString().toByteArray()
@@ -160,7 +160,7 @@ class DevCryptoServiceTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `findPublicKey should return public key for generated key`() {
         val signatureScheme = schemeMetadata.findSignatureScheme(DevCryptoService.SUPPORTED_SCHEME_CODE_NAME)
         val alias = newAlias()
@@ -172,7 +172,7 @@ class DevCryptoServiceTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should generate ECDSA key pair with SECP256R1 curve and be able to sign and verify with the key`() {
         val testData = UUID.randomUUID().toString().toByteArray()
         val badVerifyData = UUID.randomUUID().toString().toByteArray()
@@ -188,7 +188,7 @@ class DevCryptoServiceTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should generate same ECDSA key pair with SECP256R1 curve for same alias`() {
         val signatureScheme = schemeMetadata.findSignatureScheme(DevCryptoService.SUPPORTED_SCHEME_CODE_NAME)
         val alias = newAlias()
@@ -222,7 +222,7 @@ class DevCryptoServiceTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should generate deterministic ECDSA key pair with SECP256R1 curve based on alias`() {
         val signatureScheme = schemeMetadata.findSignatureScheme(DevCryptoService.SUPPORTED_SCHEME_CODE_NAME)
         val alias1 = newAlias()
@@ -246,7 +246,7 @@ class DevCryptoServiceTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should auto generate key when signing using unknown alias`() {
         val testData = UUID.randomUUID().toString().toByteArray()
         val badVerifyData = UUID.randomUUID().toString().toByteArray()
@@ -278,7 +278,7 @@ class DevCryptoServiceTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should generate wrapped ECDSA key pair with SECP256R1 curve and be able to sign and verify with the key`() {
         val testData = UUID.randomUUID().toString().toByteArray()
         val badVerifyData = UUID.randomUUID().toString().toByteArray()
@@ -299,7 +299,7 @@ class DevCryptoServiceTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(300)
     fun `Should fail signing using wrapped key pair with unknown wrapping key`() {
         val testData = UUID.randomUUID().toString().toByteArray()
         val signatureScheme = schemeMetadata.findSignatureScheme(DevCryptoService.SUPPORTED_SCHEME_CODE_NAME)
