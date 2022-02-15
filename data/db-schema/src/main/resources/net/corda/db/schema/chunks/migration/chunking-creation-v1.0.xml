@@ -26,7 +26,7 @@
             <column name="part_nr" type="INT">
                 <constraints nullable="false"/>
             </column>
-            <column name="offset" type="INT">
+            <column name="data_offset" type="INT">
                 <constraints nullable="false"/>
             </column>
             <!-- 8 * 1024 * 1024 - if you change this field change the MAX_CHUNK_SIZE in corda-runtime-os -->
