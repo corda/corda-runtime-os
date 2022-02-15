@@ -380,3 +380,7 @@ tasks.named("dependencyUpdates").configure {
         isNonStable(it.candidate.version) && !isNonStable(it.currentVersion)
     }
 }
+
+tasks.withType(Test).configureEach {
+    maxParallelForks = Runtime.runtime.availableProcessors() - 1
+}
