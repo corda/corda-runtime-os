@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@ronanb/notick/test-parallel-execution') _
+@Library('corda-shared-build-pipeline-steps@ronanb/NOTICK/build-improvments') _
 
 cordaPipeline(
     nexusAppId: 'flow-worker-5.0',
