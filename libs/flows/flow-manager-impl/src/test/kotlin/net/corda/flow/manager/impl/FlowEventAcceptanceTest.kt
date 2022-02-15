@@ -1,7 +1,6 @@
 package net.corda.flow.manager.impl
 
 import net.corda.data.flow.FlowStackItem
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
 import net.corda.flow.manager.fiber.FlowIORequest
 import net.corda.flow.manager.impl.acceptance.dsl.filterOutputFlowTopicEventPayloads

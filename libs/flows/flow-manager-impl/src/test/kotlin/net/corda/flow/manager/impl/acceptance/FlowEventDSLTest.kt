@@ -12,7 +12,6 @@ import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
-import java.lang.IllegalStateException
 import java.time.Instant
 
 class FlowEventDSLTest {
