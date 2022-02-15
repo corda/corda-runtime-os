@@ -15,8 +15,8 @@ import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.impl.read.subscription.MembershipGroupReadSubscriptions
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.config.toMessagingConfig
-import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
-import net.corda.schema.configuration.ConfigKeys.Companion.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.util.contextLogger
 
 /**
