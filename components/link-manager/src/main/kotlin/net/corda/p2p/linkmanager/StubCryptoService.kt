@@ -45,7 +45,7 @@ class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
     private val ecdsaSignature = Signature.getInstance(ECDSA_SIGNATURE_ALGO)
 
     private var readyFuture = CompletableFuture<Unit>()
-    override val complexDominoTile = ComplexDominoTile(
+    override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         ::createResources,
@@ -58,7 +58,7 @@ class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
     }
 
     override fun signData(publicKey: PublicKey, data: ByteArray): ByteArray {
-        return complexDominoTile.withLifecycleLock {
+        return dominoTile.withLifecycleLock {
             if (!isRunning) {
                 throw IllegalStateException("signData operation invoked while component was stopped.")
             }

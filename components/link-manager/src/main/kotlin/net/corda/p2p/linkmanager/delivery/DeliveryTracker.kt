@@ -71,16 +71,16 @@ class DeliveryTracker(
         messageTrackerSubscription,
         messageTrackerSubscription.subscriptionName,
         setOf(
-            replayScheduler.complexDominoTile,
-            networkMap.complexDominoTile,
-            cryptoService.complexDominoTile,
-            sessionManager.complexDominoTile,
-            appMessageReplayer.complexDominoTile
+            replayScheduler.dominoTile,
+            networkMap.dominoTile,
+            cryptoService.dominoTile,
+            sessionManager.dominoTile,
+            appMessageReplayer.dominoTile
         ),
-        setOf(replayScheduler.complexDominoTile, appMessageReplayer.complexDominoTile)
+        setOf(replayScheduler.dominoTile, appMessageReplayer.dominoTile)
     )
 
-    override val complexDominoTile = ComplexDominoTile(this::class.java.simpleName, coordinatorFactory,
+    override val dominoTile = ComplexDominoTile(this::class.java.simpleName, coordinatorFactory,
         dependentChildren = setOf(messageTrackerSubscriptionTile),
         managedChildren = setOf(messageTrackerSubscriptionTile)
     )
@@ -104,10 +104,10 @@ class DeliveryTracker(
             configuration
         )
 
-        override val complexDominoTile = publisher.complexDominoTile
+        override val dominoTile = publisher.dominoTile
 
         fun replayMessage(message: AuthenticatedMessageAndKey) {
-            complexDominoTile.withLifecycleLock {
+            dominoTile.withLifecycleLock {
                 if (!isRunning) {
                     throw IllegalStateException("A message was added for replay before the DeliveryTracker was started.")
                 }

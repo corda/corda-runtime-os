@@ -63,11 +63,11 @@ internal class OutboundMessageHandler(
         lifecycleCoordinatorFactory,
         outboundSubscription,
         outboundSubscription.subscriptionName,
-        setOf(connectionManager.complexDominoTile, connectionConfigReader.complexDominoTile),
-        setOf(connectionManager.complexDominoTile, connectionConfigReader.complexDominoTile)
+        setOf(connectionManager.dominoTile, connectionConfigReader.dominoTile),
+        setOf(connectionManager.dominoTile, connectionConfigReader.dominoTile)
     )
 
-    override val complexDominoTile = ComplexDominoTile(
+    override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         dependentChildren = listOf(outboundSubscriptionTile),
@@ -77,7 +77,7 @@ internal class OutboundMessageHandler(
     private val retryThreadPool = Executors.newSingleThreadScheduledExecutor()
 
     override fun onNext(events: List<EventLogRecord<String, LinkOutMessage>>): List<Record<*, *>> {
-        complexDominoTile.withLifecycleLock {
+        dominoTile.withLifecycleLock {
             if (!isRunning) {
                 throw IllegalStateException("Can not handle events")
             }

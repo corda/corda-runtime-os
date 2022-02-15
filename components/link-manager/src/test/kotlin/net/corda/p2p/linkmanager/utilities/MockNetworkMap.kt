@@ -77,7 +77,7 @@ class MockNetworkMap(nodes: List<LinkManagerNetworkMap.HoldingIdentity>) {
                 return LinkManagerNetworkMap.NetworkType.CORDA_5
             }
 
-            override val complexDominoTile = mock<ComplexDominoTile>()
+            override val dominoTile = mock<ComplexDominoTile>()
         }
     }
 }

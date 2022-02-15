@@ -21,7 +21,7 @@ class ConfigBasedLinkManagerHostingMap(
     coordinatorFactory: LifecycleCoordinatorFactory
 ): LinkManagerHostingMap {
 
-    override val complexDominoTile = ComplexDominoTile(
+    override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
         configurationChangeHandler = HostingMapConfigurationChangeHandler()

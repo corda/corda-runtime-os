@@ -13,7 +13,7 @@ import kotlin.concurrent.write
 class InboundAssignmentListener(private val coordinatorFactory: LifecycleCoordinatorFactory):
     PartitionAssignmentListener, LifecycleWithDominoTile {
 
-    override val complexDominoTile = ComplexDominoTile(
+    override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
         createResources = ::createResources

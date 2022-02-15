@@ -24,7 +24,7 @@ class ConnectionConfigReader(
 
     var connectionConfig = ConnectionConfiguration()
 
-    override val complexDominoTile = ComplexDominoTile(
+    override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         configurationChangeHandler = ConfigChangeHandler()

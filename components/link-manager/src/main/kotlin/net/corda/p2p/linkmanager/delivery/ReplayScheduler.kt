@@ -38,7 +38,7 @@ internal class ReplayScheduler<M>(
     private val currentTimestamp: () -> Long = { Instant.now().toEpochMilli() },
     ) : LifecycleWithDominoTile {
 
-    override val complexDominoTile = ComplexDominoTile(
+    override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
         ::createResources,
@@ -131,7 +131,7 @@ internal class ReplayScheduler<M>(
         message: M,
         counterparties: SessionManager.SessionCounterparties
     ) {
-        complexDominoTile.withLifecycleLock {
+        dominoTile.withLifecycleLock {
             if (!isRunning) {
                 throw IllegalStateException("A message was added for replay before the ReplayScheduler was started.")
             }

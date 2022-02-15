@@ -131,7 +131,7 @@ class LinkManagerIntegrationTest {
                 invalidConfig
             )
             eventually {
-                assertThat(linkManager.complexDominoTile.state).isEqualTo(DominoTileState.StoppedDueToChildStopped)
+                assertThat(linkManager.dominoTile.state).isEqualTo(DominoTileState.StoppedDueToChildStopped)
             }
 
             logger.info("Publishing valid configuration again")
@@ -177,7 +177,7 @@ class LinkManagerIntegrationTest {
         )
 
         assertDoesNotThrow {
-            DependenciesVerifier.verify(linkManager.complexDominoTile)
+            DependenciesVerifier.verify(linkManager.dominoTile)
         }
     }
 

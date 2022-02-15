@@ -44,11 +44,11 @@ class InMemorySessionReplayer(
     private val replayScheduler = ReplayScheduler(coordinatorFactory, configurationReaderService,
         false, LinkManagerConfiguration.MESSAGE_REPLAY_KEY_PREFIX, ::replayMessage)
 
-    override val complexDominoTile = ComplexDominoTile(
+    override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
-        dependentChildren = setOf(replayScheduler.complexDominoTile, publisher.complexDominoTile, networkMap.complexDominoTile),
-        managedChildren = setOf(replayScheduler.complexDominoTile, publisher.complexDominoTile)
+        dependentChildren = setOf(replayScheduler.dominoTile, publisher.dominoTile, networkMap.dominoTile),
+        managedChildren = setOf(replayScheduler.dominoTile, publisher.dominoTile)
     )
 
     data class SessionMessageReplay(
@@ -64,7 +64,7 @@ class InMemorySessionReplayer(
         messageReplay: SessionMessageReplay,
         counterparties: SessionManager.SessionCounterparties
     ) {
-        complexDominoTile.withLifecycleLock {
+        dominoTile.withLifecycleLock {
             if (!isRunning) {
                 throw IllegalStateException("A message was added for replay before the InMemorySessionReplayer was started.")
             }

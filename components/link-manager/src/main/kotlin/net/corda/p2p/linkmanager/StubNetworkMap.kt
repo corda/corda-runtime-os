@@ -39,7 +39,7 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val keyDeserialiser = KeyDeserialiser()
 
     private val readyFuture = CompletableFuture<Unit>()
-    override val complexDominoTile = ComplexDominoTile(
+    override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         ::createResources,
@@ -53,7 +53,7 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
 
     @Suppress("TYPE_INFERENCE_ONLY_INPUT_TYPES_WARNING")
     override fun getMemberInfo(holdingIdentity: LinkManagerNetworkMap.HoldingIdentity): LinkManagerNetworkMap.MemberInfo? {
-        return complexDominoTile.withLifecycleLock {
+        return dominoTile.withLifecycleLock {
             if (!isRunning) {
                 throw IllegalStateException("getMemberInfo operation invoked while component was stopped.")
             }
@@ -63,7 +63,7 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     }
 
     override fun getMemberInfo(hash: ByteArray, groupId: String): LinkManagerNetworkMap.MemberInfo? {
-        return complexDominoTile.withLifecycleLock {
+        return dominoTile.withLifecycleLock {
             if (!isRunning) {
                 throw IllegalStateException("getMemberInfo operation invoked while component was stopped.")
             }
@@ -73,7 +73,7 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     }
 
     override fun getNetworkType(groupId: String): LinkManagerNetworkMap.NetworkType? {
-        return complexDominoTile.withLifecycleLock {
+        return dominoTile.withLifecycleLock {
             if (!isRunning) {
                 throw IllegalStateException("getNetworkType operation invoked while component was stopped.")
             }

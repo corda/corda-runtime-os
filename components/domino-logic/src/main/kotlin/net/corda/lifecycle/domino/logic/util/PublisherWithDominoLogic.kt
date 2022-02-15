@@ -20,7 +20,7 @@ class PublisherWithDominoLogic(
     @Volatile
     private var publisher: Publisher? = null
 
-    override val complexDominoTile = ComplexDominoTile(this::class.java.simpleName, coordinatorFactory, ::createResources)
+    override val dominoTile = ComplexDominoTile(this::class.java.simpleName, coordinatorFactory, ::createResources)
 
     private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
         val resourceReady = CompletableFuture<Unit>()
@@ -39,13 +39,13 @@ class PublisherWithDominoLogic(
     }
 
     fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {
-        return complexDominoTile.withLifecycleLock {
+        return dominoTile.withLifecycleLock {
             publisher?.publishToPartition(records) ?: throw IllegalStateException("Publisher had not started")
         }
     }
 
     fun publish(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
-        return complexDominoTile.withLifecycleLock {
+        return dominoTile.withLifecycleLock {
             publisher?.publish(records) ?: throw IllegalStateException("Publisher had not started")
         }
     }

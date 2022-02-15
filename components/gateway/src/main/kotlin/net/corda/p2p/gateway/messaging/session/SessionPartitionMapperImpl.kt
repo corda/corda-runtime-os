@@ -43,7 +43,7 @@ class SessionPartitionMapperImpl(
         emptySet()
     )
 
-    override val complexDominoTile = ComplexDominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, ::createResources,
+    override val dominoTile = ComplexDominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, ::createResources,
         dependentChildren = setOf(sessionPartitionSubscriptionTile),
         managedChildren = setOf(sessionPartitionSubscriptionTile)
     )

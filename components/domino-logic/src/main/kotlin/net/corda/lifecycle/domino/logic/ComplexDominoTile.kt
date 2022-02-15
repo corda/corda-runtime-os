@@ -16,6 +16,12 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.lifecycle.domino.logic.DominoTileState.Created
+import net.corda.lifecycle.domino.logic.DominoTileState.Started
+import net.corda.lifecycle.domino.logic.DominoTileState.StoppedByParent
+import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToBadConfig
+import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToChildStopped
+import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToError
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
@@ -112,7 +118,7 @@ class ComplexDominoTile(
         it.state
     }.toMutableMap()
 
-    private val currentState = AtomicReference(DominoTileState.Created)
+    private val currentState = AtomicReference(Created)
 
     private val isOpen = AtomicBoolean(true)
 
@@ -156,7 +162,7 @@ class ComplexDominoTile(
         get() = currentState.get()
 
     override val isRunning: Boolean
-        get() = state == DominoTileState.Started
+        get() = state == Started
 
     private fun newConfig(config: Config) {
         coordinator.postEvent(NewConfig(config))
@@ -166,10 +172,10 @@ class ComplexDominoTile(
         val oldState = currentState.getAndSet(newState)
         if (newState != oldState) {
             val status = when (newState) {
-                DominoTileState.Started -> LifecycleStatus.UP
-                DominoTileState.StoppedDueToBadConfig, DominoTileState.StoppedByParent, DominoTileState.StoppedDueToChildStopped -> LifecycleStatus.DOWN
-                DominoTileState.StoppedDueToError -> LifecycleStatus.ERROR
-                DominoTileState.Created -> null
+                Started -> LifecycleStatus.UP
+                StoppedDueToBadConfig, StoppedByParent, StoppedDueToChildStopped -> LifecycleStatus.DOWN
+                StoppedDueToError -> LifecycleStatus.ERROR
+                Created -> null
             }
             withLifecycleWriteLock {
                 status?.let { coordinator.updateStatus(it) }
@@ -185,7 +191,7 @@ class ComplexDominoTile(
                 is ErrorEvent -> {
                     stopResources()
                     stopListeningForConfig()
-                    updateState(DominoTileState.StoppedDueToError)
+                    updateState(StoppedDueToError)
                 }
                 is StartEvent -> {
                     // The coordinator had started, set the children state map - from
@@ -198,17 +204,17 @@ class ComplexDominoTile(
                     // We don't do anything when stopping the coordinator
                 }
                 is StopTile -> {
-                    if (state != DominoTileState.StoppedByParent) {
+                    if (state != StoppedByParent) {
                         stopTile()
-                        updateState(DominoTileState.StoppedByParent)
+                        updateState(StoppedByParent)
                     }
                 }
                 is StartTile -> {
                     when (state) {
-                        DominoTileState.Created, DominoTileState.StoppedByParent -> startDependenciesIfNeeded()
-                        DominoTileState.Started, DominoTileState.StoppedDueToChildStopped -> {} // Do nothing
-                        DominoTileState.StoppedDueToError -> logger.warn("Can not start, since currently being stopped due to an error")
-                        DominoTileState.StoppedDueToBadConfig -> logger.warn("Can not start, since currently being stopped due to bad config")
+                        Created, StoppedByParent -> startDependenciesIfNeeded()
+                        Started, StoppedDueToChildStopped -> {} // Do nothing
+                        StoppedDueToError -> logger.warn("Can not start, since currently being stopped due to an error")
+                        StoppedDueToBadConfig -> logger.warn("Can not start, since currently being stopped due to bad config")
                     }
                 }
                 is RegistrationStatusChangeEvent -> {
@@ -229,15 +235,15 @@ class ComplexDominoTile(
                         latestChildStateMap[child] = statusChangeEvent.newState
 
                         when (statusChangeEvent.newState) {
-                            DominoTileState.Started -> {
+                            Started -> {
                                 logger.info("Status change: child ${child.coordinatorName} went up.")
                                 handleChildStarted()
                             }
-                            DominoTileState.StoppedDueToBadConfig, DominoTileState.StoppedDueToError, DominoTileState.StoppedByParent, DominoTileState.StoppedDueToChildStopped -> {
+                            StoppedDueToBadConfig, StoppedDueToError, StoppedByParent, StoppedDueToChildStopped -> {
                                 logger.info("Status change: child ${child.coordinatorName} went down (${statusChangeEvent.newState}).")
                                 handleChildDown()
                             }
-                            DominoTileState.Created -> { }
+                            Created -> { }
                         }
                     }
                 }
@@ -254,7 +260,7 @@ class ComplexDominoTile(
                         is ConfigUpdateResult.Error -> {
                             logger.warn("Config error ${event.configUpdateResult.e}")
                             stopResources()
-                            updateState(DominoTileState.StoppedDueToBadConfig)
+                            updateState(StoppedDueToBadConfig)
                         }
                         ConfigUpdateResult.NoUpdate -> {
                             logger.info("Config applied with no update.")
@@ -310,7 +316,7 @@ class ComplexDominoTile(
 
     private fun handleChildStarted() {
         if (!isRunning) {
-            if (dependentChildren.all { latestChildStateMap[it] == DominoTileState.Started }) {
+            if (dependentChildren.all { latestChildStateMap[it] == Started }) {
                 logger.info("Starting resources, since all children are now up.")
                 createResourcesAndStart()
             }
@@ -320,7 +326,7 @@ class ComplexDominoTile(
     private fun handleChildDown() {
         stopResources()
         stopListeningForConfig()
-        updateState(DominoTileState.StoppedDueToChildStopped)
+        updateState(StoppedDueToChildStopped)
     }
 
     private fun startDependenciesIfNeeded() {
@@ -349,7 +355,7 @@ class ComplexDominoTile(
     }
 
     private fun shouldNotWaitForChildren(): Boolean {
-        return dependentChildren.all { latestChildStateMap[it] == DominoTileState.Started }
+        return dependentChildren.all { latestChildStateMap[it] == Started }
     }
 
     private fun createResourcesAndStart() {
@@ -379,7 +385,7 @@ class ComplexDominoTile(
 
     private fun setStartedIfCan() {
         if (shouldNotWaitForResource() && shouldNotWaitForConfig() && shouldNotWaitForChildren()) {
-            updateState(DominoTileState.Started)
+            updateState(Started)
         }
     }
 

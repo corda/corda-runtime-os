@@ -203,7 +203,7 @@ class LinkManagerTest {
         }
         @Suppress("UNCHECKED_CAST")
         whenever(mock.publish(any())).doAnswer { testPublisher.publish(it.arguments.first() as List<Record<*, *>>) }
-        whenever(mock.complexDominoTile).doReturn(dominoTile)
+        whenever(mock.dominoTile).doReturn(dominoTile)
     }
 
     @AfterEach

@@ -19,7 +19,7 @@ class ReconfigurableConnectionManager(
         { sslConfig, connectionConfig -> ConnectionManager(sslConfig, connectionConfig) }
 ) : LifecycleWithDominoTile {
 
-    override val complexDominoTile = ComplexDominoTile(
+    override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         configurationChangeHandler = ConnectionManagerConfigChangeHandler()
@@ -33,7 +33,7 @@ class ReconfigurableConnectionManager(
     }
 
     fun acquire(destinationInfo: DestinationInfo): HttpClient {
-        return complexDominoTile.withLifecycleLock {
+        return dominoTile.withLifecycleLock {
             if (manager == null) {
                 throw IllegalStateException("Manager is not ready")
             }
@@ -57,7 +57,7 @@ class ReconfigurableConnectionManager(
                 if (newConfiguration.sslConfig != oldConfiguration?.sslConfig ||
                     newConfiguration.connectionConfig != oldConfiguration.connectionConfig
                 ) {
-                    logger.info("New configuration, clients for ${complexDominoTile.coordinatorName} will be reconnected")
+                    logger.info("New configuration, clients for ${dominoTile.coordinatorName} will be reconnected")
                     val newManager = managerFactory(newConfiguration.sslConfig, newConfiguration.connectionConfig)
                     resources.keep(newManager)
                     val oldManager = manager

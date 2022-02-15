@@ -142,28 +142,28 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         partitionAssignmentListener = null
     )
 
-    private val commonChildren = setOf(linkManagerNetworkMap.complexDominoTile, linkManagerCryptoService.complexDominoTile,
-        linkManagerHostingMap.complexDominoTile)
+    private val commonChildren = setOf(linkManagerNetworkMap.dominoTile, linkManagerCryptoService.dominoTile,
+        linkManagerHostingMap.dominoTile)
     private val inboundSubscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
         inboundMessageSubscription,
         inboundMessageSubscription.subscriptionName,
         dependentChildren = commonChildren,
-        managedChildren = setOf(inboundAssignmentListener.complexDominoTile)
+        managedChildren = setOf(inboundAssignmentListener.dominoTile)
     )
     private val outboundSubscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
         outboundMessageSubscription,
         outboundMessageSubscription.subscriptionName,
-        dependentChildren = commonChildren + setOf(messagesPendingSession.complexDominoTile, inboundAssignmentListener.complexDominoTile),
-        managedChildren = setOf(messagesPendingSession.complexDominoTile)
+        dependentChildren = commonChildren + setOf(messagesPendingSession.dominoTile, inboundAssignmentListener.dominoTile),
+        managedChildren = setOf(messagesPendingSession.dominoTile)
     )
 
-    override val complexDominoTile = ComplexDominoTile(
+    override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        dependentChildren = setOf(inboundSubscriptionTile, outboundSubscriptionTile, deliveryTracker.complexDominoTile),
-        managedChildren = setOf(inboundSubscriptionTile, outboundSubscriptionTile, deliveryTracker.complexDominoTile, sessionManager.complexDominoTile)
+        dependentChildren = setOf(inboundSubscriptionTile, outboundSubscriptionTile, deliveryTracker.dominoTile),
+        managedChildren = setOf(inboundSubscriptionTile, outboundSubscriptionTile, deliveryTracker.dominoTile, sessionManager.dominoTile)
                 + commonChildren
     )
 
@@ -528,7 +528,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             PublisherConfig(LINK_MANAGER_PUBLISHER_CLIENT_ID),
             configuration
         )
-        override val complexDominoTile = publisher.complexDominoTile
+        override val dominoTile = publisher.dominoTile
 
         /**
          * Either adds a [FlowMessage] to a queue for a session which is pending (has started but hasn't finished
@@ -552,7 +552,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             session: Session,
             networkMap: LinkManagerNetworkMap,
         ) {
-            publisher.complexDominoTile.withLifecycleLock {
+            publisher.dominoTile.withLifecycleLock {
                 if (!isRunning) {
                     throw IllegalStateException("sessionNegotiatedCallback was called before the PendingSessionMessageQueues was started.")
                 }

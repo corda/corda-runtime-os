@@ -751,12 +751,14 @@ class ComplexDominoTileTest {
 
     @Nested
     inner class InternalTileTest {
-        private fun tile(dependentChildren: Collection<ComplexDominoTile>, managedChildren: Collection<ComplexDominoTile>): ComplexDominoTile = ComplexDominoTile(
-            TILE_NAME,
-            factory,
-            dependentChildren = dependentChildren,
-            managedChildren = managedChildren
-        )
+        private fun tile(dependentChildren: Collection<ComplexDominoTile>,
+                         managedChildren: Collection<ComplexDominoTile>): ComplexDominoTile =
+            ComplexDominoTile(
+                TILE_NAME,
+                factory,
+                dependentChildren = dependentChildren,
+                managedChildren = managedChildren
+            )
 
         @Nested
         inner class StartTileTests {

@@ -27,7 +27,7 @@ class ReconfigurableHttpServer(
     private var httpServer: HttpServer? = null
     private val serverLock = ReentrantReadWriteLock()
 
-    override val complexDominoTile = ComplexDominoTile(
+    override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         configurationChangeHandler = ReconfigurableHttpServerConfigChangeHandler()
@@ -58,7 +58,8 @@ class ReconfigurableHttpServer(
             @Suppress("TooGenericExceptionCaught")
             try {
                 if (newConfiguration.hostPort == oldConfiguration?.hostPort) {
-                    logger.info("New server configuration for ${complexDominoTile.coordinatorName} on the same port, HTTP server will have to go down")
+                    logger.info("New server configuration for ${dominoTile.coordinatorName} on the same port, " +
+                            "HTTP server will have to go down")
                     serverLock.write {
                         val oldServer = httpServer
                         httpServer = null
@@ -69,7 +70,7 @@ class ReconfigurableHttpServer(
                         httpServer = newServer
                     }
                 } else {
-                    logger.info("New server configuration, ${complexDominoTile.coordinatorName} will be connected to " +
+                    logger.info("New server configuration, ${dominoTile.coordinatorName} will be connected to " +
                         "${newConfiguration.hostAddress}:${newConfiguration.hostPort}")
                     val newServer = HttpServer(listener, newConfiguration)
                     newServer.start()

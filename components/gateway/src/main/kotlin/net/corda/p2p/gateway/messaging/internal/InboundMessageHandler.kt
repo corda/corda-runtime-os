@@ -60,11 +60,11 @@ internal class InboundMessageHandler(
         instanceId
     )
     private val server = ReconfigurableHttpServer(lifecycleCoordinatorFactory, configurationReaderService, this)
-    override val complexDominoTile = ComplexDominoTile(
+    override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        dependentChildren = listOf(sessionPartitionMapper.complexDominoTile, p2pInPublisher.complexDominoTile, server.complexDominoTile),
-        managedChildren = listOf(sessionPartitionMapper.complexDominoTile, p2pInPublisher.complexDominoTile, server.complexDominoTile)
+        dependentChildren = listOf(sessionPartitionMapper.dominoTile, p2pInPublisher.dominoTile, server.dominoTile),
+        managedChildren = listOf(sessionPartitionMapper.dominoTile, p2pInPublisher.dominoTile, server.dominoTile)
     )
 
     /**
@@ -72,7 +72,7 @@ internal class InboundMessageHandler(
      * A session init request has additional handling as the Gateway needs to generate a secret and share it
      */
     override fun onRequest(request: HttpRequest) {
-        complexDominoTile.withLifecycleLock { handleRequest(request) }
+        dominoTile.withLifecycleLock { handleRequest(request) }
     }
 
     private fun handleRequest(request: HttpRequest) {

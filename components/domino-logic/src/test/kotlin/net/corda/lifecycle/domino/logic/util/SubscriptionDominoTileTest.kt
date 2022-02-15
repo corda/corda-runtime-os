@@ -73,6 +73,16 @@ class SubscriptionDominoTileTest {
     }
 
     @Test
+    fun `subscription tile stops all managed children when stopped`() {
+        val subscriptionTile = SubscriptionDominoTile(coordinatorFactory, subscription, subscriptionName, children, children)
+
+        subscriptionTile.stop()
+        children.forEach {
+            verify(it, times(1)).stop()
+        }
+    }
+
+    @Test
     fun `subscription tile waits for dependent children before starting the subscription`() {
         val subscriptionTile = SubscriptionDominoTile(coordinatorFactory, subscription, subscriptionName, children, children)
 
@@ -85,6 +95,46 @@ class SubscriptionDominoTileTest {
 
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(subscriptionRegistration, LifecycleStatus.UP), coordinator)
         assertThat(subscriptionTile.state).isEqualTo(DominoTileState.Started)
+    }
+
+    @Test
+    fun `subscription tile goes down if any of the dependent children goes down`() {
+        val subscriptionTile = SubscriptionDominoTile(coordinatorFactory, subscription, subscriptionName, children, children)
+
+        subscriptionTile.start()
+        handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenRegistration, LifecycleStatus.UP), coordinator)
+        handler.lastValue.processEvent(RegistrationStatusChangeEvent(subscriptionRegistration, LifecycleStatus.UP), coordinator)
+
+        handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenRegistration, LifecycleStatus.DOWN), coordinator)
+        verify(subscription, times(1)).stop()
+        handler.lastValue.processEvent(RegistrationStatusChangeEvent(subscriptionRegistration, LifecycleStatus.DOWN), coordinator)
+        assertThat(subscriptionTile.state).isEqualTo(DominoTileState.StoppedDueToChildStopped)
+    }
+
+    @Test
+    fun `subscription tile goes down if any of the dependent children errors`() {
+        val subscriptionTile = SubscriptionDominoTile(coordinatorFactory, subscription, subscriptionName, children, children)
+
+        subscriptionTile.start()
+        handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenRegistration, LifecycleStatus.UP), coordinator)
+        handler.lastValue.processEvent(RegistrationStatusChangeEvent(subscriptionRegistration, LifecycleStatus.UP), coordinator)
+
+        handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenRegistration, LifecycleStatus.ERROR), coordinator)
+        verify(subscription, times(1)).stop()
+        handler.lastValue.processEvent(RegistrationStatusChangeEvent(subscriptionRegistration, LifecycleStatus.DOWN), coordinator)
+        assertThat(subscriptionTile.state).isEqualTo(DominoTileState.StoppedDueToChildStopped)
+    }
+
+    @Test
+    fun `tile errors if subscription errors`() {
+        val subscriptionTile = SubscriptionDominoTile(coordinatorFactory, subscription, subscriptionName, children, children)
+
+        subscriptionTile.start()
+        handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenRegistration, LifecycleStatus.UP), coordinator)
+        handler.lastValue.processEvent(RegistrationStatusChangeEvent(subscriptionRegistration, LifecycleStatus.UP), coordinator)
+
+        handler.lastValue.processEvent(RegistrationStatusChangeEvent(subscriptionRegistration, LifecycleStatus.ERROR), coordinator)
+        assertThat(subscriptionTile.state).isEqualTo(DominoTileState.StoppedDueToError)
     }
 
     private fun mockTile(name: LifecycleCoordinatorName): DominoTile {

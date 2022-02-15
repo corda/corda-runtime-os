@@ -10,6 +10,12 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.DominoTileState
+import net.corda.lifecycle.domino.logic.DominoTileState.Created
+import net.corda.lifecycle.domino.logic.DominoTileState.Started
+import net.corda.lifecycle.domino.logic.DominoTileState.StoppedByParent
+import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToBadConfig
+import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToChildStopped
+import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToError
 import net.corda.lifecycle.domino.logic.StatusChangeEvent
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.RPCSubscription
@@ -70,14 +76,14 @@ class SubscriptionDominoTile(
 
     private val coordinator = coordinatorFactory.createCoordinator(coordinatorName, EventHandler())
 
-    private val currentState = AtomicReference(DominoTileState.Created)
+    private val currentState = AtomicReference(Created)
 
     private val isOpen = AtomicBoolean(true)
 
     override val state: DominoTileState
         get() = currentState.get()
     override val isRunning: Boolean
-        get() = state == DominoTileState.Started
+        get() = state == Started
 
     private val dependentChildrenRegistration = coordinator.followStatusChangesByName(dependentChildren.map { it.coordinatorName }.toSet())
     private val subscriptionRegistration = coordinator.followStatusChangesByName(setOf(subscriptionName))
@@ -102,10 +108,10 @@ class SubscriptionDominoTile(
         val oldState = currentState.getAndSet(newState)
         if (newState != oldState) {
             val status = when (newState) {
-                DominoTileState.Started -> LifecycleStatus.UP
-                DominoTileState.StoppedDueToBadConfig, DominoTileState.StoppedByParent, DominoTileState.StoppedDueToChildStopped -> LifecycleStatus.DOWN
-                DominoTileState.StoppedDueToError -> LifecycleStatus.ERROR
-                DominoTileState.Created -> null
+                Started -> LifecycleStatus.UP
+                StoppedDueToBadConfig, StoppedByParent, StoppedDueToChildStopped -> LifecycleStatus.DOWN
+                StoppedDueToError -> LifecycleStatus.ERROR
+                Created -> null
             }
             status?.let { coordinator.updateStatus(it) }
             coordinator.postCustomEventToFollowers(StatusChangeEvent(newState))
@@ -129,13 +135,13 @@ class SubscriptionDominoTile(
                         subscriptionRegistration -> {
                             when(event.status) {
                                 LifecycleStatus.UP -> {
-                                    updateState(DominoTileState.Started)
+                                    updateState(Started)
                                 }
                                 LifecycleStatus.DOWN -> {
-                                    updateState(DominoTileState.StoppedDueToChildStopped)
+                                    updateState(StoppedDueToChildStopped)
                                 }
                                 LifecycleStatus.ERROR -> {
-                                    updateState(DominoTileState.StoppedDueToError)
+                                    updateState(StoppedDueToError)
                                 }
                             }
                         }
