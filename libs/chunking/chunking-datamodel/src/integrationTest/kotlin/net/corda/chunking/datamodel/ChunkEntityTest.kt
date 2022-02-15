@@ -14,7 +14,7 @@ import javax.persistence.EntityManagerFactory
 
 internal class ChunkEntityTest {
     companion object {
-        private const val MIGRATION_FILE_LOCATION = "net/corda/db/schema/chunks/db.changelog-master.xml"
+        private const val MIGRATION_FILE_LOCATION = "net/corda/db/schema/config/db.changelog-master.xml"
         private lateinit var entityManagerFactory: EntityManagerFactory
 
         /**
