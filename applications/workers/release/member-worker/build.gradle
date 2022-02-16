@@ -3,7 +3,7 @@ plugins {
     id 'corda.quasar-app'
 }
 
-description 'Combined Worker'
+description 'Member Worker'
 
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
@@ -11,11 +11,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':applications:workers:worker-common')
     implementation project(':libs:configuration:configuration-core')
-    implementation project(':processors:crypto-processor')
-    implementation project(':processors:db-processor')
-    implementation project(':processors:flow-processor')
     implementation project(':processors:member-processor')
-    implementation project(':processors:rpc-processor')
     implementation "info.picocli:picocli:$picocliVersion"
     implementation 'net.corda:corda-base'
 
@@ -23,5 +19,6 @@ dependencies {
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+    runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
 }
