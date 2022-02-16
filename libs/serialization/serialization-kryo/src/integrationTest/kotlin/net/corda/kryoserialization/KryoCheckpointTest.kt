@@ -34,7 +34,7 @@ class KryoCheckpointTest {
         @InjectService(timeout = 1000)
         lateinit var sandboxSetup: SandboxSetup
 
-        lateinit var sandboxManagementService: SandboxManagementService
+        private lateinit var sandboxManagementService: SandboxManagementService
 
         @Suppress("unused")
         @JvmStatic
