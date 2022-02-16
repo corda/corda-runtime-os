@@ -13,7 +13,8 @@ import net.corda.v5.base.util.trace
 
 internal class ConfigProcessor(
     private val coordinator: LifecycleCoordinator,
-    private val smartConfigFactory: SmartConfigFactory
+    private val smartConfigFactory: SmartConfigFactory,
+    private val bootstrapConfig: SmartConfig,
 ) : CompactedProcessor<String, Configuration> {
 
     private companion object {
@@ -27,8 +28,11 @@ internal class ConfigProcessor(
 
     override fun onSnapshot(currentData: Map<String, Configuration>) {
         if (currentData.isNotEmpty()) {
-            val config = currentData.map { Pair(it.key, it.value.toSmartConfig()) }.toMap()
+            val config = currentData.map { Pair(it.key, it.value.toSmartConfig()) }.toMap().toMutableMap()
             logger.trace { "Initial config snapshot received: $config" }
+            bootstrapConfig.entrySet().forEach { e ->
+                if(!config.containsKey(e.key)) config[e.key] = bootstrapConfig.getConfig(e.key)
+            }
             coordinator.postEvent(NewConfigReceived(config))
         } else {
             logger.debug { "No initial data to read from configuration topic" }
