@@ -92,7 +92,7 @@ class CpiUploadRPCOpsServiceHandler(
             configSubscription = configReadService.registerComponentForUpdates(
                 coordinator,
                 setOf(
-                    //ConfigKeys.MESSAGING_CONFIG,  // TODO:  uncomment when MESSAGING key is used
+                    //ConfigKeys.MESSAGING_CONFIG,  //  uncomment when MESSAGING key is used
                     ConfigKeys.BOOT_CONFIG,
                     ConfigKeys.RPC_CONFIG
                 )
@@ -118,7 +118,7 @@ class CpiUploadRPCOpsServiceHandler(
         // RPC_CONFIG is not currently being used (in `CpiUploadManagerImpl`).
         val rpcConfig = event.config[ConfigKeys.RPC_CONFIG]?.also { previousRpcConfig = it } ?: previousRpcConfig
 
-        // val messagingConfig = event.config.toMessagingConfig()  // TODO:  uncomment when MESSAGING key is used
+        // val messagingConfig = event.config.toMessagingConfig()  //  uncomment when MESSAGING key is used
         val messagingConfig = event.config[ConfigKeys.BOOT_CONFIG]!!
 
         rpcSender?.close()
