@@ -20,6 +20,24 @@ In order to get started it is necessary to:
 gradlew :applications:workers:release:crypto-worker:publishOSGiImage :applications:workers:release:db-worker:publishOSGiImage :applications:workers:release:flow-worker:publishOSGiImage :applications:workers:release:rpc-worker:publishOSGiImage :applications:workers:release:member-worker:publishOSGiImage
 ```
 
+### Use the R3 Docker Cache
+
+It is recommended that if you intend to repeatedly run the `publishOSGiImage` gradle task,
+that you use the R3 cache:
+
+* log into [https://software.r3.com](https://software.r3.com)  and generate an API key
+* in your console:
+
+```shell
+docker login docker-remotes.software.r3.com  -p API_KEY -u FIRST.LAST@r3.com
+```
+
+* finally run the publish task using the cache:
+
+```shell
+./gradlew publishOSGi-PbaseImage=docker-remotes.software.r3.com/azul/zulu-openjdk
+```
+
 ## Start the network
 
 In this folder run:
@@ -46,6 +64,12 @@ To launch the [Kafdrop](https://github.com/HomeAdvisor/Kafdrop) UI, browse to: h
 
 To launch Swagger UI and execute HTTP RPC calls please browse to: https://localhost:8888/api/v1/swagger
 
+Note that this is `https`  **not** `http`
+
+#### Auth
+
+Default username and password are `admin:admin`
+
 ### Viewing DB Content
 
 Using your favourite DB editor (like [DBeaver](https://dbeaver.io/)) it is possible to connect to:
@@ -68,3 +92,9 @@ Workers expose debug ports as follows:
 | Member Worker | 5009        |
 
 Remote debugger can be used against: `localhost:<port>`.
+
+### Example `curl` call
+
+```shell
+curl --insecure -u admin:admin -v -F upload=@some/path/to/my-1.0.0.cpi https://localhost:8888/api/v1/cpi/
+```

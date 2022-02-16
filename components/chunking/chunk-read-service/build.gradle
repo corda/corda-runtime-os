@@ -1,0 +1,19 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+description "Chunk read service"
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda:corda-base'
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'javax.persistence:javax.persistence-api'
+
+    api project(":libs:configuration:configuration-core")
+    api project(":libs:lifecycle:lifecycle")
+    api "com.typesafe:config:$typeSafeConfigVersion"
+}
