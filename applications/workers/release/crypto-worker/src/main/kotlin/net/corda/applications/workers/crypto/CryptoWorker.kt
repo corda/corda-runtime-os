@@ -6,6 +6,7 @@ import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBo
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setUpHealthMonitor
+import net.corda.applications.workers.workercommon.JavaSerialisationFilter
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.crypto.CryptoProcessor
@@ -34,6 +35,7 @@ class CryptoWorker @Activate constructor(
     /** Parses the arguments, then initialises and starts the [processor]. */
     override fun startup(args: Array<String>) {
         logger.info("Crypto worker starting.")
+        JavaSerialisationFilter.install()
 
         val params = getParams(args, CryptoWorkerParams())
         if (printHelpOrVersion(params.defaultParams, CryptoWorker::class.java, shutDownService)) return

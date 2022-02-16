@@ -20,12 +20,11 @@ class StartRPCFlowExecutor(
         private val log = contextLogger()
     }
 
-    private val flowKeyGenerator = FlowKeyGenerator()
 
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
             val identity = startRPCFlow.rpcUsername
-            val flowKey = flowKeyGenerator.generateFlowKey(identity)
+            val flowKey = generateFlowKey(identity)
             val newState = FlowMapperState(flowKey, null, FlowMapperStateType.OPEN)
             val flowEvent = FlowEvent(flowKey, startRPCFlow)
             FlowMapperResult(

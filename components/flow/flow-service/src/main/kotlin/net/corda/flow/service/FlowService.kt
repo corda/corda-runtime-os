@@ -18,9 +18,9 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
-import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
-import net.corda.schema.configuration.ConfigKeys.Companion.FLOW_CONFIG
-import net.corda.schema.configuration.ConfigKeys.Companion.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService

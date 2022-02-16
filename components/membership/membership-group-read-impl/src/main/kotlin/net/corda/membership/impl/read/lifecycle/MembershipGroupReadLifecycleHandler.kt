@@ -1,25 +1,24 @@
 package net.corda.membership.impl.read.lifecycle
 
-import net.corda.configuration.read.ConfigurationHandler
+import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.membership.config.MembershipConfig
-import net.corda.membership.config.MembershipConfigConstants
-import net.corda.membership.impl.config.MembershipConfigImpl
+import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
-import net.corda.membership.impl.read.component.MembershipGroupReaderProviderImpl
 import net.corda.membership.impl.read.subscription.MembershipGroupReadSubscriptions
-import net.corda.membership.lifecycle.MembershipConfigReceived
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.messaging.api.config.toMessagingConfig
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.v5.base.util.contextLogger
 
 /**
  * Lifecycle handler for the membership group read component.
@@ -29,79 +28,71 @@ interface MembershipGroupReadLifecycleHandler : LifecycleEventHandler {
      * Default implementation.
      */
     class Impl(
-        private val membershipGroupReadService: MembershipGroupReaderProviderImpl,
+        private val configurationReadService: ConfigurationReadService,
         private val membershipGroupReadSubscriptions: MembershipGroupReadSubscriptions,
         private val membershipGroupReadCache: MembershipGroupReadCache
     ) : MembershipGroupReadLifecycleHandler {
+        companion object {
+            val logger = contextLogger()
+        }
+
         private var configRegistrationHandle: AutoCloseable? = null
-        private var componentRegistrationHandle: AutoCloseable? = null
-
-        private val virtualNodeInfoReader
-            get() = membershipGroupReadService.virtualNodeInfoReadService
-
-        private val cpiInfoReader
-            get() = membershipGroupReadService.cpiInfoReader
-
-        private val configurationReadService
-            get() = membershipGroupReadService.configurationReadService
+        private var dependencyRegistrationHandle: RegistrationHandle? = null
 
         override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
             when (event) {
                 is StartEvent -> handleStartEvent(coordinator)
-                is StopEvent -> handleStopEvent()
+                is StopEvent -> handleStopEvent(coordinator)
                 is RegistrationStatusChangeEvent -> handleRegistrationChangeEvent(event, coordinator)
-                is MembershipConfigReceived -> handleConfigReceivedEvent(event, coordinator)
+                is ConfigChangedEvent -> handleConfigReceivedEvent(event, coordinator)
             }
         }
 
         /**
-         * Start all necessary components and register to receive updates about their status.
-         * Caches and subscriptions are created when configuration is received.
+         * Start the cache and register to receive updates about dependency component statuses.
          */
         private fun handleStartEvent(coordinator: LifecycleCoordinator) {
-            configurationReadService.start()
-            cpiInfoReader.start()
-            virtualNodeInfoReader.start()
+            logger.trace(MembershipGroupReaderProvider::class.simpleName + " handling start event.")
             membershipGroupReadCache.start()
-
-            componentRegistrationHandle = coordinator.followStatusChangesByName(
+            dependencyRegistrationHandle?.close()
+            dependencyRegistrationHandle = coordinator.followStatusChangesByName(
                 setOf(
                     LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                    LifecycleCoordinatorName.forComponent<CpiInfoReadService>(),
-                    LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
+                    LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
                 )
             )
         }
 
         /**
-         * Stop this component by stopping all components it uses which has lifecycle handling, stop subscriptions, clear
-         * caches, and close any registration handles which are open.
+         * Stop this component by stopping subscriptions, clearing caches, and close any registration handles
+         * which are open.
          */
-        private fun handleStopEvent() {
-            configurationReadService.stop()
-            cpiInfoReader.stop()
-            virtualNodeInfoReader.stop()
+        private fun handleStopEvent(coordinator: LifecycleCoordinator) {
+            logger.trace(MembershipGroupReaderProvider::class.simpleName + " handling stop event.")
+            coordinator.updateStatus(LifecycleStatus.DOWN, "Stopped component.")
             membershipGroupReadSubscriptions.stop()
             membershipGroupReadCache.stop()
-            componentRegistrationHandle?.close()
+            dependencyRegistrationHandle?.close()
             configRegistrationHandle?.close()
         }
 
         /**
-         * If components this component depends on go down, then stop this component also.
-         * The if the components start again, start this component also and subscribe to configuration changes.
+         * React to the configuration read service going up/down.
+         * Create a registration handle on the configuration read service when it is up and close it when it goes down.
          */
         private fun handleRegistrationChangeEvent(
             event: RegistrationStatusChangeEvent,
             coordinator: LifecycleCoordinator
         ) {
+            logger.trace(MembershipGroupReaderProvider::class.simpleName + " handling registration changed event.")
             // Respond to config read service lifecycle status change
             when (event.status) {
                 LifecycleStatus.UP -> {
-                    configRegistrationHandle = configurationReadService.registerForUpdates(
-                        MembershipGroupConfigurationHandler(coordinator)
+                    configRegistrationHandle?.close()
+                    configRegistrationHandle = configurationReadService.registerComponentForUpdates(
+                        coordinator,
+                        setOf(BOOT_CONFIG, MESSAGING_CONFIG)
                     )
-                    coordinator.updateStatus(LifecycleStatus.UP)
                 }
                 else -> {
                     coordinator.updateStatus(LifecycleStatus.DOWN)
@@ -114,38 +105,14 @@ interface MembershipGroupReadLifecycleHandler : LifecycleEventHandler {
          * Process configuration changes by stopping this component, resetting cached data, recreating subscriptions and
          * finally starting the component again.
          */
-        private fun handleConfigReceivedEvent(event: MembershipConfigReceived, coordinator: LifecycleCoordinator) {
+        private fun handleConfigReceivedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
+            logger.trace(MembershipGroupReaderProvider::class.simpleName + " handling new config event.")
             coordinator.updateStatus(LifecycleStatus.DOWN, "Started processing updated configuration.")
-            if (membershipGroupReadService.isRunning) {
-                membershipGroupReadCache.stop()
-                membershipGroupReadSubscriptions.stop()
-            }
+            membershipGroupReadSubscriptions.stop()
+            membershipGroupReadCache.stop()
             membershipGroupReadCache.start()
-            membershipGroupReadSubscriptions.start(event.config)
+            membershipGroupReadSubscriptions.start(event.config.toMessagingConfig())
             coordinator.updateStatus(LifecycleStatus.UP, "Finished processing updated configuration.")
-        }
-
-        /**
-         * Parse membership config from received config and pass the new config to the service lifecycle coordinator.
-         */
-        class MembershipGroupConfigurationHandler(
-            val coordinator: LifecycleCoordinator
-        ) : ConfigurationHandler {
-            override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
-                if (MembershipConfigConstants.CONFIG_KEY in changedKeys) {
-                    val membershipConfig = with(config[MembershipConfigConstants.CONFIG_KEY]) {
-                        when {
-                            this == null || isEmpty -> handleEmptyMembershipConfig()
-                            else -> MembershipConfigImpl(root().unwrapped())
-                        }
-                    }
-                    coordinator.postEvent(MembershipConfigReceived(membershipConfig))
-                }
-            }
-
-            private fun handleEmptyMembershipConfig(): MembershipConfig {
-                throw IllegalStateException("Configuration '${MembershipConfigConstants.CONFIG_KEY}' is empty")
-            }
         }
     }
 }

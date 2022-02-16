@@ -1,0 +1,22 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+description 'Membership HTTP RPC implementation'
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation "net.corda:corda-base"
+
+    implementation project(":libs:http-rpc:http-rpc")
+    implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:membership:membership-http-rpc")
+
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+}

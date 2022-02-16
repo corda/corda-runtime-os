@@ -1,5 +1,9 @@
 package net.corda.messagebus.api.configuration
 
+import com.typesafe.config.Config
+
+fun Config.getStringOrNull(path: String) = if (hasPath(path)) getString(path) else null
+
 class ConfigProperties {
     companion object {
         const val TOPIC = "topic"
@@ -26,10 +30,12 @@ class ConfigProperties {
         const val SUBSCRIBE_MAX_RETRIES = "subscribe.retries"
         const val COMMIT_OFFSET_MAX_RETRIES = "commit.retries"
 
+        const val TRANSACTIONAL_ID = "transactional.id"
         const val GROUP_ID = "group.id"
-        const val PRODUCER_CLIENT_ID = "producer.client.id"
+        const val CLIENT_ID = "client.id"
+        const val PRODUCER_CLIENT_ID = "producer.$CLIENT_ID"
         const val CONSUMER_GROUP_ID = "consumer.group.id"
         const val CONSUMER_MAX_POLL_INTERVAL = "consumer.max.poll.interval.ms"
-        const val PRODUCER_TRANSACTIONAL_ID = "producer.transactional.id"
+        const val PRODUCER_TRANSACTIONAL_ID = "producer.$TRANSACTIONAL_ID"
     }
 }

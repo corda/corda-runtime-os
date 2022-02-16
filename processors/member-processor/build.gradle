@@ -34,10 +34,12 @@ dependencies {
     runtimeOnly project(":components:crypto:crypto-client-impl")
     runtimeOnly project(":libs:crypto:crypto-impl")
     runtimeOnly project(":libs:messaging:messaging-impl")
+    runtimeOnly project(":libs:messaging:kafka-message-bus-impl")
     runtimeOnly project(":libs:membership:membership-application")
     runtimeOnly project(":libs:membership:membership-conversion-impl")
     runtimeOnly project(":libs:membership:membership-identity-impl")
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
+    runtimeOnly project(":libs:schema-registry:schema-registry-impl")
     runtimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

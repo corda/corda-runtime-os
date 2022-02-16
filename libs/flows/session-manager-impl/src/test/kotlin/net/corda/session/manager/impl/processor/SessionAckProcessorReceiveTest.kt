@@ -15,47 +15,51 @@ import java.time.Instant
 class SessionAckProcessorReceiveTest {
 
     @Test
-    fun testNullState() {
-        val sessionAckProcessorReceived = SessionAckProcessorReceived("key", null, "sessionId", 1, Instant.now())
+    fun `test null state generates a new error state and queues an error to send`() {
+        val sessionAckProcessorReceived = SessionAckProcessorReceive("key", null, "sessionId", 1, Instant.now())
         val sessionState = sessionAckProcessorReceived.execute()
 
         val messagesToSend = sessionState.sendEventsState.undeliveredMessages
+        assertThat(sessionState.status).isEqualTo(SessionStateType.ERROR)
         assertThat(messagesToSend.size).isEqualTo(1)
         assertThat(messagesToSend.first()!!.payload::class.java).isEqualTo(SessionError::class.java)
     }
 
     @Test
-    fun testInitState() {
+    fun `CREATED state, ack received for init message sent, state moves to CONFIRMED`() {
         val sessionState = buildSessionState(
             SessionStateType.CREATED, 0, emptyList(), 1, mutableListOf(SessionEvent(MessageDirection.OUTBOUND, 1, "", 1, SessionInit()))
         )
 
-        val updatedState = SessionAckProcessorReceived("key", sessionState, "sessionId", 1, Instant.now()).execute()
+        val updatedState = SessionAckProcessorReceive("key", sessionState, "sessionId", 1, Instant.now()).execute()
 
         assertThat(updatedState.status).isEqualTo(SessionStateType.CONFIRMED)
         assertThat(updatedState.sendEventsState?.undeliveredMessages).isEmpty()
     }
 
     @Test
-    fun testConfirmedState() {
+    fun `CONFIRMED state, ack received for 1 or 2 data events, 1 data is left`() {
         val sessionState = buildSessionState(
-            SessionStateType.CONFIRMED, 0, emptyList(), 1, mutableListOf(SessionEvent(MessageDirection.OUTBOUND, 1, "", 1, SessionData()))
+            SessionStateType.CONFIRMED, 0, emptyList(), 3, mutableListOf(
+                SessionEvent(MessageDirection.OUTBOUND, 1, "", 2, SessionData()),
+                SessionEvent(MessageDirection.OUTBOUND, 1, "", 3, SessionData())
+            )
         )
 
-        val updatedState = SessionAckProcessorReceived("key", sessionState, "sessionId", 1, Instant.now()).execute()
+        val updatedState = SessionAckProcessorReceive("key", sessionState, "sessionId", 2, Instant.now()).execute()
 
         assertThat(updatedState.status).isEqualTo(SessionStateType.CONFIRMED)
-        assertThat(updatedState.sendEventsState?.undeliveredMessages).isEmpty()
+        assertThat(updatedState.sendEventsState?.undeliveredMessages?.size).isEqualTo(1)
     }
 
     @Test
-    fun testWaitFinalAckState() {
+    fun `WAIT_FOR_FINAL_ACK state, final ack is received, state moves to CLOSED`() {
         val sessionState = buildSessionState(
             SessionStateType.WAIT_FOR_FINAL_ACK, 0, emptyList(), 3, mutableListOf(SessionEvent(MessageDirection.OUTBOUND, 1, "", 3,
                 SessionClose()))
         )
 
-        val updatedState = SessionAckProcessorReceived("key", sessionState, "sessionId", 3, Instant.now()).execute()
+        val updatedState = SessionAckProcessorReceive("key", sessionState, "sessionId", 3, Instant.now()).execute()
 
         assertThat(updatedState.status).isEqualTo(SessionStateType.CLOSED)
         assertThat(updatedState.sendEventsState?.undeliveredMessages).isEmpty()

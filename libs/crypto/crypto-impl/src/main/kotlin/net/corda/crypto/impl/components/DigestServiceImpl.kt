@@ -12,6 +12,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceCardinality.OPTIONAL
+import org.osgi.service.component.annotations.ReferenceScope.PROTOTYPE_REQUIRED
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.io.InputStream
 import java.security.MessageDigest
@@ -23,7 +24,11 @@ import java.util.concurrent.ConcurrentHashMap
 class DigestServiceImpl @Activate constructor(
     @Reference(service = CipherSchemeMetadata::class)
     private val schemeMetadata: CipherSchemeMetadata,
-    @Reference(service = DigestAlgorithmFactoryProvider::class, cardinality = OPTIONAL)
+    @Reference(
+        service = DigestAlgorithmFactoryProvider::class,
+        scope = PROTOTYPE_REQUIRED,
+        cardinality = OPTIONAL
+    )
     private val customFactoriesProvider: DigestAlgorithmFactoryProvider?
 ) : DigestService, SingletonSerializeAsToken {
     private val factories = ConcurrentHashMap<String, DigestAlgorithmFactory>().also {
@@ -48,18 +53,15 @@ class DigestServiceImpl @Activate constructor(
         }
 
     private fun digestFor(digestAlgorithmName: DigestAlgorithmName): DigestAlgorithm {
-        try {
-            return factories.getOrPut(digestAlgorithmName.name) {
+        return try {
+            factories.getOrPut(digestAlgorithmName.name) {
                 SpiDigestAlgorithmFactory(schemeMetadata, digestAlgorithmName.name)
             }.getInstance()
         } catch (e: IllegalArgumentException) {
             // Check any custom registered versions.
-            val digestAlgorithmFactory = customFactoriesProvider?.get(digestAlgorithmName.name)
-            if (digestAlgorithmFactory != null) {
-                return digestAlgorithmFactory.getInstance()
-            }
-
-            throw e
+            customFactoriesProvider?.get(digestAlgorithmName.name)
+                ?.getInstance()
+                ?: throw e
         }
     }
 

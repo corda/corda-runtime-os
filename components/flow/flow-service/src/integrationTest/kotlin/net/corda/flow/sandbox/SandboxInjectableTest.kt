@@ -58,7 +58,7 @@ class SandboxInjectableTest {
 
     @Test
     fun testCordaInjectables() {
-        val vnodeInfo = sandboxFactory.loadCPI(CPB_INJECT, holdingIdentity)
+        val vnodeInfo = sandboxFactory.loadVirtualNode(CPB_INJECT, holdingIdentity)
         try {
             sandboxFactory.getOrCreateSandbox(holdingIdentity).use { sandboxContext ->
                 val sandbox = sandboxContext.sandboxGroup
@@ -93,7 +93,7 @@ class SandboxInjectableTest {
                 assertThat(DigestService::class.java).isAssignableFrom(digestService.single())
             }
         } finally {
-            sandboxFactory.unloadCPI(vnodeInfo)
+            sandboxFactory.unloadVirtualNode(vnodeInfo)
         }
     }
 

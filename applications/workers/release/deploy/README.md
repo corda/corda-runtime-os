@@ -6,7 +6,8 @@ The purpose of this Docker Compose cluster to run:
 - Kafka Bus;
 - Postgres SQL server;
 - Flow Worker;
-- Crypto Worker.
+- Crypto Worker;
+- Member Worker.
 
 locally to be able to demonstrate functionality built to date.
 
@@ -16,7 +17,7 @@ In order to get started it is necessary to:
 - Start Docker Desktop.
 - Build the images of the workers:
 ```
-gradlew :applications:workers:release:crypto-worker:publishOSGiImage :applications:workers:release:db-worker:publishOSGiImage :applications:workers:release:flow-worker:publishOSGiImage :applications:workers:release:rpc-worker:publishOSGiImage
+gradlew :applications:workers:release:crypto-worker:publishOSGiImage :applications:workers:release:db-worker:publishOSGiImage :applications:workers:release:flow-worker:publishOSGiImage :applications:workers:release:rpc-worker:publishOSGiImage :applications:workers:release:member-worker:publishOSGiImage
 ```
 
 ## Start the network
@@ -64,5 +65,6 @@ Workers expose debug ports as follows:
 | DB Worker     | 5006        |
 | Crypto Worker | 5007        |
 | Flow Worker   | 5008        |
+| Member Worker | 5009        |
 
 Remote debugger can be used against: `localhost:<port>`.

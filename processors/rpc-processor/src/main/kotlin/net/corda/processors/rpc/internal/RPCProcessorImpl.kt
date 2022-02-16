@@ -3,6 +3,7 @@ package net.corda.processors.rpc.internal
 import net.corda.components.rpc.HttpRpcGateway
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.rpcops.ConfigRPCOpsService
+import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.data.config.Configuration
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.DependentComponents
@@ -18,8 +19,8 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.processors.rpc.RPCProcessor
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
-import net.corda.schema.configuration.ConfigKeys.Companion.BOOTSTRAP_SERVERS
-import net.corda.schema.configuration.ConfigKeys.Companion.RPC_CONFIG
+import net.corda.schema.configuration.ConfigKeys.BOOTSTRAP_SERVERS
+import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.rpcops.VirtualNodeRPCOpsService
@@ -42,7 +43,9 @@ class RPCProcessorImpl @Activate constructor(
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
     @Reference(service = VirtualNodeRPCOpsService::class)
-    private val virtualNodeRPCOpsService: VirtualNodeRPCOpsService
+    private val virtualNodeRPCOpsService: VirtualNodeRPCOpsService,
+    @Reference(service = CpiUploadRPCOpsService::class)
+    private val cpiUploadRPCOpsService: CpiUploadRPCOpsService
 ) : RPCProcessor {
 
     private companion object {
@@ -55,6 +58,7 @@ class RPCProcessorImpl @Activate constructor(
         ::httpRpcGateway,
         ::configRPCOpsService,
         ::virtualNodeRPCOpsService,
+        ::cpiUploadRPCOpsService
     )
 
     override fun start(bootConfig: SmartConfig) {

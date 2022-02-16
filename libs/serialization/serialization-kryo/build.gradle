@@ -40,6 +40,7 @@ dependencies {
     implementation project(":libs:serialization:serialization-checkpoint-api")
     implementation project(path: ':libs:serialization:serialization-encoding', configuration: 'bundle')
     implementation project(":libs:utilities")
+    runtimeOnly project(':libs:crypto:crypto-impl')
 
     cpbs project(path: 'cpks:serializable-cpk-one', configuration: 'cordaCPB')
     cpbs project(path: 'cpks:serializable-cpk-two', configuration: 'cordaCPB')

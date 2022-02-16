@@ -59,8 +59,6 @@ dependencies {
     integrationTestRuntimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
     integrationTestRuntimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
 
-    cpks project(path: 'split-packages-one', configuration: 'cordaCPK')
-    cpks project(path: 'split-packages-two', configuration: 'cordaCPK')
     cpks "net.corda:corda-smoketest-linearstate-flow-contracts:$cordaDevPreviewVersion:cordapp@cpk"
     cpks "net.corda:corda-smoketest-linearstate-sample-workflows:$cordaDevPreviewVersion:cordapp@cpk"
     cpks project(path: ':components:install:test-resources:system-cpk', configuration: 'cordaCPK')
@@ -85,10 +83,6 @@ tasks.named('test', Test) {
                 key = 'contract'
             } else if (cpk.name.contains('workflows')) {
                 key = 'workflow'
-            } else if (cpk.name.contains('split-packages-one')) {
-                key = 'split1'
-            } else if (cpk.name.contains('split-packages-two')) {
-                key = 'split2'
             } else {
                 key = 'flows'
             }

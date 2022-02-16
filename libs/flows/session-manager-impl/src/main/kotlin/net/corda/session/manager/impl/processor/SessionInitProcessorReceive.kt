@@ -32,6 +32,11 @@ class SessionInitProcessorReceive(
     override fun execute(): SessionState {
         if (sessionState != null) {
             logger.debug { "Received duplicate SessionInit on key $key for session which was not null: $sessionState" }
+            sessionState.apply {
+                sendEventsState.undeliveredMessages =
+                    sendEventsState.undeliveredMessages.plus(generateAckEvent(sessionEvent.sequenceNum, sessionId, instant))
+
+            }
             return sessionState
         }
 

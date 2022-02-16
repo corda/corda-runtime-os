@@ -14,6 +14,7 @@ import net.corda.sandboxgroupcontext.SandboxGroupContextService
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandbox.SandboxException
 import net.corda.v5.base.util.loggerFor
+import net.corda.v5.cipher.suite.DigestAlgorithmFactory
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
 import org.osgi.framework.Constants.OBJECTCLASS
@@ -200,7 +201,8 @@ class SandboxGroupContextServiceImpl(
     override fun registerMetadataServices(
         sandboxGroupContext: SandboxGroupContext,
         serviceNames: (CPK.Metadata) -> Iterable<String>,
-        isMetadataService: (Class<*>) -> Boolean
+        isMetadataService: (Class<*>) -> Boolean,
+        serviceMarkerType: Class<*>
     ): AutoCloseable {
         val groupMetadata = sandboxGroupContext.sandboxGroup.metadata
         val services = groupMetadata.flatMap { (mainBundle, cpkMetadata) ->
@@ -210,10 +212,8 @@ class SandboxGroupContextServiceImpl(
             }
         }
 
-        val serviceMarkerTypeName = sandboxGroupContext.virtualNodeContext.serviceMarkerType.name
-
         // Register each metadata service as an OSGi service for its host main bundle.
-        val registrations = registerMetadataServices(serviceMarkerTypeName, services)
+        val registrations = registerMetadataServices(serviceMarkerType.name, services)
         return AutoCloseable {
             registrations.forEach { registration ->
                 runIgnoringExceptions(registration::close)
@@ -267,6 +267,14 @@ class SandboxGroupContextServiceImpl(
                 null
             }
         } + extraCloseables
+    }
+
+    override fun registerCustomCryptography(sandboxGroupContext: SandboxGroupContext): AutoCloseable {
+        return registerMetadataServices(
+            sandboxGroupContext,
+            serviceNames = { metadata -> metadata.cordappManifest.digestAlgorithmFactories },
+            serviceMarkerType = DigestAlgorithmFactory::class.java
+        )
     }
 
     override fun hasCpks(cpkIdentifiers: Set<CPK.Identifier>) : Boolean {

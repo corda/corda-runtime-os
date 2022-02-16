@@ -6,6 +6,7 @@ import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBo
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setUpHealthMonitor
+import net.corda.applications.workers.workercommon.JavaSerialisationFilter
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.flow.FlowProcessor
@@ -34,6 +35,7 @@ class FlowWorker @Activate constructor(
     /** Parses the arguments, then initialises and starts the [processor]. */
     override fun startup(args: Array<String>) {
         logger.info("Flow worker starting.")
+        JavaSerialisationFilter.install()
 
         val params = getParams(args, FlowWorkerParams())
         if (printHelpOrVersion(params.defaultParams, FlowWorker::class.java, shutDownService)) return
