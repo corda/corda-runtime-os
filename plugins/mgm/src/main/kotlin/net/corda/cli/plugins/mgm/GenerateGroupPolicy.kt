@@ -41,7 +41,7 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
         arity = "0..1",
         description = ["Path to a JSON or YAML file that contains static network information"]
     )
-    var file: Path? = null
+    var filePath: Path? = null
 
     companion object {
         private const val MEMBER_STATUS_ACTIVE = "ACTIVE"
@@ -172,7 +172,7 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
      * @throws IllegalArgumentException If both file input and string parameters are provided.
      */
     private fun memberListFromInput(): List<Map<String, Any>>? {
-        if (file != null) {
+        if (filePath != null) {
             require(endpointUrl == null) { "Endpoint URL may not be specified when '--file' is set." }
             require(endpointProtocol == null) { "Endpoint protocol may not be specified when '--file' is set." }
             require(names == null) { "Member name(s) may not be specified when '--file' is set." }
@@ -271,18 +271,22 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
      * @throws IllegalArgumentException If the input file format is not supported, the file is malformed, or the file contains an invalid combination of blocks e.g. both 'memberNames' and 'members' blocks are present.
      */
     private fun readAndValidateFile(): Map<String, Any>? {
-        return file?.toString()?.run {
+        return filePath?.toString()?.run {
+            val file = filePath!!.toFile()
+            if (!file.exists()) {
+                throw IllegalArgumentException("No such file or directory: $this.")
+            }
             when {
                 endsWith(".json") -> {
                     try {
-                        jacksonObjectMapper().readValue<Map<String, Any>>(file!!.toFile())
+                        jacksonObjectMapper().readValue<Map<String, Any>>(file)
                     } catch (e: MismatchedInputException) {
-                        throw IllegalArgumentException("Could not read static network information from $file.")
+                        throw IllegalArgumentException("Could not read static network information from $this.")
                     }
                 }
                 endsWith(".yaml") || endsWith(".yml") -> {
-                    Yaml().load(file!!.toFile().inputStream())
-                        ?: throw IllegalArgumentException("Could not read static network information from $file.")
+                    Yaml().load(file.inputStream())
+                        ?: throw IllegalArgumentException("Could not read static network information from $this.")
                 }
                 else -> throw IllegalArgumentException("Input file format not supported.")
             }.also { parsed ->
