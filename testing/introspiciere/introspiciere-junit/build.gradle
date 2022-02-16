@@ -6,6 +6,7 @@ description "Introspiciere junit lib"
 
 dependencies {
     implementation project(":testing:introspiciere:introspiciere-http")
+    implementation project(":testing:introspiciere:introspiciere-server")
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
     implementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
