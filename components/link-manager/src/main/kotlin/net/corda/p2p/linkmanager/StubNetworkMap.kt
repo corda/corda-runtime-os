@@ -32,7 +32,6 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val subscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
         subscription,
-        subscription.subscriptionName,
         emptySet(),
         emptySet()
     )

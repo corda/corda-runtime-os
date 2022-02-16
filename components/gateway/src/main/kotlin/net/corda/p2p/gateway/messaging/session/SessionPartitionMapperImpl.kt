@@ -38,7 +38,6 @@ class SessionPartitionMapperImpl(
     private val sessionPartitionSubscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
         sessionPartitionSubscription,
-        sessionPartitionSubscription.subscriptionName,
         emptySet(),
         emptySet()
     )

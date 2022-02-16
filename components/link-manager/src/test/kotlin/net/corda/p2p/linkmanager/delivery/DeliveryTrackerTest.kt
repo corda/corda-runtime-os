@@ -3,7 +3,7 @@ package net.corda.p2p.linkmanager.delivery
 import net.corda.data.identity.HoldingIdentity
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
-import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
+import net.corda.lifecycle.domino.logic.util.StateAndEventSubscriptionDominoTile
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -71,7 +71,7 @@ class DeliveryTrackerTest {
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
     }
-    private val subscriptionTile = Mockito.mockConstruction(SubscriptionDominoTile::class.java)
+    private val subscriptionTile = Mockito.mockConstruction(StateAndEventSubscriptionDominoTile::class.java)
 
     private val replayScheduler = Mockito.mockConstruction(ReplayScheduler::class.java)
 

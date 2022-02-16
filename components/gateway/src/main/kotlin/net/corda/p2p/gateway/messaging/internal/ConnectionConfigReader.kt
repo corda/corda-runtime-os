@@ -13,7 +13,7 @@ import net.corda.p2p.gateway.messaging.toGatewayConfiguration
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 
-class ConnectionConfigReader(
+internal class ConnectionConfigReader(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val configurationReaderService: ConfigurationReadService
 ): LifecycleWithDominoTile {

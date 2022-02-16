@@ -62,7 +62,6 @@ internal class OutboundMessageHandler(
     private val outboundSubscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
         outboundSubscription,
-        outboundSubscription.subscriptionName,
         setOf(connectionManager.dominoTile, connectionConfigReader.dominoTile),
         setOf(connectionManager.dominoTile, connectionConfigReader.dominoTile)
     )

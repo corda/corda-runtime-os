@@ -2,11 +2,11 @@ package net.corda.lifecycle.domino.logic.util
 
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
-import net.corda.messaging.api.subscription.Subscription
+import net.corda.messaging.api.subscription.StateAndEventSubscription
 
-class SubscriptionDominoTile<K, V>(
+class StateAndEventSubscriptionDominoTile<K, S, E>(
     coordinatorFactory: LifecycleCoordinatorFactory,
-    subscription: Subscription<K, V>,
+    subscription: StateAndEventSubscription<K, S, E>,
     dependentChildren: Collection<DominoTile>,
     managedChildren: Collection<DominoTile>
 ): BaseSubscriptionDominoTile(coordinatorFactory, subscription, subscription.subscriptionName, dependentChildren, managedChildren)

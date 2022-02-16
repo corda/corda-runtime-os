@@ -147,14 +147,12 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     private val inboundSubscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
         inboundMessageSubscription,
-        inboundMessageSubscription.subscriptionName,
         dependentChildren = commonChildren,
         managedChildren = setOf(inboundAssignmentListener.dominoTile)
     )
     private val outboundSubscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
         outboundMessageSubscription,
-        outboundMessageSubscription.subscriptionName,
         dependentChildren = commonChildren + setOf(messagesPendingSession.dominoTile, inboundAssignmentListener.dominoTile),
         managedChildren = setOf(messagesPendingSession.dominoTile)
     )

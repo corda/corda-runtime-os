@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
+import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -49,7 +50,7 @@ class Gateway(
     )
 
     @VisibleForTesting
-    internal val children: Collection<ComplexDominoTile> =
+    internal val children: Collection<DominoTile> =
         listOf(inboundMessageHandler.dominoTile, outboundMessageProcessor.dominoTile)
     override val dominoTile = ComplexDominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory,
         dependentChildren = children, managedChildren = children)

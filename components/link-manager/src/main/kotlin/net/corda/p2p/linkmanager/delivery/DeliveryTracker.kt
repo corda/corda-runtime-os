@@ -7,7 +7,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
-import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
+import net.corda.lifecycle.domino.logic.util.StateAndEventSubscriptionDominoTile
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.Response
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -66,10 +66,9 @@ class DeliveryTracker(
         configuration,
         messageTracker.listener
     )
-    private val messageTrackerSubscriptionTile = SubscriptionDominoTile(
+    private val messageTrackerSubscriptionTile = StateAndEventSubscriptionDominoTile(
         coordinatorFactory,
         messageTrackerSubscription,
-        messageTrackerSubscription.subscriptionName,
         setOf(
             replayScheduler.dominoTile,
             networkMap.dominoTile,

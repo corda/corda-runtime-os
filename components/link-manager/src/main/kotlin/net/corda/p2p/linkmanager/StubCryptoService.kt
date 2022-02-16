@@ -36,7 +36,6 @@ class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
     private val subscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
         subscription,
-        subscription.subscriptionName,
         emptySet(),
         emptySet()
     )
