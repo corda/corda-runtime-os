@@ -1,5 +1,9 @@
 # Flow Worker Deployment Steps
 
+## Step 0 - ENV variable
+You will need to create a new env variable called `FLOW_WORKER_DIR` that points to the root directory of the `flow-worker` repo
+This will be used to anchor relative paths
+
 ## Step 1 - Build
 Build and publish the necessary modules. These will be the flow-worker itself, the setup tool and the helloworld cordapp
 `gradlew clean applications:workers:release:flow-worker:publishOSGiImage applications:tools:flow-worker-setup:appJar testing:cpbs:helloworld:build`

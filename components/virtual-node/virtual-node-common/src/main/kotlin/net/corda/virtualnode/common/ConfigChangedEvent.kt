@@ -14,5 +14,7 @@ import net.corda.lifecycle.LifecycleEvent
  *                keys the component registered on. Subsequent updates will indicate which key has changed.
  * @property config Map of top-level key to config section. This is populated for all keys a component has registered on
  *                  in all cases.
+ *
+ * This is a copy of the net.corda.configuration.read.ConfigChangedEvent and needs to be cleaned up at the earliest convenience
  */
 data class ConfigChangedEvent(val keys: Set<String>, val config: Map<String, SmartConfig>) : LifecycleEvent

@@ -48,8 +48,8 @@ services:
 
       kafka-topics.sh --bootstrap-server kafka:9093 --partitions 1 --replication-factor 1 --create --topic virtual.node.creation.request
       kafka-topics.sh --bootstrap-server kafka:9093 --partitions 1 --replication-factor 1 --create --topic virtual.node.creation.request.resp
-      kafka-topics.sh --bootstrap-server kafka:9093 --partitions 1 --replication-factor 1 --create --topic virtual.node.info --config "cleanup.policy=compact"
-      kafka-topics.sh --bootstrap-server kafka:9093 --partitions 1 --replication-factor 1 --create --topic cpi.info --config "cleanup.policy=compact"
+      kafka-topics.sh --bootstrap-server kafka:9093 --partitions 3 --replication-factor 1 --create --topic virtual.node.info --config "cleanup.policy=compact"
+      kafka-topics.sh --bootstrap-server kafka:9093 --partitions 3 --replication-factor 1 --create --topic cpi.info --config "cleanup.policy=compact"
 
       kafka-topics.sh --bootstrap-server kafka:9093 --partitions 1 --replication-factor 1 --create --topic cpi.upload
       kafka-topics.sh --bootstrap-server kafka:9093 --partitions 1 --replication-factor 1 --create --topic cpi.upload.resp
@@ -62,12 +62,12 @@ services:
       kafka-topics.sh --bootstrap-server kafka:9093 --partitions 1 --replication-factor 1 --create --topic rpc.permissions.permission --config "cleanup.policy=compact"
       kafka-topics.sh --bootstrap-server kafka:9093 --partitions 1 --replication-factor 1 --create --topic permissions.user.summary --config "cleanup.policy=compact"
 
-      kafka-topics.sh --bootstrap-server kafka:9093 --partitions 1 --replication-factor 1 --create --topic flow.event
-      kafka-topics.sh --bootstrap-server kafka:9093 --partitions 1 --replication-factor 1 --create --topic flow.event.state --config "cleanup.policy=compact"
-      kafka-topics.sh --bootstrap-server kafka:9093 --partitions 1 --replication-factor 1 --create --topic flow.event.dlq
-      kafka-topics.sh --bootstrap-server kafka:9093 --partitions 1 --replication-factor 1 --create --topic flow.mapper.event
-      kafka-topics.sh --bootstrap-server kafka:9093 --partitions 1 --replication-factor 1 --create --topic flow.mapper.event.state --config "cleanup.policy=compact"
-      kafka-topics.sh --bootstrap-server kafka:9093 --partitions 1 --replication-factor 1 --create --topic flow.mapper.event.dlq
+      kafka-topics.sh --bootstrap-server kafka:9093 --partitions 3 --replication-factor 1 --create --topic flow.event
+      kafka-topics.sh --bootstrap-server kafka:9093 --partitions 3 --replication-factor 1 --create --topic flow.event.state --config "cleanup.policy=compact"
+      kafka-topics.sh --bootstrap-server kafka:9093 --partitions 3 --replication-factor 1 --create --topic flow.event.dlq
+      kafka-topics.sh --bootstrap-server kafka:9093 --partitions 3 --replication-factor 1 --create --topic flow.mapper.event
+      kafka-topics.sh --bootstrap-server kafka:9093 --partitions 3 --replication-factor 1 --create --topic flow.mapper.event.state --config "cleanup.policy=compact"
+      kafka-topics.sh --bootstrap-server kafka:9093 --partitions 3 --replication-factor 1 --create --topic flow.mapper.event.dlq
 
       echo -e 'Successfully created the following topics:'
       kafka-topics.sh --bootstrap-server kafka:9093 --list
@@ -86,7 +86,7 @@ services:
     depends_on:
       - init-kafka
     volumes:
-      - C:/flow-worker/testing/cpbs/helloworld/build/libs:/cpiDir
+      - ${FLOW_WORKER_DIR}/testing/cpbs/helloworld/build/libs:/cpiDir
     healthcheck:
       test: [ "CMD-SHELL", "curl --fail http://localhost:7000/isHealthy || exit 1" ]
       interval: 5s
@@ -106,7 +106,7 @@ services:
     depends_on:
       - init-kafka
     volumes:
-      - C:/flow-worker/testing/cpbs/helloworld/build/libs:/cpiDir
+      - ${FLOW_WORKER_DIR}/testing/cpbs/helloworld/build/libs:/cpiDir
     healthcheck:
       test: [ "CMD-SHELL", "curl --fail http://localhost:7000/isHealthy || exit 1" ]
       interval: 5s
@@ -126,7 +126,7 @@ services:
     depends_on:
       - init-kafka
     volumes:
-      - C:/flow-worker/testing/cpbs/helloworld/build/libs:/cpiDir
+      - ${FLOW_WORKER_DIR}/testing/cpbs/helloworld/build/libs:/cpiDir
     healthcheck:
       test: [ "CMD-SHELL", "curl --fail http://localhost:7000/isHealthy || exit 1" ]
       interval: 5s
