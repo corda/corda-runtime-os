@@ -50,7 +50,7 @@ class ChunkReadServiceImpl @Activate constructor(
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> onStartEvent(coordinator)
-            is StopEvent -> onStop(coordinator)
+            is StopEvent -> onStopEvent(coordinator)
             is ConfigChangedEvent -> onConfigChangedEvent(event, coordinator)
             is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event)
         }
@@ -63,6 +63,8 @@ class ChunkReadServiceImpl @Activate constructor(
     override fun stop() = coordinator.stop()
 
     private fun onStartEvent(coordinator: LifecycleCoordinator) {
+        log.debug("onStartEvent")
+
         configurationReadService.start()
         registration?.close()
         registration =
@@ -74,28 +76,36 @@ class ChunkReadServiceImpl @Activate constructor(
             )
     }
 
-    private fun onStop(coordinator: LifecycleCoordinator) {
+    private fun onStopEvent(coordinator: LifecycleCoordinator) {
+        log.debug("onStopEvent")
+
         chunkDbWriter?.stop()
         chunkDbWriter = null
         coordinator.updateStatus(LifecycleStatus.DOWN)
     }
 
     private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent) {
+        log.debug("onRegistrationStatusChangeEvent")
+
         if (event.status == LifecycleStatus.UP) {
             configSubscription =
                 configurationReadService.registerComponentForUpdates(
                     coordinator, setOf(
                         ConfigKeys.BOOT_CONFIG,
-                        ConfigKeys.MESSAGING_CONFIG,
+                        //ConfigKeys.MESSAGING_CONFIG,  // TODO - uncomment when 'messaging' is sorted out.
                     )
                 )
         } else {
             configSubscription?.close()
+            coordinator.updateStatus(LifecycleStatus.DOWN)
         }
     }
 
     private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        val config = event.config.toMessagingConfig()
+        log.debug("onConfigChangedEvent")
+
+        //val config = event.config.toMessagingConfig()  // TODO - uncomment when 'messaging' is sorted out.
+        val config = event.config[ConfigKeys.BOOT_CONFIG]!!
         chunkDbWriter?.close()
         chunkDbWriter = chunkDbWriterFactory
             .create(
