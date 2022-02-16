@@ -13,7 +13,7 @@ import net.corda.session.manager.integration.helper.initiateNewSession
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
-class SessionManagerIntegrationTest {
+class SessionInitiationIntegrationTest {
 
     private companion object {
         private const val testResendWindow = 5000L
@@ -91,6 +91,22 @@ class SessionManagerIntegrationTest {
 
         alice.processNextReceivedMessage(sendMessages = true)
         alice.assertStatus(SessionStateType.ERROR)
+    }
+
+    @Test
+    fun `Alice sends Init, Bob responds with error`() {
+        val (alice, bob) = SessionPartyFactory().createSessionParties(testSmartConfig)
+
+        //send init
+        alice.processNewOutgoingMessage(SessionMessageType.INIT, sendMessages = true)
+        alice.assertStatus(SessionStateType.CREATED)
+
+        bob.processNewOutgoingMessage(SessionMessageType.ERROR, sendMessages = true)
+        bob.assertStatus(SessionStateType.ERROR)
+
+        alice.processNextReceivedMessage(sendMessages = true)
+        alice.assertStatus(SessionStateType.ERROR)
+
     }
 
     @Test

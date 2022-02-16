@@ -156,6 +156,35 @@ class SessionCloseIntegrationTest {
     }
 
     @Test
+    fun `Bob tries to close when client has not received all data messages`() {
+        val (alice, bob) = initiateNewSession(testSmartConfig)
+
+        alice.processNewOutgoingMessage(SessionMessageType.DATA, sendMessages = true)
+        alice.processNewOutgoingMessage(SessionMessageType.DATA, sendMessages = true)
+
+        //bob loses first data messages
+        bob.dropInboundMessage(0)
+
+        //Bob processes out of order data message
+        bob.processAllReceivedMessages(sendMessages = true)
+
+        //alice process acks for data and close
+        alice.processAllReceivedMessages()
+
+        alice.assertStatus(SessionStateType.CONFIRMED)
+        bob.assertStatus(SessionStateType.CONFIRMED)
+
+        //bob send close to alice
+        bob.processNewOutgoingMessage(SessionMessageType.CLOSE, sendMessages = true)
+
+        //alice receive error and ack
+        alice.processAllReceivedMessages()
+
+        alice.assertStatus(SessionStateType.ERROR)
+        bob.assertStatus(SessionStateType.ERROR)
+    }
+
+    @Test
     fun `Normal session is closed successfully, then additional new close is attempted`() {
         val (alice, bob) = initiateNewSession(testSmartConfig)
         closeSession(alice, bob)
