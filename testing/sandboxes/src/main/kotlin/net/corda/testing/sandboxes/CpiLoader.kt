@@ -3,7 +3,7 @@ package net.corda.testing.sandboxes
 import java.util.concurrent.CompletableFuture
 import net.corda.packaging.CPI
 
-interface CpiLoaderService {
+interface CpiLoader {
     fun loadCPI(resourceName: String): CPI
     fun unloadCPI(cpi: CPI)
 

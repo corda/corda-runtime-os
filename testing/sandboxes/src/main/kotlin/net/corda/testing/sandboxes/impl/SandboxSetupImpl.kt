@@ -4,10 +4,13 @@ import java.nio.file.Path
 import java.util.Hashtable
 import java.util.Collections.unmodifiableSet
 import java.util.concurrent.TimeoutException
+import net.corda.install.InstallService
 import net.corda.sandbox.SandboxCreationService
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.impl.InstallServiceImpl.Companion.BASE_DIRECTORY_KEY
 import net.corda.testing.sandboxes.impl.InstallServiceImpl.Companion.TEST_BUNDLE_KEY
+import net.corda.testing.sandboxes.impl.SandboxSetupImpl.Companion.INSTALLER_NAME
+import net.corda.v5.base.util.loggerFor
 import org.osgi.framework.BundleContext
 import org.osgi.service.cm.ConfigurationAdmin
 import org.osgi.service.component.ComponentContext
@@ -15,10 +18,18 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
-import org.slf4j.LoggerFactory
+import org.osgi.service.component.annotations.ReferenceCardinality.OPTIONAL
+import org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC
 
 @Suppress("unused")
-@Component
+@Component(
+    reference = [ Reference(
+        name = INSTALLER_NAME,
+        service = InstallService::class,
+        cardinality = OPTIONAL,
+        policy = DYNAMIC
+    )]
+)
 class SandboxSetupImpl @Activate constructor(
     @Reference
     private val configAdmin: ConfigurationAdmin,
@@ -27,6 +38,7 @@ class SandboxSetupImpl @Activate constructor(
     private val componentContext: ComponentContext
 ) : SandboxSetup {
     companion object {
+        const val INSTALLER_NAME = "installer"
         private const val WAIT_MILLIS = 100L
 
         // The names of the bundles to place as public bundles in the sandbox service's platform sandbox.
@@ -49,15 +61,14 @@ class SandboxSetupImpl @Activate constructor(
             "slf4j.api"
         ))
 
-        private val logger = LoggerFactory.getLogger(SandboxSetup::class.java)
+        private val logger = loggerFor<SandboxSetup>()
     }
 
     private val cleanups = mutableListOf<AutoCloseable>()
 
     override fun configure(
         bundleContext: BundleContext,
-        baseDirectory: Path,
-        extraPublicBundleNames: Set<String>
+        baseDirectory: Path
     ) {
         val testBundle = bundleContext.bundle
         logger.info("Configuring sandboxes for [{}]", testBundle.symbolicName)
@@ -69,9 +80,8 @@ class SandboxSetupImpl @Activate constructor(
             config.update(properties)
         }
 
-        val platformPublicBundleNames = PLATFORM_PUBLIC_BUNDLE_NAMES + extraPublicBundleNames
         val (publicBundles, privateBundles) = bundleContext.bundles.partition { bundle ->
-            bundle.symbolicName in platformPublicBundleNames
+            bundle.symbolicName in PLATFORM_PUBLIC_BUNDLE_NAMES
         }
         sandboxCreator.createPublicSandbox(publicBundles, privateBundles)
     }
@@ -95,7 +105,18 @@ class SandboxSetupImpl @Activate constructor(
             cleanups.forEach(AutoCloseable::close)
             cleanups.clear()
         }
-        componentContext.disableComponent(InstallServiceImpl::class.java.name)
+
+        /**
+         * Deactivate the [InstallService] and then wait
+         * for the framework to unregister it.
+         */
+        with(componentContext) {
+            disableComponent(InstallServiceImpl::class.java.name)
+            while (locateService<InstallService>(INSTALLER_NAME) != null) {
+                Thread.sleep(WAIT_MILLIS)
+            }
+        }
+
         logger.info("Shutdown complete")
     }
 
@@ -110,8 +131,10 @@ class SandboxSetupImpl @Activate constructor(
         var remainingMillis = timeout.coerceAtLeast(0)
         while (true) {
             bundleContext.getServiceReference(serviceType)?.let { ref ->
-                return bundleContext.getService(ref).also {
+                val service = bundleContext.getService(ref)
+                if (service != null) {
                     cleanups.add(AutoCloseable { bundleContext.ungetService(ref) })
+                    return service
                 }
             }
             if (remainingMillis <= 0) {
