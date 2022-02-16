@@ -1,13 +1,11 @@
 package net.corda.messagebus.kafka.consumer
 
-import com.typesafe.config.Config
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CORDA_CONSUMER
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.TOPIC
+import net.corda.messagebus.api.configuration.ConsumerConfig
+import net.corda.messagebus.api.constants.ConsumerRoles
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
-import net.corda.messagebus.kafka.PATTERN_PUBSUB
-import net.corda.messagebus.kafka.createStandardTestConfig
 import net.corda.messagebus.kafka.utils.toKafka
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
@@ -41,7 +39,6 @@ import java.time.Duration
 
 class CordaKafkaConsumerImplTest {
     private lateinit var cordaKafkaConsumer: CordaKafkaConsumerImpl<String, String>
-    private lateinit var kafkaConfig: Config
     private lateinit var subscriptionConfig: SubscriptionConfig
     private val listener: CordaConsumerRebalanceListener = mock()
     private val eventTopic = "eventTopic1"
@@ -50,14 +47,13 @@ class CordaKafkaConsumerImplTest {
     private lateinit var partition: TopicPartition
     private val avroSchemaRegistry: AvroSchemaRegistry = mock()
     private val consumerRecord = CordaConsumerRecord("prefixtopic", 1, 1, "key", "value", 0)
+    private val consumerConfig = ConsumerConfig("group", "clientId", "prefix", ConsumerRoles.PUBSUB)
 
     @BeforeEach
     fun beforeEach() {
         doReturn(String::class.java).whenever(avroSchemaRegistry).getClassType(any())
         doReturn(consumerRecord.value).whenever(avroSchemaRegistry).deserialize(any(), any(), anyOrNull())
         subscriptionConfig = SubscriptionConfig("groupName1", eventTopic)
-
-        kafkaConfig = createStandardTestConfig().getConfig(PATTERN_PUBSUB).getConfig(CORDA_CONSUMER)
 
         val (mockConsumer, mockTopicPartition) = createMockConsumerAndAddRecords(
             eventTopic,
@@ -67,7 +63,7 @@ class CordaKafkaConsumerImplTest {
         consumer = mockConsumer
         partition = mockTopicPartition
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
-            kafkaConfig,
+            consumerConfig,
             consumer,
             listener
         )
@@ -80,12 +76,12 @@ class CordaKafkaConsumerImplTest {
         consumer = mock()
         doReturn(consumerRecords).whenever(consumer).poll(Mockito.any(Duration::class.java))
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
-            kafkaConfig,
+            consumerConfig,
             consumer,
             listener
         )
 
-        cordaKafkaConsumer.poll()
+        cordaKafkaConsumer.poll(Duration.ofMillis(100L))
         verify(consumer, times(1)).poll(Mockito.any(Duration::class.java))
     }
 
@@ -96,7 +92,7 @@ class CordaKafkaConsumerImplTest {
         consumer = mock()
         doReturn(consumerRecords).whenever(consumer).poll(Mockito.any(Duration::class.java))
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
-            kafkaConfig,
+            consumerConfig,
             consumer,
             listener
         )
@@ -109,14 +105,14 @@ class CordaKafkaConsumerImplTest {
     fun testPollFatal() {
         consumer = mock()
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
-            kafkaConfig,
+            consumerConfig,
             consumer,
             listener
         )
 
         doThrow(FencedInstanceIdException("")).whenever(consumer).poll(Mockito.any(Duration::class.java))
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
-            cordaKafkaConsumer.poll()
+            cordaKafkaConsumer.poll(Duration.ofMillis(100L))
         }
         verify(consumer, times(1)).poll(Mockito.any(Duration::class.java))
     }
@@ -125,14 +121,14 @@ class CordaKafkaConsumerImplTest {
     fun testPollIntermittent() {
         consumer = mock()
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
-            kafkaConfig,
+            consumerConfig,
             consumer,
             listener
         )
 
         doThrow(KafkaException()).whenever(consumer).poll(Mockito.any(Duration::class.java))
         assertThatExceptionOfType(CordaMessageAPIIntermittentException::class.java).isThrownBy {
-            cordaKafkaConsumer.poll()
+            cordaKafkaConsumer.poll(Duration.ofMillis(100L))
         }
         verify(consumer, times(1)).poll(Mockito.any(Duration::class.java))
     }
@@ -141,7 +137,7 @@ class CordaKafkaConsumerImplTest {
     fun testCloseInvoked() {
         consumer = mock()
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
-            kafkaConfig,
+            consumerConfig,
             consumer,
             listener
         )
@@ -154,12 +150,12 @@ class CordaKafkaConsumerImplTest {
     fun testCloseWithDurationInvoked() {
         consumer = mock()
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
-            kafkaConfig,
+            consumerConfig,
             consumer,
             listener
         )
 
-        cordaKafkaConsumer.close(Duration.ZERO)
+        cordaKafkaConsumer.close()
         verify(consumer, times(1)).close(Duration.ZERO)
     }
 
@@ -168,7 +164,7 @@ class CordaKafkaConsumerImplTest {
         consumer = mock()
         doThrow(KafkaException()).whenever(consumer).close(any())
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
-            kafkaConfig,
+            consumerConfig,
             consumer,
             listener
         )
@@ -191,7 +187,7 @@ class CordaKafkaConsumerImplTest {
     fun testCommitOffsetsRetries() {
         consumer = mock()
         val cordaKafkaConsumer = CordaKafkaConsumerImpl<String, String>(
-            kafkaConfig,
+            consumerConfig,
             consumer,
             listener
         )
@@ -208,7 +204,7 @@ class CordaKafkaConsumerImplTest {
     fun testCommitOffsetsFatal() {
         consumer = mock()
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
-            kafkaConfig,
+            consumerConfig,
             consumer,
             listener
         )
@@ -226,7 +222,7 @@ class CordaKafkaConsumerImplTest {
     fun testSubscribe() {
         consumer = mock()
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
-            kafkaConfig,
+            consumerConfig,
             consumer,
             listener
         )
@@ -238,7 +234,7 @@ class CordaKafkaConsumerImplTest {
     fun testSubscribeNullListener() {
         consumer = mock()
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
-            kafkaConfig,
+            consumerConfig,
             consumer,
             null
         )
@@ -250,7 +246,7 @@ class CordaKafkaConsumerImplTest {
     fun testSubscribeRetries() {
         consumer = mock()
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
-            kafkaConfig,
+            consumerConfig,
             consumer,
             listener
         )
@@ -266,7 +262,7 @@ class CordaKafkaConsumerImplTest {
     fun testSubscribeFatal() {
         consumer = mock()
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
-            kafkaConfig,
+            consumerConfig,
             consumer,
             listener
         )
@@ -323,7 +319,7 @@ class CordaKafkaConsumerImplTest {
     fun testAssignInvokedFatal() {
         consumer = mock()
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
-            kafkaConfig,
+            consumerConfig,
             consumer,
             listener
         )
@@ -338,7 +334,7 @@ class CordaKafkaConsumerImplTest {
     fun testAssignmentInvokedFatal() {
         consumer = mock()
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
-            kafkaConfig,
+            consumerConfig,
             consumer,
             listener
         )
@@ -353,7 +349,7 @@ class CordaKafkaConsumerImplTest {
     fun testPositionInvokedFatal() {
         consumer = mock()
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
-            kafkaConfig,
+            consumerConfig,
             consumer,
             listener
         )
@@ -368,7 +364,7 @@ class CordaKafkaConsumerImplTest {
     fun testSeekInvokedFatal() {
         consumer = mock()
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
-            kafkaConfig,
+            consumerConfig,
             consumer,
             listener
         )
@@ -383,7 +379,7 @@ class CordaKafkaConsumerImplTest {
     fun testSeekToBeginningInvokedFatal() {
         consumer = mock()
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
-            kafkaConfig,
+            consumerConfig,
             consumer,
             listener
         )
@@ -398,7 +394,7 @@ class CordaKafkaConsumerImplTest {
     fun testBeginningOffsetsInvokedFatal() {
         consumer = mock()
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
-            kafkaConfig,
+            consumerConfig,
             consumer,
             listener
         )
@@ -413,7 +409,7 @@ class CordaKafkaConsumerImplTest {
     fun testEndOffsetsInvokedFatal() {
         consumer = mock()
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
-            kafkaConfig,
+            consumerConfig,
             consumer,
             listener
         )
@@ -428,7 +424,7 @@ class CordaKafkaConsumerImplTest {
     fun testResumeInvokedFatal() {
         consumer = mock()
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
-            kafkaConfig,
+            consumerConfig,
             consumer,
             listener
         )
@@ -443,7 +439,7 @@ class CordaKafkaConsumerImplTest {
     fun testPauseInvokedFatal() {
         consumer = mock()
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
-            kafkaConfig,
+            consumerConfig,
             consumer,
             listener
         )
@@ -458,7 +454,7 @@ class CordaKafkaConsumerImplTest {
     fun testPausedInvokedFatal() {
         consumer = mock()
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
-            kafkaConfig,
+            consumerConfig,
             consumer,
             listener
         )
@@ -473,7 +469,7 @@ class CordaKafkaConsumerImplTest {
     fun testGroupMetadataInvokedFatal() {
         consumer = mock()
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
-            kafkaConfig,
+            consumerConfig,
             consumer,
             listener
         )

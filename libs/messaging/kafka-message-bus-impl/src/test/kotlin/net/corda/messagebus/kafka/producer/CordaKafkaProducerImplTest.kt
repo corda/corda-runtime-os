@@ -1,7 +1,7 @@
 package net.corda.messagebus.kafka.producer
 
-import com.typesafe.config.Config
-import net.corda.libs.configuration.schema.messaging.TOPIC_PREFIX_PATH
+import net.corda.messagebus.api.configuration.ProducerConfig
+import net.corda.messagebus.api.constants.ProducerRoles
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.kafka.consumer.CordaKafkaConsumerImpl
@@ -30,10 +30,10 @@ import java.time.Duration
 
 class CordaKafkaProducerImplTest {
 
-    private val config: Config = mock()
+    private val config: ProducerConfig = ProducerConfig("clientId", 1, "prefix", ProducerRoles.PUBLISHER)
     private val producer: Producer<Any, Any> = mock()
     private val consumer: Consumer<Any, Any> = mock()
-    private val cordaConsumer: CordaKafkaConsumerImpl<*, *> = CordaKafkaConsumerImpl(config, consumer, null)
+    private val cordaConsumer: CordaKafkaConsumerImpl<*, *> = CordaKafkaConsumerImpl(mock(), consumer, null)
     private lateinit var cordaKafkaProducer: CordaKafkaProducerImpl
 
     private val record: CordaProducerRecord<Any, Any> = CordaProducerRecord("topic", "key", "value")
@@ -41,7 +41,6 @@ class CordaKafkaProducerImplTest {
     @BeforeEach
     fun setup() {
         doReturn(ConsumerGroupMetadata("")).whenever(consumer).groupMetadata()
-        doReturn("").whenever(config).getString(TOPIC_PREFIX_PATH)
         cordaKafkaProducer = CordaKafkaProducerImpl(config, producer)
     }
 

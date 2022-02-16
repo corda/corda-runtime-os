@@ -1,13 +1,11 @@
 package net.corda.messagebus.kafka.consumer.builder
 
-import com.typesafe.config.ConfigFactory
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.builder.MessageBusConsumerBuilder
-import net.corda.messagebus.kafka.config.ConfigResolverImpl
+import net.corda.messagebus.kafka.config.ConfigResolver
 import net.corda.messagebus.kafka.consumer.CordaKafkaConsumerImpl
 import net.corda.messagebus.kafka.serialization.CordaAvroDeserializerImpl
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
@@ -32,10 +30,6 @@ class MessageBusConsumerBuilderImpl @Activate constructor(
 
     companion object {
         private val log: Logger = contextLogger()
-
-        private const val GROUP_PATH = "group"
-        private const val CLIENT_ID_PATH = "clientId"
-        private const val TOPIC_PREFIX_PATH = "topicPrefix"
     }
 
     override fun <K : Any, V : Any> createConsumer(
@@ -46,8 +40,8 @@ class MessageBusConsumerBuilderImpl @Activate constructor(
         onSerializationError: (ByteArray) -> Unit,
         listener: CordaConsumerRebalanceListener?
     ): CordaConsumer<K, V> {
-        val resolver = ConfigResolverImpl(busConfig.factory)
-        val kafkaProperties = resolver.resolve(busConfig, consumerConfig.role, consumerConfig.toSmartConfig(busConfig.factory))
+        val resolver = ConfigResolver(busConfig.factory)
+        val kafkaProperties = resolver.resolve(busConfig, consumerConfig)
         return try {
             val consumer = createKafkaConsumer(kafkaProperties, kClazz, vClazz, onSerializationError)
             CordaKafkaConsumerImpl(consumerConfig, consumer, listener)
@@ -77,13 +71,5 @@ class MessageBusConsumerBuilderImpl @Activate constructor(
         } finally {
             Thread.currentThread().contextClassLoader = contextClassLoader
         }
-    }
-
-    private fun ConsumerConfig.toSmartConfig(smartConfigFactory: SmartConfigFactory): SmartConfig {
-        return smartConfigFactory.create(ConfigFactory.parseMap(mapOf(
-           GROUP_PATH to group,
-           CLIENT_ID_PATH to clientId,
-           TOPIC_PREFIX_PATH to topicPrefix
-        )))
     }
 }

@@ -6,18 +6,52 @@ package net.corda.messagebus.api.constants
  * constants here should reflect the paths that the config can be found in enforced/default config files for the various
  * bus implementations.
  */
-object Roles {
-    const val PUBSUB_CONSUMER = "pubsub.consumer"
-    const val COMPACTED_CONSUMER = "compacted.consumer"
-    const val DURABLE_CONSUMER = "durable.consumer"
-    const val DURABLE_PRODUCER = "durable.producer"
-    const val SAE_STATE_CONSUMER = "stateAndEvent.stateConsumer"
-    const val SAE_EVENT_CONSUMER = "stateAndEvent.eventConsumer"
-    const val SAE_PRODUCER = "stateAndEvent.producer"
-    const val EVENT_LOG_CONSUMER = "eventLog.consumer"
-    const val EVENT_LOG_PRODUCER = "eventLog.producer"
-    const val RPC_SENDER_CONSUMER = "rpcSender.consumer"
-    const val RPC_SENDER_PRODUCER = "rpcSender.producer"
-    const val RPC_RESPONDER_CONSUMER = "rpcResponder.consumer"
-    const val RPC_RESPONDER_PRODUCER = "rpcResponder.producer"
+enum class ConsumerRoles {
+    PUBSUB {
+        override val configPath = "pubsub.consumer"
+    },
+    COMPACTED {
+        override val configPath = "compacted.consumer"
+    },
+    DURABLE {
+        override val configPath = "durable.consumer"
+    },
+    SAE_STATE {
+        override val configPath = "stateAndEvent.stateConsumer"
+    },
+    SAE_EVENT {
+        override val configPath = "stateAndEvent.eventConsumer"
+    },
+    EVENT_LOG {
+        override val configPath = "eventLog.consumer"
+    },
+    RPC_SENDER {
+        override val configPath = "rpcSender.consumer"
+    },
+    RPC_RESPONDER {
+        override val configPath = "rpcResponder.consumer"
+    };
+    abstract val configPath: String
+}
+
+enum class ProducerRoles {
+    PUBLISHER {
+        override val configPath = "publisher"
+    },
+    DURABLE {
+        override val configPath = "durable.producer"
+    },
+    SAE_PRODUCER {
+        override val configPath = "stateAndEvent.producer"
+    },
+    EVENT_LOG {
+        override val configPath = "eventLog.producer"
+    },
+    RPC_SENDER {
+        override val configPath = "rpcSender.producer"
+    },
+    RPC_RESPONDER {
+        override val configPath = "rpcResponder.producer"
+    };
+    abstract val configPath: String
 }
