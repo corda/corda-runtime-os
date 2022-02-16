@@ -30,7 +30,6 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
 
 /**
  * Unit tests for [GroupPolicyProviderImpl]
@@ -61,10 +60,14 @@ class GroupPolicyProviderImplTest {
     val holdingIdentity3 = HoldingIdentity(alice.toString(), groupId2)
     val holdingIdentity4 = HoldingIdentity(bob.toString(), groupId2)
 
-    val cpiMetadata1 = mock<CPI.Metadata>().apply { doReturn(groupPolicy1).whenever(this).groupPolicy }
-    val cpiMetadata2 = mock<CPI.Metadata>().apply { doReturn(groupPolicy2).whenever(this).groupPolicy }
-    val cpiMetadata3 = mock<CPI.Metadata>().apply { doReturn(groupPolicy3).whenever(this).groupPolicy }
-    val cpiMetadata4 = mock<CPI.Metadata>().apply { doReturn(groupPolicy4).whenever(this).groupPolicy }
+    fun mockMetadata(resultGroupPolicy: String?) = mock<CPI.Metadata> {
+        on { groupPolicy } doReturn resultGroupPolicy
+    }
+
+    val cpiMetadata1 = mockMetadata(groupPolicy1)
+    val cpiMetadata2 = mockMetadata(groupPolicy2)
+    val cpiMetadata3 = mockMetadata(groupPolicy3)
+    val cpiMetadata4 = mockMetadata(groupPolicy4)
 
     val cpiIdentifier1: CPI.Identifier = mock()
     val cpiIdentifier2: CPI.Identifier = mock()
@@ -73,38 +76,50 @@ class GroupPolicyProviderImplTest {
 
     var virtualNodeListener: VirtualNodeInfoListener? = null
 
-    val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock<VirtualNodeInfoReadService>().apply {
-        doReturn(VirtualNodeInfo(holdingIdentity1, cpiIdentifier1)).whenever(this).get(eq(holdingIdentity1))
-        doReturn(VirtualNodeInfo(holdingIdentity2, cpiIdentifier2)).whenever(this).get(eq(holdingIdentity2))
-        doReturn(VirtualNodeInfo(holdingIdentity3, cpiIdentifier3)).whenever(this).get(eq(holdingIdentity3))
-        doReturn(VirtualNodeInfo(holdingIdentity4, cpiIdentifier4)).whenever(this).get(eq(holdingIdentity4))
-        doAnswer {
+    val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
+        on { get(eq(holdingIdentity1)) } doReturn VirtualNodeInfo(holdingIdentity1, cpiIdentifier1)
+        on { get(eq(holdingIdentity2)) } doReturn VirtualNodeInfo(holdingIdentity2, cpiIdentifier2)
+        on { get(eq(holdingIdentity3)) } doReturn VirtualNodeInfo(holdingIdentity3, cpiIdentifier3)
+        on { get(eq(holdingIdentity4)) } doReturn VirtualNodeInfo(holdingIdentity4, cpiIdentifier4)
+        on { registerCallback(any()) } doAnswer {
             virtualNodeListener = it.arguments[0] as VirtualNodeInfoListener
-            mock<AutoCloseable>()
+            mock()
         }
-            .whenever(this)
-            .registerCallback(any())
     }
 
-    val cpiInfoReader = mock<CpiInfoReadService>().apply {
-        doReturn(cpiMetadata1).whenever(this).get(cpiIdentifier1)
-        doReturn(cpiMetadata2).whenever(this).get(cpiIdentifier2)
-        doReturn(cpiMetadata3).whenever(this).get(cpiIdentifier3)
-        doReturn(cpiMetadata4).whenever(this).get(cpiIdentifier4)
+    val cpiInfoReader: CpiInfoReadService = mock {
+        on { get(cpiIdentifier1) } doReturn cpiMetadata1
+        on { get(cpiIdentifier2) } doReturn cpiMetadata2
+        on { get(cpiIdentifier3) } doReturn cpiMetadata3
+        on { get(cpiIdentifier4) } doReturn cpiMetadata4
     }
 
     var handler: LifecycleEventHandler? = null
 
-    val coordinator: LifecycleCoordinator = mock<LifecycleCoordinator>().apply {
-        doAnswer { handler?.processEvent(StartEvent(), this) }.whenever(this).start()
-        doAnswer { handler?.processEvent(StopEvent(), this) }.whenever(this).stop()
+    var coordinatorIsRunning = false
+    var coordinatorStatus = LifecycleStatus.DOWN
+    val coordinator: LifecycleCoordinator = mock {
+        on { start() } doAnswer {
+            coordinatorIsRunning = true
+            handler?.processEvent(StartEvent(), mock)
+        }
+        on { stop() } doAnswer {
+            coordinatorIsRunning = false
+            handler?.processEvent(StopEvent(), mock)
+        }
+        on { isRunning } doAnswer { coordinatorIsRunning }
+        on { updateStatus(any(), any()) } doAnswer { coordinatorStatus = it.arguments[0] as LifecycleStatus }
+        on { status } doAnswer { coordinatorStatus }
     }
-    val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>().apply {
-        doAnswer {
+    val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock {
+        on { createCoordinator(any(), any()) } doAnswer {
             handler = it.arguments[1] as LifecycleEventHandler
             coordinator
-        }.whenever(this)
-            .createCoordinator(any(), any())
+        }
+    }
+
+    fun registrationChange(status: LifecycleStatus = LifecycleStatus.UP) {
+        handler?.processEvent(RegistrationStatusChangeEvent(mock(), status), coordinator)
     }
 
     @BeforeEach
@@ -114,6 +129,11 @@ class GroupPolicyProviderImplTest {
             cpiInfoReader,
             lifecycleCoordinatorFactory
         )
+    }
+
+    fun startComponentAndDependencies() {
+        groupPolicyProvider.start()
+        registrationChange()
     }
 
     fun assertExpectedGroupPolicy(
@@ -129,7 +149,7 @@ class GroupPolicyProviderImplTest {
 
     @Test
     fun `Correct group policy is returned when CPI metadata contains group policy string and service has started`() {
-        groupPolicyProvider.start()
+        startComponentAndDependencies()
         assertExpectedGroupPolicy(
             groupPolicyProvider.getGroupPolicy(holdingIdentity1),
             groupId1,
@@ -156,8 +176,16 @@ class GroupPolicyProviderImplTest {
     }
 
     @Test
-    fun `Same group policy is returned if it has already been parsed`() {
+    fun `Group policy read fails if service isn't up`() {
         groupPolicyProvider.start()
+        assertThrows<CordaRuntimeException> {
+            groupPolicyProvider.getGroupPolicy(holdingIdentity1)
+        }
+    }
+
+    @Test
+    fun `Same group policy is returned if it has already been parsed`() {
+        startComponentAndDependencies()
         val result1 = groupPolicyProvider.getGroupPolicy(holdingIdentity1)
         val result2 = groupPolicyProvider.getGroupPolicy(holdingIdentity1)
 
@@ -166,10 +194,10 @@ class GroupPolicyProviderImplTest {
 
     @Test
     fun `Different group policy is returned if the service restarts`() {
-        groupPolicyProvider.start()
+        startComponentAndDependencies()
         val result1 = groupPolicyProvider.getGroupPolicy(holdingIdentity1)
         groupPolicyProvider.stop()
-        groupPolicyProvider.start()
+        startComponentAndDependencies()
         val result2 = groupPolicyProvider.getGroupPolicy(holdingIdentity1)
 
         assertNotEquals(result1, result2)
@@ -189,7 +217,8 @@ class GroupPolicyProviderImplTest {
     @Test
     fun `Cached group policy is updated when a holding identity updates their CPI`() {
         assertNull(virtualNodeListener)
-        groupPolicyProvider.start()
+        startComponentAndDependencies()
+        assertTrue(groupPolicyProvider.isRunning)
         assertNotNull(virtualNodeListener)
         val original = groupPolicyProvider.getGroupPolicy(holdingIdentity1)
         assertExpectedGroupPolicy(original, groupId1, testAttr1)
@@ -207,7 +236,7 @@ class GroupPolicyProviderImplTest {
     @Test
     fun `Group policy not yet cached is created when a holding identity updates their CPI`() {
         assertNull(virtualNodeListener)
-        groupPolicyProvider.start()
+        startComponentAndDependencies()
         assertNotNull(virtualNodeListener)
 
         virtualNodeListener?.onUpdate(
@@ -221,16 +250,12 @@ class GroupPolicyProviderImplTest {
 
     @Test
     fun `Component goes down when followed components go down and data can't be accessed`() {
-        groupPolicyProvider.start()
+        startComponentAndDependencies()
         assertTrue(groupPolicyProvider.isRunning)
         assertNotNull(handler)
 
-        handler?.processEvent(
-            RegistrationStatusChangeEvent(mock(), LifecycleStatus.DOWN),
-            coordinator
-        )
+        registrationChange(LifecycleStatus.DOWN)
 
-        assertFalse(groupPolicyProvider.isRunning)
         assertThrows<CordaRuntimeException> {
             groupPolicyProvider.getGroupPolicy(holdingIdentity1)
         }
@@ -238,18 +263,12 @@ class GroupPolicyProviderImplTest {
 
     @Test
     fun `Component goes down and then comes back up when followed components go down and up again`() {
-        groupPolicyProvider.start()
+        startComponentAndDependencies()
         assertTrue(groupPolicyProvider.isRunning)
         assertNotNull(handler)
 
-        handler?.processEvent(
-            RegistrationStatusChangeEvent(mock(), LifecycleStatus.DOWN),
-            coordinator
-        )
-        handler?.processEvent(
-            RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP),
-            coordinator
-        )
+        registrationChange(LifecycleStatus.DOWN)
+        registrationChange()
 
         assertTrue(groupPolicyProvider.isRunning)
         assertExpectedGroupPolicy(
