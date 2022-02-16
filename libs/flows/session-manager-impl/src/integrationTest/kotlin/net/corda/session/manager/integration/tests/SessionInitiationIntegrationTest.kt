@@ -62,6 +62,38 @@ class SessionManagerIntegrationTest {
     }
 
     @Test
+    fun `Alice sends Init, Bob initially confirms and then sends error, duplicate init arrives to bob`() {
+        val (alice, bob) = SessionPartyFactory().createSessionParties(testSmartConfig)
+
+        //send init
+        alice.processNewOutgoingMessage(SessionMessageType.INIT, sendMessages = true)
+        alice.assertStatus(SessionStateType.CREATED)
+
+        //duplicate init
+        bob.duplicateMessage(0)
+
+        //bob process init and confirm session
+        bob.processNextReceivedMessage(sendMessages = true)
+        bob.assertStatus(SessionStateType.CONFIRMED)
+
+        bob.processNewOutgoingMessage(SessionMessageType.ERROR, sendMessages = true)
+        bob.assertStatus(SessionStateType.ERROR)
+
+        bob.processNextReceivedMessage(sendMessages = true)
+        bob.assertStatus(SessionStateType.ERROR)
+
+        //alice receive ack, error and ack
+        alice.processNextReceivedMessage(sendMessages = true)
+        alice.assertStatus(SessionStateType.CONFIRMED)
+
+        alice.processNextReceivedMessage(sendMessages = true)
+        alice.assertStatus(SessionStateType.ERROR)
+
+        alice.processNextReceivedMessage(sendMessages = true)
+        alice.assertStatus(SessionStateType.ERROR)
+    }
+
+    @Test
     fun `Alice initiates session with Bob, then sends error and receives ack for init`() {
         val (alice, bob) = SessionPartyFactory().createSessionParties(testSmartConfig)
 
