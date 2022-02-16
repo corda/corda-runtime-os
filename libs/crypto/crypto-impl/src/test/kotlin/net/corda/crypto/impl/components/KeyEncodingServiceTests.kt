@@ -65,7 +65,7 @@ class KeyEncodingServiceTests {
 
     @ParameterizedTest
     @MethodSource("signatureSchemes")
-    @Timeout(30)
+    @Timeout(60)
     @Suppress("MaxLineLength")
     fun `Should convert public key to PEM and backand and still to able to use for verification for all supported schemes`(
         signatureScheme: SignatureScheme
@@ -83,7 +83,7 @@ class KeyEncodingServiceTests {
 
     @ParameterizedTest
     @MethodSource("signatureSchemes")
-    @Timeout(30)
+    @Timeout(60)
     @Suppress("MaxLineLength")
     fun `Should convert public key to byte array and back and and still to able to use for verification for all supported schemes`(
         signatureScheme: SignatureScheme
@@ -99,7 +99,7 @@ class KeyEncodingServiceTests {
 
     @ParameterizedTest
     @MethodSource("signatureSchemes")
-    @Timeout(30)
+    @Timeout(60)
     fun `Should round trip encode CompositeKey to byte array with keys for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -118,7 +118,7 @@ class KeyEncodingServiceTests {
 
     @ParameterizedTest
     @MethodSource("signatureSchemes")
-    @Timeout(30)
+    @Timeout(60)
     fun `Should round trip encode CompositeKey to PEM with keys for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -137,7 +137,7 @@ class KeyEncodingServiceTests {
 
     @ParameterizedTest
     @MethodSource("signatureSchemes")
-    @Timeout(30)
+    @Timeout(60)
     fun `Should round trip encode CompositeKey with weighting to byte array with keys for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -161,7 +161,7 @@ class KeyEncodingServiceTests {
 
     @ParameterizedTest
     @MethodSource("signatureSchemes")
-    @Timeout(30)
+    @Timeout(60)
     fun `Should round trip encode CompositeKey with weighting to PEM with keys for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -186,7 +186,7 @@ class KeyEncodingServiceTests {
     @Suppress("TooGenericExceptionThrown")
     @ParameterizedTest
     @MethodSource("signatureSchemes")
-    @Timeout(30)
+    @Timeout(60)
     fun `Test save to keystore with keys for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
