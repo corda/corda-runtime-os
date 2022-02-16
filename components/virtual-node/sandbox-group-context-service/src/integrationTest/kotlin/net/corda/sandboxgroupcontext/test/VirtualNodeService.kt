@@ -5,12 +5,12 @@ import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
-import net.corda.testing.sandboxes.CpiLoaderService
+import net.corda.testing.sandboxes.CpiLoader
+import net.corda.testing.sandboxes.VirtualNodeLoader
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.write.VirtualNodeInfoWriteService
 import org.junit.jupiter.api.fail
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
@@ -21,10 +21,10 @@ import org.osgi.service.component.annotations.Reference
 @Component(service = [ VirtualNodeService::class ])
 class VirtualNodeService @Activate constructor(
     @Reference
-    private val cpiLoader: CpiLoaderService,
+    private val cpiLoader: CpiLoader,
 
     @Reference
-    private val vnodeInfoWriter: VirtualNodeInfoWriteService,
+    private val virtualNodeLoader: VirtualNodeLoader,
 
     @Reference
     private val sandboxGroupContextComponent: SandboxGroupContextComponent
@@ -35,14 +35,12 @@ class VirtualNodeService @Activate constructor(
         sandboxGroupContextComponent.close()
     }
 
-    fun loadCPI(resourceName: String, holdingIdentity: HoldingIdentity): VirtualNodeInfo {
-        val cpi = cpiLoader.loadCPI(resourceName)
-        return VirtualNodeInfo(holdingIdentity, cpi.metadata.id)
-            .also(vnodeInfoWriter::put)
+    fun loadVirtualNode(resourceName: String, holdingIdentity: HoldingIdentity): VirtualNodeInfo {
+       return virtualNodeLoader.loadVirtualNode(resourceName, holdingIdentity)
     }
 
-    fun unloadCPI(virtualNodeInfo: VirtualNodeInfo) {
-        vnodeInfoWriter.remove(virtualNodeInfo)
+    fun unloadVirtualNode(virtualNodeInfo: VirtualNodeInfo) {
+        virtualNodeLoader.unloadVirtualNode(virtualNodeInfo)
     }
 
     fun getOrCreateSandbox(virtualNodeInfo: VirtualNodeInfo): SandboxGroupContext {

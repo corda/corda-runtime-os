@@ -9,7 +9,7 @@ import net.corda.install.InstallService
 import net.corda.install.InstallServiceListener
 import net.corda.packaging.CPI
 import net.corda.packaging.CPK
-import net.corda.testing.sandboxes.CpiLoaderService
+import net.corda.testing.sandboxes.CpiLoader
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.crypto.SecureHash
 import org.osgi.framework.BundleContext
@@ -21,14 +21,14 @@ import org.osgi.service.component.propertytypes.ServiceRanking
 
 @Suppress("unused")
 @Component(
-    service = [ InstallService::class, CpiLoaderService::class ],
+    service = [ InstallService::class, CpiLoader::class ],
     configurationPolicy = REQUIRE
 )
 @ServiceRanking(Int.MAX_VALUE)
 class InstallServiceImpl @Activate constructor(
     bundleContext: BundleContext,
     properties: Map<String, Any?>
-) : InstallService, CpiLoaderService {
+) : InstallService, CpiLoader {
     companion object {
         const val BASE_DIRECTORY_KEY = "baseDirectory"
         const val TEST_BUNDLE_KEY = "testBundle"
@@ -42,8 +42,6 @@ class InstallServiceImpl @Activate constructor(
     private val testBundle = (properties[TEST_BUNDLE_KEY] as? String)?.let(bundleContext::getBundle)
         ?: throw IllegalStateException("Test bundle not found")
 
-    private val resourceLookup = mutableMapOf<CPI.Identifier, String>()
-    private val cpiResources = mutableMapOf<String, CPI>()
     private val cpis = ConcurrentHashMap<CPI.Identifier, CPI>()
     private val cpks: Collection<CPK>
         get() = cpis.values.flatMap(CPI::cpks)
@@ -60,18 +58,11 @@ class InstallServiceImpl @Activate constructor(
     }
 
     override fun loadCPI(resourceName: String): CPI {
-        return cpiResources.computeIfAbsent(resourceName) { key ->
-            getInputStream(key).buffered().use { input ->
-                CPI.from(input, expansionLocation = cpkDir, verifySignature = true)
-            }.let { newCpi ->
-                val cpiId = newCpi.metadata.id
-                cpis.putIfAbsent(cpiId, newCpi)?.also {
-                    newCpi.close()
-                } ?: newCpi.also {
-                    // Also register this resource by CPI Id.
-                    resourceLookup[cpiId] = resourceName
-                }
-            }
+        return getInputStream(resourceName).buffered().use { input ->
+            CPI.from(input, expansionLocation = cpkDir, verifySignature = true)
+        }.let { newCpi ->
+            val cpiId = newCpi.metadata.id
+            cpis.putIfAbsent(cpiId, newCpi)?.also { newCpi.close() } ?: newCpi
         }
     }
 
@@ -81,10 +72,7 @@ class InstallServiceImpl @Activate constructor(
 
     override fun remove(id: CPI.Identifier) {
         logger.info("Removing CPI {}", id)
-        cpis.remove(id)?.also { cpi ->
-            resourceLookup.remove(id)?.also(cpiResources::remove)
-            cpi.close()
-        }
+        cpis.remove(id)?.close()
     }
 
     override fun get(id: CPI.Identifier): CompletableFuture<CPI?> {

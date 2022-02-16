@@ -2,19 +2,19 @@ package net.corda.example.vnode
 
 import net.corda.flow.manager.FlowSandboxService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.testing.sandboxes.CpiLoaderService
+import net.corda.testing.sandboxes.CpiLoader
+import net.corda.testing.sandboxes.VirtualNodeLoader
 import net.corda.v5.base.util.loggerFor
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.write.VirtualNodeInfoWriteService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 interface VNodeService {
-    fun loadCPI(resourceName: String, holdingIdentity: HoldingIdentity): VirtualNodeInfo
+    fun loadVirtualNode(resourceName: String, holdingIdentity: HoldingIdentity): VirtualNodeInfo
     fun getOrCreateSandbox(holdingIdentity: HoldingIdentity): SandboxGroupContext
-    fun unloadCPI(virtualNodeInfo: VirtualNodeInfo)
+    fun unloadVirtualNode(virtualNodeInfo: VirtualNodeInfo)
 }
 
 @Suppress("unused")
@@ -24,24 +24,23 @@ class VNodeServiceImpl @Activate constructor(
     private val flowSandboxService: FlowSandboxService,
 
     @Reference
-    private val loaderService: CpiLoaderService,
+    private val cpiLoader: CpiLoader,
 
     @Reference
-    private val vnodeInfoWriter: VirtualNodeInfoWriteService
+    private val virtualNodeLoader: VirtualNodeLoader
 ) : VNodeService {
     private val logger = loggerFor<VNodeService>()
 
-    override fun loadCPI(resourceName: String, holdingIdentity: HoldingIdentity): VirtualNodeInfo {
-        val cpi = loaderService.loadCPI(resourceName)
-        return VirtualNodeInfo(holdingIdentity, cpi.metadata.id)
-            .also(vnodeInfoWriter::put)
+    override fun loadVirtualNode(resourceName: String, holdingIdentity: HoldingIdentity): VirtualNodeInfo {
+        return virtualNodeLoader.loadVirtualNode(resourceName, holdingIdentity)
     }
 
-    override fun unloadCPI(virtualNodeInfo: VirtualNodeInfo) {
-        vnodeInfoWriter.remove(virtualNodeInfo)
-        val cpi = loaderService.get(virtualNodeInfo.cpiIdentifier).get()
+    override fun unloadVirtualNode(virtualNodeInfo: VirtualNodeInfo) {
+        val cpi = cpiLoader.get(virtualNodeInfo.cpiIdentifier).get()
             ?: throw IllegalStateException("No such CPI ${virtualNodeInfo.cpiIdentifier}")
-        cpi.use(loaderService::unloadCPI)
+        virtualNodeLoader.unloadVirtualNode(virtualNodeInfo)
+        virtualNodeLoader.forgetCPI(cpi.metadata.id)
+        cpi.use(cpiLoader::unloadCPI)
     }
 
     override fun getOrCreateSandbox(holdingIdentity: HoldingIdentity): SandboxGroupContext {

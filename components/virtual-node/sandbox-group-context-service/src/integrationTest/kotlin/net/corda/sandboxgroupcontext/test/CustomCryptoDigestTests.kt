@@ -58,7 +58,7 @@ class CustomCryptoDigestTests {
     private val vnodes = mutableMapOf<SandboxGroupContext, VirtualNodeInfo>()
 
     private fun loadAndInstantiate(resourceName: String): SandboxGroupContext {
-        val vnodeInfo = virtualNode.loadCPI(resourceName, generateHoldingIdentity())
+        val vnodeInfo = virtualNode.loadVirtualNode(resourceName, generateHoldingIdentity())
         return virtualNode.getOrCreateSandbox(vnodeInfo).also { ctx ->
             vnodes[ctx] = vnodeInfo
         }
@@ -66,7 +66,7 @@ class CustomCryptoDigestTests {
 
     private fun unloadSandbox(sandboxGroupContext: SandboxGroupContext) {
         (sandboxGroupContext as? AutoCloseable)?.close()
-        vnodes.remove(sandboxGroupContext)?.let(virtualNode::unloadCPI)
+        vnodes.remove(sandboxGroupContext)?.let(virtualNode::unloadVirtualNode)
     }
 
     @Test

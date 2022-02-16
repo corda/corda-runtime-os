@@ -62,7 +62,6 @@ dependencies {
 
     integrationTestImplementation 'net.corda:corda-application'
     integrationTestImplementation project(':testing:sandboxes')
-    integrationTestImplementation project(':components:virtual-node:virtual-node-info-write-service')
     integrationTestRuntimeOnly project(':libs:crypto:crypto-impl')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:inmemory-messaging-impl')
