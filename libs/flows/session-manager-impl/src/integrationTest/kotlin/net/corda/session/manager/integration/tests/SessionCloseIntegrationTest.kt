@@ -48,6 +48,52 @@ class SessionCloseIntegrationTest {
         alice.assertLastReceivedSeqNum(1)
     }
 
+
+    @Test
+    fun `Full session send and receive with close, ack for alices close is dropped`() {
+        val (alice, bob) = initiateNewSession(testSmartConfig)
+
+        //alice send data
+        alice.processNewOutgoingMessage(SessionMessageType.DATA, sendMessages = true)
+        //bob receive data and send ack
+        bob.processNextReceivedMessage(sendMessages = true)
+        //process ack
+        alice.processNextReceivedMessage()
+
+        alice.assertAllMessagesDelivered()
+        bob.assertAllMessagesDelivered()
+
+        //alice send close
+        alice.processNewOutgoingMessage(SessionMessageType.CLOSE, sendMessages = true)
+        alice.assertStatus(SessionStateType.CLOSING)
+
+        //bob receive Close and send ack to alice
+        bob.dropNextInboundMessage()
+        //nothing to process
+        bob.processNextReceivedMessage(sendMessages = true)
+        bob.assertStatus(SessionStateType.CONFIRMED)
+
+        //alice receives nothing
+        assertThat(alice.getInboundMessageSize()).isEqualTo(0)
+        alice.assertStatus(SessionStateType.CLOSING)
+
+        //bob send close to alice
+        bob.processNewOutgoingMessage(SessionMessageType.CLOSE, sendMessages = true)
+        bob.assertStatus(SessionStateType.CLOSING)
+        //alice receive close and send ack to bob
+        alice.processNextReceivedMessage(sendMessages = true)
+        alice.assertStatus(SessionStateType.WAIT_FOR_FINAL_ACK)
+
+        //bob process ack
+        bob.processNextReceivedMessage()
+        bob.assertStatus(SessionStateType.CLOSING)
+
+        alice.assertLastSentSeqNum(3)
+        bob.assertLastReceivedSeqNum(2)
+        bob.assertLastSentSeqNum(1)
+        alice.assertLastReceivedSeqNum(1)
+    }
+
     @Test
     fun `Simultaneous close`() {
         val (alice, bob) = initiateNewSession(testSmartConfig)
