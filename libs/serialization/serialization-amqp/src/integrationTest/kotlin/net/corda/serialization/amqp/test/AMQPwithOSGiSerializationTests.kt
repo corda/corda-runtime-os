@@ -11,7 +11,7 @@ import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
-import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
+import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.utilities.copyTo
 import net.corda.utilities.div
 import net.corda.utilities.reflection.packageName_
@@ -47,12 +47,12 @@ class AMQPwithOSGiSerializationTests {
 
     companion object {
         @RegisterExtension
-        private val lifecycle = AllTestsLifecycle()
+        private val lifecycle = EachTestLifecycle()
 
         @InjectService(timeout = 1000)
         lateinit var sandboxSetup: SandboxSetup
 
-        lateinit var sandboxFactory: SandboxFactory
+        private lateinit var sandboxFactory: SandboxFactory
 
         @BeforeAll
         @JvmStatic

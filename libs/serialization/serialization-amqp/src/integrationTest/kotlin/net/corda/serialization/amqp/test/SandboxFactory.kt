@@ -5,7 +5,6 @@ import net.corda.sandbox.SandboxGroup
 import net.corda.testing.sandboxes.CpiLoader
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 
 @Component(service = [ SandboxFactory::class ])
@@ -15,12 +14,6 @@ class SandboxFactory @Activate constructor(
     @Reference
     private val sandboxCreationService: SandboxCreationService
 ) {
-    @Suppress("unused")
-    @Deactivate
-    fun done() {
-        cpiLoader.stop()
-    }
-
     fun loadSandboxGroup(resourceName: String): SandboxGroup {
         return cpiLoader.loadCPI(resourceName).let { cpi ->
             sandboxCreationService.createSandboxGroup(cpi.cpks)

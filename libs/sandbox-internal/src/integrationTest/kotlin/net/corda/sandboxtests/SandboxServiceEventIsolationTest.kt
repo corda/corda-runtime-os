@@ -3,7 +3,7 @@ package net.corda.sandboxtests
 import java.nio.file.Path
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
-import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
+import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -22,12 +22,12 @@ import org.osgi.test.junit5.service.ServiceExtension
 class SandboxServiceEventIsolationTest {
     companion object {
         @RegisterExtension
-        private val lifecycle = EachTestLifecycle()
+        private val lifecycle = AllTestsLifecycle()
 
         @InjectService(timeout = 1000)
         lateinit var sandboxSetup: SandboxSetup
 
-        lateinit var sandboxFactory: SandboxFactory
+        private lateinit var sandboxFactory: SandboxFactory
 
         @Suppress("unused")
         @JvmStatic
