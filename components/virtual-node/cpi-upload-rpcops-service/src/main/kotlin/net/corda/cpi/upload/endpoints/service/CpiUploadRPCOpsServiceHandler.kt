@@ -104,16 +104,12 @@ class CpiUploadRPCOpsServiceHandler(
         }
     }
 
+    // We only receive this event when we all keys are available as per [registerComponentForUpdates]
     private fun onConfigChangedEvent(
         event: ConfigChangedEvent,
         coordinator: LifecycleCoordinator
     ) {
         log.info("CPI Upload RPCOpsServiceHandler event - config changed")
-
-        if (!event.config.containsKey(ConfigKeys.RPC_CONFIG) || !event.config.containsKey(ConfigKeys.BOOT_CONFIG)) {
-            log.info("CPI Upload RPCOpsServiceHandler event - config changed - only have keys  ${event.config.keys}")
-            return
-        }
 
         // RPC_CONFIG is not currently being used (in `CpiUploadManagerImpl`).
         val rpcConfig = event.config[ConfigKeys.RPC_CONFIG]?.also { previousRpcConfig = it } ?: previousRpcConfig
