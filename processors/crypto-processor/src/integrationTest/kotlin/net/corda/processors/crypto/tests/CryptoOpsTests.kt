@@ -132,7 +132,7 @@ class CryptoOpsTests {
     }
 
     @Test
-    @Timeout(60)
+    @Timeout(120)
     fun `Should be able to use crypto operations`() {
         run(::`Should be able to get supported schemes for all categories`)
         val ledgerKeyAlias = UUID.randomUUID().toString()
