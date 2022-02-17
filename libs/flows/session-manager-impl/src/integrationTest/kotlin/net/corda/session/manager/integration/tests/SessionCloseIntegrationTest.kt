@@ -19,9 +19,11 @@ import java.time.Instant
 class SessionCloseIntegrationTest {
 
     private companion object {
-        private const val testResendWindow = 5000L
+        private const val FIVE_SECONDS = 5000L
+        private const val THIRTY_SECONDS = 30000L
         private val testConfig = ConfigFactory.empty()
-            .withValue(FlowConfig.SESSION_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(testResendWindow))
+            .withValue(FlowConfig.SESSION_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(FIVE_SECONDS))
+            .withValue(FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(THIRTY_SECONDS))
         private val configFactory = SmartConfigFactory.create(testConfig)
         private val testSmartConfig = configFactory.create(testConfig)
     }
@@ -178,7 +180,7 @@ class SessionCloseIntegrationTest {
         alice.processNewOutgoingMessage(SessionMessageType.CLOSE, sendMessages = true)
         //bob loses data messages
         bob.dropInboundMessage(0)
-        alice.sendMessages(Instant.now().plusMillis(testResendWindow)) //Bob inbound queue is now CLOSE, DATA, CLOSE
+        alice.sendMessages(Instant.now().plusMillis(FIVE_SECONDS)) //Bob inbound queue is now CLOSE, DATA, CLOSE
 
         bob.processAllReceivedMessages(sendMessages = true)
 

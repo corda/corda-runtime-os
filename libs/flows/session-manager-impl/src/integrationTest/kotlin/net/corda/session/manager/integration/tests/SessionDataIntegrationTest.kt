@@ -20,6 +20,8 @@ class SessionDataIntegrationTest {
 
     private companion object {
         private const val testResendWindow = 5000L
+        private const val FIVE_SECONDS = 5000L
+        private const val THIRTY_SECONDS = 30000L
         private val testConfig = ConfigFactory.empty()
             .withValue(FlowConfig.SESSION_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(testResendWindow))
         private val configFactory = SmartConfigFactory.create(testConfig)
