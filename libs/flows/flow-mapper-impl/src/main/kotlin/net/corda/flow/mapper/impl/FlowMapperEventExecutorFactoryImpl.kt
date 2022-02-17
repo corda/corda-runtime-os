@@ -16,11 +16,12 @@ import net.corda.flow.mapper.impl.executor.SessionInitExecutor
 import net.corda.flow.mapper.impl.executor.StartRPCFlowExecutor
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import org.osgi.service.component.annotations.Component
+import java.time.Instant
 
 @Component(service = [FlowMapperEventExecutorFactory::class])
 class FlowMapperEventExecutorFactoryImpl : FlowMapperEventExecutorFactory {
 
-    override fun create(eventKey: String, flowMapperEvent: FlowMapperEvent, state: FlowMapperState?):
+    override fun create(eventKey: String, flowMapperEvent: FlowMapperEvent, state: FlowMapperState?, instant: Instant):
             FlowMapperEventExecutor {
         return when (val sessionEvent = flowMapperEvent.payload) {
             is SessionEvent -> {
@@ -28,7 +29,7 @@ class FlowMapperEventExecutorFactoryImpl : FlowMapperEventExecutorFactory {
                 if (eventPayload is SessionInit) {
                     SessionInitExecutor(eventKey, sessionEvent, eventPayload, state)
                 } else {
-                    SessionEventExecutor(eventKey, sessionEvent, state)
+                    SessionEventExecutor(eventKey, sessionEvent, state, instant)
                 }
             }
             is StartRPCFlow -> StartRPCFlowExecutor(eventKey, FLOW_EVENT_TOPIC, sessionEvent, state)
