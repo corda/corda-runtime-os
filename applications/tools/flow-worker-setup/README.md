@@ -15,7 +15,8 @@ the current version assumes kafka is running on localhost:9092
 - *PublishConfig* - publishes configurations sections from a file to the config topic. The file is passed in via the
   `--config` argument
 - *SetupVirtualNode* - Publishes the vNode, CPI and CPK meta data onto Kafka. The `--cpiDir` specifies the folder where 
-the CBP is located
+  the CBP is located. There is also an optional parameter `--cpiDockerDir` that will change the config for where the flow 
+  worker will look for the CPI information.
 - *StartFlow* - Publishes a Start Flow event to kafka, at the moment this is hard coded to the hello world example app
 
 ## Usage
