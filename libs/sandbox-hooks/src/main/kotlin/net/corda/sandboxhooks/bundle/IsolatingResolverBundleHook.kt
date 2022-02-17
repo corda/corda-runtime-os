@@ -37,18 +37,20 @@ internal class IsolatingResolverBundleHook(private val sandboxService: SandboxCo
     override fun filterMatches(requirement: BundleRequirement, candidates: MutableCollection<BundleCapability>) {
         val candidatesFoundInInitiatingSandbox = mutableListOf<BundleCapability>()
 
-        val candidatesToRemove = candidates.filter { candidate ->
+        val candidatesToRemove = candidates.filterNotTo(HashSet()) { candidate ->
             if (sandboxService.areInSameSandbox(requirement.revision.bundle, candidate.revision.bundle)) {
                 // Initiating bundle and candidate are in the same sandbox.
                 candidatesFoundInInitiatingSandbox.add(candidate)
             }
 
-            !sandboxService.hasVisibility(requirement.revision.bundle, candidate.revision.bundle)
+            sandboxService.hasVisibility(requirement.revision.bundle, candidate.revision.bundle)
         }
 
         // If any matches were found in the same sandbox, we remove all other matches.
         if (candidatesFoundInInitiatingSandbox.isNotEmpty()) {
-            val candidatesNotFoundInOwnSandbox = candidates.filterNot { candidate -> candidate in candidatesFoundInInitiatingSandbox }
+            val candidatesNotFoundInOwnSandbox = candidates.filterNotTo(HashSet()) { candidate ->
+                candidate in candidatesFoundInInitiatingSandbox
+            }
             candidates.removeAll(candidatesNotFoundInOwnSandbox)
         } else {
             candidates.removeAll(candidatesToRemove)
