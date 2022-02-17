@@ -97,10 +97,10 @@ class SessionManagerImpl : SessionManager {
         val instantInMillis = instant.toEpochMilli()
         val messageResendWindow = config.getLong(SESSION_MESSAGE_RESEND_WINDOW)
         val lastReceivedMessageTime = sessionState.lastReceivedMessageTime
-        val lastSentMessageTime = sessionState.lastSentMessageTime
         val sessionId = sessionState.sessionId
+
         val sessionTimeoutTimestamp = lastReceivedMessageTime + config.getLong(SESSION_HEARTBEAT_TIMEOUT_WINDOW)
-        val scheduledHeartbeatTimestamp = lastSentMessageTime + messageResendWindow
+        val scheduledHeartbeatTimestamp = sessionState.lastSentMessageTime + messageResendWindow
 
         if (instantInMillis > sessionTimeoutTimestamp) {
             //send an error if the session has timed out
@@ -108,7 +108,7 @@ class SessionManagerImpl : SessionManager {
             messagesToReturn.add(
                 generateErrorEvent(
                     sessionId,
-                    "Session has timed out. No Heartbeat received since $lastReceivedMessageTime",
+                    "Session has timed out. No messages received since $lastReceivedMessageTime",
                     "SessionTimeout-Heartbeat",
                     instant
                 )
