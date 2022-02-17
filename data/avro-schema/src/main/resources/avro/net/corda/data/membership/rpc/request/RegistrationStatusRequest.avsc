@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "RegistrationStatusRequest",
+  "namespace": "net.corda.data.membership.rpc.request",
+  "doc": "Request to check the status of the registration process.",
+  "fields": [
+    {
+      "name": "virtualNodeId",
+      "doc": "ID of the virtual node whose registration status we want to check.",
+      "type": "string"
+    }
+  ]
+}
