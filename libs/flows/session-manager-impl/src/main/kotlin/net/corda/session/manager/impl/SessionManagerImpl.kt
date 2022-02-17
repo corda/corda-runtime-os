@@ -71,7 +71,7 @@ class SessionManagerImpl : SessionManager {
         clearAcksErrorsAndIncreaseTimestamps(sessionState, instantInMillis, messageResendWindow)
 
         //add heartbeat if no messages to send, error session if no heartbeat received within timeout
-        handleHeartBeat(sessionState, config, instant, messagesToReturn)
+        handleHearbeat(sessionState, config, instant, messagesToReturn)
 
         if (messagesToReturn.isNotEmpty()) {
             sessionState.lastSentMessageTime = instantInMillis
@@ -88,7 +88,7 @@ class SessionManagerImpl : SessionManager {
      * @param instant for timestamps of new messages
      * @param messagesToReturn add any new messages to send to this list
      */
-    private fun handleHeartBeat(
+    private fun handleHearbeat(
         sessionState: SessionState,
         config: SmartConfig,
         instant: Instant,
