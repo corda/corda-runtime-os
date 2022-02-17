@@ -104,7 +104,7 @@ class SessionCloseIntegrationTest {
         alice.assertStatus(SessionStateType.CLOSING)
         bob.assertStatus(SessionStateType.CLOSING)
 
-        //bob receive Close and send ack back aswell as resend close
+        //bob receive Close and send ack back as well as resend close
         bob.processNextReceivedMessage(sendMessages = true)
         //alice receive close and send ack back, also resend close to bob as ack not yet received
         alice.processNextReceivedMessage(sendMessages = true)
