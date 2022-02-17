@@ -3,8 +3,8 @@ package net.corda.p2p.linkmanager.utilities
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
-import net.corda.p2p.linkmanager.IdentityDataForwarder
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
+import net.corda.p2p.linkmanager.NetworkMapListener
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Assertions
 import org.mockito.kotlin.mock
@@ -78,11 +78,7 @@ class MockNetworkMap(nodes: List<LinkManagerNetworkMap.HoldingIdentity>) {
                 return LinkManagerNetworkMap.NetworkType.CORDA_5
             }
 
-            override fun getCertificates(groupId: String): List<String>? {
-                return emptyList()
-            }
-
-            override fun registerDataForwarder(forwarder: IdentityDataForwarder) {
+            override fun registerListener(networkMapListener: NetworkMapListener) {
                 // Do nothing
             }
 

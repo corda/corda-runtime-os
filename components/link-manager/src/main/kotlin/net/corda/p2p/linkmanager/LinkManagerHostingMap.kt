@@ -11,6 +11,4 @@ import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 interface LinkManagerHostingMap : LifecycleWithDominoTile {
 
     fun isHostedLocally(identity: LinkManagerNetworkMap.HoldingIdentity): Boolean
-
-    fun registerDataForwarder(forwarder: IdentityDataForwarder)
 }

@@ -14,6 +14,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.GatewayTruststore
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_TRUSTSTORES
+import net.corda.v5.base.util.contextLogger
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
@@ -25,11 +26,10 @@ internal class TrustStoresPublisher(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     configuration: SmartConfig,
     instanceId: Int,
-    private val linkManagerHostingMap: LinkManagerHostingMap,
-    private val linkManagerNetworkMap: LinkManagerNetworkMap,
-) : LifecycleWithDominoTile, IdentityDataForwarder {
+) : LifecycleWithDominoTile, NetworkMapListener {
 
     companion object {
+        val logger = contextLogger()
         private const val CURRENT_DATA_READER_GROUP_NAME = "linkmanager_truststore_reader"
         private const val MISSING_DATA_WRITER_GORUP_NAME = "linkmanager_truststore_writer"
     }
@@ -91,6 +91,13 @@ internal class TrustStoresPublisher(
         configuration,
     )
 
+    override fun groupAdded(groupInfo: NetworkMapListener.GroupInfo) {
+        val groupId = groupInfo.groupId
+        val certificates = groupInfo.trustedCertificates
+
+        publishGroupIfNeeded(groupId, certificates)
+    }
+
     override val dominoTile = DominoTile(
         this.javaClass.simpleName,
         lifecycleCoordinatorFactory,
@@ -98,11 +105,6 @@ internal class TrustStoresPublisher(
         managedChildren = listOf(
             publisher.dominoTile,
         ),
-        dependentChildren = listOf(
-            linkManagerNetworkMap.dominoTile,
-            linkManagerHostingMap.dominoTile,
-            publisher.dominoTile,
-        )
     )
 
     fun createResources(resourcesHolder: ResourcesHolder): CompletableFuture<Unit> {
@@ -112,15 +114,5 @@ internal class TrustStoresPublisher(
         subscription.start()
 
         return complete
-    }
-
-    override fun identityAdded(identity: LinkManagerNetworkMap.HoldingIdentity) {
-        if (!linkManagerHostingMap.isHostedLocally(identity)) {
-            return
-        }
-        val groupId = identity.groupId
-        val certificates = linkManagerNetworkMap.getCertificates(groupId) ?: return
-
-        publishGroupIfNeeded(groupId, certificates)
     }
 }

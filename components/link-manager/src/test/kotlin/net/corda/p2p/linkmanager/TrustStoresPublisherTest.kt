@@ -3,9 +3,7 @@ package net.corda.p2p.linkmanager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEventHandler
-import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher
@@ -15,6 +13,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.GatewayTruststore
+import net.corda.p2p.NetworkType
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_TRUSTSTORES
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
@@ -67,28 +66,12 @@ class TrustStoresPublisherTest {
         } doReturn publisher
     }
 
-    private val localIdentity = LinkManagerNetworkMap.HoldingIdentity(
-        "local",
-        "groupOne",
-    )
-    private val remoteIdentity = LinkManagerNetworkMap.HoldingIdentity(
-        "remote",
-        "groupTwo",
-    )
-    private val tile = mock<DominoTile> {
-        on { name } doReturn LifecycleCoordinatorName("name")
-    }
-    private val linkManagerHostingMap = mock<LinkManagerHostingMap> {
-        on { isHostedLocally(localIdentity) } doReturn true
-        on { isHostedLocally(remoteIdentity) } doReturn false
-        on { dominoTile } doReturn tile
-    }
-
     private val certificates = listOf("one", "two")
-    private val linkManagerNetworkMap = mock<LinkManagerNetworkMap> {
-        on { getCertificates(localIdentity.groupId) } doReturn certificates
-        on { dominoTile } doReturn tile
-    }
+    private val groupInfo = NetworkMapListener.GroupInfo(
+        "groupOne",
+        NetworkType.CORDA_5,
+        certificates,
+    )
 
     private val trustStoresPublisher = TrustStoresPublisher(
         subscriptionFactory,
@@ -96,81 +79,61 @@ class TrustStoresPublisherTest {
         lifecycleCoordinatorFactory,
         configuration,
         instanceId,
-        linkManagerHostingMap,
-        linkManagerNetworkMap,
     )
 
     @Nested
-    inner class IdentityAddedTests {
+    inner class GroupAddedTests {
 
         @Test
-        fun `identityAdded will publish unpublished group`() {
+        fun `groupAdded will publish unpublished group`() {
             trustStoresPublisher.start()
 
-            trustStoresPublisher.identityAdded(localIdentity)
+            trustStoresPublisher.groupAdded(groupInfo)
 
             assertThat(publishedRecords.allValues).containsExactly(
-                listOf(Record(GATEWAY_TLS_TRUSTSTORES, localIdentity.groupId, GatewayTruststore(certificates)))
+                listOf(Record(GATEWAY_TLS_TRUSTSTORES, groupInfo.groupId, GatewayTruststore(certificates)))
             )
         }
 
         @Test
-        fun `identityAdded will not republish certificates`() {
+        fun `groupAdded will not republish certificates`() {
             trustStoresPublisher.start()
-            trustStoresPublisher.identityAdded(localIdentity)
+            trustStoresPublisher.groupAdded(groupInfo)
 
-            trustStoresPublisher.identityAdded(localIdentity)
+            trustStoresPublisher.groupAdded(groupInfo)
 
             verify(publisher, times(1)).publish(any())
         }
 
         @Test
-        fun `identityAdded will not republish certificates in different order`() {
+        fun `groupAdded will not republish certificates in different order`() {
             trustStoresPublisher.start()
-            trustStoresPublisher.identityAdded(localIdentity)
-            whenever(linkManagerNetworkMap.getCertificates(localIdentity.groupId)).doReturn(certificates.reversed())
+            trustStoresPublisher.groupAdded(groupInfo)
 
-            trustStoresPublisher.identityAdded(localIdentity)
+            trustStoresPublisher.groupAdded(
+                groupInfo.copy(
+                    trustedCertificates = certificates.reversed()
+                )
+            )
 
             verify(publisher, times(1)).publish(any())
         }
 
         @Test
-        fun `identityAdded will ignore remote groups`() {
+        fun `groupAdded will republish new certificates`() {
             trustStoresPublisher.start()
-
-            trustStoresPublisher.identityAdded(remoteIdentity)
-
-            verify(publisher, never()).publish(any())
-        }
-
-        @Test
-        fun `identityAdded will ignore groups without certificates`() {
-            val localIdentityWithoutCertificates = LinkManagerNetworkMap.HoldingIdentity(
-                "name",
-                "local as well"
-            )
-            whenever(linkManagerHostingMap.isHostedLocally(localIdentityWithoutCertificates)).doReturn(true)
-            whenever(linkManagerNetworkMap.getCertificates(localIdentityWithoutCertificates.groupId)).doReturn(null)
-            trustStoresPublisher.start()
-
-            trustStoresPublisher.identityAdded(localIdentityWithoutCertificates)
-
-            verify(publisher, never()).publish(any())
-        }
-
-        @Test
-        fun `identityAdded will republish new certificates`() {
-            trustStoresPublisher.start()
-            trustStoresPublisher.identityAdded(localIdentity)
+            trustStoresPublisher.groupAdded(groupInfo)
             val certificatesTwo = listOf("two", "three")
-            whenever(linkManagerNetworkMap.getCertificates(localIdentity.groupId)) doReturn certificatesTwo
 
-            trustStoresPublisher.identityAdded(localIdentity)
+            trustStoresPublisher.groupAdded(
+                groupInfo.copy(
+                    trustedCertificates = certificatesTwo
+                )
+            )
 
             assertThat(publishedRecords.allValues).containsExactly(
-                listOf(Record(GATEWAY_TLS_TRUSTSTORES, localIdentity.groupId, GatewayTruststore(certificates))),
-                listOf(Record(GATEWAY_TLS_TRUSTSTORES, localIdentity.groupId, GatewayTruststore(certificatesTwo))),
+                listOf(Record(GATEWAY_TLS_TRUSTSTORES, groupInfo.groupId, GatewayTruststore(certificates))),
+                listOf(Record(GATEWAY_TLS_TRUSTSTORES, groupInfo.groupId, GatewayTruststore(certificatesTwo))),
             )
         }
 
@@ -180,7 +143,7 @@ class TrustStoresPublisherTest {
             val future = mock<CompletableFuture<Unit>>()
             whenever(publisher.publish(any())).doReturn(listOf(future))
 
-            trustStoresPublisher.identityAdded(localIdentity)
+            trustStoresPublisher.groupAdded(groupInfo)
 
             verify(future).join()
         }
@@ -205,13 +168,13 @@ class TrustStoresPublisherTest {
 
             processor.firstValue.onSnapshot(
                 mapOf(
-                    localIdentity.groupId to GatewayTruststore(
+                    groupInfo.groupId to GatewayTruststore(
                         certificates
                     )
                 )
             )
 
-            trustStoresPublisher.identityAdded(localIdentity)
+            trustStoresPublisher.groupAdded(groupInfo)
 
             verify(publisher, never()).publish(any())
         }
@@ -222,7 +185,7 @@ class TrustStoresPublisherTest {
             trustStoresPublisher.createResources(ResourcesHolder())
             processor.firstValue.onSnapshot(
                 mapOf(
-                    localIdentity.groupId to GatewayTruststore(
+                    groupInfo.groupId to GatewayTruststore(
                         certificates
                     )
                 )
@@ -230,13 +193,13 @@ class TrustStoresPublisherTest {
 
             processor.firstValue.onNext(
                 Record(
-                    "", localIdentity.groupId,
+                    "", groupInfo.groupId,
                     null
                 ),
                 null, emptyMap()
             )
 
-            trustStoresPublisher.identityAdded(localIdentity)
+            trustStoresPublisher.groupAdded(groupInfo)
 
             verify(publisher).publish(any())
         }
@@ -248,7 +211,7 @@ class TrustStoresPublisherTest {
 
             processor.firstValue.onNext(
                 Record(
-                    "", localIdentity.groupId,
+                    "", groupInfo.groupId,
                     GatewayTruststore(
                         certificates
                     )
@@ -256,7 +219,7 @@ class TrustStoresPublisherTest {
                 null, emptyMap()
             )
 
-            trustStoresPublisher.identityAdded(localIdentity)
+            trustStoresPublisher.groupAdded(groupInfo)
             verify(publisher, never()).publish(any())
         }
     }

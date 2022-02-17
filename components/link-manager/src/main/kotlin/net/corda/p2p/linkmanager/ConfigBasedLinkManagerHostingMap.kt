@@ -18,8 +18,8 @@ import java.util.concurrent.ConcurrentHashMap
  */
 class ConfigBasedLinkManagerHostingMap(
     val configReadService: ConfigurationReadService,
-    coordinatorFactory: LifecycleCoordinatorFactory
-): LinkManagerHostingMap {
+    coordinatorFactory: LifecycleCoordinatorFactory,
+) : LinkManagerHostingMap {
 
     override val dominoTile = DominoTile(
         this::class.java.simpleName,
@@ -29,14 +29,8 @@ class ConfigBasedLinkManagerHostingMap(
 
     private val locallyHostedIdentities = ConcurrentHashMap.newKeySet<LinkManagerNetworkMap.HoldingIdentity>()
 
-    private val dataForwarders = ConcurrentHashMap.newKeySet<IdentityDataForwarder>()
-
     override fun isHostedLocally(identity: LinkManagerNetworkMap.HoldingIdentity): Boolean {
         return locallyHostedIdentities.contains(identity)
-    }
-
-    override fun registerDataForwarder(forwarder: IdentityDataForwarder) {
-        dataForwarders += forwarder
     }
 
     inner class HostingMapConfigurationChangeHandler: ConfigurationChangeHandler<Set<LinkManagerNetworkMap.HoldingIdentity>>(
@@ -54,11 +48,6 @@ class ConfigBasedLinkManagerHostingMap(
             val identitiesToRemove = oldIdentities - newConfiguration
             locallyHostedIdentities.removeAll(identitiesToRemove)
             locallyHostedIdentities.addAll(identitiesToAdd)
-            dataForwarders.map { forwarder ->
-                identitiesToAdd.forEach {
-                    forwarder.identityAdded(it)
-                }
-            }
             val configUpdateResult = CompletableFuture<Unit>()
             configUpdateResult.complete(Unit)
             return configUpdateResult

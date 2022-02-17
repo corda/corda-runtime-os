@@ -32,7 +32,7 @@ class StubNetworkMap(
     private val subscriptionConfig = SubscriptionConfig("network-map", NETWORK_MAP_TOPIC, instanceId)
     private val subscription = subscriptionFactory.createCompactedSubscription(subscriptionConfig, processor, configuration)
     private val keyDeserialiser = KeyDeserialiser()
-    private val dataForwarders = ConcurrentHashMap.newKeySet<IdentityDataForwarder>()
+    private val listeners = ConcurrentHashMap.newKeySet<NetworkMapListener>()
 
     private val readyFuture = AtomicReference<CompletableFuture<Unit>>()
     override val dominoTile = DominoTile(
@@ -82,15 +82,11 @@ class StubNetworkMap(
         }
     }
 
-    override fun getCertificates(groupId: String): List<PemCertificates>? {
-        return processor.netMapEntriesByGroupIdPublicKeyHash[groupId]?.values?.first()?.trustedCertificates
+    override fun registerListener(networkMapListener: NetworkMapListener) {
+        listeners += networkMapListener
     }
 
-    override fun registerDataForwarder(forwarder: IdentityDataForwarder) {
-        dataForwarders += forwarder
-    }
-
-    private fun NetworkMapEntry.toMemberInfo():LinkManagerNetworkMap.MemberInfo {
+    private fun NetworkMapEntry.toMemberInfo(): LinkManagerNetworkMap.MemberInfo {
         return LinkManagerNetworkMap.MemberInfo(
             LinkManagerNetworkMap.HoldingIdentity(this.holdingIdentity.x500Name, this.holdingIdentity.groupId),
             keyDeserialiser.toPublicKey(this.publicKey.array(), this.publicKeyAlgorithm),
@@ -100,20 +96,20 @@ class StubNetworkMap(
     }
 
     private fun KeyAlgorithm.toKeyAlgorithm(): net.corda.p2p.crypto.protocol.api.KeyAlgorithm {
-        return when(this) {
+        return when (this) {
             KeyAlgorithm.ECDSA -> net.corda.p2p.crypto.protocol.api.KeyAlgorithm.ECDSA
             KeyAlgorithm.RSA -> net.corda.p2p.crypto.protocol.api.KeyAlgorithm.RSA
         }
     }
 
     private fun NetworkType.toLMNetworkType(): LinkManagerNetworkMap.NetworkType {
-        return when(this) {
+        return when (this) {
             NetworkType.CORDA_4 -> LinkManagerNetworkMap.NetworkType.CORDA_4
             NetworkType.CORDA_5 -> LinkManagerNetworkMap.NetworkType.CORDA_5
         }
     }
 
-    private inner class NetworkMapEntryProcessor: CompactedProcessor<String, NetworkMapEntry> {
+    private inner class NetworkMapEntryProcessor : CompactedProcessor<String, NetworkMapEntry> {
 
         private val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, BouncyCastleProvider())
 
@@ -156,8 +152,13 @@ class StubNetworkMap(
             netMapEntriesByGroupIdPublicKeyHash[networkMapEntry.holdingIdentity.groupId]!![ByteBuffer.wrap(publicKeyHash)] = networkMapEntry
             netmapEntriesByHoldingIdentity[identity] = networkMapEntry
 
-            dataForwarders.forEach {
-                it.identityAdded(networkMapEntry.holdingIdentity.toLMHoldingIdentity())
+            val groupInfo = NetworkMapListener.GroupInfo(
+                networkMapEntry.holdingIdentity.groupId,
+                networkMapEntry.networkType,
+                networkMapEntry.trustedCertificates
+            )
+            listeners.forEach { listener->
+                listener.groupAdded(groupInfo)
             }
         }
 
@@ -170,6 +171,5 @@ class StubNetworkMap(
             messageDigest.update(publicKey)
             return messageDigest.digest()
         }
-
     }
 }
