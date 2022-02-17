@@ -67,7 +67,7 @@ class SessionManagerImpl : SessionManager {
         val messageResendWindow = config.getLong(SESSION_MESSAGE_RESEND_WINDOW)
         val messagesToReturn = getMessagesToSend(sessionState, instantInMillis)
 
-        //remove SessionAcks/SessionErrors and increase timestamp of messages sent that are awaiting acknowledgement
+        //remove SessionAcks/SessionErrors and increase timestamp of messages to be sent that are awaiting acknowledgement
         clearAcksErrorsAndIncreaseTimestamps(sessionState, instantInMillis, messageResendWindow)
 
         //add heartbeat if no messages to send, error session if no heartbeat received within timeout
