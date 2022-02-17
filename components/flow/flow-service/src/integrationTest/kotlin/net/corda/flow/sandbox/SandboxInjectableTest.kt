@@ -29,7 +29,6 @@ import org.osgi.test.junit5.service.ServiceExtension
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 class SandboxInjectableTest {
-    @Suppress("unused")
     companion object {
         private const val CPB_INJECT = "sandbox-cpk-inject-package.cpb"
         private const val FLOW_CLASS_NAME = "com.example.sandbox.cpk.inject.ExampleFlow"
@@ -47,6 +46,7 @@ class SandboxInjectableTest {
 
         private lateinit var sandboxFactory: SandboxFactory
 
+        @Suppress("unused")
         @BeforeAll
         @JvmStatic
         fun setup(@InjectBundleContext context: BundleContext, @TempDir baseDirectory: Path) {

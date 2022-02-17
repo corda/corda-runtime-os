@@ -59,7 +59,7 @@ class AMQPwithOSGiSerializationTests {
         fun setUp(@InjectBundleContext bundleContext: BundleContext, @TempDir testDirectory: Path) {
             sandboxSetup.configure(bundleContext, testDirectory)
             lifecycle.accept(sandboxSetup) { setup ->
-                sandboxFactory = setup.fetchService(timeout = 1000)
+                sandboxFactory = setup.fetchService(timeout = 1500)
             }
         }
     }

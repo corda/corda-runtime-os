@@ -19,7 +19,6 @@ import org.osgi.test.junit5.service.ServiceExtension
 /** Tests the ability to have different copies of the same library in different sandboxes. */
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 class SandboxBundleDifferentLibrariesTest {
-    @Suppress("unused")
     companion object {
         @RegisterExtension
         private val lifecycle = AllTestsLifecycle()
@@ -29,6 +28,7 @@ class SandboxBundleDifferentLibrariesTest {
 
         private lateinit var sandboxFactory: SandboxFactory
 
+        @Suppress("unused")
         @JvmStatic
         @BeforeAll
         fun setup(@InjectBundleContext bundleContext: BundleContext, @TempDir testDirectory: Path) {
