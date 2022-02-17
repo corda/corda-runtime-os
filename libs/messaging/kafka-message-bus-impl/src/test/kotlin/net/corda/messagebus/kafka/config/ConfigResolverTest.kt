@@ -8,13 +8,22 @@ import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.constants.ConsumerRoles
 import net.corda.messagebus.api.constants.ProducerRoles
 import net.corda.messagebus.kafka.config.ConfigResolver
+import net.corda.messaging.api.exception.CordaMessageAPIConfigException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
+import java.util.Properties
+import java.util.stream.Stream
 
 class ConfigResolverTest {
 
     companion object {
         private const val TEST_CONFIG = "test.conf"
+        private const val EMPTY_CONFIG = "empty.conf"
+        private const val INCORRECT_BUS_CONFIG = "incorrect-bus.conf"
 
         private const val GROUP_NAME = "group"
         private const val CLIENT_ID = "test-client-id"
@@ -30,81 +39,264 @@ class ConfigResolverTest {
         private const val AUTO_OFFSET_RESET_PROP = "auto.offset.reset"
         private const val TRANSACTIONAL_ID_PROP = "transactional.id"
         private const val ACKS_PROP = "acks"
+
+        @JvmStatic
+        private fun consumerConfigSource(): Stream<Arguments> {
+            val arguments = mapOf(
+                ConsumerRoles.PUBSUB to getExpectedConsumerProperties(
+                    mapOf(
+                        BOOTSTRAP_SERVERS_PROP to "kafka:1001",
+                        SSL_KEYSTORE_PROP to "foo/bar",
+                        AUTO_OFFSET_RESET_PROP to "latest"
+                    )
+                ),
+                ConsumerRoles.COMPACTED to getExpectedConsumerProperties(
+                    mapOf(
+                        BOOTSTRAP_SERVERS_PROP to "kafka:1001",
+                        SSL_KEYSTORE_PROP to "foo/bar",
+                    )
+                ),
+                ConsumerRoles.DURABLE to getExpectedConsumerProperties(
+                    mapOf(
+                        BOOTSTRAP_SERVERS_PROP to "kafka:1001",
+                        SSL_KEYSTORE_PROP to "foo/bar",
+                    )
+                ),
+                ConsumerRoles.SAE_STATE to getExpectedConsumerProperties(
+                    mapOf(
+                        BOOTSTRAP_SERVERS_PROP to "kafka:1001",
+                        SSL_KEYSTORE_PROP to "foo/bar",
+                        CLIENT_ID_PROP to "$GROUP_NAME-stateConsumer-$CLIENT_ID"
+                    )
+                ),
+                ConsumerRoles.SAE_EVENT to getExpectedConsumerProperties(
+                    mapOf(
+                        BOOTSTRAP_SERVERS_PROP to "kafka:1001",
+                        SSL_KEYSTORE_PROP to "foo/bar",
+                        CLIENT_ID_PROP to "$GROUP_NAME-eventConsumer-$CLIENT_ID"
+                    )
+                ),
+                ConsumerRoles.EVENT_LOG to getExpectedConsumerProperties(
+                    mapOf(
+                        BOOTSTRAP_SERVERS_PROP to "kafka:1001",
+                        SSL_KEYSTORE_PROP to "foo/bar",
+                    )
+                ),
+                ConsumerRoles.RPC_SENDER to getExpectedConsumerProperties(
+                    mapOf(
+                        BOOTSTRAP_SERVERS_PROP to "kafka:1001",
+                        SSL_KEYSTORE_PROP to "foo/bar",
+                        AUTO_OFFSET_RESET_PROP to "latest"
+                    )
+                ),
+                ConsumerRoles.RPC_RESPONDER to getExpectedConsumerProperties(
+                    mapOf(
+                        BOOTSTRAP_SERVERS_PROP to "kafka:1001",
+                        SSL_KEYSTORE_PROP to "foo/bar",
+                        AUTO_OFFSET_RESET_PROP to "latest"
+                    )
+                )
+            )
+            return arguments.entries.stream().map { (role, properties) -> Arguments.arguments(role, properties) }
+        }
+
+        @JvmStatic
+        private fun producerConfigSource(): Stream<Arguments> {
+            val arguments = mapOf(
+                ProducerRoles.PUBLISHER to getExpectedProducerProperties(
+                    mapOf(
+                        BOOTSTRAP_SERVERS_PROP to "kafka:1001",
+                        SSL_KEYSTORE_PROP to "foo/bar"
+                    )
+                ),
+                ProducerRoles.DURABLE to getExpectedProducerProperties(
+                    mapOf(
+                        BOOTSTRAP_SERVERS_PROP to "kafka:1001",
+                        SSL_KEYSTORE_PROP to "foo/bar"
+                    )
+                ),
+                ProducerRoles.SAE_PRODUCER to getExpectedProducerProperties(
+                    mapOf(
+                        BOOTSTRAP_SERVERS_PROP to "kafka:1001",
+                        SSL_KEYSTORE_PROP to "foo/bar"
+                    )
+                ),
+                ProducerRoles.EVENT_LOG to getExpectedProducerProperties(
+                    mapOf(
+                        BOOTSTRAP_SERVERS_PROP to "kafka:1001",
+                        SSL_KEYSTORE_PROP to "foo/bar"
+                    )
+                ),
+                ProducerRoles.RPC_SENDER to getExpectedProducerProperties(
+                    mapOf(
+                        BOOTSTRAP_SERVERS_PROP to "kafka:1001",
+                        SSL_KEYSTORE_PROP to "foo/bar"
+                    )
+                ),
+                ProducerRoles.RPC_RESPONDER to getExpectedProducerProperties(
+                    mapOf(
+                        BOOTSTRAP_SERVERS_PROP to "kafka:1001",
+                        SSL_KEYSTORE_PROP to "foo/bar"
+                    )
+                )
+            )
+            return arguments.entries.stream().map { (role, properties) -> Arguments.arguments(role, properties) }
+        }
+
+        private fun getExpectedConsumerProperties(overrides: Map<String, String?>): Properties {
+            val defaults = mapOf(
+                GROUP_ID_PROP to GROUP_NAME,
+                CLIENT_ID_PROP to "$GROUP_NAME-consumer-$CLIENT_ID",
+                ISOLATION_LEVEL_PROP to "read_committed",
+                BOOTSTRAP_SERVERS_PROP to "localhost:9092",
+                SESSION_TIMEOUT_PROP to "6000",
+                AUTO_OFFSET_RESET_PROP to "earliest"
+            )
+            val properties = Properties()
+            for ((key, value) in defaults) {
+                properties.setProperty(key, value)
+            }
+            for ((key, value) in overrides) {
+                properties.setProperty(key, value)
+            }
+            return properties
+        }
+
+        private fun getExpectedProducerProperties(overrides: Map<String, String?>): Properties {
+            val defaults = mapOf(
+                GROUP_ID_PROP to GROUP_NAME,
+                CLIENT_ID_PROP to "$CLIENT_ID-producer",
+                TRANSACTIONAL_ID_PROP to "$CLIENT_ID-$INSTANCE_ID",
+                BOOTSTRAP_SERVERS_PROP to "localhost:9092",
+                ACKS_PROP to "all"
+            )
+            val properties = Properties()
+            for ((key, value) in defaults) {
+                properties.setProperty(key, value)
+            }
+            for ((key, value) in overrides) {
+                if (value != null) {
+                    properties.setProperty(key, value)
+                } else {
+                    properties.remove(key)
+                }
+            }
+            return properties
+        }
     }
 
     private val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
 
-    @Test
-    fun `config resolution for pubsub consumer`() {
-        val busConfig = loadTestConfig()
+    @ParameterizedTest(name = "Config resolution for consumers: {0}")
+    @MethodSource("consumerConfigSource")
+    fun `config resolution for consumers`(role: ConsumerRoles, expectedProperties: Properties) {
+        val busConfig = loadTestConfig(TEST_CONFIG)
         val resolver = ConfigResolver(smartConfigFactory)
         val properties = resolver.resolve(
             busConfig,
-            ConsumerConfig(GROUP_NAME, CLIENT_ID, TOPIC_PREFIX, ConsumerRoles.PUBSUB)
+            ConsumerConfig(GROUP_NAME, CLIENT_ID, TOPIC_PREFIX, role)
         )
-        // Verify substitutions
-        assertEquals(GROUP_NAME, properties[GROUP_ID_PROP])
-        assertEquals("$GROUP_NAME-consumer-$CLIENT_ID", properties[CLIENT_ID_PROP])
-        assertEquals("read_committed", properties[ISOLATION_LEVEL_PROP]) // Verify an enforced property
-        assertEquals("kafka:1001", properties[BOOTSTRAP_SERVERS_PROP]) // Verify overriding a default
-        assertEquals("foo/bar", properties[SSL_KEYSTORE_PROP]) // Verify providing a property that has no default
-        assertEquals("6000", properties[SESSION_TIMEOUT_PROP]) // Verify a property left at default
-        assertEquals("latest", properties[AUTO_OFFSET_RESET_PROP]) // Verify Pubsub specific override
+        assertConsumerProperties(expectedProperties, properties)
     }
 
     @Test
-    fun `config resolution for compacted consumer`() {
-        val busConfig = loadTestConfig()
+    fun `an empty config can be resolved correctly for consumers`() {
+        val busConfig = loadTestConfig(EMPTY_CONFIG)
         val resolver = ConfigResolver(smartConfigFactory)
         val properties = resolver.resolve(
             busConfig,
             ConsumerConfig(GROUP_NAME, CLIENT_ID, TOPIC_PREFIX, ConsumerRoles.COMPACTED)
         )
+        val expectedProperties = getExpectedConsumerProperties(mapOf())
         // Verify substitutions
-        assertEquals(GROUP_NAME, properties[GROUP_ID_PROP])
-        assertEquals("$GROUP_NAME-consumer-$CLIENT_ID", properties[CLIENT_ID_PROP])
-        assertEquals("read_committed", properties[ISOLATION_LEVEL_PROP]) // Verify an enforced property
-        assertEquals("kafka:1001", properties[BOOTSTRAP_SERVERS_PROP]) // Verify overriding a default
-        assertEquals("foo/bar", properties[SSL_KEYSTORE_PROP]) // Verify providing a property that has no default
-        assertEquals("6000", properties[SESSION_TIMEOUT_PROP]) // Verify a property left at default
-        assertEquals("earliest", properties[AUTO_OFFSET_RESET_PROP]) // Verify specific overrides do not occur
+        assertConsumerProperties(expectedProperties, properties)
+    }
+
+    @ParameterizedTest(name = "Config resolution for producers: {0}")
+    @MethodSource("producerConfigSource")
+    fun `config resolution for producers`(role: ProducerRoles, expectedProperties: Properties) {
+        val busConfig = loadTestConfig(TEST_CONFIG)
+        val resolver = ConfigResolver(smartConfigFactory)
+        val properties =
+            resolver.resolve(busConfig, ProducerConfig(CLIENT_ID, INSTANCE_ID, TOPIC_PREFIX, role))
+        assertProducerProperties(expectedProperties, properties)
     }
 
     @Test
-    fun `config resolution for producer for standard publisher`() {
-        val busConfig = loadTestConfig()
+    fun `an empty config can be resolved for producers`() {
+        val busConfig = loadTestConfig(EMPTY_CONFIG)
         val resolver = ConfigResolver(smartConfigFactory)
         val properties =
-            resolver.resolve(busConfig, ProducerConfig(CLIENT_ID, INSTANCE_ID, TOPIC_PREFIX, ProducerRoles.PUBLISHER))
+            resolver.resolve(
+                busConfig,
+                ProducerConfig(CLIENT_ID, INSTANCE_ID, TOPIC_PREFIX, ProducerRoles.RPC_RESPONDER)
+            )
+        val expectedProperties = getExpectedProducerProperties(mapOf())
         // Verify substitutions
-        assertEquals("$CLIENT_ID-producer", properties[CLIENT_ID_PROP])
-        assertEquals("$CLIENT_ID-$INSTANCE_ID", properties[TRANSACTIONAL_ID_PROP])
-        assertEquals("all", properties[ACKS_PROP])
-        assertEquals("kafka:1001", properties[BOOTSTRAP_SERVERS_PROP]) // Verify overriding a default
-        assertEquals("foo/bar", properties[SSL_KEYSTORE_PROP]) // Verify providing a property that has no default
+        assertProducerProperties(expectedProperties, properties)
     }
 
     @Test
     fun `no transactional id is present if the instance id is not set`() {
-        val busConfig = loadTestConfig()
+        val busConfig = loadTestConfig(TEST_CONFIG)
         val resolver = ConfigResolver(smartConfigFactory)
         val properties =
             resolver.resolve(busConfig, ProducerConfig(CLIENT_ID, null, TOPIC_PREFIX, ProducerRoles.PUBLISHER))
-        println(properties)
-        // Verify substitutions
-        assertEquals("$CLIENT_ID-producer", properties[CLIENT_ID_PROP])
-        assertEquals(null, properties[TRANSACTIONAL_ID_PROP])
-        assertEquals("all", properties[ACKS_PROP])
-        assertEquals("kafka:1001", properties[BOOTSTRAP_SERVERS_PROP]) // Verify overriding a default
-        assertEquals("foo/bar", properties[SSL_KEYSTORE_PROP]) // Verify providing a property that has no default
+        val expectedProperties = getExpectedProducerProperties(
+            mapOf(
+                TRANSACTIONAL_ID_PROP to null,
+                BOOTSTRAP_SERVERS_PROP to "kafka:1001",
+                SSL_KEYSTORE_PROP to "foo/bar"
+            )
+        )
+        assertProducerProperties(expectedProperties, properties)
     }
 
-    private fun loadTestConfig(): SmartConfig {
-        val url = this::class.java.classLoader.getResource(TEST_CONFIG)
-            ?: throw IllegalArgumentException("Failed to find $TEST_CONFIG")
+    @Test
+    fun `configuration resolution fails if the bus is the incorrect type`() {
+        val busConfig = loadTestConfig(INCORRECT_BUS_CONFIG)
+        val resolver = ConfigResolver(smartConfigFactory)
+        assertThrows<CordaMessageAPIConfigException> {
+            resolver.resolve(busConfig, ConsumerConfig(GROUP_NAME, CLIENT_ID, TOPIC_PREFIX, ConsumerRoles.DURABLE))
+        }
+        assertThrows<CordaMessageAPIConfigException> {
+            resolver.resolve(busConfig, ProducerConfig(CLIENT_ID, 1, TOPIC_PREFIX, ProducerRoles.DURABLE))
+        }
+    }
+
+    private fun loadTestConfig(resource: String): SmartConfig {
+        val url = this::class.java.classLoader.getResource(resource)
+            ?: throw IllegalArgumentException("Failed to find $resource")
         val configString = url.openStream().bufferedReader().use {
             it.readText()
         }
         return smartConfigFactory.create(ConfigFactory.parseString(configString))
+    }
+
+    // For assertions, the actual properties can contain some superfluous stuff relating to producers, as the common
+    // configuration block doesn't ensure that only shared properties are placed in there. This doesn't matter from
+    // Kafka's perspective, so we just assert on the properties that do matter here.
+    private fun assertConsumerProperties(expected: Properties, actual: Properties) {
+        assertEquals(expected[GROUP_ID_PROP], actual[GROUP_ID_PROP])
+        assertEquals(expected[CLIENT_ID_PROP], actual[CLIENT_ID_PROP])
+        assertEquals(expected[ISOLATION_LEVEL_PROP], actual[ISOLATION_LEVEL_PROP]) // Verify an enforced property
+        assertEquals(expected[BOOTSTRAP_SERVERS_PROP], actual[BOOTSTRAP_SERVERS_PROP]) // Verify overriding a default
+        assertEquals(
+            expected[SSL_KEYSTORE_PROP],
+            actual[SSL_KEYSTORE_PROP]
+        ) // Verify providing a property that has no default
+        assertEquals(expected[SESSION_TIMEOUT_PROP], actual[SESSION_TIMEOUT_PROP]) // Verify a property left at default
+        assertEquals(
+            expected[AUTO_OFFSET_RESET_PROP],
+            actual[AUTO_OFFSET_RESET_PROP]
+        ) // Verify Pubsub specific override
+    }
+
+    private fun assertProducerProperties(expected: Properties, actual: Properties) {
+        assertEquals(expected[CLIENT_ID_PROP], actual[CLIENT_ID_PROP])
+        assertEquals(expected[TRANSACTIONAL_ID_PROP], actual[TRANSACTIONAL_ID_PROP])
+        assertEquals(expected[ACKS_PROP], actual[ACKS_PROP])
+        assertEquals(expected[BOOTSTRAP_SERVERS_PROP], actual[BOOTSTRAP_SERVERS_PROP])
+        assertEquals(expected[SSL_KEYSTORE_PROP], actual[SSL_KEYSTORE_PROP])
     }
 }

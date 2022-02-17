@@ -9,6 +9,7 @@ import net.corda.messaging.api.exception.CordaMessageAPIConfigException
 import net.corda.schema.configuration.MessagingKeys.Bus.BUS_TYPE
 import net.corda.schema.configuration.MessagingKeys.Bus.KAFKA_PROPERTIES
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import org.osgi.framework.FrameworkUtil
 import java.util.Properties
 
@@ -60,12 +61,12 @@ internal class ConfigResolver(private val smartConfigFactory: SmartConfigFactory
             .withFallback(defaults)
             .resolve()
 
-        logger.info("Resolved kafka configuration: ${resolvedConfig.toSafeConfig().root().render()}")
+        logger.debug {"Resolved kafka configuration: ${resolvedConfig.toSafeConfig().root().render()}" }
 
         // Trim down to just the Kafka config for the specified role.
         val roleConfig = resolvedConfig.getConfig("roles.$rolePath")
         val properties = roleConfig.toKafkaProperties()
-        logger.info("Kafka properties for role $rolePath: $properties")
+        logger.debug {"Kafka properties for role $rolePath: $properties" }
         return properties
     }
 
