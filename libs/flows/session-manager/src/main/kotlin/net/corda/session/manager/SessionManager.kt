@@ -70,6 +70,8 @@ interface SessionManager {
      * All messages with a timestamp in the past will be returned.
      * All messages of type SessionAck will be returned regardless of timestamp.
      * SessionAcks are also removed from the undelivered sendEvents state.
+     * Triggers heartbeat messages at regular intervals.
+     * If no response from counterparty after a configurable timeouts, session will move to error state.
      * @param sessionState The session state.
      * @param instant The time to check session events against when determining which messages need to be sent
      * @param config The config containing the flow session config values such as the resend time window
