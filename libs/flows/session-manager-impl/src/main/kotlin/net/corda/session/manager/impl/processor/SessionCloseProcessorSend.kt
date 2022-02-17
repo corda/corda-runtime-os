@@ -58,10 +58,7 @@ class SessionCloseProcessorSend(
             }
             else -> {
                 val nextSeqNum = sessionState.sendEventsState.lastProcessedSequenceNum + 1
-                sessionEvent.apply {
-                    sequenceNum = nextSeqNum
-                    timestamp = instant.toEpochMilli()
-                }
+                sessionEvent.sequenceNum = nextSeqNum
 
                 getResultByCurrentState(sessionState, sessionId, nextSeqNum)
             }
