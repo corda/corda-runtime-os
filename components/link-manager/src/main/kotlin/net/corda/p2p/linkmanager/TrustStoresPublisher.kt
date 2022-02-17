@@ -31,63 +31,21 @@ internal class TrustStoresPublisher(
     companion object {
         val logger = contextLogger()
         private const val CURRENT_DATA_READER_GROUP_NAME = "linkmanager_truststore_reader"
-        private const val MISSING_DATA_WRITER_GORUP_NAME = "linkmanager_truststore_writer"
+        private const val MISSING_DATA_WRITER_GROUP_NAME = "linkmanager_truststore_writer"
     }
 
     private val publishedGroups = ConcurrentHashMap<String, Set<PemCertificates>>()
-
+    private val toPublish = mutableMapOf<String, List<PemCertificates>>()
+    private val ready = AtomicReference<CompletableFuture<Unit>>()
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,
         lifecycleCoordinatorFactory,
-        PublisherConfig(MISSING_DATA_WRITER_GORUP_NAME),
+        PublisherConfig(MISSING_DATA_WRITER_GROUP_NAME),
         configuration,
     )
-
-    private fun publishGroupIfNeeded(groupId: String, certificates: List<PemCertificates>) {
-        publishedGroups.compute(groupId) { _, publishedCertificates ->
-            val certificatesSet = certificates.toSet()
-            if (certificatesSet != publishedCertificates) {
-                val record = Record(GATEWAY_TLS_TRUSTSTORES, groupId, GatewayTruststore(certificates))
-                publisher.publish(
-                    listOf(record)
-                ).forEach {
-                    it.join()
-                }
-            }
-            certificatesSet
-        }
-    }
-
-    private val ready = AtomicReference<CompletableFuture<Unit>>()
-
-    private val processor = object : CompactedProcessor<String, GatewayTruststore> {
-        override val keyClass = String::class.java
-        override val valueClass = GatewayTruststore::class.java
-        override fun onSnapshot(currentData: Map<String, GatewayTruststore>) {
-            publishedGroups.putAll(
-                currentData.mapValues {
-                    it.value.trustedCertificates.toSet()
-                }
-            )
-            ready.get()?.complete(Unit)
-        }
-
-        override fun onNext(
-            newRecord: Record<String, GatewayTruststore>,
-            oldValue: GatewayTruststore?,
-            currentData: Map<String, GatewayTruststore>,
-        ) {
-            val certificates = newRecord.value?.trustedCertificates
-            if (certificates == null) {
-                publishedGroups.remove(newRecord.key)
-            } else {
-                publishedGroups[newRecord.key] = certificates.toSet()
-            }
-        }
-    }
     private val subscription = subscriptionFactory.createCompactedSubscription(
         SubscriptionConfig(CURRENT_DATA_READER_GROUP_NAME, GATEWAY_TLS_TRUSTSTORES, instanceId),
-        processor,
+        Processor(),
         configuration,
     )
 
@@ -107,12 +65,73 @@ internal class TrustStoresPublisher(
         ),
     )
 
-    fun createResources(resourcesHolder: ResourcesHolder): CompletableFuture<Unit> {
+    private inner class Processor : CompactedProcessor<String, GatewayTruststore> {
+        override val keyClass = String::class.java
+        override val valueClass = GatewayTruststore::class.java
+        override fun onSnapshot(currentData: Map<String, GatewayTruststore>) {
+            publishedGroups.putAll(
+                currentData.mapValues {
+                    it.value.trustedCertificates.toSet()
+                }
+            )
+            ready.get()?.complete(Unit)
+            dominoTile.withLifecycleWriteLock {
+                toPublish.forEach { (groupId, certificates) ->
+                    publishGroupIfNeeded(groupId, certificates)
+                }
+                toPublish.clear()
+            }
+        }
+
+        override fun onNext(
+            newRecord: Record<String, GatewayTruststore>,
+            oldValue: GatewayTruststore?,
+            currentData: Map<String, GatewayTruststore>,
+        ) {
+            val certificates = newRecord.value?.trustedCertificates
+            if (certificates == null) {
+                publishedGroups.remove(newRecord.key)
+            } else {
+                publishedGroups[newRecord.key] = certificates.toSet()
+            }
+        }
+    }
+
+    private fun createResources(resourcesHolder: ResourcesHolder): CompletableFuture<Unit> {
         val complete = CompletableFuture<Unit>()
         ready.set(complete)
         resourcesHolder.keep(subscription)
         subscription.start()
 
         return complete
+    }
+
+    private fun publishGroupIfNeeded(groupId: String, certificates: List<PemCertificates>) {
+        if (ready.get()?.isDone != true) {
+            val notReady = dominoTile.withLifecycleWriteLock {
+                if (ready.get()?.isDone != true) {
+                    // Still waiting for the snapshots, keep this group to be published later
+                    toPublish[groupId] = certificates
+                    true
+                } else {
+                    false
+                }
+            }
+            if (notReady) {
+                return
+            }
+        }
+        publishedGroups.compute(groupId) { _, publishedCertificates ->
+            val certificatesSet = certificates.toSet()
+            if (certificatesSet != publishedCertificates) {
+                val record = Record(GATEWAY_TLS_TRUSTSTORES, groupId, GatewayTruststore(certificates))
+                publisher.publish(
+                    listOf(record)
+                ).forEach {
+                    it.join()
+                }
+            }
+            certificatesSet
+        }
     }
 }

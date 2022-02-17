@@ -30,6 +30,18 @@ internal class TrustStoresMap(
     companion object {
         private const val CONSUMER_GROUP_ID = "gateway_tls_truststores_reader"
     }
+    private val ready = AtomicReference<CompletableFuture<Unit>>()
+    private val subscription = subscriptionFactory.createCompactedSubscription(
+        SubscriptionConfig(CONSUMER_GROUP_ID, Schemas.P2P.GATEWAY_TLS_TRUSTSTORES, instanceId),
+        Processor(),
+        nodeConfiguration
+    )
+    private val groupIdToTrustRoots = ConcurrentHashMap<String, TrustedCertificates>()
+
+    fun getTrustStore(groupId: String) =
+        groupIdToTrustRoots[groupId]
+            ?.trustStore
+            ?: throw IllegalArgumentException("Unknown trust store: $groupId")
 
     override val dominoTile = DominoTile(
         this::class.java.simpleName,
@@ -37,14 +49,38 @@ internal class TrustStoresMap(
         createResources = ::createResources
     )
 
-    private val ready = AtomicReference<CompletableFuture<Unit>>()
+    class TrustedCertificates(
+        pemCertificates: Collection<String>,
+        certificateFactory: CertificateFactory = CertificateFactory.getInstance("X.509"),
+    ) {
 
-    private val processor = object : CompactedProcessor<String, GatewayTruststore> {
+        val trustStore: KeyStore by lazy {
+            KeyStore.getInstance("PKCS12").also { keyStore ->
+                keyStore.load(null, null)
+                pemCertificates.withIndex().forEach { (index, pemCertificate) ->
+                    val certificate = ByteArrayInputStream(pemCertificate.toByteArray()).use {
+                        certificateFactory.generateCertificate(it)
+                    }
+                    keyStore.setCertificateEntry("gateway-$index", certificate)
+                }
+            }
+        }
+    }
+
+    private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
+        val resourceFuture = CompletableFuture<Unit>()
+        ready.set(resourceFuture)
+        subscription.start()
+        resources.keep { subscription.stop() }
+        return resourceFuture
+    }
+
+    private inner class Processor : CompactedProcessor<String, GatewayTruststore> {
         override val keyClass = String::class.java
         override val valueClass = GatewayTruststore::class.java
 
         override fun onSnapshot(currentData: Map<String, GatewayTruststore>) {
-            groupIdToTrustroots.putAll(
+            groupIdToTrustRoots.putAll(
                 currentData.mapValues {
                     TrustedCertificates(it.value.trustedCertificates, certificateFactory)
                 }
@@ -62,48 +98,9 @@ internal class TrustStoresMap(
             }
 
             if (store != null) {
-                groupIdToTrustroots[newRecord.key] = store
+                groupIdToTrustRoots[newRecord.key] = store
             } else {
-                groupIdToTrustroots.remove(newRecord.key)
-            }
-        }
-    }
-
-    private val subscription = subscriptionFactory.createCompactedSubscription(
-        SubscriptionConfig(CONSUMER_GROUP_ID, Schemas.P2P.GATEWAY_TLS_TRUSTSTORES, instanceId),
-        processor,
-        nodeConfiguration
-    )
-
-    private val groupIdToTrustroots = ConcurrentHashMap<String, TrustedCertificates>()
-
-    fun getTrustStore(groupId: String) =
-        groupIdToTrustroots[groupId]
-            ?.trustStore
-            ?: throw IllegalArgumentException("Unknown trust store: $groupId")
-
-    private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-        val resourceFuture = CompletableFuture<Unit>()
-        ready.set(resourceFuture)
-        subscription.start()
-        resources.keep { subscription.stop() }
-        return resourceFuture
-    }
-
-    class TrustedCertificates(
-        pemCertificates: Collection<String>,
-        certificateFactory: CertificateFactory = CertificateFactory.getInstance("X.509"),
-    ) {
-
-        val trustStore: KeyStore by lazy {
-            KeyStore.getInstance("PKCS12").also { keyStore ->
-                keyStore.load(null, null)
-                pemCertificates.withIndex().forEach { (index, pemCertificate) ->
-                    val certificate = ByteArrayInputStream(pemCertificate.toByteArray()).use {
-                        certificateFactory.generateCertificate(it)
-                    }
-                    keyStore.setCertificateEntry("gateway-$index", certificate)
-                }
+                groupIdToTrustRoots.remove(newRecord.key)
             }
         }
     }

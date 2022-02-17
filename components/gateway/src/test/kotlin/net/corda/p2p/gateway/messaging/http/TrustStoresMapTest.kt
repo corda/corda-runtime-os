@@ -1,9 +1,9 @@
 package net.corda.p2p.gateway.messaging.http
 
 import net.corda.libs.configuration.SmartConfig
-import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleEventHandler
+import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
@@ -14,10 +14,10 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.Mockito.mockConstruction
 import org.mockito.Mockito.mockStatic
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -26,17 +26,16 @@ import java.io.InputStream
 import java.security.KeyStore
 import java.security.cert.Certificate
 import java.security.cert.CertificateFactory
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.atomic.AtomicReference
 
 class TrustStoresMapTest {
     private val subscription = mock<CompactedSubscription<String, GatewayTruststore>>()
-    private val lifecycleEventHandler = argumentCaptor<LifecycleEventHandler>()
-    private val coordinator = mock< LifecycleCoordinator> {
-        on { postEvent(any()) } doAnswer {
-            lifecycleEventHandler.firstValue.processEvent(it.getArgument(0), mock())
-        }
-    }
-    private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory> {
-        on { createCoordinator(any(), lifecycleEventHandler.capture()) } doReturn coordinator
+    private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>()
+    private val creteResources = AtomicReference<(resources: ResourcesHolder) -> CompletableFuture<Unit>>()
+    private val mockDominoTile = mockConstruction(DominoTile::class.java) { _, context ->
+        @Suppress("UNCHECKED_CAST")
+        creteResources.set(context.arguments()[2] as? (resources: ResourcesHolder) -> CompletableFuture<Unit>)
     }
     private val processor = argumentCaptor<CompactedProcessor<String, GatewayTruststore>>()
     private val subscriptionFactory = mock<SubscriptionFactory> {
@@ -57,6 +56,7 @@ class TrustStoresMapTest {
     @AfterEach
     fun cleanUp() {
         mockKeyStore.close()
+        mockDominoTile.close()
     }
 
     private val testObject = TrustStoresMap(
@@ -69,40 +69,40 @@ class TrustStoresMapTest {
 
     @Test
     fun `createResources will start the subscription`() {
-        testObject.start()
-
+        creteResources.get()?.invoke(mock())
         verify(subscription).start()
     }
 
     @Test
     fun `createResources will not mark as ready before getting snapshot`() {
-        testObject.start()
+        val future = creteResources.get()?.invoke(mock())
 
-        assertThat(testObject.isRunning).isFalse
+        assertThat(future).isNotCompleted
     }
 
     @Test
     fun `onSnapshot will mark as ready`() {
-        testObject.start()
+        val future = creteResources.get()?.invoke(mock())
 
         processor.firstValue.onSnapshot(emptyMap())
 
-        assertThat(testObject.isRunning).isTrue
+        assertThat(future).isCompleted
     }
 
     @Test
     fun `stop will stop the subscription`() {
-        testObject.start()
+        val resources = ResourcesHolder()
+        creteResources.get()?.invoke(resources)
         processor.firstValue.onSnapshot(emptyMap())
 
-        testObject.stop()
+        resources.close()
 
         verify(subscription).stop()
     }
 
     @Test
     fun `onNext with value will add store`() {
-        testObject.start()
+        creteResources.get()?.invoke(mock())
         processor.firstValue.onSnapshot(emptyMap())
 
         processor.firstValue.onNext(
@@ -116,7 +116,7 @@ class TrustStoresMapTest {
 
     @Test
     fun `onNext without value will remove store`() {
-        testObject.start()
+        creteResources.get()?.invoke(mock())
         processor.firstValue.onSnapshot(
             mapOf(
                 "group id 1" to GatewayTruststore(listOf("one"))
@@ -147,7 +147,7 @@ class TrustStoresMapTest {
 
     @Test
     fun `trust store add certificates to keystore`() {
-        testObject.start()
+        creteResources.get()?.invoke(mock())
         processor.firstValue.onSnapshot(
             mapOf(
                 "a" to GatewayTruststore(listOf("one", "two")),
@@ -162,7 +162,7 @@ class TrustStoresMapTest {
 
     @Test
     fun `trust store will load the keystore`() {
-        testObject.start()
+        creteResources.get()?.invoke(mock())
         processor.firstValue.onSnapshot(
             mapOf(
                 "a" to GatewayTruststore(listOf("one", "two")),
@@ -178,7 +178,7 @@ class TrustStoresMapTest {
     fun `trust store load the correct certificate`() {
         val data = argumentCaptor<InputStream>()
         whenever(certificateFactory.generateCertificate(data.capture())).doReturn(certificate)
-        testObject.start()
+        creteResources.get()?.invoke(mock())
         processor.firstValue.onSnapshot(
             mapOf(
                 "a" to GatewayTruststore(listOf("one", "two")),
