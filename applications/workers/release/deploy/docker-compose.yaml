@@ -91,8 +91,8 @@ services:
       kafka:
         condition: service_healthy
 
-  cluster-db:
-    container_name: cluster-db
+  corda-cluster-db:
+    container_name: corda-cluster-db
     image: postgres
     ports:
       - "5433:5432"
@@ -139,7 +139,7 @@ services:
       - -ssalt=not so random
       - -ddatabase.user=user
       - -ddatabase.pass.configSecret.encryptedSecret=4LNuCvt+NhGIBwL7gRRhvAZh3k6JRN9NHv0aG3pi1xM=
-      - -ddatabase.jdbc.url=jdbc:postgresql://cluster-db:5432/cordacluster
+      - -ddatabase.jdbc.url=jdbc:postgresql://corda-cluster-db:5432/cordacluster
     healthcheck:
       test: [ "CMD-SHELL", "curl --fail http://localhost:7000/isHealthy || exit 1" ]
       interval: 5s
