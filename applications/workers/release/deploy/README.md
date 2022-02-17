@@ -35,7 +35,7 @@ docker login docker-remotes.software.r3.com  -p API_KEY -u FIRST.LAST@r3.com
 * finally run the publish task using the cache:
 
 ```shell
-./gradlew publishOSGi-PbaseImage=docker-remotes.software.r3.com/azul/zulu-openjdk
+./gradlew publishOSGi -PbaseImage=docker-remotes.software.r3.com/azul/zulu-openjdk
 ```
 
 ## Start the network
