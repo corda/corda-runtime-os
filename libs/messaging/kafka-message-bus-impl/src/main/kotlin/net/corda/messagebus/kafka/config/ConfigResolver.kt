@@ -9,7 +9,6 @@ import net.corda.messaging.api.exception.CordaMessageAPIConfigException
 import net.corda.schema.configuration.MessagingKeys.Bus.BUS_TYPE
 import net.corda.schema.configuration.MessagingKeys.Bus.KAFKA_PROPERTIES
 import net.corda.v5.base.util.contextLogger
-import org.osgi.framework.Bundle
 import org.osgi.framework.FrameworkUtil
 import java.util.Properties
 
@@ -30,6 +29,7 @@ internal class ConfigResolver(private val smartConfigFactory: SmartConfigFactory
         private const val CLIENT_ID_PATH = "clientId"
         private const val TOPIC_PREFIX_PATH = "topicPrefix"
         private const val INSTANCE_ID_PATH = "instanceId"
+        private const val TRANSACTIONAL_ID_PATH = "transactionalId"
     }
 
     private val defaults = getResourceConfig(DEFAULT_CONFIG_FILE)
@@ -46,9 +46,11 @@ internal class ConfigResolver(private val smartConfigFactory: SmartConfigFactory
      *                     required configuration provided to the builders.
      */
     private fun resolve(busConfig: SmartConfig, rolePath: String, configParams: SmartConfig): Properties {
-        // TODO fix paths here. Does the returned config when you do getConfig have the path stripped?
-        if (busConfig.getString(BUS_TYPE) != EXPECTED_BUS_TYPE) {
-            throw CordaMessageAPIConfigException("foo")
+        val busType = busConfig.getString(BUS_TYPE)
+        if (busType != EXPECTED_BUS_TYPE) {
+            throw CordaMessageAPIConfigException(
+                "Tried to configure the Kafka bus but received $busType configuration instead"
+            )
         }
 
         val kafkaParams = busConfig.getConfig(KAFKA_PROPERTIES)
@@ -58,7 +60,7 @@ internal class ConfigResolver(private val smartConfigFactory: SmartConfigFactory
             .withFallback(defaults)
             .resolve()
 
-        logger.info("Resolved kafka configuration: ${resolvedConfig.root().render()}")
+        logger.info("Resolved kafka configuration: ${resolvedConfig.toSafeConfig().root().render()}")
 
         // Trim down to just the Kafka config for the specified role.
         val roleConfig = resolvedConfig.getConfig("roles.$rolePath")
@@ -81,9 +83,12 @@ internal class ConfigResolver(private val smartConfigFactory: SmartConfigFactory
      * If this is running outside OSGi (e.g. a unit test) then fall back to standard Java classloader mechanisms.
      */
     private fun getResourceConfig(resource: String): SmartConfig {
-        val bundle: Bundle? = FrameworkUtil.getBundle(this::class.java)
+        val bundle = FrameworkUtil.getBundle(this::class.java)
         val url = bundle?.getResource(resource)
-            ?: this::class.java.classLoader.getResource(resource) ?: throw CordaMessageAPIConfigException("foo") // TODO
+            ?: this::class.java.classLoader.getResource(resource)
+            ?: throw CordaMessageAPIConfigException(
+                "Failed to get resource $resource from Kafka bus implementation bundle"
+            )
         val config = ConfigFactory.parseURL(url)
         return smartConfigFactory.create(config)
     }
@@ -99,19 +104,34 @@ internal class ConfigResolver(private val smartConfigFactory: SmartConfigFactory
     // All parameters in the enforced and default config files must be specified. These functions insert dummy values
     // for those parameters that don't matter when resolving the config.
     private fun ConsumerConfig.toSmartConfig(): SmartConfig {
-        return smartConfigFactory.create(ConfigFactory.parseMap(mapOf(
-            GROUP_PATH to group,
-            CLIENT_ID_PATH to clientId,
-            TOPIC_PREFIX_PATH to topicPrefix,
-            INSTANCE_ID_PATH to "<undefined>"
-        )))
+        return smartConfigFactory.create(
+            ConfigFactory.parseMap(
+                mapOf(
+                    GROUP_PATH to group,
+                    CLIENT_ID_PATH to clientId,
+                    TOPIC_PREFIX_PATH to topicPrefix,
+                    INSTANCE_ID_PATH to "<undefined>",
+                    TRANSACTIONAL_ID_PATH to "<undefined>"
+                )
+            )
+        )
     }
 
     private fun ProducerConfig.toSmartConfig(): SmartConfig {
-        return smartConfigFactory.create(ConfigFactory.parseMap(mapOf(
-            CLIENT_ID_PATH to clientId,
-            INSTANCE_ID_PATH to instanceId,
-            GROUP_PATH to "<undefined>"
-        )))
+        val transactionalId = if (instanceId != null) {
+            "$clientId-$instanceId"
+        } else {
+            null
+        }
+        return smartConfigFactory.create(
+            ConfigFactory.parseMap(
+                mapOf(
+                    CLIENT_ID_PATH to clientId,
+                    INSTANCE_ID_PATH to instanceId,
+                    GROUP_PATH to "<undefined>",
+                    TRANSACTIONAL_ID_PATH to transactionalId
+                )
+            )
+        )
     }
 }

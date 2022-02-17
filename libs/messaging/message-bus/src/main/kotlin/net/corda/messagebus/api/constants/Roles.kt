@@ -36,7 +36,7 @@ enum class ConsumerRoles {
 
 enum class ProducerRoles {
     PUBLISHER {
-        override val configPath = "publisher"
+        override val configPath = "publisher.producer"
     },
     DURABLE {
         override val configPath = "durable.producer"
