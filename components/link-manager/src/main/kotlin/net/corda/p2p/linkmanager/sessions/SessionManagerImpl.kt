@@ -198,7 +198,9 @@ open class SessionManagerImpl(
                         SessionState.SessionAlreadyPending
                     }
                     is OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded -> {
-                        val messages = getSessionInitMessage(counterparties, genSessionInitMessage(counterparties, status.number))
+                        val initMessages = genSessionInitMessages(counterparties, status.number)
+                        outboundSessionPool.get().addPendingSessions(counterparties, initMessages.map { it.first })
+                        val messages = linkOutMessagesFromSessionInitMessages(counterparties, initMessages)
                             ?: return@read SessionState.CannotEstablishSession
                         SessionState.NewSessionsNeeded(messages)
                     }
@@ -257,9 +259,9 @@ open class SessionManagerImpl(
         sessionNegotiationLock.write {
             sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId(sessionId), counterparties)
             sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId(sessionId), counterparties)
-            val sessionInitMessage = genSessionInitMessage(counterparties, 1)
+            val sessionInitMessage = genSessionInitMessages(counterparties, 1)
             outboundSessionPool.get().timeoutSession(sessionId, sessionInitMessage.single().first)
-            val records = getSessionInitMessage(counterparties, sessionInitMessage) ?.let {
+            val records = linkOutMessagesFromSessionInitMessages(counterparties, sessionInitMessage) ?.let {
                 LinkManager.OutboundMessageProcessor.recordsForNewSessions(
                     SessionState.NewSessionsNeeded(it),
                     inboundAssignmentListener,
@@ -278,7 +280,7 @@ open class SessionManagerImpl(
         return sessionId + "_" + InitiatorHandshakeMessage::class.java.simpleName
     }
 
-    private fun genSessionInitMessage(counterparties: SessionCounterparties, multiplicity: Int)
+    private fun genSessionInitMessages(counterparties: SessionCounterparties, multiplicity: Int)
         : List<Pair<AuthenticationProtocolInitiator, InitiatorHelloMessage>> {
         val ourMemberInfo = networkMap.getMemberInfo(counterparties.ourId)
         if (ourMemberInfo == null) {
@@ -309,12 +311,10 @@ open class SessionManagerImpl(
         return messagesAndProtocol
     }
 
-    private fun getSessionInitMessage(
+    private fun linkOutMessagesFromSessionInitMessages(
         counterparties: SessionCounterparties,
         messages: List<Pair<AuthenticationProtocolInitiator, InitiatorHelloMessage>>
     ): List<Pair<String, LinkOutMessage>>? {
-        outboundSessionPool.get().addPendingSessions(counterparties, messages.map { it.first })
-
         val sessionIds = messages.map { it.first.sessionId }
         logger.info("Local identity (${counterparties.ourId}) initiating new sessions with Id's $sessionIds with remote identity " +
             "${counterparties.counterpartyId}"
@@ -365,7 +365,7 @@ open class SessionManagerImpl(
     }
 
     private fun processResponderHello(message: ResponderHelloMessage): LinkOutMessage? {
-        val sessionType = outboundSessionPool.get().getSession(message.header.sessionId) ?: run {
+        val sessionType = outboundSessionPool.get()?.getSession(message.header.sessionId) ?: run {
             logger.noSessionWarning(message::class.java.simpleName, message.header.sessionId)
             return null
         }

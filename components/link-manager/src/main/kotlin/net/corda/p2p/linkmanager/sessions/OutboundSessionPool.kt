@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.random.Random
 
 class OutboundSessionPool(
-    originalPoolSize: Int,
+    private val poolSize: Int,
     private val calculateWeightForSession: (sessionId: String) -> Double?,
     private val genRandomNumber: () -> Float = { Random.nextFloat() }
 ) {
@@ -20,9 +20,6 @@ class OutboundSessionPool(
 
     private val outboundSessions = ConcurrentHashMap<SessionKey, SessionType>()
     private val sessionIdToSessionKey = ConcurrentHashMap<String, SessionKey>()
-
-    @Volatile
-    private var poolSize: Int = originalPoolSize
 
     private data class SessionKey(val poolIndex: Int, val sessionCounterparties: SessionManager.SessionCounterparties)
 
