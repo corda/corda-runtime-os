@@ -24,6 +24,7 @@ class SessionDataIntegrationTest {
         private const val THIRTY_SECONDS = 30000L
         private val testConfig = ConfigFactory.empty()
             .withValue(FlowConfig.SESSION_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(testResendWindow))
+            .withValue(FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(testResendWindow))
         private val configFactory = SmartConfigFactory.create(testConfig)
         private val testSmartConfig = configFactory.create(testConfig)
     }
