@@ -46,7 +46,7 @@ class SessionParty (
         }
     }
 
-    override fun processNextReceivedMessage(sendMessages: Boolean) {
+    override fun processNextReceivedMessage(sendMessages: Boolean, instant: Instant) {
         processAndAcknowledgeEventsInSequence(getNextInboundMessage())
 
         if (sendMessages) {
@@ -54,7 +54,7 @@ class SessionParty (
         }
     }
 
-    override fun processAllReceivedMessages(sendMessages: Boolean) {
+    override fun processAllReceivedMessages(sendMessages: Boolean, instant: Instant) {
         var nextMessage = getNextInboundMessage()
         while (nextMessage != null) {
             processAndAcknowledgeEventsInSequence(nextMessage)

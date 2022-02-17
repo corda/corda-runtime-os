@@ -48,6 +48,8 @@ class SessionInitProcessorSend(
         val newSessionState = SessionState.newBuilder()
             .setSessionId(newSessionId)
             .setSessionStartTime(instant.toEpochMilli())
+            .setLastReceivedMessageTime(instant.toEpochMilli())
+            .setLastSentMessageTime(instant.toEpochMilli())
             .setIsInitiator(true)
             .setCounterpartyIdentity(sessionInit.initiatedIdentity)
             .setReceivedEventsState(SessionProcessState(0, mutableListOf()))

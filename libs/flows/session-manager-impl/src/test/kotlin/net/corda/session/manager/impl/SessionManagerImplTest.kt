@@ -6,6 +6,7 @@ import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionData
+import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.FlowConfig
@@ -17,8 +18,10 @@ class SessionManagerImplTest {
 
     private val sessionManager = SessionManagerImpl()
     private val testResendWindow = 5000L
+    private val testHeartbeatTimeout = 30000L
     private val testConfig = ConfigFactory.empty()
         .withValue(FlowConfig.SESSION_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(testResendWindow))
+        .withValue(FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(testHeartbeatTimeout))
     private val configFactory = SmartConfigFactory.create(testConfig)
     private val testSmartConfig = configFactory.create(testConfig)
 
@@ -109,5 +112,64 @@ class SessionManagerImplTest {
         assertThat(secondOutputState.sendEventsState.undeliveredMessages.filter {
             it.payload::class.java == SessionAck::class.java }
         ).isEmpty()
+    }
+
+    @Test
+    fun `Send heartbeat`() {
+        val instant = Instant.now()
+        val sessionState = buildSessionState(
+            SessionStateType.CONFIRMED,
+            0,
+            listOf(),
+            4,
+            listOf(),
+            instant.toEpochMilli()
+        )
+
+        //validate no heartbeat
+        val (_, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig)
+        assertThat(messagesToSend.size).isEqualTo(0)
+
+        //Validate heartbeat
+        val (_, secondMessagesToSend) = sessionManager.getMessagesToSend(
+            sessionState, instant.plusMillis(testResendWindow  + 1),
+            testSmartConfig
+        )
+
+        assertThat(secondMessagesToSend.size).isEqualTo(1)
+        val messageToSend = secondMessagesToSend.first()
+        assertThat(messageToSend.payload::class.java).isEqualTo(SessionAck::class.java)
+        val ack = messageToSend.payload as SessionAck
+        assertThat(ack.sequenceNum).isEqualTo(0)
+    }
+
+    @Test
+    fun `Send error for session timed out`() {
+        val instant = Instant.now()
+        val sessionState = buildSessionState(
+            SessionStateType.CONFIRMED,
+            0,
+            listOf(),
+            4,
+            listOf(),
+            instant.toEpochMilli()
+        )
+
+        //validate no heartbeat
+        val (firstUpdatedState, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig)
+        assertThat(messagesToSend.size).isEqualTo(0)
+        assertThat(firstUpdatedState.status).isEqualTo(SessionStateType.CONFIRMED)
+
+        //Validate heartbeat
+        val (secondUpdatedState, secondMessagesToSend) = sessionManager.getMessagesToSend(
+            sessionState, instant.plusMillis(testHeartbeatTimeout  + 1),
+            testSmartConfig
+        )
+
+        assertThat(secondMessagesToSend.size).isEqualTo(1)
+        assertThat(secondUpdatedState.status).isEqualTo(SessionStateType.ERROR)
+        val messageToSend = secondMessagesToSend.first()
+        assertThat(messageToSend.payload::class.java).isEqualTo(SessionError::class.java)
+        assertThat(messageToSend.payload::class.java).isEqualTo(SessionError::class.java)
     }
 }
