@@ -36,7 +36,7 @@ class CpkWriteServiceImpl @Activate constructor(
     private val configReadService: ConfigurationReadService,
 ) : CpkWriteService, LifecycleEventHandler {
     companion object {
-        val log: Logger = contextLogger()
+        val logger: Logger = contextLogger()
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<CpkWriteService>(this)
@@ -45,19 +45,19 @@ class CpkWriteServiceImpl @Activate constructor(
     internal var configReadServiceRegistration: RegistrationHandle? = null
     @VisibleForTesting
     internal var configSubscription: AutoCloseable? = null
-
-    private var writer: CpkFileWriter? = null
+    @VisibleForTesting
+    internal var writer: CpkFileWriter? = null
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
 
     override fun start() {
-        log.debug { "Cpk Write Service starting" }
+        logger.debug { "Cpk Write Service starting" }
         coordinator.start()
     }
 
     override fun stop() {
-        log.debug { "Cpk Write Service stopping" }
+        logger.debug { "Cpk Write Service stopping" }
         coordinator.stop()
     }
 
@@ -94,7 +94,11 @@ class CpkWriteServiceImpl @Activate constructor(
                 setOf(ConfigKeys.BOOT_CONFIG)
             )
         } else {
-            configSubscription?.close()
+            logger.warn(
+                "Received a ${RegistrationStatusChangeEvent::class.java.simpleName} with status ${event.status}." +
+                        " Component ${this::class.java.simpleName} is not started"
+            )
+            closeResources()
         }
     }
 
@@ -102,12 +106,16 @@ class CpkWriteServiceImpl @Activate constructor(
      * We've received a config event that we care about, we can now write cpks
      */
     private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        val cfg = event.config[ConfigKeys.BOOT_CONFIG]!!
-        if (cfg.hasPath(CpkServiceConfigKeys.CPK_CACHE_DIR)) {
-            writer = CpkFileWriter.fromConfig(cfg)
+        val config = event.config[ConfigKeys.BOOT_CONFIG]!!
+        if (config.hasPath(CpkServiceConfigKeys.CPK_CACHE_DIR)) {
+            writer = CpkFileWriter.fromConfig(config)
             coordinator.updateStatus(LifecycleStatus.UP)
         } else {
-            log.error("Need ${CpkServiceConfigKeys.CPK_CACHE_DIR} to be specified in the boot config")
+            logger.warn(
+                "Need ${CpkServiceConfigKeys.CPK_CACHE_DIR} to be specified in the boot config." +
+                        " Component ${this::class.java.simpleName} is not started"
+            )
+            closeResources()
         }
     }
 
@@ -115,13 +123,11 @@ class CpkWriteServiceImpl @Activate constructor(
      * Close the registration.
      */
     private fun onStopEvent() {
-        configReadServiceRegistration?.close()
-        configReadServiceRegistration = null
+        closeResources()
     }
 
     override fun close() {
-        configSubscription?.close()
-        configReadServiceRegistration?.close()
+        closeResources()
     }
 
     override fun put(cpkMetadata: CPK.Metadata, inputStream: InputStream) {
@@ -136,5 +142,13 @@ class CpkWriteServiceImpl @Activate constructor(
             throw CordaRuntimeException("CpkWriteServiceImpl has not been initialised yet")
         }
         writer!!.remove(cpkMetadata)
+    }
+
+    private fun closeResources() {
+        configReadServiceRegistration?.close()
+        configReadServiceRegistration = null
+        configSubscription?.close()
+        configSubscription = null
+        writer = null
     }
 }
