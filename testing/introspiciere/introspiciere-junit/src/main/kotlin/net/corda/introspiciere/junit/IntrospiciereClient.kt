@@ -7,8 +7,8 @@ import net.corda.introspiciere.domain.TopicDefinition.Companion.DEFAULT_REPLICAT
 import net.corda.introspiciere.http.CreateTopicReq
 import net.corda.introspiciere.http.MessageReaderReq
 import net.corda.introspiciere.http.MessageWriterReq
+import java.nio.ByteBuffer
 
-@Suppress("UNUSED_PARAMETER")
 class IntrospiciereClient(private val endpoint: String) {
     fun helloWorld() {
         println("I should call $endpoint/helloworld")
@@ -21,6 +21,11 @@ class IntrospiciereClient(private val endpoint: String) {
     ) {
         val topic = TopicDefinition(name, partitions, replicationFactor)
         CreateTopicReq(topic).request(endpoint)
+    }
+
+    fun write(topic: String, key: String, schema: Any) {
+        val byteBuffer = schema::class.java.getMethod("toByteBuffer").invoke(schema) as ByteBuffer
+        write(topic, key, byteBuffer.toByteArray(), schema::class.qualifiedName!!)
     }
 
     fun write(topic: String, key: String, schema: ByteArray, schemaClass: String) {

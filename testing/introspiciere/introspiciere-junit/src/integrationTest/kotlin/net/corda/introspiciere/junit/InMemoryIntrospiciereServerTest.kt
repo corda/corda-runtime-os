@@ -20,7 +20,7 @@ class InMemoryIntrospiciereServerTest {
     }
 
     @Test
-    fun `I can start the server with as an extension`() {
+    fun `I can start the server as an extension`() {
         val generator = KeyPairGenerator.getInstance("EC")
         generator.initialize(571)
         val pair = generator.generateKeyPair()
@@ -34,19 +34,13 @@ class InMemoryIntrospiciereServerTest {
         val key = "key".random8
 
         introspiciere.client.createTopic(topic)
-        introspiciere.client.write(
-            topic,
-            key,
-            keyPairEntry.toByteBuffer().toByteArray(),
-            KeyPairEntry::class.qualifiedName!!
-        )
+        introspiciere.client.write(topic, key, keyPairEntry)
 
         val messages = introspiciere.client.read(
             topic,
             key,
             KeyPairEntry::class.java
         )
-
 
         println(messages)
     }
