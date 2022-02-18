@@ -18,6 +18,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.packaging.CPK
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -40,7 +41,8 @@ class CpkWriteServiceImpl @Activate constructor(
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<CpkWriteService>(this)
-    private var registration: RegistrationHandle? = null
+    @VisibleForTesting
+    internal var configReadServiceRegistration: RegistrationHandle? = null
     private var configSubscription: AutoCloseable? = null
 
     private var writer: CpkFileWriter? = null
@@ -75,8 +77,8 @@ class CpkWriteServiceImpl @Activate constructor(
      * to tell us when it is ready so we can register ourselves to handle config updates.
      */
     private fun onStartEvent(coordinator: LifecycleCoordinator) {
-        registration?.close()
-        registration =
+        configReadServiceRegistration?.close()
+        configReadServiceRegistration =
             coordinator.followStatusChangesByName(setOf(LifecycleCoordinatorName.forComponent<ConfigurationReadService>()))
     }
 
@@ -109,8 +111,8 @@ class CpkWriteServiceImpl @Activate constructor(
      * Close the registration.
      */
     private fun onStopEvent() {
-        registration?.close()
-        registration = null
+        configReadServiceRegistration?.close()
+        configReadServiceRegistration = null
     }
 
     /** received a new configuration from the configuration service (not the event loop) */
@@ -122,7 +124,7 @@ class CpkWriteServiceImpl @Activate constructor(
 
     override fun close() {
         configSubscription?.close()
-        registration?.close()
+        configReadServiceRegistration?.close()
     }
 
     class ConfigChangedEvent(val config: SmartConfig) : LifecycleEvent
