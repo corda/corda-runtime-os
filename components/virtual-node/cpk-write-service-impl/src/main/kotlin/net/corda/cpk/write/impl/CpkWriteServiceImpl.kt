@@ -1,10 +1,9 @@
 package net.corda.cpk.write.impl
 
-import net.corda.configuration.read.ConfigurationHandler
+import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpk.readwrite.CpkServiceConfigKeys
 import net.corda.cpk.write.CpkWriteService
-import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -35,15 +34,17 @@ class CpkWriteServiceImpl @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configReadService: ConfigurationReadService,
-) : CpkWriteService, LifecycleEventHandler, ConfigurationHandler {
+) : CpkWriteService, LifecycleEventHandler {
     companion object {
         val log: Logger = contextLogger()
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<CpkWriteService>(this)
+
     @VisibleForTesting
     internal var configReadServiceRegistration: RegistrationHandle? = null
-    private var configSubscription: AutoCloseable? = null
+    @VisibleForTesting
+    internal var configSubscription: AutoCloseable? = null
 
     private var writer: CpkFileWriter? = null
 
@@ -66,8 +67,8 @@ class CpkWriteServiceImpl @Activate constructor(
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> onStartEvent(coordinator)
-            is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event)
-            is ConfigChangedEvent -> onConfigChangedEvent(coordinator, event)
+            is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event, coordinator)
+            is ConfigChangedEvent -> onConfigChangedEvent(event, coordinator)
             is StopEvent -> onStopEvent()
         }
     }
@@ -86,9 +87,12 @@ class CpkWriteServiceImpl @Activate constructor(
      * If the thing(s) we depend on are up (only the [ConfigurationReadService]),
      * then register `this` for config updates
      */
-    private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent) {
+    private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator) {
         if (event.status == LifecycleStatus.UP) {
-            configSubscription = configReadService.registerForUpdates(this)
+            configSubscription = configReadService.registerComponentForUpdates(
+                coordinator,
+                setOf(ConfigKeys.BOOT_CONFIG)
+            )
         } else {
             configSubscription?.close()
         }
@@ -97,8 +101,8 @@ class CpkWriteServiceImpl @Activate constructor(
     /**
      * We've received a config event that we care about, we can now write cpks
      */
-    private fun onConfigChangedEvent(coordinator: LifecycleCoordinator, event: ConfigChangedEvent) {
-        val cfg = event.config.toSafeConfig()
+    private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
+        val cfg = event.config[ConfigKeys.BOOT_CONFIG]!!
         if (cfg.hasPath(CpkServiceConfigKeys.CPK_CACHE_DIR)) {
             writer = CpkFileWriter.fromConfig(cfg)
             coordinator.updateStatus(LifecycleStatus.UP)
@@ -115,19 +119,10 @@ class CpkWriteServiceImpl @Activate constructor(
         configReadServiceRegistration = null
     }
 
-    /** received a new configuration from the configuration service (not the event loop) */
-    override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
-        if (ConfigKeys.BOOT_CONFIG in changedKeys) {
-            coordinator.postEvent(ConfigChangedEvent(config[ConfigKeys.BOOT_CONFIG]!!))
-        }
-    }
-
     override fun close() {
         configSubscription?.close()
         configReadServiceRegistration?.close()
     }
-
-    class ConfigChangedEvent(val config: SmartConfig) : LifecycleEvent
 
     override fun put(cpkMetadata: CPK.Metadata, inputStream: InputStream) {
         if (writer == null) {
