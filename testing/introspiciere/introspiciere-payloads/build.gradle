@@ -5,5 +5,6 @@ plugins {
 description "Introspiciere http payloads"
 
 dependencies {
+    implementation project(':testing:introspiciere:introspiciere-domain')
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
 }

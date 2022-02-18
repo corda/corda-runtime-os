@@ -12,6 +12,7 @@ import net.corda.introspiciere.core.addidentity.CreateKeysAndAddIdentityInteract
 import net.corda.introspiciere.core.addidentity.CryptoKeySenderImpl
 import net.corda.introspiciere.domain.KafkaMessage
 import net.corda.introspiciere.domain.TopicDefinition
+import net.corda.introspiciere.payloads.KafkaMessageList
 import java.io.Closeable
 import java.net.BindException
 import java.net.ServerSocket

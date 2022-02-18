@@ -1,14 +1,14 @@
 package net.corda.introspiciere.http
 
-import com.github.kittinunf.fuel.gson.jsonBody
 import com.github.kittinunf.fuel.httpPost
+import com.github.kittinunf.fuel.jackson.objectBody
 import com.github.kittinunf.result.Result
 import net.corda.introspiciere.domain.TopicDefinition
 
 class CreateTopicReq(private val topicDefinition: TopicDefinition) {
     fun request(endpoint: String) {
         val (_, response, result) = "$endpoint/topics".httpPost()
-            .jsonBody(topicDefinition)
+            .objectBody(topicDefinition)
             .timeoutRead(180000)
             .responseString()
         when (result) {

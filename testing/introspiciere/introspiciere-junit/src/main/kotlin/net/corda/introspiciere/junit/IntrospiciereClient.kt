@@ -39,7 +39,16 @@ class IntrospiciereClient(private val endpoint: String) {
         ).request(endpoint)
     }
 
-    fun <T> read(topic: String, key: String, schemaClass: Class<T>): String {
-        return MessageReaderReq(topic, key, schemaClass).request(endpoint)
+    inline fun <reified T> read(topic: String, key: String): List<T> {
+        return read(topic, key, T::class.java)
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    fun <T> read(topic: String, key: String, schemaClass: Class<T>): List<T> {
+        val messages = MessageReaderReq(topic, key, schemaClass).request(endpoint)
+        return messages.map {
+            val method = schemaClass.getMethod("fromByteBuffer", ByteBuffer::class.java)
+            method.invoke(null, ByteBuffer.wrap(it.schema)) as T
+        }
     }
 }
