@@ -3,9 +3,12 @@ package net.corda.introspiciere.server
 import io.javalin.Javalin
 import io.javalin.http.InternalServerErrorResponse
 import net.corda.introspiciere.core.HelloWorld
+import net.corda.introspiciere.core.KafkaAdminFactory
 import net.corda.introspiciere.core.SimpleKafkaClient
+import net.corda.introspiciere.core.TopicCreatorGateway
 import net.corda.introspiciere.core.addidentity.CreateKeysAndAddIdentityInteractor
 import net.corda.introspiciere.core.addidentity.CryptoKeySenderImpl
+import net.corda.introspiciere.domain.TopicDefinition
 import java.io.Closeable
 import java.net.BindException
 import java.net.ServerSocket
@@ -37,6 +40,14 @@ class IntrospiciereServer(private val port: Int = 0, private val kafkaBrokers: L
             }
         }
 
+        app.post("/topics") { ctx ->
+            wrapException {
+                val topicDefinition = ctx.bodyAsClass<TopicDefinition>()
+                TopicCreatorGateway(KafkaAdminFactory(servers)).create(topicDefinition)
+                ctx.result("OK")
+            }
+        }
+
         app.post("/identities") { ctx ->
             wrapException {
                 val input = ctx.bodyAsClass<CreateKeysAndAddIdentityInteractor.Input>()
@@ -45,7 +56,7 @@ class IntrospiciereServer(private val port: Int = 0, private val kafkaBrokers: L
             }
         }
     }
-    
+
     val portUsed: Int
         get() = app.port()
 

@@ -5,7 +5,7 @@ import net.corda.messagebus.kafka.serialization.CordaAvroSerializerImpl
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import org.apache.avro.specific.SpecificRecordBase
 import org.apache.kafka.clients.admin.Admin
-import org.apache.kafka.clients.admin.AdminClientConfig
+import org.apache.kafka.clients.admin.AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG
 import org.apache.kafka.clients.admin.NewTopic
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.consumer.KafkaConsumer
@@ -17,22 +17,13 @@ import java.time.Duration
 import java.util.*
 
 class SimpleKafkaClient(val servers: List<String>) {
-    fun createTopic(name: String, partitions: Int = 1, replicationFactor: Short = 1) {
-        val properties = Properties()
-        properties[AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG] = servers.joinToString(",")
-        Admin.create(properties).use {
-            val newTopic = NewTopic(name, partitions, replicationFactor)
-            it.createTopics(listOf(newTopic)).all().get()
-        }
-    }
-
     val classes: MutableSet<Class<out SpecificRecordBase>> by lazy {
         Reflections("net.corda").getSubTypesOf(SpecificRecordBase::class.java)
     }
 
     fun fetchTopics(): String {
         val properties = Properties()
-        properties[AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG] = servers.joinToString(",")
+        properties[BOOTSTRAP_SERVERS_CONFIG] = servers.joinToString(",")
         //properties[AdminClientConfig.RETRIES_CONFIG] = 5//Int.MAX_VALUE
         //properties[AdminClientConfig.DEFAULT_API_TIMEOUT_MS_CONFIG] = 20000 //Must be equal or bigger than REQUEST_TIMEOUT_MS_CONFIG
         //properties[AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG] = 5000

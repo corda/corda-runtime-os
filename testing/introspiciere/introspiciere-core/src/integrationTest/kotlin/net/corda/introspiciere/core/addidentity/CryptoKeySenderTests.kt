@@ -4,6 +4,7 @@ import net.corda.introspiciere.core.DeployKafka
 import net.corda.p2p.test.KeyAlgorithm.ECDSA
 import net.corda.p2p.test.KeyPairEntry
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
 import java.nio.ByteBuffer
@@ -13,8 +14,9 @@ class CryptoKeySenderTests {
     val kafka = DeployKafka("alpha")
 
     @Test
+    @Disabled
     fun first() {
-        kafka.client.createTopic(CryptoKeySenderImpl.topicName)
+//        kafka.client.createTopic(CryptoKeySenderImpl.topicName)
 
         CryptoKeySenderImpl(kafka.client).send(
             "alice", KeyPairEntry(ECDSA, "a".toByteBuffer(), "b".toByteBuffer())

@@ -50,7 +50,7 @@ class IdentitiesRequester(private val endpoint: String) {
     }
 }
 
-private fun Response.buildException(): HttpException? {
+internal fun Response.buildException(): HttpException? {
     if (body().isEmpty()) return null
     val message = StringBuilder()
     message.appendLine(responseMessage)

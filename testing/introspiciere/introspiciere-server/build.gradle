@@ -11,6 +11,8 @@ dependencies {
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 
     implementation project(':testing:introspiciere:introspiciere-core')
+    implementation project(':testing:introspiciere:introspiciere-payloads')
+    implementation project(':testing:introspiciere:introspiciere-domain')
 }
 
 jar {

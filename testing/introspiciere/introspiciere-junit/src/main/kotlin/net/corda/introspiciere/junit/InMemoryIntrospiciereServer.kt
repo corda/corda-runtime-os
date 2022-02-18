@@ -28,11 +28,6 @@ class InMemoryIntrospiciereServer(
     }
 
     val client: IntrospiciereClient
-        get() = IntrospiciereClient("http://localhost:$port")
+        get() = IntrospiciereClient("http://localhost:${server.portUsed}")
 }
 
-class IntrospiciereClient(private val endpoint: String) {
-    fun helloWorld() {
-        println("I should call $endpoint/helloworld")
-    }
-}
