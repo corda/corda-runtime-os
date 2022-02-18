@@ -5,6 +5,7 @@ import net.corda.introspiciere.domain.TopicDefinition
 import net.corda.introspiciere.domain.TopicDefinition.Companion.DEFAULT_PARTITIONS
 import net.corda.introspiciere.domain.TopicDefinition.Companion.DEFAULT_REPLICATION_FACTOR
 import net.corda.introspiciere.http.CreateTopicReq
+import net.corda.introspiciere.http.MessageReaderReq
 import net.corda.introspiciere.http.MessageWriterReq
 
 @Suppress("UNUSED_PARAMETER")
@@ -33,7 +34,7 @@ class IntrospiciereClient(private val endpoint: String) {
         ).request(endpoint)
     }
 
-    fun read(topic: String, key: String, schemaClass: String) {
-
+    fun <T> read(topic: String, key: String, schemaClass: Class<T>): String {
+        return MessageReaderReq(topic, key, schemaClass).request(endpoint)
     }
 }

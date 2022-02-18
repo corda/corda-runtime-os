@@ -5,6 +5,7 @@ import io.javalin.http.InternalServerErrorResponse
 import net.corda.introspiciere.core.HelloWorld
 import net.corda.introspiciere.core.KafkaAdminFactory
 import net.corda.introspiciere.core.KafkaMessageGateway
+import net.corda.introspiciere.core.KafkaReaderGateway
 import net.corda.introspiciere.core.SimpleKafkaClient
 import net.corda.introspiciere.core.TopicCreatorGateway
 import net.corda.introspiciere.core.addidentity.CreateKeysAndAddIdentityInteractor
@@ -46,9 +47,9 @@ class IntrospiciereServer(private val port: Int = 0, private val kafkaBrokers: L
             wrapException {
                 val topic = ctx.pathParam("topic")
                 val key = ctx.pathParam("key")
-                val schema = ctx.queryParam("schema")
-
-                ctx.result(topics)
+                val schema = ctx.queryParam("schema")!!
+                val messages = KafkaReaderGateway(servers).read(topic, key, schema)
+                ctx.json(messages)
             }
         }
 

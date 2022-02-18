@@ -12,14 +12,11 @@ import java.net.InetAddress
 import java.nio.ByteBuffer
 
 
-
-@Suppress("UNUSED_VARIABLE")
 class KafkaMessageGateway(private val servers: List<String>) {
 
     fun send(kafkaMessage: KafkaMessage) {
         val clss = Class.forName(kafkaMessage.schemaClass)
 
-        val methods = clss.methods.map { it.name }
         val method = clss.getMethod("fromByteBuffer", ByteBuffer::class.java)
         val keyPairEntry = method.invoke(null, ByteBuffer.wrap(kafkaMessage.schema))
 

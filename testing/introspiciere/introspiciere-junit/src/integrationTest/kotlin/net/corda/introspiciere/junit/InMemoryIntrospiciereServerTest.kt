@@ -30,16 +30,24 @@ class InMemoryIntrospiciereServerTest {
             ByteBuffer.wrap(pair.private.encoded)
         )
 
-
         val topic = "topic".random8
+        val key = "key".random8
+
         introspiciere.client.createTopic(topic)
         introspiciere.client.write(
             topic,
-            "key1",
+            key,
             keyPairEntry.toByteBuffer().toByteArray(),
             KeyPairEntry::class.qualifiedName!!
         )
 
+        val messages = introspiciere.client.read(
+            topic,
+            key,
+            KeyPairEntry::class.java
+        )
 
+
+        println(messages)
     }
 }
