@@ -45,6 +45,7 @@ class GroupPolicyUploader @Activate constructor(
         const val PRODUCER_CLIENT_ID = "messaging.kafka.producer.client.id"
     }
 
+    @Suppress("SpreadOperator")
     override fun startup(args: Array<String>) {
         val parameters = CliParameters()
         CommandLine(parameters).parseArgs(*args)
