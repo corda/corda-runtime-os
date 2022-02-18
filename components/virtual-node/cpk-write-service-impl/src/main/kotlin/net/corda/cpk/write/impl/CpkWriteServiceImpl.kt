@@ -108,7 +108,6 @@ class CpkWriteServiceImpl @Activate constructor(
      * to tell us when it is ready so we can register ourselves to handle config updates.
      */
     private fun onStartEvent(coordinator: LifecycleCoordinator) {
-        configurationReadService.start()
         registration?.close()
         registration =
             coordinator.followStatusChangesByName(setOf(LifecycleCoordinatorName.forComponent<ConfigurationReadService>()))
