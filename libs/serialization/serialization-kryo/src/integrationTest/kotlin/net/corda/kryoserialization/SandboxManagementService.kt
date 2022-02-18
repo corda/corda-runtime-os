@@ -32,9 +32,6 @@ class SandboxManagementService @Activate constructor(
     fun cleanup() {
         sandboxCreationService.unloadSandboxGroup(group1)
         sandboxCreationService.unloadSandboxGroup(group2)
-
-        // Reset the CPI loader, ready for the next test.
-        cpiLoader.stop()
     }
 
     private fun loadCPI(resourceName: String): CPI {

@@ -4,7 +4,7 @@ import java.nio.file.Path
 import net.corda.sandbox.SandboxException
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
-import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
+import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
 import net.corda.v5.application.flows.Flow
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
@@ -26,12 +26,12 @@ import org.osgi.test.junit5.service.ServiceExtension
 class SandboxClassTagTests {
     companion object {
         @RegisterExtension
-        private val lifecycle = EachTestLifecycle()
+        private val lifecycle = AllTestsLifecycle()
 
         @InjectService(timeout = 1000)
         lateinit var sandboxSetup: SandboxSetup
 
-        lateinit var sandboxFactory: SandboxFactory
+        private lateinit var sandboxFactory: SandboxFactory
 
         @Suppress("unused")
         @JvmStatic

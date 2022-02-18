@@ -10,6 +10,7 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(':components:chunking:chunk-read-service')
     implementation project(':components:configuration:configuration-read-service')
     implementation project(':components:configuration:configuration-write-service')
     implementation project(':components:db:db-connection-manager')
@@ -17,6 +18,7 @@ dependencies {
     implementation project(':components:permissions:permission-storage-reader-service')
     implementation project(':components:permissions:permission-storage-writer-service')
     implementation project(':components:virtual-node:virtual-node-write-service')
+    implementation project(':libs:chunking:chunking-datamodel')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-datamodel')
     implementation project(':libs:db:db-admin')
@@ -31,6 +33,8 @@ dependencies {
     implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-db-schema'
 
+    runtimeOnly project(':components:chunking:chunk-read-service-impl')
+    runtimeOnly project(':components:chunking:chunk-db-write-impl')
     runtimeOnly project(':components:configuration:configuration-write-service-impl')
     runtimeOnly project(':components:virtual-node:virtual-node-write-service-impl')
     runtimeOnly project(':components:db:db-connection-manager-impl')

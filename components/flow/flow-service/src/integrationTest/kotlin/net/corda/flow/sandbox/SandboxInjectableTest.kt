@@ -5,14 +5,16 @@ import java.util.UUID
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX_FILTER
 import net.corda.testing.sandboxes.SandboxSetup
+import net.corda.testing.sandboxes.fetchService
+import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.fail
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.framework.BundleContext
@@ -37,24 +39,23 @@ class SandboxInjectableTest {
 
         private val holdingIdentity = HoldingIdentity(X500_NAME, UUID.randomUUID().toString())
 
+        @RegisterExtension
+        private val lifecycle = EachTestLifecycle()
+
         @InjectService(timeout = 1000)
         lateinit var sandboxSetup: SandboxSetup
+
+        private lateinit var sandboxFactory: SandboxFactory
 
         @BeforeAll
         @JvmStatic
         fun setup(@InjectBundleContext context: BundleContext, @TempDir baseDirectory: Path) {
             sandboxSetup.configure(context, baseDirectory)
-        }
-
-        @AfterAll
-        @JvmStatic
-        fun done() {
-            sandboxSetup.shutdown()
+            lifecycle.accept(sandboxSetup) { setup ->
+                sandboxFactory = setup.fetchService(timeout = 1000)
+            }
         }
     }
-
-    @InjectService(timeout = 1000)
-    lateinit var sandboxFactory: SandboxFactory
 
     @Test
     fun testCordaInjectables() {
