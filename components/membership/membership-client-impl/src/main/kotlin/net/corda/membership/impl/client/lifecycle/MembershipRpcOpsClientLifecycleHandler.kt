@@ -1,4 +1,4 @@
-package net.corda.membership.impl.httprpc.lifecycle
+package net.corda.membership.impl.client.lifecycle
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
@@ -12,10 +12,11 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.membership.impl.httprpc.MembershipRpcOpsClientImpl
+import net.corda.membership.impl.client.MembershipRpcOpsClientImpl
 import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.subscription.config.RPCConfig
+import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 
@@ -25,7 +26,6 @@ class MembershipRpcOpsClientLifecycleHandler(
     companion object {
         const val CLIENT_ID = "membership.ops.rpc"
         const val GROUP_NAME = "membership.ops.rpc"
-        const val TOPIC_NAME = "membership.rpc.ops"
     }
 
     // for watching the config changes
@@ -96,7 +96,7 @@ class MembershipRpcOpsClientLifecycleHandler(
             RPCConfig(
                 groupName = GROUP_NAME,
                 clientName = CLIENT_ID,
-                requestTopic = TOPIC_NAME,
+                requestTopic = Schemas.Membership.MEMBERSHIP_RPC_TOPIC,
                 requestType = MembershipRpcRequest::class.java,
                 responseType = MembershipRpcResponse::class.java
             ),

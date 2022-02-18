@@ -1,10 +1,11 @@
-package net.corda.membership.impl.httprpc
+package net.corda.membership.impl.client
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
 import net.corda.data.membership.rpc.request.RegistrationAction
 import net.corda.data.membership.rpc.request.RegistrationRequest
+import net.corda.data.membership.rpc.request.RegistrationStatusRequest
 import net.corda.data.membership.rpc.response.RegistrationResponse
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
@@ -12,17 +13,19 @@ import net.corda.membership.httprpc.MembershipRpcOpsClient
 import net.corda.membership.httprpc.types.MemberInfoSubmitted
 import net.corda.membership.httprpc.types.MemberRegistrationRequest
 import net.corda.membership.httprpc.types.RegistrationRequestProgress
-import net.corda.membership.impl.httprpc.lifecycle.MembershipRpcOpsClientLifecycleHandler
+import net.corda.membership.impl.client.lifecycle.MembershipRpcOpsClientLifecycleHandler
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import java.time.Instant
 import java.util.UUID
 
+@Component(service = [MembershipRpcOpsClient::class])
 class MembershipRpcOpsClientImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     val coordinatorFactory: LifecycleCoordinatorFactory,
@@ -37,7 +40,7 @@ class MembershipRpcOpsClientImpl @Activate constructor(
 
     private val lifecycleHandler = MembershipRpcOpsClientLifecycleHandler(this)
 
-    private val coordinator = coordinatorFactory.createCoordinator<MembershipRpcOpsClientLifecycleHandler>(lifecycleHandler)
+    private val coordinator = coordinatorFactory.createCoordinator<MembershipRpcOpsClient>(lifecycleHandler)
 
     private val className = this::class.java.simpleName
 
@@ -63,7 +66,7 @@ class MembershipRpcOpsClientImpl @Activate constructor(
             ),
             RegistrationRequest(
                 memberRegistrationRequest.virtualNodeId,
-                RegistrationAction.REQUEST_JOIN
+                RegistrationAction.valueOf(memberRegistrationRequest.action.name)
             )
         )
 
@@ -77,7 +80,7 @@ class MembershipRpcOpsClientImpl @Activate constructor(
                 UUID.randomUUID().toString(),
                 Instant.now()
             ),
-            virtualNodeId
+            RegistrationStatusRequest(virtualNodeId)
         )
 
         return registrationResponse(request.sendRequest())
@@ -98,10 +101,24 @@ class MembershipRpcOpsClientImpl @Activate constructor(
         )
 
     @Suppress("UNCHECKED_CAST")
-    private fun <RESPONSE> MembershipRpcRequest.sendRequest(): RESPONSE {
-        return try {
+    private inline fun <reified RESPONSE> MembershipRpcRequest.sendRequest(): RESPONSE {
+        try {
             logger.info("Sending request: $this")
-            lifecycleHandler.rpcSender.sendRequest(this).getOrThrow().response as RESPONSE
+            val response = lifecycleHandler.rpcSender.sendRequest(this).getOrThrow()
+            require(response != null && response.responseContext != null && response.response != null) {
+                "Response cannot be null."
+            }
+            require(this.requestContext.requestId == response.responseContext.requestId) {
+                "Request ID must match in the request and response."
+            }
+            require(this.requestContext.requestTimestamp == response.responseContext.requestTimestamp) {
+                "Request timestamp must match in the request and response."
+            }
+            require(response.response is RESPONSE) {
+                "Expected ${RESPONSE::class.java} as response type, but received ${response.response.javaClass}."
+            }
+
+            return response.response as RESPONSE
         } catch (e: Exception) {
             throw CordaRuntimeException(
                 "Failed to send request and receive response for membership RPC operation. " + e.message, e
