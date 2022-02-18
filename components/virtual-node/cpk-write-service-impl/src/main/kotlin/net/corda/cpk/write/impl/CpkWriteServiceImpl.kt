@@ -71,6 +71,16 @@ class CpkWriteServiceImpl @Activate constructor(
     }
 
     /**
+     * We depend on the [ConfigurationReadService] so we 'listen' to [RegistrationStatusChangeEvent]
+     * to tell us when it is ready so we can register ourselves to handle config updates.
+     */
+    private fun onStartEvent(coordinator: LifecycleCoordinator) {
+        registration?.close()
+        registration =
+            coordinator.followStatusChangesByName(setOf(LifecycleCoordinatorName.forComponent<ConfigurationReadService>()))
+    }
+
+    /**
      * If the thing(s) we depend on are up (only the [ConfigurationReadService]),
      * then register `this` for config updates
      */
@@ -101,16 +111,6 @@ class CpkWriteServiceImpl @Activate constructor(
     private fun onStopEvent() {
         registration?.close()
         registration = null
-    }
-
-    /**
-     * We depend on the [ConfigurationReadService] so we 'listen' to [RegistrationStatusChangeEvent]
-     * to tell us when it is ready so we can register ourselves to handle config updates.
-     */
-    private fun onStartEvent(coordinator: LifecycleCoordinator) {
-        registration?.close()
-        registration =
-            coordinator.followStatusChangesByName(setOf(LifecycleCoordinatorName.forComponent<ConfigurationReadService>()))
     }
 
     /** received a new configuration from the configuration service (not the event loop) */
