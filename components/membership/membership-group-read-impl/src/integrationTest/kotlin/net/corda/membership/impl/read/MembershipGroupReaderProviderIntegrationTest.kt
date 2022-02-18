@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
@@ -183,8 +184,8 @@ class MembershipGroupReaderProviderIntegrationTest {
 
         configurationReadService.startAndWait()
         eventually {
-            startableServices.all { it.isRunning }
-            membershipGroupReaderProvider.getAliceGroupReader()
+            assertTrue(startableServices.all { it.isRunning })
+            assertDoesNotThrow { membershipGroupReaderProvider.getAliceGroupReader() }
         }
     }
 
