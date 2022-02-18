@@ -126,10 +126,6 @@ class CpkWriteServiceImpl @Activate constructor(
         closeResources()
     }
 
-    override fun close() {
-        closeResources()
-    }
-
     override fun put(cpkMetadata: CPK.Metadata, inputStream: InputStream) {
         if (writer == null) {
             throw CordaRuntimeException("CpkWriteServiceImpl has not been initialised yet")
