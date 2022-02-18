@@ -33,7 +33,7 @@ class CpkWriteServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
-    private val configurationReadService: ConfigurationReadService,
+    private val configReadService: ConfigurationReadService,
 ) : CpkWriteService, LifecycleEventHandler, ConfigurationHandler {
     companion object {
         val log: Logger = contextLogger()
@@ -76,7 +76,7 @@ class CpkWriteServiceImpl @Activate constructor(
      */
     private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent) {
         if (event.status == LifecycleStatus.UP) {
-            configSubscription = configurationReadService.registerForUpdates(this)
+            configSubscription = configReadService.registerForUpdates(this)
         } else {
             configSubscription?.close()
         }
