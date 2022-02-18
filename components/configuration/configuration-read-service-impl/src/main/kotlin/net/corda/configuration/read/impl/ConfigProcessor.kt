@@ -30,11 +30,11 @@ internal class ConfigProcessor(
     override fun onSnapshot(currentData: Map<String, Configuration>) {
         if (currentData.isNotEmpty()) {
             val config = currentData.map { Pair(it.key, it.value.toSmartConfig()) }.toMap().toMutableMap()
-            // This is a tactical change to ensure that the messaging config always has a default (i.e. the boot config).
+            // This is a tactical change (CORE-3849) to ensure that the messaging config always has a default (i.e. the boot config).
             // All config keys should really have some default, but currently there's no way of ensuring this for other
             // keys (and there's not much config for other keys anyway). Longer term we may want to ensure that defaults
             // are always pushed to the config topic, so the workers know to wait until the first config reconciliation
-            // has happened.
+            // has happened. Should be addressed properly under CORE-3972
             val messagingConfig = config[MESSAGING_CONFIG]?.withFallback(bootConfig) ?: bootConfig
             config[MESSAGING_CONFIG] = messagingConfig
             logger.trace { "Initial config snapshot received: $config" }
