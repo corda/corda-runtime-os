@@ -20,7 +20,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
-import net.corda.messaging.config.ConfigBuilder
+import net.corda.messaging.config.ConfigResolver
 import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.subscription.CompactedSubscriptionImpl
 import net.corda.messaging.subscription.DurableSubscriptionImpl
@@ -235,7 +235,7 @@ class CordaSubscriptionFactory @Activate constructor(
         subscriptionConfig: SubscriptionConfig,
         messagingConfig: SmartConfig
     ): ResolvedSubscriptionConfig {
-        val configBuilder = ConfigBuilder(messagingConfig.factory)
+        val configBuilder = ConfigResolver(messagingConfig.factory)
         val clientId = clientIdCounter.getAndIncrement()
         return configBuilder.buildSubscriptionConfig(subscriptionConfig, messagingConfig, clientId)
     }

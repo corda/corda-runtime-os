@@ -1,13 +1,11 @@
 package net.corda.messaging.subscription.consumer.builder
 
-import net.corda.libs.configuration.SmartConfig
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.config.ResolvedSubscriptionConfig
-import net.corda.messaging.subscription.config.StateAndEventConfig
 import net.corda.messaging.subscription.consumer.StateAndEventConsumer
 import net.corda.messaging.subscription.consumer.StateAndEventConsumerImpl
 import net.corda.messaging.subscription.consumer.StateAndEventPartitionState
@@ -20,7 +18,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [StateAndEventBuilder::class])
