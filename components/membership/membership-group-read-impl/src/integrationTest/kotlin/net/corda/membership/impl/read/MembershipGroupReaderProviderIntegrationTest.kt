@@ -183,10 +183,9 @@ class MembershipGroupReaderProviderIntegrationTest {
         eventually { membershipGroupReaderProvider.failGetAliceGroupReader() }
 
         configurationReadService.startAndWait()
-        eventually {
-            assertTrue(startableServices.all { it.isRunning })
-            assertDoesNotThrow { membershipGroupReaderProvider.getAliceGroupReader() }
-        }
+        eventually { assertTrue(startableServices.all { it.isRunning }) }
+        eventually { assertDoesNotThrow { groupPolicyProvider.getGroupPolicy(aliceHoldingIdentity) } }
+        eventually { assertDoesNotThrow { membershipGroupReaderProvider.getAliceGroupReader() } }
     }
 
     fun runTest(testFunction: KFunction<Unit>) {
