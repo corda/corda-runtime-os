@@ -7,7 +7,8 @@ import org.apache.kafka.common.serialization.Serializer
 import org.apache.kafka.common.serialization.StringSerializer
 
 class CordaAvroSerializerImpl<T : Any>(
-    private val schemaRegistry: AvroSchemaRegistry
+    private val schemaRegistry: AvroSchemaRegistry,
+    private val expectedClass: Class<T>? = null
 ) : CordaAvroSerializer<T>, Serializer<T> {
 
     companion object {

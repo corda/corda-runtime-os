@@ -11,4 +11,10 @@ dependencies {
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
     implementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+
+    integrationTestImplementation "net.corda:corda-avro-schema:$cordaApiVersion"
+    integrationTestImplementation "net.corda:corda-topic-schema:$cordaApiVersion"
+    integrationTestImplementation project(":libs:messaging:kafka-message-bus-impl")
+    integrationTestImplementation project(":libs:schema-registry:schema-registry")
+    integrationTestImplementation project(":libs:schema-registry:schema-registry-impl")
 }

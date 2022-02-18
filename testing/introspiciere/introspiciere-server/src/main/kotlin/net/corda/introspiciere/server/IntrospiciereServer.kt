@@ -4,10 +4,12 @@ import io.javalin.Javalin
 import io.javalin.http.InternalServerErrorResponse
 import net.corda.introspiciere.core.HelloWorld
 import net.corda.introspiciere.core.KafkaAdminFactory
+import net.corda.introspiciere.core.KafkaMessageGateway
 import net.corda.introspiciere.core.SimpleKafkaClient
 import net.corda.introspiciere.core.TopicCreatorGateway
 import net.corda.introspiciere.core.addidentity.CreateKeysAndAddIdentityInteractor
 import net.corda.introspiciere.core.addidentity.CryptoKeySenderImpl
+import net.corda.introspiciere.domain.KafkaMessage
 import net.corda.introspiciere.domain.TopicDefinition
 import java.io.Closeable
 import java.net.BindException
@@ -40,10 +42,29 @@ class IntrospiciereServer(private val port: Int = 0, private val kafkaBrokers: L
             }
         }
 
+        app.get("/topics/<topic>/<key>") { ctx ->
+            wrapException {
+                val topic = ctx.pathParam("topic")
+                val key = ctx.pathParam("key")
+                val schema = ctx.queryParam("schema")
+
+                ctx.result(topics)
+            }
+        }
+
         app.post("/topics") { ctx ->
             wrapException {
                 val topicDefinition = ctx.bodyAsClass<TopicDefinition>()
                 TopicCreatorGateway(KafkaAdminFactory(servers)).create(topicDefinition)
+                ctx.result("OK")
+            }
+        }
+
+        // TODO: This one should look different
+        app.put("/topics") { ctx ->
+            wrapException {
+                val kafkaMessage = ctx.bodyAsClass<KafkaMessage>()
+                KafkaMessageGateway(servers).send(kafkaMessage)
                 ctx.result("OK")
             }
         }

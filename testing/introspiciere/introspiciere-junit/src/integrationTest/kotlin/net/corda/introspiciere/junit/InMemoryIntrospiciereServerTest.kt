@@ -1,7 +1,11 @@
 package net.corda.introspiciere.junit
 
+import net.corda.p2p.test.KeyAlgorithm
+import net.corda.p2p.test.KeyPairEntry
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
+import java.nio.ByteBuffer
+import java.security.KeyPairGenerator
 
 class InMemoryIntrospiciereServerTest {
 
@@ -17,7 +21,25 @@ class InMemoryIntrospiciereServerTest {
 
     @Test
     fun `I can start the server with as an extension`() {
-        introspiciere.client.helloWorld()
-        introspiciere.client.createTopic("hola".random8)
+        val generator = KeyPairGenerator.getInstance("EC")
+        generator.initialize(571)
+        val pair = generator.generateKeyPair()
+        val keyPairEntry = KeyPairEntry(
+            KeyAlgorithm.ECDSA,
+            ByteBuffer.wrap(pair.public.encoded),
+            ByteBuffer.wrap(pair.private.encoded)
+        )
+
+
+        val topic = "topic".random8
+        introspiciere.client.createTopic(topic)
+        introspiciere.client.write(
+            topic,
+            "key1",
+            keyPairEntry.toByteBuffer().toByteArray(),
+            KeyPairEntry::class.qualifiedName!!
+        )
+
+
     }
 }

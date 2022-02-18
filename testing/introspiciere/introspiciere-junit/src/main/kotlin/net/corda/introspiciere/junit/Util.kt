@@ -1,5 +1,6 @@
 package net.corda.introspiciere.junit
 
+import java.nio.ByteBuffer
 import java.util.concurrent.ThreadLocalRandom
 import kotlin.streams.asSequence
 
@@ -39,4 +40,10 @@ fun getMinikubeKafkaBroker(): List<String> {
         .let(Regex("\\d+:(\\d+)/TCP")::find)!!.groupValues[1]
 
     return listOf("$ip:$port")
+}
+
+fun ByteBuffer.toByteArray(): ByteArray {
+    val array = ByteArray(remaining())
+    get(array)
+    return array
 }

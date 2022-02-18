@@ -11,3 +11,4 @@ class TopicCreatorGateway(private val kafkaAdminFactory: KafkaAdminFactory) {
         }
     }
 }
+
