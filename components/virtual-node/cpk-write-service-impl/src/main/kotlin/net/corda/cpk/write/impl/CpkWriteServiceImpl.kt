@@ -59,6 +59,7 @@ class CpkWriteServiceImpl @Activate constructor(
     override fun stop() {
         logger.debug { "Cpk Write Service stopping" }
         coordinator.stop()
+        closeResources()
     }
 
     /**
