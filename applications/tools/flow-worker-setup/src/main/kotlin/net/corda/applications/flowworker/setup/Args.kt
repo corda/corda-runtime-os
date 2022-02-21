@@ -18,6 +18,9 @@ class Args {
     @CommandLine.Option(names = ["--cpiDir"], description = ["Folder containing CPIs"])
     var cpiDir: Path? = null
 
+    @CommandLine.Option(names = ["--cpiDockerDir"], description = ["Folder containing CPIs on docker"])
+    var cpiDockerDir: Path? = null
+
     @CommandLine.Option(names = ["--x500NName"], description = ["Optional x500 name of the holder associated with a CPI"])
     var x500NName: String = "x500Name"
 }

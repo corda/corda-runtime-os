@@ -54,24 +54,17 @@ class GroupPolicyProviderImpl @Activate constructor(
 
     override fun getGroupPolicy(
         holdingIdentity: HoldingIdentity
-    ) = lookupGroupPolicy(holdingIdentity) ?: parseGroupPolicy(holdingIdentity)
+    ): GroupPolicy {
+        return groupPolicies.computeIfAbsent(holdingIdentity) { parseGroupPolicy(holdingIdentity) }
+    }
 
     override fun start() = coordinator.start()
 
     override fun stop() = coordinator.stop()
 
-    override var isRunning: Boolean = false
+    override val isRunning get() = coordinator.isRunning
 
-    private fun lookupGroupPolicy(
-        holdingIdentity: HoldingIdentity
-    ): GroupPolicy? = groupPolicies[holdingIdentity]
-
-    private fun storeGroupPolicy(
-        holdingIdentity: HoldingIdentity,
-        groupPolicy: GroupPolicy
-    ) {
-        groupPolicies[holdingIdentity] = groupPolicy
-    }
+    private val isUp get() = coordinator.status == LifecycleStatus.UP
 
     /**
      * Parse the group policy string to a [GroupPolicy] object.
@@ -92,50 +85,43 @@ class GroupPolicyProviderImpl @Activate constructor(
         holdingIdentity: HoldingIdentity,
         virtualNodeInfo: VirtualNodeInfo? = null,
     ): GroupPolicy {
-        val vNodeInfo = virtualNodeInfo
-            ?: virtualNodeInfoReadService.get(holdingIdentity)
-        val metadata = vNodeInfo
-            ?.cpiIdentifier
-            ?.let { cpiInfoReader.get(it) }
-        return groupPolicyParser
-            .parse(metadata?.groupPolicy)
-            .apply { storeGroupPolicy(holdingIdentity, this) }
+        val vNodeInfo = virtualNodeInfo ?: virtualNodeInfoReadService.get(holdingIdentity)
+        val metadata = vNodeInfo?.cpiIdentifier?.let { cpiInfoReader.get(it) }
+        return groupPolicyParser.parse(metadata?.groupPolicy)
     }
 
     /**
      * Handle lifecycle events.
      */
+    @Suppress("UNUSED_PARAMETER")
     private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+        logger.debug { "Group policy provider received event $event." }
         when (event) {
-            is StartEvent -> handleStartEvent()
-            is StopEvent -> handleStopEvent()
+            is StartEvent -> handleStartEvent(coordinator)
+            is StopEvent -> handleStopEvent(coordinator)
             is RegistrationStatusChangeEvent -> handleRegistrationChangeEvent(event, coordinator)
         }
     }
 
     /**
-     * Start the component. This include setting the status to UP and creating a registration following the components
-     * this component needs to function.
+     * Start the component. This includes creating a registration following the component this component needs to
+     * function and setting up the cache map.
      */
-    private fun handleStartEvent() {
-        logger.debug { "Group policy provider starting up." }
-        setStatusToUp(coordinator)
-
-        registrationHandle = coordinator.followStatusChangesByName(
-            setOf(
-                LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
-                LifecycleCoordinatorName.forComponent<CpiInfoReadService>()
-            )
-        )
+    private fun handleStartEvent(coordinator: LifecycleCoordinator) {
+        logger.debug { "Group policy provider starting." }
+        startDependencyRegistrationHandle(coordinator)
     }
 
     /**
-     * Handle stopping the component. This should set the status to DOWN and also close the registration handle.
+     * Handle stopping the component. This should set the status to DOWN, clear the cache, and close the open
+     * registration handles.
      */
-    private fun handleStopEvent() {
+    private fun handleStopEvent(coordinator: LifecycleCoordinator) {
         logger.debug { "Group policy provider stopping." }
-        setStatusToDown(coordinator)
-        registrationHandle?.close()
+        coordinator.updateStatus(LifecycleStatus.DOWN)
+        stopVirtualNodeHandle()
+        stopDependencyRegistrationHandle()
+        stopCache()
     }
 
     /**
@@ -146,46 +132,65 @@ class GroupPolicyProviderImpl @Activate constructor(
     private fun handleRegistrationChangeEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator) {
         logger.debug { "Group policy provider handling registration change. Event status: ${event.status}" }
         when (event.status) {
-            LifecycleStatus.UP -> setStatusToUp(coordinator)
-            else -> setStatusToDown(coordinator)
+            LifecycleStatus.UP -> {
+                startCache()
+                startVirtualNodeHandle()
+                coordinator.updateStatus(LifecycleStatus.UP)
+            }
+            else -> {
+                coordinator.updateStatus(LifecycleStatus.DOWN)
+                stopVirtualNodeHandle()
+                stopCache()
+            }
         }
     }
 
-    /**
-     * This function sets up the component so that it's status is UP.
-     * This includes creating the data cache, registering a callback with the virtual node service, and updating the
-     * component status.
-     */
-    private fun setStatusToUp(coordinator: LifecycleCoordinator) {
-        logger.trace("Setting group policy provider status to up.")
-        _groupPolicies = ConcurrentHashMap()
+    private fun startCache() {
+        if (_groupPolicies == null) {
+            _groupPolicies = ConcurrentHashMap()
+        }
+    }
 
-        /**
-         * Register callback so that if a holding identity modifies their virtual node information, the group policy
-         * for that holding identity will be parsed in case the virtual node change affected the group policy file.
-         */
-        virtualNodeInfoCallbackHandle = virtualNodeInfoReadService.registerCallback { changed, snapshot ->
-            if (isRunning) {
-                changed.filter { snapshot[it] != null }.forEach {
-                    parseGroupPolicy(it, virtualNodeInfo = snapshot[it])
+    private fun stopCache() {
+        _groupPolicies = null
+    }
+
+    private fun startDependencyRegistrationHandle(coordinator: LifecycleCoordinator) {
+        if (registrationHandle == null) {
+            registrationHandle = coordinator.followStatusChangesByName(
+                setOf(
+                    LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
+                    LifecycleCoordinatorName.forComponent<CpiInfoReadService>()
+                )
+            )
+        }
+    }
+
+    private fun stopDependencyRegistrationHandle() {
+        registrationHandle?.close()
+        registrationHandle = null
+    }
+
+    /**
+     * Register callback so that if a holding identity modifies their virtual node information, the
+     * group policy for that holding identity will be parsed in case the virtual node change affected the
+     * group policy file.
+     */
+    private fun startVirtualNodeHandle() {
+        if (virtualNodeInfoCallbackHandle == null) {
+            virtualNodeInfoCallbackHandle = virtualNodeInfoReadService.registerCallback { changed, snapshot ->
+                if (isRunning && isUp) {
+                    changed.filter { snapshot[it] != null }.forEach {
+                        parseGroupPolicy(it, virtualNodeInfo = snapshot[it])
+                            .apply { groupPolicies[it] = this }
+                    }
                 }
             }
         }
-
-        isRunning = true
-        coordinator.updateStatus(LifecycleStatus.UP)
     }
 
-    /**
-     * Sets the component status the DOWN.
-     * This also closes the virtual node callback handle and clears cached data.
-     * The component is not running after it has gone down.
-     */
-    private fun setStatusToDown(coordinator: LifecycleCoordinator) {
-        logger.trace("Setting group policy provider status to down.")
-        coordinator.updateStatus(LifecycleStatus.DOWN)
-        isRunning = false
+    private fun stopVirtualNodeHandle() {
         virtualNodeInfoCallbackHandle?.close()
-        _groupPolicies = null
+        virtualNodeInfoCallbackHandle = null
     }
 }

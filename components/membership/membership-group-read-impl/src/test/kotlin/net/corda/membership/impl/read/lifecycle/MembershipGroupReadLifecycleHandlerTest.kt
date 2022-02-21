@@ -1,38 +1,30 @@
 package net.corda.membership.impl.read.lifecycle
 
+import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigObject
 import net.corda.lifecycle.LifecycleCoordinator
-import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.membership.config.MembershipConfig
-import net.corda.membership.config.MembershipConfigConstants.CONFIG_KEY
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
-import net.corda.membership.impl.read.component.MembershipGroupReaderProviderImpl
-import net.corda.membership.impl.read.lifecycle.MembershipGroupReadLifecycleHandler.Impl.MembershipGroupConfigurationHandler
 import net.corda.membership.impl.read.subscription.MembershipGroupReadSubscriptions
-import net.corda.membership.lifecycle.MembershipConfigReceived
-import net.corda.v5.membership.conversion.PropertyConverter
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.messaging.api.config.toMessagingConfig
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
-import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 
 class MembershipGroupReadLifecycleHandlerTest {
 
@@ -41,38 +33,21 @@ class MembershipGroupReadLifecycleHandlerTest {
     val componentRegistrationHandle: RegistrationHandle = mock()
     val configRegistrationHandle: AutoCloseable = mock()
 
-    val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock()
-    val cpiInfoReader: CpiInfoReadService = mock()
-    val configurationReadService: ConfigurationReadService = mock<ConfigurationReadService>().apply {
-        doReturn(configRegistrationHandle).whenever(this).registerForUpdates(any())
+    val configurationReadService: ConfigurationReadService = mock {
+        on { registerComponentForUpdates(any(), any()) } doReturn configRegistrationHandle
     }
-    val readServiceCoordinator: LifecycleCoordinator = mock()
-    val coordinatorFactory: LifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>().apply {
-        doReturn(readServiceCoordinator).whenever(this).createCoordinator(any(), any())
-    }
-    private val converter: PropertyConverter = mock()
-    private val groupPolicyProvider: GroupPolicyProvider = mock()
-    private val membershipGroupReadService: MembershipGroupReaderProviderImpl = MembershipGroupReaderProviderImpl(
-        virtualNodeInfoReadService,
-        cpiInfoReader,
-        configurationReadService,
-        mock(),
-        coordinatorFactory,
-        converter,
-        groupPolicyProvider
-    )
     private val membershipGroupReadSubscriptions: MembershipGroupReadSubscriptions = mock()
 
     private val membershipGroupReadCache: MembershipGroupReadCache = mock()
 
-    val coordinator: LifecycleCoordinator = mock<LifecycleCoordinator>().apply {
-        doReturn(componentRegistrationHandle).whenever(this).followStatusChangesByName(any())
+    val coordinator: LifecycleCoordinator = mock {
+        on { followStatusChangesByName(any()) } doReturn componentRegistrationHandle
     }
 
     @BeforeEach
     fun setUp() {
         handler = MembershipGroupReadLifecycleHandler.Impl(
-            membershipGroupReadService,
+            configurationReadService,
             membershipGroupReadSubscriptions,
             membershipGroupReadCache
         )
@@ -82,17 +57,32 @@ class MembershipGroupReadLifecycleHandlerTest {
     fun `Start event`() {
         handler.processEvent(StartEvent(), coordinator)
 
-        verify(configurationReadService).start()
-        verify(cpiInfoReader).start()
-        verify(virtualNodeInfoReadService).start()
         verify(membershipGroupReadCache).start()
 
         verify(coordinator).followStatusChangesByName(
             eq(
                 setOf(
                     LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                    LifecycleCoordinatorName.forComponent<CpiInfoReadService>(),
-                    LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
+                    LifecycleCoordinatorName.forComponent<GroupPolicyProvider>()
+                )
+            )
+        )
+    }
+
+    @Test
+    fun `Dependency handle is closed if it was already created`() {
+        handler.processEvent(StartEvent(), coordinator)
+        handler.processEvent(StartEvent(), coordinator)
+
+        verify(membershipGroupReadCache, times(2)).start()
+
+        // by default this asserts for only one call
+        verify(componentRegistrationHandle).close()
+        verify(coordinator, times(2)).followStatusChangesByName(
+            eq(
+                setOf(
+                    LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                    LifecycleCoordinatorName.forComponent<GroupPolicyProvider>()
                 )
             )
         )
@@ -102,9 +92,6 @@ class MembershipGroupReadLifecycleHandlerTest {
     fun `Stop event`() {
         handler.processEvent(StopEvent(), coordinator)
 
-        verify(configurationReadService).stop()
-        verify(cpiInfoReader).stop()
-        verify(virtualNodeInfoReadService).stop()
         verify(membershipGroupReadSubscriptions).stop()
         verify(membershipGroupReadCache).stop()
 
@@ -130,13 +117,13 @@ class MembershipGroupReadLifecycleHandlerTest {
     }
 
     @Test
-    fun `Registration status UP registers for config updates and sets component status to UP`() {
+    fun `Registration status UP registers for config updates`() {
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
 
-        verify(configurationReadService).registerForUpdates(
-            any<MembershipGroupConfigurationHandler>()
+        verify(configurationReadService).registerComponentForUpdates(
+            eq(coordinator), eq(setOf(BOOT_CONFIG, MESSAGING_CONFIG))
         )
-        verify(coordinator).updateStatus(eq(LifecycleStatus.UP), any())
+        verify(coordinator, never()).updateStatus(eq(LifecycleStatus.UP), any())
     }
 
     @Test
@@ -161,67 +148,15 @@ class MembershipGroupReadLifecycleHandlerTest {
         verify(configRegistrationHandle).close()
     }
 
-    private fun getConfigHandler(): MembershipGroupConfigurationHandler {
-        // Get config handler after registration status changes to UP
-        lateinit var configHandler: MembershipGroupConfigurationHandler
-        doAnswer {
-            configHandler =
-                it.arguments[0] as MembershipGroupConfigurationHandler
-            mock<AutoCloseable>()
-        }.whenever(configurationReadService).registerForUpdates(any())
-
-        // Change registration status to UP to catch handler
-        handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
-        return configHandler
-    }
-
-    @Test
-    fun `config handler does nothing if membership config has not changed`() {
-        val configHandler = getConfigHandler()
-
-        configHandler.onNewConfiguration(emptySet(), emptyMap())
-        verify(coordinator, never()).postEvent(any<MembershipConfigReceived>())
-    }
-
-    @Test
-    fun `config handler throws exception if membership config has changed but config is null`() {
-        val configHandler = getConfigHandler()
-
-        assertThrows<IllegalStateException> {
-            configHandler.onNewConfiguration(setOf(CONFIG_KEY), emptyMap())
-        }
-    }
-
-    @Test
-    fun `config handler throws exception if membership config has changed but config is empty`() {
-        val configHandler = getConfigHandler()
-        val config: SmartConfig = mock<SmartConfig>().apply { doReturn(true).whenever(this).isEmpty }
-
-        assertThrows<IllegalStateException> {
-            configHandler.onNewConfiguration(setOf(CONFIG_KEY), mapOf(CONFIG_KEY to config))
-        }
-    }
-
-    @Test
-    fun `config handler posts config received event when config is found`() {
-        val configHandler = getConfigHandler()
-        val configObject = mock<SmartConfigObject>().apply {
-            doReturn(emptyMap<String, Any>()).whenever(this).unwrapped()
-        }
-        val config = mock<SmartConfig>().apply {
-            doReturn(configObject).whenever(this).root()
-        }
-
-        configHandler.onNewConfiguration(setOf(CONFIG_KEY), mapOf(CONFIG_KEY to config))
-
-        verify(coordinator).postEvent(any<MembershipConfigReceived>())
-    }
-
     @Test
     fun `Config received event while component is running`() {
-        doReturn(true).whenever(readServiceCoordinator).isRunning
-        val config: MembershipConfig = mock()
-        handler.processEvent(MembershipConfigReceived(config), coordinator)
+        val bootConfig: SmartConfig = mock()
+        val messagingConfig: SmartConfig = mock()
+        val configs = mapOf(
+            BOOT_CONFIG to bootConfig,
+            MESSAGING_CONFIG to messagingConfig
+        )
+        handler.processEvent(ConfigChangedEvent(setOf(BOOT_CONFIG, MESSAGING_CONFIG), configs), coordinator)
 
         verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
         verify(coordinator).updateStatus(eq(LifecycleStatus.UP), any())
@@ -229,27 +164,6 @@ class MembershipGroupReadLifecycleHandlerTest {
         verify(membershipGroupReadSubscriptions).stop()
         verify(membershipGroupReadCache).start()
         verify(membershipGroupReadSubscriptions, never()).start()
-        verify(membershipGroupReadSubscriptions).start(any())
-
-        membershipGroupReadCache.start()
-        membershipGroupReadSubscriptions.start(eq(config))
-    }
-
-    @Test
-    fun `Config received event while component is not running`() {
-        doReturn(false).whenever(readServiceCoordinator).isRunning
-        val config: MembershipConfig = mock()
-        handler.processEvent(MembershipConfigReceived(config), coordinator)
-
-        verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
-        verify(coordinator).updateStatus(eq(LifecycleStatus.UP), any())
-        verify(membershipGroupReadCache, never()).stop()
-        verify(membershipGroupReadSubscriptions, never()).stop()
-        verify(membershipGroupReadCache).start()
-        verify(membershipGroupReadSubscriptions, never()).start()
-        verify(membershipGroupReadSubscriptions).start(any())
-
-        membershipGroupReadCache.start()
-        membershipGroupReadSubscriptions.start(eq(config))
+        verify(membershipGroupReadSubscriptions).start(eq(configs.toMessagingConfig()))
     }
 }

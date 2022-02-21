@@ -11,6 +11,7 @@ import net.corda.libs.configuration.schema.messaging.TOPIC_PREFIX
 import net.corda.osgi.api.Shutdown
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import org.osgi.framework.FrameworkUtil
 import picocli.CommandLine
 
@@ -62,7 +63,7 @@ class WorkerHelpers {
                     (key, _) -> "${ConfigKeys.SECRETS_CONFIG}.${key.trim()}" })
 
             val bootConfig = SmartConfigFactory.create(secretsConfig).create(config)
-            logger.debug("Worker boot config\n: ${bootConfig.root().render()}")
+            logger.debug { "Worker boot config\n: ${bootConfig.root().render()}" }
 
             return bootConfig
         }

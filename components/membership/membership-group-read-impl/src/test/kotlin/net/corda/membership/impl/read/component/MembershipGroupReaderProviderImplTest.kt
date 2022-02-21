@@ -1,9 +1,9 @@
 package net.corda.membership.impl.read.component
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_1
 import net.corda.membership.impl.read.TestProperties.Companion.aliceName
@@ -11,7 +11,6 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.membership.conversion.PropertyConverter
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -33,19 +32,26 @@ import org.mockito.kotlin.whenever
  */
 class MembershipGroupReaderProviderImplTest {
 
-    private lateinit var membershipGroupReadService: MembershipGroupReaderProviderImpl
+    private lateinit var membershipGroupReaderProvider: MembershipGroupReaderProviderImpl
 
     private val memberName = aliceName
 
     var coordinatorIsRunning = false
+    var lifecycleStatus = LifecycleStatus.DOWN
     private val coordinator: LifecycleCoordinator = mock<LifecycleCoordinator>().apply {
         doAnswer { coordinatorIsRunning }.whenever(this).isRunning
-        doAnswer { coordinatorIsRunning = true }.whenever(this).start()
-        doAnswer { coordinatorIsRunning = false }.whenever(this).stop()
+        doAnswer { lifecycleStatus }.whenever(this).status
+
+        doAnswer {
+            coordinatorIsRunning = true
+            lifecycleStatus = LifecycleStatus.UP
+        }.whenever(this).start()
+        doAnswer {
+            coordinatorIsRunning = false
+            lifecycleStatus = LifecycleStatus.DOWN
+        }.whenever(this).stop()
     }
 
-    private val cpiInfoReader: CpiInfoReadService = mock()
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock()
     private val subscriptionFactory: SubscriptionFactory = mock()
     private val configurationReadService: ConfigurationReadService = mock()
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>().apply {
@@ -56,9 +62,7 @@ class MembershipGroupReaderProviderImplTest {
 
     @BeforeEach
     fun setUp() {
-        membershipGroupReadService = MembershipGroupReaderProviderImpl(
-            virtualNodeInfoReadService,
-            cpiInfoReader,
+        membershipGroupReaderProvider = MembershipGroupReaderProviderImpl(
             configurationReadService,
             subscriptionFactory,
             lifecycleCoordinatorFactory,
@@ -69,34 +73,34 @@ class MembershipGroupReaderProviderImplTest {
 
     @Test
     fun `Component is not running before starting and after stopping`() {
-        assertFalse(membershipGroupReadService.isRunning)
-        membershipGroupReadService.start()
-        assertTrue(membershipGroupReadService.isRunning)
-        membershipGroupReadService.stop()
-        assertFalse(membershipGroupReadService.isRunning)
+        assertFalse(membershipGroupReaderProvider.isRunning)
+        membershipGroupReaderProvider.start()
+        assertTrue(membershipGroupReaderProvider.isRunning)
+        membershipGroupReaderProvider.stop()
+        assertFalse(membershipGroupReaderProvider.isRunning)
     }
 
     @Test
     fun `Lifecycle coordinator is started when starting this component`() {
         verify(coordinator, never()).start()
-        membershipGroupReadService.start()
+        membershipGroupReaderProvider.start()
         verify(coordinator).start()
     }
 
     @Test
     fun `Lifecycle coordinator is stopped when stopping this component`() {
-        membershipGroupReadService.start()
+        membershipGroupReaderProvider.start()
 
         verify(coordinator, never()).stop()
-        membershipGroupReadService.stop()
+        membershipGroupReaderProvider.stop()
         verify(coordinator).stop()
     }
 
     @Test
     fun `Get group reader throws exception if component hasn't started`() {
         val e = assertThrows<CordaRuntimeException> {
-            membershipGroupReadService.getGroupReader(HoldingIdentity(memberName.toString(), GROUP_ID_1))
+            membershipGroupReaderProvider.getGroupReader(HoldingIdentity(memberName.toString(), GROUP_ID_1))
         }
-        assertEquals(MembershipGroupReaderProviderImpl.ACCESS_TOO_EARLY, e.message)
+        assertEquals(MembershipGroupReaderProviderImpl.ILLEGAL_ACCESS, e.message)
     }
 }

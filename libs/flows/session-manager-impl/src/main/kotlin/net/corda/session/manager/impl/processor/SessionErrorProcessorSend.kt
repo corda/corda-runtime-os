@@ -39,10 +39,7 @@ class SessionErrorProcessorSend(
                         "Updating status from ${sessionState.status} to ${SessionStateType.ERROR}. Error message: $exceptionEnvelope"
             )
 
-            sessionEvent.apply {
-                timestamp = instant.toEpochMilli()
-                sequenceNum = null
-            }
+            sessionEvent.sequenceNum = null
 
             sessionState.apply {
                 status = SessionStateType.ERROR

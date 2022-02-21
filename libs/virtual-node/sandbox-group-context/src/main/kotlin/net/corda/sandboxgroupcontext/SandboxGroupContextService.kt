@@ -97,6 +97,21 @@ interface SandboxGroupContextService {
     ): AutoCloseable
 
     /**
+     * This function registers any [DigestAlgorithmFactory][net.corda.v5.cipher.suite.DigestAlgorithmFactory]
+     * instances that exist inside the [SandboxGroup][net.corda.sandbox.SandboxGroup]'s CPKs.
+     * The [DigestAlgorithmFactoryProvider][net.corda.crypto.DigestAlgorithmFactoryProvider]
+     * component will discover these services when the sandbox uses its
+     * [DigestService][net.corda.v5.crypto.DigestService] for the first time.
+     *
+     * @param sandboxGroupContext
+     *
+     * @return an [AutoCloseable] for unregistering the services.
+     */
+    fun registerCustomCryptography(
+        sandboxGroupContext: SandboxGroupContext
+    ): AutoCloseable
+
+    /**
      * Does the service 'contain' the cpks in its cache?
      *
      *     if (service.hasCpks(virtualNodeContext.cpkIdentifiers)) {

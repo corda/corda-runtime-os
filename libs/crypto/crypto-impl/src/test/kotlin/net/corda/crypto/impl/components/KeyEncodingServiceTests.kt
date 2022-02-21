@@ -5,7 +5,6 @@ import net.corda.crypto.impl.signData
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.cipher.suite.schemes.COMPOSITE_KEY_CODE_NAME
-import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.SignatureVerificationService
 import org.bouncycastle.asn1.ASN1Sequence
@@ -20,12 +19,14 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.io.TempDir
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import java.io.ByteArrayOutputStream
 import java.io.OutputStream
 import java.math.BigInteger
 import java.nio.file.Files
 import java.nio.file.Path
+import java.security.KeyPair
 import java.security.KeyStore
 import java.security.PublicKey
 import java.security.cert.CertificateFactory
@@ -43,6 +44,7 @@ class KeyEncodingServiceTests {
         private lateinit var schemeMetadata: CipherSchemeMetadata
         private lateinit var keyEncoder: KeyEncodingService
         private lateinit var verifier: SignatureVerificationService
+        private lateinit var testParams: Array<Arguments>
 
         @TempDir
         @JvmStatic
@@ -55,22 +57,28 @@ class KeyEncodingServiceTests {
             keyEncoder = schemeMetadata
             val digest = DigestServiceImpl(schemeMetadata, null)
             verifier = SignatureVerificationServiceImpl(schemeMetadata, digest)
+            testParams = schemeMetadata.schemes.filter {
+                it.codeName != COMPOSITE_KEY_CODE_NAME
+            }.map {
+                Arguments.of(
+                    generateKeyPair(schemeMetadata, it.codeName),
+                    generateKeyPair(schemeMetadata, it.codeName),
+                    generateKeyPair(schemeMetadata, it.codeName)
+                )
+            }.toTypedArray()
         }
 
         @JvmStatic
-        fun signatureSchemes(): Array<SignatureScheme> = schemeMetadata.schemes.filter {
-            it.codeName != COMPOSITE_KEY_CODE_NAME
-        }.toTypedArray()
+        fun keyPairs(): Array<Arguments> = testParams
     }
 
     @ParameterizedTest
-    @MethodSource("signatureSchemes")
-    @Timeout(30)
+    @MethodSource("keyPairs")
+    @Timeout(60)
     @Suppress("MaxLineLength")
     fun `Should convert public key to PEM and backand and still to able to use for verification for all supported schemes`(
-        signatureScheme: SignatureScheme
+        keyPair: KeyPair
     ) {
-        val keyPair = generateKeyPair(schemeMetadata, signatureScheme.codeName)
         val encodedPublicKey = keyEncoder.encodeAsString(keyPair.public)
         assert(encodedPublicKey.startsWith("-----BEGIN PUBLIC KEY-----")) { encodedPublicKey }
         assert(encodedPublicKey.contains("-----END PUBLIC KEY-----")) { encodedPublicKey }
@@ -82,13 +90,12 @@ class KeyEncodingServiceTests {
     }
 
     @ParameterizedTest
-    @MethodSource("signatureSchemes")
-    @Timeout(30)
+    @MethodSource("keyPairs")
+    @Timeout(60)
     @Suppress("MaxLineLength")
     fun `Should convert public key to byte array and back and and still to able to use for verification for all supported schemes`(
-        signatureScheme: SignatureScheme
+        keyPair: KeyPair
     ) {
-        val keyPair = generateKeyPair(schemeMetadata, signatureScheme.codeName)
         val encodedPublicKey = keyEncoder.encodeAsByteArray(keyPair.public)
         val decodedPublicKey = keyEncoder.decodePublicKey(encodedPublicKey)
         assertEquals(decodedPublicKey, keyPair.public)
@@ -98,14 +105,16 @@ class KeyEncodingServiceTests {
     }
 
     @ParameterizedTest
-    @MethodSource("signatureSchemes")
-    @Timeout(30)
+    @MethodSource("keyPairs")
+    @Timeout(60)
     fun `Should round trip encode CompositeKey to byte array with keys for all supported schemes`(
-        signatureScheme: SignatureScheme
+        keyPair1: KeyPair,
+        keyPair2: KeyPair,
+        keyPair3: KeyPair
     ) {
-        val alicePublicKey = generateKeyPair(schemeMetadata, signatureScheme.codeName).public
-        val bobPublicKey = generateKeyPair(schemeMetadata, signatureScheme.codeName).public
-        val charliePublicKey = generateKeyPair(schemeMetadata, signatureScheme.codeName).public
+        val alicePublicKey = keyPair1.public
+        val bobPublicKey = keyPair2.public
+        val charliePublicKey = keyPair3.public
         val aliceAndBob = CompositeKey.Builder().addKeys(alicePublicKey, bobPublicKey).build()
         val aliceAndBobOrCharlie = CompositeKey
             .Builder()
@@ -117,14 +126,16 @@ class KeyEncodingServiceTests {
     }
 
     @ParameterizedTest
-    @MethodSource("signatureSchemes")
-    @Timeout(30)
+    @MethodSource("keyPairs")
+    @Timeout(60)
     fun `Should round trip encode CompositeKey to PEM with keys for all supported schemes`(
-        signatureScheme: SignatureScheme
+        keyPair1: KeyPair,
+        keyPair2: KeyPair,
+        keyPair3: KeyPair
     ) {
-        val alicePublicKey = generateKeyPair(schemeMetadata, signatureScheme.codeName).public
-        val bobPublicKey = generateKeyPair(schemeMetadata, signatureScheme.codeName).public
-        val charliePublicKey = generateKeyPair(schemeMetadata, signatureScheme.codeName).public
+        val alicePublicKey = keyPair1.public
+        val bobPublicKey = keyPair2.public
+        val charliePublicKey = keyPair3.public
         val aliceAndBob = CompositeKey.Builder().addKeys(alicePublicKey, bobPublicKey).build()
         val aliceAndBobOrCharlie = CompositeKey
             .Builder()
@@ -136,14 +147,16 @@ class KeyEncodingServiceTests {
     }
 
     @ParameterizedTest
-    @MethodSource("signatureSchemes")
-    @Timeout(30)
+    @MethodSource("keyPairs")
+    @Timeout(60)
     fun `Should round trip encode CompositeKey with weighting to byte array with keys for all supported schemes`(
-        signatureScheme: SignatureScheme
+        keyPair1: KeyPair,
+        keyPair2: KeyPair,
+        keyPair3: KeyPair
     ) {
-        val alicePublicKey = generateKeyPair(schemeMetadata, signatureScheme.codeName).public
-        val bobPublicKey = generateKeyPair(schemeMetadata, signatureScheme.codeName).public
-        val charliePublicKey = generateKeyPair(schemeMetadata, signatureScheme.codeName).public
+        val alicePublicKey = keyPair1.public
+        val bobPublicKey = keyPair2.public
+        val charliePublicKey = keyPair3.public
         val aliceAndBob = CompositeKey
             .Builder()
             .addKey(alicePublicKey, 2)
@@ -160,14 +173,16 @@ class KeyEncodingServiceTests {
     }
 
     @ParameterizedTest
-    @MethodSource("signatureSchemes")
-    @Timeout(30)
+    @MethodSource("keyPairs")
+    @Timeout(60)
     fun `Should round trip encode CompositeKey with weighting to PEM with keys for all supported schemes`(
-        signatureScheme: SignatureScheme
+        keyPair1: KeyPair,
+        keyPair2: KeyPair,
+        keyPair3: KeyPair
     ) {
-        val alicePublicKey = generateKeyPair(schemeMetadata, signatureScheme.codeName).public
-        val bobPublicKey = generateKeyPair(schemeMetadata, signatureScheme.codeName).public
-        val charliePublicKey = generateKeyPair(schemeMetadata, signatureScheme.codeName).public
+        val alicePublicKey = keyPair1.public
+        val bobPublicKey = keyPair2.public
+        val charliePublicKey = keyPair3.public
         val aliceAndBob = CompositeKey
             .Builder()
             .addKey(alicePublicKey, 2)
@@ -185,14 +200,16 @@ class KeyEncodingServiceTests {
 
     @Suppress("TooGenericExceptionThrown")
     @ParameterizedTest
-    @MethodSource("signatureSchemes")
-    @Timeout(30)
+    @MethodSource("keyPairs")
+    @Timeout(60)
     fun `Test save to keystore with keys for all supported schemes`(
-        signatureScheme: SignatureScheme
+        keyPair1: KeyPair,
+        keyPair2: KeyPair,
+        keyPair3: KeyPair
     ) {
-        val alicePublicKey = generateKeyPair(schemeMetadata, signatureScheme.codeName).public
-        val bobPublicKey = generateKeyPair(schemeMetadata, signatureScheme.codeName).public
-        val charliePublicKey = generateKeyPair(schemeMetadata, signatureScheme.codeName).public
+        val alicePublicKey = keyPair1.public
+        val bobPublicKey = keyPair2.public
+        val charliePublicKey = keyPair3.public
         val aliceAndBob = CompositeKey
             .Builder()
             .addKey(alicePublicKey, 2)
@@ -208,6 +225,7 @@ class KeyEncodingServiceTests {
         val jksFile = Files.createFile(tempDir.resolve("$subjectAlias.jks")).toFile()
         val keyStoreSave = KeyStore.getInstance("JKS")
         keyStoreSave.load(null, pwdArray)
+        val signatureScheme = schemeMetadata.findSignatureScheme(keyPair1.public)
         val caKeyPair = generateKeyPair(schemeMetadata, signatureScheme.codeName)
         jksFile.outputStream().use {
             keyStoreSave.setCertificateEntry(
