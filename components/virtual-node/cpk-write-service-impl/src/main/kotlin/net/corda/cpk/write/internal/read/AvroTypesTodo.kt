@@ -33,5 +33,9 @@ fun AvroTypesTodo.CpkChunkIdAvro.toCorda(): CpkChunkId =
 fun AvroTypesTodo.CpkChunkAvro.toCorda(): CpkChunk =
     CpkChunk(this.cpkChunkIdAvro.toCorda(), this.bytes)
 
+fun CpkChunkId.toAvro(): AvroTypesTodo.CpkChunkIdAvro =
+    AvroTypesTodo.CpkChunkIdAvro(this.cpkChecksum.toAvro(), this.partNumber)
 
+fun ByteArray.toCpkChunkAvro(chunkId: CpkChunkId): AvroTypesTodo.CpkChunkAvro =
+    AvroTypesTodo.CpkChunkAvro(chunkId.toAvro(), this)
 
