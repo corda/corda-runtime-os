@@ -8,6 +8,7 @@ import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.httprpc.MembershipRpcOpsService
 import net.corda.membership.registration.provider.RegistrationProvider
 import net.corda.processors.member.MemberProcessor
 import net.corda.processors.member.internal.lifecycle.MemberProcessorLifecycleHandler
@@ -33,7 +34,9 @@ class MemberProcessorImpl @Activate constructor(
     @Reference(service = CpiInfoReadService::class)
     private val cpiInfoReader: CpiInfoReadService,
     @Reference(service = CryptoOpsClient::class)
-    private val cryptoOpsClient: CryptoOpsClient
+    private val cryptoOpsClient: CryptoOpsClient,
+    @Reference(service = MembershipRpcOpsService::class)
+    private val membershipRpcOpsService: MembershipRpcOpsService
 ) : MemberProcessor {
 
     companion object {
@@ -46,7 +49,8 @@ class MemberProcessorImpl @Activate constructor(
         ::cpiInfoReader,
         ::groupPolicyProvider,
         ::registrationProvider,
-        ::cryptoOpsClient
+        ::cryptoOpsClient,
+        ::membershipRpcOpsService
     )
 
     private val coordinator =

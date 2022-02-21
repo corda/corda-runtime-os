@@ -12,10 +12,18 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation "net.corda:corda-base"
+    implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-topic-schema"
+    implementation "net.corda:corda-config-schema"
 
     implementation project(":libs:http-rpc:http-rpc")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:membership:membership-http-rpc")
+    implementation project(":libs:membership:membership-internal")
+    implementation project(":libs:messaging:messaging")
+    implementation project(":components:configuration:configuration-read-service")
+    implementation project(":components:membership:registration-provider")
+    implementation project(":components:virtual-node:virtual-node-info-read-service")
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
