@@ -4,6 +4,8 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpk.readwrite.CpkServiceConfigKeys
 import net.corda.cpk.write.CpkWriteService
+import net.corda.cpk.write.internal.read.kafka.CpkChunksCacheImpl
+import net.corda.cpk.write.types.CpkChunk
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -15,25 +17,26 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.packaging.CPK
+import net.corda.messaging.api.publisher.Publisher
+import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.annotations.VisibleForTesting
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.io.InputStream
 
-@Suppress("Unused")
+@Suppress("Warnings", "Unused")
 @Component(service = [CpkWriteService::class])
 class CpkWriteServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = PublisherFactory::class)
+    publisherFactory: PublisherFactory,
     @Reference(service = ConfigurationReadService::class)
-    private val configReadService: ConfigurationReadService,
+    private val configReadService: ConfigurationReadService
 ) : CpkWriteService, LifecycleEventHandler {
     companion object {
         val logger: Logger = contextLogger()
@@ -46,21 +49,9 @@ class CpkWriteServiceImpl @Activate constructor(
     @VisibleForTesting
     internal var configSubscription: AutoCloseable? = null
     @VisibleForTesting
-    internal var writer: CpkFileWriter? = null
-
-    override val isRunning: Boolean
-        get() = coordinator.isRunning
-
-    override fun start() {
-        logger.debug { "Cpk Write Service starting" }
-        coordinator.start()
-    }
-
-    override fun stop() {
-        logger.debug { "Cpk Write Service stopping" }
-        coordinator.stop()
-        closeResources()
-    }
+    internal var cpkChecksumCache: CpkChunksCacheImpl? = null
+    @VisibleForTesting
+    internal var publisher: Publisher? = null
 
     /**
      * Event loop
@@ -109,7 +100,7 @@ class CpkWriteServiceImpl @Activate constructor(
     private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         val config = event.config[ConfigKeys.BOOT_CONFIG]!!
         if (config.hasPath(CpkServiceConfigKeys.CPK_CACHE_DIR)) {
-            writer = CpkFileWriter.fromConfig(config)
+            //writer = CpkFileWriter.fromConfig(config)
             coordinator.updateStatus(LifecycleStatus.UP)
         } else {
             logger.warn(
@@ -127,18 +118,32 @@ class CpkWriteServiceImpl @Activate constructor(
         closeResources()
     }
 
-    override fun put(cpkMetadata: CPK.Metadata, inputStream: InputStream) {
-        if (writer == null) {
-            throw CordaRuntimeException("CpkWriteServiceImpl has not been initialised yet")
-        }
-        writer!!.put(cpkMetadata, inputStream)
+    override fun putIfAbsent(cpkInfo: List<CpkChunk>): Boolean {
+//        var cpkInfoAdded = false
+//
+//        val missingKafkaCpkInfo = cpkInfo.filter {
+//            !cpkChecksumCache.contains(it.checksum)
+//        }
+//
+//        missingKafkaCpkInfo.forEach {
+//
+//        }
+        return false
     }
 
-    override fun remove(cpkMetadata: CPK.Metadata) {
-        if (writer == null) {
-            throw CordaRuntimeException("CpkWriteServiceImpl has not been initialised yet")
-        }
-        writer!!.remove(cpkMetadata)
+    override val isRunning: Boolean
+        get() = coordinator.isRunning
+
+    override fun start() {
+        logger.debug { "Cpk Write Service starting" }
+        cpkChecksumCache!!.start()
+        coordinator.start()
+    }
+
+    override fun stop() {
+        logger.debug { "Cpk Write Service stopping" }
+        coordinator.stop()
+        closeResources()
     }
 
     private fun closeResources() {
@@ -146,6 +151,7 @@ class CpkWriteServiceImpl @Activate constructor(
         configReadServiceRegistration = null
         configSubscription?.close()
         configSubscription = null
-        writer = null
+        cpkChecksumCache?.close()
+        cpkChecksumCache = null
     }
 }
