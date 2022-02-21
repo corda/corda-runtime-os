@@ -27,6 +27,8 @@ dependencies {
 
     runtimeOnly project(':components:configuration:configuration-read-service-impl')
     runtimeOnly project(':components:configuration:configuration-rpcops-service-impl')
+    runtimeOnly project(":components:membership:membership-http-rpc-impl")
+    runtimeOnly project(":components:membership:membership-client-impl")
     runtimeOnly project(':components:virtual-node:virtual-node-rpcops-service-impl')
     runtimeOnly project(":components:permissions:permission-rpc-ops-impl")
 

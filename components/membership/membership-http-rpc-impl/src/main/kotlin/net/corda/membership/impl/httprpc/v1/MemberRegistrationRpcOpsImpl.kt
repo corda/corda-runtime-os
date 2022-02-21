@@ -47,11 +47,13 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
 
     override fun start() {
         logger.info("$className started.")
+        membershipRpcOpsClient.start()
         coordinator.start()
     }
 
     override fun stop() {
         logger.info("$className stopped.")
+        membershipRpcOpsClient.stop()
         coordinator.stop()
     }
 
