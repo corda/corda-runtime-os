@@ -15,9 +15,9 @@
       "doc": "Flow execution state, serialized at the point the flow was suspended."
     },
     {
-      "name": "cpiId",
-      "type": "string",
-      "doc": "CPI ID for the package containing the flow."
+      "name": "flowStartContext",
+      "type": "net.corda.data.flow.FlowStartContext",
+      "doc": "Context data captured when the flow was started."
     },
     {
       "name": "flowState",

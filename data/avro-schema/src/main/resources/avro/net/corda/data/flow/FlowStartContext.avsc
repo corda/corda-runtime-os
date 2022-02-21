@@ -1,0 +1,41 @@
+{
+  "type": "record",
+  "name": "FlowStartContext",
+  "namespace": "net.corda.data.flow",
+  "doc": "The Start Flow event represents the information needed to initiate a flow.",
+  "fields": [
+    {
+      "name": "statusKey",
+      "type": "net.corda.data.flow.FlowStatusKey",
+      "doc": "The unique ID for tracking the flow status"
+    },
+    {
+      "name": "initiatorType",
+      "type": "net.corda.data.flow.FlowInitiatorType",
+      "doc": "The type of initiator that started the flow"
+    },
+    {
+      "name": "clientRequestId",
+      "type": "string",
+      "doc": "The request ID assigned by the client that created the flow."
+    },
+    {
+      "name": "virtualNode",
+      "type": "net.corda.data.virtualnode.VirtualNodeInfo",
+      "doc": "The virtual node the flow is executing on."
+    },
+    {
+      "name": "flowClassName",
+      "type": "string",
+      "doc": "The fully qualified class name of the flow."
+    },
+    {
+      "name": "createdTimestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "The date and time the flow was created."
+    }
+  ]
+}

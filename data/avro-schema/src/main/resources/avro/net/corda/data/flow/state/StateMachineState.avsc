@@ -4,23 +4,12 @@
   "namespace": "net.corda.data.flow.state",
   "fields": [
     {
-      "name": "clientId",
-      "type": [
-        "null",
-        "string"
-      ]
-    },
-    {
       "name": "suspendCount",
       "type": "int"
     },
     {
       "name": "isKilled",
       "type": "boolean"
-    },
-    {
-      "name": "initiatedBy",
-      "type": "bytes"
     },
     {
       "name": "suspendedOn",
@@ -35,10 +24,6 @@
         "null",
         "net.corda.data.flow.state.waiting.WaitingFor"
       ]
-    },
-    {
-      "name": "flowClassName",
-      "type": "string"
     }
   ]
 }

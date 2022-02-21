@@ -1,0 +1,68 @@
+{
+  "type": "record",
+  "name": "FlowStatus",
+  "namespace": "net.corda.data.flow.output",
+  "doc": "The Flow Status represents the current processing state of a flow at a given point in time",
+  "fields": [
+    {
+      "name": "key",
+      "type": "net.corda.data.flow.FlowStatusKey",
+      "doc": "The unique ID for the status"
+    },
+    {
+      "name": "initiatorType",
+      "type": "net.corda.data.flow.FlowInitiatorType",
+      "doc": "The type of initiator that started the flow"
+    },
+    {
+      "name": "flowId",
+      "type": ["null", "string"],
+      "doc": "The unique flow ID"
+    },
+    {
+      "name": "flowClassName",
+      "type": "string",
+      "doc": "The fully qualified class name of the flow"
+    },
+    {
+      "name": "flowStatus",
+      "doc": "The current processing status of a flow" ,
+      "type": {
+        "name": "FlowStates",
+        "type": "enum",
+        "symbols": [
+          "START_REQUESTED",
+          "RUNNING",
+          "COMPLETED",
+          "FAILED"
+        ]
+      }
+    },
+    {
+      "name": "result",
+      "type": ["null", "string"],
+      "doc": "Optional result, this contains the result from the flow will only be set if the flow status is 'COMPLETED'"
+    },
+    {
+      "name": "error",
+      "type": ["null", "net.corda.data.ExceptionEnvelope"],
+      "doc": "Optional error message, this will be set if the flow status is 'FAILED'"
+    },
+    {
+      "name": "createdTimestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "The date the flow was created."
+    },
+    {
+      "name": "lastUpdateTimestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "The date and time this status update was published."
+    }
+  ]
+}

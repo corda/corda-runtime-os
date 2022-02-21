@@ -1,0 +1,10 @@
+{
+  "type": "enum",
+  "name": "FlowInitiatorType",
+  "namespace": "net.corda.data.flow",
+  "doc": "Represents the type flow initiator.",
+  "symbols": [
+     "RPC",
+     "P2P"
+  ]
+}

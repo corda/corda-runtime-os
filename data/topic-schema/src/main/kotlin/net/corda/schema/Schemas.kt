@@ -41,6 +41,7 @@ class Schemas {
         companion object {
             const val FLOW_EVENT_TOPIC = "flow.event"
             const val FLOW_MAPPER_EVENT_TOPIC = "flow.mapper.event"
+            const val FLOW_STATUS_TOPIC = "flow.status"
         }
     }
 
