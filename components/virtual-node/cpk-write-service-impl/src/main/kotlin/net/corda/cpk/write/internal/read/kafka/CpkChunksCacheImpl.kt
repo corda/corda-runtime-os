@@ -22,7 +22,7 @@ class CpkChunksCacheImpl(
     subscriptionFactory: SubscriptionFactory,
     subscriptionConfig: SubscriptionConfig,
     nodeConfig: SmartConfig = SmartConfigImpl.empty()
-) : CpkChunksCache, Lifecycle {
+) : CpkChunksCache {
     companion object {
         val logger = contextLogger()
     }
@@ -48,6 +48,10 @@ class CpkChunksCacheImpl(
 
     override fun contains(checksum: CpkChunkId) = checksum in cpkChunkIds.keys
 
+    override fun add(cpkChunkId: CpkChunkId) {
+        cpkChunkIds[cpkChunkId] = cpkChunkId
+    }
+
     inner class CacheSynchronizer : CompactedProcessor<AvroTypesTodo.CpkChunkIdAvro, AvroTypesTodo.CpkChunkAvro> {
         override val keyClass: Class<AvroTypesTodo.CpkChunkIdAvro>
             get() = AvroTypesTodo.CpkChunkIdAvro::class.java
@@ -59,7 +63,7 @@ class CpkChunksCacheImpl(
             currentData.forEach { (cpkChunkIdAvro, _) ->
                 // treat cpkInfoChecksums as a concurrent set, hence not care about its values.
                 val cpkChunkId = cpkChunkIdAvro.toCorda()
-                cpkChunkIds[cpkChunkId] = cpkChunkId
+                add(cpkChunkId)
                 logger.debug(
                     "Added CPK chunk to cache of id cpkChecksum: ${cpkChunkId.cpkChecksum} partNumber: ${cpkChunkId.partNumber}"
                 )
@@ -75,7 +79,7 @@ class CpkChunksCacheImpl(
             //  also assert that newRecord.topic is the same with ours just in case?
             val cpkChunkIdAvro = newRecord.key
             val cpkChunkId = cpkChunkIdAvro.toCorda()
-            cpkChunkIds.putIfAbsent(cpkChunkId, cpkChunkId)
+            add(cpkChunkId)
             logger.debug(
                 "Added CPK chunk to cache of id cpkChecksum: ${cpkChunkId.cpkChecksum} partNumber: ${cpkChunkId.partNumber}"
             )
