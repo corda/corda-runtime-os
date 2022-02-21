@@ -4,7 +4,9 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpk.readwrite.CpkServiceConfigKeys
 import net.corda.cpk.write.CpkWriteService
-import net.corda.cpk.write.internal.read.kafka.CpkChunksCacheImpl
+import net.corda.cpk.write.internal.read.kafka.CpkChunksCache
+import net.corda.cpk.write.internal.read.toAvro
+import net.corda.cpk.write.internal.read.toCpkChunkAvro
 import net.corda.cpk.write.types.CpkChunk
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -19,8 +21,10 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Activate
@@ -49,7 +53,7 @@ class CpkWriteServiceImpl @Activate constructor(
     @VisibleForTesting
     internal var configSubscription: AutoCloseable? = null
     @VisibleForTesting
-    internal var cpkChecksumCache: CpkChunksCacheImpl? = null
+    internal var cpkChunksCache: CpkChunksCache? = null
     @VisibleForTesting
     internal var publisher: Publisher? = null
 
@@ -118,17 +122,26 @@ class CpkWriteServiceImpl @Activate constructor(
         closeResources()
     }
 
-    override fun putIfAbsent(cpkInfo: List<CpkChunk>): Boolean {
-//        var cpkInfoAdded = false
-//
-//        val missingKafkaCpkInfo = cpkInfo.filter {
-//            !cpkChecksumCache.contains(it.checksum)
-//        }
-//
-//        missingKafkaCpkInfo.forEach {
-//
-//        }
-        return false
+    override fun putAll(cpkChunks: List<CpkChunk>) {
+        val cpkChunksCache = this.cpkChunksCache
+
+        val missingKafkaCpkInfo =
+        if (cpkChunksCache == null) {
+            logger.info("Cpk chunks cache is not set. " +
+                    "Putting cpk chunks to Kafka will not check if chunks already exist." +
+                    "It will overwrite existing Kafka <Cpk chunk Id, Cpk chunk> entries.")
+            cpkChunks
+        } else {
+            cpkChunks.filter {
+                !cpkChunksCache.contains(it.id)
+            }
+        }
+
+        val missingKafkaCpkInfoRecords = missingKafkaCpkInfo.map { cpkChunk ->
+            Record("TODO", cpkChunk.id.toAvro(), cpkChunk.bytes.toCpkChunkAvro(cpkChunk.id))
+        }
+
+        publisher?.publish(missingKafkaCpkInfoRecords) ?: throw CordaRuntimeException("Kafka publisher is null")
     }
 
     override val isRunning: Boolean
@@ -136,7 +149,7 @@ class CpkWriteServiceImpl @Activate constructor(
 
     override fun start() {
         logger.debug { "Cpk Write Service starting" }
-        cpkChecksumCache!!.start()
+        cpkChunksCache!!.start()
         coordinator.start()
     }
 
@@ -151,7 +164,7 @@ class CpkWriteServiceImpl @Activate constructor(
         configReadServiceRegistration = null
         configSubscription?.close()
         configSubscription = null
-        cpkChecksumCache?.close()
-        cpkChecksumCache = null
+        cpkChunksCache?.close()
+        cpkChunksCache = null
     }
 }

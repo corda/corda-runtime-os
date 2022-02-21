@@ -7,5 +7,5 @@ interface CpkWriteService : Lifecycle {
     /**
      * Puts CPK chunks to kafka.
       */
-    fun putIfAbsent(cpkInfo: List<CpkChunk>): Boolean
+    fun putAll(cpkChunks: List<CpkChunk>)
 }
