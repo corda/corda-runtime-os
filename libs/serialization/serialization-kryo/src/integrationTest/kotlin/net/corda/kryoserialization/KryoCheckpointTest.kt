@@ -42,7 +42,7 @@ class KryoCheckpointTest {
         fun setup(@InjectBundleContext bundleContext: BundleContext, @TempDir baseDirectory: Path) {
             sandboxSetup.configure(bundleContext, baseDirectory)
             lifecycle.accept(sandboxSetup) { setup ->
-                sandboxManagementService = setup.fetchService(timeout = 1000)
+                sandboxManagementService = setup.fetchService(timeout = 1500)
             }
         }
     }

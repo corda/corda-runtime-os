@@ -34,6 +34,8 @@ class DigestAlgorithmFactoryProviderImpl @Activate constructor(
             }?.associateBy(DigestAlgorithmFactory::algorithm)
     }
 
+    // This property MUST be "lazy" so that it is executed from within the sandbox.
+    // Note that SandboxContextService.getCallingSandboxGroup() works by walking the stack.
     private val provider: Map<String, DigestAlgorithmFactory> by lazy {
         sandboxContextService.getCallingSandboxGroup()?.let { sandboxGroup ->
             sandboxGroup.metadata.keys.firstOrNull()?.let(::getAlgorithmFactories)

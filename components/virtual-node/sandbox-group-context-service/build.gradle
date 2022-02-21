@@ -69,6 +69,7 @@ dependencies {
     // Gather locations of CPIs to add into `resources`
     cpis project(path: ':testing:cpbs:crypto-custom-digest-one-consumer', configuration: 'cordaCPB')
     cpis project(path: ':testing:cpbs:crypto-custom-digest-two-consumer', configuration: 'cordaCPB')
+    cpis project(path: ':testing:cpbs:corda-services', configuration: 'cordaCPB')
 }
 
 def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {
