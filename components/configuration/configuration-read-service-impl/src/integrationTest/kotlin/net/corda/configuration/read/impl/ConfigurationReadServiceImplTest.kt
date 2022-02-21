@@ -14,6 +14,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.seconds
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -117,8 +118,8 @@ class ConfigurationReadServiceImplTest {
         )
 
         // Register and verify everything gets delivered
-        val expectedKeys = mutableSetOf(BOOT_CONFIG, FLOW_CONFIG)
-        val expectedConfig = mutableMapOf(BOOT_CONFIG to bootConfig, FLOW_CONFIG to flowConfig)
+        val expectedKeys = mutableSetOf(BOOT_CONFIG, FLOW_CONFIG, MESSAGING_CONFIG)
+        val expectedConfig = mutableMapOf(BOOT_CONFIG to bootConfig, FLOW_CONFIG to flowConfig, MESSAGING_CONFIG to bootConfig)
         var receivedKeys = emptySet<String>()
         var receivedConfig = mapOf<String, SmartConfig>()
         val reg = configurationReadService.registerForUpdates { keys, config ->

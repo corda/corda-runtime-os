@@ -22,6 +22,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
@@ -41,26 +43,27 @@ import java.util.concurrent.TimeUnit
 
 @Timeout(value = 30, unit = TimeUnit.SECONDS)
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
+@TestInstance(PER_CLASS)
 class AMQPwithOSGiSerializationTests {
-
     private val testSerializationContext = AMQP_STORAGE_CONTEXT
 
-    companion object {
-        @RegisterExtension
-        private val lifecycle = EachTestLifecycle()
+    @RegisterExtension
+    private val lifecycle = EachTestLifecycle()
 
+    private lateinit var sandboxFactory: SandboxFactory
+
+    @BeforeAll
+    fun setUp(
         @InjectService(timeout = 1000)
-        lateinit var sandboxSetup: SandboxSetup
-
-        private lateinit var sandboxFactory: SandboxFactory
-
-        @BeforeAll
-        @JvmStatic
-        fun setUp(@InjectBundleContext bundleContext: BundleContext, @TempDir testDirectory: Path) {
-            sandboxSetup.configure(bundleContext, testDirectory)
-            lifecycle.accept(sandboxSetup) { setup ->
-                sandboxFactory = setup.fetchService(timeout = 1000)
-            }
+        sandboxSetup: SandboxSetup,
+        @InjectBundleContext
+        bundleContext: BundleContext,
+        @TempDir
+        testDirectory: Path
+    ) {
+        sandboxSetup.configure(bundleContext, testDirectory)
+        lifecycle.accept(sandboxSetup) { setup ->
+            sandboxFactory = setup.fetchService(timeout = 1500)
         }
     }
 

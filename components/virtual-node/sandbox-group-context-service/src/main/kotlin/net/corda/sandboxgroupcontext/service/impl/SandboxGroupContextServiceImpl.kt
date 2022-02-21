@@ -234,6 +234,7 @@ class SandboxGroupContextServiceImpl(
                 }
                 val serviceInterfaces = mutableSetOf(serviceMarkerTypeName)
                 val serviceObj = if (component == null) {
+                    serviceInterfaces += serviceClass.name
                     serviceClass.getConstructor().newInstance()
                 } else if (component.defaultEnabled
                     && component.scope == SCOPE_SINGLETON

@@ -1,5 +1,7 @@
 package net.corda.sandboxgroupcontext.test
 
+import java.util.UUID
+import kotlin.collections.LinkedHashSet
 import net.corda.packaging.CPK
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
@@ -8,6 +10,7 @@ import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.VirtualNodeLoader
 import net.corda.v5.application.flows.Flow
+import net.corda.v5.application.services.CordaService
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -29,21 +32,21 @@ class VirtualNodeService @Activate constructor(
     @Reference
     private val sandboxGroupContextComponent: SandboxGroupContextComponent
 ) {
+    private companion object {
+        private const val X500_NAME = "CN=Testing, OU=Application, O=R3, L=London, C=GB"
+
+        private fun generateHoldingIdentity() = HoldingIdentity(X500_NAME, UUID.randomUUID().toString())
+    }
+
+    private val vnodes = mutableMapOf<SandboxGroupContext, VirtualNodeInfo>()
+
     @Suppress("unused")
     @Deactivate
     fun done() {
         sandboxGroupContextComponent.close()
     }
 
-    fun loadVirtualNode(resourceName: String, holdingIdentity: HoldingIdentity): VirtualNodeInfo {
-       return virtualNodeLoader.loadVirtualNode(resourceName, holdingIdentity)
-    }
-
-    fun unloadVirtualNode(virtualNodeInfo: VirtualNodeInfo) {
-        virtualNodeLoader.unloadVirtualNode(virtualNodeInfo)
-    }
-
-    fun getOrCreateSandbox(virtualNodeInfo: VirtualNodeInfo): SandboxGroupContext {
+    private fun getOrCreateSandbox(virtualNodeInfo: VirtualNodeInfo): SandboxGroupContext {
         val cpi = cpiLoader.get(virtualNodeInfo.cpiIdentifier).get()
             ?: fail("CPI ${virtualNodeInfo.cpiIdentifier} not found")
         val vNodeContext = VirtualNodeContext(
@@ -55,7 +58,24 @@ class VirtualNodeService @Activate constructor(
         )
         return sandboxGroupContextComponent.getOrCreate(vNodeContext) { _, sandboxGroupContext ->
             sandboxGroupContextComponent.registerCustomCryptography(sandboxGroupContext)
+            sandboxGroupContextComponent.registerMetadataServices(
+                sandboxGroupContext,
+                serviceNames = { cpk -> cpk.cordappManifest.services },
+                isMetadataService = CordaService::class.java::isAssignableFrom
+            )
         }
+    }
+
+    fun loadSandbox(resourceName: String): SandboxGroupContext {
+        val vnodeInfo = virtualNodeLoader.loadVirtualNode(resourceName, generateHoldingIdentity())
+        return getOrCreateSandbox(vnodeInfo).also { ctx ->
+            vnodes[ctx] = vnodeInfo
+        }
+    }
+
+    fun unloadSandbox(sandboxGroupContext: SandboxGroupContext) {
+        (sandboxGroupContext as? AutoCloseable)?.close()
+        vnodes.remove(sandboxGroupContext)?.let(virtualNodeLoader::unloadVirtualNode)
     }
 
     fun <T : Any> runFlow(className: String, groupContext: SandboxGroupContext): T {

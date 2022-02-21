@@ -13,6 +13,8 @@ import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.fail
@@ -28,8 +30,8 @@ import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
+@TestInstance(PER_CLASS)
 class SandboxInjectableTest {
-    @Suppress("unused")
     companion object {
         private const val CPB_INJECT = "sandbox-cpk-inject-package.cpb"
         private const val FLOW_CLASS_NAME = "com.example.sandbox.cpk.inject.ExampleFlow"
@@ -38,22 +40,25 @@ class SandboxInjectableTest {
         private const val X500_NAME = "CN=Testing, OU=Application, O=R3, L=London, C=GB"
 
         private val holdingIdentity = HoldingIdentity(X500_NAME, UUID.randomUUID().toString())
+    }
 
-        @RegisterExtension
-        private val lifecycle = EachTestLifecycle()
+    @RegisterExtension
+    private val lifecycle = EachTestLifecycle()
 
+    private lateinit var sandboxFactory: SandboxFactory
+
+    @BeforeAll
+    fun setup(
         @InjectService(timeout = 1000)
-        lateinit var sandboxSetup: SandboxSetup
-
-        private lateinit var sandboxFactory: SandboxFactory
-
-        @BeforeAll
-        @JvmStatic
-        fun setup(@InjectBundleContext context: BundleContext, @TempDir baseDirectory: Path) {
-            sandboxSetup.configure(context, baseDirectory)
-            lifecycle.accept(sandboxSetup) { setup ->
-                sandboxFactory = setup.fetchService(timeout = 1000)
-            }
+        sandboxSetup: SandboxSetup,
+        @InjectBundleContext
+        context: BundleContext,
+        @TempDir
+        baseDirectory: Path
+    ) {
+        sandboxSetup.configure(context, baseDirectory)
+        lifecycle.accept(sandboxSetup) { setup ->
+            sandboxFactory = setup.fetchService(timeout = 1000)
         }
     }
 

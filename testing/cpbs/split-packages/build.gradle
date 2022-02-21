@@ -1,0 +1,17 @@
+plugins {
+    id 'net.corda.plugins.cordapp-cpb'
+}
+
+cordapp {
+    targetPlatformVersion platformVersion as Integer
+    contract {
+        name 'Corda Split Packages'
+        versionId 1
+        vendor 'R3'
+    }
+}
+
+dependencies {
+    cpb project('split-packages-one')
+    cpb project('split-packages-two')
+}
