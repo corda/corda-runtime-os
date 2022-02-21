@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicReference
  *   (it will be processing messages only if they are all up).
  * @param managedChildren the children that the class will start, when it is started.
  */
-abstract class BaseSubscriptionDominoTile(
+abstract class SubscriptionDominoTileBase(
     coordinatorFactory: LifecycleCoordinatorFactory,
     // Lifecycle type is used, because there is no single type capturing all subscriptions. Type checks are executed at runtime.
     private val subscription: Lifecycle,

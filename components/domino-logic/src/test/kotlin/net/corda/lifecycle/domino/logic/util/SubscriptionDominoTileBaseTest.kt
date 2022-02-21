@@ -23,7 +23,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import java.lang.IllegalArgumentException
 
-class BaseSubscriptionDominoTileTest {
+class SubscriptionDominoTileBaseTest {
 
     private val subscriptionRegistration = mock<RegistrationHandle>()
     private val childrenRegistration = mock<RegistrationHandle>()
@@ -163,6 +163,6 @@ class BaseSubscriptionDominoTileTest {
         subscription: Subscription<K, V>,
         dependentChildren: Collection<DominoTile>,
         managedChildren: Collection<DominoTile>
-    ): BaseSubscriptionDominoTile(coordinatorFactory, subscription, subscription.subscriptionName, dependentChildren, managedChildren)
+    ): SubscriptionDominoTileBase(coordinatorFactory, subscription, subscription.subscriptionName, dependentChildren, managedChildren)
 
 }

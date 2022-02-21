@@ -9,4 +9,4 @@ class StateAndEventSubscriptionDominoTile<K, S, E>(
     subscription: StateAndEventSubscription<K, S, E>,
     dependentChildren: Collection<DominoTile>,
     managedChildren: Collection<DominoTile>
-): BaseSubscriptionDominoTile(coordinatorFactory, subscription, subscription.subscriptionName, dependentChildren, managedChildren)
+): SubscriptionDominoTileBase(coordinatorFactory, subscription, subscription.subscriptionName, dependentChildren, managedChildren)

@@ -9,4 +9,4 @@ class SubscriptionDominoTile<K, V>(
     subscription: Subscription<K, V>,
     dependentChildren: Collection<DominoTile>,
     managedChildren: Collection<DominoTile>
-): BaseSubscriptionDominoTile(coordinatorFactory, subscription, subscription.subscriptionName, dependentChildren, managedChildren)
+): SubscriptionDominoTileBase(coordinatorFactory, subscription, subscription.subscriptionName, dependentChildren, managedChildren)
