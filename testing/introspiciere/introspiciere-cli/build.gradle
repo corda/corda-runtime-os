@@ -9,8 +9,12 @@ dependencies {
     implementation project(":testing:introspiciere:introspiciere-payloads")
     implementation project(":testing:introspiciere:introspiciere-domain")
 
+    implementation "net.corda:corda-avro-schema:$cordaApiVersion"
+    implementation "net.corda:corda-topic-schema:$cordaApiVersion"
+
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
     implementation "info.picocli:picocli:$picocliVersion"
+    implementation "org.apache.avro:avro:$avroVersion"
 
     integrationTestImplementation project(":testing:introspiciere:introspiciere-junit")
 }

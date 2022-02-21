@@ -4,7 +4,8 @@ import picocli.CommandLine
 
 @CommandLine.Command(subcommands = [
     HelloWorldCommand::class,
-    CreateTopicCommand::class
+    CreateTopicCommand::class,
+    WriteCommand::class
 ])
 class Subcommands : Runnable {
     @CommandLine.Spec
