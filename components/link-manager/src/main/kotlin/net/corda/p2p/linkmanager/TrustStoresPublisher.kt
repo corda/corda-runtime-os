@@ -63,6 +63,9 @@ internal class TrustStoresPublisher(
         managedChildren = listOf(
             publisher.dominoTile,
         ),
+        dependentChildren = listOf(
+            publisher.dominoTile,
+        )
     )
 
     private inner class Processor : CompactedProcessor<String, GatewayTruststore> {
