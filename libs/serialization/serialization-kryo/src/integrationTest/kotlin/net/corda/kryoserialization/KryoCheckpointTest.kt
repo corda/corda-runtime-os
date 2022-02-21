@@ -10,6 +10,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.io.TempDir
@@ -22,28 +24,28 @@ import java.nio.file.Path
 import java.util.concurrent.Executors
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
+@TestInstance(PER_CLASS)
 class KryoCheckpointTest {
+    @RegisterExtension
+    private val lifecycle = AllTestsLifecycle()
 
-    companion object {
-        @RegisterExtension
-        private val lifecycle = AllTestsLifecycle()
+    @InjectService(timeout = 1000)
+    lateinit var checkpointSerializerBuilderFactory: CheckpointSerializerBuilderFactory
 
+    private lateinit var sandboxManagementService: SandboxManagementService
+
+    @BeforeAll
+    fun setup(
         @InjectService(timeout = 1000)
-        lateinit var checkpointSerializerBuilderFactory: CheckpointSerializerBuilderFactory
-
-        @InjectService(timeout = 1000)
-        lateinit var sandboxSetup: SandboxSetup
-
-        private lateinit var sandboxManagementService: SandboxManagementService
-
-        @Suppress("unused")
-        @JvmStatic
-        @BeforeAll
-        fun setup(@InjectBundleContext bundleContext: BundleContext, @TempDir baseDirectory: Path) {
-            sandboxSetup.configure(bundleContext, baseDirectory)
-            lifecycle.accept(sandboxSetup) { setup ->
-                sandboxManagementService = setup.fetchService(timeout = 1500)
-            }
+        sandboxSetup: SandboxSetup,
+        @InjectBundleContext
+        bundleContext: BundleContext,
+        @TempDir
+        baseDirectory: Path
+    ) {
+        sandboxSetup.configure(bundleContext, baseDirectory)
+        lifecycle.accept(sandboxSetup) { setup ->
+            sandboxManagementService = setup.fetchService(timeout = 1500)
         }
     }
 
