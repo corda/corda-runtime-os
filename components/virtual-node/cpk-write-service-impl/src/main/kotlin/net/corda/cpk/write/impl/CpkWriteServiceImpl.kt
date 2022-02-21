@@ -42,12 +42,12 @@ import java.util.concurrent.CompletableFuture
 class CpkWriteServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = ConfigurationReadService::class)
+    private val configReadService: ConfigurationReadService,
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory,
-    @Reference(service = ConfigurationReadService::class)
-    private val configReadService: ConfigurationReadService
+    private val publisherFactory: PublisherFactory
 ) : CpkWriteService, LifecycleEventHandler {
     companion object {
         val logger: Logger = contextLogger()
