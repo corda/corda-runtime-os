@@ -51,8 +51,6 @@ class CpkWriteServiceImpl @Activate constructor(
 ) : CpkWriteService, LifecycleEventHandler {
     companion object {
         val logger: Logger = contextLogger()
-
-        const val TODO_CONFIG_PATH = "todo"
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<CpkWriteService>(this)
@@ -113,7 +111,7 @@ class CpkWriteServiceImpl @Activate constructor(
     private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         val config = event.config[ConfigKeys.BOOT_CONFIG]!!
         // TODO - fix configuration for cache and publisher
-        if (config.hasPath(TODO_CONFIG_PATH)) {
+        if (config.hasPath("todo")) {
 
             cpkChunksCache = CpkChunksCacheImpl(
                 subscriptionFactory,
