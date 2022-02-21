@@ -31,6 +31,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import java.util.concurrent.CompletableFuture
 
 @Suppress("Warnings", "Unused")
 @Component(service = [CpkWriteService::class])
@@ -122,7 +123,7 @@ class CpkWriteServiceImpl @Activate constructor(
         closeResources()
     }
 
-    override fun putAll(cpkChunks: List<CpkChunk>) {
+    override fun putAll(cpkChunks: List<CpkChunk>): List<CompletableFuture<Unit>> {
         val cpkChunksCache = this.cpkChunksCache
 
         val missingKafkaCpkInfo =
@@ -141,7 +142,7 @@ class CpkWriteServiceImpl @Activate constructor(
             Record("TODO", cpkChunk.id.toAvro(), cpkChunk.bytes.toCpkChunkAvro(cpkChunk.id))
         }
 
-        publisher?.publish(missingKafkaCpkInfoRecords) ?: throw CordaRuntimeException("Kafka publisher is null")
+        return publisher?.publish(missingKafkaCpkInfoRecords) ?: throw CordaRuntimeException("Kafka publisher is null")
     }
 
     override val isRunning: Boolean
