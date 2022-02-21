@@ -9,6 +9,8 @@ import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
@@ -20,6 +22,7 @@ import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
+@TestInstance(PER_CLASS)
 @Suppress("FunctionName")
 class CustomCryptoDigestTests {
     companion object {
@@ -30,23 +33,25 @@ class CustomCryptoDigestTests {
 
         private const val DIGEST_CPB_ONE = "META-INF/crypto-custom-digest-one-consumer.cpb"
         private const val DIGEST_CPB_TWO = "META-INF/crypto-custom-digest-two-consumer.cpb"
+    }
 
-        @RegisterExtension
-        private val lifecycle = EachTestLifecycle()
+    @RegisterExtension
+    private val lifecycle = EachTestLifecycle()
 
+    private lateinit var virtualNode: VirtualNodeService
+
+    @BeforeAll
+    fun setup(
         @InjectService(timeout = 1000)
-        lateinit var sandboxSetup: SandboxSetup
-
-        private lateinit var virtualNode: VirtualNodeService
-
-        @Suppress("unused")
-        @JvmStatic
-        @BeforeAll
-        fun setup(@InjectBundleContext bundleContext: BundleContext, @TempDir testDirectory: Path) {
-            sandboxSetup.configure(bundleContext, testDirectory)
-            lifecycle.accept(sandboxSetup) { setup ->
-                virtualNode = setup.fetchService(timeout = 1000)
-            }
+        sandboxSetup: SandboxSetup,
+        @InjectBundleContext
+        bundleContext: BundleContext,
+        @TempDir
+        testDirectory: Path
+    ) {
+        sandboxSetup.configure(bundleContext, testDirectory)
+        lifecycle.accept(sandboxSetup) { setup ->
+            virtualNode = setup.fetchService(timeout = 1000)
         }
     }
 

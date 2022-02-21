@@ -11,6 +11,8 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
 import org.junit.jupiter.api.assertAll
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
@@ -24,6 +26,7 @@ import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
+@TestInstance(PER_CLASS)
 class CordaServicesTest {
     companion object {
         private const val SERVICE_FILTER = "(&$CORDA_SANDBOX_FILTER(service.scope=singleton))"
@@ -42,28 +45,30 @@ class CordaServicesTest {
         private const val SINGLETON_COMPONENT_CLASS_NAME = "com.example.service.SingletonComponentService"
 
         private const val HOST_CLASS_NAME = "com.example.service.host.CordaServiceHost"
+    }
 
-        @RegisterExtension
-        private val lifecycle = AllTestsLifecycle()
+    @RegisterExtension
+    private val lifecycle = AllTestsLifecycle()
 
+    private lateinit var virtualNode: VirtualNodeService
+    private lateinit var sandboxGroupContext: SandboxGroupContext
+
+    private val cpkBundleContexts: Set<BundleContext>
+        get() = sandboxGroupContext.sandboxGroup.metadata.keys.mapTo(LinkedHashSet(), Bundle::getBundleContext)
+
+    @BeforeAll
+    fun setup(
         @InjectService(timeout = 1000)
-        lateinit var sandboxSetup: SandboxSetup
-
-        private lateinit var virtualNode: VirtualNodeService
-        private lateinit var sandboxGroupContext: SandboxGroupContext
-
-        private val cpkBundleContexts: Set<BundleContext>
-            get() = sandboxGroupContext.sandboxGroup.metadata.keys.mapTo(LinkedHashSet(), Bundle::getBundleContext)
-
-        @Suppress("unused")
-        @JvmStatic
-        @BeforeAll
-        fun setup(@InjectBundleContext bundleContext: BundleContext, @TempDir testDirectory: Path) {
-            sandboxSetup.configure(bundleContext, testDirectory)
-            lifecycle.accept(sandboxSetup) { setup ->
-                virtualNode = setup.fetchService(timeout = 1000)
-                sandboxGroupContext = virtualNode.loadSandbox(SERVICES_CPB)
-            }
+        sandboxSetup: SandboxSetup,
+        @InjectBundleContext
+        bundleContext: BundleContext,
+        @TempDir
+        testDirectory: Path
+    ) {
+        sandboxSetup.configure(bundleContext, testDirectory)
+        lifecycle.accept(sandboxSetup) { setup ->
+            virtualNode = setup.fetchService(timeout = 1000)
+            sandboxGroupContext = virtualNode.loadSandbox(SERVICES_CPB)
         }
     }
 
