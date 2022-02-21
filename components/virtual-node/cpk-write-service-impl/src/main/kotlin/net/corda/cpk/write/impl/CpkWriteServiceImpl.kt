@@ -5,6 +5,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpk.readwrite.CpkServiceConfigKeys
 import net.corda.cpk.write.CpkWriteService
 import net.corda.cpk.write.internal.read.kafka.CpkChunksCache
+import net.corda.cpk.write.internal.read.kafka.CpkChunksCacheImpl
 import net.corda.cpk.write.internal.read.toAvro
 import net.corda.cpk.write.internal.read.toCpkChunkAvro
 import net.corda.cpk.write.types.CpkChunk
@@ -20,8 +21,11 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.Publisher
+import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -38,13 +42,17 @@ import java.util.concurrent.CompletableFuture
 class CpkWriteServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = SubscriptionFactory::class)
+    private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = PublisherFactory::class)
-    publisherFactory: PublisherFactory,
+    private val publisherFactory: PublisherFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configReadService: ConfigurationReadService
 ) : CpkWriteService, LifecycleEventHandler {
     companion object {
         val logger: Logger = contextLogger()
+
+        const val TODO_CONFIG_PATH = "todo"
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<CpkWriteService>(this)
@@ -104,8 +112,18 @@ class CpkWriteServiceImpl @Activate constructor(
      */
     private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         val config = event.config[ConfigKeys.BOOT_CONFIG]!!
-        if (config.hasPath(CpkServiceConfigKeys.CPK_CACHE_DIR)) {
-            //writer = CpkFileWriter.fromConfig(config)
+        // TODO - fix configuration for cache and publisher
+        if (config.hasPath(TODO_CONFIG_PATH)) {
+
+            cpkChunksCache = CpkChunksCacheImpl(
+                subscriptionFactory,
+                SubscriptionConfig("todo", "todo"),
+                config
+            )
+            publisher = publisherFactory.createPublisher(
+                PublisherConfig("todo"),
+                config
+            )
             coordinator.updateStatus(LifecycleStatus.UP)
         } else {
             logger.warn(
@@ -167,5 +185,7 @@ class CpkWriteServiceImpl @Activate constructor(
         configSubscription = null
         cpkChunksCache?.close()
         cpkChunksCache = null
+        publisher?.close()
+        publisher = null
     }
 }
