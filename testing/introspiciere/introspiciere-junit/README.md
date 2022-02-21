@@ -44,11 +44,8 @@ kubectl apply -f kafka-persistent-single.yaml -n kafka
 # 8. Wait until ready
 kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka 
 
-# 9. Send message to kafka
+# 9. Send message to kafka and comsume it to ensure you can connect from your machine to Kafka 
 BROKER_LIST=`minikube ip`:`kubectl get service my-cluster-kafka-external-bootstrap -o=jsonpath='{.spec.ports[0].nodePort}' -n kafka`
 kafka-console-producer --broker-list $BROKER_LIST --topic topic1
-
-# 10. Consume message from kafka. From different terminal
-BROKER_LIST=`minikube ip`:`kubectl get service my-cluster-kafka-external-bootstrap -o=jsonpath='{.spec.ports[0].nodePort}' -n kafka`
-kafka-console-consumer --topic topic1 --from-beginning --bootstrap-server $BROKER_LIST
+kafka-console-consumer --topic topic1 --from-beginning --bootstrap-server $BROKER_LIST # From different terminal
 ```
