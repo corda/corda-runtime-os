@@ -75,7 +75,7 @@ Default username and password are `admin:admin`
 Using your favourite DB editor (like [DBeaver](https://dbeaver.io/)) it is possible to connect to:
 `user=user`
 `password=pass`
-`jdbc.url=jdbc:postgresql://cluster-db:5432/cordacluster`
+`jdbc.url=jdbc:postgresql://localhost:5433/cordacluster`
 
 There should be two schemas with DB objects: `config` and `rpc_rbac`.
 
