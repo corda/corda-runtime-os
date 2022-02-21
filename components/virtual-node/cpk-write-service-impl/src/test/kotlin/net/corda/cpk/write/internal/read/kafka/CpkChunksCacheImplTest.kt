@@ -21,6 +21,14 @@ class CpkChunksCacheImplTest {
     private val subscriptionConfig = SubscriptionConfig("dummyGroupName", "dummyEventTopic")
     private val cpkChunkAvro = AvroTypesTodo.CpkChunkAvro(mock(), byteArrayOf())
 
+    companion object {
+        fun secureHash(bytes: ByteArray): net.corda.data.crypto.SecureHash {
+            val algorithm = "SHA-256"
+            val messageDigest = MessageDigest.getInstance(algorithm)
+            return SecureHash(algorithm, messageDigest.digest(bytes)).toAvro()
+        }
+    }
+
     @BeforeEach
     fun setUp() {
         subscriptionFactory = mock()
@@ -66,12 +74,5 @@ class CpkChunksCacheImplTest {
             mock()
         )
         assertThat(mapOf(cpkChunkIdAvro0.toCorda() to cpkChunkIdAvro0.toCorda())).isEqualTo(cpkChecksumCache.cpkChunkIds)
-    }
-
-
-    private fun secureHash(bytes: ByteArray): net.corda.data.crypto.SecureHash {
-        val algorithm = "SHA-256"
-        val messageDigest = MessageDigest.getInstance(algorithm)
-        return SecureHash(algorithm, messageDigest.digest(bytes)).toAvro()
     }
 }
