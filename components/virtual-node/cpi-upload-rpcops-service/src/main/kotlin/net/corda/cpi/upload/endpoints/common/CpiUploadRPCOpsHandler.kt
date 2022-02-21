@@ -26,27 +26,37 @@ class CpiUploadRPCOpsHandler : LifecycleEventHandler {
     }
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-
         when (event) {
-            is StartEvent -> {
-                log.info("Received a start event, listening on CpiUploadRPCOpsService for its status")
-                cpiUploadRPCOpsServiceRegistrationHandle = coordinator.followStatusChangesByName(setOf(
-                    LifecycleCoordinatorName.forComponent<CpiUploadRPCOpsService>()
-                ))
-            }
-            is RegistrationStatusChangeEvent -> {
-                log.info("Received event ${event.status} from CpiUploadRPCOpsService, updating my status")
-                if (event.status == LifecycleStatus.ERROR) {
-                    closeResources()
-                }
-                coordinator.updateStatus(event.status)
-            }
-            is StopEvent -> {
-                log.info("Stopping...")
-                closeResources()
-                coordinator.updateStatus(LifecycleStatus.DOWN)
-            }
+            is StartEvent -> onStartEvent(coordinator)
+            is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event, coordinator)
+            is StopEvent -> onStopEvent(coordinator)
         }
+    }
+
+    private fun onStartEvent(coordinator: LifecycleCoordinator) {
+        log.info("CPI Upload RPCOpsHandler event - start")
+        cpiUploadRPCOpsServiceRegistrationHandle = coordinator.followStatusChangesByName(
+            setOf(
+                LifecycleCoordinatorName.forComponent<CpiUploadRPCOpsService>()
+            )
+        )
+    }
+
+    private fun onStopEvent(coordinator: LifecycleCoordinator) {
+        log.info("CPI Upload RPCOpsHandler event - stop")
+        closeResources()
+        coordinator.updateStatus(LifecycleStatus.DOWN)
+    }
+
+    private fun onRegistrationStatusChangeEvent(
+        event: RegistrationStatusChangeEvent,
+        coordinator: LifecycleCoordinator
+    ) {
+        log.info("CPI Upload RPCOpsHandler event - registration status changed")
+        if (event.status == LifecycleStatus.ERROR) {
+            closeResources()
+        }
+        coordinator.updateStatus(event.status)
     }
 
     private fun closeResources() {

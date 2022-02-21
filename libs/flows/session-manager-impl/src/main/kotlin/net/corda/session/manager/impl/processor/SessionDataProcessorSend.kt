@@ -42,10 +42,7 @@ class SessionDataProcessorSend(
             }
             SessionStateType.CONFIRMED -> {
                 val nextSeqNum = sessionState.sendEventsState.lastProcessedSequenceNum + 1
-                sessionEvent.apply {
-                    sequenceNum = nextSeqNum
-                    timestamp = instant.toEpochMilli()
-                }
+                sessionEvent.sequenceNum = nextSeqNum
 
                 sessionState.apply {
                     sendEventsState.lastProcessedSequenceNum = nextSeqNum

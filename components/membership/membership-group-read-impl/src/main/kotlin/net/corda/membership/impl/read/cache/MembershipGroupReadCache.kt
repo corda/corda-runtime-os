@@ -47,8 +47,8 @@ interface MembershipGroupReadCache : Lifecycle {
         private var _groupReaderCache: MemberDataCache<MembershipGroupReader>? = null
 
         override fun start() {
-            _memberListCache = MemberListCache.Impl()
-            _groupReaderCache = MemberDataCache.Impl()
+            if(_memberListCache == null) _memberListCache = MemberListCache.Impl()
+            if(_groupReaderCache == null) _groupReaderCache = MemberDataCache.Impl()
             isRunning = true
         }
 

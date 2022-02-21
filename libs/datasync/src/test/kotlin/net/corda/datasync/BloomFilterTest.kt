@@ -11,7 +11,7 @@ import org.junit.jupiter.params.provider.MethodSource
 
 class BloomFilterTest {
     companion object {
-        private val expectedItemCounts = listOf(99, 1, 2, 3, 10000, 100000)
+        private val expectedItemCounts = listOf(99, 1, 2, 3, 937, 3_754)
         private const val FALSE_POSITIVE_RATE = 0.02
         private val hashSeeds = listOf(99, 1, 2, 3, 9999, 99999)
         private val testElement = 100000.toByteArray()
@@ -80,7 +80,7 @@ class BloomFilterTest {
 
     @Test
     fun `false positive checks`() {
-        val itemCount = 100000
+        val itemCount = 3_749
         val falsePositiveRate = 0.03
         val bloomFilter = createBloomFilter(
             itemCount,
@@ -104,8 +104,8 @@ class BloomFilterTest {
         }
         assertTrue(count.toDouble() < 2.0 * itemCount * falsePositiveRate)
 
-        // check for known false positives until 287
-        val falsePositives = setOf(41, 149, 151, 243, 249, 253, 261, 265, 271, 287)
+        // check for known false positives until 185
+        val falsePositives = setOf(40, 45, 57, 83, 109, 111, 115, 135, 151, 155, 160, 185)
         falsePositives.forEach {
             assertTrue(bloomFilter.possiblyContains(it.toByteArray()))
         }

@@ -1,0 +1,45 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+description "Chunk read service impl"
+
+dependencies {
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+
+    implementation project(":components:configuration:configuration-read-service")
+    implementation project(":libs:lifecycle:lifecycle")
+    implementation project(':libs:configuration:configuration-core')
+    implementation project(':libs:messaging:messaging')
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-base"
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'net.corda:corda-avro-schema'
+    implementation 'net.corda:corda-config-schema'
+    implementation 'net.corda:corda-topic-schema'
+
+    implementation project(':components:chunking:chunk-read-service')
+    implementation project(':components:chunking:chunk-db-write')
+    implementation project(":components:db:db-connection-manager")
+    implementation project(':libs:chunking:chunking-core')
+    implementation project(':libs:chunking:chunking-datamodel')
+    implementation project(':libs:db:db-orm')
+    implementation project(':libs:configuration:configuration-schema:messaging-configuration')
+
+    implementation 'javax.persistence:javax.persistence-api'
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+
+    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    integrationTestImplementation project(":testing:test-utilities")
+    integrationTestImplementation project(":libs:lifecycle:registry")
+
+    integrationTestRuntimeOnly project(":components:chunking:chunk-db-write-impl")
+    integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
+    integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")
+    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+}

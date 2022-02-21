@@ -5,7 +5,7 @@ import net.corda.utilities.LazyPool
 import java.io.ByteArrayOutputStream
 import java.io.OutputStream
 import java.nio.ByteBuffer
-import java.util.*
+import java.util.Arrays
 
 internal val serializeOutputStreamPool = LazyPool(
         clear = ByteBufferOutputStream::reset,

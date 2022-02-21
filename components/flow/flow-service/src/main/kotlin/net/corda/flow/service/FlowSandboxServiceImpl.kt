@@ -20,7 +20,6 @@ import net.corda.v5.application.services.CordaService
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.manager.api.RuntimeRegistration
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -39,9 +38,7 @@ class FlowSandboxServiceImpl @Activate constructor(
     @Reference(service = SandboxDependencyInjectorFactory::class)
     private val dependencyInjectionFactory: SandboxDependencyInjectorFactory,
     @Reference(service = CheckpointSerializerBuilderFactory::class)
-    private val checkpointSerializerBuilderFactory: CheckpointSerializerBuilderFactory,
-    @Reference
-    private val registrar: RuntimeRegistration
+    private val checkpointSerializerBuilderFactory: CheckpointSerializerBuilderFactory
 ) : FlowSandboxService {
     private val logger = loggerFor<FlowSandboxServiceImpl>()
 
@@ -78,7 +75,7 @@ class FlowSandboxServiceImpl @Activate constructor(
         sandboxGroupContext: MutableSandboxGroupContext
     ): AutoCloseable {
         val sandboxGroup = sandboxGroupContext.sandboxGroup
-        registrar.register(sandboxGroup)
+        val customCrypto = sandboxGroupContextComponent.registerCustomCryptography(sandboxGroupContext)
 
         // Declare services implemented within this sandbox group for CordaInject support.
         val sandboxServices = sandboxGroupContextComponent.registerMetadataServices(
@@ -101,7 +98,7 @@ class FlowSandboxServiceImpl @Activate constructor(
         return AutoCloseable {
             injectorService.close()
             sandboxServices.close()
-            registrar.unregister(sandboxGroup)
+            customCrypto.close()
         }
     }
 }

@@ -31,7 +31,7 @@ class PSSParameterSpecSerializerTests {
 
     @ParameterizedTest
     @MethodSource("params")
-    @Timeout(5)
+    @Timeout(60)
     fun `Should round trip serialize and deserialize`(testParams: TestParams) {
         val params = PSSParameterSpec(
             testParams.digestAlgorithm,
@@ -51,7 +51,7 @@ class PSSParameterSpecSerializerTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(60)
     fun `Should throw IllegalArgumentException to serialize params with non MGF1ParameterSpec`() {
         val params = PSSParameterSpec(
             "SHA-256",

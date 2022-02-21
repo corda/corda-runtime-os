@@ -5,14 +5,16 @@ import java.util.UUID
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX_FILTER
 import net.corda.testing.sandboxes.SandboxSetup
+import net.corda.testing.sandboxes.fetchService
+import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.fail
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.framework.BundleContext
@@ -27,7 +29,6 @@ import org.osgi.test.junit5.service.ServiceExtension
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 class SandboxInjectableTest {
-    @Suppress("unused")
     companion object {
         private const val CPB_INJECT = "sandbox-cpk-inject-package.cpb"
         private const val FLOW_CLASS_NAME = "com.example.sandbox.cpk.inject.ExampleFlow"
@@ -37,28 +38,28 @@ class SandboxInjectableTest {
 
         private val holdingIdentity = HoldingIdentity(X500_NAME, UUID.randomUUID().toString())
 
+        @RegisterExtension
+        private val lifecycle = EachTestLifecycle()
+
         @InjectService(timeout = 1000)
         lateinit var sandboxSetup: SandboxSetup
 
+        private lateinit var sandboxFactory: SandboxFactory
+
+        @Suppress("unused")
         @BeforeAll
         @JvmStatic
         fun setup(@InjectBundleContext context: BundleContext, @TempDir baseDirectory: Path) {
             sandboxSetup.configure(context, baseDirectory)
-        }
-
-        @AfterAll
-        @JvmStatic
-        fun done() {
-            sandboxSetup.shutdown()
+            lifecycle.accept(sandboxSetup) { setup ->
+                sandboxFactory = setup.fetchService(timeout = 1000)
+            }
         }
     }
 
-    @InjectService(timeout = 1000)
-    lateinit var sandboxFactory: SandboxFactory
-
     @Test
     fun testCordaInjectables() {
-        val vnodeInfo = sandboxFactory.loadCPI(CPB_INJECT, holdingIdentity)
+        val vnodeInfo = sandboxFactory.loadVirtualNode(CPB_INJECT, holdingIdentity)
         try {
             sandboxFactory.getOrCreateSandbox(holdingIdentity).use { sandboxContext ->
                 val sandbox = sandboxContext.sandboxGroup
@@ -93,7 +94,7 @@ class SandboxInjectableTest {
                 assertThat(DigestService::class.java).isAssignableFrom(digestService.single())
             }
         } finally {
-            sandboxFactory.unloadCPI(vnodeInfo)
+            sandboxFactory.unloadVirtualNode(vnodeInfo)
         }
     }
 
