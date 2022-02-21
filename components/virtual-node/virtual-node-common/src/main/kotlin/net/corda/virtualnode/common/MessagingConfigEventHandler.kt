@@ -12,6 +12,7 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.schema.configuration.ConfigKeys
 
 /**
@@ -80,7 +81,7 @@ class MessagingConfigEventHandler(
      * require as defined in [onNewConfiguration]
      */
     private fun onConfigChangedEventReceived(coordinator: LifecycleCoordinator, event: ConfigChangedEvent) {
-        configCallback(coordinator, event.config)
+        configCallback(coordinator, event.config.toMessagingConfig())
     }
 
     private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent) {
@@ -94,7 +95,7 @@ class MessagingConfigEventHandler(
     /** Only raise a [ConfigChangedEvent] is the Kafka messaging config has been sent */
     override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
         if (ConfigKeys.MESSAGING_CONFIG in changedKeys) {
-            configChangedEventCallback(ConfigChangedEvent(config[ConfigKeys.MESSAGING_CONFIG]!!))
+            configChangedEventCallback(ConfigChangedEvent(changedKeys, config))
         }
     }
 

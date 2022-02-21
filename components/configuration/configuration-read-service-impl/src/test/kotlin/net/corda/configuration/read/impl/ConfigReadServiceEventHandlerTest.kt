@@ -34,7 +34,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 
 internal class ConfigReadServiceEventHandlerTest {
-    val configFactory = SmartConfigFactory.create(ConfigFactory.empty())
+    private val configFactory = SmartConfigFactory.create(ConfigFactory.empty())
 
     @Captor
     val lifecycleEventCaptor: ArgumentCaptor<LifecycleEvent> = ArgumentCaptor.forClass(LifecycleEvent::class.java)

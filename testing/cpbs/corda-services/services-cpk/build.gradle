@@ -1,0 +1,20 @@
+plugins {
+    id 'net.corda.plugins.cordapp-cpk'
+    id 'org.jetbrains.kotlin.jvm'
+}
+
+cordapp {
+    targetPlatformVersion platformVersion as Integer
+    workflow {
+        name 'Corda Services CPK Example'
+        versionId 1
+        vendor 'R3'
+    }
+}
+
+dependencies {
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+    cordaProvided "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    cordaProvided 'net.corda:corda-application'
+}

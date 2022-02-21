@@ -7,11 +7,13 @@ import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBo
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setUpHealthMonitor
+import net.corda.applications.workers.workercommon.JavaSerialisationFilter
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.crypto.CryptoProcessor
 import net.corda.processors.db.DBProcessor
 import net.corda.processors.flow.FlowProcessor
+import net.corda.processors.member.MemberProcessor
 import net.corda.processors.rpc.RPCProcessor
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
@@ -32,6 +34,8 @@ class CombinedWorker @Activate constructor(
     private val flowProcessor: FlowProcessor,
     @Reference(service = RPCProcessor::class)
     private val rpcProcessor: RPCProcessor,
+    @Reference(service = MemberProcessor::class)
+    private val memberProcessor: MemberProcessor,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
     @Reference(service = HealthMonitor::class)
@@ -47,6 +51,7 @@ class CombinedWorker @Activate constructor(
     /** Parses the arguments, then initialises and starts the processors. */
     override fun startup(args: Array<String>) {
         logger.info("Combined worker starting.")
+        JavaSerialisationFilter.install()
 
         val params = getParams(args, CombinedWorkerParams())
         if (printHelpOrVersion(params.defaultParams, CombinedWorker::class.java, shutDownService)) return
@@ -59,6 +64,7 @@ class CombinedWorker @Activate constructor(
         cryptoProcessor.start(config)
         dbProcessor.start(config)
         flowProcessor.start(config)
+        memberProcessor.start(config)
         rpcProcessor.start(config)
     }
 
@@ -68,6 +74,7 @@ class CombinedWorker @Activate constructor(
         cryptoProcessor.stop()
         dbProcessor.stop()
         flowProcessor.stop()
+        memberProcessor.stop()
         rpcProcessor.stop()
 
         healthMonitor.stop()

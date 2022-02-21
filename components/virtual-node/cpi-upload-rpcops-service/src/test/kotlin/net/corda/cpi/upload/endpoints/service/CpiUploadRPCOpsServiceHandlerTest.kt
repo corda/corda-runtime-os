@@ -8,13 +8,12 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.cpiupload.CpiUploadManager
 import net.corda.libs.cpiupload.CpiUploadManagerFactory
 import net.corda.lifecycle.LifecycleCoordinator
-import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.lifecycle.StartEvent
-import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
+import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.schema.configuration.ConfigKeys
@@ -40,7 +39,8 @@ class CpiUploadRPCOpsServiceHandlerTest {
         cpiUploadManagerFactory = mock()
         configReadService = mock()
         publisherFactory = mock()
-        cpiUploadRPCOpsServiceHandler = CpiUploadRPCOpsServiceHandler(cpiUploadManagerFactory, configReadService, publisherFactory)
+        cpiUploadRPCOpsServiceHandler =
+            CpiUploadRPCOpsServiceHandler(cpiUploadManagerFactory, configReadService, publisherFactory)
 
         coordinator = mock()
     }
@@ -48,11 +48,13 @@ class CpiUploadRPCOpsServiceHandlerTest {
     @Test
     fun `on Start event follows ConfigurationReadService for changes`() {
         val registrationHandle = mock<RegistrationHandle>()
-        whenever(coordinator.followStatusChangesByName(
+        whenever(
+            coordinator.followStatusChangesByName(
                 setOf(
                     LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
                 )
-        )).thenReturn(registrationHandle)
+            )
+        ).thenReturn(registrationHandle)
 
         assertNull(cpiUploadRPCOpsServiceHandler.configReadServiceRegistrationHandle)
         cpiUploadRPCOpsServiceHandler.processEvent(StartEvent(), coordinator)
@@ -65,7 +67,11 @@ class CpiUploadRPCOpsServiceHandlerTest {
         cpiUploadRPCOpsServiceHandler.processEvent(event, coordinator)
         verify(configReadService).registerComponentForUpdates(
             coordinator,
-            setOf(ConfigKeys.MESSAGING_CONFIG, ConfigKeys.BOOT_CONFIG, ConfigKeys.RPC_CONFIG)
+            setOf(
+//                ConfigKeys.MESSAGING_CONFIG,
+                ConfigKeys.BOOT_CONFIG,
+                ConfigKeys.RPC_CONFIG
+            )
         )
     }
 
@@ -91,10 +97,12 @@ class CpiUploadRPCOpsServiceHandlerTest {
     @Test
     fun `on ConfigChangedEvent creates new RPCSender and CpiUploadManager and updates coordinator to UP`() {
         val config = mock<Map<String, SmartConfig>>()
-        whenever(config[ConfigKeys.MESSAGING_CONFIG]).thenReturn(mock())
+        // uncomment when we add ConfigKeys.MESSAGING_CONFIG back into the code.
+//        whenever(config[ConfigKeys.MESSAGING_CONFIG]).thenReturn(mock())
         whenever(config[ConfigKeys.BOOT_CONFIG]).thenReturn(mock())
         whenever(config[ConfigKeys.RPC_CONFIG]).thenReturn(mock())
-        whenever(config.toMessagingConfig()).thenReturn(mock())
+        // uncomment when we add ConfigKeys.MESSAGING_CONFIG back into the code.
+//        whenever(config.toMessagingConfig()).thenReturn(mock())
 
         val rpcSender = mock<RPCSender<Any, Any>>()
         whenever(publisherFactory.createRPCSender<Any, Any>(any(), any())).thenReturn(rpcSender)

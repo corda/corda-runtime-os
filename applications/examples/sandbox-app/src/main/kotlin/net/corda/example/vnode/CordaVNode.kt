@@ -132,7 +132,7 @@ class CordaVNode @Activate constructor(
     @Suppress("SameParameterValue")
     private fun executeSandbox(clientId: String, resourceName: String) {
         val holdingIdentity = HoldingIdentity(X500_NAME, generateRandomId())
-        val vnodeInfo = vnode.loadCPI(resourceName, holdingIdentity)
+        val vnodeInfo = vnode.loadVirtualNode(resourceName, holdingIdentity)
         try {
             // Checkpoint: We have loaded the CPI into the framework.
             logger.info("Loaded CPI: {}", vnodeInfo.cpiIdentifier)
@@ -160,7 +160,7 @@ class CordaVNode @Activate constructor(
             logger.info("Destroyed sandbox")
             dumpHeap("destroyed")
         } finally {
-            vnode.unloadCPI(vnodeInfo)
+            vnode.unloadVirtualNode(vnodeInfo)
         }
         logger.info("Unloaded CPI")
     }

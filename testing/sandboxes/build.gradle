@@ -22,7 +22,6 @@ dependencies {
     implementation project(':components:install:install-service')
     implementation project(':components:virtual-node:cpi-info-read-service')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
-    implementation project(':components:virtual-node:virtual-node-info-write-service')
 
     runtimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
     runtimeOnly project(':libs:sandbox-internal')
