@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpk.readwrite.CpkServiceConfigKeys
 import net.corda.cpk.write.CpkWriteService
+import net.corda.cpk.write.internal.read.AvroTypesTodo
 import net.corda.cpk.write.internal.read.kafka.CpkChunksCache
 import net.corda.cpk.write.internal.read.kafka.CpkChunksCacheImpl
 import net.corda.cpk.write.internal.read.toAvro
@@ -20,6 +21,8 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -28,14 +31,16 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.seconds
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.util.concurrent.CompletableFuture
+import java.time.Duration
 
 @Suppress("Warnings", "Unused")
 @Component(service = [CpkWriteService::class])
@@ -64,6 +69,9 @@ class CpkWriteServiceImpl @Activate constructor(
     @VisibleForTesting
     internal var publisher: Publisher? = null
 
+    //TODO: populate the following with configuration
+    private val timeout: Duration = 20.seconds
+
     /**
      * Event loop
      */
@@ -90,7 +98,10 @@ class CpkWriteServiceImpl @Activate constructor(
      * If the thing(s) we depend on are up (only the [ConfigurationReadService]),
      * then register `this` for config updates
      */
-    private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator) {
+    private fun onRegistrationStatusChangeEvent(
+        event: RegistrationStatusChangeEvent,
+        coordinator: LifecycleCoordinator
+    ) {
         if (event.status == LifecycleStatus.UP) {
             configSubscription = configReadService.registerComponentForUpdates(
                 coordinator,
@@ -139,26 +150,54 @@ class CpkWriteServiceImpl @Activate constructor(
         closeResources()
     }
 
-    override fun putAll(cpkChunks: List<CpkChunk>): List<CompletableFuture<Unit>> {
+    override fun putAll(cpkChunks: List<CpkChunk>) {
         val cpkChunksCache = this.cpkChunksCache
 
-        val missingKafkaCpkInfo =
-        if (cpkChunksCache == null) {
-            logger.info("Cpk chunks cache is not set. " +
-                    "Putting cpk chunks to Kafka will not check if chunks already exist." +
-                    "It will overwrite existing Kafka <Cpk chunk Id, Cpk chunk> entries.")
-            cpkChunks
-        } else {
-            cpkChunks.filter {
-                !cpkChunksCache.contains(it.id)
+        val missingCpkChunks =
+            if (cpkChunksCache == null) {
+                logger.info(
+                    "CPK chunks cache is not set. " +
+                            "Putting cpk chunks to Kafka will not check if chunks already exist." +
+                            "It will overwrite existing Kafka <CPK chunk Id, CPK chunk> entries."
+                )
+                cpkChunks
+            } else {
+                cpkChunks.filter { cpkChunk ->
+                    !cpkChunksCache.contains(cpkChunk.id).also {
+                        val cpkChunkId = "${cpkChunk.id.cpkChecksum} : ${cpkChunk.id.partNumber}"
+                        if (it == true)
+                            logger.debug("CPK chunk not contained in cache: $cpkChunkId")
+                        else
+                            logger.debug("CPK chunk contained in cache: $cpkChunkId")
+                    }
+                }
             }
-        }
 
-        val missingKafkaCpkInfoRecords = missingKafkaCpkInfo.map { cpkChunk ->
-            Record("TODO", cpkChunk.id.toAvro(), cpkChunk.bytes.toCpkChunkAvro(cpkChunk.id))
-        }
+        val missingCpkChunksRecords =
+            missingCpkChunks.map { cpkChunk ->
+                Record("TODO", cpkChunk.id.toAvro(), cpkChunk.bytes.toCpkChunkAvro(cpkChunk.id))
+            }
 
-        return publisher?.publish(missingKafkaCpkInfoRecords) ?: throw CordaRuntimeException("Kafka publisher is null")
+        putAllAndWaitForResponses(missingCpkChunksRecords)
+    }
+
+    private fun putAllAndWaitForResponses(missingCpkChunksRecords: List<Record<AvroTypesTodo.CpkChunkIdAvro, AvroTypesTodo.CpkChunkAvro>>) {
+        val responses = publisher?.let {
+            it.publish(missingCpkChunksRecords)
+        } ?: throw CordaRuntimeException("Kafka publisher is null")
+
+        responses.forEach {
+            var intermittentException = false
+            do {
+                try {
+                    it.getOrThrow(timeout)
+                    intermittentException = false
+                } catch (e: CordaMessageAPIIntermittentException) {
+                    intermittentException = true
+                    logger.info("Caught an CordaMessageAPIIntermittentException. Will retry waiting on a future response.")
+                }
+            } while (intermittentException)
+        }
     }
 
     override val isRunning: Boolean
