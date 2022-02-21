@@ -49,3 +49,20 @@ BROKER_LIST=`minikube ip`:`kubectl get service my-cluster-kafka-external-bootstr
 kafka-console-producer --broker-list $BROKER_LIST --topic topic1
 kafka-console-consumer --topic topic1 --from-beginning --bootstrap-server $BROKER_LIST # From different terminal
 ```
+
+# Troubleshooting
+
+After restaring minikube you might find that you cannot re-deploy Kafka.
+
+```shell
+# 1. Delete namespace
+kubectl delete namespace kafka
+
+# 2. Create again the namespace
+kubectl create namespace kafka
+
+# 3. Deploy Kafka again and wait until ready
+# 7. Deploy kafka
+kubectl apply -f kafka-persistent-single.yaml -n kafka 
+kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka 
+```

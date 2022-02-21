@@ -6,9 +6,13 @@ description "Introspiciere core"
 
 dependencies {
     implementation project(":testing:introspiciere:introspiciere-http")
+    implementation project(":testing:introspiciere:introspiciere-payloads")
+    implementation project(":testing:introspiciere:introspiciere-domain")
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
     implementation "info.picocli:picocli:$picocliVersion"
+
+    integrationTestImplementation project(":testing:introspiciere:introspiciere-junit")
 }
 
 jar {

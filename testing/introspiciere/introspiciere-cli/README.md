@@ -11,3 +11,11 @@ cd testing/introspiciere/introspiciere-cli
 java -jar build/libs/introspiciere-cli-5.0.0.0-SNAPSHOT.jar
 ```
 
+## Commands
+
+### Create a topic
+
+```shell
+java -jar introspiciere-cli-5.0.0.0-SNAPSHOT.jar create-topic \
+  --endpoint http://localhost:9094 --topic topic-1234 [--partitions 5] [--replicaton-factor 2]
+```

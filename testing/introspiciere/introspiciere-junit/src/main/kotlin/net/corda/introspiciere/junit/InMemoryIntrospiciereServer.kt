@@ -8,8 +8,8 @@ import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 
 class InMemoryIntrospiciereServer(
-    private val port: Int = 0,
-    private val kafkaBrokers: List<String>? = null,
+    port: Int = 0,
+    kafkaBrokers: List<String>? = null,
 ) : BeforeAllCallback, BeforeEachCallback, AfterEachCallback, AfterAllCallback {
 
     override fun beforeEach(context: ExtensionContext?) = startServer()
@@ -27,7 +27,16 @@ class InMemoryIntrospiciereServer(
         server.close()
     }
 
+    /**
+     * Endpoint where Introspiciere is listening.
+     */
+    val endpoint: String
+        get() = "http://localhost:${server.portUsed}"
+
+    /**
+     * Introspiciere client.
+     */
     val client: IntrospiciereClient
-        get() = IntrospiciereClient("http://localhost:${server.portUsed}")
+        get() = IntrospiciereClient(endpoint)
 }
 
