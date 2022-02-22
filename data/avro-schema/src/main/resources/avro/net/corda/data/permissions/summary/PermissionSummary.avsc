@@ -13,16 +13,11 @@
     },
     {
       "name": "permissionString",
-      "type": [ "null", "string" ]
+      "type": "string"
     },
     {
-      "name": "type",
-      "type": {
-        "type": "enum",
-        "name": "PermissionType",
-        "symbols": ["ALLOW", "DENY"]
-      },
-      "doc": "The type of the permission."
+      "name": "permissionType",
+      "type": "net.corda.data.permissions.PermissionType"
     }
   ]
 }
