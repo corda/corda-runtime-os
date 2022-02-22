@@ -23,6 +23,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -31,6 +32,7 @@ import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_GROUP_TOPIC
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_ROLE_TOPIC
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_USER_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -172,21 +174,28 @@ class PermissionCacheService @Activate constructor(
         val groupData = ConcurrentHashMap<String, Group>()
         val roleData = ConcurrentHashMap<String, Role>()
         val permissionData = ConcurrentHashMap<String, Permission>()
+        userSubscription?.stop()
         val userSubscription = createUserSubscription(userData, config)
             .also {
                 it.start()
                 userSubscription = it
             }
+
+        groupSubscription?.stop()
         val groupSubscription = createGroupSubscription(groupData, config)
             .also {
                 it.start()
                 groupSubscription = it
             }
+
+        roleSubscription?.stop()
         val roleSubscription = createRoleSubscription(roleData, config)
             .also {
                 it.start()
                 roleSubscription = it
             }
+
+        permissionSubscription?.stop()
         val permissionSubscription = createPermissionSubscription(permissionData, config)
             .also {
                 it.start()
@@ -201,14 +210,18 @@ class PermissionCacheService @Activate constructor(
             )
         )
 
+        _permissionCache?.stop()
         _permissionCache = permissionCacheFactory.createPermissionCache(userData, groupData, roleData, permissionData)
             .also { it.start() }
     }
 
     private fun onConfigChange(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
         log.info("Received configuration update event, changedKeys: $changedKeys")
-        if (BOOT_CONFIG in changedKeys){
-            coordinator.postEvent(NewConfigurationReceivedEvent(config[BOOT_CONFIG]!!))
+        if ((BOOT_CONFIG in changedKeys || MESSAGING_CONFIG in changedKeys) &&
+            config.keys.containsAll(setOf(BOOT_CONFIG, MESSAGING_CONFIG))
+        ) {
+            val messagingConfig = config.toMessagingConfig()
+            coordinator.postEvent(NewConfigurationReceivedEvent(messagingConfig))
         }
     }
 

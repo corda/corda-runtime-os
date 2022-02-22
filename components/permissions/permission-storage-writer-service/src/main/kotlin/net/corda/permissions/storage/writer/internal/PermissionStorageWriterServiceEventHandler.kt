@@ -12,12 +12,14 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_MGMT_REQ_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import javax.persistence.EntityManagerFactory
@@ -79,13 +81,14 @@ class PermissionStorageWriterServiceEventHandler(
         changedKeys: Set<String>,
         currentConfigurationSnapshot: Map<String, SmartConfig>
     ) {
-
         log.info("Component received configuration update event, changedKeys: $changedKeys")
 
-        if (BOOT_CONFIG in changedKeys) {
+        if ((BOOT_CONFIG in changedKeys || MESSAGING_CONFIG in changedKeys) &&
+            currentConfigurationSnapshot.keys.containsAll(setOf(BOOT_CONFIG, MESSAGING_CONFIG))
+        ) {
+            val messagingConfig = currentConfigurationSnapshot.toMessagingConfig()
 
-            val bootstrapConfig = checkNotNull(currentConfigurationSnapshot[BOOT_CONFIG])
-
+            subscription?.stop()
             subscription = subscriptionFactory.createRPCSubscription(
                 rpcConfig = RPCConfig(
                     groupName = GROUP_NAME,
@@ -94,7 +97,7 @@ class PermissionStorageWriterServiceEventHandler(
                     requestType = PermissionManagementRequest::class.java,
                     responseType = PermissionManagementResponse::class.java
                 ),
-                nodeConfig = bootstrapConfig,
+                nodeConfig = messagingConfig,
                 responderProcessor = permissionStorageWriterProcessorFactory.create(
                     entityManagerFactoryCreator(),
                     readerService.permissionStorageReader!!

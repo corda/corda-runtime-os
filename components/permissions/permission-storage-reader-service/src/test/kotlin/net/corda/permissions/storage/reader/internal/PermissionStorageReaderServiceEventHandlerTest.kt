@@ -20,6 +20,7 @@ import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 import net.corda.schema.configuration.ConfigKeys.DB_PASS
 import net.corda.schema.configuration.ConfigKeys.DB_USER
 import net.corda.schema.configuration.ConfigKeys.JDBC_URL
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
@@ -71,7 +72,8 @@ class PermissionStorageReaderServiceEventHandlerTest {
             )
     )
 
-    private val bootstrapConfig = mapOf(BOOT_CONFIG to config)
+    private val bootstrapConfig =
+        mapOf(BOOT_CONFIG to config, MESSAGING_CONFIG to configFactory.create(ConfigFactory.empty()))
 
     @Test
     fun `processing a start event causes the service to follow permission cache status changes`() {

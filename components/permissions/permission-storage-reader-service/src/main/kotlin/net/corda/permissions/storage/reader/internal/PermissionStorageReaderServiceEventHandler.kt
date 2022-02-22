@@ -13,11 +13,13 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.permissions.cache.PermissionCacheService
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import javax.persistence.EntityManagerFactory
@@ -105,16 +107,20 @@ class PermissionStorageReaderServiceEventHandler(
     ) {
         log.info("Component received configuration update event, changedKeys: $changedKeys")
 
-        if (BOOT_CONFIG in changedKeys) {
+        if ((BOOT_CONFIG in changedKeys || MESSAGING_CONFIG in changedKeys) &&
+            currentConfigurationSnapshot.keys.containsAll(setOf(BOOT_CONFIG, MESSAGING_CONFIG))
+        ) {
+            val messagingConfig = currentConfigurationSnapshot.toMessagingConfig()
 
-            val bootstrapConfig = checkNotNull(currentConfigurationSnapshot[BOOT_CONFIG])
+            publisher?.close()
             publisher = publisherFactory.createPublisher(
                 publisherConfig = PublisherConfig(clientId = CLIENT_NAME),
-                kafkaConfig = bootstrapConfig
+                kafkaConfig = messagingConfig
             ).also {
                 it.start()
             }
 
+            permissionStorageReader?.stop()
             permissionStorageReader = permissionStorageReaderFactory.create(
                 checkNotNull(permissionCacheService.permissionCache) {
                     "The ${PermissionCacheService::class.java} should be up and ready to provide the cache"
