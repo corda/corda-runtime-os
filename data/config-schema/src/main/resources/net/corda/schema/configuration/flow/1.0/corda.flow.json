@@ -14,6 +14,12 @@
           "type": "integer",
           "minimum": 100,
           "default": 5000
+        },
+        "heartbeatTimeout": {
+          "description": "Length of time to wait when no message has been received from a counterparty before causing the session to error, in milliseconds",
+          "type": "integer",
+          "minimum": 600000,
+          "default": 3600000
         }
       }
     }

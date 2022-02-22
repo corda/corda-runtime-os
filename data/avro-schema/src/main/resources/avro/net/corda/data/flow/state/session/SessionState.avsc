@@ -5,29 +5,52 @@
   "fields": [
     {
       "name": "sessionId",
-      "type": "string"
+      "type": "string",
+      "doc": "UUID for the session. The initiated party sessionID will have a suffix of `-INITIATED`"
     },
     {
       "name": "sessionStartTime",
-      "type": "long"
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Time ([Instant]) in milliseconds when the session was created"
+    },
+    {
+      "name": "lastReceivedMessageTime",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Time ([Instant]) in milliseconds when the last session event was received from a counterparty"
+    },
+    {
+      "name": "lastSentMessageTime",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Time ([Instant]) in milliseconds of the last message sent to a counterparty"
     },
     {
       "name": "counterpartyIdentity",
-      "type": "net.corda.data.identity.HoldingIdentity"
+      "type": "net.corda.data.identity.HoldingIdentity",
+      "doc": "Identity of the session counterparty"
     },
     {
       "name": "isInitiator",
-      "type": "boolean"
+      "type": "boolean",
+      "doc": "True if this party initiated the session, false otherwise"
     },
     {
       "name": "receivedEventsState",
       "type": "net.corda.data.flow.state.session.SessionProcessState",
-      "doc" : "Record the highest contiguous sequence number received from the counterparty. Record all events received but not yet processed by this party's client code."
+      "doc": "Record the highest contiguous sequence number received from the counterparty. Record all events received but not yet processed by this party's client code."
     },
     {
       "name": "sendEventsState",
       "type": "net.corda.data.flow.state.session.SessionProcessState",
-      "doc" : "Record the sequence number of the last event sent to the counterparty. Record all events sent but not yet acknowledged by the counterparty as well as any messages to send to the counterparty."
+      "doc": "Record the sequence number of the last event sent to the counterparty. Record all events sent but not yet acknowledged by the counterparty as well as any messages to send to the counterparty."
     },
     {
       "name": "status",
@@ -42,7 +65,8 @@
           "CLOSED",
           "ERROR"
         ]
-      }
+      },
+      "doc": "The status of the session."
     }
   ]
 }

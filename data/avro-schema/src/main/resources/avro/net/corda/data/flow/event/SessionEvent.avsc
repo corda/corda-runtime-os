@@ -6,7 +6,7 @@
   "fields": [
     {
       "name": "messageDirection",
-      "doc": "INBOUND for messages originating from a counterparty. OUTBOUND for messages to be sent to a counterparty." ,
+      "doc": "INBOUND for messages originating from a counterparty. OUTBOUND for messages to be sent to a counterparty.",
       "type": {
         "name": "MessageDirection",
         "type": "enum",
@@ -18,16 +18,24 @@
     },
     {
       "name": "timestamp",
-      "type": "long"
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Time ([Instant]) in milliseconds when the session event was created"
     },
     {
       "name": "sessionId",
-      "type": "string"
+      "type": "string",
+      "doc": "UUID for the session. The initiated party sessionID will have a suffix of `-INITIATED`"
     },
     {
       "name": "sequenceNum",
-      "type": ["null", "int"],
-      "doc" : "Unique id for a message sent to a party. sequenceNum is not bidirectional. Each party will track outbound/inbound sequence numbers separately."
+      "type": [
+        "null",
+        "int"
+      ],
+      "doc": "Unique id for a message sent to a party. sequenceNum is not bidirectional. Each party will track outbound/inbound sequence numbers separately."
     },
     {
       "name": "payload",
