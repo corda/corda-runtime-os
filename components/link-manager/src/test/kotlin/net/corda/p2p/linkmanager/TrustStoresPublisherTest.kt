@@ -2,7 +2,7 @@ package net.corda.p2p.linkmanager
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.CompactedProcessor
@@ -43,7 +43,7 @@ class TrustStoresPublisherTest {
     }
     private val publishedRecords = argumentCaptor<List<Record<String, GatewayTruststore>>>()
     private val creteResources = AtomicReference<(resources: ResourcesHolder) -> CompletableFuture<Unit>>()
-    private val mockDominoTile = mockConstruction(DominoTile::class.java) { _, context ->
+    private val mockDominoTile = mockConstruction(ComplexDominoTile::class.java) { _, context ->
         @Suppress("UNCHECKED_CAST")
         creteResources.set(context.arguments()[2] as? (resources: ResourcesHolder) -> CompletableFuture<Unit>)
     }

@@ -2,7 +2,7 @@ package net.corda.p2p.gateway.messaging.http
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
@@ -33,7 +33,7 @@ class TrustStoresMapTest {
     private val subscription = mock<CompactedSubscription<String, GatewayTruststore>>()
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>()
     private val creteResources = AtomicReference<(resources: ResourcesHolder) -> CompletableFuture<Unit>>()
-    private val mockDominoTile = mockConstruction(DominoTile::class.java) { _, context ->
+    private val mockDominoTile = mockConstruction(ComplexDominoTile::class.java) { _, context ->
         @Suppress("UNCHECKED_CAST")
         creteResources.set(context.arguments()[2] as? (resources: ResourcesHolder) -> CompletableFuture<Unit>)
     }

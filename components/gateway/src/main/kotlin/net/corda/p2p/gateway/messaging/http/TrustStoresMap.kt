@@ -2,7 +2,7 @@ package net.corda.p2p.gateway.messaging.http
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.CompactedProcessor
@@ -43,7 +43,7 @@ internal class TrustStoresMap(
             ?.trustStore
             ?: throw IllegalArgumentException("Unknown trust store: $groupId")
 
-    override val dominoTile = DominoTile(
+    override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         createResources = ::createResources
