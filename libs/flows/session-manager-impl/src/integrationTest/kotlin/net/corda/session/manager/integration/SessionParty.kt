@@ -23,11 +23,11 @@ class SessionParty (
     private val sessionManager = SessionManagerImpl()
 
     override fun processNewOutgoingMessage(messageType: SessionMessageType, sendMessages: Boolean, instant: Instant) {
-        val sessionEvent = generateMessage(messageType)
+        val sessionEvent = generateMessage(messageType, instant)
         sessionState = sessionManager.processMessageToSend("key", sessionState, sessionEvent, instant)
 
         if (sendMessages) {
-            sendMessages()
+            sendMessages(instant)
         }
     }
 
@@ -37,12 +37,12 @@ class SessionParty (
         outboundMessages.addMessages(outputMessages)
     }
 
-    private fun generateMessage(messageType: SessionMessageType) : SessionEvent {
+    private fun generateMessage(messageType: SessionMessageType, instant: Instant) : SessionEvent {
         return when(messageType) {
-            SessionMessageType.INIT -> generateInit()
-            SessionMessageType.DATA -> generateData()
-            SessionMessageType.ERROR -> generateError()
-            SessionMessageType.CLOSE -> generateClose()
+            SessionMessageType.INIT -> generateInit(instant)
+            SessionMessageType.DATA -> generateData(instant)
+            SessionMessageType.ERROR -> generateError(instant)
+            SessionMessageType.CLOSE -> generateClose(instant)
         }
     }
 
@@ -50,7 +50,7 @@ class SessionParty (
         processAndAcknowledgeEventsInSequence(getNextInboundMessage())
 
         if (sendMessages) {
-            sendMessages()
+            sendMessages(instant)
         }
     }
 
@@ -62,7 +62,7 @@ class SessionParty (
         }
 
         if (sendMessages) {
-            sendMessages()
+            sendMessages(instant)
         }
     }
 
