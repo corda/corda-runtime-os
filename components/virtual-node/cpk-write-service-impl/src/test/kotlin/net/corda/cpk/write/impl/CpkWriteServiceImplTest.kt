@@ -73,7 +73,8 @@ class CpkWriteServiceImplTest {
 
         cpkWriteServiceImpl.processEvent(ConfigChangedEvent(keys, config), coordinator)
         assertNotNull(cpkWriteServiceImpl.cpkChecksumsCache)
-        assertNotNull(cpkWriteServiceImpl.publisher)
+        assertNotNull(cpkWriteServiceImpl.cpkChunksPublisher)
+        assertNotNull(cpkWriteServiceImpl.timeout)
         verify(coordinator).updateStatus(LifecycleStatus.UP)
     }
 

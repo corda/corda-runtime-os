@@ -5,7 +5,9 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpk.readwrite.CpkServiceConfigKeys
 import net.corda.cpk.write.CpkWriteService
 import net.corda.cpk.write.impl.services.kafka.CpkChecksumsCache
+import net.corda.cpk.write.impl.services.kafka.CpkChunksPublisher
 import net.corda.cpk.write.impl.services.kafka.impl.CpkChecksumsCacheImpl
+import net.corda.cpk.write.impl.services.kafka.impl.KafkaCpkChunksPublisher
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -17,7 +19,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -58,10 +59,9 @@ class CpkWriteServiceImpl @Activate constructor(
     @VisibleForTesting
     internal var cpkChecksumsCache: CpkChecksumsCache? = null
     @VisibleForTesting
-    internal var publisher: Publisher? = null
-
-    //TODO: populate the following with configuration
-    private val timeout: Duration = 20.seconds
+    internal var cpkChunksPublisher: CpkChunksPublisher? = null
+    @VisibleForTesting
+    internal var timeout: Duration? = null
 
     /**
      * Event loop
@@ -112,18 +112,21 @@ class CpkWriteServiceImpl @Activate constructor(
      */
     private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         val config = event.config[ConfigKeys.BOOT_CONFIG]!!
-        // TODO - fix configuration for cache and publisher
+        // TODO - fix expected configuration and fill following properties with configuration
         if (config.hasPath("todo")) {
+
+            timeout = 20.seconds
 
             cpkChecksumsCache = CpkChecksumsCacheImpl(
                 subscriptionFactory,
                 SubscriptionConfig("todo", "todo"),
                 config
             )
-            publisher = publisherFactory.createPublisher(
+            val publisher = publisherFactory.createPublisher(
                 PublisherConfig("todo"),
                 config
             )
+            cpkChunksPublisher = KafkaCpkChunksPublisher(publisher, timeout!!)
             coordinator.updateStatus(LifecycleStatus.UP)
         } else {
             logger.warn(
@@ -170,7 +173,6 @@ class CpkWriteServiceImpl @Activate constructor(
         configSubscription = null
         cpkChecksumsCache?.close()
         cpkChecksumsCache = null
-        publisher?.close()
-        publisher = null
+        cpkChunksPublisher = null
     }
 }
