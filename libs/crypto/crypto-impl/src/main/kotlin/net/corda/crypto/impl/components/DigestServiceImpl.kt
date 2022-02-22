@@ -1,6 +1,6 @@
 package net.corda.crypto.impl.components
 
-import net.corda.crypto.DigestAlgorithmFactoryProvider
+import net.corda.crypto.core.DigestAlgorithmFactoryProvider
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestAlgorithm
 import net.corda.v5.cipher.suite.DigestAlgorithmFactory

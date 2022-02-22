@@ -1,6 +1,6 @@
 package net.corda.crypto.service.impl.persistence
 
-import net.corda.crypto.CryptoConsts
+import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.persistence.EntityKeyInfo
 import net.corda.crypto.persistence.KeyValuePersistence
 import net.corda.crypto.persistence.SigningKeysPersistenceProvider
