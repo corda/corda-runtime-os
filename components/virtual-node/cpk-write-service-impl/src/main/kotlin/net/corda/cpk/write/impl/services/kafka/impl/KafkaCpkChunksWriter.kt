@@ -1,9 +1,7 @@
 package net.corda.cpk.write.impl.services.kafka.impl
 
-import net.corda.cpk.write.impl.CpkChunkId
 import net.corda.cpk.write.impl.services.kafka.AvroTypesTodo
-import net.corda.cpk.write.impl.services.kafka.CpkChunkWriter
-import net.corda.cpk.write.impl.services.kafka.toAvro
+import net.corda.cpk.write.impl.services.kafka.CpkChunksWriter
 import net.corda.data.chunking.Chunk
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.publisher.Publisher
@@ -12,10 +10,10 @@ import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import java.time.Duration
 
-class KafkaCpkChunkWriter(
+class KafkaCpkChunksWriter(
     private val publisher: Publisher,
     private val timeout: Duration
-) : CpkChunkWriter {
+) : CpkChunksWriter {
     companion object {
         val logger = contextLogger()
     }
