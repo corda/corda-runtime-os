@@ -26,10 +26,10 @@ import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
-import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -133,7 +133,7 @@ class MembershipGroupReaderProviderIntegrationTest {
             }
 
             // Wait for published content to be picked up by components.
-            eventually { Assertions.assertNotNull(getVirtualNodeInfo()) }
+            eventually { assertNotNull(getVirtualNodeInfo()) }
 
             setUpComplete = true
         }
@@ -213,24 +213,30 @@ class MembershipGroupReaderProviderIntegrationTest {
     private fun Lifecycle.stopAndWait() {
         logger.info("Stopping component ${this::class.java.simpleName}.")
         stop()
-        eventually { isStopped() }
+        isStopped()
     }
 
     private fun Lifecycle.isStopped() {
-        assertFalse(isRunning)
+        eventually { assertFalse(isRunning) }
     }
 
     private fun MembershipGroupReaderProvider.getAliceGroupReader(): MembershipGroupReader {
         logger.info("Getting group reader for test.")
-        return getGroupReader(aliceHoldingIdentity).also {
-            assertEquals(groupId, it.groupId)
-            assertEquals(aliceMemberName, it.owningMember)
+        val groupReader = eventually {
+            assertDoesNotThrow {
+                getGroupReader(aliceHoldingIdentity)
+            }
         }
+        assertEquals(groupId, groupReader.groupId)
+        assertEquals(aliceMemberName, groupReader.owningMember)
+        return groupReader
     }
 
     private fun MembershipGroupReaderProvider.failGetAliceGroupReader() {
         logger.info("Running test expecting exception to be thrown.")
-        assertThrows<CordaRuntimeException> { getGroupReader(aliceHoldingIdentity) }
+        eventually {
+            assertThrows<CordaRuntimeException> { getGroupReader(aliceHoldingIdentity) }
+        }
     }
 
     private val sampleGroupPolicy1 get() = getSampleGroupPolicy("/SampleGroupPolicy.json")
