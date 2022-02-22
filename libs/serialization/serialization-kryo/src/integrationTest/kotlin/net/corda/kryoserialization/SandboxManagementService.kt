@@ -4,7 +4,7 @@ import net.corda.packaging.CPI
 import net.corda.packaging.CPK
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
-import net.corda.testing.sandboxes.CpiLoaderService
+import net.corda.testing.sandboxes.CpiLoader
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
@@ -13,7 +13,7 @@ import org.osgi.service.component.annotations.Reference
 @Component(service = [ SandboxManagementService::class ])
 class SandboxManagementService @Activate constructor(
     @Reference
-    private val loader: CpiLoaderService,
+    private val cpiLoader: CpiLoader,
     @Reference
     private val sandboxCreationService: SandboxCreationService
 ) {
@@ -32,13 +32,10 @@ class SandboxManagementService @Activate constructor(
     fun cleanup() {
         sandboxCreationService.unloadSandboxGroup(group1)
         sandboxCreationService.unloadSandboxGroup(group2)
-
-        // Reset the CPI loader, ready for the next test.
-        loader.stop()
     }
 
     private fun loadCPI(resourceName: String): CPI {
-        return loader.loadCPI(resourceName)
+        return cpiLoader.loadCPI(resourceName)
     }
 
     private fun createSandboxGroupFor(cpks: Iterable<CPK>): SandboxGroup {

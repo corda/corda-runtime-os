@@ -17,7 +17,6 @@ import net.corda.processor.member.MemberProcessorTestUtils.Companion.getGroupPol
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.getGroupPolicyFails
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.groupId
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.isStarted
-import net.corda.processor.member.MemberProcessorTestUtils.Companion.isStopped
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishCryptoConf
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishMessagingConf
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishRawGroupPolicyData
@@ -157,7 +156,6 @@ class MemberProcessorIntegrationTest {
     fun `Group policy cannot be retrieved if virtual node info reader dependency component goes down`() {
         val groupPolicy1 = getGroupPolicy(groupPolicyProvider)
         virtualNodeInfoReader.stopAndWait()
-        groupPolicyProvider.isStopped()
         getGroupPolicyFails(groupPolicyProvider)
 
         virtualNodeInfoReader.startAndWait()
@@ -169,7 +167,6 @@ class MemberProcessorIntegrationTest {
     fun `Group policy cannot be retrieved if CPI info reader dependency component goes down`() {
         val groupPolicy1 = getGroupPolicy(groupPolicyProvider)
         cpiInfoReader.stopAndWait()
-        groupPolicyProvider.isStopped()
         getGroupPolicyFails(groupPolicyProvider)
 
         cpiInfoReader.startAndWait()

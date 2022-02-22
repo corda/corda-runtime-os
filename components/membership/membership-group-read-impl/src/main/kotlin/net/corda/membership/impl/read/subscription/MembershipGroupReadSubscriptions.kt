@@ -1,19 +1,14 @@
 package net.corda.membership.impl.read.subscription
 
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.lifecycle.Lifecycle
-import net.corda.membership.config.MembershipConfig
-import net.corda.membership.config.MembershipConfigConstants
-import net.corda.membership.config.groupName
-import net.corda.membership.config.kafkaConfig
-import net.corda.membership.config.memberList
-import net.corda.membership.config.persistence
-import net.corda.membership.config.topicName
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.Schemas
+import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.membership.conversion.PropertyConverter
 
@@ -25,7 +20,7 @@ interface MembershipGroupReadSubscriptions : Lifecycle {
     /**
      * Start all subscriptions.
      */
-    fun start(config: MembershipConfig)
+    fun start(config: SmartConfig)
 
     /**
      * Default implementation.
@@ -35,6 +30,10 @@ interface MembershipGroupReadSubscriptions : Lifecycle {
         private val groupReadCache: MembershipGroupReadCache,
         private val converter: PropertyConverter
     ) : MembershipGroupReadSubscriptions {
+
+        companion object {
+            const val CONSUMER_GROUP = "MEMBERSHIP_GROUP_READER"
+        }
 
         private var memberListSubscription: CompactedSubscription<String, PersistentMemberInfo>? = null
 
@@ -46,8 +45,10 @@ interface MembershipGroupReadSubscriptions : Lifecycle {
         override val isRunning: Boolean
             get() = subscriptions.all { it?.isRunning ?: false }
 
-        override fun start(config: MembershipConfig) {
-            startMemberListSubscription(config)
+        override fun start(config: SmartConfig) {
+            if(!isRunning) {
+                startMemberListSubscription(config)
+            }
         }
 
         override fun start() {
@@ -57,20 +58,28 @@ interface MembershipGroupReadSubscriptions : Lifecycle {
         override fun stop() = subscriptions.forEach { it?.stop() }
 
         /**
-         * Start the member list subscription. Group and topic names are provided by configuration but will be set to
-         * default values if configuration leaves out these names.
+         * Start the member list subscription.
          */
-        private fun startMemberListSubscription(config: MembershipConfig) {
-            val memberListKafkaConfig = config.kafkaConfig?.persistence?.memberList
-            val memberListGroupName = memberListKafkaConfig?.groupName
-                ?: MembershipConfigConstants.Kafka.Persistence.MemberList.DEFAULT_GROUP_NAME
-            val memberListTopicName = memberListKafkaConfig?.topicName ?: Schemas.Membership.MEMBER_LIST_TOPIC
+        private fun startMemberListSubscription(config: SmartConfig) {
+            val instanceId = when {
+                config.getIsNull(INSTANCE_ID) -> null
+                else -> config.getInt(INSTANCE_ID)
+            }
+
+            val subscriptionConfig = SubscriptionConfig(
+                CONSUMER_GROUP,
+                MEMBER_LIST_TOPIC,
+                instanceId
+            )
+
+            val processor = MemberListProcessor(groupReadCache, converter)
 
             memberListSubscription = subscriptionFactory.createCompactedSubscription(
-                SubscriptionConfig(memberListGroupName, memberListTopicName),
-                MemberListProcessor(groupReadCache, converter)
-            ).also {
-                it.start()
+                subscriptionConfig,
+                processor,
+                config
+            ).apply {
+                start()
             }
         }
 

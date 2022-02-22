@@ -36,7 +36,7 @@ class MessagingSigningKeysPersistenceProviderTests : ProviderTestsBase<Messaging
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(60)
     fun `Should return instances using same processor instance until config is changed regardless of tenant`() {
         coordinator.postEvent(
             ConfigChangedEvent(
@@ -78,7 +78,7 @@ class MessagingSigningKeysPersistenceProviderTests : ProviderTestsBase<Messaging
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(60)
     fun `Should concurrently return instances regardless of tenant`() {
         coordinator.postEvent(
             ConfigChangedEvent(
@@ -106,7 +106,7 @@ class MessagingSigningKeysPersistenceProviderTests : ProviderTestsBase<Messaging
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(60)
     fun `Should throw IllegalStateException if config is not received yet`() {
         assertThrows<IllegalStateException> {
             provider.getInstance(UUID.randomUUID().toString()) { it }

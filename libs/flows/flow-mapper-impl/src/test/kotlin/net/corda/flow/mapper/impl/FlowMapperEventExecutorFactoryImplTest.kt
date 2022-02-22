@@ -2,14 +2,14 @@ package net.corda.flow.mapper.impl
 
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.StartRPCFlow
+import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.mapper.ExecuteCleanup
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.flow.mapper.impl.executor.ExecuteCleanupEventExecutor
 import net.corda.flow.mapper.impl.executor.ScheduleCleanupEventExecutor
 import net.corda.flow.mapper.impl.executor.SessionEventExecutor
-import net.corda.flow.mapper.impl.executor.StartRPCFlowExecutor
+import net.corda.flow.mapper.impl.executor.StartFlowExecutor
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -19,8 +19,8 @@ class FlowMapperEventExecutorFactoryImplTest {
 
     @Test
     fun testStartRPCFlowExecutor() {
-        val executor = executorFactoryImpl.create("", FlowMapperEvent(StartRPCFlow()), null)
-        assertThat(executor::class).isEqualTo(StartRPCFlowExecutor::class)
+        val executor = executorFactoryImpl.create("", FlowMapperEvent(StartFlow()), null)
+        assertThat(executor::class).isEqualTo(StartFlowExecutor::class)
     }
 
     @Test

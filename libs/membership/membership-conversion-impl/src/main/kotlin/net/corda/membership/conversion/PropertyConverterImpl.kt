@@ -19,7 +19,7 @@ import java.time.Instant
  * ones existing in this class.
  */
 @Component(service = [PropertyConverter::class])
-open class PropertyConverterImpl @Activate constructor(
+class PropertyConverterImpl @Activate constructor(
     @Reference(
         service = CustomPropertyConverter::class,
         cardinality = ReferenceCardinality.MULTIPLE,

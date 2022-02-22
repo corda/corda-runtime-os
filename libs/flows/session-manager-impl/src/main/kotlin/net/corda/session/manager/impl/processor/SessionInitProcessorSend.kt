@@ -10,7 +10,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.uncheckedCast
 import java.time.Instant
-import java.util.*
 
 /**
  * Process SessionInit messages to be sent to a counterparty.
@@ -36,11 +35,10 @@ class SessionInitProcessorSend(
         }
 
         val sessionInit: SessionInit = uncheckedCast(sessionEvent.payload)
-        val newSessionId = generateSessionId()
+        val newSessionId = sessionEvent.sessionId
         val seqNum = 1
 
         sessionEvent.apply {
-            sessionId = newSessionId
             sequenceNum = seqNum
             timestamp = instant.toEpochMilli()
         }
@@ -60,12 +58,5 @@ class SessionInitProcessorSend(
         logger.debug { "Creating new session with id $newSessionId on key $key for SessionInit sent. sessionState $newSessionState"}
 
         return newSessionState
-    }
-
-    /**
-     * Random ID for session
-     */
-    private fun generateSessionId(): String {
-        return UUID.randomUUID().toString()
     }
 }

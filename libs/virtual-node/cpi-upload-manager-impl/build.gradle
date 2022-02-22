@@ -10,7 +10,7 @@ dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation project(':libs:chunking')
+    implementation project(':libs:chunking:chunking-core')
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:messaging:messaging')
     implementation project(':libs:configuration:configuration-core')
