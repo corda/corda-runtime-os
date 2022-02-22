@@ -23,7 +23,14 @@ object ConfigKeys {
     const val BOOTSTRAP_SERVERS = "messaging.kafka.common.bootstrap.servers"
 
     //  RPC
-    const val RPC_ENDPOINT_TIMEOUT_MILLIS = "rpc.endpoint.timeoutMs"
+    const val RPC_ADDRESS = "address"
+    const val RPC_CONTEXT_DESCRIPTION = "context.description"
+    const val RPC_CONTEXT_TITLE = "context.title"
+    const val RPC_ENDPOINT_TIMEOUT_MILLIS = "endpoint.timeoutMs"
+    const val RPC_MAX_CONTENT_LENGTH = "maxContentLength"
+    const val RPC_AZUREAD_CLIENT_ID = "sso.azureAd.clientId"
+    const val RPC_AZUREAD_CLIENT_SECRET = "sso.azureAd.clientSecret"
+    const val RPC_AZUREAD_TENANT_ID = "sso.azureAd.tenantId"
 
     // Secrets Service
     const val SECRETS_PASSPHRASE = "passphrase"
