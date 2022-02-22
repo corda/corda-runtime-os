@@ -12,6 +12,7 @@ import net.corda.flow.mapper.impl.executor.SessionEventExecutor
 import net.corda.flow.mapper.impl.executor.StartFlowExecutor
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import java.time.Instant
 
 class FlowMapperEventExecutorFactoryImplTest {
 
@@ -25,7 +26,7 @@ class FlowMapperEventExecutorFactoryImplTest {
 
     @Test
     fun testSessionEventExecutor() {
-        val executor = executorFactoryImpl.create("", FlowMapperEvent(SessionEvent(MessageDirection.INBOUND, 1, "", 1, null, )),
+        val executor = executorFactoryImpl.create("", FlowMapperEvent(SessionEvent(MessageDirection.INBOUND, Instant.now(), "", 1, null, )),
             null)
         assertThat(executor::class).isEqualTo(SessionEventExecutor::class)
     }
