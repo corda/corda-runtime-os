@@ -35,7 +35,6 @@ dependencies {
     testImplementation project(":components:virtual-node:virtual-node-info-read-service")
     testImplementation "net.corda:corda-packaging-avro-converters"
     testImplementation project(":components:virtual-node:cpi-info-read-service")
-    testImplementation project(":libs:crypto:crypto-client")
     testImplementation project(":testing:test-utilities")
 
     integrationTestRuntimeOnly project(":components:membership:group-policy-impl")
