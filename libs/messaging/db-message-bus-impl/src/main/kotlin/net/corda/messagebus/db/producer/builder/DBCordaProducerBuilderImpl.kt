@@ -8,6 +8,7 @@ import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messagebus.db.datamodel.CommittedOffsetEntry
 import net.corda.messagebus.db.datamodel.TopicEntry
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
+import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.producer.CordaAtomicDBProducerImpl
 import net.corda.messagebus.db.producer.CordaTransactionalDBProducerImpl
@@ -36,7 +37,12 @@ class DBCordaProducerBuilderImpl @Activate constructor(
                 producerConfig,
                 entityManagerFactoryFactory,
                     "DB Producer for ${producerConfig.getString(CLIENT_ID)}",
-                    listOf(TopicRecordEntry::class.java, CommittedOffsetEntry::class.java, TopicEntry::class.java)
+                    listOf(
+                        TopicRecordEntry::class.java,
+                        CommittedOffsetEntry::class.java,
+                        TopicEntry::class.java,
+                        TransactionRecordEntry::class.java,
+                    )
             )
         )
         return if (isTransactional) {

@@ -38,6 +38,8 @@ class DBAccessIntegrationTest {
 
         private const val topic = "topic1"
         private const val topic2 = "topic2"
+        private val key = "key".toByteArray()
+        private val value = "value".toByteArray()
         private const val consumerGroup = "group1"
 
         @Suppress("unused")
@@ -110,21 +112,70 @@ class DBAccessIntegrationTest {
     fun `DBWriter writes topic records`() {
         val timestamp = Instant.parse("2022-01-01T00:00:00.00Z")
 
+        val transactionRecord = TransactionRecordEntry(randomId())
+
         val records = listOf(
-            TopicRecordEntry(topic, 0, 0, "key1".toByteArray(), "value1".toByteArray(), "id", timestamp = timestamp),
-            TopicRecordEntry(topic, 0, 1, "key2".toByteArray(), "value2".toByteArray(), "id", timestamp = timestamp),
-            TopicRecordEntry(topic, 1, 0, "key3".toByteArray(), "value3".toByteArray(), "id", timestamp = timestamp),
-            TopicRecordEntry(topic, 2, 0, "key4".toByteArray(), "value4".toByteArray(), "id", timestamp = timestamp),
-            TopicRecordEntry(topic, 3, 0, "key5".toByteArray(), "value5".toByteArray(), "id", timestamp = timestamp),
+            TopicRecordEntry(topic, 0, 0, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 0, 1, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 1, 0, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 2, 0, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 3, 0, key, value, transactionRecord, timestamp = timestamp),
         )
 
         val dbAccess = DBAccess(emf)
         dbAccess.writeRecords(records)
 
-        val results = query(TopicRecordEntry::class.java, "from topic_record where topic in ('$topic') order by partition, record_offset")
+        val results = query(
+            TopicRecordEntry::class.java,
+            "from topic_record where topic in ('$topic') order by partition, record_offset"
+        )
         assertThat(results).size().isEqualTo(records.size)
         results.forEachIndexed { index, topicRecordEntry ->
             assertThat(topicRecordEntry).isEqualToComparingFieldByField(records[index])
+        }
+    }
+
+    @Test
+    fun `DBWriter reads topic records, and only up to the limit specified`() {
+        val timestamp = Instant.parse("2022-01-01T00:00:00.00Z")
+        val transactionRecord = TransactionRecordEntry(randomId())
+        val transactionRecord2 = TransactionRecordEntry(randomId()) // Won't be committed
+        val transactionRecord3 = TransactionRecordEntry(randomId())
+        val partition5 = listOf(
+            TopicRecordEntry(topic, 5, 0, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 5, 1, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 5, 3, key, value, transactionRecord2, timestamp = timestamp),
+            TopicRecordEntry(topic, 5, 4, key, value, transactionRecord2, timestamp = timestamp),
+            TopicRecordEntry(topic, 5, 5, key, value, transactionRecord3, timestamp = timestamp),
+        )
+        val partition6 = listOf(
+            TopicRecordEntry(topic, 6, 0, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 6, 1, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 6, 2, key, value, transactionRecord, timestamp = timestamp),
+        )
+        val partition7 = listOf(
+            TopicRecordEntry(topic, 7, 0, key, value, transactionRecord, timestamp = timestamp),
+        )
+        val partition8 = listOf(
+            TopicRecordEntry(topic, 8, 0, key, value, transactionRecord, timestamp = timestamp),
+        )
+        val records = partition5 + partition6 + partition7 + partition8
+
+        val dbAccess = DBAccess(emf)
+        dbAccess.writeRecords(records)
+
+        dbAccess.readRecords(-1, CordaTopicPartition(topic, 5)).apply {
+            assertThat(this).size().isEqualTo(partition5.size)
+            forEachIndexed { index, topicRecordEntry ->
+                assertThat(topicRecordEntry).isEqualToComparingFieldByField(partition5[index])
+            }
+        }
+
+        dbAccess.readRecords(-1, CordaTopicPartition(topic, 6), 2).apply {
+            assertThat(this).size().isEqualTo(2)
+            forEachIndexed { index, topicRecordEntry ->
+                assertThat(topicRecordEntry).isEqualToComparingFieldByField(partition6[index])
+            }
         }
     }
 
@@ -199,21 +250,23 @@ class DBAccessIntegrationTest {
         val topic3 = "topic3"
         val topic4 = "topic4"
 
+        val transactionRecord = TransactionRecordEntry("id")
+
         val records = listOf(
-            TopicRecordEntry(topic3, 0, 0, "key1".toByteArray(), "value1".toByteArray(), "id", timestamp = timestamp),
-            TopicRecordEntry(topic3, 0, 1, "key2".toByteArray(), "value2".toByteArray(), "id", timestamp = timestamp),
-            TopicRecordEntry(topic3, 1, 0, "key3".toByteArray(), "value3".toByteArray(), "id", timestamp = timestamp),
-            TopicRecordEntry(topic3, 1, 1, "key3".toByteArray(), "value3".toByteArray(), "id", timestamp = timestamp),
-            TopicRecordEntry(topic3, 1, 2, "key3".toByteArray(), "value3".toByteArray(), "id", timestamp = timestamp),
-            TopicRecordEntry(topic3, 1, 3, "key3".toByteArray(), "value3".toByteArray(), "id", timestamp = timestamp),
-            TopicRecordEntry(topic3, 2, 0, "key4".toByteArray(), "value4".toByteArray(), "id", timestamp = timestamp),
-            TopicRecordEntry(topic3, 2, 7, "key4".toByteArray(), "value4".toByteArray(), "id", timestamp = timestamp),
-            TopicRecordEntry(topic3, 3, 0, "key5".toByteArray(), "value5".toByteArray(), "id", timestamp = timestamp),
-            TopicRecordEntry(topic4, 0, 0, "key0".toByteArray(), "value1".toByteArray(), "id", timestamp = timestamp),
-            TopicRecordEntry(topic4, 1, 1, "key1".toByteArray(), "value2".toByteArray(), "id", timestamp = timestamp),
-            TopicRecordEntry(topic4, 2, 0, "key2".toByteArray(), "value3".toByteArray(), "id", timestamp = timestamp),
-            TopicRecordEntry(topic4, 3, 1, "key3".toByteArray(), "value3".toByteArray(), "id", timestamp = timestamp),
-            TopicRecordEntry(topic4, 4, 2, "key4".toByteArray(), "value3".toByteArray(), "id", timestamp = timestamp),
+            TopicRecordEntry(topic3, 0, 0, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic3, 0, 1, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic3, 1, 0, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic3, 1, 1, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic3, 1, 2, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic3, 1, 3, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic3, 2, 0, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic3, 2, 7, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic3, 3, 0, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic4, 0, 0, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic4, 1, 1, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic4, 2, 0, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic4, 3, 1, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic4, 4, 2, key, value, transactionRecord, timestamp = timestamp),
         )
 
         dbAccess.writeRecords(records)

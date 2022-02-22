@@ -118,11 +118,10 @@ internal class CordaTransactionalDBProducerImplTest {
         assertThat(record.value).isEqualTo(serializedValue)
         assertThat(record.recordOffset).isEqualTo(6)
         assertThat(record.partition).isEqualTo(0)
-        assertThat(record.transactionId).isNotEmpty()
         assertThat(record.transactionId).isNotEqualTo(ATOMIC_TRANSACTION)
 
         val initialTransactionRecord = dbTransaction.allValues.single()
-        assertThat(record.transactionId).isEqualTo(initialTransactionRecord.transactionId)
+        assertThat(record.transactionId).isEqualTo(initialTransactionRecord)
         assertThat(initialTransactionRecord.state).isEqualTo(TransactionState.PENDING)
 
         verify(dbAccess).setTransactionRecordState(eq(initialTransactionRecord.transactionId), eq(TransactionState.COMMITTED))

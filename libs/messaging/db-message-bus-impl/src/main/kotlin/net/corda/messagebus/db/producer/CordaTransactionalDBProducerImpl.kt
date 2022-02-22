@@ -33,12 +33,14 @@ class CordaTransactionalDBProducerImpl(
     private val topicPartitionMap = dbAccess.getTopicPartitionMap()
     private val writeOffsets = WriteOffsets(dbAccess.getMaxOffsetsPerTopicPartition())
 
-    private val transaction = ThreadLocal<TransactionRecordEntry>()
+    private val _transaction = ThreadLocal<TransactionRecordEntry>()
+    private var transaction
+        get() = _transaction.get()
+        set(value) = _transaction.set(value)
     private val transactionId: String
-        get() = transaction.get()?.transactionId
-            ?: throw CordaMessageAPIFatalException("Transaction Id must be created before this point")
+        get() = transaction.transactionId
     private val inTransaction: Boolean
-        get() = transaction.get() != null
+        get() = transaction != null
 
     override fun send(record: CordaProducerRecord<*, *>, callback: CordaProducer.Callback?) {
         verifyInTransaction()
@@ -81,7 +83,7 @@ class CordaTransactionalDBProducerImpl(
                 offset,
                 serialisedKey,
                 serialisedValue,
-                transactionId,
+                transaction,
             )
         }
 
@@ -99,7 +101,7 @@ class CordaTransactionalDBProducerImpl(
             throw CordaMessageAPIFatalException("Cannot start a new transaction when one is already in progress.")
         }
         val newTransaction = TransactionRecordEntry(UUID.randomUUID().toString())
-        transaction.set(newTransaction)
+        transaction = newTransaction
         dbAccess.writeTransactionRecord(newTransaction)
     }
 
@@ -148,13 +150,13 @@ class CordaTransactionalDBProducerImpl(
     override fun commitTransaction() {
         verifyInTransaction()
         dbAccess.setTransactionRecordState(transactionId, TransactionState.COMMITTED)
-        transaction.set(null)
+        transaction = null
     }
 
     override fun abortTransaction() {
         verifyInTransaction()
         dbAccess.setTransactionRecordState(transactionId, TransactionState.ABORTED)
-        transaction.set(null)
+        transaction = null
     }
 
     override fun close(timeout: Duration) {

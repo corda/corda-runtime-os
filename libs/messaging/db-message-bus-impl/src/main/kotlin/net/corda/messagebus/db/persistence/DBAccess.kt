@@ -27,31 +27,26 @@ class DBAccess(
     }
 
     @Suppress("UNUSED_PARAMETER")
-    fun getMaxCommittedOffset(topic: String, consumerGroup: String, partitions: Set<Int>): Map<Int, Long?> {
-        if (partitions.isEmpty()) {
+    fun getMaxCommittedOffset(groupId: String, topicPartitions: Set<CordaTopicPartition>): Map<CordaTopicPartition, Long> {
+        if (topicPartitions.isEmpty()) {
             return emptyMap()
         }
 
-        val maxOffsets: MutableMap<Int, Long?> = partitions.associateWith { null }.toMutableMap()
-        executeWithErrorHandling("max committed offsets") {
-//            val partitionsList = MutableList(partitions.size) { "?" }.joinToString(", ", "(", ")")
-//            val sqlStatement = maxCommittedOffsetsStmt.replace("[partitions_list]", partitionsList)
-//            val stmt = it.prepareStatement(sqlStatement)
-//            stmt.setString(1, topic)
-//            stmt.setString(2, consumerGroup)
-//            partitions.forEachIndexed { index, partition -> stmt.setInt(3 + index, partition) }
-//
-//            val result = stmt.executeQuery()
-//            while (result.next()) {
-//                val partition = result.getInt(1)
-//                val maxOffset = result.getLong(2)
-//                if (!result.wasNull()) {
-//                    maxOffsets[partition] = maxOffset
-//                }
-//            }
+        return executeWithErrorHandling("max committed offsets") { entityManager ->
+            entityManager.createQuery(
+                """
+                    FROM topic_consumer_offset 
+                    WHERE ${CommittedOffsetEntry::consumerGroup.name} = '$groupId'
+                    """,
+                CommittedOffsetEntry::class.java
+            ).resultList.groupBy {
+                CordaTopicPartition(it.topic, it.partition)
+            }.filter {
+                it.key in topicPartitions
+            }.mapValues {
+                it.value.maxOf { committedOffsetEntry -> committedOffsetEntry.recordOffset }
+            }
         }
-
-        return maxOffsets
     }
 
     fun getMaxOffsetsPerTopicPartition(): Map<CordaTopicPartition, Long> {
@@ -169,8 +164,24 @@ class DBAccess(
     fun writeRecords(records: List<TopicRecordEntry>) {
         executeWithErrorHandling("write records") { entityManager ->
             records.forEach { record ->
+                entityManager.persist(record.transactionId)
                 entityManager.persist(record)
             }
+        }
+    }
+
+    fun readRecords(fromOffset: Long, topicPartition: CordaTopicPartition, limit: Int = Int.MAX_VALUE): List<TopicRecordEntry> {
+        return executeWithErrorHandling("read records") { entityManager ->
+            entityManager.createQuery(
+                """
+                    FROM topic_record 
+                    WHERE ${TopicRecordEntry::topic.name} = '${topicPartition.topic}'
+                    AND ${TopicRecordEntry::partition.name} = ${topicPartition.partition}
+                    AND ${TopicRecordEntry::recordOffset.name} > $fromOffset
+                    ORDER BY ${TopicRecordEntry::recordOffset.name}
+                    """,
+                TopicRecordEntry::class.java
+            ).setMaxResults(limit).resultList
         }
     }
 
@@ -178,11 +189,11 @@ class DBAccess(
      * Executes the specified operation with the necessary error handling.
      * If an error arises during execution, the transaction is rolled back and the exception is re-thrown.
      */
-    private fun executeWithErrorHandling(
+    private fun <T> executeWithErrorHandling(
         operationName: String,
-        operation: (emf: EntityManager) -> Unit,
-    ) {
-        try {
+        operation: (emf: EntityManager) -> T,
+    ): T {
+        return try {
             entityManagerFactory.transaction {
                 operation(it)
             }
