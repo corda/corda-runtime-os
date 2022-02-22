@@ -72,7 +72,7 @@ class CpkWriteServiceImplTest {
         whenever(publisherFactory.createPublisher(any(), any())).thenReturn(mock())
 
         cpkWriteServiceImpl.processEvent(ConfigChangedEvent(keys, config), coordinator)
-        assertNotNull(cpkWriteServiceImpl.cpkChecksumCache)
+        assertNotNull(cpkWriteServiceImpl.cpkChecksumsCache)
         assertNotNull(cpkWriteServiceImpl.publisher)
         verify(coordinator).updateStatus(LifecycleStatus.UP)
     }

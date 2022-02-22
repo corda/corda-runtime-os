@@ -7,7 +7,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.v5.crypto.SecureHash
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -16,9 +15,9 @@ import org.mockito.kotlin.mock
 import java.nio.ByteBuffer
 import java.security.MessageDigest
 
-class CpkChecksumCacheImplTest {
-    private lateinit var cpkChecksumCache: CpkChecksumCacheImpl
-    private lateinit var cacheSynchronizer: CpkChecksumCacheImpl.CacheSynchronizer
+class CpkChecksumsCacheImplTest {
+    private lateinit var cpkChecksumCache: CpkChecksumsCacheImpl
+    private lateinit var cacheSynchronizer: CpkChecksumsCacheImpl.CacheSynchronizer
     private lateinit var subscriptionFactory: SubscriptionFactory
 
     private val subscriptionConfig = SubscriptionConfig("dummyGroupName", "dummyEventTopic")
@@ -50,7 +49,7 @@ class CpkChecksumCacheImplTest {
     @BeforeEach
     fun setUp() {
         subscriptionFactory = mock()
-        cpkChecksumCache = CpkChecksumCacheImpl(subscriptionFactory, subscriptionConfig, mock())
+        cpkChecksumCache = CpkChecksumsCacheImpl(subscriptionFactory, subscriptionConfig, mock())
         cacheSynchronizer = cpkChecksumCache.CacheSynchronizer()
     }
 

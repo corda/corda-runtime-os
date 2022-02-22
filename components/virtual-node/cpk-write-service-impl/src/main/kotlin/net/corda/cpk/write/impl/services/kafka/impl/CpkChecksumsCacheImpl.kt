@@ -1,6 +1,6 @@
 package net.corda.cpk.write.impl.services.kafka.impl
 
-import net.corda.cpk.write.impl.services.kafka.CpkChecksumCache
+import net.corda.cpk.write.impl.services.kafka.CpkChecksumsCache
 import net.corda.cpk.write.impl.services.kafka.AvroTypesTodo
 import net.corda.cpk.write.impl.services.kafka.toCorda
 import net.corda.data.chunking.Chunk
@@ -25,11 +25,11 @@ import java.util.concurrent.ConcurrentHashMap
  * CPK chunks cache. Caches only what identifies uniquely a CPK chunk which is its checksum + chunk id.
  * The cache will get updated every time a new CPK chunk entry gets written to Kafka.
  */
-class CpkChecksumCacheImpl(
+class CpkChecksumsCacheImpl(
     subscriptionFactory: SubscriptionFactory,
     subscriptionConfig: SubscriptionConfig,
     nodeConfig: SmartConfig = SmartConfigImpl.empty()
-) : CpkChecksumCache {
+) : CpkChecksumsCache {
     companion object {
         val logger = contextLogger()
 

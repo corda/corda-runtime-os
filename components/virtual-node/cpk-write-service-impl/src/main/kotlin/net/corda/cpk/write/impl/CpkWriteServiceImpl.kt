@@ -4,8 +4,8 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpk.readwrite.CpkServiceConfigKeys
 import net.corda.cpk.write.CpkWriteService
-import net.corda.cpk.write.impl.services.kafka.CpkChecksumCache
-import net.corda.cpk.write.impl.services.kafka.impl.CpkChecksumCacheImpl
+import net.corda.cpk.write.impl.services.kafka.CpkChecksumsCache
+import net.corda.cpk.write.impl.services.kafka.impl.CpkChecksumsCacheImpl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -33,9 +33,6 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import java.time.Duration
 
-// something that will read from the database
-// a cache
-// something that publishes to Kafka
 @Suppress("Warnings", "Unused")
 @Component(service = [CpkWriteService::class])
 class CpkWriteServiceImpl @Activate constructor(
@@ -59,7 +56,7 @@ class CpkWriteServiceImpl @Activate constructor(
     @VisibleForTesting
     internal var configSubscription: AutoCloseable? = null
     @VisibleForTesting
-    internal var cpkChecksumCache: CpkChecksumCache? = null
+    internal var cpkChecksumsCache: CpkChecksumsCache? = null
     @VisibleForTesting
     internal var publisher: Publisher? = null
 
@@ -118,7 +115,7 @@ class CpkWriteServiceImpl @Activate constructor(
         // TODO - fix configuration for cache and publisher
         if (config.hasPath("todo")) {
 
-            cpkChecksumCache = CpkChecksumCacheImpl(
+            cpkChecksumsCache = CpkChecksumsCacheImpl(
                 subscriptionFactory,
                 SubscriptionConfig("todo", "todo"),
                 config
@@ -156,7 +153,7 @@ class CpkWriteServiceImpl @Activate constructor(
 
     override fun start() {
         logger.debug { "Cpk Write Service starting" }
-        cpkChecksumCache!!.start()
+        cpkChecksumsCache!!.start()
         coordinator.start()
     }
 
@@ -171,8 +168,8 @@ class CpkWriteServiceImpl @Activate constructor(
         configReadServiceRegistration = null
         configSubscription?.close()
         configSubscription = null
-        cpkChecksumCache?.close()
-        cpkChecksumCache = null
+        cpkChecksumsCache?.close()
+        cpkChecksumsCache = null
         publisher?.close()
         publisher = null
     }
