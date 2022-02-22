@@ -14,21 +14,21 @@ pipeline {
         }
     }
 
-        triggers {
-            cron '@hourly'
-        }
-
     environment {
         ARTIFACTORY_CREDENTIALS = credentials('artifactory-credentials')
         CORDA_ARTIFACTORY_USERNAME = "${env.ARTIFACTORY_CREDENTIALS_USR}"
         CORDA_ARTIFACTORY_PASSWORD = "${env.ARTIFACTORY_CREDENTIALS_PSW}"
         CORDA_USE_CACHE = "corda-remotes"
-        KUBECONFIG=credentials("e2e-tests-credentials")
-        CORDA_CLI_USER_HOME="/tmp/corda-cli-home"
+        KUBECONFIG = credentials("e2e-tests-credentials")
+        CORDA_CLI_USER_HOME = "/tmp/corda-cli-home"
         GRADLE_USER_HOME = "/host_tmp/gradle"
         CORDA_REVISION = "${env.GIT_COMMIT}"
-        NAME_SPACE = "run-${UUID.randomUUID().toString()}"
-        BASE_IMAGE = "unstable"
+        NAMESPACE = "run-${UUID.randomUUID().toString()}"
+        GIT_COMMIT_SHORT = sh(
+                script: "printf \$(git rev-parse --short ${GIT_COMMIT})",
+                returnStdout: true
+        )
+        BASE_IMAGE = "preTest-${GIT_COMMIT_SHORT}"
         CLUSTER_NAME = "eks-e2e.e2e.awsdev.r3.com"
     }
 
@@ -49,59 +49,50 @@ pipeline {
                 sh "./corda-cli/bin/corda-cli -v"
             }
         }
-        stage('Setup network') {
+        stage('Set up cluster') {
             steps {
-               echo "add steps"
-               sh './corda-cli/bin/corda-cli cluster configure k8s "${NAME_SPACE}"'
-               sh 'echo """cluster:""" | ./corda-cli/bin/corda-cli --stacktrace cluster deploy -t "${BASE_IMAGE}" -c "${NAME_SPACE}" -f /dev/stdin | tee spec.yaml | kubectl apply -f /dev/stdin'
+               sh './corda-cli/bin/corda-cli cluster configure k8s "${NAMESPACE}"'
+               sh 'echo """cluster:""" | ./corda-cli/bin/corda-cli --stacktrace cluster deploy -t "${BASE_IMAGE}" -c "${NAMESPACE}" -f /dev/stdin | tee spec.yaml | kubectl apply -f /dev/stdin'
             }
         }
-        stage('Wait for network') {
+        stage('Wait for cluster') {
             steps {
-                sh './corda-cli/bin/corda-cli cluster wait -c "${NAME_SPACE}"'
+                sh './corda-cli/bin/corda-cli cluster wait -c "${NAMESPACE}"'
             }
         }
-        stage('Forward ports and run the tests') {
+        stage('Forward port and run the tests') {
             steps {
-               echo "add steps"
 
                 //for details see
                 // https://github.com/corda/corda-runtime-os/blob/release/ent/5.0/applications/http-rpc-gateway/src/e2e-test/README.md
 
 
                 sh '''
-                    # Unfortunately port forwarding wasn't continued in the cli properly so this is a hack to make it work
-                    forward_args=$(kubectl -n "${NAME_SPACE}" get pods -o=name | grep rpc | awk "{print \\\$1, \"8888\"}")
-
-                    nohup kubectl port-forward -n ${NAME_SPACE} $forward_args > forward.txt 2>&1 &
+                    # Forward RPC worker port
+                    nohup kubectl port-forward -n ${NAMESPACE} deploy/${NAMESPACE}-rpc 8888 > forward.txt 2>&1 &
                     procno=$! #remember process number started in background
                     trap "kill -9 ${procno}" EXIT
 
                     echo forward.txt
-                    # Let the job populate the topics - this is bad
-                    sleep 30
+                    # Wait for the job to create the topics
+                    kubectl wait -n ${NAMESPACE} --for=condition=complete --timeout=30s job/create-topics
 
                     ./gradlew cleanE2eTest :applications:workers:release:rpc-worker:e2eTest
                 '''
             }
             post {
                 always {
-                       echo "add steps"
-                }
-                success {
-                        echo "add steps"
-
+                    junit allowEmptyResults: true, testResults: '**/test-results/e2eTest/TEST-*.xml'
+                    archiveArtifacts artifacts: 'forward.txt', allowEmptyArchive: true, fingerprint: true
+                    sh 'rm -f forward.txt'
                 }
             }
         }
     }
     post {
             cleanup {
-                junit allowEmptyResults: true, testResults: '**/test-results/e2eTest/TEST-*.xml'
-                archiveArtifacts artifacts: 'forward.txt', allowEmptyArchive: true, fingerprint: true
-                sh 'rm -f forward.txt'
                 // We can just let this take care of itself - worst case scenario it'll be pruned
-                sh 'kubectl delete ns "${NAME_SPACE}" &'
+                sh 'kubectl delete ns "${NAMESPACE}" &'
             }
     }
 }
