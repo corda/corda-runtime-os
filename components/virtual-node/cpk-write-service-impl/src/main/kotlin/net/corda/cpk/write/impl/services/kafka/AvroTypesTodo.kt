@@ -1,7 +1,7 @@
-package net.corda.cpk.write.internal.read
+package net.corda.cpk.write.impl.services.kafka
 
-import net.corda.cpk.write.types.CpkChunk
-import net.corda.cpk.write.types.CpkChunkId
+import net.corda.cpk.write.impl.CpkChunk
+import net.corda.cpk.write.impl.CpkChunkId
 import java.nio.ByteBuffer
 
 // TODO properly define those in corda-api

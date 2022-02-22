@@ -1,4 +1,4 @@
-package net.corda.cpk.write.types
+package net.corda.cpk.write.impl
 
 data class CpkChunk(
     val id: CpkChunkId,

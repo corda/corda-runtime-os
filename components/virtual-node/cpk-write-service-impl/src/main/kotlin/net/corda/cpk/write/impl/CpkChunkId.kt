@@ -1,4 +1,4 @@
-package net.corda.cpk.write.types
+package net.corda.cpk.write.impl
 
 import net.corda.v5.crypto.SecureHash
 

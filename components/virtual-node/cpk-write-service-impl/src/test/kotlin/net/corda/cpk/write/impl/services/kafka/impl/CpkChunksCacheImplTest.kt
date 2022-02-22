@@ -1,8 +1,8 @@
-package net.corda.cpk.write.internal.read.kafka
+package net.corda.cpk.write.impl.services.kafka.impl
 
-import net.corda.cpk.write.internal.read.AvroTypesTodo
-import net.corda.cpk.write.internal.read.toAvro
-import net.corda.cpk.write.internal.read.toCorda
+import net.corda.cpk.write.impl.services.kafka.types.AvroTypesTodo
+import net.corda.cpk.write.impl.services.kafka.types.toAvro
+import net.corda.cpk.write.impl.services.kafka.types.toCorda
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory

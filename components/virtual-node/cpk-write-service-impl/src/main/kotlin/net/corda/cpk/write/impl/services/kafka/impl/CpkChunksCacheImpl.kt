@@ -1,11 +1,11 @@
-package net.corda.cpk.write.internal.read.kafka
+package net.corda.cpk.write.impl.services.kafka.impl
 
-import net.corda.cpk.write.internal.read.AvroTypesTodo
-import net.corda.cpk.write.internal.read.toCorda
-import net.corda.cpk.write.types.CpkChunkId
+import net.corda.cpk.write.impl.services.kafka.CpkChunksCache
+import net.corda.cpk.write.impl.CpkChunkId
+import net.corda.cpk.write.impl.services.kafka.AvroTypesTodo
+import net.corda.cpk.write.impl.services.kafka.toCorda
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
-import net.corda.lifecycle.*
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -14,6 +14,9 @@ import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import java.util.concurrent.ConcurrentHashMap
 
+
+// Needs to be made a CPK checksum cache. What will happen if say some chunks of a CPK are on Kafka but not all?
+// Should we identify somehow that all chunks of a CPK are on kafka and only then that CPK checksum could be cached?
 /**
  * CPK chunks cache. Caches only what identifies uniquely a CPK chunk which is its checksum + chunk id.
  * The cache will get updated every time a new CPK chunk entry gets written to Kafka.

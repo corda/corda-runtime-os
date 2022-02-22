@@ -1,6 +1,6 @@
-package net.corda.cpk.write.internal.read.kafka
+package net.corda.cpk.write.impl.services.kafka
 
-import net.corda.cpk.write.types.CpkChunkId
+import net.corda.cpk.write.impl.CpkChunkId
 import net.corda.lifecycle.Lifecycle
 
 // TODO Maybe we need to allow cache entries invalidation to allow re-writing a Kafka record?

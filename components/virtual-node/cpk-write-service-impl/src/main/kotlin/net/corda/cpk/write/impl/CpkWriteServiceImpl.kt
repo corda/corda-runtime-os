@@ -4,12 +4,11 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpk.readwrite.CpkServiceConfigKeys
 import net.corda.cpk.write.CpkWriteService
-import net.corda.cpk.write.internal.read.AvroTypesTodo
-import net.corda.cpk.write.internal.read.kafka.CpkChunksCache
-import net.corda.cpk.write.internal.read.kafka.CpkChunksCacheImpl
-import net.corda.cpk.write.internal.read.toAvro
-import net.corda.cpk.write.internal.read.toCpkChunkAvro
-import net.corda.cpk.write.types.CpkChunk
+import net.corda.cpk.write.impl.services.kafka.CpkChunksCache
+import net.corda.cpk.write.impl.services.kafka.impl.CpkChunksCacheImpl
+import net.corda.cpk.write.impl.services.kafka.types.AvroTypesTodo
+import net.corda.cpk.write.impl.services.kafka.types.toAvro
+import net.corda.cpk.write.impl.services.kafka.types.toCpkChunkAvro
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -21,7 +20,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -42,6 +40,9 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import java.time.Duration
 
+// something that will read from the database
+// a cache
+// something that publishes to Kafka
 @Suppress("Warnings", "Unused")
 @Component(service = [CpkWriteService::class])
 class CpkWriteServiceImpl @Activate constructor(
@@ -150,54 +151,11 @@ class CpkWriteServiceImpl @Activate constructor(
         closeResources()
     }
 
-    override fun putAll(cpkChunks: List<CpkChunk>) {
-        val cpkChunksCache = this.cpkChunksCache
-
-        val missingCpkChunks =
-            if (cpkChunksCache == null) {
-                logger.info(
-                    "CPK chunks cache is not set. " +
-                            "Putting cpk chunks to Kafka will not check if chunks already exist." +
-                            "It will overwrite existing Kafka <CPK chunk Id, CPK chunk> entries."
-                )
-                cpkChunks
-            } else {
-                cpkChunks.filter { cpkChunk ->
-                    !cpkChunksCache.contains(cpkChunk.id).also {
-                        val cpkChunkId = "${cpkChunk.id.cpkChecksum} : ${cpkChunk.id.partNumber}"
-                        if (it == true)
-                            logger.debug("CPK chunk not contained in cache: $cpkChunkId")
-                        else
-                            logger.debug("CPK chunk contained in cache: $cpkChunkId")
-                    }
-                }
-            }
-
-        val missingCpkChunksRecords =
-            missingCpkChunks.map { cpkChunk ->
-                Record("TODO", cpkChunk.id.toAvro(), cpkChunk.bytes.toCpkChunkAvro(cpkChunk.id))
-            }
-
-        putAllAndWaitForResponses(missingCpkChunksRecords)
+    override fun putAllCpk() {
     }
 
-    private fun putAllAndWaitForResponses(missingCpkChunksRecords: List<Record<AvroTypesTodo.CpkChunkIdAvro, AvroTypesTodo.CpkChunkAvro>>) {
-        val responses = publisher?.let {
-            it.publish(missingCpkChunksRecords)
-        } ?: throw CordaRuntimeException("Kafka publisher is null")
+    override fun putMissingCpk() {
 
-        responses.forEach {
-            var intermittentException = false
-            do {
-                try {
-                    it.getOrThrow(timeout)
-                    intermittentException = false
-                } catch (e: CordaMessageAPIIntermittentException) {
-                    intermittentException = true
-                    logger.info("Caught an CordaMessageAPIIntermittentException. Will retry waiting on a future response.")
-                }
-            } while (intermittentException)
-        }
     }
 
     override val isRunning: Boolean
