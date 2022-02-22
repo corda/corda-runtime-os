@@ -1,5 +1,6 @@
 package net.corda.permissions.storage.writer.internal
 
+import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
@@ -57,7 +58,10 @@ class PermissionStorageWriterServiceEventHandler(
                 log.info("Status Change Event received: $event")
                 when (event.status) {
                     LifecycleStatus.UP -> {
-                        crsSub = configurationReadService.registerForUpdates(::onConfigurationUpdated)
+                        crsSub = configurationReadService.registerComponentForUpdates(
+                            coordinator,
+                            setOf(BOOT_CONFIG, MESSAGING_CONFIG)
+                        )
                         coordinator.updateStatus(LifecycleStatus.UP)
                     }
                     LifecycleStatus.DOWN -> {
@@ -69,6 +73,9 @@ class PermissionStorageWriterServiceEventHandler(
                     }
                 }
             }
+            is ConfigChangedEvent -> {
+                onConfigurationUpdated(event.config.toMessagingConfig())
+            }
             is StopEvent -> {
                 log.info("Stop event received")
                 downTransition(coordinator)
@@ -77,34 +84,24 @@ class PermissionStorageWriterServiceEventHandler(
     }
 
     @VisibleForTesting
-    internal fun onConfigurationUpdated(
-        changedKeys: Set<String>,
-        currentConfigurationSnapshot: Map<String, SmartConfig>
-    ) {
-        log.info("Component received configuration update event, changedKeys: $changedKeys")
+    internal fun onConfigurationUpdated(messagingConfig: SmartConfig) {
 
-        if ((BOOT_CONFIG in changedKeys || MESSAGING_CONFIG in changedKeys) &&
-            currentConfigurationSnapshot.keys.containsAll(setOf(BOOT_CONFIG, MESSAGING_CONFIG))
-        ) {
-            val messagingConfig = currentConfigurationSnapshot.toMessagingConfig()
-
-            subscription?.stop()
-            subscription = subscriptionFactory.createRPCSubscription(
-                rpcConfig = RPCConfig(
-                    groupName = GROUP_NAME,
-                    clientName = CLIENT_NAME,
-                    requestTopic = RPC_PERM_MGMT_REQ_TOPIC,
-                    requestType = PermissionManagementRequest::class.java,
-                    responseType = PermissionManagementResponse::class.java
-                ),
-                nodeConfig = messagingConfig,
-                responderProcessor = permissionStorageWriterProcessorFactory.create(
-                    entityManagerFactoryCreator(),
-                    readerService.permissionStorageReader!!
-                )
-            ).also {
-                it.start()
-            }
+        subscription?.stop()
+        subscription = subscriptionFactory.createRPCSubscription(
+            rpcConfig = RPCConfig(
+                groupName = GROUP_NAME,
+                clientName = CLIENT_NAME,
+                requestTopic = RPC_PERM_MGMT_REQ_TOPIC,
+                requestType = PermissionManagementRequest::class.java,
+                responseType = PermissionManagementResponse::class.java
+            ),
+            nodeConfig = messagingConfig,
+            responderProcessor = permissionStorageWriterProcessorFactory.create(
+                entityManagerFactoryCreator(),
+                readerService.permissionStorageReader!!
+            )
+        ).also {
+            it.start()
         }
     }
 

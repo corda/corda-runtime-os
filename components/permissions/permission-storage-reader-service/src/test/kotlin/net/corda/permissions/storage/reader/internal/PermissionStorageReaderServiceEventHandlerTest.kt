@@ -12,6 +12,7 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.permissions.cache.PermissionCacheService
@@ -90,7 +91,7 @@ class PermissionStorageReaderServiceEventHandlerTest {
 
         handler.processEvent(StartEvent(), coordinator)
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
-        handler.onConfigurationUpdated(setOf(BOOT_CONFIG), bootstrapConfig)
+        handler.onConfigurationUpdated(bootstrapConfig.toMessagingConfig())
 
         assertNotNull(handler.permissionStorageReader)
         verify(permissionStorageReader).start()
@@ -107,7 +108,7 @@ class PermissionStorageReaderServiceEventHandlerTest {
     fun `processing a DOWN event from the permission cache when the service is started stops the storage reader`() {
         handler.processEvent(StartEvent(), coordinator)
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
-        handler.onConfigurationUpdated(setOf(BOOT_CONFIG), bootstrapConfig)
+        handler.onConfigurationUpdated(bootstrapConfig.toMessagingConfig())
 
         assertNotNull(handler.permissionStorageReader)
 
@@ -129,7 +130,7 @@ class PermissionStorageReaderServiceEventHandlerTest {
     fun `processing a stop event stops the service's dependencies`() {
         handler.processEvent(StartEvent(), coordinator)
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
-        handler.onConfigurationUpdated(setOf(BOOT_CONFIG), bootstrapConfig)
+        handler.onConfigurationUpdated(bootstrapConfig.toMessagingConfig())
 
         assertNotNull(handler.registrationHandle)
         assertNotNull(handler.permissionStorageReader)

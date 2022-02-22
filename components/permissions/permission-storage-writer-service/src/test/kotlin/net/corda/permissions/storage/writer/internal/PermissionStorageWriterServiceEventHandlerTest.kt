@@ -11,6 +11,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
@@ -81,7 +82,7 @@ class PermissionStorageWriterServiceEventHandlerTest {
         handler.processEvent(StartEvent(), mock())
         assertNull(handler.subscription)
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
-        handler.onConfigurationUpdated(setOf(BOOT_CONFIG), bootstrapConfig)
+        handler.onConfigurationUpdated(bootstrapConfig.toMessagingConfig())
 
         assertNotNull(handler.subscription)
         verify(subscription).start()

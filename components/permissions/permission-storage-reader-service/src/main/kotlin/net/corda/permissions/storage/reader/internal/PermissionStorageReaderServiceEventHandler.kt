@@ -1,5 +1,6 @@
 package net.corda.permissions.storage.reader.internal
 
+import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
@@ -69,7 +70,10 @@ class PermissionStorageReaderServiceEventHandler(
                 log.info("Status Change Event received: $event")
                 when (event.status) {
                     LifecycleStatus.UP -> {
-                        crsSub = configurationReadService.registerForUpdates(::onConfigurationUpdated)
+                        crsSub = configurationReadService.registerComponentForUpdates(
+                            coordinator,
+                            setOf(BOOT_CONFIG, MESSAGING_CONFIG)
+                        )
                         coordinator.updateStatus(LifecycleStatus.UP)
                     }
                     LifecycleStatus.DOWN -> {
@@ -87,6 +91,9 @@ class PermissionStorageReaderServiceEventHandler(
                     }
                 }
             }
+            is ConfigChangedEvent -> {
+                onConfigurationUpdated(event.config.toMessagingConfig())
+            }
             is StopEvent -> {
                 log.info("Stop Event received")
                 publisher?.close()
@@ -101,35 +108,25 @@ class PermissionStorageReaderServiceEventHandler(
     }
 
     @VisibleForTesting
-    internal fun onConfigurationUpdated(
-        changedKeys: Set<String>,
-        currentConfigurationSnapshot: Map<String, SmartConfig>
-    ) {
-        log.info("Component received configuration update event, changedKeys: $changedKeys")
+    internal fun onConfigurationUpdated(messagingConfig: SmartConfig) {
 
-        if ((BOOT_CONFIG in changedKeys || MESSAGING_CONFIG in changedKeys) &&
-            currentConfigurationSnapshot.keys.containsAll(setOf(BOOT_CONFIG, MESSAGING_CONFIG))
-        ) {
-            val messagingConfig = currentConfigurationSnapshot.toMessagingConfig()
+        publisher?.close()
+        publisher = publisherFactory.createPublisher(
+            publisherConfig = PublisherConfig(clientId = CLIENT_NAME),
+            kafkaConfig = messagingConfig
+        ).also {
+            it.start()
+        }
 
-            publisher?.close()
-            publisher = publisherFactory.createPublisher(
-                publisherConfig = PublisherConfig(clientId = CLIENT_NAME),
-                kafkaConfig = messagingConfig
-            ).also {
-                it.start()
-            }
-
-            permissionStorageReader?.stop()
-            permissionStorageReader = permissionStorageReaderFactory.create(
-                checkNotNull(permissionCacheService.permissionCache) {
-                    "The ${PermissionCacheService::class.java} should be up and ready to provide the cache"
-                },
-                checkNotNull(publisher) { "The ${Publisher::class.java} must be initialised" },
-                entityManagerFactoryCreator()
-            ).also {
-                it.start()
-            }
+        permissionStorageReader?.stop()
+        permissionStorageReader = permissionStorageReaderFactory.create(
+            checkNotNull(permissionCacheService.permissionCache) {
+                "The ${PermissionCacheService::class.java} should be up and ready to provide the cache"
+            },
+            checkNotNull(publisher) { "The ${Publisher::class.java} must be initialised" },
+            entityManagerFactoryCreator()
+        ).also {
+            it.start()
         }
     }
 }
