@@ -5,7 +5,7 @@ plugins {
 description "Introspiciere core"
 
 dependencies {
-    implementation project(":testing:introspiciere:introspiciere-http")
+    implementation project(":testing:introspiciere:introspiciere-client")
     implementation project(":testing:introspiciere:introspiciere-payloads")
     implementation project(":testing:introspiciere:introspiciere-domain")
 
@@ -21,7 +21,7 @@ dependencies {
 
 jar {
     // not sure why the dependency is not building automatically
-    dependsOn ':testing:introspiciere:introspiciere-http:build'
+    dependsOn ':testing:introspiciere:introspiciere-client:build'
 
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 

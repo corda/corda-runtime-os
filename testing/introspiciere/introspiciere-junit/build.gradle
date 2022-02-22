@@ -5,7 +5,7 @@ plugins {
 description "Introspiciere junit lib"
 
 dependencies {
-    implementation project(":testing:introspiciere:introspiciere-http")
+    implementation project(":testing:introspiciere:introspiciere-client")
     implementation project(":testing:introspiciere:introspiciere-server")
     implementation project(":testing:introspiciere:introspiciere-domain")
 
