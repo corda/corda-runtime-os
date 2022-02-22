@@ -3,7 +3,7 @@ package net.corda.p2p.linkmanager
 import com.typesafe.config.ConfigFactory
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -17,7 +17,7 @@ import org.mockito.kotlin.whenever
 class ConfigBasedLinkManagerHostingMapTest {
 
     private lateinit var configHandler: ConfigBasedLinkManagerHostingMap.HostingMapConfigurationChangeHandler
-    private val dominoTile = Mockito.mockConstruction(DominoTile::class.java) { _, context ->
+    private val dominoTile = Mockito.mockConstruction(ComplexDominoTile::class.java) { _, context ->
         @Suppress("UNCHECKED_CAST")
         configHandler = context.arguments()[5] as ConfigBasedLinkManagerHostingMap.HostingMapConfigurationChangeHandler
     }

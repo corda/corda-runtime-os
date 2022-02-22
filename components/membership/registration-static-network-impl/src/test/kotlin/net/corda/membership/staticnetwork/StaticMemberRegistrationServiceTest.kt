@@ -2,7 +2,7 @@ package net.corda.membership.staticnetwork
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.CryptoOpsClient
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.lifecycle.LifecycleCoordinator

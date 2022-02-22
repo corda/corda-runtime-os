@@ -3,10 +3,10 @@ package net.corda.p2p.linkmanager
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -54,7 +54,6 @@ import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
-import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
@@ -62,8 +61,6 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.*
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.atomic.AtomicReference
 
 @Suppress("LongParameterList")
 class LinkManager(@Reference(service = SubscriptionFactory::class)
@@ -94,8 +91,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         }
     }
 
-    private val inboundAssigned = AtomicReference<CompletableFuture<Unit>>()
-    private var inboundAssignmentListener = InboundAssignmentListener(inboundAssigned)
+    private var inboundAssignmentListener = InboundAssignmentListener(lifecycleCoordinatorFactory)
 
     private val messagesPendingSession = PendingSessionMessageQueuesImpl(
         publisherFactory,
@@ -146,46 +142,26 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         partitionAssignmentListener = null
     )
 
-    @VisibleForTesting
-    internal fun createInboundResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-        val future = CompletableFuture<Unit>()
-        inboundAssigned.set(future)
-        inboundMessageSubscription.start()
-        resources.keep { inboundMessageSubscription.stop() }
-        //We complete the future inside inboundAssignmentListener.
-        return future
-    }
-
-    @VisibleForTesting
-    internal fun createOutboundResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-        outboundMessageSubscription.start()
-        resources.keep { outboundMessageSubscription.stop() }
-        val outboundReady = CompletableFuture<Unit>()
-        outboundReady.complete(Unit)
-        return outboundReady
-    }
-
     private val commonChildren = setOf(linkManagerNetworkMap.dominoTile, linkManagerCryptoService.dominoTile,
         linkManagerHostingMap.dominoTile)
-    private val inboundDominoTile = DominoTile(
-        "InboundProcessor",
+    private val inboundSubscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
-        ::createInboundResources,
-        dependentChildren = commonChildren
+        inboundMessageSubscription,
+        dependentChildren = commonChildren,
+        managedChildren = setOf(inboundAssignmentListener.dominoTile)
     )
-    private val outboundDominoTile = DominoTile(
-        "OutboundProcessor",
+    private val outboundSubscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
-        ::createOutboundResources,
-        dependentChildren = setOf(inboundDominoTile, messagesPendingSession.dominoTile) + commonChildren,
+        outboundMessageSubscription,
+        dependentChildren = commonChildren + setOf(messagesPendingSession.dominoTile, inboundAssignmentListener.dominoTile),
         managedChildren = setOf(messagesPendingSession.dominoTile)
     )
 
-    override val dominoTile = DominoTile(
+    override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        dependentChildren = setOf(inboundDominoTile, outboundDominoTile, deliveryTracker.dominoTile),
-        managedChildren = setOf(inboundDominoTile, outboundDominoTile, deliveryTracker.dominoTile, sessionManager.dominoTile)
+        dependentChildren = setOf(inboundSubscriptionTile, outboundSubscriptionTile, deliveryTracker.dominoTile),
+        managedChildren = setOf(inboundSubscriptionTile, outboundSubscriptionTile, deliveryTracker.dominoTile, sessionManager.dominoTile)
                 + commonChildren
     )
 
@@ -520,7 +496,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         override val valueClass = LinkInMessage::class.java
     }
 
-    interface PendingSessionMessageQueues {
+    interface PendingSessionMessageQueues: LifecycleWithDominoTile {
         fun queueMessage(message: AuthenticatedMessageAndKey, counterparties: SessionCounterparties)
         fun sessionNegotiatedCallback(
             sessionManager: SessionManager,
@@ -530,14 +506,13 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         )
         fun destroyQueue(counterparties: SessionCounterparties)
         fun destroyAllQueues()
-        val dominoTile: DominoTile
     }
 
     class PendingSessionMessageQueuesImpl(
         publisherFactory: PublisherFactory,
         coordinatorFactory: LifecycleCoordinatorFactory,
         configuration: SmartConfig
-    ): PendingSessionMessageQueues, LifecycleWithDominoTile {
+    ): PendingSessionMessageQueues {
 
         companion object {
             private val logger = contextLogger()

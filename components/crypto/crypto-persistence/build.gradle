@@ -19,7 +19,7 @@ dependencies {
     implementation "net.corda:corda-cipher-suite"
 
     implementation project(":libs:configuration:configuration-core")
-    implementation project(":libs:crypto:crypto-client")
+    implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:lifecycle:lifecycle")
 
     testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"

@@ -1,18 +1,29 @@
 package net.corda.p2p.linkmanager
 
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
-class InboundAssignmentListener(private val future: AtomicReference<CompletableFuture<Unit>>):
-    PartitionAssignmentListener {
+class InboundAssignmentListener(private val coordinatorFactory: LifecycleCoordinatorFactory):
+    PartitionAssignmentListener, LifecycleWithDominoTile {
+
+    override val dominoTile = ComplexDominoTile(
+        this::class.java.simpleName,
+        coordinatorFactory,
+        createResources = ::createResources
+    )
 
     private val lock = ReentrantReadWriteLock()
     private val topicToPartition = mutableMapOf<String, MutableSet<Int>>()
     private var firstAssignment = true
+
+    private val future: CompletableFuture<Unit> = CompletableFuture()
 
     override fun onPartitionsUnassigned(topicPartitions: List<Pair<String, Int>>) {
         lock.write {
@@ -26,7 +37,7 @@ class InboundAssignmentListener(private val future: AtomicReference<CompletableF
         lock.write {
             if (firstAssignment) {
                 firstAssignment = false
-                future.get().complete(Unit)
+                future.complete(Unit)
             }
             for ((topic, partition) in topicPartitions) {
                 val partitionSet = topicToPartition.computeIfAbsent(topic) { mutableSetOf() }
@@ -39,5 +50,9 @@ class InboundAssignmentListener(private val future: AtomicReference<CompletableF
         return lock.read {
             topicToPartition[topic] ?: emptySet()
         }
+    }
+
+    private fun createResources(@Suppress("UNUSED_PARAMETER") resourcesHolder: ResourcesHolder): CompletableFuture<Unit> {
+        return future
     }
 }
