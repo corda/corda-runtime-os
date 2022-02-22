@@ -2,9 +2,13 @@ package net.corda.applications.flowworker.setup.tasks
 
 import net.corda.applications.flowworker.setup.Task
 import net.corda.applications.flowworker.setup.TaskContext
-import net.corda.data.flow.event.StartRPCFlow
+import net.corda.data.flow.FlowInitiatorType
+import net.corda.data.flow.FlowStartContext
+import net.corda.data.flow.FlowStatusKey
+import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.identity.HoldingIdentity
+import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import java.time.Instant
@@ -16,7 +20,6 @@ class StartFlow(private val context: TaskContext) : Task {
         context.publish(
             getStartRPCEventRecord(
                 clientId = UUID.randomUUID().toString(),
-                cpiId = "corda-helloworld-cpb",
                 flowName = "net.corda.linearstatesample.flows.HelloWorldFlowInitiator",
                 x500Name = context.startArgs.x500NName ,
                 groupId = "1",
@@ -25,21 +28,28 @@ class StartFlow(private val context: TaskContext) : Task {
         )
     }
 
-    @Suppress("LongParameterList")
+    @Suppress("LongParameterList", "Unused")
     fun getStartRPCEventRecord(
         clientId: String,
-        cpiId: String,
         flowName: String,
         x500Name: String,
         groupId: String,
         jsonArgs: String
     ): Record<*, *> {
         val identity = HoldingIdentity(x500Name, groupId)
-        val flowKey = "$clientId.$x500Name.$groupId"
-        val rpcStartFlow = StartRPCFlow(clientId, cpiId, flowName, identity, Instant.now(), jsonArgs)
+
+        val context = FlowStartContext(
+            FlowStatusKey(clientId,identity),
+            FlowInitiatorType.RPC,
+            clientId,
+            VirtualNodeInfo(identity,null),
+            flowName,
+            Instant.now())
+
+        val rpcStartFlow = StartFlow(context,jsonArgs)
         return Record(
             Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,
-            flowKey,
+            context.statusKey,
             FlowMapperEvent(rpcStartFlow)
         )
     }

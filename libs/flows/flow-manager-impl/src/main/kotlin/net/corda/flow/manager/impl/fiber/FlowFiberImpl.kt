@@ -58,9 +58,16 @@ class FlowFiberImpl<R>(
         log.info("Flow starting.")
 
         try {
-            suspend(FlowIORequest.ForceCheckpoint)
-            val result = flowLogic.call()
-            flowCompletion.complete(FlowIORequest.FlowFinished(result))
+            suspend(FlowIORequest.InitialCheckpoint)
+
+            /**
+             * TODOs: Need to review/discuss how/where to ensure the user code can only return
+             * a string
+             */
+            when (val result = flowLogic.call()){
+                is String -> flowCompletion.complete(FlowIORequest.FlowFinished(result))
+                else ->  throw IllegalStateException("The flow result has to be a string.")
+            }
         } catch (t: Throwable) {
             log.error("Flow failed", t)
             if (t.isUnrecoverable()) {
