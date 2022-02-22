@@ -10,6 +10,8 @@ import net.corda.data.permissions.PermissionType
 import net.corda.data.permissions.Role
 import net.corda.data.permissions.RoleAssociation
 import net.corda.data.permissions.User
+import net.corda.data.permissions.summary.PermissionSummary
+import net.corda.data.permissions.summary.UserPermissionSummary
 import net.corda.libs.permissions.cache.PermissionCache
 import net.corda.libs.permissions.cache.exception.PermissionCacheException
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -24,7 +26,8 @@ internal class PermissionCacheImplTest {
     private val groupData = ConcurrentHashMap<String, Group>()
     private val roleData = ConcurrentHashMap<String, Role>()
     private val permissionData = ConcurrentHashMap<String, Permission>()
-    private val permissionCache: PermissionCache = PermissionCacheImpl(userData, groupData, roleData, permissionData)
+    private val permissionSummaryData = ConcurrentHashMap<String, UserPermissionSummary>()
+    private val permissionCache: PermissionCache = PermissionCacheImpl(userData, groupData, roleData, permissionData, permissionSummaryData)
 
     private val user1 = User("id1", 1, ChangeDetails(Instant.now()), "user-login1", "full name", true,
         "hashedPassword", "saltValue", null, false, null, null, emptyList())
@@ -46,6 +49,17 @@ internal class PermissionCacheImplTest {
     private val role2 = Role("role2", 0, ChangeDetails(Instant.now()), "admin", group1.id,
         listOf(PermissionAssociation(ChangeDetails(Instant.now()), permission2.id)))
 
+    private val permissionSummary1 = UserPermissionSummary(
+        "userLogin1",
+        listOf(PermissionSummary(null, null, "", PermissionType.ALLOW)),
+        Instant.now()
+    )
+    private val permissionSummary2 = UserPermissionSummary(
+        "userLogin2",
+        listOf(PermissionSummary(null, null, "", PermissionType.DENY)),
+        Instant.now()
+    )
+
     @BeforeEach
     fun setUp() {
         userData["user-login-1"] = user1
@@ -57,6 +71,8 @@ internal class PermissionCacheImplTest {
         permissionData[permission1.id] = permission1
         permissionData[permission2.id] = permission2
         permissionCache.start()
+        permissionSummaryData["userLogin1"] = permissionSummary1
+        permissionSummaryData["userLogin2"] = permissionSummary2
     }
 
     @Test
@@ -136,6 +152,19 @@ internal class PermissionCacheImplTest {
         assertTrue(permissionIds.containsAll(listOf(permission1.id, permission2.id)),
             "GetPermissions result should contain permission IDs as keys.")
         assertTrue(permissions.containsAll(listOf(permission1, permission2)),
+            "GetPermissions result should contain expected permissions in the map.")
+    }
+
+    @Test
+    fun getPermissionSummaries() {
+        val permissionSummariesMap = permissionCache.permissionSummaries
+        val permissionIds = permissionSummariesMap.keys
+        val permissions = permissionSummariesMap.values
+        assertEquals(2, permissionSummariesMap.size,
+            "GetPermissionSummaries should return all permission summaries in the map.")
+        assertTrue(permissionIds.containsAll(listOf("userLogin1", "userLogin2")),
+            "GetPermissions result should contain permission IDs as keys.")
+        assertTrue(permissions.containsAll(listOf(permissionSummary1, permissionSummary2)),
             "GetPermissions result should contain expected permissions in the map.")
     }
 }

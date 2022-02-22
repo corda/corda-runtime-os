@@ -1,7 +1,8 @@
 package net.corda.libs.permission.impl
 
-import net.corda.data.permissions.Permission
-import net.corda.data.permissions.PermissionType
+import java.lang.IllegalArgumentException
+import net.corda.data.permissions.summary.UserPermissionSummary
+import net.corda.data.permissions.PermissionType as AvroPermissionType
 import net.corda.libs.permission.PermissionValidator
 import net.corda.libs.permissions.cache.PermissionCache
 import net.corda.permissions.password.PasswordHash
@@ -55,64 +56,34 @@ class PermissionValidatorImpl(
             return false
         }
 
-        return performCheckRec(
-            user.roleAssociations.map { it.roleId },
-            user.parentGroupId,
+        val permissionSummary = permissionCache.getPermissionSummary(loginName)
+            ?: throw IllegalArgumentException("User was found in permission cache but User Permission Summary was not.")
+
+        return findPermissionMatch(
+            permissionSummary,
             PermissionUrl.fromUrl(permission)
         )
     }
 
-    private tailrec fun performCheckRec(
-        roleIds: Collection<String>,
-        parentGroupId: String?,
-        permissionUrl: PermissionUrl
-    ): Boolean {
+    private fun findPermissionMatch(permissionSummary: UserPermissionSummary, permissionUrl: PermissionUrl): Boolean {
 
-        logger.debug { "Checking permissions for: $permissionUrl - $roleIds - $parentGroupId" }
+        val (denies, allows) = permissionSummary.permissions
+            .partition { it.permissionType == AvroPermissionType.DENY }
 
-        if (roleIds.isEmpty() && parentGroupId == null) {
-            logger.debug { "Roles are empty and no parent group left" }
+        if (denies.any { wildcardMatch(it.permissionString, permissionUrl.permissionRequested) }) {
+            val msg = "Explicitly denied by: '${denies.first { wildcardMatch(it.permissionString, permissionUrl.permissionRequested) }}'"
+            logger.debug { msg }
             return false
         }
-
-        // Should we report roles that cannot be found?
-        val roles = roleIds.mapNotNull { permissionCache.getRole(it) }
-
-        val permissionRequested: String = permissionUrl.permissionRequested
-        val allPermissions = roles.flatMap {
-            it.permissions.map { permissionAssociation ->
-                requireNotNull(permissionCache.getPermission(permissionAssociation.permissionId)) {
-                    "Permission for ${permissionAssociation.permissionId} cannot be found in the cache"
-                }
-            }
-        }
-
-        // Perform checks, with deny taking priority over allow
-        val (denies, allows) = allPermissions.partition { it.permissionType == PermissionType.DENY }
-        if (denies.any { wildcardMatch(it, permissionRequested) }) {
-            logger.debug { "Explicitly denied by: '${denies.first { wildcardMatch(it, permissionRequested) }}'" }
-            return false
-        }
-        if (allows.any { wildcardMatch(it, permissionRequested) }) {
-            logger.debug { "Explicitly allowed by: '${allows.first { wildcardMatch(it, permissionRequested) }}'" }
+        if (allows.any { wildcardMatch(it.permissionString, permissionUrl.permissionRequested) }) {
+            val msg = "Explicitly allowed by: '${allows.first { wildcardMatch(it.permissionString, permissionUrl.permissionRequested) }}'"
+            logger.debug { msg }
             return true
         }
-
-        // If we could not reach decision yet, try referring to the parent
-        if (parentGroupId == null) {
-            logger.debug { "No parent group left" }
-            return false
-        }
-        val parentGroup = permissionCache.getGroup(parentGroupId)
-        if (parentGroup == null) {
-            logger.warn("Group with id: '$parentGroupId' cannot be found")
-            return false
-        }
-        val rolesIdsForGroup = parentGroup.roleAssociations.map { it.roleId }
-        return performCheckRec(rolesIdsForGroup, parentGroup.parentGroupId, permissionUrl)
+        return false
     }
 
-    private fun wildcardMatch(existingPermission: Permission, permissionRequested: String): Boolean {
-        return permissionRequested.matches(existingPermission.permissionString.toRegex(RegexOption.IGNORE_CASE))
+    private fun wildcardMatch(permissionString: String, permissionRequested: String): Boolean {
+        return permissionRequested.matches(permissionString.toRegex(RegexOption.IGNORE_CASE))
     }
 }

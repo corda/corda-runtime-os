@@ -39,6 +39,8 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.concurrent.ConcurrentHashMap
+import net.corda.data.permissions.summary.UserPermissionSummary
+import net.corda.schema.Schemas.Permissions.Companion.PERMISSIONS_USER_SUMMARY_TOPIC
 
 @Component(service = [PermissionCacheService::class])
 class PermissionCacheService @Activate constructor(
@@ -70,6 +72,7 @@ class PermissionCacheService @Activate constructor(
     private var groupSubscription: CompactedSubscription<String, Group>? = null
     private var roleSubscription: CompactedSubscription<String, Role>? = null
     private var permissionSubscription: CompactedSubscription<String, Permission>? = null
+    private var permissionSummarySubscription: CompactedSubscription<String, UserPermissionSummary>? = null
     private var configHandle: AutoCloseable? = null
 
     private var configRegistration: RegistrationHandle? = null
@@ -157,6 +160,8 @@ class PermissionCacheService @Activate constructor(
         roleSubscription = null
         permissionSubscription?.stop()
         permissionSubscription = null
+        permissionSummarySubscription?.stop()
+        permissionSummarySubscription = null
 
         userSnapshotReceived = false
         groupSnapshotReceived = false
@@ -174,6 +179,8 @@ class PermissionCacheService @Activate constructor(
         val groupData = ConcurrentHashMap<String, Group>()
         val roleData = ConcurrentHashMap<String, Role>()
         val permissionData = ConcurrentHashMap<String, Permission>()
+        val permissionSummaryData = ConcurrentHashMap<String, UserPermissionSummary>()
+
         userSubscription?.stop()
         val userSubscription = createUserSubscription(userData, config)
             .also {
@@ -202,16 +209,30 @@ class PermissionCacheService @Activate constructor(
                 permissionSubscription = it
             }
 
+        permissionSummarySubscription?.stop()
+        val permissionSummarySubscription = createPermissionSummarySubscription(permissionSummaryData, config)
+            .also {
+                it.start()
+                permissionSummarySubscription = it
+            }
+
         topicsRegistration?.close()
         topicsRegistration = coordinator.followStatusChangesByName(
             setOf(
                 userSubscription.subscriptionName, groupSubscription.subscriptionName,
-                roleSubscription.subscriptionName, permissionSubscription.subscriptionName
+                roleSubscription.subscriptionName, permissionSubscription.subscriptionName,
+                permissionSummarySubscription.subscriptionName
             )
         )
 
         _permissionCache?.stop()
-        _permissionCache = permissionCacheFactory.createPermissionCache(userData, groupData, roleData, permissionData)
+        _permissionCache = permissionCacheFactory.createPermissionCache(
+            userData,
+            groupData,
+            roleData,
+            permissionData,
+            permissionSummaryData
+        )
             .also { it.start() }
     }
 
@@ -261,6 +282,19 @@ class PermissionCacheService @Activate constructor(
         return subscriptionFactory.createCompactedSubscription(
             SubscriptionConfig(CONSUMER_GROUP, RPC_PERM_ENTITY_TOPIC),
             permissionCacheTopicProcessorFactory.createPermissionTopicProcessor(permissionData) {
+                coordinator.postEvent(PermissionTopicSnapshotReceived())
+            },
+            kafkaConfig
+        )
+    }
+
+    private fun createPermissionSummarySubscription(
+        permissionSummaryData: ConcurrentHashMap<String, UserPermissionSummary>,
+        kafkaConfig: SmartConfig
+    ): CompactedSubscription<String, UserPermissionSummary> {
+        return subscriptionFactory.createCompactedSubscription(
+            SubscriptionConfig(CONSUMER_GROUP, PERMISSIONS_USER_SUMMARY_TOPIC),
+            permissionCacheTopicProcessorFactory.createPermissionSummaryTopicProcessor(permissionSummaryData) {
                 coordinator.postEvent(PermissionTopicSnapshotReceived())
             },
             kafkaConfig
