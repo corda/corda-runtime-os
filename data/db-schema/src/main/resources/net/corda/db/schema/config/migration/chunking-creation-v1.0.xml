@@ -5,7 +5,7 @@
 
     <!-- this schema is intentional -->
     <property name="schema.name" value="CONFIG"/>
-    <property name="table.name" value="CHUNKS"/>
+    <property name="table.name" value="file_upload"/>
 
     <changeSet author="R3.Corda" id="chunks-creation-v1.0">
 
@@ -36,7 +36,7 @@
             </column>
         </createTable>
 
-        <addPrimaryKey tableName="${table.name}" columnNames="request_id, part_nr" constraintName="request_id_pk"
+        <addPrimaryKey tableName="${table.name}" columnNames="request_id, part_nr" constraintName="${table.name}_pk"
                        schemaName="${schema.name}"/>
 
     </changeSet>

@@ -1,0 +1,103 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <property name="schema.name" value="CONFIG"/>
+
+    <changeSet author="R3.Corda" id="cpx-creation-v1.0">
+
+        <sql>
+            CREATE SCHEMA IF NOT EXISTS CONFIG;
+        </sql>
+
+        <createTable tableName="cpi" schemaName="${schema.name}">
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="signer_summary_hash" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="file_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="file_checksum" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="group_policy" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="group_id" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="file_upload_request_id" type="VARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="insert_ts" type="TIMESTAMP"
+                    defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="cpi" columnNames="name, version, signer_summary_hash" constraintName="cpi_pk"
+                       schemaName="${schema.name}"/>
+
+        <createTable tableName="cpk" schemaName="${schema.name}">
+            <column name="file_checksum" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <!-- TODO: bin data type for postgres -->
+            <column name="data" type="CLOB">
+                <constraints nullable="false"/>
+            </column>
+            <column name="insert_ts" type="TIMESTAMP"
+                    defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="cpk" columnNames="file_checksum" constraintName="cpk_pk"
+                       schemaName="${schema.name}"/>
+
+        <createTable tableName="cpi_cpk" schemaName="${schema.name}">
+            <column name="cpi_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cpi_version" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cpi_signer_summary_hash" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cpk_file_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cpk_file_checksum" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="insert_ts" type="TIMESTAMP"
+                    defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="cpi_cpk" columnNames="cpi_name, cpi_version, cpi_signer_summary_hash, cpk_file_checksum" constraintName="cpi_cpk_pk"
+                       schemaName="${schema.name}"/>
+
+        <addForeignKeyConstraint baseTableName="cpi_cpk" baseColumnNames="cpi_name, cpi_version, cpi_signer_summary_hash"
+                                 referencedTableName="cpi" referencedColumnNames="name, version, signer_summary_hash"
+                                 constraintName="FK_cpi_cpk_cpi"
+                                 baseTableSchemaName="${schema.name}"
+                                 referencedTableSchemaName="${schema.name}"/>
+
+        <addForeignKeyConstraint baseTableName="cpi_cpk" baseColumnNames="cpk_file_checksum"
+                                 referencedTableName="cpk" referencedColumnNames="file_checksum"
+                                 constraintName="FK_cpi_cpk_cpk"
+                                 baseTableSchemaName="${schema.name}"
+                                 referencedTableSchemaName="${schema.name}"/>
+
+    </changeSet>
+</databaseChangeLog>
