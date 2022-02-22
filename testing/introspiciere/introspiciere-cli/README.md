@@ -39,3 +39,10 @@ java -jar introspiciere-cli-5.0.0.0-SNAPSHOT.jar << END write \
 }
 END
 ```
+
+### Read messages
+
+```shell
+java -jar introspiciere-cli-5.0.0.0-SNAPSHOT.jar read \
+  --endpoint http://localhost:7070 --topic topic-1234 --key key1 --schema net.corda.p2p.test.KeyPairEntry
+```

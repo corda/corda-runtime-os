@@ -6,10 +6,13 @@ import com.github.kittinunf.result.Result
 import net.corda.introspiciere.domain.KafkaMessage
 
 
-class MessageReaderReq<T>(private val topic: String, private val key: String, private val schema: Class<T>) {
+class MessageReaderReq(private val topic: String, private val key: String, private val schema: String) {
+
+    constructor(topic: String, key: String, schema: Class<*>): this(topic, key, schema.canonicalName)
+
     fun request(endpoint: String): List<KafkaMessage> {
         val (_, response, result) = "$endpoint/topics/$topic/$key"
-            .httpGet(listOf("schema" to schema.canonicalName))
+            .httpGet(listOf("schema" to schema))
             .timeoutRead(180000)
             .responseObject<List<KafkaMessage>>()
 
