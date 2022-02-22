@@ -44,12 +44,10 @@ class SessionCloseProcessorSend(
                 handleInvalidStatus(sessionState)
             }
             sessionState.receivedEventsState.undeliveredMessages.any { it.payload !is SessionClose } -> {
-                //session mismatch error, ignore close messages as we only care about data messages not consumed by the client lib
                 handleUnprocessedReceivedDataEvents(sessionId, sessionState)
             }
             currentStatus == SessionStateType.CLOSING &&
                     sessionState.receivedEventsState.undeliveredMessages.none { it.payload is SessionClose } -> {
-                //session mismatch - tried to send multiple close
                 handleDuplicateCloseSent(sessionState)
             }
             else -> {
