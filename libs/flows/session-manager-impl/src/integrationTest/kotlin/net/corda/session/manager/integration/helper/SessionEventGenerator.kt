@@ -9,8 +9,9 @@ import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.identity.HoldingIdentity
 import java.nio.ByteBuffer
+import java.time.Instant
 
-fun generateInit(): SessionEvent {
+fun generateInit(instant: Instant): SessionEvent {
     val sessionInit = SessionInit.newBuilder()
         .setCpiId("cpiId")
         .setFlowKey(null)
@@ -19,26 +20,26 @@ fun generateInit(): SessionEvent {
         .setInitiatingIdentity(HoldingIdentity("Alice","group1" ))
         .setInitiatedIdentity(HoldingIdentity("Bob","group1" ))
         .build()
-    return generateSessionEvent(sessionInit)
+    return generateSessionEvent(sessionInit, instant)
 }
 
-fun generateData(): SessionEvent {
-    return generateSessionEvent(SessionData())
+fun generateData(instant: Instant): SessionEvent {
+    return generateSessionEvent(SessionData(), instant)
 }
 
-fun generateError(): SessionEvent {
-    return generateSessionEvent(SessionError(ExceptionEnvelope("error type", "error message")))
+fun generateError(instant: Instant): SessionEvent {
+    return generateSessionEvent(SessionError(ExceptionEnvelope("error type", "error message")), instant)
 }
 
-fun generateClose(): SessionEvent {
-    return generateSessionEvent(SessionClose())
+fun generateClose(instant: Instant): SessionEvent {
+    return generateSessionEvent(SessionClose(), instant)
 }
 
-fun generateSessionEvent(payload: Any): SessionEvent {
+fun generateSessionEvent(payload: Any, instant: Instant): SessionEvent {
     return SessionEvent.newBuilder()
         .setSessionId("sessionId")
         .setSequenceNum(null)
-        .setTimestamp(0)
+        .setTimestamp(instant)
         .setMessageDirection(MessageDirection.OUTBOUND)
         .setPayload(payload)
         .build()

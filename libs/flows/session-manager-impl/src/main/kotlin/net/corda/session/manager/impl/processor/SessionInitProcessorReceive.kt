@@ -45,7 +45,9 @@ class SessionInitProcessorReceive(
         val seqNum = sessionEvent.sequenceNum
         val newSessionState = SessionState.newBuilder()
             .setSessionId(sessionId)
-            .setSessionStartTime(instant.toEpochMilli())
+            .setSessionStartTime(instant)
+            .setLastReceivedMessageTime(instant)
+            .setLastSentMessageTime(instant)
             .setIsInitiator(false)
             .setCounterpartyIdentity(sessionInit.initiatingIdentity)
             .setReceivedEventsState(SessionProcessState(seqNum, mutableListOf(sessionEvent)))

@@ -15,7 +15,6 @@ import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.identity.HoldingIdentity
-import net.corda.data.packaging.CPIIdentifier
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
@@ -91,7 +90,7 @@ class FlowMapperServiceIntegrationTest {
         val sessionInitEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
                 SessionEvent(
-                    MessageDirection.OUTBOUND, currentTimeMillis(), testId, 1, SessionInit(
+                    MessageDirection.OUTBOUND, Instant.now(), testId, 1, SessionInit(
                         testId, testId, flowKey, identity,
                         identity, null
                     )
@@ -113,7 +112,7 @@ class FlowMapperServiceIntegrationTest {
         //send data back
         val sessionDataEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
-                SessionEvent(MessageDirection.INBOUND, currentTimeMillis(), testId, 2, SessionData())
+                SessionEvent(MessageDirection.INBOUND, Instant.now(), testId, 2, SessionData())
             )
         )
         publisher.publish(listOf(sessionDataEvent))
@@ -190,7 +189,7 @@ class FlowMapperServiceIntegrationTest {
         //send data, no state
         val sessionDataEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
-                SessionEvent(MessageDirection.OUTBOUND, currentTimeMillis(), testId, 1, SessionData())
+                SessionEvent(MessageDirection.OUTBOUND, Instant.now(), testId, 1, SessionData())
             )
         )
         publisher.publish(listOf(sessionDataEvent))
