@@ -95,16 +95,14 @@ class VirtualNodeDbFactory(private val dbAdmin: DbAdmin,
      */
     private fun createClusterConnection(dbType: VirtualNodeDbType, holdingIdentityId: String, dbPrivilege: DbPrivilege): DbConnection {
         with (dbType) {
-            val user = dbType.getUserName(dbPrivilege, holdingIdentityId)
+            val user = getUserName(dbPrivilege, holdingIdentityId)
             val password = UUID.randomUUID().toString().toLowerCase()
             val config = createDbConfig(smartConfigFactory, user, password, jdbcUrl = dbAdmin.createJdbcUrl(adminJdbcUrl, getSchemaName(holdingIdentityId)))
             return DbConnection(
                 getConnectionName(holdingIdentityId),
                 dbPrivilege,
                 config,
-                getConnectionDescription(dbPrivilege, holdingIdentityId),
-                user,
-                password
+                getConnectionDescription(dbPrivilege, holdingIdentityId)
             )
         }
     }

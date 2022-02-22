@@ -29,20 +29,6 @@ enum class VirtualNodeDbType(private val infix: String, val dbChangeFiles: List<
     fun getSchemaName(holdingIdentityId: String) = "${DbSchema.VNODE}_${infix}_$holdingIdentityId".toLowerCase()
 
     /**
-     * Returns DB user for DDL operations
-     * @param holdingIdentityId Holding identity ID (short hash)
-     * @return DB user for DDL operations
-     */
-    fun getDdlUserName(holdingIdentityId: String) = "vnode_${infix}_${holdingIdentityId}_ddl".toLowerCase()
-
-    /**
-     * Returns DB user for DML operations
-     * @param holdingIdentityId Holding identity ID (short hash)
-     * @return DB user for DML operations
-     */
-    fun getDmlUserName(holdingIdentityId: String) = "vnode_${infix}_${holdingIdentityId}_dml".toLowerCase()
-
-    /**
      * Returns DB user for given DB privilege
      * @param dbPrivilege DB privilege
      * @param holdingIdentityId Holding identity ID (short hash)
@@ -50,8 +36,8 @@ enum class VirtualNodeDbType(private val infix: String, val dbChangeFiles: List<
      */
     fun getUserName(dbPrivilege: DbPrivilege, holdingIdentityId: String) =
         when (dbPrivilege) {
-            DDL -> getDdlUserName(holdingIdentityId)
-            DML -> getDmlUserName(holdingIdentityId)
+            DDL -> "vnode_${infix}_${holdingIdentityId}_ddl".toLowerCase()
+            DML -> "vnode_${infix}_${holdingIdentityId}_dml".toLowerCase()
         }
 
     /**
@@ -62,20 +48,6 @@ enum class VirtualNodeDbType(private val infix: String, val dbChangeFiles: List<
     fun getConnectionName(holdingIdentityId: String) = "vnode_${infix}_$holdingIdentityId".toLowerCase()
 
     /**
-     * Returns DDL DB connection description
-     * @param identity Member's identity (X500 name)
-     * @return DDL DB connection description
-     */
-    fun getDdlConnectionDescription(identity: String) = "$infix DDL connection for $identity"
-
-    /**
-     * Returns DML DB connection description
-     * @param identity Member's identity (X500 name)
-     * @return DML DB connection description
-     */
-    fun getDmlConnectionDescription(identity: String) = "$infix DML connection for $identity"
-
-    /**
      * Returns DB connection description for given privilege
      * @param dbPrivilege DB privilege
      * @param identity Member's identity (X500 name)
@@ -83,7 +55,7 @@ enum class VirtualNodeDbType(private val infix: String, val dbChangeFiles: List<
      */
     fun getConnectionDescription(dbPrivilege: DbPrivilege, identity: String) =
         when (dbPrivilege) {
-            DDL -> getDdlConnectionDescription(identity)
-            DML -> getDmlConnectionDescription(identity)
+            DDL -> "$infix DDL connection for $identity"
+            DML -> "$infix DML connection for $identity"
         }
 }

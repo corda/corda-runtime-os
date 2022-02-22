@@ -71,8 +71,6 @@ internal class VirtualNodeWriterProcessor(
         }
         virtualNodeEntityRepository.putHoldingIdentity(holdingId)
 
-        // TODO CPI exists?
-
         // Insert VNode Instance
         virtualNodeEntityRepository.putVirtualNode(holdingId, cpiMetadata.id)
 
@@ -113,7 +111,7 @@ internal class VirtualNodeWriterProcessor(
     }
 
     private fun VirtualNodeCreationRequest.validationError(): String? {
-        if (!vaultDdlConnection.isNullOrBlank() && !vaultDmlConnection.isNullOrBlank()) {
+        if (!vaultDdlConnection.isNullOrBlank() && vaultDmlConnection.isNullOrBlank()) {
             return "If Vault DDL connection is provided, Vault DML connection needs to be provided as well."
         }
 

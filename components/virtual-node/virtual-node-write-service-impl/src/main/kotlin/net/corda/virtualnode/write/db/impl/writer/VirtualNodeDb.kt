@@ -2,6 +2,7 @@ package net.corda.virtualnode.write.db.impl.writer
 
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
+import net.corda.db.connection.manager.DBConfigurationException
 import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionsRepository
 import net.corda.db.core.DbPrivilege
@@ -22,9 +23,11 @@ class VirtualNodeDb(
      * Creates DB schema and user
      */
     fun createSchemasAndUsers() {
-        dbConnections.forEach { (privilege, connection) ->
-            connection?.user?.let { user ->
-                connection.password?.let { password ->
+        if (isClusterDb) {
+            dbConnections.forEach { (privilege, connection) ->
+                connection?.let {
+                    val user= connection.getUser() ?: throw DBConfigurationException("DB user not known for connection ${connection.description}")
+                    val password = connection.getPassword() ?: throw DBConfigurationException("DB password not known for connection ${connection.description}")
                     dbAdmin.createDbAndUser(dbType.getSchemaName(holdingIdentityId), user, password, adminJdbcUrl, privilege)
                 }
             }
