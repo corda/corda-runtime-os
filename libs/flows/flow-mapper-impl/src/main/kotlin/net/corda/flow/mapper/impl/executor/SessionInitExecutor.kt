@@ -40,8 +40,6 @@ class SessionInitExecutor(
     }
 
     private fun processSessionInit(sessionEvent: SessionEvent, sessionInit: SessionInit): FlowMapperResult {
-        sessionEvent.sessionId = toggleSessionId(sessionEvent.sessionId)
-
         val (flowKey, outputRecordKey, outputRecordValue) =
             getSessionInitOutputs(
                 messageDirection,
@@ -75,6 +73,7 @@ class SessionInitExecutor(
             val tmpFLowEventKey = sessionInit.flowKey
             sessionInit.flowKey = null
             sessionEvent.payload = sessionInit
+            sessionEvent.sessionId = toggleSessionId(sessionEvent.sessionId)
 
             SessionInitOutputs(
                 tmpFLowEventKey,
