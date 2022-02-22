@@ -20,6 +20,7 @@ class DbAdminImpl @Activate constructor(
         private val log = contextLogger()
     }
 
+    // TODO Remove method below
     override fun createDbAndUser(
         persistenceUnitName: String,
         schemaName: String,
@@ -60,4 +61,42 @@ class DbAdminImpl @Activate constructor(
             "DbAdmin"
         )
     }
+
+    override fun createDbAndUser(
+        schemaName: String,
+        user: String,
+        password: String,
+        jdbcUrl: String,
+        privilege: DbPrivilege) {
+        // NOTE - This is currently Postgres specific and we will need to provide alternative implementations
+        //  for other DBs. So we may need to wrap this in a factory.
+        log.info("Creating $schemaName $privilege User: $user")
+        val permissions = if (privilege == DbPrivilege.DML) {
+            "ALTER DEFAULT PRIVILEGES IN SCHEMA $schemaName GRANT SELECT, UPDATE, INSERT, DELETE ON TABLES"
+        } else {
+            "GRANT ALL ON SCHEMA $schemaName"
+        }
+        val sql = """
+            CREATE SCHEMA IF NOT EXISTS $schemaName;
+            DO
+            $$
+            BEGIN
+              IF NOT EXISTS (SELECT * FROM pg_user WHERE USENAME = '$user') THEN 
+                 CREATE USER $user WITH PASSWORD '$password';
+              ELSE
+                 ALTER USER $user WITH PASSWORD '$password';
+              END IF;
+            END
+            $$;
+            
+            GRANT USAGE ON SCHEMA $schemaName to $user;
+            $permissions TO $user;
+            """.trimIndent()
+        dbConnectionsRepository.clusterDataSource.connection.use {
+            it.createStatement().execute(sql)
+            it.commit()
+        }
+    }
+
+    override fun createJdbcUrl(jdbcUrl: String, schemaName: String) = "$jdbcUrl?currentSchema=$schemaName"
 }

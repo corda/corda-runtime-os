@@ -22,6 +22,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
 
@@ -35,11 +36,15 @@ class VirtualNodeWriterProcessorTests {
         )
         VirtualNodeInfo(
             holdingIdentity.toAvro(),
-            CPIIdentifier("dummy_name", "dummy_version", secureHash)
-        )
+            CPIIdentifier("dummy_name", "dummy_version", secureHash),
+            UUID.randomUUID().toString(), UUID.randomUUID().toString(), UUID.randomUUID().toString(), UUID.randomUUID().toString(),
+            null
+            )
     }
     private val vnodeCreationReq =
-        VirtualNodeCreationRequest(vnodeInfo.holdingIdentity.x500Name, "dummy_cpi_id_short_hash")
+        VirtualNodeCreationRequest(vnodeInfo.holdingIdentity.x500Name, "dummy_cpi_id_short_hash",
+            "dummy_vault_ddl_config", "dummy_vault_dml_config",
+            "dummy_crypto_ddl_config", "dummy_crypto_dml_config", "update_actor")
 
     private val publisherError = CordaMessageAPIIntermittentException("Error.")
 
@@ -71,7 +76,7 @@ class VirtualNodeWriterProcessorTests {
         val expectedRecord = Record(VIRTUAL_NODE_INFO_TOPIC, vnodeInfo.holdingIdentity, vnodeInfo)
 
         val publisher = getPublisher()
-        val processor = VirtualNodeWriterProcessor(publisher, VirtualNodeEntityRepository(mock()))
+        val processor = VirtualNodeWriterProcessor(publisher, VirtualNodeEntityRepository(mock()), mock())
         processRequest(processor, vnodeCreationReq)
 
         verify(publisher).publish(listOf(expectedRecord))
@@ -90,7 +95,7 @@ class VirtualNodeWriterProcessorTests {
             holdingIdentity.id
         )
 
-        val processor = VirtualNodeWriterProcessor(getPublisher(), VirtualNodeEntityRepository(mock()))
+        val processor = VirtualNodeWriterProcessor(getPublisher(), VirtualNodeEntityRepository(mock()), mock())
         val resp = processRequest(processor, vnodeCreationReq)
 
         assertEquals(expectedResp, resp)
@@ -115,7 +120,7 @@ class VirtualNodeWriterProcessorTests {
             holdingIdentity.id
         )
 
-        val processor = VirtualNodeWriterProcessor(getErroringPublisher(), VirtualNodeEntityRepository(mock()))
+        val processor = VirtualNodeWriterProcessor(getErroringPublisher(), VirtualNodeEntityRepository(mock()), mock())
         val resp = processRequest(processor, vnodeCreationReq)
 
         assertEquals(expectedResp, resp)
@@ -134,7 +139,7 @@ class VirtualNodeWriterProcessorTests {
         val entityRepository = mock<VirtualNodeEntityRepository>().apply {
             whenever(getCPIMetadata(any())).thenReturn(null)
         }
-        val processor = VirtualNodeWriterProcessor(getPublisher(), entityRepository)
+        val processor = VirtualNodeWriterProcessor(getPublisher(), entityRepository, mock())
         val resp = processRequest(processor, vnodeCreationReq)
 
         assertEquals(expectedResp, resp)
@@ -151,7 +156,7 @@ class VirtualNodeWriterProcessorTests {
         val entityRepository = mock<VirtualNodeEntityRepository>().apply {
             whenever(getHoldingIdentity(any())).thenReturn(mock())
         }
-        val processor = VirtualNodeWriterProcessor(getPublisher(), entityRepository)
+        val processor = VirtualNodeWriterProcessor(getPublisher(), entityRepository, mock())
         val resp = processRequest(processor, vnodeCreationReq)
 
         assertEquals(expectedResp, resp)

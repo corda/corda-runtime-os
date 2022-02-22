@@ -6,6 +6,7 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus.ERROR
 import net.corda.lifecycle.LifecycleStatus.UP
 import net.corda.schema.configuration.ConfigKeys.BOOTSTRAP_SERVERS
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriterFactory
@@ -25,9 +26,11 @@ internal class VirtualNodeWriteConfigHandler(
      *  be created or started.
      */
     override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
-        val rpcConfig = config[RPC_CONFIG] ?: return
+        // TODO
+        // val msgConfig = config[MESSAGING_CONFIG] ?: return
+        val msgConfig = config[RPC_CONFIG] ?: return
 
-        if (rpcConfig.hasPath(BOOTSTRAP_SERVERS)) {
+        if (msgConfig.hasPath(BOOTSTRAP_SERVERS)) {
             if (eventHandler.virtualNodeWriter != null) throw VirtualNodeWriteServiceException(
                 "An attempt was made to initialise the virtual node writer twice."
             )
@@ -35,7 +38,7 @@ internal class VirtualNodeWriteConfigHandler(
             try {
                 eventHandler.virtualNodeWriter = virtualNodeWriterFactory
                     // TODO - Set instance ID correctly.
-                    .create(rpcConfig, 0)
+                    .create(msgConfig, 0)
                     .apply { start() }
                 coordinator.updateStatus(UP)
             } catch (e: Exception) {

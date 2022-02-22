@@ -1,10 +1,16 @@
 package net.corda.virtualnode.write.db.impl.writer
 
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.db.core.DbPrivilege
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.virtualnode.datamodel.HoldingIdentityEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntity
+import net.corda.libs.virtualnode.datamodel.VirtualNodeEntityKey
+import net.corda.orm.utils.transaction
 import net.corda.packaging.CPI
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
+import java.util.*
 
 /** Reads and writes CPIs, holding identities and virtual nodes to and from the cluster database. */
 internal class VirtualNodeEntityRepository(private val dbConnectionManager: DbConnectionManager) {
@@ -17,23 +23,70 @@ internal class VirtualNodeEntityRepository(private val dbConnectionManager: DbCo
         return CPIMetadata(cpiId, "dummy_cpi_id_short_hash", "dummy_mgm_group_id")
     }
 
-    /** Null-returning stub for reading a holding identity from the database. */
-    @Suppress("Unused_parameter")
+    /**
+     * Reads a holding identity from the database.
+     * @param holdingIdShortHash Holding identity ID (short hash)
+     * @return Holding identity for a given ID (short hash) or null if not found
+     */
     internal fun getHoldingIdentity(holdingIdShortHash: String): HoldingIdentity? {
-        // TODO - Use `dbConnectionManager` to read from DB.
-        return null
+        return dbConnectionManager.clusterDbEntityManagerFactory.createEntityManager()
+            .transaction { entityManager ->
+                val hidEntity = entityManager.find(HoldingIdentityEntity::class.java, holdingIdShortHash) ?: return null
+                HoldingIdentity(hidEntity.x500Name, hidEntity.mgmGroupId)
+            }
     }
 
-    /** No-op stub for writing a holding identity to the database. */
-    @Suppress("Unused_parameter")
-    internal fun putHoldingIdentity(x500Name: String, mgmGroupId: String) {
-        // TODO - Use `dbConnectionManager` to write to DB.
+    /**
+     * Writes a holding identity to the database.
+     * @param holdingIdentity Holding identity
+     * @param vaultDdlConnectionId Vault DDL connection's ID
+     * @param vaultDmlConnectionId Vault DML connection's ID
+     * @param cryptoDdlConnectionId Crypto DDL connection's ID
+     * @param cryptoDmlConnectionId Crypto DML connection's ID
+     */
+    internal fun putHoldingIdentity(holdingIdentity: HoldingIdentity) {
+        dbConnectionManager.clusterDbEntityManagerFactory.createEntityManager()
+            .transaction {
+                val entity = it.find(HoldingIdentityEntity::class.java, holdingIdentity.id)?.apply {
+                    update(holdingIdentity.vaultDdlConnectionId,
+                        holdingIdentity.vaultDmlConnectionId,
+                        holdingIdentity.cryptoDdlConnectionId,
+                        holdingIdentity.cryptoDmlConnectionId)
+                } ?: HoldingIdentityEntity(
+                    holdingIdentity.id,
+                    holdingIdentity.hash,
+                    holdingIdentity.x500Name,
+                    holdingIdentity.groupId,
+                    holdingIdentity.vaultDdlConnectionId,
+                    holdingIdentity.vaultDmlConnectionId,
+                    holdingIdentity.cryptoDdlConnectionId,
+                    holdingIdentity.cryptoDmlConnectionId,
+                    null
+                )
+                it.persist(entity)
+            }
     }
 
-    /** No-op stub for writing a virtual node to the database. */
+    /**
+     * Writes a virtual node to the database.
+     * @param holdingId Holding identity
+     * @param cpiId CPI identifier
+     */
     @Suppress("Unused_parameter")
     internal fun putVirtualNode(holdingId: HoldingIdentity, cpiId: CPI.Identifier) {
-        // TODO - Use `dbConnectionManager` to store entity in the database. Also create supporting databases.
-        VirtualNodeEntity(holdingId.id, cpiId.name, cpiId.version, cpiId.signerSummaryHash.toString())
+        dbConnectionManager.clusterDbEntityManagerFactory.createEntityManager()
+            .transaction {
+                val key = VirtualNodeEntityKey(holdingId.id, cpiId.name, cpiId.version, cpiId.signerSummaryHash.toString())
+                it.find(VirtualNodeEntity::class.java, key) ?:
+                    it.persist(VirtualNodeEntity(holdingId.id, cpiId.name, cpiId.version, cpiId.signerSummaryHash.toString()))
+            }
     }
+
+    /**
+     * Writes a virtual node connection to the database.
+     * @param name Connection's name
+     */
+    @Suppress("Unused_parameter")
+    internal fun putVirtualNodeConnection(name: String, dbPrivilege: DbPrivilege, config: SmartConfig, description: String?, updateActor: String) =
+        dbConnectionManager.putConnection(name, dbPrivilege, config, description, updateActor)
 }

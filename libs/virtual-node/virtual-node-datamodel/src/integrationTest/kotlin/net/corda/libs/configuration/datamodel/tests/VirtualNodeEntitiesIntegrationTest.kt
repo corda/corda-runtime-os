@@ -14,7 +14,6 @@ import net.corda.orm.utils.transaction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import java.util.UUID
 import javax.persistence.EntityManagerFactory
 import kotlin.random.Random
 
@@ -57,7 +56,7 @@ class VirtualNodeEntitiesIntegrationTest {
     @Test
     fun `can persist and read back Holding Identity entity`() {
         val holdingIdentity = HoldingIdentityEntity("0123456789AB", "a=b", "OU=LLC, O=Bob, L=Dublin, C=IE",
-            "${random.nextInt()}", null, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null)
+            "${random.nextInt()}", null, null, null, null, null)
 
         entityManagerFactory.createEntityManager().transaction { em ->
             em.persist(holdingIdentity)

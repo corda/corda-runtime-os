@@ -35,4 +35,12 @@ interface EntityManagerFactoryCache {
      * @throws [DBConfigurationException] if connection details for the requested DB/Privilege does not exist.
      */
     fun getOrCreate(name: String, privilege: DbPrivilege, entitiesSet: JpaEntitiesSet): EntityManagerFactory
+
+    /**
+     * Delete the [EntityManagerFactory] related to the given [name] and [privilege] from cache.
+     *
+     * @param name Name of the DB.
+     * @param privilege [DbPrivilege] required (DML or DDL).
+     */
+    fun delete(name: String, privilege: DbPrivilege)
 }

@@ -8,8 +8,10 @@ import net.corda.libs.configuration.SmartConfigFactory
  */
 interface DbAdmin {
 
+    // TODO Remove method below
+
     /**
-     * Create "logical" DB (Schema) with [name] for [user] and the given [privilege]
+     * Create "logical" DB (Schema) with [schemaName] for [user] and the given [privilege]
      */
     @Suppress("LongParameterList")
     fun createDbAndUser(
@@ -21,4 +23,18 @@ interface DbAdmin {
         privilege: DbPrivilege,
         configFactory: SmartConfigFactory
     )
+
+    /**
+     * Create "logical" DB (Schema) with [schemaName] for [user] and the given [privilege]
+     */
+    @Suppress("LongParameterList")
+    fun createDbAndUser(
+        schemaName: String,
+        user: String,
+        password: String,
+        jdbcUrl: String,
+        privilege: DbPrivilege,
+    )
+
+    fun createJdbcUrl(jdbcUrl: String, schemaName: String): String
 }

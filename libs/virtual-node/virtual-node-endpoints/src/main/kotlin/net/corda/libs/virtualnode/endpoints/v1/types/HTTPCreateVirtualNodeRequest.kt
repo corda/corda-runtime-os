@@ -8,6 +8,9 @@ package net.corda.libs.virtualnode.endpoints.v1.types
  */
 data class HTTPCreateVirtualNodeRequest(
     val x500Name: String,
-    val cpiIdHash: String
-    // TODO - Add optional crypto DB and vault DB connection strings.
+    val cpiIdHash: String,
+    val vaultDdlConnection: String?,
+    val vaultDmlConnection: String?,
+    val cryptoDdlConnection: String?,
+    val cryptoDmlConnection: String?
 )

@@ -2,6 +2,7 @@ package net.corda.db.connection.manager
 
 import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.SmartConfig
+import java.util.*
 import javax.sql.DataSource
 
 interface DbConnectionsRepository {
@@ -20,12 +21,13 @@ interface DbConnectionsRepository {
      * @param config SmartConfig object to use
      * @param description
      * @param updateActor actor on whose behalf the update is on
+     * @return ID of persisted DB connection
      */
     fun put(name: String,
             privilege: DbPrivilege,
             config: SmartConfig,
             description: String?,
-            updateActor: String)
+            updateActor: String): UUID
 
     /**
      * Get DB connection for given [name].
@@ -43,4 +45,9 @@ interface DbConnectionsRepository {
      * @throws [DBConfigurationException] if the cluster DB cannot be connected to.
      */
     val clusterDataSource: DataSource
+
+    /**
+     * Get the main cluster DB configuration.
+     */
+    val clusterConfig: SmartConfig
 }

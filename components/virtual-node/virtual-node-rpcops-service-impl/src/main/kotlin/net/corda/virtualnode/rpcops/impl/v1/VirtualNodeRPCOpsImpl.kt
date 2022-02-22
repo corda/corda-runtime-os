@@ -5,6 +5,7 @@ import net.corda.data.virtualnode.VirtualNodeCreationResponse
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.InvalidInputDataException
+import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRPCOps
 import net.corda.libs.virtualnode.endpoints.v1.types.CPIIdentifier
@@ -67,9 +68,10 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
     }
 
     override fun createVirtualNode(request: HTTPCreateVirtualNodeRequest): HTTPCreateVirtualNodeResponse {
-        // TODO - Support for provided DB connection (rather than having it auto-generated).
-        val rpcRequest = VirtualNodeCreationRequest(request.x500Name, request.cpiIdHash)
-        validateX500Name(rpcRequest.x500Name)
+        validateX500Name(request.x500Name)
+
+        val actor = CURRENT_RPC_CONTEXT.get().principal
+        val rpcRequest = with (request) { VirtualNodeCreationRequest(x500Name, cpiIdHash, vaultDdlConnection, vaultDmlConnection, cryptoDdlConnection, cryptoDmlConnection, actor) }
         val resp = sendRequest(rpcRequest)
 
         return if (resp.success) {

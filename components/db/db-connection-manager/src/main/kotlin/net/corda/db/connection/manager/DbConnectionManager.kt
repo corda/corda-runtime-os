@@ -5,6 +5,7 @@ import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.orm.JpaEntitiesSet
+import java.util.UUID
 import javax.persistence.EntityManagerFactory
 
 /**
@@ -67,13 +68,14 @@ interface DbConnectionManager : Lifecycle {
      *      needed to create a [javax.sql.DataSource] from [DataSourceFactory].
      * @param description (optional)
      * @param name of the actor responsible for the insert or update.
+     * @return ID of persisted DB connection
      */
     fun putConnection(
         name: String,
         privilege: DbPrivilege,
         config: SmartConfig,
         description: String?,
-        updateActor: String)
+        updateActor: String): UUID
 
     /**
      * Return the [EntityManagerFactory] object for the cluster DB.

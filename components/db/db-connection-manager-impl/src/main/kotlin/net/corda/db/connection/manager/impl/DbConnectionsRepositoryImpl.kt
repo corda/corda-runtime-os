@@ -13,6 +13,7 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.libs.configuration.datamodel.findDbConnectionByNameAndPrivilege
+import net.corda.libs.virtualnode.datamodel.VirtualNodeEntities
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.utils.transaction
@@ -55,12 +56,13 @@ class DbConnectionsRepositoryImpl(
     }
 
     private lateinit var lateInitialisedClusterDataSource: DataSource
+    private lateinit var config: SmartConfig
     private lateinit var configFactory: SmartConfigFactory
     private val dbConnectionsEntityManagerFactory: EntityManagerFactory by lazy {
         // special case EMF for fetching other DB connections
         entityManagerFactoryFactory.create(
             "DB Connections",
-            ConfigurationEntities.classes.toList(),
+            ConfigurationEntities.classes.toList() + VirtualNodeEntities.classes.toList(),
             DbEntityManagerConfiguration(lateInitialisedClusterDataSource)
             )
     }
@@ -72,6 +74,13 @@ class DbConnectionsRepositoryImpl(
             return lateInitialisedClusterDataSource
         }
 
+    override val clusterConfig: SmartConfig
+        get() {
+            if(!this::config.isInitialized)
+                throw DBConfigurationException("Cluster DB must be initialised.")
+            return config
+        }
+
     /**
      * Initialise the [DbConnectionsRepositoryImpl] with the given Cluster DB config.
      *
@@ -79,6 +88,7 @@ class DbConnectionsRepositoryImpl(
      */
     override fun initialise(config: SmartConfig) {
         // configure connection to cluster DB and try/retry to connect
+        this.config = config
         configFactory = config.factory
         lateInitialisedClusterDataSource = dataSourceFactory.createFromConfig(config)
 
@@ -109,9 +119,9 @@ class DbConnectionsRepositoryImpl(
         privilege: DbPrivilege,
         config: SmartConfig,
         description: String?,
-        updateActor: String) {
+        updateActor: String): UUID {
         logger.debug("Saving $privilege DB connection for $name: ${config.root().render()}")
-        dbConnectionsEntityManagerFactory.transaction {
+        return dbConnectionsEntityManagerFactory.transaction {
             val configAsString = config.root().render(ConfigRenderOptions.concise())
             val existingConfig = it.findDbConnectionByNameAndPrivilege(name, privilege)?.apply {
                 update(configAsString, description, updateActor)
@@ -126,6 +136,7 @@ class DbConnectionsRepositoryImpl(
             )
             it.persist(existingConfig)
             it.flush()
+            existingConfig.id
         }
     }
 

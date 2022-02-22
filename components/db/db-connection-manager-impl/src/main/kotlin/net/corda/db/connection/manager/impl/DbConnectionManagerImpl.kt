@@ -12,6 +12,7 @@ import net.corda.orm.JpaEntitiesSet
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.*
 import javax.persistence.EntityManagerFactory
 
 @Component(service = [DbConnectionManager::class])
@@ -39,8 +40,10 @@ class DbConnectionManagerImpl @Activate constructor(
         privilege: DbPrivilege,
         config: SmartConfig,
         description: String?,
-        updateActor: String) {
-        dbConnectionsRepository.put(name, privilege, config, description, updateActor)
+        updateActor: String): UUID {
+        val connectionId = dbConnectionsRepository.put(name, privilege, config, description, updateActor)
+        cache.delete(name, privilege)
+        return connectionId
     }
 
     override val clusterDbEntityManagerFactory: EntityManagerFactory

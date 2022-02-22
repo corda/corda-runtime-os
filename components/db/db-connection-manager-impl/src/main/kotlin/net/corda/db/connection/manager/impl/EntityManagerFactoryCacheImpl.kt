@@ -60,6 +60,10 @@ class EntityManagerFactoryCacheImpl @Activate constructor(
         }
     }
 
+    override fun delete(name: String, privilege: DbPrivilege) {
+        cache.remove(Pair(name, privilege))
+    }
+
     private fun createManagerFactory(name: String, dataSource: DataSource): EntityManagerFactory {
         return entityManagerFactoryFactory.create(
             name,
