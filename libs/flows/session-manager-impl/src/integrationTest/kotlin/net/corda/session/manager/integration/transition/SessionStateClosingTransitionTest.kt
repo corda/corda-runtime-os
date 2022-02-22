@@ -17,14 +17,14 @@ class SessionStateClosingTransitionTest {
 
     private val sessionManager = SessionManagerImpl()
     private val instant = Instant.now()
-    //TODO - this should be an error
+
     @Test
     fun `Send duplicate session init when in state closing`() {
         val sessionState = buildClosingState(true)
 
         val sessionEvent = generateMessage(SessionMessageType.INIT, instant)
         val outputState = sessionManager.processMessageToSend(sessionState, sessionState, sessionEvent, instant)
-        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CLOSING)
+        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.ERROR)
     }
 
     @Test

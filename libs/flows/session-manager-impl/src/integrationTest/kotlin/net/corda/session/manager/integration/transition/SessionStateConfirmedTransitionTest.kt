@@ -17,14 +17,13 @@ class SessionStateConfirmedTransitionTest {
     private val sessionManager = SessionManagerImpl()
     private val instant = Instant.now()
 
-    //TODO - this should be an error
     @Test
     fun `Send session init when in state confirmed`() {
         val sessionState = buildConfirmedState()
 
         val sessionEvent = generateMessage(SessionMessageType.INIT, instant)
         val outputState = sessionManager.processMessageToSend(sessionState, sessionState, sessionEvent, instant)
-        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CONFIRMED)
+        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.ERROR)
     }
 
     @Test
