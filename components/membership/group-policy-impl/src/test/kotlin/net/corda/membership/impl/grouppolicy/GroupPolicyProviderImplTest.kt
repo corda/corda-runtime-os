@@ -11,7 +11,6 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.GroupPolicy
 import net.corda.membership.impl.grouppolicy.factory.IllegalGroupPolicyFormat
 import net.corda.packaging.CPI
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.membership.identity.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -31,7 +30,6 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import java.lang.IllegalStateException
 
 /**
  * Unit tests for [GroupPolicyProviderImpl]
