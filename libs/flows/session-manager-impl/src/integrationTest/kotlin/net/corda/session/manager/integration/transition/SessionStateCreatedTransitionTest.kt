@@ -44,7 +44,6 @@ class SessionStateCreatedTransitionTest {
         Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.ERROR)
     }
 
-    //TODO this should really be an error
     @Test
     fun `Session Initiatitor receives init back`() {
         val sessionState = buildCreatedState()
@@ -52,7 +51,7 @@ class SessionStateCreatedTransitionTest {
         val sessionEvent = generateMessage(SessionMessageType.INIT, instant, MessageDirection.INBOUND)
         sessionEvent.sequenceNum = 1
         val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant)
-        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CREATED)
+        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.ERROR)
     }
 
     @Test

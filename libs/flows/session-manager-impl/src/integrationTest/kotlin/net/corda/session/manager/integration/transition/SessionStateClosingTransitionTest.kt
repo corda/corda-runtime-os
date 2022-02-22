@@ -54,14 +54,13 @@ class SessionStateClosingTransitionTest {
         Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.WAIT_FOR_FINAL_ACK)
     }
 
-    //TODO - this should error
     @Test
     fun `Send close when initiated close`() {
         val sessionState = buildClosingState(true)
 
         val sessionEvent = generateMessage(SessionMessageType.CLOSE, instant)
         val outputState = sessionManager.processMessageToSend(sessionState, sessionState, sessionEvent, instant)
-        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.WAIT_FOR_FINAL_ACK)
+        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.ERROR)
     }
 
     @Test

@@ -64,7 +64,6 @@ class SessionStateClosedTransitionTest {
         Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.ERROR)
     }
 
-    //TODO - this should be ok
     @Test
     fun `Receive duplicate close when in state closed`() {
         val sessionState = buildClosedState()
@@ -72,7 +71,7 @@ class SessionStateClosedTransitionTest {
         val sessionEvent = generateMessage(SessionMessageType.CLOSE, instant, MessageDirection.INBOUND)
         sessionEvent.sequenceNum = 1
         val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant)
-        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.ERROR)
+        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CLOSED)
     }
 
     @Test

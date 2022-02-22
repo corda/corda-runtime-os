@@ -40,10 +40,12 @@ class SessionCloseProcessorSend(
                 logger.error(errorMessage)
                 generateErrorSessionStateFromSessionEvent(sessionId, errorMessage, "SessionCLose-StateNull", instant)
             }
-            currentStatus == SessionStateType.ERROR -> {
+            currentStatus == SessionStateType.ERROR || currentStatus == SessionStateType.WAIT_FOR_FINAL_ACK || currentStatus ==
+                    SessionStateType.CLOSED -> {
                 val errorMessage = "Tried to send SessionClose on key $key for sessionId $sessionId with status of : $currentStatus"
                 logger.error(errorMessage)
                 sessionState.apply {
+                    status = SessionStateType.ERROR
                     sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.plus(
                         generateErrorEvent(sessionId, errorMessage, "SessionClose-InvalidStatus", instant)
                     )
@@ -53,7 +55,15 @@ class SessionCloseProcessorSend(
             sessionState.receivedEventsState.undeliveredMessages.any { it.payload !is SessionClose } -> {
                 val errorMessage = "Tried to send SessionClose on key $key and sessionId $sessionId, session status is " +
                         "${sessionState.status}, however there are still received events that have not been processed. " +
-                        "Current SessionState: $sessionState. Sending error to counterparty"
+                        "Current SessionState: $sessionState."
+                logAndGenerateErrorResult(errorMessage, sessionState, sessionId, "SessionClose-SessionMismatch")
+            }
+            //session mismatch - tried to send multiple close
+            currentStatus == SessionStateType.CLOSING &&
+                    sessionState.receivedEventsState.undeliveredMessages.none { it.payload is SessionClose } -> {
+                val errorMessage = "Tried to send SessionClose on key $key and sessionId $sessionId, session status is " +
+                        "${sessionState.status}, however SessionClose has already been sent. " +
+                        "Current SessionState: $sessionState."
                 logAndGenerateErrorResult(errorMessage, sessionState, sessionId, "SessionClose-SessionMismatch")
             }
             else -> {
@@ -87,7 +97,7 @@ class SessionCloseProcessorSend(
         }
         else -> {
             val errorMessage = "Tried to send SessionClose on key $key and sessionId $sessionId, session status is " +
-                    "$currentState. Current SessionState: $sessionState. Sending error to counterparty"
+                    "$currentState. Current SessionState: $sessionState."
             logAndGenerateErrorResult(errorMessage, sessionState, sessionId, "SessionClose-InvalidStatus")
         }
     }
