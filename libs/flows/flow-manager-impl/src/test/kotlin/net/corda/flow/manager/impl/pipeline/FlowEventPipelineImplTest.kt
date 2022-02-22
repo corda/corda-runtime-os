@@ -98,7 +98,7 @@ class FlowEventPipelineImplTest {
     @ParameterizedTest(name = "runOrContinue runs a flow when {0} is returned by the FlowEventHandler with flow completion result")
     @MethodSource("runFlowContinuationConditions")
     fun `runOrContinue runs a flow when with flow completion result`(outcome: FlowContinuation) {
-        val flowResult = FlowIORequest.FlowFinished(Unit)
+        val flowResult = FlowIORequest.FlowFinished("")
         val expectedFiber = ByteBuffer.wrap(byteArrayOf())
 
         whenever(flowEventHandler.runOrContinue(inputContext)).thenReturn(outcome)
@@ -115,7 +115,7 @@ class FlowEventPipelineImplTest {
     @Test
     fun `runOrContinue runs a flow when FlowContinuation#Error is returned by the FlowEventHandler`() {
         whenever(flowEventHandler.runOrContinue(inputContext)).thenReturn(FlowContinuation.Error(IllegalStateException("I'm broken")))
-        whenever(runFlowCompletion.get()).thenReturn(FlowIORequest.FlowFinished(Unit))
+        whenever(runFlowCompletion.get()).thenReturn(FlowIORequest.FlowFinished(""))
         pipeline.runOrContinue()
         verify(flowRunner).runFlow(any(), any())
         verify(flowEventHandler).runOrContinue(inputContext)

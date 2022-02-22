@@ -5,7 +5,6 @@ import net.corda.httprpc.exception.ServiceUnavailableException
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.lifecycle.createCoordinator
 import net.corda.membership.httprpc.MemberRegistrationRpcOps
 import net.corda.membership.httprpc.MembershipRpcOpsClient
 import net.corda.membership.httprpc.types.MemberRegistrationRequest
@@ -48,11 +47,13 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
 
     override fun start() {
         logger.info("$className started.")
+        membershipRpcOpsClient.start()
         coordinator.start()
     }
 
     override fun stop() {
         logger.info("$className stopped.")
+        membershipRpcOpsClient.stop()
         coordinator.stop()
     }
 

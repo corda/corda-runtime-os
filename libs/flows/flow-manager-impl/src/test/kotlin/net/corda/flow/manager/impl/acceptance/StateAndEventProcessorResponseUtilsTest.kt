@@ -2,7 +2,7 @@ package net.corda.flow.manager.impl.acceptance
 
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.event.StartRPCFlow
+import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.identity.HoldingIdentity
@@ -20,7 +20,7 @@ class StateAndEventProcessorResponseUtilsTest {
 
     private companion object {
         val flowEventA = FlowEvent(FlowKey("a", HoldingIdentity("x500 name", "group id")), Wakeup())
-        val flowEventB = FlowEvent(FlowKey("b", HoldingIdentity("x500 name", "group id")), StartRPCFlow())
+        val flowEventB = FlowEvent(FlowKey("b", HoldingIdentity("x500 name", "group id")), StartFlow())
         const val notAFlowEvent = "not a flow event"
     }
 

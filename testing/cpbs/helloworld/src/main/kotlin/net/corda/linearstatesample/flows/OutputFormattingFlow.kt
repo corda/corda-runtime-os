@@ -3,10 +3,9 @@ package net.corda.linearstatesample.flows
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.injection.CordaInject
 import net.corda.v5.application.services.json.JsonMarshallingService
-import net.corda.v5.application.services.json.parseJson
 import net.corda.v5.base.util.contextLogger
 
-class GetNameFlow(private val json: String) : Flow<String> {
+class OutputFormattingFlow(private val result: Int) : Flow<String> {
 
     private companion object {
         val log = contextLogger()
@@ -17,11 +16,10 @@ class GetNameFlow(private val json: String) : Flow<String> {
 
     override fun call(): String {
         try {
-            return jsonMarshallingService.parseJson<ExampleMessage>(json).who!!
+            return jsonMarshallingService.formatJson(OutputMessage(result))
         } catch (e: Throwable) {
-            log.warn("could not deserialize '$json' because:'${e.message}'")
+            log.warn("could not serialise result '$result'")
+            throw e
         }
-
-        return ""
     }
 }
