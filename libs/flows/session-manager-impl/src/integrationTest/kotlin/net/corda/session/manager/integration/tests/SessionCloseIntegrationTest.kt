@@ -48,9 +48,8 @@ class SessionCloseIntegrationTest {
         alice.assertLastReceivedSeqNum(1)
     }
 
-
     @Test
-    fun `Full session send and receive with close, ack for alices close is dropped`() {
+    fun `Full session send and receive with close, alices close is dropped`() {
         val (alice, bob) = initiateNewSession(testSmartConfig)
 
         //alice send data
@@ -67,7 +66,7 @@ class SessionCloseIntegrationTest {
         alice.processNewOutgoingMessage(SessionMessageType.CLOSE, sendMessages = true)
         alice.assertStatus(SessionStateType.CLOSING)
 
-        //bob receive Close and send ack to alice
+        //alice close is dropped
         bob.dropNextInboundMessage()
         //nothing to process
         bob.processNextReceivedMessage(sendMessages = true)
@@ -120,6 +119,39 @@ class SessionCloseIntegrationTest {
 
         alice.assertAllMessagesDelivered()
         bob.assertAllMessagesDelivered()
+
+        alice.assertLastSentSeqNum(2)
+        bob.assertLastReceivedSeqNum(2)
+        bob.assertLastSentSeqNum(1)
+        alice.assertLastReceivedSeqNum(1)
+    }
+
+    @Test
+    fun `Simultaneous close, ack for bobs close is dropped`() {
+        val (alice, bob) = initiateNewSession(testSmartConfig)
+
+        //bob and alice send close
+        bob.processNewOutgoingMessage(SessionMessageType.CLOSE, sendMessages = true)
+        alice.processNewOutgoingMessage(SessionMessageType.CLOSE, sendMessages = true)
+        alice.assertStatus(SessionStateType.CLOSING)
+        bob.assertStatus(SessionStateType.CLOSING)
+
+        //bob receive Close and send ack back as well
+        bob.processNextReceivedMessage(sendMessages = true)
+        //alice receive close and send ack back
+        alice.processNextReceivedMessage(sendMessages = true)
+        bob.assertStatus(SessionStateType.WAIT_FOR_FINAL_ACK)
+        alice.assertStatus(SessionStateType.WAIT_FOR_FINAL_ACK)
+
+        //drop ack for bobs close
+        bob.dropNextInboundMessage()
+
+        //alice and bob process duplicate closes as well as acks
+        alice.processAllReceivedMessages(sendMessages = true)
+        alice.assertStatus(SessionStateType.CLOSED)
+        bob.processAllReceivedMessages(sendMessages = true)
+        bob.assertStatus(SessionStateType.WAIT_FOR_FINAL_ACK)
+        alice.processAllReceivedMessages()
 
         alice.assertLastSentSeqNum(2)
         bob.assertLastReceivedSeqNum(2)
