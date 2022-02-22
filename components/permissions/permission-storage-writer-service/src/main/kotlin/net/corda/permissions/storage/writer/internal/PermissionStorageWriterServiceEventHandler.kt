@@ -62,7 +62,6 @@ class PermissionStorageWriterServiceEventHandler(
                             coordinator,
                             setOf(BOOT_CONFIG, MESSAGING_CONFIG)
                         )
-                        coordinator.updateStatus(LifecycleStatus.UP)
                     }
                     LifecycleStatus.DOWN -> {
                         downTransition(coordinator)
@@ -75,6 +74,7 @@ class PermissionStorageWriterServiceEventHandler(
             }
             is ConfigChangedEvent -> {
                 onConfigurationUpdated(event.config.toMessagingConfig())
+                coordinator.updateStatus(LifecycleStatus.UP)
             }
             is StopEvent -> {
                 log.info("Stop event received")

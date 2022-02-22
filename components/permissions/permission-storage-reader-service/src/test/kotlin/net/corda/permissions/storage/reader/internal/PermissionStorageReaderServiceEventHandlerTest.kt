@@ -2,6 +2,7 @@ package net.corda.permissions.storage.reader.internal
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.permissions.cache.PermissionCache
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
@@ -101,6 +102,7 @@ class PermissionStorageReaderServiceEventHandlerTest {
     fun `processing an UP event from the permission cache when the service is started updates the service's status to UP`() {
         handler.processEvent(StartEvent(), coordinator)
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
+        handler.processEvent(ConfigChangedEvent(bootstrapConfig.keys, bootstrapConfig), coordinator)
         verify(coordinator).updateStatus(LifecycleStatus.UP)
     }
 

@@ -74,7 +74,6 @@ class PermissionStorageReaderServiceEventHandler(
                             coordinator,
                             setOf(BOOT_CONFIG, MESSAGING_CONFIG)
                         )
-                        coordinator.updateStatus(LifecycleStatus.UP)
                     }
                     LifecycleStatus.DOWN -> {
                         permissionStorageReader?.stop()
@@ -93,6 +92,7 @@ class PermissionStorageReaderServiceEventHandler(
             }
             is ConfigChangedEvent -> {
                 onConfigurationUpdated(event.config.toMessagingConfig())
+                coordinator.updateStatus(LifecycleStatus.UP)
             }
             is StopEvent -> {
                 log.info("Stop Event received")
