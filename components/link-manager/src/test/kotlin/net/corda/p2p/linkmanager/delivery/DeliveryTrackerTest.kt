@@ -2,8 +2,8 @@ package net.corda.p2p.linkmanager.delivery
 
 import net.corda.data.identity.HoldingIdentity
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.lifecycle.domino.logic.DominoTile
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
+import net.corda.lifecycle.domino.logic.util.StateAndEventSubscriptionDominoTile
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -20,7 +20,6 @@ import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -40,7 +39,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.*
-import java.util.concurrent.CompletableFuture
 
 class DeliveryTrackerTest {
 
@@ -60,6 +58,7 @@ class DeliveryTrackerTest {
     @AfterEach
     fun cleanUp() {
         dominoTile.close()
+        subscriptionTile.close()
         replayScheduler.close()
         loggingInterceptor.reset()
     }
@@ -68,14 +67,11 @@ class DeliveryTrackerTest {
         return listOf(Record("TOPIC", "Key", messageAndKey))
     }
 
-    private val resourcesHolder = mock<ResourcesHolder>()
-    private lateinit var createResources: ((ResourcesHolder) -> CompletableFuture<Unit>)
-    private val dominoTile = Mockito.mockConstruction(DominoTile::class.java) { mock, context ->
+    private val dominoTile = Mockito.mockConstruction(ComplexDominoTile::class.java) { mock, _ ->
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
-        @Suppress("UNCHECKED_CAST")
-        createResources = context.arguments()[2] as ((ResourcesHolder) -> CompletableFuture<Unit>)
     }
+    private val subscriptionTile = Mockito.mockConstruction(StateAndEventSubscriptionDominoTile::class.java)
 
     private val replayScheduler = Mockito.mockConstruction(ReplayScheduler::class.java)
 
@@ -137,9 +133,6 @@ class DeliveryTrackerTest {
             1,
             ::processAuthenticatedMessage
         )
-        val future = createResources(resourcesHolder)
-        assertThat(future.isDone).isTrue
-        assertThat(future.isCompletedExceptionally).isFalse()
 
         val processorCaptor = argumentCaptor<StateAndEventProcessor<String, AuthenticatedMessageDeliveryState, AppMessageMarker>>()
         val listenerCaptor = argumentCaptor<StateAndEventListener<String, AuthenticatedMessageDeliveryState>>()

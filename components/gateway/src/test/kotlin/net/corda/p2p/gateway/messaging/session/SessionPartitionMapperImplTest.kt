@@ -2,8 +2,9 @@ package net.corda.p2p.gateway.messaging.session
 
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
@@ -19,13 +20,13 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 class SessionPartitionMapperImplTest {
 
     private var processor = argumentCaptor<CompactedProcessor<String, SessionPartitions>>()
-    private val dominoTile = Mockito.mockConstruction(DominoTile::class.java)
+    private val dominoTile = Mockito.mockConstruction(ComplexDominoTile::class.java)
+    private val subscriptionTile = Mockito.mockConstruction(SubscriptionDominoTile::class.java)
 
     private val factory = mock<LifecycleCoordinatorFactory>()
     private val subscription = mock<CompactedSubscription<String, SessionPartitions>>()
@@ -39,6 +40,7 @@ class SessionPartitionMapperImplTest {
     @AfterEach
     fun cleanUp() {
         dominoTile.close()
+        subscriptionTile.close()
     }
 
     @Test
@@ -80,17 +82,6 @@ class SessionPartitionMapperImplTest {
 
         assertThatThrownBy { sessionPartitionMapper.getPartitions(sessionId) }
             .isInstanceOf(IllegalStateException::class.java)
-    }
-
-    @Test
-    fun `createResources will start the subscription and add it to the resource holder`() {
-        val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory, config, 1)
-
-        sessionPartitionMapper.createResources(resourcesHolder)
-
-        verify(subscription).start()
-        //TODOs : this will be refactored as part of CORE-3147
-        //verify(resourcesHolder).keep(subscription)
     }
 
     @Test

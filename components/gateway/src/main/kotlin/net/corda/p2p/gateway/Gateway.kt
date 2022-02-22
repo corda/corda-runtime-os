@@ -3,6 +3,7 @@ package net.corda.p2p.gateway
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -49,8 +50,9 @@ class Gateway(
     )
 
     @VisibleForTesting
-    internal val children: Collection<DominoTile> = listOf(inboundMessageHandler.dominoTile, outboundMessageProcessor.dominoTile)
-    override val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory,
+    internal val children: Collection<DominoTile> =
+        listOf(inboundMessageHandler.dominoTile, outboundMessageProcessor.dominoTile)
+    override val dominoTile = ComplexDominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory,
         dependentChildren = children, managedChildren = children)
 
     companion object {
