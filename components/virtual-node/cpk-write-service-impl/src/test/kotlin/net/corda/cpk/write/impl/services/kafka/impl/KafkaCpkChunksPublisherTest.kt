@@ -1,7 +1,7 @@
 package net.corda.cpk.write.impl.services.kafka.impl
 
 import net.corda.cpk.write.impl.services.kafka.AvroTypesTodo
-import net.corda.cpk.write.impl.services.kafka.CpkChunksWriter
+import net.corda.cpk.write.impl.services.kafka.CpkChunksPublisher
 import net.corda.cpk.write.impl.services.kafka.toAvro
 import net.corda.data.chunking.Chunk
 import net.corda.messaging.api.publisher.Publisher
@@ -15,8 +15,8 @@ import org.mockito.kotlin.whenever
 import java.security.MessageDigest
 import java.util.concurrent.CompletableFuture
 
-class KafkaCpkChunksWriterTest {
-    private lateinit var kafkaCpkChunksWriter: CpkChunksWriter
+class KafkaCpkChunksPublisherTest {
+    private lateinit var kafkaCpkChunksPublisher: CpkChunksPublisher
     private lateinit var publisher: Publisher
 
     companion object {
@@ -30,7 +30,7 @@ class KafkaCpkChunksWriterTest {
     @BeforeEach
     fun setUp() {
         publisher = mock()
-        kafkaCpkChunksWriter = KafkaCpkChunksWriter(publisher, 10.seconds)
+        kafkaCpkChunksPublisher = KafkaCpkChunksPublisher(publisher, 10.seconds)
     }
 
     @Test
@@ -39,6 +39,6 @@ class KafkaCpkChunksWriterTest {
         val cpkChunk = Chunk()
         whenever(publisher.publish(any())).thenReturn(listOf(CompletableFuture<Unit>().also { it.complete(Unit) }))
 
-        kafkaCpkChunksWriter.putAll(listOf(cpkChunkId to cpkChunk))
+        kafkaCpkChunksPublisher.putAll(listOf(cpkChunkId to cpkChunk))
     }
 }
