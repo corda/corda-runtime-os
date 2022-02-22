@@ -17,8 +17,7 @@ class SessionInitProcessorSendTest {
     fun testNonNullState() {
         val initiatingIdentity = HoldingIdentity("ALice", "group1")
         val initiatedIdentity = HoldingIdentity("Bob", "group1")
-        val sessionInitProcessor = SessionInitProcessorSend("key", SessionState(), SessionEvent(MessageDirection.OUTBOUND, System
-            .currentTimeMillis(),
+        val sessionInitProcessor = SessionInitProcessorSend("key", SessionState(), SessionEvent(MessageDirection.OUTBOUND, Instant.now(),
             "sessionId",1, SessionInit("flow", "cpiId", FlowKey(), initiatedIdentity, initiatingIdentity, null)), Instant.now())
 
         val sessionState = sessionInitProcessor.execute()
@@ -30,7 +29,7 @@ class SessionInitProcessorSendTest {
     fun testSessionInitToSend() {
         val initiatingIdentity = HoldingIdentity("ALice", "group1")
         val initiatedIdentity = HoldingIdentity("Bob", "group1")
-        val sessionInitEvent = SessionEvent(MessageDirection.OUTBOUND, System.currentTimeMillis(),
+        val sessionInitEvent = SessionEvent(MessageDirection.OUTBOUND, Instant.now(),
             "sessionId",1, SessionInit("flow", "cpiId", FlowKey(), initiatedIdentity, initiatingIdentity, null))
         val sessionInitProcessor = SessionInitProcessorSend("key", null, sessionInitEvent, Instant.now())
 

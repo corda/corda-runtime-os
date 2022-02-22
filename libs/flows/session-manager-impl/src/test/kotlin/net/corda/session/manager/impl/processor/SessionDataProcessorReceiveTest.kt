@@ -15,7 +15,7 @@ class SessionDataProcessorReceiveTest {
 
     @Test
     fun testNullState() {
-        val sessionEvent = SessionEvent(MessageDirection.INBOUND, 1, "sessionId", 1, SessionData())
+        val sessionEvent = SessionEvent(MessageDirection.INBOUND, Instant.now(), "sessionId", 1, SessionData())
         val result = SessionDataProcessorReceive("key", null, sessionEvent, Instant.now()).execute()
         assertThat(result).isNotNull
         assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
@@ -24,7 +24,7 @@ class SessionDataProcessorReceiveTest {
 
     @Test
     fun testErrorState() {
-        val sessionEvent = SessionEvent(MessageDirection.INBOUND, 1, "sessionId", 3, SessionData())
+        val sessionEvent = SessionEvent(MessageDirection.INBOUND, Instant.now(), "sessionId", 3, SessionData())
         val inputState = buildSessionState(
             SessionStateType.ERROR, 2, mutableListOf(), 0, mutableListOf()
         )
@@ -38,7 +38,7 @@ class SessionDataProcessorReceiveTest {
 
     @Test
     fun testOldSeqNum() {
-        val sessionEvent = SessionEvent(MessageDirection.INBOUND, 1, "sessionId", 2, SessionData())
+        val sessionEvent = SessionEvent(MessageDirection.INBOUND, Instant.now(), "sessionId", 2, SessionData())
         val inputState = buildSessionState(
             SessionStateType.CONFIRMED, 2, mutableListOf(), 0, mutableListOf()
         )
@@ -57,7 +57,7 @@ class SessionDataProcessorReceiveTest {
 
     @Test
     fun testValidDataMessage() {
-        val sessionEvent = SessionEvent(MessageDirection.INBOUND, 1, "sessionId", 3, SessionData())
+        val sessionEvent = SessionEvent(MessageDirection.INBOUND, Instant.now(), "sessionId", 3, SessionData())
         val inputState = buildSessionState(
             SessionStateType.CONFIRMED, 2, mutableListOf(), 0, mutableListOf()
         )
