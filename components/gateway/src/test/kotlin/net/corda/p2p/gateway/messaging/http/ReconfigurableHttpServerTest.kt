@@ -6,7 +6,7 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import org.assertj.core.api.Assertions
@@ -52,7 +52,7 @@ class ReconfigurableHttpServerTest {
     }
 
     private lateinit var configHandler: ReconfigurableHttpServer.ReconfigurableHttpServerConfigChangeHandler
-    private val dominoTile = mockConstruction(DominoTile::class.java) { _, context ->
+    private val dominoTile = mockConstruction(ComplexDominoTile::class.java) { _, context ->
         @Suppress("UNCHECKED_CAST")
         configHandler = (context.arguments()[5] as ReconfigurableHttpServer.ReconfigurableHttpServerConfigChangeHandler)
     }

@@ -19,7 +19,7 @@ class SessionEventExecutorTest {
 
     @Test
     fun `Session event executor test outbound data message and non null state`() {
-        val payload = SessionEvent(MessageDirection.OUTBOUND,1, "sessionId", 1, SessionData(null))
+        val payload = SessionEvent(MessageDirection.OUTBOUND,Instant.now(), "sessionId", 1, SessionData(null))
 
         val result = SessionEventExecutor("sessionId",  payload, FlowMapperState(), Instant.now()).execute()
         val state = result.flowMapperState
@@ -37,7 +37,7 @@ class SessionEventExecutorTest {
     @Test
     fun `Session event executor test inbound data message and non null state`() {
         val flowKey = FlowKey()
-        val payload = SessionEvent(MessageDirection.INBOUND, 1, "sessionId-INITIATED", 1, SessionData(null))
+        val payload = SessionEvent(MessageDirection.INBOUND, Instant.now(), "sessionId-INITIATED", 1, SessionData(null))
 
         val result = SessionEventExecutor(
             "sessionId-INITIATED", payload, FlowMapperState(
@@ -59,7 +59,7 @@ class SessionEventExecutorTest {
 
     @Test
     fun `Session event with null state`() {
-        val payload = SessionEvent(MessageDirection.INBOUND,1, "sessionId", 1, SessionData(null))
+        val payload = SessionEvent(MessageDirection.INBOUND, Instant.now(), "sessionId", 1, SessionData(null))
         val result = SessionEventExecutor("sessionId",  payload, null, Instant.now()).execute()
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents

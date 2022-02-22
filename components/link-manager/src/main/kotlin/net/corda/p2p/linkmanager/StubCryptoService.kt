@@ -2,8 +2,9 @@ package net.corda.p2p.linkmanager
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -18,7 +19,6 @@ import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.Signature
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.atomic.AtomicReference
 
 class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
                         subscriptionFactory: SubscriptionFactory,
@@ -33,19 +33,27 @@ class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
     private val subscriptionConfig = SubscriptionConfig("crypto-service", CRYPTO_KEYS_TOPIC, instanceId)
     private val subscription =
         subscriptionFactory.createCompactedSubscription(subscriptionConfig, keyPairEntryProcessor, configuration)
+    private val subscriptionTile = SubscriptionDominoTile(
+        lifecycleCoordinatorFactory,
+        subscription,
+        emptySet(),
+        emptySet()
+    )
 
     private val rsaSignature = Signature.getInstance(RSA_SIGNATURE_ALGO)
     private val ecdsaSignature = Signature.getInstance(ECDSA_SIGNATURE_ALGO)
 
-    private var readyFuture = AtomicReference<CompletableFuture<Unit>>()
-    override val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, ::createResources)
+    private var readyFuture = CompletableFuture<Unit>()
+    override val dominoTile = ComplexDominoTile(
+        this::class.java.simpleName,
+        lifecycleCoordinatorFactory,
+        ::createResources,
+        setOf(subscriptionTile),
+        setOf(subscriptionTile)
+    )
 
-    private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-        val future = CompletableFuture<Unit>()
-        readyFuture.set(future)
-        subscription.start()
-        resources.keep { subscription.stop() }
-        return future
+    private fun createResources(@Suppress("UNUSED_PARAMETER") resources: ResourcesHolder): CompletableFuture<Unit> {
+        return readyFuture
     }
 
     override fun signData(publicKey: PublicKey, data: ByteArray): ByteArray {
@@ -108,7 +116,7 @@ class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
                 val publicKey = keyDeserialiser.toPublicKey(keyPairEntry.publicKey.array(), keyPairEntry.keyAlgo)
                 keys[alias] = KeyPair(keyPairEntry.keyAlgo, privateKey, publicKey)
             }
-            readyFuture.get().complete(Unit)
+            readyFuture.complete(Unit)
         }
 
         override fun onNext(newRecord: Record<String, KeyPairEntry>,

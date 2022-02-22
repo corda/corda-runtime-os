@@ -1,6 +1,6 @@
 package net.corda.crypto.service
 
-import net.corda.crypto.CryptoConsts
+import net.corda.crypto.core.CryptoConsts
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.WrappedKeyPair
 import net.corda.v5.cipher.suite.WrappedPrivateKey

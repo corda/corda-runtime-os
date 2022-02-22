@@ -59,7 +59,7 @@ dependencies {
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation "net.corda:corda-application"
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
-    integrationTestRuntimeOnly project(':libs:crypto:crypto-client')
+    integrationTestRuntimeOnly project(':libs:crypto:crypto-core')
     integrationTestRuntimeOnly project(':libs:crypto:crypto-impl')
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
     integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")
