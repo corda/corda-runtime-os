@@ -21,7 +21,7 @@ class WriteCommand : BaseCommand() {
          * from production and it should be replaced by a proper way of mocking the resource. This method will only
          * override the resource once, and then will return stdin again.
          */
-        internal fun overrideStdinOnlyOnceForTesting(inputStream: InputStream) {
+        fun overrideStdinOnlyOnceForTesting(inputStream: InputStream) {
             overrideInputStream = inputStream
         }
 
