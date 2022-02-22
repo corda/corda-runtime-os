@@ -25,9 +25,7 @@ class FlowEventProcessorImplTest {
 
     private val wakeupPayload = Wakeup()
     private val flowKey = FlowKey("flow id", HoldingIdentity("x500 name", "group id"))
-    private val updatedCheckpoint = Checkpoint().apply {
-        cpiId = "cpi id set"
-    }
+    private val updatedCheckpoint = Checkpoint()
     private val outputRecords = listOf(Record(FLOW_EVENT_TOPIC, "key", "value"))
     private val updatedContext = FlowEventContext<Any>(updatedCheckpoint, FlowEvent(flowKey, wakeupPayload), wakeupPayload, outputRecords)
 

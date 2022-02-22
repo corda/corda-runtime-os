@@ -2,12 +2,13 @@ package net.corda.flow.manager.impl.acceptance.dsl
 
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.event.StartRPCFlow
+import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.manager.fiber.FlowIORequest
 import net.corda.flow.manager.impl.FlowEventProcessorImpl
-import net.corda.flow.manager.impl.handlers.events.StartRPCFlowEventHandler
+import net.corda.flow.manager.impl.acceptance.getBasicFlowStartContext
+import net.corda.flow.manager.impl.handlers.events.StartFlowEventHandler
 import net.corda.flow.manager.impl.handlers.events.WakeUpEventHandler
 import net.corda.flow.manager.impl.handlers.requests.CloseSessionsRequestHandler
 import net.corda.flow.manager.impl.handlers.requests.FlowFailedRequestHandler
@@ -25,7 +26,7 @@ import net.corda.flow.manager.impl.pipeline.factory.FlowEventPipelineFactoryImpl
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
-import java.time.Instant
+import org.mockito.kotlin.mock
 import java.util.UUID
 
 fun flowEventDSL(dsl: FlowEventDSL.() -> Unit) {
@@ -95,13 +96,9 @@ class FlowEventDSL {
     }
 
     private fun startFlow(flowId: String): Pair<MockFlowFiber, StateAndEventProcessor.Response<Checkpoint>> {
-        val startRPCFlowPayload = StartRPCFlow.newBuilder()
-            .setClientId("client id")
-            .setCpiId("cpi id")
-            .setFlowClassName("flow class name")
-            .setRpcUsername(HoldingIdentity("x500 name", "group id"))
-            .setTimestamp(Instant.now())
-            .setJsonArgs(" { \"json\": \"args\" }")
+        val startRPCFlowPayload = StartFlow.newBuilder()
+            .setStartContext(getBasicFlowStartContext())
+            .setFlowStartArgs(" { \"json\": \"args\" }")
             .build()
 
         val key = FlowKey(flowId, HoldingIdentity("x500 name", "group id"))
@@ -125,15 +122,15 @@ class FlowEventDSL {
 
 // Must be updated when new flow event handlers are added
 private val flowEventHandlers = listOf(
-    StartRPCFlowEventHandler(),
+    StartFlowEventHandler(),
     WakeUpEventHandler()
 )
 
 // Must be updated when new flow request handlers are added
 private val flowRequestHandlers = listOf(
     CloseSessionsRequestHandler(),
-    FlowFailedRequestHandler(),
-    FlowFinishedRequestHandler(),
+    FlowFailedRequestHandler(mock()),
+    FlowFinishedRequestHandler(mock()),
     ForceCheckpointRequestHandler(),
     GetFlowInfoRequestHandler(),
     ReceiveRequestHandler(),

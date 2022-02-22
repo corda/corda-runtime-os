@@ -2,7 +2,7 @@ package net.corda.flow.manager.impl.acceptance
 
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.event.StartRPCFlow
+import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.manager.fiber.FlowIORequest
@@ -12,7 +12,6 @@ import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
-import java.time.Instant
 
 class FlowEventDSLTest {
 
@@ -21,13 +20,9 @@ class FlowEventDSLTest {
         const val ANOTHER_FLOW_ID = "another flow id"
     }
 
-    private val startRPCFlowPayload = StartRPCFlow.newBuilder()
-        .setClientId("client id")
-        .setCpiId("cpi id")
-        .setFlowClassName("flow class name")
-        .setRpcUsername(HoldingIdentity("x500 name", "group id"))
-        .setTimestamp(Instant.now())
-        .setJsonArgs(" { \"json\": \"args\" }")
+    private val startRPCFlowPayload = StartFlow.newBuilder()
+        .setStartContext(getBasicFlowStartContext())
+        .setFlowStartArgs(" { \"json\": \"args\" }")
         .build()
 
     private val flowKey = FlowKey(FLOW_ID, HoldingIdentity("x500 name", "group id"))

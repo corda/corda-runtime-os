@@ -19,25 +19,25 @@ class MockFlowFiberTest {
     fun `queue and dequeue suspensions`() {
         fiber.queueSuspension(FlowIORequest.ForceCheckpoint)
         fiber.queueSuspension(FlowIORequest.WaitForSessionConfirmations)
-        fiber.queueSuspension(FlowIORequest.FlowFinished(Unit))
+        fiber.queueSuspension(FlowIORequest.FlowFinished(""))
 
         assertEquals(FlowIORequest.FlowSuspended(emptyBytes, FlowIORequest.ForceCheckpoint), fiber.dequeueSuspension())
         assertEquals(FlowIORequest.FlowSuspended(emptyBytes, FlowIORequest.WaitForSessionConfirmations), fiber.dequeueSuspension())
-        assertEquals(FlowIORequest.FlowFinished(Unit), fiber.dequeueSuspension())
+        assertEquals(FlowIORequest.FlowFinished(""), fiber.dequeueSuspension())
     }
 
     @Test
     fun `repeat queue and dequeue suspensions`() {
         fiber.repeatSuspension(FlowIORequest.ForceCheckpoint, 1)
         fiber.repeatSuspension(FlowIORequest.WaitForSessionConfirmations, 2)
-        fiber.repeatSuspension(FlowIORequest.FlowFinished(Unit), 3)
+        fiber.repeatSuspension(FlowIORequest.FlowFinished(""), 3)
 
         assertEquals(FlowIORequest.FlowSuspended(emptyBytes, FlowIORequest.ForceCheckpoint), fiber.dequeueSuspension())
         assertEquals(FlowIORequest.FlowSuspended(emptyBytes, FlowIORequest.WaitForSessionConfirmations), fiber.dequeueSuspension())
         assertEquals(FlowIORequest.FlowSuspended(emptyBytes, FlowIORequest.WaitForSessionConfirmations), fiber.dequeueSuspension())
-        assertEquals(FlowIORequest.FlowFinished(Unit), fiber.dequeueSuspension())
-        assertEquals(FlowIORequest.FlowFinished(Unit), fiber.dequeueSuspension())
-        assertEquals(FlowIORequest.FlowFinished(Unit), fiber.dequeueSuspension())
+        assertEquals(FlowIORequest.FlowFinished(""), fiber.dequeueSuspension())
+        assertEquals(FlowIORequest.FlowFinished(""), fiber.dequeueSuspension())
+        assertEquals(FlowIORequest.FlowFinished(""), fiber.dequeueSuspension())
     }
 
     @Test
