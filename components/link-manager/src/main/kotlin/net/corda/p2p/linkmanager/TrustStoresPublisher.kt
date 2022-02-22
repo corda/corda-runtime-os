@@ -6,6 +6,7 @@ import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -18,7 +19,6 @@ import net.corda.v5.base.util.contextLogger
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedDeque
-import java.util.concurrent.atomic.AtomicReference
 
 @Suppress("LongParameterList")
 internal class TrustStoresPublisher(
@@ -37,7 +37,7 @@ internal class TrustStoresPublisher(
 
     private val publishedGroups = ConcurrentHashMap<String, Set<PemCertificates>>()
     private val toPublish = ConcurrentLinkedDeque<NetworkMapListener.GroupInfo>()
-    private val ready = AtomicReference<CompletableFuture<Unit>>()
+    private val ready = CompletableFuture<Unit>()
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,
         lifecycleCoordinatorFactory,
@@ -48,6 +48,12 @@ internal class TrustStoresPublisher(
         SubscriptionConfig(CURRENT_DATA_READER_GROUP_NAME, GATEWAY_TLS_TRUSTSTORES, instanceId),
         Processor(),
         configuration,
+    )
+    private val subscriptionTile = SubscriptionDominoTile(
+        lifecycleCoordinatorFactory,
+        subscription,
+        emptyList(),
+        emptyList(),
     )
 
     override fun groupAdded(groupInfo: NetworkMapListener.GroupInfo) {
@@ -61,9 +67,11 @@ internal class TrustStoresPublisher(
         createResources = ::createResources,
         managedChildren = listOf(
             publisher.dominoTile,
+            subscriptionTile
         ),
         dependentChildren = listOf(
             publisher.dominoTile,
+            subscriptionTile
         )
     )
 
@@ -76,7 +84,7 @@ internal class TrustStoresPublisher(
                     it.value.trustedCertificates.toSet()
                 }
             )
-            ready.get()?.complete(Unit)
+            ready.complete(Unit)
             publishQueueIfPossible()
         }
 
@@ -94,17 +102,14 @@ internal class TrustStoresPublisher(
         }
     }
 
-    private fun createResources(resourcesHolder: ResourcesHolder): CompletableFuture<Unit> {
-        val complete = CompletableFuture<Unit>()
-        ready.set(complete)
-        resourcesHolder.keep(subscription)
-        subscription.start()
-
-        return complete
+    private fun createResources(
+        @Suppress("UNUSED_PARAMETER") resourcesHolder: ResourcesHolder
+    ): CompletableFuture<Unit> {
+        return ready
     }
 
     private fun publishQueueIfPossible() {
-        while (ready.get()?.isDone == true) {
+        while (ready.isDone) {
             val groupInfo = toPublish.pollFirst() ?: return
             val groupId = groupInfo.groupId
             val certificates = groupInfo.trustedCertificates

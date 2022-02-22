@@ -5,6 +5,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -16,7 +17,6 @@ import java.security.KeyStore
 import java.security.cert.CertificateFactory
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicReference
 
 internal class TrustStoresMap(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
@@ -30,13 +30,19 @@ internal class TrustStoresMap(
     companion object {
         private const val CONSUMER_GROUP_ID = "gateway_tls_truststores_reader"
     }
-    private val ready = AtomicReference<CompletableFuture<Unit>>()
+    private val ready = CompletableFuture<Unit>()
     private val subscription = subscriptionFactory.createCompactedSubscription(
         SubscriptionConfig(CONSUMER_GROUP_ID, Schemas.P2P.GATEWAY_TLS_TRUSTSTORES, instanceId),
         Processor(),
         nodeConfiguration
     )
     private val groupIdToTrustRoots = ConcurrentHashMap<String, TrustedCertificates>()
+    private val subscriptionTile = SubscriptionDominoTile(
+        lifecycleCoordinatorFactory,
+        subscription,
+        emptyList(),
+        emptyList()
+    )
 
     fun getTrustStore(groupId: String) =
         groupIdToTrustRoots[groupId]
@@ -46,7 +52,9 @@ internal class TrustStoresMap(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        createResources = ::createResources
+        createResources = ::createResources,
+        managedChildren = listOf(subscriptionTile),
+        dependentChildren = listOf(subscriptionTile),
     )
 
     class TrustedCertificates(
@@ -67,12 +75,10 @@ internal class TrustStoresMap(
         }
     }
 
-    private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-        val resourceFuture = CompletableFuture<Unit>()
-        ready.set(resourceFuture)
-        subscription.start()
-        resources.keep { subscription.stop() }
-        return resourceFuture
+    private fun createResources(
+        @Suppress("UNUSED_PARAMETER") resources: ResourcesHolder
+    ): CompletableFuture<Unit> {
+        return ready
     }
 
     private inner class Processor : CompactedProcessor<String, GatewayTruststore> {
@@ -85,7 +91,7 @@ internal class TrustStoresMap(
                     TrustedCertificates(it.value.trustedCertificates, certificateFactory)
                 }
             )
-            ready.get()?.complete(Unit)
+            ready.complete(Unit)
         }
 
         override fun onNext(

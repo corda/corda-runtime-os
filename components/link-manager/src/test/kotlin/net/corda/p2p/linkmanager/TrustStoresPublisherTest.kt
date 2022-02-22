@@ -5,6 +5,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -54,6 +55,7 @@ class TrustStoresPublisherTest {
     private val configuration = mock<SmartConfig>()
     private val instanceId = 1
     private val publisherFactory = mock<PublisherFactory>()
+    private val subscriptionDominoTile = mockConstruction(SubscriptionDominoTile::class.java)
 
     private val certificates = listOf("one", "two")
     private val groupInfo = NetworkMapListener.GroupInfo(
@@ -74,6 +76,7 @@ class TrustStoresPublisherTest {
     fun cleanUp() {
         mockDominoTile.close()
         mockPublisher.close()
+        subscriptionDominoTile.close()
     }
 
     @Nested
@@ -261,27 +264,10 @@ class TrustStoresPublisherTest {
     @Nested
     inner class CreateResourcesTests {
         @Test
-        fun `createResources start the subscription`() {
-            creteResources.get().invoke(ResourcesHolder())
-
-            verify(subscription).start()
-        }
-
-        @Test
         fun `createResources will not complete before the snapshot is ready`() {
             val future = creteResources.get().invoke(ResourcesHolder())
 
             assertThat(future.isDone).isFalse
-        }
-
-        @Test
-        fun `createResources will remember to close the subscription`() {
-            val resources = ResourcesHolder()
-
-            creteResources.get().invoke(resources)
-
-            resources.close()
-            verify(subscription).close()
         }
     }
 }

@@ -4,6 +4,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
@@ -52,11 +53,13 @@ class TrustStoresMapTest {
             KeyStore.getInstance("PKCS12")
         }.doReturn(keyStore)
     }
+    private val subscriptionDominoTile = mockConstruction(SubscriptionDominoTile::class.java)
 
     @AfterEach
     fun cleanUp() {
         mockKeyStore.close()
         mockDominoTile.close()
+        subscriptionDominoTile.close()
     }
 
     private val testObject = TrustStoresMap(
@@ -66,12 +69,6 @@ class TrustStoresMapTest {
         12,
         certificateFactory
     )
-
-    @Test
-    fun `createResources will start the subscription`() {
-        creteResources.get()?.invoke(mock())
-        verify(subscription).start()
-    }
 
     @Test
     fun `createResources will not mark as ready before getting snapshot`() {
@@ -87,17 +84,6 @@ class TrustStoresMapTest {
         processor.firstValue.onSnapshot(emptyMap())
 
         assertThat(future).isCompleted
-    }
-
-    @Test
-    fun `stop will stop the subscription`() {
-        val resources = ResourcesHolder()
-        creteResources.get()?.invoke(resources)
-        processor.firstValue.onSnapshot(emptyMap())
-
-        resources.close()
-
-        verify(subscription).stop()
     }
 
     @Test
