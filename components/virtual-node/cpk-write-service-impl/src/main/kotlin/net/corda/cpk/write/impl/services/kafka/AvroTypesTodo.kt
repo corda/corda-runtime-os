@@ -1,6 +1,5 @@
 package net.corda.cpk.write.impl.services.kafka
 
-import net.corda.cpk.write.impl.CpkChunk
 import net.corda.cpk.write.impl.CpkChunkId
 import java.nio.ByteBuffer
 
@@ -11,13 +10,6 @@ object AvroTypesTodo {
     data class CpkChunkIdAvro(
         val cpkChecksum: net.corda.data.crypto.SecureHash,
         val partNumber: Int
-    )
-
-    // Value - also add here cpkchunk id ? So that values can be identified without keys as well?
-    @Suppress("warnings")
-    data class CpkChunkAvro(
-        val cpkChunkIdAvro: CpkChunkIdAvro,
-        val bytes: ByteArray
     )
 }
 
@@ -30,12 +22,5 @@ fun net.corda.data.crypto.SecureHash.toCorda(): net.corda.v5.crypto.SecureHash =
 fun AvroTypesTodo.CpkChunkIdAvro.toCorda(): CpkChunkId =
     CpkChunkId(this.cpkChecksum.toCorda(), this.partNumber)
 
-fun AvroTypesTodo.CpkChunkAvro.toCorda(): CpkChunk =
-    CpkChunk(this.cpkChunkIdAvro.toCorda(), this.bytes)
-
 fun CpkChunkId.toAvro(): AvroTypesTodo.CpkChunkIdAvro =
     AvroTypesTodo.CpkChunkIdAvro(this.cpkChecksum.toAvro(), this.partNumber)
-
-fun ByteArray.toCpkChunkAvro(chunkId: CpkChunkId): AvroTypesTodo.CpkChunkAvro =
-    AvroTypesTodo.CpkChunkAvro(chunkId.toAvro(), this)
-

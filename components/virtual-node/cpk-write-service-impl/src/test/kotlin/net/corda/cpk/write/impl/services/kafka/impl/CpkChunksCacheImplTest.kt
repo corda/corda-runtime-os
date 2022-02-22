@@ -1,8 +1,8 @@
 package net.corda.cpk.write.impl.services.kafka.impl
 
-import net.corda.cpk.write.impl.services.kafka.types.AvroTypesTodo
-import net.corda.cpk.write.impl.services.kafka.types.toAvro
-import net.corda.cpk.write.impl.services.kafka.types.toCorda
+import net.corda.cpk.write.impl.services.kafka.AvroTypesTodo
+import net.corda.cpk.write.impl.services.kafka.toAvro
+import net.corda.data.chunking.Chunk
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -19,7 +19,7 @@ class CpkChunksCacheImplTest {
     private lateinit var subscriptionFactory: SubscriptionFactory
 
     private val subscriptionConfig = SubscriptionConfig("dummyGroupName", "dummyEventTopic")
-    private val cpkChunkAvro = AvroTypesTodo.CpkChunkAvro(mock(), byteArrayOf())
+    private val cpkChunk = Chunk()
 
     companion object {
         fun secureHash(bytes: ByteArray): net.corda.data.crypto.SecureHash {
@@ -41,15 +41,15 @@ class CpkChunksCacheImplTest {
         val cpkChecksum = secureHash("dummy".toByteArray())
         val cpkChunkIdAvro0 = AvroTypesTodo.CpkChunkIdAvro(cpkChecksum, 0)
         val cpkChunkIdAvro1 = AvroTypesTodo.CpkChunkIdAvro(cpkChecksum, 1)
-        val pair0 = cpkChunkIdAvro0 to cpkChunkAvro
-        val pair1 = cpkChunkIdAvro1 to cpkChunkAvro
+        val pair0 = cpkChunkIdAvro0 to cpkChunk
+        val pair1 = cpkChunkIdAvro1 to cpkChunk
         val currentData = mapOf(pair0, pair1)
 
         cacheSynchronizer.onSnapshot(currentData)
         assertThat(
             mapOf(
-                cpkChunkIdAvro0.toCorda() to cpkChunkIdAvro0.toCorda(),
-                cpkChunkIdAvro1.toCorda() to cpkChunkIdAvro1.toCorda()
+                cpkChunkIdAvro0 to cpkChunkIdAvro0,
+                cpkChunkIdAvro1 to cpkChunkIdAvro1
             )
         ).isEqualTo(cpkChecksumCache.cpkChunkIds)
     }
@@ -58,14 +58,14 @@ class CpkChunksCacheImplTest {
     fun `onNext adds cpk checksum if it does not already exist`() {
         val cpkChecksum = secureHash("dummy".toByteArray())
         val cpkChunkIdAvro0 = AvroTypesTodo.CpkChunkIdAvro(cpkChecksum, 0)
-        val pair0 =  cpkChunkIdAvro0 to cpkChunkAvro
+        val pair0 =  cpkChunkIdAvro0 to cpkChunk
 
         cacheSynchronizer.onNext(
             Record("dummyTopic", pair0.first, pair0.second),
             null,
             mock()
         )
-        assertThat(mapOf(cpkChunkIdAvro0.toCorda() to cpkChunkIdAvro0.toCorda())).isEqualTo(cpkChecksumCache.cpkChunkIds)
+        assertThat(mapOf(cpkChunkIdAvro0 to cpkChunkIdAvro0)).isEqualTo(cpkChecksumCache.cpkChunkIds)
 
         // already exists so shouldn't be re-added
         cacheSynchronizer.onNext(
@@ -73,6 +73,6 @@ class CpkChunksCacheImplTest {
             null,
             mock()
         )
-        assertThat(mapOf(cpkChunkIdAvro0.toCorda() to cpkChunkIdAvro0.toCorda())).isEqualTo(cpkChecksumCache.cpkChunkIds)
+        assertThat(mapOf(cpkChunkIdAvro0 to cpkChunkIdAvro0)).isEqualTo(cpkChecksumCache.cpkChunkIds)
     }
 }

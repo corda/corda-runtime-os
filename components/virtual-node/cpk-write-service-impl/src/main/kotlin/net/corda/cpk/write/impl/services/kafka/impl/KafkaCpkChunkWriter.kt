@@ -1,10 +1,10 @@
 package net.corda.cpk.write.impl.services.kafka.impl
 
-import net.corda.cpk.write.impl.CpkChunk
+import net.corda.cpk.write.impl.CpkChunkId
 import net.corda.cpk.write.impl.services.kafka.AvroTypesTodo
 import net.corda.cpk.write.impl.services.kafka.CpkChunkWriter
 import net.corda.cpk.write.impl.services.kafka.toAvro
-import net.corda.cpk.write.impl.services.kafka.toCpkChunkAvro
+import net.corda.data.chunking.Chunk
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -21,16 +21,18 @@ class KafkaCpkChunkWriter(
     }
 
     // This needs to be transactional i.e. write all of cpk chunks to Kafka or nothing
-    override fun putAll(cpkChunks: List<CpkChunk>) {
+    override fun putAll(cpkChunks: List<Pair<AvroTypesTodo.CpkChunkIdAvro, Chunk>>) {
         val cpkChunksRecords =
-            cpkChunks.map { cpkChunk ->
-                Record("TODO", cpkChunk.id.toAvro(), cpkChunk.bytes.toCpkChunkAvro(cpkChunk.id))
+            cpkChunks.map {
+                val cpkChunkId = it.first
+                val cpkChunk = it.second
+                Record("TODO", cpkChunkId, cpkChunk)
             }
 
         putAllAndWaitForResponses(cpkChunksRecords)
     }
 
-    private fun putAllAndWaitForResponses(cpkChunksRecords: List<Record<AvroTypesTodo.CpkChunkIdAvro, AvroTypesTodo.CpkChunkAvro>>) {
+    private fun putAllAndWaitForResponses(cpkChunksRecords: List<Record<AvroTypesTodo.CpkChunkIdAvro, Chunk>>) {
         val responses = publisher.publish(cpkChunksRecords)
 
         responses.forEach {

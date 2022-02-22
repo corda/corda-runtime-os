@@ -6,9 +6,6 @@ import net.corda.cpk.readwrite.CpkServiceConfigKeys
 import net.corda.cpk.write.CpkWriteService
 import net.corda.cpk.write.impl.services.kafka.CpkChunksCache
 import net.corda.cpk.write.impl.services.kafka.impl.CpkChunksCacheImpl
-import net.corda.cpk.write.impl.services.kafka.types.AvroTypesTodo
-import net.corda.cpk.write.impl.services.kafka.types.toAvro
-import net.corda.cpk.write.impl.services.kafka.types.toCpkChunkAvro
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName

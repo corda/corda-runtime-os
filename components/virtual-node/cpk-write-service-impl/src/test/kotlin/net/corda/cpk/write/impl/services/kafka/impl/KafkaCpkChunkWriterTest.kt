@@ -1,8 +1,10 @@
 package net.corda.cpk.write.impl.services.kafka.impl
 
-import net.corda.cpk.write.impl.CpkChunk
 import net.corda.cpk.write.impl.CpkChunkId
+import net.corda.cpk.write.impl.services.kafka.AvroTypesTodo
 import net.corda.cpk.write.impl.services.kafka.CpkChunkWriter
+import net.corda.cpk.write.impl.services.kafka.toAvro
+import net.corda.data.chunking.Chunk
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.v5.base.util.seconds
 import net.corda.v5.crypto.SecureHash
@@ -19,10 +21,10 @@ class KafkaCpkChunkWriterTest {
     private lateinit var publisher: Publisher
 
     companion object {
-        fun secureHash(bytes: ByteArray): SecureHash {
+        fun secureHash(bytes: ByteArray): net.corda.data.crypto.SecureHash {
             val algorithm = "SHA-256"
             val messageDigest = MessageDigest.getInstance(algorithm)
-            return SecureHash(algorithm, messageDigest.digest(bytes))
+            return SecureHash(algorithm, messageDigest.digest(bytes)).toAvro()
         }
     }
 
@@ -34,10 +36,10 @@ class KafkaCpkChunkWriterTest {
 
     @Test
     fun `on putting cpk chunks puts them to Kafka`() {
-        val cpkChunkId = CpkChunkId(secureHash("dummy".toByteArray()), 0)
-        val cpkChunk = CpkChunk(cpkChunkId, "dummy".toByteArray())
+        val cpkChunkId = AvroTypesTodo.CpkChunkIdAvro(secureHash("dummy".toByteArray()), 0)
+        val cpkChunk = Chunk()
         whenever(publisher.publish(any())).thenReturn(listOf(CompletableFuture<Unit>().also { it.complete(Unit) }))
 
-        kafkaCpkChunkWriter.putAll(listOf(cpkChunk))
+        kafkaCpkChunkWriter.putAll(listOf(cpkChunkId to cpkChunk))
     }
 }
