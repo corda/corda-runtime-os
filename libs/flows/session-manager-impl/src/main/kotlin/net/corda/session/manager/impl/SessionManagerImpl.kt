@@ -3,6 +3,7 @@ package net.corda.session.manager.impl
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
+import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.libs.configuration.SmartConfig
@@ -60,11 +61,11 @@ class SessionManagerImpl : SessionManager {
             List<SessionEvent>> {
         val instantInMillis = instant.toEpochMilli()
         val messagesToReturn = sessionState.sendEventsState.undeliveredMessages.filter { it.timestamp <= instantInMillis || it
-            .payload is SessionAck}
+            .payload is SessionAck|| it.payload is SessionError}
 
-        //remove SessionAcks and increase timestamp of messages sent that are awaiting acknowledgement
+        //remove SessionAcks/SessionErrors and increase timestamp of messages sent that are awaiting acknowledgement
         sessionState.sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.filter {
-            it.payload !is SessionAck
+            it.payload !is SessionAck && it.payload !is SessionError
         }.map {
             if (it.timestamp <= instantInMillis) {
                 it.timestamp = instantInMillis + config.getLong(SESSION_MESSAGE_RESEND_WINDOW)
