@@ -1,11 +1,16 @@
 package net.corda.flow.manager.impl.acceptance
 
+import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
+import net.corda.data.flow.FlowStartContext
+import net.corda.data.flow.FlowStatusKey
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.event.StartRPCFlow
+import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.flow.state.StateMachineState
 import net.corda.data.identity.HoldingIdentity
+import net.corda.data.packaging.CPIIdentifier
+import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.flow.manager.fiber.FlowContinuation
 import net.corda.flow.manager.fiber.FlowIORequest
 import net.corda.flow.manager.impl.FlowEventContext
@@ -30,13 +35,21 @@ class MockFlowRunnerTest {
 
     private val flowKey = FlowKey(FLOW_ID, HoldingIdentity("x500 name", "group id"))
 
-    private val startRPCFlowPayload = StartRPCFlow.newBuilder()
-        .setClientId("client id")
-        .setCpiId("cpi id")
+    private val holdingIdentity = HoldingIdentity("x500 name","group id")
+    private val cpi = CPIIdentifier("cpi id","1.0",null)
+    private val virtualNode = VirtualNodeInfo(holdingIdentity,cpi)
+    private val startContext = FlowStartContext.newBuilder()
+        .setStatusKey(FlowStatusKey("request id",holdingIdentity))
+        .setInitiatorType(FlowInitiatorType.RPC)
+        .setClientRequestId("request id")
+        .setVirtualNode(virtualNode)
         .setFlowClassName("flow class name")
-        .setRpcUsername(HoldingIdentity("x500 name", "group id"))
-        .setTimestamp(Instant.now())
-        .setJsonArgs(" { \"json\": \"args\" }")
+        .setCreatedTimestamp(Instant.MIN)
+        .build()
+
+    private val startRPCFlowPayload = StartFlow.newBuilder()
+        .setStartContext(startContext)
+        .setFlowStartArgs(" { \"json\": \"args\" }")
         .build()
 
     private val startFlowEvent = FlowEvent(flowKey, startRPCFlowPayload)
@@ -44,7 +57,7 @@ class MockFlowRunnerTest {
     private val checkpoint = Checkpoint.newBuilder()
         .setFlowKey(flowKey)
         .setFiber(ByteBuffer.wrap(byteArrayOf()))
-        .setCpiId("cpi id")
+        .setFlowStartContext(startContext)
         .setFlowState(StateMachineState())
         .setSessions(mutableListOf())
         .setFlowStackItems(mutableListOf())
