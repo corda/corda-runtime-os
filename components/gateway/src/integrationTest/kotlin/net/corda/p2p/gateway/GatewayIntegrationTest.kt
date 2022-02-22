@@ -7,7 +7,7 @@ import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.domino.logic.DependenciesVerifier
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.DominoTileState
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.messaging.api.processor.EventLogProcessor
@@ -79,7 +79,7 @@ class GatewayIntegrationTest : TestBase() {
     private inner class Node(private val name: String) {
         private val topicService = TopicServiceImpl()
         private val rpcTopicService = RPCTopicServiceImpl()
-        private val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
+        val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
         val subscriptionFactory = InMemSubscriptionFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
         val publisherFactory = CordaPublisherFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
         val publisher = publisherFactory.createPublisher(PublisherConfig("$name.id"))
@@ -154,7 +154,7 @@ class GatewayIntegrationTest : TestBase() {
                 ),
                 alice.subscriptionFactory,
                 alice.publisherFactory,
-                lifecycleCoordinatorFactory,
+                alice.lifecycleCoordinatorFactory,
                 nodeConfig,
                 instanceId.incrementAndGet(),
             ).use {
@@ -244,7 +244,7 @@ class GatewayIntegrationTest : TestBase() {
                     configPublisher.readerService,
                     alice.subscriptionFactory,
                     alice.publisherFactory,
-                    lifecycleCoordinatorFactory,
+                    alice.lifecycleCoordinatorFactory,
                     nodeConfig,
                     instanceId.incrementAndGet(),
                 ).use { gateway ->
@@ -319,7 +319,7 @@ class GatewayIntegrationTest : TestBase() {
                 ),
                 alice.subscriptionFactory,
                 alice.publisherFactory,
-                lifecycleCoordinatorFactory,
+                alice.lifecycleCoordinatorFactory,
                 nodeConfig,
                 instanceId.incrementAndGet(),
             ).use {
@@ -424,7 +424,7 @@ class GatewayIntegrationTest : TestBase() {
                 ),
                 alice.subscriptionFactory,
                 alice.publisherFactory,
-                lifecycleCoordinatorFactory,
+                alice.lifecycleCoordinatorFactory,
                 nodeConfig,
                 instanceId.incrementAndGet(),
             ).use {
@@ -497,8 +497,6 @@ class GatewayIntegrationTest : TestBase() {
 
             val startTime = Instant.now().toEpochMilli()
             // Start the gateways and let them run until all messages have been processed
-            val lcf1 = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
-            val lcf2 = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
             val gateways = listOf(
                 Gateway(
                     createConfigurationServiceFor(
@@ -507,11 +505,11 @@ class GatewayIntegrationTest : TestBase() {
                             aliceGatewayAddress.port,
                             chipSslConfig
                         ),
-                        lcf1
+                        alice.lifecycleCoordinatorFactory
                     ),
                     alice.subscriptionFactory,
                     alice.publisherFactory,
-                    lcf1,
+                    alice.lifecycleCoordinatorFactory,
                     nodeConfig,
                     instanceId.incrementAndGet(),
                 ),
@@ -522,11 +520,11 @@ class GatewayIntegrationTest : TestBase() {
                             bobGatewayAddress.port,
                             daleSslConfig
                         ),
-                        lcf2
+                        bob.lifecycleCoordinatorFactory
                     ),
                     bob.subscriptionFactory,
                     bob.publisherFactory,
-                    lcf2,
+                    bob.lifecycleCoordinatorFactory,
                     nodeConfig,
                     instanceId.incrementAndGet(),
                 )
@@ -592,7 +590,7 @@ class GatewayIntegrationTest : TestBase() {
                 configPublisher.readerService,
                 alice.subscriptionFactory,
                 alice.publisherFactory,
-                lifecycleCoordinatorFactory,
+                alice.lifecycleCoordinatorFactory,
                 nodeConfig,
                 instanceId.incrementAndGet(),
             ).use { gateway ->
@@ -605,7 +603,7 @@ class GatewayIntegrationTest : TestBase() {
                     )
                 )
                 gateway.startAndWaitForStarted()
-                assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.Started)
+                assertThat(gateway.dominoTile.state).isEqualTo(DominoTileState.Started)
 
                 logger.info("Publishing bad config")
                 // -20 is invalid port, serer should fail
@@ -617,7 +615,7 @@ class GatewayIntegrationTest : TestBase() {
                     )
                 )
                 eventually(duration = 20.seconds) {
-                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.StoppedDueToChildStopped)
+                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTileState.StoppedDueToChildStopped)
                 }
                 assertThrows<ConnectException> {
                     Socket(host, 10005).close()
@@ -632,7 +630,7 @@ class GatewayIntegrationTest : TestBase() {
                     )
                 )
                 eventually(duration = 20.seconds) {
-                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.Started)
+                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTileState.Started)
                 }
                 assertDoesNotThrow {
                     Socket(host, 10006).close()
@@ -641,7 +639,7 @@ class GatewayIntegrationTest : TestBase() {
                 logger.info("Publishing bad config again")
                 configPublisher.publishBadConfig()
                 eventually(duration = 20.seconds) {
-                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.StoppedDueToChildStopped)
+                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTileState.StoppedDueToChildStopped)
                 }
                 assertThrows<ConnectException> {
                     Socket(host, 10006).close()
@@ -659,7 +657,7 @@ class GatewayIntegrationTest : TestBase() {
                 configPublisher.readerService,
                 alice.subscriptionFactory,
                 alice.publisherFactory,
-                lifecycleCoordinatorFactory,
+                alice.lifecycleCoordinatorFactory,
                 nodeConfig,
                 instanceId.incrementAndGet(),
             )

@@ -2,8 +2,9 @@ package net.corda.p2p.linkmanager
 
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfigImpl
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -42,13 +43,14 @@ class StubNetworkMapTest {
 
     private val resourcesHolder = mock<ResourcesHolder>()
     private lateinit var createResources: ((resources: ResourcesHolder) -> CompletableFuture<Unit>)
-    private val dominoTile = mockConstruction(DominoTile::class.java) { mock, context ->
+    private val dominoTile = mockConstruction(ComplexDominoTile::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
         @Suppress("UNCHECKED_CAST")
         createResources = context.arguments()[2] as ((ResourcesHolder) -> CompletableFuture<Unit>)
         whenever(mock.isRunning).doReturn(true)
     }
+    private val subscriptionTile = mockConstruction(SubscriptionDominoTile::class.java)
     private val networkMap = StubNetworkMap(mock(), subscriptionFactory, 1, SmartConfigImpl.empty())
 
     private val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, BouncyCastleProvider())
@@ -76,6 +78,7 @@ class StubNetworkMapTest {
     @AfterEach
     fun cleanUp() {
         dominoTile.close()
+        subscriptionTile.close()
         resourcesHolder.close()
     }
 
@@ -127,15 +130,6 @@ class StubNetworkMapTest {
         assertThat(networkMap.getMemberInfo(LinkManagerNetworkMap.HoldingIdentity(charlieName, groupId1))).isNull()
     }
 
-//TODOs : this will be refactored as part of CORE-3147
-//    @Test
-//    fun `create resource starts the subscription and adds it to the resource tracker`() {
-//        createResources(resourcesHolder)
-//        val capture = argumentCaptor<AutoCloseable>()
-//        verify(resourcesHolder).keep(capture.capture())
-//        verify(capture.lastValue as CompactedSubscription<*, *>).start()
-//    }
-
     @Test
     fun `onSnapshot completes the resource future`() {
         val future = createResources(resourcesHolder)
@@ -149,5 +143,4 @@ class StubNetworkMapTest {
         messageDigest.update(publicKey)
         return messageDigest.digest()
     }
-
 }

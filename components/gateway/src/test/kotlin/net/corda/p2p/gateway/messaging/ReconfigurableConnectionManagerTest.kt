@@ -5,7 +5,7 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.StartEvent
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import org.assertj.core.api.Assertions.assertThat
@@ -49,7 +49,7 @@ class ReconfigurableConnectionManagerTest {
 
     private val resourcesHolder = mock<ResourcesHolder>()
     private lateinit var configHandler: ReconfigurableConnectionManager.ConnectionManagerConfigChangeHandler
-    private val dominoTile = Mockito.mockConstruction(DominoTile::class.java) { mock, context ->
+    private val dominoTile = Mockito.mockConstruction(ComplexDominoTile::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
         @Suppress("UNCHECKED_CAST")

@@ -10,6 +10,12 @@ interface BusInteractions {
     fun getNextInboundMessage() : SessionEvent?
 
     /**
+     * Duplicate the message at the [position] in the inbound queue
+     * Message is added to the end of the list
+     */
+    fun duplicateMessage(position: Int)
+
+    /**
      * Get the number of messages currently on the inbound message bus
      */
     fun getInboundMessageSize() : Int

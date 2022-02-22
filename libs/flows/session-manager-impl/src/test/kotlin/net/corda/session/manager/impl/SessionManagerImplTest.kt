@@ -77,7 +77,7 @@ class SessionManagerImplTest {
 
 
     @Test
-    fun `Get messages with datas and acks with timestamps in the future and past`() {
+    fun `Get messages with datas, error and acks with timestamps in the future and past`() {
         val instant = Instant.now()
         val sessionState = buildSessionState(
             SessionStateType.CONFIRMED,

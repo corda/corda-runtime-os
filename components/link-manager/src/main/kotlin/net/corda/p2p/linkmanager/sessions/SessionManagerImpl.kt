@@ -7,7 +7,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
@@ -124,7 +124,7 @@ open class SessionManagerImpl(
         configuration
     )
 
-    override val dominoTile = DominoTile(
+    override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
         dependentChildren = setOf(
@@ -618,7 +618,7 @@ open class SessionManagerImpl(
             configuration
         )
 
-        override val dominoTile = DominoTile(
+        override val dominoTile = ComplexDominoTile(
             this::class.java.simpleName,
             coordinatorFactory,
             ::createResources,

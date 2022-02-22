@@ -1,6 +1,6 @@
 package net.corda.p2p.linkmanager.utilities
 
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
@@ -81,8 +81,7 @@ class MockNetworkMap(nodes: List<LinkManagerNetworkMap.HoldingIdentity>) {
             override fun registerListener(networkMapListener: NetworkMapListener) {
                 // Do nothing
             }
-
-            override val dominoTile = mock<DominoTile>()
+            override val dominoTile = mock<ComplexDominoTile>()
         }
     }
 }

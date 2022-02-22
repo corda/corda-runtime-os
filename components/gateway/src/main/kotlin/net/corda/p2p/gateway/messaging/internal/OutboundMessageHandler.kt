@@ -5,10 +5,9 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
@@ -16,15 +15,11 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.NetworkType
-import net.corda.p2p.gateway.Gateway
-import net.corda.p2p.gateway.messaging.ConnectionConfiguration
-import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpResponse
 import net.corda.p2p.gateway.messaging.http.SniCalculator
 import net.corda.p2p.gateway.messaging.http.TrustStoresMap
-import net.corda.p2p.gateway.messaging.toGatewayConfiguration
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.v5.base.util.debug
 import org.bouncycastle.asn1.x500.X500Name
@@ -42,7 +37,7 @@ import java.util.concurrent.TimeUnit
  */
 internal class OutboundMessageHandler(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    private val configurationReaderService: ConfigurationReadService,
+    configurationReaderService: ConfigurationReadService,
     subscriptionFactory: SubscriptionFactory,
     nodeConfiguration: SmartConfig,
     instanceId: Int,
@@ -52,7 +47,7 @@ internal class OutboundMessageHandler(
         const val MAX_RETRIES = 1
     }
 
-    private var connectionConfig = ConnectionConfiguration()
+    private val connectionConfigReader = ConnectionConfigReader(lifecycleCoordinatorFactory, configurationReaderService)
 
     private val connectionManager = ReconfigurableConnectionManager(
         lifecycleCoordinatorFactory,
@@ -66,20 +61,24 @@ internal class OutboundMessageHandler(
         instanceId
     )
 
-    override val dominoTile = DominoTile(
-        this::class.java.simpleName,
-        lifecycleCoordinatorFactory,
-        dependentChildren = listOf(connectionManager.dominoTile, trustStoresMap.dominoTile),
-        managedChildren = listOf(connectionManager.dominoTile, trustStoresMap.dominoTile),
-        createResources = ::createResources,
-        configurationChangeHandler = ConfigChangeHandler()
-    )
-
-    private val p2pMessageSubscription = subscriptionFactory.createEventLogSubscription(
+    private val outboundSubscription = subscriptionFactory.createEventLogSubscription(
         SubscriptionConfig("outbound-message-handler", LINK_OUT_TOPIC, instanceId),
         this,
         nodeConfiguration,
         null
+    )
+    private val outboundSubscriptionTile = SubscriptionDominoTile(
+        lifecycleCoordinatorFactory,
+        outboundSubscription,
+        setOf(connectionManager.dominoTile, connectionConfigReader.dominoTile),
+        setOf(connectionManager.dominoTile, connectionConfigReader.dominoTile)
+    )
+
+    override val dominoTile = ComplexDominoTile(
+        this::class.java.simpleName,
+        lifecycleCoordinatorFactory,
+        dependentChildren = listOf(outboundSubscriptionTile, trustStoresMap.dominoTile),
+        managedChildren = listOf(outboundSubscriptionTile, trustStoresMap.dominoTile)
     )
 
     private val retryThreadPool = Executors.newSingleThreadScheduledExecutor()
@@ -135,7 +134,7 @@ internal class OutboundMessageHandler(
     private fun waitUntilComplete(pendingRequests: List<PendingRequest>) {
         try {
             CompletableFuture.allOf(*pendingRequests.map { it.future }.toTypedArray())
-                .get(connectionConfig.responseTimeout.toMillis(), TimeUnit.MILLISECONDS)
+                .get(connectionConfig().responseTimeout.toMillis(), TimeUnit.MILLISECONDS)
         } catch (e: Exception) {
             // Do nothing - results/errors will be processed individually.
         }
@@ -157,11 +156,11 @@ internal class OutboundMessageHandler(
         retryThreadPool.schedule({
             val future = sendMessage(destinationInfo, gatewayMessage)
             val pendingRequest = PendingRequest(gatewayMessage, destinationInfo, future)
-            future.orTimeout(connectionConfig.responseTimeout.toMillis(), TimeUnit.MILLISECONDS)
+            future.orTimeout(connectionConfig().responseTimeout.toMillis(), TimeUnit.MILLISECONDS)
                 .whenCompleteAsync { response, error ->
                     handleResponse(pendingRequest, response, error, remainingAttempts - 1)
                 }
-        }, connectionConfig.retryDelay.toMillis(), TimeUnit.MILLISECONDS)
+        }, connectionConfig().retryDelay.toMillis(), TimeUnit.MILLISECONDS)
     }
 
     private fun handleResponse(pendingRequest: PendingRequest, response: HttpResponse?, error: Throwable?, remainingAttempts: Int) {
@@ -196,40 +195,16 @@ internal class OutboundMessageHandler(
         return connectionManager.acquire(destinationInfo).write(gatewayMessage.toByteBuffer().array())
     }
 
+    private fun connectionConfig() = connectionConfigReader.connectionConfig
+
     override val keyClass: Class<String>
         get() = String::class.java
     override val valueClass: Class<LinkOutMessage>
         get() = LinkOutMessage::class.java
-
-    private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-        val future = CompletableFuture<Unit>()
-        resources.keep { p2pMessageSubscription.stop() }
-        p2pMessageSubscription.start()
-        future.complete(Unit)
-        return future
-    }
 
     private data class PendingRequest(
         val gatewayMessage: GatewayMessage,
         val destinationInfo: DestinationInfo,
         val future: CompletableFuture<HttpResponse>
     )
-
-    private inner class ConfigChangeHandler : ConfigurationChangeHandler<GatewayConfiguration>(
-        configurationReaderService,
-        Gateway.CONFIG_KEY,
-        { it.toGatewayConfiguration() }
-    ) {
-        override fun applyNewConfiguration(
-            newConfiguration: GatewayConfiguration,
-            oldConfiguration: GatewayConfiguration?,
-            resources: ResourcesHolder
-        ): CompletableFuture<Unit> {
-            if (newConfiguration.connectionConfig != oldConfiguration?.connectionConfig) {
-                logger.info("New configuration, connection settings updated to ${newConfiguration.connectionConfig}.")
-                connectionConfig = newConfiguration.connectionConfig
-            }
-            return CompletableFuture.completedFuture(Unit)
-        }
-    }
 }
