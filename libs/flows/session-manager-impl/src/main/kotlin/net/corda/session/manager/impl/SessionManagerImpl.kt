@@ -25,7 +25,7 @@ class SessionManagerImpl : SessionManager {
 
     override fun processMessageReceived(key: Any, sessionState: SessionState?, event: SessionEvent, instant: Instant):
             SessionState {
-        sessionState?.lastReceivedMessageTime = instant.toEpochMilli()
+        sessionState?.lastReceivedMessageTime = instant
         return sessionEventProcessorFactory.createEventReceivedProcessor(key, event, sessionState, instant).execute()
     }
 
@@ -63,18 +63,17 @@ class SessionManagerImpl : SessionManager {
 
     override fun getMessagesToSend(sessionState: SessionState, instant: Instant, config: SmartConfig): Pair<SessionState,
             List<SessionEvent>> {
-        val instantInMillis = instant.toEpochMilli()
         val messageResendWindow = config.getLong(SESSION_MESSAGE_RESEND_WINDOW)
-        val messagesToReturn = getMessagesToSend(sessionState, instantInMillis)
+        val messagesToReturn = getMessagesToSend(sessionState, instant)
 
         //remove SessionAcks/SessionErrors and increase timestamp of messages to be sent that are awaiting acknowledgement
-        clearAcksErrorsAndIncreaseTimestamps(sessionState, instantInMillis, messageResendWindow)
+        clearAcksErrorsAndIncreaseTimestamps(sessionState, instant, messageResendWindow)
 
         //add heartbeat if no messages to send, error session if no heartbeat received within timeout
         handleHeartbeat(sessionState, config, instant, messagesToReturn)
 
         if (messagesToReturn.isNotEmpty()) {
-            sessionState.lastSentMessageTime = instantInMillis
+            sessionState.lastSentMessageTime = instant
         }
 
         return Pair(sessionState, messagesToReturn)
@@ -94,15 +93,14 @@ class SessionManagerImpl : SessionManager {
         instant: Instant,
         messagesToReturn: MutableList<SessionEvent>,
     ) {
-        val instantInMillis = instant.toEpochMilli()
         val messageResendWindow = config.getLong(SESSION_MESSAGE_RESEND_WINDOW)
         val lastReceivedMessageTime = sessionState.lastReceivedMessageTime
         val sessionId = sessionState.sessionId
 
-        val sessionTimeoutTimestamp = lastReceivedMessageTime + config.getLong(SESSION_HEARTBEAT_TIMEOUT_WINDOW)
-        val scheduledHeartbeatTimestamp = sessionState.lastSentMessageTime + messageResendWindow
+        val sessionTimeoutTimestamp = lastReceivedMessageTime.plusMillis(config.getLong(SESSION_HEARTBEAT_TIMEOUT_WINDOW))
+        val scheduledHeartbeatTimestamp = sessionState.lastSentMessageTime.plusMillis(messageResendWindow)
 
-        if (instantInMillis > sessionTimeoutTimestamp) {
+        if (instant > sessionTimeoutTimestamp) {
             //send an error if the session has timed out
             sessionState.status = SessionStateType.ERROR
             messagesToReturn.add(
@@ -113,7 +111,7 @@ class SessionManagerImpl : SessionManager {
                     instant
                 )
             )
-        } else if (messagesToReturn.isEmpty() && instantInMillis > scheduledHeartbeatTimestamp) {
+        } else if (messagesToReturn.isEmpty() && instant > scheduledHeartbeatTimestamp) {
             messagesToReturn.add(generateAckEvent(0, sessionId, instant))
         }
     }
@@ -123,14 +121,14 @@ class SessionManagerImpl : SessionManager {
      * Send any Acks or Errors regardless of timestamps.
      * Send any other messages with a timestamp less than that of [instantInMillis]
      * @param sessionState to examine sendEventsState.undeliveredMessages
-     * @param instantInMillis to compare against messages to avoid resending messages in quick succession
+     * @param instant to compare against messages to avoid resending messages in quick succession
      * @return Messages to send
      */
     private fun getMessagesToSend(
         sessionState: SessionState,
-        instantInMillis: Long
+        instant: Instant
     ) = sessionState.sendEventsState.undeliveredMessages.filter {
-        it.timestamp <= instantInMillis || it
+        it.timestamp <= instant || it
             .payload is SessionAck || it.payload is SessionError
     }.toMutableList()
 
@@ -139,18 +137,18 @@ class SessionManagerImpl : SessionManager {
      * Increase the timestamps of messages with a timestamp less than [instantInMillis]
      * by the configurable value of the [messageResendWindow]. This will avoid message resends in quick succession.
      * @param sessionState to update the sendEventsState.undeliveredMessages
-     * @param instantInMillis to update the sendEventsState.undeliveredMessages
+     * @param instant to update the sendEventsState.undeliveredMessages
      */
     private fun clearAcksErrorsAndIncreaseTimestamps(
         sessionState: SessionState,
-        instantInMillis: Long,
+        instant: Instant,
         messageResendWindow: Long
     ) {
         sessionState.sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.filter {
             it.payload !is SessionAck && it.payload !is SessionError
         }.map {
-            if (it.timestamp <= instantInMillis) {
-                it.timestamp = instantInMillis + messageResendWindow
+            if (it.timestamp <= instant) {
+                it.timestamp = instant.plusMillis(messageResendWindow)
             }
             it
         }

@@ -28,7 +28,7 @@ class SessionAckProcessorReceiveTest {
     @Test
     fun `CREATED state, ack received for init message sent, state moves to CONFIRMED`() {
         val sessionState = buildSessionState(
-            SessionStateType.CREATED, 0, emptyList(), 1, mutableListOf(SessionEvent(MessageDirection.OUTBOUND, 1, "", 1, SessionInit()))
+            SessionStateType.CREATED, 0, emptyList(), 1, mutableListOf(SessionEvent(MessageDirection.OUTBOUND, Instant.now(), "", 1, SessionInit()))
         )
 
         val updatedState = SessionAckProcessorReceive("key", sessionState, "sessionId", 1, Instant.now()).execute()
@@ -41,8 +41,8 @@ class SessionAckProcessorReceiveTest {
     fun `CONFIRMED state, ack received for 1 or 2 data events, 1 data is left`() {
         val sessionState = buildSessionState(
             SessionStateType.CONFIRMED, 0, emptyList(), 3, mutableListOf(
-                SessionEvent(MessageDirection.OUTBOUND, 1, "", 2, SessionData()),
-                SessionEvent(MessageDirection.OUTBOUND, 1, "", 3, SessionData())
+                SessionEvent(MessageDirection.OUTBOUND, Instant.now(), "", 2, SessionData()),
+                SessionEvent(MessageDirection.OUTBOUND, Instant.now(), "", 3, SessionData())
             )
         )
 
@@ -55,7 +55,7 @@ class SessionAckProcessorReceiveTest {
     @Test
     fun `WAIT_FOR_FINAL_ACK state, final ack is received, state moves to CLOSED`() {
         val sessionState = buildSessionState(
-            SessionStateType.WAIT_FOR_FINAL_ACK, 0, emptyList(), 3, mutableListOf(SessionEvent(MessageDirection.OUTBOUND, 1, "", 3,
+            SessionStateType.WAIT_FOR_FINAL_ACK, 0, emptyList(), 3, mutableListOf(SessionEvent(MessageDirection.OUTBOUND, Instant.now(), "", 3,
                 SessionClose()))
         )
 

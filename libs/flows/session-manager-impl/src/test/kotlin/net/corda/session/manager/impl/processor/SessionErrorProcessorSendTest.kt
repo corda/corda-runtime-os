@@ -14,7 +14,7 @@ class SessionErrorProcessorSendTest {
 
     @Test
     fun testNullState() {
-        val sessionEvent = SessionEvent(MessageDirection.OUTBOUND, 1, "1", 1, SessionError(ExceptionEnvelope()))
+        val sessionEvent = SessionEvent(MessageDirection.OUTBOUND, Instant.now(), "1", 1, SessionError(ExceptionEnvelope()))
         val sessionState = SessionErrorProcessorSend("Key", null, sessionEvent, ExceptionEnvelope(), Instant.now()).execute()
         assertThat(sessionState).isNotNull
         assertThat(sessionState.sendEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionError::class.java)
@@ -22,7 +22,7 @@ class SessionErrorProcessorSendTest {
 
     @Test
     fun testErrorMessage() {
-        val sessionEvent = SessionEvent(MessageDirection.OUTBOUND, 1, "1", 1, SessionError(ExceptionEnvelope()))
+        val sessionEvent = SessionEvent(MessageDirection.OUTBOUND, Instant.now(), "1", 1, SessionError(ExceptionEnvelope()))
         val inputState = buildSessionState(
             SessionStateType.CONFIRMED, 0, mutableListOf(), 0, mutableListOf()
         )

@@ -40,14 +40,14 @@ class SessionInitProcessorSend(
 
         sessionEvent.apply {
             sequenceNum = seqNum
-            timestamp = instant.toEpochMilli()
+            timestamp = instant
         }
 
         val newSessionState = SessionState.newBuilder()
             .setSessionId(newSessionId)
-            .setSessionStartTime(instant.toEpochMilli())
-            .setLastReceivedMessageTime(instant.toEpochMilli())
-            .setLastSentMessageTime(instant.toEpochMilli())
+            .setSessionStartTime(instant)
+            .setLastReceivedMessageTime(instant)
+            .setLastSentMessageTime(instant)
             .setIsInitiator(true)
             .setCounterpartyIdentity(sessionInit.initiatedIdentity)
             .setReceivedEventsState(SessionProcessState(0, mutableListOf()))

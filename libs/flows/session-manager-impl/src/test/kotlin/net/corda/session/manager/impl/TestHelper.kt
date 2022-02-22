@@ -15,7 +15,7 @@ fun buildSessionState(
     receivedEvents: List<SessionEvent>,
     lastSentSeqNum: Int,
     eventsToSend: List<SessionEvent>,
-    sessionStartTime: Long = Instant.now().toEpochMilli()
+    sessionStartTime: Instant = Instant.now()
 ): SessionState {
     return SessionState.newBuilder()
         .setSessionId("sessionId")
