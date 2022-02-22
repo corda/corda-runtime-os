@@ -91,9 +91,10 @@ kubectl apply -f kafka-persistent-single.yaml -n kafka
 kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka 
 
 # 8. Test sending message to kafka and consuming it to ensure you can connect from your machine to Kafka 
+# Install kafka-console-[producer|consumer] using brew in MacOS: `brew install kafka`
 BROKER_LIST=`minikube ip`:`kubectl get service my-cluster-kafka-external-bootstrap -o=jsonpath='{.spec.ports[0].nodePort}' -n kafka`
 kafka-console-producer --broker-list $BROKER_LIST --topic topic1
 kafka-console-consumer --topic topic1 --from-beginning --bootstrap-server $BROKER_LIST # From different terminal
 ```
 
-When restarting minikube, delete the namespace and re-deploy Kafka again. Otherwise you might find weird behaviour.
+> When restarting minikube, delete the namespace and re-deploy Kafka again. Otherwise you might find weird behaviour.
