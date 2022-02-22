@@ -2,23 +2,17 @@ package net.corda.cpk.write.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.cpk.write.impl.services.kafka.CpkChunksCache
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.*
-import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.crypto.SecureHash
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito.`when`
-import org.mockito.invocation.InvocationOnMock
 import org.mockito.kotlin.*
 import java.security.MessageDigest
-import java.util.concurrent.CompletableFuture
 
 class CpkWriteServiceImplTest {
     private lateinit var cpkWriteServiceImpl: CpkWriteServiceImpl
@@ -78,7 +72,7 @@ class CpkWriteServiceImplTest {
         whenever(publisherFactory.createPublisher(any(), any())).thenReturn(mock())
 
         cpkWriteServiceImpl.processEvent(ConfigChangedEvent(keys, config), coordinator)
-        assertNotNull(cpkWriteServiceImpl.cpkChunksCache)
+        assertNotNull(cpkWriteServiceImpl.cpkChecksumCache)
         assertNotNull(cpkWriteServiceImpl.publisher)
         verify(coordinator).updateStatus(LifecycleStatus.UP)
     }

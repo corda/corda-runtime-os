@@ -4,8 +4,8 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpk.readwrite.CpkServiceConfigKeys
 import net.corda.cpk.write.CpkWriteService
-import net.corda.cpk.write.impl.services.kafka.CpkChunksCache
-import net.corda.cpk.write.impl.services.kafka.impl.CpkChunksCacheImpl
+import net.corda.cpk.write.impl.services.kafka.CpkChecksumCache
+import net.corda.cpk.write.impl.services.kafka.impl.CpkChecksumCacheImpl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -17,17 +17,13 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.annotations.VisibleForTesting
-import net.corda.v5.base.concurrent.getOrThrow
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.seconds
@@ -63,7 +59,7 @@ class CpkWriteServiceImpl @Activate constructor(
     @VisibleForTesting
     internal var configSubscription: AutoCloseable? = null
     @VisibleForTesting
-    internal var cpkChunksCache: CpkChunksCache? = null
+    internal var cpkChecksumCache: CpkChecksumCache? = null
     @VisibleForTesting
     internal var publisher: Publisher? = null
 
@@ -122,7 +118,7 @@ class CpkWriteServiceImpl @Activate constructor(
         // TODO - fix configuration for cache and publisher
         if (config.hasPath("todo")) {
 
-            cpkChunksCache = CpkChunksCacheImpl(
+            cpkChecksumCache = CpkChecksumCacheImpl(
                 subscriptionFactory,
                 SubscriptionConfig("todo", "todo"),
                 config
@@ -160,7 +156,7 @@ class CpkWriteServiceImpl @Activate constructor(
 
     override fun start() {
         logger.debug { "Cpk Write Service starting" }
-        cpkChunksCache!!.start()
+        cpkChecksumCache!!.start()
         coordinator.start()
     }
 
@@ -175,8 +171,8 @@ class CpkWriteServiceImpl @Activate constructor(
         configReadServiceRegistration = null
         configSubscription?.close()
         configSubscription = null
-        cpkChunksCache?.close()
-        cpkChunksCache = null
+        cpkChecksumCache?.close()
+        cpkChecksumCache = null
         publisher?.close()
         publisher = null
     }

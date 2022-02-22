@@ -1,7 +1,6 @@
 package net.corda.cpk.write.impl.services.kafka.impl
 
-import net.corda.cpk.write.impl.services.kafka.CpkChunksCache
-import net.corda.cpk.write.impl.CpkChunkId
+import net.corda.cpk.write.impl.services.kafka.CpkChecksumCache
 import net.corda.cpk.write.impl.services.kafka.AvroTypesTodo
 import net.corda.cpk.write.impl.services.kafka.toCorda
 import net.corda.data.chunking.Chunk
@@ -13,6 +12,8 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.crypto.SecureHash
+import java.nio.ByteBuffer
 import java.util.concurrent.ConcurrentHashMap
 
 // Needs to be made a CPK checksum cache. What will happen if say some chunks of a CPK are on Kafka but not all?
@@ -24,17 +25,19 @@ import java.util.concurrent.ConcurrentHashMap
  * CPK chunks cache. Caches only what identifies uniquely a CPK chunk which is its checksum + chunk id.
  * The cache will get updated every time a new CPK chunk entry gets written to Kafka.
  */
-class CpkChunksCacheImpl(
+class CpkChecksumCacheImpl(
     subscriptionFactory: SubscriptionFactory,
     subscriptionConfig: SubscriptionConfig,
     nodeConfig: SmartConfig = SmartConfigImpl.empty()
-) : CpkChunksCache {
+) : CpkChecksumCache {
     companion object {
         val logger = contextLogger()
+
+        private fun ByteBuffer.isZeroChunk() = this.limit() == 0
     }
 
     @VisibleForTesting
-    internal val cpkChunkIds: MutableMap<CpkChunkId, CpkChunkId> = ConcurrentHashMap()
+    internal val cpkChecksums: MutableMap<SecureHash, SecureHash> = ConcurrentHashMap()
 
     // TODO Add config to the below
     @VisibleForTesting
@@ -52,10 +55,13 @@ class CpkChunksCacheImpl(
         compactedSubscription.close()
     }
 
-    override fun contains(checksum: CpkChunkId) = checksum in cpkChunkIds.keys
+    override fun contains(cpkChecksum: SecureHash) = cpkChecksum in cpkChecksums.keys
 
-    override fun add(cpkChunkId: CpkChunkId) {
-        cpkChunkIds[cpkChunkId] = cpkChunkId
+    override fun add(cpkChecksum: SecureHash) {
+        cpkChecksums[cpkChecksum] = cpkChecksum
+        logger.debug(
+            "Added to cache CPK checksum: $cpkChecksum"
+        )
     }
 
     inner class CacheSynchronizer : CompactedProcessor<AvroTypesTodo.CpkChunkIdAvro, Chunk> {
@@ -66,13 +72,8 @@ class CpkChunksCacheImpl(
 
         // TODO: Not good that we need to load AvroTypesTodo.CpkChunk back in memory for now reason.
         override fun onSnapshot(currentData: Map<AvroTypesTodo.CpkChunkIdAvro, Chunk>) {
-            currentData.forEach { (cpkChunkIdAvro, _) ->
-                // treat cpkInfoChecksums as a concurrent set, hence not care about its values.
-                val cpkChunkId = cpkChunkIdAvro.toCorda()
-                add(cpkChunkId)
-                logger.debug(
-                    "Added CPK chunk to cache of id cpkChecksum: ${cpkChunkId.cpkChecksum} partNumber: ${cpkChunkId.partNumber}"
-                )
+            currentData.forEach { (cpkChunkId, cpkChunk) ->
+                updateCacheOnZeroChunk(cpkChunkId, cpkChunk)
             }
         }
 
@@ -83,12 +84,16 @@ class CpkChunksCacheImpl(
         ) {
             // TODO add checks with oldValue: CpkInfo? that matches memory state
             //  also assert that newRecord.topic is the same with ours just in case?
-            val cpkChunkIdAvro = newRecord.key
-            val cpkChunkId = cpkChunkIdAvro.toCorda()
-            add(cpkChunkId)
-            logger.debug(
-                "Added CPK chunk to cache of id cpkChecksum: ${cpkChunkId.cpkChecksum} partNumber: ${cpkChunkId.partNumber}"
-            )
+            val cpkChunkId = newRecord.key
+            val cpkChunk = newRecord.value
+            updateCacheOnZeroChunk(cpkChunkId, cpkChunk)
+        }
+
+        private fun updateCacheOnZeroChunk(cpkChunkId: AvroTypesTodo.CpkChunkIdAvro, cpkChunk: Chunk?) {
+            if (cpkChunk?.data?.isZeroChunk() == true) {
+                val cpkChecksum = cpkChunkId.cpkChecksum.toCorda()
+                add(cpkChecksum)
+            }
         }
     }
 }
