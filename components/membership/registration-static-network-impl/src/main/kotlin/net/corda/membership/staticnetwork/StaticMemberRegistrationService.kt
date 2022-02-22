@@ -1,8 +1,8 @@
 package net.corda.membership.staticnetwork
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.CryptoConsts
-import net.corda.crypto.CryptoOpsClient
+import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.SignedMemberInfo

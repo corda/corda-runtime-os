@@ -31,7 +31,7 @@ dependencies {
     implementation "net.corda:corda-packaging-avro-converters"
 
     implementation project(":libs:configuration:configuration-core")
-    implementation project(":libs:crypto:crypto-client")
+    implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
 

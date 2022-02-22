@@ -19,9 +19,10 @@ dependencies {
     implementation "net.corda:corda-topic-schema"
 
     implementation project(":components:configuration:configuration-read-service")
+    implementation project(":components:crypto:crypto-client")
     implementation project(":libs:configuration:configuration-core")
+    implementation project(":libs:crypto:crypto-core")
     implementation project(':libs:crypto:crypto-impl')
-    implementation project(":libs:crypto:crypto-client")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
 
