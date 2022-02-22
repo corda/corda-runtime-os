@@ -20,6 +20,9 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 7070
+          env:
+            - name: KAFKA_BROKERS
+              value: "my-cluster-kafka-bootstrap:9092" # if kafka deployed with strimzi
 
 ---
 apiVersion: v1

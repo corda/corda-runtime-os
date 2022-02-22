@@ -9,6 +9,7 @@ import picocli.CommandLine
  */
 @CommandLine.Command(name = "create-topic")
 class CreateTopicCommand : BaseCommand() {
+
     @CommandLine.Option(names = ["--topic"], required = true, description = ["Topic name"])
     private lateinit var topicName: String
 
@@ -21,5 +22,6 @@ class CreateTopicCommand : BaseCommand() {
     override fun run() {
         var topic = TopicDefinition(topicName, partitions, replicationFactor)
         CreateTopicReq(topic).request(endpoint)
+        println("Topic $topicName created successfully")
     }
 }

@@ -28,6 +28,7 @@ class IntrospiciereServer(private val port: Int = 0, private val kafkaBrokers: L
         val servers = kafkaBrokers
             ?: System.getenv("KAFKA_BROKERS")?.split(",")
             ?: listOf("alpha-bk-1:9092")
+        println("Kafka brokers are $servers")
         val kafka = SimpleKafkaClient(servers)
 
         app.get("/helloworld") { ctx ->

@@ -75,6 +75,7 @@ class WriteCommand : BaseCommand() {
         )
 
         MessageWriterReq(kafkaMessage).request(endpoint)
+        println("Message successfully sent to topic $topicName")
     }
 
     private fun ByteBuffer.toByteArray(): ByteArray {
