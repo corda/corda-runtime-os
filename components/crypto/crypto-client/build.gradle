@@ -1,0 +1,24 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+description 'Crypto components clients'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-cipher-suite"
+    implementation "net.corda:corda-crypto"
+    implementation "net.i2p.crypto:eddsa:$eddsaVersion"
+    implementation "org.bouncycastle:bcprov-jdk15on:${bouncyCastleVersion}"
+    implementation "org.bouncycastle:bcpkix-jdk15on:${bouncyCastleVersion}"
+
+    implementation project(":libs:lifecycle:lifecycle")
+}
+
+

@@ -3,8 +3,9 @@ package net.corda.p2p.linkmanager
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -19,7 +20,6 @@ import java.nio.ByteBuffer
 import java.security.MessageDigest
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicReference
 
 class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
                      subscriptionFactory: SubscriptionFactory,
@@ -29,17 +29,25 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val processor = NetworkMapEntryProcessor()
     private val subscriptionConfig = SubscriptionConfig("network-map", NETWORK_MAP_TOPIC, instanceId)
     private val subscription = subscriptionFactory.createCompactedSubscription(subscriptionConfig, processor, configuration)
+    private val subscriptionTile = SubscriptionDominoTile(
+        lifecycleCoordinatorFactory,
+        subscription,
+        emptySet(),
+        emptySet()
+    )
     private val keyDeserialiser = KeyDeserialiser()
 
-    private val readyFuture = AtomicReference<CompletableFuture<Unit>>()
-    override val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, ::createResources)
+    private val readyFuture = CompletableFuture<Unit>()
+    override val dominoTile = ComplexDominoTile(
+        this::class.java.simpleName,
+        lifecycleCoordinatorFactory,
+        ::createResources,
+        setOf(subscriptionTile),
+        setOf(subscriptionTile)
+    )
 
-    private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-        val future = CompletableFuture<Unit>()
-        readyFuture.set(future)
-        subscription.start()
-        resources.keep { subscription.stop() }
-        return future
+    private fun createResources(@Suppress("UNUSED_PARAMETER") resources: ResourcesHolder): CompletableFuture<Unit> {
+        return readyFuture
     }
 
     @Suppress("TYPE_INFERENCE_ONLY_INPUT_TYPES_WARNING")
@@ -110,7 +118,7 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
 
         override fun onSnapshot(currentData: Map<String, NetworkMapEntry>) {
             currentData.forEach { (_, networkMapEntry) -> addEntry(networkMapEntry) }
-            readyFuture.get().complete(Unit)
+            readyFuture.complete(Unit)
         }
 
         override fun onNext(

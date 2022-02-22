@@ -15,13 +15,14 @@ dependencies {
     implementation project(":libs:membership:membership-internal")
     implementation project(":libs:membership:membership-impl")
     implementation project(":components:configuration:configuration-read-service")
+    implementation project(":components:crypto:crypto-client")
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:membership:membership-identity-impl")
     implementation project(":libs:membership:membership-internal")
     implementation project(":libs:messaging:messaging")
     implementation "net.corda:corda-membership-conversion"
-    implementation project(":libs:crypto:crypto-client")
+    implementation project(":libs:crypto:crypto-core")
     implementation "net.corda:corda-cipher-suite"
     testImplementation project(":libs:crypto:crypto-impl")
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

@@ -1,7 +1,7 @@
 package net.corda.libs.configuration
 
 import com.typesafe.config.ConfigFactory
-import net.corda.crypto.Encryptor
+import net.corda.crypto.core.Encryptor
 import net.corda.libs.configuration.secret.EncryptionSecretsService
 import net.corda.libs.configuration.secret.MaskedSecretsLookupService
 import net.corda.libs.configuration.secret.SecretsConfigurationException

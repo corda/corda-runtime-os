@@ -1,6 +1,6 @@
 package net.corda.crypto.persistence
 
-import net.corda.crypto.Encryptor
+import net.corda.crypto.core.Encryptor
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo

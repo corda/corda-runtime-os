@@ -1,7 +1,7 @@
 package net.corda.processors.crypto.tests
 
-import net.corda.crypto.CryptoConsts
-import net.corda.crypto.CryptoOpsClient
+import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.config.Configuration
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
