@@ -16,6 +16,7 @@ import java.time.Instant
  * If the state is null, ERROR or CLOSED send an error response to the counterparty as this indicates a bug in client code or  a
  * session mismatch has occurred.
  * If the client has not consumed all received events and it tries to send a close then trigger an error as this is a bug/session mismatch.
+ * If the client has already sent an close trigger an error as this is a bug/session mismatch.
  * If the state is CONFIRMED then set the status to CLOSING
  * If the state is CLOSING and set the status to WAIT_FOR_FINAL_ACK. The session cannot be closed until all acks are received by the
  * counterparty.
@@ -40,7 +41,7 @@ class SessionCloseProcessorSend(
             }
             currentStatus == SessionStateType.ERROR || currentStatus == SessionStateType.WAIT_FOR_FINAL_ACK || currentStatus ==
                     SessionStateType.CLOSED -> {
-                handleInvalidStatus(sessionId, currentStatus, sessionState)
+                handleInvalidStatus(sessionState)
             }
             sessionState.receivedEventsState.undeliveredMessages.any { it.payload !is SessionClose } -> {
                 //session mismatch error, ignore close messages as we only care about data messages not consumed by the client lib
@@ -49,7 +50,7 @@ class SessionCloseProcessorSend(
             currentStatus == SessionStateType.CLOSING &&
                     sessionState.receivedEventsState.undeliveredMessages.none { it.payload is SessionClose } -> {
                 //session mismatch - tried to send multiple close
-                handleDuplicateCloseSent(sessionId, sessionState)
+                handleDuplicateCloseSent(sessionState)
             }
             else -> {
                 val nextSeqNum = sessionState.sendEventsState.lastProcessedSequenceNum + 1
@@ -66,9 +67,9 @@ class SessionCloseProcessorSend(
     }
 
     private fun handleDuplicateCloseSent(
-        sessionId: String,
         sessionState: SessionState
     ): SessionState {
+        val sessionId = sessionState.sessionId
         val errorMessage = "Tried to send SessionClose on key $key and sessionId $sessionId, session status is " +
                 "${sessionState.status}, however SessionClose has already been sent. " +
                 "Current SessionState: $sessionState."
@@ -86,11 +87,10 @@ class SessionCloseProcessorSend(
     }
 
     private fun handleInvalidStatus(
-        sessionId: String,
-        currentStatus: SessionStateType?,
         sessionState: SessionState
     ) : SessionState {
-        val errorMessage = "Tried to send SessionClose on key $key for sessionId $sessionId with status of : $currentStatus"
+        val errorMessage = "Tried to send SessionClose on key $key for sessionId ${sessionState.sessionId} " +
+                "with status of : ${sessionState.status}"
         logger.error(errorMessage)
         return sessionState.apply {
             status = SessionStateType.ERROR
