@@ -16,14 +16,8 @@ import net.corda.v5.crypto.SecureHash
 import java.nio.ByteBuffer
 import java.util.concurrent.ConcurrentHashMap
 
-// Needs to be made a CPK checksum cache. What will happen if say some chunks of a CPK are on Kafka but not all?
-// Should we identify somehow that all chunks of a CPK are on kafka and only then that CPK checksum could be cached?
-// In theory, if we say publishing to Kafka will be transactional, i.e. either all chunks or none, that should mean
-// all chunks for a CPK should be in Kafka.
-// Or maybe check for a null byte [CpkChunk] meaning all of the chunks were uploaded to Kafka. Should be quite safe?
 /**
- * CPK chunks cache. Caches only what identifies uniquely a CPK chunk which is its checksum + chunk id.
- * The cache will get updated every time a new CPK chunk entry gets written to Kafka.
+ * This cache will get updated everytime a zero chunk is pushed to Kafka and gets picked up by [CacheSynchronizer].
  */
 class CpkChecksumsCacheImpl(
     subscriptionFactory: SubscriptionFactory,
