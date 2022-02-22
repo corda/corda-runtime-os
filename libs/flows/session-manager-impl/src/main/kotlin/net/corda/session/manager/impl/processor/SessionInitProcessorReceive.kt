@@ -16,8 +16,9 @@ import java.util.*
 
 /**
  * Process SessionInit messages.
- * Generate [SessionAck] for the SessionInit and create a new [SessionState]
- * If [SessionState] for the given sessionId is null log the duplicate event.
+ * Generate [SessionAck] for the SessionInit and create a new [SessionState].
+ * If [SessionState] for the given sessionId is not null log the duplicate event.
+ * If SessionInit is received in reply to a SessionInit sent, error the session.
  */
 class SessionInitProcessorReceive(
     private val key: Any,
