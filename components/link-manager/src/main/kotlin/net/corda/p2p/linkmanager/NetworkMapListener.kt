@@ -8,5 +8,5 @@ interface NetworkMapListener {
         val networkType: NetworkType,
         val trustedCertificates: List<PemCertificates>,
     )
-    fun groupAdded(groupInfo: GroupInfo) {}
+    fun groupAdded(groupInfo: GroupInfo)
 }

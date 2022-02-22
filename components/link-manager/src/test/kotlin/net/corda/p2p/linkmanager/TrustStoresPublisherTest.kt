@@ -20,7 +20,6 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mockConstruction
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -44,13 +43,9 @@ class TrustStoresPublisherTest {
     }
     private val publishedRecords = argumentCaptor<List<Record<String, GatewayTruststore>>>()
     private val creteResources = AtomicReference<(resources: ResourcesHolder) -> CompletableFuture<Unit>>()
-    private val mockDominoTile = mockConstruction(DominoTile::class.java) { mock, context ->
+    private val mockDominoTile = mockConstruction(DominoTile::class.java) { _, context ->
         @Suppress("UNCHECKED_CAST")
         creteResources.set(context.arguments()[2] as? (resources: ResourcesHolder) -> CompletableFuture<Unit>)
-        whenever(mock.withLifecycleWriteLock(any<()->Any>())).doAnswer {
-            @Suppress("UNCHECKED_CAST")
-            it.getArgument<()->Any>(0).invoke()
-        }
     }
     private val mockPublisher = mockConstruction(PublisherWithDominoLogic::class.java) { mock, _ ->
         whenever(mock.publish(publishedRecords.capture())).doReturn(emptyList())

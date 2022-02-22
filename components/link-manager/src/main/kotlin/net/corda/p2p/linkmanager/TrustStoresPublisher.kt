@@ -17,6 +17,7 @@ import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_TRUSTSTORES
 import net.corda.v5.base.util.contextLogger
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.atomic.AtomicReference
 
 @Suppress("LongParameterList")
@@ -35,7 +36,7 @@ internal class TrustStoresPublisher(
     }
 
     private val publishedGroups = ConcurrentHashMap<String, Set<PemCertificates>>()
-    private val toPublish = mutableMapOf<String, List<PemCertificates>>()
+    private val toPublish = ConcurrentLinkedDeque<NetworkMapListener.GroupInfo>()
     private val ready = AtomicReference<CompletableFuture<Unit>>()
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,
@@ -50,10 +51,8 @@ internal class TrustStoresPublisher(
     )
 
     override fun groupAdded(groupInfo: NetworkMapListener.GroupInfo) {
-        val groupId = groupInfo.groupId
-        val certificates = groupInfo.trustedCertificates
-
-        publishGroupIfNeeded(groupId, certificates)
+        toPublish.offerLast(groupInfo)
+        publishQueueIfPossible()
     }
 
     override val dominoTile = DominoTile(
@@ -78,12 +77,7 @@ internal class TrustStoresPublisher(
                 }
             )
             ready.get()?.complete(Unit)
-            dominoTile.withLifecycleWriteLock {
-                toPublish.forEach { (groupId, certificates) ->
-                    publishGroupIfNeeded(groupId, certificates)
-                }
-                toPublish.clear()
-            }
+            publishQueueIfPossible()
         }
 
         override fun onNext(
@@ -109,21 +103,16 @@ internal class TrustStoresPublisher(
         return complete
     }
 
-    private fun publishGroupIfNeeded(groupId: String, certificates: List<PemCertificates>) {
-        if (ready.get()?.isDone != true) {
-            val notReady = dominoTile.withLifecycleWriteLock {
-                if (ready.get()?.isDone != true) {
-                    // Still waiting for the snapshots, keep this group to be published later
-                    toPublish[groupId] = certificates
-                    true
-                } else {
-                    false
-                }
-            }
-            if (notReady) {
-                return
-            }
+    private fun publishQueueIfPossible() {
+        while (ready.get()?.isDone == true) {
+            val groupInfo = toPublish.pollFirst() ?: return
+            val groupId = groupInfo.groupId
+            val certificates = groupInfo.trustedCertificates
+            publishGroupIfNeeded(groupId, certificates)
         }
+    }
+
+    private fun publishGroupIfNeeded(groupId: String, certificates: List<PemCertificates>) {
         publishedGroups.compute(groupId) { _, publishedCertificates ->
             val certificatesSet = certificates.toSet()
             if (certificatesSet != publishedCertificates) {
