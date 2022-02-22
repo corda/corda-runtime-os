@@ -14,27 +14,6 @@ import java.nio.ByteBuffer
 @CommandLine.Command(name = "write")
 class WriteCommand : BaseCommand() {
 
-    companion object {
-
-        /**
-         * This method is a bit hacky. It has been created to quickly test the command. It should never be called
-         * from production and it should be replaced by a proper way of mocking the resource. This method will only
-         * override the resource once, and then will return stdin again.
-         */
-        fun overrideStdinOnlyOnceForTesting(inputStream: InputStream) {
-            overrideInputStream = inputStream
-        }
-
-        private var overrideInputStream: InputStream? = null
-
-        private val stdin: InputStream
-            get() {
-                val stream = overrideInputStream ?: System.`in`
-                overrideInputStream = null
-                return stream
-            }
-    }
-
     @CommandLine.Option(names = ["--topic"], required = true, description = ["Topic name"])
     private lateinit var topicName: String
 

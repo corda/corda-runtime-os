@@ -17,6 +17,7 @@ dependencies {
     implementation "org.apache.avro:avro:$avroVersion"
 
     integrationTestImplementation project(":testing:introspiciere:introspiciere-junit")
+    integrationTestImplementation "com.jayway.jsonpath:json-path:2.7.0"
 }
 
 jar {

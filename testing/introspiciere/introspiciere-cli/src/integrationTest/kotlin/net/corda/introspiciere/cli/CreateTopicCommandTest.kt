@@ -1,11 +1,22 @@
 package net.corda.introspiciere.cli
 
+import com.jayway.jsonpath.JsonPath
 import net.corda.introspiciere.junit.InMemoryIntrospiciereServer
 import net.corda.introspiciere.junit.getMinikubeKafkaBroker
 import net.corda.introspiciere.junit.random8
+import net.corda.p2p.test.KeyAlgorithm
+import net.corda.p2p.test.KeyPairEntry
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
+import java.io.ByteArrayOutputStream
+import java.nio.ByteBuffer
+import java.nio.CharBuffer
+import java.nio.charset.Charset
+import java.nio.charset.StandardCharsets
+import java.security.KeyPairGenerator
 
+@Suppress("UNUSED_VARIABLE")
 class CreateTopicCommandTest {
 
     companion object {
@@ -19,9 +30,8 @@ class CreateTopicCommandTest {
     }
 
     @Test
-    fun `I can create a topic from cli`() {
-        internalMain(
-            "create-topic",
+    fun `i can create a topic from cli`() {
+        internalMain("create-topic",
             "--endpoint", introspiciere.endpoint,
             "--topic", "topic".random8,
             "--partitions", "3",
@@ -30,24 +40,69 @@ class CreateTopicCommandTest {
     }
 
     @Test
-    fun `Write message from cli`() {
+    fun `write message from cli`() {
         val topic = "topic".random8
-        introspiciere.client.createTopic(topic)
+        val key = "key".random8
 
-        WriteCommand.overrideStdinOnlyOnceForTesting("""
+        val input = """
             {
                 "keyAlgo": "ECDSA",
                 "publicKey": "public-key",
                 "privateKey": "private-key"
             }
-        """.trimIndent().byteInputStream())
+        """.trimIndent()
 
-        internalMain(
-            "write",
+        introspiciere.client.createTopic(topic)
+
+        input.byteInputStream().use {
+            internalMain("write",
+                "--endpoint", introspiciere.endpoint,
+                "--topic", topic,
+                "--key", key,
+                "--schema", KeyPairEntry::class.qualifiedName!!,
+                overrideStdin = it
+            )
+        }
+
+        val messages = introspiciere.client.read<KeyPairEntry>(topic, key)
+        assertEquals(1, messages.size, "Only one message expected")
+        assertEquals(KeyAlgorithm.ECDSA, messages.first().keyAlgo)
+        assertEquals(ByteBuffer.wrap("public-key".toByteArray()), messages.first().publicKey)
+        assertEquals(ByteBuffer.wrap("private-key".toByteArray()), messages.first().privateKey)
+    }
+
+    @Test
+    fun `read message from cli`() {
+        val topic = "topic".random8
+        val key = "key".random8
+        val keyPairEntry = generateKeyPairEntry()
+
+        introspiciere.client.createTopic(topic)
+        introspiciere.client.write(topic, key, keyPairEntry)
+
+        val outputStream = ByteArrayOutputStream()
+        internalMain("read",
             "--endpoint", introspiciere.endpoint,
             "--topic", topic,
-            "--key", "key1",
-            "--schema", "net.corda.p2p.test.KeyPairEntry"
+            "--key", key,
+            "--schema", KeyPairEntry::class.qualifiedName!!,
+            overrideStdout = outputStream
+        )
+
+        val stdout = outputStream.toByteArray().let(::String)
+        val jpath = JsonPath.parse(stdout)
+        assertEquals("ECDSA", jpath.read("$.keyAlgo"))
+        // TODO: Assert public and private keys. Don't know how to do it
+    }
+
+    private fun generateKeyPairEntry(): KeyPairEntry {
+        val generator = KeyPairGenerator.getInstance("EC")
+        generator.initialize(571)
+        val pair = generator.generateKeyPair()
+        return KeyPairEntry(
+            KeyAlgorithm.ECDSA,
+            ByteBuffer.wrap(pair.public.encoded),
+            ByteBuffer.wrap(pair.private.encoded)
         )
     }
 }

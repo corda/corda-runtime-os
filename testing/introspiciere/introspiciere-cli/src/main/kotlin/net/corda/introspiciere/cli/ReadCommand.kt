@@ -22,10 +22,12 @@ class ReadCommand : BaseCommand() {
         val messages = MessageReaderReq(topicName, key, schemaName).request(endpoint)
 
         val clazz = Class.forName(schemaName)
-        messages.forEach {
+        messages.forEach { msg ->
             val fromByteBuffer = clazz.getMethod("fromByteBuffer", ByteBuffer::class.java)
-            val avro = fromByteBuffer.invoke(null, ByteBuffer.wrap(it.schema))
-            println(avro)
+            val avro = fromByteBuffer.invoke(null, ByteBuffer.wrap(msg.schema))
+            stdout.bufferedWriter().autoFlush { writer ->
+                writer.appendLine(avro.toString())
+            }
         }
     }
 }
