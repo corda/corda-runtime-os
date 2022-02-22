@@ -31,7 +31,7 @@ class SessionEventProcessorFactoryTest {
     fun testCreateEventReceivedProcessorOutboundMessage() {
         assertThrows<SessionManagerException> {
             sessionEventProcessorFactory.createEventReceivedProcessor(
-                "key", SessionEvent(MessageDirection.OUTBOUND, 1, "1", 1, null),
+                "key", SessionEvent(MessageDirection.OUTBOUND, Instant.now(), "1", 1, null),
                 null, Instant.now()
             )
         }
@@ -41,7 +41,7 @@ class SessionEventProcessorFactoryTest {
     fun testCreateEventToSendProcessorInboundMessage() {
         assertThrows<SessionManagerException> {
             sessionEventProcessorFactory.createEventToSendProcessor(
-                "key", SessionEvent(MessageDirection.INBOUND, 1, "1", null, null), null,
+                "key", SessionEvent(MessageDirection.INBOUND, Instant.now(), "1", null, null), null,
                 Instant.now()
             )
         }
@@ -51,7 +51,7 @@ class SessionEventProcessorFactoryTest {
     fun testOutboundDataMessage() {
         val processor = sessionEventProcessorFactory.createEventToSendProcessor(
             "key", SessionEvent(
-                MessageDirection.OUTBOUND, 1, "1", null,
+                MessageDirection.OUTBOUND, Instant.now(), "1", null,
                 SessionData()
             ), null, Instant.now()
         )
@@ -63,7 +63,7 @@ class SessionEventProcessorFactoryTest {
     fun testInboundDataMessage() {
         val processor = sessionEventProcessorFactory.createEventReceivedProcessor(
             "key", SessionEvent(
-                MessageDirection.INBOUND, 1, "1", 2,
+                MessageDirection.INBOUND, Instant.now(), "1", 2,
                 SessionData()
             ), null, Instant.now()
         )
@@ -75,7 +75,7 @@ class SessionEventProcessorFactoryTest {
     fun testInboundErrorMessage() {
         val processor = sessionEventProcessorFactory.createEventReceivedProcessor(
             "key", SessionEvent(
-                MessageDirection.INBOUND, 1, "1", 2,
+                MessageDirection.INBOUND, Instant.now(), "1", 2,
                 SessionError(ExceptionEnvelope())
             ), null, Instant.now()
         )
@@ -87,7 +87,7 @@ class SessionEventProcessorFactoryTest {
     fun testOutboundErrorMessage() {
         val processor = sessionEventProcessorFactory.createEventToSendProcessor(
             "key", SessionEvent(
-                MessageDirection.OUTBOUND, 1, "1", 2,
+                MessageDirection.OUTBOUND, Instant.now(), "1", 2,
                 SessionError(ExceptionEnvelope())
             ), null, Instant.now()
         )
@@ -99,7 +99,7 @@ class SessionEventProcessorFactoryTest {
     fun testInboundInitMessage() {
         val processor = sessionEventProcessorFactory.createEventReceivedProcessor(
             "key", SessionEvent(
-                MessageDirection.INBOUND, 1, "1", 2,
+                MessageDirection.INBOUND, Instant.now(), "1", 2,
                 SessionInit()
             ), null, Instant.now()
         )
@@ -111,7 +111,7 @@ class SessionEventProcessorFactoryTest {
     fun testOutboundInitMessage() {
         val processor = sessionEventProcessorFactory.createEventToSendProcessor(
             "key", SessionEvent(
-                MessageDirection.OUTBOUND, 1, "1", 2,
+                MessageDirection.OUTBOUND, Instant.now(), "1", 2,
                 SessionInit()
             ), null, Instant.now()
         )
@@ -123,7 +123,7 @@ class SessionEventProcessorFactoryTest {
     fun testInboundAckMessage() {
         val processor = sessionEventProcessorFactory.createEventReceivedProcessor(
             "key", SessionEvent(
-                MessageDirection.INBOUND, 1, "1", 2,
+                MessageDirection.INBOUND, Instant.now(), "1", 2,
                 SessionAck()
             ), null, Instant.now()
         )
@@ -136,7 +136,7 @@ class SessionEventProcessorFactoryTest {
         assertThrows<NotImplementedError> {
             sessionEventProcessorFactory.createEventToSendProcessor(
                 "key", SessionEvent(
-                    MessageDirection.OUTBOUND, 1, "1", 1,
+                    MessageDirection.OUTBOUND, Instant.now(), "1", 1,
                     SessionAck()
                 ), null, Instant.now()
             )
@@ -147,7 +147,7 @@ class SessionEventProcessorFactoryTest {
     fun testInboundCloseMessage() {
         val processor = sessionEventProcessorFactory.createEventReceivedProcessor(
             "key", SessionEvent(
-                MessageDirection.INBOUND, 1, "1", 2,
+                MessageDirection.INBOUND, Instant.now(), "1", 2,
                 SessionClose()
             ), null, Instant.now()
         )
@@ -159,7 +159,7 @@ class SessionEventProcessorFactoryTest {
     fun testOutboundCloseMessage() {
         val processor = sessionEventProcessorFactory.createEventToSendProcessor(
             "key", SessionEvent(
-                MessageDirection.OUTBOUND, 1, "1", 2,
+                MessageDirection.OUTBOUND, Instant.now(), "1", 2,
                 SessionClose()
             ), null, Instant.now()
         )
