@@ -3,7 +3,7 @@ package net.corda.p2p.gateway.messaging
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.gateway.Gateway.Companion.CONFIG_KEY
@@ -19,7 +19,7 @@ class ReconfigurableConnectionManager(
         { sslConfig, connectionConfig -> ConnectionManager(sslConfig, connectionConfig) }
 ) : LifecycleWithDominoTile {
 
-    override val dominoTile = DominoTile(
+    override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         configurationChangeHandler = ConnectionManagerConfigChangeHandler()
@@ -57,7 +57,7 @@ class ReconfigurableConnectionManager(
                 if (newConfiguration.sslConfig != oldConfiguration?.sslConfig ||
                     newConfiguration.connectionConfig != oldConfiguration.connectionConfig
                 ) {
-                    logger.info("New configuration, clients for ${dominoTile.name} will be reconnected")
+                    logger.info("New configuration, clients for ${dominoTile.coordinatorName} will be reconnected")
                     val newManager = managerFactory(newConfiguration.sslConfig, newConfiguration.connectionConfig)
                     resources.keep(newManager)
                     val oldManager = manager

@@ -31,7 +31,6 @@ dependencies {
     implementation "net.corda:corda-cipher-suite"
     implementation "net.corda:corda-packaging"
     implementation "net.corda:corda-serialization"
-    implementation project(":libs:crypto:crypto-client")
 
     implementation project(":libs:utilities")
 

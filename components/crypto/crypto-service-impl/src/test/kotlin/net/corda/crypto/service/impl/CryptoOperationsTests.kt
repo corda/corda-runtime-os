@@ -1,6 +1,6 @@
 package net.corda.crypto.service.impl
 
-import net.corda.crypto.CryptoConsts
+import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.service.impl.signing.CryptoServicesTestFactory
 import net.corda.test.util.createTestCase
 import net.corda.v5.base.types.OpaqueBytes
