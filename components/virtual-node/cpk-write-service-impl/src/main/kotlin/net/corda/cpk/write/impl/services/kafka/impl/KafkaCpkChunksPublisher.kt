@@ -12,14 +12,15 @@ import java.time.Duration
 
 class KafkaCpkChunksPublisher(
     private val publisher: Publisher,
-    private val timeout: Duration
+    private val timeout: Duration,
+    private val topicName: String = "TODO"
 ) : CpkChunksPublisher {
     companion object {
         val logger = contextLogger()
     }
 
     override fun put(cpkChunkId: AvroTypesTodo.CpkChunkIdAvro, cpkChunk: Chunk) {
-        val cpkChunksRecord = Record("TODO", cpkChunkId, cpkChunk)
+        val cpkChunksRecord = Record(topicName, cpkChunkId, cpkChunk)
         putAllAndWaitForResponses(cpkChunksRecord)
     }
 
