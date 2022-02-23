@@ -30,8 +30,7 @@ class CpkChecksumsCacheImpl(
         private fun ByteBuffer.isZeroChunk() = this.limit() == 0
     }
 
-    @VisibleForTesting
-    internal val cpkChecksums: MutableMap<SecureHash, SecureHash> = ConcurrentHashMap()
+    private val cpkChecksums: MutableMap<SecureHash, SecureHash> = ConcurrentHashMap()
 
     // TODO Add config to the below
     @VisibleForTesting
