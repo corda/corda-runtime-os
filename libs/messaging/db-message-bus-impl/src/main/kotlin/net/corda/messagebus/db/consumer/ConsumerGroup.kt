@@ -12,7 +12,7 @@ class ConsumerGroup(
     private val dbAccess: DBAccess,
 ) {
     private val lock: ReentrantReadWriteLock = ReentrantReadWriteLock()
-    private val topicPartitions: Map<String, Collection<CordaTopicPartition>> = buildTopicPartitions()
+    private val topicPartitions: MutableMap<String, MutableSet<CordaTopicPartition>> = mutableMapOf()
     private val consumerMap: MutableMap<String, MutableSet<CordaConsumer<*, *>>> = mutableMapOf()
     private val partitionsPerConsumer: MutableMap<Int, MutableSet<CordaTopicPartition>> = mutableMapOf()
 
@@ -30,6 +30,7 @@ class ConsumerGroup(
         topics: Collection<String>,
     ) {
         topics.forEach { topic ->
+            buildTopicPartitionsFor(topic)
             getConsumersFor(topic).add(consumer)
             try {
                 repartition(topic)
@@ -58,13 +59,11 @@ class ConsumerGroup(
         }
     }
 
-    private fun buildTopicPartitions(): Map<String, Collection<CordaTopicPartition>> {
-        val topicPartitions = mutableMapOf<String, MutableSet<CordaTopicPartition>>()
-        dbAccess.getTopicPartitionMap().forEach { (topic, numPartitions) ->
+    private fun buildTopicPartitionsFor(topic: String) {
+        dbAccess.getTopicPartitionMapFor(topic).apply {
             repeat(numPartitions) { partition ->
-                topicPartitions.computeIfAbsent(topic) { mutableSetOf() }.add(CordaTopicPartition(topic, partition))
+                topicPartitions.computeIfAbsent(this.topic) { mutableSetOf() }.add(CordaTopicPartition(topic, partition))
             }
         }
-        return topicPartitions
     }
 }

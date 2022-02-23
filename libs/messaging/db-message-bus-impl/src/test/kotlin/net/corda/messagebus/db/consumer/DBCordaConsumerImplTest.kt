@@ -31,6 +31,7 @@ internal class DBCordaConsumerImplTest {
         max.poll.records = 10
         max.poll.interval.ms = 100000
         group.id = group
+        client.id = client
         """
         )
 
@@ -189,6 +190,36 @@ internal class DBCordaConsumerImplTest {
         assertThat(fromOffset.allValues[4]).isEqualTo(6)
         assertThat(fromOffset.allValues[5]).isEqualTo(11)
 
+    }
+
+    @Test
+    fun `consumer poll stops at uncommitted records`() {
+        val fromOffset = ArgumentCaptor.forClass(Long::class.java)
+        val timestamp = Instant.parse("2022-01-01T00:00:00.00Z")
+
+        val transactionRecord1 = TransactionRecordEntry("id", TransactionState.COMMITTED)
+        val transactionRecord2 = TransactionRecordEntry("id2", TransactionState.PENDING)
+
+        val pollResult = listOf(
+            TopicRecordEntry(topic, 0, 0, serializedKey, serializedValue, transactionRecord1, timestamp),
+            TopicRecordEntry(topic, 0, 2, serializedKey, serializedValue, transactionRecord1, timestamp),
+            TopicRecordEntry(topic, 0, 5, serializedKey, serializedValue, transactionRecord2, timestamp),
+            TopicRecordEntry(topic, 0, 7, serializedKey, serializedValue, transactionRecord2, timestamp),
+        )
+        val expectedRecords = listOf(
+            CordaConsumerRecord(topic, 0, 0, "key", "value", timestamp.toEpochMilli()),
+            CordaConsumerRecord(topic, 0, 2, "key", "value", timestamp.toEpochMilli()),
+        )
+
+        whenever(dbAccess.getMaxOffsetsPerTopicPartition()).thenAnswer { mapOf(partition0 to 0L) }
+        whenever(dbAccess.readRecords(fromOffset.capture(), any(), any())).thenAnswer { pollResult }
+        whenever(consumerGroup.getTopicPartitionsFor(any())).thenAnswer { setOf(partition0) }
+
+        val consumer = makeConsumer()
+        val test = consumer.poll()
+        consumer.poll()
+        assertThat(test.size).isEqualTo(2)
+        assertThat(test).isEqualTo(expectedRecords)
     }
 
     @Test

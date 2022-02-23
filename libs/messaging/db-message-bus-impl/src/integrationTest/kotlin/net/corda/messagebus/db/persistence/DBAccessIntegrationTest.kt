@@ -206,13 +206,14 @@ class DBAccessIntegrationTest {
     @Test
     fun `DBWriter writes commited offsets`() {
         val timestamp = Instant.parse("2022-01-01T00:00:00.00Z")
+        val transactionRecordEntry = TransactionRecordEntry(randomId())
 
         val offsets = listOf(
-            CommittedOffsetEntry(topic, consumerGroup, 0, 0, "", timestamp),
-            CommittedOffsetEntry(topic, consumerGroup, 0, 1, "", timestamp),
-            CommittedOffsetEntry(topic, consumerGroup, 0, 2, "", timestamp),
-            CommittedOffsetEntry(topic, consumerGroup, 1, 0, "", timestamp),
-            CommittedOffsetEntry(topic, consumerGroup, 1, 5, "", timestamp),
+            CommittedOffsetEntry(topic, consumerGroup, 0, 0, transactionRecordEntry, timestamp),
+            CommittedOffsetEntry(topic, consumerGroup, 0, 1, transactionRecordEntry, timestamp),
+            CommittedOffsetEntry(topic, consumerGroup, 0, 2, transactionRecordEntry, timestamp),
+            CommittedOffsetEntry(topic, consumerGroup, 1, 0, transactionRecordEntry, timestamp),
+            CommittedOffsetEntry(topic, consumerGroup, 1, 5, transactionRecordEntry, timestamp),
         )
 
         val dbAccess = DBAccess(emf)
@@ -284,5 +285,45 @@ class DBAccessIntegrationTest {
         )
 
         assertThat(dbAccess).returns(expectedResult, from(DBAccess::getMaxOffsetsPerTopicPartition))
+    }
+
+    @Test
+    fun `DbAccess returns correct max and min committed offsets`() {
+        val timestamp = Instant.parse("2022-01-01T00:00:00.00Z")
+        val dbAccess = DBAccess(emf)
+
+        val topic5 = "topic5"
+        val group1 = "group1"
+        val group2 = "group2"
+
+        val partition0 = CordaTopicPartition(topic5, 0)
+        val partition1 = CordaTopicPartition(topic5, 1)
+
+        val transactionRecord = TransactionRecordEntry("id")
+        val transactionRecord2 = TransactionRecordEntry("id2")
+
+        val offsets = listOf(
+            CommittedOffsetEntry(topic5, group1, 0, 0, transactionRecord, timestamp = timestamp),
+            CommittedOffsetEntry(topic5, group1, 0, 3, transactionRecord, timestamp = timestamp),
+            CommittedOffsetEntry(topic5, group1, 1, 0, transactionRecord, timestamp = timestamp),
+            CommittedOffsetEntry(topic5, group1, 1, 3, transactionRecord, timestamp = timestamp),
+            CommittedOffsetEntry(topic5, group1, 1, 5, transactionRecord2, timestamp = timestamp),
+
+            CommittedOffsetEntry(topic5, group2, 0, 6, transactionRecord, timestamp = timestamp),
+            CommittedOffsetEntry(topic5, group2, 1, 10, transactionRecord, timestamp = timestamp),
+        )
+
+        dbAccess.writeOffsets(offsets)
+        dbAccess.setTransactionRecordState(transactionRecord.transactionId, TransactionState.COMMITTED)
+
+        val minOffsets = dbAccess.getMinCommittedOffsets(group1, setOf(partition0, partition1))
+        assertThat(minOffsets.size).isEqualTo(2)
+        assertThat(minOffsets[partition0]).isEqualTo(0)
+        assertThat(minOffsets[partition1]).isEqualTo(0)
+
+        val maxOffsets = dbAccess.getMaxCommittedOffsets(group1, setOf(partition0, partition1))
+        assertThat(maxOffsets.size).isEqualTo(2)
+        assertThat(maxOffsets[partition0]).isEqualTo(3)
+        assertThat(maxOffsets[partition1]).isEqualTo(10)
     }
 }

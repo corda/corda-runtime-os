@@ -123,7 +123,7 @@ class CordaTransactionalDBProducerImpl(
                             (consumer as DBCordaConsumerImpl).getConsumerGroup(),
                             partition,
                             offset,
-                            transactionId
+                            transaction
                         )
                     }
 
@@ -141,7 +141,7 @@ class CordaTransactionalDBProducerImpl(
                 (consumer as DBCordaConsumerImpl).getConsumerGroup(),
                 partition,
                 offset,
-                transactionId
+                transaction
             )
         }
         dbAccess.writeOffsets(offsets)

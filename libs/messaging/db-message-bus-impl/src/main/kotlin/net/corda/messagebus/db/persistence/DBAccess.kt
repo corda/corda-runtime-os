@@ -18,6 +18,7 @@ import javax.persistence.EntityManagerFactory
  *
  * @param entityManagerFactory Provides the underlying DB connection
  */
+@Suppress("TooManyFunctions")
 class DBAccess(
     private val entityManagerFactory: EntityManagerFactory,
 ) {
@@ -26,12 +27,10 @@ class DBAccess(
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
     }
 
-    @Suppress("UNUSED_PARAMETER")
-    fun getMaxCommittedOffset(groupId: String, topicPartitions: Set<CordaTopicPartition>): Map<CordaTopicPartition, Long> {
-        if (topicPartitions.isEmpty()) {
-            return emptyMap()
-        }
-
+    private fun getCommittedOffsets(
+        groupId: String,
+        topicPartitions: Set<CordaTopicPartition>
+    ): Map<CordaTopicPartition, List<CommittedOffsetEntry>> {
         return executeWithErrorHandling("max committed offsets") { entityManager ->
             entityManager.createQuery(
                 """
@@ -43,10 +42,40 @@ class DBAccess(
                 CordaTopicPartition(it.topic, it.partition)
             }.filter {
                 it.key in topicPartitions
-            }.mapValues {
-                it.value.maxOf { committedOffsetEntry -> committedOffsetEntry.recordOffset }
             }
         }
+    }
+
+    fun getMaxCommittedOffsets(
+        groupId: String,
+        topicPartitions: Set<CordaTopicPartition>
+    ): Map<CordaTopicPartition, Long> {
+        if (topicPartitions.isEmpty()) {
+            return emptyMap()
+        }
+
+        val returnedOffsets = getCommittedOffsets(groupId, topicPartitions)
+            .mapValues {
+                it.value.maxOf { committedOffsetEntry -> committedOffsetEntry.recordOffset }
+            }
+        val missingPartitions = topicPartitions - returnedOffsets.keys
+        return returnedOffsets + missingPartitions.associateWith { 0L }
+    }
+
+    fun getMinCommittedOffsets(
+        groupId: String,
+        topicPartitions: Set<CordaTopicPartition>
+    ): Map<CordaTopicPartition, Long> {
+        if (topicPartitions.isEmpty()) {
+            return emptyMap()
+        }
+
+        val returnedOffsets = getCommittedOffsets(groupId, topicPartitions)
+            .mapValues {
+                it.value.minOf { committedOffsetEntry -> committedOffsetEntry.recordOffset }
+            }
+        val missingPartitions = topicPartitions - returnedOffsets.keys
+        return returnedOffsets + missingPartitions.associateWith { 0L }
     }
 
     fun getMaxOffsetsPerTopicPartition(): Map<CordaTopicPartition, Long> {
@@ -54,6 +83,7 @@ class DBAccess(
 
         executeWithErrorHandling("retrieve max offsets per topic") { entityManager ->
             data class Result(val topic: String, val partition: Int, val offset: Long)
+
             val builder = entityManager.criteriaBuilder
             val select = builder.createQuery(Result::class.java)
             val root = select.from(TopicRecordEntry::class.java)
@@ -77,8 +107,19 @@ class DBAccess(
     }
 
     fun createTopic(topic: String, partitions: Int) {
-        executeWithErrorHandling("create the topic $topic") { entityManager ->
+        executeWithErrorHandling("create the topic") { entityManager ->
             entityManager.persist(TopicEntry(topic, partitions))
+        }
+    }
+
+    fun getTopicPartitionMapFor(topic: String): TopicEntry {
+        return executeWithErrorHandling("retrieve topic partitions") { entityManager ->
+            val builder = entityManager.criteriaBuilder
+            val query = builder.createQuery(TopicEntry::class.java)
+            val root = query.from(TopicEntry::class.java)
+            query.multiselect(root.get<String>(TopicEntry::topic.name), root.get<Int>(TopicEntry::numPartitions.name))
+            query.where(builder.equal(root.get<String>(TopicEntry::topic.name), topic))
+            entityManager.createQuery(query).singleResult
         }
     }
 
@@ -170,7 +211,11 @@ class DBAccess(
         }
     }
 
-    fun readRecords(fromOffset: Long, topicPartition: CordaTopicPartition, limit: Int = Int.MAX_VALUE): List<TopicRecordEntry> {
+    fun readRecords(
+        fromOffset: Long,
+        topicPartition: CordaTopicPartition,
+        limit: Int = Int.MAX_VALUE
+    ): List<TopicRecordEntry> {
         return executeWithErrorHandling("read records") { entityManager ->
             entityManager.createQuery(
                 """

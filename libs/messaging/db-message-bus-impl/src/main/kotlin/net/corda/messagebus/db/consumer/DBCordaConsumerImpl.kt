@@ -3,19 +3,25 @@ package net.corda.messagebus.db.consumer
 import com.typesafe.config.Config
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.configuration.ConfigProperties
+import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CLIENT_ID
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
+import net.corda.messagebus.db.datamodel.CommittedOffsetEntry
+import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messagebus.db.persistence.DBAccess
+import net.corda.messagebus.db.producer.CordaAtomicDBProducerImpl.Companion.ATOMIC_TRANSACTION
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.schema.registry.AvroSchemaRegistry
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Duration
 
 @Suppress("TooManyFunctions", "LongParameterList")
 class DBCordaConsumerImpl<K : Any, V : Any> internal constructor(
-    consumerConfig: Config,
+    private val consumerConfig: Config,
     private val dbAccess: DBAccess,
     private val consumerGroup: ConsumerGroup?,
     private val avroSchemaRegistry: AvroSchemaRegistry,
@@ -30,7 +36,10 @@ class DBCordaConsumerImpl<K : Any, V : Any> internal constructor(
     companion object {
         const val MAX_POLL_RECORDS = "max.poll.records"
         const val MAX_POLL_INTERVAL = "max.poll.interval.ms"
+
     }
+
+    private val log: Logger = LoggerFactory.getLogger(consumerConfig.getString(CLIENT_ID))
 
     private val groupId = consumerConfig.getString(ConfigProperties.GROUP_ID)
     private val maxPollRecords: Int = consumerConfig.getInt(MAX_POLL_RECORDS)
@@ -63,7 +72,6 @@ class DBCordaConsumerImpl<K : Any, V : Any> internal constructor(
     }
 
     override fun assignment(): Set<CordaTopicPartition> {
-        checkNotSubscribed()
         return topicPartitions.toSet()
     }
 
@@ -77,20 +85,20 @@ class DBCordaConsumerImpl<K : Any, V : Any> internal constructor(
     }
 
     override fun seekToBeginning(partitions: Collection<CordaTopicPartition>) {
-        lastReadOffset.putAll(partitions.associateWith { 0L })
+        lastReadOffset.putAll(beginningOffsets(partitions))
     }
 
     override fun seekToEnd(partitions: Collection<CordaTopicPartition>) {
-        val maxOffsets = dbAccess.getMaxOffsetsPerTopicPartition()
-        lastReadOffset.putAll(partitions.associateWith { maxOffsets[it] ?: 0L })
+        val maxOffsets = dbAccess.getMaxCommittedOffsets(groupId, partitions.toSet())
+        lastReadOffset.putAll(maxOffsets)
     }
 
     override fun beginningOffsets(partitions: Collection<CordaTopicPartition>): Map<CordaTopicPartition, Long> {
-        TODO("Not yet implemented")
+        return dbAccess.getMinCommittedOffsets(groupId, partitions.toSet())
     }
 
     override fun endOffsets(partitions: Collection<CordaTopicPartition>): Map<CordaTopicPartition, Long> {
-        return dbAccess.getMaxOffsetsPerTopicPartition().filter { it.key in partitions }
+        return dbAccess.getMaxCommittedOffsets(groupId, partitions.toSet())
     }
 
     override fun resume(partitions: Collection<CordaTopicPartition>) {
@@ -114,7 +122,10 @@ class DBCordaConsumerImpl<K : Any, V : Any> internal constructor(
         val fromOffset = getNextOffsetFor(topicPartition)
 
         val dbRecords = dbAccess.readRecords(fromOffset, topicPartition, maxPollRecords)
-        return dbRecords.map { dbRecord ->
+
+        return dbRecords.takeWhile {
+            it.transactionId.state == TransactionState.COMMITTED
+        }.map { dbRecord ->
             CordaConsumerRecord(
                 dbRecord.topic,
                 dbRecord.partition,
@@ -127,7 +138,7 @@ class DBCordaConsumerImpl<K : Any, V : Any> internal constructor(
     }
 
     override fun resetToLastCommittedPositions(offsetStrategy: CordaOffsetResetStrategy) {
-        val lastCommittedOffsets = dbAccess.getMaxCommittedOffset(groupId, topicPartitions)
+        val lastCommittedOffsets = dbAccess.getMaxCommittedOffsets(groupId, topicPartitions)
         val maxOffsets = dbAccess.getMaxOffsetsPerTopicPartition().toMutableMap()
 
         for (topicPartition in topicPartitions) {
@@ -141,7 +152,17 @@ class DBCordaConsumerImpl<K : Any, V : Any> internal constructor(
     }
 
     override fun commitSyncOffsets(event: CordaConsumerRecord<K, V>, metaData: String?) {
-        TODO("Not yet implemented")
+        dbAccess.writeOffsets(
+            listOf(
+                CommittedOffsetEntry(
+                    event.topic,
+                    groupId,
+                    event.partition,
+                    event.offset,
+                    ATOMIC_TRANSACTION,
+                )
+            )
+        )
     }
 
     override fun getPartitions(topic: String, timeout: Duration): List<CordaTopicPartition> {
@@ -150,6 +171,7 @@ class DBCordaConsumerImpl<K : Any, V : Any> internal constructor(
 
     override fun close(timeout: Duration) {
         // Nothing to do here
+        log.info("Closing logger")
     }
 
     override fun close() {
@@ -255,5 +277,4 @@ class DBCordaConsumerImpl<K : Any, V : Any> internal constructor(
             throw CordaMessageAPIFatalException("Consumer is already assigned topic partitions")
         }
     }
-
 }
