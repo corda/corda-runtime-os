@@ -159,10 +159,6 @@ class CpkWriteServiceImpl @Activate constructor(
         closeResources()
     }
 
-    // Remove this, just keep delta method
-    override fun putAllCpk() {
-    }
-
     // is all we need - pass in the cache the checksums and get the missing the ones
     // for each of the metadata get the blob chunk it etc
     override fun putMissingCpk() {
