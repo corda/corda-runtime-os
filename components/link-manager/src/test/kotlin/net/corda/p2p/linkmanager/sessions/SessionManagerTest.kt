@@ -53,6 +53,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
 import org.mockito.Mockito
+import org.mockito.Mockito.mockStatic
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
@@ -66,11 +67,14 @@ import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.MessageDigest
+import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.util.Collections
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
 class SessionManagerTest {
@@ -125,6 +129,7 @@ class SessionManagerTest {
         sessionManager.stop()
         loggingInterceptor.reset()
         resources.close()
+        mockExecutors.close()
     }
 
     private lateinit var configHandler: SessionManagerImpl.SessionManagerConfigChangeHandler
@@ -173,6 +178,32 @@ class SessionManagerTest {
         on { createResponder(any(), any(), any()) } doReturn protocolResponder
     }
     val resources = ResourcesHolder()
+
+    private var now = Instant.now()
+    private val clock = mock<Clock> {
+        on { instant() } doAnswer { now }
+    }
+
+    private val scheduledTasks: MutableList<Pair<Instant, Runnable>> = mutableListOf()
+    private val mockScheduledExecutor = mock<ScheduledExecutorService> {
+        on { schedule(any(), any(), any()) } doAnswer {
+            @Suppress("UNCHECKED_CAST")
+            val task = it.arguments[0] as Runnable
+            val delay = it.arguments[1] as Long
+            val timeUnit = it.arguments[2] as TimeUnit
+            val timeToExecute = now.plus(delay, timeUnit.toChronoUnit())
+            scheduledTasks.add(timeToExecute to task)
+
+            mock()
+        }
+    }
+    private val mockExecutors = mockStatic(Executors::class.java).also {
+        it.`when`<Executors> {
+            Executors.newSingleThreadScheduledExecutor()
+        }.doReturn(mockScheduledExecutor)
+    }
+
+
     private val sessionManager = SessionManagerImpl(
         networkMap,
         cryptoService,
@@ -182,7 +213,8 @@ class SessionManagerTest {
         mock(),
         mock(),
         protocolFactory,
-        sessionReplayer
+        sessionReplayer,
+        clock
     ).apply {
         setRunning()
         configHandler.applyNewConfiguration(

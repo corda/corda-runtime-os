@@ -53,8 +53,8 @@ import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import org.slf4j.LoggerFactory
+import java.time.Clock
 import java.time.Duration
-import java.time.Instant
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
@@ -82,7 +82,8 @@ open class SessionManagerImpl(
         coordinatorFactory,
         configuration,
         networkMap
-    )
+    ),
+    clock: Clock = Clock.systemUTC()
 ) : SessionManager {
 
     companion object {
@@ -114,7 +115,8 @@ open class SessionManagerImpl(
         coordinatorFactory,
         configuration,
         networkMap,
-        ::destroyOutboundSession
+        ::destroyOutboundSession,
+        clock
     )
 
     private val publisher = PublisherWithDominoLogic(
@@ -559,7 +561,8 @@ open class SessionManagerImpl(
         coordinatorFactory: LifecycleCoordinatorFactory,
         configuration: SmartConfig,
         private val networkMap: LinkManagerNetworkMap,
-        private val destroySession: (counterparties: SessionCounterparties, sessionId: String) -> Any
+        private val destroySession: (counterparties: SessionCounterparties, sessionId: String) -> Any,
+        private val clock: Clock
     ) : LifecycleWithDominoTile {
 
         companion object {
@@ -770,7 +773,7 @@ open class SessionManagerImpl(
         }
 
         private fun timeStamp(): Long {
-            return Instant.now().toEpochMilli()
+            return clock.instant().toEpochMilli()
         }
     }
 }
