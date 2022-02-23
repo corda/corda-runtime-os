@@ -11,7 +11,7 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
     implementation "info.picocli:picocli:$picocliVersion"
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
-
+    implementation "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion"
 }
 application {
     mainClass = 'net.corda.p2p.deployment.GoKt'

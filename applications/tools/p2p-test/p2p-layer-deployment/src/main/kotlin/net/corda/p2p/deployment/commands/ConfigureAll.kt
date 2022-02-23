@@ -102,13 +102,23 @@ class ConfigureAll : Runnable {
         keyStoreFile(host)
     }
 
-    private val sslKeys by lazy {
+    private fun tlsCertificates(host: String): File {
+        return File(keyStoreDir.absolutePath, "$host.tlsCertificates.pem").also {
+            if (!it.exists()) {
+                createSslKeys(host)
+            }
+        }
+    }
+
+    private fun createSslKeys(host: String) {
         val keyStoreFile = File(keyStoreDir.absolutePath, "$host.ssl.keystore.jks")
         val trustStoreFile = File(keyStoreDir.absolutePath, "truststore.pem")
+        val tlsCertificates = File(keyStoreDir.absolutePath, "$host.tlsCertificates.pem")
         if ((!keyStoreFile.exists()) || (!trustStoreFile.exists())) {
             keyStoreDir.mkdirs()
             val creator = CreateStores()
             creator.sslStoreFile = keyStoreFile
+            creator.tlsCertificates = tlsCertificates
             creator.hosts = listOf(host)
             creator.trustStoreFile = trustStoreFile.let {
                 if (it.exists()) {
@@ -119,15 +129,22 @@ class ConfigureAll : Runnable {
             }
             creator.run()
         }
-        keyStoreFile to trustStoreFile
     }
 
     private val sslKeyStore by lazy {
-        sslKeys.first
+        File(keyStoreDir.absolutePath, "$host.ssl.keystore.jks").also {
+            if (!it.exists()) {
+                createSslKeys(host)
+            }
+        }
     }
 
     private val trustStoreFile by lazy {
-        sslKeys.second
+        File(keyStoreDir.absolutePath, "truststore.pem").also {
+            if (!it.exists()) {
+                createSslKeys(host)
+            }
+        }
     }
 
     private fun publishMySelfToOthers() {
@@ -146,6 +163,7 @@ class ConfigureAll : Runnable {
                     "address" to "http://$host:${Port.Gateway.port}",
                     "networkType" to "CORDA_5",
                     "trustStoreCertificates" to listOf(trustStoreFile.absolutePath),
+                    "tlsCertificates" to listOf(tlsCertificates(host).absolutePath),
                 )
             )
 
@@ -190,6 +208,7 @@ class ConfigureAll : Runnable {
                         "address" to "http://$host:${Port.Gateway.port}",
                         "networkType" to "CORDA_5",
                         "trustStoreCertificates" to listOf(trustStoreFile.absolutePath),
+                        "tlsCertificates" to listOf(tlsCertificates(host).absolutePath),
                     )
                 )
             }
@@ -224,8 +243,14 @@ class ConfigureAll : Runnable {
                     "keystoreFile" to keyStoreFile.absolutePath,
                     "password" to "password",
                     "algo" to "ECDSA"
+                ),
+                mapOf(
+                    "alias" to "$host.$x500name.rsa",
+                    "keystoreFile" to sslKeyStore.absolutePath,
+                    "password" to "password",
+                    "algo" to "RSA",
                 )
-            )
+            ),
         )
         jsonWriter.writeValue(configurationFile, configurationMap)
         println("Publishing keys to $namespaceName")
@@ -261,8 +286,6 @@ class ConfigureAll : Runnable {
                 "gateway",
                 "--hostAddress=0.0.0.0",
                 "--port=${Port.Gateway.port}",
-                "--keyStore=${sslKeyStore.absolutePath}",
-                "--keyStorePassword=password",
             ) + gatewayArguments
         ).run()
     }

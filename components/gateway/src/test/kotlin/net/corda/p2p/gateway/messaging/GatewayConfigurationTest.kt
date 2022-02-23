@@ -4,7 +4,6 @@ import com.typesafe.config.Config
 import net.corda.v5.base.util.hours
 import net.corda.v5.base.util.minutes
 import net.corda.v5.base.util.seconds
-import net.corda.v5.base.util.toBase64
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doReturn
@@ -15,8 +14,6 @@ class GatewayConfigurationTest {
     fun `toGatewayConfiguration return correct configuration with default connectionConfig`() {
         val sslConfig = mock<Config> {
             on { getEnum(RevocationConfigMode::class.java, "revocationCheck.mode") } doReturn RevocationConfigMode.HARD_FAIL
-            on { getString("keyStore") } doReturn byteArrayOf(1, 2, 3).toBase64()
-            on { getString("keyStorePassword") } doReturn "pass1"
         }
         val config = mock<Config> {
             on { hasPath("connectionConfig") } doReturn false
@@ -34,8 +31,6 @@ class GatewayConfigurationTest {
                 hostAddress = "address",
                 connectionConfig = ConnectionConfiguration(),
                 sslConfig = SslConfiguration(
-                    rawKeyStore = byteArrayOf(1, 2, 3),
-                    keyStorePassword = "pass1",
                     revocationCheck =
                     RevocationConfig(RevocationConfigMode.HARD_FAIL)
                 )
@@ -54,8 +49,6 @@ class GatewayConfigurationTest {
         }
         val sslConfig = mock<Config> {
             on { getEnum(RevocationConfigMode::class.java, "revocationCheck.mode") } doReturn RevocationConfigMode.HARD_FAIL
-            on { getString("keyStore") } doReturn byteArrayOf(1, 2, 3).toBase64()
-            on { getString("keyStorePassword") } doReturn "pass1"
         }
         val config = mock<Config> {
             on { hasPath("connectionConfig") } doReturn true
@@ -80,8 +73,6 @@ class GatewayConfigurationTest {
                     retryDelay = 21.minutes
                 ),
                 sslConfig = SslConfiguration(
-                    rawKeyStore = byteArrayOf(1, 2, 3),
-                    keyStorePassword = "pass1",
                     revocationCheck =
                     RevocationConfig(RevocationConfigMode.HARD_FAIL)
                 )

@@ -2,6 +2,7 @@ package net.corda.p2p.gateway.messaging.internal
 
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.stub.delegated.signing.StubCryptoService
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.data.p2p.gateway.GatewayResponse
@@ -28,6 +29,7 @@ import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.internal.InitiatorHandshakeIdentity
+import net.corda.p2p.gateway.messaging.CertificatesReader
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
 import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
@@ -65,6 +67,8 @@ class InboundMessageHandlerTest {
     private val server = mockConstruction(ReconfigurableHttpServer::class.java)
     private val sessionPartitionMapper = mockConstruction(SessionPartitionMapperImpl::class.java)
     private val p2pInPublisher = mockConstruction(PublisherWithDominoLogic::class.java)
+    private val certificatesReader = mockConstruction(CertificatesReader::class.java)
+    private val stubCryptoService = mockConstruction(StubCryptoService::class.java)
 
     private val dominoTile = mockConstruction(ComplexDominoTile::class.java) { mock, _ ->
         @Suppress("UNCHECKED_CAST")
@@ -80,13 +84,14 @@ class InboundMessageHandlerTest {
         1
     )
 
-
     @AfterEach
     fun cleanUp() {
         server.close()
         sessionPartitionMapper.close()
         p2pInPublisher.close()
         dominoTile.close()
+        certificatesReader.close()
+        stubCryptoService.close()
     }
 
     @Test
@@ -437,6 +442,8 @@ class InboundMessageHandlerTest {
         whenever(server.constructed().first().isRunning).doReturn(true)
         whenever(sessionPartitionMapper.constructed().first().isRunning).doReturn(true)
         whenever(p2pInPublisher.constructed().first().isRunning).doReturn(true)
+        whenever(certificatesReader.constructed().first().isRunning).doReturn(true)
+        whenever(stubCryptoService.constructed().first().isRunning).doReturn(true)
         handler.start()
     }
 

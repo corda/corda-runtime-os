@@ -1,7 +1,10 @@
 package net.corda.p2p.linkmanager
 
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.ECDSA_SIGNATURE_ALGO
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RSA_SIGNATURE_ALGO
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
+import net.corda.v5.crypto.SignatureSpec
 import java.security.PublicKey
 
 typealias PemCertificates = String
@@ -55,7 +58,18 @@ interface LinkManagerNetworkMap: LifecycleWithDominoTile {
     data class MemberInfo(val holdingIdentity: HoldingIdentity,
                           val publicKey: PublicKey,
                           val publicKeyAlgorithm: KeyAlgorithm,
-                          val endPoint: EndPoint)
+                          val endPoint: EndPoint,
+                          val tlsCertificates: List<PemCertificates>
+    ) {
+
+        fun getSignatureSpec(): SignatureSpec {
+            val algo = when (publicKeyAlgorithm) {
+                KeyAlgorithm.RSA -> RSA_SIGNATURE_ALGO
+                KeyAlgorithm.ECDSA -> ECDSA_SIGNATURE_ALGO
+            }
+            return SignatureSpec(algo)
+        }
+    }
 
     data class EndPoint(val address: String)
 

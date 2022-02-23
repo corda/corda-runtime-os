@@ -21,6 +21,7 @@ class ReconfigurableHttpServer(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val configurationReaderService: ConfigurationReadService,
     private val listener: HttpServerListener,
+    private val keyStore: KeyStoreWithPassword,
 ) : LifecycleWithDominoTile {
 
     @Volatile
@@ -64,15 +65,17 @@ class ReconfigurableHttpServer(
                         val oldServer = httpServer
                         httpServer = null
                         oldServer?.stop()
-                        val newServer = HttpServer(listener, newConfiguration)
+                        val newServer = HttpServer(listener, newConfiguration, keyStore)
                         newServer.start()
                         resources.keep(newServer)
                         httpServer = newServer
                     }
                 } else {
-                    logger.info("New server configuration, ${dominoTile.coordinatorName} will be connected to " +
-                        "${newConfiguration.hostAddress}:${newConfiguration.hostPort}")
-                    val newServer = HttpServer(listener, newConfiguration)
+                    logger.info(
+                        "New server configuration, ${dominoTile.coordinatorName} will be connected to " +
+                            "${newConfiguration.hostAddress}:${newConfiguration.hostPort}"
+                    )
+                    val newServer = HttpServer(listener, newConfiguration, keyStore)
                     newServer.start()
                     resources.keep(newServer)
                     serverLock.write {

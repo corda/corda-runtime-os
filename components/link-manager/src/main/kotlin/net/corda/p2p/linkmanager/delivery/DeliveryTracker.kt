@@ -1,6 +1,7 @@
 package net.corda.p2p.linkmanager.delivery
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.stub.delegated.signing.SigningCryptoService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MESSAGE_REPLAY_KEY_PREFIX
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -18,7 +19,6 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.AuthenticatedMessageDeliveryState
-import net.corda.p2p.linkmanager.LinkManagerCryptoService
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.sessions.SessionManager
@@ -39,7 +39,7 @@ class DeliveryTracker(
     private val configuration: SmartConfig,
     private val subscriptionFactory: SubscriptionFactory,
     networkMap: LinkManagerNetworkMap,
-    cryptoService: LinkManagerCryptoService,
+    cryptoService: SigningCryptoService,
     sessionManager: SessionManager,
     private val instanceId: Int,
     processAuthenticatedMessage: (message: AuthenticatedMessageAndKey) -> List<Record<String, *>>,

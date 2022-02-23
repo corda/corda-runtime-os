@@ -2,6 +2,7 @@ package net.corda.p2p.linkmanager
 
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
+import net.corda.crypto.stub.delegated.signing.StubCryptoService
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.publish.CordaConfigurationKey
 import net.corda.libs.configuration.publish.CordaConfigurationVersion

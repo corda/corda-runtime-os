@@ -2,6 +2,7 @@ package net.corda.p2p.linkmanager.sessions
 
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.stub.delegated.signing.SigningCryptoService
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
@@ -31,7 +32,6 @@ import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
 import net.corda.p2p.linkmanager.LinkManager
-import net.corda.p2p.linkmanager.LinkManagerCryptoService
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
@@ -69,7 +69,7 @@ import kotlin.concurrent.write
 @Suppress("LongParameterList", "TooManyFunctions")
 open class SessionManagerImpl(
     private val networkMap: LinkManagerNetworkMap,
-    private val cryptoService: LinkManagerCryptoService,
+    private val cryptoService: SigningCryptoService,
     private val pendingOutboundSessionMessageQueues: LinkManager.PendingSessionMessageQueues,
     publisherFactory: PublisherFactory,
     private val configurationReaderService: ConfigurationReadService,
@@ -360,13 +360,15 @@ open class SessionManagerImpl(
             return null
         }
 
-        val signWithOurGroupId = { data: ByteArray -> cryptoService.signData(ourMemberInfo.publicKey, data) }
+        val signWithOurGroupId = { data: ByteArray ->
+            cryptoService.sign(ourMemberInfo.publicKey, ourMemberInfo.getSignatureSpec() , data)
+        }
         val payload = try {
             session.generateOurHandshakeMessage(
                 responderMemberInfo.publicKey,
                 signWithOurGroupId
             )
-        } catch (exception: LinkManagerCryptoService.NoPrivateKeyForGroupException) {
+        } catch (exception: SecurityException) {
             logger.warn(
                 "${exception.message}. The ${message::class.java.simpleName} with sessionId ${message.header.sessionId}" +
                         " was discarded."
@@ -530,9 +532,9 @@ open class SessionManagerImpl(
 
         val response = try {
             val ourPublicKey = ourMemberInfo.publicKey
-            val signData = { data: ByteArray -> cryptoService.signData(ourMemberInfo.publicKey, data) }
+            val signData = { data: ByteArray -> cryptoService.sign(ourMemberInfo.publicKey, ourMemberInfo.getSignatureSpec(), data) }
             session.generateOurHandshakeMessage(ourPublicKey, signData)
-        } catch (exception: LinkManagerCryptoService.NoPrivateKeyForGroupException) {
+        } catch (exception: SecurityException) {
             logger.warn(
                 "Received ${message::class.java.simpleName} with sessionId ${message.header.sessionId}. ${exception.message}." +
                         " The message was discarded."

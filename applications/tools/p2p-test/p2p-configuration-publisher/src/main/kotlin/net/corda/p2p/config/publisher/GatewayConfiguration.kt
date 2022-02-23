@@ -5,10 +5,8 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.publish.CordaConfigurationKey
 import net.corda.libs.configuration.publish.CordaConfigurationVersion
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
-import net.corda.v5.base.util.toBase64
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
-import java.io.File
 import java.time.Duration
 
 @Command(
@@ -30,20 +28,6 @@ class GatewayConfiguration : ConfigProducer() {
         required = true
     )
     var port: Int = 0
-
-    @Option(
-        names = ["--keyStore"],
-        description = ["The path to the key store file"],
-        required = true
-    )
-    lateinit var keyStoreFile: File
-
-    @Option(
-        names = ["--keyStorePassword"],
-        description = ["The key store password"],
-        required = true
-    )
-    lateinit var keyStorePassword: String
 
     @Option(
         names = ["--revocationCheck"],
@@ -90,16 +74,6 @@ class GatewayConfiguration : ConfigProducer() {
             .withValue(
                 "hostPort",
                 ConfigValueFactory.fromAnyRef(port)
-            )
-            .withValue(
-                "sslConfig.keyStorePassword",
-                ConfigValueFactory.fromAnyRef(keyStorePassword)
-            )
-            .withValue(
-                "sslConfig.keyStore",
-                ConfigValueFactory.fromAnyRef(
-                    keyStoreFile.readBytes().toBase64()
-                )
             )
             .withValue(
                 "sslConfig.revocationCheck.mode",

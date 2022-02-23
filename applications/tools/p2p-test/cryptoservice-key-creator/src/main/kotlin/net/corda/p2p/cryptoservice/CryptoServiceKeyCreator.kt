@@ -121,11 +121,12 @@ class CryptoServiceKeyCreator @Activate constructor(
 
             val keystore = KeyStore.getInstance("JKS")
             keystore.load(FileInputStream(keystoreFilePath), keystorePassword.toCharArray())
+            val keyStoreAlias = keystore.aliases().nextElement()
 
-            val privateKey = keystore.getKey(alias, keystorePassword.toCharArray()) as PrivateKey
-            val publicKey = keystore.getCertificate(alias).publicKey
+            val privateKey = keystore.getKey(keyStoreAlias, keystorePassword.toCharArray()) as PrivateKey
+            val publicKey = keystore.getCertificate(keyStoreAlias).publicKey
 
-            val keyAlgorithm: KeyAlgorithm? = when (algo) {
+            val keyAlgorithm: KeyAlgorithm = when (algo) {
                 "RSA" -> KeyAlgorithm.RSA
                 "ECDSA" -> KeyAlgorithm.ECDSA
                 else -> {

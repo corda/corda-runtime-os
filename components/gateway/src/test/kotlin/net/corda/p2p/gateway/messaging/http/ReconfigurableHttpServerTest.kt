@@ -41,10 +41,7 @@ class ReconfigurableHttpServerTest {
     private val configuration = GatewayConfiguration(
         hostAddress = "www.r3.com",
         hostPort = 33,
-        sslConfig = mock {
-            on { keyStore } doReturn mock()
-            on { keyStorePassword } doReturn "hi"
-        }
+        sslConfig = mock()
     )
     private val badConfigurationException = RuntimeException("Bad Config")
     private val badConfiguration = mock<GatewayConfiguration> {
@@ -60,7 +57,8 @@ class ReconfigurableHttpServerTest {
     private val server = ReconfigurableHttpServer(
         lifecycleCoordinatorFactory,
         configurationReaderService,
-        listener
+        listener,
+        mock()
     )
 
     @AfterEach
@@ -105,7 +103,7 @@ class ReconfigurableHttpServerTest {
         val future = configHandler.applyNewConfiguration(badConfiguration, null, resourcesHolder)
 
         Assertions.assertThat(future.isDone).isTrue
-        Assertions.assertThat(future.isCompletedExceptionally).isTrue()
+        Assertions.assertThat(future.isCompletedExceptionally).isTrue
     }
 
     @Test

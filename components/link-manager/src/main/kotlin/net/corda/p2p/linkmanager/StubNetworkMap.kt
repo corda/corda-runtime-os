@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager
 
+import net.corda.crypto.stub.delegated.signing.KeyDeserialiser
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -95,7 +96,8 @@ class StubNetworkMap(
             LinkManagerNetworkMap.HoldingIdentity(this.holdingIdentity.x500Name, this.holdingIdentity.groupId),
             keyDeserialiser.toPublicKey(this.publicKey.array(), this.publicKeyAlgorithm),
             this.publicKeyAlgorithm.toKeyAlgorithm(),
-            LinkManagerNetworkMap.EndPoint(this.address)
+            LinkManagerNetworkMap.EndPoint(this.address),
+            this.tlsCertificates,
         )
     }
 
@@ -163,6 +165,14 @@ class StubNetworkMap(
             )
             listeners.forEach { listener ->
                 listener.groupAdded(groupInfo)
+            }
+            val identityInfo = NetworkMapListener.IdentityInfo(
+                networkMapEntry.holdingIdentity,
+                networkMapEntry.address,
+                networkMapEntry.tlsCertificates
+            )
+            listeners.forEach { listener ->
+                listener.identityAdded(identityInfo)
             }
         }
 

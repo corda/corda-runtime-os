@@ -4,6 +4,7 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
+import net.corda.crypto.stub.delegated.signing.StubCryptoService
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -42,7 +43,6 @@ import net.corda.p2p.gateway.messaging.RevocationConfigMode
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.linkmanager.ConfigBasedLinkManagerHostingMap
 import net.corda.p2p.linkmanager.LinkManager
-import net.corda.p2p.linkmanager.StubCryptoService
 import net.corda.p2p.linkmanager.StubNetworkMap
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
@@ -55,13 +55,15 @@ import net.corda.schema.TestSchema.Companion.NETWORK_MAP_TOPIC
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
-import net.corda.v5.base.util.toBase64
 import org.assertj.core.api.Assertions.assertThat
+import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import java.io.StringWriter
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
+import java.security.KeyStore
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
@@ -221,7 +223,7 @@ class P2PLayerEndToEndTest {
         p2pAddress: String,
         p2pPort: Int,
         val x500Name: String,
-        keyStoreFileName: String,
+        private val keyStoreFileName: String,
         trustStoreFileName: String,
         private val bootstrapConfig: SmartConfig,
         checkRevocation: Boolean,
@@ -248,8 +250,6 @@ class P2PLayerEndToEndTest {
         }
 
         private val sslConfig = SslConfiguration(
-            keyStorePassword = "password",
-            rawKeyStore = readKeyStore("$keyStoreFileName.jks"),
             revocationCheck = RevocationConfig(if (checkRevocation) RevocationConfigMode.HARD_FAIL else RevocationConfigMode.OFF)
         )
         val keyPair = KeyPairGenerator.getInstance(identitiesKeyAlgorithm.generatorName).genKeyPair()
@@ -272,8 +272,6 @@ class P2PLayerEndToEndTest {
             return ConfigFactory.empty()
                 .withValue("hostAddress", ConfigValueFactory.fromAnyRef(domainName))
                 .withValue("hostPort", ConfigValueFactory.fromAnyRef(port))
-                .withValue("sslConfig.keyStorePassword", ConfigValueFactory.fromAnyRef(sslConfig.keyStorePassword))
-                .withValue("sslConfig.keyStore", ConfigValueFactory.fromAnyRef(sslConfig.rawKeyStore.toBase64()))
                 .withValue("sslConfig.revocationCheck.mode", ConfigValueFactory.fromAnyRef(sslConfig.revocationCheck.mode.toString()))
         }
 
@@ -340,6 +338,26 @@ class P2PLayerEndToEndTest {
             publishLinkManagerConfig()
         }
 
+        private val keyStore = KeyStore.getInstance("JKS").also { keyStore ->
+            javaClass.classLoader.getResource("$keyStoreFileName.jks")!!.openStream().use {
+                keyStore.load(it, "password".toCharArray())
+            }
+        }
+        private val tlsCertificatesPem = keyStore.aliases()
+            .toList()
+            .first()
+            .let { alias ->
+                val certificateChain = keyStore.getCertificateChain(alias)
+                certificateChain.map { certificate ->
+                    StringWriter().use { str ->
+                        JcaPEMWriter(str).use { writer ->
+                            writer.writeObject(certificate)
+                        }
+                        str.toString()
+                    }
+                }
+            }
+
         private val networkMapEntry =
             NetworkMapEntry(
                 HoldingIdentity(x500Name, GROUP_ID),
@@ -347,7 +365,8 @@ class P2PLayerEndToEndTest {
                 identitiesKeyAlgorithm,
                 "http://$p2pAddress:$p2pPort",
                 NetworkType.CORDA_5,
-                listOf(String(readKeyStore("$trustStoreFileName.pem")))
+                listOf(String(readKeyStore("$trustStoreFileName.pem"))),
+                tlsCertificatesPem
             )
 
         private fun publishNetworkMapAndKeys(otherHost: Host) {
@@ -376,9 +395,43 @@ class P2PLayerEndToEndTest {
             }
         }
 
+        fun publishKeys() {
+            val records = keyStore.aliases().toList().map { alias ->
+                val privateKey = keyStore.getKey(alias, "password".toCharArray())
+                val publicKey = keyStore.getCertificate(alias).publicKey
+                val keyAlgorithm: KeyAlgorithm = when (publicKey.algorithm) {
+                    "RSA" -> KeyAlgorithm.RSA
+                    "EC" -> KeyAlgorithm.ECDSA
+                    else -> throw RuntimeException("Unsupported algorithm: ${publicKey.algorithm}")
+                }
+
+                val keyPair = KeyPairEntry(
+                    keyAlgorithm,
+                    ByteBuffer.wrap(publicKey.encoded),
+                    ByteBuffer.wrap(privateKey.encoded)
+                )
+                Record(
+                    CRYPTO_KEYS_TOPIC,
+                    alias,
+                    keyPair
+                )
+            }
+            publisherFactory.createPublisher(
+                PublisherConfig(
+                    "test-runner-publisher",
+                    1
+                ),
+                bootstrapConfig
+            ).use { publisher ->
+                publisher.start()
+                publisher.publish(records).forEach { it.get() }
+            }
+        }
+
         fun startWith(otherHost: Host) {
             configReadService.start()
             configReadService.bootstrapConfig(bootstrapConfig)
+            publishKeys()
 
             linkManager.start()
             gateway.start()

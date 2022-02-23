@@ -35,7 +35,7 @@ class NetworkMapCreator @Activate constructor(
     private val shutDownService: Shutdown,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
-): Application {
+) : Application {
 
     private companion object {
         private val logger: Logger = contextLogger()
@@ -90,8 +90,14 @@ class NetworkMapCreator @Activate constructor(
                     .unwrapped()
                     .filterIsInstance<String>()
                     .map {
-                    File(it)
-                }.map { it.readText() }
+                        File(it)
+                    }.map { it.readText() }
+                val tlsCertificates = dataConfig.getList("tlsCertificates")
+                    .unwrapped()
+                    .filterIsInstance<String>()
+                    .map {
+                        File(it)
+                    }.map { it.readText() }
 
                 val (keyAlgo, publicKey) = readKey(publicKeyStoreFile, publicKeyAlgo, publicKeyAlias, keystorePassword)
                 val networkMapEntry = NetworkMapEntry(
@@ -100,7 +106,8 @@ class NetworkMapCreator @Activate constructor(
                     keyAlgo,
                     address,
                     networkType,
-                    trustStoreCertificates
+                    trustStoreCertificates,
+                    tlsCertificates,
                 )
                 Record(topic, "$x500Name-$groupId", networkMapEntry)
             }
@@ -144,7 +151,7 @@ class NetworkMapCreator @Activate constructor(
     }
 
     private fun parseNetworkType(networkType: String): NetworkType {
-        val parsedNetworkType = when(networkType) {
+        val parsedNetworkType = when (networkType) {
             "CORDA_4" -> NetworkType.CORDA_4
             "CORDA_5" -> NetworkType.CORDA_5
             else -> null
@@ -158,9 +165,12 @@ class NetworkMapCreator @Activate constructor(
         return parsedNetworkType!!
     }
 
-    private fun readKey(keyStoreFilePath: String,
-                        keyAlgo: String, keyAlias:
-                        String, keystorePassword: String): Pair<KeyAlgorithm, PublicKey> {
+    private fun readKey(
+        keyStoreFilePath: String,
+        keyAlgo: String,
+        keyAlias: String,
+        keystorePassword: String
+    ): Pair<KeyAlgorithm, PublicKey> {
         val keystore = KeyStore.getInstance("JKS")
         keystore.load(FileInputStream(keyStoreFilePath), keystorePassword.toCharArray())
 
@@ -189,8 +199,13 @@ class CliParameters {
     )
     var kafkaConnection: File? = null
 
-    @CommandLine.Option(names = ["--topic"], description = ["Topic to write the records to. " +
-            "Defaults to ${NETWORK_MAP_TOPIC}, if not specified."])
+    @CommandLine.Option(
+        names = ["--topic"],
+        description = [
+            "Topic to write the records to. " +
+                "Defaults to $NETWORK_MAP_TOPIC, if not specified."
+        ]
+    )
     var topic: String? = null
 
     @CommandLine.Option(names = ["--netmap-file"], description = ["File containing network map data used to populate Kafka."])

@@ -74,6 +74,7 @@ class StubNetworkMapTest {
 
     private val certificates1 = listOf("1.1", "1.2")
     private val certificates2 = listOf("2")
+    private val tlsCertificates = listOf("4")
 
     @AfterEach
     fun cleanUp() {
@@ -91,6 +92,7 @@ class StubNetworkMapTest {
                 KeyAlgorithm.RSA, aliceAddress,
                 NetworkType.CORDA_4,
                 certificates1,
+                tlsCertificates,
             ),
             "$bobName-$groupId1" to NetworkMapEntry(
                 HoldingIdentity(bobName, groupId1),
@@ -98,6 +100,7 @@ class StubNetworkMapTest {
                 KeyAlgorithm.RSA, bobAddress,
                 NetworkType.CORDA_4,
                 certificates1,
+                tlsCertificates,
             ),
         )
         val charlieEntry = "$charlieName-$groupId2" to NetworkMapEntry(
@@ -106,6 +109,7 @@ class StubNetworkMapTest {
             KeyAlgorithm.ECDSA, charlieAddress,
             NetworkType.CORDA_5,
             certificates2,
+            tlsCertificates,
         )
         createResources(resourcesHolder)
         clientProcessor!!.onSnapshot(snapshot)

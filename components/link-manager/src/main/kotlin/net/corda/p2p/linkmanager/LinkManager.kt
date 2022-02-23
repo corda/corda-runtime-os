@@ -1,6 +1,8 @@
 package net.corda.p2p.linkmanager
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.stub.delegated.signing.SigningCryptoService
+import net.corda.crypto.stub.delegated.signing.StubCryptoService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
@@ -77,7 +79,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                       = StubNetworkMap(lifecycleCoordinatorFactory, subscriptionFactory, instanceId, configuration),
                   private val linkManagerHostingMap: LinkManagerHostingMap
                       = ConfigBasedLinkManagerHostingMap(configurationReaderService, lifecycleCoordinatorFactory),
-                  private val linkManagerCryptoService: LinkManagerCryptoService
+                  linkManagerCryptoService: SigningCryptoService
                       = StubCryptoService(lifecycleCoordinatorFactory, subscriptionFactory, instanceId, configuration)
 ) : LifecycleWithDominoTile {
 
@@ -117,6 +119,16 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     )
 
     private val trustStoresPublisher = TrustStoresPublisher(
+        subscriptionFactory,
+        publisherFactory,
+        lifecycleCoordinatorFactory,
+        configuration,
+        instanceId,
+    ).also {
+        linkManagerNetworkMap.registerListener(it)
+    }
+
+    private val tlsCertificatesPublisher = TlsCertificatesPublisher(
         subscriptionFactory,
         publisherFactory,
         lifecycleCoordinatorFactory,
@@ -181,6 +193,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             deliveryTracker.dominoTile,
             sessionManager.dominoTile,
             trustStoresPublisher.dominoTile,
+            tlsCertificatesPublisher.dominoTile,
         ) + commonChildren
     )
 

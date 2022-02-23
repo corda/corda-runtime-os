@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager.sessions
 
+import net.corda.crypto.stub.delegated.signing.StubCryptoService
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
@@ -33,7 +34,6 @@ import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
 import net.corda.p2p.linkmanager.LinkManager
-import net.corda.p2p.linkmanager.LinkManagerCryptoService
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionNeeded
@@ -98,11 +98,12 @@ class SessionManagerTest {
         val OUR_PARTY = LinkManagerNetworkMap.HoldingIdentity("Alice", GROUP_ID)
         val OUR_KEY = keyGenerator.genKeyPair()
         val OUR_MEMBER_INFO = LinkManagerNetworkMap.MemberInfo(OUR_PARTY, OUR_KEY.public, KeyAlgorithm.ECDSA,
-            LinkManagerNetworkMap.EndPoint("http://alice.com"))
+            LinkManagerNetworkMap.EndPoint("http://alice.com"),
+            emptyList(),)
         val PEER_PARTY = LinkManagerNetworkMap.HoldingIdentity("Bob", GROUP_ID)
         val PEER_KEY = keyGenerator.genKeyPair()
         val PEER_MEMBER_INFO = LinkManagerNetworkMap.MemberInfo(PEER_PARTY, PEER_KEY.public, KeyAlgorithm.ECDSA,
-            LinkManagerNetworkMap.EndPoint("http://bob.com"))
+            LinkManagerNetworkMap.EndPoint("http://bob.com"), emptyList(),)
 
         lateinit var loggingInterceptor: LoggingInterceptor
 
@@ -161,8 +162,8 @@ class SessionManagerTest {
         on { getMemberInfo(PEER_PARTY) } doReturn PEER_MEMBER_INFO
         on { getMemberInfo(messageDigest.hash(PEER_KEY.public.encoded), GROUP_ID) } doReturn PEER_MEMBER_INFO
     }
-    private val cryptoService = mock<LinkManagerCryptoService> {
-        on { signData(eq(OUR_KEY.public), any()) } doReturn "signature-from-A".toByteArray()
+    private val cryptoService = mock<StubCryptoService> {
+        on { sign(eq(OUR_KEY.public), any(), any()) } doReturn "signature-from-A".toByteArray()
     }
     private val pendingSessionMessageQueues = Mockito.mock(LinkManager.PendingSessionMessageQueues::class.java)
     private val sessionReplayer = Mockito.mock(InMemorySessionReplayer::class.java)
@@ -480,7 +481,7 @@ class SessionManagerTest {
         val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
 
         whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), any()))
-            .thenThrow(LinkManagerCryptoService.NoPrivateKeyForGroupException(OUR_KEY.public))
+            .thenThrow(SecurityException(""))
         val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
         val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(responderHello))
@@ -737,7 +738,7 @@ class SessionManagerTest {
         whenever(protocolResponder.validatePeerHandshakeMessage(initiatorHandshake, PEER_KEY.public, KeyAlgorithm.ECDSA))
             .thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
         whenever(protocolResponder.generateOurHandshakeMessage(eq(OUR_KEY.public), any()))
-            .thenThrow(LinkManagerCryptoService.NoPrivateKeyForGroupException(OUR_KEY.public))
+            .thenThrow(SecurityException(""))
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
 
         assertThat(responseMessage).isNull()

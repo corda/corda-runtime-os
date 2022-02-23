@@ -2,6 +2,7 @@ package net.corda.p2p.gateway.messaging.internal
 
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.stub.delegated.signing.StubCryptoService
 import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.libs.configuration.SmartConfig
@@ -21,6 +22,8 @@ import net.corda.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
+import net.corda.p2p.gateway.messaging.CertificatesReader
+import net.corda.p2p.gateway.messaging.KeyStoreFactory
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.HttpServerListener
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
@@ -41,7 +44,7 @@ internal class InboundMessageHandler(
     subscriptionFactory: SubscriptionFactory,
     nodeConfiguration: SmartConfig,
     instanceId: Int,
-    ) : HttpServerListener, LifecycleWithDominoTile {
+) : HttpServerListener, LifecycleWithDominoTile {
 
     companion object {
         private val logger = contextLogger()
@@ -59,12 +62,42 @@ internal class InboundMessageHandler(
         nodeConfiguration,
         instanceId
     )
-    private val server = ReconfigurableHttpServer(lifecycleCoordinatorFactory, configurationReaderService, this)
+    private val certificatesReader = CertificatesReader(
+        lifecycleCoordinatorFactory,
+        subscriptionFactory,
+        nodeConfiguration,
+        instanceId,
+    )
+    private val signer = StubCryptoService(
+        lifecycleCoordinatorFactory,
+        subscriptionFactory,
+        instanceId,
+        nodeConfiguration,
+    )
+
+    private val server = ReconfigurableHttpServer(
+        lifecycleCoordinatorFactory,
+        configurationReaderService,
+        this,
+        KeyStoreFactory(signer, certificatesReader).createDelegatedKeyStore()
+    )
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        dependentChildren = listOf(sessionPartitionMapper.dominoTile, p2pInPublisher.dominoTile, server.dominoTile),
-        managedChildren = listOf(sessionPartitionMapper.dominoTile, p2pInPublisher.dominoTile, server.dominoTile)
+        dependentChildren = listOf(
+            sessionPartitionMapper.dominoTile,
+            p2pInPublisher.dominoTile,
+            server.dominoTile,
+            signer.dominoTile,
+            certificatesReader.dominoTile,
+        ),
+        managedChildren = listOf(
+            sessionPartitionMapper.dominoTile,
+            p2pInPublisher.dominoTile,
+            server.dominoTile,
+            signer.dominoTile,
+            certificatesReader.dominoTile
+        )
     )
 
     /**
