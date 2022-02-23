@@ -4,10 +4,14 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpk.readwrite.CpkServiceConfigKeys
 import net.corda.cpk.write.CpkWriteService
+import net.corda.cpk.write.impl.services.db.CpkChecksumData
+import net.corda.cpk.write.impl.services.db.CpkStorage
+import net.corda.cpk.write.impl.services.db.impl.DBCpkStorage
 import net.corda.cpk.write.impl.services.kafka.CpkChecksumsCache
 import net.corda.cpk.write.impl.services.kafka.CpkChunksPublisher
 import net.corda.cpk.write.impl.services.kafka.impl.CpkChecksumsCacheImpl
 import net.corda.cpk.write.impl.services.kafka.impl.KafkaCpkChunksPublisher
+import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -25,6 +29,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.seconds
@@ -44,7 +49,9 @@ class CpkWriteServiceImpl @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory
+    private val publisherFactory: PublisherFactory,
+    @Reference(service = DbConnectionManager::class)
+    private val dbConnectionManager: DbConnectionManager
 ) : CpkWriteService, LifecycleEventHandler {
     companion object {
         val logger: Logger = contextLogger()
@@ -60,6 +67,8 @@ class CpkWriteServiceImpl @Activate constructor(
     internal var cpkChecksumsCache: CpkChecksumsCache? = null
     @VisibleForTesting
     internal var cpkChunksPublisher: CpkChunksPublisher? = null
+    @VisibleForTesting
+    internal var cpkStorage: CpkStorage? = null
     @VisibleForTesting
     internal var timeout: Duration? = null
 
@@ -82,7 +91,12 @@ class CpkWriteServiceImpl @Activate constructor(
     private fun onStartEvent(coordinator: LifecycleCoordinator) {
         configReadServiceRegistration?.close()
         configReadServiceRegistration =
-            coordinator.followStatusChangesByName(setOf(LifecycleCoordinatorName.forComponent<ConfigurationReadService>()))
+            coordinator.followStatusChangesByName(
+                setOf(
+                    LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                    LifecycleCoordinatorName.forComponent<DbConnectionManager>()
+                )
+            )
     }
 
     /**
@@ -116,7 +130,6 @@ class CpkWriteServiceImpl @Activate constructor(
         if (config.hasPath("todo")) {
 
             timeout = 20.seconds
-
             cpkChecksumsCache = CpkChecksumsCacheImpl(
                 subscriptionFactory,
                 SubscriptionConfig("todo", "todo"),
@@ -127,6 +140,8 @@ class CpkWriteServiceImpl @Activate constructor(
                 config
             )
             cpkChunksPublisher = KafkaCpkChunksPublisher(publisher, timeout!!)
+            cpkStorage = DBCpkStorage(dbConnectionManager.clusterDbEntityManagerFactory)
+
             coordinator.updateStatus(LifecycleStatus.UP)
         } else {
             logger.warn(
@@ -144,10 +159,16 @@ class CpkWriteServiceImpl @Activate constructor(
         closeResources()
     }
 
+    // Remove this, just keep delta method
     override fun putAllCpk() {
     }
 
+    // is all we need - pass in the cache the checksums and get the missing the ones
+    // for each of the metadata get the blob chunk it etc
     override fun putMissingCpk() {
+    }
+
+    private fun chunkAndPublishCpk(cpkChecksumData: CpkChecksumData) {
 
     }
 

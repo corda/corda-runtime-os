@@ -1,9 +1,10 @@
 package net.corda.cpk.write.impl.services.db
 
-import net.corda.cpk.write.impl.CpkChecksumData
+import net.corda.v5.crypto.SecureHash
 import java.util.stream.Stream
 
-// Maybe should be promoted to libs
-interface CpkStorage   {
-    fun getAllCpkInfo(): Stream<CpkChecksumData>
+interface CpkStorage {
+    fun getCpkIdsNotIn(checksums: Set<SecureHash>): Set<SecureHash>
+
+    fun getCpkBlobByCpkId(checksum: SecureHash): CpkChecksumData
 }
