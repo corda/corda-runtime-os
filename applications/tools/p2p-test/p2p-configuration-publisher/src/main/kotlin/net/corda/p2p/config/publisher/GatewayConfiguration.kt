@@ -46,20 +46,6 @@ class GatewayConfiguration : ConfigProducer() {
     lateinit var keyStorePassword: String
 
     @Option(
-        names = ["--trustStore"],
-        description = ["The path to the trust store file"],
-        required = true
-    )
-    lateinit var trustStoreFile: File
-
-    @Option(
-        names = ["--trustStorePassword"],
-        description = ["The trust store password"],
-        required = true
-    )
-    lateinit var trustStorePassword: String
-
-    @Option(
         names = ["--revocationCheck"],
         description = ["Revocation Check mode (one of: \${COMPLETION-CANDIDATES})"]
     )
@@ -113,16 +99,6 @@ class GatewayConfiguration : ConfigProducer() {
                 "sslConfig.keyStore",
                 ConfigValueFactory.fromAnyRef(
                     keyStoreFile.readBytes().toBase64()
-                )
-            )
-            .withValue(
-                "sslConfig.trustStorePassword",
-                ConfigValueFactory.fromAnyRef(trustStorePassword)
-            )
-            .withValue(
-                "sslConfig.trustStore",
-                ConfigValueFactory.fromAnyRef(
-                    trustStoreFile.readBytes().toBase64()
                 )
             )
             .withValue(

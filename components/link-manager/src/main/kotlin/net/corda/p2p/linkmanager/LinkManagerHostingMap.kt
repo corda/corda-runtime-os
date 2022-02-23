@@ -8,8 +8,7 @@ import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
  * This can be used by the [LinkManager] to identify whether a message can be simply sent
  * via a loop back mechanism to an identity hosted locally or needs to be sent through the network.
  */
-interface LinkManagerHostingMap: LifecycleWithDominoTile {
+interface LinkManagerHostingMap : LifecycleWithDominoTile {
 
     fun isHostedLocally(identity: LinkManagerNetworkMap.HoldingIdentity): Boolean
-
 }

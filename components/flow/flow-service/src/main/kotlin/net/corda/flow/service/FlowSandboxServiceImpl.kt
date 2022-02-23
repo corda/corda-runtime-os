@@ -21,6 +21,9 @@ import net.corda.v5.base.util.loggerFor
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import org.osgi.framework.BundleContext
+import org.osgi.framework.Constants.SCOPE_SINGLETON
+import org.osgi.framework.Constants.SERVICE_SCOPE
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -38,7 +41,8 @@ class FlowSandboxServiceImpl @Activate constructor(
     @Reference(service = SandboxDependencyInjectorFactory::class)
     private val dependencyInjectionFactory: SandboxDependencyInjectorFactory,
     @Reference(service = CheckpointSerializerBuilderFactory::class)
-    private val checkpointSerializerBuilderFactory: CheckpointSerializerBuilderFactory
+    private val checkpointSerializerBuilderFactory: CheckpointSerializerBuilderFactory,
+    private val bundleContext: BundleContext
 ) : FlowSandboxService {
     private val logger = loggerFor<FlowSandboxServiceImpl>()
 
@@ -87,19 +91,36 @@ class FlowSandboxServiceImpl @Activate constructor(
         val injectorService = dependencyInjectionFactory.create(sandboxGroupContext)
         sandboxGroupContext.putObjectByKey(DEPENDENCY_INJECTOR, injectorService)
 
+        // Identify singleton services outside the sandbox that may need checkpointing.
+        // These services should not overlap with the injectable services, which should
+        // all have PROTOTYPE scope outside the sandbox.
+        val cleanupCordaSingletons = mutableListOf<AutoCloseable>()
+        val nonInjectableSingletons = getNonInjectableSingletons(cleanupCordaSingletons)
+
         // Create and configure the checkpoint serializer
         val checkpointSerializer = checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(sandboxGroup).let { builder ->
             builder.addSingletonSerializableInstances(injectorService.getRegisteredSingletons())
+            builder.addSingletonSerializableInstances(nonInjectableSingletons)
             builder.addSingletonSerializableInstances(setOf(sandboxGroup))
             builder.build()
         }
         sandboxGroupContext.putObjectByKey(CHECKPOINT_SERIALIZER, checkpointSerializer)
 
         return AutoCloseable {
+            cleanupCordaSingletons.forEach(AutoCloseable::close)
             injectorService.close()
             sandboxServices.close()
             customCrypto.close()
         }
+    }
+
+    private fun getNonInjectableSingletons(cleanups: MutableList<AutoCloseable>): Set<SingletonSerializeAsToken> {
+        return bundleContext.getServiceReferences(SingletonSerializeAsToken::class.java, "($SERVICE_SCOPE=$SCOPE_SINGLETON)")
+            .mapTo(HashSet()) { ref ->
+                bundleContext.getService(ref).also {
+                    cleanups.add(AutoCloseable { bundleContext.ungetService(ref) })
+                }
+            }
     }
 }
 
