@@ -19,7 +19,7 @@ class GroupPolicyParser {
             try {
                 if (groupPolicyJson.isNullOrBlank()) {
                     logger.error(EMPTY_GROUP_POLICY)
-                    throw IllegalGroupPolicyFormat(EMPTY_GROUP_POLICY)
+                    throw CordaRuntimeException(EMPTY_GROUP_POLICY)
                 } else {
                     ConfigFactory
                         .parseString(groupPolicyJson)
@@ -28,10 +28,8 @@ class GroupPolicyParser {
                 }
             } catch (e: ConfigException.Parse) {
                 logger.error(FAILED_PARSING)
-                throw IllegalGroupPolicyFormat(FAILED_PARSING, e)
+                throw CordaRuntimeException(FAILED_PARSING, e)
             }
         )
     }
 }
-
-class IllegalGroupPolicyFormat(message: String, cause: Throwable? = null) : CordaRuntimeException(message, cause)

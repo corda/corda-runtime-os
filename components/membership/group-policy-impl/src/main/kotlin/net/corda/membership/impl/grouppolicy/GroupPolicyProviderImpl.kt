@@ -13,6 +13,7 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.membership.GroupPolicy
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.grouppolicy.factory.GroupPolicyParser
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
@@ -43,11 +44,12 @@ class GroupPolicyProviderImpl @Activate constructor(
     private val groupPolicyParser = GroupPolicyParser()
 
     private var groupPolicies: MutableMap<HoldingIdentity, GroupPolicy> = newCacheMap()
-        get() {
-            check(isRunning && isUp) {
+        get() = if (isRunning && isUp) {
+            field
+        } else {
+            throw CordaRuntimeException(
                 "Tried to access group policy information while the provider service is not running or is not UP."
-            }
-            return field
+            )
         }
 
     private val coordinator = lifecycleCoordinatorFactory

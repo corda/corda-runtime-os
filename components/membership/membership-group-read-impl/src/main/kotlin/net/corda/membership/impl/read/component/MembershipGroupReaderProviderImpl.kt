@@ -14,6 +14,7 @@ import net.corda.membership.impl.read.subscription.MembershipGroupReadSubscripti
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.membership.conversion.PropertyConverter
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
@@ -98,8 +99,9 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
      */
     override fun getGroupReader(
         holdingIdentity: HoldingIdentity
-    ): MembershipGroupReader {
-        check(isRunning && isUp) { ILLEGAL_ACCESS }
-        return membershipGroupReaderFactory.getGroupReader(holdingIdentity)
+    ) = if (isRunning && isUp) {
+        membershipGroupReaderFactory.getGroupReader(holdingIdentity)
+    } else {
+        throw CordaRuntimeException(ILLEGAL_ACCESS)
     }
 }

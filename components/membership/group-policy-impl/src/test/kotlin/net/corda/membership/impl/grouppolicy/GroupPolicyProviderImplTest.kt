@@ -9,8 +9,8 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.GroupPolicy
-import net.corda.membership.impl.grouppolicy.factory.IllegalGroupPolicyFormat
 import net.corda.packaging.CPI
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.membership.identity.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -165,12 +165,12 @@ class GroupPolicyProviderImplTest {
             groupId2,
             testAttr3
         )
-        assertThrows<IllegalGroupPolicyFormat> { groupPolicyProvider.getGroupPolicy(holdingIdentity4) }
+        assertThrows<CordaRuntimeException> { groupPolicyProvider.getGroupPolicy(holdingIdentity4) }
     }
 
     @Test
     fun `Group policy read fails if service hasn't started`() {
-        assertThrows<IllegalStateException> {
+        assertThrows<CordaRuntimeException> {
             groupPolicyProvider.getGroupPolicy(holdingIdentity1)
         }
     }
@@ -178,7 +178,7 @@ class GroupPolicyProviderImplTest {
     @Test
     fun `Group policy read fails if service isn't up`() {
         groupPolicyProvider.start()
-        assertThrows<IllegalStateException> {
+        assertThrows<CordaRuntimeException> {
             groupPolicyProvider.getGroupPolicy(holdingIdentity1)
         }
     }
@@ -256,7 +256,7 @@ class GroupPolicyProviderImplTest {
 
         registrationChange(LifecycleStatus.DOWN)
 
-        assertThrows<IllegalStateException> {
+        assertThrows<CordaRuntimeException> {
             groupPolicyProvider.getGroupPolicy(holdingIdentity1)
         }
     }
