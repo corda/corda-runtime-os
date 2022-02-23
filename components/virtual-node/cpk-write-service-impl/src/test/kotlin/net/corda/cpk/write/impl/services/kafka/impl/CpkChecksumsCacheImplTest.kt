@@ -61,7 +61,7 @@ class CpkChecksumsCacheImplTest {
         val currentData = mapOf(pair0, pair1)
 
         cacheSynchronizer.onSnapshot(currentData)
-        assertTrue(cpkChecksumCache.contains(cpkChecksum))
+        assertTrue(cpkChecksum in cpkChecksumCache.cpkChecksums)
     }
 
     @Test
@@ -75,13 +75,13 @@ class CpkChecksumsCacheImplTest {
             null,
             mock()
         )
-        assertFalse(cpkChecksumCache.contains(cpkChecksum))
+        assertFalse(cpkChecksum in cpkChecksumCache.cpkChecksums)
 
         cacheSynchronizer.onNext(
             Record("dummyTopic", pair1.first, pair1.second),
             null,
             mock()
         )
-        assertTrue(cpkChecksumCache.contains(cpkChecksum))
+        assertTrue(cpkChecksum in cpkChecksumCache.cpkChecksums)
     }
 }

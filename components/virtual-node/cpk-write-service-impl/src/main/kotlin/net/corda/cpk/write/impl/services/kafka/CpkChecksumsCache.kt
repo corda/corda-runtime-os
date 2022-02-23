@@ -8,7 +8,7 @@ import net.corda.v5.crypto.SecureHash
  * Cache holding CPK checksums.
  */
 interface CpkChecksumsCache : Lifecycle {
-    fun contains(cpkChecksum: SecureHash): Boolean
+    fun getCachedCpkIds(): Set<SecureHash>
 
     fun add(cpkChecksum: SecureHash)
 }

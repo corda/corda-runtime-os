@@ -49,7 +49,9 @@ class CpkChecksumsCacheImpl(
         compactedSubscription.close()
     }
 
-    override fun contains(cpkChecksum: SecureHash) = cpkChecksum in cpkChecksums.keys
+    override fun getCachedCpkIds(): Set<SecureHash> {
+        return cpkChecksums.keys
+    }
 
     override fun add(cpkChecksum: SecureHash) {
         cpkChecksums[cpkChecksum] = cpkChecksum
