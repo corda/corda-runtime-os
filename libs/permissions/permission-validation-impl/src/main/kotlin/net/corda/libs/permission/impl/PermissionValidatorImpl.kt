@@ -1,6 +1,5 @@
 package net.corda.libs.permission.impl
 
-import java.lang.IllegalArgumentException
 import net.corda.data.permissions.summary.UserPermissionSummary
 import net.corda.data.permissions.PermissionType as AvroPermissionType
 import net.corda.libs.permission.PermissionValidator
@@ -36,11 +35,11 @@ class PermissionValidatorImpl(
         logger.debug { "Checking authentication for user $loginName." }
         val user = permissionCache.getUser(loginName) ?: return false
 
-        if(user.saltValue == null || user.hashedPassword == null) {
+        if (user.saltValue == null || user.hashedPassword == null) {
             return false
         }
 
-        if(!passwordService.verifies(String(password), PasswordHash(user.saltValue, user.hashedPassword))) {
+        if (!passwordService.verifies(String(password), PasswordHash(user.saltValue, user.hashedPassword))) {
             return false
         }
 
@@ -57,7 +56,13 @@ class PermissionValidatorImpl(
         }
 
         val permissionSummary = permissionCache.getPermissionSummary(loginName)
-            ?: throw IllegalArgumentException("User was found in permission cache but User Permission Summary was not.")
+
+        if (permissionSummary == null) {
+            logger.debug { "No permission found for user $loginName." }
+            return false
+        }
+
+        logger.debug { "Permission summary found for user $loginName with permissions: ${permissionSummary.permissions.joinToString()}." }
 
         return findPermissionMatch(
             permissionSummary,

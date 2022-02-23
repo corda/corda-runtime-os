@@ -50,12 +50,12 @@ internal class PermissionCacheImplTest {
         listOf(PermissionAssociation(ChangeDetails(Instant.now()), permission2.id)))
 
     private val permissionSummary1 = UserPermissionSummary(
-        "userLogin1",
+        "userlogin1",
         listOf(PermissionSummary(null, null, "", PermissionType.ALLOW)),
         Instant.now()
     )
     private val permissionSummary2 = UserPermissionSummary(
-        "userLogin2",
+        "userlogin2",
         listOf(PermissionSummary(null, null, "", PermissionType.DENY)),
         Instant.now()
     )

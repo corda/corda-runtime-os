@@ -3,7 +3,6 @@ package net.corda.libs.permissions.storage.reader.impl.repository
 import java.time.Instant
 import javax.persistence.EntityManager
 import net.corda.libs.permissions.storage.reader.repository.PermissionRepository
-import net.corda.orm.utils.use
 import net.corda.permissions.model.Group
 import net.corda.permissions.model.Permission
 import net.corda.permissions.model.Role
@@ -11,6 +10,7 @@ import net.corda.permissions.model.User
 import javax.persistence.EntityManagerFactory
 import net.corda.libs.permissions.storage.reader.repository.UserLogin
 import net.corda.libs.permissions.storage.reader.summary.InternalUserPermissionSummary
+import net.corda.orm.utils.transaction
 import net.corda.permissions.query.dto.InternalPermissionQueryDto
 
 class PermissionRepositoryImpl(private val entityManagerFactory: EntityManagerFactory) : PermissionRepository {
@@ -44,12 +44,10 @@ class PermissionRepositoryImpl(private val entityManagerFactory: EntityManagerFa
     }
 
     override fun findAllPermissionSummaries(): Map<UserLogin, InternalUserPermissionSummary> {
-        entityManagerFactory.use { em ->
-            em.transaction.begin()
-
+        entityManagerFactory.transaction { entityManager ->
             val timeOfPermissionSummary = Instant.now()
-            val userLogins = findAllUserLogins(em)
-            val userPermissionsFromRoles = findPermissionsForUsersFromRoleAssignment(em)
+            val userLogins = findAllUserLogins(entityManager)
+            val userPermissionsFromRoles = findPermissionsForUsersFromRoleAssignment(entityManager)
 
             return aggregatePermissionSummariesForUsers(
                 userLogins,
@@ -60,15 +58,13 @@ class PermissionRepositoryImpl(private val entityManagerFactory: EntityManagerFa
     }
 
     private inline fun <reified T> findAll(qlString: String): List<T> {
-        return entityManagerFactory.use { entityManager ->
-            entityManager.transaction.begin()
+        return entityManagerFactory.transaction { entityManager ->
             entityManager.createQuery(qlString, T::class.java).resultList
         }
     }
 
     private inline fun <reified T> findAll(qlString: String, ids: List<String>): List<T> {
-        return entityManagerFactory.use { entityManager ->
-            entityManager.transaction.begin()
+        return entityManagerFactory.transaction { entityManager ->
             ids.chunked(100) { chunkedIds ->
                 entityManager.createQuery(qlString, T::class.java)
                     .setParameter("ids", chunkedIds)
