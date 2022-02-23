@@ -37,7 +37,6 @@ class DBAccessIntegrationTest {
         lateinit var emf: EntityManagerFactory
 
         private const val topic = "topic1"
-        private const val topic2 = "topic2"
         private val key = "key".toByteArray()
         private val value = "value".toByteArray()
         private const val consumerGroup = "group1"
@@ -111,7 +110,7 @@ class DBAccessIntegrationTest {
     @Test
     fun `DBWriter writes topic records`() {
         val timestamp = Instant.parse("2022-01-01T00:00:00.00Z")
-
+        val topic = randomId()
         val transactionRecord = TransactionRecordEntry(randomId())
 
         val records = listOf(
@@ -138,6 +137,7 @@ class DBAccessIntegrationTest {
     @Test
     fun `DBWriter reads topic records, and only up to the limit specified`() {
         val timestamp = Instant.parse("2022-01-01T00:00:00.00Z")
+        val topic = randomId()
         val transactionRecord = TransactionRecordEntry(randomId())
         val transactionRecord2 = TransactionRecordEntry(randomId()) // Won't be committed
         val transactionRecord3 = TransactionRecordEntry(randomId())
@@ -206,17 +206,21 @@ class DBAccessIntegrationTest {
     @Test
     fun `DBWriter writes commited offsets`() {
         val timestamp = Instant.parse("2022-01-01T00:00:00.00Z")
-        val transactionRecordEntry = TransactionRecordEntry(randomId())
+        val dbAccess = DBAccess(emf)
+
+        val topic = randomId()
+
+        val transactionRecord = TransactionRecordEntry(randomId())
+        dbAccess.writeTransactionRecord(transactionRecord)
 
         val offsets = listOf(
-            CommittedOffsetEntry(topic, consumerGroup, 0, 0, transactionRecordEntry, timestamp),
-            CommittedOffsetEntry(topic, consumerGroup, 0, 1, transactionRecordEntry, timestamp),
-            CommittedOffsetEntry(topic, consumerGroup, 0, 2, transactionRecordEntry, timestamp),
-            CommittedOffsetEntry(topic, consumerGroup, 1, 0, transactionRecordEntry, timestamp),
-            CommittedOffsetEntry(topic, consumerGroup, 1, 5, transactionRecordEntry, timestamp),
+            CommittedOffsetEntry(topic, consumerGroup, 0, 0, transactionRecord, timestamp),
+            CommittedOffsetEntry(topic, consumerGroup, 0, 1, transactionRecord, timestamp),
+            CommittedOffsetEntry(topic, consumerGroup, 0, 2, transactionRecord, timestamp),
+            CommittedOffsetEntry(topic, consumerGroup, 1, 0, transactionRecord, timestamp),
+            CommittedOffsetEntry(topic, consumerGroup, 1, 5, transactionRecord, timestamp),
         )
 
-        val dbAccess = DBAccess(emf)
         dbAccess.writeOffsets(offsets)
 
         val results =
@@ -230,17 +234,17 @@ class DBAccessIntegrationTest {
     @Test
     fun `DBWriter can create new topics and return the correct topics`() {
         val dbAccess = DBAccess(emf)
-        dbAccess.createTopic(topic2, 10)
+        val newTopic = randomId()
+        dbAccess.createTopic(newTopic, 10)
 
-        val results = query(TopicEntry::class.java, "from topic order by topic")
-        assertThat(results.size).isEqualTo(2)
-        assertThat(results[1].topic).isEqualTo(topic2)
-        assertThat(results[1].numPartitions).isEqualTo(10)
+        val result = query(TopicEntry::class.java, "from topic where topic = '$newTopic'").single()
+        assertThat(result.topic).isEqualTo(newTopic)
+        assertThat(result.numPartitions).isEqualTo(10)
 
         val topics = dbAccess.getTopicPartitionMap()
         assertThat(topics.size).isEqualTo(2)
         assertThat(topics[topic]!!).isEqualTo(4)
-        assertThat(topics[topic2]!!).isEqualTo(10)
+        assertThat(topics[newTopic]!!).isEqualTo(10)
     }
 
     @Test
@@ -248,40 +252,40 @@ class DBAccessIntegrationTest {
         val timestamp = Instant.parse("2022-01-01T00:00:00.00Z")
         val dbAccess = DBAccess(emf)
 
-        val topic3 = "topic3"
-        val topic4 = "topic4"
+        val topic = randomId()
+        val topic2 = randomId()
 
-        val transactionRecord = TransactionRecordEntry("id")
+        val transactionRecord = TransactionRecordEntry(randomId())
 
         val records = listOf(
-            TopicRecordEntry(topic3, 0, 0, key, value, transactionRecord, timestamp = timestamp),
-            TopicRecordEntry(topic3, 0, 1, key, value, transactionRecord, timestamp = timestamp),
-            TopicRecordEntry(topic3, 1, 0, key, value, transactionRecord, timestamp = timestamp),
-            TopicRecordEntry(topic3, 1, 1, key, value, transactionRecord, timestamp = timestamp),
-            TopicRecordEntry(topic3, 1, 2, key, value, transactionRecord, timestamp = timestamp),
-            TopicRecordEntry(topic3, 1, 3, key, value, transactionRecord, timestamp = timestamp),
-            TopicRecordEntry(topic3, 2, 0, key, value, transactionRecord, timestamp = timestamp),
-            TopicRecordEntry(topic3, 2, 7, key, value, transactionRecord, timestamp = timestamp),
-            TopicRecordEntry(topic3, 3, 0, key, value, transactionRecord, timestamp = timestamp),
-            TopicRecordEntry(topic4, 0, 0, key, value, transactionRecord, timestamp = timestamp),
-            TopicRecordEntry(topic4, 1, 1, key, value, transactionRecord, timestamp = timestamp),
-            TopicRecordEntry(topic4, 2, 0, key, value, transactionRecord, timestamp = timestamp),
-            TopicRecordEntry(topic4, 3, 1, key, value, transactionRecord, timestamp = timestamp),
-            TopicRecordEntry(topic4, 4, 2, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 0, 0, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 0, 1, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 1, 0, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 1, 1, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 1, 2, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 1, 3, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 2, 0, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 2, 7, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic, 3, 0, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic2, 0, 0, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic2, 1, 1, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic2, 2, 0, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic2, 3, 1, key, value, transactionRecord, timestamp = timestamp),
+            TopicRecordEntry(topic2, 4, 2, key, value, transactionRecord, timestamp = timestamp),
         )
 
         dbAccess.writeRecords(records)
 
         val expectedResult = mapOf(
-            CordaTopicPartition(topic3, 0) to 1L,
-            CordaTopicPartition(topic3, 1) to 3L,
-            CordaTopicPartition(topic3, 2) to 7L,
-            CordaTopicPartition(topic3, 3) to 0L,
-            CordaTopicPartition(topic4, 0) to 0L,
-            CordaTopicPartition(topic4, 1) to 1L,
-            CordaTopicPartition(topic4, 2) to 0L,
-            CordaTopicPartition(topic4, 3) to 1L,
-            CordaTopicPartition(topic4, 4) to 2L,
+            CordaTopicPartition(topic, 0) to 1L,
+            CordaTopicPartition(topic, 1) to 3L,
+            CordaTopicPartition(topic, 2) to 7L,
+            CordaTopicPartition(topic, 3) to 0L,
+            CordaTopicPartition(topic2, 0) to 0L,
+            CordaTopicPartition(topic2, 1) to 1L,
+            CordaTopicPartition(topic2, 2) to 0L,
+            CordaTopicPartition(topic2, 3) to 1L,
+            CordaTopicPartition(topic2, 4) to 2L,
         )
 
         assertThat(dbAccess).returns(expectedResult, from(DBAccess::getMaxOffsetsPerTopicPartition))
@@ -292,38 +296,39 @@ class DBAccessIntegrationTest {
         val timestamp = Instant.parse("2022-01-01T00:00:00.00Z")
         val dbAccess = DBAccess(emf)
 
-        val topic5 = "topic5"
-        val group1 = "group1"
-        val group2 = "group2"
+        val topic = randomId()
+        val group1 = randomId()
+        val group2 = randomId()
 
-        val partition0 = CordaTopicPartition(topic5, 0)
-        val partition1 = CordaTopicPartition(topic5, 1)
+        val partition0 = CordaTopicPartition(topic, 0)
+        val partition1 = CordaTopicPartition(topic, 1)
 
-        val transactionRecord = TransactionRecordEntry("id")
-        val transactionRecord2 = TransactionRecordEntry("id2")
+        val transactionRecord = TransactionRecordEntry(randomId(), TransactionState.COMMITTED)
+        val transactionRecord2 = TransactionRecordEntry(randomId())
+        dbAccess.writeTransactionRecord(transactionRecord)
+        dbAccess.writeTransactionRecord(transactionRecord2)
 
         val offsets = listOf(
-            CommittedOffsetEntry(topic5, group1, 0, 0, transactionRecord, timestamp = timestamp),
-            CommittedOffsetEntry(topic5, group1, 0, 3, transactionRecord, timestamp = timestamp),
-            CommittedOffsetEntry(topic5, group1, 1, 0, transactionRecord, timestamp = timestamp),
-            CommittedOffsetEntry(topic5, group1, 1, 3, transactionRecord, timestamp = timestamp),
-            CommittedOffsetEntry(topic5, group1, 1, 5, transactionRecord2, timestamp = timestamp),
+            CommittedOffsetEntry(topic, group1, 0, 2, transactionRecord, timestamp = timestamp),
+            CommittedOffsetEntry(topic, group1, 0, 3, transactionRecord, timestamp = timestamp),
+            CommittedOffsetEntry(topic, group1, 1, 1, transactionRecord, timestamp = timestamp),
+            CommittedOffsetEntry(topic, group1, 1, 3, transactionRecord, timestamp = timestamp),
+            CommittedOffsetEntry(topic, group1, 1, 5, transactionRecord2, timestamp = timestamp),
 
-            CommittedOffsetEntry(topic5, group2, 0, 6, transactionRecord, timestamp = timestamp),
-            CommittedOffsetEntry(topic5, group2, 1, 10, transactionRecord, timestamp = timestamp),
+            CommittedOffsetEntry(topic, group2, 0, 6, transactionRecord, timestamp = timestamp),
+            CommittedOffsetEntry(topic, group2, 1, 10, transactionRecord, timestamp = timestamp),
         )
 
         dbAccess.writeOffsets(offsets)
-        dbAccess.setTransactionRecordState(transactionRecord.transactionId, TransactionState.COMMITTED)
 
         val minOffsets = dbAccess.getMinCommittedOffsets(group1, setOf(partition0, partition1))
         assertThat(minOffsets.size).isEqualTo(2)
-        assertThat(minOffsets[partition0]).isEqualTo(0)
-        assertThat(minOffsets[partition1]).isEqualTo(0)
+        assertThat(minOffsets[partition0]).isEqualTo(2)
+        assertThat(minOffsets[partition1]).isEqualTo(1)
 
         val maxOffsets = dbAccess.getMaxCommittedOffsets(group1, setOf(partition0, partition1))
         assertThat(maxOffsets.size).isEqualTo(2)
         assertThat(maxOffsets[partition0]).isEqualTo(3)
-        assertThat(maxOffsets[partition1]).isEqualTo(10)
+        assertThat(maxOffsets[partition1]).isEqualTo(3)
     }
 }

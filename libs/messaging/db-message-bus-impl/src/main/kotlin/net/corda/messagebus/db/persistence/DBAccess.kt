@@ -38,7 +38,9 @@ class DBAccess(
                     WHERE ${CommittedOffsetEntry::consumerGroup.name} = '$groupId'
                     """,
                 CommittedOffsetEntry::class.java
-            ).resultList.groupBy {
+            ).resultList.takeWhile {
+                it.transactionId.state == TransactionState.COMMITTED
+            }.groupBy {
                 CordaTopicPartition(it.topic, it.partition)
             }.filter {
                 it.key in topicPartitions
