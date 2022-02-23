@@ -39,6 +39,6 @@ class KafkaCpkChunksPublisherTest {
         val cpkChunk = Chunk()
         whenever(publisher.publish(any())).thenReturn(listOf(CompletableFuture<Unit>().also { it.complete(Unit) }))
 
-        kafkaCpkChunksPublisher.putAll(listOf(cpkChunkId to cpkChunk))
+        kafkaCpkChunksPublisher.put(cpkChunkId to cpkChunk)
     }
 }

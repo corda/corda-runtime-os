@@ -19,31 +19,25 @@ class KafkaCpkChunksPublisher(
     }
 
     // This needs to be transactional i.e. write all of cpk chunks to Kafka or nothing
-    override fun putAll(cpkChunks: List<Pair<AvroTypesTodo.CpkChunkIdAvro, Chunk>>) {
-        val cpkChunksRecords =
-            cpkChunks.map {
-                val cpkChunkId = it.first
-                val cpkChunk = it.second
-                Record("TODO", cpkChunkId, cpkChunk)
-            }
-
-        putAllAndWaitForResponses(cpkChunksRecords)
+    override fun put(idToCpkChunk: Pair<AvroTypesTodo.CpkChunkIdAvro, Chunk>) {
+        val cpkChunkId = idToCpkChunk.first
+        val cpkChunk = idToCpkChunk.second
+        val cpkChunksRecord = Record("TODO", cpkChunkId, cpkChunk)
+        putAllAndWaitForResponses(cpkChunksRecord)
     }
 
-    private fun putAllAndWaitForResponses(cpkChunksRecords: List<Record<AvroTypesTodo.CpkChunkIdAvro, Chunk>>) {
-        val responses = publisher.publish(cpkChunksRecords)
+    private fun putAllAndWaitForResponses(cpkChunksRecord: Record<AvroTypesTodo.CpkChunkIdAvro, Chunk>) {
+        val response = publisher.publish(listOf(cpkChunksRecord)).single()
 
-        responses.forEach {
-            var intermittentException: Boolean
-            do {
-                try {
-                    it.getOrThrow(timeout)
-                    intermittentException = false
-                } catch (e: CordaMessageAPIIntermittentException) {
-                    intermittentException = true
-                    logger.info("Caught an CordaMessageAPIIntermittentException. Will retry waiting on a future response.")
-                }
-            } while (intermittentException)
-        }
+        var intermittentException: Boolean
+        do {
+            try {
+                response.getOrThrow(timeout)
+                intermittentException = false
+            } catch (e: CordaMessageAPIIntermittentException) {
+                intermittentException = true
+                logger.info("Caught an CordaMessageAPIIntermittentException. Will retry waiting on a future response.")
+            }
+        } while (intermittentException)
     }
 }
