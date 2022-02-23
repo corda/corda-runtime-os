@@ -7,7 +7,6 @@ import net.corda.data.chunking.Chunk
 import net.corda.orm.utils.transaction
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
-import java.security.MessageDigest
 import javax.persistence.EntityManagerFactory
 
 /**
