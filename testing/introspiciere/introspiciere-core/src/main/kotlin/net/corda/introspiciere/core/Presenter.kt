@@ -1,5 +1,5 @@
 package net.corda.introspiciere.core
 
-interface Presenter<T> {
+fun interface Presenter<T> {
     fun present(output: T)
 }
