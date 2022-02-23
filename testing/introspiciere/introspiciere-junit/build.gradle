@@ -18,6 +18,9 @@ dependencies {
     integrationTestImplementation project(":libs:messaging:kafka-message-bus-impl")
     integrationTestImplementation project(":libs:schema-registry:schema-registry")
     integrationTestImplementation project(":libs:schema-registry:schema-registry-impl")
+    integrationTestImplementation project(":libs:configuration:configuration-publish")
+    integrationTestImplementation project(":libs:configuration:configuration-schema:p2p")
 
     integrationTestImplementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+    integrationTestImplementation "com.typesafe:config:$typeSafeConfigVersion"
 }
