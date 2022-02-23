@@ -18,7 +18,7 @@ import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_TRUSTSTORES
 import net.corda.v5.base.util.contextLogger
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ConcurrentLinkedDeque
+import java.util.concurrent.ConcurrentLinkedQueue
 
 @Suppress("LongParameterList")
 internal class TrustStoresPublisher(
@@ -36,7 +36,7 @@ internal class TrustStoresPublisher(
     }
 
     private val publishedGroups = ConcurrentHashMap<String, Set<PemCertificates>>()
-    private val toPublish = ConcurrentLinkedDeque<NetworkMapListener.GroupInfo>()
+    private val toPublish = ConcurrentLinkedQueue<NetworkMapListener.GroupInfo>()
     private val ready = CompletableFuture<Unit>()
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,
@@ -57,7 +57,7 @@ internal class TrustStoresPublisher(
     )
 
     override fun groupAdded(groupInfo: NetworkMapListener.GroupInfo) {
-        toPublish.offerLast(groupInfo)
+        toPublish.offer(groupInfo)
         publishQueueIfPossible()
     }
 
@@ -110,7 +110,7 @@ internal class TrustStoresPublisher(
 
     private fun publishQueueIfPossible() {
         while (ready.isDone) {
-            val groupInfo = toPublish.pollFirst() ?: return
+            val groupInfo = toPublish.poll() ?: return
             val groupId = groupInfo.groupId
             val certificates = groupInfo.trustedCertificates
             publishGroupIfNeeded(groupId, certificates)
