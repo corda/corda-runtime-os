@@ -2,8 +2,8 @@ package net.corda.introspiciere.server
 
 import io.javalin.http.Handler
 import net.corda.introspiciere.core.KafkaConfig
-import net.corda.introspiciere.core.KafkaMessageGateway
-import net.corda.introspiciere.core.KafkaReaderGateway
+import net.corda.introspiciere.core.ReadMessagesUseCases
+import net.corda.introspiciere.core.WriteMessageUseCase
 import net.corda.introspiciere.domain.KafkaMessage
 
 internal class MessagesController(private val kafkaConfig: KafkaConfig) {
@@ -12,15 +12,28 @@ internal class MessagesController(private val kafkaConfig: KafkaConfig) {
             val topic = ctx.pathParam("topic")
             val key = ctx.pathParam("key")
             val schema = ctx.queryParam("schema")!!
-            val messages = KafkaReaderGateway(listOf(kafkaConfig.brokers)).read(topic, key, schema)
-            ctx.json(messages)
+
+            val useCase = ReadMessagesUseCases(kafkaConfig) {
+                ctx.json(it)
+            }
+
+            useCase.execute(
+                ReadMessagesUseCases.Input(topic, key, schema)
+            )
         }
     }
 
     fun create(): Handler = Handler { ctx ->
         wrapException {
             val kafkaMessage = ctx.bodyAsClass<KafkaMessage>()
-            KafkaMessageGateway(listOf(kafkaConfig.brokers)).send(kafkaMessage)
+
+            WriteMessageUseCase(kafkaConfig).execute(WriteMessageUseCase.Input(
+                kafkaMessage.topic,
+                kafkaMessage.key,
+                kafkaMessage.schema,
+                kafkaMessage.schemaClass
+            ))
+
             ctx.result("OK")
         }
     }

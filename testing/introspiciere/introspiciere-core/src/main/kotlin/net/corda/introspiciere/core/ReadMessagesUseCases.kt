@@ -11,32 +11,37 @@ import java.net.InetAddress
 import java.nio.ByteBuffer
 import java.time.Duration
 
-class KafkaReaderGateway(private val servers: List<String>) {
+class ReadMessagesUseCases(
+    private val kafkaConfig: KafkaConfig,
+    private val presenter: Presenter<List<KafkaMessage>>,
+) : UseCase<ReadMessagesUseCases.Input> {
 
-    fun read(topic: String, key: String, schemaClass: String): List<KafkaMessage> {
+    data class Input(val topic: String, val key: String, val schemaClass: String)
+
+    override fun execute(input: Input) {
         val props = mapOf(
             ConsumerConfig.CLIENT_ID_CONFIG to InetAddress.getLocalHost().hostName,
             ConsumerConfig.GROUP_ID_CONFIG to "foo",
-            ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to servers.joinToString(","),
+            ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to kafkaConfig.brokers,
             ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to "earliest"
-        ).toProperties()
+        )
 
         val consumer = KafkaConsumer(
             props,
             CordaAvroDeserializerImpl(
                 AvroSchemaRegistryImpl(specificRecordaBaseClasses = classes), {}, String::class.java),
             CordaAvroDeserializerImpl(
-                AvroSchemaRegistryImpl(specificRecordaBaseClasses = classes), {}, Class.forName(schemaClass))
+                AvroSchemaRegistryImpl(specificRecordaBaseClasses = classes), {}, Class.forName(input.schemaClass))
         )
 
         consumer.use { cons ->
-            consumer.subscribe(listOf(topic))
-            val records = cons.poll(Duration.ofSeconds(10))
-            return records.filter { it.key() == key }.map {
+            consumer.subscribe(listOf(input.topic))
+            val records = cons.poll(Duration.ofSeconds(10)).filter { it.key() == input.key }.map {
                 val value = it.value()
                 val byteBuffer = value::class.java.getMethod("toByteBuffer").invoke(value) as ByteBuffer
-                KafkaMessage(topic, key, byteBuffer.toByteArray(), schemaClass)
+                KafkaMessage(input.topic, input.key, byteBuffer.toByteArray(), input.schemaClass)
             }
+            presenter.present(records)
         }
     }
 

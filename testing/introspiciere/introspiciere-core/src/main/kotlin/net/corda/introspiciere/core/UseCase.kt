@@ -1,7 +1,7 @@
 package net.corda.introspiciere.core
 
 /**
- * Defines a use case in the core. It will eventually replace the [Interactor] interface.
+ * Defines a use case in the core.
  */
 interface UseCase<INPUT> {
     fun execute(input: INPUT)

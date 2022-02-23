@@ -1,6 +1,5 @@
 package net.corda.introspiciere.core
 
-import net.corda.introspiciere.domain.KafkaMessage
 import net.corda.messagebus.kafka.serialization.CordaAvroSerializerImpl
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import org.apache.avro.specific.SpecificRecordBase
@@ -11,20 +10,26 @@ import org.reflections.Reflections
 import java.net.InetAddress
 import java.nio.ByteBuffer
 
+class WriteMessageUseCase(private val kafkaConfig: KafkaConfig) : UseCase<WriteMessageUseCase.Input> {
 
-class KafkaMessageGateway(private val servers: List<String>) {
+    data class Input(
+        val topic: String,
+        val key: String,
+        val schema: ByteArray,
+        val schemaClass: String,
+    )
 
-    fun send(kafkaMessage: KafkaMessage) {
-        val clss = Class.forName(kafkaMessage.schemaClass)
+    override fun execute(input: Input) {
+        val clss = Class.forName(input.schemaClass)
 
         val method = clss.getMethod("fromByteBuffer", ByteBuffer::class.java)
-        val keyPairEntry = method.invoke(null, ByteBuffer.wrap(kafkaMessage.schema))
+        val keyPairEntry = method.invoke(null, ByteBuffer.wrap(input.schema))
 
         val props = mapOf(
             ProducerConfig.CLIENT_ID_CONFIG to InetAddress.getLocalHost().hostName,
-            ProducerConfig.BOOTSTRAP_SERVERS_CONFIG to servers.joinToString(","),
+            ProducerConfig.BOOTSTRAP_SERVERS_CONFIG to kafkaConfig.brokers,
             ProducerConfig.ACKS_CONFIG to "all"
-        ).toProperties()
+        )
 
         val producer = KafkaProducer(
             props,
@@ -33,7 +38,7 @@ class KafkaMessageGateway(private val servers: List<String>) {
         )
 
         producer.use {
-            val record = ProducerRecord(kafkaMessage.topic, kafkaMessage.key, keyPairEntry)
+            val record = ProducerRecord(input.topic, input.key, keyPairEntry)
             it.send(record).get()
         }
     }
