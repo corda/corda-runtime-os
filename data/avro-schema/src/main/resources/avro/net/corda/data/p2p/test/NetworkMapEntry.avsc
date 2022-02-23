@@ -22,6 +22,14 @@
     {
       "name": "networkType",
       "type": "net.corda.p2p.NetworkType"
+    },
+    {
+      "doc": "The root trusted certificates of the group (in PEM format)",
+      "name": "trustedCertificates",
+      "type": {
+        "type": "array",
+        "items": "string"
+      }
     }
   ]
 }

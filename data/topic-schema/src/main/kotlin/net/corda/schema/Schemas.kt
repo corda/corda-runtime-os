@@ -66,6 +66,7 @@ class Schemas {
             const val LINK_OUT_TOPIC = "link.out"
             const val LINK_IN_TOPIC = "link.in"
             const val SESSION_OUT_PARTITIONS = "session.out.partitions"
+            const val GATEWAY_TLS_TRUSTSTORES = "gateway.tls.truststores"
         }
     }
 

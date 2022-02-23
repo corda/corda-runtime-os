@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "GatewayTruststore",
+  "namespace": "net.corda.p2p",
+  "fields": [
+    {
+      "doc": "Collection of certificates in PEM format",
+      "name": "trustedCertificates",
+      "type": {
+        "type": "array",
+        "items": "string"
+      }
+    }
+  ]
+}

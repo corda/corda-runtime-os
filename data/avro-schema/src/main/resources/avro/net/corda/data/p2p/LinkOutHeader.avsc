@@ -4,8 +4,9 @@
   "namespace": "net.corda.p2p",
   "fields": [
     {
-      "name": "destinationX500Name",
-      "type": "string"
+      "doc": "The destination identity (x500 name + group ID)",
+      "name": "destinationIdentity",
+      "type": "net.corda.data.identity.HoldingIdentity"
     },
     {
       "name": "destinationNetworkType",
