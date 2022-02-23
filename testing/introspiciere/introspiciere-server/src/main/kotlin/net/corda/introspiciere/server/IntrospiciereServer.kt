@@ -24,7 +24,6 @@ class IntrospiciereServer(private val port: Int = 0, private val kafkaBrokers: L
         app.get("/helloworld", helloWorldController.greeting())
 
         val topicController = TopicController(kafkaConfig)
-        app.get("/topics", topicController.getAll())
         app.post("/topics/{topic}", topicController.create())
 
         val messagesController = MessagesController(kafkaConfig)
