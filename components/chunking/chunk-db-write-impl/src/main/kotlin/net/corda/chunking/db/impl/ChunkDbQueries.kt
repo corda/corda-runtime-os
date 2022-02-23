@@ -7,6 +7,7 @@ import net.corda.data.chunking.Chunk
 import net.corda.orm.utils.transaction
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
+import java.security.MessageDigest
 import javax.persistence.EntityManagerFactory
 
 /**
@@ -81,9 +82,9 @@ internal class ChunkDbQueries(private val entityManagerFactory: EntityManagerFac
                 .setParameter("requestId", requestId)
                 .resultStream
 
-            val messageDigest = Checksum.getMessageDigest()
-
             streamingResults.use { stream ->
+                val messageDigest = Checksum.getMessageDigest()
+
                 stream.forEach { e ->
                     if (e.data == null) { // zero chunk
                         if (e.checksum == null) throw CordaRuntimeException("No checksum found in zero-sized chunk")
@@ -92,11 +93,10 @@ internal class ChunkDbQueries(private val entityManagerFactory: EntityManagerFac
                         messageDigest.update(e.data!!)
                     }
                 }
+
+                if (expectedChecksum == null) throw CordaRuntimeException("Expected checksum not set because no zero-sized chunk was found")
+                actualChecksum = messageDigest.digest()
             }
-
-            if (expectedChecksum == null) throw CordaRuntimeException("Expected checksum not set because no zero-sized chunk was found")
-
-            actualChecksum = messageDigest.digest()
         }
 
         return expectedChecksum!!.bytes.contentEquals(actualChecksum)
