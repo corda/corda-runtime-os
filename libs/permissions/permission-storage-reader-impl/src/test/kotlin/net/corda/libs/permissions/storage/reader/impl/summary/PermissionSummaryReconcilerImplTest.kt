@@ -499,4 +499,39 @@ internal class PermissionSummaryReconcilerImplTest {
         assertEquals("vrtnode", resultPermissionsList[0].virtualNode)
         assertEquals("grp", resultPermissionsList[0].groupVisibility)
     }
+
+    @Test
+    fun `getSummariesForReconciliation detects when a user summary calculation from db is actually older than summary the cache`() {
+
+        val now = Instant.now().truncatedTo(ChronoUnit.MILLIS)
+        val later = now.plusMillis(1000)
+
+        val dbPermissionSummaries = mutableMapOf(
+            "loginName" to InternalUserPermissionSummary(
+                "loginName",
+                listOf(
+                    InternalPermissionQueryDto("loginName", null, null, "A", PermissionType.ALLOW)
+                ),
+                now
+            )
+        )
+
+        val cachedPermissionSummaries = mutableMapOf(
+            "loginName" to AvroUserPermissionSummary(
+                "loginName",
+                listOf(
+                    AvroPermissionSummary(null, null, "B", AvroPermissionType.ALLOW)
+                ),
+                later
+            )
+        )
+
+        val result = reconciler.getSummariesForReconciliation(
+            dbPermissionSummaries,
+            cachedPermissionSummaries
+        )
+
+        assertEquals(0, result.size)
+        assertNull(result["loginName"])
+    }
 }

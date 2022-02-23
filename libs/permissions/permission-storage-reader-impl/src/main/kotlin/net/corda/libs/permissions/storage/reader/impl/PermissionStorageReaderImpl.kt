@@ -83,7 +83,7 @@ class PermissionStorageReaderImpl(
     }
 
     override fun reconcilePermissionSummaries() {
-
+        log.info("Reconciliation of permission summaries started.")
         val permissionSummariesFromDb: Map<UserLogin, InternalUserPermissionSummary> = permissionRepository.findAllPermissionSummaries()
 
         val permissionsToReconcile: Map<UserLogin, AvroUserPermissionSummary?> = permissionSummaryReconciler.getSummariesForReconciliation(
@@ -91,6 +91,7 @@ class PermissionStorageReaderImpl(
             permissionCache.permissionSummaries
         )
 
+        log.info("Publishing permission summary records for ${permissionsToReconcile.size} unique users that require reconciliation.")
         publisher.publish(createPermissionSummaryRecords(permissionsToReconcile))
     }
 
@@ -100,7 +101,7 @@ class PermissionStorageReaderImpl(
         publisher.publish(createGroupRecords(permissionRepository.findAllGroups()))
         publisher.publish(createRoleRecords(permissionRepository.findAllRoles()))
         publisher.publish(createPermissionRecords(permissionRepository.findAllPermissions()))
-        publisher.publish(createPermissionRecords(permissionRepository.findAllPermissions()))
+        reconcilePermissionSummaries()
     }
 
     private fun createUserRecords(users: List<User>): List<Record<String, AvroUser>> {
