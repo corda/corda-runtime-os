@@ -61,7 +61,7 @@ class CpkChecksumsCacheImplTest {
         val currentData = mapOf(pair0, pair1)
 
         cacheSynchronizer.onSnapshot(currentData)
-        assertTrue(cpkChecksum in cpkChecksumCache.cpkChecksums)
+        assertTrue(cpkChecksum in cpkChecksumCache.getCachedCpkIds())
     }
 
     @Test
@@ -70,18 +70,22 @@ class CpkChecksumsCacheImplTest {
         val pair0 = dummyCpkChunkIdToCpkChunk(cpkChecksum, 0, false)
         val pair1 = dummyCpkChunkIdToCpkChunk(cpkChecksum, 1, true)
 
-        cacheSynchronizer.onNext(
-            Record("dummyTopic", pair0.first, pair0.second),
-            null,
-            mock()
-        )
-        assertFalse(cpkChecksum in cpkChecksumCache.cpkChecksums)
+        cacheSynchronizer.onNext(Record("dummyTopic", pair0.first, pair0.second), null, mock())
+        assertFalse(cpkChecksum in cpkChecksumCache.getCachedCpkIds())
 
-        cacheSynchronizer.onNext(
-            Record("dummyTopic", pair1.first, pair1.second),
-            null,
-            mock()
-        )
-        assertTrue(cpkChecksum in cpkChecksumCache.cpkChecksums)
+        cacheSynchronizer.onNext(Record("dummyTopic", pair1.first, pair1.second), null, mock())
+        assertTrue(cpkChecksum in cpkChecksumCache.getCachedCpkIds())
+    }
+
+    @Test
+    fun `on partial cpk chunks updates, cpk checksum does not get cached`() {
+        val cpkChecksum = secureHash("dummy".toByteArray())
+        val pair0 = dummyCpkChunkIdToCpkChunk(cpkChecksum, 0, false)
+        val pair1 = dummyCpkChunkIdToCpkChunk(cpkChecksum, 1, false)
+
+        cacheSynchronizer.onNext(Record("dummyTopic", pair0.first, pair0.second), null, mock())
+        cacheSynchronizer.onNext(Record("dummyTopic", pair1.first, pair1.second), null, mock())
+
+        assertFalse(cpkChecksum in cpkChecksumCache.getCachedCpkIds())
     }
 }
