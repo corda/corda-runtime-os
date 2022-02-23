@@ -17,8 +17,6 @@ class GatewayConfigurationTest {
             on { getEnum(RevocationConfigMode::class.java, "revocationCheck.mode") } doReturn RevocationConfigMode.HARD_FAIL
             on { getString("keyStore") } doReturn byteArrayOf(1, 2, 3).toBase64()
             on { getString("keyStorePassword") } doReturn "pass1"
-            on { getString("trustStore") } doReturn byteArrayOf(4, 5).toBase64()
-            on { getString("trustStorePassword") } doReturn "pass2"
         }
         val config = mock<Config> {
             on { hasPath("connectionConfig") } doReturn false
@@ -36,10 +34,8 @@ class GatewayConfigurationTest {
                 hostAddress = "address",
                 connectionConfig = ConnectionConfiguration(),
                 sslConfig = SslConfiguration(
-                    rawTrustStore = byteArrayOf(4, 5),
                     rawKeyStore = byteArrayOf(1, 2, 3),
                     keyStorePassword = "pass1",
-                    trustStorePassword = "pass2",
                     revocationCheck =
                     RevocationConfig(RevocationConfigMode.HARD_FAIL)
                 )
@@ -60,8 +56,6 @@ class GatewayConfigurationTest {
             on { getEnum(RevocationConfigMode::class.java, "revocationCheck.mode") } doReturn RevocationConfigMode.HARD_FAIL
             on { getString("keyStore") } doReturn byteArrayOf(1, 2, 3).toBase64()
             on { getString("keyStorePassword") } doReturn "pass1"
-            on { getString("trustStore") } doReturn byteArrayOf(4, 5).toBase64()
-            on { getString("trustStorePassword") } doReturn "pass2"
         }
         val config = mock<Config> {
             on { hasPath("connectionConfig") } doReturn true
@@ -86,10 +80,8 @@ class GatewayConfigurationTest {
                     retryDelay = 21.minutes
                 ),
                 sslConfig = SslConfiguration(
-                    rawTrustStore = byteArrayOf(4, 5),
                     rawKeyStore = byteArrayOf(1, 2, 3),
                     keyStorePassword = "pass1",
-                    trustStorePassword = "pass2",
                     revocationCheck =
                     RevocationConfig(RevocationConfigMode.HARD_FAIL)
                 )

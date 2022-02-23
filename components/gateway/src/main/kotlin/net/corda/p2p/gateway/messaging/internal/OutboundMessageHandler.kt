@@ -19,12 +19,13 @@ import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpResponse
 import net.corda.p2p.gateway.messaging.http.SniCalculator
+import net.corda.p2p.gateway.messaging.http.TrustStoresMap
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.v5.base.util.debug
 import org.bouncycastle.asn1.x500.X500Name
 import org.slf4j.LoggerFactory
 import java.net.URI
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.Executors
@@ -53,6 +54,13 @@ internal class OutboundMessageHandler(
         configurationReaderService
     )
 
+    private val trustStoresMap = TrustStoresMap(
+        lifecycleCoordinatorFactory,
+        subscriptionFactory,
+        nodeConfiguration,
+        instanceId
+    )
+
     private val outboundSubscription = subscriptionFactory.createEventLogSubscription(
         SubscriptionConfig("outbound-message-handler", LINK_OUT_TOPIC, instanceId),
         this,
@@ -69,8 +77,8 @@ internal class OutboundMessageHandler(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        dependentChildren = listOf(outboundSubscriptionTile),
-        managedChildren = listOf(outboundSubscriptionTile)
+        dependentChildren = listOf(outboundSubscriptionTile, trustStoresMap.dominoTile),
+        managedChildren = listOf(outboundSubscriptionTile, trustStoresMap.dominoTile)
     )
 
     private val retryThreadPool = Executors.newSingleThreadScheduledExecutor()
@@ -84,22 +92,25 @@ internal class OutboundMessageHandler(
             val pendingRequests = events.mapNotNull { evt ->
                 evt.value?.let { peerMessage ->
                     try {
+                        val trustStore = trustStoresMap.getTrustStore(peerMessage.header.destinationIdentity.groupId)
+
                         val sni = SniCalculator.calculateSni(
-                            peerMessage.header.destinationX500Name,
+                            peerMessage.header.destinationIdentity.x500Name,
                             peerMessage.header.destinationNetworkType,
                             peerMessage.header.address
                         )
                         val messageId = UUID.randomUUID().toString()
                         val gatewayMessage = GatewayMessage(messageId, peerMessage.payload)
                         val expectedX500Name = if (NetworkType.CORDA_4 == peerMessage.header.destinationNetworkType) {
-                            X500Name(peerMessage.header.destinationX500Name)
+                            X500Name(peerMessage.header.destinationIdentity.x500Name)
                         } else {
                             null
                         }
                         val destinationInfo = DestinationInfo(
                             URI.create(peerMessage.header.address),
                             sni,
-                            expectedX500Name
+                            expectedX500Name,
+                            trustStore,
                         )
                         val responseFuture = sendMessage(destinationInfo, gatewayMessage)
                         PendingRequest(gatewayMessage, destinationInfo, responseFuture)
@@ -115,7 +126,6 @@ internal class OutboundMessageHandler(
                 val (response, error) = getResponseOrError(pendingMessage)
                 handleResponse(pendingMessage, response, error, MAX_RETRIES)
             }
-
         }
         return emptyList()
     }
@@ -123,7 +133,7 @@ internal class OutboundMessageHandler(
     @Suppress("SpreadOperator")
     private fun waitUntilComplete(pendingRequests: List<PendingRequest>) {
         try {
-            CompletableFuture.allOf( *pendingRequests.map{ it.future }.toTypedArray() )
+            CompletableFuture.allOf(*pendingRequests.map { it.future }.toTypedArray())
                 .get(connectionConfig().responseTimeout.toMillis(), TimeUnit.MILLISECONDS)
         } catch (e: Exception) {
             // Do nothing - results/errors will be processed individually.
@@ -136,7 +146,7 @@ internal class OutboundMessageHandler(
             response to null
         } catch (error: Exception) {
             when {
-                error is ExecutionException && error.cause != null-> null to error.cause
+                error is ExecutionException && error.cause != null -> null to error.cause
                 else -> null to error
             }
         }
@@ -147,9 +157,9 @@ internal class OutboundMessageHandler(
             val future = sendMessage(destinationInfo, gatewayMessage)
             val pendingRequest = PendingRequest(gatewayMessage, destinationInfo, future)
             future.orTimeout(connectionConfig().responseTimeout.toMillis(), TimeUnit.MILLISECONDS)
-                  .whenCompleteAsync { response, error ->
-                        handleResponse(pendingRequest, response, error, remainingAttempts - 1)
-                  }
+                .whenCompleteAsync { response, error ->
+                    handleResponse(pendingRequest, response, error, remainingAttempts - 1)
+                }
         }, connectionConfig().retryDelay.toMillis(), TimeUnit.MILLISECONDS)
     }
 
@@ -164,8 +174,10 @@ internal class OutboundMessageHandler(
         } else if (response != null) {
             if (response.statusCode != HttpResponseStatus.OK) {
                 if (shouldRetry(response.statusCode) && remainingAttempts > 0) {
-                    logger.warn("Request (${pendingRequest.gatewayMessage.id}) failed with status code ${response.statusCode}, " +
-                            "it will be retried later.")
+                    logger.warn(
+                        "Request (${pendingRequest.gatewayMessage.id}) failed with status code ${response.statusCode}, " +
+                            "it will be retried later."
+                    )
                     scheduleMessageReplay(pendingRequest.destinationInfo, pendingRequest.gatewayMessage, remainingAttempts)
                 } else {
                     logger.warn("Request (${pendingRequest.gatewayMessage.id}) failed with status code ${response.statusCode}.")
@@ -190,8 +202,9 @@ internal class OutboundMessageHandler(
     override val valueClass: Class<LinkOutMessage>
         get() = LinkOutMessage::class.java
 
-    private data class PendingRequest(val gatewayMessage: GatewayMessage,
-                                      val destinationInfo: DestinationInfo,
-                                      val future: CompletableFuture<HttpResponse>)
-
+    private data class PendingRequest(
+        val gatewayMessage: GatewayMessage,
+        val destinationInfo: DestinationInfo,
+        val future: CompletableFuture<HttpResponse>
+    )
 }

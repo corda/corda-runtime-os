@@ -2,6 +2,7 @@ package net.corda.p2p.gateway
 
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.handler.codec.http.HttpResponseStatus
+import net.corda.data.identity.HoldingIdentity
 import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.libs.configuration.SmartConfigImpl
@@ -18,6 +19,7 @@ import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
 import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
+import net.corda.p2p.GatewayTruststore
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutHeader
 import net.corda.p2p.LinkOutMessage
@@ -33,6 +35,7 @@ import net.corda.p2p.gateway.messaging.http.HttpConnectionEvent
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.p2p.gateway.messaging.http.ListenerWithServer
+import net.corda.schema.Schemas
 import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
@@ -65,6 +68,7 @@ import kotlin.concurrent.thread
 class GatewayIntegrationTest : TestBase() {
     companion object {
         private val logger = contextLogger()
+        const val GROUP_ID = "Group - 1"
     }
 
     private val sessionId = "session-1"
@@ -72,7 +76,7 @@ class GatewayIntegrationTest : TestBase() {
 
     private val nodeConfig = SmartConfigImpl.empty()
 
-    private class Node(private val name: String) {
+    private inner class Node(private val name: String) {
         private val topicService = TopicServiceImpl()
         private val rpcTopicService = RPCTopicServiceImpl()
         val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
@@ -82,6 +86,12 @@ class GatewayIntegrationTest : TestBase() {
 
         fun stop() {
             publisher.close()
+        }
+
+        fun publishTrustStore() {
+            publish(
+                Record(Schemas.P2P.GATEWAY_TLS_TRUSTSTORES, GROUP_ID, GatewayTruststore(listOf(truststoreCertificatePem)))
+            )
         }
 
         fun publish(vararg records: Record<Any, Any>): List<CompletableFuture<Unit>> {
@@ -149,7 +159,7 @@ class GatewayIntegrationTest : TestBase() {
                 instanceId.incrementAndGet(),
             ).use {
                 it.startAndWaitForStarted()
-                val serverInfo = DestinationInfo(serverAddress, aliceSNI[0], null)
+                val serverInfo = DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore)
                 HttpClient(
                     serverInfo,
                     bobSslConfig,
@@ -186,11 +196,16 @@ class GatewayIntegrationTest : TestBase() {
         fun `gateway reconfiguration`() {
             val configurationCount = 3
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
+            alice.publishTrustStore()
             val recipientServerUrl = URI.create("http://www.alice.net:10001")
 
             val linkInMessage = LinkInMessage(authenticatedP2PMessage(""))
             val linkOutMessage = LinkOutMessage.newBuilder().apply {
-                header = LinkOutHeader("", NetworkType.CORDA_5, recipientServerUrl.toString())
+                header = LinkOutHeader(
+                    HoldingIdentity("", GROUP_ID),
+                    NetworkType.CORDA_5,
+                    recipientServerUrl.toString(),
+                )
                 payload = authenticatedP2PMessage("link out")
             }.build()
             val gatewayMessage = GatewayMessage("msg-id", linkInMessage.payload)
@@ -258,7 +273,8 @@ class GatewayIntegrationTest : TestBase() {
                             DestinationInfo(
                                 url,
                                 aliceSNI[0],
-                                null
+                                null,
+                                truststoreKeyStore
                             ),
                             aliceSslConfig,
                             NioEventLoopGroup(1),
@@ -309,7 +325,7 @@ class GatewayIntegrationTest : TestBase() {
             ).use {
                 it.startAndWaitForStarted()
                 (1..clientNumber).map { index ->
-                    val serverInfo = DestinationInfo(serverAddress, aliceSNI[1], null)
+                    val serverInfo = DestinationInfo(serverAddress, aliceSNI[1], null, truststoreKeyStore)
                     val client = HttpClient(serverInfo, bobSslConfig, threadPool, threadPool, 2.seconds)
                     client.start()
                     val p2pOutMessage = LinkInMessage(authenticatedP2PMessage("Client-$index"))
@@ -349,6 +365,7 @@ class GatewayIntegrationTest : TestBase() {
         fun `gateway to multiple servers`() {
             val messageCount = 100
             val serversCount = 4
+            alice.publishTrustStore()
 
             // We first produce some messages which will be consumed by the Gateway.
             val deliveryLatch = CountDownLatch(serversCount * messageCount)
@@ -359,7 +376,11 @@ class GatewayIntegrationTest : TestBase() {
             }.onEach { serverUrl ->
                 repeat(messageCount) {
                     val msg = LinkOutMessage.newBuilder().apply {
-                        header = LinkOutHeader("", NetworkType.CORDA_5, serverUrl)
+                        header = LinkOutHeader(
+                            HoldingIdentity("", GROUP_ID),
+                            NetworkType.CORDA_5,
+                            serverUrl,
+                        )
                         payload = authenticatedP2PMessage("Target-$serverUrl")
                     }.build()
                     alice.publish(Record(LINK_OUT_TOPIC, "key", msg))
@@ -429,6 +450,8 @@ class GatewayIntegrationTest : TestBase() {
             val messageCount = 100
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
             bob.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
+            alice.publishTrustStore()
+            bob.publishTrustStore()
 
             val receivedLatch = CountDownLatch(messageCount * 2)
             var bobReceivedMessages = 0
@@ -481,7 +504,8 @@ class GatewayIntegrationTest : TestBase() {
                             aliceGatewayAddress.host,
                             aliceGatewayAddress.port,
                             chipSslConfig
-                        ), alice.lifecycleCoordinatorFactory
+                        ),
+                        alice.lifecycleCoordinatorFactory
                     ),
                     alice.subscriptionFactory,
                     alice.publisherFactory,
@@ -495,7 +519,8 @@ class GatewayIntegrationTest : TestBase() {
                             bobGatewayAddress.host,
                             bobGatewayAddress.port,
                             daleSslConfig
-                        ), bob.lifecycleCoordinatorFactory
+                        ),
+                        bob.lifecycleCoordinatorFactory
                     ),
                     bob.subscriptionFactory,
                     bob.publisherFactory,
@@ -515,7 +540,11 @@ class GatewayIntegrationTest : TestBase() {
                 )
             }.flatMap { (address, node) ->
                 val msg = LinkOutMessage.newBuilder().apply {
-                    header = LinkOutHeader("", NetworkType.CORDA_5, address)
+                    header = LinkOutHeader(
+                        HoldingIdentity("", GROUP_ID),
+                        NetworkType.CORDA_5,
+                        address
+                    )
                     payload = authenticatedP2PMessage("Target-$address")
                 }.build()
                 node.publish(Record(LINK_OUT_TOPIC, "key", msg))
@@ -527,7 +556,7 @@ class GatewayIntegrationTest : TestBase() {
             if (!allMessagesDelivered) {
                 fail(
                     "Not all messages were delivered successfully. Bob received $bobReceivedMessages messages (expected $messageCount), " +
-                            "Alice received $aliceReceivedMessages (expected $messageCount)"
+                        "Alice received $aliceReceivedMessages (expected $messageCount)"
                 )
             }
 
@@ -543,7 +572,6 @@ class GatewayIntegrationTest : TestBase() {
             }
         }
     }
-
 
     private fun authenticatedP2PMessage(content: String) = AuthenticatedDataMessage.newBuilder().apply {
         header = CommonHeader(MessageType.DATA, 0, sessionId, 1L, Instant.now().toEpochMilli())
@@ -616,7 +644,6 @@ class GatewayIntegrationTest : TestBase() {
                 assertThrows<ConnectException> {
                     Socket(host, 10006).close()
                 }
-
             }
         }
     }
@@ -640,6 +667,4 @@ class GatewayIntegrationTest : TestBase() {
             }
         }
     }
-
-
 }

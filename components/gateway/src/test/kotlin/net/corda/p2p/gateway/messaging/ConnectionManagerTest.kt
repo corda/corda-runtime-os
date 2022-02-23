@@ -16,6 +16,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import java.net.URI
+import java.security.KeyStore
 import java.util.concurrent.TimeUnit
 
 class ConnectionManagerTest {
@@ -24,6 +25,7 @@ class ConnectionManagerTest {
 
     private val connectionManager = ConnectionManager(sslConfiguration, connectionConfiguration)
     private val mockedClient = mockConstruction(HttpClient::class.java)
+    private val trustStore = mock<KeyStore>()
 
     @AfterEach
     fun cleanUp() {
@@ -37,7 +39,8 @@ class ConnectionManagerTest {
                 DestinationInfo(
                     URI("http://www.r3.com:3000"),
                     "",
-                    null
+                    null,
+                    trustStore
                 )
             )
 
@@ -52,7 +55,8 @@ class ConnectionManagerTest {
                 DestinationInfo(
                     URI("http://www.r3.com:3000"),
                     "1",
-                    null
+                    null,
+                    trustStore
                 )
             )
         val client2 = connectionManager
@@ -60,7 +64,8 @@ class ConnectionManagerTest {
                 DestinationInfo(
                     URI("http://www.r3.com:3000"),
                     "2",
-                    null
+                    null,
+                    trustStore
                 )
             )
 
@@ -76,7 +81,8 @@ class ConnectionManagerTest {
                 DestinationInfo(
                     URI("http://www.r3.com:3000"),
                     "",
-                    null
+                    null,
+                    trustStore
                 )
             )
         val client2 = connectionManager
@@ -84,7 +90,8 @@ class ConnectionManagerTest {
                 DestinationInfo(
                     URI("http://www.r3.com:3001"),
                     "",
-                    null
+                    null,
+                    trustStore
                 )
             )
 
@@ -103,7 +110,8 @@ class ConnectionManagerTest {
                 DestinationInfo(
                     URI("http://www.r3.com:3000"),
                     "",
-                    null
+                    null,
+                    trustStore
                 )
             )
 
@@ -114,7 +122,8 @@ class ConnectionManagerTest {
                 DestinationInfo(
                     URI("http://www.r3.com:3000"),
                     "",
-                    null
+                    null,
+                    trustStore
                 )
             )
         assertThat(client1).isNotSameAs(client2)
@@ -132,7 +141,8 @@ class ConnectionManagerTest {
                 DestinationInfo(
                     URI("http://www.r3.com:3000"),
                     "",
-                    null
+                    null,
+                    trustStore
                 )
             )
 

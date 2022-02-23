@@ -15,6 +15,7 @@ import net.corda.p2p.gateway.messaging.SslConfiguration
 import org.bouncycastle.asn1.x500.X500Name
 import org.slf4j.LoggerFactory
 import java.net.URI
+import java.security.KeyStore
 import java.time.Duration
 import java.util.LinkedList
 import java.util.concurrent.CompletableFuture
@@ -204,7 +205,7 @@ class HttpClient(
 
         init {
             sslConfiguration.run {
-                val pkixParams = getCertCheckingParameters(trustStore, revocationCheck)
+                val pkixParams = getCertCheckingParameters(destinationInfo.trustStore, revocationCheck)
                 trustManagerFactory.init(pkixParams)
             }
         }
@@ -230,8 +231,14 @@ class HttpClient(
  * @param uri the destination URI
  * @param sni the destination server name
  * @param legalName the destination legal name expected to be on the TLS certificate. If the value is *null*, the [HttpClient]
+ * @param trustStore Key store containing the certificates trusted for this specific destination.
  * will use standard target identity check
  */
-data class DestinationInfo(val uri: URI, val sni: String, val legalName: X500Name?)
+data class DestinationInfo(
+    val uri: URI,
+    val sni: String,
+    val legalName: X500Name?,
+    val trustStore: KeyStore,
+)
 
 typealias HttpRequestPayload = ByteArray

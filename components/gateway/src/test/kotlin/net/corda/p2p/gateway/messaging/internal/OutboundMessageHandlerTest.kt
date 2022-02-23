@@ -26,6 +26,7 @@ import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.p2p.gateway.messaging.http.HttpResponse
+import net.corda.p2p.gateway.messaging.http.TrustStoresMap
 import net.corda.v5.base.util.millis
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x500.X500Name
@@ -45,11 +46,15 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.net.URI
 import java.nio.ByteBuffer
+import java.security.KeyStore
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 class OutboundMessageHandlerTest {
+    companion object {
+        private const val GROUP_ID = "My group ID"
+    }
     private val coordinatorHandler = argumentCaptor<LifecycleEventHandler>()
     private val coordinator = mock<LifecycleCoordinator> {
         on { postEvent(any()) } doAnswer {
@@ -74,6 +79,10 @@ class OutboundMessageHandlerTest {
     }
     private var connectionConfig = ConnectionConfiguration()
     private val connectionManager = mockConstruction(ReconfigurableConnectionManager::class.java)
+    private val truststore = mock<KeyStore>()
+    private val trustStores = mockConstruction(TrustStoresMap::class.java) { mock, _ ->
+        whenever(mock.getTrustStore(GROUP_ID)).doReturn(truststore)
+    }
 
     private val sentMessages = mutableListOf<GatewayMessage>()
     private val client = mock<HttpClient> {
@@ -109,6 +118,7 @@ class OutboundMessageHandlerTest {
 
     @AfterEach
     fun cleanUp() {
+        trustStores.close()
         connectionManager.close()
         dominoTile.close()
         subscriptionTile.close()
@@ -124,7 +134,11 @@ class OutboundMessageHandlerTest {
             )
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
-        val headers = LinkOutHeader("a", NetworkType.CORDA_5, "https://r3.com/")
+        val headers = LinkOutHeader(
+            HoldingIdentity("a", GROUP_ID),
+            NetworkType.CORDA_5,
+            "https://r3.com/",
+        )
         val message = LinkOutMessage(headers, msgPayload)
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
 
@@ -150,7 +164,11 @@ class OutboundMessageHandlerTest {
             )
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
-        val headers = LinkOutHeader("a", NetworkType.CORDA_5, "https://r3.com/")
+        val headers = LinkOutHeader(
+            HoldingIdentity("a", GROUP_ID),
+            NetworkType.CORDA_5,
+            "https://r3.com/",
+        )
         val message = LinkOutMessage(headers, payload)
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
 
@@ -173,7 +191,11 @@ class OutboundMessageHandlerTest {
             )
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
-        val headers = LinkOutHeader("a", NetworkType.CORDA_5, "https://r3.com/")
+        val headers = LinkOutHeader(
+            HoldingIdentity("a", GROUP_ID),
+            NetworkType.CORDA_5,
+            "https://r3.com/",
+        )
         val message = LinkOutMessage(
             headers,
             payload,
@@ -192,7 +214,8 @@ class OutboundMessageHandlerTest {
                 DestinationInfo(
                     URI.create("https://r3.com/"),
                     "r3.com",
-                    null
+                    null,
+                    truststore
                 )
             )
     }
@@ -206,7 +229,11 @@ class OutboundMessageHandlerTest {
             )
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
-        val headers = LinkOutHeader("O=PartyA, L=London, C=GB", NetworkType.CORDA_4, "https://r3.com/")
+        val headers = LinkOutHeader(
+            HoldingIdentity("O=PartyA, L=London, C=GB", GROUP_ID),
+            NetworkType.CORDA_4,
+            "https://r3.com/",
+        )
         val message = LinkOutMessage(
             headers,
             payload,
@@ -225,7 +252,8 @@ class OutboundMessageHandlerTest {
                 DestinationInfo(
                     URI.create("https://r3.com/"),
                     "b597e8858a2fa87424f5e8c39dc4f93c.p2p.corda.net",
-                    X500Name("O=PartyA, L=London, C=GB")
+                    X500Name("O=PartyA, L=London, C=GB"),
+                    truststore
                 )
             )
     }
@@ -239,7 +267,11 @@ class OutboundMessageHandlerTest {
             )
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
-        val headers = LinkOutHeader("aaa", NetworkType.CORDA_4, "https://r3.com/")
+        val headers = LinkOutHeader(
+            HoldingIdentity("aaa", GROUP_ID),
+            NetworkType.CORDA_4,
+            "https://r3.com/",
+        )
         val message = LinkOutMessage(
             headers,
             payload,
@@ -252,6 +284,35 @@ class OutboundMessageHandlerTest {
         )
 
         verify(connectionManager.constructed().first(), never()).acquire(any())
+    }
+
+    @Test
+    fun `onNext will get the trust store from the trust store map`() {
+        val payload = UnauthenticatedMessage.newBuilder().apply {
+            header = UnauthenticatedMessageHeader(
+                HoldingIdentity("A", "B"),
+                HoldingIdentity("C", "D")
+            )
+            payload = ByteBuffer.wrap(byteArrayOf())
+        }.build()
+        val headers = LinkOutHeader(
+            HoldingIdentity("aaa", GROUP_ID),
+            NetworkType.CORDA_4,
+            "https://r3.com/",
+        )
+
+        val message = LinkOutMessage(
+            headers,
+            payload,
+        )
+
+        handler.onNext(
+            listOf(
+                EventLogRecord("", "", message, 1, 1L),
+            )
+        )
+
+        verify(trustStores.constructed().first()).getTrustStore(GROUP_ID)
     }
 
     @Test
@@ -274,7 +335,11 @@ class OutboundMessageHandlerTest {
             )
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
-        val headers = LinkOutHeader("a", NetworkType.CORDA_5, "https://r3.com/")
+        val headers = LinkOutHeader(
+            HoldingIdentity("a", GROUP_ID),
+            NetworkType.CORDA_5,
+            "https://r3.com/",
+        )
         val message = LinkOutMessage(headers, msgPayload)
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
 
@@ -315,7 +380,11 @@ class OutboundMessageHandlerTest {
             )
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
-        val headers = LinkOutHeader("a", NetworkType.CORDA_5, "https://r3.com/")
+        val headers = LinkOutHeader(
+            HoldingIdentity("a", GROUP_ID),
+            NetworkType.CORDA_5,
+            "https://r3.com/",
+        )
         val message = LinkOutMessage(headers, msgPayload)
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
 
@@ -359,7 +428,11 @@ class OutboundMessageHandlerTest {
             )
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
-        val headers = LinkOutHeader("a", NetworkType.CORDA_5, "https://r3.com/")
+        val headers = LinkOutHeader(
+            HoldingIdentity("a", GROUP_ID),
+            NetworkType.CORDA_5,
+            "https://r3.com/",
+        )
         val message = LinkOutMessage(headers, msgPayload)
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
 
@@ -402,7 +475,11 @@ class OutboundMessageHandlerTest {
             )
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
-        val headers = LinkOutHeader("a", NetworkType.CORDA_5, "https://r3.com/")
+        val headers = LinkOutHeader(
+            HoldingIdentity("a", GROUP_ID),
+            NetworkType.CORDA_5,
+            "https://r3.com/",
+        )
         val message = LinkOutMessage(headers, msgPayload)
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
 
@@ -418,5 +495,4 @@ class OutboundMessageHandlerTest {
         assertThat(sentMessages).hasSize(1)
         assertThat(sentMessages.first().payload).isEqualTo(msgPayload)
     }
-
 }

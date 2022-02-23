@@ -26,7 +26,6 @@ OCSP responder.
 ## With support of revocation (using tinycert)
 
 TinyCert provides CRL and OCSP endpoints and an easy way to revoke certificates via their web interface, so it can be used in scenarios where certification revocation needs to be tested. However, it provides only the option of creating RSA certificates.
-
 ### Create the CA and certificates
 
 1. Create a new CA using the tinycert dashboard.
@@ -35,19 +34,12 @@ TinyCert provides CRL and OCSP endpoints and an easy way to revoke certificates 
 4. Download the newly created certificate chain and private key. Files will be .pem format and are named *certchain.pem*
 and *key.dec.pem* if it's clear text or *key.enc.pem* if it's encrypted.
 
-### Create truststore.jks
+### Create truststore.pem
 
-1. Create an empty truststore. The initial entry will be deleted after in preparation for importing the CA certificate
-
-```
-keytool -genkey -keyalg RSA -alias temp -keystore truststore.jks
-keytool -delete -alias temp -keystore truststore.jks
-```
-
-2. Import the CA into the truststore
+1. Copy (or rename) the cacert.pem to  truststore.pem
 
 ```
-keytool -import -v -trustcacerts -alias root -file cacert.pem -keystore truststore.jks 
+cp cacert.pem truststore.pem 
 ```
 
 ### Create sslkeystore.jks
@@ -142,9 +134,9 @@ openssl req -new -x509 -nodes -key ca.key -out cacert.pem -passin "pass:password
 ### Create Trust store
 To create the trust store run:
 ```bash
-keytool -keystore truststore.jks -alias ca-root -import  -trustcacerts -file cacert.pem -storepass password -noprompt
+cp cacert.pem truststore.pem
 ```
-This will create the trust store in `./truststore.jks`
+This will create the trust store in `./truststore.pem`
 
 ### Create SSL key store
 1. Generate the key for `<name>`:
