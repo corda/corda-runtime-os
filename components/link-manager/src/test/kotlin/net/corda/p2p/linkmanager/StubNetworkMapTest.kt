@@ -142,6 +142,78 @@ class StubNetworkMapTest {
         assertThat(future.isCompletedExceptionally).isFalse
     }
 
+    @Test
+    fun `onNext notify the listeners of new identity`() {
+        val identities = mutableListOf<NetworkMapListener.IdentityInfo>()
+        val identityListener = object : NetworkMapListener {
+            override fun identityAdded(identityInfo: NetworkMapListener.IdentityInfo) {
+                identities.add(identityInfo)
+            }
+        }
+        networkMap.registerListener(identityListener)
+
+        clientProcessor?.onNext(
+            Record(
+                NETWORK_MAP_TOPIC,
+                "key",
+                NetworkMapEntry(
+                    HoldingIdentity(aliceName, groupId1),
+                    ByteBuffer.wrap(aliceKeyPair.public.encoded),
+                    KeyAlgorithm.RSA, aliceAddress,
+                    NetworkType.CORDA_4,
+                    certificates1,
+                    tlsCertificates,
+                )
+            ),
+            null,
+            emptyMap()
+        )
+
+        assertThat(identities).containsExactly(
+            NetworkMapListener.IdentityInfo(
+                HoldingIdentity(aliceName, groupId1),
+                aliceAddress,
+                tlsCertificates,
+            )
+        )
+    }
+
+    @Test
+    fun `onNext notify the listeners of new group`() {
+        val groups = mutableListOf<NetworkMapListener.GroupInfo>()
+        val groupListener = object : NetworkMapListener {
+            override fun groupAdded(groupInfo: NetworkMapListener.GroupInfo) {
+                groups.add(groupInfo)
+            }
+        }
+        networkMap.registerListener(groupListener)
+
+        clientProcessor?.onNext(
+            Record(
+                NETWORK_MAP_TOPIC,
+                "key",
+                NetworkMapEntry(
+                    HoldingIdentity(aliceName, groupId1),
+                    ByteBuffer.wrap(aliceKeyPair.public.encoded),
+                    KeyAlgorithm.RSA, aliceAddress,
+                    NetworkType.CORDA_4,
+                    certificates1,
+                    tlsCertificates,
+                )
+            ),
+            null,
+            emptyMap()
+        )
+
+        assertThat(groups).containsExactly(
+            NetworkMapListener.GroupInfo(
+                groupId1,
+                NetworkType.CORDA_4,
+                certificates1,
+            )
+        )
+    }
+
     private fun calculateHash(publicKey: ByteArray): ByteArray {
         messageDigest.reset()
         messageDigest.update(publicKey)

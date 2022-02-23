@@ -361,7 +361,7 @@ open class SessionManagerImpl(
         }
 
         val signWithOurGroupId = { data: ByteArray ->
-            cryptoService.sign(ourMemberInfo.publicKey, ourMemberInfo.getSignatureSpec() , data)
+            cryptoService.sign(ourMemberInfo.publicKey, ourMemberInfo.getSignatureSpec(), data)
         }
         val payload = try {
             session.generateOurHandshakeMessage(

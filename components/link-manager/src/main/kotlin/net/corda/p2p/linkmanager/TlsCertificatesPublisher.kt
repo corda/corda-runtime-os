@@ -19,7 +19,7 @@ import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_CERTIFICATES
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_TRUSTSTORES
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ConcurrentLinkedDeque
+import java.util.concurrent.ConcurrentLinkedQueue
 
 @Suppress("LongParameterList")
 internal class TlsCertificatesPublisher(
@@ -36,7 +36,7 @@ internal class TlsCertificatesPublisher(
     }
 
     private val publishedIds = ConcurrentHashMap<String, Set<PemCertificates>>()
-    private val toPublish = ConcurrentLinkedDeque<NetworkMapListener.IdentityInfo>()
+    private val toPublish = ConcurrentLinkedQueue<NetworkMapListener.IdentityInfo>()
 
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,
@@ -67,7 +67,7 @@ internal class TlsCertificatesPublisher(
     private val ready = CompletableFuture<Unit>()
 
     override fun identityAdded(identityInfo: NetworkMapListener.IdentityInfo) {
-        toPublish.offerLast(identityInfo)
+        toPublish.offer(identityInfo)
         publishQueueIfPossible()
     }
 
@@ -132,7 +132,7 @@ internal class TlsCertificatesPublisher(
 
     private fun publishQueueIfPossible() {
         while (ready.isDone) {
-            val identityInfo = toPublish.pollFirst() ?: return
+            val identityInfo = toPublish.poll() ?: return
             publishIdNeeded(
                 identityInfo.holdingIdentity.toHoldingIdentity(),
                 identityInfo.tlsCertificates
