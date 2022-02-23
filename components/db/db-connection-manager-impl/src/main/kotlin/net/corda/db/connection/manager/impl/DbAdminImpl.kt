@@ -98,9 +98,7 @@ class DbAdminImpl @Activate constructor(
                 preparedStatement.setString(1, user)
                 preparedStatement.executeQuery().use { resultSet ->
                     if (resultSet.next()) {
-                        val userExists = resultSet.getBoolean(1)
-                        if (userExists) log.debug("DB user $user exist") else log.debug("DB user $user doesn't exist")
-                        return userExists
+                        return resultSet.getBoolean(1)
                     }
                     throw SQLException("Query for checking whether user: $user exists did not return any row")
                 }

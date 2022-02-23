@@ -8,6 +8,7 @@ import net.corda.db.connection.manager.DbConnectionsRepository
 import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.*
 import net.corda.db.schema.DbSchema
+import net.corda.v5.base.util.contextLogger
 import java.util.*
 
 /**
@@ -18,6 +19,10 @@ class VirtualNodeDb(
     val dbConnections: Map<DbPrivilege, DbConnection?>, private val dbAdmin: DbAdmin,
     private val dbConnectionRepository: DbConnectionsRepository, private val schemaMigrator: LiquibaseSchemaMigrator
 ) {
+
+    companion object {
+        private val log = contextLogger()
+    }
 
     /**
      * Creates DB schema and user
@@ -31,7 +36,10 @@ class VirtualNodeDb(
                     val dbSchema = dbType.getSchemaName(holdingIdentityId)
                     // This covers scenario when previous virtual node on-boarding request failed after user was created
                     // Since connections are persisted at later point, user's password is lost, so user is re-created
-                    if (dbAdmin.userExists(user)) dbAdmin.deleteSchemaAndUser(dbSchema, user)
+                    if (dbAdmin.userExists(user)) {
+                        log.info("User for connection ${connection.description} already exists in DB, it will be re-created")
+                        dbAdmin.deleteSchemaAndUser(dbSchema, user)
+                    }
                     dbAdmin.createDbAndUser(dbSchema, user, password, privilege)
                 }
             }
