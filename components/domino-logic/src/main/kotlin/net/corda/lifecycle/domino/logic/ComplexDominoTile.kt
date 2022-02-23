@@ -254,6 +254,13 @@ class ComplexDominoTile(
                 is ConfigApplied -> {
                     when (event.configUpdateResult) {
                         ConfigUpdateResult.Success -> {
+                            if (state == StoppedDueToBadConfig) {
+                                logger.info(
+                                    "Received valid config for $coordinatorName, which was previously stopped due to invalid config."
+                                )
+                            } else {
+                                logger.info("Received valid config for $coordinatorName.")
+                            }
                             configReady = true
                             createResourcesAndStart()
                         }
@@ -294,7 +301,6 @@ class ComplexDominoTile(
         }
         logger.info("Got new configuration")
         if (newConfiguration == configurationChangeHandler.lastConfiguration) {
-            logger.info("Configuration same with previous, so not applying it.")
             configApplied(ConfigUpdateResult.NoUpdate)
         } else {
             logger.info("Applying new configuration")
