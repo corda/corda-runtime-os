@@ -1,10 +1,7 @@
 package net.corda.introspiciere.junit
 
 import net.corda.introspiciere.domain.KafkaMessage
-import net.corda.introspiciere.domain.TopicDefinition
-import net.corda.introspiciere.domain.TopicDefinition.Companion.DEFAULT_PARTITIONS
-import net.corda.introspiciere.domain.TopicDefinition.Companion.DEFAULT_REPLICATION_FACTOR
-import net.corda.introspiciere.http.CreateTopicReq
+import net.corda.introspiciere.http.IntrospiciereHttpClient
 import net.corda.introspiciere.http.MessageReaderReq
 import net.corda.introspiciere.http.MessageWriterReq
 import java.nio.ByteBuffer
@@ -13,6 +10,8 @@ import java.nio.ByteBuffer
  * Client to interact with the instrospiciere server.
  */
 class IntrospiciereClient(private val endpoint: String) {
+
+    private val httpClient = IntrospiciereHttpClient(endpoint)
 
     /**
      * Dummy method to initially test the client-server connexion. It will disappear eventually.
@@ -26,11 +25,12 @@ class IntrospiciereClient(private val endpoint: String) {
      */
     fun createTopic(
         name: String,
-        partitions: Int = DEFAULT_PARTITIONS,
-        replicationFactor: Short = DEFAULT_REPLICATION_FACTOR,
+        partitions: Int? = null,
+        replicationFactor: Short? = null,
+        config: Map<String, Any>? = null,
     ) {
-        val topic = TopicDefinition(name, partitions, replicationFactor)
-        CreateTopicReq(topic).request(endpoint)
+        val mapOfStrings = (config ?: emptyMap()).map { it.key to it.value.toString() }.toMap()
+        httpClient.createTopic(name, partitions, replicationFactor, mapOfStrings)
     }
 
     /**

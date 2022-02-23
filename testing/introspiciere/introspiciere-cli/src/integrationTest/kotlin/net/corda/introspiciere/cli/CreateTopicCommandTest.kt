@@ -35,7 +35,9 @@ class CreateTopicCommandTest {
             "--endpoint", introspiciere.endpoint,
             "--topic", "topic".random8,
             "--partitions", "3",
-            "--replication-factor", "2"
+            "--replication-factor", "2",
+            "--config", "cleanup.policy=compact",
+            "-c", "segment.ms=300000"
         )
     }
 

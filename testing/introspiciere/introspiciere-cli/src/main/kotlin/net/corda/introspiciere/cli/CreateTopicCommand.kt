@@ -1,8 +1,8 @@
 package net.corda.introspiciere.cli
 
-import net.corda.introspiciere.domain.TopicDefinition
-import net.corda.introspiciere.http.CreateTopicReq
+import net.corda.introspiciere.http.IntrospiciereHttpClient
 import picocli.CommandLine
+import picocli.CommandLine.Option
 
 /**
  * Create a Kafka topic.
@@ -10,18 +10,21 @@ import picocli.CommandLine
 @CommandLine.Command(name = "create-topic")
 class CreateTopicCommand : BaseCommand() {
 
-    @CommandLine.Option(names = ["--topic"], required = true, description = ["Topic name"])
+    @Option(names = ["--topic"], required = true, description = ["Topic name"])
     private lateinit var topicName: String
 
-    @CommandLine.Option(names = ["--partitions"], description = ["Number of partitions when creating the topic."])
-    private var partitions: Int = TopicDefinition.DEFAULT_PARTITIONS
+    @Option(names = ["--partitions"], description = ["Number of partitions when creating the topic."])
+    private var partitions: Int? = null
 
-    @CommandLine.Option(names = ["--replication-factor"], description = ["Replication factor of the topic."])
-    private var replicationFactor: Short = TopicDefinition.DEFAULT_REPLICATION_FACTOR
+    @Option(names = ["--replication-factor"], description = ["Replication factor of the topic."])
+    private var replicationFactor: Short? = null
+
+    @Option(names = ["-c", "--config"], description = ["Additional topic config. Format KEY=VALUE."])
+    private var configArray: Array<String> = emptyArray()
 
     override fun run() {
-        var topic = TopicDefinition(topicName, partitions, replicationFactor)
-        CreateTopicReq(topic).request(endpoint)
+        val config = configArray.map { it.split("=") }.associate { it[0] to it[1] }
+        IntrospiciereHttpClient(endpoint).createTopic(topicName, partitions, replicationFactor, config)
         println("Topic $topicName created successfully")
     }
 }

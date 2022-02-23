@@ -14,7 +14,10 @@ dependencies {
 
     integrationTestImplementation "net.corda:corda-avro-schema:$cordaApiVersion"
     integrationTestImplementation "net.corda:corda-topic-schema:$cordaApiVersion"
+
     integrationTestImplementation project(":libs:messaging:kafka-message-bus-impl")
     integrationTestImplementation project(":libs:schema-registry:schema-registry")
     integrationTestImplementation project(":libs:schema-registry:schema-registry-impl")
+
+    integrationTestImplementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
 }

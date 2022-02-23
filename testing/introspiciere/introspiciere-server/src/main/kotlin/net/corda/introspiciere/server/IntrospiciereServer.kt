@@ -2,17 +2,16 @@ package net.corda.introspiciere.server
 
 import io.javalin.Javalin
 import io.javalin.http.InternalServerErrorResponse
+import net.corda.introspiciere.core.CreateTopicUseCase
 import net.corda.introspiciere.core.HelloWorld
-import net.corda.introspiciere.core.KafkaAdminFactory
+import net.corda.introspiciere.core.KafkaConfig
+import net.corda.introspiciere.core.KafkaConfigImpl
 import net.corda.introspiciere.core.KafkaMessageGateway
 import net.corda.introspiciere.core.KafkaReaderGateway
 import net.corda.introspiciere.core.SimpleKafkaClient
-import net.corda.introspiciere.core.TopicCreatorGateway
 import net.corda.introspiciere.core.addidentity.CreateKeysAndAddIdentityInteractor
 import net.corda.introspiciere.core.addidentity.CryptoKeySenderImpl
 import net.corda.introspiciere.domain.KafkaMessage
-import net.corda.introspiciere.domain.TopicDefinition
-import net.corda.introspiciere.payloads.KafkaMessageList
 import java.io.Closeable
 import java.net.BindException
 import java.net.ServerSocket
@@ -25,11 +24,12 @@ class IntrospiciereServer(private val port: Int = 0, private val kafkaBrokers: L
         val thePort = if (port > 0) port else availablePort(7070)
 
         app = Javalin.create().start(thePort)
-        val servers = kafkaBrokers
-            ?: System.getenv("KAFKA_BROKERS")?.split(",")
-            ?: listOf("alpha-bk-1:9092")
-        println("Kafka brokers are $servers")
-        val kafka = SimpleKafkaClient(servers)
+
+        val kafkaConfig: KafkaConfig = KafkaConfigImpl(
+            kafkaBrokers?.joinToString(", ")
+        )
+
+        val kafka = SimpleKafkaClient(listOf(kafkaConfig.brokers))
 
         app.get("/helloworld") { ctx ->
             wrapException {
@@ -50,24 +50,21 @@ class IntrospiciereServer(private val port: Int = 0, private val kafkaBrokers: L
                 val topic = ctx.pathParam("topic")
                 val key = ctx.pathParam("key")
                 val schema = ctx.queryParam("schema")!!
-                val messages = KafkaReaderGateway(servers).read(topic, key, schema)
+                val messages = KafkaReaderGateway(listOf(kafkaConfig.brokers)).read(topic, key, schema)
                 ctx.json(messages)
             }
         }
 
-        app.post("/topics") { ctx ->
-            wrapException {
-                val topicDefinition = ctx.bodyAsClass<TopicDefinition>()
-                TopicCreatorGateway(KafkaAdminFactory(servers)).create(topicDefinition)
-                ctx.result("OK")
-            }
-        }
+        app.post("/topics/<topic>", CreateTopicHandler(
+            CreateTopicUseCase(kafkaConfig)
+        ))
+
 
         // TODO: This one should look different
         app.put("/topics") { ctx ->
             wrapException {
                 val kafkaMessage = ctx.bodyAsClass<KafkaMessage>()
-                KafkaMessageGateway(servers).send(kafkaMessage)
+                KafkaMessageGateway(listOf(kafkaConfig.brokers)).send(kafkaMessage)
                 ctx.result("OK")
             }
         }
@@ -100,11 +97,14 @@ class IntrospiciereServer(private val port: Int = 0, private val kafkaBrokers: L
         }
     }
 
-    private fun <R> wrapException(action: () -> R): R {
-        try {
-            return action()
-        } catch (t: Throwable) {
-            throw InternalServerErrorResponse(details = mapOf("Exception" to t.stackTraceToString()))
-        }
+
+}
+
+internal fun <R> wrapException(action: () -> R): R {
+    try {
+        return action()
+    } catch (t: Throwable) {
+        throw InternalServerErrorResponse(details = mapOf("Exception" to t.stackTraceToString()))
     }
 }
+
