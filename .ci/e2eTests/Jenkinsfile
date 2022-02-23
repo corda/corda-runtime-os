@@ -14,6 +14,10 @@ pipeline {
         }
     }
 
+    parameters {
+        string(name: 'BUILD_REV', defaultValue: '', description: 'Short git hash of the build revision to test')
+    }
+
     environment {
         ARTIFACTORY_CREDENTIALS = credentials('artifactory-credentials')
         CORDA_ARTIFACTORY_USERNAME = "${env.ARTIFACTORY_CREDENTIALS_USR}"
@@ -24,11 +28,7 @@ pipeline {
         GRADLE_USER_HOME = "/host_tmp/gradle"
         CORDA_REVISION = "${env.GIT_COMMIT}"
         NAMESPACE = "run-${UUID.randomUUID().toString()}"
-        GIT_COMMIT_SHORT = sh(
-                script: "printf \$(git rev-parse --short ${GIT_COMMIT})",
-                returnStdout: true
-        )
-        BASE_IMAGE = "preTest-${GIT_COMMIT_SHORT}"
+        BASE_IMAGE = "preTest-${params.BUILD_REV}"
         CLUSTER_NAME = "eks-e2e.e2e.awsdev.r3.com"
     }
 
