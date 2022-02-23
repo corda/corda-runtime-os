@@ -9,6 +9,7 @@ import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.sql.SQLException
 
 @Component(service = [DbAdmin::class])
 class DbAdminImpl @Activate constructor(
@@ -66,7 +67,6 @@ class DbAdminImpl @Activate constructor(
         schemaName: String,
         user: String,
         password: String,
-        jdbcUrl: String,
         privilege: DbPrivilege) {
         // NOTE - This is currently Postgres specific and we will need to provide alternative implementations
         //  for other DBs. So we may need to wrap this in a factory.
@@ -78,19 +78,43 @@ class DbAdminImpl @Activate constructor(
         }
         val sql = """
             CREATE SCHEMA IF NOT EXISTS $schemaName;
-            DO
-            $$
-            BEGIN
-              IF NOT EXISTS (SELECT * FROM pg_user WHERE USENAME = '$user') THEN 
-                 CREATE USER $user WITH PASSWORD '$password';
-              ELSE
-                 ALTER USER $user WITH PASSWORD '$password';
-              END IF;
-            END
-            $$;
-            
+            CREATE USER $user WITH PASSWORD '$password';
             GRANT USAGE ON SCHEMA $schemaName to $user;
             $permissions TO $user;
+            """.trimIndent()
+        dbConnectionsRepository.clusterDataSource.connection.use {
+            it.createStatement().execute(sql)
+            it.commit()
+        }
+    }
+
+    override fun userExists(user: String): Boolean {
+        // NOTE - This is currently Postgres specific and we will need to provide alternative implementations
+        //  for other DBs. So we may need to wrap this in a factory.
+        log.info("Checking whether user: $user exists")
+        val sql = "SELECT EXISTS(SELECT * FROM pg_user WHERE USENAME = ?)"
+        dbConnectionsRepository.clusterDataSource.connection.use { connection ->
+            connection.prepareStatement(sql).use { preparedStatement ->
+                preparedStatement.setString(1, user)
+                preparedStatement.executeQuery().use { resultSet ->
+                    if (resultSet.next()) {
+                        val userExists = resultSet.getBoolean(1)
+                        if (userExists) log.debug("DB user $user exist") else log.debug("DB user $user doesn't exist")
+                        return userExists
+                    }
+                    throw SQLException("Query for checking whether user: $user exists did not return any row")
+                }
+            }
+        }
+    }
+
+    override fun deleteSchemaAndUser(schemaName: String, user: String) {
+        // NOTE - This is currently Postgres specific and we will need to provide alternative implementations
+        //  for other DBs. So we may need to wrap this in a factory.
+        log.info("Deleting user: $user")
+        val sql = """
+            DROP SCHEMA $schemaName CASCADE;
+            DROP USER $user
             """.trimIndent()
         dbConnectionsRepository.clusterDataSource.connection.use {
             it.createStatement().execute(sql)

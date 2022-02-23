@@ -60,7 +60,7 @@ class VirtualNodeDbFactory(private val dbAdmin: DbAdmin,
                     Pair(DDL, createClusterConnection(dbType, holdingIdentityId, DDL)),
                     Pair(DML, createClusterConnection(dbType, holdingIdentityId, DML)))
             }
-        return VirtualNodeDb(dbType, !connectionsProvided, holdingIdentityId, dbConnections, dbAdmin, adminJdbcUrl, dbConnectionRepository, schemaMigrator)
+        return VirtualNodeDb(dbType, !connectionsProvided, holdingIdentityId, dbConnections, dbAdmin, dbConnectionRepository, schemaMigrator)
     }
 
     /**

@@ -10,7 +10,6 @@ import net.corda.orm.utils.transaction
 import net.corda.packaging.CPI
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
-import java.util.*
 
 /** Reads and writes CPIs, holding identities and virtual nodes to and from the cluster database. */
 internal class VirtualNodeEntityRepository(private val dbConnectionManager: DbConnectionManager) {
@@ -39,10 +38,6 @@ internal class VirtualNodeEntityRepository(private val dbConnectionManager: DbCo
     /**
      * Writes a holding identity to the database.
      * @param holdingIdentity Holding identity
-     * @param vaultDdlConnectionId Vault DDL connection's ID
-     * @param vaultDmlConnectionId Vault DML connection's ID
-     * @param cryptoDdlConnectionId Crypto DDL connection's ID
-     * @param cryptoDmlConnectionId Crypto DML connection's ID
      */
     internal fun putHoldingIdentity(holdingIdentity: HoldingIdentity) {
         dbConnectionManager.clusterDbEntityManagerFactory.createEntityManager()

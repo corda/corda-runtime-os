@@ -32,9 +32,31 @@ interface DbAdmin {
         schemaName: String,
         user: String,
         password: String,
-        jdbcUrl: String,
         privilege: DbPrivilege,
     )
 
+    /**
+     * Check whether user exists in DB
+     *
+     * @param user Username
+     * @return true if user exists in Db, false otherwise
+     */
+    fun userExists(user: String): Boolean
+
+    /**
+     * Delete DB schema and user
+     *
+     * @param schemaName Schema name
+     * @param user Username
+     */
+    fun deleteSchemaAndUser(schemaName: String, user: String)
+
+    /**
+     * Configure JDBC URL to use given DB schema
+     *
+     * @param jdbcUrl JDBC URL
+     * @param schemaName Schema name
+     * @return JDBC URL configured to use given DB schema
+     */
     fun createJdbcUrl(jdbcUrl: String, schemaName: String): String
 }

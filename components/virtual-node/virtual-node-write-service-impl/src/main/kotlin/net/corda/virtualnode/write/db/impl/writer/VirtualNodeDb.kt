@@ -15,7 +15,7 @@ import java.util.*
  */
 class VirtualNodeDb(
     private val dbType: VirtualNodeDbType, val isClusterDb: Boolean, private val holdingIdentityId: String,
-    val dbConnections: Map<DbPrivilege, DbConnection?>, private val dbAdmin: DbAdmin, private val adminJdbcUrl: String,
+    val dbConnections: Map<DbPrivilege, DbConnection?>, private val dbAdmin: DbAdmin,
     private val dbConnectionRepository: DbConnectionsRepository, private val schemaMigrator: LiquibaseSchemaMigrator
 ) {
 
@@ -26,9 +26,13 @@ class VirtualNodeDb(
         if (isClusterDb) {
             dbConnections.forEach { (privilege, connection) ->
                 connection?.let {
-                    val user= connection.getUser() ?: throw DBConfigurationException("DB user not known for connection ${connection.description}")
+                    val user = connection.getUser() ?: throw DBConfigurationException("DB user not known for connection ${connection.description}")
                     val password = connection.getPassword() ?: throw DBConfigurationException("DB password not known for connection ${connection.description}")
-                    dbAdmin.createDbAndUser(dbType.getSchemaName(holdingIdentityId), user, password, adminJdbcUrl, privilege)
+                    val dbSchema = dbType.getSchemaName(holdingIdentityId)
+                    // This covers scenario when previous virtual node on-boarding request failed after user was created
+                    // Since connections are persisted at later point, user's password is lost, so user is re-created
+                    if (dbAdmin.userExists(user)) dbAdmin.deleteSchemaAndUser(dbSchema, user)
+                    dbAdmin.createDbAndUser(dbSchema, user, password, privilege)
                 }
             }
         }
