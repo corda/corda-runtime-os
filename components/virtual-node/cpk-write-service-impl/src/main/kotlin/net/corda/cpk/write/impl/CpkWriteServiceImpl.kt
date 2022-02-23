@@ -1,5 +1,6 @@
 package net.corda.cpk.write.impl
 
+import net.corda.chunking.ChunkWriterFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpk.readwrite.CpkServiceConfigKeys
@@ -7,10 +8,12 @@ import net.corda.cpk.write.CpkWriteService
 import net.corda.cpk.write.impl.services.db.CpkChecksumData
 import net.corda.cpk.write.impl.services.db.CpkStorage
 import net.corda.cpk.write.impl.services.db.impl.DBCpkStorage
+import net.corda.cpk.write.impl.services.kafka.AvroTypesTodo
 import net.corda.cpk.write.impl.services.kafka.CpkChecksumsCache
 import net.corda.cpk.write.impl.services.kafka.CpkChunksPublisher
 import net.corda.cpk.write.impl.services.kafka.impl.CpkChecksumsCacheImpl
 import net.corda.cpk.write.impl.services.kafka.impl.KafkaCpkChunksPublisher
+import net.corda.cpk.write.impl.services.kafka.toAvro
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -33,6 +36,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.seconds
+import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -55,6 +59,9 @@ class CpkWriteServiceImpl @Activate constructor(
 ) : CpkWriteService, LifecycleEventHandler {
     companion object {
         val logger: Logger = contextLogger()
+
+        private const val KB = 1024
+        const val TODO_CHUNK_SIZE = 512 * KB // TODO Replace with config.
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<CpkWriteService>(this)
@@ -126,7 +133,7 @@ class CpkWriteServiceImpl @Activate constructor(
      */
     private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         val config = event.config[ConfigKeys.BOOT_CONFIG]!!
-        // TODO - fix expected configuration and fill following properties with configuration
+        // TODO - kyriakos - fix expected configuration and fill following properties with configuration
         if (config.hasPath("todo")) {
 
             timeout = 20.seconds
@@ -159,13 +166,35 @@ class CpkWriteServiceImpl @Activate constructor(
         closeResources()
     }
 
-    // is all we need - pass in the cache the checksums and get the missing the ones
-    // for each of the metadata get the blob chunk it etc
+    // TODO - kyriakos - need to schedule this to run like a timer task
     override fun putMissingCpk() {
+        val cachedCpkIds = cpkChecksumsCache?.let {
+            it.getCachedCpkIds()
+        } ?: {
+            logger.info("cpkChecksumsCache is not set yet, therefore will run a full db to kafka reconciliation")
+            emptySet<SecureHash>()
+        }.invoke()
+
+        val cpkStorage =
+            this.cpkStorage ?: throw CordaRuntimeException("CPK storage service is not set")
+        val missingCpkIdsOnKafka = cpkStorage.getCpkIdsNotIn(cachedCpkIds)
+
+        missingCpkIdsOnKafka.forEach {
+            // Make sure we use the same CPK publisher per CPK publish.
+            val cpkChunksPublisher =
+                this.cpkChunksPublisher ?: throw CordaRuntimeException("CPK chunks publisher service is not set")
+            val cpkChecksumData = cpkStorage.getCpkBlobByCpkId(it)
+            cpkChunksPublisher.chunkAndPublishCpk(cpkChecksumData)
+        }
     }
 
-    private fun chunkAndPublishCpk(cpkChecksumData: CpkChecksumData) {
-
+    private fun CpkChunksPublisher.chunkAndPublishCpk(cpkChecksumData: CpkChecksumData) {
+        val cpkChecksum = cpkChecksumData.checksum
+        val chunkWriter = ChunkWriterFactory.create(TODO_CHUNK_SIZE)
+        chunkWriter.onChunk { chunk ->
+            val cpkChunkIdAvro = AvroTypesTodo.CpkChunkIdAvro(cpkChecksum.toAvro(), chunk.partNumber)
+            put(cpkChunkIdAvro to chunk)
+        }
     }
 
     override val isRunning: Boolean
