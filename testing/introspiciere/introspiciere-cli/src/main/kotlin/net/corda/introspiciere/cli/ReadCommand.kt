@@ -1,6 +1,5 @@
 package net.corda.introspiciere.cli
 
-import net.corda.introspiciere.http.MessageReaderReq
 import picocli.CommandLine
 import java.nio.ByteBuffer
 
@@ -19,9 +18,8 @@ class ReadCommand : BaseCommand() {
     private lateinit var schemaName: String
 
     override fun run() {
-        val messages = MessageReaderReq(topicName, key, schemaName).request(endpoint)
-
         val clazz = Class.forName(schemaName)
+        val messages = httpClient.readMessages(topicName, key, schemaName)
         messages.forEach { msg ->
             val fromByteBuffer = clazz.getMethod("fromByteBuffer", ByteBuffer::class.java)
             val avro = fromByteBuffer.invoke(null, ByteBuffer.wrap(msg.schema))

@@ -2,8 +2,6 @@ package net.corda.introspiciere.junit
 
 import net.corda.introspiciere.domain.KafkaMessage
 import net.corda.introspiciere.http.IntrospiciereHttpClient
-import net.corda.introspiciere.http.MessageReaderReq
-import net.corda.introspiciere.http.MessageWriterReq
 import java.nio.ByteBuffer
 
 /**
@@ -51,14 +49,12 @@ class IntrospiciereClient(private val endpoint: String) {
      * [schema] is the byte array of an an instance serialised. [schemaClass] is the qualified name of the Avro schema class.
      */
     fun write(topic: String, key: String, schema: ByteArray, schemaClass: String) {
-        MessageWriterReq(
-            KafkaMessage(
-                topic = topic,
-                key = key,
-                schema = schema,
-                schemaClass = schemaClass
-            )
-        ).request(endpoint)
+        httpClient.sendMessage(KafkaMessage(
+            topic = topic,
+            key = key,
+            schema = schema,
+            schemaClass = schemaClass
+        ))
     }
 
     /**
@@ -74,7 +70,7 @@ class IntrospiciereClient(private val endpoint: String) {
      * [in the official docs](https://www.confluent.io/blog/5-things-every-kafka-developer-should-know/#tip-2-new-sticky-partitioner).
      */
     fun <T> read(topic: String, key: String, schemaClass: Class<T>): List<T> {
-        val messages = MessageReaderReq(topic, key, schemaClass).request(endpoint)
+        val messages = httpClient.readMessages(topic, key, schemaClass.canonicalName)
         return messages.map {
             val method = schemaClass.getMethod("fromByteBuffer", ByteBuffer::class.java)
             @Suppress("UNCHECKED_CAST")

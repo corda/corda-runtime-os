@@ -1,14 +1,12 @@
 package net.corda.introspiciere.cli
 
 import net.corda.introspiciere.domain.KafkaMessage
-import net.corda.introspiciere.http.MessageWriterReq
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
 import org.apache.avro.generic.GenericDatumReader
 import org.apache.avro.io.DecoderFactory
 import picocli.CommandLine
 import java.io.File
-import java.io.InputStream
 import java.nio.ByteBuffer
 
 @CommandLine.Command(name = "write")
@@ -53,7 +51,7 @@ class WriteCommand : BaseCommand() {
             schemaClass = schemaName
         )
 
-        MessageWriterReq(kafkaMessage).request(endpoint)
+        httpClient.sendMessage(kafkaMessage)
         println("Message successfully sent to topic $topicName")
     }
 

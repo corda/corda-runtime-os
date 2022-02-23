@@ -1,6 +1,5 @@
 package net.corda.introspiciere.cli
 
-import net.corda.introspiciere.http.HelloWorldReq
 import picocli.CommandLine
 
 /**
@@ -9,6 +8,6 @@ import picocli.CommandLine
 @CommandLine.Command(name = "helloworld")
 class HelloWorldCommand : BaseCommand() {
     override fun run() {
-        println(HelloWorldReq(endpoint).greetings())
+        println(httpClient.greetings())
     }
 }

@@ -1,6 +1,5 @@
 package net.corda.introspiciere.cli
 
-import net.corda.introspiciere.http.IntrospiciereHttpClient
 import picocli.CommandLine
 import picocli.CommandLine.Option
 
@@ -24,7 +23,7 @@ class CreateTopicCommand : BaseCommand() {
 
     override fun run() {
         val config = configArray.map { it.split("=") }.associate { it[0] to it[1] }
-        IntrospiciereHttpClient(endpoint).createTopic(topicName, partitions, replicationFactor, config)
+        httpClient.createTopic(topicName, partitions, replicationFactor, config)
         println("Topic $topicName created successfully")
     }
 }

@@ -1,8 +1,5 @@
 package net.corda.introspiciere.junit
 
-import net.corda.introspiciere.http.HelloWorldReq
-import net.corda.introspiciere.http.IdentitiesRequester
-import net.corda.introspiciere.http.Topics
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.AfterEachCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
@@ -10,24 +7,11 @@ import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import java.io.File
 import java.time.LocalDateTime
-import java.util.Base64
+import java.util.*
 
 class DeployCluster(
     private val name: String,
 ) : BeforeAllCallback, BeforeEachCallback, AfterEachCallback, AfterAllCallback {
-    private val introspiciereEndpoint = "http://localhost:7070"
-
-    fun helloWorld(): String {
-        return HelloWorldReq(introspiciereEndpoint).greetings()
-    }
-
-    fun fetchTopics(): String {
-        return Topics(introspiciereEndpoint).fetch()
-    }
-
-    fun createKeyAndAddIdentity(alias: String, algorithm: String) {
-        IdentitiesRequester(introspiciereEndpoint).createKeyAndAddIdentity(alias, algorithm)
-    }
 
     override fun beforeAll(context: ExtensionContext?) {
         deploy()
@@ -101,7 +85,8 @@ class DeployCluster(
 
         // Forward ports for introspiciere-server
         println("${LocalDateTime.now()} port forward introspiciere-server")
-        portForwarding = exec("kubectl port-forward service/introspiciere-server 7070:7070 -n $name", ensureSuccess = false)
+        portForwarding =
+            exec("kubectl port-forward service/introspiciere-server 7070:7070 -n $name", ensureSuccess = false)
     }
 
     private fun exec(command: String, workDir: File? = null, ensureSuccess: Boolean = true): Process {
@@ -133,7 +118,9 @@ class DeployCluster(
         } else {
             Thread.sleep(5000)
             if (!processes.last().isAlive) {
-                println("Process meant to keep running died:\n${processes.last().errorStream.bufferedReader().readText()}")
+                println("Process meant to keep running died:\n${
+                    processes.last().errorStream.bufferedReader().readText()
+                }")
                 throw CommandExecutionFailed(processes.last().exitValue())
             }
             println("  Process is still running...")
