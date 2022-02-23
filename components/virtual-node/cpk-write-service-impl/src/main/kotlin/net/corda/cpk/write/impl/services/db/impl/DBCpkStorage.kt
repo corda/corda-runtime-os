@@ -37,6 +37,4 @@ class DBCpkStorage(private val entityManagerFactory: EntityManagerFactory) : Cpk
             CpkChecksumData(SecureHash.create(cpk.fileChecksum), cpk.data)
         }
     }
-
-
 }
