@@ -78,16 +78,19 @@ class MembershipRpcOpsProcessor(
 
     @Suppress("UNCHECKED_CAST")
     private fun getHandler(request: MembershipRpcRequest): RpcHandler<Any> {
-        val type = handlers[request.request::class.java] ?: throw MembershipRegistrationException(
+        val type = handlers[request.request::class.java] ?: throw IllegalArgumentException(
             "Unknown request type ${request.request::class.java.name}"
         )
         return when (type) {
             RegistrationRequestHandler::class.java -> {
-                type.constructors.first { it.parameterCount == 2 }
-                    .newInstance(registrationProvider, virtualNodeInfoReadService) as RpcHandler<Any>
+                constructors.computeIfAbsent(request.request::class.java) {
+                    type.constructors.first { it.parameterCount == 2 }
+                }.newInstance(registrationProvider, virtualNodeInfoReadService) as RpcHandler<Any>
             }
             else -> {
-                type.constructors.first { it.parameterCount == 0 }.newInstance() as RpcHandler<Any>
+                constructors.computeIfAbsent(request.request::class.java) {
+                    type.constructors.first { it.parameterCount == 0 }
+                }.newInstance() as RpcHandler<Any>
             }
         }
     }

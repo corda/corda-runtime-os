@@ -80,7 +80,9 @@ class MembershipRpcOpsServiceImpl @Activate constructor(
                 registrationHandle?.close()
                 registrationHandle = coordinator.followStatusChangesByName(
                     setOf(
-                        LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+                        LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                        LifecycleCoordinatorName.forComponent<RegistrationProvider>(),
+                        LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>()
                     )
                 )
             }
