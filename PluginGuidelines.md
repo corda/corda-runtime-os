@@ -51,4 +51,4 @@ You will need to raise a PR that includes a description of the work, and this wi
 
 ## Template & Examples
 
-Please check out the [template plugin that is in the CLI repo](https://github.com/corda/corda-cli-plugin-host/tree/main/plugins). You can use this as a base to begin development. You may also make use of the two example plugins included, one shows examples on how to use the CLI's built in services, e.g. the Http service.
+Please check out the [template plugin](https://github.com/corda/corda-cli-host-plugin-template). You can use this as a base to begin development. You may also make use of the two example plugins included in this repo, one shows examples on how to use the CLI's built in services, e.g. the Http service.

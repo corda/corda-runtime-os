@@ -48,6 +48,8 @@ To Write your own plugin for the CLI you must depend on this project's 'api' mod
 The API module contains the `CordaCliPlugin` Interface which must be used when constructing your plugin. For examples of
 use please see the 'plugins' module where you will find two example plugins.
 
+###### _**PLEASE NOTE: When importing the CordaCliPlugin API module, you must use compileOnly**_
+
 To construct a plugin you will have to follow the pf4j pattern below:
 
 ```kotlin
