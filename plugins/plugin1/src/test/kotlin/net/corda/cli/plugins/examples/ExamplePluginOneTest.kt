@@ -50,7 +50,7 @@ class ExamplePluginOneTest {
         val app = ExamplePluginOne.ExamplePluginOneEntry()
         app.service = MockHttpService()
         val url = "https://test.r3.com"
-        val endpoint = "exampleEndpoint"
+        val endpoint = "json"
 
         val outText = tapSystemOutNormalized {
             CommandLine(

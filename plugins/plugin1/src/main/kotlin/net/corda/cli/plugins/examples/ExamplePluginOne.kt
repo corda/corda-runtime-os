@@ -19,12 +19,12 @@ class ExamplePluginOne(wrapper: PluginWrapper) : Plugin(wrapper) {
 
     // Supply plugin startup logic here
     override fun start() {
-        logger.debug("ExampleNodePlugin.start()")
+        logger.debug("ExamplePluginOne.start()")
     }
 
     // Supply plugin tear down here
     override fun stop() {
-        logger.debug("ExampleNodePlugin.stop()")
+        logger.debug("ExamplePluginOne.stop()")
     }
 
     @Extension
@@ -48,7 +48,7 @@ class ExamplePluginOne(wrapper: PluginWrapper) : Plugin(wrapper) {
             description = ["A subcommand that uses a service supplied by the host."]
         )
         fun exampleServiceSubCommand() {
-            service.get("exampleEndpoint")
+            service.get("json")
         }
     }
 }
