@@ -1,4 +1,4 @@
-package net.corda.membership.httprpc
+package net.corda.membership.service
 
 import net.corda.lifecycle.Lifecycle
 

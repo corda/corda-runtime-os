@@ -8,7 +8,7 @@ import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.membership.httprpc.MembershipRpcOpsService
+import net.corda.membership.service.MembershipRpcOpsService
 import net.corda.membership.registration.provider.RegistrationProvider
 import net.corda.processors.member.MemberProcessor
 import net.corda.processors.member.internal.lifecycle.MemberProcessorLifecycleHandler

@@ -1,4 +1,4 @@
-package net.corda.membership.impl.httprpc
+package net.corda.membership.service.impl
 
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.rpc.request.MembershipRpcRequest

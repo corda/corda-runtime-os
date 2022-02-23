@@ -17,9 +17,9 @@ dependencies {
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:membership:membership-internal")
-    implementation project(":libs:membership:membership-http-rpc")
 
     implementation project(':components:configuration:configuration-read-service')
+    implementation project(":components:membership:membership-service")
     implementation project(':components:membership:registration-provider')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
     implementation project(':components:virtual-node:cpi-info-read-service')
@@ -29,7 +29,7 @@ dependencies {
     implementation project(':libs:configuration:configuration-core')
 
     runtimeOnly project(":components:membership:group-policy-impl")
-    runtimeOnly project(":components:membership:membership-http-rpc-impl")
+    runtimeOnly project(":components:membership:membership-service-impl")
     runtimeOnly project(":components:membership:membership-client-impl")
     runtimeOnly project(":components:membership:registration-static-network-impl")
     runtimeOnly project(":components:virtual-node:cpi-info-read-service-impl")

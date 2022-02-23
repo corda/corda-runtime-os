@@ -1,0 +1,28 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+description 'Membership RPC Ops Service implementatiob'
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-base"
+    implementation "net.corda:corda-config-schema"
+    implementation "net.corda:corda-topic-schema"
+
+    implementation project(":libs:messaging:messaging")
+    implementation project(":components:configuration:configuration-read-service")
+    implementation project(":libs:membership:membership-internal")
+    implementation project(":components:membership:membership-service")
+    implementation project(":components:membership:registration-provider")
+    implementation project(":components:virtual-node:virtual-node-info-read-service")
+
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+}

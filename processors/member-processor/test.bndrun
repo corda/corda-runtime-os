@@ -20,7 +20,7 @@
     bnd.identity;id='net.corda.membership-conversion-impl',\
     bnd.identity;id='net.corda.membership-application',\
     bnd.identity;id='net.corda.membership-group-read-impl',\
-    bnd.identity;id='net.corda.membership-http-rpc-impl',\
+    bnd.identity;id='net.corda.membership-service-impl',\
     bnd.identity;id='net.corda.crypto-processor',\
     bnd.identity;id='net.corda.crypto-service-impl',\
     bnd.identity;id='net.corda.crypto-client-impl',\
@@ -77,7 +77,6 @@
 	net.corda.crypto-service;version='[5.0.0,5.0.1)',\
 	net.corda.crypto-service-impl;version='[5.0.0,5.0.1)',\
 	net.corda.group-policy-impl;version='[5.0.0,5.0.1)',\
-	net.corda.http-rpc;version='[5.0.0,5.0.1)',\
 	net.corda.inmemory-messaging-impl;version='[5.0.0,5.0.1)',\
 	net.corda.kotlin-stdlib-jdk7.osgi-bundle;version='[1.4.32,1.4.33)',\
 	net.corda.kotlin-stdlib-jdk8.osgi-bundle;version='[1.4.32,1.4.33)',\
@@ -89,12 +88,12 @@
 	net.corda.membership-conversion;version='[5.0.0,5.0.1)',\
 	net.corda.membership-conversion-impl;version='[5.0.0,5.0.1)',\
 	net.corda.membership-group-read-impl;version='[5.0.0,5.0.1)',\
-	net.corda.membership-http-rpc;version='[5.0.0,5.0.1)',\
-	net.corda.membership-http-rpc-impl;version='[5.0.0,5.0.1)',\
 	net.corda.membership-identity;version='[5.0.0,5.0.1)',\
 	net.corda.membership-identity-impl;version='[5.0.0,5.0.1)',\
 	net.corda.membership-impl;version='[5.0.0,5.0.1)',\
 	net.corda.membership-internal;version='[5.0.0,5.0.1)',\
+	net.corda.membership-service;version='[5.0.0,5.0.1)',\
+	net.corda.membership-service-impl;version='[5.0.0,5.0.1)',\
 	net.corda.message-bus;version='[5.0.0,5.0.1)',\
 	net.corda.messaging;version='[5.0.0,5.0.1)',\
 	net.corda.messaging-impl;version='[5.0.0,5.0.1)',\

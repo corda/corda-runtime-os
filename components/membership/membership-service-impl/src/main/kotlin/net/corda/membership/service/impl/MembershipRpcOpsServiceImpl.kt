@@ -1,4 +1,4 @@
-package net.corda.membership.impl.httprpc
+package net.corda.membership.service.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
@@ -14,8 +14,8 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.membership.httprpc.MembershipRpcOpsService
 import net.corda.membership.registration.provider.RegistrationProvider
+import net.corda.membership.service.MembershipRpcOpsService
 import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
