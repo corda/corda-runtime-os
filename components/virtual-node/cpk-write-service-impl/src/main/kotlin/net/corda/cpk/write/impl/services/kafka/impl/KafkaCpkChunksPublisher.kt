@@ -18,10 +18,7 @@ class KafkaCpkChunksPublisher(
         val logger = contextLogger()
     }
 
-    // This needs to be transactional i.e. write all of cpk chunks to Kafka or nothing
-    override fun put(cpkIdToCpkChunk: Pair<AvroTypesTodo.CpkChunkIdAvro, Chunk>) {
-        val cpkChunkId = cpkIdToCpkChunk.first
-        val cpkChunk = cpkIdToCpkChunk.second
+    override fun put(cpkChunkId: AvroTypesTodo.CpkChunkIdAvro, cpkChunk: Chunk) {
         val cpkChunksRecord = Record("TODO", cpkChunkId, cpkChunk)
         putAllAndWaitForResponses(cpkChunksRecord)
     }

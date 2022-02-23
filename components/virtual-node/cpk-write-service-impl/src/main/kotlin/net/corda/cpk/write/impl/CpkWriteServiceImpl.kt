@@ -166,6 +166,7 @@ class CpkWriteServiceImpl @Activate constructor(
         closeResources()
     }
 
+    // TODO - kyriakos - add testing for the below method
     // TODO - kyriakos - need to schedule this to run like a timer task
     override fun putMissingCpk() {
         val cachedCpkIds = cpkChecksumsCache?.let {
@@ -192,8 +193,8 @@ class CpkWriteServiceImpl @Activate constructor(
         val cpkChecksum = cpkChecksumData.checksum
         val chunkWriter = ChunkWriterFactory.create(TODO_CHUNK_SIZE)
         chunkWriter.onChunk { chunk ->
-            val cpkChunkIdAvro = AvroTypesTodo.CpkChunkIdAvro(cpkChecksum.toAvro(), chunk.partNumber)
-            put(cpkChunkIdAvro to chunk)
+            val cpkChunkId = AvroTypesTodo.CpkChunkIdAvro(cpkChecksum.toAvro(), chunk.partNumber)
+            put(cpkChunkId, chunk)
         }
     }
 
