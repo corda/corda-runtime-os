@@ -70,6 +70,18 @@ class GatewayConfiguration : ConfigProducer() {
     var connectionIdleTimeoutSec = 60L
 
     @Option(
+        names = ["--connectionInitialReconnectionDelaySec"],
+        description = ["The initial duration (in seconds) to wait before trying to reconnect"]
+    )
+    var connectionInitialReconnectionDelaySec = 1L
+
+    @Option(
+        names = ["--connectionMaximalReconnectionDelaySec"],
+        description = ["The maximal duration (in seconds) to delay before trying to reconnect"]
+    )
+    var connectionMaximalReconnectionDelaySec = 16L
+
+    @Option(
         names = ["--responseTimeoutMilliSecs"],
         description = ["Time after which a message delivery is considered failed in milliseconds"]
     )
@@ -124,6 +136,14 @@ class GatewayConfiguration : ConfigProducer() {
             .withValue(
                 "connectionConfig.retryDelay",
                 ConfigValueFactory.fromAnyRef(Duration.ofMillis(retryDelayMilliSecs))
+            )
+            .withValue(
+                "connectionConfig.initialReconnectionDelay",
+                ConfigValueFactory.fromAnyRef(Duration.ofSeconds(connectionInitialReconnectionDelaySec))
+            )
+            .withValue(
+                "connectionConfig.maximalReconnectionDelay",
+                ConfigValueFactory.fromAnyRef(Duration.ofSeconds(connectionMaximalReconnectionDelaySec))
             )
     }
 

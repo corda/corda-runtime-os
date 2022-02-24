@@ -3,7 +3,7 @@ package net.corda.membership.impl.httprpc.v1
 import net.corda.httprpc.exception.ServiceUnavailableException
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.membership.httprpc.MembershipRpcOpsClient
+import net.corda.membership.httprpc.MemberOpsClient
 import net.corda.membership.httprpc.types.MemberRegistrationRequest
 import net.corda.membership.httprpc.types.RegistrationAction
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -34,11 +34,11 @@ class MemberRegistrationRpcOpsTest {
         on { createCoordinator(any(), any()) } doReturn coordinator
     }
 
-    private val membershipRpcOpsClient: MembershipRpcOpsClient = mock()
+    private val memberOpsClient: MemberOpsClient = mock()
 
     private val memberRegistrationRpcOps = MemberRegistrationRpcOpsImpl(
         lifecycleCoordinatorFactory,
-        membershipRpcOpsClient
+        memberOpsClient
     )
 
     private val registrationRequest = MemberRegistrationRequest(
@@ -58,7 +58,7 @@ class MemberRegistrationRpcOpsTest {
     fun `starting registration calls the client svc`() {
         memberRegistrationRpcOps.start()
         memberRegistrationRpcOps.startRegistration(registrationRequest)
-        verify(membershipRpcOpsClient).startRegistration(eq(registrationRequest))
+        verify(memberOpsClient).startRegistration(eq(registrationRequest))
         memberRegistrationRpcOps.stop()
     }
 
@@ -66,7 +66,7 @@ class MemberRegistrationRpcOpsTest {
     fun `checking registration progress calls the client svc`() {
         memberRegistrationRpcOps.start()
         memberRegistrationRpcOps.checkRegistrationProgress(VIRTUAL_NODE_ID)
-        verify(membershipRpcOpsClient).checkRegistrationProgress(eq(VIRTUAL_NODE_ID))
+        verify(memberOpsClient).checkRegistrationProgress(eq(VIRTUAL_NODE_ID))
         memberRegistrationRpcOps.stop()
     }
 

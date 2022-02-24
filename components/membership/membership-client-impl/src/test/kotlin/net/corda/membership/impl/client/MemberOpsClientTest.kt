@@ -16,7 +16,7 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.httprpc.types.MemberRegistrationRequest
 import net.corda.membership.httprpc.types.RegistrationAction
-import net.corda.membership.impl.client.lifecycle.MembershipRpcOpsClientLifecycleHandler
+import net.corda.membership.impl.client.lifecycle.MemberOpsClientLifecycleHandler
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -37,7 +37,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class MembershipRpcOpsClientTest {
+class MemberOpsClientTest {
     companion object {
         private const val VIRTUAL_NODE_ID = "nodeId"
     }
@@ -49,12 +49,12 @@ class MembershipRpcOpsClientTest {
         on { stop() } doAnswer { coordinatorIsRunning = false }
     }
 
-    private var lifecycleHandler: MembershipRpcOpsClientLifecycleHandler? = null
+    private var lifecycleHandler: MemberOpsClientLifecycleHandler? = null
 
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock {
         on { createCoordinator(any(), any()) } doReturn coordinator
         on { createCoordinator(any(), any()) } doAnswer {
-            lifecycleHandler = it.arguments[1] as MembershipRpcOpsClientLifecycleHandler
+            lifecycleHandler = it.arguments[1] as MemberOpsClientLifecycleHandler
             coordinator
         }
     }
@@ -67,7 +67,7 @@ class MembershipRpcOpsClientTest {
 
     private val configurationReadService: ConfigurationReadService = mock()
 
-    private lateinit var rpcOpsClient: MembershipRpcOpsClientImpl
+    private lateinit var memberOpsClient: MemberOpsClientImpl
 
     private val bootConfig: SmartConfig = mock()
     private val messagingConfig: SmartConfig = mock {
@@ -125,7 +125,7 @@ class MembershipRpcOpsClientTest {
             } doReturn rpcSender
         }
 
-        rpcOpsClient = MembershipRpcOpsClientImpl(
+        memberOpsClient = MemberOpsClientImpl(
             lifecycleCoordinatorFactory,
             publisherFactory,
             configurationReadService
@@ -134,18 +134,18 @@ class MembershipRpcOpsClientTest {
 
     @Test
     fun `starting and stopping the service succeeds`() {
-        rpcOpsClient.start()
-        assertTrue(rpcOpsClient.isRunning)
-        rpcOpsClient.stop()
-        assertFalse(rpcOpsClient.isRunning)
+        memberOpsClient.start()
+        assertTrue(memberOpsClient.isRunning)
+        memberOpsClient.stop()
+        assertFalse(memberOpsClient.isRunning)
     }
 
     @Test
     fun `rpc sender sends the expected request - starting registration process`() {
-        rpcOpsClient.start()
+        memberOpsClient.start()
         setUpRpcSender()
-        rpcOpsClient.startRegistration(request)
-        rpcOpsClient.stop()
+        memberOpsClient.startRegistration(request)
+        memberOpsClient.stop()
 
         val requestSent = rpcRequest?.request as RegistrationRequest
 
@@ -155,10 +155,10 @@ class MembershipRpcOpsClientTest {
 
     @Test
     fun `rpc sender sends the expected request - checking registration progress`() {
-        rpcOpsClient.start()
+        memberOpsClient.start()
         setUpRpcSender()
-        rpcOpsClient.checkRegistrationProgress(request.virtualNodeId)
-        rpcOpsClient.stop()
+        memberOpsClient.checkRegistrationProgress(request.virtualNodeId)
+        memberOpsClient.stop()
 
         val requestSent = rpcRequest?.request as RegistrationStatusRequest
 
@@ -167,32 +167,32 @@ class MembershipRpcOpsClientTest {
 
     @Test
     fun `should fail when rpc sender is not ready`() {
-        rpcOpsClient.start()
-        val ex = assertFailsWith<CordaRuntimeException> { rpcOpsClient.checkRegistrationProgress(request.virtualNodeId) }
+        memberOpsClient.start()
+        val ex = assertFailsWith<CordaRuntimeException> { memberOpsClient.checkRegistrationProgress(request.virtualNodeId) }
         assertTrue { ex.message!!.contains("RPC sender") }
-        rpcOpsClient.stop()
+        memberOpsClient.stop()
     }
 
     @Test
     fun `should fail when service is not running`() {
-        val ex = assertFailsWith<CordaRuntimeException> { rpcOpsClient.checkRegistrationProgress(request.virtualNodeId) }
-        assertTrue { ex.message!!.contains("MembershipRpcOpsClientImpl is not running.") }
+        val ex = assertFailsWith<CordaRuntimeException> { memberOpsClient.checkRegistrationProgress(request.virtualNodeId) }
+        assertTrue { ex.message!!.contains("MemberOpsClientImpl is not running.") }
     }
 
     @Test
     fun `should fail when there is an RPC sender exception while sending the request`() {
-        rpcOpsClient.start()
+        memberOpsClient.start()
         setUpRpcSender()
         val message = "Sender exception."
         whenever(rpcSender.sendRequest(any())).thenThrow(CordaRPCAPISenderException(message))
-        val ex = assertFailsWith<CordaRuntimeException> { rpcOpsClient.checkRegistrationProgress(request.virtualNodeId) }
+        val ex = assertFailsWith<CordaRuntimeException> { memberOpsClient.checkRegistrationProgress(request.virtualNodeId) }
         assertTrue { ex.message!!.contains(message) }
-        rpcOpsClient.stop()
+        memberOpsClient.stop()
     }
 
     @Test
     fun `should fail when response is null`() {
-        rpcOpsClient.start()
+        memberOpsClient.start()
         setUpRpcSender()
 
         whenever(rpcSender.sendRequest(any())).then {
@@ -209,14 +209,14 @@ class MembershipRpcOpsClientTest {
             )
         }
 
-        val ex = assertFailsWith<CordaRuntimeException> { rpcOpsClient.checkRegistrationProgress(request.virtualNodeId) }
+        val ex = assertFailsWith<CordaRuntimeException> { memberOpsClient.checkRegistrationProgress(request.virtualNodeId) }
         assertTrue { ex.message!!.contains("null") }
-        rpcOpsClient.stop()
+        memberOpsClient.stop()
     }
 
     @Test
     fun `should fail when request and response has different ids`() {
-        rpcOpsClient.start()
+        memberOpsClient.start()
         setUpRpcSender()
 
         whenever(rpcSender.sendRequest(any())).then {
@@ -239,14 +239,14 @@ class MembershipRpcOpsClientTest {
             )
         }
 
-        val ex = assertFailsWith<CordaRuntimeException> { rpcOpsClient.checkRegistrationProgress(request.virtualNodeId) }
+        val ex = assertFailsWith<CordaRuntimeException> { memberOpsClient.checkRegistrationProgress(request.virtualNodeId) }
         assertTrue { ex.message!!.contains("ID") }
-        rpcOpsClient.stop()
+        memberOpsClient.stop()
     }
 
     @Test
     fun `should fail when request and response has different requestTimestamp`() {
-        rpcOpsClient.start()
+        memberOpsClient.start()
         setUpRpcSender()
 
         whenever(rpcSender.sendRequest(any())).then {
@@ -269,14 +269,14 @@ class MembershipRpcOpsClientTest {
             )
         }
 
-        val ex = assertFailsWith<CordaRuntimeException> { rpcOpsClient.checkRegistrationProgress(request.virtualNodeId) }
+        val ex = assertFailsWith<CordaRuntimeException> { memberOpsClient.checkRegistrationProgress(request.virtualNodeId) }
         assertTrue { ex.message!!.contains("timestamp") }
-        rpcOpsClient.stop()
+        memberOpsClient.stop()
     }
 
     @Test
     fun `should fail when response type is not the expected type`() {
-        rpcOpsClient.start()
+        memberOpsClient.start()
         setUpRpcSender()
 
         whenever(rpcSender.sendRequest(any())).then {
@@ -293,8 +293,8 @@ class MembershipRpcOpsClientTest {
             )
         }
 
-        val ex = assertFailsWith<CordaRuntimeException> { rpcOpsClient.checkRegistrationProgress(request.virtualNodeId) }
+        val ex = assertFailsWith<CordaRuntimeException> { memberOpsClient.checkRegistrationProgress(request.virtualNodeId) }
         assertTrue { ex.message!!.contains("Expected class") }
-        rpcOpsClient.stop()
+        memberOpsClient.stop()
     }
 }

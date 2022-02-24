@@ -67,7 +67,11 @@ abstract class Pod : Yamlable {
                                 if ((!image.startsWith(DockerSecrets.cordaHost)) &&
                                     (!image.startsWith(DockerSecrets.cacheHost))
                                 ) {
-                                    "${DockerSecrets.cacheHost}/$image"
+                                    if (DockerSecrets.canUseRegistryCache) {
+                                        "${DockerSecrets.cacheHost}/$image"
+                                    } else {
+                                        image
+                                    }
                                 } else {
                                     image
                                 }

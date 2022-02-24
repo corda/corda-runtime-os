@@ -52,7 +52,7 @@ services:
       kafka-topics.sh --bootstrap-server kafka:9093 --partitions 3 --replication-factor 1 --create --topic cpi.info --config "cleanup.policy=compact"
 
       kafka-topics.sh --bootstrap-server kafka:9093 --partitions 1 --replication-factor 1 --create --topic cpi.upload
-      kafka-topics.sh --bootstrap-server kafka:9093 --partitions 1 --replication-factor 1 --create --topic cpi.upload.resp
+      kafka-topics.sh --bootstrap-server kafka:9093 --partitions 1 --replication-factor 1 --create --topic cpi.upload.status
 
       kafka-topics.sh --bootstrap-server kafka:9093 --partitions 1 --replication-factor 1 --create --topic rpc.permissions.management
       kafka-topics.sh --bootstrap-server kafka:9093 --partitions 1 --replication-factor 1 --create --topic rpc.permissions.management.resp
