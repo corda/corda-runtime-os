@@ -2,7 +2,7 @@ package net.corda.cpk.write.impl.services.db
 
 import net.corda.v5.crypto.SecureHash
 
-data class CpkChecksumData(
+data class CpkChecksumToData(
     val checksum: SecureHash,
     val data: ByteArray
 ) {
@@ -10,7 +10,7 @@ data class CpkChecksumData(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as CpkChecksumData
+        other as CpkChecksumToData
 
         if (checksum != other.checksum) return false
         if (!data.contentEquals(other.data)) return false

@@ -5,7 +5,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpk.readwrite.CpkServiceConfigKeys
 import net.corda.cpk.write.CpkWriteService
-import net.corda.cpk.write.impl.services.db.CpkChecksumData
+import net.corda.cpk.write.impl.services.db.CpkChecksumToData
 import net.corda.cpk.write.impl.services.db.CpkStorage
 import net.corda.cpk.write.impl.services.db.impl.DBCpkStorage
 import net.corda.cpk.write.impl.services.kafka.AvroTypesTodo
@@ -192,9 +192,9 @@ class CpkWriteServiceImpl @Activate constructor(
         }
     }
 
-    private fun CpkChunksPublisher.chunkAndPublishCpk(cpkChecksumData: CpkChecksumData) {
-        val cpkChecksum = cpkChecksumData.checksum
-        val cpkData = cpkChecksumData.data
+    private fun CpkChunksPublisher.chunkAndPublishCpk(cpkChecksumToData: CpkChecksumToData) {
+        val cpkChecksum = cpkChecksumToData.checksum
+        val cpkData = cpkChecksumToData.data
         val chunkWriter = ChunkWriterFactory.create(TODO_CHUNK_SIZE)
         chunkWriter.onChunk { chunk ->
             val cpkChunkId = AvroTypesTodo.CpkChunkIdAvro(cpkChecksum.toAvro(), chunk.partNumber)

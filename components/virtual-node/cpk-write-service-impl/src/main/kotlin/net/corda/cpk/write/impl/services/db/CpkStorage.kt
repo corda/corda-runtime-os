@@ -1,10 +1,9 @@
 package net.corda.cpk.write.impl.services.db
 
 import net.corda.v5.crypto.SecureHash
-import java.util.stream.Stream
 
 interface CpkStorage {
     fun getCpkIdsNotIn(checksums: Set<SecureHash>): Set<SecureHash>
 
-    fun getCpkDataByCpkId(checksum: SecureHash): CpkChecksumData
+    fun getCpkDataByCpkId(checksum: SecureHash): CpkChecksumToData
 }
