@@ -15,7 +15,7 @@ pipeline {
     }
 
     parameters {
-        string(name: 'BUILD_REV', defaultValue: '', description: 'Short git hash of the build revision to test')
+        string(name: 'BUILD_REV', defaultValue: '', description: 'Short git hash of the build revision to test - leave blank to test unstable')
     }
 
     environment {
@@ -28,7 +28,6 @@ pipeline {
         GRADLE_USER_HOME = "/host_tmp/gradle"
         CORDA_REVISION = "${env.GIT_COMMIT}"
         NAMESPACE = "run-${UUID.randomUUID().toString()}"
-        BASE_IMAGE = "preTest-${params.BUILD_REV}"
         CLUSTER_NAME = "eks-e2e.e2e.awsdev.r3.com"
     }
 
@@ -51,6 +50,9 @@ pipeline {
         }
         stage('Set up cluster') {
             steps {
+               script {
+                  env.BASE_IMAGE = params.BUILD_REV ? "preTest-${params.BUILD_REV}" : "unstable"
+               }
                sh './corda-cli/bin/corda-cli cluster configure k8s "${NAMESPACE}"'
                sh 'echo """cluster:""" | ./corda-cli/bin/corda-cli --stacktrace cluster deploy -t "${BASE_IMAGE}" -c "${NAMESPACE}" -f /dev/stdin | tee spec.yaml | kubectl apply -f /dev/stdin'
             }
