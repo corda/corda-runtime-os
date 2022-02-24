@@ -5,8 +5,13 @@ import net.corda.data.permissions.summary.UserPermissionSummary as AvroUserPermi
 import net.corda.libs.permissions.storage.reader.repository.UserLogin
 import net.corda.libs.permissions.storage.reader.summary.InternalUserPermissionSummary
 import net.corda.libs.permissions.storage.reader.summary.PermissionSummaryReconciler
+import net.corda.v5.base.util.contextLogger
 
 class PermissionSummaryReconcilerImpl : PermissionSummaryReconciler {
+
+    private companion object {
+        val logger = contextLogger()
+    }
 
     override fun getSummariesForReconciliation(
         dbPermissionSummaries: Map<UserLogin, InternalUserPermissionSummary>,
@@ -20,7 +25,7 @@ class PermissionSummaryReconcilerImpl : PermissionSummaryReconciler {
             val permissionSummaryCached: AvroUserPermissionSummary? = cachedPermissionSummaries[currentUserLogin]
 
             if (permissionSummaryCached == null) {
-                // This is a new user who exists in database but not in cache. They will be added to the cache.
+                logger.info("Permission summary reconciliation task discovered new user $currentUserLogin.")
                 usersForReconciliation[currentUserLogin] = permissionSummaryDb.toAvroUserPermissionSummary()
                 continue
             }
@@ -29,8 +34,10 @@ class PermissionSummaryReconcilerImpl : PermissionSummaryReconciler {
             val lastUpdateTimestamp = permissionSummaryCached.lastUpdateTimestamp
 
             if (lastUpdateTimestamp > thisUpdateTimestamp) {
-                // The user was updated in the cache more recently than this attempted update. E.g. another worker has made a concurrent
-                // change that also affects this user. We will skip this user.
+                // This could happen if the same user was affected by a change from another concurrent reconciliation task.
+                // We will not overwrite a more recently calculated permission summary.
+                logger.info("Permission summary reconciliation task discovered a more recent version of permission summary in cache for " +
+                        "user $currentUserLogin and will skip reconciliation for this user.")
                 continue
             }
 
@@ -79,8 +86,10 @@ class PermissionSummaryReconcilerImpl : PermissionSummaryReconciler {
     }
 
     private fun reconcileForRemovedUsers(dbPermissionSummaries: Set<UserLogin>, cachedPermissionSummaries: Set<UserLogin>):
-            List<UserLogin> {
-        return cachedPermissionSummaries.filterNot { dbPermissionSummaries.contains(it) }
+            Set<UserLogin> {
+        val removedUserLogins = cachedPermissionSummaries.filterNotTo(mutableSetOf()) { dbPermissionSummaries.contains(it) }
+        logger.info("Permission summary reconciliation task discovered ${removedUserLogins.size} removed users.")
+        return removedUserLogins
     }
 
     private fun InternalUserPermissionSummary.toAvroUserPermissionSummary() = AvroUserPermissionSummary(
