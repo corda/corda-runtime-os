@@ -204,7 +204,7 @@ class DBAccessIntegrationTest {
     }
 
     @Test
-    fun `DBWriter writes commited offsets`() {
+    fun `DBWriter writes committed offsets`() {
         val timestamp = Instant.parse("2022-01-01T00:00:00.00Z")
         val dbAccess = DBAccess(emf)
 

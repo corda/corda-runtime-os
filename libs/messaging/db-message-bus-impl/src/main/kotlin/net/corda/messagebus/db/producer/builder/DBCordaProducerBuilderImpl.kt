@@ -12,6 +12,7 @@ import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.producer.CordaAtomicDBProducerImpl
 import net.corda.messagebus.db.producer.CordaTransactionalDBProducerImpl
+import net.corda.messagebus.db.serialization.CordaDBAvroSerializerImpl
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.schema.registry.AvroSchemaRegistry
@@ -47,12 +48,12 @@ class DBCordaProducerBuilderImpl @Activate constructor(
         )
         return if (isTransactional) {
             CordaTransactionalDBProducerImpl(
-                avroSchemaRegistry,
+                CordaDBAvroSerializerImpl(avroSchemaRegistry),
                 dbAccess
             )
         } else {
             CordaAtomicDBProducerImpl(
-                avroSchemaRegistry,
+                CordaDBAvroSerializerImpl(avroSchemaRegistry),
                 dbAccess
             )
         }

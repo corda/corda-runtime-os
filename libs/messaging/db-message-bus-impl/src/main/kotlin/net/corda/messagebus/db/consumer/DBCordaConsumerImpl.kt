@@ -1,6 +1,7 @@
 package net.corda.messagebus.db.consumer
 
 import com.typesafe.config.Config
+import net.corda.data.CordaAvroDeserializer
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.configuration.ConfigProperties
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CLIENT_ID
@@ -13,10 +14,8 @@ import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.producer.CordaAtomicDBProducerImpl.Companion.ATOMIC_TRANSACTION
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
-import net.corda.schema.registry.AvroSchemaRegistry
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
 import java.time.Duration
 
 @Suppress("TooManyFunctions", "LongParameterList")
@@ -24,10 +23,8 @@ class DBCordaConsumerImpl<K : Any, V : Any> internal constructor(
     private val consumerConfig: Config,
     private val dbAccess: DBAccess,
     private val consumerGroup: ConsumerGroup?,
-    private val avroSchemaRegistry: AvroSchemaRegistry,
-    private val kClazz: Class<K>,
-    private val vClazz: Class<V>,
-    private val onSerializationError: (ByteArray) -> Unit,
+    private val keyDeserializer: CordaAvroDeserializer<K>,
+    private val valueDeserializer: CordaAvroDeserializer<V>,
     private var defaultListener: CordaConsumerRebalanceListener?,
 ) : CordaConsumer<K, V> {
 
@@ -36,7 +33,7 @@ class DBCordaConsumerImpl<K : Any, V : Any> internal constructor(
     companion object {
         const val MAX_POLL_RECORDS = "max.poll.records"
         const val MAX_POLL_INTERVAL = "max.poll.interval.ms"
-
+        const val AUTO_OFFSET_RESET = "auto.offset.reset"
     }
 
     private val log: Logger = LoggerFactory.getLogger(consumerConfig.getString(CLIENT_ID))
@@ -44,7 +41,9 @@ class DBCordaConsumerImpl<K : Any, V : Any> internal constructor(
     private val groupId = consumerConfig.getString(ConfigProperties.GROUP_ID)
     private val maxPollRecords: Int = consumerConfig.getInt(MAX_POLL_RECORDS)
     private val maxPollInterval: Long = consumerConfig.getLong(MAX_POLL_INTERVAL)
-    private var topicPartitions: MutableSet<CordaTopicPartition> = mutableSetOf()
+    private val autoResetStrategy =
+        CordaOffsetResetStrategy.valueOf(consumerConfig.getString(AUTO_OFFSET_RESET).toUpperCase())
+    private var topicPartitions: Set<CordaTopicPartition> = emptySet()
     private val pausedPartitions: MutableSet<CordaTopicPartition> = mutableSetOf()
     private val partitionListeners: MutableMap<String, CordaConsumerRebalanceListener?> = mutableMapOf()
     private var currentTopicPartition = topicPartitions.iterator()
@@ -67,30 +66,37 @@ class DBCordaConsumerImpl<K : Any, V : Any> internal constructor(
 
     override fun assign(partitions: Collection<CordaTopicPartition>) {
         checkNotSubscribed()
-        topicPartitions = partitions.toMutableSet()
+        topicPartitions = partitions.toSet()
         subscriptionType = SubscriptionType.ASSIGNED
     }
 
     override fun assignment(): Set<CordaTopicPartition> {
-        return topicPartitions.toSet()
+        return topicPartitions
     }
 
     override fun position(partition: CordaTopicPartition): Long {
         return lastReadOffset[partition]
-            ?: throw CordaMessageAPIFatalException("No offset for $partition")
+            ?: when (autoResetStrategy) {
+                CordaOffsetResetStrategy.EARLIEST -> beginningOffsets(setOf(partition)).values.single()
+                CordaOffsetResetStrategy.LATEST -> endOffsets(setOf(partition)).values.single()
+                else -> throw CordaMessageAPIFatalException("No offset for $partition")
+            }
     }
 
     override fun seek(partition: CordaTopicPartition, offset: Long) {
-        lastReadOffset[partition] = offset
+        if (lastReadOffset.containsKey(partition)) {
+            lastReadOffset[partition] = offset
+        } else {
+            throw CordaMessageAPIFatalException("Partition is not currently assigned to this consumer")
+        }
     }
 
     override fun seekToBeginning(partitions: Collection<CordaTopicPartition>) {
-        lastReadOffset.putAll(beginningOffsets(partitions))
+        beginningOffsets(partitions).forEach { (partition, offset) -> seek(partition, offset) }
     }
 
     override fun seekToEnd(partitions: Collection<CordaTopicPartition>) {
-        val maxOffsets = dbAccess.getMaxCommittedOffsets(groupId, partitions.toSet())
-        lastReadOffset.putAll(maxOffsets)
+        endOffsets(partitions).forEach { (partition, offset) -> seek(partition, offset) }
     }
 
     override fun beginningOffsets(partitions: Collection<CordaTopicPartition>): Map<CordaTopicPartition, Long> {
@@ -171,7 +177,7 @@ class DBCordaConsumerImpl<K : Any, V : Any> internal constructor(
 
     override fun close(timeout: Duration) {
         // Nothing to do here
-        log.info("Closing logger")
+        log.info("Closing logger for ${consumerConfig.getString(CLIENT_ID)}")
     }
 
     override fun close() {
@@ -182,7 +188,7 @@ class DBCordaConsumerImpl<K : Any, V : Any> internal constructor(
         this.defaultListener = defaultListener
     }
 
-    fun getConsumerGroup(): String = groupId
+    internal fun getConsumerGroup(): String = groupId
 
     private fun updateTopicPartitions() {
         if (consumerGroup == null) {
@@ -207,7 +213,7 @@ class DBCordaConsumerImpl<K : Any, V : Any> internal constructor(
                 ?: defaultListener?.onPartitionsAssigned(newPartitions)
         }
 
-        topicPartitions = newTopicPartitions.toMutableSet()
+        topicPartitions = newTopicPartitions
         currentTopicPartition = topicPartitions.iterator()
     }
 
@@ -245,36 +251,35 @@ class DBCordaConsumerImpl<K : Any, V : Any> internal constructor(
     }
 
     private fun deserializeKey(bytes: ByteArray): K {
-        return deserialize(bytes, kClazz)
+        return keyDeserializer.deserialize(bytes)
             ?: throw CordaMessageAPIFatalException("Should never get null result from key deserialize")
     }
 
     private fun deserializeValue(bytes: ByteArray?): V? {
-        return deserialize(bytes, vClazz)
-    }
-
-    private fun <T : Any> deserialize(bytes: ByteArray?, clazz: Class<T>): T? {
-        if (bytes == null) {
-            return null
-        }
-
-        return try {
-            avroSchemaRegistry.deserialize(ByteBuffer.wrap(bytes), clazz, null)
-        } catch (ex: Exception) {
-            onSerializationError.invoke(bytes)
-            throw ex
-        }
+        return if (bytes != null) { valueDeserializer.deserialize(bytes) } else { null }
     }
 
     private fun checkNotSubscribed() {
-        if (subscriptionType == DBCordaConsumerImpl.SubscriptionType.SUBSCRIBED) {
-            throw CordaMessageAPIFatalException("Consumer is already subscribed to topic(s)")
+        if (subscriptionType == SubscriptionType.SUBSCRIBED) {
+            throw CordaMessageAPIFatalException("Cannot assign when consumer is already subscribed to topic(s)")
         }
     }
 
     private fun checkNotAssigned() {
-        if (subscriptionType == DBCordaConsumerImpl.SubscriptionType.ASSIGNED) {
-            throw CordaMessageAPIFatalException("Consumer is already assigned topic partitions")
+        if (subscriptionType == SubscriptionType.ASSIGNED) {
+            throw CordaMessageAPIFatalException("Cannot subscribed when consumer is already assigned topic partitions")
+        }
+    }
+
+    private fun CordaOffsetResetStrategy.from(strategy: String?): CordaOffsetResetStrategy {
+        return if (strategy.isNullOrEmpty()) {
+            CordaOffsetResetStrategy.NONE
+        } else if (strategy.toLowerCase() == "earliest") {
+            CordaOffsetResetStrategy.EARLIEST
+        } else if (strategy.toLowerCase() == "latest") {
+            CordaOffsetResetStrategy.LATEST
+        } else {
+            throw CordaMessageAPIFatalException("Invalid configuration option '$strategy' for $AUTO_OFFSET_RESET")
         }
     }
 }

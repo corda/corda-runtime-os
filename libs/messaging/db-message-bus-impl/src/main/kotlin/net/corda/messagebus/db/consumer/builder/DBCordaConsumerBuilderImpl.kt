@@ -13,6 +13,7 @@ import net.corda.messagebus.db.datamodel.TopicEntry
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.messagebus.db.persistence.DBAccess
+import net.corda.messagebus.db.serialization.CordaDBAvroDeserializerImpl
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.schema.registry.AvroSchemaRegistry
@@ -68,10 +69,8 @@ class DBCordaConsumerBuilderImpl @Activate constructor(
             consumerConfig,
             dbAccess,
             consumerGroup,
-            avroSchemaRegistry,
-            kClazz,
-            vClazz,
-            onSerializationError,
+            CordaDBAvroDeserializerImpl(avroSchemaRegistry, onSerializationError, kClazz),
+            CordaDBAvroDeserializerImpl(avroSchemaRegistry, onSerializationError, vClazz),
             listener
         )
     }

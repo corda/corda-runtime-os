@@ -1,5 +1,6 @@
 package net.corda.messagebus.db.producer
 
+import net.corda.data.CordaAvroSerializer
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
@@ -11,7 +12,6 @@ import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.util.WriteOffsets
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
-import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import java.time.Duration
@@ -20,7 +20,7 @@ import kotlin.math.abs
 
 @Suppress("TooManyFunctions")
 class CordaAtomicDBProducerImpl(
-    private val schemaRegistry: AvroSchemaRegistry,
+    private val serializer: CordaAvroSerializer<Any>,
     private val dbAccess: DBAccess
 ) : CordaProducer {
 
@@ -72,9 +72,10 @@ class CordaAtomicDBProducerImpl(
     override fun sendRecordsToPartitions(recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>) {
         val dbRecords = recordsWithPartitions.map { (partition, record) ->
             val offset = writeOffsets.getNextOffsetFor(CordaTopicPartition(record.topic, partition))
-            val serialisedKey = schemaRegistry.serialize(record.key).array()
-            val serialisedValue = if (record.value != null) {
-                schemaRegistry.serialize(record.value!!).array()
+            val serializedKey = serializer.serialize(record.key)
+                ?: throw CordaMessageAPIFatalException("Serialized Key cannot be null")
+            val serializedValue = if (record.value != null) {
+                serializer.serialize(record.value!!)
             } else {
                 null
             }
@@ -82,8 +83,8 @@ class CordaAtomicDBProducerImpl(
                 record.topic,
                 partition,
                 offset,
-                serialisedKey,
-                serialisedValue,
+                serializedKey,
+                serializedValue,
                 ATOMIC_TRANSACTION,
             )
         }

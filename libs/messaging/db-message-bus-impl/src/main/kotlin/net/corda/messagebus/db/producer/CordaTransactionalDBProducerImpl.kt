@@ -1,5 +1,6 @@
 package net.corda.messagebus.db.producer
 
+import net.corda.data.CordaAvroSerializer
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
@@ -13,7 +14,6 @@ import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.util.WriteOffsets
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
-import net.corda.schema.registry.AvroSchemaRegistry
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
@@ -21,7 +21,7 @@ import java.util.*
 import kotlin.math.abs
 
 class CordaTransactionalDBProducerImpl(
-    private val schemaRegistry: AvroSchemaRegistry,
+    private val serializer: CordaAvroSerializer<Any>,
     private val dbAccess: DBAccess
 ) : CordaProducer {
 
@@ -71,9 +71,10 @@ class CordaTransactionalDBProducerImpl(
         val dbRecords = recordsWithPartitions.map { (partition, record) ->
             val offset = writeOffsets.getNextOffsetFor(CordaTopicPartition(record.topic, partition))
 
-            val serialisedKey = schemaRegistry.serialize(record.key).array()
+            val serialisedKey = serializer.serialize(record.key)
+                ?: throw CordaMessageAPIFatalException("Serialized Key cannot be null")
             val serialisedValue = if (record.value != null) {
-                schemaRegistry.serialize(record.value!!).array()
+                serializer.serialize(record.value!!)
             } else {
                 null
             }

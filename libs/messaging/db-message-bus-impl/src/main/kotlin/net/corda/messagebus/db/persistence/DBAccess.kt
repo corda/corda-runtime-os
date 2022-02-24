@@ -31,7 +31,7 @@ class DBAccess(
         groupId: String,
         topicPartitions: Set<CordaTopicPartition>
     ): Map<CordaTopicPartition, List<CommittedOffsetEntry>> {
-        return executeWithErrorHandling("max committed offsets") { entityManager ->
+        return executeWithErrorHandling("get committed offsets") { entityManager ->
             entityManager.createQuery(
                 """
                     FROM topic_consumer_offset 

@@ -1,6 +1,7 @@
 package net.corda.messagebus.db.consumer
 
 import com.typesafe.config.ConfigFactory
+import net.corda.data.CordaAvroDeserializer
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
@@ -8,7 +9,6 @@ import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
-import net.corda.schema.registry.AvroSchemaRegistry
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.Test
@@ -16,10 +16,8 @@ import org.mockito.ArgumentCaptor
 import org.mockito.Mock
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
-import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.nio.ByteBuffer
 import java.time.Instant
 
 internal class DBCordaConsumerImplTest {
@@ -32,6 +30,7 @@ internal class DBCordaConsumerImplTest {
         max.poll.interval.ms = 100000
         group.id = group
         client.id = client
+        auto.offset.reset = earliest
         """
         )
 
@@ -50,29 +49,16 @@ internal class DBCordaConsumerImplTest {
     val dbAccess = mock<DBAccess>()
 
     private fun makeConsumer(): DBCordaConsumerImpl<String, String> {
-        val avroSchemaRegistry = mock<AvroSchemaRegistry>()
-        whenever(
-            avroSchemaRegistry.deserialize(
-                eq(ByteBuffer.wrap(serializedKey)),
-                eq(String::class.java),
-                isNull()
-            )
-        ).thenAnswer { "key" }
-        whenever(
-            avroSchemaRegistry.deserialize(
-                eq(ByteBuffer.wrap(serializedValue)),
-                eq(String::class.java),
-                isNull()
-            )
-        ).thenAnswer { "value" }
+        val keyDeserializer = mock<CordaAvroDeserializer<String>>()
+        val valueDeserializer = mock<CordaAvroDeserializer<String>>()
+        whenever(keyDeserializer.deserialize(eq(serializedKey))).thenAnswer { "key" }
+        whenever(valueDeserializer.deserialize(eq(serializedValue))).thenAnswer { "value" }
         return DBCordaConsumerImpl(
             config,
             dbAccess,
             consumerGroup,
-            avroSchemaRegistry,
-            String::class.java,
-            String::class.java,
-            {},
+            keyDeserializer,
+            valueDeserializer,
             null
         )
     }
@@ -267,29 +253,16 @@ internal class DBCordaConsumerImplTest {
 
     @Test
     fun `consumer without group id cannot subscribe`() {
-        val avroSchemaRegistry = mock<AvroSchemaRegistry>()
-        whenever(
-            avroSchemaRegistry.deserialize(
-                eq(ByteBuffer.wrap(serializedKey)),
-                eq(String::class.java),
-                isNull()
-            )
-        ).thenAnswer { "key" }
-        whenever(
-            avroSchemaRegistry.deserialize(
-                eq(ByteBuffer.wrap(serializedValue)),
-                eq(String::class.java),
-                isNull()
-            )
-        ).thenAnswer { "value" }
+        val keyDeserializer = mock<CordaAvroDeserializer<String>>()
+        val valueDeserializer = mock<CordaAvroDeserializer<String>>()
+        whenever(keyDeserializer.deserialize(eq(serializedKey))).thenAnswer { "key" }
+        whenever(valueDeserializer.deserialize(eq(serializedValue))).thenAnswer { "value" }
         val consumer = DBCordaConsumerImpl(
             config,
             dbAccess,
             null,
-            avroSchemaRegistry,
-            String::class.java,
-            String::class.java,
-            {},
+            keyDeserializer,
+            valueDeserializer,
             null
         )
 
