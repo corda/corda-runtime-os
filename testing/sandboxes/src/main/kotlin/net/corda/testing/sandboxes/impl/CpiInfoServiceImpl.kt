@@ -3,7 +3,7 @@ package net.corda.testing.sandboxes.impl
 import net.corda.cpiinfo.read.CpiInfoListener
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.packaging.CPI
-import net.corda.testing.sandboxes.CpiLoaderService
+import net.corda.testing.sandboxes.CpiLoader
 import net.corda.v5.base.util.loggerFor
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -13,7 +13,7 @@ import org.osgi.service.component.annotations.Reference
 @Component
 class CpiInfoServiceImpl @Activate constructor(
     @Reference
-    private val loader: CpiLoaderService
+    private val loader: CpiLoader
 ): CpiInfoReadService {
     private val logger = loggerFor<CpiInfoServiceImpl>()
 

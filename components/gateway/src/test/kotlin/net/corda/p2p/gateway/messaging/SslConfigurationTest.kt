@@ -5,13 +5,9 @@ import net.corda.v5.base.util.toBase64
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mockConstruction
-import org.mockito.Mockito.mockStatic
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.io.InputStream
 import java.security.KeyStore
 
 class SslConfigurationTest {
@@ -21,18 +17,14 @@ class SslConfigurationTest {
             on { getEnum(RevocationConfigMode::class.java, "revocationCheck.mode") } doReturn RevocationConfigMode.SOFT_FAIL
             on { getString("keyStore") } doReturn byteArrayOf(7, 8).toBase64()
             on { getString("keyStorePassword") } doReturn "passA"
-            on { getString("trustStore") } doReturn byteArrayOf(1, 2).toBase64()
-            on { getString("trustStorePassword") } doReturn "passB"
         }
 
         val sslConfiguration = config.toSslConfiguration()
 
         assertThat(sslConfiguration).isEqualTo(
             SslConfiguration(
-                rawTrustStore = byteArrayOf(1, 2),
                 rawKeyStore = byteArrayOf(7, 8),
                 keyStorePassword = "passA",
-                trustStorePassword = "passB",
                 revocationCheck =
                 RevocationConfig(RevocationConfigMode.SOFT_FAIL)
             )
@@ -44,8 +36,6 @@ class SslConfigurationTest {
         val config = SslConfiguration(
             rawKeyStore = byteArrayOf(1, 2, 3, 4),
             keyStorePassword = "password",
-            rawTrustStore = byteArrayOf(1, 2),
-            trustStorePassword = "passB",
             revocationCheck =
             RevocationConfig(RevocationConfigMode.SOFT_FAIL)
         )
@@ -64,8 +54,6 @@ class SslConfigurationTest {
         val config = SslConfiguration(
             rawKeyStore = byteArrayOf(1, 2, 3, 4),
             keyStorePassword = "password",
-            rawTrustStore = byteArrayOf(1, 2),
-            trustStorePassword = "passB",
             revocationCheck =
             RevocationConfig(RevocationConfigMode.SOFT_FAIL)
         )
@@ -83,8 +71,6 @@ class SslConfigurationTest {
         val config = SslConfiguration(
             rawKeyStore = byteArrayOf(1, 2, 3, 4),
             keyStorePassword = "password",
-            rawTrustStore = byteArrayOf(1, 2),
-            trustStorePassword = "passB",
             revocationCheck =
             RevocationConfig(RevocationConfigMode.SOFT_FAIL)
         )
@@ -98,92 +84,16 @@ class SslConfigurationTest {
     }
 
     @Test
-    fun `trustStore create key store`() {
-        val config = SslConfiguration(
-            rawKeyStore = byteArrayOf(1, 2, 3, 4),
-            keyStorePassword = "password",
-            rawTrustStore = byteArrayOf(1, 2),
-            trustStorePassword = "passB",
-            revocationCheck =
-            RevocationConfig(RevocationConfigMode.SOFT_FAIL)
-        )
-        val keyStore = mock<KeyStore>()
-        mockStatic(KeyStore::class.java).use { mockStatic ->
-            mockStatic.`when`<KeyStore> {
-                KeyStore.getInstance("JKS")
-            }.doReturn(keyStore)
-
-            assertThat(config.trustStore).isSameAs(keyStore)
-        }
-    }
-
-    @Test
-    fun `trustStore load correct data`() {
-        val config = SslConfiguration(
-            rawKeyStore = byteArrayOf(1, 2, 3, 4),
-            keyStorePassword = "password",
-            rawTrustStore = byteArrayOf(1, 2),
-            trustStorePassword = "passB",
-            revocationCheck =
-            RevocationConfig(RevocationConfigMode.SOFT_FAIL)
-        )
-        val data = argumentCaptor<InputStream>()
-        val password = argumentCaptor<CharArray>()
-        val keyStore = mock<KeyStore> {
-            on { load(data.capture(), password.capture()) } doAnswer {}
-        }
-        mockStatic(KeyStore::class.java).use { mockStatic ->
-            mockStatic.`when`<KeyStore> {
-                KeyStore.getInstance("JKS")
-            }.doReturn(keyStore)
-
-            config.trustStore
-        }
-
-        assertThat(data.firstValue.readAllBytes()).isEqualTo(byteArrayOf(1, 2))
-    }
-
-    @Test
-    fun `trustStore load correct password`() {
-        val config = SslConfiguration(
-            rawKeyStore = byteArrayOf(1, 2, 3, 4),
-            keyStorePassword = "password",
-            rawTrustStore = byteArrayOf(1, 2),
-            trustStorePassword = "passB",
-            revocationCheck =
-            RevocationConfig(RevocationConfigMode.SOFT_FAIL)
-        )
-        val data = argumentCaptor<InputStream>()
-        val password = argumentCaptor<CharArray>()
-        val keyStore = mock<KeyStore> {
-            on { load(data.capture(), password.capture()) } doAnswer {}
-        }
-        mockStatic(KeyStore::class.java).use { mockStatic ->
-            mockStatic.`when`<KeyStore> {
-                KeyStore.getInstance("JKS")
-            }.doReturn(keyStore)
-
-            config.trustStore
-        }
-
-        assertThat(password.firstValue).isEqualTo("passB".toCharArray())
-    }
-
-    @Test
     fun `hashCode is different if content is different`() {
         val config1 = SslConfiguration(
             rawKeyStore = byteArrayOf(1, 2, 3, 4),
             keyStorePassword = "password",
-            rawTrustStore = byteArrayOf(1, 2),
-            trustStorePassword = "passB",
             revocationCheck =
             RevocationConfig(RevocationConfigMode.SOFT_FAIL)
         )
         val config2 = SslConfiguration(
             rawKeyStore = byteArrayOf(1, 2, 3),
             keyStorePassword = "password",
-            rawTrustStore = byteArrayOf(1, 2, 3),
-            trustStorePassword = "passB",
             revocationCheck =
             RevocationConfig(RevocationConfigMode.SOFT_FAIL)
         )
@@ -196,8 +106,6 @@ class SslConfigurationTest {
         val config1 = SslConfiguration(
             rawKeyStore = byteArrayOf(1, 2, 3, 4),
             keyStorePassword = "password",
-            rawTrustStore = byteArrayOf(1, 2),
-            trustStorePassword = "passB",
             revocationCheck =
             RevocationConfig(RevocationConfigMode.SOFT_FAIL)
         )
@@ -211,8 +119,6 @@ class SslConfigurationTest {
         val config1 = SslConfiguration(
             rawKeyStore = byteArrayOf(1, 2, 3, 4),
             keyStorePassword = "password",
-            rawTrustStore = byteArrayOf(1, 2),
-            trustStorePassword = "passB",
             revocationCheck =
             RevocationConfig(RevocationConfigMode.SOFT_FAIL)
         )
@@ -225,8 +131,6 @@ class SslConfigurationTest {
         val config1 = SslConfiguration(
             rawKeyStore = byteArrayOf(1, 2, 3, 4),
             keyStorePassword = "password",
-            rawTrustStore = byteArrayOf(1, 2),
-            trustStorePassword = "passB",
             revocationCheck =
             RevocationConfig(RevocationConfigMode.SOFT_FAIL)
         )
@@ -240,8 +144,6 @@ class SslConfigurationTest {
         val config1 = SslConfiguration(
             rawKeyStore = byteArrayOf(1, 2, 3, 4),
             keyStorePassword = "password",
-            rawTrustStore = byteArrayOf(1, 2),
-            trustStorePassword = "passB",
             revocationCheck =
             RevocationConfig(RevocationConfigMode.SOFT_FAIL)
         )
@@ -250,43 +152,12 @@ class SslConfigurationTest {
         assertThat(config1).isNotEqualTo(config2)
     }
 
-    @Test
-    fun `equals return false for another rawTrustStore`() {
-        val config1 = SslConfiguration(
-            rawKeyStore = byteArrayOf(1, 2, 3, 4),
-            keyStorePassword = "password",
-            rawTrustStore = byteArrayOf(1, 2),
-            trustStorePassword = "passB",
-            revocationCheck =
-            RevocationConfig(RevocationConfigMode.SOFT_FAIL)
-        )
-        val config2 = config1.copy(rawTrustStore = byteArrayOf(3, 3, 3))
-
-        assertThat(config1).isNotEqualTo(config2)
-    }
-
-    @Test
-    fun `equals return false for another trustStorePassword`() {
-        val config1 = SslConfiguration(
-            rawKeyStore = byteArrayOf(1, 2, 3, 4),
-            keyStorePassword = "password",
-            rawTrustStore = byteArrayOf(1, 2),
-            trustStorePassword = "passB",
-            revocationCheck =
-            RevocationConfig(RevocationConfigMode.SOFT_FAIL)
-        )
-        val config2 = config1.copy(trustStorePassword = "passc")
-
-        assertThat(config1).isNotEqualTo(config2)
-    }
 
     @Test
     fun `equals return false for another revocationCheck`() {
         val config1 = SslConfiguration(
             rawKeyStore = byteArrayOf(1, 2, 3, 4),
             keyStorePassword = "password",
-            rawTrustStore = byteArrayOf(1, 2),
-            trustStorePassword = "passB",
             revocationCheck =
             RevocationConfig(RevocationConfigMode.SOFT_FAIL)
         )
@@ -300,8 +171,6 @@ class SslConfigurationTest {
         val config1 = SslConfiguration(
             rawKeyStore = byteArrayOf(1, 2, 3, 4),
             keyStorePassword = "password",
-            rawTrustStore = byteArrayOf(1, 2),
-            trustStorePassword = "passB",
             revocationCheck =
             RevocationConfig(RevocationConfigMode.SOFT_FAIL)
         )

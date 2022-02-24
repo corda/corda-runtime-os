@@ -1,6 +1,6 @@
 package net.corda.crypto.persistence.messaging.impl
 
-import net.corda.crypto.CryptoConsts
+import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.persistence.EntityKeyInfo
 import net.corda.crypto.persistence.KeyValuePersistence
 import net.corda.data.crypto.persistence.SigningKeysRecord
@@ -59,14 +59,14 @@ class MessagingSigningKeysPersistenceTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(10)
     fun `Should get signing cache null when it's not found`() {
         val cachedRecord = signingPersistence.get(UUID.randomUUID().toString())
         assertNull(cachedRecord)
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(10)
     fun `Should round trip persist and get signing cache value`() {
         val original = SigningKeysRecord(
             tenantId,
@@ -106,7 +106,7 @@ class MessagingSigningKeysPersistenceTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(10)
     fun `Should fetch and cache record from subscription when it's not cached yet`() {
         val original = SigningKeysRecord(
             tenantId,

@@ -105,20 +105,19 @@ data class FlowEventPipelineImpl(
         /*
         Need to think about a timeout for the get(), what do we do if a flow does not complete?
         */
-        when (val flowResult = flowResultFuture.get()) {
+        return when (val flowResult = flowResultFuture.get()) {
             is FlowIORequest.FlowFinished -> {
                 context.checkpoint!!.fiber = ByteBuffer.wrap(byteArrayOf())
-                return copy(output = flowResult)
+                copy(output = flowResult)
             }
             is FlowIORequest.FlowSuspended<*> -> {
                 context.checkpoint!!.fiber = flowResult.fiber
-                return copy(output = flowResult.output)
+                copy(output = flowResult.output)
             }
             is FlowIORequest.FlowFailed -> {
                 TODO("Flow Failure Path TBD")
             }
+            else -> throw FlowProcessingException("Invalid ${FlowIORequest::class.java.simpleName} returned from flow fiber")
         }
-
-        return this
     }
 }

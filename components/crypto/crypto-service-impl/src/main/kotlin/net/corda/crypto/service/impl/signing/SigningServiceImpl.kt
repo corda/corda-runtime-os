@@ -1,6 +1,6 @@
 package net.corda.crypto.service.impl.signing
 
-import net.corda.crypto.CryptoConsts
+import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.service.CryptoServiceConfiguredInstance
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.SigningService

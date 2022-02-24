@@ -1,5 +1,7 @@
 package net.corda.processors.db.internal
 
+import net.corda.chunking.datamodel.ChunkingEntities
+import net.corda.chunking.read.ChunkReadService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.write.ConfigWriteService
 import net.corda.db.admin.LiquibaseSchemaMigrator
@@ -42,6 +44,7 @@ import org.osgi.service.component.annotations.Reference
 import java.sql.SQLException
 import java.util.UUID
 import javax.sql.DataSource
+import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 
 @Suppress("Unused", "LongParameterList")
 @Component(service = [DBProcessor::class])
@@ -71,13 +74,15 @@ class DBProcessorImpl @Activate constructor(
     private val schemaMigrator: LiquibaseSchemaMigrator,
     @Reference(service = DbAdmin::class)
     private val dbAdmin: DbAdmin,
+    @Reference(service = ChunkReadService::class)
+    private val chunkReadService: ChunkReadService,
 ) : DBProcessor {
     init {
         // define the different DB Entity Sets
         //  entities can be in different packages, but all JPA classes must be passed in.
         entitiesRegistry.register(
             CordaDb.CordaCluster.persistenceUnitName,
-            ConfigurationEntities.classes + VirtualNodeEntities.classes
+            ConfigurationEntities.classes + VirtualNodeEntities.classes + ChunkingEntities.classes
         )
         entitiesRegistry.register(CordaDb.RBAC.persistenceUnitName, RbacEntities.classes)
     }
@@ -93,7 +98,8 @@ class DBProcessorImpl @Activate constructor(
         ::permissionCacheService,
         ::permissionStorageReaderService,
         ::permissionStorageWriterService,
-        ::virtualNodeWriteService
+        ::virtualNodeWriteService,
+        ::chunkReadService
     )
     // keeping track of the DB Managers registration handler specifically because the bootstrap process needs to be split
     //  into 2 parts.
@@ -146,7 +152,7 @@ class DBProcessorImpl @Activate constructor(
                 instanceId = event.config.getInt(CONFIG_INSTANCE_ID)
 
                 log.info("Bootstrapping DB connection Manager")
-                dbConnectionManager.bootstrap(event.config.getConfig(ConfigKeys.DB_CONFIG))
+                dbConnectionManager.bootstrap(event.config.getConfig(DB_CONFIG))
             }
             is StopEvent -> {
                 dependentComponents.stopAll()
@@ -165,7 +171,7 @@ class DBProcessorImpl @Activate constructor(
             "net/corda/db/schema/config/db.changelog-master.xml"
         ))
 
-        val dbConfig = config.withFallback(dbFallbackConfig)
+        val dbConfig = config.getConfig(DB_CONFIG).withFallback(dbFallbackConfig)
 
         // Creating RBAC DB configurations
         if(null == dbConnectionsRepository.get(CordaDb.RBAC.persistenceUnitName, DbPrivilege.DDL)) {

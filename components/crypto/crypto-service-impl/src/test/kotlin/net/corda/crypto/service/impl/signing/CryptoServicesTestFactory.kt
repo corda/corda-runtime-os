@@ -1,6 +1,6 @@
 package net.corda.crypto.service.impl.signing
 
-import net.corda.crypto.CryptoConsts
+import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
 import net.corda.crypto.impl.components.DigestServiceImpl
 import net.corda.crypto.impl.components.SignatureVerificationServiceImpl

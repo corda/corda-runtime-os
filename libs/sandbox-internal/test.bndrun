@@ -62,7 +62,7 @@
 	net.corda.configuration-read-service-impl;version='[5.0.0,5.0.1)',\
 	net.corda.cpi-info-read-service;version='[5.0.0,5.0.1)',\
 	net.corda.crypto;version='[5.0.0,5.0.1)',\
-	net.corda.crypto-client;version='[5.0.0,5.0.1)',\
+	net.corda.crypto-core;version='[5.0.0,5.0.1)',\
 	net.corda.crypto-impl;version='[5.0.0,5.0.1)',\
 	net.corda.inmemory-messaging-impl;version='[5.0.0,5.0.1)',\
 	net.corda.install-service;version='[5.0.0,5.0.1)',\
@@ -87,7 +87,6 @@
 	net.corda.virtual-node-common;version='[5.0.0,5.0.1)',\
 	net.corda.virtual-node-info;version='[5.0.0,5.0.1)',\
 	net.corda.virtual-node-info-read-service;version='[5.0.0,5.0.1)',\
-	net.corda.virtual-node-info-write-service;version='[5.0.0,5.0.1)',\
 	net.i2p.crypto.eddsa;version='[0.3.0,0.3.1)',\
 	org.apache.commons.commons-compress;version='[1.21.0,1.21.1)',\
 	org.apache.commons.lang3;version='[3.9.0,3.9.1)',\

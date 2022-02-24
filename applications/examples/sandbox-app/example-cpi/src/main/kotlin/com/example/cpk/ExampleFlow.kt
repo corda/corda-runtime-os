@@ -8,12 +8,11 @@ import net.corda.v5.application.services.json.JsonMarshallingService
 import net.corda.v5.application.services.json.parseJson
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.loggerFor
-import net.corda.v5.crypto.SecureHash
 
 @Suppress("unused")
 @InitiatingFlow
 @StartableByRPC
-class ExampleFlow(private val json: String) : Flow<SecureHash> {
+class ExampleFlow(private val json: String) : Flow<String> {
     private val logger = loggerFor<ExampleFlow>()
 
     @CordaInject
@@ -27,13 +26,13 @@ class ExampleFlow(private val json: String) : Flow<SecureHash> {
     }
 
     @Suspendable
-    override fun call(): SecureHash {
+    override fun call(): String {
         logger.info("Invoked: JSON=$json")
         val input = jsonMarshaller.parseJson<FlowInput>(json)
         return customCrypto.hashOf(
             bytes = input.message?.toByteArray() ?: byteArrayOf()
         ).also { result ->
             logger.info("Result=$result")
-        }
+        }.toHexString()
     }
 }

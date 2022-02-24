@@ -47,12 +47,7 @@ class CpiUploadRPCOpsService @Activate constructor(
 
     override val isRunning get() = coordinator.isRunning
 
-    // It gets started by [RPCProcessorImpl].
-    override fun start() {
-        coordinator.start()
-    }
+    override fun start() = coordinator.start()
 
-    override fun stop() {
-        coordinator.stop() // also sends stop event to coordinator
-    }
+    override fun stop() = coordinator.stop()
 }

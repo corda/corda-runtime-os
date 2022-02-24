@@ -1,6 +1,6 @@
 package net.corda.crypto.persistence.messaging.impl
 
-import net.corda.crypto.CryptoConsts
+import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.persistence.KeyValuePersistence
 import net.corda.crypto.persistence.messaging.impl.KafkaInfrastructure.Companion.wait
 import net.corda.data.crypto.persistence.SigningKeysRecord
@@ -113,7 +113,7 @@ class MessagingSigningKeysPersistenceSnapshotTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(10)
     fun `Should load snapshot and get signing cache value`() {
         val cachedRecord1 =  signingPersistence.wait(keyDerivedId1)
         assertNotNull(cachedRecord1)

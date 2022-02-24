@@ -12,6 +12,12 @@ class MessageBus : BusInteractions {
         return inboundMessages.poll()
     }
 
+    override fun duplicateMessage(position: Int) {
+        val message = inboundMessages[position]
+        val copy = message.specificData.deepCopy(message.schema, message)
+        inboundMessages.add(copy)
+    }
+
     override fun getInboundMessageSize(): Int {
         return inboundMessages.size
     }

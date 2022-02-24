@@ -26,7 +26,14 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.permissions.service.PermissionServiceComponent
+import net.corda.schema.configuration.ConfigKeys.RPC_ADDRESS
+import net.corda.schema.configuration.ConfigKeys.RPC_AZUREAD_CLIENT_ID
+import net.corda.schema.configuration.ConfigKeys.RPC_AZUREAD_CLIENT_SECRET
+import net.corda.schema.configuration.ConfigKeys.RPC_AZUREAD_TENANT_ID
 import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
+import net.corda.schema.configuration.ConfigKeys.RPC_CONTEXT_DESCRIPTION
+import net.corda.schema.configuration.ConfigKeys.RPC_CONTEXT_TITLE
+import net.corda.schema.configuration.ConfigKeys.RPC_MAX_CONTENT_LENGTH
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger
@@ -43,13 +50,6 @@ internal class HttpRpcGatewayEventHandler(
 
     private companion object {
         val log = contextLogger()
-        const val RPC_ADDRESS_CONFIG = "address"
-        const val RPC_DESCRIPTION_CONFIG = "context.description"
-        const val RPC_TITLE_CONFIG = "context.title"
-        const val MAX_CONTENT_LENGTH_CONFIG = "maxContentLength"
-        const val AZURE_CLIENT_ID_CONFIG = "sso.azureAd.clientId"
-        const val AZURE_TENANT_ID_CONFIG = "sso.azureAd.tenantId"
-        const val AZURE_CLIENT_SECRET_CONFIG = "sso.azureAd.clientSecret"
     }
 
     @VisibleForTesting
@@ -140,12 +140,12 @@ internal class HttpRpcGatewayEventHandler(
         }
 
         val httpRpcSettings = HttpRpcSettings(
-            address = NetworkHostAndPort.parse(config.getString(RPC_ADDRESS_CONFIG)),
+            address = NetworkHostAndPort.parse(config.getString(RPC_ADDRESS)),
             context = HttpRpcContext(
                 version = "1",
                 basePath = "/api",
-                description = config.getString(RPC_DESCRIPTION_CONFIG),
-                title = config.getString(RPC_TITLE_CONFIG)
+                description = config.getString(RPC_CONTEXT_DESCRIPTION),
+                title = config.getString(RPC_CONTEXT_TITLE)
             ),
             ssl = HttpRpcSSLSettings(keyStoreInfo.path, keyStoreInfo.password),
             sso = config.retrieveSsoOptions(),
@@ -166,12 +166,12 @@ internal class HttpRpcGatewayEventHandler(
     }
 
     private fun SmartConfig.retrieveSsoOptions(): SsoSettings? {
-        return if (!hasPath(AZURE_CLIENT_ID_CONFIG) || !hasPath(AZURE_TENANT_ID_CONFIG)) {
+        return if (!hasPath(RPC_AZUREAD_CLIENT_ID) || !hasPath(RPC_AZUREAD_TENANT_ID)) {
             null
         } else {
-            val clientId = getString(AZURE_CLIENT_ID_CONFIG)
-            val tenantId = getString(AZURE_TENANT_ID_CONFIG)
-            val clientSecret = AZURE_CLIENT_SECRET_CONFIG.let {
+            val clientId = getString(RPC_AZUREAD_CLIENT_ID)
+            val tenantId = getString(RPC_AZUREAD_TENANT_ID)
+            val clientSecret = RPC_AZUREAD_CLIENT_SECRET.let {
                 if (hasPath(it)) {
                     getString(it)
                 } else null
@@ -181,8 +181,8 @@ internal class HttpRpcGatewayEventHandler(
     }
 
     private fun SmartConfig.retrieveMaxContentLength(): Int {
-        return if (hasPath(MAX_CONTENT_LENGTH_CONFIG)) {
-            getInt(MAX_CONTENT_LENGTH_CONFIG)
+        return if (hasPath(RPC_MAX_CONTENT_LENGTH)) {
+            getInt(RPC_MAX_CONTENT_LENGTH)
         } else {
             MAX_CONTENT_LENGTH_DEFAULT_VALUE
         }

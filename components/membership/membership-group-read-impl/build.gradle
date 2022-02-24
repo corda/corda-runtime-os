@@ -1,6 +1,7 @@
 plugins {
     id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'corda.common-library'
+    id 'corda.osgi-test-conventions'
 }
 
 description 'Membership data read services implementation'
@@ -10,18 +11,18 @@ dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation project(":libs:configuration:configuration-schema:messaging-configuration")
     implementation project(":libs:membership:membership-identity-impl")
     implementation project(":libs:membership:membership-internal")
     implementation project(":libs:membership:membership-impl")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:virtual-node:virtual-node-info")
-    implementation project(":components:virtual-node:cpi-info-read-service")
-    implementation project(":components:virtual-node:virtual-node-info-read-service")
     implementation project(":components:configuration:configuration-read-service")
 
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-topic-schema"
+    implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-membership"
     implementation "net.corda:corda-membership-identity"
     implementation "net.corda:corda-membership-conversion"
@@ -31,5 +32,15 @@ dependencies {
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation project(":libs:crypto:crypto-client")
+    testImplementation project(":components:virtual-node:virtual-node-info-read-service")
+    testImplementation "net.corda:corda-packaging-avro-converters"
+    testImplementation project(":components:virtual-node:cpi-info-read-service")
+    testImplementation project(":testing:test-utilities")
+
+    integrationTestRuntimeOnly project(":components:membership:group-policy-impl")
+    integrationTestRuntimeOnly project(":components:virtual-node:cpi-info-read-service-impl")
+    integrationTestRuntimeOnly project(":components:configuration:configuration-read-service-impl")
+    integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")
+    integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
+    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 }

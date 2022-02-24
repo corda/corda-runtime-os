@@ -1,9 +1,19 @@
+import aQute.bnd.gradle.Bundle
+
 plugins {
     id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.osgi-test-conventions'
     id 'corda.common-library'
 }
 
-description "Sandbox Context Group Service Reader"
+description "Sandbox Context Group Service"
+
+configurations {
+    cpis {
+        canBeConsumed = false
+        transitive = false
+    }
+}
 
 dependencies {
     compileOnly 'org.osgi:osgi.core'
@@ -21,6 +31,7 @@ dependencies {
     implementation "net.corda:corda-packaging-avro-converters"
 
     implementation project(":libs:configuration:configuration-core")
+    implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
 
@@ -48,4 +59,26 @@ dependencies {
     testRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
     testRuntimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     testRuntimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+
+    integrationTestImplementation 'net.corda:corda-application'
+    integrationTestImplementation project(':testing:sandboxes')
+    integrationTestRuntimeOnly project(':libs:crypto:crypto-impl')
+    integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:inmemory-messaging-impl')
+
+    // Gather locations of CPIs to add into `resources`
+    cpis project(path: ':testing:cpbs:crypto-custom-digest-one-consumer', configuration: 'cordaCPB')
+    cpis project(path: ':testing:cpbs:crypto-custom-digest-two-consumer', configuration: 'cordaCPB')
+    cpis project(path: ':testing:cpbs:corda-services', configuration: 'cordaCPB')
+}
+
+def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {
+    from(configurations.cpis) {
+        into 'META-INF'
+        rename "(.*)-\\Q${version}\\E-package.cpb", "\$1.cpb"
+    }
+}
+
+tasks.named('testingBundle', Bundle) {
+    dependsOn integrationTestResources
 }

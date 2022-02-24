@@ -2,8 +2,8 @@ package net.corda.crypto.client.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.CryptoPublishResult
-import net.corda.crypto.HSMRegistrationClient
+import net.corda.crypto.client.CryptoPublishResult
+import net.corda.crypto.client.HSMRegistrationClient
 import net.corda.data.crypto.config.HSMConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName

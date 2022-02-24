@@ -44,14 +44,14 @@ import java.util.concurrent.ExecutionException
 import javax.net.ssl.TrustManagerFactory
 
 class HttpClientTest {
+    private val trustStore = mock<KeyStore>()
     private val destinationInfo = DestinationInfo(
         uri = URI("http://www.r3.com:3023"),
         sni = "sni",
-        legalName = null
+        legalName = null,
+        trustStore
     )
-    private val trustStore = mock<KeyStore>()
     private val sslConfiguration = mock<SslConfiguration> {
-        on { trustStore } doReturn trustStore
         on { revocationCheck } doReturn RevocationConfig(RevocationConfigMode.OFF)
     }
     private val loop = mock<EventLoop> {

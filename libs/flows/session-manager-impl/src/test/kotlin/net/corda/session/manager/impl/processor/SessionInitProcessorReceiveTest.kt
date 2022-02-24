@@ -19,7 +19,7 @@ class SessionInitProcessorReceiveTest {
         val initiatingIdentity = HoldingIdentity("ALice", "group1")
         val initiatedIdentity = HoldingIdentity("Bob", "group1")
         val sessionInitEvent = SessionEvent(
-            MessageDirection.OUTBOUND, System.currentTimeMillis(), "sessionId", 1, SessionInit(
+            MessageDirection.OUTBOUND, Instant.now(), "sessionId", 1, SessionInit(
                 "flow", "cpiId", FlowKey(),initiatedIdentity, initiatingIdentity, null
             )
         )
@@ -40,7 +40,7 @@ class SessionInitProcessorReceiveTest {
         val initiatingIdentity = HoldingIdentity("ALice", "group1")
         val initiatedIdentity = HoldingIdentity("Bob", "group1")
         val sessionInitEvent = SessionEvent(
-            MessageDirection.OUTBOUND, System.currentTimeMillis(), "sessionId", 1, SessionInit(
+            MessageDirection.OUTBOUND, Instant.now(), "sessionId", 1, SessionInit(
                 "flow", "cpiId", FlowKey(),initiatedIdentity, initiatingIdentity, null
             )
         )

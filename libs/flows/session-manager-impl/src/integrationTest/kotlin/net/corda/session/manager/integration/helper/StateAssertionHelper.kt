@@ -4,7 +4,7 @@ import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.integration.SessionParty
 import org.assertj.core.api.Assertions.assertThat
 
-fun SessionParty.assertStatus(expectedStatus: SessionStateType) {
+fun SessionParty.assertStatus(expectedStatus: SessionStateType?) {
     assertThat(sessionState?.status).isEqualTo(expectedStatus)
 }
 

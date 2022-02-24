@@ -1,7 +1,7 @@
 package net.corda.processors.crypto.tests
 
-import net.corda.crypto.CryptoConsts
-import net.corda.crypto.CryptoOpsClient
+import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.config.Configuration
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -132,7 +132,7 @@ class CryptoOpsTests {
     }
 
     @Test
-    @Timeout(60)
+    @Timeout(120)
     fun `Should be able to use crypto operations`() {
         run(::`Should be able to get supported schemes for all categories`)
         val ledgerKeyAlias = UUID.randomUUID().toString()

@@ -2,7 +2,7 @@ package net.corda.flow.manager.impl.runner
 
 import co.paralleluniverse.concurrent.util.ScheduledSingleThreadExecutor
 import co.paralleluniverse.fibers.FiberExecutorScheduler
-import net.corda.data.flow.event.StartRPCFlow
+import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.state.Checkpoint
 import net.corda.flow.manager.FlowSandboxContextTypes
 import net.corda.flow.manager.FlowSandboxService
@@ -55,20 +55,20 @@ class FlowRunnerImpl @Activate constructor(
         flowContinuation: FlowContinuation
     ): Future<FlowIORequest<*>> {
         return when (val payload = context.inputEvent.payload) {
-            is StartRPCFlow -> startFlow(context, payload)
+            is StartFlow -> startFlow(context, payload)
             else -> resumeFlow(context, flowContinuation)
         }
     }
 
     private fun startFlow(
         context: FlowEventContext<Any>,
-        startFlowEvent: StartRPCFlow
+        startFlowEvent: StartFlow
     ): Future<FlowIORequest<*>> {
         val checkpoint = context.checkpoint!!
 
         log.info(
-            "start new flow clientId: ${checkpoint.flowState.clientId} " +
-                    "flowClassName: ${startFlowEvent.flowClassName} args ${startFlowEvent.jsonArgs}"
+            "start new flow clientId: ${checkpoint.flowStartContext.clientRequestId} " +
+                    "flowClassName: ${startFlowEvent.startContext.flowClassName} args ${startFlowEvent.flowStartArgs}"
         )
 
         val sandbox = getSandbox(checkpoint)

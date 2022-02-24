@@ -76,7 +76,12 @@ interface FlowIORequest<out R> {
     // TODOs: consider using an empty FlowAsyncOperation instead
     object ForceCheckpoint : FlowIORequest<Unit>
 
-    data class FlowFinished(val result: Any?) : FlowIORequest<Any?>
+    /**
+     * The initial checkpoint capture point when a flow starts.
+     */
+    object InitialCheckpoint : FlowIORequest<Unit>
+
+    data class FlowFinished(val result: String?) : FlowIORequest<String?>
 
     data class SubFlowFinished(val result: FlowStackItem?) : FlowIORequest<FlowStackItem?>
 
@@ -89,6 +94,5 @@ interface FlowIORequest<out R> {
      * @property fiber serialized fiber state at the point of suspension.
      * @property output the IO request that caused the suspension.
      */
-    class FlowSuspended<SUSPENDRETURN>(val fiber: ByteBuffer, val output: FlowIORequest<SUSPENDRETURN>) :
-        FlowIORequest<Unit>
+    data class FlowSuspended<SUSPENDRETURN>(val fiber: ByteBuffer, val output: FlowIORequest<SUSPENDRETURN>) : FlowIORequest<Unit>
 }

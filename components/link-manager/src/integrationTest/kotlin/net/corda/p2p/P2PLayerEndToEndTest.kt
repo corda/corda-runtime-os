@@ -251,9 +251,7 @@ class P2PLayerEndToEndTest {
 
         private val sslConfig = SslConfiguration(
             keyStorePassword = "password",
-            rawKeyStore = readKeyStore(keyStoreFileName),
-            trustStorePassword = "password",
-            rawTrustStore = readKeyStore(trustStoreFileName),
+            rawKeyStore = readKeyStore("$keyStoreFileName.jks"),
             revocationCheck = RevocationConfig(if (checkRevocation) RevocationConfigMode.HARD_FAIL else RevocationConfigMode.OFF)
         )
         val keyPair = KeyPairGenerator.getInstance(identitiesKeyAlgorithm.generatorName).genKeyPair()
@@ -269,7 +267,7 @@ class P2PLayerEndToEndTest {
         val linkManagerConfig = ConfigFactory.parseString(linkManagerConfigTemplate.replace("<x500-name>", x500Name))
 
         private fun readKeyStore(fileName: String): ByteArray {
-            return javaClass.classLoader.getResource("$fileName.jks").readBytes()
+            return javaClass.classLoader.getResource(fileName).readBytes()
         }
 
         private fun createGatewayConfig(port: Int, domainName: String, sslConfig: SslConfiguration): Config {
@@ -278,8 +276,6 @@ class P2PLayerEndToEndTest {
                 .withValue("hostPort", ConfigValueFactory.fromAnyRef(port))
                 .withValue("sslConfig.keyStorePassword", ConfigValueFactory.fromAnyRef(sslConfig.keyStorePassword))
                 .withValue("sslConfig.keyStore", ConfigValueFactory.fromAnyRef(sslConfig.rawKeyStore.toBase64()))
-                .withValue("sslConfig.trustStorePassword", ConfigValueFactory.fromAnyRef(sslConfig.trustStorePassword))
-                .withValue("sslConfig.trustStore", ConfigValueFactory.fromAnyRef(sslConfig.rawTrustStore.toBase64()))
                 .withValue("sslConfig.revocationCheck.mode", ConfigValueFactory.fromAnyRef(sslConfig.revocationCheck.mode.toString()))
         }
 
@@ -352,7 +348,8 @@ class P2PLayerEndToEndTest {
                 ByteBuffer.wrap(keyPair.public.encoded),
                 identitiesKeyAlgorithm,
                 "http://$p2pAddress:$p2pPort",
-                NetworkType.CORDA_5
+                NetworkType.CORDA_5,
+                listOf(String(readKeyStore("$trustStoreFileName.pem")))
             )
 
         private fun publishNetworkMapAndKeys(otherHost: Host) {

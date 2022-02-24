@@ -20,7 +20,7 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_COUNTERPARTIES_KEY
 import net.corda.lifecycle.domino.logic.DependenciesVerifier
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.DominoTileState
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -133,7 +133,7 @@ class LinkManagerIntegrationTest {
                 invalidConfig
             )
             eventually {
-                assertThat(linkManager.dominoTile.state).isEqualTo(DominoTile.State.StoppedDueToChildStopped)
+                assertThat(linkManager.dominoTile.state).isEqualTo(DominoTileState.StoppedDueToChildStopped)
             }
 
             logger.info("Publishing valid configuration again")

@@ -2,7 +2,7 @@ package net.corda.flow.sandbox
 
 import net.corda.flow.manager.FlowSandboxService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.testing.sandboxes.SandboxLoader
+import net.corda.testing.sandboxes.VirtualNodeLoader
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import org.osgi.service.component.annotations.Activate
@@ -19,16 +19,16 @@ class CloseableSandboxGroupContext(private val context: SandboxGroupContext)
 @Component(service = [ SandboxFactory::class ])
 class SandboxFactory @Activate constructor(
     @Reference
-    private val sandboxLoader: SandboxLoader,
+    private val virtualNodeLoader: VirtualNodeLoader,
     @Reference
     private val flowSandboxService: FlowSandboxService
 ) {
-    fun loadCPI(resourceName: String, holdingIdentity: HoldingIdentity): VirtualNodeInfo {
-        return sandboxLoader.loadCPI(resourceName, holdingIdentity)
+    fun loadVirtualNode(resourceName: String, holdingIdentity: HoldingIdentity): VirtualNodeInfo {
+        return virtualNodeLoader.loadVirtualNode(resourceName, holdingIdentity)
     }
 
-    fun unloadCPI(virtualNodeInfo: VirtualNodeInfo) {
-        sandboxLoader.unloadCPI(virtualNodeInfo)
+    fun unloadVirtualNode(virtualNodeInfo: VirtualNodeInfo) {
+        virtualNodeLoader.unloadVirtualNode(virtualNodeInfo)
     }
 
     fun getOrCreateSandbox(holdingIdentity: HoldingIdentity): CloseableSandboxGroupContext {

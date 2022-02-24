@@ -16,7 +16,6 @@
     bnd.identity;id='net.corda.registration-static-network-impl',\
     bnd.identity;id='net.corda.configuration-read-service-impl',\
     bnd.identity;id='net.corda.cpi-info-read-service-impl',\
-    bnd.identity;id='net.corda.cpi-info-write-service-impl',\
     bnd.identity;id='net.corda.membership-identity-impl',\
     bnd.identity;id='net.corda.membership-conversion-impl',\
     bnd.identity;id='net.corda.membership-application',\
@@ -66,11 +65,10 @@
 	net.corda.configuration-read-service-impl;version='[5.0.0,5.0.1)',\
 	net.corda.cpi-info-read-service;version='[5.0.0,5.0.1)',\
 	net.corda.cpi-info-read-service-impl;version='[5.0.0,5.0.1)',\
-	net.corda.cpi-info-write-service;version='[5.0.0,5.0.1)',\
-	net.corda.cpi-info-write-service-impl;version='[5.0.0,5.0.1)',\
 	net.corda.crypto;version='[5.0.0,5.0.1)',\
 	net.corda.crypto-client;version='[5.0.0,5.0.1)',\
 	net.corda.crypto-client-impl;version='[5.0.0,5.0.1)',\
+	net.corda.crypto-core;version='[5.0.0,5.0.1)',\
 	net.corda.crypto-impl;version='[5.0.0,5.0.1)',\
 	net.corda.crypto-messaging-persistence-impl;version='[5.0.0,5.0.1)',\
 	net.corda.crypto-persistence;version='[5.0.0,5.0.1)',\
@@ -104,6 +102,7 @@
 	net.corda.serialization;version='[5.0.0,5.0.1)',\
 	net.corda.serialization-internal;version='[5.0.0,5.0.1)',\
 	net.corda.test-utilities;version='[5.0.0,5.0.1)',\
+	net.corda.topic-schema;version='[5.0.0,5.0.1)',\
 	net.corda.utilities;version='[5.0.0,5.0.1)',\
 	net.corda.virtual-node-common;version='[5.0.0,5.0.1)',\
 	net.corda.virtual-node-info;version='[5.0.0,5.0.1)',\
