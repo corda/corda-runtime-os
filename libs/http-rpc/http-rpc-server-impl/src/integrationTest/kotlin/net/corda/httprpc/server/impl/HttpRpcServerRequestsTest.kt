@@ -1,6 +1,9 @@
 package net.corda.httprpc.server.impl
 
 import com.google.gson.Gson
+import io.javalin.core.util.Header.ACCESS_CONTROL_ALLOW_CREDENTIALS
+import io.javalin.core.util.Header.ACCESS_CONTROL_ALLOW_ORIGIN
+import io.javalin.core.util.Header.CACHE_CONTROL
 import io.javalin.core.util.Header.WWW_AUTHENTICATE
 import net.corda.v5.application.flows.BadRpcStartFlowRequestException
 import net.corda.v5.base.util.NetworkHostAndPort
@@ -66,6 +69,9 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
 
         val getPathResponse = client.call(net.corda.httprpc.tools.HttpVerb.GET, WebRequest<Any>("health/sanity"), userName, password)
         assertEquals(HttpStatus.SC_OK, getPathResponse.responseStatus)
+        assertEquals("localhost", getPathResponse.headers[ACCESS_CONTROL_ALLOW_ORIGIN])
+        assertEquals("true", getPathResponse.headers[ACCESS_CONTROL_ALLOW_CREDENTIALS])
+        assertEquals("no-cache", getPathResponse.headers[CACHE_CONTROL])
     }
 
     @Test
