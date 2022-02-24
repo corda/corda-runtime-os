@@ -173,7 +173,7 @@ class SessionManagerTest {
     }
     val resources = ResourcesHolder()
 
-    private var now = Instant.now()
+    private var now = Instant.ofEpochSecond(1000)
     private val clock = mock<Clock> {
         on { instant() } doAnswer { now }
     }
