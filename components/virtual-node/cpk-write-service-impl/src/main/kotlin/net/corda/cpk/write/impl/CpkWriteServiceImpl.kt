@@ -187,7 +187,7 @@ class CpkWriteServiceImpl @Activate constructor(
             // Make sure we use the same CPK publisher per CPK publish.
             val cpkChunksPublisher =
                 this.cpkChunksPublisher ?: throw CordaRuntimeException("CPK chunks publisher service is not set")
-            val cpkChecksumData = cpkStorage.getCpkBlobByCpkId(it)
+            val cpkChecksumData = cpkStorage.getCpkDataByCpkId(it)
             cpkChunksPublisher.chunkAndPublishCpk(cpkChecksumData)
         }
     }

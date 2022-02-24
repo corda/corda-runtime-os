@@ -6,5 +6,5 @@ import java.util.stream.Stream
 interface CpkStorage {
     fun getCpkIdsNotIn(checksums: Set<SecureHash>): Set<SecureHash>
 
-    fun getCpkBlobByCpkId(checksum: SecureHash): CpkChecksumData
+    fun getCpkDataByCpkId(checksum: SecureHash): CpkChecksumData
 }

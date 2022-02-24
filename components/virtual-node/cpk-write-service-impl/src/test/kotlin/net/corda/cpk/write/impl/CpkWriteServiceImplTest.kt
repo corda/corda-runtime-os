@@ -9,7 +9,6 @@ import net.corda.data.chunking.Chunk
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.*
-import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys
@@ -97,7 +96,7 @@ class CpkWriteServiceImplTest {
         val cpkChecksum = secureHash(cpkData)
         val cpkStorage = mock<CpkStorage>()
         whenever(cpkStorage.getCpkIdsNotIn(emptySet())).thenReturn(setOf(cpkChecksum))
-        whenever(cpkStorage.getCpkBlobByCpkId(cpkChecksum)).thenReturn(CpkChecksumData(cpkChecksum, cpkData))
+        whenever(cpkStorage.getCpkDataByCpkId(cpkChecksum)).thenReturn(CpkChecksumData(cpkChecksum, cpkData))
         cpkWriteServiceImpl.cpkStorage = cpkStorage
 
         val chunks = mutableListOf<Chunk>()

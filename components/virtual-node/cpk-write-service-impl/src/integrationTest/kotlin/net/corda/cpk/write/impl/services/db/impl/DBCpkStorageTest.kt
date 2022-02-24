@@ -116,7 +116,7 @@ class DBCpkStorageTest {
     fun `gets cpk blob by cpk id`() {
         val bytes = byteArrayOf(0x01, 0x02, 0x03)
         storeCpkDataEntity(DUMMY_HASH_1, bytes, emFactory)
-        val cpkChecksumData = dbCpkStorage.getCpkBlobByCpkId(DUMMY_HASH_1)
+        val cpkChecksumData = dbCpkStorage.getCpkDataByCpkId(DUMMY_HASH_1)
         assertTrue(bytes.contentEquals(cpkChecksumData.data))
         assertEquals(DUMMY_HASH_1, cpkChecksumData.checksum)
     }

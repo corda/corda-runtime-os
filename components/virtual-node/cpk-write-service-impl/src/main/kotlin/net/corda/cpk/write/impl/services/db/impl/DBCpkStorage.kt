@@ -30,7 +30,7 @@ class DBCpkStorage(private val entityManagerFactory: EntityManagerFactory) : Cpk
         }
     }
 
-    override fun getCpkBlobByCpkId(checksum: SecureHash): CpkChecksumData {
+    override fun getCpkDataByCpkId(checksum: SecureHash): CpkChecksumData {
         return entityManagerFactory.createEntityManager().transaction {
             val cpk = it.find(
                 CpkDataEntity::class.java,
