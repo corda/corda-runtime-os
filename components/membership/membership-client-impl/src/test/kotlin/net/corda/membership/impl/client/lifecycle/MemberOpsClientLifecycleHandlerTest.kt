@@ -13,7 +13,7 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.membership.impl.client.MembershipRpcOpsClientImpl
+import net.corda.membership.impl.client.MemberOpsClientImpl
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -28,7 +28,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import kotlin.test.assertNotNull
 
-class MembershipRpcOpsClientLifecycleHandlerTest {
+class MemberOpsClientLifecycleHandlerTest {
     private val componentHandle: RegistrationHandle = mock()
     private val configHandle: AutoCloseable = mock()
 
@@ -50,13 +50,13 @@ class MembershipRpcOpsClientLifecycleHandlerTest {
         on { registerComponentForUpdates(any(), any()) } doReturn configHandle
     }
 
-    private val membershipRpcOpsClient = MembershipRpcOpsClientImpl(
+    private val memberOpsClient = MemberOpsClientImpl(
         coordinatorFactory,
         publisherFactory,
         configurationReadService
     )
 
-    private val lifecycleHandler = MembershipRpcOpsClientLifecycleHandler(membershipRpcOpsClient)
+    private val lifecycleHandler = MemberOpsClientLifecycleHandler(memberOpsClient)
 
     private val bootConfig: SmartConfig = mock()
     private val messagingConfig: SmartConfig = mock {

@@ -6,7 +6,7 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.membership.httprpc.MemberRegistrationRpcOps
-import net.corda.membership.httprpc.MembershipRpcOpsClient
+import net.corda.membership.httprpc.MemberOpsClient
 import net.corda.membership.httprpc.types.MemberRegistrationRequest
 import net.corda.membership.httprpc.types.RegistrationRequestProgress
 import net.corda.membership.impl.httprpc.v1.lifecycle.RegistrationRpcOpsLifecycleHandler
@@ -20,8 +20,8 @@ import org.slf4j.Logger
 class MemberRegistrationRpcOpsImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = MembershipRpcOpsClient::class)
-    private val membershipRpcOpsClient: MembershipRpcOpsClient
+    @Reference(service = MemberOpsClient::class)
+    private val memberOpsClient: MemberOpsClient
 ) : MemberRegistrationRpcOps, PluggableRPCOps<MemberRegistrationRpcOps>, Lifecycle {
     companion object {
         private val logger: Logger = contextLogger()
@@ -47,24 +47,24 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
 
     override fun start() {
         logger.info("$className started.")
-        membershipRpcOpsClient.start()
+        memberOpsClient.start()
         coordinator.start()
     }
 
     override fun stop() {
         logger.info("$className stopped.")
-        membershipRpcOpsClient.stop()
+        memberOpsClient.stop()
         coordinator.stop()
     }
 
     override fun startRegistration(memberRegistrationRequest: MemberRegistrationRequest): RegistrationRequestProgress {
         serviceIsRunning()
-        return membershipRpcOpsClient.startRegistration(memberRegistrationRequest)
+        return memberOpsClient.startRegistration(memberRegistrationRequest)
     }
 
     override fun checkRegistrationProgress(virtualNodeId: String): RegistrationRequestProgress {
         serviceIsRunning()
-        return membershipRpcOpsClient.checkRegistrationProgress(virtualNodeId)
+        return memberOpsClient.checkRegistrationProgress(virtualNodeId)
     }
 
     private fun serviceIsRunning() {
