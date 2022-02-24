@@ -689,7 +689,7 @@ class GatewayIntegrationTest : TestBase() {
                 SslConfiguration(RevocationConfig(RevocationConfigMode.OFF)),
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
-                20.seconds
+                ConnectionConfiguration(),
             ).use { client ->
                 client.start()
                 val httpResponse = client.write(gatewayMessage.toByteBuffer().array()).getOrThrow()
