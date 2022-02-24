@@ -32,7 +32,8 @@ class P2pServiceConfigurationTest {
         private val introspiciere = InMemoryIntrospiciereServer(
             // This only works locally at the moment. For CI it should read
             // this for an environment variable or from a config file
-            kafkaBrokers = getMinikubeKafkaBroker()
+            // kafkaBrokers = getMinikubeKafkaBroker()
+            kafkaBrokers = "20.62.51.171:9094"
         )
 
         private val suiteSuffix = "".random8
