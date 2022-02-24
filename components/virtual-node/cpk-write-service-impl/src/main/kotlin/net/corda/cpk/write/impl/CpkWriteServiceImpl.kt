@@ -41,6 +41,8 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import java.io.ByteArrayInputStream
+import java.nio.file.Paths
 import java.time.Duration
 
 @Suppress("Warnings", "Unused")
@@ -70,6 +72,7 @@ class CpkWriteServiceImpl @Activate constructor(
     internal var configReadServiceRegistration: RegistrationHandle? = null
     @VisibleForTesting
     internal var configSubscription: AutoCloseable? = null
+
     @VisibleForTesting
     internal var cpkChecksumsCache: CpkChecksumsCache? = null
     @VisibleForTesting
@@ -136,7 +139,6 @@ class CpkWriteServiceImpl @Activate constructor(
         // TODO - kyriakos - fix expected configuration and fill following properties with configuration
         if (config.hasPath("todo")) {
 
-            timeout = 20.seconds
             cpkChecksumsCache = CpkChecksumsCacheImpl(
                 subscriptionFactory,
                 SubscriptionConfig("todo", "todo"),
@@ -148,6 +150,7 @@ class CpkWriteServiceImpl @Activate constructor(
             )
             cpkChunksPublisher = KafkaCpkChunksPublisher(publisher, timeout!!)
             cpkStorage = DBCpkStorage(dbConnectionManager.clusterDbEntityManagerFactory)
+            timeout = 20.seconds
 
             coordinator.updateStatus(LifecycleStatus.UP)
         } else {
@@ -191,11 +194,13 @@ class CpkWriteServiceImpl @Activate constructor(
 
     private fun CpkChunksPublisher.chunkAndPublishCpk(cpkChecksumData: CpkChecksumData) {
         val cpkChecksum = cpkChecksumData.checksum
+        val cpkData = cpkChecksumData.bytes
         val chunkWriter = ChunkWriterFactory.create(TODO_CHUNK_SIZE)
         chunkWriter.onChunk { chunk ->
             val cpkChunkId = AvroTypesTodo.CpkChunkIdAvro(cpkChecksum.toAvro(), chunk.partNumber)
             put(cpkChunkId, chunk)
         }
+        chunkWriter.write(Paths.get("todo"), ByteArrayInputStream(cpkData))
     }
 
     override val isRunning: Boolean

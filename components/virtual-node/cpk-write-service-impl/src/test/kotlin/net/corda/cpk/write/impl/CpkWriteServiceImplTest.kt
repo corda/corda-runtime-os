@@ -2,16 +2,26 @@ package net.corda.cpk.write.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.cpk.write.impl.services.db.CpkChecksumData
+import net.corda.cpk.write.impl.services.db.CpkStorage
+import net.corda.cpk.write.impl.services.kafka.CpkChunksPublisher
+import net.corda.data.chunking.Chunk
+import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.*
+import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito.`when`
+import org.mockito.Mockito.mock
 import org.mockito.kotlin.*
+import java.nio.ByteBuffer
 import java.security.MessageDigest
 
 class CpkWriteServiceImplTest {
@@ -20,6 +30,7 @@ class CpkWriteServiceImplTest {
     private lateinit var configReadService: ConfigurationReadService
     private lateinit var subscriptionFactory: SubscriptionFactory
     private lateinit var publisherFactory: PublisherFactory
+    private lateinit var dbConnectionManager: DbConnectionManager
 
     private lateinit var coordinator: LifecycleCoordinator
 
@@ -37,8 +48,9 @@ class CpkWriteServiceImplTest {
         configReadService = mock()
         subscriptionFactory = mock()
         publisherFactory = mock()
+        dbConnectionManager = mock()
         cpkWriteServiceImpl =
-            CpkWriteServiceImpl(coordinatorFactory, configReadService, subscriptionFactory, publisherFactory)
+            CpkWriteServiceImpl(coordinatorFactory, configReadService, subscriptionFactory, publisherFactory, dbConnectionManager)
 
         coordinator = mock()
     }
@@ -74,12 +86,34 @@ class CpkWriteServiceImplTest {
         cpkWriteServiceImpl.processEvent(ConfigChangedEvent(keys, config), coordinator)
         assertNotNull(cpkWriteServiceImpl.cpkChecksumsCache)
         assertNotNull(cpkWriteServiceImpl.cpkChunksPublisher)
+        assertNotNull(cpkWriteServiceImpl.cpkStorage)
         assertNotNull(cpkWriteServiceImpl.timeout)
         verify(coordinator).updateStatus(LifecycleStatus.UP)
     }
 
     @Test
-    fun `on putting non cached cpk chunks puts them to Kafka`() {
+    fun `on putMissingCpk chunks the CPK and publishes it`() {
+        val cpkData = byteArrayOf(0x01, 0x02, 0x03)
+        val cpkChecksum = secureHash(cpkData)
+        val cpkStorage = mock<CpkStorage>()
+        whenever(cpkStorage.getCpkIdsNotIn(emptySet())).thenReturn(setOf(cpkChecksum))
+        whenever(cpkStorage.getCpkBlobByCpkId(cpkChecksum)).thenReturn(CpkChecksumData(cpkChecksum, cpkData))
+        cpkWriteServiceImpl.cpkStorage = cpkStorage
+
+        val chunks = mutableListOf<Chunk>()
+        val cpkChunksPublisher = mock(CpkChunksPublisher::class.java)
+        `when`(cpkChunksPublisher.put(anyOrNull(), anyOrNull())).thenAnswer { invocation ->
+            chunks.add(invocation.arguments[1] as Chunk)
+        }
+        cpkWriteServiceImpl.cpkChunksPublisher = cpkChunksPublisher
+
+        cpkWriteServiceImpl.putMissingCpk()
+        assertTrue(chunks.size == 2)
+        assertTrue(chunks[0].data.equals(ByteBuffer.wrap(cpkData)))
+    }
+
+//    @Test
+//    fun `on putting non cached cpk chunks puts them to Kafka`() {
 //        val cpkChunkId = CpkChunkId(secureHash("dummy".toByteArray()), 0)
 //        val cpkChunk = CpkChunk(cpkChunkId, "dummy".toByteArray())
 //
@@ -88,7 +122,7 @@ class CpkWriteServiceImplTest {
 //        cpkWriteServiceImpl.publisher = publisher
 //
 //        cpkWriteServiceImpl.putAll(listOf(cpkChunk))
-    }
+//    }
 
     @Test
     fun `on putting cached cpk chunks it will not put them since they already exist to Kafka`() {
