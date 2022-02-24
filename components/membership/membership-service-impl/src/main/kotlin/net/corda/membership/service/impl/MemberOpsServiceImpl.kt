@@ -15,7 +15,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.registration.provider.RegistrationProvider
-import net.corda.membership.service.MembershipRpcOpsService
+import net.corda.membership.service.MemberOpsService
 import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -29,8 +29,8 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
-@Component(service = [MembershipRpcOpsService::class])
-class MembershipRpcOpsServiceImpl @Activate constructor(
+@Component(service = [MemberOpsService::class])
+class MemberOpsServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = SubscriptionFactory::class)
@@ -41,7 +41,7 @@ class MembershipRpcOpsServiceImpl @Activate constructor(
     private val registrationProvider: RegistrationProvider,
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
-): MembershipRpcOpsService {
+): MemberOpsService {
     private companion object {
         private val logger = contextLogger()
         const val GROUP_NAME = "membership.ops.rpc"
@@ -49,7 +49,7 @@ class MembershipRpcOpsServiceImpl @Activate constructor(
     }
 
     private val lifecycleCoordinator =
-        coordinatorFactory.createCoordinator<MembershipRpcOpsService>(::eventHandler)
+        coordinatorFactory.createCoordinator<MemberOpsService>(::eventHandler)
 
     @Volatile
     private var configHandle: AutoCloseable? = null
@@ -128,7 +128,7 @@ class MembershipRpcOpsServiceImpl @Activate constructor(
     private fun createResources(event: ConfigChangedEvent) {
         logger.info("Creating RPC subscription for '{}' topic", Schemas.Membership.MEMBERSHIP_RPC_TOPIC)
         val messagingConfig = event.config.toMessagingConfig()
-        val processor = MembershipRpcOpsProcessor(registrationProvider, virtualNodeInfoReadService)
+        val processor = MemberOpsServiceProcessor(registrationProvider, virtualNodeInfoReadService)
         val current = subscription
         subscription = subscriptionFactory.createRPCSubscription(
             rpcConfig = RPCConfig(

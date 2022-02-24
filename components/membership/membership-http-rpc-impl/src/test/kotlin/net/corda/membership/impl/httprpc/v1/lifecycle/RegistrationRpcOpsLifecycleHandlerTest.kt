@@ -7,7 +7,7 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.membership.httprpc.MembershipRpcOpsClient
+import net.corda.membership.httprpc.MemberOpsClient
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
@@ -31,7 +31,7 @@ class RegistrationRpcOpsLifecycleHandlerTest {
     fun `start event starts following the statuses of the required dependencies`() {
         registrationRpcOpsLifecycleHandler.processEvent(StartEvent(), coordinator)
         verify(coordinator).followStatusChangesByName(
-            eq(setOf(LifecycleCoordinatorName.forComponent<MembershipRpcOpsClient>()))
+            eq(setOf(LifecycleCoordinatorName.forComponent<MemberOpsClient>()))
         )
     }
 

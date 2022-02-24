@@ -20,7 +20,7 @@ import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
-class MembershipRpcOpsProcessor(
+class MemberOpsServiceProcessor(
     private val registrationProvider: RegistrationProvider,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService
 ) : RPCResponderProcessor<MembershipRpcRequest, MembershipRpcResponse> {

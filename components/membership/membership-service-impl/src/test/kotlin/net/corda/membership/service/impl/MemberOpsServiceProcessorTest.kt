@@ -19,7 +19,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import org.hamcrest.CoreMatchers
+import org.hamcrest.CoreMatchers.instanceOf
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.allOf
 import org.hamcrest.Matchers.greaterThanOrEqualTo
@@ -36,10 +36,10 @@ import java.util.concurrent.ExecutionException
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
-class MembershipRpcOpsProcessorTest {
+class MemberOpsServiceProcessorTest {
 
     companion object {
-        private lateinit var processor: MembershipRpcOpsProcessor
+        private lateinit var processor: MemberOpsServiceProcessor
         private lateinit var registrationProvider: RegistrationProvider
         private lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
 
@@ -63,7 +63,7 @@ class MembershipRpcOpsProcessorTest {
                     CPI.Identifier.newInstance("test", "test", SecureHash("algorithm", "1234".toByteArray()))
                 )
             }
-            processor = MembershipRpcOpsProcessor(registrationProvider, virtualNodeInfoReadService)
+            processor = MemberOpsServiceProcessor(registrationProvider, virtualNodeInfoReadService)
         }
     }
 
@@ -120,6 +120,6 @@ class MembershipRpcOpsProcessorTest {
             future.get()
         }
         assertNotNull(exception.cause)
-        assertThat(exception.cause, CoreMatchers.instanceOf(MembershipRegistrationException::class.java))
+        assertThat(exception.cause, instanceOf(MembershipRegistrationException::class.java))
     }
 }
