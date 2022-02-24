@@ -21,7 +21,7 @@ val String.random8: String
  *
  * `port = kubectl get service my-cluster-kafka-bootstrap -n kafka`
  */
-fun getMinikubeKafkaBroker(): List<String> {
+fun getMinikubeKafkaBroker(): String {
     val minikubeIp = ProcessBuilder("minikube", "ip").start()
     val kafkaPort =
         ProcessBuilder("kubectl", "get", "service", "my-cluster-kafka-external-bootstrap", "-n", "kafka").start()
@@ -39,7 +39,7 @@ fun getMinikubeKafkaBroker(): List<String> {
         // regex: 9094:32440/TCP
         .let(Regex("\\d+:(\\d+)/TCP")::find)!!.groupValues[1]
 
-    return listOf("$ip:$port")
+    return "$ip:$port"
 }
 
 fun ByteBuffer.toByteArray(): ByteArray {

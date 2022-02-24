@@ -16,7 +16,7 @@ import org.junit.jupiter.api.extension.ExtensionContext
  */
 class InMemoryIntrospiciereServer(
     port: Int = 0,
-    kafkaBrokers: List<String>? = null,
+    kafkaBrokers: String? = null,
 ) : BeforeAllCallback, BeforeEachCallback, AfterEachCallback, AfterAllCallback {
 
     override fun beforeEach(context: ExtensionContext?) = startServer()

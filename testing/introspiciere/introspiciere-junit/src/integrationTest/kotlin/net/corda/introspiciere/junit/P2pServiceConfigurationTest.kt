@@ -157,7 +157,8 @@ class P2pServiceConfigurationTest {
             ByteBuffer.wrap(publicKey),
             KeyAlgorithm.ECDSA,
             address,
-            NetworkType.CORDA_5
+            NetworkType.CORDA_5,
+            listOf("trusted-certificate-1")
         )
         write(TestSchema.NETWORK_MAP_TOPIC, "$x500Name-$groupId", networkMapEntry)
     }
