@@ -24,38 +24,50 @@ To run the application use:
 ```
 #### Gateway Arguments:
 ```
-      [@<filename>...]    One or more argument files containing options.
+      [@<filename>...]   One or more argument files containing options.
       --acquireTimeoutSec=<acquireTimeoutSec>
-                          The client connection acquire timeout in seconds
-                            Default: 10
+                         The client connection acquire timeout in seconds
+                           Default: 10
       --connectionIdleTimeoutSec=<connectionIdleTimeoutSec>
-                          The amount of time to keep inactive client connection
-                            before closing it in seconds
-                            Default: 60
-  -h, --help              display this help message
-      --hostAddress=<hostAddress>   The host name or IP address where the HTTP server will
-                            bind
-                            Default: 0.0.0.0
+                         The amount of time to keep inactive client connection
+                           before closing it in seconds
+                           Default: 60
+      --connectionInitialReconnectionDelaySec=<connectionInitialReconnectionDela
+        ySec>
+                         The initial duration (in seconds) to wait before
+                           trying to reconnect
+                           Default: 1
+      --connectionMaximalReconnectionDelaySec=<connectionMaximalReconnectionDela
+        ySec>
+                         The maximal duration (in seconds) to delay before
+                           trying to reconnect
+                           Default: 16
+  -h, --help             display this help message
+      --hostAddress=<hostAddress>
+                         The host name or IP address where the HTTP server will
+                           bind
+                           Default: 0.0.0.0
       --keyStore=<keyStoreFile>
-                          The path to the key store file
+                         The path to the key store file
       --keyStorePassword=<keyStorePassword>
-                          The key store password
+                         The key store password
       --maxClientConnections=<maxClientConnections>
-                          The maximal number of client connections
-                            Default: 100
-      --port=<port>       The HTTP port
+                         The maximal number of client connections
+                           Default: 100
+      --port=<port>      The HTTP port
+                           Default: 0
       --responseTimeoutMilliSecs=<responseTimeoutMilliSecs>
-                          Time after which a message delivery is considered
-                            failed in milliseconds
-                            Default: 1000
+                         Time after which a message delivery is considered
+                           failed in milliseconds
+                           Default: 1000
       --retryDelayMilliSecs=<retryDelayMilliSecs>
-                          Time after which a message is retried, when
-                            previously failed in milliseconds
-                            Default: 1000
+                         Time after which a message is retried, when previously
+                           failed in milliseconds
+                           Default: 1000
       --revocationCheck=<revocationCheck>
-                          Revocation Check mode (one of: SOFT_FAIL, HARD_FAIL,
-                            OFF)
-                            Default: OFF
+                         Revocation Check mode (one of: SOFT_FAIL, HARD_FAIL,
+                           OFF)
+                           Default: OFF
 ```
 #### Link manager Arguments:
 ```
@@ -69,10 +81,17 @@ To run the application use:
                            <groupId>)
       --maxMessageSize=<maxMessageSize>
                          The maximal message size in bytes
-                           Default: 1_000_000
-      --messageReplayPeriodMilliSecs=<messageReplayPeriodMilliSecs>
-                         message replay period in milliseconds
+                           Default: 1000000
+      --maxReplayingMessages=<maxReplayingMessages>
+                         the maximum number of replaying messages between two
+                           peers
+                           Default: 100
+      --messageReplayPeriodBaseMilliSecs=<messageReplayPeriodBaseMilliSecs>
+                         message replay period base in milliseconds
                            Default: 2000
+      --messageReplayPeriodCutOffMilliSecs=<messageReplayPeriodCutoffMilliSecs>
+                         message replay period cut off in milliseconds
+                           Default: 10000
       --protocolMode=<protocolModes>
                          Supported protocol mode (out of: AUTHENTICATION_ONLY,
                            AUTHENTICATED_ENCRYPTION)
