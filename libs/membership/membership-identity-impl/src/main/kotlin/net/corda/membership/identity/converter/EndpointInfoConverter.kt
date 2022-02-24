@@ -1,9 +1,9 @@
 package net.corda.membership.identity.converter
 
+import net.corda.layeredpropertymap.ConversionContext
+import net.corda.layeredpropertymap.CustomPropertyConverter
 import net.corda.membership.identity.EndpointInfoImpl
 import net.corda.membership.identity.MemberContextImpl
-import net.corda.v5.membership.conversion.ConversionContext
-import net.corda.v5.membership.conversion.CustomPropertyConverter
 import net.corda.v5.membership.identity.EndpointInfo
 import org.osgi.service.component.annotations.Component
 
@@ -24,9 +24,9 @@ class EndpointInfoConverter: CustomPropertyConverter<EndpointInfo> {
         return when(context.storeClass) {
             MemberContextImpl::class.java -> {
                 EndpointInfoImpl(
-                    context.findValueByPattern(URL_KEY)
+                    context.value(URL_KEY)
                             ?: throw IllegalArgumentException("$URL_KEY cannot be null."),
-                    context.findValueByPattern(PROTOCOL_VERSION_KEY)?.toInt()
+                    context.value(PROTOCOL_VERSION_KEY)?.toInt()
                             ?: throw IllegalArgumentException("$PROTOCOL_VERSION_KEY cannot be null.")
                 )
             }

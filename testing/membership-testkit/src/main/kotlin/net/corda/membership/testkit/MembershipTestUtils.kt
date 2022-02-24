@@ -1,6 +1,6 @@
 package net.corda.membership.testkit
 
-import net.corda.membership.conversion.LayeredPropertyMapImpl
+import net.corda.layeredpropertymap.LayeredPropertyMapImpl
 import net.corda.v5.membership.conversion.ConversionContext
 import net.corda.v5.membership.conversion.CustomPropertyConverter
 import net.corda.v5.membership.conversion.LayeredPropertyMap

@@ -10,11 +10,10 @@ dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    api project(':libs:membership:membership-conversion-impl')
+    api project(':libs:layered-property-map')
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-cipher-suite"
-    implementation "net.corda:corda-membership-conversion"
     implementation "net.corda:corda-membership-identity"
 
     testImplementation project(":testing:membership-testkit")

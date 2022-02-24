@@ -1,7 +1,7 @@
 package net.corda.membership.application.converter
 
 import net.corda.membership.application.PartyImpl
-import net.corda.membership.conversion.PropertyConverterImpl
+import net.corda.layeredpropertymap.impl.PropertyConverter
 import net.corda.membership.identity.MGMContextImpl
 import net.corda.membership.identity.MemberContextImpl
 import net.corda.membership.identity.MemberInfoExtension
@@ -28,7 +28,7 @@ class PartyConverterTest {
         private const val KEY = "12345"
         private val key = Mockito.mock(PublicKey::class.java)
 
-        private val converter = PropertyConverterImpl(listOf(PartyConverter(), PublicKeyConverter(keyEncodingService)))
+        private val converter = PropertyConverter(listOf(PartyConverter(), PublicKeyConverter(keyEncodingService)))
 
         val memberContext = MemberContextImpl(
             sortedMapOf(

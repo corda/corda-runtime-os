@@ -1,6 +1,6 @@
 package net.corda.membership.identity
 
-import net.corda.membership.conversion.PropertyConverterImpl
+import net.corda.layeredpropertymap.impl.PropertyConverter
 import net.corda.membership.identity.MemberInfoExtension.Companion.IDENTITY_KEY_HASHES
 import net.corda.membership.identity.converter.PublicKeyHashConverter
 import net.corda.membership.testkit.createContext
@@ -19,7 +19,7 @@ class PublicKeyHashConverterTest {
         private const val OWNING_KEY_HASH = "CB8379AC2098AA165029E3938A51DA0BCECFC008FD6795F401178647F96C5B34"
         private val owningKeyHash = PublicKeyHash.parse(OWNING_KEY_HASH)
 
-        private val converter = PropertyConverterImpl(listOf(PublicKeyHashConverter()))
+        private val converter = PropertyConverter(listOf(PublicKeyHashConverter()))
         private val publicKeyHashConverter = converter.customConverters.first()
     }
 

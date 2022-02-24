@@ -38,7 +38,7 @@ dependencies {
     runtimeOnly project(":libs:messaging:messaging-impl")
     runtimeOnly project(":libs:messaging:kafka-message-bus-impl")
     runtimeOnly project(":libs:membership:membership-application")
-    runtimeOnly project(":libs:membership:membership-conversion-impl")
+    runtimeOnly project(":libs:layered-property-map")
     runtimeOnly project(":libs:membership:membership-identity-impl")
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")

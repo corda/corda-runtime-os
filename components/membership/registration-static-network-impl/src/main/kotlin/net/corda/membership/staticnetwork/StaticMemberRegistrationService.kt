@@ -9,7 +9,7 @@ import net.corda.data.membership.SignedMemberInfo
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.GroupPolicy
-import net.corda.membership.conversion.toWire
+import net.corda.layeredpropertymap.toWire
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.identity.MGMContextImpl
 import net.corda.membership.identity.MemberContextImpl

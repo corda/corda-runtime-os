@@ -1,6 +1,6 @@
 package net.corda.membership.identity
 
-import net.corda.membership.conversion.PropertyConverterImpl
+import net.corda.layeredpropertymap.impl.PropertyConverter
 import net.corda.membership.identity.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.identity.converter.EndpointInfoConverter
 import net.corda.membership.testkit.createContext
@@ -14,7 +14,7 @@ class EndpointInfoConverterTest {
         private const val URL_KEY = "corda.endpoints.1.connectionURL"
         private const val PROTOCOL_VERSION = "corda.endpoints.1.protocolVersion"
         private val endpoint = EndpointInfoImpl("https://localhost:10000", EndpointInfo.DEFAULT_PROTOCOL_VERSION)
-        private val converter = PropertyConverterImpl(listOf(EndpointInfoConverter()))
+        private val converter = PropertyConverter(listOf(EndpointInfoConverter()))
         private val endpointInfoConverter = converter.customConverters.first()
     }
 

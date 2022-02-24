@@ -7,7 +7,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.membership.conversion.PropertyConverterImpl
+import net.corda.layeredpropertymap.impl.PropertyConverter
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.identity.MGMContextImpl
 import net.corda.membership.identity.MemberContextImpl
@@ -158,7 +158,7 @@ class StaticMemberRegistrationServiceTest {
         }
     }
 
-    private val converter: PropertyConverterImpl = PropertyConverterImpl(
+    private val converter: PropertyConverter = PropertyConverter(
         listOf(EndpointInfoConverter(), PublicKeyConverter(keyEncodingService), PublicKeyHashConverter())
     )
 

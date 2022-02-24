@@ -3,8 +3,8 @@ package net.corda.membership.identity
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.SignedMemberInfo
-import net.corda.membership.conversion.PropertyConverterImpl
-import net.corda.membership.conversion.toWire
+import net.corda.layeredpropertymap.impl.PropertyConverter
+import net.corda.layeredpropertymap.toWire
 import net.corda.membership.identity.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.identity.MemberInfoExtension.Companion.IDENTITY_KEYS
 import net.corda.membership.identity.MemberInfoExtension.Companion.IDENTITY_KEYS_KEY
@@ -29,9 +29,6 @@ import net.corda.membership.testkit.DummyObjectWithNumberAndText
 import net.corda.membership.testkit.DummyObjectWithText
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.membership.conversion.ValueNotFoundException
-import net.corda.v5.membership.conversion.parse
-import net.corda.v5.membership.conversion.parseList
-import net.corda.v5.membership.conversion.parseOrNull
 import net.corda.v5.membership.identity.EndpointInfo
 import net.corda.v5.membership.identity.MemberInfo
 import org.apache.avro.file.DataFileReader
@@ -75,7 +72,7 @@ class MemberInfoTest {
         private const val TEST_OBJECT_NUMBER = "custom.testObjects.%s.number"
         private const val TEST_OBJECT_TEXT = "custom.testObjects.%s.text"
 
-        private val converter = PropertyConverterImpl(
+        private val converter = PropertyConverter(
             listOf(
                 EndpointInfoConverter(),
                 PublicKeyConverter(keyEncodingService),

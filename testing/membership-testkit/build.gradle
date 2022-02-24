@@ -9,7 +9,7 @@ dependencies {
     compileOnly "org.osgi:osgi.annotation"
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
-    api project(':libs:membership:membership-conversion-impl')
+    api project(':libs:layered-property-map')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-membership-conversion"

@@ -1,6 +1,6 @@
 package net.corda.membership.identity
 
-import net.corda.membership.conversion.PropertyConverterImpl
+import net.corda.layeredpropertymap.impl.PropertyConverter
 import net.corda.membership.identity.MemberInfoExtension.Companion.IDENTITY_KEYS
 import net.corda.membership.identity.MemberInfoExtension.Companion.PARTY_OWNING_KEY
 import net.corda.membership.identity.converter.PublicKeyConverter
@@ -27,7 +27,7 @@ class PublicKeyConverterTest {
         private const val OWNING_KEY = "12378"
         private val owningKey = Mockito.mock(PublicKey::class.java)
 
-        private val converter = PropertyConverterImpl(listOf(PublicKeyConverter(keyEncodingService)))
+        private val converter = PropertyConverter(listOf(PublicKeyConverter(keyEncodingService)))
         private val publicKeyConverter = converter.customConverters.first()
     }
 

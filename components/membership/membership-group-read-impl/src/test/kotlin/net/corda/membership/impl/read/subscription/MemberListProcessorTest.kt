@@ -3,8 +3,8 @@ package net.corda.membership.impl.read.subscription
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.SignedMemberInfo
-import net.corda.membership.conversion.PropertyConverterImpl
-import net.corda.membership.conversion.toWire
+import net.corda.layeredpropertymap.impl.PropertyConverter
+import net.corda.layeredpropertymap.toWire
 import net.corda.membership.identity.EndpointInfoImpl
 import net.corda.membership.identity.MGMContextImpl
 import net.corda.membership.identity.MemberContextImpl
@@ -53,7 +53,7 @@ class MemberListProcessorTest {
             EndpointInfoImpl("https://corda5.r3.com:10001", 10)
         )
         private val identityKeys = listOf(knownKey, knownKey)
-        private val converter = PropertyConverterImpl(
+        private val converter = PropertyConverter(
             listOf(
                 EndpointInfoConverter(),
                 PublicKeyConverter(keyEncodingService),
