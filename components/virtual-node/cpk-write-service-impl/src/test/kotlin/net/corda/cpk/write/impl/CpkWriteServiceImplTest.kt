@@ -57,7 +57,14 @@ class CpkWriteServiceImplTest {
     @Test
     fun `on StartEvent follows configuration read service for updates`() {
         val registration = mock<RegistrationHandle>()
-        whenever(coordinator.followStatusChangesByName(setOf(LifecycleCoordinatorName.forComponent<ConfigurationReadService>())))
+        whenever(
+            coordinator.followStatusChangesByName(
+                setOf(
+                    LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                    LifecycleCoordinatorName.forComponent<DbConnectionManager>()
+                )
+            )
+        )
             .thenReturn(registration)
 
         cpkWriteServiceImpl.processEvent(StartEvent(), coordinator)
@@ -81,6 +88,7 @@ class CpkWriteServiceImplTest {
         val config = mock<Map<String, SmartConfig>>()
         whenever(config[ConfigKeys.BOOT_CONFIG]).thenReturn(bootConfig)
         whenever(publisherFactory.createPublisher(any(), any())).thenReturn(mock())
+        whenever(dbConnectionManager.clusterDbEntityManagerFactory).thenReturn(mock())
 
         cpkWriteServiceImpl.processEvent(ConfigChangedEvent(keys, config), coordinator)
         assertNotNull(cpkWriteServiceImpl.cpkChecksumsCache)

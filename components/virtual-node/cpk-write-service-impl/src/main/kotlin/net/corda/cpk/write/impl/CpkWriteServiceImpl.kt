@@ -74,13 +74,13 @@ class CpkWriteServiceImpl @Activate constructor(
     internal var configSubscription: AutoCloseable? = null
 
     @VisibleForTesting
+    internal var timeout: Duration? = null
+    @VisibleForTesting
     internal var cpkChecksumsCache: CpkChecksumsCache? = null
     @VisibleForTesting
     internal var cpkChunksPublisher: CpkChunksPublisher? = null
     @VisibleForTesting
     internal var cpkStorage: CpkStorage? = null
-    @VisibleForTesting
-    internal var timeout: Duration? = null
 
     /**
      * Event loop
@@ -139,6 +139,7 @@ class CpkWriteServiceImpl @Activate constructor(
         // TODO - kyriakos - fix expected configuration and fill following properties with configuration
         if (config.hasPath("todo")) {
 
+            timeout = 20.seconds
             cpkChecksumsCache = CpkChecksumsCacheImpl(
                 subscriptionFactory,
                 SubscriptionConfig("todo", "todo"),
@@ -150,7 +151,6 @@ class CpkWriteServiceImpl @Activate constructor(
             )
             cpkChunksPublisher = KafkaCpkChunksPublisher(publisher, timeout!!)
             cpkStorage = DBCpkStorage(dbConnectionManager.clusterDbEntityManagerFactory)
-            timeout = 20.seconds
 
             coordinator.updateStatus(LifecycleStatus.UP)
         } else {
