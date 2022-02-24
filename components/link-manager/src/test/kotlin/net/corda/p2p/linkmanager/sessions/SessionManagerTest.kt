@@ -1057,10 +1057,6 @@ class SessionManagerTest {
             return listOf(CompletableFuture.completedFuture(Unit))
         }
 
-        val configVeryLongTimeout = SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfig(
-            Duration.ofMillis(100),
-            Duration.ofMillis(longPeriodMilliSec)
-        )
         val resourcesHolder = ResourcesHolder()
         val sessionManager = SessionManagerImpl(
             networkMap,
@@ -1081,7 +1077,7 @@ class SessionManagerTest {
                 null,
                 mock(),
             )
-            heartbeatConfigHandler.applyNewConfiguration(configVeryLongTimeout, null, mock())
+            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock())
             createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(resourcesHolder) }
         }
         @Suppress("UNCHECKED_CAST")
@@ -1111,23 +1107,15 @@ class SessionManagerTest {
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
         sessionManager.dataMessageSent(authenticatedSession)
 
-        advanceTime(configVeryLongTimeout.heartbeatPeriod.plus(5.millis))
-        advanceTime(configVeryLongTimeout.heartbeatPeriod.plus(5.millis))
-        assertThat(messages.size).isGreaterThanOrEqualTo(2)
+        advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
+        advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
+        assertThat(messages.size).isEqualTo(2)
 
-        val configFasterHeartbeat = SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfig(
-            Duration.ofMillis(50),
-            Duration.ofMillis(longPeriodMilliSec)
-        )
-        heartbeatConfigHandler.applyNewConfiguration(configFasterHeartbeat, null, mock())
+        heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock())
 
-        advanceTime(configFasterHeartbeat.heartbeatPeriod.plus(5.millis))
-        advanceTime(configFasterHeartbeat.heartbeatPeriod.plus(5.millis))
-        assertThat(messages.size).isGreaterThanOrEqualTo(3)
-        val messagesSentSoFar = messages.size
-
-        advanceTime(configFasterHeartbeat.heartbeatPeriod.plus(5.millis))
-        assertThat(messages.size).isGreaterThan(messagesSentSoFar)
+        advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
+        advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
+        assertThat(messages.size).isEqualTo(4)
 
         sessionManager.stop()
         resourcesHolder.close()
@@ -1146,10 +1134,6 @@ class SessionManagerTest {
             return listOf(CompletableFuture.completedFuture(Unit))
         }
 
-        val configVeryLongTimeout = SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfig(
-            configWithHeartbeat.heartbeatPeriod,
-            Duration.ofMillis(longPeriodMilliSec)
-        )
         val sessionManager = SessionManagerImpl(
             networkMap,
             cryptoService,
@@ -1169,7 +1153,7 @@ class SessionManagerTest {
                 null,
                 mock(),
             )
-            heartbeatConfigHandler.applyNewConfiguration(configVeryLongTimeout, null, resourcesHolder)
+            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, resourcesHolder)
             createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(resourcesHolder) }
         }
         @Suppress("UNCHECKED_CAST")
@@ -1201,19 +1185,17 @@ class SessionManagerTest {
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
         sessionManager.dataMessageSent(authenticatedSession)
 
-        advanceTime(configVeryLongTimeout.heartbeatPeriod.plus(5.millis))
-        advanceTime(configVeryLongTimeout.heartbeatPeriod.plus(5.millis))
-        assertThat(linkOutMessages).isGreaterThanOrEqualTo(2)
+        repeat(2) { advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis)) }
+        assertThat(linkOutMessages).isEqualTo(2)
 
         configHandler.applyNewConfiguration(
             SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
             null,
             resourcesHolder,
         )
-        val messagesSentSoFar = linkOutMessages
 
         advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
-        assertThat(linkOutMessages).isEqualTo(messagesSentSoFar)
+        assertThat(linkOutMessages).isEqualTo(2)
         verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())
             .publish(listOf(Record(SESSION_OUT_PARTITIONS, sessionState.sessionId, null)))
 
@@ -1290,7 +1272,7 @@ class SessionManagerTest {
             advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
             sessionManager.messageAcknowledged(sessionState.sessionId)
         }
-        assertThat(messages).hasSizeLessThanOrEqualTo(numberOfHeartbeats)
+        assertThat(messages).hasSize(numberOfHeartbeats)
         synchronized(messages) {
             for (message in messages) {
                 val heartbeatMessage = DataMessagePayload.fromByteBuffer(message.payload)
@@ -1305,10 +1287,6 @@ class SessionManagerTest {
 
     @Test
     fun `when sending a heartbeat, if an exception is thrown, the heartbeat is resent`() {
-        val configLongTimeout = SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfig(
-            Duration.ofMillis(100),
-            Duration.ofMillis(10000)
-        )
         var sentHeartbeats = 0
         var throwFirst = true
         fun publish(): List<CompletableFuture<Unit>> {
@@ -1340,7 +1318,7 @@ class SessionManagerTest {
                 null,
                 mock(),
             )
-            heartbeatConfigHandler.applyNewConfiguration(configLongTimeout, null, resourcesHolder)
+            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, resourcesHolder)
             createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(resourcesHolder) }
         }
         publisherWithDominoLogicByClientId[SessionManagerImpl.HeartbeatManager.HEARTBEAT_MANAGER_CLIENT_ID]!!.forEach {
@@ -1354,8 +1332,8 @@ class SessionManagerTest {
 
         sessionManager.dataMessageSent(authenticatedSession)
 
-        repeat(3) { advanceTime(configLongTimeout.heartbeatPeriod.plus(5.millis)) }
-        assertThat(sentHeartbeats).isGreaterThanOrEqualTo(2)
+        repeat(3) { advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis)) }
+        assertThat(sentHeartbeats).isEqualTo(3)
         loggingInterceptor.assertSingleWarningContains("An exception was thrown when sending a heartbeat message.")
         sessionManager.stop()
         resourcesHolder.close()
