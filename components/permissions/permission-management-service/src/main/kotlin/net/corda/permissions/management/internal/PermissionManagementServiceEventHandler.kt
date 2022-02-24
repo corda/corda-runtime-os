@@ -1,5 +1,6 @@
 package net.corda.permissions.management.internal
 
+import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
@@ -15,17 +16,17 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.permissions.cache.PermissionCacheService
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_MGMT_REQ_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
-
-private class NewConfigurationReceivedEvent(val config: SmartConfig) : LifecycleEvent
 
 internal class PermissionManagementServiceEventHandler(
     private val publisherFactory: PublisherFactory,
@@ -61,18 +62,16 @@ internal class PermissionManagementServiceEventHandler(
                     )
                 )
             }
-            is NewConfigurationReceivedEvent -> {
-                log.info("Received new configuration event. Creating and starting RPCSender and permission manager.")
-                createAndStartRpcSender(event.config)
-                createPermissionManager(event.config)
-                coordinator.updateStatus(LifecycleStatus.UP)
-            }
             is RegistrationStatusChangeEvent -> {
                 log.info("Registration status change received: ${event.status.name}.")
                 when (event.status) {
                     LifecycleStatus.UP -> {
                         log.info("Registering for updates from configuration read service.")
-                        registerForConfigurationUpdates(coordinator)
+                        configSubscription?.close()
+                        configSubscription = configurationReadService.registerComponentForUpdates(
+                            coordinator,
+                            setOf(BOOT_CONFIG, MESSAGING_CONFIG, RPC_CONFIG)
+                        )
                     }
                     LifecycleStatus.DOWN -> {
                         permissionManager?.stop()
@@ -85,6 +84,14 @@ internal class PermissionManagementServiceEventHandler(
                     }
                 }
             }
+            is ConfigChangedEvent -> {
+                log.info("Received new configuration event. Creating and starting RPCSender and permission manager.")
+                val messagingConfig = event.config.toMessagingConfig()
+                createAndStartRpcSender(messagingConfig)
+                val rpcConfig = event.config[RPC_CONFIG]!!
+                createPermissionManager(rpcConfig)
+                coordinator.updateStatus(LifecycleStatus.UP)
+            }
             is StopEvent -> {
                 log.info("Stop event received, stopping dependencies and setting status to DOWN.")
                 configSubscription?.close()
@@ -96,21 +103,6 @@ internal class PermissionManagementServiceEventHandler(
                 registrationHandle?.close()
                 registrationHandle = null
                 coordinator.updateStatus(LifecycleStatus.DOWN)
-            }
-        }
-    }
-
-    private fun registerForConfigurationUpdates(coordinator: LifecycleCoordinator) {
-        configSubscription?.close()
-        configSubscription = configurationReadService.registerForUpdates { changedKeys: Set<String>, config: Map<String, SmartConfig> ->
-            log.info("Received configuration update event, changedKeys: $changedKeys")
-            if (BOOT_CONFIG in changedKeys && config.keys.contains(BOOT_CONFIG)) {
-                val rpcConfig: SmartConfig? = config[RPC_CONFIG]
-                val bootConfig = config[BOOT_CONFIG]!!
-                val newConfig = rpcConfig?.withFallback(bootConfig) ?: bootConfig
-                coordinator.postEvent(NewConfigurationReceivedEvent(newConfig))
-            } else if (RPC_CONFIG in changedKeys && config.keys.contains(RPC_CONFIG)) {
-                coordinator.postEvent(NewConfigurationReceivedEvent(config[RPC_CONFIG]!!))
             }
         }
     }
