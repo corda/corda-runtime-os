@@ -118,38 +118,4 @@ class CpkWriteServiceImplTest {
         assertTrue(chunks.size == 2)
         assertTrue(chunks[0].data.equals(ByteBuffer.wrap(cpkData)))
     }
-
-//    @Test
-//    fun `on putting non cached cpk chunks puts them to Kafka`() {
-//        val cpkChunkId = CpkChunkId(secureHash("dummy".toByteArray()), 0)
-//        val cpkChunk = CpkChunk(cpkChunkId, "dummy".toByteArray())
-//
-//        val publisher = mock<Publisher>()
-//        whenever(publisher.publish(any())).thenReturn(listOf(CompletableFuture<Unit>().also { it.complete(Unit) }))
-//        cpkWriteServiceImpl.publisher = publisher
-//
-//        cpkWriteServiceImpl.putAll(listOf(cpkChunk))
-//    }
-
-    @Test
-    fun `on putting cached cpk chunks it will not put them since they already exist to Kafka`() {
-//        val cpkChunkId = CpkChunkId(secureHash("dummy".toByteArray()), 0)
-//        val cpkChunk = CpkChunk(cpkChunkId, "dummy".toByteArray())
-//
-//        val cpkChunksCache = mock<CpkChunksCache>()
-//        whenever(cpkChunksCache.contains(cpkChunkId)).thenReturn(true)
-//        cpkWriteServiceImpl.cpkChunksCache = cpkChunksCache
-//
-//        var invocation: InvocationOnMock? = null
-//        val publisher = org.mockito.Mockito.mock(Publisher::class.java)
-//        `when`(publisher.publish(anyOrNull())).thenAnswer { _invocation ->
-//            invocation = _invocation
-//            emptyList<CompletableFuture<Unit>>()
-//        }
-//        cpkWriteServiceImpl.publisher = publisher
-//
-//
-//        cpkWriteServiceImpl.putAll(listOf(cpkChunk))
-//        assertThat(invocation!!.arguments[0] as List<*>).isEmpty()
-    }
 }
