@@ -44,6 +44,7 @@ internal class ReplayScheduler<M>(
 
     private val replayCalculator = AtomicReference<ReplayCalculator>()
     data class ReplayInfo(val currentReplayPeriod: Duration, val future: ScheduledFuture<*>)
+    // Compute on this map is used during add/remove operations to ensure these are performed atomically.
     private val replayingMessageIdsPerSessionCounterparties =
         ConcurrentHashMap<SessionManager.SessionCounterparties, MutableSet<MessageId>>()
     private val replayInfoPerMessageId = ConcurrentHashMap<MessageId, ReplayInfo>()
@@ -55,24 +56,26 @@ internal class ReplayScheduler<M>(
      */
     internal class MessageQueue<M> {
 
-        private val messageIds: MutableSet<MessageId> = ConcurrentHashMap.newKeySet()
-        private val queue: ConcurrentLinkedQueue<QueuedMessage<M>> = ConcurrentLinkedQueue()
+        private val queue: LinkedHashMap<MessageId, QueuedMessage<M>> = LinkedHashMap()
 
         fun queueMessage(message: QueuedMessage<M>) {
-            messageIds.add(message.uniqueId)
-            queue.add(message)
+            synchronized(this) {
+                queue.put(message.uniqueId, message)
+            }
         }
 
         fun removeMessage(messageId: MessageId) {
-            messageIds.remove(messageId)
+            synchronized(this) {
+                queue.remove(messageId)
+            }
         }
 
-        fun getNextQueuedMessage(): QueuedMessage<M>? {
-           var queuedMessage: QueuedMessage<M>?
-           do {
-               queuedMessage = queue.poll() ?: return null
-           } while (!(messageIds.contains(queuedMessage?.uniqueId)))
-           return queuedMessage
+        fun poll(): QueuedMessage<M>? {
+            return synchronized(this) {
+                val (id, message) = queue.entries.firstOrNull() ?: return null
+                queue.remove(id)
+                message
+            }
         }
     }
 
@@ -116,7 +119,7 @@ internal class ReplayScheduler<M>(
             val extraMessages = oldConfiguration?.maxReplayingMessages?.let { newReplayCalculator.extraMessagesToReplay(it) } ?: 0
             queuedMessagesPerSessionCounterparties.forEach { (sessionCounterparties, queuedMessages) ->
                 for (i in 0 until extraMessages) {
-                    queuedMessages.getNextQueuedMessage()?.let {
+                    queuedMessages.poll()?.let {
                         addForReplay(it.originalAttemptTimestamp, it.uniqueId, it.message, sessionCounterparties)
                     }
                 }
@@ -191,7 +194,7 @@ internal class ReplayScheduler<M>(
             val removed = replayInfoPerMessageId.remove(messageId)?.future?.cancel(false) ?: false
             replayingMessagesForSessionCounterparties?.remove(messageId)
             if (removed) {
-                queuedMessagesPerSessionCounterparties[counterparties]?.getNextQueuedMessage()?.let {
+                queuedMessagesPerSessionCounterparties[counterparties]?.poll()?.let {
                     addForReplay(it.originalAttemptTimestamp, it.uniqueId, it.message, counterparties)
                 }
             } else {
