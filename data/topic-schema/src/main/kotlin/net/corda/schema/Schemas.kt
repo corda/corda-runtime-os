@@ -102,6 +102,7 @@ class Schemas {
             const val VIRTUAL_NODE_CREATION_REQUEST_TOPIC = "virtual.node.creation.request"
             const val CPI_INFO_TOPIC = "cpi.info"
             const val CPI_UPLOAD_TOPIC = "cpi.upload"
+            const val CPI_UPLOAD_STATUS_TOPIC = "cpi.upload.status"
         }
     }
 

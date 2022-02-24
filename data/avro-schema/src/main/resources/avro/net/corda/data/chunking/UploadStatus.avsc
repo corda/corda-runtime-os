@@ -1,0 +1,30 @@
+{
+  "type": "record",
+  "name": "UploadStatus",
+  "namespace": "net.corda.data.chunking",
+  "doc": "Upload status of a given requestId for a collection of {@link net.corda.data.chunking.Chunk} objects.",
+  "fields": [
+    {
+      "name": "requestId",
+      "type": "string",
+      "doc": "unique identifier that indicates the group this chunk belongs to"
+    },
+    {
+      "name": "uploadFileStatus",
+      "type": {
+        "type": "enum",
+        "name": "UploadFileStatus",
+        "symbols": ["OK", "UPLOAD_FAILED", "UPLOAD_IN_PROGRESS", "FILE_INVALID"]
+      },
+      "doc": "Status enum.  'FILE INVALID' means further validation of a completed upload was unsuccessful"
+    },
+    {
+      "name": "exception",
+      "type": [
+        "null",
+        "net.corda.data.ExceptionEnvelope"
+      ],
+      "doc": "cause of failure if the request was unsuccessful"
+    }
+  ]
+}
