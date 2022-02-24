@@ -1,5 +1,6 @@
 package net.corda.introspiciere.junit
 
+import net.corda.introspiciere.domain.IntrospiciereException
 import java.nio.ByteBuffer
 import java.util.concurrent.ThreadLocalRandom
 import kotlin.streams.asSequence
@@ -27,11 +28,11 @@ fun getMinikubeKafkaBroker(): String {
         ProcessBuilder("kubectl", "get", "service", "my-cluster-kafka-external-bootstrap", "-n", "kafka").start()
 
     if (minikubeIp.waitFor() != 0) {
-        throw Exception("Fail to get minikube ip.")
+        throw IntrospiciereException("Fail to get minikube ip.", null)
     }
 
     if (kafkaPort.waitFor() != 0) {
-        throw Exception("Fail to get kafka port.")
+        throw IntrospiciereException("Fail to get kafka port.")
     }
 
     val ip = minikubeIp.inputStream.bufferedReader().readText().trim()

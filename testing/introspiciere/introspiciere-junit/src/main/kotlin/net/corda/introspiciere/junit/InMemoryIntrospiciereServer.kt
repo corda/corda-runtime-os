@@ -12,7 +12,7 @@ import org.junit.jupiter.api.extension.ExtensionContext
  * server starts in the same process as the tests and binds to a port in the local machine. Hence, is not a pure
  * in-memory server. The server stops automatically at the end of the test or the test suite.
  *
- * // TODO: There is a known bug where if an exception is thrown in the server, the test can still pass.
+ * There is a known bug where if an exception is thrown in the server, the test can still pass.
  */
 class InMemoryIntrospiciereServer(
     port: Int = 0,

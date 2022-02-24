@@ -5,6 +5,7 @@ import com.github.kittinunf.fuel.httpPost
 import com.github.kittinunf.fuel.jackson.objectBody
 import com.github.kittinunf.fuel.jackson.responseObject
 import com.github.kittinunf.result.Result
+import net.corda.introspiciere.domain.IntrospiciereException
 import net.corda.introspiciere.domain.KafkaMessage
 import net.corda.introspiciere.domain.TopicDefinitionPayload
 
