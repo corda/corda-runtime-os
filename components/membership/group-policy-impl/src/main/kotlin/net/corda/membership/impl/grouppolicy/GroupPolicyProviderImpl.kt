@@ -47,6 +47,8 @@ class GroupPolicyProviderImpl @Activate constructor(
         get() = if (isRunning && isUp) {
             field
         } else {
+            logger.error("Service is in incorrect state for accessing group policies. " +
+                    "Running: [$isRunning], Lifecycle status: [${coordinator.status}]")
             throw CordaRuntimeException(
                 "Tried to access group policy information while the provider service is not running or is not UP."
             )
