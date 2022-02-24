@@ -194,7 +194,7 @@ class CpkWriteServiceImpl @Activate constructor(
 
     private fun CpkChunksPublisher.chunkAndPublishCpk(cpkChecksumData: CpkChecksumData) {
         val cpkChecksum = cpkChecksumData.checksum
-        val cpkData = cpkChecksumData.bytes
+        val cpkData = cpkChecksumData.data
         val chunkWriter = ChunkWriterFactory.create(TODO_CHUNK_SIZE)
         chunkWriter.onChunk { chunk ->
             val cpkChunkId = AvroTypesTodo.CpkChunkIdAvro(cpkChecksum.toAvro(), chunk.partNumber)
