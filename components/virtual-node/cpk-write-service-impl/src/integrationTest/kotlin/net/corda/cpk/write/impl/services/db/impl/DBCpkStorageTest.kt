@@ -103,6 +103,16 @@ class DBCpkStorageTest {
     }
 
     @Test
+    fun `on gets cpk ids not in empty set, returns full set`() {
+        val checksums = setOf(DUMMY_HASH_1, DUMMY_HASH_2, DUMMY_HASH_3)
+
+        checksums.forEach { storeCpkDataEntity(it, byteArrayOf(0x01, 0x02, 0x03), emFactory) }
+
+        val cpkIds = dbCpkStorage.getCpkIdsNotIn(setOf())
+        assertEquals(checksums, cpkIds)
+    }
+
+    @Test
     fun `gets cpk blob by cpk id`() {
         val bytes = byteArrayOf(0x01, 0x02, 0x03)
         storeCpkDataEntity(DUMMY_HASH_1, bytes, emFactory)

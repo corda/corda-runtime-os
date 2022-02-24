@@ -19,7 +19,9 @@ class DBCpkStorage(private val entityManagerFactory: EntityManagerFactory) : Cpk
                         "WHERE cpk.fileChecksum NOT IN (:checksums)",
                 String::class.java
             )
-                .setParameter("checksums", checksums.map { checksum -> checksum.toString() })
+                .setParameter(
+                    "checksums",
+                    if (checksums.isEmpty()) "" else checksums.map { checksum -> checksum.toString() })
                 .resultStream
 
             cpkChecksumsStream.map { checksumString ->
