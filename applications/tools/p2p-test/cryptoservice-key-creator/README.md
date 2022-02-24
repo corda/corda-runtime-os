@@ -38,6 +38,8 @@ The file provided on the `--keys-config` CLI parameter should have the following
     ]
 }
 ```
+Note: the `alias` field acts as a unique identifier for each key pair entry and thus needs to be unique for each entry. If you want to deploy multiple identities behind a single host, make sure you use a different alias for the entry of each identity. 
+
 
 Key files are expected to be `.jks` files. You can create them using Java's `keytool`, e.g.:
 ```

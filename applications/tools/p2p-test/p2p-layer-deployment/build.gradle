@@ -12,6 +12,7 @@ dependencies {
     implementation "info.picocli:picocli:$picocliVersion"
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
     implementation "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion"
+    implementation "com.konghq:unirest-java:$unirestVersion"
 }
 application {
     mainClass = 'net.corda.p2p.deployment.GoKt'

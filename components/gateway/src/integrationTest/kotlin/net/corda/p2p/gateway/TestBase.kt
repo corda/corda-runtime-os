@@ -139,6 +139,8 @@ open class TestBase {
                 .withValue("connectionConfig.acquireTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.acquireTimeout))
                 .withValue("connectionConfig.responseTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.responseTimeout))
                 .withValue("connectionConfig.retryDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.retryDelay))
+                .withValue("connectionConfig.initialReconnectionDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.initialReconnectionDelay))
+                .withValue("connectionConfig.maximalReconnectionDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maximalReconnectionDelay))
             CordaPublisherFactory(configurationTopicService, rpcTopicService, lifecycleCoordinatorFactory).createPublisher(PublisherConfig((configPublisherClientId))).use { publisher ->
                 val configurationPublisher = ConfigPublisherImpl(CONFIG_TOPIC, publisher)
                 configurationPublisher.updateConfiguration(

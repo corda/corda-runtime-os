@@ -28,6 +28,7 @@ import net.corda.p2p.SessionPartitions
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.CommonHeader
 import net.corda.p2p.crypto.MessageType
+import net.corda.p2p.gateway.messaging.ConnectionConfiguration
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
@@ -179,7 +180,7 @@ class GatewayIntegrationTest : TestBase() {
                     bobSslConfig,
                     NioEventLoopGroup(1),
                     NioEventLoopGroup(1),
-                    2.seconds
+                    ConnectionConfiguration(),
                 ).use { client ->
                     client.start()
                     val httpResponse = client.write(gatewayMessage.toByteBuffer().array()).get()
@@ -295,7 +296,7 @@ class GatewayIntegrationTest : TestBase() {
                             aliceSslConfig,
                             NioEventLoopGroup(1),
                             NioEventLoopGroup(1),
-                            2.seconds
+                            ConnectionConfiguration(),
                         ).use { secondInboundClient ->
                             secondInboundClient.start()
 
@@ -343,7 +344,7 @@ class GatewayIntegrationTest : TestBase() {
                 it.startAndWaitForStarted()
                 (1..clientNumber).map { index ->
                     val serverInfo = DestinationInfo(serverAddress, aliceSNI[1], null, truststoreKeyStore)
-                    val client = HttpClient(serverInfo, bobSslConfig, threadPool, threadPool, 2.seconds)
+                    val client = HttpClient(serverInfo, bobSslConfig, threadPool, threadPool, ConnectionConfiguration())
                     client.start()
                     val p2pOutMessage = LinkInMessage(authenticatedP2PMessage("Client-$index"))
                     val gatewayMessage = GatewayMessage("msg-${msgNumber.getAndIncrement()}", p2pOutMessage.payload)

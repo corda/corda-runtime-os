@@ -2,6 +2,7 @@ package net.corda.chunking.db.impl.tests
 
 import com.google.common.jimfs.Jimfs
 import net.corda.chunking.ChunkWriterFactory
+import net.corda.chunking.RequestId
 import net.corda.chunking.datamodel.ChunkEntity
 import net.corda.chunking.datamodel.ChunkingEntities
 import net.corda.chunking.db.impl.AllChunksReceived
@@ -68,7 +69,7 @@ internal class ChunkDbQueriesTest {
 
 
         /** Return the parts we've received - i.e. chunks with non-zero bytes */
-        fun partsReceived(entityManagerFactory: EntityManagerFactory, requestId: String): Long {
+        fun partsReceived(entityManagerFactory: EntityManagerFactory, requestId: RequestId): Long {
             return entityManagerFactory.createEntityManager().transaction {
                 it.createQuery(
                     "SELECT count(c) FROM ${ChunkEntity::class.simpleName} c " +
@@ -80,7 +81,7 @@ internal class ChunkDbQueriesTest {
         }
 
         /** Return the expected number of parts - i.e. the part number on the zero bytes chunk */
-        fun partsExpected(entityManagerFactory: EntityManagerFactory, requestId: String): Long {
+        fun partsExpected(entityManagerFactory: EntityManagerFactory, requestId: RequestId): Long {
             return entityManagerFactory.createEntityManager().transaction {
                 try {
                     (it.createQuery(

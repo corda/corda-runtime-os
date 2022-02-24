@@ -107,11 +107,9 @@ class ChunkReadServiceImpl @Activate constructor(
         val config = event.config[ConfigKeys.BOOT_CONFIG]!!
         chunkDbWriter?.close()
         chunkDbWriter = chunkDbWriterFactory
-            .create(
-                config,
-                dbConnectionManager.clusterDbEntityManagerFactory
-            )
+            .create(config, dbConnectionManager.clusterDbEntityManagerFactory)
             .apply { start() }
+
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 
