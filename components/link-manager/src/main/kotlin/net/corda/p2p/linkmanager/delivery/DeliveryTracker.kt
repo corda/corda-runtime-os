@@ -115,7 +115,7 @@ class DeliveryTracker(
                 }
 
                 val records = processAuthenticatedMessage(message)
-                logger.debug { "Replaying data message ${message.message.header.messageId}." }
+                logger.info ( "Replaying data message ${message.message.header.messageId}." )
                 publisher.publish(records)
             }
         }
@@ -166,9 +166,13 @@ class DeliveryTracker(
                         val sessionCounterparties = sessionCounterpartiesFromState(state)
                         trackedSessionCounterparties[key] = sessionCounterparties
                         replayScheduler.addForReplay(state.timestamp, key, state.message, sessionCounterparties)
+                        logger.info("Added message Id $key to tracker.")
                     } else {
                         val sessionCounterparties = trackedSessionCounterparties.remove(key)
-                        sessionCounterparties?.let { replayScheduler.removeFromReplay(key, sessionCounterparties) }
+                        sessionCounterparties?.let { replayScheduler.removeFromReplay(key, sessionCounterparties)
+                            logger.info("Removed message Id $key.")
+                        }
+                        if (sessionCounterparties == null) logger.info("sessionCounterparties null for $key")
                     }
                 }
             }
@@ -177,6 +181,7 @@ class DeliveryTracker(
                 for ((key, state) in states) {
                     replayScheduler.removeFromReplay(key, sessionCounterpartiesFromState(state))
                     trackedSessionCounterparties.remove(key)
+                    logger.info("Partition lost removing message Id $key")
                 }
             }
 
@@ -185,6 +190,7 @@ class DeliveryTracker(
                     val sessionCounterparties = sessionCounterpartiesFromState(state)
                     trackedSessionCounterparties[key] = sessionCounterparties
                     replayScheduler.addForReplay(state.timestamp, key, state.message, sessionCounterparties)
+                    logger.info("Partition gained adding message Id $key")
                 }
             }
 
