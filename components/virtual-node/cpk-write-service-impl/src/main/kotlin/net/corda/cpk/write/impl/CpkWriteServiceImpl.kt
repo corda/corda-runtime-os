@@ -169,7 +169,6 @@ class CpkWriteServiceImpl @Activate constructor(
         closeResources()
     }
 
-    // TODO - kyriakos - add testing for the below method
     // TODO - kyriakos - need to schedule this to run like a timer task
     override fun putMissingCpk() {
         val cachedCpkIds = cpkChecksumsCache?.let {
