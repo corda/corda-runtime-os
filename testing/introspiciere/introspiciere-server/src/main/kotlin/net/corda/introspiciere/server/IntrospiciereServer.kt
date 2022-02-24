@@ -7,7 +7,7 @@ import java.io.Closeable
 import java.net.BindException
 import java.net.ServerSocket
 
-class IntrospiciereServer(private val port: Int = 0, private val kafkaBrokers: String?) : Closeable {
+class IntrospiciereServer(private val port: Int = 0, private val kafkaBrokers: String? = null) : Closeable {
 
     private lateinit var app: Javalin
 
