@@ -9,7 +9,9 @@ object AvroTypesTodo {
     // Key
     data class CpkChunkIdAvro(
         val cpkChecksum: net.corda.data.crypto.SecureHash,
-        val partNumber: Int
+        val partNumber: Int/*,
+        val publisherId: String // TODO: so that the receiver can only trust chunks from the same publisher
+        */
     )
 }
 
