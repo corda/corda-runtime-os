@@ -47,7 +47,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import java.io.ByteArrayInputStream
-import java.nio.file.Paths
 import java.time.Duration
 
 @Suppress("TooManyFunctions")
@@ -219,7 +218,7 @@ class CpkWriteServiceImpl @Activate constructor(
             val cpkChunkId = CpkChunkId(cpkChecksum.toAvro(), chunk.partNumber)
             put(cpkChunkId, chunk)
         }
-        chunkWriter.write(Paths.get(cpkChecksum.toFileName()), ByteArrayInputStream(cpkData))
+        chunkWriter.write(cpkChecksum.toFileName(), ByteArrayInputStream(cpkData))
     }
 
     override val isRunning: Boolean

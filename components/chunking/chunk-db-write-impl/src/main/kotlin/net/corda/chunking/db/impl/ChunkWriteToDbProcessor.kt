@@ -14,7 +14,8 @@ import net.corda.v5.base.util.contextLogger
  */
 class ChunkWriteToDbProcessor(
     private val statusTopic: String,
-    private val queries: ChunkDbQueries
+    private val queries: DatabaseQueries,
+    private val validator: CpiValidator
 ) : DurableProcessor<RequestId, Chunk> {
     companion object {
         private val log = contextLogger()
@@ -64,7 +65,7 @@ class ChunkWriteToDbProcessor(
         var uploadComplete = AllChunksReceived.NO
 
         try {
-            uploadComplete = queries.persist(request)
+            uploadComplete = queries.persistChunk(request)
             internalStatus.setAndReturnActualStatus(request.requestId, UploadFileStatus.UPLOAD_IN_PROGRESS)
         } catch (e: Exception) {
             // If we fail to publish one chunk, we cannot easily recover so need to return some error.
@@ -96,19 +97,11 @@ class ChunkWriteToDbProcessor(
         // Haven't received all the chunks yet?  That's ok, just return
         if (uploadComplete == AllChunksReceived.NO) return UploadFileStatus.UPLOAD_IN_PROGRESS
 
-        // Check the checksum of the bytes match.  Further validation will occur after this
-        // such as CPI unzipping, signature checks etc.
-        if (!queries.checksumIsValid(requestId)) return UploadFileStatus.FILE_INVALID
+        // Check the checksum of the bytes match.  It should be "impossible" for this to happen.
+        if (!queries.checksumIsValid(requestId)) return UploadFileStatus.UPLOAD_FAILED
 
-        sendStatusMessage(requestId)
-
-        return UploadFileStatus.OK
-    }
-
-    @Suppress("UNUSED_PARAMETER")
-    private fun sendStatusMessage(requestId: RequestId) {
-        // This is where we'd raise a message to whatever wants to consume the Chunks
-        log.warn("Not implemented in this PR")
+        // Once we're here, we have the full set of chunks, so now we validate - it's either ok, or file_invalid
+        return validator.validate(requestId)
     }
 
     override fun onNext(events: List<Record<RequestId, Chunk>>): List<Record<*, *>> {

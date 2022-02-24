@@ -48,8 +48,6 @@ class CpiInfoWriterComponentImpl @Activate constructor(
     // This eventually needs to be passed in to here from the parent `main`
     private val instanceId: Int? = null
 
-    private val maxAttempts = 10
-
     private val eventHandler: MessagingConfigEventHandler =
         MessagingConfigEventHandler(configurationReadService, this::onConfigChangeEvent, this::onConfig)
 
