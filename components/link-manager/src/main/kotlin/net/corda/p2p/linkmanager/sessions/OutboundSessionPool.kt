@@ -105,12 +105,13 @@ class OutboundSessionPool(
         }
     }
 
-    fun timeoutSession(timedOutSessionId: String, newPendingSession: AuthenticationProtocolInitiator) {
-        val sessionKey = sessionIdToSessionKey.remove(timedOutSessionId) ?: return
+    fun timeoutSession(timedOutSessionId: String, newPendingSession: AuthenticationProtocolInitiator): Boolean {
+        val sessionKey = sessionIdToSessionKey.remove(timedOutSessionId) ?: return false
         outboundSessions.compute(sessionKey) { _, _ ->
             sessionIdToSessionKey[newPendingSession.sessionId] = sessionKey
             SessionType.PendingSession(sessionKey.sessionCounterparties, newPendingSession)
         }
+        return true
     }
 
     fun getAllSessionIds(): List<String> {

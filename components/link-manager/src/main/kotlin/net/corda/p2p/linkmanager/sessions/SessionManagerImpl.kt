@@ -259,7 +259,10 @@ open class SessionManagerImpl(
             sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId(sessionId), counterparties)
             sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId(sessionId), counterparties)
             val sessionInitMessage = genSessionInitMessages(counterparties, 1)
-            outboundSessionPool.get().timeoutSession(sessionId, sessionInitMessage.single().first)
+            val timedOut = outboundSessionPool.get().timeoutSession(sessionId, sessionInitMessage.single().first)
+            if (!timedOut) {
+                logger.warn("Session with id $sessionId which is not in the pool timed out.")
+            }
             val records = linkOutMessagesFromSessionInitMessages(counterparties, sessionInitMessage) ?.let {
                 LinkManager.OutboundMessageProcessor.recordsForNewSessions(
                     SessionState.NewSessionsNeeded(it),
