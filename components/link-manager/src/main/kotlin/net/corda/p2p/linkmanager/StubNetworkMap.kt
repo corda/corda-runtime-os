@@ -21,10 +21,12 @@ import java.security.MessageDigest
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
-class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-                     subscriptionFactory: SubscriptionFactory,
-                     instanceId: Int,
-                     configuration: SmartConfig): LinkManagerNetworkMap {
+class StubNetworkMap(
+    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    subscriptionFactory: SubscriptionFactory,
+    instanceId: Int,
+    configuration: SmartConfig,
+) : LinkManagerNetworkMap {
 
     private val processor = NetworkMapEntryProcessor()
     private val subscriptionConfig = SubscriptionConfig("network-map", NETWORK_MAP_TOPIC, instanceId)
@@ -36,6 +38,7 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
         emptySet()
     )
     private val keyDeserialiser = KeyDeserialiser()
+    private val listeners = ConcurrentHashMap.newKeySet<NetworkMapListener>()
 
     private val readyFuture = CompletableFuture<Unit>()
     override val dominoTile = ComplexDominoTile(
@@ -77,11 +80,17 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
                 throw IllegalStateException("getNetworkType operation invoked while component was stopped.")
             }
 
-            processor.netMapEntriesByGroupIdPublicKeyHash[groupId]?.values?.first()?.networkType?.toLMNetworkType()
+            processor.netMapEntriesByGroupIdPublicKeyHash[groupId]
+                ?.values
+                ?.first()?.networkType?.toLMNetworkType()
         }
     }
 
-    private fun NetworkMapEntry.toMemberInfo():LinkManagerNetworkMap.MemberInfo {
+    override fun registerListener(networkMapListener: NetworkMapListener) {
+        listeners += networkMapListener
+    }
+
+    private fun NetworkMapEntry.toMemberInfo(): LinkManagerNetworkMap.MemberInfo {
         return LinkManagerNetworkMap.MemberInfo(
             LinkManagerNetworkMap.HoldingIdentity(this.holdingIdentity.x500Name, this.holdingIdentity.groupId),
             keyDeserialiser.toPublicKey(this.publicKey.array(), this.publicKeyAlgorithm),
@@ -91,20 +100,20 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     }
 
     private fun KeyAlgorithm.toKeyAlgorithm(): net.corda.p2p.crypto.protocol.api.KeyAlgorithm {
-        return when(this) {
+        return when (this) {
             KeyAlgorithm.ECDSA -> net.corda.p2p.crypto.protocol.api.KeyAlgorithm.ECDSA
             KeyAlgorithm.RSA -> net.corda.p2p.crypto.protocol.api.KeyAlgorithm.RSA
         }
     }
 
     private fun NetworkType.toLMNetworkType(): LinkManagerNetworkMap.NetworkType {
-        return when(this) {
+        return when (this) {
             NetworkType.CORDA_4 -> LinkManagerNetworkMap.NetworkType.CORDA_4
             NetworkType.CORDA_5 -> LinkManagerNetworkMap.NetworkType.CORDA_5
         }
     }
 
-    private inner class NetworkMapEntryProcessor: CompactedProcessor<String, NetworkMapEntry> {
+    private inner class NetworkMapEntryProcessor : CompactedProcessor<String, NetworkMapEntry> {
 
         private val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, BouncyCastleProvider())
 
@@ -143,8 +152,18 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
             }
 
             val publicKeyHash = calculateHash(networkMapEntry.publicKey.array())
+            val identity = networkMapEntry.holdingIdentity.toLMHoldingIdentity()
             netMapEntriesByGroupIdPublicKeyHash[networkMapEntry.holdingIdentity.groupId]!![ByteBuffer.wrap(publicKeyHash)] = networkMapEntry
-            netmapEntriesByHoldingIdentity[networkMapEntry.holdingIdentity.toLMHoldingIdentity()] = networkMapEntry
+            netmapEntriesByHoldingIdentity[identity] = networkMapEntry
+
+            val groupInfo = NetworkMapListener.GroupInfo(
+                networkMapEntry.holdingIdentity.groupId,
+                networkMapEntry.networkType,
+                networkMapEntry.trustedCertificates
+            )
+            listeners.forEach { listener ->
+                listener.groupAdded(groupInfo)
+            }
         }
 
         private fun HoldingIdentity.toLMHoldingIdentity(): LinkManagerNetworkMap.HoldingIdentity {
@@ -156,8 +175,5 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
             messageDigest.update(publicKey)
             return messageDigest.digest()
         }
-
     }
-
-
 }

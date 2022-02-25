@@ -46,20 +46,6 @@ class GatewayConfiguration : ConfigProducer() {
     lateinit var keyStorePassword: String
 
     @Option(
-        names = ["--trustStore"],
-        description = ["The path to the trust store file"],
-        required = true
-    )
-    lateinit var trustStoreFile: File
-
-    @Option(
-        names = ["--trustStorePassword"],
-        description = ["The trust store password"],
-        required = true
-    )
-    lateinit var trustStorePassword: String
-
-    @Option(
         names = ["--revocationCheck"],
         description = ["Revocation Check mode (one of: \${COMPLETION-CANDIDATES})"]
     )
@@ -82,6 +68,18 @@ class GatewayConfiguration : ConfigProducer() {
         description = ["The amount of time to keep inactive client connection before closing it in seconds"]
     )
     var connectionIdleTimeoutSec = 60L
+
+    @Option(
+        names = ["--connectionInitialReconnectionDelaySec"],
+        description = ["The initial duration (in seconds) to wait before trying to reconnect"]
+    )
+    var connectionInitialReconnectionDelaySec = 1L
+
+    @Option(
+        names = ["--connectionMaximalReconnectionDelaySec"],
+        description = ["The maximal duration (in seconds) to delay before trying to reconnect"]
+    )
+    var connectionMaximalReconnectionDelaySec = 16L
 
     @Option(
         names = ["--responseTimeoutMilliSecs"],
@@ -116,16 +114,6 @@ class GatewayConfiguration : ConfigProducer() {
                 )
             )
             .withValue(
-                "sslConfig.trustStorePassword",
-                ConfigValueFactory.fromAnyRef(trustStorePassword)
-            )
-            .withValue(
-                "sslConfig.trustStore",
-                ConfigValueFactory.fromAnyRef(
-                    trustStoreFile.readBytes().toBase64()
-                )
-            )
-            .withValue(
                 "sslConfig.revocationCheck.mode",
                 ConfigValueFactory.fromAnyRef(revocationCheck.toString())
             )
@@ -148,6 +136,14 @@ class GatewayConfiguration : ConfigProducer() {
             .withValue(
                 "connectionConfig.retryDelay",
                 ConfigValueFactory.fromAnyRef(Duration.ofMillis(retryDelayMilliSecs))
+            )
+            .withValue(
+                "connectionConfig.initialReconnectionDelay",
+                ConfigValueFactory.fromAnyRef(Duration.ofSeconds(connectionInitialReconnectionDelaySec))
+            )
+            .withValue(
+                "connectionConfig.maximalReconnectionDelay",
+                ConfigValueFactory.fromAnyRef(Duration.ofSeconds(connectionMaximalReconnectionDelaySec))
             )
     }
 

@@ -18,8 +18,8 @@ import java.util.concurrent.ConcurrentHashMap
  */
 class ConfigBasedLinkManagerHostingMap(
     val configReadService: ConfigurationReadService,
-    coordinatorFactory: LifecycleCoordinatorFactory
-): LinkManagerHostingMap {
+    coordinatorFactory: LifecycleCoordinatorFactory,
+) : LinkManagerHostingMap {
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,

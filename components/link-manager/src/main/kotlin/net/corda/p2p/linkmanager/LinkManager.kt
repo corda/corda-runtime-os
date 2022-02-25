@@ -116,6 +116,16 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         inboundAssignmentListener,
     )
 
+    private val trustStoresPublisher = TrustStoresPublisher(
+        subscriptionFactory,
+        publisherFactory,
+        lifecycleCoordinatorFactory,
+        configuration,
+        instanceId,
+    ).also {
+        linkManagerNetworkMap.registerListener(it)
+    }
+
     private val deliveryTracker = DeliveryTracker(
         lifecycleCoordinatorFactory,
         configurationReaderService,
@@ -160,9 +170,18 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        dependentChildren = setOf(inboundSubscriptionTile, outboundSubscriptionTile, deliveryTracker.dominoTile),
-        managedChildren = setOf(inboundSubscriptionTile, outboundSubscriptionTile, deliveryTracker.dominoTile, sessionManager.dominoTile)
-                + commonChildren
+        dependentChildren = setOf(
+            inboundSubscriptionTile,
+            outboundSubscriptionTile,
+            deliveryTracker.dominoTile,
+        ),
+        managedChildren = setOf(
+            inboundSubscriptionTile,
+            outboundSubscriptionTile,
+            deliveryTracker.dominoTile,
+            sessionManager.dominoTile,
+            trustStoresPublisher.dominoTile,
+        ) + commonChildren
     )
 
     class OutboundMessageProcessor(

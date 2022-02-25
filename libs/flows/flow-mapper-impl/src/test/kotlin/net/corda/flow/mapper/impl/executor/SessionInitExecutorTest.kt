@@ -61,7 +61,7 @@ class SessionInitExecutorTest {
         assertThat(outboundEvent.topic).isEqualTo(FLOW_EVENT_TOPIC)
         assertThat(outboundEvent.key::class).isEqualTo(FlowKey::class)
         assertThat(outboundEvent.value!!::class).isEqualTo(FlowEvent::class)
-        assertThat(payload.sessionId).isEqualTo("sessionId")
+        assertThat(payload.sessionId).isEqualTo("sessionId-INITIATED")
     }
 
     @Test

@@ -1,27 +1,29 @@
 package net.corda.libs.cpiupload.impl
 
-import net.corda.data.ExceptionEnvelope
+import net.corda.chunking.RequestId
 import net.corda.data.chunking.Chunk
-import net.corda.data.chunking.ChunkAck
-import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.cpiupload.CpiUploadManagerException
-import net.corda.messaging.api.publisher.RPCSender
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.assertThrows
+import net.corda.data.chunking.UploadFileStatus
+import net.corda.data.chunking.UploadStatus
+import net.corda.messaging.api.publisher.Publisher
+import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.Subscription
+import net.corda.schema.Schemas
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.mock
 import java.io.ByteArrayInputStream
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
 class CpiUploadManagerImplTest {
     private lateinit var cpiUploadManagerImpl: CpiUploadManagerImpl
-    private lateinit var rpcSender: RPCSender<Chunk, ChunkAck>
+    private val ackProcessor = UploadStatusProcessor()
+    private val publisher = mock(Publisher::class.java)
+    private val subscription : Subscription<RequestId, UploadStatus> = mock()
 
     companion object {
         const val DUMMY_FILE_NAME = "dummyFileName"
@@ -30,113 +32,31 @@ class CpiUploadManagerImplTest {
     @BeforeEach
     @Suppress("UNCHECKED_CAST")
     fun setUp() {
-        rpcSender = mock(RPCSender::class.java) as RPCSender<Chunk, ChunkAck>
-        cpiUploadManagerImpl = CpiUploadManagerImpl(mock(SmartConfig::class.java), rpcSender)
+        cpiUploadManagerImpl = CpiUploadManagerImpl(Schemas.VirtualNode.CPI_UPLOAD_TOPIC, publisher, subscription, ackProcessor)
     }
 
     @Test
     fun `on successfully uploading CPI to Kafka returns CPI's request Id`() {
-        `when`(rpcSender.isRunning).thenReturn(true)
-        `when`(rpcSender.sendRequest(anyOrNull())).thenAnswer { invocation ->
-            val chunk = invocation.arguments[0] as Chunk
-            CompletableFuture<ChunkAck>().also {
-                it.complete(
-                    ChunkAck(
-                        chunk.requestId,
-                        chunk.partNumber,
-                        true,
-                        null
+        `when`(publisher.publish(anyOrNull())).thenAnswer { invocation ->
+            val chunks = invocation.arguments[0] as List<*>
+
+            chunks.map { it ->
+                val record = it as Record<*, *>
+                val chunk = record.value as Chunk
+                CompletableFuture<UploadStatus>().also {
+                    it.complete(
+                        UploadStatus(
+                            chunk.requestId,
+                            UploadFileStatus.UPLOAD_IN_PROGRESS,
+                            null
+                        )
                     )
-                )
+                }
             }
         }
 
         val cpiBytes = "dummyCPI".toByteArray()
         val requestId = cpiUploadManagerImpl.uploadCpi(DUMMY_FILE_NAME, ByteArrayInputStream(cpiBytes))
         assertDoesNotThrow { UUID.fromString(requestId) }
-    }
-
-    @Test
-    fun `on erroneous CPI chunk ack without exception throws CpiUploadManagerException`() {
-        var chunkId: CpiUploadManagerImpl.ChunkId? = null
-        var firstChunk = true
-
-        `when`(rpcSender.isRunning).thenReturn(true)
-        `when`(rpcSender.sendRequest(anyOrNull())).thenAnswer { invocation ->
-            val chunk = invocation.arguments[0] as Chunk
-            CompletableFuture<ChunkAck>().also {
-                it.complete(
-                    ChunkAck(
-                        chunk.requestId,
-                        chunk.partNumber,
-                        !firstChunk,
-                        null
-                    ).also {
-                        if (firstChunk) {
-                            // just grab the first chunk's id
-                            chunkId = CpiUploadManagerImpl.ChunkId(chunk.requestId, chunk.partNumber)
-                            firstChunk = false
-                        }
-                    }
-                )
-            }
-        }
-
-        val cpiBytes = "dummyCPI".toByteArray()
-        val e = assertThrows<CpiUploadManagerException> {
-            cpiUploadManagerImpl.uploadCpi(DUMMY_FILE_NAME, ByteArrayInputStream(cpiBytes))
-        }
-
-        assertNull(e.cause)
-        assertEquals("Unsuccessful ACK for chunk: $chunkId.", e.message)
-    }
-
-    @Test
-    fun `on erroneous CPI chunk ack with exception throws CpiUploadManagerException with exception included`() {
-        var chunkId: CpiUploadManagerImpl.ChunkId? = null
-        var firstChunk = true
-
-        `when`(rpcSender.isRunning).thenReturn(true)
-        `when`(rpcSender.sendRequest(anyOrNull())).thenAnswer { invocation ->
-            val chunk = invocation.arguments[0] as Chunk
-            CompletableFuture<ChunkAck>().also {
-                it.complete(
-                    ChunkAck(
-                        chunk.requestId,
-                        chunk.partNumber,
-                        !firstChunk,
-                        ExceptionEnvelope(
-                            "DummyException",
-                            "dummy error message"
-                        ).also {
-                            if (firstChunk) {
-                                // just grab the first chunk's id
-                                chunkId = CpiUploadManagerImpl.ChunkId(chunk.requestId, chunk.partNumber)
-                                firstChunk = false
-                            }
-                        }
-                    )
-                )
-            }
-        }
-
-        val cpiBytes = "dummyCPI".toByteArray()
-        val e = assertThrows<CpiUploadManagerException> {
-            cpiUploadManagerImpl.uploadCpi(DUMMY_FILE_NAME, ByteArrayInputStream(cpiBytes))
-        }
-
-        assertNull(e.cause)
-        assertEquals("Unsuccessful ACK for chunk: $chunkId. Error was DummyException: dummy error message", e.message)
-    }
-
-    @Test
-    fun `if RPCSender stopped running aborts CPI uploading by throwing CpiUploadManagerException`() {
-        `when`(rpcSender.isRunning).thenReturn(false)
-
-        val cpiBytes = "dummyCPI".toByteArray()
-        val e = assertThrows<CpiUploadManagerException> {
-            cpiUploadManagerImpl.uploadCpi(DUMMY_FILE_NAME, ByteArrayInputStream(cpiBytes))
-        }
-        assertEquals("RPCSender has stopped running. Aborting CPI uploading.", e.message)
     }
 }

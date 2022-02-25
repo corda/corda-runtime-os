@@ -57,10 +57,9 @@ class SessionEventExecutor(
      * Toggles the sessionId for the event and output the session event to the correct topic and key
      */
     private fun processOtherSessionEvents(flowMapperState: FlowMapperState): FlowMapperResult {
-        val sessionId = toggleSessionId(eventKey)
-        sessionEvent.sessionId = sessionId
-
         val outputRecord = if (messageDirection == MessageDirection.OUTBOUND) {
+            val sessionId = toggleSessionId(eventKey)
+            sessionEvent.sessionId = sessionId
             Record(outputTopic, sessionId, FlowMapperEvent(sessionEvent))
         } else {
             Record(outputTopic, flowMapperState.flowKey, FlowEvent(flowMapperState.flowKey, sessionEvent))

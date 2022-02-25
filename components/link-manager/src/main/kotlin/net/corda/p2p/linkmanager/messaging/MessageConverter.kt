@@ -44,7 +44,11 @@ class MessageConverter {
         }
 
         private fun generateLinkOutHeaderFromPeer(peer: MemberInfo, networkType: NetworkType): LinkOutHeader {
-            return LinkOutHeader(peer.holdingIdentity.x500Name, networkType.toNetworkType(), peer.endPoint.address)
+            return LinkOutHeader(
+                peer.holdingIdentity.toHoldingIdentity(),
+                networkType.toNetworkType(),
+                peer.endPoint.address,
+            )
         }
 
         private fun <T> deserializeHandleAvroErrors(deserialize: (ByteBuffer) -> T, data: ByteBuffer, sessionId: String): T? {

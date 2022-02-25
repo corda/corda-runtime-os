@@ -151,8 +151,12 @@ class CordaVNode @Activate constructor(
                 val record = Record(FLOW_EVENT_TOPIC, flowKey, FlowEvent(flowKey, rpcStartFlow))
                 flowEventProcessorFactory.create().apply {
                     val result = onNext(null, record)
-                    @Suppress("unchecked_cast")
-                    onNext(result.updatedState, result.responseEvents.single() as Record<FlowKey, FlowEvent>)
+                    result.responseEvents.singleOrNull { evt ->
+                        evt.topic == FLOW_EVENT_TOPIC
+                    }?.also { evt ->
+                        @Suppress("unchecked_cast")
+                        onNext(result.updatedState, evt as Record<FlowKey, FlowEvent>)
+                    }
                 }
             } finally {
                 (sandboxContext as AutoCloseable).close()

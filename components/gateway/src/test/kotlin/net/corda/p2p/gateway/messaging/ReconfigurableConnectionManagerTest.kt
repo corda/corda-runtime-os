@@ -66,7 +66,7 @@ class ReconfigurableConnectionManagerTest {
     @Test
     fun `acquire will throw an exception if configuration is not ready`() {
         assertThrows<IllegalStateException> {
-            connectionManager.acquire(DestinationInfo(URI("http://www.r3.com:3000"), "", null))
+            connectionManager.acquire(DestinationInfo(URI("http://www.r3.com:3000"), "", null, mock()))
         }
     }
 
@@ -78,7 +78,8 @@ class ReconfigurableConnectionManagerTest {
         val info = DestinationInfo(
             URI("http://www.r3.com:3000"),
             "",
-            null
+            null,
+            mock()
         )
 
         connectionManager
