@@ -17,6 +17,7 @@
         "SignWithAliasSpecRpcCommand",
         "SignWithSpecRpcCommand",
         "GenerateFreshKeyRpcCommand",
+        "GenerateKeyPairCommand",
         "PublicKeyRpcQuery",
         "FilterMyKeysRpcQuery",
         "SupportedSchemesRpcQuery",
