@@ -73,7 +73,6 @@ class SessionStateClosingTransitionTest {
         Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CLOSING)
     }
 
-    //TODO - this should be error
     @Test
     fun `Receive new data when already received close`() {
         val sessionState = buildClosingState(false)
@@ -81,7 +80,7 @@ class SessionStateClosingTransitionTest {
         val sessionEvent = generateMessage(SessionMessageType.DATA, instant, MessageDirection.INBOUND)
         sessionEvent.sequenceNum = 2
         val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant)
-        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CLOSING)
+        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.ERROR)
     }
 
     @Test

@@ -65,6 +65,16 @@ class SessionStateClosedTransitionTest {
     }
 
     @Test
+    fun `Receive old data when in state closed`() {
+        val sessionState = buildClosedState()
+
+        val sessionEvent = generateMessage(SessionMessageType.DATA, instant, MessageDirection.INBOUND)
+        sessionEvent.sequenceNum = 1
+        val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant)
+        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CLOSED)
+    }
+
+    @Test
     fun `Receive duplicate close when in state closed`() {
         val sessionState = buildClosedState()
 
