@@ -2,7 +2,6 @@ package net.corda.p2p.gateway.messaging.internal
 
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.stub.delegated.signing.StubCryptoService
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.data.p2p.gateway.GatewayResponse
@@ -33,6 +32,7 @@ import net.corda.p2p.gateway.messaging.CertificatesReader
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
 import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
+import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -68,7 +68,7 @@ class InboundMessageHandlerTest {
     private val sessionPartitionMapper = mockConstruction(SessionPartitionMapperImpl::class.java)
     private val p2pInPublisher = mockConstruction(PublisherWithDominoLogic::class.java)
     private val certificatesReader = mockConstruction(CertificatesReader::class.java)
-    private val stubCryptoService = mockConstruction(StubCryptoService::class.java)
+    private val stubCryptoProcessor = mockConstruction(StubCryptoProcessor::class.java)
 
     private val dominoTile = mockConstruction(ComplexDominoTile::class.java) { mock, _ ->
         @Suppress("UNCHECKED_CAST")
@@ -91,7 +91,7 @@ class InboundMessageHandlerTest {
         p2pInPublisher.close()
         dominoTile.close()
         certificatesReader.close()
-        stubCryptoService.close()
+        stubCryptoProcessor.close()
     }
 
     @Test
@@ -443,7 +443,7 @@ class InboundMessageHandlerTest {
         whenever(sessionPartitionMapper.constructed().first().isRunning).doReturn(true)
         whenever(p2pInPublisher.constructed().first().isRunning).doReturn(true)
         whenever(certificatesReader.constructed().first().isRunning).doReturn(true)
-        whenever(stubCryptoService.constructed().first().isRunning).doReturn(true)
+        whenever(stubCryptoProcessor.constructed().first().isRunning).doReturn(true)
         handler.start()
     }
 

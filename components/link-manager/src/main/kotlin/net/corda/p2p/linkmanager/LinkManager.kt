@@ -1,8 +1,6 @@
 package net.corda.p2p.linkmanager
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.stub.delegated.signing.SigningCryptoService
-import net.corda.crypto.stub.delegated.signing.StubCryptoService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
@@ -50,6 +48,8 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
+import net.corda.p2p.test.stub.crypto.processor.SigningCryptoService
+import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
@@ -80,7 +80,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                   private val linkManagerHostingMap: LinkManagerHostingMap
                       = ConfigBasedLinkManagerHostingMap(configurationReaderService, lifecycleCoordinatorFactory),
                   linkManagerCryptoService: SigningCryptoService
-                      = StubCryptoService(lifecycleCoordinatorFactory, subscriptionFactory, instanceId, configuration)
+                      = StubCryptoProcessor(lifecycleCoordinatorFactory, subscriptionFactory, instanceId, configuration)
 ) : LifecycleWithDominoTile {
 
     companion object {

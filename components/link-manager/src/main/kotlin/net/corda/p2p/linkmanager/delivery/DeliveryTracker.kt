@@ -1,7 +1,6 @@
 package net.corda.p2p.linkmanager.delivery
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.stub.delegated.signing.SigningCryptoService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MESSAGE_REPLAY_KEY_PREFIX
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -25,6 +24,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
+import net.corda.p2p.test.stub.crypto.processor.SigningCryptoService
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug

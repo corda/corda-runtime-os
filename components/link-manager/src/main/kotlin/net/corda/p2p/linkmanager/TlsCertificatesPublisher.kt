@@ -49,7 +49,7 @@ internal class TlsCertificatesPublisher(
         return "${this.groupId}-${this.x500Name}"
     }
 
-    private fun publishIdNeeded(identity: LinkManagerNetworkMap.HoldingIdentity, certificates: List<PemCertificates>) {
+    private fun publishIfNeeded(identity: LinkManagerNetworkMap.HoldingIdentity, certificates: List<PemCertificates>) {
         publishedIds.compute(identity.asString()) { id, publishedCertificates ->
             val certificatesSet = certificates.toSet()
             if (certificatesSet != publishedCertificates) {
@@ -133,7 +133,7 @@ internal class TlsCertificatesPublisher(
     private fun publishQueueIfPossible() {
         while (ready.isDone) {
             val identityInfo = toPublish.poll() ?: return
-            publishIdNeeded(
+            publishIfNeeded(
                 identityInfo.holdingIdentity.toHoldingIdentity(),
                 identityInfo.tlsCertificates
             )

@@ -4,7 +4,7 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
-import net.corda.crypto.stub.delegated.signing.StubCryptoService
+import net.corda.crypto.stub.delegated.signing.StubCryptoProcessor
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -301,7 +301,7 @@ class P2PLayerEndToEndTest {
                     configReadService,
                     lifecycleCoordinatorFactory
                 ),
-                StubCryptoService(
+                StubCryptoProcessor(
                     lifecycleCoordinatorFactory,
                     subscriptionFactory,
                     1,

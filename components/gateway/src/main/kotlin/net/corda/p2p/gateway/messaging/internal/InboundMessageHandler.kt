@@ -2,7 +2,6 @@ package net.corda.p2p.gateway.messaging.internal
 
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.stub.delegated.signing.StubCryptoService
 import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.libs.configuration.SmartConfig
@@ -28,10 +27,11 @@ import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.HttpServerListener
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
 import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
+import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
 import net.corda.v5.base.util.contextLogger
 import java.nio.ByteBuffer
-import java.util.*
+import java.util.UUID
 
 /**
  * This class implements a simple message processor for p2p messages received from other Gateways.
@@ -68,7 +68,7 @@ internal class InboundMessageHandler(
         nodeConfiguration,
         instanceId,
     )
-    private val signer = StubCryptoService(
+    private val signer = StubCryptoProcessor(
         lifecycleCoordinatorFactory,
         subscriptionFactory,
         instanceId,

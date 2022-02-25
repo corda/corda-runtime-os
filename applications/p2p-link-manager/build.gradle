@@ -14,7 +14,7 @@ dependencies {
     implementation project(':osgi-framework-api')
     implementation project(':components:link-manager')
     implementation project(':components:domino-logic')
-    implementation project(':components:crypto:stub-delegated-signing')
+    implementation project(':components:p2p-test:stub-crypto-processor')
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation 'org.slf4j:slf4j-api'
     implementation 'net.corda:corda-base'

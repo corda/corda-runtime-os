@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager
 
-import net.corda.crypto.stub.delegated.signing.KeyDeserialiser
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -15,6 +14,7 @@ import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.NetworkMapEntry
+import net.corda.p2p.test.stub.crypto.processor.KeyDeserialiser
 import net.corda.schema.TestSchema.Companion.NETWORK_MAP_TOPIC
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.nio.ByteBuffer

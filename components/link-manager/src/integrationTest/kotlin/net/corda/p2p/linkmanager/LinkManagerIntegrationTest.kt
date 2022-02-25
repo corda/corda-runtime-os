@@ -4,7 +4,7 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
-import net.corda.crypto.stub.delegated.signing.StubCryptoService
+import net.corda.crypto.stub.delegated.signing.StubCryptoProcessor
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.publish.CordaConfigurationKey
 import net.corda.libs.configuration.publish.CordaConfigurationVersion
@@ -100,7 +100,7 @@ class LinkManagerIntegrationTest {
                 configReadService,
                 lifecycleCoordinatorFactory
             ),
-            StubCryptoService(
+            StubCryptoProcessor(
                 lifecycleCoordinatorFactory,
                 subscriptionFactory,
                 1,
@@ -173,7 +173,7 @@ class LinkManagerIntegrationTest {
                 configReadService,
                 lifecycleCoordinatorFactory
             ),
-            StubCryptoService(
+            StubCryptoProcessor(
                 lifecycleCoordinatorFactory,
                 subscriptionFactory,
                 1,

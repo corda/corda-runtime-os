@@ -1,9 +1,9 @@
 package net.corda.p2p.linkmanager
 
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
-import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.ECDSA_SIGNATURE_ALGO
-import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RSA_SIGNATURE_ALGO
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
+import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC
+import net.corda.v5.cipher.suite.schemes.RSA_SHA256_SIGNATURE_SPEC
 import net.corda.v5.crypto.SignatureSpec
 import java.security.PublicKey
 
@@ -54,11 +54,10 @@ interface LinkManagerNetworkMap: LifecycleWithDominoTile {
     ) {
 
         fun getSignatureSpec(): SignatureSpec {
-            val algo = when (publicKeyAlgorithm) {
-                KeyAlgorithm.RSA -> RSA_SIGNATURE_ALGO
-                KeyAlgorithm.ECDSA -> ECDSA_SIGNATURE_ALGO
+            return when (publicKeyAlgorithm) {
+                KeyAlgorithm.RSA -> RSA_SHA256_SIGNATURE_SPEC
+                KeyAlgorithm.ECDSA -> ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC
             }
-            return SignatureSpec(algo)
         }
     }
 

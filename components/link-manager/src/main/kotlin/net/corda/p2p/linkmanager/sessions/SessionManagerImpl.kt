@@ -2,7 +2,6 @@ package net.corda.p2p.linkmanager.sessions
 
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.stub.delegated.signing.SigningCryptoService
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
@@ -47,6 +46,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerH
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerNotInTheNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.validationFailedWarning
 import net.corda.p2p.linkmanager.utilities.AutoClosableScheduledExecutorService
+import net.corda.p2p.test.stub.crypto.processor.SigningCryptoService
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.v5.base.annotations.VisibleForTesting
@@ -421,7 +421,7 @@ open class SessionManagerImpl(
         }
 
         try {
-            session.validatePeerHandshakeMessage(message, memberInfo.publicKey, memberInfo.publicKeyAlgorithm)
+            session.validatePeerHandshakeMessage(message, memberInfo.publicKey, memberInfo.getSignatureSpec())
         } catch (exception: InvalidHandshakeResponderKeyHash) {
             logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
             return null
@@ -501,7 +501,7 @@ open class SessionManagerImpl(
 
         session.generateHandshakeSecrets()
         val ourIdentityData = try {
-            session.validatePeerHandshakeMessage(message, peer.publicKey, peer.publicKeyAlgorithm)
+            session.validatePeerHandshakeMessage(message, peer.publicKey, peer.getSignatureSpec())
         } catch (exception: WrongPublicKeyHashException) {
             logger.error("The message was discarded. ${exception.message}")
             return null
