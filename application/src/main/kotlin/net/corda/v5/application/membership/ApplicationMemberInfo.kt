@@ -2,8 +2,8 @@
 package net.corda.v5.application.membership
 
 import net.corda.v5.application.identity.Party
+import net.corda.v5.base.util.parse
 import net.corda.v5.membership.identity.MemberInfo
-import net.corda.v5.membership.conversion.parse
 
 const val PARTY = "corda.party"
 

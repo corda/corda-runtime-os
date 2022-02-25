@@ -1,6 +1,6 @@
 package net.corda.v5.membership.identity
 
-import net.corda.v5.membership.conversion.LayeredPropertyMap
+import net.corda.v5.base.types.LayeredPropertyMap
 
 /**
  * Part of [MemberInfo], MemberContext part is provided by the member as part of the initial MemberInfo proposal.

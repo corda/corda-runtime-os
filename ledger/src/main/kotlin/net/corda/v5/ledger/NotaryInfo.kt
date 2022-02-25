@@ -2,7 +2,7 @@ package net.corda.v5.ledger
 
 import net.corda.v5.application.identity.Party
 import net.corda.v5.base.annotations.CordaSerializable
-import net.corda.v5.membership.conversion.LayeredPropertyMap
+import net.corda.v5.base.types.LayeredPropertyMap
 
 /**
  * Stores information about a notary service available in the network.

@@ -16,7 +16,6 @@ dependencies {
 
     implementation project(":crypto")
     implementation project(":membership")
-    implementation project(":membership-conversion")
 
     implementation "org.bouncycastle:bcprov-jdk15on:$bouncycastleVersion"
     implementation "org.bouncycastle:bcpkix-jdk15on:$bouncycastleVersion"

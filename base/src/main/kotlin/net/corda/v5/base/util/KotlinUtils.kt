@@ -1,6 +1,7 @@
 package net.corda.v5.base.util
 
 import net.corda.v5.base.annotations.CordaSerializable
+import net.corda.v5.base.types.LayeredPropertyMap
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
@@ -125,3 +126,30 @@ private class TransientProperty<out T> internal constructor(private val initiali
 fun <T, U : T> uncheckedCast(obj: T) = obj as U
 
 fun <T> Class<T>.castIfPossible(obj: Any): T? = if (isInstance(obj)) cast(obj) else null
+
+/**
+ * Function for reading and parsing the String values stored in the values to actual objects.
+ *
+ * @param key The key we are looking for in the store.
+ */
+inline fun <reified T> LayeredPropertyMap.parse(key: String): T {
+    return parse(key, T::class.java)
+}
+
+/**
+ * Function for reading and parsing the String values stored in the values to actual objects or return null.
+ *
+ * @param key The key we are looking for in the store.
+ */
+inline fun <reified T> LayeredPropertyMap.parseOrNull(key: String): T? {
+    return parseOrNull(key, T::class.java)
+}
+
+/**
+ * Function for reading and parsing the String values stored in the values to an actual list of objects.
+ *
+ * @param itemKeyPrefix The key prefix we are looking for in the store.
+ */
+inline fun <reified T> LayeredPropertyMap.parseList(itemKeyPrefix: String): List<T> {
+    return parseList(itemKeyPrefix, T::class.java)
+}
