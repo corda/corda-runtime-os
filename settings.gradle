@@ -290,7 +290,6 @@ include 'processors:rpc-processor'
 include 'testing:apps:test-app'
 include 'testing:crypto-testkit'
 include 'testing:db-testkit'
-include 'testing:membership-testkit'
 include 'testing:bundles:testing-cats'
 include 'testing:bundles:testing-dogs'
 include 'testing:cpbs:corda-services'
@@ -306,6 +305,7 @@ include 'testing:cpbs:split-packages:split-packages-one'
 include 'testing:cpbs:split-packages:split-packages-one:library-one'
 include 'testing:cpbs:split-packages:split-packages-two'
 include 'testing:cpbs:split-packages:split-packages-two:library-two'
+include 'testing:layered-property-map-testkit'
 include 'testing:message-patterns'
 include 'testing:sandboxes'
 include 'testing:test-utilities'
@@ -328,7 +328,6 @@ if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
             substitute module('net.corda:corda-topic-schema') using project(':data:topic-schema')
             substitute module('net.corda:corda-ledger') using project(':ledger')
             substitute module('net.corda:corda-membership') using project(':membership')
-            substitute module('net.corda:corda-membership-conversion') using project(':membership-conversion')
             substitute module('net.corda:corda-membership-identity') using project(':membership-identity')
             substitute module('net.corda:corda-packaging') using project(':packaging')
             substitute module('net.corda:corda-packaging-avro-converters') using project(':packaging:packaging-avro-converters')

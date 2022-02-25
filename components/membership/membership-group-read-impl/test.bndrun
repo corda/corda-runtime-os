@@ -54,11 +54,10 @@
 	net.corda.inmemory-messaging-impl;version='[5.0.0,5.0.1)',\
 	net.corda.kotlin-stdlib-jdk7.osgi-bundle;version='[1.4.32,1.4.33)',\
 	net.corda.kotlin-stdlib-jdk8.osgi-bundle;version='[1.4.32,1.4.33)',\
+	net.corda.layered-property-map;version='[5.0.0,5.0.1)',\
 	net.corda.lifecycle;version='[5.0.0,5.0.1)',\
 	net.corda.lifecycle-impl;version='[5.0.0,5.0.1)',\
 	net.corda.membership;version='[5.0.0,5.0.1)',\
-	net.corda.membership-conversion;version='[5.0.0,5.0.1)',\
-	net.corda.layered-property-map;version='[5.0.0,5.0.1)',\
 	net.corda.membership-group-read-impl;version='[5.0.0,5.0.1)',\
 	net.corda.membership-identity;version='[5.0.0,5.0.1)',\
 	net.corda.membership-identity-impl;version='[5.0.0,5.0.1)',\
@@ -81,5 +80,6 @@
 	org.osgi.test.junit5;version='[1.0.1,1.0.2)',\
 	org.osgi.util.function;version='[1.1.0,1.1.1)',\
 	org.osgi.util.promise;version='[1.1.1,1.1.2)',\
+	slf4j.api;version='[1.7.26,1.7.27)',\
 	slf4j.api;version='[1.7.32,1.7.33)',\
 	slf4j.simple;version='[1.7.32,1.7.33)'

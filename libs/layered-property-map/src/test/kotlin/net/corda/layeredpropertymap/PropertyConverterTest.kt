@@ -2,7 +2,6 @@ package net.corda.layeredpropertymap
 
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapImpl
 import net.corda.layeredpropertymap.impl.PropertyConverter
-import net.corda.v5.membership.identity.MGMContext
 import net.corda.v5.membership.identity.MemberX500Name
 import org.junit.jupiter.api.Test
 import java.time.Instant
@@ -55,7 +54,6 @@ class PropertyConverterTest {
 
         private fun createContext(key: String) = ConversionContext(
             layeredPropertyMapImpl,
-            MGMContext::class.java,
             key
         )
     }

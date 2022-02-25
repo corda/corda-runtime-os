@@ -3,15 +3,19 @@ package net.corda.layeredpropertymap
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapImpl
 import net.corda.layeredpropertymap.impl.PropertyConverter
 import net.corda.v5.base.exceptions.ValueNotFoundException
+import net.corda.v5.base.types.toHexString
 import net.corda.v5.base.util.parse
 import net.corda.v5.base.util.parseList
 import net.corda.v5.base.util.parseOrNull
+import net.corda.v5.crypto.PublicKeyHash
+import net.corda.v5.crypto.sha256Bytes
 import org.junit.jupiter.api.Test
 import java.time.Instant
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
@@ -58,21 +62,40 @@ class LayeredPropertyMapTest {
                 "corda.endpoints.1.url" to "localhost2",
                 "corda.endpoints.1.protocolVersion" to "2",
                 "listWithNull.0" to "42",
-                "listWithNull.1" to null
+                "listWithNull.1" to null,
+                "singlePublicKeyHash" to "single".toByteArray().sha256Bytes().toHexString(),
+                "listPublicKeyHash.0" to "list0".toByteArray().sha256Bytes().toHexString(),
+                "listPublicKeyHash.1" to "list1".toByteArray().sha256Bytes().toHexString(),
+                "listPublicKeyHash.2" to "list2".toByteArray().sha256Bytes().toHexString(),
             ),
             PropertyConverter(
                 mapOf(
                     DummyObjectWithNumberAndText::class.java to DummyConverter(),
-                    DummyEndpointInfo::class.java to DummyEndpointInfoConverter()
+                    DummyEndpointInfo::class.java to DummyEndpointInfoConverter(),
+                    PublicKeyHash::class.java to DummyPublicKeyHashConverter()
                 )
             )
         )
     }
 
     @Test
+    fun `converter functions should work for custom converter of single value`() {
+        val propertyMap = createLayeredPropertyMapImpl()
+        val single1 = propertyMap.parse<PublicKeyHash>("singlePublicKeyHash")
+        val single2 = propertyMap.parseOrNull<PublicKeyHash>("singlePublicKeyHash")
+        assertEquals(single1, single2)
+        assertEquals("single".toByteArray().sha256Bytes().toHexString(), single1.value)
+        val list = propertyMap.parseList<PublicKeyHash>("listPublicKeyHash")
+        assertEquals(3, list.size)
+        assertEquals("list0".toByteArray().sha256Bytes().toHexString(), list[0].value)
+        assertEquals("list1".toByteArray().sha256Bytes().toHexString(), list[1].value)
+        assertEquals("list2".toByteArray().sha256Bytes().toHexString(), list[2].value)
+    }
+
+    @Test
     fun `converter functions should work`() {
         val propertyMap = createLayeredPropertyMapImpl()
-        assertEquals(34, propertyMap.entries.size)
+        assertEquals(38, propertyMap.entries.size)
         assertEquals(number, propertyMap.parse(NUMBER))
         assertEquals(text, propertyMap.parse(TEXT))
         assertEquals(initialTime, propertyMap.parse(MODIFIED_TIME))
@@ -83,7 +106,7 @@ class LayeredPropertyMapTest {
     @Test
     fun `converter functions should work second time around by fetching from cache`() {
         val propertyMap = createLayeredPropertyMapImpl()
-        assertEquals(34, propertyMap.entries.size)
+        assertEquals(38, propertyMap.entries.size)
         assertEquals(number, propertyMap.parse(NUMBER))
         assertEquals(number, propertyMap.parse(NUMBER))
         assertEquals(text, propertyMap.parse(TEXT))
@@ -99,7 +122,7 @@ class LayeredPropertyMapTest {
     @Test
     fun `converter parseOrNull should work second time around by fetching from cache`() {
         val propertyMap = createLayeredPropertyMapImpl()
-        assertEquals(34, propertyMap.entries.size)
+        assertEquals(38, propertyMap.entries.size)
         assertEquals(number, propertyMap.parseOrNull(NUMBER))
         assertEquals(number, propertyMap.parseOrNull(NUMBER))
         assertEquals(text, propertyMap.parseOrNull(TEXT))
@@ -167,6 +190,23 @@ class LayeredPropertyMapTest {
         assertFailsWith<IllegalArgumentException> {
             propertyMap.parseList<Int>(FAILING_LIST_PREFIX)
         }
+    }
+
+    @Test
+    fun `parse should convert complex value`() {
+        val propertyMap = createLayeredPropertyMapImpl()
+        val dummyObject = propertyMap.parse<DummyObjectWithNumberAndText>(DUMMY_OBJECT)
+        assertEquals(number, dummyObject.number)
+        assertEquals(text, dummyObject.text)
+    }
+
+    @Test
+    fun `parseOrNull should convert complex value`() {
+        val propertyMap = createLayeredPropertyMapImpl()
+        val dummyObject = propertyMap.parseOrNull<DummyObjectWithNumberAndText>(DUMMY_OBJECT)
+        assertNotNull(dummyObject)
+        assertEquals(number, dummyObject.number)
+        assertEquals(text, dummyObject.text)
     }
 
     @Test
@@ -324,5 +364,23 @@ class LayeredPropertyMapTest {
             )
         )
         assertNotEquals(map1, map2)
+    }
+
+    @Test
+    fun `parse should throw IllegalArgumentException when the key is blank`() {
+        val propertyMap = createLayeredPropertyMapImpl()
+        assertFailsWith<IllegalArgumentException> { propertyMap.parse<String>("") }
+    }
+
+    @Test
+    fun `parseOrNull should throw IllegalArgumentException when the key is blank`() {
+        val propertyMap = createLayeredPropertyMapImpl()
+        assertFailsWith<IllegalArgumentException> { propertyMap.parseOrNull<String>("") }
+    }
+
+    @Test
+    fun `parseList should throw IllegalArgumentException when the itemKeyPrefix is blank`() {
+        val propertyMap = createLayeredPropertyMapImpl()
+        assertFailsWith<IllegalArgumentException> { propertyMap.parseList<String>("") }
     }
 }

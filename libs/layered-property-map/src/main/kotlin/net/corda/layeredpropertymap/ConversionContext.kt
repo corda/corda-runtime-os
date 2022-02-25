@@ -5,18 +5,31 @@ import net.corda.v5.base.types.LayeredPropertyMap
 /**
  * The context from which we want to do the conversion and parsing from.
  *
- * @property store The [LayeredPropertyMap] containing all keys and their values.
- * @property storeClass The type of the store.
- * @property key The key we are looking for in the store.
+ * @property map The [LayeredPropertyMap] containing all keys and their values.
+ * @property key The key we are looking for in the store. If the context references item in the list then it would be
+ * empty string.
  */
 open class ConversionContext(
-    val store: LayeredPropertyMap,
-    val storeClass: Class<out LayeredPropertyMap>,
+    val map: LayeredPropertyMap,
     val key: String
 ) {
-    fun value(): String? = store[key]
+    /**
+     * Returns true if the context describes an item in a list.
+     */
+    val isListItem: Boolean get() = key.isEmpty()
 
-    fun value(subKey: String): String? = store[fullKey(subKey)]
+    /**
+     * Returns a string value (or null if it's not found) for objects which occupy single map item -
+     * like Boolean, Int, MemberX500Name (despite being complex object it's parsed from single string), PublicKey
+     * (as well despite being complex object it's parsed from single string), etc.
+     */
+    fun value(): String? = map[key]
+
+    /**
+     * Return a string value(or null if it's not found) for objects occupying several map items, like EndpointInfo
+     * which uses two items "<prefix>.url: and "<prefix>.protocolVersion"
+     */
+    fun value(subKey: String): String? = map[fullKey(subKey)]
 
     private fun fullKey(subKey: String): String =
         when {

@@ -1,11 +1,17 @@
 package net.corda.membership.identity
 
-import net.corda.layeredpropertymap.LayeredPropertyMapImpl
-import net.corda.v5.membership.conversion.PropertyConverter
+import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.membership.identity.MGMContext
-import java.util.SortedMap
 
 class MGMContextImpl(
-    map: SortedMap<String, String?>,
-    converter: PropertyConverter
-) : LayeredPropertyMapImpl(map, converter), MGMContext
+    private val map: LayeredPropertyMap
+) : LayeredPropertyMap by map, MGMContext {
+    override fun hashCode(): Int {
+        return map.hashCode()
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (other == null || other !is MGMContextImpl) return false
+        return map == other.map
+    }
+}

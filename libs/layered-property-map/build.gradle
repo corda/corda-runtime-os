@@ -17,6 +17,7 @@ dependencies {
     implementation "net.corda:corda-membership-identity"
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "net.corda:corda-crypto"
 
     integrationTestImplementation project(":libs:layered-property-map:layered-property-map-test-converter")
 }

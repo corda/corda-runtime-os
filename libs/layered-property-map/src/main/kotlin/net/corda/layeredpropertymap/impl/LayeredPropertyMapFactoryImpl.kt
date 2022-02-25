@@ -36,7 +36,7 @@ class LayeredPropertyMapFactoryImpl @Activate constructor(
         )
     }
 
-    override fun create(properties: Map<String, String?>): LayeredPropertyMap {
+    override fun createMap(properties: Map<String, String?>): LayeredPropertyMap {
         logger.debug("Creating new instance of LayeredPropertyMapImpl")
         return LayeredPropertyMapImpl(properties, converter)
     }

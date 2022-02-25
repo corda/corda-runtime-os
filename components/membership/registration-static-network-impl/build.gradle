@@ -21,7 +21,7 @@ dependencies {
     implementation project(":libs:membership:membership-identity-impl")
     implementation project(":libs:membership:membership-internal")
     implementation project(":libs:messaging:messaging")
-    implementation "net.corda:corda-membership-conversion"
+    implementation "net.corda:corda-base"
     implementation project(":libs:crypto:crypto-core")
     implementation "net.corda:corda-cipher-suite"
     testImplementation project(":libs:crypto:crypto-impl")
@@ -33,4 +33,5 @@ dependencies {
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":libs:membership:membership-impl")
+    testImplementation project(":testing:layered-property-map-testkit")
 }

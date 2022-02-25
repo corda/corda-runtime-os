@@ -1,7 +1,9 @@
 package net.corda.layeredpropertymap.tests
 
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
+import net.corda.layeredpropertymap.create
 import net.corda.layeredpropertymap.tests.converters.IntegrationDummyEndpointInfo
+import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.util.parse
 import net.corda.v5.base.util.parseList
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -29,7 +31,7 @@ class LayeredPropertyMapFactoryTests {
 
     @Test
     fun `Should be able to create instance of LayredPropertyMap with custom converters`() {
-        val layeredPropertyMap = facttory.create(createMap())
+        val layeredPropertyMap = facttory.createMap(createMap())
         assertEquals(42, layeredPropertyMap.parse("number"))
         val complexList = layeredPropertyMap.parseList<IntegrationDummyEndpointInfo>("corda.endpoints")
         assertEquals(3, complexList.size)
@@ -41,4 +43,25 @@ class LayeredPropertyMapFactoryTests {
         assertEquals(1, simpleList.size)
         assertEquals(45, simpleList[0])
     }
+
+    @Test
+    fun `Should be able to create instance of derived class with custom converters`() {
+        val layeredContext = facttory.create<LayeredContextImpl>(createMap())
+        assertEquals(42, layeredContext.parse("number"))
+        val complexList = layeredContext.parseList<IntegrationDummyEndpointInfo>("corda.endpoints")
+        assertEquals(3, complexList.size)
+        for( i in 0 until  3) {
+            assertEquals("localhost${i+1}", complexList[i].url)
+            assertEquals(i+1, complexList[i].protocolVersion)
+        }
+        val simpleList = layeredContext.parseList<Int>("listWithNull")
+        assertEquals(1, simpleList.size)
+        assertEquals(45, simpleList[0])
+    }
+
+    interface LayeredContext : LayeredPropertyMap
+
+    class LayeredContextImpl(
+        private val map: LayeredPropertyMap
+    ) : LayeredPropertyMap by map, LayeredContext
 }

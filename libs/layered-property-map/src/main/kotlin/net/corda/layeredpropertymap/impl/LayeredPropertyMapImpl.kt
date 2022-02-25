@@ -28,6 +28,9 @@ class LayeredPropertyMapImpl(
      */
     @Suppress("UNCHECKED_CAST")
     override fun <T> parse(key: String, clazz: Class<out T>): T {
+        require(key.isNotBlank()) {
+            "The key cannot be blank string."
+        }
         // 1. Check if value already is in our cache, if yes, return that value
         val cached = cache[key]
         if (cached?.value != null) {
@@ -41,7 +44,7 @@ class LayeredPropertyMapImpl(
 
         // 2. Convert the string value using the provided or built-in converter or our built-in primitive converter
         // if not provided
-        val convertedValue = converter.convert(ConversionContext(this, this::class.java, key), clazz)
+        val convertedValue = converter.convert(ConversionContext(this, key), clazz)
             ?: throw ValueNotFoundException("There is no value for '$key' key or it's null.")
 
         // 3. Assign the converted value in the cache and return it
@@ -54,6 +57,9 @@ class LayeredPropertyMapImpl(
      */
     @Suppress("UNCHECKED_CAST")
     override fun <T> parseOrNull(key: String, clazz: Class<out T>): T? {
+        require(key.isNotBlank()) {
+            "The key cannot be blank string."
+        }
         // 1. Check if value already in cache, if yes, return that value (caching unfortunately won't work for nulls)
         val cached = cache[key]
         if (cached?.value != null) {
@@ -65,7 +71,7 @@ class LayeredPropertyMapImpl(
 
         // 2. Convert the value with the converter (provided or builtin), if no converter is found, use our
         // default primitive converter
-        val convertedValue = converter.convert(ConversionContext(this, this::class.java, key), clazz)
+        val convertedValue = converter.convert(ConversionContext(this, key), clazz)
 
         // 3. Assign converted value and return it
         cache[key] = CachedValue(convertedValue)
@@ -88,6 +94,9 @@ class LayeredPropertyMapImpl(
         itemKeyPrefix: String,
         clazz: Class<out T>
     ): List<T> {
+        require(itemKeyPrefix.isNotBlank()) {
+            "The itemKeyPrefix cannot be blank string."
+        }
         // normalise prefix, add "." at the end to make processing easier and make usage foolproof
         val normalisedPrefix = normaliseListSearchKeyPrefix(itemKeyPrefix)
         // 1. Check if list already in cache, if yes, return that list
@@ -129,7 +138,7 @@ class LayeredPropertyMapImpl(
             val map = it.second.map { item ->
                 item.key.removePrefix(it.first.second) to item.value
             }.toLinkedHashMap()
-            val itemContext =  ConversionContext(LayeredPropertyMapImpl(map, converter), this::class.java, "")
+            val itemContext =  ConversionContext(LayeredPropertyMapImpl(map, converter), "")
             converter.convert(itemContext, clazz)
                 ?: throw ValueNotFoundException("Error while converting $itemKeyPrefix prefix.")
         }

@@ -2,7 +2,6 @@ package net.corda.layeredpropertymap
 
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapImpl
 import net.corda.layeredpropertymap.impl.PropertyConverter
-import net.corda.v5.membership.identity.MGMContext
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -47,7 +46,6 @@ class PropertyConverterWithCustomConvertersTest {
 
         private fun createContext(key: String) = ConversionContext(
             layeredPropertyMapImpl,
-            MGMContext::class.java,
             key
         )
     }
