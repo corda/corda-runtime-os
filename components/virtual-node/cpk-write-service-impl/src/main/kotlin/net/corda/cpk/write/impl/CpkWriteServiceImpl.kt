@@ -26,6 +26,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -121,7 +122,10 @@ class CpkWriteServiceImpl @Activate constructor(
         if (event.status == LifecycleStatus.UP) {
             configSubscription = configReadService.registerComponentForUpdates(
                 coordinator,
-                setOf(ConfigKeys.BOOT_CONFIG)
+                setOf(
+                    ConfigKeys.BOOT_CONFIG,
+                    ConfigKeys.MESSAGING_CONFIG
+                )
             )
         } else {
             logger.warn(
@@ -136,32 +140,21 @@ class CpkWriteServiceImpl @Activate constructor(
      * We've received a config event that we care about, we can now write cpks
      */
     private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        val config = event.config[ConfigKeys.BOOT_CONFIG]!!
-        // TODO - kyriakos - fix expected configuration and fill following properties with configuration
-        //if (config.hasPath("todo")) {
+        val config = event.config.toMessagingConfig()
+        timeout = 20.seconds // TODO: fill this with configuration once we know where it lies?
+        cpkChecksumsCache = CpkChecksumsCacheImpl(
+            subscriptionFactory,
+            SubscriptionConfig(CPK_WRITE_GROUP, CPK_WRITE_TOPIC),
+            config
+        ).also { it.start() }
 
-            timeout = 20.seconds
-            cpkChecksumsCache = CpkChecksumsCacheImpl(
-                subscriptionFactory,
-                SubscriptionConfig(CPK_WRITE_GROUP, CPK_WRITE_TOPIC),
-                config
-            ).also { it.start() }
-
-            val publisher = publisherFactory.createPublisher(
-                PublisherConfig(CPK_WRITE_CLIENT),
-                config
-            )
-            cpkChunksPublisher = KafkaCpkChunksPublisher(publisher, timeout!!, CPK_WRITE_TOPIC)
-            cpkStorage = DBCpkStorage(dbConnectionManager.clusterDbEntityManagerFactory)
-
-            coordinator.updateStatus(LifecycleStatus.UP)
-//        } else {
-//            logger.warn(
-//                "Need ${CpkServiceConfigKeys.CPK_CACHE_DIR} to be specified in the boot config." +
-//                        " Component ${this::class.java.simpleName} is not started"
-//            )
-//            closeResources()
-//        }
+        val publisher = publisherFactory.createPublisher(
+            PublisherConfig(CPK_WRITE_CLIENT),
+            config
+        )
+        cpkChunksPublisher = KafkaCpkChunksPublisher(publisher, timeout!!, CPK_WRITE_TOPIC)
+        cpkStorage = DBCpkStorage(dbConnectionManager.clusterDbEntityManagerFactory)
+        coordinator.updateStatus(LifecycleStatus.UP)
     }
 
     /**
