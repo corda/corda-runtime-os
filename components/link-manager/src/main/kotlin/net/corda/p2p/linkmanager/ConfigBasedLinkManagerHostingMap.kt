@@ -75,8 +75,6 @@ class ConfigBasedLinkManagerHostingMap(
         return holdingIdentitiesConfig.map { identityConfig ->
             val x500name = identityConfig.getString(LOCALLY_HOSTED_IDENTITY_X500_NAME)
             val groupId = identityConfig.getString(LOCALLY_HOSTED_IDENTITY_GPOUP_ID)
-            println("QQQ identityConfig = $identityConfig")
-            println("QQQ identityConfig = ${identityConfig.getAnyRef(LOCALLY_HOSTED_TLS_CERTIFICATES)?.javaClass}")
             val certificates = identityConfig.getStringList(LOCALLY_HOSTED_TLS_CERTIFICATES)
             LinkManagerNetworkMap.HoldingIdentity(x500name, groupId) to certificates
         }.toMap()

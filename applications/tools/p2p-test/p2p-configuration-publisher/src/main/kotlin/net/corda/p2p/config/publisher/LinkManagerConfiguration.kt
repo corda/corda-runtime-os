@@ -91,12 +91,6 @@ class LinkManagerConfiguration : ConfigProducer() {
                 }
 
             )
-            it[0] to it[1]
-        }.map {
-            mapOf(
-                "x500Name" to it.first,
-                "groupId" to it.second
-            )
         }
         ConfigFactory.empty()
             .withValue(
