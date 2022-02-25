@@ -50,7 +50,7 @@
                 <constraints nullable="false"/>
             </column>
             <!-- TODO: bin data type for postgres -->
-            <column name="data" type="CLOB">
+            <column name="data" type="BLOB">
                 <constraints nullable="false"/>
             </column>
             <column name="insert_ts" type="TIMESTAMP"
