@@ -95,9 +95,9 @@ class PermissionRepositoryImpl(private val entityManagerFactory: EntityManagerFa
 
     private fun findPermissionsForUsersFromRoleAssignment(em: EntityManager): Map<UserLogin, List<InternalPermissionQueryDto>> {
         val rolePermissionsQuery = """
-            SELECT NEW net.corda.permissions.query.dto.InternalPermissionQueryDto(
+            SELECT DISTINCT NEW net.corda.permissions.query.dto.InternalPermissionQueryDto(
                 u.loginName,
-                r.groupVisibility.id, 
+                p.groupVisibility.id, 
                 p.virtualNode, 
                 p.permissionString, 
                 p.permissionType
@@ -110,6 +110,7 @@ class PermissionRepositoryImpl(private val entityManagerFactory: EntityManagerFa
             """
         return em.createQuery(rolePermissionsQuery, InternalPermissionQueryDto::class.java)
             .resultList
+            .sortedWith(PermissionQueryDtoComparator())
             .groupBy { it.loginName }
     }
 }
