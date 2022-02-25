@@ -23,7 +23,7 @@ data class CpkDataEntity(
     @Id
     @Column(name = "file_checksum", nullable = false)
     val fileChecksum: String,
-    @Lob
+    //@Lob // Commented out as it was throwing: org.hibernate.HibernateException: Unable to access lob stream. To be investigated.
     @Column(name = "data", nullable = false)
     val data: ByteArray,
 ) {
