@@ -2,6 +2,7 @@ package net.corda.permissions.storage.reader.internal
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.permissions.cache.PermissionCache
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
@@ -12,6 +13,7 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.permissions.cache.PermissionCacheService
@@ -20,6 +22,7 @@ import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 import net.corda.schema.configuration.ConfigKeys.DB_PASS
 import net.corda.schema.configuration.ConfigKeys.DB_USER
 import net.corda.schema.configuration.ConfigKeys.JDBC_URL
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
@@ -71,7 +74,8 @@ class PermissionStorageReaderServiceEventHandlerTest {
             )
     )
 
-    private val bootstrapConfig = mapOf(BOOT_CONFIG to config)
+    private val bootstrapConfig =
+        mapOf(BOOT_CONFIG to config, MESSAGING_CONFIG to configFactory.create(ConfigFactory.empty()))
 
     @Test
     fun `processing a start event causes the service to follow permission cache status changes`() {
@@ -88,7 +92,7 @@ class PermissionStorageReaderServiceEventHandlerTest {
 
         handler.processEvent(StartEvent(), coordinator)
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
-        handler.onConfigurationUpdated(setOf(BOOT_CONFIG), bootstrapConfig)
+        handler.onConfigurationUpdated(bootstrapConfig.toMessagingConfig())
 
         assertNotNull(handler.permissionStorageReader)
         verify(permissionStorageReader).start()
@@ -98,6 +102,7 @@ class PermissionStorageReaderServiceEventHandlerTest {
     fun `processing an UP event from the permission cache when the service is started updates the service's status to UP`() {
         handler.processEvent(StartEvent(), coordinator)
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
+        handler.processEvent(ConfigChangedEvent(bootstrapConfig.keys, bootstrapConfig), coordinator)
         verify(coordinator).updateStatus(LifecycleStatus.UP)
     }
 
@@ -105,7 +110,7 @@ class PermissionStorageReaderServiceEventHandlerTest {
     fun `processing a DOWN event from the permission cache when the service is started stops the storage reader`() {
         handler.processEvent(StartEvent(), coordinator)
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
-        handler.onConfigurationUpdated(setOf(BOOT_CONFIG), bootstrapConfig)
+        handler.onConfigurationUpdated(bootstrapConfig.toMessagingConfig())
 
         assertNotNull(handler.permissionStorageReader)
 
@@ -127,7 +132,7 @@ class PermissionStorageReaderServiceEventHandlerTest {
     fun `processing a stop event stops the service's dependencies`() {
         handler.processEvent(StartEvent(), coordinator)
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
-        handler.onConfigurationUpdated(setOf(BOOT_CONFIG), bootstrapConfig)
+        handler.onConfigurationUpdated(bootstrapConfig.toMessagingConfig())
 
         assertNotNull(handler.registrationHandle)
         assertNotNull(handler.permissionStorageReader)

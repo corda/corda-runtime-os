@@ -3,7 +3,7 @@ plugins {
     id 'corda.common-library'
 }
 
-description 'Membership RPC Ops Client implementation'
+description 'Member Ops Client implementation'
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"

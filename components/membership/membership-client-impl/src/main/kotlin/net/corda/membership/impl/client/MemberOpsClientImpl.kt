@@ -9,11 +9,11 @@ import net.corda.data.membership.rpc.request.RegistrationStatusRequest
 import net.corda.data.membership.rpc.response.RegistrationResponse
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
-import net.corda.membership.httprpc.MembershipRpcOpsClient
+import net.corda.membership.httprpc.MemberOpsClient
 import net.corda.membership.httprpc.types.MemberInfoSubmitted
 import net.corda.membership.httprpc.types.MemberRegistrationRequest
 import net.corda.membership.httprpc.types.RegistrationRequestProgress
-import net.corda.membership.impl.client.lifecycle.MembershipRpcOpsClientLifecycleHandler
+import net.corda.membership.impl.client.lifecycle.MemberOpsClientLifecycleHandler
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -25,22 +25,22 @@ import org.slf4j.Logger
 import java.time.Instant
 import java.util.UUID
 
-@Component(service = [MembershipRpcOpsClient::class])
-class MembershipRpcOpsClientImpl @Activate constructor(
+@Component(service = [MemberOpsClient::class])
+class MemberOpsClientImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = PublisherFactory::class)
     val publisherFactory: PublisherFactory,
     @Reference(service = ConfigurationReadService::class)
     val configurationReadService: ConfigurationReadService
-) : MembershipRpcOpsClient {
+) : MemberOpsClient {
     companion object {
         private val logger: Logger = contextLogger()
     }
 
-    private val lifecycleHandler = MembershipRpcOpsClientLifecycleHandler(this)
+    private val lifecycleHandler = MemberOpsClientLifecycleHandler(this)
 
-    private val coordinator = coordinatorFactory.createCoordinator<MembershipRpcOpsClient>(lifecycleHandler)
+    private val coordinator = coordinatorFactory.createCoordinator<MemberOpsClient>(lifecycleHandler)
 
     private val className = this::class.java.simpleName
 

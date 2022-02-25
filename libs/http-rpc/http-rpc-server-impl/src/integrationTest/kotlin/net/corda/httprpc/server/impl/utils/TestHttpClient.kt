@@ -1,5 +1,6 @@
 package net.corda.httprpc.server.impl.utils
 
+import io.javalin.core.util.Header.ORIGIN
 import kong.unirest.HttpRequest
 import kong.unirest.HttpRequestWithBody
 import kong.unirest.Unirest
@@ -30,7 +31,7 @@ class TestHttpClientUnirestImpl(override val baseAddress: String, private val en
         var request = when (verb) {
             HttpVerb.GET -> Unirest.get(baseAddress + webRequest.path).basicAuth(userName, password)
             HttpVerb.POST -> Unirest.post(baseAddress + webRequest.path).basicAuth(userName, password)
-        }
+        }.addOriginHeader()
 
         if (webRequest.body != null && request is HttpRequestWithBody) request = request.body(webRequest.body)
         webRequest.queryParameters?.forEach{ item ->
@@ -46,6 +47,8 @@ class TestHttpClientUnirestImpl(override val baseAddress: String, private val en
         return WebResponse(response.body, response.headers.all()
                 .associateBy({ it.name }, { it.value }), response.status, response.statusText)
     }
+
+    private fun HttpRequest<*>.addOriginHeader() = header(ORIGIN, "localhost")
 
     override fun <T> call(verb: HttpVerb, webRequest: WebRequest<T>, userName: String, password: String): WebResponse<String> {
         return doCall(verb, webRequest) {
@@ -63,12 +66,12 @@ class TestHttpClientUnirestImpl(override val baseAddress: String, private val en
         var request: HttpRequest<*> = when (verb) {
             HttpVerb.GET -> Unirest.get(path)
             HttpVerb.POST -> Unirest.post(path)
-        }
+        }.addOriginHeader()
 
         request.encodeAuth()
 
         if (webRequest.body != null && request is HttpRequestWithBody) request = request.body(webRequest.body)
-        webRequest.queryParameters?.forEach{ item ->
+        webRequest.queryParameters?.forEach { item ->
             if (item.value is Collection<*>) {
                 (item.value as Collection<*>).forEach { request = request.queryString(item.key, it) }
             }

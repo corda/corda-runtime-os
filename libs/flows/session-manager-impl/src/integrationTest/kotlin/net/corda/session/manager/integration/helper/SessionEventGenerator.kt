@@ -3,15 +3,28 @@ package net.corda.session.manager.integration.helper
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.identity.HoldingIdentity
+import net.corda.session.manager.integration.SessionMessageType
 import java.nio.ByteBuffer
 import java.time.Instant
 
-fun generateInit(instant: Instant): SessionEvent {
+fun generateMessage(messageType: SessionMessageType, instant: Instant, messageDirection: MessageDirection = MessageDirection.OUTBOUND) :
+        SessionEvent {
+    return when(messageType) {
+        SessionMessageType.INIT -> generateInit(instant, messageDirection)
+        SessionMessageType.DATA -> generateData(instant, messageDirection)
+        SessionMessageType.ERROR -> generateError(instant, messageDirection)
+        SessionMessageType.CLOSE -> generateClose(instant, messageDirection)
+        SessionMessageType.ACK -> generateAck(instant, messageDirection)
+    }
+}
+
+fun generateInit(instant: Instant, messageDirection: MessageDirection = MessageDirection.OUTBOUND): SessionEvent {
     val sessionInit = SessionInit.newBuilder()
         .setCpiId("cpiId")
         .setFlowKey(null)
@@ -20,27 +33,31 @@ fun generateInit(instant: Instant): SessionEvent {
         .setInitiatingIdentity(HoldingIdentity("Alice","group1" ))
         .setInitiatedIdentity(HoldingIdentity("Bob","group1" ))
         .build()
-    return generateSessionEvent(sessionInit, instant)
+    return generateSessionEvent(sessionInit, instant, messageDirection)
 }
 
-fun generateData(instant: Instant): SessionEvent {
-    return generateSessionEvent(SessionData(), instant)
+fun generateData(instant: Instant, messageDirection: MessageDirection): SessionEvent {
+    return generateSessionEvent(SessionData(), instant, messageDirection)
 }
 
-fun generateError(instant: Instant): SessionEvent {
-    return generateSessionEvent(SessionError(ExceptionEnvelope("error type", "error message")), instant)
+fun generateAck(instant: Instant, messageDirection: MessageDirection = MessageDirection.OUTBOUND): SessionEvent {
+    return generateSessionEvent(SessionAck(), instant, messageDirection)
 }
 
-fun generateClose(instant: Instant): SessionEvent {
-    return generateSessionEvent(SessionClose(), instant)
+fun generateError(instant: Instant, messageDirection: MessageDirection): SessionEvent {
+    return generateSessionEvent(SessionError(ExceptionEnvelope("error type", "error message")), instant, messageDirection)
 }
 
-fun generateSessionEvent(payload: Any, instant: Instant): SessionEvent {
+fun generateClose(instant: Instant, messageDirection: MessageDirection): SessionEvent {
+    return generateSessionEvent(SessionClose(), instant, messageDirection)
+}
+
+fun generateSessionEvent(payload: Any, instant: Instant, messageDirection: MessageDirection): SessionEvent {
     return SessionEvent.newBuilder()
         .setSessionId("sessionId")
         .setSequenceNum(null)
         .setTimestamp(instant)
-        .setMessageDirection(MessageDirection.OUTBOUND)
+        .setMessageDirection(messageDirection)
         .setPayload(payload)
         .build()
 }

@@ -7,6 +7,7 @@ import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateAckEvent
+import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.uncheckedCast
@@ -15,8 +16,9 @@ import java.util.*
 
 /**
  * Process SessionInit messages.
- * Generate [SessionAck] for the SessionInit and create a new [SessionState]
- * If [SessionState] for the given sessionId is null log the duplicate event.
+ * Generate [SessionAck] for the SessionInit and create a new [SessionState].
+ * If [SessionState] for the given sessionId is not null log the duplicate event.
+ * If SessionInit is received in reply to a SessionInit sent, error the session.
  */
 class SessionInitProcessorReceive(
     private val key: Any,
@@ -31,13 +33,25 @@ class SessionInitProcessorReceive(
 
     override fun execute(): SessionState {
         if (sessionState != null) {
-            logger.debug { "Received duplicate SessionInit on key $key for session which was not null: $sessionState" }
-            sessionState.apply {
-                sendEventsState.undeliveredMessages =
-                    sendEventsState.undeliveredMessages.plus(generateAckEvent(sessionEvent.sequenceNum, sessionId, instant))
-
+            val seqNum = sessionEvent.sequenceNum
+            return if (sessionState.status == SessionStateType.CREATED || seqNum > 1) {
+                sessionState.apply {
+                    status = SessionStateType.ERROR
+                    sendEventsState.undeliveredMessages = sendEventsState.undeliveredMessages.plus(
+                            generateErrorEvent(sessionId,
+                                "Received SessionInit with seqNum $seqNum when session state which was not null: $sessionState",
+                                "SessionInit-SessionMismatch",
+                                instant
+                            )
+                        )
+                }
+            } else {
+                logger.debug { "Received duplicate SessionInit on key $key for session which was not null: $sessionState" }
+                sessionState.apply {
+                    sendEventsState.undeliveredMessages =
+                        sendEventsState.undeliveredMessages.plus(generateAckEvent(sessionEvent.sequenceNum, sessionId, instant))
+                }
             }
-            return sessionState
         }
 
         val sessionInit: SessionInit = uncheckedCast(sessionEvent.payload)
@@ -55,7 +69,7 @@ class SessionInitProcessorReceive(
             .setStatus(SessionStateType.CONFIRMED)
             .build()
 
-        logger.debug { "Created new session with id $sessionId for SessionInit received on key $key. sessionState $newSessionState"}
+        logger.debug { "Created new session with id $sessionId for SessionInit received on key $key. sessionState $newSessionState" }
 
         return newSessionState
     }

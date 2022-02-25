@@ -1,6 +1,7 @@
 package net.corda.chunking.db.impl
 
 import net.corda.chunking.Checksum
+import net.corda.chunking.RequestId
 import net.corda.chunking.datamodel.ChunkEntity
 import net.corda.chunking.toCorda
 import net.corda.data.chunking.Chunk
@@ -15,7 +16,7 @@ import javax.persistence.EntityManagerFactory
  *
  * If all chunks are received, then we can also calculate its checksum.
  */
-internal class ChunkDbQueries(private val entityManagerFactory: EntityManagerFactory) {
+class ChunkDbQueries(private val entityManagerFactory: EntityManagerFactory) {
 
     /**
      * Persist a chunk to the database and also check whether we have all chunks,
@@ -67,7 +68,7 @@ internal class ChunkDbQueries(private val entityManagerFactory: EntityManagerFac
 
 
     /** Is the checksum for the given [requestId] valid? */
-    fun checksumIsValid(requestId: String): Boolean {
+    fun checksumIsValid(requestId: RequestId): Boolean {
         var expectedChecksum: SecureHash? = null
         var actualChecksum: ByteArray? = null
 

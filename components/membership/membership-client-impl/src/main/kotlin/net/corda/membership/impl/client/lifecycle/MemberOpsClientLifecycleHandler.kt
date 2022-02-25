@@ -12,7 +12,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.membership.impl.client.MembershipRpcOpsClientImpl
+import net.corda.membership.impl.client.MemberOpsClientImpl
 import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -20,8 +20,8 @@ import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 
-class MembershipRpcOpsClientLifecycleHandler(
-    membershipRpcOpsClient: MembershipRpcOpsClientImpl
+class MemberOpsClientLifecycleHandler(
+    memberOpsClient: MemberOpsClientImpl
 ) : LifecycleEventHandler {
     companion object {
         const val CLIENT_ID = "membership.ops.rpc"
@@ -33,9 +33,9 @@ class MembershipRpcOpsClientLifecycleHandler(
     // for checking the components' health
     private var componentHandle: AutoCloseable? = null
 
-    private val publisherFactory = membershipRpcOpsClient.publisherFactory
+    private val publisherFactory = memberOpsClient.publisherFactory
 
-    private val configurationReadService = membershipRpcOpsClient.configurationReadService
+    private val configurationReadService = memberOpsClient.configurationReadService
 
     private var _rpcSender: RPCSender<MembershipRpcRequest, MembershipRpcResponse>? = null
 

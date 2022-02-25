@@ -20,6 +20,7 @@
     bnd.identity;id='net.corda.membership-conversion-impl',\
     bnd.identity;id='net.corda.membership-application',\
     bnd.identity;id='net.corda.membership-group-read-impl',\
+    bnd.identity;id='net.corda.membership-service-impl',\
     bnd.identity;id='net.corda.crypto-processor',\
     bnd.identity;id='net.corda.crypto-service-impl',\
     bnd.identity;id='net.corda.crypto-client-impl',\
@@ -91,6 +92,8 @@
 	net.corda.membership-identity-impl;version='[5.0.0,5.0.1)',\
 	net.corda.membership-impl;version='[5.0.0,5.0.1)',\
 	net.corda.membership-internal;version='[5.0.0,5.0.1)',\
+	net.corda.membership-service;version='[5.0.0,5.0.1)',\
+	net.corda.membership-service-impl;version='[5.0.0,5.0.1)',\
 	net.corda.message-bus;version='[5.0.0,5.0.1)',\
 	net.corda.messaging;version='[5.0.0,5.0.1)',\
 	net.corda.messaging-impl;version='[5.0.0,5.0.1)',\

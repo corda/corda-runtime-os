@@ -1,5 +1,6 @@
 package net.corda.libs.permissions.storage.reader.impl
 
+import net.corda.data.permissions.summary.UserPermissionSummary as AvroUserPermissionSummary
 import net.corda.libs.permissions.cache.PermissionCache
 import net.corda.libs.permissions.storage.common.converter.toAvroGroup
 import net.corda.libs.permissions.storage.common.converter.toAvroPermission
@@ -7,12 +8,16 @@ import net.corda.libs.permissions.storage.common.converter.toAvroRole
 import net.corda.libs.permissions.storage.common.converter.toAvroUser
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
 import net.corda.libs.permissions.storage.reader.repository.PermissionRepository
+import net.corda.libs.permissions.storage.reader.repository.UserLogin
+import net.corda.libs.permissions.storage.reader.summary.InternalUserPermissionSummary
+import net.corda.libs.permissions.storage.reader.summary.PermissionSummaryReconciler
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.permissions.model.Group
 import net.corda.permissions.model.Permission
 import net.corda.permissions.model.Role
 import net.corda.permissions.model.User
+import net.corda.schema.Schemas.Permissions.Companion.PERMISSIONS_USER_SUMMARY_TOPIC
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_ENTITY_TOPIC
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_GROUP_TOPIC
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_ROLE_TOPIC
@@ -24,10 +29,12 @@ import net.corda.data.permissions.Permission as AvroPermission
 import net.corda.data.permissions.Role as AvroRole
 import net.corda.data.permissions.User as AvroUser
 
+@Suppress("TooManyFunctions")
 class PermissionStorageReaderImpl(
     private val permissionCache: PermissionCache,
     private val permissionRepository: PermissionRepository,
     private val publisher: Publisher,
+    private val permissionSummaryReconciler: PermissionSummaryReconciler,
 ) : PermissionStorageReader {
 
     private companion object {
@@ -75,12 +82,26 @@ class PermissionStorageReaderImpl(
         publisher.publish(createRoleRecords(permissionRepository.findAllRoles(ids)))
     }
 
+    override fun reconcilePermissionSummaries() {
+        log.info("Reconciliation of permission summaries started.")
+        val permissionSummariesFromDb: Map<UserLogin, InternalUserPermissionSummary> = permissionRepository.findAllPermissionSummaries()
+
+        val permissionsToReconcile: Map<UserLogin, AvroUserPermissionSummary?> = permissionSummaryReconciler.getSummariesForReconciliation(
+            permissionSummariesFromDb,
+            permissionCache.permissionSummaries
+        )
+
+        log.info("Publishing permission summary records for ${permissionsToReconcile.size} unique users that require reconciliation.")
+        publisher.publish(createPermissionSummaryRecords(permissionsToReconcile))
+    }
+
     private fun publishOnStartup() {
         log.info("Publishing on start-up")
         publisher.publish(createUserRecords(permissionRepository.findAllUsers()))
         publisher.publish(createGroupRecords(permissionRepository.findAllGroups()))
         publisher.publish(createRoleRecords(permissionRepository.findAllRoles()))
         publisher.publish(createPermissionRecords(permissionRepository.findAllPermissions()))
+        reconcilePermissionSummaries()
     }
 
     private fun createUserRecords(users: List<User>): List<Record<String, AvroUser>> {
@@ -129,5 +150,14 @@ class PermissionStorageReaderImpl(
             .map { (id, _) -> Record(RPC_PERM_ENTITY_TOPIC, key = id, value = null) }
 
         return updated + removed
+    }
+
+    private fun createPermissionSummaryRecords(summaries: Map<UserLogin, AvroUserPermissionSummary?>):
+            List<Record<String, AvroUserPermissionSummary>> {
+
+        return summaries.map {
+            // summaries with null value are removal records for the user
+            Record(PERMISSIONS_USER_SUMMARY_TOPIC, it.key, it.value)
+        }
     }
 }

@@ -5,9 +5,9 @@ import net.corda.membership.httprpc.types.MemberRegistrationRequest
 import net.corda.membership.httprpc.types.RegistrationRequestProgress
 
 /**
- * The membership RPC ops client to perform group operations.
+ * The member ops client to perform group operations.
  */
-interface MembershipRpcOpsClient : Lifecycle {
+interface MemberOpsClient : Lifecycle {
 
     /**
      * Starts the registration process for a member.

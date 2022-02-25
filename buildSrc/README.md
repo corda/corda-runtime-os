@@ -486,7 +486,7 @@ Nightlys feature branch
     nightly-jiraTicket-date
     nightly-jiraTickt-ShortGitHash
 
-Pre test (to be used in infrastructre based testing in pipelines)
+Pre test (to be used in infrastructure based testing in pipelines)
 -Repo:corda-os-docker-pre-test
 -Tags: 
     preTest-version

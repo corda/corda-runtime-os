@@ -3,6 +3,7 @@ package net.corda.chunking.impl
 import net.corda.chunking.ChunkReader
 import net.corda.chunking.ChunksCombined
 import net.corda.chunking.Checksum
+import net.corda.chunking.RequestId
 import net.corda.chunking.toCorda
 import net.corda.data.chunking.Chunk
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -30,7 +31,7 @@ internal class ChunkReaderImpl(private val destDir: Path) : ChunkReader {
         var expectedChecksum: SecureHash
     )
 
-    private val chunksSoFar = mutableMapOf<String, ChunksReceived>()
+    private val chunksSoFar = mutableMapOf<RequestId, ChunksReceived>()
     private var chunksCombinedCallback: ChunksCombined? = null
 
     override fun read(chunk: Chunk) {

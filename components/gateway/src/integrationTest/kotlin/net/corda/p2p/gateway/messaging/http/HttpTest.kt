@@ -13,6 +13,7 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.p2p.NetworkType
 import net.corda.p2p.gateway.LoggingInterceptor
 import net.corda.p2p.gateway.TestBase
+import net.corda.p2p.gateway.messaging.ConnectionConfiguration
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.test.util.eventually
@@ -82,7 +83,7 @@ class HttpTest : TestBase() {
                 chipSslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
-                2.seconds
+                ConnectionConfiguration(),
             ).use { client ->
                 client.start()
                 val response = client.write(clientMessageContent.toByteArray(Charsets.UTF_8)).get()
@@ -123,7 +124,7 @@ class HttpTest : TestBase() {
                         chipSslConfig,
                         threadPool,
                         threadPool,
-                        2.seconds
+                        ConnectionConfiguration(),
                     )
                     httpClient.use {
                         httpClient.start()
@@ -180,7 +181,7 @@ class HttpTest : TestBase() {
                 bobSslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
-                2.seconds
+                ConnectionConfiguration(),
             ).use { client ->
                 client.start()
                 val response = client.write(hugePayload).get()
@@ -214,7 +215,7 @@ class HttpTest : TestBase() {
                 aliceSslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
-                2.seconds
+                ConnectionConfiguration(),
             ).use { client ->
                 client.start()
                 val response = client.write(ByteArray(0)).get()
@@ -247,7 +248,7 @@ class HttpTest : TestBase() {
                 c4sslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
-                2.seconds
+                ConnectionConfiguration(),
             ).use { client ->
                 client.start()
                 val response = client.write(ByteArray(0)).get()
@@ -268,7 +269,7 @@ class HttpTest : TestBase() {
                 c4sslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
-                2.seconds
+                ConnectionConfiguration(),
             ).use { client ->
 
                 client.start()
@@ -300,7 +301,7 @@ class HttpTest : TestBase() {
                 daleSslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
-                2.seconds
+                ConnectionConfiguration(),
             ).use { client ->
                 client.start()
                 val future = client.write(ByteArray(0))
@@ -342,7 +343,7 @@ class HttpTest : TestBase() {
                 chipSslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
-                2.seconds
+                ConnectionConfiguration(),
             ).use { client ->
                 client.start()
                 val future = client.write(ByteArray(0))
@@ -384,7 +385,7 @@ class HttpTest : TestBase() {
                 chipSslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
-                2.seconds
+                ConnectionConfiguration(),
             ).use { client ->
                 client.start()
                 val future = client.write(ByteArray(0))
