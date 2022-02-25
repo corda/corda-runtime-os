@@ -4,10 +4,7 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.state.session.SessionState
 import net.corda.libs.configuration.SmartConfig
 import net.corda.session.manager.impl.SessionManagerImpl
-import net.corda.session.manager.integration.helper.generateClose
-import net.corda.session.manager.integration.helper.generateData
-import net.corda.session.manager.integration.helper.generateError
-import net.corda.session.manager.integration.helper.generateInit
+import net.corda.session.manager.integration.helper.generateMessage
 import java.time.Instant
 
 /**
@@ -35,15 +32,6 @@ class SessionParty (
         val (updatedState, outputMessages) = sessionManager.getMessagesToSend(sessionState!!, instant, testConfig)
         sessionState = updatedState
         outboundMessages.addMessages(outputMessages)
-    }
-
-    private fun generateMessage(messageType: SessionMessageType, instant: Instant) : SessionEvent {
-        return when(messageType) {
-            SessionMessageType.INIT -> generateInit(instant)
-            SessionMessageType.DATA -> generateData(instant)
-            SessionMessageType.ERROR -> generateError(instant)
-            SessionMessageType.CLOSE -> generateClose(instant)
-        }
     }
 
     override fun processNextReceivedMessage(sendMessages: Boolean, instant: Instant) {

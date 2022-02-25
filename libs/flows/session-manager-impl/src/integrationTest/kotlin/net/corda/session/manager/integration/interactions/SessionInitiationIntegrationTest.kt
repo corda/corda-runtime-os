@@ -1,4 +1,4 @@
-package net.corda.session.manager.integration.tests
+package net.corda.session.manager.integration.interactions
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory

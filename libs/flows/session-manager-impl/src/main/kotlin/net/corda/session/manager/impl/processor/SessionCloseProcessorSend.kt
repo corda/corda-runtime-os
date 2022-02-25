@@ -16,6 +16,7 @@ import java.time.Instant
  * If the state is null, ERROR or CLOSED send an error response to the counterparty as this indicates a bug in client code or  a
  * session mismatch has occurred.
  * If the client has not consumed all received events and it tries to send a close then trigger an error as this is a bug/session mismatch.
+ * If the client has already sent an close trigger an error as this is a bug/session mismatch.
  * If the state is CONFIRMED then set the status to CLOSING
  * If the state is CLOSING and set the status to WAIT_FOR_FINAL_ACK. The session cannot be closed until all acks are received by the
  * counterparty.
@@ -36,32 +37,64 @@ class SessionCloseProcessorSend(
         val currentStatus = sessionState?.status
         return when {
             sessionState == null -> {
-                val errorMessage = "Tried to send SessionClose with flow key $key and sessionId $sessionId  with null state"
-                logger.error(errorMessage)
-                generateErrorSessionStateFromSessionEvent(sessionId, errorMessage, "SessionCLose-StateNull", instant)
+                handleNullSession(sessionId)
             }
-            currentStatus == SessionStateType.ERROR -> {
-                val errorMessage = "Tried to send SessionClose on key $key for sessionId $sessionId with status of : $currentStatus"
-                logger.error(errorMessage)
-                sessionState.apply {
-                    sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.plus(
-                        generateErrorEvent(sessionId, errorMessage, "SessionClose-InvalidStatus", instant)
-                    )
-                }
+            currentStatus == SessionStateType.ERROR || currentStatus == SessionStateType.WAIT_FOR_FINAL_ACK || currentStatus ==
+                    SessionStateType.CLOSED -> {
+                handleInvalidStatus(sessionState)
             }
-            //session mismatch error, ignore close messages as we only care about data messages not consumed by the client lib
             sessionState.receivedEventsState.undeliveredMessages.any { it.payload !is SessionClose } -> {
-                val errorMessage = "Tried to send SessionClose on key $key and sessionId $sessionId, session status is " +
-                        "${sessionState.status}, however there are still received events that have not been processed. " +
-                        "Current SessionState: $sessionState. Sending error to counterparty"
-                logAndGenerateErrorResult(errorMessage, sessionState, sessionId, "SessionClose-SessionMismatch")
+                handleUnprocessedReceivedDataEvents(sessionId, sessionState)
+            }
+            currentStatus == SessionStateType.CLOSING &&
+                    sessionState.receivedEventsState.undeliveredMessages.none { it.payload is SessionClose } -> {
+                handleDuplicateCloseSent(sessionState)
             }
             else -> {
                 val nextSeqNum = sessionState.sendEventsState.lastProcessedSequenceNum + 1
                 sessionEvent.sequenceNum = nextSeqNum
-
                 getResultByCurrentState(sessionState, sessionId, nextSeqNum)
             }
+        }
+    }
+
+    private fun handleNullSession(sessionId: String): SessionState {
+        val errorMessage = "Tried to send SessionClose with flow key $key and sessionId $sessionId  with null state"
+        logger.error(errorMessage)
+        return generateErrorSessionStateFromSessionEvent(sessionId, errorMessage, "SessionCLose-StateNull", instant)
+    }
+
+    private fun handleDuplicateCloseSent(
+        sessionState: SessionState
+    ): SessionState {
+        val sessionId = sessionState.sessionId
+        val errorMessage = "Tried to send SessionClose on key $key and sessionId $sessionId, session status is " +
+                "${sessionState.status}, however SessionClose has already been sent. " +
+                "Current SessionState: $sessionState."
+        return logAndGenerateErrorResult(errorMessage, sessionState, sessionId, "SessionClose-SessionMismatch")
+    }
+
+    private fun handleUnprocessedReceivedDataEvents(
+        sessionId: String,
+        sessionState: SessionState
+    ): SessionState {
+        val errorMessage = "Tried to send SessionClose on key $key and sessionId $sessionId, session status is " +
+                "${sessionState.status}, however there are still received events that have not been processed. " +
+                "Current SessionState: $sessionState."
+        return logAndGenerateErrorResult(errorMessage, sessionState, sessionId, "SessionClose-SessionMismatch")
+    }
+
+    private fun handleInvalidStatus(
+        sessionState: SessionState
+    ) : SessionState {
+        val errorMessage = "Tried to send SessionClose on key $key for sessionId ${sessionState.sessionId} " +
+                "with status of : ${sessionState.status}"
+        logger.error(errorMessage)
+        return sessionState.apply {
+            status = SessionStateType.ERROR
+            sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.plus(
+                generateErrorEvent(sessionId, errorMessage, "SessionClose-InvalidStatus", instant)
+            )
         }
     }
 
@@ -87,7 +120,7 @@ class SessionCloseProcessorSend(
         }
         else -> {
             val errorMessage = "Tried to send SessionClose on key $key and sessionId $sessionId, session status is " +
-                    "$currentState. Current SessionState: $sessionState. Sending error to counterparty"
+                    "$currentState. Current SessionState: $sessionState."
             logAndGenerateErrorResult(errorMessage, sessionState, sessionId, "SessionClose-InvalidStatus")
         }
     }
