@@ -44,6 +44,7 @@ import org.slf4j.Logger
 import java.io.ByteArrayInputStream
 import java.nio.file.Paths
 import java.time.Duration
+import kotlin.concurrent.thread
 
 @Component(service = [CpkWriteService::class])
 class CpkWriteServiceImpl @Activate constructor(
@@ -171,7 +172,7 @@ class CpkWriteServiceImpl @Activate constructor(
     }
 
     // TODO - kyriakos - need to schedule this to run like a timer task
-    override fun putMissingCpk() {
+    private fun putMissingCpk() {
         val cachedCpkIds = cpkChecksumsCache?.getCachedCpkIds() ?: run {
             logger.info("cpkChecksumsCache is not set yet, therefore will run a full db to kafka reconciliation")
             emptySet()
@@ -207,6 +208,18 @@ class CpkWriteServiceImpl @Activate constructor(
     override fun start() {
         logger.debug { "Cpk Write Service starting" }
         coordinator.start()
+
+        thread {
+            while (true) {
+                Thread.sleep(10000)
+                logger.info("TEST------------------- thread waking up ")
+                try {
+                    putMissingCpk()
+                } catch (e: Exception) {
+                    logger.info("TEST------------------- caught exception ${e.cause} ${e.message}")
+                }
+            }
+        }
     }
 
     override fun stop() {
