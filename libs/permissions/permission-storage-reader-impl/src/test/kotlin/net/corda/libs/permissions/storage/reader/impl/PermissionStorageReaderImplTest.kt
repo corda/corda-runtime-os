@@ -28,6 +28,11 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
+import net.corda.data.permissions.summary.PermissionSummary as AvroPermissionSummary
+import net.corda.libs.permissions.storage.reader.summary.InternalUserPermissionSummary
+import net.corda.data.permissions.summary.UserPermissionSummary as AvroUserPermissionSummary
+import net.corda.libs.permissions.storage.reader.summary.PermissionSummaryReconciler
+import net.corda.schema.Schemas.Permissions.Companion.PERMISSIONS_USER_SUMMARY_TOPIC
 import net.corda.data.permissions.Group as AvroGroup
 import net.corda.data.permissions.Permission as AvroPermission
 import net.corda.data.permissions.PermissionType as AvroPermissionType
@@ -286,13 +291,20 @@ class PermissionStorageReaderImplTest {
                 )
             )
         )
+
+        val avroPermSummary = AvroUserPermissionSummary(
+            user.loginName,
+            emptyList(),
+            Instant.now()
+        )
     }
 
     private val permissionCache = mock<PermissionCache>()
     private val permissionRepository = mock<PermissionRepository>()
     private val publisher = mock<Publisher>()
+    private val reconciler = mock<PermissionSummaryReconciler>()
 
-    private val processor = PermissionStorageReaderImpl(permissionCache, permissionRepository, publisher)
+    private val processor = PermissionStorageReaderImpl(permissionCache, permissionRepository, publisher, reconciler)
 
     @Test
     fun `starting the reader publishes stored users, groups, roles and permissions`() {
@@ -305,6 +317,12 @@ class PermissionStorageReaderImplTest {
         whenever(permissionRepository.findAllRoles()).thenReturn(listOf(role))
         whenever(permissionRepository.findAllPermissions()).thenReturn(listOf(permission))
 
+        val summariesDb = mapOf(user.loginName to InternalUserPermissionSummary(user.loginName, emptyList(), Instant.now()))
+        val summariesCached = mapOf(user.loginName to avroPermSummary)
+        whenever(permissionRepository.findAllPermissionSummaries()).thenReturn(summariesDb)
+        whenever(permissionCache.permissionSummaries).thenReturn(summariesCached)
+        whenever(reconciler.getSummariesForReconciliation(summariesDb, summariesCached)).thenReturn(emptyMap())
+
         processor.start()
 
         val userRecord = Record(RPC_PERM_USER_TOPIC, user.loginName, avroUser)
@@ -313,11 +331,12 @@ class PermissionStorageReaderImplTest {
         val permissionRecord = Record(RPC_PERM_ENTITY_TOPIC, permission.id, avroPermission)
 
         val captor = argumentCaptor<List<Record<String, Any>>>()
-        verify(publisher, times(4)).publish(captor.capture())
+        verify(publisher, times(5)).publish(captor.capture())
         assertEquals(listOf(userRecord), captor.firstValue)
         assertEquals(listOf(groupRecord), captor.secondValue)
         assertEquals(listOf(roleRecord), captor.thirdValue)
         assertEquals(listOf(permissionRecord), captor.allValues[3])
+        assertEquals(emptyList<AvroUserPermissionSummary>(), captor.allValues[4])
     }
 
     @Test
@@ -331,6 +350,12 @@ class PermissionStorageReaderImplTest {
         whenever(permissionRepository.findAllRoles()).thenReturn(emptyList())
         whenever(permissionRepository.findAllPermissions()).thenReturn(emptyList())
 
+        val summariesDb = mapOf(user.loginName to InternalUserPermissionSummary(user.loginName, emptyList(), Instant.now()))
+        val summariesCached = mapOf(user.loginName to avroPermSummary)
+        whenever(permissionRepository.findAllPermissionSummaries()).thenReturn(summariesDb)
+        whenever(permissionCache.permissionSummaries).thenReturn(summariesCached)
+        whenever(reconciler.getSummariesForReconciliation(summariesDb, summariesCached)).thenReturn(emptyMap())
+
         processor.start()
 
         val userRecord = Record(RPC_PERM_USER_TOPIC, user.loginName, value = null)
@@ -339,11 +364,12 @@ class PermissionStorageReaderImplTest {
         val permissionRecord = Record(RPC_PERM_ENTITY_TOPIC, permission.id, value = null)
 
         val captor = argumentCaptor<List<Record<String, Any>>>()
-        verify(publisher, times(4)).publish(captor.capture())
+        verify(publisher, times(5)).publish(captor.capture())
         assertEquals(listOf(userRecord), captor.firstValue)
         assertEquals(listOf(groupRecord), captor.secondValue)
         assertEquals(listOf(roleRecord), captor.thirdValue)
         assertEquals(listOf(permissionRecord), captor.allValues[3])
+        assertEquals(emptyList<AvroUserPermissionSummary>(), captor.allValues[4])
     }
 
     @Test
@@ -476,4 +502,52 @@ class PermissionStorageReaderImplTest {
 
         verify(publisher).publish(roleRecords)
     }
+
+    @Test
+    fun `reconcilePermissionSummaries publishes empty list when no users need reconciled`() {
+        val summariesDb = mapOf(user.loginName to InternalUserPermissionSummary(user.loginName, emptyList(), Instant.now()))
+        val summariesCached = mapOf(user.loginName to avroPermSummary)
+        whenever(permissionRepository.findAllPermissionSummaries()).thenReturn(summariesDb)
+        whenever(permissionCache.permissionSummaries).thenReturn(summariesCached)
+        whenever(reconciler.getSummariesForReconciliation(summariesDb, summariesCached)).thenReturn(emptyMap())
+
+        processor.reconcilePermissionSummaries()
+
+        val captor = argumentCaptor<List<Record<String, Any>>>()
+        verify(publisher, times(1)).publish(captor.capture())
+        assertEquals(emptyList<AvroUserPermissionSummary>(), captor.firstValue)
+    }
+
+    @Test
+    fun `reconcilePermissionSummaries publishes records for users requiring reconciliation`() {
+        val summariesDb = mapOf(
+            "login1" to InternalUserPermissionSummary("login1", emptyList(), Instant.now()),
+            "login2" to InternalUserPermissionSummary("login2", emptyList(), Instant.now()),
+        )
+        val summariesCached = mapOf(
+            "login3" to AvroUserPermissionSummary("login3", listOf(AvroPermissionSummary()), Instant.now())
+        )
+        val reconcileSummaryLogin1 = AvroUserPermissionSummary()
+        val reconcileSummaryLogin2 = AvroUserPermissionSummary()
+        val forReconciliation = mapOf(
+            "login1" to reconcileSummaryLogin1,
+            "login2" to reconcileSummaryLogin2,
+            "login3" to null
+        )
+
+        whenever(permissionRepository.findAllPermissionSummaries()).thenReturn(summariesDb)
+        whenever(permissionCache.permissionSummaries).thenReturn(summariesCached)
+        whenever(reconciler.getSummariesForReconciliation(summariesDb, summariesCached)).thenReturn(forReconciliation)
+
+        processor.reconcilePermissionSummaries()
+
+        val permissionRecord1 = Record(PERMISSIONS_USER_SUMMARY_TOPIC, "login1", reconcileSummaryLogin1)
+        val permissionRecord2 = Record(PERMISSIONS_USER_SUMMARY_TOPIC, "login2", reconcileSummaryLogin2)
+        val permissionRecord3 = Record(PERMISSIONS_USER_SUMMARY_TOPIC, "login3", null)
+
+        val captor = argumentCaptor<List<Record<String, Any>>>()
+        verify(publisher, times(1)).publish(captor.capture())
+        assertEquals(listOf(permissionRecord1, permissionRecord2, permissionRecord3), captor.firstValue)
+    }
+
 }

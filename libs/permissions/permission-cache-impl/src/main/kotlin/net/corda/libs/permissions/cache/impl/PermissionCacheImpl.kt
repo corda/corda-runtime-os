@@ -6,6 +6,7 @@ import net.corda.data.permissions.Group
 import net.corda.data.permissions.Permission
 import net.corda.data.permissions.Role
 import net.corda.data.permissions.User
+import net.corda.data.permissions.summary.UserPermissionSummary
 import net.corda.libs.permissions.cache.PermissionCache
 import net.corda.libs.permissions.cache.exception.PermissionCacheException
 
@@ -16,7 +17,8 @@ internal class PermissionCacheImpl(
     _userData: ConcurrentHashMap<String, User>,
     _groupData: ConcurrentHashMap<String, Group>,
     _roleData: ConcurrentHashMap<String, Role>,
-    _permissionsData: ConcurrentHashMap<String, Permission>
+    _permissionsData: ConcurrentHashMap<String, Permission>,
+    _permissionSummaryData: ConcurrentHashMap<String, UserPermissionSummary>
 ) : PermissionCache {
 
     override val users: ConcurrentHashMap<String, User> = _userData
@@ -36,6 +38,12 @@ internal class PermissionCacheImpl(
         }
 
     override val permissions: ConcurrentHashMap<String, Permission> = _permissionsData
+        get() {
+            validateCacheIsRunning()
+            return field
+        }
+
+    override val permissionSummaries: ConcurrentHashMap<String, UserPermissionSummary> = _permissionSummaryData
         get() {
             validateCacheIsRunning()
             return field
@@ -64,6 +72,11 @@ internal class PermissionCacheImpl(
     override fun getPermission(permissionId: String): Permission? {
         validateCacheIsRunning()
         return permissions[permissionId]
+    }
+
+    override fun getPermissionSummary(loginName: String): UserPermissionSummary? {
+        validateCacheIsRunning()
+        return permissionSummaries[loginName.toLowerCase()]
     }
 
     private fun validateCacheIsRunning() {
