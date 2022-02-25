@@ -13,7 +13,7 @@ import java.time.Duration
 class KafkaCpkChunksPublisher(
     private val publisher: Publisher,
     private val timeout: Duration,
-    private val topicName: String = "TODO"
+    private val topicName: String
 ) : CpkChunksPublisher {
     companion object {
         val logger = contextLogger()

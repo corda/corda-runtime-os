@@ -30,7 +30,7 @@ class KafkaCpkChunksPublisherTest {
     @BeforeEach
     fun setUp() {
         publisher = mock()
-        kafkaCpkChunksPublisher = KafkaCpkChunksPublisher(publisher, 10.seconds)
+        kafkaCpkChunksPublisher = KafkaCpkChunksPublisher(publisher, 10.seconds, "dummyTopicName")
     }
 
     @Test

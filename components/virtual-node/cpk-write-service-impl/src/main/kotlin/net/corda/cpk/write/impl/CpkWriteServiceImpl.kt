@@ -1,9 +1,9 @@
 package net.corda.cpk.write.impl
 
 import net.corda.chunking.ChunkWriterFactory
+import net.corda.chunking.ChunkWriterFactory.SUGGESTED_CHUNK_SIZE
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.cpk.readwrite.CpkServiceConfigKeys
 import net.corda.cpk.write.CpkWriteService
 import net.corda.cpk.write.impl.services.db.CpkChecksumToData
 import net.corda.cpk.write.impl.services.db.CpkStorage
@@ -30,13 +30,13 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.seconds
-import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -44,8 +44,8 @@ import org.slf4j.Logger
 import java.io.ByteArrayInputStream
 import java.nio.file.Paths
 import java.time.Duration
+import kotlin.concurrent.thread
 
-@Suppress("Warnings", "Unused")
 @Component(service = [CpkWriteService::class])
 class CpkWriteServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
@@ -62,8 +62,9 @@ class CpkWriteServiceImpl @Activate constructor(
     companion object {
         val logger: Logger = contextLogger()
 
-        private const val KB = 1024
-        const val TODO_CHUNK_SIZE = 512 * KB // TODO Replace with config.
+        const val CPK_WRITE_TOPIC = Schemas.VirtualNode.CPK_FILE_TOPIC
+        const val CPK_WRITE_GROUP = "cpk.writer"
+        const val CPK_WRITE_CLIENT = "$CPK_WRITE_GROUP.client"
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<CpkWriteService>(this)
@@ -137,29 +138,30 @@ class CpkWriteServiceImpl @Activate constructor(
     private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         val config = event.config[ConfigKeys.BOOT_CONFIG]!!
         // TODO - kyriakos - fix expected configuration and fill following properties with configuration
-        if (config.hasPath("todo")) {
+        //if (config.hasPath("todo")) {
 
             timeout = 20.seconds
             cpkChecksumsCache = CpkChecksumsCacheImpl(
                 subscriptionFactory,
-                SubscriptionConfig("todo", "todo"),
+                SubscriptionConfig(CPK_WRITE_GROUP, CPK_WRITE_TOPIC),
                 config
-            )
+            ).also { it.start() }
+
             val publisher = publisherFactory.createPublisher(
-                PublisherConfig("todo"),
+                PublisherConfig(CPK_WRITE_CLIENT),
                 config
             )
-            cpkChunksPublisher = KafkaCpkChunksPublisher(publisher, timeout!!)
+            cpkChunksPublisher = KafkaCpkChunksPublisher(publisher, timeout!!, CPK_WRITE_TOPIC)
             cpkStorage = DBCpkStorage(dbConnectionManager.clusterDbEntityManagerFactory)
 
             coordinator.updateStatus(LifecycleStatus.UP)
-        } else {
-            logger.warn(
-                "Need ${CpkServiceConfigKeys.CPK_CACHE_DIR} to be specified in the boot config." +
-                        " Component ${this::class.java.simpleName} is not started"
-            )
-            closeResources()
-        }
+//        } else {
+//            logger.warn(
+//                "Need ${CpkServiceConfigKeys.CPK_CACHE_DIR} to be specified in the boot config." +
+//                        " Component ${this::class.java.simpleName} is not started"
+//            )
+//            closeResources()
+//        }
     }
 
     /**
@@ -171,12 +173,10 @@ class CpkWriteServiceImpl @Activate constructor(
 
     // TODO - kyriakos - need to schedule this to run like a timer task
     override fun putMissingCpk() {
-        val cachedCpkIds = cpkChecksumsCache?.let {
-            it.getCachedCpkIds()
-        } ?: {
+        val cachedCpkIds = cpkChecksumsCache?.getCachedCpkIds() ?: run {
             logger.info("cpkChecksumsCache is not set yet, therefore will run a full db to kafka reconciliation")
-            emptySet<SecureHash>()
-        }.invoke()
+            emptySet()
+        }
 
         val cpkStorage =
             this.cpkStorage ?: throw CordaRuntimeException("CPK storage service is not set")
@@ -194,7 +194,7 @@ class CpkWriteServiceImpl @Activate constructor(
     private fun CpkChunksPublisher.chunkAndPublishCpk(cpkChecksumToData: CpkChecksumToData) {
         val cpkChecksum = cpkChecksumToData.checksum
         val cpkData = cpkChecksumToData.data
-        val chunkWriter = ChunkWriterFactory.create(TODO_CHUNK_SIZE)
+        val chunkWriter = ChunkWriterFactory.create(SUGGESTED_CHUNK_SIZE)
         chunkWriter.onChunk { chunk ->
             val cpkChunkId = AvroTypesTodo.CpkChunkIdAvro(cpkChecksum.toAvro(), chunk.partNumber)
             put(cpkChunkId, chunk)
@@ -207,7 +207,6 @@ class CpkWriteServiceImpl @Activate constructor(
 
     override fun start() {
         logger.debug { "Cpk Write Service starting" }
-        cpkChecksumsCache!!.start()
         coordinator.start()
     }
 
