@@ -1,9 +1,9 @@
 package net.corda.cpk.write.impl.services.kafka.impl
 
+import net.corda.chunking.toCorda
 import net.corda.cpk.write.impl.services.kafka.CpkChecksumsCache
-import net.corda.cpk.write.impl.services.kafka.AvroTypesTodo
-import net.corda.cpk.write.impl.services.kafka.toCorda
 import net.corda.data.chunking.Chunk
+import net.corda.data.chunking.CpkChunkId
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.processor.CompactedProcessor
@@ -59,23 +59,23 @@ class CpkChecksumsCacheImpl(
         )
     }
 
-    inner class CacheSynchronizer : CompactedProcessor<AvroTypesTodo.CpkChunkIdAvro, Chunk> {
-        override val keyClass: Class<AvroTypesTodo.CpkChunkIdAvro>
-            get() = AvroTypesTodo.CpkChunkIdAvro::class.java
+    inner class CacheSynchronizer : CompactedProcessor<CpkChunkId, Chunk> {
+        override val keyClass: Class<CpkChunkId>
+            get() = CpkChunkId::class.java
         override val valueClass: Class<Chunk>
             get() = Chunk::class.java
 
         // TODO: Not good that we need to load AvroTypesTodo.CpkChunk back in memory for now reason.
-        override fun onSnapshot(currentData: Map<AvroTypesTodo.CpkChunkIdAvro, Chunk>) {
+        override fun onSnapshot(currentData: Map<CpkChunkId, Chunk>) {
             currentData.forEach { (cpkChunkId, cpkChunk) ->
                 updateCacheOnZeroChunk(cpkChunkId, cpkChunk)
             }
         }
 
         override fun onNext(
-            newRecord: Record<AvroTypesTodo.CpkChunkIdAvro, Chunk>,
+            newRecord: Record<CpkChunkId, Chunk>,
             oldValue: Chunk?,
-            currentData: Map<AvroTypesTodo.CpkChunkIdAvro, Chunk>
+            currentData: Map<CpkChunkId, Chunk>
         ) {
             // TODO add checks with oldValue: CpkInfo? that matches memory state
             //  also assert that newRecord.topic is the same with ours just in case?
@@ -84,7 +84,7 @@ class CpkChecksumsCacheImpl(
             updateCacheOnZeroChunk(cpkChunkId, cpkChunk)
         }
 
-        private fun updateCacheOnZeroChunk(cpkChunkId: AvroTypesTodo.CpkChunkIdAvro, cpkChunk: Chunk?) {
+        private fun updateCacheOnZeroChunk(cpkChunkId: CpkChunkId, cpkChunk: Chunk?) {
             if (cpkChunk?.data?.isZeroChunk() == true) {
                 val cpkChecksum = cpkChunkId.cpkChecksum.toCorda()
                 add(cpkChecksum)

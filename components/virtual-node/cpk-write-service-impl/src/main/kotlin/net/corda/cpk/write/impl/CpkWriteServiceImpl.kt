@@ -2,18 +2,18 @@ package net.corda.cpk.write.impl
 
 import net.corda.chunking.ChunkWriterFactory
 import net.corda.chunking.ChunkWriterFactory.SUGGESTED_CHUNK_SIZE
+import net.corda.chunking.toAvro
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpk.write.CpkWriteService
 import net.corda.cpk.write.impl.services.db.CpkChecksumToData
 import net.corda.cpk.write.impl.services.db.CpkStorage
 import net.corda.cpk.write.impl.services.db.impl.DBCpkStorage
-import net.corda.cpk.write.impl.services.kafka.AvroTypesTodo
 import net.corda.cpk.write.impl.services.kafka.CpkChecksumsCache
 import net.corda.cpk.write.impl.services.kafka.CpkChunksPublisher
 import net.corda.cpk.write.impl.services.kafka.impl.CpkChecksumsCacheImpl
 import net.corda.cpk.write.impl.services.kafka.impl.KafkaCpkChunksPublisher
-import net.corda.cpk.write.impl.services.kafka.toAvro
+import net.corda.data.chunking.CpkChunkId
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -44,7 +44,6 @@ import org.slf4j.Logger
 import java.io.ByteArrayInputStream
 import java.nio.file.Paths
 import java.time.Duration
-import kotlin.concurrent.thread
 
 @Component(service = [CpkWriteService::class])
 class CpkWriteServiceImpl @Activate constructor(
@@ -196,7 +195,7 @@ class CpkWriteServiceImpl @Activate constructor(
         val cpkData = cpkChecksumToData.data
         val chunkWriter = ChunkWriterFactory.create(SUGGESTED_CHUNK_SIZE)
         chunkWriter.onChunk { chunk ->
-            val cpkChunkId = AvroTypesTodo.CpkChunkIdAvro(cpkChecksum.toAvro(), chunk.partNumber)
+            val cpkChunkId = CpkChunkId(cpkChecksum.toAvro(), chunk.partNumber)
             put(cpkChunkId, chunk)
         }
         chunkWriter.write(Paths.get("todo"), ByteArrayInputStream(cpkData))

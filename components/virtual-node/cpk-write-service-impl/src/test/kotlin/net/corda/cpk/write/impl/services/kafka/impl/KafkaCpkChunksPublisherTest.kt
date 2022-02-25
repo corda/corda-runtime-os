@@ -1,9 +1,9 @@
 package net.corda.cpk.write.impl.services.kafka.impl
 
-import net.corda.cpk.write.impl.services.kafka.AvroTypesTodo
+import net.corda.chunking.toAvro
 import net.corda.cpk.write.impl.services.kafka.CpkChunksPublisher
-import net.corda.cpk.write.impl.services.kafka.toAvro
 import net.corda.data.chunking.Chunk
+import net.corda.data.chunking.CpkChunkId
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.v5.base.util.seconds
 import net.corda.v5.crypto.SecureHash
@@ -35,7 +35,7 @@ class KafkaCpkChunksPublisherTest {
 
     @Test
     fun `on putting cpk chunks puts them to Kafka`() {
-        val cpkChunkId = AvroTypesTodo.CpkChunkIdAvro(secureHash("dummy".toByteArray()), 0)
+        val cpkChunkId = CpkChunkId(secureHash("dummy".toByteArray()), 0)
         val cpkChunk = Chunk()
         whenever(publisher.publish(any())).thenReturn(listOf(CompletableFuture<Unit>().also { it.complete(Unit) }))
 

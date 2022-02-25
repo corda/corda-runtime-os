@@ -1,8 +1,8 @@
 package net.corda.cpk.write.impl.services.kafka.impl
 
-import net.corda.cpk.write.impl.services.kafka.AvroTypesTodo
-import net.corda.cpk.write.impl.services.kafka.toAvro
+import net.corda.chunking.toAvro
 import net.corda.data.chunking.Chunk
+import net.corda.data.chunking.CpkChunkId
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -31,7 +31,7 @@ class CpkChecksumsCacheImplTest {
 
         fun dummyCpkChunkIdToCpkChunk(cpkChecksum: SecureHash, partNumber: Int, zeroChunk: Boolean) =
             Pair(
-                AvroTypesTodo.CpkChunkIdAvro(cpkChecksum.toAvro(), partNumber),
+                CpkChunkId(cpkChecksum.toAvro(), partNumber),
                 Chunk(
                     "dummyRequestId",
                     "dummyFileName",
