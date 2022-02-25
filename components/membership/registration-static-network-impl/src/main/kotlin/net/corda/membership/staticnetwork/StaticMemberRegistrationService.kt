@@ -44,6 +44,7 @@ import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.calculateHash
 import net.corda.v5.membership.identity.EndpointInfo
 import net.corda.v5.membership.identity.MemberInfo
+import net.corda.v5.membership.identity.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
@@ -147,7 +148,7 @@ class StaticMemberRegistrationService @Activate constructor(
         @Suppress("SpreadOperator")
         staticMemberList.forEach { staticMember ->
             isValidStaticMemberDeclaration(processedMembers, staticMember)
-            val memberName = staticMember.name!!
+            val memberName = MemberX500Name.parse(staticMember.name!!).toString()
             val memberId = HoldingIdentity(memberName, groupId).id
             val memberKey = generateOwningKey(staticMember, memberId)
             val encodedMemberKey = keyEncodingService.encodeAsString(memberKey)
@@ -189,7 +190,9 @@ class StaticMemberRegistrationService @Activate constructor(
     private fun isValidStaticMemberDeclaration(processedMembers: List<String>, member: StaticMember) {
         val memberName = member.name
         require(!memberName.isNullOrBlank()) { "Member's name is not provided." }
-        require(!processedMembers.contains(memberName)) { "Duplicated static member declaration." }
+        require(!processedMembers.contains(
+            MemberX500Name.parse(memberName).toString()
+        )) { "Duplicated static member declaration." }
         require(
             member.keys.any { it.startsWith(endpointUrlIdentifier) }
         ) { "Endpoint urls are not provided." }
