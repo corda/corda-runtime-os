@@ -16,13 +16,7 @@ import net.corda.p2p.linkmanager.utilities.AutoClosableScheduledExecutorService
 import net.corda.v5.base.util.contextLogger
 import java.time.Duration
 import java.time.Instant
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.ScheduledFuture
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -50,12 +44,40 @@ internal class ReplayScheduler<M>(
 
     private val replayCalculator = AtomicReference<ReplayCalculator>()
     data class ReplayInfo(val currentReplayPeriod: Duration, val future: ScheduledFuture<*>)
+    // Compute on this map is used during add/remove operations to ensure these are performed atomically.
     private val replayingMessageIdsPerSessionCounterparties =
         ConcurrentHashMap<SessionManager.SessionCounterparties, MutableSet<MessageId>>()
     private val replayInfoPerMessageId = ConcurrentHashMap<MessageId, ReplayInfo>()
     data class QueuedMessage<M>(val originalAttemptTimestamp: Long, val uniqueId: MessageId, val message: M)
-    private val queuedMessagesPerSessionCounterparties =
-        ConcurrentHashMap<SessionManager.SessionCounterparties, ConcurrentLinkedQueue<QueuedMessage<M>>>()
+    private val queuedMessagesPerSessionCounterparties = ConcurrentHashMap<SessionManager.SessionCounterparties, MessageQueue<M>>()
+
+    /**
+     * A Queue of QueuedMessages where messages can be removed from the queue by messageId.
+     */
+    internal class MessageQueue<M> {
+
+        private val queue: LinkedHashMap<MessageId, QueuedMessage<M>> = LinkedHashMap()
+
+        fun queueMessage(message: QueuedMessage<M>) {
+            synchronized(this) {
+                queue.put(message.uniqueId, message)
+            }
+        }
+
+        fun removeMessage(messageId: MessageId) {
+            synchronized(this) {
+                queue.remove(messageId)
+            }
+        }
+
+        fun poll(): QueuedMessage<M>? {
+            return synchronized(this) {
+                val (id, message) = queue.entries.firstOrNull() ?: return null
+                queue.remove(id)
+                message
+            }
+        }
+    }
 
     companion object {
         private val logger = contextLogger()
@@ -97,7 +119,9 @@ internal class ReplayScheduler<M>(
             val extraMessages = oldConfiguration?.maxReplayingMessages?.let { newReplayCalculator.extraMessagesToReplay(it) } ?: 0
             queuedMessagesPerSessionCounterparties.forEach { (sessionCounterparties, queuedMessages) ->
                 for (i in 0 until extraMessages) {
-                    queuedMessages.poll()?.let { addForReplay(it.originalAttemptTimestamp, it.uniqueId, it.message, sessionCounterparties) }
+                    queuedMessages.poll()?.let {
+                        addForReplay(it.originalAttemptTimestamp, it.uniqueId, it.message, sessionCounterparties)
+                    }
                 }
             }
             configUpdateResult.complete(Unit)
@@ -149,8 +173,8 @@ internal class ReplayScheduler<M>(
                         replayingMessagesForSessionCounterparties
                     }
                     else -> {
-                        queuedMessagesPerSessionCounterparties.computeIfAbsent(counterparties) { ConcurrentLinkedQueue() }
-                            .add(QueuedMessage(originalAttemptTimestamp, messageId, message))
+                        queuedMessagesPerSessionCounterparties.computeIfAbsent(counterparties) { MessageQueue() }
+                            .queueMessage(QueuedMessage(originalAttemptTimestamp, messageId, message))
                         replayingMessagesForSessionCounterparties
                     }
                 }
@@ -173,6 +197,8 @@ internal class ReplayScheduler<M>(
                 queuedMessagesPerSessionCounterparties[counterparties]?.poll()?.let {
                     addForReplay(it.originalAttemptTimestamp, it.uniqueId, it.message, counterparties)
                 }
+            } else {
+                queuedMessagesPerSessionCounterparties[counterparties]?.removeMessage(messageId)
             }
             if (replayingMessagesForSessionCounterparties?.isEmpty() == true) {
                 queuedMessagesPerSessionCounterparties.remove(counterparties)
