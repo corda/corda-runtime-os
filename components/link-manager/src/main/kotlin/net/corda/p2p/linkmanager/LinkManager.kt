@@ -135,7 +135,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         configuration,
         instanceId,
     ).also {
-        linkManagerNetworkMap.registerListener(it)
+        linkManagerHostingMap.registerListener(it)
     }
 
     private val deliveryTracker = DeliveryTracker(

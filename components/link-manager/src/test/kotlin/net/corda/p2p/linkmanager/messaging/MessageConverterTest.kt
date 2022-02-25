@@ -112,7 +112,6 @@ class MessageConverterTest {
                 keyPairGenerator.genKeyPair().public,
                 KeyAlgorithm.ECDSA,
                 LinkManagerNetworkMap.EndPoint(""),
-                emptyList(),
             )
         )
         val flowMessage = authenticatedMessageAndKey(us, peer, ByteBuffer.wrap("DATA".toByteArray()))
@@ -153,7 +152,6 @@ class MessageConverterTest {
                 keyPairGenerator.genKeyPair().public,
                 KeyAlgorithm.ECDSA,
                 LinkManagerNetworkMap.EndPoint(""),
-                emptyList(),
             )
         )
         assertNull(MessageConverter.linkOutFromUnauthenticatedMessage(unauthenticatedMsg, networkMap))

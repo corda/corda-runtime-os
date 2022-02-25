@@ -97,7 +97,6 @@ class StubNetworkMap(
             keyDeserialiser.toPublicKey(this.publicKey.array(), this.publicKeyAlgorithm),
             this.publicKeyAlgorithm.toKeyAlgorithm(),
             LinkManagerNetworkMap.EndPoint(this.address),
-            this.tlsCertificates,
         )
     }
 
@@ -165,14 +164,6 @@ class StubNetworkMap(
             )
             listeners.forEach { listener ->
                 listener.groupAdded(groupInfo)
-            }
-            val identityInfo = NetworkMapListener.IdentityInfo(
-                networkMapEntry.holdingIdentity,
-                networkMapEntry.address,
-                networkMapEntry.tlsCertificates
-            )
-            listeners.forEach { listener ->
-                listener.identityAdded(identityInfo)
             }
         }
 

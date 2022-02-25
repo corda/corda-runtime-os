@@ -92,12 +92,6 @@ class NetworkMapCreator @Activate constructor(
                     .map {
                         File(it)
                     }.map { it.readText() }
-                val tlsCertificates = dataConfig.getList("tlsCertificates")
-                    .unwrapped()
-                    .filterIsInstance<String>()
-                    .map {
-                        File(it)
-                    }.map { it.readText() }
 
                 val (keyAlgo, publicKey) = readKey(publicKeyStoreFile, publicKeyAlgo, publicKeyAlias, keystorePassword)
                 val networkMapEntry = NetworkMapEntry(
@@ -107,7 +101,6 @@ class NetworkMapCreator @Activate constructor(
                     address,
                     networkType,
                     trustStoreCertificates,
-                    tlsCertificates,
                 )
                 Record(topic, "$x500Name-$groupId", networkMapEntry)
             }

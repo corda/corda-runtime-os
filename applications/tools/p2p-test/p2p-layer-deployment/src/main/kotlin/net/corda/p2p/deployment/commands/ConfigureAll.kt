@@ -163,7 +163,6 @@ class ConfigureAll : Runnable {
                     "address" to "http://$host:${Port.Gateway.port}",
                     "networkType" to "CORDA_5",
                     "trustStoreCertificates" to listOf(trustStoreFile.absolutePath),
-                    "tlsCertificates" to listOf(tlsCertificates(host).absolutePath),
                 )
             )
 
@@ -208,7 +207,6 @@ class ConfigureAll : Runnable {
                         "address" to "http://$host:${Port.Gateway.port}",
                         "networkType" to "CORDA_5",
                         "trustStoreCertificates" to listOf(trustStoreFile.absolutePath),
-                        "tlsCertificates" to listOf(tlsCertificates(host).absolutePath),
                     )
                 )
             }
@@ -271,7 +269,7 @@ class ConfigureAll : Runnable {
                 "-k",
                 RunJar.kafkaServers(namespaceName),
                 "link-manager",
-                "--locallyHostedIdentity=$x500name:$groupId",
+                "--locallyHostedIdentity=$x500name:$groupId:${tlsCertificates(host).absolutePath}",
             ) + linkManagerExtraArguments
         ).run()
     }

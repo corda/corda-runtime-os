@@ -28,7 +28,7 @@ internal class TlsCertificatesPublisher(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     configuration: SmartConfig,
     instanceId: Int,
-) : LifecycleWithDominoTile, NetworkMapListener {
+) : LifecycleWithDominoTile, HostingMapListener {
 
     companion object {
         private const val CURRENT_DATA_READER_GROUP_NAME = "linkmanager_tlscertificates_reader"
@@ -36,7 +36,7 @@ internal class TlsCertificatesPublisher(
     }
 
     private val publishedIds = ConcurrentHashMap<String, Set<PemCertificates>>()
-    private val toPublish = ConcurrentLinkedQueue<NetworkMapListener.IdentityInfo>()
+    private val toPublish = ConcurrentLinkedQueue<HostingMapListener.IdentityInfo>()
 
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,
@@ -66,7 +66,7 @@ internal class TlsCertificatesPublisher(
 
     private val ready = CompletableFuture<Unit>()
 
-    override fun identityAdded(identityInfo: NetworkMapListener.IdentityInfo) {
+    override fun identityAdded(identityInfo: HostingMapListener.IdentityInfo) {
         toPublish.offer(identityInfo)
         publishQueueIfPossible()
     }

@@ -60,12 +60,12 @@ class MockNetworkMap(nodes: List<LinkManagerNetworkMap.HoldingIdentity>) {
             }
 
             override fun getOurMemberInfo(): LinkManagerNetworkMap.MemberInfo {
-                return LinkManagerNetworkMap.MemberInfo(node, getKeyPair().public, KeyAlgorithm.ECDSA, FAKE_ENDPOINT, emptyList())
+                return LinkManagerNetworkMap.MemberInfo(node, getKeyPair().public, KeyAlgorithm.ECDSA, FAKE_ENDPOINT)
             }
 
             override fun getMemberInfo(holdingIdentity: LinkManagerNetworkMap.HoldingIdentity): LinkManagerNetworkMap.MemberInfo? {
                 val publicKey = keys[holdingIdentity]?.public ?: return null
-                return LinkManagerNetworkMap.MemberInfo(holdingIdentity, publicKey, KeyAlgorithm.ECDSA, FAKE_ENDPOINT, emptyList())
+                return LinkManagerNetworkMap.MemberInfo(holdingIdentity, publicKey, KeyAlgorithm.ECDSA, FAKE_ENDPOINT)
             }
 
             override fun getMemberInfo(hash: ByteArray, groupId: String): LinkManagerNetworkMap.MemberInfo? {

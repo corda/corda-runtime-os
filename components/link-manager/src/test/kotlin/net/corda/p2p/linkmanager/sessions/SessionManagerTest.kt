@@ -98,12 +98,11 @@ class SessionManagerTest {
         val OUR_PARTY = LinkManagerNetworkMap.HoldingIdentity("Alice", GROUP_ID)
         val OUR_KEY = keyGenerator.genKeyPair()
         val OUR_MEMBER_INFO = LinkManagerNetworkMap.MemberInfo(OUR_PARTY, OUR_KEY.public, KeyAlgorithm.ECDSA,
-            LinkManagerNetworkMap.EndPoint("http://alice.com"),
-            emptyList(),)
+            LinkManagerNetworkMap.EndPoint("http://alice.com"))
         val PEER_PARTY = LinkManagerNetworkMap.HoldingIdentity("Bob", GROUP_ID)
         val PEER_KEY = keyGenerator.genKeyPair()
         val PEER_MEMBER_INFO = LinkManagerNetworkMap.MemberInfo(PEER_PARTY, PEER_KEY.public, KeyAlgorithm.ECDSA,
-            LinkManagerNetworkMap.EndPoint("http://bob.com"), emptyList(),)
+            LinkManagerNetworkMap.EndPoint("http://bob.com"))
 
         lateinit var loggingInterceptor: LoggingInterceptor
 

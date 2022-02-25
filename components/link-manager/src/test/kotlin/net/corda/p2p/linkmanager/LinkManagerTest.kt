@@ -101,7 +101,6 @@ class LinkManagerTest {
             keyPairGenerator.generateKeyPair().public,
             KeyAlgorithm.ECDSA,
             FAKE_ENDPOINT,
-            emptyList(),
         )
 
         private val hostingMap = mock<LinkManagerHostingMap>().also {

@@ -18,6 +18,7 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITIES_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_GPOUP_ID
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_X500_NAME
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_TLS_CERTIFICATES
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_MESSAGE_SIZE_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_REPLAYING_MESSAGES_PER_PEER_POSTFIX
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MESSAGE_REPLAY_KEY_PREFIX
@@ -229,26 +230,6 @@ class P2PLayerEndToEndTest {
         checkRevocation: Boolean,
         private val identitiesKeyAlgorithm: KeyAlgorithm,
     ) : AutoCloseable {
-        companion object {
-            private val linkManagerConfigTemplate = """
-                {
-                    $LOCALLY_HOSTED_IDENTITIES_KEY: [
-                        {
-                            "$LOCALLY_HOSTED_IDENTITY_X500_NAME": "<x500-name>",
-                            "$LOCALLY_HOSTED_IDENTITY_GPOUP_ID": "$GROUP_ID"
-                        }
-                    ],
-                    $MAX_MESSAGE_SIZE_KEY: 1000000,
-                    $PROTOCOL_MODE_KEY: ["${ProtocolMode.AUTHENTICATION_ONLY}", "${ProtocolMode.AUTHENTICATED_ENCRYPTION}"],
-                    $MESSAGE_REPLAY_KEY_PREFIX$BASE_REPLAY_PERIOD_KEY_POSTFIX: 2000,
-                    $MESSAGE_REPLAY_KEY_PREFIX$CUTOFF_REPLAY_KEY_POSTFIX: 10000,
-                    $MESSAGE_REPLAY_KEY_PREFIX$MAX_REPLAYING_MESSAGES_PER_PEER_POSTFIX: 100,
-                    $HEARTBEAT_MESSAGE_PERIOD_KEY: 2000,
-                    $SESSION_TIMEOUT_KEY: 10000
-                }
-            """.trimIndent()
-        }
-
         private val sslConfig = SslConfiguration(
             revocationCheck = RevocationConfig(if (checkRevocation) RevocationConfigMode.HARD_FAIL else RevocationConfigMode.OFF)
         )
@@ -262,7 +243,34 @@ class P2PLayerEndToEndTest {
             ConfigPublisherImpl(CONFIG_TOPIC, it)
         }
         val gatewayConfig = createGatewayConfig(p2pPort, p2pAddress, sslConfig)
-        val linkManagerConfig = ConfigFactory.parseString(linkManagerConfigTemplate.replace("<x500-name>", x500Name))
+        val linkManagerConfig by lazy {
+            val locallyHostedIdentities = ConfigValueFactory.fromAnyRef(
+                listOf(
+                    mapOf(
+                        LOCALLY_HOSTED_IDENTITY_X500_NAME to x500Name,
+                        LOCALLY_HOSTED_IDENTITY_GPOUP_ID to GROUP_ID,
+                        LOCALLY_HOSTED_TLS_CERTIFICATES to tlsCertificatesPem
+                    )
+                )
+            )
+            ConfigFactory.empty()
+                .withValue(LOCALLY_HOSTED_IDENTITIES_KEY, locallyHostedIdentities)
+                .withValue(MAX_MESSAGE_SIZE_KEY, ConfigValueFactory.fromAnyRef(1000000))
+                .withValue(
+                    PROTOCOL_MODE_KEY,
+                    ConfigValueFactory.fromAnyRef(
+                        listOf(
+                            ProtocolMode.AUTHENTICATION_ONLY,
+                            ProtocolMode.AUTHENTICATED_ENCRYPTION
+                        ).map { it.name }
+                    )
+                )
+                .withValue("$MESSAGE_REPLAY_KEY_PREFIX$BASE_REPLAY_PERIOD_KEY_POSTFIX", ConfigValueFactory.fromAnyRef(2000))
+                .withValue("$MESSAGE_REPLAY_KEY_PREFIX$CUTOFF_REPLAY_KEY_POSTFIX", ConfigValueFactory.fromAnyRef(10000))
+                .withValue("$MESSAGE_REPLAY_KEY_PREFIX$MAX_REPLAYING_MESSAGES_PER_PEER_POSTFIX", ConfigValueFactory.fromAnyRef(100))
+                .withValue(HEARTBEAT_MESSAGE_PERIOD_KEY, ConfigValueFactory.fromAnyRef(2000))
+                .withValue(SESSION_TIMEOUT_KEY, ConfigValueFactory.fromAnyRef(10000))
+        }
 
         private fun readKeyStore(fileName: String): ByteArray {
             return javaClass.classLoader.getResource(fileName).readBytes()
@@ -366,7 +374,6 @@ class P2PLayerEndToEndTest {
                 "http://$p2pAddress:$p2pPort",
                 NetworkType.CORDA_5,
                 listOf(String(readKeyStore("$trustStoreFileName.pem"))),
-                tlsCertificatesPem
             )
 
         private fun publishNetworkMapAndKeys(otherHost: Host) {

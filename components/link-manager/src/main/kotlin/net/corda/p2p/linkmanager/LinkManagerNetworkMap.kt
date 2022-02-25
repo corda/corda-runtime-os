@@ -51,7 +51,6 @@ interface LinkManagerNetworkMap: LifecycleWithDominoTile {
                           val publicKey: PublicKey,
                           val publicKeyAlgorithm: KeyAlgorithm,
                           val endPoint: EndPoint,
-                          val tlsCertificates: List<PemCertificates>
     ) {
 
         fun getSignatureSpec(): SignatureSpec {

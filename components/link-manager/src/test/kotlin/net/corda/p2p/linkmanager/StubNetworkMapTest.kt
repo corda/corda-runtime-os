@@ -74,7 +74,6 @@ class StubNetworkMapTest {
 
     private val certificates1 = listOf("1.1", "1.2")
     private val certificates2 = listOf("2")
-    private val tlsCertificates = listOf("4")
 
     @AfterEach
     fun cleanUp() {
@@ -92,7 +91,6 @@ class StubNetworkMapTest {
                 KeyAlgorithm.RSA, aliceAddress,
                 NetworkType.CORDA_4,
                 certificates1,
-                tlsCertificates,
             ),
             "$bobName-$groupId1" to NetworkMapEntry(
                 HoldingIdentity(bobName, groupId1),
@@ -100,7 +98,6 @@ class StubNetworkMapTest {
                 KeyAlgorithm.RSA, bobAddress,
                 NetworkType.CORDA_4,
                 certificates1,
-                tlsCertificates,
             ),
         )
         val charlieEntry = "$charlieName-$groupId2" to NetworkMapEntry(
@@ -109,7 +106,6 @@ class StubNetworkMapTest {
             KeyAlgorithm.ECDSA, charlieAddress,
             NetworkType.CORDA_5,
             certificates2,
-            tlsCertificates,
         )
         createResources(resourcesHolder)
         clientProcessor!!.onSnapshot(snapshot)
@@ -143,42 +139,6 @@ class StubNetworkMapTest {
     }
 
     @Test
-    fun `onNext notify the listeners of new identity`() {
-        val identities = mutableListOf<NetworkMapListener.IdentityInfo>()
-        val identityListener = object : NetworkMapListener {
-            override fun identityAdded(identityInfo: NetworkMapListener.IdentityInfo) {
-                identities.add(identityInfo)
-            }
-        }
-        networkMap.registerListener(identityListener)
-
-        clientProcessor?.onNext(
-            Record(
-                NETWORK_MAP_TOPIC,
-                "key",
-                NetworkMapEntry(
-                    HoldingIdentity(aliceName, groupId1),
-                    ByteBuffer.wrap(aliceKeyPair.public.encoded),
-                    KeyAlgorithm.RSA, aliceAddress,
-                    NetworkType.CORDA_4,
-                    certificates1,
-                    tlsCertificates,
-                )
-            ),
-            null,
-            emptyMap()
-        )
-
-        assertThat(identities).containsExactly(
-            NetworkMapListener.IdentityInfo(
-                HoldingIdentity(aliceName, groupId1),
-                aliceAddress,
-                tlsCertificates,
-            )
-        )
-    }
-
-    @Test
     fun `onNext notify the listeners of new group`() {
         val groups = mutableListOf<NetworkMapListener.GroupInfo>()
         val groupListener = object : NetworkMapListener {
@@ -198,7 +158,6 @@ class StubNetworkMapTest {
                     KeyAlgorithm.RSA, aliceAddress,
                     NetworkType.CORDA_4,
                     certificates1,
-                    tlsCertificates,
                 )
             ),
             null,
