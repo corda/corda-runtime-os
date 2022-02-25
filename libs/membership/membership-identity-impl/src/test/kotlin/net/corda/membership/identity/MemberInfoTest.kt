@@ -3,8 +3,8 @@ package net.corda.membership.identity
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.SignedMemberInfo
-import net.corda.membership.conversion.PropertyConverterImpl
-import net.corda.membership.conversion.toWire
+import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
+import net.corda.layeredpropertymap.toWire
 import net.corda.membership.identity.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.identity.MemberInfoExtension.Companion.IDENTITY_KEYS
 import net.corda.membership.identity.MemberInfoExtension.Companion.IDENTITY_KEYS_KEY
@@ -24,14 +24,10 @@ import net.corda.membership.identity.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.identity.MemberInfoExtension.Companion.status
 import net.corda.membership.identity.converter.EndpointInfoConverter
 import net.corda.membership.identity.converter.PublicKeyConverter
-import net.corda.membership.testkit.DummyConverter
-import net.corda.membership.testkit.DummyObjectWithNumberAndText
-import net.corda.membership.testkit.DummyObjectWithText
+import net.corda.v5.base.exceptions.ValueNotFoundException
+import net.corda.v5.base.util.parse
+import net.corda.v5.base.util.parseList
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.membership.conversion.ValueNotFoundException
-import net.corda.v5.membership.conversion.parse
-import net.corda.v5.membership.conversion.parseList
-import net.corda.v5.membership.conversion.parseOrNull
 import net.corda.v5.membership.identity.EndpointInfo
 import net.corda.v5.membership.identity.MemberInfo
 import org.apache.avro.file.DataFileReader
@@ -52,7 +48,9 @@ import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 @Suppress("MaxLineLength")
 class MemberInfoTest {
@@ -75,12 +73,10 @@ class MemberInfoTest {
         private const val TEST_OBJECT_NUMBER = "custom.testObjects.%s.number"
         private const val TEST_OBJECT_TEXT = "custom.testObjects.%s.text"
 
-        private val converter = PropertyConverterImpl(
-            listOf(
-                EndpointInfoConverter(),
-                PublicKeyConverter(keyEncodingService),
-                DummyConverter()
-            )
+        private val converters = listOf(
+            EndpointInfoConverter(),
+            PublicKeyConverter(keyEncodingService),
+            DummyConverter()
         )
 
         private const val NULL_KEY = "nullKey"
@@ -92,7 +88,7 @@ class MemberInfoTest {
 
         @Suppress("SpreadOperator")
         private fun createDummyMemberInfo(): MemberInfo = MemberInfoImpl(
-            memberProvidedContext = MemberContextImpl(
+            memberProvidedContext = LayeredPropertyMapMocks.create<MemberContextImpl>(
                 sortedMapOf(
                     PARTY_NAME to "O=Alice,L=London,C=GB",
                     PARTY_OWNING_KEY to KEY,
@@ -107,15 +103,15 @@ class MemberInfoTest {
                     DUMMY_KEY to "dummyValue",
                     NULL_KEY to null
                 ),
-                converter
+                converters
             ),
-            mgmProvidedContext = MGMContextImpl(
+            mgmProvidedContext = LayeredPropertyMapMocks.create<MGMContextImpl>(
                 sortedMapOf(
                     STATUS to MEMBER_STATUS_ACTIVE,
                     MODIFIED_TIME to modifiedTime.toString(),
                     DUMMY_KEY to "dummyValue"
                 ),
-                converter
+                converters
             )
         )
 
@@ -202,8 +198,12 @@ class MemberInfoTest {
         while (dataFileReader.hasNext()) {
             user = dataFileReader.next(user)
             recreatedMemberInfo = toMemberInfo(
-                MemberContextImpl(KeyValuePairList.fromByteBuffer(user.memberContext).toSortedMap(), converter),
-                MGMContextImpl(KeyValuePairList.fromByteBuffer(user.mgmContext).toSortedMap(), converter)
+                LayeredPropertyMapMocks.create<MemberContextImpl>(
+                    KeyValuePairList.fromByteBuffer(user.memberContext).toSortedMap(), converters
+                ),
+                LayeredPropertyMapMocks.create<MGMContextImpl>(
+                    KeyValuePairList.fromByteBuffer(user.mgmContext).toSortedMap(), converters
+                )
             )
         }
 
@@ -226,33 +226,29 @@ class MemberInfoTest {
     }
 
     @Test
-    fun `parsing throws ValueNotFoundException when no value is found`() {
-        val ex = assertFailsWith<ValueNotFoundException> {
-            memberInfo?.memberProvidedContext?.parseList<String>(DUMMY_KEY)
-        }
-        assertEquals("There is no value for '$DUMMY_KEY' prefix.", ex.message)
+    fun `parsing return empty list when no value is found`() {
+        val result = memberInfo?.memberProvidedContext?.parseList<String>(DUMMY_KEY)
+        assertNotNull(result)
+        assertTrue(result.isEmpty())
     }
 
     @Test
     fun `parse throws ValueNotFoundException when non-existing key is used`() {
         val nonExistentKey = "nonExistentKey"
-        val ex = assertFailsWith<ValueNotFoundException> { memberInfo?.mgmProvidedContext?.parse(nonExistentKey) }
-        assertEquals("There is no value for '$nonExistentKey' key.", ex.message)
+        assertFailsWith<ValueNotFoundException> { memberInfo?.mgmProvidedContext?.parse(nonExistentKey) }
     }
 
     @Test
     fun `parse throws error when value is null for a key`() {
-        val ex = assertFailsWith<IllegalStateException> { memberInfo?.memberProvidedContext?.parse("nullKey") }
-        assertEquals("Converted value cannot be null.", ex.message)
-        assertNull(memberInfo?.memberProvidedContext?.parseOrNull("nullKey"))
+        assertFailsWith<ValueNotFoundException> { memberInfo?.memberProvidedContext?.parse("nullKey") }
+        assertNull(memberInfo?.memberProvidedContext?.parseOrNull("nullKey", String::class.java))
     }
 
     @Test
     fun `retrieving value from cache fails when casting is impossible`() {
         val keys = memberInfo?.identityKeys
         assertEquals(identityKeys, keys)
-        val ex = assertFailsWith<ClassCastException> { memberInfo?.memberProvidedContext?.parseList<EndpointInfo>(IDENTITY_KEYS) }
-        assertEquals("Casting failed for $IDENTITY_KEYS prefix.", ex.message)
+        assertFailsWith<ClassCastException> { memberInfo?.memberProvidedContext?.parseList<EndpointInfo>(IDENTITY_KEYS) }
     }
 
     @Test

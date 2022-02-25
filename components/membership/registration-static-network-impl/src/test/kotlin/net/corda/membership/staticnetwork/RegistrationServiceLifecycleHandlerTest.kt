@@ -17,7 +17,6 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.crypto.DigestService
-import net.corda.v5.membership.conversion.PropertyConverter
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -52,8 +51,6 @@ class RegistrationServiceLifecycleHandlerTest {
         on { createCoordinator(any(), any()) } doReturn coordinator
     }
 
-    private val converter: PropertyConverter = mock()
-
     private val digestService: DigestService = mock()
 
     private val staticMemberRegistrationService = StaticMemberRegistrationService(
@@ -63,7 +60,7 @@ class RegistrationServiceLifecycleHandlerTest {
         mock(),
         configurationReadService,
         coordinatorFactory,
-        converter,
+        mock(),
         digestService
     )
 

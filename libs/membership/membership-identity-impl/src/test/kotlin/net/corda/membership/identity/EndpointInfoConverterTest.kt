@@ -1,9 +1,10 @@
 package net.corda.membership.identity
 
-import net.corda.membership.conversion.PropertyConverterImpl
-import net.corda.membership.identity.MemberInfoExtension.Companion.ENDPOINTS
+import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.membership.identity.converter.EndpointInfoConverter
-import net.corda.membership.testkit.createContext
+import net.corda.v5.base.exceptions.ValueNotFoundException
+import net.corda.v5.base.util.parse
+import net.corda.v5.base.util.parseList
 import net.corda.v5.membership.identity.EndpointInfo
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
@@ -11,57 +12,45 @@ import kotlin.test.assertFailsWith
 
 class EndpointInfoConverterTest {
     companion object {
-        private const val URL_KEY = "corda.endpoints.1.connectionURL"
-        private const val PROTOCOL_VERSION = "corda.endpoints.1.protocolVersion"
         private val endpoint = EndpointInfoImpl("https://localhost:10000", EndpointInfo.DEFAULT_PROTOCOL_VERSION)
-        private val converter = PropertyConverterImpl(listOf(EndpointInfoConverter()))
-        private val endpointInfoConverter = converter.customConverters.first()
+        private val converters = listOf(EndpointInfoConverter())
     }
 
     @Test
-    fun `converting EndpointInfo should work`() {
-        val memberContext = createContext(
+    fun `converting EndpointInfo should work for single element`() {
+        val memberContext = LayeredPropertyMapMocks.create<MemberContextImpl>(
             sortedMapOf(
-                URL_KEY to endpoint.url,
-                PROTOCOL_VERSION to endpoint.protocolVersion.toString()
+                "corda.endpoint.connectionURL" to endpoint.url,
+                "corda.endpoint.protocolVersion" to endpoint.protocolVersion.toString()
             ),
-            converter,
-            MemberContextImpl::class.java,
-            ENDPOINTS
+            converters
         )
-
-        assertEquals(endpoint, endpointInfoConverter.convert(memberContext))
+        assertEquals(endpoint, memberContext.parse<EndpointInfo>("corda.endpoint"))
     }
 
     @Test
-    fun `converting EndpointInfo fails when invalid context is used`() {
-        val mgmContext = createContext(
+    fun `converting EndpointInfo should work for list`() {
+        val memberContext = LayeredPropertyMapMocks.create<MemberContextImpl>(
             sortedMapOf(
-                URL_KEY to endpoint.url,
-                PROTOCOL_VERSION to endpoint.protocolVersion.toString()
+                "corda.endpoints.0.connectionURL" to endpoint.url,
+                "corda.endpoints.0.protocolVersion" to endpoint.protocolVersion.toString()
             ),
-            converter,
-            MGMContextImpl::class.java,
-            ENDPOINTS
+            converters
         )
-
-        val ex = assertFailsWith<IllegalArgumentException> { endpointInfoConverter.convert(mgmContext) }
-        assertEquals("Unknown class '${mgmContext.storeClass.name}'.", ex.message)
+        val list = memberContext.parseList<EndpointInfo>("corda.endpoints")
+        assertEquals(1, list.size)
+        assertEquals(endpoint, list[0])
     }
 
     @Test
     fun `converting EndpointInfo fails when one of the keys is null`() {
-        val memberContext = createContext(
+        val memberContext = LayeredPropertyMapMocks.create<MemberContextImpl>(
             sortedMapOf(
-                URL_KEY to endpoint.url,
-                PROTOCOL_VERSION to null
+                "corda.endpoint.connectionURL" to endpoint.url,
+                "corda.endpoint.protocolVersion" to null
             ),
-            converter,
-            MemberContextImpl::class.java,
-            ENDPOINTS
+            converters
         )
-
-        val ex = assertFailsWith<IllegalArgumentException> { endpointInfoConverter.convert(memberContext) }
-        assertEquals("protocolVersion cannot be null.", ex.message)
+        assertFailsWith<ValueNotFoundException> { memberContext.parse<EndpointInfo>("corda.endpoint") }
     }
 }
