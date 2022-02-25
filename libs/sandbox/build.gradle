@@ -13,4 +13,6 @@ dependencies {
     api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     api 'net.corda:corda-packaging'
     api 'net.corda:corda-serialization'
+
+    api project(":libs:virtual-node:packaging-core")
 }

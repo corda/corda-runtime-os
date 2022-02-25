@@ -1,23 +1,25 @@
 package net.corda.testing.sandboxes.impl
 
-import java.io.FileNotFoundException
-import java.io.InputStream
-import java.nio.file.Paths
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.install.InstallService
-import net.corda.install.InstallServiceListener
+import net.corda.libs.packaging.CpiIdentifier
+import net.corda.libs.packaging.CpiMetadata
+import net.corda.libs.packaging.CpkIdentifier
+import net.corda.libs.packaging.CpkMetadata
 import net.corda.packaging.CPI
 import net.corda.packaging.CPK
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.v5.base.util.loggerFor
-import net.corda.v5.crypto.SecureHash
 import org.osgi.framework.BundleContext
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ConfigurationPolicy.REQUIRE
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.propertytypes.ServiceRanking
+import java.io.FileNotFoundException
+import java.io.InputStream
+import java.nio.file.Paths
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("unused")
 @Component(
@@ -42,9 +44,12 @@ class InstallServiceImpl @Activate constructor(
     private val testBundle = (properties[TEST_BUNDLE_KEY] as? String)?.let(bundleContext::getBundle)
         ?: throw IllegalStateException("Test bundle not found")
 
-    private val cpis = ConcurrentHashMap<CPI.Identifier, CPI>()
+    private val cpis = ConcurrentHashMap<CpiIdentifier, CPI>()
     private val cpks: Collection<CPK>
         get() = cpis.values.flatMap(CPI::cpks)
+
+    private val cpksMeta: Collection<CpkMetadata>
+        get() = cpks.map(CpkMetadata::fromLegacyCpk)
 
     override val isRunning: Boolean get() = true
 
@@ -62,41 +67,32 @@ class InstallServiceImpl @Activate constructor(
             CPI.from(input, expansionLocation = cpkDir, verifySignature = true)
         }.let { newCpi ->
             val cpiId = newCpi.metadata.id
-            cpis.putIfAbsent(cpiId, newCpi)?.also { newCpi.close() } ?: newCpi
+            cpis.putIfAbsent(CpiIdentifier.fromLegacy(cpiId), newCpi)?.also {
+                newCpi.close() } ?: newCpi
         }
     }
 
-    override fun unloadCPI(cpi: CPI) {
-        remove(cpi.metadata.id)
+    override fun unloadCPI(id: CpiIdentifier) {
+        remove(id)
     }
 
-    override fun remove(id: CPI.Identifier) {
+    override fun remove(id: CpiIdentifier) {
         logger.info("Removing CPI {}", id)
         cpis.remove(id)?.close()
     }
 
-    override fun get(id: CPI.Identifier): CompletableFuture<CPI?> {
-        return CompletableFuture.completedFuture(cpis[id])
+    override fun get(id: CpiIdentifier): CompletableFuture<CpiMetadata?> {
+        val legacyCpi: CPI? = cpis[id]
+        val cpi: CpiMetadata? = if(legacyCpi == null) { null } else { CpiMetadata.fromLegacy(legacyCpi) }
+        return CompletableFuture.completedFuture(cpi)
     }
 
-    override fun get(id: CPK.Identifier): CompletableFuture<CPK?> {
-        return CompletableFuture.completedFuture(cpks.find { it.metadata.id == id })
-    }
-
-    override fun getCPKByHash(hash: SecureHash): CompletableFuture<CPK?> {
-        return CompletableFuture.completedFuture(cpks.find { it.metadata.hash == hash })
-    }
-
-    override fun listCPK(): List<CPK.Metadata> {
-        return cpks.map(CPK::metadata)
-    }
-
-    override fun listCPI(): List<CPI.Metadata> {
-        return cpis.values.map(CPI::metadata)
-    }
-
-    override fun registerForUpdates(installServiceListener: InstallServiceListener): AutoCloseable {
-        return AutoCloseable {}
+    override fun get(id: CpkIdentifier): CompletableFuture<CPK?> {
+        val cpk = cpks.firstOrNull {
+            it.metadata.id.name == id.name &&
+                    it.metadata.id.version == id.version &&
+                    it.metadata.id.signerSummaryHash == id.signerSummaryHash }
+        return CompletableFuture.completedFuture(cpk)
     }
 
     override fun start() {
@@ -105,7 +101,7 @@ class InstallServiceImpl @Activate constructor(
 
     @Deactivate
     override fun stop() {
-        ArrayList(cpis.values).forEach(::unloadCPI)
+        ArrayList(cpis.keys).forEach(::unloadCPI)
         logger.info("Stopped")
     }
 }

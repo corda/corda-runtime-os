@@ -4,16 +4,16 @@ import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.CLASS_TAG_DELIMITER
 import net.corda.sandbox.internal.CLASS_TAG_IDENTIFIER_IDX
 import net.corda.sandbox.internal.CLASS_TAG_VERSION_IDX
+import net.corda.sandbox.internal.CPK_MAIN_BUNDLE_NAME
 import net.corda.sandbox.internal.ClassTagV1
 import net.corda.sandbox.internal.ClassTagV1.CLASS_TYPE_IDX
 import net.corda.sandbox.internal.ClassTagV1.CPK_SANDBOX_CLASS
 import net.corda.sandbox.internal.ClassTagV1.PLACEHOLDER_HASH
 import net.corda.sandbox.internal.ClassTagV1.PLACEHOLDER_STRING
-import net.corda.sandbox.internal.CPK_MAIN_BUNDLE_NAME
 import net.corda.sandbox.internal.classtag.v1.EvolvableTagImplV1
 import net.corda.sandbox.internal.classtag.v1.StaticTagImplV1
 import net.corda.sandbox.internal.mockBundle
-import net.corda.sandbox.internal.mockCpk
+import net.corda.sandbox.internal.mockCpkMeta
 import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -29,7 +29,7 @@ class ClassTagFactoryImplTests {
 
     private val mockBundle = mockBundle(MOCK_BUNDLE_NAME)
     private val mockCpkMainBundle = mockBundle(CPK_MAIN_BUNDLE_NAME)
-    private val mockCpk = mockCpk()
+    private val mockCpk = mockCpkMeta()
     private val mockSandbox = CpkSandboxImpl(randomUUID(), mockCpk, mockCpkMainBundle, emptySet())
 
     /**
@@ -79,7 +79,7 @@ class ClassTagFactoryImplTests {
         val classTag = classTagFactory.deserialise(serialisedTag)
 
         val expectedClassTag =
-            StaticTagImplV1(ClassType.CpkSandboxClass, mockBundle.symbolicName, mockCpk.metadata.hash)
+            StaticTagImplV1(ClassType.CpkSandboxClass, mockBundle.symbolicName, mockCpk.hash)
         assertEquals(expectedClassTag, classTag)
     }
 
@@ -112,7 +112,7 @@ class ClassTagFactoryImplTests {
             ClassType.CpkSandboxClass,
             mockBundle.symbolicName,
             mockSandbox.mainBundle.symbolicName,
-            mockCpk.metadata.id.signerSummaryHash
+            mockCpk.id.signerSummaryHash
         )
         assertEquals(expectedClassTag, classTag)
     }

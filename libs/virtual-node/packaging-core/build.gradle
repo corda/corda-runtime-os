@@ -1,0 +1,21 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+description "Packaging Interfaces and Data Classes"
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    api "net.corda:corda-avro-schema"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-packaging"
+    implementation "net.corda:corda-packaging"
+
+    implementation "net.corda:corda-packaging-avro-converters"
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}

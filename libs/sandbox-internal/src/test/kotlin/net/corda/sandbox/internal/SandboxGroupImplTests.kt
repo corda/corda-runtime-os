@@ -1,6 +1,6 @@
 package net.corda.sandbox.internal
 
-import net.corda.packaging.CPK
+import net.corda.libs.packaging.CpkMetadata
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.ClassTagV1.EVOLVABLE_IDENTIFIER
 import net.corda.sandbox.internal.ClassTagV1.PLACEHOLDER_HASH
@@ -62,12 +62,13 @@ class SandboxGroupImplTests {
         whenever(getBundle(nonSandboxClass)).thenReturn(mockNonSandboxBundle)
     }
 
+
     private val cpkSandbox =
-        CpkSandboxImpl(randomUUID(), mockCpk(), mockCpkMainBundle, setOf(mockCpkLibraryBundle))
+        CpkSandboxImpl(randomUUID(), mockCpkMeta(), mockCpkMainBundle, setOf(mockCpkLibraryBundle))
     private val publicSandbox = SandboxImpl(randomUUID(), setOf(mockPublicBundle), setOf(mockPublicLibraryBundle))
 
     private val sandboxGroupImpl = SandboxGroupImpl(
-        setOf(cpkSandbox), setOf(publicSandbox), DummyClassTagFactory(cpkSandbox.cpk), mockBundleUtils
+        setOf(cpkSandbox), setOf(publicSandbox), DummyClassTagFactory(cpkSandbox.cpkMetadata), mockBundleUtils
     )
 
     @Test
@@ -214,12 +215,12 @@ private class EvolvableTagImpl(
 }
 
 /** A dummy [ClassTagFactory] implementation that returns pre-defined tags. */
-private class DummyClassTagFactory(cpk: CPK) : ClassTagFactory {
+private class DummyClassTagFactory(cpk: CpkMetadata) : ClassTagFactory {
     // Used for public classes, where the main bundle name, CPK file hash and CPK signer summary hash are ignored.
     val staticIdentifier = STATIC_IDENTIFIER
     val evolvableIdentifier = EVOLVABLE_IDENTIFIER
 
-    private val cpkStaticTag = StaticTagImpl(ClassType.CpkSandboxClass, CPK_LIBRARY_BUNDLE_NAME, cpk.metadata.hash)
+    private val cpkStaticTag = StaticTagImpl(ClassType.CpkSandboxClass, CPK_LIBRARY_BUNDLE_NAME, cpk.hash)
 
     private val publicStaticTag = StaticTagImpl(ClassType.PublicSandboxClass, PUBLIC_BUNDLE_NAME, PLACEHOLDER_HASH)
 
@@ -231,7 +232,7 @@ private class DummyClassTagFactory(cpk: CPK) : ClassTagFactory {
             ClassType.CpkSandboxClass,
             CPK_LIBRARY_BUNDLE_NAME,
             CPK_MAIN_BUNDLE_NAME,
-            cpk.metadata.id.signerSummaryHash
+            cpk.id.signerSummaryHash
         )
 
     private val publicEvolvableTag =
@@ -242,7 +243,7 @@ private class DummyClassTagFactory(cpk: CPK) : ClassTagFactory {
             ClassType.CpkSandboxClass,
             CPK_LIBRARY_BUNDLE_NAME,
             "invalid_main_bundle_name",
-            cpk.metadata.id.signerSummaryHash
+            cpk.id.signerSummaryHash
         )
 
     private val invalidSignersEvolvableTag =
