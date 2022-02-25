@@ -82,6 +82,48 @@ services:
       kafka-topics.sh --bootstrap-server kafka:9092 --list
       "
 
+  # extract AVRO schemas from a worker jar
+  avro-schemas:
+    container_name: avro-schemas
+    image: "corda-os-docker-dev.software.r3.com/corda-os-flow-worker:latest-local"
+    entrypoint: [ '/bin/sh', '-c' ]
+    command: |
+        "
+        mkdir /schemas
+        mkdir /tmp/schemas
+        cd /tmp/schemas/
+        jar xf /opt/override/flow-worker.jar
+        cp bundles/corda-avro-schema-*.jar .
+        jar xf corda-avro-schema-*.jar
+        cp -R avro/net/corda/data/* /schemas
+        "
+    volumes:
+      - ./schemas:/schemas
+
+  kafkasnoop:
+    container_name: kafkasnoop
+    image: "driessamyn/kafkasnoop-wrap:latest"
+    command:
+      - --broker
+      - kafka:9092
+      - --schema-path
+      - /schemas
+      - --envelope
+      - net.corda.data.AvroEnvelope
+      - --envelope-payload-field
+      - payload
+      - --envelope-schema-fingerprint-field
+      - fingerprint
+    volumes:
+      - ./schemas:/schemas:ro
+    ports:
+      - "9001:9000"
+    depends_on:
+      avro-schemas:
+        condition: service_completed_successfully
+      kafka:
+        condition: service_healthy
+
   kafdrop:
     container_name: kafdrop
     image: obsidiandynamics/kafdrop
