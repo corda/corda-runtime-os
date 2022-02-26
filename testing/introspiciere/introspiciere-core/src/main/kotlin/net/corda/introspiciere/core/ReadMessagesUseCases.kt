@@ -1,7 +1,5 @@
 package net.corda.introspiciere.core
 
-import net.corda.introspiciere.domain.IntrospiciereException
-import net.corda.introspiciere.domain.KafkaMessage
 import net.corda.messagebus.kafka.serialization.CordaAvroDeserializerImpl
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import org.apache.avro.specific.SpecificRecordBase
