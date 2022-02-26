@@ -1,9 +1,9 @@
 package net.corda.membership.identity
 
 import net.corda.v5.base.util.NetworkHostAndPort
+import net.corda.v5.base.util.parse
+import net.corda.v5.base.util.parseList
 import net.corda.v5.crypto.PublicKeyHash
-import net.corda.v5.membership.conversion.parse
-import net.corda.v5.membership.conversion.parseList
 import net.corda.v5.membership.identity.EndpointInfo
 import net.corda.v5.membership.identity.MemberInfo
 import java.net.URL

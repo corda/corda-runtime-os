@@ -6,6 +6,7 @@ import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.impl.SessionEventProcessor
+import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.uncheckedCast
@@ -29,9 +30,16 @@ class SessionInitProcessorSend(
 
     override fun execute(): SessionState {
         if (sessionState != null) {
-            logger.debug { "Tried to send SessionInit on key $key for session which was not null: $sessionState" }
-            //TODO - Is this an error condition?
-            return sessionState
+            logger.error("Tried to send SessionInit on key $key for session which was not null: $sessionState")
+            return sessionState.apply {
+                status = SessionStateType.ERROR
+                sendEventsState.undeliveredMessages = sendEventsState.undeliveredMessages.plus(
+                    generateErrorEvent(sessionId,
+                        "Tried to send SessionInit for session which is not null",
+                        "SessionInit-SessionMismatch", instant
+                    )
+                )
+            }
         }
 
         val sessionInit: SessionInit = uncheckedCast(sessionEvent.payload)
@@ -55,7 +63,7 @@ class SessionInitProcessorSend(
             .setStatus(SessionStateType.CREATED)
             .build()
 
-        logger.debug { "Creating new session with id $newSessionId on key $key for SessionInit sent. sessionState $newSessionState"}
+        logger.debug { "Creating new session with id $newSessionId on key $key for SessionInit sent. sessionState $newSessionState" }
 
         return newSessionState
     }

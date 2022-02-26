@@ -1,6 +1,7 @@
 package net.corda.membership.impl.read.component
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
@@ -15,7 +16,6 @@ import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.membership.conversion.PropertyConverter
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -41,8 +41,8 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
     subscriptionFactory: SubscriptionFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = PropertyConverter::class)
-    converter: PropertyConverter,
+    @Reference(service = LayeredPropertyMapFactory::class)
+    layeredPropertyMapFactory: LayeredPropertyMapFactory,
     @Reference(service = GroupPolicyProvider::class)
     groupPolicyProvider: GroupPolicyProvider
 ) : MembershipGroupReaderProvider {
@@ -63,7 +63,7 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
     private val membershipGroupReadSubscriptions = MembershipGroupReadSubscriptions.Impl(
         subscriptionFactory,
         membershipGroupReadCache,
-        converter
+        layeredPropertyMapFactory
     )
 
     // Handler for lifecycle events.

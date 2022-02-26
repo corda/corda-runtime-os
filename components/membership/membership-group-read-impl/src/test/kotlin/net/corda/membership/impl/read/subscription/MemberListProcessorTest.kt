@@ -3,8 +3,10 @@ package net.corda.membership.impl.read.subscription
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.SignedMemberInfo
-import net.corda.membership.conversion.PropertyConverterImpl
-import net.corda.membership.conversion.toWire
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
+import net.corda.layeredpropertymap.create
+import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
+import net.corda.layeredpropertymap.toWire
 import net.corda.membership.identity.EndpointInfoImpl
 import net.corda.membership.identity.MGMContextImpl
 import net.corda.membership.identity.MemberContextImpl
@@ -53,12 +55,12 @@ class MemberListProcessorTest {
             EndpointInfoImpl("https://corda5.r3.com:10001", 10)
         )
         private val identityKeys = listOf(knownKey, knownKey)
-        private val converter = PropertyConverterImpl(
-            listOf(
-                EndpointInfoConverter(),
-                PublicKeyConverter(keyEncodingService),
-            )
+        private lateinit var layeredPropertyMapFactory: LayeredPropertyMapFactory
+        private val converters = listOf(
+            EndpointInfoConverter(),
+            PublicKeyConverter(keyEncodingService),
         )
+
         private val signature = CryptoSignatureWithKey(
             ByteBuffer.wrap(byteArrayOf()),
             ByteBuffer.wrap(byteArrayOf()),
@@ -77,7 +79,7 @@ class MemberListProcessorTest {
 
         @Suppress("SpreadOperator")
         private fun createTestMemberInfo(x500Name: String, status: String): MemberInfo = MemberInfoImpl(
-            memberProvidedContext = MemberContextImpl(
+            memberProvidedContext = layeredPropertyMapFactory.create<MemberContextImpl>(
                 sortedMapOf(
                     PARTY_NAME to x500Name,
                     PARTY_OWNING_KEY to knownKeyAsString,
@@ -87,15 +89,13 @@ class MemberListProcessorTest {
                     SOFTWARE_VERSION to "5.0.0",
                     PLATFORM_VERSION to "10",
                     SERIAL to "1",
-                ),
-                converter
+                )
             ),
-            mgmProvidedContext = MGMContextImpl(
+            mgmProvidedContext = layeredPropertyMapFactory.create<MGMContextImpl>(
                 sortedMapOf(
                     STATUS to status,
                     MODIFIED_TIME to modifiedTime.toString(),
-                ),
-                converter
+                )
             )
         )
 
@@ -150,7 +150,8 @@ class MemberListProcessorTest {
         @JvmStatic
         @BeforeAll
         fun setUp() {
-            memberListProcessor = MemberListProcessor(membershipGroupReadCache, converter)
+            layeredPropertyMapFactory = LayeredPropertyMapMocks.createFactory(converters)
+            memberListProcessor = MemberListProcessor(membershipGroupReadCache, layeredPropertyMapFactory)
             whenever(keyEncodingService.decodePublicKey(knownKeyAsString)).thenReturn(knownKey)
             whenever(keyEncodingService.encodeAsString(knownKey)).thenReturn(knownKeyAsString)
             alice = createTestMemberInfo("O=Alice,L=London,C=GB", MEMBER_STATUS_PENDING)

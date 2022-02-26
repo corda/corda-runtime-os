@@ -8,6 +8,7 @@ import net.corda.libs.permissions.storage.reader.impl.repository.PermissionRepos
 import net.corda.messaging.api.publisher.Publisher
 import org.osgi.service.component.annotations.Component
 import javax.persistence.EntityManagerFactory
+import net.corda.libs.permissions.storage.reader.impl.summary.PermissionSummaryReconcilerImpl
 
 @Component(service = [PermissionStorageReaderFactory::class])
 class PermissionStorageReaderFactoryImpl : PermissionStorageReaderFactory {
@@ -17,6 +18,12 @@ class PermissionStorageReaderFactoryImpl : PermissionStorageReaderFactory {
         publisher: Publisher,
         entityManagerFactory: EntityManagerFactory
     ): PermissionStorageReader {
-        return PermissionStorageReaderImpl(permissionCache, PermissionRepositoryImpl(entityManagerFactory), publisher)
+
+        return PermissionStorageReaderImpl(
+            permissionCache,
+            PermissionRepositoryImpl(entityManagerFactory),
+            publisher,
+            PermissionSummaryReconcilerImpl()
+        )
     }
 }
