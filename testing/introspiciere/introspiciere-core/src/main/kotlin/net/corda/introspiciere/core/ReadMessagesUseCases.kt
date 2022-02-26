@@ -7,9 +7,12 @@ import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.common.TopicPartition
 import org.reflections.Reflections
-import java.net.InetAddress
+import java.io.Closeable
 import java.nio.ByteBuffer
 import java.time.Duration
+import kotlin.concurrent.getOrSet
+
+private typealias KafkaConsumerCache = MutableMap<String, KafkaConsumer<String, out Any>>
 
 class ReadMessagesUseCases(
     private val kafkaConfig: KafkaConfig,
@@ -44,7 +47,9 @@ class ReadMessagesUseCases(
     }
 
     private fun offsets(topic: String, schemaClass: String, fromBeginning: Boolean): LongArray {
-        createConsumer(schemaClass).use { consumer ->
+        val consumer = getOrCreateConsumerFromLocalThread(schemaClass)
+        Closeable { consumer.assign(emptyList()) }.use {
+
             val partitions = consumer.partitionsFor(topic).map {
                 TopicPartition(it.topic(), it.partition())
             }
@@ -63,7 +68,8 @@ class ReadMessagesUseCases(
     }
 
     fun readFrom(topic: String, key: String, schemaClass: String, from: List<Long>, output: Output) {
-        createConsumer(schemaClass).use { consumer ->
+        val consumer = getOrCreateConsumerFromLocalThread(schemaClass)
+        Closeable { consumer.assign(emptyList()) }.use {
 
             val partitions = consumer.partitionsFor(topic)
                 .map { TopicPartition(it.topic(), it.partition()) }
@@ -88,10 +94,14 @@ class ReadMessagesUseCases(
         }
     }
 
+    private fun getOrCreateConsumerFromLocalThread(schemaClass: String): KafkaConsumer<String, out Any> {
+        val threadLocal = ThreadLocal<KafkaConsumerCache>()
+        val cache = threadLocal.getOrSet { mutableMapOf() }
+        return cache.getOrPut(schemaClass) { createConsumer(schemaClass) }
+    }
+
     private fun createConsumer(schemaClass: String): KafkaConsumer<String, out Any> {
         val props = mapOf(
-            ConsumerConfig.CLIENT_ID_CONFIG to InetAddress.getLocalHost().hostName,
-            ConsumerConfig.GROUP_ID_CONFIG to "foo",
             ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to kafkaConfig.brokers,
         )
 
