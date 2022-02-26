@@ -2,7 +2,9 @@ package net.corda.introspiciere.junit
 
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
 import java.nio.ByteBuffer
@@ -27,12 +29,15 @@ class InMemoryIntrospiciereServerTest {
         val key = "key".random8
         val keyPairEntry = generateKeyPairEntry()
 
-        introspiciere.client.createTopic(topic)
-        introspiciere.client.write(topic, key, keyPairEntry)
-        val messages = introspiciere.client.read<KeyPairEntry>(topic, key)
+        introspiciere.client.createTopic(topic, 3)
 
-        assertEquals(1, messages.size, "Only one message")
-        assertEquals(keyPairEntry, messages.single())
+        val seq = introspiciere.client.readFromLatest<KeyPairEntry>(topic, key)
+        val iter = seq.iterator()
+
+        introspiciere.client.write(topic, key, keyPairEntry)
+
+        assertEquals(keyPairEntry, iter.next())
+        assertNull(iter.next())
     }
 
     private fun generateKeyPairEntry(): KeyPairEntry {

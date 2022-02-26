@@ -2,19 +2,17 @@ package net.corda.introspiciere.cli
 
 import com.jayway.jsonpath.JsonPath
 import net.corda.introspiciere.junit.InMemoryIntrospiciereServer
-import net.corda.introspiciere.junit.getMinikubeKafkaBroker
 import net.corda.introspiciere.junit.random8
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
-import java.nio.CharBuffer
-import java.nio.charset.Charset
-import java.nio.charset.StandardCharsets
 import java.security.KeyPairGenerator
+import kotlin.concurrent.thread
 
 @Suppress("UNUSED_VARIABLE")
 class CreateTopicCommandTest {
@@ -56,6 +54,7 @@ class CreateTopicCommandTest {
         """.trimIndent()
 
         introspiciere.client.createTopic(topic)
+        val sequence = introspiciere.client.readFromLatest<KeyPairEntry>(topic, key)
 
         input.byteInputStream().use {
             internalMain("write",
@@ -67,11 +66,11 @@ class CreateTopicCommandTest {
             )
         }
 
-        val messages = introspiciere.client.read<KeyPairEntry>(topic, key)
-        assertEquals(1, messages.size, "Only one message expected")
-        assertEquals(KeyAlgorithm.ECDSA, messages.first().keyAlgo)
-        assertEquals(ByteBuffer.wrap("public-key".toByteArray()), messages.first().publicKey)
-        assertEquals(ByteBuffer.wrap("private-key".toByteArray()), messages.first().privateKey)
+        val message = sequence.first()
+        assertNotNull(message, "Message cannot be null")
+        assertEquals(KeyAlgorithm.ECDSA, message!!.keyAlgo, "Key algorithm")
+        assertEquals(ByteBuffer.wrap("public-key".toByteArray()), message.publicKey, "Public key")
+        assertEquals(ByteBuffer.wrap("private-key".toByteArray()), message.privateKey, "Private key")
     }
 
     @Test
@@ -83,16 +82,26 @@ class CreateTopicCommandTest {
         introspiciere.client.createTopic(topic)
         introspiciere.client.write(topic, key, keyPairEntry)
 
+        // End loop after 5 seconds
+        val th = thread {
+            Thread.sleep(5000)
+            ReadCommand.exitCommandGracefullyInTesting()
+        }
+
         val outputStream = ByteArrayOutputStream()
         internalMain("read",
             "--endpoint", introspiciere.endpoint,
             "--topic", topic,
             "--key", key,
             "--schema", KeyPairEntry::class.qualifiedName!!,
+            "--from-beginning",
             overrideStdout = outputStream
         )
 
+        th.join()
+
         val stdout = outputStream.toByteArray().let(::String)
+        println("the stdout is $stdout")
         val jpath = JsonPath.parse(stdout)
         assertEquals("ECDSA", jpath.read("$.keyAlgo"))
         // TODO: Assert public and private keys. Don't know how to do it

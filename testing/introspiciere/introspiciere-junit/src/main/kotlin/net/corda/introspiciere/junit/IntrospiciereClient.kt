@@ -58,23 +58,49 @@ class IntrospiciereClient(private val endpoint: String) {
     }
 
     /**
-     * Read all messages from a topic under a given key. More about keys
-     * [in the official docs](https://www.confluent.io/blog/5-things-every-kafka-developer-should-know/#tip-2-new-sticky-partitioner).
+     * Returns a sequence with all messages from a [topic] with a [key]. Starts reading messages from the beginning.
      */
-    inline fun <reified T> read(topic: String, key: String): List<T> {
-        return read(topic, key, T::class.java)
-    }
+    inline fun <reified T> readFromBeginning(topic: String, key: String): Sequence<T?> =
+        readFromBeginning(topic, key, T::class.java)
 
     /**
-     * Read all messages from a topic under a given key. More about keys
-     * [in the official docs](https://www.confluent.io/blog/5-things-every-kafka-developer-should-know/#tip-2-new-sticky-partitioner).
+     * Returns a sequence with all messages from a [topic] with a [key]. Starts reading messages from the end.
      */
-    fun <T> read(topic: String, key: String, schemaClass: Class<T>): List<T> {
-        val messages = httpClient.readMessages(topic, key, schemaClass.canonicalName)
-        return messages.map {
-            val method = schemaClass.getMethod("fromByteBuffer", ByteBuffer::class.java)
-            @Suppress("UNCHECKED_CAST")
-            method.invoke(null, ByteBuffer.wrap(it.schema)) as T
+    inline fun <reified T> readFromLatest(topic: String, key: String): Sequence<T?> =
+        readFromLatest(topic, key, T::class.java)
+
+    /**
+     * Returns a sequence with all messages from a [topic] with a [key]. Starts reading messages from the beginning.
+     */
+    fun <T> readFromBeginning(topic: String, key: String, schemaClass: Class<T>): Sequence<T?> =
+        readFrom(topic, key, schemaClass, httpClient.beginningOffsets(topic, schemaClass.canonicalName))
+
+    /**
+     * Returns a sequence with all messages from a [topic] with a [key]. Starts reading messages from the end.
+     */
+    fun <T> readFromLatest(topic: String, key: String, schemaClass: Class<T>): Sequence<T?> =
+        readFrom(topic, key, schemaClass, httpClient.endOffsets(topic, schemaClass.canonicalName))
+
+    private fun <T> readFrom(topic: String, key: String, schemaClass: Class<T>, offsets: LongArray): Sequence<T?> {
+        var latestOffsets = offsets
+
+        return sequence {
+            while (true) {
+                val batch = httpClient.readMessages(topic, key, schemaClass.canonicalName, latestOffsets)
+
+                if (batch.messages.isEmpty()) {
+                    yield(null)
+                }
+
+                for (message in batch.messages) {
+                    val fromByteBuffer = schemaClass.getMethod("fromByteBuffer", ByteBuffer::class.java)
+                    @Suppress("UNCHECKED_CAST")
+                    yield(fromByteBuffer.invoke(null, ByteBuffer.wrap(message)) as T)
+                }
+
+
+                latestOffsets = batch.latestOffsets
+            }
         }
     }
 }

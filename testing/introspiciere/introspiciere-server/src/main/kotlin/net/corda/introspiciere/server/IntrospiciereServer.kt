@@ -23,6 +23,8 @@ class IntrospiciereServer(private val port: Int = 0, private val kafkaBrokers: S
 
         val topicController = TopicController(kafkaConfig)
         app.post("/topics/{topic}", topicController.create())
+        app.get("/topics/{topic}/beginningOffsets", topicController.beginningOffsets())
+        app.get("/topics/{topic}/endOffsets", topicController.endOffsets())
 
         val messagesController = MessagesController(kafkaConfig)
         app.get("/topics/{topic}/messages/{key}", messagesController.getAll())

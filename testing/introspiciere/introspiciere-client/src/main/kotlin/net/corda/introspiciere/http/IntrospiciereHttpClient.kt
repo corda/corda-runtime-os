@@ -1,5 +1,6 @@
 package net.corda.introspiciere.http
 
+import com.github.kittinunf.fuel.core.Request
 import com.github.kittinunf.fuel.httpGet
 import com.github.kittinunf.fuel.httpPost
 import com.github.kittinunf.fuel.jackson.objectBody
@@ -8,6 +9,7 @@ import com.github.kittinunf.result.Result
 import net.corda.introspiciere.domain.IntrospiciereException
 import net.corda.introspiciere.domain.KafkaMessage
 import net.corda.introspiciere.domain.TopicDefinitionPayload
+import net.corda.introspiciere.payloads.KafkaMessagesBatch
 
 class IntrospiciereHttpClient(private val endpoint: String) {
 
@@ -40,13 +42,39 @@ class IntrospiciereHttpClient(private val endpoint: String) {
     }
 
     /**
-     * Request messages from a kafka topic/key.
+     * Request beginning offsets of a topic. [beginningOffsets] or [endOffsets] should be called before [readMessages].
      */
-    fun readMessages(topic: String, key: String, schema: String): List<KafkaMessage> {
-        val (_, response, result) = "$endpoint/topics/$topic/messages/$key"
-            .httpGet(listOf("schema" to schema))
+    fun beginningOffsets(topic: String, schemaClass: String): LongArray =
+        fetchOffsets(topic, schemaClass, "beginningOffsets")
+
+    /**
+     * Request end offsets of a topic. [beginningOffsets] or [endOffsets] should be called before [readMessages].
+     */
+    fun endOffsets(topic: String, schemaClass: String): LongArray =
+        fetchOffsets(topic, schemaClass, "endOffsets")
+
+    private fun fetchOffsets(topic: String, schemaClass: String, operation: String): LongArray {
+        val (_, response, result) = "$endpoint/topics/$topic/$operation"
+            .httpGet("schema" to schemaClass)
             .timeoutRead(180000)
-            .responseObject<List<KafkaMessage>>()
+            .responseObject<LongArray>()
+
+        return when (result) {
+            is Result.Success -> result.get()
+            is Result.Failure -> throw IntrospiciereException(result.getException().message, response.buildException())
+        }
+    }
+
+    /**
+     * Fetch messages from a topic for a [key]. [beginningOffsets] or [endOffsets] should be called before [readMessages].
+     */
+    fun readMessages(topic: String, key: String, schema: String, from: LongArray): KafkaMessagesBatch {
+        val (_, response, result) = "$endpoint/topics/$topic/messages/$key"
+            .httpGet(
+                "schema" to schema,
+                "from" to from.joinToString(","),
+            ).timeoutRead(180000)
+            .responseObject<KafkaMessagesBatch>()
 
         return when (result) {
             is Result.Success -> result.get()
@@ -69,3 +97,6 @@ class IntrospiciereHttpClient(private val endpoint: String) {
         }
     }
 }
+
+private fun String.httpGet(vararg parameters: Pair<String, Any?>): Request =
+    httpGet(parameters.toList())
