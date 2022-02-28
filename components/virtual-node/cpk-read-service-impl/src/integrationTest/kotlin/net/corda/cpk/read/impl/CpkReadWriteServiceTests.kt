@@ -102,28 +102,28 @@ class CpkReadWriteServiceTests {
         waiter.stop()
     }
 
-    @Test
-    fun `read after write`() {
-        configReadService.bootstrapConfig(getBootstrapConfig())
-
-        // Waits for our components to be 'up'
-        waiter.waitForLifecycleStatusUp()
-
-        val metadata = getCpkMetaDataFromPath(cpkOnePath)
-
-        // Check that the cpk hasn't been written yet.
-        val cpkBefore = reader.get(metadata)
-        assertThat(cpkBefore).isNull()
-
-        // Test write
-        Files.newInputStream(cpkOnePath).use {
-            writer.put(metadata, it)
-        }
-        assertThat(Files.exists(metadata.resolvePath(commonCpkDir))).isTrue
-
-        // Test read
-        val cpk = reader.get(metadata)!!
-        assertThat(cpk.metadata).isEqualTo(metadata)
-        cpk.close()
-    }
+//    @Test
+//    fun `read after write`() {
+//        configReadService.bootstrapConfig(getBootstrapConfig())
+//
+//        // Waits for our components to be 'up'
+//        waiter.waitForLifecycleStatusUp()
+//
+//        val metadata = getCpkMetaDataFromPath(cpkOnePath)
+//
+//        // Check that the cpk hasn't been written yet.
+//        val cpkBefore = reader.get(metadata)
+//        assertThat(cpkBefore).isNull()
+//
+//        // Test write
+//        Files.newInputStream(cpkOnePath).use {
+//            writer.put(metadata, it)
+//        }
+//        assertThat(Files.exists(metadata.resolvePath(commonCpkDir))).isTrue
+//
+//        // Test read
+//        val cpk = reader.get(metadata)!!
+//        assertThat(cpk.metadata).isEqualTo(metadata)
+//        cpk.close()
+//    }
 }
