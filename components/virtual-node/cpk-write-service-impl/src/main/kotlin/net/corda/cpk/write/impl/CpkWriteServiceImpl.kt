@@ -40,6 +40,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import net.corda.v5.base.util.seconds
+import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -219,7 +220,7 @@ class CpkWriteServiceImpl @Activate constructor(
             val cpkChunkId = CpkChunkId(cpkChecksum.toAvro(), chunk.partNumber)
             put(cpkChunkId, chunk)
         }
-        chunkWriter.write(Paths.get("todo"), ByteArrayInputStream(cpkData))
+        chunkWriter.write(Paths.get(cpkChecksum.toFileName()), ByteArrayInputStream(cpkData))
     }
 
     override val isRunning: Boolean
@@ -248,3 +249,7 @@ class CpkWriteServiceImpl @Activate constructor(
 
     data class ReconcileCpkEvent(override val key: String): TimerEvent
 }
+
+// Must not call SecureHash.toString() because it contains delimiter : that fails on Path creation.
+// Therefore the file name will be the <hex string>.cpk.
+private fun SecureHash.toFileName() = "${this.toHexString()}.cpk"
