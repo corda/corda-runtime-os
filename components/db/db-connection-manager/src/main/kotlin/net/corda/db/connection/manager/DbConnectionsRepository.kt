@@ -7,13 +7,6 @@ import javax.sql.DataSource
 
 interface DbConnectionsRepository {
     /**
-     * Initialise the [DbConnectionsRepository] with the given Cluster DB config.
-     *
-     * This also validates we can connect to the configured cluster DB and retries until it is successful.
-     */
-    fun initialise(config: SmartConfig)
-
-    /**
      * Persist a new or updated DB connection with given [name], [privilege] and [config].
      *
      * @param name
@@ -40,14 +33,9 @@ interface DbConnectionsRepository {
     fun get(name: String, privilege: DbPrivilege): DataSource?
 
     /**
-     * Get the main cluster DB connection.
+     * Get cluster DB [DataSource]
      *
-     * @throws [DBConfigurationException] if the cluster DB cannot be connected to.
+     * @return The cluster DB [DataSource]
      */
-    val clusterDataSource: DataSource
-
-    /**
-     * Get the main cluster DB configuration.
-     */
-    val clusterConfig: SmartConfig
+    fun getClusterDataSource(): DataSource
 }

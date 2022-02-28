@@ -1,7 +1,7 @@
 package net.corda.db.connection.manager.impl
 
 import net.corda.db.connection.manager.DbAdmin
-import net.corda.db.connection.manager.DbConnectionsRepository
+import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.createDbConfig
 import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.SmartConfigFactory
@@ -13,8 +13,8 @@ import java.sql.SQLException
 
 @Component(service = [DbAdmin::class])
 class DbAdminImpl @Activate constructor(
-    @Reference(service = DbConnectionsRepository::class)
-    private val dbConnectionsRepository: DbConnectionsRepository,
+    @Reference(service = DbConnectionManager::class)
+    private val dbConnectionManager: DbConnectionManager
 ): DbAdmin {
 
     companion object {
@@ -44,13 +44,13 @@ class DbAdminImpl @Activate constructor(
             GRANT USAGE ON SCHEMA $schemaName to $user;
             $permissions TO $user;
             """.trimIndent()
-        dbConnectionsRepository.clusterDataSource.connection.use {
+        dbConnectionManager.getClusterDataSource().connection.use {
             it.createStatement().execute(sql)
             it.commit()
         }
 
         log.info("Persisting DB Configuration for $persistenceUnitName")
-        dbConnectionsRepository.put(
+        dbConnectionManager.putConnection(
             persistenceUnitName,
             privilege,
             createDbConfig(
@@ -82,7 +82,7 @@ class DbAdminImpl @Activate constructor(
             GRANT USAGE ON SCHEMA $schemaName to $user;
             $permissions TO $user;
             """.trimIndent()
-        dbConnectionsRepository.clusterDataSource.connection.use {
+        dbConnectionManager.getClusterDataSource().connection.use {
             it.createStatement().execute(sql)
             it.commit()
         }
@@ -93,7 +93,7 @@ class DbAdminImpl @Activate constructor(
         //  for other DBs. So we may need to wrap this in a factory.
         log.info("Checking whether user: $user exists")
         val sql = "SELECT EXISTS(SELECT * FROM pg_user WHERE USENAME = ?)"
-        dbConnectionsRepository.clusterDataSource.connection.use { connection ->
+        dbConnectionManager.getClusterDataSource().connection.use { connection ->
             connection.prepareStatement(sql).use { preparedStatement ->
                 preparedStatement.setString(1, user)
                 preparedStatement.executeQuery().use { resultSet ->
@@ -112,9 +112,9 @@ class DbAdminImpl @Activate constructor(
         log.info("Deleting user: $user")
         val sql = """
             DROP SCHEMA $schemaName CASCADE;
-            DROP USER $user
+            DROP USER $user;
             """.trimIndent()
-        dbConnectionsRepository.clusterDataSource.connection.use {
+        dbConnectionManager.getClusterDataSource().connection.use {
             it.createStatement().execute(sql)
             it.commit()
         }

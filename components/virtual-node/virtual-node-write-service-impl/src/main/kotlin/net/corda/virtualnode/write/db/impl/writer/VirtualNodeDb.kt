@@ -4,7 +4,7 @@ import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.connection.manager.DBConfigurationException
 import net.corda.db.connection.manager.DbAdmin
-import net.corda.db.connection.manager.DbConnectionsRepository
+import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.*
 import net.corda.db.schema.DbSchema
@@ -17,7 +17,7 @@ import java.util.*
 class VirtualNodeDb(
     private val dbType: VirtualNodeDbType, val isClusterDb: Boolean, private val holdingIdentityId: String,
     val dbConnections: Map<DbPrivilege, DbConnection?>, private val dbAdmin: DbAdmin,
-    private val dbConnectionRepository: DbConnectionsRepository, private val schemaMigrator: LiquibaseSchemaMigrator
+    private val dbConnectionManager: DbConnectionManager, private val schemaMigrator: LiquibaseSchemaMigrator
 ) {
 
     companion object {
@@ -51,7 +51,7 @@ class VirtualNodeDb(
      */
     fun runDbMigration() {
         dbConnections[DDL]?.let { dbConnection ->
-            dbConnectionRepository.get(dbConnection.name, dbConnection.privilege)?.let { dataSource->
+            dbConnectionManager.getDataSource(dbConnection.name, dbConnection.privilege)?.let { dataSource->
                 val dbChangeFiles = dbType.dbChangeFiles
                 val changeLogResourceFiles = setOf(DbSchema::class.java).mapTo(LinkedHashSet()) { klass ->
                     ClassloaderChangeLog.ChangeLogResourceFiles(klass.packageName, dbChangeFiles, klass.classLoader)

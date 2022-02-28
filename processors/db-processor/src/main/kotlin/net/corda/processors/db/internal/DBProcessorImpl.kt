@@ -5,10 +5,7 @@ import net.corda.configuration.write.ConfigWriteService
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.ClassloaderChangeLog.ChangeLogResourceFiles
-import net.corda.db.connection.manager.DbAdmin
-import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.db.connection.manager.DbConnectionsRepository
-import net.corda.db.connection.manager.dbFallbackConfig
+import net.corda.db.connection.manager.*
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
@@ -65,12 +62,10 @@ class DBProcessorImpl @Activate constructor(
     @Reference(service = VirtualNodeWriteService::class)
     private val virtualNodeWriteService: VirtualNodeWriteService,
     // TODO - remove this when DB migration is not needed anymore in this processor.
-    @Reference(service = DbConnectionsRepository::class)
-    private val dbConnectionsRepository: DbConnectionsRepository,
     @Reference(service = LiquibaseSchemaMigrator::class)
     private val schemaMigrator: LiquibaseSchemaMigrator,
     @Reference(service = DbAdmin::class)
-    private val dbAdmin: DbAdmin,
+    private val dbAdmin: DbAdmin
 ) : DBProcessor {
     init {
         // define the different DB Entity Sets
@@ -133,7 +128,7 @@ class DBProcessorImpl @Activate constructor(
                     configWriteService.startProcessing(
                         bootstrapConfig!!,
                         bootstrapConfig!!.getInt(CONFIG_INSTANCE_ID),
-                        dbConnectionManager.clusterDbEntityManagerFactory)
+                        dbConnectionManager.getClusterEntityManagerFactory())
 
                     configurationReadService.bootstrapConfig(bootstrapConfig!!)
                 } else {
@@ -161,14 +156,14 @@ class DBProcessorImpl @Activate constructor(
 
     private fun tempDbInitProcess(config: SmartConfig) {
         log.info("Running Cluster DB Migration")
-        migrateDatabase(dbConnectionsRepository.clusterDataSource, listOf(
+        migrateDatabase(dbConnectionManager.getClusterDataSource(), listOf(
             "net/corda/db/schema/config/db.changelog-master.xml"
         ))
 
         val dbConfig = config.withFallback(dbFallbackConfig)
 
         // Creating RBAC DB configurations
-        if(null == dbConnectionsRepository.get(CordaDb.RBAC.persistenceUnitName, DbPrivilege.DDL)) {
+        if(null == dbConnectionManager.getDataSource(CordaDb.RBAC.persistenceUnitName, DbPrivilege.DDL)) {
             val ddlRbacUser = "rbac_ddl"
             val ddlRbacPassword = UUID.randomUUID().toString()
             dbAdmin.createDbAndUser(
@@ -182,7 +177,7 @@ class DBProcessorImpl @Activate constructor(
             )
         }
 
-        if(null == dbConnectionsRepository.get(CordaDb.RBAC.persistenceUnitName, DbPrivilege.DML)) {
+        if(null == dbConnectionManager.getDataSource(CordaDb.RBAC.persistenceUnitName, DbPrivilege.DML)) {
             val dmlRbacUser = "rbac_dml"
             val dmlRbacPassword = UUID.randomUUID().toString()
             dbAdmin.createDbAndUser(
@@ -212,7 +207,7 @@ class DBProcessorImpl @Activate constructor(
          *   Until then, just use the cluster DB.
          */
         migrateDatabase(
-            dbConnectionsRepository.clusterDataSource,
+            dbConnectionManager.getClusterDataSource(),
             listOf("net/corda/db/schema/rbac/db.changelog-master.xml"),
             DbSchema.RPC_RBAC)
     }

@@ -4,7 +4,7 @@ import com.typesafe.config.ConfigFactory
 import net.corda.data.virtualnode.VirtualNodeCreationRequest
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbAdmin
-import net.corda.db.connection.manager.DbConnectionsRepository
+import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.createDbConfig
 import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.*
@@ -15,12 +15,13 @@ import java.util.*
 /**
  * A factory for [VirtualNodeDb]s.
  */
-class VirtualNodeDbFactory(private val dbAdmin: DbAdmin,
-                           private val dbConnectionRepository: DbConnectionsRepository,
-                           private val schemaMigrator: LiquibaseSchemaMigrator
+class VirtualNodeDbFactory(
+    private val dbConnectionManager: DbConnectionManager,
+    private val dbAdmin: DbAdmin,
+    private val schemaMigrator: LiquibaseSchemaMigrator
 ) {
-    private val smartConfigFactory = dbConnectionRepository.clusterConfig.factory
-    private val adminJdbcUrl = dbConnectionRepository.clusterConfig.getString(ConfigKeys.JDBC_URL)
+    private val smartConfigFactory = dbConnectionManager.clusterConfig.factory
+    private val adminJdbcUrl = dbConnectionManager.clusterConfig.getString(ConfigKeys.JDBC_URL)
 
     /**
      * Creates [VirtualNodeDb]s using connection configurations from virtual node creation request
@@ -60,7 +61,7 @@ class VirtualNodeDbFactory(private val dbAdmin: DbAdmin,
                     Pair(DDL, createClusterConnection(dbType, holdingIdentityId, DDL)),
                     Pair(DML, createClusterConnection(dbType, holdingIdentityId, DML)))
             }
-        return VirtualNodeDb(dbType, !connectionsProvided, holdingIdentityId, dbConnections, dbAdmin, dbConnectionRepository, schemaMigrator)
+        return VirtualNodeDb(dbType, !connectionsProvided, holdingIdentityId, dbConnections, dbAdmin, dbConnectionManager, schemaMigrator)
     }
 
     /**
