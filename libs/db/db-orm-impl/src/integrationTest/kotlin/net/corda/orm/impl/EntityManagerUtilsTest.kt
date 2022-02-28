@@ -51,6 +51,24 @@ class EntityManagerUtilsTest {
     }
 
     @Test
+    fun `can persist JPA entities using EntityManager#transaction`() {
+
+        val emf = createEntityManagerFactory()
+
+        val owner = Owner(UUID.randomUUID(), "Fred", 25)
+        val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
+
+        val em = emf.createEntityManager()
+        em.transaction {
+            it.persist(owner)
+            it.persist(cat)
+        }
+
+        val loadedCats = emf.createEntityManager().createQuery("from Cat", Cat::class.java)
+        Assertions.assertThat(loadedCats.resultList).contains(cat)
+    }
+
+    @Test
     fun `can persist JPA entities using EntityManager#use`() {
 
         val emf = createEntityManagerFactory()
@@ -68,6 +86,25 @@ class EntityManagerUtilsTest {
 
         val loadedCats = emf.createEntityManager().createQuery("from Cat", Cat::class.java)
         Assertions.assertThat(loadedCats.resultList).contains(cat)
+    }
+
+    @Test
+    fun `can load JPA entities using EntityManagerFactory#transaction`() {
+
+        val emf = createEntityManagerFactory()
+
+        val owner = Owner(UUID.randomUUID(), "Fred", 25)
+        val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
+
+        emf.transaction {
+            it.persist(owner)
+            it.persist(cat)
+        }
+
+        emf.createEntityManager().transaction {
+            val loadedCats = it.createQuery("from Cat", Cat::class.java)
+            Assertions.assertThat(loadedCats.resultList).contains(cat)
+        }
     }
 
     @Test
@@ -203,82 +240,6 @@ class EntityManagerUtilsTest {
         }
 
         assertEquals(expectedTag, retrievedEntity.tag)
-    }
-
-    @Test
-    fun `can persist JPA entities in transaction block using EntityManagerFactory#transaction`() {
-
-        val emf = createEntityManagerFactory()
-
-        val owner = Owner(UUID.randomUUID(), "Fred", 25)
-        val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
-
-        transaction {
-            emf.transaction {
-                it.persist(owner)
-                it.persist(cat)
-            }
-        }
-
-        val loadedCats = emf.createEntityManager().createQuery("from Cat", Cat::class.java)
-        Assertions.assertThat(loadedCats.resultList).contains(cat)
-    }
-
-    @Test
-    fun `in transaction block EntityManager#transaction rolls back the transaction if an exception is thrown`() {
-        val expectedTag = "initialTag"
-        val entity = MutableEntity(UUID.randomUUID(), expectedTag)
-
-        val emf = createEntityManagerFactory()
-        emf.transaction { em ->
-            em.persist(entity)
-        }
-
-        try {
-            transaction {
-                emf.transaction { em ->
-                    val retrievedEntity = em.find(MutableEntity::class.java, entity.id)
-                    retrievedEntity.tag = "newTag"
-                    throw Exception()
-                }
-            }
-        } catch (_: Exception) {
-        }
-
-        val retrievedEntity = emf.transaction { em ->
-            em.find(MutableEntity::class.java, entity.id)
-        }
-
-        assertEquals(expectedTag, retrievedEntity.tag)
-    }
-
-    @Test
-    fun `in transaction block all EntityManager#transaction blocks are rolled back if an exception is thrown`() {
-
-        val emf = createEntityManagerFactory()
-
-        val owner = Owner(UUID.randomUUID(), "Bob", 25)
-        val cat = Cat(UUID.randomUUID(), "Sylvester", "Black & White", owner)
-
-        try {
-            transaction {
-                emf.transaction {
-                    it.persist(owner)
-                }
-
-                emf.transaction {
-                    it.persist(cat)
-                    throw Exception()
-                }
-            }
-        } catch (_: Exception) {
-        }
-
-        val loadedOwners = emf.createEntityManager().createQuery("from Owner", Owner::class.java)
-        Assertions.assertThat(loadedOwners.resultList).doesNotContain(owner)
-
-        val loadedCats = emf.createEntityManager().createQuery("from Cat", Cat::class.java)
-        Assertions.assertThat(loadedCats.resultList).doesNotContain(cat)
     }
 
     private fun createEntityManagerFactory(): EntityManagerFactory {

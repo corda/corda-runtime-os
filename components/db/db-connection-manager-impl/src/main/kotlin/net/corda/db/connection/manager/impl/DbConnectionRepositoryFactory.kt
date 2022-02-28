@@ -12,7 +12,7 @@ import javax.persistence.EntityManagerFactory
 import javax.sql.DataSource
 
 /**
- * Factory for creating [DbConnectionsRepository] instamces
+ * Factory for creating [DbConnectionsRepository] instances
  */
 class DbConnectionRepositoryFactory {
 

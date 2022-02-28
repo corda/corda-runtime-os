@@ -14,6 +14,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
 class DbConnectionManagerImplTest {
@@ -97,13 +98,15 @@ class DbConnectionManagerImplTest {
             entityManagerFactoryFactory,
             jpaEntitiesRegistry)
 
+        val em = mock<EntityManager>()
+
         val config = mock<SmartConfig>()
         val name = "test config"
         val priv = DbPrivilege.DDL
         val description = "A really awesome database"
         val actor = "Spiderman"
-        mgr.putConnection(name, priv, config, description, actor)
+        mgr.putConnection(em, name, priv, config, description, actor)
 
-        verify(dbConnectionsRepository).put(name, priv, config, description, actor)
+        verify(dbConnectionsRepository).put(em, name, priv, config, description, actor)
     }
 }

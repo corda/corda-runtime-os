@@ -23,6 +23,7 @@ import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbType.*
 import java.nio.ByteBuffer
 import java.util.*
 import java.util.concurrent.CompletableFuture
+import javax.persistence.EntityManager
 
 /**
  * An RPC responder processor that handles virtual node creation requests.
@@ -131,26 +132,32 @@ internal class VirtualNodeWriterProcessor(
     private fun persistHoldingIdAndVirtualNode(holdingIdentity: HoldingIdentity, vNodeDbs: Map<VirtualNodeDbType,
             VirtualNodeDb>, cpiId: CPI.Identifier, updateActor: String) {
         try {
-            transaction {
-                with(holdingIdentity) {
-                    vaultDdlConnectionId = putConnection(vNodeDbs, VAULT, DDL, updateActor)
-                    vaultDmlConnectionId = putConnection(vNodeDbs, VAULT, DML, updateActor)
-                    cryptoDdlConnectionId = putConnection(vNodeDbs, CRYPTO, DDL, updateActor)
-                    cryptoDmlConnectionId = putConnection(vNodeDbs, CRYPTO, DML, updateActor)
+            dbConnectionManager.getClusterEntityManagerFactory().createEntityManager()
+                .transaction { entityManager ->
+                    with(holdingIdentity) {
+                        vaultDdlConnectionId = putConnection(entityManager, vNodeDbs, VAULT, DDL, updateActor)
+                        vaultDmlConnectionId = putConnection(entityManager, vNodeDbs, VAULT, DML, updateActor)
+                        cryptoDdlConnectionId = putConnection(entityManager, vNodeDbs, CRYPTO, DDL, updateActor)
+                        cryptoDmlConnectionId = putConnection(entityManager,vNodeDbs, CRYPTO, DML, updateActor)
+                    }
+                    virtualNodeEntityRepository.putHoldingIdentity(entityManager, holdingIdentity)
+                    virtualNodeEntityRepository.putVirtualNode(entityManager, holdingIdentity, cpiId)
                 }
-                virtualNodeEntityRepository.putHoldingIdentity(holdingIdentity)
-                virtualNodeEntityRepository.putVirtualNode(holdingIdentity, cpiId)
-            }
         } catch (e: Exception) {
             throw VirtualNodeWriteServiceException("Error persisting virtual node for holding identity $holdingIdentity", e)
         }
     }
 
-    private fun putConnection(vNodeDbs: Map<VirtualNodeDbType, VirtualNodeDb>, dbType: VirtualNodeDbType, dbPrivilege: DbPrivilege, updateActor: String): UUID? {
+    private fun putConnection(
+        entityManager: EntityManager,
+        vNodeDbs: Map<VirtualNodeDbType, VirtualNodeDb>,
+        dbType: VirtualNodeDbType,
+        dbPrivilege: DbPrivilege,
+        updateActor: String): UUID? {
         return vNodeDbs[dbType]?.let {  vNodeDb ->
             vNodeDb.dbConnections[dbPrivilege]?.let { dbConnection ->
                 with (dbConnection) {
-                    dbConnectionManager.putConnection(name, dbPrivilege, config, description, updateActor)
+                    dbConnectionManager.putConnection(entityManager, name, dbPrivilege, config, description, updateActor)
                 }
             }
         }

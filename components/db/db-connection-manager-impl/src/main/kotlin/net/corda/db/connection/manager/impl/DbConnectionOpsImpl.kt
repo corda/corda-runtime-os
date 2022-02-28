@@ -12,6 +12,7 @@ import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.v5.base.util.contextLogger
 import java.util.*
+import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.sql.DataSource
 
@@ -33,8 +34,13 @@ class DbConnectionOpsImpl(
     override fun getDataSource(name: String, privilege: DbPrivilege): DataSource? =
         dbConnectionsRepository.get(name, privilege)
 
-    override fun putConnection(name: String, privilege: DbPrivilege, config: SmartConfig, description: String?, updateActor: String): UUID =
+    override fun putConnection(name: String, privilege: DbPrivilege, config: SmartConfig,
+                               description: String?, updateActor: String): UUID =
         dbConnectionsRepository.put(name, privilege, config, description, updateActor)
+
+    override fun putConnection(entityManager: EntityManager, name: String, privilege: DbPrivilege, config: SmartConfig,
+                               description: String?, updateActor: String): UUID =
+        dbConnectionsRepository.put(entityManager, name, privilege, config, description, updateActor)
 
     override fun getClusterEntityManagerFactory(): EntityManagerFactory = clusterEntityManagerFactory
 

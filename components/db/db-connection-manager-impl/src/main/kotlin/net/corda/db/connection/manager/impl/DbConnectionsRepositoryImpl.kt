@@ -16,6 +16,7 @@ import net.corda.orm.utils.use
 import net.corda.v5.base.util.contextLogger
 import java.time.Instant
 import java.util.UUID
+import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.sql.DataSource
 
@@ -41,24 +42,35 @@ class DbConnectionsRepositoryImpl(
         config: SmartConfig,
         description: String?,
         updateActor: String): UUID {
-        logger.debug("Saving $privilege DB connection for $name: ${config.root().render()}")
-        return entityManagerFactory.transaction {
-            val configAsString = config.root().render(ConfigRenderOptions.concise())
-            val existingConfig = it.findDbConnectionByNameAndPrivilege(name, privilege)?.apply {
-                update(configAsString, description, updateActor)
-            } ?: DbConnectionConfig(
-                UUID.randomUUID(),
-                name,
-                privilege,
-                Instant.now(),
-                updateActor,
-                description,
-                configAsString
-            )
-            it.persist(existingConfig)
-            it.flush()
-            existingConfig.id
+
+        return entityManagerFactory.createEntityManager().transaction {
+            put(it, name, privilege, config, description, updateActor)
         }
+    }
+
+    override fun put(
+        entityManager: EntityManager,
+        name: String,
+        privilege: DbPrivilege,
+        config: SmartConfig,
+        description: String?,
+        updateActor: String): UUID {
+        logger.debug("Saving $privilege DB connection for $name: ${config.root().render()}")
+        val configAsString = config.root().render(ConfigRenderOptions.concise())
+        val existingConfig = entityManager.findDbConnectionByNameAndPrivilege(name, privilege)?.apply {
+            update(configAsString, description, updateActor)
+        } ?: DbConnectionConfig(
+            UUID.randomUUID(),
+            name,
+            privilege,
+            Instant.now(),
+            updateActor,
+            description,
+            configAsString
+        )
+        entityManager.persist(existingConfig)
+        entityManager.flush()
+        return existingConfig.id
     }
 
     override fun get(name: String, privilege: DbPrivilege): DataSource? {

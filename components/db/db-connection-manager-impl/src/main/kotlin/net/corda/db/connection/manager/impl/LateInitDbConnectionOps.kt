@@ -6,6 +6,7 @@ import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
 import net.corda.orm.JpaEntitiesSet
 import java.util.*
+import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.sql.DataSource
 
@@ -23,6 +24,17 @@ class LateInitDbConnectionOps(): DbConnectionOps {
         updateActor: String
     ): UUID {
         return delegate.putConnection(name, privilege, config, description, updateActor)
+    }
+
+    override fun putConnection(
+        entityManager: EntityManager,
+        name: String,
+        privilege: DbPrivilege,
+        config: SmartConfig,
+        description: String?,
+        updateActor: String
+    ): UUID {
+        return delegate.putConnection(entityManager, name, privilege, config, description, updateActor)
     }
 
     override fun getClusterDataSource(): DataSource = delegate.getClusterDataSource()

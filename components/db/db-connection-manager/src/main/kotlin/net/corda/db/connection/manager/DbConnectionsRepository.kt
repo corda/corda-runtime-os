@@ -3,6 +3,7 @@ package net.corda.db.connection.manager
 import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.SmartConfig
 import java.util.*
+import javax.persistence.EntityManager
 import javax.sql.DataSource
 
 interface DbConnectionsRepository {
@@ -17,6 +18,24 @@ interface DbConnectionsRepository {
      * @return ID of persisted DB connection
      */
     fun put(name: String,
+            privilege: DbPrivilege,
+            config: SmartConfig,
+            description: String?,
+            updateActor: String): UUID
+
+    /**
+    * Persist a new or updated DB connection with given [name], [privilege] and [config].
+    *
+    * @param entityManager [EntityManager]
+    * @param name
+    * @param privilege DML or DDL
+    * @param config SmartConfig object to use
+    * @param description
+    * @param updateActor actor on whose behalf the update is on
+    * @return ID of persisted DB connection
+    */
+    fun put(entityManager: EntityManager,
+            name: String,
             privilege: DbPrivilege,
             config: SmartConfig,
             description: String?,

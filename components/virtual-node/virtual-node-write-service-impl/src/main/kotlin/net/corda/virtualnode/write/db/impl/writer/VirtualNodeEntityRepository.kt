@@ -8,6 +8,7 @@ import net.corda.orm.utils.transaction
 import net.corda.packaging.CPI
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
+import javax.persistence.EntityManager
 
 /** Reads and writes CPIs, holding identities and virtual nodes to and from the cluster database. */
 internal class VirtualNodeEntityRepository(dbConnectionManager: DbConnectionManager) {
@@ -38,29 +39,28 @@ internal class VirtualNodeEntityRepository(dbConnectionManager: DbConnectionMana
 
     /**
      * Writes a holding identity to the database.
+     *
+     * @param entityManager [EntityManager]
      * @param holdingIdentity Holding identity
      */
-    internal fun putHoldingIdentity(holdingIdentity: HoldingIdentity) {
-        entityManagerFactory
-            .transaction {
-                val entity = it.find(HoldingIdentityEntity::class.java, holdingIdentity.id)?.apply {
-                    update(holdingIdentity.vaultDdlConnectionId,
-                        holdingIdentity.vaultDmlConnectionId,
-                        holdingIdentity.cryptoDdlConnectionId,
-                        holdingIdentity.cryptoDmlConnectionId)
-                } ?: HoldingIdentityEntity(
-                    holdingIdentity.id,
-                    holdingIdentity.hash,
-                    holdingIdentity.x500Name,
-                    holdingIdentity.groupId,
-                    holdingIdentity.vaultDdlConnectionId,
+    internal fun putHoldingIdentity(entityManager: EntityManager, holdingIdentity: HoldingIdentity) {
+            val entity = entityManager.find(HoldingIdentityEntity::class.java, holdingIdentity.id)?.apply {
+                update(holdingIdentity.vaultDdlConnectionId,
                     holdingIdentity.vaultDmlConnectionId,
                     holdingIdentity.cryptoDdlConnectionId,
-                    holdingIdentity.cryptoDmlConnectionId,
-                    null
-                )
-                it.persist(entity)
-            }
+                    holdingIdentity.cryptoDmlConnectionId)
+            } ?: HoldingIdentityEntity(
+                holdingIdentity.id,
+                holdingIdentity.hash,
+                holdingIdentity.x500Name,
+                holdingIdentity.groupId,
+                holdingIdentity.vaultDdlConnectionId,
+                holdingIdentity.vaultDmlConnectionId,
+                holdingIdentity.cryptoDdlConnectionId,
+                holdingIdentity.cryptoDmlConnectionId,
+                null
+            )
+        entityManager.persist(entity)
     }
 
     /**
@@ -82,13 +82,9 @@ internal class VirtualNodeEntityRepository(dbConnectionManager: DbConnectionMana
      * @param holdingId Holding identity
      * @param cpiId CPI identifier
      */
-    @Suppress("Unused_parameter")
-    internal fun putVirtualNode(holdingId: HoldingIdentity, cpiId: CPI.Identifier) {
-        entityManagerFactory
-            .transaction {
-                val key = VirtualNodeEntityKey(holdingId.id, cpiId.name, cpiId.version, cpiId.signerSummaryHash.toString())
-                it.find(VirtualNodeEntity::class.java, key) ?:
-                    it.persist(VirtualNodeEntity(holdingId.id, cpiId.name, cpiId.version, cpiId.signerSummaryHash.toString()))
-            }
+    internal fun putVirtualNode(entityManager: EntityManager, holdingId: HoldingIdentity, cpiId: CPI.Identifier) {
+        val key = VirtualNodeEntityKey(holdingId.id, cpiId.name, cpiId.version, cpiId.signerSummaryHash.toString())
+        entityManager.find(VirtualNodeEntity::class.java, key) ?:
+        entityManager.persist(VirtualNodeEntity(holdingId.id, cpiId.name, cpiId.version, cpiId.signerSummaryHash.toString()))
     }
 }
