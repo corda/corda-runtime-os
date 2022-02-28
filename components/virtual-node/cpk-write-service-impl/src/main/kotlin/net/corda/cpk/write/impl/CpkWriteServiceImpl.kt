@@ -204,10 +204,10 @@ class CpkWriteServiceImpl @Activate constructor(
         val missingCpkIdsOnKafka = cpkStorage.getCpkIdsNotIn(cachedCpkIds)
 
         // Make sure we use the same CPK publisher for all CPK publishing.
-        this.cpkChunksPublisher?.let { cpkChunksPublisher ->
-            missingCpkIdsOnKafka.forEach {
-                val cpkChecksumData = cpkStorage.getCpkDataByCpkId(it)
-                cpkChunksPublisher.chunkAndPublishCpk(cpkChecksumData)
+        this.cpkChunksPublisher?.let {
+            missingCpkIdsOnKafka.forEach { cpkChecksum ->
+                val cpkChecksumData = cpkStorage.getCpkDataByCpkId(cpkChecksum)
+                it.chunkAndPublishCpk(cpkChecksumData)
             }
         } ?: throw CordaRuntimeException("CPK Chunks Publisher service is not set")
     }
