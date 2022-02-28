@@ -1,6 +1,7 @@
 package net.corda.membership.impl.read.component
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
@@ -9,7 +10,6 @@ import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_1
 import net.corda.membership.impl.read.TestProperties.Companion.aliceName
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.membership.conversion.PropertyConverter
 import net.corda.virtualnode.HoldingIdentity
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -57,8 +57,8 @@ class MembershipGroupReaderProviderImplTest {
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>().apply {
         doReturn(coordinator).whenever(this).createCoordinator(any(), any())
     }
-    private val converter: PropertyConverter = mock()
     private val groupPolicyProvider: GroupPolicyProvider = mock()
+    private val layeredPropertyMapFactory: LayeredPropertyMapFactory = mock()
 
     @BeforeEach
     fun setUp() {
@@ -66,7 +66,7 @@ class MembershipGroupReaderProviderImplTest {
             configurationReadService,
             subscriptionFactory,
             lifecycleCoordinatorFactory,
-            converter,
+            layeredPropertyMapFactory,
             groupPolicyProvider
         )
     }

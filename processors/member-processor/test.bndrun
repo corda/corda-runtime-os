@@ -17,9 +17,10 @@
     bnd.identity;id='net.corda.configuration-read-service-impl',\
     bnd.identity;id='net.corda.cpi-info-read-service-impl',\
     bnd.identity;id='net.corda.membership-identity-impl',\
-    bnd.identity;id='net.corda.membership-conversion-impl',\
+    bnd.identity;id='net.corda.layered-property-map',\
     bnd.identity;id='net.corda.membership-application',\
     bnd.identity;id='net.corda.membership-group-read-impl',\
+    bnd.identity;id='net.corda.membership-service-impl',\
     bnd.identity;id='net.corda.crypto-processor',\
     bnd.identity;id='net.corda.crypto-service-impl',\
     bnd.identity;id='net.corda.crypto-client-impl',\
@@ -85,12 +86,14 @@
 	net.corda.membership;version='[5.0.0,5.0.1)',\
 	net.corda.membership-application;version='[5.0.0,5.0.1)',\
 	net.corda.membership-conversion;version='[5.0.0,5.0.1)',\
-	net.corda.membership-conversion-impl;version='[5.0.0,5.0.1)',\
+	net.corda.layered-property-map;version='[5.0.0,5.0.1)',\
 	net.corda.membership-group-read-impl;version='[5.0.0,5.0.1)',\
 	net.corda.membership-identity;version='[5.0.0,5.0.1)',\
 	net.corda.membership-identity-impl;version='[5.0.0,5.0.1)',\
 	net.corda.membership-impl;version='[5.0.0,5.0.1)',\
 	net.corda.membership-internal;version='[5.0.0,5.0.1)',\
+	net.corda.membership-service;version='[5.0.0,5.0.1)',\
+	net.corda.membership-service-impl;version='[5.0.0,5.0.1)',\
 	net.corda.message-bus;version='[5.0.0,5.0.1)',\
 	net.corda.messaging;version='[5.0.0,5.0.1)',\
 	net.corda.messaging-impl;version='[5.0.0,5.0.1)',\

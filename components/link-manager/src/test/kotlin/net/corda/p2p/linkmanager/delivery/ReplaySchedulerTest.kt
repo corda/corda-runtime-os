@@ -307,6 +307,52 @@ class ReplaySchedulerTest {
     }
 
     @Test
+    fun `queued messages which are removed are not replayed`() {
+        val messageCap = 1
+        val firstBatchLatch = CountDownLatch(messageCap)
+        val secondBatchLatch = CountDownLatch(messageCap * 2)
+        val replayedMessages = ConcurrentHashMap.newKeySet<String>()
+        fun onReplay(messageId: String) {
+            if (!replayedMessages.contains(messageId)) {
+                firstBatchLatch.countDown()
+                secondBatchLatch.countDown()
+                replayedMessages.add(messageId)
+            }
+        }
+        val replayManager = ReplayScheduler(
+            coordinatorFactory,
+            service,
+            true,
+            REPLAY_PERIOD_KEY,
+            ::onReplay
+        ) { 0 }
+        replayManager.start()
+        setRunning()
+        createResources(resourcesHolder)
+        configHandler.applyNewConfiguration(
+            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod, 1),
+            null,
+            configResourcesHolder
+        )
+
+        val messageId = UUID.randomUUID().toString()
+        replayManager.addForReplay(0, messageId, messageId, sessionCounterparties)
+
+        val queuedMessageId = UUID.randomUUID().toString()
+        replayManager.addForReplay(0, queuedMessageId, queuedMessageId, sessionCounterparties)
+        replayManager.removeFromReplay(queuedMessageId, sessionCounterparties)
+
+        val anotherQueuedMessageId = UUID.randomUUID().toString()
+        replayManager.addForReplay(0, anotherQueuedMessageId, anotherQueuedMessageId, sessionCounterparties)
+
+        firstBatchLatch.await()
+        replayManager.removeFromReplay(messageId, sessionCounterparties)
+        secondBatchLatch.await()
+
+        assertThat(replayedMessages).containsOnly(messageId, anotherQueuedMessageId)
+    }
+
+    @Test
     fun `If the ReplayScheduler cap increases queued messages are replayed`() {
         val messageCap = 3
         val firstBatchLatch = CountDownLatch(messageCap)

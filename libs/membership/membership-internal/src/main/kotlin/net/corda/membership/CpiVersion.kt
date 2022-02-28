@@ -1,5 +1,5 @@
 package net.corda.membership
 
-import net.corda.v5.membership.conversion.LayeredPropertyMap
+import net.corda.v5.base.types.LayeredPropertyMap
 
 interface CpiVersion : LayeredPropertyMap

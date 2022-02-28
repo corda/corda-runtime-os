@@ -1,7 +1,5 @@
 package net.corda.membership.identity
 
-import net.corda.v5.membership.conversion.parse
-import net.corda.v5.membership.conversion.parseList
 import net.corda.membership.identity.MemberInfoExtension.Companion.IDENTITY_KEYS
 import net.corda.membership.identity.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.identity.MemberInfoExtension.Companion.PARTY_NAME
@@ -11,6 +9,8 @@ import net.corda.membership.identity.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.identity.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.identity.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.identity.MemberInfoExtension.Companion.softwareVersion
+import net.corda.v5.base.util.parse
+import net.corda.v5.base.util.parseList
 import net.corda.v5.membership.identity.MGMContext
 import net.corda.v5.membership.identity.MemberContext
 import net.corda.v5.membership.identity.MemberInfo

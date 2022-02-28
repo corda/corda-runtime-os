@@ -1,11 +1,10 @@
 package net.corda.membership.application.converter
 
+import net.corda.layeredpropertymap.create
 import net.corda.membership.application.PartyImpl
-import net.corda.membership.conversion.PropertyConverterImpl
-import net.corda.membership.identity.MGMContextImpl
+import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.membership.identity.MemberContextImpl
 import net.corda.membership.identity.MemberInfoExtension
-import net.corda.membership.identity.converter.PublicKeyConverter
 import net.corda.v5.application.identity.CordaX500Name
 import net.corda.v5.application.identity.Party
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -16,7 +15,6 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
-import kotlin.test.assertFailsWith
 
 class PartyConverterTest {
     companion object {
@@ -28,16 +26,16 @@ class PartyConverterTest {
         private const val KEY = "12345"
         private val key = Mockito.mock(PublicKey::class.java)
 
-        private val converter = PropertyConverterImpl(listOf(PartyConverter(), PublicKeyConverter(keyEncodingService)))
+        private val converters = listOf(PartyConverter(keyEncodingService))
+        private val layeredPropertyMapFactory = LayeredPropertyMapMocks.createFactory(converters)
 
-        val memberContext = MemberContextImpl(
+        val memberContext = layeredPropertyMapFactory.create<MemberContextImpl>(
             sortedMapOf(
                 MemberInfoExtension.PARTY_NAME to partyName,
                 MemberInfoExtension.PARTY_OWNING_KEY to KEY,
                 MemberInfoExtension.NOTARY_SERVICE_PARTY_NAME to notaryName,
                 MemberInfoExtension.NOTARY_SERVICE_PARTY_KEY to KEY
-            ),
-            converter
+            )
         )
 
         val nodeParty = PartyImpl(
@@ -48,14 +46,6 @@ class PartyConverterTest {
         val notaryServiceParty = PartyImpl(
             CordaX500Name(MemberX500Name.parse(notaryName)),
             key
-        )
-
-        val mgmContext = MGMContextImpl(
-            sortedMapOf(
-                MemberInfoExtension.PARTY_NAME to partyName,
-                MemberInfoExtension.PARTY_OWNING_KEY to KEY
-            ),
-            converter
         )
     }
 
@@ -77,11 +67,5 @@ class PartyConverterTest {
     @Test
     fun `PartyConverter works for converting notary service's party`() {
         assertEquals(notaryServiceParty, memberContext.parse(NOTARY_SERVICE_PARTY, Party::class.java))
-    }
-
-    @Test
-    fun `PartyConverter fails when incorrect context is used`() {
-        val ex = assertFailsWith<IllegalArgumentException> { mgmContext.parse(PARTY, Party::class.java) }
-        assertEquals("Unknown class 'net.corda.membership.identity.MGMContextImpl'.", ex.message)
     }
 }

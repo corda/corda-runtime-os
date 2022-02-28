@@ -63,4 +63,12 @@ interface PermissionStorageReader : Lifecycle {
      * @param ids The ids of updates roles to publish.
      */
     fun publishRoles(ids: List<String>)
+
+    /**
+     * Synchronize the permission summaries for all users between the database and the message bus.
+     *
+     * Use this overload when any user could be affected by a change to the permission system. For example, add/remove permission to/from
+     * role, add/remove role to/from group, etc.
+     */
+    fun reconcilePermissionSummaries()
 }
