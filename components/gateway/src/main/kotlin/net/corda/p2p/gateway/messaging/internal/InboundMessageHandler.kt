@@ -21,13 +21,10 @@ import net.corda.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
-import net.corda.p2p.gateway.messaging.CertificatesReader
-import net.corda.p2p.gateway.messaging.KeyStoreFactory
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.HttpServerListener
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
 import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
-import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
 import net.corda.v5.base.util.contextLogger
 import java.nio.ByteBuffer
@@ -62,24 +59,14 @@ internal class InboundMessageHandler(
         nodeConfiguration,
         instanceId
     )
-    private val certificatesReader = CertificatesReader(
-        lifecycleCoordinatorFactory,
-        subscriptionFactory,
-        nodeConfiguration,
-        instanceId,
-    )
-    private val signer = StubCryptoProcessor(
-        lifecycleCoordinatorFactory,
-        subscriptionFactory,
-        instanceId,
-        nodeConfiguration,
-    )
 
     private val server = ReconfigurableHttpServer(
         lifecycleCoordinatorFactory,
         configurationReaderService,
         this,
-        KeyStoreFactory(signer, certificatesReader).createDelegatedKeyStore()
+        subscriptionFactory,
+        nodeConfiguration,
+        instanceId,
     )
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
@@ -88,15 +75,11 @@ internal class InboundMessageHandler(
             sessionPartitionMapper.dominoTile,
             p2pInPublisher.dominoTile,
             server.dominoTile,
-            signer.dominoTile,
-            certificatesReader.dominoTile,
         ),
         managedChildren = listOf(
             sessionPartitionMapper.dominoTile,
             p2pInPublisher.dominoTile,
             server.dominoTile,
-            signer.dominoTile,
-            certificatesReader.dominoTile
         )
     )
 

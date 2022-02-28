@@ -8,7 +8,10 @@ import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.p2p.gateway.messaging.CertificatesReader
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
+import net.corda.p2p.gateway.messaging.KeyStoreFactory
+import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
@@ -54,17 +57,24 @@ class ReconfigurableHttpServerTest {
         configHandler = (context.arguments()[5] as ReconfigurableHttpServer.ReconfigurableHttpServerConfigChangeHandler)
     }
 
+    private val certificatesReader = mockConstruction(CertificatesReader::class.java)
+    private val signer = mockConstruction(StubCryptoProcessor::class.java)
+
     private val server = ReconfigurableHttpServer(
         lifecycleCoordinatorFactory,
         configurationReaderService,
         listener,
-        mock()
+        mock(),
+        mock(),
+        1,
     )
 
     @AfterEach
     fun cleanUp() {
         serverMock.close()
         dominoTile.close()
+        signer.close()
+        certificatesReader.close()
     }
 
     @Test
@@ -129,5 +139,14 @@ class ReconfigurableHttpServerTest {
         configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
 
         verify(resourcesHolder).keep(serverMock.constructed().last())
+    }
+
+    @Test
+    fun `applyNewConfiguration creates new key store`() {
+        mockConstruction(KeyStoreFactory::class.java).use { mockKeyStoreFactory ->
+            configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
+
+            verify(mockKeyStoreFactory.constructed().first()).createDelegatedKeyStore()
+        }
     }
 }

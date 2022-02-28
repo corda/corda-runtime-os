@@ -2,14 +2,19 @@ package net.corda.p2p.gateway.messaging.http
 
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
+import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.gateway.Gateway
+import net.corda.p2p.gateway.messaging.CertificatesReader
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
+import net.corda.p2p.gateway.messaging.KeyStoreFactory
 import net.corda.p2p.gateway.messaging.toGatewayConfiguration
+import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.v5.base.util.contextLogger
 import java.net.SocketAddress
 import java.util.concurrent.CompletableFuture
@@ -21,17 +26,44 @@ class ReconfigurableHttpServer(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val configurationReaderService: ConfigurationReadService,
     private val listener: HttpServerListener,
-    private val keyStore: KeyStoreWithPassword,
+    subscriptionFactory: SubscriptionFactory,
+    nodeConfiguration: SmartConfig,
+    instanceId: Int,
 ) : LifecycleWithDominoTile {
 
     @Volatile
     private var httpServer: HttpServer? = null
     private val serverLock = ReentrantReadWriteLock()
 
+    private val certificatesReader = CertificatesReader(
+        lifecycleCoordinatorFactory,
+        subscriptionFactory,
+        nodeConfiguration,
+        instanceId,
+    )
+    private val signer = StubCryptoProcessor(
+        lifecycleCoordinatorFactory,
+        subscriptionFactory,
+        instanceId,
+        nodeConfiguration,
+    )
+
+    private val keyStore by lazy {
+        KeyStoreFactory(signer, certificatesReader).createDelegatedKeyStore()
+    }
+
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        configurationChangeHandler = ReconfigurableHttpServerConfigChangeHandler()
+        configurationChangeHandler = ReconfigurableHttpServerConfigChangeHandler(),
+        dependentChildren = listOf(
+            signer.dominoTile,
+            certificatesReader.dominoTile,
+        ),
+        managedChildren = listOf(
+            signer.dominoTile,
+            certificatesReader.dominoTile,
+        ),
     )
 
     companion object {
@@ -59,8 +91,10 @@ class ReconfigurableHttpServer(
             @Suppress("TooGenericExceptionCaught")
             try {
                 if (newConfiguration.hostPort == oldConfiguration?.hostPort) {
-                    logger.info("New server configuration for ${dominoTile.coordinatorName} on the same port, " +
-                            "HTTP server will have to go down")
+                    logger.info(
+                        "New server configuration for ${dominoTile.coordinatorName} on the same port, " +
+                            "HTTP server will have to go down"
+                    )
                     serverLock.write {
                         val oldServer = httpServer
                         httpServer = null
