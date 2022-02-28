@@ -45,7 +45,6 @@ class DBCpkStorageTest {
             )
             emFactory.createEntityManager().transaction {
                 it.persist(cpkDataEntity)
-                it.flush()
             }
         }
 
@@ -57,7 +56,6 @@ class DBCpkStorageTest {
                 )
                     .setParameter("checksum", checksum.toString())
                     .executeUpdate()
-                it.flush()
             }
         }
     }
