@@ -14,7 +14,7 @@
     bnd.identity;id='net.corda.member-processor',\
     bnd.identity;id='net.corda.group-policy',\
     bnd.identity;id='net.corda.group-policy-impl',\
-    bnd.identity;id='net.corda.registration-static-network-impl',\
+    bnd.identity;id='net.corda.registration-impl',\
     bnd.identity;id='net.corda.configuration-read-service-impl',\
     bnd.identity;id='net.corda.cpi-info-read-service-impl',\
     bnd.identity;id='net.corda.membership-identity-impl',\
@@ -101,7 +101,7 @@
 	net.corda.packaging;version='[5.0.0,5.0.1)',\
 	net.corda.packaging-avro-converters;version='[5.0.0,5.0.1)',\
 	net.corda.registration-provider;version='[5.0.0,5.0.1)',\
-	net.corda.registration-static-network-impl;version='[5.0.0,5.0.1)',\
+	net.corda.registration-impl;version='[5.0.0,5.0.1)',\
 	net.corda.registry;version='[5.0.0,5.0.1)',\
 	net.corda.serialization;version='[5.0.0,5.0.1)',\
 	net.corda.serialization-internal;version='[5.0.0,5.0.1)',\

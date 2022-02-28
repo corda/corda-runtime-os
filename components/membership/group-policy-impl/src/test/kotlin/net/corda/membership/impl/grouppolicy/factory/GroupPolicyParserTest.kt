@@ -141,12 +141,6 @@ class GroupPolicyParserTest {
         assertEquals(charlie[ENDPOINT_PROTOCOL_2], 1)
     }
 
-    @Test
-    fun `Parse group policy - verify MGM private key alias`() {
-        val result = groupPolicyParser.parse(getSampleGroupPolicy())
-        assertEquals(testMgmKeyAlias, result.mgmKeyAlias)
-    }
-
     private fun getSampleGroupPolicy(): String {
         val url = this::class.java.getResource("/SampleGroupPolicy.json")
         requireNotNull(url)

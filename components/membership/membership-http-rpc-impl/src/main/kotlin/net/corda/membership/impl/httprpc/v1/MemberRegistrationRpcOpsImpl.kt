@@ -6,7 +6,7 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.membership.client.MemberOpsClient
-import net.corda.membership.httprpc.MemberRegistrationRpcOps
+import net.corda.membership.httprpc.v1.MemberRegistrationRpcOps
 import net.corda.membership.httprpc.types.MemberRegistrationRequest
 import net.corda.membership.httprpc.types.RegistrationRequestProgress
 import net.corda.membership.impl.httprpc.v1.lifecycle.RegistrationRpcOpsLifecycleHandler

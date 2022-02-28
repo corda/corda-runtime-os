@@ -3,7 +3,7 @@ plugins {
     id 'corda.common-library'
 }
 
-description 'Member Ops Client'
+description 'Membership HTTP RPC definition'
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
@@ -11,6 +11,6 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
 
-    implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:http-rpc:http-rpc")
     implementation project(":libs:membership:membership-http-rpc-types")
 }

@@ -26,7 +26,7 @@ dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation project(":components:membership:registration-static-network-impl")
+    testImplementation project(":components:membership:registration-impl")
     testImplementation project(":components:configuration:configuration-read-service")
     testImplementation project(":libs:messaging:messaging")
     testImplementation project(":libs:configuration:configuration-core")
