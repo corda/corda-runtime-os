@@ -507,6 +507,7 @@ open class SessionManagerImpl(
             session
         }
         val responderHello = session.generateResponderHello()
+        logger.info("processInitiatorHello session with ID: ${message.header.sessionId} Protocol ID: ${session.sessionId}.")
 
         val peer = networkMap.getMemberInfo(message.source.initiatorPublicKeyHash.array(), message.source.groupId)
         if (peer == null) {
@@ -533,6 +534,7 @@ open class SessionManagerImpl(
             logger.noSessionWarning(message::class.java.simpleName, message.header.sessionId)
             return null
         }
+        logger.info("ProcessInitiatorHandshake session with ID: ${message.header.sessionId} Protocol ID: ${session.sessionId}.")
 
         val initiatorIdentityData = session.getInitiatorIdentity()
         val peer = networkMap.getMemberInfo(initiatorIdentityData.initiatorPublicKeyHash.array(), initiatorIdentityData.groupId)

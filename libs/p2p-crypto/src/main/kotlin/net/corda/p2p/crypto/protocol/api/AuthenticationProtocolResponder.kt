@@ -50,7 +50,7 @@ import kotlin.math.min
  *
  * This class is not thread-safe, which means clients that want to use it from different threads need to perform external synchronisation.
  */
-class AuthenticationProtocolResponder(private val sessionId: String,
+class AuthenticationProtocolResponder(val sessionId: String,
                                       private val supportedModes: Set<ProtocolMode>,
                                       private val ourMaxMessageSize: Int): AuthenticationProtocol() {
 
