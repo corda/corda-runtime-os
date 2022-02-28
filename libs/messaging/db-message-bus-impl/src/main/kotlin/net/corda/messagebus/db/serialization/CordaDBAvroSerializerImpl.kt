@@ -10,6 +10,9 @@ class CordaDBAvroSerializerImpl<T : Any>(
 
     override fun serialize(data: T): ByteArray {
         return when (data.javaClass) {
+            String::class.java -> {
+                (data as String).encodeToByteArray()
+            }
             ByteArray::class.java -> {
                 uncheckedCast(data)
             }

@@ -18,6 +18,9 @@ class CordaDBAvroDeserializerImpl<T : Any>(
 
     override fun deserialize(data: ByteArray): T? {
         when (expectedClass) {
+            String::class.java -> {
+                return uncheckedCast(data.decodeToString())
+            }
             ByteArray::class.java -> {
                 return uncheckedCast(data)
             }

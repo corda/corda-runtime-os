@@ -122,6 +122,7 @@ class DBAccessIntegrationTest {
         )
 
         val dbAccess = DBAccess(emf)
+        dbAccess.writeTransactionRecord(transactionRecord)
         dbAccess.writeRecords(records)
 
         val results = query(
@@ -141,6 +142,11 @@ class DBAccessIntegrationTest {
         val transactionRecord = TransactionRecordEntry(randomId())
         val transactionRecord2 = TransactionRecordEntry(randomId()) // Won't be committed
         val transactionRecord3 = TransactionRecordEntry(randomId())
+        val dbAccess = DBAccess(emf)
+
+        dbAccess.writeTransactionRecord(transactionRecord)
+        dbAccess.writeTransactionRecord(transactionRecord2)
+        dbAccess.writeTransactionRecord(transactionRecord3)
         val partition5 = listOf(
             TopicRecordEntry(topic, 5, 0, key, value, transactionRecord, timestamp = timestamp),
             TopicRecordEntry(topic, 5, 1, key, value, transactionRecord, timestamp = timestamp),
@@ -161,7 +167,6 @@ class DBAccessIntegrationTest {
         )
         val records = partition5 + partition6 + partition7 + partition8
 
-        val dbAccess = DBAccess(emf)
         dbAccess.writeRecords(records)
 
         dbAccess.readRecords(-1, CordaTopicPartition(topic, 5)).apply {
@@ -256,6 +261,7 @@ class DBAccessIntegrationTest {
         val topic2 = randomId()
 
         val transactionRecord = TransactionRecordEntry(randomId())
+        dbAccess.writeTransactionRecord(transactionRecord)
 
         val records = listOf(
             TopicRecordEntry(topic, 0, 0, key, value, transactionRecord, timestamp = timestamp),
@@ -330,5 +336,54 @@ class DBAccessIntegrationTest {
         assertThat(maxOffsets.size).isEqualTo(2)
         assertThat(maxOffsets[partition0]).isEqualTo(3)
         assertThat(maxOffsets[partition1]).isEqualTo(3)
+    }
+
+    @Test
+    fun `DBAccess correctly returns earliest and latest record offsets`() {
+        val timestamp = Instant.parse("2022-01-01T00:00:00.00Z")
+        val dbAccess = DBAccess(emf)
+
+        val topic = randomId()
+
+        val partition0 = CordaTopicPartition(topic, 0)
+        val partition1 = CordaTopicPartition(topic, 1)
+        val partition2 = CordaTopicPartition(topic, 2)
+        val partitions = setOf(partition0, partition1, partition2)
+
+        val transactionRecord = TransactionRecordEntry(randomId(), TransactionState.COMMITTED)
+        val transactionRecord2 = TransactionRecordEntry(randomId(), TransactionState.PENDING)
+        dbAccess.writeTransactionRecord(transactionRecord)
+        dbAccess.writeTransactionRecord(transactionRecord2)
+
+        dbAccess.writeRecords(
+            listOf(
+                TopicRecordEntry(topic, 0, 1, key, value, transactionRecord, timestamp = timestamp),
+                TopicRecordEntry(topic, 0, 2, key, value, transactionRecord, timestamp = timestamp),
+                TopicRecordEntry(topic, 0, 3, key, value, transactionRecord, timestamp = timestamp),
+                TopicRecordEntry(topic, 1, 6, key, value, transactionRecord, timestamp = timestamp),
+                TopicRecordEntry(topic, 1, 7, key, value, transactionRecord, timestamp = timestamp),
+                TopicRecordEntry(topic, 1, 8, key, value, transactionRecord, timestamp = timestamp),
+                TopicRecordEntry(topic, 2, 7, key, value, transactionRecord, timestamp = timestamp),
+                TopicRecordEntry(topic, 2, 8, key, value, transactionRecord, timestamp = timestamp),
+                TopicRecordEntry(topic, 2, 9, key, value, transactionRecord, timestamp = timestamp),
+            )
+        )
+
+        val expectedEarliestResults = mapOf(partition0 to 1L, partition1 to 6L, partition2 to 7L)
+        assertThat(dbAccess.getEarliestRecordOffset(partitions)).isEqualTo(expectedEarliestResults)
+
+        val expectedLatestResults = mapOf(partition0 to 3L, partition1 to 8L, partition2 to 9L)
+        assertThat(dbAccess.getLatestRecordOffset(partitions)).isEqualTo(expectedLatestResults)
+
+        // Shouldn't matter as transactionRecord2 is still pending
+        dbAccess.writeRecords(
+            listOf(
+                TopicRecordEntry(topic, 0, 5, key, value, transactionRecord2, timestamp = timestamp),
+                TopicRecordEntry(topic, 0, 6, key, value, transactionRecord2, timestamp = timestamp),
+                TopicRecordEntry(topic, 0, 7, key, value, transactionRecord2, timestamp = timestamp),
+            )
+        )
+
+        assertThat(dbAccess.getLatestRecordOffset(partitions)).isEqualTo(expectedLatestResults)
     }
 }

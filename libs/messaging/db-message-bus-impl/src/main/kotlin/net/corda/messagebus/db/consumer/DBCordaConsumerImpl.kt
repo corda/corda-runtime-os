@@ -43,12 +43,13 @@ class DBCordaConsumerImpl<K : Any, V : Any> internal constructor(
     private val maxPollInterval: Long = consumerConfig.getLong(MAX_POLL_INTERVAL)
     private val autoResetStrategy =
         CordaOffsetResetStrategy.valueOf(consumerConfig.getString(AUTO_OFFSET_RESET).toUpperCase())
-    private var topicPartitions: Set<CordaTopicPartition> = emptySet()
-    private val pausedPartitions: MutableSet<CordaTopicPartition> = mutableSetOf()
-    private val partitionListeners: MutableMap<String, CordaConsumerRebalanceListener?> = mutableMapOf()
-    private var currentTopicPartition = topicPartitions.iterator()
-    private var lastReadOffset = dbAccess.getMaxOffsetsPerTopicPartition().toMutableMap()
     private var subscriptionType = SubscriptionType.NONE
+
+    private var topicPartitions = emptySet<CordaTopicPartition>()
+    private var currentTopicPartition = topicPartitions.iterator()
+    private val pausedPartitions = mutableSetOf<CordaTopicPartition>()
+    private val partitionListeners = mutableMapOf<String, CordaConsumerRebalanceListener?>()
+    private val lastReadOffset = mutableMapOf<CordaTopicPartition, Long>()
 
     override fun subscribe(topics: Collection<String>, listener: CordaConsumerRebalanceListener?) {
         checkNotAssigned()
@@ -74,13 +75,16 @@ class DBCordaConsumerImpl<K : Any, V : Any> internal constructor(
         return topicPartitions
     }
 
+    private fun getAutoResetOffset(partition:CordaTopicPartition): Long {
+        return when (autoResetStrategy) {
+            CordaOffsetResetStrategy.EARLIEST -> beginningOffsets(setOf(partition)).values.single()
+            CordaOffsetResetStrategy.LATEST -> endOffsets(setOf(partition)).values.single()
+            else -> throw CordaMessageAPIFatalException("No offset for $partition")
+        }
+    }
+
     override fun position(partition: CordaTopicPartition): Long {
-        return lastReadOffset[partition]
-            ?: when (autoResetStrategy) {
-                CordaOffsetResetStrategy.EARLIEST -> beginningOffsets(setOf(partition)).values.single()
-                CordaOffsetResetStrategy.LATEST -> endOffsets(setOf(partition)).values.single()
-                else -> throw CordaMessageAPIFatalException("No offset for $partition")
-            }
+        return lastReadOffset[partition] ?: getAutoResetOffset(partition)
     }
 
     override fun seek(partition: CordaTopicPartition, offset: Long) {
@@ -100,11 +104,11 @@ class DBCordaConsumerImpl<K : Any, V : Any> internal constructor(
     }
 
     override fun beginningOffsets(partitions: Collection<CordaTopicPartition>): Map<CordaTopicPartition, Long> {
-        return dbAccess.getMinCommittedOffsets(groupId, partitions.toSet())
+        return dbAccess.getEarliestRecordOffset(partitions.toSet())
     }
 
     override fun endOffsets(partitions: Collection<CordaTopicPartition>): Map<CordaTopicPartition, Long> {
-        return dbAccess.getMaxCommittedOffsets(groupId, partitions.toSet())
+        return dbAccess.getLatestRecordOffset(partitions.toSet())
     }
 
     override fun resume(partitions: Collection<CordaTopicPartition>) {
@@ -125,11 +129,11 @@ class DBCordaConsumerImpl<K : Any, V : Any> internal constructor(
 
     override fun poll(timeout: Duration): List<CordaConsumerRecord<K, V>> {
         val topicPartition = getNextTopicPartition() ?: return emptyList()
-        val fromOffset = getNextOffsetFor(topicPartition)
+        val fromOffset = position(topicPartition)
 
         val dbRecords = dbAccess.readRecords(fromOffset, topicPartition, maxPollRecords)
 
-        return dbRecords.takeWhile {
+        val result = dbRecords.takeWhile {
             it.transactionId.state == TransactionState.COMMITTED
         }.map { dbRecord ->
             CordaConsumerRecord(
@@ -141,6 +145,8 @@ class DBCordaConsumerImpl<K : Any, V : Any> internal constructor(
                 dbRecord.timestamp.toEpochMilli()
             )
         }
+        seek(topicPartition, result.last().offset + 1)
+        return result
     }
 
     override fun resetToLastCommittedPositions(offsetStrategy: CordaOffsetResetStrategy) {
@@ -195,6 +201,7 @@ class DBCordaConsumerImpl<K : Any, V : Any> internal constructor(
             // No consumer group means no rebalancing
             return
         }
+
         val newTopicPartitions = consumerGroup.getTopicPartitionsFor(this)
         val addedTopicPartitions = newTopicPartitions - topicPartitions
         val removedTopicPartitions = topicPartitions - newTopicPartitions
@@ -203,18 +210,30 @@ class DBCordaConsumerImpl<K : Any, V : Any> internal constructor(
             return
         }
 
-        removedTopicPartitions.groupBy { it.topic }.forEach { (topic, newPartitions) ->
-            partitionListeners[topic]?.onPartitionsRevoked(newPartitions)
-                ?: defaultListener?.onPartitionsRevoked(newPartitions)
+        removedTopicPartitions.groupBy { it.topic }.forEach { (topic, removedPartitions) ->
+            removedPartitions.forEach { lastReadOffset.remove(it) }
+            revokePartitions(topic, removedPartitions)
         }
 
         addedTopicPartitions.groupBy { it.topic }.forEach { (topic, newPartitions) ->
-            partitionListeners[topic]?.onPartitionsAssigned(newPartitions)
-                ?: defaultListener?.onPartitionsAssigned(newPartitions)
+            dbAccess.getMaxCommittedOffsets(groupId, newPartitions.toSet()).forEach { (topicPartition, offset) ->
+                lastReadOffset[topicPartition] = offset ?: getAutoResetOffset(topicPartition)
+            }
+            assignPartitions(topic, newPartitions)
         }
 
         topicPartitions = newTopicPartitions
         currentTopicPartition = topicPartitions.iterator()
+    }
+
+    private fun revokePartitions(topic: String, removedPartitions: Collection<CordaTopicPartition>) {
+        partitionListeners[topic]?.onPartitionsRevoked(removedPartitions)
+            ?: defaultListener?.onPartitionsRevoked(removedPartitions)
+    }
+
+    private fun assignPartitions(topic: String, newPartitions: Collection<CordaTopicPartition>) {
+        partitionListeners[topic]?.onPartitionsAssigned(newPartitions)
+            ?: defaultListener?.onPartitionsAssigned(newPartitions)
     }
 
     /**
@@ -244,12 +263,6 @@ class DBCordaConsumerImpl<K : Any, V : Any> internal constructor(
         return next
     }
 
-    private fun getNextOffsetFor(topicPartition: CordaTopicPartition): Long {
-        val offset = position(topicPartition)
-        lastReadOffset[topicPartition] = offset + 1
-        return offset
-    }
-
     private fun deserializeKey(bytes: ByteArray): K {
         return keyDeserializer.deserialize(bytes)
             ?: throw CordaMessageAPIFatalException("Should never get null result from key deserialize")
@@ -268,18 +281,6 @@ class DBCordaConsumerImpl<K : Any, V : Any> internal constructor(
     private fun checkNotAssigned() {
         if (subscriptionType == SubscriptionType.ASSIGNED) {
             throw CordaMessageAPIFatalException("Cannot subscribed when consumer is already assigned topic partitions")
-        }
-    }
-
-    private fun CordaOffsetResetStrategy.from(strategy: String?): CordaOffsetResetStrategy {
-        return if (strategy.isNullOrEmpty()) {
-            CordaOffsetResetStrategy.NONE
-        } else if (strategy.toLowerCase() == "earliest") {
-            CordaOffsetResetStrategy.EARLIEST
-        } else if (strategy.toLowerCase() == "latest") {
-            CordaOffsetResetStrategy.LATEST
-        } else {
-            throw CordaMessageAPIFatalException("Invalid configuration option '$strategy' for $AUTO_OFFSET_RESET")
         }
     }
 }

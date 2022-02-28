@@ -51,7 +51,7 @@ class DBAccess(
     fun getMaxCommittedOffsets(
         groupId: String,
         topicPartitions: Set<CordaTopicPartition>
-    ): Map<CordaTopicPartition, Long> {
+    ): Map<CordaTopicPartition, Long?> {
         if (topicPartitions.isEmpty()) {
             return emptyMap()
         }
@@ -61,7 +61,7 @@ class DBAccess(
                 it.value.maxOf { committedOffsetEntry -> committedOffsetEntry.recordOffset }
             }
         val missingPartitions = topicPartitions - returnedOffsets.keys
-        return returnedOffsets + missingPartitions.associateWith { 0L }
+        return returnedOffsets + missingPartitions.associateWith { null }
     }
 
     fun getMinCommittedOffsets(
@@ -207,12 +207,19 @@ class DBAccess(
     fun writeRecords(records: List<TopicRecordEntry>) {
         executeWithErrorHandling("write records") { entityManager ->
             records.forEach { record ->
-                entityManager.persist(record.transactionId)
                 entityManager.persist(record)
             }
         }
     }
 
+    /**
+     * Read records from the given [topicPartition].  Records will be returned which have an offset
+     * _greater than_ [fromOffset].
+     *
+     * @param fromOffset the last read offset (only records with greater offsets will be returned)
+     * @param topicPartition the topic partition from which the records will be read
+     * @param limit the max number of results to read
+     */
     fun readRecords(
         fromOffset: Long,
         topicPartition: CordaTopicPartition,
@@ -229,6 +236,63 @@ class DBAccess(
                     """,
                 TopicRecordEntry::class.java
             ).setMaxResults(limit).resultList
+        }
+    }
+
+    private fun findOffsetToReadUntil(topicPartition: CordaTopicPartition): Long {
+        return executeWithErrorHandling("read latest offsets") { entityManager ->
+            entityManager.createQuery(
+                """
+                     select t from topic_record t 
+                     join transaction_record tr on t.${TopicRecordEntry::transactionId.name} 
+                           = tr.${TransactionRecordEntry::transactionId.name}
+                     where t.${TopicRecordEntry::topic.name} = '${topicPartition.topic}'
+                     and t.${TopicRecordEntry::partition.name} = '${topicPartition.partition}'
+                     and tr.${TransactionRecordEntry::state.name} = ${TransactionState.PENDING.ordinal}
+                     order by t.${TopicRecordEntry::recordOffset.name}
+                    """.trimIndent(),
+                TopicRecordEntry::class.java
+            ).setMaxResults(1).resultList.firstOrNull()?.recordOffset ?: Long.MAX_VALUE
+        }
+    }
+
+    fun getLatestRecordOffset(topicPartitions: Collection<CordaTopicPartition>): Map<CordaTopicPartition, Long> {
+        return executeWithErrorHandling("read latest offsets") { entityManager ->
+            topicPartitions.associateWith {
+                entityManager.createQuery(
+                    """
+                     select t from topic_record t
+                     join transaction_record tr on t.${TopicRecordEntry::transactionId.name} 
+                           = tr.${TransactionRecordEntry::transactionId.name}
+                     where t.${TopicRecordEntry::topic.name} = '${it.topic}'
+                     and t.${TopicRecordEntry::partition.name} = '${it.partition}'
+                     and tr.${TransactionRecordEntry::state.name} = ${TransactionState.COMMITTED.ordinal}
+                     and t.${TopicRecordEntry::recordOffset.name} < ${findOffsetToReadUntil(it)}
+                     order by t.${TopicRecordEntry::recordOffset.name} desc
+                """.trimIndent(),
+                    TopicRecordEntry::class.java
+                ).setMaxResults(1).resultList.firstOrNull()?.recordOffset ?: 0L
+            }
+        }
+    }
+
+    fun getEarliestRecordOffset(topicPartitions: Collection<CordaTopicPartition>): Map<CordaTopicPartition, Long> {
+        return executeWithErrorHandling("read earliest offsets") { entityManager ->
+            topicPartitions.associateWith {
+                entityManager.createQuery(
+                    """
+                     select t from topic_record t
+                     join transaction_record tr on t.${TopicRecordEntry::transactionId.name} 
+                           = tr.${TransactionRecordEntry::transactionId.name}
+                     where t.${TopicRecordEntry::topic.name} = '${it.topic}'
+                     and t.${TopicRecordEntry::partition.name} = '${it.partition}'
+                     and tr.${TransactionRecordEntry::state.name} = ${TransactionState.COMMITTED.ordinal}
+                     order by t.${TopicRecordEntry::recordOffset.name} 
+                """.trimIndent(),
+                    TopicRecordEntry::class.java
+                ).setMaxResults(1).resultList.firstOrNull()?.recordOffset
+                    ?: 0L // This needs to follow auto.offset.reset
+            }
         }
     }
 

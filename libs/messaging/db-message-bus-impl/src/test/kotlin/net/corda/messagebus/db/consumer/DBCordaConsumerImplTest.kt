@@ -1,9 +1,14 @@
 package net.corda.messagebus.db.consumer
 
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory
 import net.corda.data.CordaAvroDeserializer
 import net.corda.messagebus.api.CordaTopicPartition
+import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
+import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
+import net.corda.messagebus.db.consumer.DBCordaConsumerImpl.Companion.AUTO_OFFSET_RESET
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionState
@@ -24,7 +29,7 @@ internal class DBCordaConsumerImplTest {
 
     companion object {
         private const val topic = "topic"
-        private val config = ConfigFactory.parseString(
+        private val defaultConfig = ConfigFactory.parseString(
             """
         max.poll.records = 10
         max.poll.interval.ms = 100000
@@ -48,7 +53,7 @@ internal class DBCordaConsumerImplTest {
     @Mock
     val dbAccess = mock<DBAccess>()
 
-    private fun makeConsumer(): DBCordaConsumerImpl<String, String> {
+    private fun makeConsumer(config: Config = defaultConfig): DBCordaConsumerImpl<String, String> {
         val keyDeserializer = mock<CordaAvroDeserializer<String>>()
         val valueDeserializer = mock<CordaAvroDeserializer<String>>()
         whenever(keyDeserializer.deserialize(eq(serializedKey))).thenAnswer { "key" }
@@ -120,7 +125,7 @@ internal class DBCordaConsumerImplTest {
             timestamp.toEpochMilli()
         )
 
-        whenever(dbAccess.getMaxOffsetsPerTopicPartition()).thenAnswer { mapOf(partition0 to 0L) }
+        whenever(dbAccess.getMaxCommittedOffsets(any(), any())).thenAnswer { mapOf(partition0 to 0L) }
         whenever(dbAccess.readRecords(fromOffset.capture(), any(), any())).thenAnswer { pollResult }
         whenever(consumerGroup.getTopicPartitionsFor(any())).thenAnswer { setOf(partition0) }
 
@@ -132,30 +137,63 @@ internal class DBCordaConsumerImplTest {
     }
 
     @Test
-    fun `consumer poll correctly increases offset`() {
+    fun `consumer poll correctly increases offset for multiple records`() {
         val fromOffset = ArgumentCaptor.forClass(Long::class.java)
         val timestamp = Instant.parse("2022-01-01T00:00:00.00Z")
-        var recordOffsetCounter = 0L
+        val transactionRecord1 = TransactionRecordEntry("id", TransactionState.COMMITTED)
+
+        val pollResult = listOf(
+            TopicRecordEntry(topic, 0, 0, serializedKey, serializedValue, transactionRecord1, timestamp),
+            TopicRecordEntry(topic, 0, 2, serializedKey, serializedValue, transactionRecord1, timestamp),
+            TopicRecordEntry(topic, 0, 5, serializedKey, serializedValue, transactionRecord1, timestamp),
+            TopicRecordEntry(topic, 0, 7, serializedKey, serializedValue, transactionRecord1, timestamp),
+        )
+
+        whenever(dbAccess.getMaxCommittedOffsets(any(), any())).thenAnswer { mapOf(partition0 to 0L) }
+        whenever(dbAccess.readRecords(fromOffset.capture(), any(), any())).thenAnswer { pollResult }
+        whenever(consumerGroup.getTopicPartitionsFor(any())).thenAnswer { setOf(partition0) }
+
+        val consumer = makeConsumer()
+        consumer.poll()
+        assertThat(consumer.position(partition0)).isEqualTo(8)
+    }
+
+    @Test
+    fun `consumer poll correctly increases offset`() {
+        val timestamp = Instant.parse("2022-01-01T00:00:00.00Z")
+
+        var partition0Offset = 0L
+        var partition1Offset = 5L
+        var partition2Offset = 10L
+
+        fun nextRecord(partition: CordaTopicPartition, offset: Long) = listOf(
+            TopicRecordEntry(
+                topic,
+                partition.partition,
+                offset,
+                serializedKey,
+                serializedValue,
+                TransactionRecordEntry("id", TransactionState.COMMITTED),
+                timestamp
+            )
+        )
 
         whenever(consumerGroup.getTopicPartitionsFor(any())).thenAnswer { setOf(partition0, partition1, partition2) }
-        whenever(dbAccess.readRecords(fromOffset.capture(), any(), any())).thenAnswer {
-            listOf(
-                TopicRecordEntry(
-                    topic,
-                    0,
-                    recordOffsetCounter++,
-                    serializedKey,
-                    serializedValue,
-                    TransactionRecordEntry("id", TransactionState.COMMITTED),
-                    timestamp
-                )
-            )
-        }
-        whenever(dbAccess.getMaxOffsetsPerTopicPartition()).thenAnswer {
+        whenever(dbAccess.readRecords(any(), eq(partition0), any())).thenAnswer { nextRecord(partition0, partition0Offset++) }
+        whenever(dbAccess.readRecords(any(), eq(partition1), any())).thenAnswer { nextRecord(partition1, partition1Offset++) }
+        whenever(dbAccess.readRecords(any(), eq(partition2), any())).thenAnswer { nextRecord(partition2, partition2Offset++) }
+        whenever(dbAccess.getMaxCommittedOffsets(any(), any())).thenAnswer {
             mapOf(
                 partition0 to 0L,
-                partition1 to 5L,
-                partition2 to 10,
+                partition1 to 0L,
+                partition2 to 0L,
+            )
+        }
+        whenever(dbAccess.getLatestRecordOffset(any())).thenAnswer {
+            mapOf(
+                partition0 to partition0Offset,
+                partition1 to partition1Offset,
+                partition2 to partition2Offset,
             )
         }
 
@@ -164,18 +202,17 @@ internal class DBCordaConsumerImplTest {
         consumer.poll()
         consumer.poll()
 
-        assertThat(fromOffset.allValues[0]).isEqualTo(0)
-        assertThat(fromOffset.allValues[1]).isEqualTo(5)
-        assertThat(fromOffset.allValues[2]).isEqualTo(10)
+        assertThat(consumer.position(partition0)).isEqualTo(1)
+        assertThat(consumer.position(partition1)).isEqualTo(6)
+        assertThat(consumer.position(partition2)).isEqualTo(11)
 
         consumer.poll()
         consumer.poll()
         consumer.poll()
 
-        assertThat(fromOffset.allValues[3]).isEqualTo(1)
-        assertThat(fromOffset.allValues[4]).isEqualTo(6)
-        assertThat(fromOffset.allValues[5]).isEqualTo(11)
-
+        assertThat(consumer.position(partition0)).isEqualTo(2)
+        assertThat(consumer.position(partition1)).isEqualTo(7)
+        assertThat(consumer.position(partition2)).isEqualTo(12)
     }
 
     @Test
@@ -197,13 +234,12 @@ internal class DBCordaConsumerImplTest {
             CordaConsumerRecord(topic, 0, 2, "key", "value", timestamp.toEpochMilli()),
         )
 
-        whenever(dbAccess.getMaxOffsetsPerTopicPartition()).thenAnswer { mapOf(partition0 to 0L) }
+        whenever(dbAccess.getMaxCommittedOffsets(any(), any())).thenAnswer { mapOf(partition0 to 0L) }
         whenever(dbAccess.readRecords(fromOffset.capture(), any(), any())).thenAnswer { pollResult }
         whenever(consumerGroup.getTopicPartitionsFor(any())).thenAnswer { setOf(partition0) }
 
         val consumer = makeConsumer()
         val test = consumer.poll()
-        consumer.poll()
         assertThat(test.size).isEqualTo(2)
         assertThat(test).isEqualTo(expectedRecords)
     }
@@ -258,7 +294,7 @@ internal class DBCordaConsumerImplTest {
         whenever(keyDeserializer.deserialize(eq(serializedKey))).thenAnswer { "key" }
         whenever(valueDeserializer.deserialize(eq(serializedValue))).thenAnswer { "value" }
         val consumer = DBCordaConsumerImpl(
-            config,
+            defaultConfig,
             dbAccess,
             null,
             keyDeserializer,
@@ -268,6 +304,33 @@ internal class DBCordaConsumerImplTest {
 
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
             consumer.subscribe(topic)
+        }
+    }
+
+    @Test
+    fun `consumer returns correct position when not available based on auto_offset_reset`() {
+        fun createAutoResetConsumer(strategy: CordaOffsetResetStrategy): CordaConsumer<String, String> {
+            val keyDeserializer = mock<CordaAvroDeserializer<String>>()
+            val valueDeserializer = mock<CordaAvroDeserializer<String>>()
+            whenever(keyDeserializer.deserialize(eq(serializedKey))).thenAnswer { "key" }
+            whenever(valueDeserializer.deserialize(eq(serializedValue))).thenAnswer { "value" }
+            whenever(dbAccess.getEarliestRecordOffset(any())).thenAnswer { mapOf(partition0 to 0) }
+            whenever(dbAccess.getLatestRecordOffset(any())).thenAnswer { mapOf(partition0 to 5) }
+            val config = defaultConfig.withValue(AUTO_OFFSET_RESET, ConfigValueFactory.fromAnyRef(strategy.name))
+            return DBCordaConsumerImpl(
+                config,
+                dbAccess,
+                consumerGroup,
+                keyDeserializer,
+                valueDeserializer,
+                null
+            )
+        }
+
+        assertThat(createAutoResetConsumer(CordaOffsetResetStrategy.EARLIEST).position(partition0)).isEqualTo(0)
+        assertThat(createAutoResetConsumer(CordaOffsetResetStrategy.LATEST).position(partition0)).isEqualTo(5)
+        assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
+            createAutoResetConsumer(CordaOffsetResetStrategy.NONE).position(partition0)
         }
     }
 
