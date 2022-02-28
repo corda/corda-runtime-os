@@ -81,6 +81,13 @@ interface DbConnectionOps {
     fun getDataSource(name: String, privilege: DbPrivilege): DataSource?
 
     /**
+     * Get DB connection for given configuration.
+     *
+     * @param config DB config
+     */
+    fun getDataSource(config: SmartConfig): DataSource
+
+    /**
      * Get cluster DB [EntityManagerFactory]
      *
      * @return cluster DB [EntityManagerFactory]

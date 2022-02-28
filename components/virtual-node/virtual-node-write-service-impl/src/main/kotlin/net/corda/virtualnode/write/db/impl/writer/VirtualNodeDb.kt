@@ -51,17 +51,16 @@ class VirtualNodeDb(
      */
     fun runDbMigration() {
         dbConnections[DDL]?.let { dbConnection ->
-            dbConnectionManager.getDataSource(dbConnection.name, dbConnection.privilege)?.let { dataSource->
-                val dbChangeFiles = dbType.dbChangeFiles
-                val changeLogResourceFiles = setOf(DbSchema::class.java).mapTo(LinkedHashSet()) { klass ->
-                    ClassloaderChangeLog.ChangeLogResourceFiles(klass.packageName, dbChangeFiles, klass.classLoader)
-                }
-                val dbChange = ClassloaderChangeLog(changeLogResourceFiles)
-                val dbSchema = dbType.getSchemaName(holdingIdentityId)
+            val dataSource = dbConnectionManager.getDataSource(dbConnection.config)
+            val dbChangeFiles = dbType.dbChangeFiles
+            val changeLogResourceFiles = setOf(DbSchema::class.java).mapTo(LinkedHashSet()) { klass ->
+                ClassloaderChangeLog.ChangeLogResourceFiles(klass.packageName, dbChangeFiles, klass.classLoader)
+            }
+            val dbChange = ClassloaderChangeLog(changeLogResourceFiles)
+            val dbSchema = dbType.getSchemaName(holdingIdentityId)
 
-                dataSource.connection.use { connection ->
-                    schemaMigrator.updateDb(connection, dbChange, dbSchema)
-                }
+            dataSource.connection.use { connection ->
+                schemaMigrator.updateDb(connection, dbChange, dbSchema)
             }
         }
     }

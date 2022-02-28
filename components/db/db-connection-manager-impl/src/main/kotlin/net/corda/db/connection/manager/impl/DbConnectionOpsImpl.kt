@@ -34,6 +34,9 @@ class DbConnectionOpsImpl(
     override fun getDataSource(name: String, privilege: DbPrivilege): DataSource? =
         dbConnectionsRepository.get(name, privilege)
 
+    override fun getDataSource(config: SmartConfig): DataSource =
+        dbConnectionsRepository.get(config)
+
     override fun putConnection(name: String, privilege: DbPrivilege, config: SmartConfig,
                                description: String?, updateActor: String): UUID =
         dbConnectionsRepository.put(name, privilege, config, description, updateActor)

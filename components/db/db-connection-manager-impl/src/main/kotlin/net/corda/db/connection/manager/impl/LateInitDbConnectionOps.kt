@@ -42,6 +42,9 @@ class LateInitDbConnectionOps(): DbConnectionOps {
     override fun getDataSource(name: String, privilege: DbPrivilege): DataSource? =
         delegate.getDataSource(name, privilege)
 
+    override fun getDataSource(config: SmartConfig): DataSource =
+        delegate.getDataSource(config)
+
     override fun getClusterEntityManagerFactory(): EntityManagerFactory =
         delegate.getClusterEntityManagerFactory()
 

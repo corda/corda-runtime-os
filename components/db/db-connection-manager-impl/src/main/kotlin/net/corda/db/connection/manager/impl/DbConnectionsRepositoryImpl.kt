@@ -89,6 +89,10 @@ class DbConnectionsRepositoryImpl(
         }
     }
 
+    override fun get(config: SmartConfig): DataSource {
+        return dataSourceFactory.createFromConfig(dbConfigFactory.create(config))
+    }
+
     override fun getClusterDataSource(): DataSource = clusterDataSource
 }
 

@@ -52,6 +52,13 @@ interface DbConnectionsRepository {
     fun get(name: String, privilege: DbPrivilege): DataSource?
 
     /**
+     * Get DB connection for given configuration.
+     *
+     * @param config DB config
+     */
+    fun get(config: SmartConfig): DataSource
+
+    /**
      * Get cluster DB [DataSource]
      *
      * @return The cluster DB [DataSource]
