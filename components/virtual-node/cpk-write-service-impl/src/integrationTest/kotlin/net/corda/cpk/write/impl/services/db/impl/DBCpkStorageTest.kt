@@ -41,7 +41,7 @@ class DBCpkStorageTest {
         fun storeCpkDataEntity(checksum: SecureHash, bytes: ByteArray, emFactory: EntityManagerFactory) {
             val cpkDataEntity = CpkDataEntity(
                 checksum.toString(),
-                bytes,
+                bytes
             )
             emFactory.createEntityManager().transaction {
                 it.persist(cpkDataEntity)
@@ -60,7 +60,6 @@ class DBCpkStorageTest {
                 it.flush()
             }
         }
-
     }
 
     @BeforeAll
