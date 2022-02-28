@@ -1,4 +1,4 @@
-package net.corda.membership.httprpc.types
+package net.corda.membership.client.dto
 
 import java.time.Instant
 
@@ -9,8 +9,8 @@ import java.time.Instant
  * @param registrationStatus Status of registration request: Submitted or not submitted.
  * @param memberInfoSubmitted Information sent to the MGM for registration.
  */
-data class RegistrationRequestProgress(
+data class RegistrationRequestProgressDto(
     val registrationSent: Instant?,
     val registrationStatus: String,
-    val memberInfoSubmitted: MemberInfoSubmitted
+    val memberInfoSubmitted: MemberInfoSubmittedDto
 )

@@ -19,7 +19,7 @@ dependencies {
     implementation project(":components:membership:membership-client")
 
     implementation project(":libs:lifecycle:lifecycle")
-    implementation project(":libs:membership:membership-http-rpc-types")
+    implementation project(":libs:membership:membership-internal")
     implementation project(":libs:messaging:messaging")
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

@@ -6,8 +6,8 @@ import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
-import net.corda.membership.httprpc.types.MemberRegistrationRequest
-import net.corda.membership.httprpc.types.RegistrationRequestProgress
+import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
+import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgress
 
 /**
  * RPC operations for registering a member (i.e. virtual node) within a group.

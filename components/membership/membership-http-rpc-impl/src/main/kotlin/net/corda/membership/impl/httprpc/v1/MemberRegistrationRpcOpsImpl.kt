@@ -7,8 +7,8 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.membership.client.MemberOpsClient
 import net.corda.membership.httprpc.v1.MemberRegistrationRpcOps
-import net.corda.membership.httprpc.types.MemberRegistrationRequest
-import net.corda.membership.httprpc.types.RegistrationRequestProgress
+import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
+import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgress
 import net.corda.membership.impl.httprpc.v1.lifecycle.RegistrationRpcOpsLifecycleHandler
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
@@ -59,12 +59,12 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
 
     override fun startRegistration(memberRegistrationRequest: MemberRegistrationRequest): RegistrationRequestProgress {
         serviceIsRunning()
-        return memberOpsClient.startRegistration(memberRegistrationRequest)
+        return memberOpsClient.startRegistration(memberRegistrationRequest.toDto()).fromDto()
     }
 
     override fun checkRegistrationProgress(virtualNodeId: String): RegistrationRequestProgress {
         serviceIsRunning()
-        return memberOpsClient.checkRegistrationProgress(virtualNodeId)
+        return memberOpsClient.checkRegistrationProgress(virtualNodeId).fromDto()
     }
 
     private fun serviceIsRunning() {

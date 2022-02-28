@@ -18,7 +18,6 @@ dependencies {
 
     implementation project(":libs:http-rpc:http-rpc")
     implementation project(":libs:lifecycle:lifecycle")
-    implementation project(":libs:membership:membership-http-rpc-types")
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
