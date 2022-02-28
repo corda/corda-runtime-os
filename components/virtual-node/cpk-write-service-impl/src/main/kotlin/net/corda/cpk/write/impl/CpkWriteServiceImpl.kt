@@ -202,13 +202,13 @@ class CpkWriteServiceImpl @Activate constructor(
             this.cpkStorage ?: throw CordaRuntimeException("CPK storage service is not set")
         val missingCpkIdsOnKafka = cpkStorage.getCpkIdsNotIn(cachedCpkIds)
 
-        missingCpkIdsOnKafka.forEach {
-            // Make sure we use the same CPK publisher per CPK publish.
-            val cpkChunksPublisher =
-                this.cpkChunksPublisher ?: throw CordaRuntimeException("CPK chunks publisher service is not set")
-            val cpkChecksumData = cpkStorage.getCpkDataByCpkId(it)
-            cpkChunksPublisher.chunkAndPublishCpk(cpkChecksumData)
-        }
+        // Make sure we use the same CPK publisher for all CPK publishing.
+        this.cpkChunksPublisher?.let { cpkChunksPublisher ->
+            missingCpkIdsOnKafka.forEach {
+                val cpkChecksumData = cpkStorage.getCpkDataByCpkId(it)
+                cpkChunksPublisher.chunkAndPublishCpk(cpkChecksumData)
+            }
+        } ?: throw CordaRuntimeException("CPK chunks publisher service is not set")
     }
 
     override val isRunning: Boolean
