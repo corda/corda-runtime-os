@@ -112,8 +112,11 @@ internal class RouteInfo(
     }
 
     private fun generateFullPath(resourcePath: String, endpointPath: String): String {
+        val resourcePathNoSlash = if (resourcePath.endsWith('/')) {
+            resourcePath.substring(0..resourcePath.length - 2)
+        } else resourcePath
         log.trace { "Generate full path for resource path: \"$resourcePath\", endpoint path: \"$endpointPath\"." }
-        return "/${basePath}/v${apiVersion}/${resourcePath}/${endpointPath}".toLowerCase().also {
+        return "/${basePath}/v${apiVersion}/${resourcePathNoSlash}/${endpointPath}".toLowerCase().also {
             log.trace { "Full path $it generated." }
         }
     }

@@ -260,7 +260,11 @@ internal class HttpRpcServerInternal(
             log.debug { "Invoke method \"${this.method.method.name}\" for route info." }
             log.trace { "Get parameter values." }
             try {
-                val paramValues = parameters.map { ParameterRetrieverFactory.create(it).get(ctx) }.toTypedArray()
+                val parametersRetrieverContext = ParametersRetrieverContext(ctx)
+                val paramValues = parameters.map {
+                    val parameterRetriever = ParameterRetrieverFactory.create(it)
+                    parameterRetriever.apply(parametersRetrieverContext)
+                }.toTypedArray()
 
                 log.debug { "Invoke method \"${method.method.name}\" with paramValues \"${paramValues.joinToString(",")}\"." }
 
