@@ -211,17 +211,6 @@ class CpkWriteServiceImpl @Activate constructor(
         }
     }
 
-    private fun CpkChunksPublisher.chunkAndPublishCpk(cpkChecksumToData: CpkChecksumToData) {
-        val cpkChecksum = cpkChecksumToData.checksum
-        val cpkData = cpkChecksumToData.data
-        val chunkWriter = ChunkWriterFactory.create(SUGGESTED_CHUNK_SIZE)
-        chunkWriter.onChunk { chunk ->
-            val cpkChunkId = CpkChunkId(cpkChecksum.toAvro(), chunk.partNumber)
-            put(cpkChunkId, chunk)
-        }
-        chunkWriter.write(Paths.get("todo"), ByteArrayInputStream(cpkData))
-    }
-
     override val isRunning: Boolean
         get() = coordinator.isRunning
 
@@ -247,4 +236,15 @@ class CpkWriteServiceImpl @Activate constructor(
     }
 
     data class ReconcileCpkEvent(override val key: String): TimerEvent
+}
+
+private fun CpkChunksPublisher.chunkAndPublishCpk(cpkChecksumToData: CpkChecksumToData) {
+    val cpkChecksum = cpkChecksumToData.checksum
+    val cpkData = cpkChecksumToData.data
+    val chunkWriter = ChunkWriterFactory.create(SUGGESTED_CHUNK_SIZE)
+    chunkWriter.onChunk { chunk ->
+        val cpkChunkId = CpkChunkId(cpkChecksum.toAvro(), chunk.partNumber)
+        put(cpkChunkId, chunk)
+    }
+    chunkWriter.write(Paths.get("todo"), ByteArrayInputStream(cpkData))
 }
