@@ -39,17 +39,14 @@ class CpkChecksumsCacheImpl(
     override val isRunning: Boolean
         get() = compactedSubscription.isRunning
 
-    override fun start() {
+    override fun start() =
         compactedSubscription.start()
-    }
 
-    override fun stop() {
+    override fun stop() =
         compactedSubscription.close()
-    }
 
-    override fun getCachedCpkIds(): Set<SecureHash> {
-        return cpkChecksums.keys
-    }
+    override fun getCachedCpkIds() =
+        cpkChecksums.keys
 
     override fun add(cpkChecksum: SecureHash) {
         cpkChecksums[cpkChecksum] = cpkChecksum
