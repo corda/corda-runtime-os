@@ -192,7 +192,7 @@ class CpkWriteServiceImpl @Activate constructor(
     // TODO - kyriakos - need to schedule this to run like a timer task
     @VisibleForTesting
     internal fun putMissingCpk() {
-        logger.info("Reconciling missing CPKs from DB to Kafka")
+        logger.info("Putting missing CPKs from DB to Kafka")
 
         val cachedCpkIds = cpkChecksumsCache?.getCachedCpkIds() ?: run {
             logger.info("CPK Checksums Cache is not set yet, therefore will run a full db to kafka reconciliation")
