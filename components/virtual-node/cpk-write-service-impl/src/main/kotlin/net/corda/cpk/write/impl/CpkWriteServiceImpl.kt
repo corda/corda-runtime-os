@@ -25,6 +25,7 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.lifecycle.TimerEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -45,7 +46,6 @@ import org.slf4j.Logger
 import java.io.ByteArrayInputStream
 import java.nio.file.Paths
 import java.time.Duration
-import kotlin.concurrent.thread
 
 @Component(service = [CpkWriteService::class])
 class CpkWriteServiceImpl @Activate constructor(
@@ -78,6 +78,8 @@ class CpkWriteServiceImpl @Activate constructor(
     @VisibleForTesting
     internal var timeout: Duration? = null
     @VisibleForTesting
+    internal var timerEventInterval: Duration? = null
+    @VisibleForTesting
     internal var cpkChecksumsCache: CpkChecksumsCache? = null
     @VisibleForTesting
     internal var cpkChunksPublisher: CpkChunksPublisher? = null
@@ -92,6 +94,7 @@ class CpkWriteServiceImpl @Activate constructor(
             is StartEvent -> onStartEvent(coordinator)
             is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event, coordinator)
             is ConfigChangedEvent -> onConfigChangedEvent(event, coordinator)
+            is ReconcileCpkEvent -> onMissingCpkEvent(coordinator)
             is StopEvent -> onStopEvent()
         }
     }
@@ -141,7 +144,9 @@ class CpkWriteServiceImpl @Activate constructor(
      */
     private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         val config = event.config.toMessagingConfig()
-        timeout = 20.seconds // TODO: fill this with configuration once we know where it lies?
+        // TODO: fill the following with configuration once we know where they lie?
+        timeout = 20.seconds
+        timerEventInterval = 10.seconds
         cpkChecksumsCache = CpkChecksumsCacheImpl(
             subscriptionFactory,
             SubscriptionConfig(CPK_WRITE_GROUP, CPK_WRITE_TOPIC),
@@ -155,6 +160,26 @@ class CpkWriteServiceImpl @Activate constructor(
         cpkChunksPublisher = KafkaCpkChunksPublisher(publisher, timeout!!, CPK_WRITE_TOPIC)
         cpkStorage = DBCpkStorage(dbConnectionManager.clusterDbEntityManagerFactory)
         coordinator.updateStatus(LifecycleStatus.UP)
+        setTimerEvent(coordinator)
+    }
+
+    private fun onMissingCpkEvent(coordinator: LifecycleCoordinator) {
+        logger.info("Reconciliation between DB and Kafka for missing CPKs starting")
+        try {
+            putMissingCpk()
+        } catch (e: Exception) {
+            logger.warn("Caught exception ${e.cause} ${e.message}")
+        }
+        logger.info("Reconciliation between DB and Kafka for missing CPKs finished")
+        setTimerEvent(coordinator)
+    }
+
+    private fun setTimerEvent(coordinator: LifecycleCoordinator) {
+        logger.info("Registering new ${ReconcileCpkEvent::class.simpleName}")
+        coordinator.setTimer(
+            "${CpkWriteServiceImpl::class.simpleName}",
+            timerEventInterval!!.toMillis()
+        ) { ReconcileCpkEvent(it) }
     }
 
     /**
@@ -202,18 +227,6 @@ class CpkWriteServiceImpl @Activate constructor(
     override fun start() {
         logger.debug { "Cpk Write Service starting" }
         coordinator.start()
-
-        thread {
-            while (true) {
-                Thread.sleep(10000)
-                logger.info("TEST------------------- thread waking up ")
-                try {
-                    putMissingCpk()
-                } catch (e: Exception) {
-                    logger.info("TEST------------------- caught exception ${e.cause} ${e.message}")
-                }
-            }
-        }
     }
 
     override fun stop() {
@@ -231,4 +244,6 @@ class CpkWriteServiceImpl @Activate constructor(
         cpkChecksumsCache = null
         cpkChunksPublisher = null
     }
+
+    data class ReconcileCpkEvent(override val key: String): TimerEvent
 }
