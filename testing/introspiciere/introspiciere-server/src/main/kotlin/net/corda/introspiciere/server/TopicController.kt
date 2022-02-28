@@ -4,6 +4,7 @@ import io.javalin.http.Handler
 import net.corda.introspiciere.core.CreateTopicUseCase
 import net.corda.introspiciere.core.KafkaConfig
 import net.corda.introspiciere.core.ReadMessagesUseCases
+import net.corda.introspiciere.core.TopicDefinition
 import net.corda.introspiciere.domain.TopicDefinitionPayload
 
 internal class TopicController(private val kafkaConfig: KafkaConfig) {
@@ -11,7 +12,7 @@ internal class TopicController(private val kafkaConfig: KafkaConfig) {
         wrapException {
             val topic = ctx.pathParam("topic")
             val kafkaMessage = ctx.bodyAsClass<TopicDefinitionPayload>()
-            CreateTopicUseCase(kafkaConfig).execute(CreateTopicUseCase.Input(
+            CreateTopicUseCase(kafkaConfig).execute(TopicDefinition(
                 topic,
                 kafkaMessage.partitions,
                 kafkaMessage.replicationFactor,
