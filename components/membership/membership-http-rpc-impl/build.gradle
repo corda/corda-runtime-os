@@ -13,6 +13,8 @@ dependencies {
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation "net.corda:corda-base"
 
+    implementation project(":components:membership:membership-client")
+
     implementation project(":libs:http-rpc:http-rpc")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:membership:membership-http-rpc")

@@ -9,7 +9,7 @@ import net.corda.data.membership.rpc.request.RegistrationStatusRequest
 import net.corda.data.membership.rpc.response.RegistrationResponse
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
-import net.corda.membership.httprpc.MemberOpsClient
+import net.corda.membership.client.MemberOpsClient
 import net.corda.membership.httprpc.types.MemberInfoSubmitted
 import net.corda.membership.httprpc.types.MemberRegistrationRequest
 import net.corda.membership.httprpc.types.RegistrationRequestProgress

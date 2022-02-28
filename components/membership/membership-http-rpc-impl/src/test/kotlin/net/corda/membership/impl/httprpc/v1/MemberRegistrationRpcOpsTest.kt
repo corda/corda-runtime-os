@@ -3,7 +3,7 @@ package net.corda.membership.impl.httprpc.v1
 import net.corda.httprpc.exception.ServiceUnavailableException
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.membership.httprpc.MemberOpsClient
+import net.corda.membership.client.MemberOpsClient
 import net.corda.membership.httprpc.types.MemberRegistrationRequest
 import net.corda.membership.httprpc.types.RegistrationAction
 import org.junit.jupiter.api.Assertions.assertFalse

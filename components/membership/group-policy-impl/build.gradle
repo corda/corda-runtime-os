@@ -6,7 +6,6 @@ plugins {
 description 'Group policy provider component implementation'
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation"
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'

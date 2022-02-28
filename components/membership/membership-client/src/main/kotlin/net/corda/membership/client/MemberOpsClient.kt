@@ -1,4 +1,4 @@
-package net.corda.membership.httprpc
+package net.corda.membership.client
 
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.httprpc.types.MemberRegistrationRequest
