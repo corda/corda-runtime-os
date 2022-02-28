@@ -265,6 +265,7 @@ open class SessionManagerImpl(
             val timedOut = outboundSessionPool.get().timeoutSession(sessionId, sessionInitMessage.single().first)
             if (!timedOut) {
                 logger.warn("Session with id $sessionId which is not in the pool timed out.")
+                return
             }
             val records = linkOutMessagesFromSessionInitMessages(counterparties, sessionInitMessage) ?.let {
                 LinkManager.OutboundMessageProcessor.recordsForNewSessions(
