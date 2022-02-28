@@ -10,6 +10,31 @@
     {
       "name": "cpiIdentifier",
       "type": "net.corda.data.packaging.CPIIdentifier"
+    },
+    {
+      "name": "vaultDdlConnectionId",
+      "type": ["null", "string"],
+      "doc": "ID of virtual node Vault DB connection for DDL operations. Null value means that DB is managed externally."
+    },
+    {
+      "name": "vaultDmlConnectionId",
+      "type": "string",
+      "doc": "ID of virtual node Vault DB connection for DML operations."
+    },
+    {
+      "name": "cryptoDdlConnectionId",
+      "type": ["null", "string"],
+      "doc": "ID of virtual node Crypto DB connection for DDL operations. Null value means that DB is managed externally."
+    },
+    {
+      "name": "cryptoDmlConnectionId",
+      "type": "string",
+      "doc": "ID of virtual node Vault DB connection for DML operations."
+    },
+    {
+      "name": "hsmConnectionId",
+      "type": ["null", "string"],
+      "doc": "ID of HSM connection. Null value means that HSM is not used."
     }
   ]
 }

@@ -22,24 +22,39 @@
     },
     {
       "name": "cpiIdentifier",
-      "type": "net.corda.data.packaging.CPIIdentifier"
+      "type": [
+        "null",
+        "net.corda.data.packaging.CPIIdentifier"
+      ]
     },
     {
       "name": "cpiIdentifierHash",
-      "type": "string",
+      "type": [
+        "null",
+        "string"
+      ],
       "doc": "The short 12-character hash of the CPI."
     },
     {
       "name": "mgmGroupId",
-      "type": "string"
+      "type": [
+        "null",
+        "string"
+      ]
     },
     {
       "name": "holdingIdentity",
-      "type": "net.corda.data.identity.HoldingIdentity"
+      "type": [
+        "null",
+        "net.corda.data.identity.HoldingIdentity"
+      ]
     },
     {
       "name": "holdingIdentifierHash",
-      "type": "string",
+      "type": [
+        "null",
+        "string"
+      ],
       "doc": "The short 12-character hash of the holding identity."
     }
   ]

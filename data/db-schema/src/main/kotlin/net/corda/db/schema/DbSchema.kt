@@ -18,6 +18,9 @@ object DbSchema {
     const val VNODE = "VNODE"
     const val VNODE_INSTANCE_DB_TABLE = "vnode_instance"
     const val HOLDING_IDENTITY_DB_TABLE = "holding_identity"
+    const val VNODE_VAULT_DB_TABLE = "vnode_vault"
+    const val VNODE_KEY_DB_TABLE = "vnode_key"
+    const val VNODE_CERTIFICATE_DB_TABLE = "vnode_certificate"
 
     const val DB_MESSAGE_BUS = "DB_MESSAGE_BUS"
 }

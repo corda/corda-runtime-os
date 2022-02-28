@@ -1,0 +1,22 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet author="R3.Corda" id="vnode-crypto-creation-v1.0">
+
+        <createTable tableName="vnode_key">
+            <column name="holding_identity_id" type="VARCHAR(12)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey columnNames="holding_identity_id" constraintName="vnode_key_pk" tableName="vnode_key"/>
+
+        <createTable tableName="vnode_certificate">
+            <column name="holding_identity_id" type="VARCHAR(12)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey columnNames="holding_identity_id" constraintName="vnode_certificate_pk" tableName="vnode_certificate"/>
+    </changeSet>
+</databaseChangeLog>

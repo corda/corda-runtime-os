@@ -11,6 +11,31 @@
       "name": "cpiIdHash",
       "type": "string",
       "doc": "The short 12-character hash of the CPI."
+    },
+    {
+      "name": "vaultDdlConnection",
+      "type": ["null", "string"],
+      "doc": "Connection details for virtual node Vault DB to be used for DDL operations. If null is passed for both vault connections, cluster DB will be used."
+    },
+    {
+      "name": "vaultDmlConnection",
+      "type": ["null", "string"],
+      "doc": "Connection details for virtual node Vault DB to be used for DML operations. If null is passed for both vault connections, cluster DB will be used."
+    },
+    {
+      "name": "cryptoDdlConnection",
+      "type": ["null", "string"],
+      "doc": "Connection details for virtual node Crypto DB to be used for DDL operations. If null is passed for both crypto connections, cluster DB will be used."
+    },
+    {
+      "name": "cryptoDmlConnection",
+      "type": ["null", "string"],
+      "doc": "Connection details for virtual node Crypto DB to be used for DML operations. If null is passed for both crypto connections, cluster DB will be used."
+    },
+    {
+      "name": "updateActor",
+      "type": "string",
+      "doc": "ID of RPC user that requested the virtual node creation."
     }
   ]
 }
