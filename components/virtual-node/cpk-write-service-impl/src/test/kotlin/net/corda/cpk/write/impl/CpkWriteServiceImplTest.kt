@@ -8,7 +8,14 @@ import net.corda.cpk.write.impl.services.kafka.CpkChunksPublisher
 import net.corda.data.chunking.Chunk
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
-import net.corda.lifecycle.*
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
+import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.StartEvent
+import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys
@@ -17,9 +24,11 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito.`when`
-import org.mockito.Mockito.mock
-import org.mockito.kotlin.*
+import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
+import org.mockito.kotlin.verify
 import java.nio.ByteBuffer
 import java.security.MessageDigest
 
@@ -83,18 +92,20 @@ class CpkWriteServiceImplTest {
     fun `on onConfigChangedEvent fully sets the component`() {
         val keys = mock<Set<String>>()
         whenever(keys.contains(ConfigKeys.BOOT_CONFIG)).thenReturn(true)
-        val bootConfig = mock<SmartConfig>()
-        whenever(bootConfig.hasPath("todo")).thenReturn(true)
         val config = mock<Map<String, SmartConfig>>()
-        whenever(config[ConfigKeys.BOOT_CONFIG]).thenReturn(bootConfig)
+        whenever(config[ConfigKeys.BOOT_CONFIG]).thenReturn(mock())
+        whenever(config[ConfigKeys.MESSAGING_CONFIG]).thenReturn(mock())
+        whenever(config.toMessagingConfig()).thenReturn(mock())
         whenever(publisherFactory.createPublisher(any(), any())).thenReturn(mock())
         whenever(dbConnectionManager.clusterDbEntityManagerFactory).thenReturn(mock())
+        whenever(subscriptionFactory.createCompactedSubscription<Any, Any>(any(), any(), any())).thenReturn(mock())
 
         cpkWriteServiceImpl.processEvent(ConfigChangedEvent(keys, config), coordinator)
+        assertNotNull(cpkWriteServiceImpl.timeout)
+        assertNotNull(cpkWriteServiceImpl.timerEventInterval)
         assertNotNull(cpkWriteServiceImpl.cpkChecksumsCache)
         assertNotNull(cpkWriteServiceImpl.cpkChunksPublisher)
         assertNotNull(cpkWriteServiceImpl.cpkStorage)
-        assertNotNull(cpkWriteServiceImpl.timeout)
         verify(coordinator).updateStatus(LifecycleStatus.UP)
     }
 
@@ -108,8 +119,8 @@ class CpkWriteServiceImplTest {
         cpkWriteServiceImpl.cpkStorage = cpkStorage
 
         val chunks = mutableListOf<Chunk>()
-        val cpkChunksPublisher = mock(CpkChunksPublisher::class.java)
-        `when`(cpkChunksPublisher.put(anyOrNull(), anyOrNull())).thenAnswer { invocation ->
+        val cpkChunksPublisher = org.mockito.Mockito.mock(CpkChunksPublisher::class.java)
+        org.mockito.Mockito.`when`(cpkChunksPublisher.put(anyOrNull(), anyOrNull())).thenAnswer { invocation ->
             chunks.add(invocation.arguments[1] as Chunk)
         }
         cpkWriteServiceImpl.cpkChunksPublisher = cpkChunksPublisher
