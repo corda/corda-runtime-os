@@ -22,6 +22,7 @@ import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.config.ConfigResolver
 import net.corda.messaging.config.ResolvedSubscriptionConfig
+import net.corda.messaging.constants.SubscriptionType
 import net.corda.messaging.subscription.CompactedSubscriptionImpl
 import net.corda.messaging.subscription.DurableSubscriptionImpl
 import net.corda.messaging.subscription.EventLogSubscriptionImpl
@@ -35,7 +36,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Kafka implementation of the Subscription Factory.
@@ -57,7 +58,7 @@ class CordaSubscriptionFactory @Activate constructor(
 ) : SubscriptionFactory {
 
     // Used to ensure that each subscription has a unique client.id
-    private val clientIdCounter = AtomicInteger()
+    private val clientIdCounter = AtomicLong()
 
     override fun <K : Any, V : Any> createPubSubSubscription(
         subscriptionConfig: SubscriptionConfig,
@@ -72,7 +73,7 @@ class CordaSubscriptionFactory @Activate constructor(
 //            PATTERN_PUBSUB
 //        )
 
-        val config = getConfig(subscriptionConfig, nodeConfig)
+        val config = getConfig(SubscriptionType.PUB_SUB, subscriptionConfig, nodeConfig)
         return PubSubSubscriptionImpl(
             config,
             cordaConsumerBuilder,
@@ -100,7 +101,7 @@ class CordaSubscriptionFactory @Activate constructor(
 //            clientIdCounter.getAndIncrement(),
 //            PATTERN_DURABLE
 //        )
-        val config = getConfig(subscriptionConfig, nodeConfig)
+        val config = getConfig(SubscriptionType.DURABLE, subscriptionConfig, nodeConfig)
         return DurableSubscriptionImpl(
             config,
             cordaConsumerBuilder,
@@ -122,7 +123,7 @@ class CordaSubscriptionFactory @Activate constructor(
 //            clientIdCounter.getAndIncrement(),
 //            PATTERN_COMPACTED
 //        )
-        val config = getConfig(subscriptionConfig, nodeConfig)
+        val config = getConfig(SubscriptionType.COMPACTED, subscriptionConfig, nodeConfig)
         val mapFactory = object : MapFactory<K, V> {
             override fun createMap(): MutableMap<K, V> = ConcurrentHashMap<K, V>()
             override fun destroyMap(map: MutableMap<K, V>) {
@@ -156,7 +157,7 @@ class CordaSubscriptionFactory @Activate constructor(
 //
 //        val stateAndEventConfig = getStateAndEventConfig(config)
 
-        val config = getConfig(subscriptionConfig, nodeConfig)
+        val config = getConfig(SubscriptionType.STATE_AND_EVENT, subscriptionConfig, nodeConfig)
         val serializer = cordaAvroSerializationFactory.createAvroSerializer<Any> { }
         return StateAndEventSubscriptionImpl(
             config,
@@ -187,7 +188,7 @@ class CordaSubscriptionFactory @Activate constructor(
 //            PATTERN_EVENTLOG
 //        )
 
-        val config = getConfig(subscriptionConfig, nodeConfig)
+        val config = getConfig(SubscriptionType.EVENT_LOG, subscriptionConfig, nodeConfig)
         return EventLogSubscriptionImpl(
             config,
             cordaConsumerBuilder,
@@ -216,7 +217,7 @@ class CordaSubscriptionFactory @Activate constructor(
 //            PATTERN_RPC_RESPONDER
 //        ).withoutPath(PRODUCER_TRANSACTIONAL_ID)
 
-        val config = getConfig(rpcConfig, nodeConfig)
+        val config = getConfig(SubscriptionType.RPC_RESPONDER, rpcConfig, nodeConfig)
         val cordaAvroSerializer = cordaAvroSerializationFactory.createAvroSerializer<RESPONSE> { }
         val cordaAvroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({ }, rpcConfig.requestType)
 
@@ -232,20 +233,21 @@ class CordaSubscriptionFactory @Activate constructor(
     }
 
     private fun getConfig(
+        subscriptionType: SubscriptionType,
         subscriptionConfig: SubscriptionConfig,
         messagingConfig: SmartConfig
     ): ResolvedSubscriptionConfig {
         val configBuilder = ConfigResolver(messagingConfig.factory)
-        val clientId = clientIdCounter.getAndIncrement()
-        return configBuilder.buildSubscriptionConfig(subscriptionConfig, messagingConfig, clientId)
+        return configBuilder.buildSubscriptionConfig(subscriptionType, subscriptionConfig, messagingConfig, clientIdCounter.getAndIncrement())
     }
 
     private fun getConfig(
+        subscriptionType: SubscriptionType,
         rpcConfig: RPCConfig<*, *>,
         messagingConfig: SmartConfig
     ): ResolvedSubscriptionConfig {
         val subscriptionConfig =
             SubscriptionConfig(rpcConfig.groupName, rpcConfig.requestTopic)
-        return getConfig(subscriptionConfig, messagingConfig)
+        return getConfig(subscriptionType, subscriptionConfig, messagingConfig)
     }
 }

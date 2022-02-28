@@ -3,6 +3,7 @@ package net.corda.messaging.publisher.factory
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.messagebus.api.constants.ProducerRoles
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
@@ -11,6 +12,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.config.ConfigResolver
+import net.corda.messaging.constants.SubscriptionType
 import net.corda.messaging.publisher.CordaPublisherImpl
 import net.corda.messaging.publisher.CordaRPCSenderImpl
 import net.corda.messaging.subscription.consumer.builder.CordaConsumerBuilder
@@ -43,7 +45,7 @@ class CordaPublisherFactory @Activate constructor(
     ): Publisher {
         val configBuilder = ConfigResolver(kafkaConfig.factory)
         val config = configBuilder.buildPublisherConfig(publisherConfig, kafkaConfig)
-        val producer = cordaProducerBuilder.createProducer(config.busConfig)
+        val producer = cordaProducerBuilder.createProducer(ProducerRoles.PUBLISHER, config.busConfig)
         return CordaPublisherImpl(config, producer)
     }
 
@@ -67,7 +69,7 @@ class CordaPublisherFactory @Activate constructor(
         val configBuilder = ConfigResolver(kafkaConfig.factory)
         val subscriptionConfig = SubscriptionConfig(rpcConfig.groupName, rpcConfig.requestTopic)
         val config =
-            configBuilder.buildSubscriptionConfig(subscriptionConfig, kafkaConfig, clientIdCounter.getAndIncrement())
+            configBuilder.buildSubscriptionConfig(SubscriptionType.RPC_SENDER, subscriptionConfig, kafkaConfig)
         val serializer = avroSerializationFactory.createAvroSerializer<REQUEST> { }
         val deserializer = avroSerializationFactory.createAvroDeserializer({}, rpcConfig.responseType)
 

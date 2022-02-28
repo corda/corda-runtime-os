@@ -30,7 +30,7 @@ import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
 @Suppress("LongParameterList")
-class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
+internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private val config: ResolvedSubscriptionConfig,
     private val cordaConsumerBuilder: CordaConsumerBuilder,
     private val producerBuilder: CordaProducerBuilder,

@@ -6,6 +6,7 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messaging.api.exception.CordaMessageAPIConfigException
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
+import net.corda.messaging.constants.SubscriptionType
 import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.FrameworkUtil
 
@@ -22,11 +23,13 @@ internal class ConfigResolver(private val smartConfigFactory: SmartConfigFactory
     private val defaults = getResourceConfig(DEFAULT_CONFIG)
 
     fun buildSubscriptionConfig(
+        subscriptionType: SubscriptionType,
         subscriptionConfig: SubscriptionConfig,
-        messagingConfig: SmartConfig
+        messagingConfig: SmartConfig,
+        counter: Long
     ): ResolvedSubscriptionConfig {
         val config = messagingConfig.withFallback(defaults)
-        return ResolvedSubscriptionConfig.merge(subscriptionConfig, config)
+        return ResolvedSubscriptionConfig.merge(subscriptionType, subscriptionConfig, config, counter)
     }
 
     fun buildPublisherConfig(

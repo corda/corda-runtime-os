@@ -44,7 +44,7 @@ import kotlin.concurrent.withLock
  */
 
 @Suppress("LongParameterList")
-class EventLogSubscriptionImpl<K : Any, V : Any>(
+internal class EventLogSubscriptionImpl<K : Any, V : Any>(
     private val config: ResolvedSubscriptionConfig,
     private val cordaConsumerBuilder: CordaConsumerBuilder,
     private val cordaProducerBuilder: CordaProducerBuilder,

@@ -37,7 +37,7 @@ import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
 @Suppress("LongParameterList")
-class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
+internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val config: ResolvedSubscriptionConfig,
     private val builder: StateAndEventBuilder,
     private val processor: StateAndEventProcessor<K, S, E>,

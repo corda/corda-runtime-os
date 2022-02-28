@@ -2,6 +2,7 @@ package net.corda.messaging.config
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
+import net.corda.messaging.constants.SubscriptionType
 import net.corda.schema.configuration.MessagingKeys.Subscription.COMMIT_RETRIES
 import net.corda.schema.configuration.MessagingKeys.Subscription.POLL_TIMEOUT
 import net.corda.schema.configuration.MessagingKeys.Subscription.PROCESSOR_RETRIES
@@ -11,8 +12,10 @@ import net.corda.schema.configuration.MessagingKeys.Subscription.THREAD_STOP_TIM
 import java.time.Duration
 
 internal data class ResolvedSubscriptionConfig(
+    val subscriptionType: SubscriptionType,
     val topic: String,
     val group: String,
+    val idCounter: Long,
     val pollTimeout: Duration,
     val threadStopTimeout: Duration,
     val processorRetries: Int,
@@ -22,10 +25,17 @@ internal data class ResolvedSubscriptionConfig(
     val busConfig: SmartConfig
 ) {
     companion object {
-        fun merge(subscriptionConfig: SubscriptionConfig, messagingConfig: SmartConfig): ResolvedSubscriptionConfig {
+        fun merge(
+            subscriptionType: SubscriptionType,
+            subscriptionConfig: SubscriptionConfig,
+            messagingConfig: SmartConfig,
+            idCounter: Long
+        ): ResolvedSubscriptionConfig {
             return ResolvedSubscriptionConfig(
+                subscriptionType,
                 subscriptionConfig.eventTopic,
                 subscriptionConfig.groupName,
+                idCounter,
                 Duration.ofMillis(messagingConfig.getLong(POLL_TIMEOUT)),
                 Duration.ofMillis(messagingConfig.getLong(THREAD_STOP_TIMEOUT)),
                 messagingConfig.getInt(PROCESSOR_RETRIES),
@@ -37,6 +47,6 @@ internal data class ResolvedSubscriptionConfig(
         }
     }
 
-    val loggerName = "$topic-$group"
-    val clientId = "$topic-$group-"
+    val loggerName = "$subscriptionType-$group-$topic"
+    val clientId = "$subscriptionType-$group-$topic-$idCounter"
 }

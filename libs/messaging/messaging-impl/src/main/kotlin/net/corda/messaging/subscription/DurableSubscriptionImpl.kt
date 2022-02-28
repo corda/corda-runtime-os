@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory
  */
 
 @Suppress("LongParameterList")
-class DurableSubscriptionImpl<K : Any, V : Any>(
+internal class DurableSubscriptionImpl<K : Any, V : Any>(
     private val config: ResolvedSubscriptionConfig,
     private val cordaConsumerBuilder: CordaConsumerBuilder,
     private val cordaProducerBuilder: CordaProducerBuilder,

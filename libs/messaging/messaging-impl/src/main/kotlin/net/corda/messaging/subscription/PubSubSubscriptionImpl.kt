@@ -34,7 +34,7 @@ import kotlin.concurrent.withLock
  *                    If executor is null processor executed on the same thread as the consumer.
  *
  */
-class PubSubSubscriptionImpl<K : Any, V : Any>(
+internal class PubSubSubscriptionImpl<K : Any, V : Any>(
     private val config: ResolvedSubscriptionConfig,
     private val cordaConsumerBuilder: CordaConsumerBuilder,
     private val processor: PubSubProcessor<K, V>,

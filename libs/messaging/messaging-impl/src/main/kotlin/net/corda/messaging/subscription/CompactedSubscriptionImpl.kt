@@ -19,7 +19,7 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
-class CompactedSubscriptionImpl<K : Any, V : Any>(
+internal class CompactedSubscriptionImpl<K : Any, V : Any>(
     private val config: ResolvedSubscriptionConfig,
     private val mapFactory: MapFactory<K, V>,
     private val cordaConsumerBuilder: CordaConsumerBuilder,

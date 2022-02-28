@@ -21,4 +21,6 @@ internal data class ResolvedPublisherConfig(
             )
         }
     }
+
+    val loggerName = "PUBLISHER-$clientId"
 }
