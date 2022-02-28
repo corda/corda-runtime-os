@@ -2,12 +2,13 @@ package net.corda.membership.staticnetwork
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.CryptoOpsClient
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.layeredpropertymap.create
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.membership.conversion.PropertyConverterImpl
+import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.identity.MGMContextImpl
 import net.corda.membership.identity.MemberContextImpl
@@ -158,9 +159,13 @@ class StaticMemberRegistrationServiceTest {
         }
     }
 
-    private val converter: PropertyConverterImpl = PropertyConverterImpl(
-        listOf(EndpointInfoConverter(), PublicKeyConverter(keyEncodingService), PublicKeyHashConverter())
+    private val converters = listOf(
+        EndpointInfoConverter(),
+        PublicKeyConverter(keyEncodingService),
+        PublicKeyHashConverter()
     )
+
+    private val layeredPropertyMapFactory = LayeredPropertyMapMocks.createFactory(converters)
 
     private val digestService: DigestService = mock {
         on { hash(any<ByteArray>(), any()) } doReturn SecureHash("SHA256", "1234ABCD".toByteArray())
@@ -173,7 +178,7 @@ class StaticMemberRegistrationServiceTest {
         cryptoOpsClient,
         configurationReadService,
         lifecycleCoordinatorFactory,
-        converter,
+        layeredPropertyMapFactory,
         digestService
     )
 
@@ -210,13 +215,11 @@ class StaticMemberRegistrationServiceTest {
             assertTrue { it.key.startsWith(alice.id) }
             val signedMemberPublished = it.value?.signedMemberInfo
             val memberPublished = toMemberInfo(
-                MemberContextImpl(
-                    KeyValuePairList.fromByteBuffer(signedMemberPublished?.memberContext).toSortedMap(),
-                    converter
+                layeredPropertyMapFactory.create<MemberContextImpl>(
+                    KeyValuePairList.fromByteBuffer(signedMemberPublished?.memberContext).toSortedMap()
                 ),
-                MGMContextImpl(
-                    KeyValuePairList.fromByteBuffer(signedMemberPublished?.mgmContext).toSortedMap(),
-                    converter
+                layeredPropertyMapFactory.create<MGMContextImpl>(
+                    KeyValuePairList.fromByteBuffer(signedMemberPublished?.mgmContext).toSortedMap()
                 )
             )
             assertEquals(DUMMY_GROUP_ID, memberPublished.groupId)

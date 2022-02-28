@@ -33,7 +33,6 @@ dependencies {
     implementation project(":libs:sandbox")
     implementation project(":libs:serialization:serialization-checkpoint-api")
     implementation project(":libs:virtual-node:sandbox-group-context")
-    implementation project(":libs:virtual-node:virtual-node-manager")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 

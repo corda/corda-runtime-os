@@ -4,6 +4,7 @@ import net.corda.data.permissions.Group
 import net.corda.data.permissions.Permission
 import net.corda.data.permissions.Role
 import net.corda.data.permissions.User
+import net.corda.data.permissions.summary.UserPermissionSummary
 import net.corda.lifecycle.Lifecycle
 
 /**
@@ -14,9 +15,11 @@ interface PermissionCache : Lifecycle {
     val groups: Map<String, Group>
     val roles: Map<String, Role>
     val permissions: Map<String, Permission>
+    val permissionSummaries: Map<String, UserPermissionSummary>
 
     fun getUser(loginName: String): User?
     fun getGroup(groupId: String): Group?
     fun getRole(roleId: String): Role?
     fun getPermission(permissionId: String): Permission?
+    fun getPermissionSummary(loginName: String): UserPermissionSummary?
 }

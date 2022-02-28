@@ -36,6 +36,7 @@ class PermissionStorageWriterProcessorImpl(
                 is CreateUserRequest -> {
                     val avroUser = userWriter.createUser(permissionRequest, request.requestUserId)
                     permissionStorageReader.publishNewUser(avroUser)
+                    permissionStorageReader.reconcilePermissionSummaries()
                     avroUser
                 }
                 is CreateRoleRequest -> {
@@ -51,21 +52,25 @@ class PermissionStorageWriterProcessorImpl(
                 is AddRoleToUserRequest -> {
                     val avroUser = userWriter.addRoleToUser(permissionRequest, request.requestUserId)
                     permissionStorageReader.publishUpdatedUser(avroUser)
+                    permissionStorageReader.reconcilePermissionSummaries()
                     avroUser
                 }
                 is RemoveRoleFromUserRequest -> {
                     val avroUser = userWriter.removeRoleFromUser(permissionRequest, request.requestUserId)
                     permissionStorageReader.publishUpdatedUser(avroUser)
+                    permissionStorageReader.reconcilePermissionSummaries()
                     avroUser
                 }
                 is AddPermissionToRoleRequest -> {
                     val avroRole = roleWriter.addPermissionToRole(permissionRequest, request.requestUserId)
                     permissionStorageReader.publishUpdatedRole(avroRole)
+                    permissionStorageReader.reconcilePermissionSummaries()
                     avroRole
                 }
                 is RemovePermissionFromRoleRequest -> {
                     val avroRole = roleWriter.removePermissionFromRole(permissionRequest, request.requestUserId)
                     permissionStorageReader.publishUpdatedRole(avroRole)
+                    permissionStorageReader.reconcilePermissionSummaries()
                     avroRole
                 }
                 else -> throw IllegalArgumentException("Received invalid permission request type.")

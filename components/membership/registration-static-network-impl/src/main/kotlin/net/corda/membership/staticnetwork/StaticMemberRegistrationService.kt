@@ -1,15 +1,17 @@
 package net.corda.membership.staticnetwork
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.CryptoConsts
-import net.corda.crypto.CryptoOpsClient
+import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.SignedMemberInfo
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
+import net.corda.layeredpropertymap.create
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.GroupPolicy
-import net.corda.membership.conversion.toWire
+import net.corda.layeredpropertymap.toWire
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.identity.MGMContextImpl
 import net.corda.membership.identity.MemberContextImpl
@@ -40,7 +42,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.calculateHash
-import net.corda.v5.membership.conversion.PropertyConverter
 import net.corda.v5.membership.identity.EndpointInfo
 import net.corda.v5.membership.identity.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -49,6 +50,8 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import java.io.PrintWriter
+import java.io.StringWriter
 import java.nio.ByteBuffer
 import java.security.PublicKey
 
@@ -67,8 +70,8 @@ class StaticMemberRegistrationService @Activate constructor(
     val configurationReadService: ConfigurationReadService,
     @Reference(service = LifecycleCoordinatorFactory::class)
     val coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = PropertyConverter::class)
-    val converter: PropertyConverter,
+    @Reference(service = LayeredPropertyMapFactory::class)
+    val layeredPropertyMapFactory: LayeredPropertyMapFactory,
     @Reference(service = DigestService::class)
     val digestService: DigestService
 ) : MemberRegistrationService {
@@ -113,7 +116,12 @@ class StaticMemberRegistrationService @Activate constructor(
             val updates = lifecycleHandler.publisher.publish(parseMemberTemplate(member))
             updates.forEach { it.get() }
         } catch (e: Exception) {
-            logger.warn("Registration failed. Reason: ${e.message}")
+            StringWriter().use { sw ->
+                PrintWriter(sw).use { pw ->
+                    e.printStackTrace(pw)
+                    logger.warn("Registration failed. Reason: $sw")
+                }
+            }
             return MembershipRequestRegistrationResult(
                 NOT_SUBMITTED,
                 "Registration failed. Reason: ${e.message}"
@@ -144,8 +152,8 @@ class StaticMemberRegistrationService @Activate constructor(
             val memberKey = generateOwningKey(staticMember, memberId)
             val encodedMemberKey = keyEncodingService.encodeAsString(memberKey)
             val mgmKey = parseMgmTemplate(memberId, policy)
-            val memberInfo = MemberInfoImpl(
-                memberProvidedContext = MemberContextImpl(
+            val memberInfo =  MemberInfoImpl(
+                memberProvidedContext = layeredPropertyMapFactory.create<MemberContextImpl>(
                     sortedMapOf(
                         PARTY_NAME to memberName,
                         PARTY_OWNING_KEY to encodedMemberKey,
@@ -156,15 +164,13 @@ class StaticMemberRegistrationService @Activate constructor(
                         SOFTWARE_VERSION to staticMember.softwareVersion,
                         PLATFORM_VERSION to staticMember.platformVersion,
                         SERIAL to staticMember.serial,
-                    ),
-                    converter
+                    )
                 ),
-                mgmProvidedContext = MGMContextImpl(
+                mgmProvidedContext = layeredPropertyMapFactory.create<MGMContextImpl>(
                     sortedMapOf(
                         STATUS to staticMember.status,
                         MODIFIED_TIME to staticMember.modifiedTime,
-                    ),
-                    converter
+                    )
                 )
             )
             val signedMemberInfo = signMemberInfo(memberId, memberInfo, memberKey, mgmKey)

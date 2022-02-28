@@ -53,7 +53,7 @@ services:
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic cpi.info --config "cleanup.policy=compact"
 
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic cpi.upload
-      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic cpi.upload.resp
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic cpi.upload.status
 
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic rpc.permissions.management
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic rpc.permissions.management.resp
@@ -63,12 +63,20 @@ services:
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic rpc.permissions.permission --config "cleanup.policy=compact"
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic permissions.user.summary --config "cleanup.policy=compact"
 
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic flow.status --config "cleanup.policy=compact"
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic flow.event
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic flow.event.state --config "cleanup.policy=compact"
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic flow.event.dlq
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic flow.mapper.event
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic flow.mapper.event.state --config "cleanup.policy=compact"
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic flow.mapper.event.dlq
+
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic membership.members --config "cleanup.policy=compact"
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic membership.rpc.ops
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic membership.rpc.ops.resp
+      
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic crypto.ops.rpc
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic crypto.ops.rpc.resp
 
       echo -e 'Successfully created the following topics:'
       kafka-topics.sh --bootstrap-server kafka:9092 --list
@@ -87,8 +95,8 @@ services:
       kafka:
         condition: service_healthy
 
-  cluster-db:
-    container_name: cluster-db
+  corda-cluster-db:
+    container_name: corda-cluster-db
     image: postgres
     ports:
       - "5433:5432"
@@ -135,7 +143,7 @@ services:
       - -ssalt=not so random
       - -ddatabase.user=user
       - -ddatabase.pass.configSecret.encryptedSecret=4LNuCvt+NhGIBwL7gRRhvAZh3k6JRN9NHv0aG3pi1xM=
-      - -ddatabase.jdbc.url=jdbc:postgresql://cluster-db:5432/cordacluster
+      - -ddatabase.jdbc.url=jdbc:postgresql://corda-cluster-db:5432/cordacluster
     healthcheck:
       test: [ "CMD-SHELL", "curl --fail http://localhost:7000/isHealthy || exit 1" ]
       interval: 5s
@@ -170,6 +178,24 @@ services:
       - "7004:7000" # healthcheck port
     environment:
       JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
+    command:
+      - --messagingParams
+      - kafka.common.bootstrap.servers=kafka:9092
+    healthcheck:
+      test: [ "CMD-SHELL", "curl --fail http://localhost:7000/isHealthy || exit 1" ]
+      interval: 5s
+      timeout: 1s
+      retries: 20
+
+  member-worker:
+    container_name: member-worker
+    # Created with `gradlew applications:workers:release:member-worker:publishOSGiImage`.
+    image: "corda-os-docker-dev.software.r3.com/corda-os-member-worker:latest-local"
+    ports:
+      - "5009:5009" # debug port
+      - "7005:7000" # healthcheck port
+    environment:
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5009"
     command:
       - --messagingParams
       - kafka.common.bootstrap.servers=kafka:9092

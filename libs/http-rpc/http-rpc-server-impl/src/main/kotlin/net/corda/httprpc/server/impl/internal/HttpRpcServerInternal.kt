@@ -112,6 +112,7 @@ internal class HttpRpcServerInternal(
                 }
         }
         it.defaultContentType = contentTypeApplicationJson
+        it.enableCorsForAllOrigins()
     }.apply {
         addRoutes()
         addOpenApiRoute()
@@ -269,6 +270,7 @@ internal class HttpRpcServerInternal(
                 if (result != null) {
                     ctx.json(result)
                 }
+                ctx.header(Header.CACHE_CONTROL, "no-cache")
                 log.debug { "Invoke method \"${this.method.method.name}\" for route info completed." }
             } catch (e: Exception) {
                 log.warn("Error invoking path '${this.fullPath}'.", e)

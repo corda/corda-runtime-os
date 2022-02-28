@@ -91,6 +91,10 @@ class SandboxGroupContextComponentImpl @Activate constructor(
         sandboxGroupContext, serviceNames, isMetadataService, serviceMarkerType
     )
 
+    override fun registerCustomCryptography(
+        sandboxGroupContext: SandboxGroupContext
+    ): AutoCloseable = sandboxGroupContextServiceImpl.registerCustomCryptography(sandboxGroupContext)
+
     override fun hasCpks(cpkIdentifiers: Set<CPK.Identifier>): Boolean =
         sandboxGroupContextServiceImpl.hasCpks(cpkIdentifiers)
 

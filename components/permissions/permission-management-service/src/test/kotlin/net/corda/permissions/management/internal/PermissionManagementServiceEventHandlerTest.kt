@@ -18,6 +18,7 @@ import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.permissions.cache.PermissionCacheService
+import net.corda.schema.configuration.ConfigKeys
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
@@ -91,7 +92,11 @@ internal class PermissionManagementServiceEventHandlerTest {
 
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
 
-        verify(configurationReadService).registerForUpdates(any())
+        verify(configurationReadService).registerComponentForUpdates(coordinator, setOf(
+            ConfigKeys.BOOT_CONFIG,
+            ConfigKeys.MESSAGING_CONFIG,
+            ConfigKeys.RPC_CONFIG
+        ))
     }
 
     @Test
@@ -108,7 +113,13 @@ internal class PermissionManagementServiceEventHandlerTest {
     fun `processing UP status update subscribes for configuration updates`() {
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
 
-        verify(configurationReadService).registerForUpdates(any())
+        verify(configurationReadService).registerComponentForUpdates(
+            coordinator, setOf(
+                ConfigKeys.BOOT_CONFIG,
+                ConfigKeys.MESSAGING_CONFIG,
+                ConfigKeys.RPC_CONFIG
+            )
+        )
     }
 
     @Test

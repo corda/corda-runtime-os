@@ -95,7 +95,6 @@ java \
 --kafka-servers kafka-broker-1.p2p-layer:9093 \
 gateway \
 --keyStore ./components/gateway/src/integration-test/resources/sslkeystore_alice.jks \
---trustStore ./components/gateway/src/integration-test/resources/truststore.jks \
 --port 1433 \
 ```
 Please note, the port number need to be 1433, the host name should be one of the host names from the deploy (default to www.alice.net).
@@ -220,9 +219,18 @@ minikube stop && minikube delete
 2. Make sure you have access to AWS. (see [here](https://engineering.r3.com/engineering-central/how-we-work/build-logistics-and-tooling/build-and-test/test/eks-cluster-getting-started/#obtaining-sso-access-to-aws))
 2.1 After using minikube, make sure to run:
 ```bash
-aws eks update-kubeconfig --name eks-e2e-03
+aws eks update-kubeconfig --name eks-e2e
 ```
 To switch back to minikube use:
 ```bash
 kubectl config use-context minikube
 ```
+
+# Access R3 docker registry cache
+Docker hub has a [limit](https://docs.docker.com/docker-hub/download-rate-limit/) on the number of downloads one can do. As some images used in the deployment are from docker hub, we want to prevent the cluster from reaching that limit. In order to do this, we have a cache of used docker images in `docker-remotes.software.r3.com`.
+To check if you have access to that container, run:
+```bash
+docker login docker-remotes.software.r3.com  -u $CORDA_ARTIFACTORY_USERNAME -p $CORDA_ARTIFACTORY_PASSWORD
+docker pull docker-remotes.software.r3.com/alpine
+```
+If you do not have access the deployment will access directly the docker hub. If you have access it will use the cache. If you need access, ask a member of the BLT team.

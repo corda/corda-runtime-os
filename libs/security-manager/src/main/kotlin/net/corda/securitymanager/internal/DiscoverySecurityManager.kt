@@ -1,7 +1,6 @@
 package net.corda.securitymanager.internal
 
 import net.corda.v5.base.util.contextLogger
-import org.osgi.service.component.annotations.Component
 import org.osgi.service.permissionadmin.PermissionInfo
 import java.security.Permission
 
@@ -13,7 +12,6 @@ import java.security.Permission
  *
  * This security manager is not secure for production use.
  */
-@Component(service = [DiscoverySecurityManager::class])
 class DiscoverySecurityManager(
     prefixes: Collection<String>,
     private val bundleUtils: BundleUtils,

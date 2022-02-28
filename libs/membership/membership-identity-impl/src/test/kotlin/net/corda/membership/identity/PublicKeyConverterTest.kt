@@ -1,99 +1,90 @@
 package net.corda.membership.identity
 
-import net.corda.membership.conversion.PropertyConverterImpl
-import net.corda.membership.identity.MemberInfoExtension.Companion.IDENTITY_KEYS
-import net.corda.membership.identity.MemberInfoExtension.Companion.PARTY_OWNING_KEY
+import net.corda.layeredpropertymap.CustomPropertyConverter
+import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.membership.identity.converter.PublicKeyConverter
-import net.corda.membership.testkit.createContext
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.base.exceptions.ValueNotFoundException
+import net.corda.v5.base.util.parse
+import net.corda.v5.base.util.parseList
+import net.corda.v5.base.util.parseOrNull
+import net.corda.v5.cipher.suite.KeyEncodingService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito
-import org.mockito.kotlin.whenever
-import java.lang.IllegalArgumentException
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import java.security.PublicKey
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertNotEquals
+import kotlin.test.assertNull
 
 class PublicKeyConverterTest {
     companion object {
-        private val keyEncodingService = Mockito.mock(CipherSchemeMetadata::class.java)
-
-        private const val IDENTITY_KEY_KEY = "corda.identityKeys.1"
         private const val IDENTITY_KEY = "12345"
-        private val identityKey = Mockito.mock(PublicKey::class.java)
-
-        private const val OWNING_KEY = "12378"
-        private val owningKey = Mockito.mock(PublicKey::class.java)
-
-        private val converter = PropertyConverterImpl(listOf(PublicKeyConverter(keyEncodingService)))
-        private val publicKeyConverter = converter.customConverters.first()
+        private val identityKey = mock<PublicKey>()
     }
+
+    private lateinit var keyEncodingService: KeyEncodingService
+    private lateinit var converters: List<CustomPropertyConverter<out Any>>
 
     @BeforeEach
-    fun setUp() {
-        whenever(
-            keyEncodingService.decodePublicKey(IDENTITY_KEY)
-        ).thenReturn(identityKey)
-        whenever(
-            keyEncodingService.encodeAsString(identityKey)
-        ).thenReturn(IDENTITY_KEY)
-
-        whenever(
-            keyEncodingService.decodePublicKey(OWNING_KEY)
-        ).thenReturn(owningKey)
-        whenever(
-            keyEncodingService.encodeAsString(owningKey)
-        ).thenReturn(OWNING_KEY)
+    fun setup() {
+        keyEncodingService = mock {
+            on { decodePublicKey(IDENTITY_KEY) } doReturn identityKey
+            on { encodeAsString(identityKey) } doReturn IDENTITY_KEY
+        }
+        converters = listOf(PublicKeyConverter(keyEncodingService))
     }
 
     @Test
-    fun `converting identity key should work`() {
-        val memberContext = createContext(
-            sortedMapOf(IDENTITY_KEY_KEY to IDENTITY_KEY),
-            converter,
-            MemberContextImpl::class.java,
-            IDENTITY_KEYS
+    fun `converting public key should work for single element`() {
+        val memberContext = LayeredPropertyMapMocks.create<MemberContextImpl>(
+            sortedMapOf("corda.identityKey" to IDENTITY_KEY),
+            converters
         )
-
-        val result = publicKeyConverter.convert(memberContext)
+        val result = memberContext.parse<PublicKey>("corda.identityKey")
         assertEquals(identityKey, result)
-        assertNotEquals(owningKey, result)
     }
 
     @Test
-    fun `converting owning key should work`() {
-        val memberContext = createContext(
-            sortedMapOf(
-                PARTY_OWNING_KEY to OWNING_KEY,
-                IDENTITY_KEY_KEY to IDENTITY_KEY,
-                "key" to "value"
-            ),
-            converter,
-            MemberContextImpl::class.java,
-            PARTY_OWNING_KEY
+    fun `converting list of public key should work`() {
+        val memberContext = LayeredPropertyMapMocks.create<MemberContextImpl>(
+            sortedMapOf("corda.identityKeys.0" to IDENTITY_KEY),
+            converters
         )
-
-        val result = publicKeyConverter.convert(memberContext)
-        assertEquals(owningKey, result)
-        assertNotEquals(identityKey, result)
+        val result = memberContext.parseList<PublicKey>("corda.identityKeys")
+        assertEquals(1, result.size)
+        assertEquals(identityKey, result[0])
     }
 
     @Test
-    fun `converting PublicKey fails when invalid context is used`() {
-        val mgmContext = createContext(
+    fun `converting PublicKey fails when the keys is null`() {
+        val memberContext = LayeredPropertyMapMocks.create<MemberContextImpl>(
             sortedMapOf(
-                PARTY_OWNING_KEY to OWNING_KEY,
-                IDENTITY_KEY_KEY to IDENTITY_KEY,
-                "key" to "value"
+                "corda.identityKey" to null
             ),
-            converter,
-            MGMContextImpl::class.java,
-            PARTY_OWNING_KEY
+            converters
         )
+        assertFailsWith<ValueNotFoundException> { memberContext.parse<PublicKey>("corda.identityKey") }
+    }
 
-        val ex = assertFailsWith<IllegalArgumentException> { publicKeyConverter.convert(mgmContext) }
-        assertEquals("Unknown class '${mgmContext.store::class.java.name}'.", ex.message)
+    @Test
+    fun `converting list of PublicKeys fails when the keys is null`() {
+        val memberContext = LayeredPropertyMapMocks.create<MemberContextImpl>(
+            sortedMapOf("corda.identityKeys.0" to null),
+            converters
+        )
+        assertFailsWith<ValueNotFoundException> {
+            memberContext.parseList<PublicKey>("corda.identityKeys")
+        }
+    }
+
+    @Test
+    fun `converting to nullable PublicKey works`() {
+        val memberContext = LayeredPropertyMapMocks.create<MemberContextImpl>(
+            sortedMapOf("corda.identityKey" to null),
+            converters
+        )
+        val result = memberContext.parseOrNull<PublicKey>("corda.identityKey")
+        assertNull(result)
     }
 }

@@ -4,6 +4,8 @@ import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import java.security.PublicKey
 
+typealias PemCertificates = String
+
 /**
  * This interface defines the parts of the Network Map required by the LinkManager.
  */
@@ -44,6 +46,11 @@ interface LinkManagerNetworkMap: LifecycleWithDominoTile {
      * Returns the [NetworkType] for group identifier [groupId].
      */
     fun getNetworkType(groupId: String): NetworkType?
+
+    /**
+     * Register a listener to changes in the network map
+     */
+    fun registerListener(networkMapListener: NetworkMapListener)
 
     data class MemberInfo(val holdingIdentity: HoldingIdentity,
                           val publicKey: PublicKey,

@@ -24,14 +24,16 @@ interface SessionInteractions {
     /**
      * Get the next message from the bus and process it with the session manager.
      * Set [sendMessages] to true to send any queued messages to the counterparty.
+     * Any messages generated or state set will use the [instant] for timestamps
      * This call will also trigger the client lib to mark any contiguous messages received as delivered automatically.
      */
-    fun processNextReceivedMessage(sendMessages: Boolean = false)
+    fun processNextReceivedMessage(sendMessages: Boolean = false, instant: Instant = Instant.now())
 
     /**
      * Get all messages from the bus and process them with the session manager.
      * Set [sendMessages] to true to send any queued messages to the counterparty.
+     * Any messages generated or state set will use the [instant] for timestamps
      * This call will also trigger the client lib to mark any contiguous messages received events as delivered automatically.
      */
-    fun processAllReceivedMessages(sendMessages: Boolean = false)
+    fun processAllReceivedMessages(sendMessages: Boolean = false, instant: Instant = Instant.now())
 }

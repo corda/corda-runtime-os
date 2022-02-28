@@ -13,12 +13,13 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-base'
 
-    implementation project(":libs:crypto:crypto-client")
+    implementation project(":components:crypto:crypto-client")
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:membership:membership-internal")
 
     implementation project(':components:configuration:configuration-read-service')
+    implementation project(":components:membership:membership-service")
     implementation project(':components:membership:registration-provider')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
     implementation project(':components:virtual-node:cpi-info-read-service')
@@ -28,16 +29,19 @@ dependencies {
     implementation project(':libs:configuration:configuration-core')
 
     runtimeOnly project(":components:membership:group-policy-impl")
+    runtimeOnly project(":components:membership:membership-service-impl")
     runtimeOnly project(":components:membership:registration-static-network-impl")
     runtimeOnly project(":components:virtual-node:cpi-info-read-service-impl")
     runtimeOnly project(":components:configuration:configuration-read-service-impl")
     runtimeOnly project(":components:crypto:crypto-client-impl")
     runtimeOnly project(":libs:crypto:crypto-impl")
     runtimeOnly project(":libs:messaging:messaging-impl")
+    runtimeOnly project(":libs:messaging:kafka-message-bus-impl")
     runtimeOnly project(":libs:membership:membership-application")
-    runtimeOnly project(":libs:membership:membership-conversion-impl")
+    runtimeOnly project(":libs:layered-property-map")
     runtimeOnly project(":libs:membership:membership-identity-impl")
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
+    runtimeOnly project(":libs:schema-registry:schema-registry-impl")
     runtimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

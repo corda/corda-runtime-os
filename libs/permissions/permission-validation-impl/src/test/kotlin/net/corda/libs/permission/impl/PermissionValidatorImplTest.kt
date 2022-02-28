@@ -12,6 +12,8 @@ import net.corda.data.permissions.PermissionType
 import net.corda.data.permissions.Role
 import net.corda.data.permissions.RoleAssociation
 import net.corda.data.permissions.User
+import net.corda.data.permissions.summary.PermissionSummary
+import net.corda.data.permissions.summary.UserPermissionSummary
 import net.corda.libs.permissions.cache.PermissionCache
 import net.corda.permissions.password.PasswordHash
 import net.corda.permissions.password.PasswordService
@@ -226,6 +228,13 @@ class PermissionValidatorImplTest {
     @Test
     fun `User with proper permission will be authorized`() {
 
+        val userPermissionSummary = UserPermissionSummary(
+            user.loginName,
+            listOf(PermissionSummary(null, null, permissionString, PermissionType.ALLOW)),
+            Instant.now()
+        )
+        whenever(permissionCache.getPermissionSummary(user.loginName)).thenReturn(userPermissionSummary)
+
         assertTrue(permissionValidator.authorizeUser(user.loginName, permissionUrlRequest))
     }
 
@@ -236,15 +245,16 @@ class PermissionValidatorImplTest {
     }
 
     @Test
-    fun `Disabled user will not be authorized`() {
-
-        assertFalse(permissionValidator.authorizeUser(disabledUser.id, permissionUrlRequest))
-    }
-
-    @Test
     fun `User with proper permission set to DENY will not be authorized`() {
 
-        assertFalse(permissionValidator.authorizeUser(userWithPermDenied.id, permissionUrlRequest))
+        val userPermissionSummary = UserPermissionSummary(
+            userWithPermDenied.loginName,
+            listOf(PermissionSummary(null, null, permissionString, PermissionType.DENY)),
+            Instant.now()
+        )
+        whenever(permissionCache.getPermissionSummary(userWithPermDenied.loginName)).thenReturn(userPermissionSummary)
+
+        assertFalse(permissionValidator.authorizeUser(userWithPermDenied.loginName, permissionUrlRequest))
     }
 
     // More tests are to be added which verify group related permissions

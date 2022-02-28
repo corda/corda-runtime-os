@@ -7,7 +7,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
@@ -46,15 +46,14 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourId
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerHashNotInNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerNotInTheNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.validationFailedWarning
-import net.corda.p2p.linkmanager.utilities.AutoClosableScheduledExecutorService
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import org.slf4j.LoggerFactory
+import java.time.Clock
 import java.time.Duration
-import java.time.Instant
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
@@ -82,7 +81,9 @@ open class SessionManagerImpl(
         coordinatorFactory,
         configuration,
         networkMap
-    )
+    ),
+    clock: Clock = Clock.systemUTC(),
+    executorService: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
 ) : SessionManager {
 
     companion object {
@@ -114,7 +115,9 @@ open class SessionManagerImpl(
         coordinatorFactory,
         configuration,
         networkMap,
-        ::destroyOutboundSession
+        ::destroyOutboundSession,
+        clock,
+        executorService
     )
 
     private val publisher = PublisherWithDominoLogic(
@@ -124,7 +127,7 @@ open class SessionManagerImpl(
         configuration
     )
 
-    override val dominoTile = DominoTile(
+    override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
         dependentChildren = setOf(
@@ -559,7 +562,9 @@ open class SessionManagerImpl(
         coordinatorFactory: LifecycleCoordinatorFactory,
         configuration: SmartConfig,
         private val networkMap: LinkManagerNetworkMap,
-        private val destroySession: (counterparties: SessionCounterparties, sessionId: String) -> Any
+        private val destroySession: (counterparties: SessionCounterparties, sessionId: String) -> Any,
+        private val clock: Clock,
+        private val executorService: ScheduledExecutorService
     ) : LifecycleWithDominoTile {
 
         companion object {
@@ -598,17 +603,6 @@ open class SessionManagerImpl(
             Duration.ofMillis(config.getLong(LinkManagerConfiguration.SESSION_TIMEOUT_KEY)))
         }
 
-        private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-            val future = CompletableFuture<Unit>()
-            executorService = Executors.newSingleThreadScheduledExecutor()
-            resources.keep(AutoClosableScheduledExecutorService(executorService))
-            future.complete(Unit)
-            return future
-        }
-
-        @Volatile
-        private lateinit var executorService: ScheduledExecutorService
-
         private val trackedSessions = ConcurrentHashMap<String, TrackedSession>()
 
         private val publisher = PublisherWithDominoLogic(
@@ -618,13 +612,12 @@ open class SessionManagerImpl(
             configuration
         )
 
-        override val dominoTile = DominoTile(
+        override val dominoTile = ComplexDominoTile(
             this::class.java.simpleName,
             coordinatorFactory,
-            ::createResources,
             dependentChildren = setOf(networkMap.dominoTile, publisher.dominoTile),
             managedChildren = setOf(publisher.dominoTile),
-            HeartbeatManagerConfigChangeHandler(),
+            configurationChangeHandler = HeartbeatManagerConfigChangeHandler(),
         )
 
         /**
@@ -770,7 +763,7 @@ open class SessionManagerImpl(
         }
 
         private fun timeStamp(): Long {
-            return Instant.now().toEpochMilli()
+            return clock.instant().toEpochMilli()
         }
     }
 }

@@ -13,6 +13,7 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.p2p.NetworkType
 import net.corda.p2p.gateway.LoggingInterceptor
 import net.corda.p2p.gateway.TestBase
+import net.corda.p2p.gateway.messaging.ConnectionConfiguration
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.test.util.eventually
@@ -78,11 +79,11 @@ class HttpTest : TestBase() {
             listener.server = server
             server.startAndWaitForStarted()
             HttpClient(
-                DestinationInfo(serverAddress, aliceSNI[0], null),
+                DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore),
                 chipSslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
-                2.seconds
+                ConnectionConfiguration(),
             ).use { client ->
                 client.start()
                 val response = client.write(clientMessageContent.toByteArray(Charsets.UTF_8)).get()
@@ -119,11 +120,11 @@ class HttpTest : TestBase() {
             repeat(threadNo) {
                 val t = thread {
                     val httpClient = HttpClient(
-                        DestinationInfo(serverAddress, aliceSNI[1], null),
+                        DestinationInfo(serverAddress, aliceSNI[1], null, truststoreKeyStore),
                         chipSslConfig,
                         threadPool,
                         threadPool,
-                        2.seconds
+                        ConnectionConfiguration(),
                     )
                     httpClient.use {
                         httpClient.start()
@@ -176,11 +177,11 @@ class HttpTest : TestBase() {
             listener.server = server
             server.startAndWaitForStarted()
             HttpClient(
-                DestinationInfo(serverAddress, aliceSNI[0], null),
+                DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore),
                 bobSslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
-                2.seconds
+                ConnectionConfiguration(),
             ).use { client ->
                 client.start()
                 val response = client.write(hugePayload).get()
@@ -210,11 +211,11 @@ class HttpTest : TestBase() {
             listener.server = server
             server.startAndWaitForStarted()
             HttpClient(
-                DestinationInfo(serverAddress, bobSNI[0], null),
+                DestinationInfo(serverAddress, bobSNI[0], null, truststoreKeyStore),
                 aliceSslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
-                2.seconds
+                ConnectionConfiguration(),
             ).use { client ->
                 client.start()
                 val response = client.write(ByteArray(0)).get()
@@ -243,11 +244,11 @@ class HttpTest : TestBase() {
             listener.server = server
             server.startAndWaitForStarted()
             HttpClient(
-                DestinationInfo(serverAddress, partyASNI, partyAx500Name),
+                DestinationInfo(serverAddress, partyASNI, partyAx500Name, c4TruststoreKeyStore),
                 c4sslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
-                2.seconds
+                ConnectionConfiguration(),
             ).use { client ->
                 client.start()
                 val response = client.write(ByteArray(0)).get()
@@ -264,11 +265,11 @@ class HttpTest : TestBase() {
             val expectedX500Name = "O=Test,L=London,C=GB"
             val sni = SniCalculator.calculateSni("O=Test,L=London,C=GB", NetworkType.CORDA_4, serverAddress.host)
             HttpClient(
-                DestinationInfo(serverAddress, sni, X500Name(expectedX500Name)),
+                DestinationInfo(serverAddress, sni, X500Name(expectedX500Name), c4TruststoreKeyStore),
                 c4sslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
-                2.seconds
+                ConnectionConfiguration(),
             ).use { client ->
 
                 client.start()
@@ -296,11 +297,11 @@ class HttpTest : TestBase() {
         MitmServer(serverAddress.host, serverAddress.port, chipSslConfig).use { server ->
             server.start()
             HttpClient(
-                DestinationInfo(serverAddress, aliceSNI[0], null),
+                DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore),
                 daleSslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
-                2.seconds
+                ConnectionConfiguration(),
             ).use { client ->
                 client.start()
                 val future = client.write(ByteArray(0))
@@ -338,11 +339,11 @@ class HttpTest : TestBase() {
         ).use { server ->
             server.startAndWaitForStarted()
             HttpClient(
-                DestinationInfo(serverAddress, bobSNI[0], null),
+                DestinationInfo(serverAddress, bobSNI[0], null, truststoreKeyStore),
                 chipSslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
-                2.seconds
+                ConnectionConfiguration(),
             ).use { client ->
                 client.start()
                 val future = client.write(ByteArray(0))
@@ -380,11 +381,11 @@ class HttpTest : TestBase() {
         ).use { server ->
             server.startAndWaitForStarted()
             HttpClient(
-                DestinationInfo(serverAddress, bobSNI[0], null),
+                DestinationInfo(serverAddress, bobSNI[0], null, truststoreKeyStore),
                 chipSslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
-                2.seconds
+                ConnectionConfiguration(),
             ).use { client ->
                 client.start()
                 val future = client.write(ByteArray(0))

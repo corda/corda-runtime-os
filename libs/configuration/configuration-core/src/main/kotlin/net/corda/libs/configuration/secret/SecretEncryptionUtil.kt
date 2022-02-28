@@ -1,6 +1,6 @@
 package net.corda.libs.configuration.secret
 
-import net.corda.crypto.Encryptor
+import net.corda.crypto.core.Encryptor
 import java.util.Base64
 import java.util.concurrent.ConcurrentHashMap
 

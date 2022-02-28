@@ -1,6 +1,6 @@
 package net.corda.crypto.service.impl
 
-import net.corda.crypto.CryptoConsts
+import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.service.impl.signing.CryptoServicesTestFactory
 import net.corda.test.util.createTestCase
 import net.corda.v5.base.types.OpaqueBytes
@@ -227,13 +227,13 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(10)
     fun `SoftCryptoService should require wrapping key`() {
         assertTrue(services.cryptoService.requiresWrappingKey())
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(10)
     fun `All supported by SoftCryptoService schemes should be defined in cipher suite`() {
         assertTrue(services.cryptoService.supportedSchemes().isNotEmpty())
         services.cryptoService.supportedSchemes().forEach {
@@ -242,7 +242,7 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(10)
     fun `All supported by SoftCryptoService wrapping schemes should be defined in cipher suite`() {
         assertTrue(services.cryptoService.supportedWrappingSchemes().isNotEmpty())
         services.cryptoService.supportedWrappingSchemes().forEach {
@@ -251,7 +251,7 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(10)
     fun `containsKey in SoftCryptoService should return false for unknown alias`() {
         val alias = newAlias()
         assertFalse(services.cryptoService.containsKey(alias))
@@ -259,7 +259,7 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedSchemes")
-    @Timeout(30)
+    @Timeout(60)
     fun `containsKey in SoftCryptoService should return true for known alias for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -270,7 +270,7 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedWrappingSchemes")
-    @Timeout(30)
+    @Timeout(60)
     @Suppress("MaxLineLength")
     fun `SoftCryptoService should fail signing using wrapped key pair with unknown wrapping key for all supported schemes`(
         signatureScheme: SignatureScheme
@@ -295,7 +295,7 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(60)
     fun `Should generate deterministic signatures for EdDSA, SPHINCS-256 and RSA`() {
         listOf(
             schemeMetadata.schemes.first { it.codeName == EDDSA_ED25519_CODE_NAME },
@@ -342,7 +342,7 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(10)
     fun `Should generate non deterministic signatures for ECDSA`() {
         listOf(
             schemeMetadata.schemes.first { it.codeName == ECDSA_SECP256K1_CODE_NAME },
@@ -388,7 +388,7 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(10)
     fun `Should generate RSA key pair`() {
         val alias = newAlias()
         val scheme = schemeMetadata.findSignatureScheme(RSA_CODE_NAME)
@@ -400,7 +400,7 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(10)
     fun `Should generate RSA key pair and be able sign and verify using RSASSA-PSS signature`() {
         val data = UUID.randomUUID().toString().toByteArray()
         val alias = newAlias()
@@ -427,7 +427,7 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(10)
     fun `Should generate wrapped RSA key pair and be able sign and verify using RSASSA-PSS signature`() {
         val data = UUID.randomUUID().toString().toByteArray()
         val signatureScheme = schemeMetadata.findSignatureScheme(RSA_CODE_NAME)

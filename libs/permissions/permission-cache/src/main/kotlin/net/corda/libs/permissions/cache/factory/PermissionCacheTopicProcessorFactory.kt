@@ -5,6 +5,7 @@ import net.corda.data.permissions.Group
 import net.corda.data.permissions.Permission
 import net.corda.data.permissions.Role
 import net.corda.data.permissions.User
+import net.corda.data.permissions.summary.UserPermissionSummary
 import net.corda.libs.permissions.cache.processor.PermissionCacheTopicProcessor
 
 /**
@@ -54,4 +55,15 @@ interface PermissionCacheTopicProcessorFactory {
         permissionData: ConcurrentHashMap<String, Permission>,
         onSnapshotCallback: () -> Unit,
     ): PermissionCacheTopicProcessor<String, Permission>
+
+    /**
+     * Create a topic processor for Permission Summaries.
+     *
+     * @param permissionSummaryData the instance of a ConcurrentHashMap holding the Permission Summary data.
+     * @param onSnapshotCallback the callback invoked after snapshot has been received.
+     */
+    fun createPermissionSummaryTopicProcessor(
+        permissionSummaryData: ConcurrentHashMap<String, UserPermissionSummary>,
+        onSnapshotCallback: () -> Unit,
+    ): PermissionCacheTopicProcessor<String, UserPermissionSummary>
 }

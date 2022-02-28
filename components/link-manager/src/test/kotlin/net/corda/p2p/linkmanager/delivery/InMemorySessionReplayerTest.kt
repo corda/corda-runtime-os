@@ -1,6 +1,6 @@
 package net.corda.p2p.linkmanager.delivery
 
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.LinkOutMessage
@@ -57,7 +57,7 @@ class InMemorySessionReplayerTest {
         loggingInterceptor.reset()
     }
 
-    private val dominoTile = Mockito.mockConstruction(DominoTile::class.java) { mock, _ ->
+    private val dominoTile = Mockito.mockConstruction(ComplexDominoTile::class.java) { mock, _ ->
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
     }

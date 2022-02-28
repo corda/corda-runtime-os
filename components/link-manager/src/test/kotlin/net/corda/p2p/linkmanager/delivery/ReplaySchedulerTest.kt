@@ -2,7 +2,7 @@ package net.corda.p2p.linkmanager.delivery
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.sessions.SessionManager
@@ -58,7 +58,7 @@ class ReplaySchedulerTest {
 
     private lateinit var configHandler: ReplayScheduler<*>.ReplaySchedulerConfigurationChangeHandler
     private lateinit var createResources: ((resources: ResourcesHolder) -> CompletableFuture<Unit>)
-    private val dominoTile = Mockito.mockConstruction(DominoTile::class.java) { mock, context ->
+    private val dominoTile = Mockito.mockConstruction(ComplexDominoTile::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
         @Suppress("UNCHECKED_CAST")
@@ -304,6 +304,52 @@ class ReplaySchedulerTest {
         }
 
         replayManager.stop()
+    }
+
+    @Test
+    fun `queued messages which are removed are not replayed`() {
+        val messageCap = 1
+        val firstBatchLatch = CountDownLatch(messageCap)
+        val secondBatchLatch = CountDownLatch(messageCap * 2)
+        val replayedMessages = ConcurrentHashMap.newKeySet<String>()
+        fun onReplay(messageId: String) {
+            if (!replayedMessages.contains(messageId)) {
+                firstBatchLatch.countDown()
+                secondBatchLatch.countDown()
+                replayedMessages.add(messageId)
+            }
+        }
+        val replayManager = ReplayScheduler(
+            coordinatorFactory,
+            service,
+            true,
+            REPLAY_PERIOD_KEY,
+            ::onReplay
+        ) { 0 }
+        replayManager.start()
+        setRunning()
+        createResources(resourcesHolder)
+        configHandler.applyNewConfiguration(
+            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod, 1),
+            null,
+            configResourcesHolder
+        )
+
+        val messageId = UUID.randomUUID().toString()
+        replayManager.addForReplay(0, messageId, messageId, sessionCounterparties)
+
+        val queuedMessageId = UUID.randomUUID().toString()
+        replayManager.addForReplay(0, queuedMessageId, queuedMessageId, sessionCounterparties)
+        replayManager.removeFromReplay(queuedMessageId, sessionCounterparties)
+
+        val anotherQueuedMessageId = UUID.randomUUID().toString()
+        replayManager.addForReplay(0, anotherQueuedMessageId, anotherQueuedMessageId, sessionCounterparties)
+
+        firstBatchLatch.await()
+        replayManager.removeFromReplay(messageId, sessionCounterparties)
+        secondBatchLatch.await()
+
+        assertThat(replayedMessages).containsOnly(messageId, anotherQueuedMessageId)
     }
 
     @Test

@@ -1,8 +1,9 @@
 package net.corda.membership.impl.read.component
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
@@ -15,9 +16,7 @@ import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.membership.conversion.PropertyConverter
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -36,24 +35,21 @@ import org.osgi.service.component.annotations.Reference
 @Component(service = [MembershipGroupReaderProvider::class])
 @Suppress("LongParameterList")
 class MembershipGroupReaderProviderImpl @Activate constructor(
-    @Reference(service = VirtualNodeInfoReadService::class)
-    val virtualNodeInfoReadService: VirtualNodeInfoReadService,
-    @Reference(service = CpiInfoReadService::class)
-    val cpiInfoReader: CpiInfoReadService,
     @Reference(service = ConfigurationReadService::class)
-    val configurationReadService: ConfigurationReadService,
+    configurationReadService: ConfigurationReadService,
     @Reference(service = SubscriptionFactory::class)
-    val subscriptionFactory: SubscriptionFactory,
+    subscriptionFactory: SubscriptionFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
-    val coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = PropertyConverter::class)
-    val converter: PropertyConverter,
+    coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = LayeredPropertyMapFactory::class)
+    layeredPropertyMapFactory: LayeredPropertyMapFactory,
     @Reference(service = GroupPolicyProvider::class)
     groupPolicyProvider: GroupPolicyProvider
 ) : MembershipGroupReaderProvider {
 
     companion object {
-        const val ACCESS_TOO_EARLY = "Tried to read group data before starting the component."
+        const val ILLEGAL_ACCESS = "Tried to read group data before starting the component " +
+                "or while the component is down."
     }
 
     // Group data cache instance shared across services.
@@ -67,12 +63,12 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
     private val membershipGroupReadSubscriptions = MembershipGroupReadSubscriptions.Impl(
         subscriptionFactory,
         membershipGroupReadCache,
-        converter
+        layeredPropertyMapFactory
     )
 
     // Handler for lifecycle events.
     private val lifecycleHandler = MembershipGroupReadLifecycleHandler.Impl(
-        this,
+        configurationReadService,
         membershipGroupReadSubscriptions,
         membershipGroupReadCache
     )
@@ -84,6 +80,9 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
     // Component is running when it's coordinator has started.
     override val isRunning
         get() = coordinator.isRunning
+
+    private val isUp
+        get() = coordinator.status == LifecycleStatus.UP
 
     /**
      * Start the coordinator, which will then receive the lifecycle event [StartEvent].
@@ -100,9 +99,9 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
      */
     override fun getGroupReader(
         holdingIdentity: HoldingIdentity
-    ) = if (isRunning) {
+    ) = if (isRunning && isUp) {
         membershipGroupReaderFactory.getGroupReader(holdingIdentity)
     } else {
-        throw CordaRuntimeException(ACCESS_TOO_EARLY)
+        throw CordaRuntimeException(ILLEGAL_ACCESS)
     }
 }

@@ -2,11 +2,15 @@ package net.corda.sandboxtests
 
 import java.nio.file.Path
 import net.corda.testing.sandboxes.SandboxSetup
-import org.junit.jupiter.api.AfterAll
+import net.corda.testing.sandboxes.fetchService
+import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.framework.BundleContext
 import org.osgi.test.common.annotation.InjectBundleContext
@@ -16,27 +20,27 @@ import org.osgi.test.junit5.service.ServiceExtension
 
 /** Tests the use of non-exported implementation classes from one bundle in another bundle. */
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
+@TestInstance(PER_CLASS)
 class SandboxBundlePrivateImplementationTest {
-    @Suppress("unused")
-    companion object {
+    @RegisterExtension
+    private val lifecycle = AllTestsLifecycle()
+
+    private lateinit var sandboxFactory: SandboxFactory
+
+    @BeforeAll
+    fun setup(
         @InjectService(timeout = 1000)
-        lateinit var sandboxSetup: SandboxSetup
-
-        @JvmStatic
-        @BeforeAll
-        fun setup(@InjectBundleContext bundleContext: BundleContext, @TempDir testDirectory: Path) {
-            sandboxSetup.configure(bundleContext, testDirectory)
-        }
-
-        @JvmStatic
-        @AfterAll
-        fun done() {
-            sandboxSetup.shutdown()
+        sandboxSetup: SandboxSetup,
+        @InjectBundleContext
+        bundleContext: BundleContext,
+        @TempDir
+        testDirectory: Path
+    ) {
+        sandboxSetup.configure(bundleContext, testDirectory)
+        lifecycle.accept(sandboxSetup) { setup ->
+            sandboxFactory = setup.fetchService(timeout = 1000)
         }
     }
-
-    @InjectService(timeout = 1500)
-    lateinit var sandboxFactory: SandboxFactory
 
     @Test
     fun `sandbox can invoke a private implementation in a non-exported package of another bundle`() {

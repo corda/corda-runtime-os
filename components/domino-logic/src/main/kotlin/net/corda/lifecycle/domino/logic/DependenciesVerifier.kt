@@ -21,7 +21,7 @@ object DependenciesVerifier {
 
         allHierarchyTiles.forEach {
             if (!managedTileToParent.containsKey(it)) {
-                throw InvalidTileConfigurationException("The domino tile ${it.name} is not being managed by any parent tile.")
+                throw InvalidTileConfigurationException("The domino tile ${it.coordinatorName} is not being managed by any parent tile.")
             }
         }
     }
@@ -32,8 +32,8 @@ object DependenciesVerifier {
 
         dominoTile.managedChildren.forEach {
             if (managedTiles.contains(it)) {
-                throw InvalidTileConfigurationException("The domino tile ${it.name} is being managed by two parent tiles: " +
-                        "${managedTiles[it]!!.name} and ${dominoTile.name}")
+                throw InvalidTileConfigurationException("The domino tile ${it.coordinatorName} is being managed by two parent tiles: " +
+                        "${managedTiles[it]!!.coordinatorName} and ${dominoTile.coordinatorName}")
             }
 
             managedTiles[it] = dominoTile

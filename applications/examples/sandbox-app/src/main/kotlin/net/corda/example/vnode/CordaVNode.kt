@@ -3,35 +3,24 @@ package net.corda.example.vnode
 
 import co.paralleluniverse.fibers.instrument.Retransform
 import com.sun.management.HotSpotDiagnosticMXBean
-import java.io.FilePermission
-import java.lang.management.ManagementFactory
-import java.lang.management.ManagementPermission
-import java.lang.reflect.ReflectPermission
-import java.net.NetPermission
-import java.net.SocketPermission
-import java.nio.file.LinkPermission
-import java.time.Instant
-import java.util.PropertyPermission
-import java.util.UUID
-import java.util.concurrent.TimeoutException
-import java.util.concurrent.atomic.AtomicInteger
+import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
+import net.corda.data.flow.FlowStartContext
+import net.corda.data.flow.FlowStatusKey
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.event.StartRPCFlow
+import net.corda.data.flow.event.StartFlow
+import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.flow.manager.factory.FlowEventProcessorFactory
 import net.corda.messaging.api.records.Record
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
-import net.corda.packaging.CPI
 import net.corda.packaging.CPK
-import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import net.corda.securitymanager.SecurityManagerService
 import net.corda.v5.base.util.loggerFor
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.osgi.framework.AdminPermission
-import org.osgi.framework.BundleContext
 import org.osgi.framework.BundleReference
 import org.osgi.framework.PackagePermission
 import org.osgi.framework.PackagePermission.EXPORTONLY
@@ -40,16 +29,37 @@ import org.osgi.framework.ServicePermission
 import org.osgi.framework.ServicePermission.GET
 import org.osgi.framework.ServicePermission.REGISTER
 import org.osgi.framework.wiring.BundleWiring
+import org.osgi.service.component.ComponentContext
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.ReferenceCardinality.OPTIONAL
+import org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC
 import org.osgi.service.permissionadmin.PermissionAdmin
+import java.io.FilePermission
+import java.lang.management.ManagementFactory
+import java.lang.management.ManagementPermission
+import java.lang.reflect.ReflectPermission
+import java.net.NetPermission
+import java.net.SocketPermission
+import java.nio.file.LinkPermission
+import java.time.Instant
+import java.util.*
+import java.util.concurrent.TimeoutException
+import java.util.concurrent.atomic.AtomicInteger
 
 val CPK.id: CPK.Identifier get() = metadata.id
+const val VNODE_SERVICE = "vnode"
 
 @Suppress("unused", "LongParameterList")
-@Component
+@Component(reference = [
+    Reference(
+        name = VNODE_SERVICE,
+        service = VNodeService::class,
+        cardinality = OPTIONAL,
+        policy = DYNAMIC
+    )
+])
 class CordaVNode @Activate constructor(
     @Reference
     private val flowEventProcessorFactory: FlowEventProcessorFactory,
@@ -60,7 +70,7 @@ class CordaVNode @Activate constructor(
     @Reference
     private val shutdown: Shutdown,
 
-    private val bundleContext: BundleContext
+    private val componentContext: ComponentContext
 ) : Application {
     private companion object {
         private const val EXAMPLE_CPI_RESOURCE = "META-INF/example-cpi-package.cpb"
@@ -79,26 +89,20 @@ class CordaVNode @Activate constructor(
         HotSpotDiagnosticMXBean::class.java
     )
 
-    private val cleanups = mutableListOf<AutoCloseable>()
-    private val vnode: VNodeService = fetchService(TIMEOUT_MILLIS)
+    private val vnode: VNodeService = fetchService(VNODE_SERVICE, TIMEOUT_MILLIS)
 
-    @Deactivate
-    fun done() {
-        cleanups.forEach(AutoCloseable::close)
-        logger.info("Deactivated")
+    private inline fun <reified T> fetchService(name: String, timeout: Long): T {
+        return fetchService(name, T::class.java, timeout)
     }
 
-    private inline fun <reified T> fetchService(timeout: Long): T {
-        return fetchService(T::class.java, timeout)
-    }
-
-    private fun <T> fetchService(serviceType: Class<T>, timeout: Long): T {
-        var remainingMillis = timeout
-        while (remainingMillis >= 0) {
-            bundleContext.getServiceReference(serviceType)?.let { ref ->
-                return bundleContext.getService(ref).also {
-                    cleanups.add(AutoCloseable { bundleContext.ungetService(ref) })
-                }
+    private fun <T> fetchService(name: String, serviceType: Class<T>, timeout: Long): T {
+        var remainingMillis = timeout.coerceAtLeast(0)
+        while (true) {
+            componentContext.locateService<T>(name)?.also { svc ->
+                return svc
+            }
+            if (remainingMillis <= 0) {
+                break
             }
             val waitMillis = remainingMillis.coerceAtMost(WAIT_MILLIS)
             Thread.sleep(waitMillis)
@@ -114,22 +118,23 @@ class CordaVNode @Activate constructor(
 
     private fun generateRandomId(): String = UUID.randomUUID().toString()
 
-    private fun createRPCStartFlow(clientId: String, cpiId: CPI.Identifier, sandboxContext: SandboxGroupContext): StartRPCFlow {
-        val vnc = sandboxContext.virtualNodeContext
-        return StartRPCFlow(
-            clientId,
-            cpiId.name,
-            "com.example.cpk.ExampleFlow",
-            vnc.holdingIdentity.toAvro(),
-            Instant.now(),
-            "{\"message\":\"Bongo!\"}"
+    private fun createRPCStartFlow(clientId: String, virtualNodeInfo: VirtualNodeInfo): StartFlow {
+        return StartFlow(
+            FlowStartContext(
+                FlowStatusKey(clientId, virtualNodeInfo.holdingIdentity),
+                FlowInitiatorType.RPC,
+                clientId,
+                virtualNodeInfo,
+                "com.example.cpk.ExampleFlow",
+                Instant.now(),
+            ),  "{\"message\":\"Bongo!\"}"
         )
     }
 
     @Suppress("SameParameterValue")
     private fun executeSandbox(clientId: String, resourceName: String) {
         val holdingIdentity = HoldingIdentity(X500_NAME, generateRandomId())
-        val vnodeInfo = vnode.loadCPI(resourceName, holdingIdentity)
+        val vnodeInfo = vnode.loadVirtualNode(resourceName, holdingIdentity)
         try {
             // Checkpoint: We have loaded the CPI into the framework.
             logger.info("Loaded CPI: {}", vnodeInfo.cpiIdentifier)
@@ -141,13 +146,17 @@ class CordaVNode @Activate constructor(
                 logger.info("Created sandbox: {}", sandboxContext.sandboxGroup.cpks.map(CPK::id))
                 dumpHeap("created")
 
-                val rpcStartFlow = createRPCStartFlow(clientId, vnodeInfo.cpiIdentifier, sandboxContext)
+                val rpcStartFlow = createRPCStartFlow(clientId, vnodeInfo.toAvro())
                 val flowKey = FlowKey(generateRandomId(), holdingIdentity.toAvro())
                 val record = Record(FLOW_EVENT_TOPIC, flowKey, FlowEvent(flowKey, rpcStartFlow))
                 flowEventProcessorFactory.create().apply {
                     val result = onNext(null, record)
-                    @Suppress("unchecked_cast")
-                    onNext(result.updatedState, result.responseEvents.single() as Record<FlowKey, FlowEvent>)
+                    result.responseEvents.singleOrNull { evt ->
+                        evt.topic == FLOW_EVENT_TOPIC
+                    }?.also { evt ->
+                        @Suppress("unchecked_cast")
+                        onNext(result.updatedState, evt as Record<FlowKey, FlowEvent>)
+                    }
                 }
             } finally {
                 (sandboxContext as AutoCloseable).close()
@@ -157,7 +166,7 @@ class CordaVNode @Activate constructor(
             logger.info("Destroyed sandbox")
             dumpHeap("destroyed")
         } finally {
-            vnode.unloadCPI(vnodeInfo)
+            vnode.unloadVirtualNode(vnodeInfo)
         }
         logger.info("Unloaded CPI")
     }
@@ -206,7 +215,7 @@ class CordaVNode @Activate constructor(
             executeSandbox("client-3", EXAMPLE_CPI_RESOURCE)
         } finally {
             dumpHeap("finished")
-            shutdown.shutdown(bundleContext.bundle)
+            shutdown.shutdown(componentContext.usingBundle)
 
             val instrumentor = Retransform.getInstrumentor()
             logger.info("Instrumentor: {}", instrumentor::class.java)

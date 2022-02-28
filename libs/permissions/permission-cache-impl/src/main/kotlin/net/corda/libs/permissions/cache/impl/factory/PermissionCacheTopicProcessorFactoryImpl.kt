@@ -5,6 +5,7 @@ import net.corda.data.permissions.Group
 import net.corda.data.permissions.Permission
 import net.corda.data.permissions.Role
 import net.corda.data.permissions.User
+import net.corda.data.permissions.summary.UserPermissionSummary
 import net.corda.libs.permissions.cache.factory.PermissionCacheTopicProcessorFactory
 import net.corda.libs.permissions.cache.impl.processor.PermissionTopicProcessor
 import net.corda.libs.permissions.cache.processor.PermissionCacheTopicProcessor
@@ -38,5 +39,12 @@ class PermissionCacheTopicProcessorFactoryImpl : PermissionCacheTopicProcessorFa
         onSnapshotCallback: () -> Unit,
     ): PermissionCacheTopicProcessor<String, Permission> {
         return PermissionTopicProcessor(String::class.java, Permission::class.java, permissionData, onSnapshotCallback)
+    }
+
+    override fun createPermissionSummaryTopicProcessor(
+        permissionSummaryData: ConcurrentHashMap<String, UserPermissionSummary>,
+        onSnapshotCallback: () -> Unit,
+    ): PermissionCacheTopicProcessor<String, UserPermissionSummary> {
+        return PermissionTopicProcessor(String::class.java, UserPermissionSummary::class.java, permissionSummaryData, onSnapshotCallback)
     }
 }
