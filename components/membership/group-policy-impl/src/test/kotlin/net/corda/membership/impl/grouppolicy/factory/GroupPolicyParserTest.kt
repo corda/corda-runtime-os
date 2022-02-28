@@ -77,7 +77,7 @@ class GroupPolicyParserTest {
         // Top level properties
         assertEquals(1, result[FILE_FORMAT_VERSION])
         assertEquals(testGroupId, result.groupId)
-        assertEquals("net.corda.membership.staticnetwork.StaticMemberRegistrationService", result.registrationProtocol)
+        assertEquals("net.corda.membership.impl.registration.staticnetwork.StaticMemberRegistrationService", result.registrationProtocol)
         assertEquals("net.corda.v5.mgm.MGMSynchronisationProtocolFactory", result[SYNC_PROTOCOL_FACTORY])
         assertTrue(result[PROTOCOL_PARAMETERS] is Map<*, *>)
         assertTrue(result[STATIC_NETWORK] is Map<*, *>)

@@ -88,6 +88,7 @@
 	net.corda.member-processor;version='[5.0.0,5.0.1)',\
 	net.corda.membership;version='[5.0.0,5.0.1)',\
 	net.corda.membership-application;version='[5.0.0,5.0.1)',\
+	net.corda.membership-group-read;version='[5.0.0,5.0.1)',\
 	net.corda.membership-group-read-impl;version='[5.0.0,5.0.1)',\
 	net.corda.membership-identity;version='[5.0.0,5.0.1)',\
 	net.corda.membership-identity-impl;version='[5.0.0,5.0.1)',\
@@ -100,7 +101,7 @@
 	net.corda.messaging-impl;version='[5.0.0,5.0.1)',\
 	net.corda.packaging;version='[5.0.0,5.0.1)',\
 	net.corda.packaging-avro-converters;version='[5.0.0,5.0.1)',\
-	net.corda.registration-provider;version='[5.0.0,5.0.1)',\
+	net.corda.registration;version='[5.0.0,5.0.1)',\
 	net.corda.registration-impl;version='[5.0.0,5.0.1)',\
 	net.corda.registry;version='[5.0.0,5.0.1)',\
 	net.corda.serialization;version='[5.0.0,5.0.1)',\
