@@ -66,13 +66,12 @@ class CpkChecksumsCacheImpl(
             }
         }
 
-        @Suppress("ForbiddenComment")
         override fun onNext(
             newRecord: Record<CpkChunkId, Chunk>,
             oldValue: Chunk?,
             currentData: Map<CpkChunkId, Chunk>
         ) {
-            // TODO: add checks with oldValue: CpkInfo? that matches memory state
+            // TODO add checks with oldValue: CpkInfo? that matches memory state
             //  also assert that newRecord.topic is the same with ours just in case?
             val cpkChunkId = newRecord.key
             val cpkChunk = newRecord.value

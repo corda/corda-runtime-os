@@ -143,10 +143,9 @@ class CpkWriteServiceImpl @Activate constructor(
     /**
      * We've received a config event that we care about, we can now write cpks
      */
-    @Suppress("ForbiddenComment")
     private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         val config = event.config.toMessagingConfig()
-        // TODO: fill the following with configuration once we know where they lie?
+        // TODO fill the following with configuration once we know where they lie?
         timeout = 20.seconds
         timerEventInterval = 10.seconds
         cpkChecksumsCache = CpkChecksumsCacheImpl(
@@ -189,7 +188,6 @@ class CpkWriteServiceImpl @Activate constructor(
         closeResources()
     }
 
-    // TODO - kyriakos - need to schedule this to run like a timer task
     @VisibleForTesting
     internal fun putMissingCpk() {
         logger.info("Putting missing CPKs from DB to Kafka")
