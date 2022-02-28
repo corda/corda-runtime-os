@@ -555,8 +555,9 @@ open class SessionManagerImpl(
             logger.validationFailedWarning(
                 message::class.java.simpleName,
                 message.header.sessionId,
-                exception.message
+                exception.message,
             )
+            logger.error("Stack trace", exception)
             return null
         }
         //Find the correct Holding Identity to use (using the public key hash).
