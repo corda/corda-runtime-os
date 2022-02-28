@@ -107,8 +107,8 @@ class MemberOpsServiceProcessor(
                 context.requestTimestamp,
                 RegistrationStatus.valueOf(result.outcome.toString()),
                 REGISTRATION_PROTOCOL_VERSION,
-                KeyValuePairList(),
-                KeyValuePairList()
+                KeyValuePairList(emptyList()),
+                KeyValuePairList(emptyList())
             )
         }
     }

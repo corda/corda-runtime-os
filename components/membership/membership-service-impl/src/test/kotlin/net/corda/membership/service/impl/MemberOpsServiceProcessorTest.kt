@@ -98,8 +98,8 @@ class MemberOpsServiceProcessorTest {
             requestTimestamp,
             RegistrationStatus.SUBMITTED,
             1,
-            KeyValuePairList(),
-            KeyValuePairList()
+            KeyValuePairList(emptyList()),
+            KeyValuePairList(emptyList())
         )
         assertEquals(expectedResponse, result.response)
         assertResponseContext(requestContext, result.responseContext)

@@ -6,6 +6,7 @@ import net.corda.crypto.persistence.SoftKeysPersistenceProvider
 import net.corda.crypto.service.CryptoOpsService
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.service.SoftCryptoServiceProvider
+import net.corda.data.config.Configuration
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
@@ -15,7 +16,12 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.records.Record
 import net.corda.processors.crypto.CryptoProcessor
+import net.corda.schema.Schemas
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Activate
@@ -27,6 +33,8 @@ import org.osgi.service.component.annotations.Reference
 class CryptoProcessorImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = PublisherFactory::class)
+    private val publisherFactory: PublisherFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = SoftKeysPersistenceProvider::class)
@@ -42,6 +50,8 @@ class CryptoProcessorImpl @Activate constructor(
 ) : CryptoProcessor {
     private companion object {
         val log = contextLogger()
+
+        const val CLIENT_ID = "crypto.processor"
     }
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<CryptoProcessor>(::eventHandler)
@@ -84,6 +94,18 @@ class CryptoProcessorImpl @Activate constructor(
             }
             is BootConfigEvent -> {
                 configurationReadService.bootstrapConfig(event.config)
+
+                val publisherConfig = PublisherConfig(CLIENT_ID, 1)
+                val publisher = publisherFactory.createPublisher(publisherConfig, event.config)
+                publisher.use {
+                    it.start()
+                    val record = Record(
+                        Schemas.Config.CONFIG_TOPIC,
+                        ConfigKeys.CRYPTO_CONFIG,
+                        Configuration("", "1")
+                    )
+                    publisher.publish(listOf(record)).forEach { future -> future.get() }
+                }
             }
             else -> {
                 log.warn("Unexpected event $event!")
