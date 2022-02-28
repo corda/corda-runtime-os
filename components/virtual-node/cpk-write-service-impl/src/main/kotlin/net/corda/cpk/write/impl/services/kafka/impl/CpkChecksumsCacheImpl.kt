@@ -32,7 +32,6 @@ class CpkChecksumsCacheImpl(
 
     private val cpkChecksums: MutableMap<SecureHash, SecureHash> = ConcurrentHashMap()
 
-    // TODO Add config to the below
     @VisibleForTesting
     internal val compactedSubscription =
         subscriptionFactory.createCompactedSubscription(subscriptionConfig, CacheSynchronizer(), nodeConfig)
@@ -65,19 +64,19 @@ class CpkChecksumsCacheImpl(
         override val valueClass: Class<Chunk>
             get() = Chunk::class.java
 
-        // TODO: Not good that we need to load AvroTypesTodo.CpkChunk back in memory for now reason.
         override fun onSnapshot(currentData: Map<CpkChunkId, Chunk>) {
             currentData.forEach { (cpkChunkId, cpkChunk) ->
                 updateCacheOnZeroChunk(cpkChunkId, cpkChunk)
             }
         }
 
+        @Suppress("ForbiddenComment")
         override fun onNext(
             newRecord: Record<CpkChunkId, Chunk>,
             oldValue: Chunk?,
             currentData: Map<CpkChunkId, Chunk>
         ) {
-            // TODO add checks with oldValue: CpkInfo? that matches memory state
+            // TODO: add checks with oldValue: CpkInfo? that matches memory state
             //  also assert that newRecord.topic is the same with ours just in case?
             val cpkChunkId = newRecord.key
             val cpkChunk = newRecord.value

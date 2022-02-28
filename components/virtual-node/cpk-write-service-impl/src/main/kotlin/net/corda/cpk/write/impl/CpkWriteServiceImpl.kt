@@ -142,6 +142,7 @@ class CpkWriteServiceImpl @Activate constructor(
     /**
      * We've received a config event that we care about, we can now write cpks
      */
+    @Suppress("ForbiddenComment")
     private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         val config = event.config.toMessagingConfig()
         // TODO: fill the following with configuration once we know where they lie?
