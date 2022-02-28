@@ -34,7 +34,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
-import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
@@ -43,7 +42,7 @@ import org.osgi.test.junit5.service.ServiceExtension
 import kotlin.reflect.KFunction
 
 @ExtendWith(ServiceExtension::class)
-@Tag("Unstable")
+@Disabled
 class MemberProcessorIntegrationTest {
     companion object {
         const val CLIENT_ID = "member-processor-integration-test"
