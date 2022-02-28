@@ -58,7 +58,7 @@ class MemberRegistrationRpcOpsTest {
     fun `starting registration calls the client svc`() {
         memberRegistrationRpcOps.start()
         memberRegistrationRpcOps.startRegistration(registrationRequest)
-        verify(memberOpsClient).startRegistration(eq(registrationRequest))
+        verify(memberOpsClient).startRegistration(eq(registrationRequest.toDto()))
         memberRegistrationRpcOps.stop()
     }
 
