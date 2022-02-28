@@ -10,7 +10,7 @@ import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.*
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbType.*
-import java.util.*
+import java.security.SecureRandom
 
 /**
  * A factory for [VirtualNodeDb]s.
@@ -22,6 +22,12 @@ class VirtualNodeDbFactory(
 ) {
     private val smartConfigFactory = dbConnectionManager.clusterConfig.factory
     private val adminJdbcUrl = dbConnectionManager.clusterConfig.getString(ConfigKeys.JDBC_URL)
+
+    companion object {
+        private const val passwordLength = 64
+        private val passwordSource = (('0'..'9') + ('A'..'Z') + ('a'..'z')).toCharArray()
+        private val random = SecureRandom()
+    }
 
     /**
      * Creates [VirtualNodeDb]s using connection configurations from virtual node creation request
@@ -97,8 +103,9 @@ class VirtualNodeDbFactory(
     private fun createClusterConnection(dbType: VirtualNodeDbType, holdingIdentityId: String, dbPrivilege: DbPrivilege): DbConnection {
         with (dbType) {
             val user = getUserName(dbPrivilege, holdingIdentityId)
-            val password = UUID.randomUUID().toString().toLowerCase()
-            val config = createDbConfig(smartConfigFactory, user, password, jdbcUrl = dbAdmin.createJdbcUrl(adminJdbcUrl, getSchemaName(holdingIdentityId)))
+            val password = generatePassword()
+            // TODO support for CharArray passwords in SmartConfig
+            val config = createDbConfig(smartConfigFactory, user, password.concatToString(), jdbcUrl = dbAdmin.createJdbcUrl(adminJdbcUrl, getSchemaName(holdingIdentityId)))
             return DbConnection(
                 getConnectionName(holdingIdentityId),
                 dbPrivilege,
@@ -106,6 +113,15 @@ class VirtualNodeDbFactory(
                 getConnectionDescription(dbPrivilege, holdingIdentityId)
             )
         }
+    }
+
+    /**
+     * Generates random DB password
+     */
+    private fun generatePassword(): CharArray {
+        val password = CharArray(passwordLength)
+        for (i in 0 until passwordLength) password[i] = passwordSource[random.nextInt(passwordSource.size)]
+        return password
     }
 
     /**
