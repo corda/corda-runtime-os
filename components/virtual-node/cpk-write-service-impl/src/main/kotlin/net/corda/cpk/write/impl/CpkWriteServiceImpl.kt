@@ -38,6 +38,7 @@ import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.trace
 import net.corda.v5.base.util.seconds
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -165,18 +166,16 @@ class CpkWriteServiceImpl @Activate constructor(
     }
 
     private fun onReconcileCpkEvent(coordinator: LifecycleCoordinator) {
-        logger.info("Reconciliation between DB and Kafka for missing CPKs starting")
         try {
             putMissingCpk()
         } catch (e: Exception) {
             logger.warn("Caught exception ${e.cause} ${e.message}")
         }
-        logger.info("Reconciliation between DB and Kafka for missing CPKs finished")
         setTimerEvent(coordinator)
     }
 
     private fun setTimerEvent(coordinator: LifecycleCoordinator) {
-        logger.info("Registering new ${ReconcileCpkEvent::class.simpleName}")
+        logger.trace { "Registering new ${ReconcileCpkEvent::class.simpleName}" }
         coordinator.setTimer(
             "${CpkWriteServiceImpl::class.simpleName}",
             timerEventInterval!!.toMillis()
@@ -193,13 +192,15 @@ class CpkWriteServiceImpl @Activate constructor(
     // TODO - kyriakos - need to schedule this to run like a timer task
     @VisibleForTesting
     internal fun putMissingCpk() {
+        logger.info("Reconciling missing CPKs from DB to Kafka")
+
         val cachedCpkIds = cpkChecksumsCache?.getCachedCpkIds() ?: run {
-            logger.info("cpkChecksumsCache is not set yet, therefore will run a full db to kafka reconciliation")
+            logger.info("CPK Checksums Cache is not set yet, therefore will run a full db to kafka reconciliation")
             emptySet()
         }
 
         val cpkStorage =
-            this.cpkStorage ?: throw CordaRuntimeException("CPK storage service is not set")
+            this.cpkStorage ?: throw CordaRuntimeException("CPK Storage Service is not set")
         val missingCpkIdsOnKafka = cpkStorage.getCpkIdsNotIn(cachedCpkIds)
 
         // Make sure we use the same CPK publisher for all CPK publishing.
@@ -208,19 +209,31 @@ class CpkWriteServiceImpl @Activate constructor(
                 val cpkChecksumData = cpkStorage.getCpkDataByCpkId(it)
                 cpkChunksPublisher.chunkAndPublishCpk(cpkChecksumData)
             }
-        } ?: throw CordaRuntimeException("CPK chunks publisher service is not set")
+        } ?: throw CordaRuntimeException("CPK Chunks Publisher service is not set")
+    }
+
+    private fun CpkChunksPublisher.chunkAndPublishCpk(cpkChecksumToData: CpkChecksumToData) {
+        logger.debug { "Publishing CPK ${cpkChecksumToData.checksum}" }
+        val cpkChecksum = cpkChecksumToData.checksum
+        val cpkData = cpkChecksumToData.data
+        val chunkWriter = ChunkWriterFactory.create(SUGGESTED_CHUNK_SIZE)
+        chunkWriter.onChunk { chunk ->
+            val cpkChunkId = CpkChunkId(cpkChecksum.toAvro(), chunk.partNumber)
+            put(cpkChunkId, chunk)
+        }
+        chunkWriter.write(Paths.get("todo"), ByteArrayInputStream(cpkData))
     }
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
 
     override fun start() {
-        logger.debug { "Cpk Write Service starting" }
+        logger.debug("CPK Write Service starting")
         coordinator.start()
     }
 
     override fun stop() {
-        logger.debug { "Cpk Write Service stopping" }
+        logger.debug("CPK Write Service stopping")
         coordinator.stop()
         closeResources()
     }
@@ -236,15 +249,4 @@ class CpkWriteServiceImpl @Activate constructor(
     }
 
     data class ReconcileCpkEvent(override val key: String): TimerEvent
-}
-
-private fun CpkChunksPublisher.chunkAndPublishCpk(cpkChecksumToData: CpkChecksumToData) {
-    val cpkChecksum = cpkChecksumToData.checksum
-    val cpkData = cpkChecksumToData.data
-    val chunkWriter = ChunkWriterFactory.create(SUGGESTED_CHUNK_SIZE)
-    chunkWriter.onChunk { chunk ->
-        val cpkChunkId = CpkChunkId(cpkChecksum.toAvro(), chunk.partNumber)
-        put(cpkChunkId, chunk)
-    }
-    chunkWriter.write(Paths.get("todo"), ByteArrayInputStream(cpkData))
 }

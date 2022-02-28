@@ -12,6 +12,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
 import java.nio.ByteBuffer
 import java.util.concurrent.ConcurrentHashMap
@@ -49,10 +50,8 @@ class CpkChecksumsCacheImpl(
         cpkChecksums.keys
 
     override fun add(cpkChecksum: SecureHash) {
+        logger.debug { "Adding CPK checksum to cache $cpkChecksum" }
         cpkChecksums[cpkChecksum] = cpkChecksum
-        logger.debug(
-            "Added to cache CPK checksum: $cpkChecksum"
-        )
     }
 
     inner class CacheSynchronizer : CompactedProcessor<CpkChunkId, Chunk> {

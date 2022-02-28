@@ -8,6 +8,7 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import java.time.Duration
 
 class KafkaCpkChunksPublisher(
@@ -20,6 +21,7 @@ class KafkaCpkChunksPublisher(
     }
 
     override fun put(cpkChunkId: CpkChunkId, cpkChunk: Chunk) {
+        logger.debug { "Putting CPK chunk cpkChecksum= ${cpkChunkId.cpkChecksum} partNumber= ${cpkChunkId.cpkChunkPartNumber}" }
         val cpkChunksRecord = Record(topicName, cpkChunkId, cpkChunk)
         putAllAndWaitForResponses(cpkChunksRecord)
     }
@@ -34,7 +36,7 @@ class KafkaCpkChunksPublisher(
                 intermittentException = false
             } catch (e: CordaMessageAPIIntermittentException) {
                 intermittentException = true
-                logger.info("Caught an CordaMessageAPIIntermittentException. Will retry waiting on a future response.")
+                logger.info("Caught a CordaMessageAPIIntermittentException. Will retry waiting on future response.")
             }
         } while (intermittentException)
     }
