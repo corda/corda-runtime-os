@@ -94,7 +94,7 @@ class CpkWriteServiceImpl @Activate constructor(
             is StartEvent -> onStartEvent(coordinator)
             is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event, coordinator)
             is ConfigChangedEvent -> onConfigChangedEvent(event, coordinator)
-            is ReconcileCpkEvent -> onMissingCpkEvent(coordinator)
+            is ReconcileCpkEvent -> onReconcileCpkEvent(coordinator)
             is StopEvent -> onStopEvent()
         }
     }
@@ -163,7 +163,7 @@ class CpkWriteServiceImpl @Activate constructor(
         setTimerEvent(coordinator)
     }
 
-    private fun onMissingCpkEvent(coordinator: LifecycleCoordinator) {
+    private fun onReconcileCpkEvent(coordinator: LifecycleCoordinator) {
         logger.info("Reconciliation between DB and Kafka for missing CPKs starting")
         try {
             putMissingCpk()
