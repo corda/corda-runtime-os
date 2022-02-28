@@ -1,4 +1,4 @@
-package net.corda.membership.impl.read.component
+package net.corda.membership.impl.read
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory

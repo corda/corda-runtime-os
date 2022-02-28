@@ -52,6 +52,7 @@ dependencies {
     testImplementation "net.corda:corda-packaging-avro-converters"
     testImplementation "net.corda:corda-membership-identity"
 
+    integrationTestCompile project(":components:membership:membership-group-read")
     integrationTestImplementation project(":processors:crypto-processor")
 
     integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")

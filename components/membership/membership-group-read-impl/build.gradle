@@ -13,7 +13,6 @@ dependencies {
 
     implementation project(":libs:configuration:configuration-schema:messaging-configuration")
     implementation project(":libs:membership:membership-identity-impl")
-    implementation project(":libs:membership:membership-internal")
     implementation project(":libs:membership:membership-impl")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
@@ -21,6 +20,7 @@ dependencies {
 
     implementation project(":components:configuration:configuration-read-service")
     implementation project(":components:membership:group-policy")
+    implementation project(":components:membership:membership-group-read")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-avro-schema"
