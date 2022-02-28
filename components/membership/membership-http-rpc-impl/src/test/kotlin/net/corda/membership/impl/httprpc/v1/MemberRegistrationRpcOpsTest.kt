@@ -3,9 +3,11 @@ package net.corda.membership.impl.httprpc.v1
 import net.corda.httprpc.exception.ServiceUnavailableException
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.membership.httprpc.MemberOpsClient
-import net.corda.membership.httprpc.types.MemberRegistrationRequest
-import net.corda.membership.httprpc.types.RegistrationAction
+import net.corda.membership.client.MemberOpsClient
+import net.corda.membership.client.dto.MemberInfoSubmittedDto
+import net.corda.membership.client.dto.RegistrationRequestProgressDto
+import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
+import net.corda.membership.httprpc.v1.types.request.RegistrationAction
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -15,6 +17,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import java.time.Instant
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
@@ -34,7 +37,16 @@ class MemberRegistrationRpcOpsTest {
         on { createCoordinator(any(), any()) } doReturn coordinator
     }
 
-    private val memberOpsClient: MemberOpsClient = mock()
+    private val registrationProgress = RegistrationRequestProgressDto(
+        Instant.now(),
+        "SUBMITTED",
+        MemberInfoSubmittedDto(emptyMap())
+    )
+
+    private val memberOpsClient: MemberOpsClient = mock {
+        on { checkRegistrationProgress(any()) } doReturn registrationProgress
+        on { startRegistration(any()) } doReturn registrationProgress
+    }
 
     private val memberRegistrationRpcOps = MemberRegistrationRpcOpsImpl(
         lifecycleCoordinatorFactory,
@@ -58,7 +70,7 @@ class MemberRegistrationRpcOpsTest {
     fun `starting registration calls the client svc`() {
         memberRegistrationRpcOps.start()
         memberRegistrationRpcOps.startRegistration(registrationRequest)
-        verify(memberOpsClient).startRegistration(eq(registrationRequest))
+        verify(memberOpsClient).startRegistration(eq(registrationRequest.toDto()))
         memberRegistrationRpcOps.stop()
     }
 

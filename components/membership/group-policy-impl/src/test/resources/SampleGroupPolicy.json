@@ -1,7 +1,7 @@
 {
   "fileFormatVersion": 1,
   "groupId": "ABC123",
-  "registrationProtocol": "net.corda.membership.staticnetwork.StaticMemberRegistrationService",
+  "registrationProtocol": "net.corda.membership.impl.registration.staticnetwork.StaticMemberRegistrationService",
   "synchronisationProtocolFactory": "net.corda.v5.mgm.MGMSynchronisationProtocolFactory",
   "protocolParameters": {
     "identityTrustStore": [
