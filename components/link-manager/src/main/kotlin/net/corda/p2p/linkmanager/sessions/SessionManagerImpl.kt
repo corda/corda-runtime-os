@@ -507,11 +507,9 @@ open class SessionManagerImpl(
             logger.error("The message was discarded. ${exception.message}")
             return null
         } catch (exception: InvalidHandshakeMessageException) {
-            logger.validationFailedWarning(
-                message::class.java.simpleName,
-                message.header.sessionId,
-                exception.message
-            )
+            logger.info("Received ${message::class.java.simpleName} with sessionId ${message.header.sessionId}, which " +
+                    "failed validation with: ${exception.message}. This might be caused by a rebalance of the message bus." +
+                    " The message was discarded.")
             return null
         }
         //Find the correct Holding Identity to use (using the public key hash).

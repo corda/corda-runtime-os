@@ -107,11 +107,11 @@ internal class InboundMessageHandler(
     }
 
     private fun processSessionMessage(p2pMessage: LinkInMessage): HttpResponseStatus {
+        val sessionId = getSessionId(p2pMessage) ?: return HttpResponseStatus.INTERNAL_SERVER_ERROR
         if (p2pMessage.payload is InitiatorHelloMessage) {
-            p2pInPublisher.publish(listOf(Record(LINK_IN_TOPIC, UUID.randomUUID().toString(), p2pMessage)))
+            p2pInPublisher.publish(listOf(Record(LINK_IN_TOPIC, sessionId, p2pMessage)))
             return HttpResponseStatus.OK
         }
-        val sessionId = getSessionId(p2pMessage) ?: return HttpResponseStatus.INTERNAL_SERVER_ERROR
         val partitions = sessionPartitionMapper.getPartitions(sessionId)
         return if (partitions == null) {
             logger.warn("No mapping for session ($sessionId), discarding the message and returning an error.")
@@ -132,6 +132,7 @@ internal class InboundMessageHandler(
         return when (message.payload) {
             is AuthenticatedDataMessage -> (message.payload as AuthenticatedDataMessage).header.sessionId
             is AuthenticatedEncryptedDataMessage -> (message.payload as AuthenticatedEncryptedDataMessage).header.sessionId
+            is InitiatorHelloMessage -> (message.payload as InitiatorHelloMessage).header.sessionId
             is InitiatorHandshakeMessage -> (message.payload as InitiatorHandshakeMessage).header.sessionId
             is ResponderHelloMessage -> (message.payload as ResponderHelloMessage).header.sessionId
             is ResponderHandshakeMessage -> (message.payload as ResponderHandshakeMessage).header.sessionId
