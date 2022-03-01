@@ -264,6 +264,7 @@ class CpkWriteServiceImpl @Activate constructor(
         configSubscription = null
         cpkChecksumsCache?.close()
         cpkChecksumsCache = null
+        cpkChunksPublisher?.close()
         cpkChunksPublisher = null
     }
 

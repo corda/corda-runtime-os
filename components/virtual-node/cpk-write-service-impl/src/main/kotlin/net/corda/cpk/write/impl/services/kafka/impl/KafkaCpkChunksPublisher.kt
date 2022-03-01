@@ -9,6 +9,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import java.io.Closeable
 import java.time.Duration
 
 class KafkaCpkChunksPublisher(
@@ -31,5 +32,9 @@ class KafkaCpkChunksPublisher(
         responses.forEach {
             it.getOrThrow(timeout)
         }
+    }
+
+    override fun close() {
+        publisher.close()
     }
 }
