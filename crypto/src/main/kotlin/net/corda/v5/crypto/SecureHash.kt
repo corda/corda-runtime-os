@@ -28,7 +28,7 @@ class SecureHash(val algorithm: String, bytes: ByteArray) : OpaqueBytes(bytes) {
         fun create(str: String): SecureHash {
             val idx = str.indexOf(DELIMITER)
             return if (idx == -1) {
-                throw IllegalArgumentException("Provided string should be of format algorithm:hexadecimal")
+                throw IllegalArgumentException("Provided string: $str should be of format algorithm:hexadecimal")
             } else {
                 val algorithm = str.substring(0, idx)
                 val value = str.substring(idx + 1)
