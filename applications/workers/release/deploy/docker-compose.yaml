@@ -77,6 +77,8 @@ services:
       
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic crypto.ops.rpc
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic crypto.ops.rpc.resp
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic crypto.key.soft
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic crypto.key.info
 
       echo -e 'Successfully created the following topics:'
       kafka-topics.sh --bootstrap-server kafka:9092 --list
