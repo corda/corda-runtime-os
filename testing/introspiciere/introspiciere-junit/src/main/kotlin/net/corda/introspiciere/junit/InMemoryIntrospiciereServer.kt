@@ -1,5 +1,7 @@
 package net.corda.introspiciere.junit
 
+import net.corda.introspiciere.core.KafkaConfig
+import net.corda.introspiciere.server.Context
 import net.corda.introspiciere.server.IntrospiciereServer
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.AfterEachCallback
@@ -15,19 +17,29 @@ import org.junit.jupiter.api.extension.ExtensionContext
  * There is a known bug where if an exception is thrown in the server, the test can still pass.
  */
 class InMemoryIntrospiciereServer(
-    port: Int = 0,
+    private val port: Int = 0,
     kafkaBrokers: String? = null,
-) : BeforeAllCallback, BeforeEachCallback, AfterEachCallback, AfterAllCallback {
+) : BeforeAllCallback, AfterAllCallback {
 
-    override fun beforeEach(context: ExtensionContext?) = startServer()
+//    override fun beforeEach(context: ExtensionContext?) = startServer()
     override fun beforeAll(context: ExtensionContext?) = startServer()
-    override fun afterEach(context: ExtensionContext?) = stopServer()
+//    override fun afterEach(context: ExtensionContext?) = stopServer()
     override fun afterAll(context: ExtensionContext?) = stopServer()
 
-    private val server = IntrospiciereServer(port, kafkaBrokers)
+    private val server: IntrospiciereServer
+
+    init {
+        var ctx = Context()
+        if (kafkaBrokers != null) {
+            ctx = ctx.copy(kafkaConfig = object : KafkaConfig {
+                override val brokers: String = kafkaBrokers
+            })
+        }
+        server = IntrospiciereServer((ctx))
+    }
 
     private fun startServer() {
-        server.start()
+        server.start(port)
     }
 
     private fun stopServer() {

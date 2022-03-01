@@ -24,7 +24,8 @@ class KafkaAdminGatewayImpl(private val kafkaConfig: KafkaConfig) : KafkaAdminGa
             topic.configs(definition.config)
         }
 
-        adminClient.createTopics(listOf(topic))
+        val results = adminClient.createTopics(listOf(topic))
+        results.all().get()
     }
 
     private val adminClient: Admin
@@ -32,3 +33,4 @@ class KafkaAdminGatewayImpl(private val kafkaConfig: KafkaConfig) : KafkaAdminGa
             mapOf(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG to kafkaConfig.brokers).let(Admin::create)
         }
 }
+

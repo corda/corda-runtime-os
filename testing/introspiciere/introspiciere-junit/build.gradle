@@ -6,12 +6,14 @@ description "Introspiciere junit lib"
 
 dependencies {
     implementation project(":testing:introspiciere:introspiciere-client")
-    implementation project(":testing:introspiciere:introspiciere-server")
+    implementation project(":testing:introspiciere:introspiciere-core")
     implementation project(":testing:introspiciere:introspiciere-domain")
     implementation project(":testing:introspiciere:introspiciere-payloads")
+    implementation project(":testing:introspiciere:introspiciere-server")
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
     implementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+
 
     integrationTestImplementation "net.corda:corda-avro-schema:$cordaApiVersion"
     integrationTestImplementation "net.corda:corda-topic-schema:$cordaApiVersion"
@@ -21,6 +23,7 @@ dependencies {
     integrationTestImplementation project(":libs:schema-registry:schema-registry-impl")
     integrationTestImplementation project(":libs:configuration:configuration-publish")
     integrationTestImplementation project(":libs:configuration:configuration-schema:p2p")
+
 
     integrationTestImplementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
     integrationTestImplementation "com.typesafe:config:$typeSafeConfigVersion"

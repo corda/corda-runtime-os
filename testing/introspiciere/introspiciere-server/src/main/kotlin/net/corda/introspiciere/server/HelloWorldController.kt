@@ -6,7 +6,7 @@ import net.corda.introspiciere.core.HelloWorldUseCase
 internal class HelloWorldController {
     fun greeting(): Handler = Handler { ctx ->
         wrapException {
-            HelloWorldUseCase { ctx.result(it) }
+            HelloWorldUseCase { ctx.result(it) }.execute(Unit)
         }
     }
 }

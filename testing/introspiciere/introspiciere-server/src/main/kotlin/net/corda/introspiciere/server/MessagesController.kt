@@ -7,7 +7,7 @@ import net.corda.introspiciere.core.WriteMessageUseCase
 import net.corda.introspiciere.domain.KafkaMessage
 import net.corda.introspiciere.payloads.KafkaMessagesBatch
 
-internal class MessagesController(private val kafkaConfig: KafkaConfig) {
+internal class MessagesController(private val context: Context) {
     fun getAll(): Handler = Handler { ctx ->
         wrapException {
             val topic = ctx.pathParam("topic")
@@ -16,7 +16,7 @@ internal class MessagesController(private val kafkaConfig: KafkaConfig) {
             val from = ctx.queryParam("from")!!.split(",").map(String::toLong)
 
             var batch = KafkaMessagesBatch(schema, emptyList(), LongArray(0))
-            ReadMessagesUseCases(kafkaConfig).readFrom(topic, key, schema, from, object : ReadMessagesUseCases.Output {
+            ReadMessagesUseCases(context.kafkaConfig).readFrom(topic, key, schema, from, object : ReadMessagesUseCases.Output {
                 override fun messages(byteArrays: List<ByteArray>) {
                     batch = batch.copy(messages = byteArrays)
                 }
@@ -34,7 +34,7 @@ internal class MessagesController(private val kafkaConfig: KafkaConfig) {
         wrapException {
             val kafkaMessage = ctx.bodyAsClass<KafkaMessage>()
 
-            WriteMessageUseCase(kafkaConfig).execute(WriteMessageUseCase.Input(
+            WriteMessageUseCase(context.kafkaConfig).execute(WriteMessageUseCase.Input(
                 kafkaMessage.topic,
                 kafkaMessage.key,
                 kafkaMessage.schema,

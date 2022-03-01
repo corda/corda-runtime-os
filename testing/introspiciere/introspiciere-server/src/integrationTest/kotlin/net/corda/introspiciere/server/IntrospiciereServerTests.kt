@@ -1,5 +1,7 @@
 package net.corda.introspiciere.server
 
+import io.javalin.testtools.TestUtil
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -41,6 +43,31 @@ class IntrospiciereServerTests {
             false
         } catch (ex: BindException) {
             true
+        }
+    }
+}
+
+class A {
+    @Test
+    fun a() {
+        TestUtil.test(IntrospiciereServer().app) { _, client ->
+            val greeting = client.get("/helloworld").body!!.string()
+            assertEquals("Hello world!!", greeting)
+        }
+    }
+
+    @Test
+    fun b() {
+        IntrospiciereServer().use {
+            it.start()
+        }
+    }
+
+    @Test
+    fun c() {
+        TestUtil.test(IntrospiciereServer().app) { _, client ->
+            val greeting = client.get("/helloworld").body!!.string()
+            assertEquals("Hello world!!", greeting)
         }
     }
 }
