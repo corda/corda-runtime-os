@@ -42,14 +42,3 @@ dependencies {
     cpks project(path: ':components:install:test-resources:contract-cpk', configuration: 'cordaCPK')
 
 }
-
-tasks.named('testOSGi') {
-    inputs.files configurations.cpks
-
-    ext {
-        // this in turn is specified in tests.bndrun
-        cpkOne = provider {
-            configurations.cpks.singleFile
-        }
-    }
-}
