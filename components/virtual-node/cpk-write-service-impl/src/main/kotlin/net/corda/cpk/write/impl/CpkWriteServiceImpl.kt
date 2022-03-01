@@ -160,7 +160,7 @@ class CpkWriteServiceImpl @Activate constructor(
         createCpkStorage()
 
         coordinator.updateStatus(LifecycleStatus.UP)
-        setTimerEvent(coordinator)
+        setReconciliationTimerEvent(coordinator)
     }
 
     private fun createCpkChecksumsCache(config: SmartConfig) {
@@ -191,10 +191,10 @@ class CpkWriteServiceImpl @Activate constructor(
         } catch (e: Exception) {
             logger.warn("Caught exception $e")
         }
-        setTimerEvent(coordinator)
+        setReconciliationTimerEvent(coordinator)
     }
 
-    private fun setTimerEvent(coordinator: LifecycleCoordinator) {
+    private fun setReconciliationTimerEvent(coordinator: LifecycleCoordinator) {
         logger.trace { "Registering new ${ReconcileCpkEvent::class.simpleName}" }
         coordinator.setTimer(
             "${CpkWriteServiceImpl::class.simpleName}",
