@@ -8,7 +8,7 @@ import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.builder.MessageBusConsumerBuilder
 import net.corda.messagebus.db.consumer.ConsumerGroupFactory
 import net.corda.messagebus.db.consumer.DBCordaConsumerImpl
-import net.corda.messagebus.db.datamodel.CommittedOffsetEntry
+import net.corda.messagebus.db.datamodel.CommittedPositionEntry
 import net.corda.messagebus.db.datamodel.TopicEntry
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionRecordEntry
@@ -49,7 +49,7 @@ class DBCordaConsumerBuilderImpl @Activate constructor(
                 "DB Consumer for ${consumerConfig.getString(ConfigProperties.CLIENT_ID)}",
                 listOf(
                     TopicRecordEntry::class.java,
-                    CommittedOffsetEntry::class.java,
+                    CommittedPositionEntry::class.java,
                     TopicEntry::class.java,
                     TransactionRecordEntry::class.java,
                 )

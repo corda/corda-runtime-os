@@ -22,7 +22,7 @@ import javax.persistence.Table
 @Entity(name = "topic_consumer_offset")
 @Table(name = "topic_consumer_offset")
 @IdClass(CommittedOffsetEntryKey::class)
-class CommittedOffsetEntry(
+class CommittedPositionEntry(
     @Id
     val topic: String,
 
@@ -35,7 +35,7 @@ class CommittedOffsetEntry(
 
     @Id
     @Column(name = "record_offset")
-    val recordOffset: Long,
+    val recordPosition: Long,
 
     @ManyToOne
     @JoinColumn(name = "transaction_id")
@@ -52,5 +52,5 @@ data class CommittedOffsetEntryKey(
     val consumerGroup: String,
     val partition: Int,
     @Column(name = "record_offset")
-    val recordOffset: Long
+    val recordPosition: Long
 ): Serializable

@@ -1,7 +1,7 @@
 package net.corda.messagebus.db.persistence
 
 import net.corda.messagebus.api.CordaTopicPartition
-import net.corda.messagebus.db.datamodel.CommittedOffsetEntry
+import net.corda.messagebus.db.datamodel.CommittedPositionEntry
 import net.corda.messagebus.db.datamodel.TopicEntry
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionRecordEntry
@@ -27,17 +27,17 @@ class DBAccess(
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
     }
 
-    private fun getCommittedOffsets(
+    private fun getCommittedPositions(
         groupId: String,
         topicPartitions: Set<CordaTopicPartition>
-    ): Map<CordaTopicPartition, List<CommittedOffsetEntry>> {
-        return executeWithErrorHandling("get committed offsets") { entityManager ->
+    ): Map<CordaTopicPartition, List<CommittedPositionEntry>> {
+        return executeWithErrorHandling("get committed positions") { entityManager ->
             entityManager.createQuery(
                 """
                     FROM topic_consumer_offset 
-                    WHERE ${CommittedOffsetEntry::consumerGroup.name} = '$groupId'
+                    WHERE ${CommittedPositionEntry::consumerGroup.name} = '$groupId'
                     """,
-                CommittedOffsetEntry::class.java
+                CommittedPositionEntry::class.java
             ).resultList.takeWhile {
                 it.transactionId.state == TransactionState.COMMITTED
             }.groupBy {
@@ -48,7 +48,7 @@ class DBAccess(
         }
     }
 
-    fun getMaxCommittedOffsets(
+    fun getMaxCommittedPositions(
         groupId: String,
         topicPartitions: Set<CordaTopicPartition>
     ): Map<CordaTopicPartition, Long?> {
@@ -56,15 +56,15 @@ class DBAccess(
             return emptyMap()
         }
 
-        val returnedOffsets = getCommittedOffsets(groupId, topicPartitions)
+        val returnedPositions = getCommittedPositions(groupId, topicPartitions)
             .mapValues {
-                it.value.maxOf { committedOffsetEntry -> committedOffsetEntry.recordOffset }
+                it.value.maxOf { committedOffsetEntry -> committedOffsetEntry.recordPosition }
             }
-        val missingPartitions = topicPartitions - returnedOffsets.keys
-        return returnedOffsets + missingPartitions.associateWith { null }
+        val missingPartitions = topicPartitions - returnedPositions.keys
+        return returnedPositions + missingPartitions.associateWith { null }
     }
 
-    fun getMinCommittedOffsets(
+    fun getMinCommittedPositions(
         groupId: String,
         topicPartitions: Set<CordaTopicPartition>
     ): Map<CordaTopicPartition, Long> {
@@ -72,12 +72,12 @@ class DBAccess(
             return emptyMap()
         }
 
-        val returnedOffsets = getCommittedOffsets(groupId, topicPartitions)
+        val returnedPositions = getCommittedPositions(groupId, topicPartitions)
             .mapValues {
-                it.value.minOf { committedOffsetEntry -> committedOffsetEntry.recordOffset }
+                it.value.minOf { committedOffsetEntry -> committedOffsetEntry.recordPosition }
             }
-        val missingPartitions = topicPartitions - returnedOffsets.keys
-        return returnedOffsets + missingPartitions.associateWith { 0L }
+        val missingPartitions = topicPartitions - returnedPositions.keys
+        return returnedPositions + missingPartitions.associateWith { 0L }
     }
 
     fun getMaxOffsetsPerTopicPartition(): Map<CordaTopicPartition, Long> {
@@ -164,16 +164,16 @@ class DBAccess(
     fun deleteOffsetsOlderThan(topic: String, timestamp: Instant) {
         executeWithErrorHandling("clean up offsets older than $timestamp") { entityManager ->
             val builder = entityManager.criteriaBuilder
-            val delete = builder.createCriteriaDelete(CommittedOffsetEntry::class.java)
-            val root = delete.from(CommittedOffsetEntry::class.java)
+            val delete = builder.createCriteriaDelete(CommittedPositionEntry::class.java)
+            val root = delete.from(CommittedPositionEntry::class.java)
             delete.where(
                 builder.and(
                     builder.equal(
-                        root.get<String>(CommittedOffsetEntry::topic.name),
+                        root.get<String>(CommittedPositionEntry::topic.name),
                         topic
                     ),
                     builder.lessThan(
-                        root.get(CommittedOffsetEntry::timestamp.name),
+                        root.get(CommittedPositionEntry::timestamp.name),
                         timestamp
                     )
                 )
@@ -182,7 +182,7 @@ class DBAccess(
         }
     }
 
-    fun writeOffsets(offsets: List<CommittedOffsetEntry>) {
+    fun writeOffsets(offsets: List<CommittedPositionEntry>) {
         executeWithErrorHandling("write offsets") { entityManager ->
             offsets.forEach { offset ->
                 entityManager.persist(offset)

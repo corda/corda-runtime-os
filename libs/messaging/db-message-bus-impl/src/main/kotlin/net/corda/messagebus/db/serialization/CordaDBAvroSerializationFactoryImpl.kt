@@ -9,7 +9,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 /**
- * Kafka implementation of the Subscription Factory.
+ * DB implementation of the Serialization Factory.
  */
 @Component(service = [CordaAvroSerializationFactory::class])
 class CordaDBAvroSerializationFactoryImpl @Activate constructor(

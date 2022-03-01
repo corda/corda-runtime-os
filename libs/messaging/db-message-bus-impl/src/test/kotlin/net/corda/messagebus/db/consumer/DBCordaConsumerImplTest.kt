@@ -125,7 +125,7 @@ internal class DBCordaConsumerImplTest {
             timestamp.toEpochMilli()
         )
 
-        whenever(dbAccess.getMaxCommittedOffsets(any(), any())).thenAnswer { mapOf(partition0 to 0L) }
+        whenever(dbAccess.getMaxCommittedPositions(any(), any())).thenAnswer { mapOf(partition0 to 0L) }
         whenever(dbAccess.readRecords(fromOffset.capture(), any(), any())).thenAnswer { pollResult }
         whenever(consumerGroup.getTopicPartitionsFor(any())).thenAnswer { setOf(partition0) }
 
@@ -149,7 +149,7 @@ internal class DBCordaConsumerImplTest {
             TopicRecordEntry(topic, 0, 7, serializedKey, serializedValue, transactionRecord1, timestamp),
         )
 
-        whenever(dbAccess.getMaxCommittedOffsets(any(), any())).thenAnswer { mapOf(partition0 to 0L) }
+        whenever(dbAccess.getMaxCommittedPositions(any(), any())).thenAnswer { mapOf(partition0 to 0L) }
         whenever(dbAccess.readRecords(fromOffset.capture(), any(), any())).thenAnswer { pollResult }
         whenever(consumerGroup.getTopicPartitionsFor(any())).thenAnswer { setOf(partition0) }
 
@@ -182,7 +182,7 @@ internal class DBCordaConsumerImplTest {
         whenever(dbAccess.readRecords(any(), eq(partition0), any())).thenAnswer { nextRecord(partition0, partition0Offset++) }
         whenever(dbAccess.readRecords(any(), eq(partition1), any())).thenAnswer { nextRecord(partition1, partition1Offset++) }
         whenever(dbAccess.readRecords(any(), eq(partition2), any())).thenAnswer { nextRecord(partition2, partition2Offset++) }
-        whenever(dbAccess.getMaxCommittedOffsets(any(), any())).thenAnswer {
+        whenever(dbAccess.getMaxCommittedPositions(any(), any())).thenAnswer {
             mapOf(
                 partition0 to 0L,
                 partition1 to 0L,
@@ -234,7 +234,7 @@ internal class DBCordaConsumerImplTest {
             CordaConsumerRecord(topic, 0, 2, "key", "value", timestamp.toEpochMilli()),
         )
 
-        whenever(dbAccess.getMaxCommittedOffsets(any(), any())).thenAnswer { mapOf(partition0 to 0L) }
+        whenever(dbAccess.getMaxCommittedPositions(any(), any())).thenAnswer { mapOf(partition0 to 0L) }
         whenever(dbAccess.readRecords(fromOffset.capture(), any(), any())).thenAnswer { pollResult }
         whenever(consumerGroup.getTopicPartitionsFor(any())).thenAnswer { setOf(partition0) }
 

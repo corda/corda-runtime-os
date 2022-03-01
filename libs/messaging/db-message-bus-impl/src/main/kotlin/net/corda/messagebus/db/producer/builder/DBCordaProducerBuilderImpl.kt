@@ -3,9 +3,10 @@ package net.corda.messagebus.db.producer.builder
 import com.typesafe.config.Config
 import net.corda.db.core.PostgresDataSourceFactory
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CLIENT_ID
+import net.corda.messagebus.api.configuration.ConfigProperties.Companion.TRANSACTIONAL_ID
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
-import net.corda.messagebus.db.datamodel.CommittedOffsetEntry
+import net.corda.messagebus.db.datamodel.CommittedPositionEntry
 import net.corda.messagebus.db.datamodel.TopicEntry
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionRecordEntry
@@ -32,7 +33,6 @@ class DBCordaProducerBuilderImpl @Activate constructor(
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
 ) : CordaProducerBuilder {
     override fun createProducer(producerConfig: Config): CordaProducer {
-        val isTransactional = producerConfig.hasPath("instanceId")
         val dbAccess = DBAccess(
             obtainEntityManagerFactory(
                 producerConfig,
@@ -40,13 +40,13 @@ class DBCordaProducerBuilderImpl @Activate constructor(
                     "DB Producer for ${producerConfig.getString(CLIENT_ID)}",
                     listOf(
                         TopicRecordEntry::class.java,
-                        CommittedOffsetEntry::class.java,
+                        CommittedPositionEntry::class.java,
                         TopicEntry::class.java,
                         TransactionRecordEntry::class.java,
                     )
             )
         )
-        return if (isTransactional) {
+        return if (producerConfig.hasPath(TRANSACTIONAL_ID)) {
             CordaTransactionalDBProducerImpl(
                 CordaDBAvroSerializerImpl(avroSchemaRegistry),
                 dbAccess

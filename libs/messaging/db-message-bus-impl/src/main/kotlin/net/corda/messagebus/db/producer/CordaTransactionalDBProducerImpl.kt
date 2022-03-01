@@ -7,7 +7,7 @@ import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.db.consumer.DBCordaConsumerImpl
-import net.corda.messagebus.db.datamodel.CommittedOffsetEntry
+import net.corda.messagebus.db.datamodel.CommittedPositionEntry
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionState
@@ -119,7 +119,7 @@ class CordaTransactionalDBProducerImpl(
                     .groupBy { it.partition }
                     .mapValues { it.value.maxOf { record -> record.offset } }
                     .map { (partition, offset) ->
-                        CommittedOffsetEntry(
+                        CommittedPositionEntry(
                             topic,
                             (consumer as DBCordaConsumerImpl).getConsumerGroup(),
                             partition,
@@ -137,7 +137,7 @@ class CordaTransactionalDBProducerImpl(
         val topicPartitions = consumer.assignment()
         val offsets = topicPartitions.map { (topic, partition) ->
             val offset = writeOffsets.getNextOffsetFor(CordaTopicPartition(topic, partition))
-            CommittedOffsetEntry(
+            CommittedPositionEntry(
                 topic,
                 (consumer as DBCordaConsumerImpl).getConsumerGroup(),
                 partition,

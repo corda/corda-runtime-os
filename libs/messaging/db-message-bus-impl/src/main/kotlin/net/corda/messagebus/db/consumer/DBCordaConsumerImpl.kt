@@ -9,7 +9,7 @@ import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
-import net.corda.messagebus.db.datamodel.CommittedOffsetEntry
+import net.corda.messagebus.db.datamodel.CommittedPositionEntry
 import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.producer.CordaAtomicDBProducerImpl.Companion.ATOMIC_TRANSACTION
@@ -150,23 +150,17 @@ class DBCordaConsumerImpl<K : Any, V : Any> internal constructor(
     }
 
     override fun resetToLastCommittedPositions(offsetStrategy: CordaOffsetResetStrategy) {
-        val lastCommittedOffsets = dbAccess.getMaxCommittedOffsets(groupId, topicPartitions)
-        val maxOffsets = dbAccess.getMaxOffsetsPerTopicPartition().toMutableMap()
-
+        val lastCommittedOffsets = dbAccess.getMaxCommittedPositions(groupId, topicPartitions)
         for (topicPartition in topicPartitions) {
-            val backupOffset = if (offsetStrategy == CordaOffsetResetStrategy.LATEST) {
-                maxOffsets[topicPartition] ?: 0L
-            } else {
-                0L
-            }
-            lastReadOffset[topicPartition] = lastCommittedOffsets[topicPartition] ?: backupOffset
+            lastReadOffset[topicPartition] = lastCommittedOffsets[topicPartition]
+                ?: getAutoResetOffset(topicPartition)
         }
     }
 
     override fun commitSyncOffsets(event: CordaConsumerRecord<K, V>, metaData: String?) {
         dbAccess.writeOffsets(
             listOf(
-                CommittedOffsetEntry(
+                CommittedPositionEntry(
                     event.topic,
                     groupId,
                     event.partition,
@@ -216,7 +210,7 @@ class DBCordaConsumerImpl<K : Any, V : Any> internal constructor(
         }
 
         addedTopicPartitions.groupBy { it.topic }.forEach { (topic, newPartitions) ->
-            dbAccess.getMaxCommittedOffsets(groupId, newPartitions.toSet()).forEach { (topicPartition, offset) ->
+            dbAccess.getMaxCommittedPositions(groupId, newPartitions.toSet()).forEach { (topicPartition, offset) ->
                 lastReadOffset[topicPartition] = offset ?: getAutoResetOffset(topicPartition)
             }
             assignPartitions(topic, newPartitions)

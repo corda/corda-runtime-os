@@ -5,7 +5,7 @@ import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils.getEntityManagerConfiguration
 import net.corda.messagebus.api.CordaTopicPartition
-import net.corda.messagebus.db.datamodel.CommittedOffsetEntry
+import net.corda.messagebus.db.datamodel.CommittedPositionEntry
 import net.corda.messagebus.db.datamodel.TopicEntry
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionRecordEntry
@@ -70,7 +70,7 @@ class DBAccessIntegrationTest {
                 "test",
                 listOf(
                     TopicRecordEntry::class.java,
-                    CommittedOffsetEntry::class.java,
+                    CommittedPositionEntry::class.java,
                     TopicEntry::class.java,
                     TransactionRecordEntry::class.java,
                 ),
@@ -219,17 +219,17 @@ class DBAccessIntegrationTest {
         dbAccess.writeTransactionRecord(transactionRecord)
 
         val offsets = listOf(
-            CommittedOffsetEntry(topic, consumerGroup, 0, 0, transactionRecord, timestamp),
-            CommittedOffsetEntry(topic, consumerGroup, 0, 1, transactionRecord, timestamp),
-            CommittedOffsetEntry(topic, consumerGroup, 0, 2, transactionRecord, timestamp),
-            CommittedOffsetEntry(topic, consumerGroup, 1, 0, transactionRecord, timestamp),
-            CommittedOffsetEntry(topic, consumerGroup, 1, 5, transactionRecord, timestamp),
+            CommittedPositionEntry(topic, consumerGroup, 0, 0, transactionRecord, timestamp),
+            CommittedPositionEntry(topic, consumerGroup, 0, 1, transactionRecord, timestamp),
+            CommittedPositionEntry(topic, consumerGroup, 0, 2, transactionRecord, timestamp),
+            CommittedPositionEntry(topic, consumerGroup, 1, 0, transactionRecord, timestamp),
+            CommittedPositionEntry(topic, consumerGroup, 1, 5, transactionRecord, timestamp),
         )
 
         dbAccess.writeOffsets(offsets)
 
         val results =
-            query(CommittedOffsetEntry::class.java, "from topic_consumer_offset order by partition, record_offset")
+            query(CommittedPositionEntry::class.java, "from topic_consumer_offset order by partition, record_offset")
         assertThat(results).size().isEqualTo(offsets.size)
         results.forEachIndexed { index, topicRecordEntry ->
             assertThat(topicRecordEntry).isEqualToComparingFieldByField(offsets[index])
@@ -315,24 +315,24 @@ class DBAccessIntegrationTest {
         dbAccess.writeTransactionRecord(transactionRecord2)
 
         val offsets = listOf(
-            CommittedOffsetEntry(topic, group1, 0, 2, transactionRecord, timestamp = timestamp),
-            CommittedOffsetEntry(topic, group1, 0, 3, transactionRecord, timestamp = timestamp),
-            CommittedOffsetEntry(topic, group1, 1, 1, transactionRecord, timestamp = timestamp),
-            CommittedOffsetEntry(topic, group1, 1, 3, transactionRecord, timestamp = timestamp),
-            CommittedOffsetEntry(topic, group1, 1, 5, transactionRecord2, timestamp = timestamp),
+            CommittedPositionEntry(topic, group1, 0, 2, transactionRecord, timestamp = timestamp),
+            CommittedPositionEntry(topic, group1, 0, 3, transactionRecord, timestamp = timestamp),
+            CommittedPositionEntry(topic, group1, 1, 1, transactionRecord, timestamp = timestamp),
+            CommittedPositionEntry(topic, group1, 1, 3, transactionRecord, timestamp = timestamp),
+            CommittedPositionEntry(topic, group1, 1, 5, transactionRecord2, timestamp = timestamp),
 
-            CommittedOffsetEntry(topic, group2, 0, 6, transactionRecord, timestamp = timestamp),
-            CommittedOffsetEntry(topic, group2, 1, 10, transactionRecord, timestamp = timestamp),
+            CommittedPositionEntry(topic, group2, 0, 6, transactionRecord, timestamp = timestamp),
+            CommittedPositionEntry(topic, group2, 1, 10, transactionRecord, timestamp = timestamp),
         )
 
         dbAccess.writeOffsets(offsets)
 
-        val minOffsets = dbAccess.getMinCommittedOffsets(group1, setOf(partition0, partition1))
+        val minOffsets = dbAccess.getMinCommittedPositions(group1, setOf(partition0, partition1))
         assertThat(minOffsets.size).isEqualTo(2)
         assertThat(minOffsets[partition0]).isEqualTo(2)
         assertThat(minOffsets[partition1]).isEqualTo(1)
 
-        val maxOffsets = dbAccess.getMaxCommittedOffsets(group1, setOf(partition0, partition1))
+        val maxOffsets = dbAccess.getMaxCommittedPositions(group1, setOf(partition0, partition1))
         assertThat(maxOffsets.size).isEqualTo(2)
         assertThat(maxOffsets[partition0]).isEqualTo(3)
         assertThat(maxOffsets[partition1]).isEqualTo(3)
