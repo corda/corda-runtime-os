@@ -44,7 +44,7 @@ import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.calculateHash
 import net.corda.v5.membership.identity.EndpointInfo
 import net.corda.v5.membership.identity.MemberInfo
-import net.corda.v5.membership.identity.MemberX500Name
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
