@@ -22,7 +22,7 @@ class KafkaCpkChunksPublisher(
 
     override fun put(cpkChunkId: CpkChunkId, cpkChunk: Chunk) {
         logger.debug {
-            "Putting CPK chunk cpkChecksum= ${cpkChunkId.cpkChecksum.toCorda()} partNumber= ${cpkChunkId.cpkChunkPartNumber}"
+            "Putting CPK chunk cpkChecksum: ${cpkChunkId.cpkChecksum.toCorda()} partNumber: ${cpkChunkId.cpkChunkPartNumber}"
         }
         val cpkChunksRecord = Record(topicName, cpkChunkId, cpkChunk)
         val responses = publisher.publish(listOf(cpkChunksRecord))
