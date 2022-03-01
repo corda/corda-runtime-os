@@ -50,6 +50,7 @@ import java.io.ByteArrayInputStream
 import java.nio.file.Paths
 import java.time.Duration
 
+@Suppress("TooManyFunctions")
 @Component(service = [CpkWriteService::class])
 class CpkWriteServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
@@ -163,28 +164,6 @@ class CpkWriteServiceImpl @Activate constructor(
         setReconciliationTimerEvent(coordinator)
     }
 
-    private fun createCpkChecksumsCache(config: SmartConfig) {
-        cpkChecksumsCache?.close()
-        cpkChecksumsCache = CpkChecksumsCacheImpl(
-            subscriptionFactory,
-            SubscriptionConfig(CPK_WRITE_GROUP, VirtualNode.CPK_FILE_TOPIC),
-            config
-        ).also { it.start() }
-    }
-
-    private fun createCpkChunksPublisher(config: SmartConfig) {
-        cpkChunksPublisher?.close()
-        val publisher = publisherFactory.createPublisher(
-            PublisherConfig(CPK_WRITE_CLIENT),
-            config
-        ).also { it.start() }
-        cpkChunksPublisher = KafkaCpkChunksPublisher(publisher, timeout!!, VirtualNode.CPK_FILE_TOPIC)
-    }
-
-    private fun createCpkStorage() {
-        cpkStorage = DBCpkStorage(dbConnectionManager.clusterDbEntityManagerFactory)
-    }
-
     private fun onReconcileCpkEvent(coordinator: LifecycleCoordinator) {
         try {
             putMissingCpk()
@@ -266,6 +245,28 @@ class CpkWriteServiceImpl @Activate constructor(
         cpkChecksumsCache = null
         cpkChunksPublisher?.close()
         cpkChunksPublisher = null
+    }
+
+    private fun createCpkChecksumsCache(config: SmartConfig) {
+        cpkChecksumsCache?.close()
+        cpkChecksumsCache = CpkChecksumsCacheImpl(
+            subscriptionFactory,
+            SubscriptionConfig(CPK_WRITE_GROUP, VirtualNode.CPK_FILE_TOPIC),
+            config
+        ).also { it.start() }
+    }
+
+    private fun createCpkChunksPublisher(config: SmartConfig) {
+        cpkChunksPublisher?.close()
+        val publisher = publisherFactory.createPublisher(
+            PublisherConfig(CPK_WRITE_CLIENT),
+            config
+        ).also { it.start() }
+        cpkChunksPublisher = KafkaCpkChunksPublisher(publisher, timeout!!, VirtualNode.CPK_FILE_TOPIC)
+    }
+
+    private fun createCpkStorage() {
+        cpkStorage = DBCpkStorage(dbConnectionManager.clusterDbEntityManagerFactory)
     }
 
     data class ReconcileCpkEvent(override val key: String): TimerEvent
