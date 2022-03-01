@@ -1,0 +1,20 @@
+cluster:
+  kafka:
+    bootstrapServers:
+      - host: "prereqs-kafka"
+        port: 9092
+  databases:
+    connectionDetails:
+      host: "prereqs-postgresql"
+      port: 5432
+      name: "cordacluster"
+      authentication:
+        username: "user"
+        password: "4LNuCvt+NhGIBwL7gRRhvAZh3k6JRN9NHv0aG3pi1xM="
+  workers:
+    p2p-worker: {}
+    p2p-link-worker: {}
+    rpc-worker: {}
+    crypto-worker: {}
+    db-worker: {}
+    flow-worker: {}
