@@ -56,7 +56,7 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
         val x500Identities = listOf("CN=Bob, O=Bob Corp, L=LDN, C=GB","CN=Alice, O=Alice Corp, L=LDN, C=GB")
 
         val virtualNodes = cpiList.flatMap { cpi ->
-            x500Identities.map { x500 -> cpi to VirtualNodeInfo(HoldingIdentity(x500, cpi.metadata.id.name), cpi.metadata.id) }
+            x500Identities.map { x500 -> cpi to VirtualNodeInfo(HoldingIdentity(x500, cpi.metadata.id.name), CpiIdentifier.fromLegacy(cpi.metadata.id)) }
         }
 
         virtualNodes.forEach { vNode ->

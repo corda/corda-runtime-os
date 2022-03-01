@@ -16,7 +16,7 @@ class CalculateBlockFlow(private val jsonArg: String) : Flow<String> {
     private companion object {
         val log = contextLogger()
 
-        val palette = Array(255) { IntArray(3) { 0 } }.apply {
+        val colourPalette = Array(255) { IntArray(3) { 0 } }.apply {
             this[0] = intArrayOf(0, 0, 0)
             this[1] = intArrayOf(255, 235, 238)
             this[2] = intArrayOf(255, 205, 210)
@@ -276,7 +276,7 @@ class CalculateBlockFlow(private val jsonArg: String) : Flow<String> {
     }
 
     @CordaInject
-    lateinit var jsonMarshallingService: JsonMarshallingService
+    private lateinit var jsonMarshallingService: JsonMarshallingService
 
     @Suppress("NestedBlockDepth")
     @Suspendable
@@ -318,7 +318,7 @@ class CalculateBlockFlow(private val jsonArg: String) : Flow<String> {
                         i=0
                     }
                     val idx = sx + (sy * pixelWidth)
-                    response[idx] =  palette[i % palette.size]
+                    response[idx] =  colourPalette[i % colourPalette.size]
 
                     sx++
                 }
@@ -327,7 +327,7 @@ class CalculateBlockFlow(private val jsonArg: String) : Flow<String> {
 
             return jsonMarshallingService.formatJson(response)
 
-        } catch (e: Throwable) {
+        } catch (e: Exception) {
             log.error("Failed to calculate mandelbrot '$jsonArg' because '${e.message}'")
             throw e
         }

@@ -1,5 +1,4 @@
 plugins {
-    id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'net.corda.plugins.cordapp-cpb'
 }
 
@@ -14,10 +13,7 @@ cordapp {
 }
 
 dependencies {
-    cordaProvided platform(group: "net.corda", name: "corda-api", version: cordaApiVersion)
-    cordaProvided group: 'net.corda', name: 'corda-application'
+    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+    cordaProvided 'net.corda:corda-application'
 }
 
-tasks.named('jar', Jar) {
-    archiveBaseName = 'corda-connect4-cpb'
-}

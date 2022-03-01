@@ -48,7 +48,7 @@ class StartConnectFourGameFlow(private val jsonArg: String) : Flow<String> {
             )
             log.info("Game Started for player 1 = '${player1}' player 2 ='${player2}'.")
             return jsonMarshallingService.formatJson(gameState)
-        } catch (e: Throwable) {
+        } catch (e: Exception) {
             log.error("Failed to start game for '$jsonArg' because '${e.message}'")
             throw e
         }
