@@ -1,12 +1,10 @@
 package net.corda.introspiciere.junit
 
 import net.corda.introspiciere.core.KafkaConfig
-import net.corda.introspiciere.server.Context
+import net.corda.introspiciere.server.DefaultAppContext
 import net.corda.introspiciere.server.IntrospiciereServer
 import org.junit.jupiter.api.extension.AfterAllCallback
-import org.junit.jupiter.api.extension.AfterEachCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
-import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 
 /**
@@ -21,22 +19,17 @@ class InMemoryIntrospiciereServer(
     kafkaBrokers: String? = null,
 ) : BeforeAllCallback, AfterAllCallback {
 
-//    override fun beforeEach(context: ExtensionContext?) = startServer()
+    //    override fun beforeEach(context: ExtensionContext?) = startServer()
     override fun beforeAll(context: ExtensionContext?) = startServer()
-//    override fun afterEach(context: ExtensionContext?) = stopServer()
+
+    //    override fun afterEach(context: ExtensionContext?) = stopServer()
     override fun afterAll(context: ExtensionContext?) = stopServer()
 
-    private val server: IntrospiciereServer
-
-    init {
-        var ctx = Context()
-        if (kafkaBrokers != null) {
-            ctx = ctx.copy(kafkaConfig = object : KafkaConfig {
-                override val brokers: String = kafkaBrokers
-            })
-        }
-        server = IntrospiciereServer((ctx))
-    }
+    private val server: IntrospiciereServer = IntrospiciereServer(object : DefaultAppContext() {
+        override val kafkaConfig: KafkaConfig
+            get() = if (kafkaBrokers == null) super.kafkaConfig
+            else FakeKafkaConfig(kafkaBrokers)
+    })
 
     private fun startServer() {
         server.start(port)

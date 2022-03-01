@@ -80,6 +80,8 @@ class ReadMessagesUseCases(
                 consumer.seek(topicPartition, from[topicPartition.partition()])
             }
 
+            consumer.endOffsets(partitions).keys.first()
+
             val records = consumer.poll(Duration.ofSeconds(5)).filter { it.key() == key }
             if (records.isNotEmpty()) {
                 val toByteBufferMethod = records.first().value()::class.java.getMethod("toByteBuffer")

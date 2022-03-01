@@ -1,9 +1,10 @@
 package net.corda.introspiciere.junit
 
+import net.corda.introspiciere.domain.TopicDefinition
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
-import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
@@ -19,7 +20,7 @@ class InMemoryIntrospiciereServerTest {
             // This only works locally at the moment. For CI it should read
             // this for an environment variable or from a config file
             // kafkaBrokers = getMinikubeKafkaBroker()
-             kafkaBrokers = "20.62.51.171:9094"
+            kafkaBrokers = "20.62.51.171:9094"
         )
     }
 
@@ -51,3 +52,4 @@ class InMemoryIntrospiciereServerTest {
         )
     }
 }
+

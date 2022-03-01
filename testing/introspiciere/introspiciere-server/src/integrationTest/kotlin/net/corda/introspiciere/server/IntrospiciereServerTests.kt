@@ -13,8 +13,8 @@ class IntrospiciereServerTests {
     @Test
     fun `Server binds to the specified port`() {
         val port = findUnusedPort()
-        IntrospiciereServer(port).use {
-            it.start()
+        IntrospiciereServer().use {
+            it.start(port)
             assertEquals(port, it.portUsed, "Listening port")
             assertTrue(isPortUsed(port), "Listening port not in use")
         }

@@ -8,11 +8,15 @@ import org.apache.kafka.clients.admin.AdminClientConfig
 import org.apache.kafka.clients.admin.NewTopic
 import java.util.*
 
+
 interface TopicGateway {
     fun create(topicDefinition: TopicDefinition)
     fun removeByName(name: String)
     fun findAll(): Set<String>
     fun findByName(name: String): TopicDescription
+
+    class TopicAlreadyExist(topic: String) : IntrospiciereException("Topic $topic already exists")
+    class TopicDoesNotExist(topic: String) : IntrospiciereException("Topic $topic does not exists")
 }
 
 class TopicGatewayImpl(private val kafkaConfig: KafkaConfig) : TopicGateway {
@@ -42,7 +46,7 @@ class TopicGatewayImpl(private val kafkaConfig: KafkaConfig) : TopicGateway {
     override fun findByName(name: String): TopicDescription {
         val topic = adminClient().use {
             it.describeTopics(listOf(name)).all().get().values.firstOrNull()
-        } ?: throw IntrospiciereException("Cannot find topic $name")
+        } ?: throw TopicGateway.TopicDoesNotExist(name)
 
         return TopicDescription(
             topic.topicId().toString(),

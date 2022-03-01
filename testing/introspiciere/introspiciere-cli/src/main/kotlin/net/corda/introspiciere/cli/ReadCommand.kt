@@ -32,23 +32,23 @@ class ReadCommand : BaseCommand() {
     private var fromBeginning: Boolean = false
 
     override fun run() {
-        val clazz = Class.forName(schemaName)
-
-        var latestOffsets =
-            if (fromBeginning) httpClient.beginningOffsets(topicName, schemaName)
-            else httpClient.endOffsets(topicName, schemaName)
-
-        continueLoop = true
-        while (continueLoop) {
-            val batch = httpClient.readMessages(topicName, key, schemaName, latestOffsets)
-
-            for (message in batch.messages) {
-                val fromByteBuffer = clazz.getMethod("fromByteBuffer", ByteBuffer::class.java)
-                val avro = fromByteBuffer.invoke(null, ByteBuffer.wrap(message))
-                stdout.bufferedWriter().autoFlush { it.appendLine(avro.toString()) }
-            }
-
-            latestOffsets = batch.latestOffsets
-        }
+//        val clazz = Class.forName(schemaName)
+//
+//        var latestOffsets =
+//            if (fromBeginning) httpClient.beginningOffsets(topicName, schemaName)
+//            else httpClient.endOffsets(topicName, schemaName)
+//
+//        continueLoop = true
+//        while (continueLoop) {
+//            val batch = httpClient.readMessages(topicName, key, schemaName, latestOffsets)
+//
+//            for (message in batch.messages) {
+//                val fromByteBuffer = clazz.getMethod("fromByteBuffer", ByteBuffer::class.java)
+//                val avro = fromByteBuffer.invoke(null, ByteBuffer.wrap(message))
+//                stdout.bufferedWriter().autoFlush { it.appendLine(avro.toString()) }
+//            }
+//
+//            latestOffsets = batch.latestOffsets
+//        }
     }
 }

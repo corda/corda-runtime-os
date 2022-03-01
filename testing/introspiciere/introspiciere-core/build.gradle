@@ -10,7 +10,9 @@ dependencies {
     implementation project(":libs:messaging:kafka-message-bus-impl")
     implementation project(":libs:schema-registry:schema-registry")
     implementation project(":libs:schema-registry:schema-registry-impl")
+
     implementation project(':testing:introspiciere:introspiciere-domain')
+    implementation project(':testing:introspiciere:introspiciere-payloads')
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
     implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
