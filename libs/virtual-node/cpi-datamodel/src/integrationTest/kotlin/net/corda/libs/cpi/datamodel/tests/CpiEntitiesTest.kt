@@ -32,7 +32,7 @@ class CpiEntitiesIntegrationTest {
     init {
         // comment this out if you want to run the test against a real postgres
         //  NOTE: the blob storage doesn't work in HSQL, hence skipping the majority of the test.
-//        System.setProperty("postgresPort", "5432")
+        System.setProperty("postgresPort", "5432")
         dbConfig = DbUtils.getEntityManagerConfiguration("cpi_db")
     }
     @BeforeAll
@@ -229,17 +229,9 @@ class CpiEntitiesIntegrationTest {
         )
 
         emFactory.transaction {
-            it.createQuery(
-                "DELETE FROM ${CpkMetadataEntity::class.simpleName} " +
-                        "WHERE 1 = 1"
-            )
-                .executeUpdate()
+            it.createQuery("DELETE FROM ${CpkMetadataEntity::class.simpleName}").executeUpdate()
 
-            it.createQuery(
-                "DELETE FROM ${CpkDataEntity::class.simpleName} " +
-                        "WHERE 1 = 1"
-            )
-                .executeUpdate()
+            it.createQuery("DELETE FROM ${CpkDataEntity::class.simpleName}").executeUpdate()
         }
     }
 
