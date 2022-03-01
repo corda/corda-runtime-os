@@ -67,11 +67,11 @@
 	net.corda.lifecycle;version='[5.0.0,5.0.1)',\
 	net.corda.lifecycle-impl;version='[5.0.0,5.0.1)',\
 	net.corda.membership;version='[5.0.0,5.0.1)',\
-	net.corda.membership-conversion;version='[5.0.0,5.0.1)',\
 	net.corda.membership-identity;version='[5.0.0,5.0.1)',\
 	net.corda.messaging;version='[5.0.0,5.0.1)',\
 	net.corda.packaging;version='[5.0.0,5.0.1)',\
 	net.corda.packaging-avro-converters;version='[5.0.0,5.0.1)',\
+	net.corda.packaging-core;version='[5.0.0,5.0.1)',\
 	net.corda.registry;version='[5.0.0,5.0.1)',\
 	net.corda.sandbox;version='[5.0.0,5.0.1)',\
 	net.corda.sandbox-group-context;version='[5.0.0,5.0.1)',\

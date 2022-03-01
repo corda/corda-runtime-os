@@ -71,7 +71,6 @@
 	net.corda.lifecycle;version='[5.0.0,5.0.1)',\
 	net.corda.lifecycle-impl;version='[5.0.0,5.0.1)',\
 	net.corda.membership;version='[5.0.0,5.0.1)',\
-	net.corda.membership-conversion;version='[5.0.0,5.0.1)',\
 	net.corda.membership-identity;version='[5.0.0,5.0.1)',\
 	net.corda.messaging;version='[5.0.0,5.0.1)',\
 	net.corda.packaging;version='[5.0.0,5.0.1)',\
@@ -100,6 +99,5 @@
 	org.osgi.util.function;version='[1.1.0,1.1.1)',\
 	org.osgi.util.promise;version='[1.1.1,1.1.2)',\
 	sandbox-internal-tests;version='[5.0.0,5.0.1)',\
-	slf4j.api;version='[1.7.26,1.7.27)',\
 	slf4j.api;version='[1.7.32,1.7.33)',\
 	slf4j.simple;version='[1.7.32,1.7.33)'

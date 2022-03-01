@@ -9,6 +9,7 @@ import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.identity.HoldingIdentity
+import net.corda.session.manager.impl.buildSessionEvent
 import net.corda.session.manager.integration.SessionMessageType
 import java.nio.ByteBuffer
 import java.time.Instant
@@ -53,11 +54,5 @@ fun generateClose(instant: Instant, messageDirection: MessageDirection): Session
 }
 
 fun generateSessionEvent(payload: Any, instant: Instant, messageDirection: MessageDirection): SessionEvent {
-    return SessionEvent.newBuilder()
-        .setSessionId("sessionId")
-        .setSequenceNum(null)
-        .setTimestamp(instant)
-        .setMessageDirection(messageDirection)
-        .setPayload(payload)
-        .build()
+    return buildSessionEvent(messageDirection, "sessionId", null, payload, 0, mutableListOf(), instant)
 }

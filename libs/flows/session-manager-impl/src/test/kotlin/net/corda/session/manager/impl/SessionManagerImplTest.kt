@@ -3,10 +3,11 @@ package net.corda.session.manager.impl
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.event.MessageDirection
-import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionAck
+import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
+import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.FlowConfig
@@ -31,9 +32,9 @@ class SessionManagerImplTest {
             SessionStateType.CONFIRMED,
             1,
             listOf(
-                SessionEvent(MessageDirection.INBOUND, Instant.now(), "sessionId", 1, null),
-                SessionEvent(MessageDirection.INBOUND, Instant.now(), "sessionId", 3, null),
-                SessionEvent(MessageDirection.INBOUND, Instant.now(), "sessionId", 4, null),
+                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionData()),
+                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 3, SessionData()),
+                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 4, SessionData()),
             ),
             0,
             listOf()
@@ -49,8 +50,8 @@ class SessionManagerImplTest {
             SessionStateType.CONFIRMED,
             1,
             listOf(
-                SessionEvent(MessageDirection.INBOUND, Instant.now(), "sessionId", 3, null),
-                SessionEvent(MessageDirection.INBOUND, Instant.now(), "sessionId", 4, null),
+                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 3, SessionData()),
+                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 4, SessionData()),
             ),
             0,
             listOf()
@@ -59,16 +60,15 @@ class SessionManagerImplTest {
         assertThat(outputEvent).isNull()
     }
 
-
     @Test
     fun testAcknowledgeReceivedEvent() {
         val sessionState = buildSessionState(
             SessionStateType.CONFIRMED,
             1,
             listOf(
-                SessionEvent(MessageDirection.INBOUND, Instant.now(), "sessionId", 1, null),
-                SessionEvent(MessageDirection.INBOUND, Instant.now(), "sessionId", 3, null),
-                SessionEvent(MessageDirection.INBOUND, Instant.now(), "sessionId", 4, null),
+                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionData()),
+                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 3, SessionData()),
+                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 4, SessionData()),
             ),
             0,
             listOf()
@@ -77,7 +77,6 @@ class SessionManagerImplTest {
         assertThat(outputState.receivedEventsState.undeliveredMessages.size).isEqualTo(2)
         assertThat(outputState.receivedEventsState.undeliveredMessages.find { it.sequenceNum == 1 }).isNull()
     }
-
 
     @Test
     fun `Get messages with datas, error and acks with timestamps in the future and past`() {
@@ -88,16 +87,16 @@ class SessionManagerImplTest {
             listOf(),
             4,
             listOf(
-                SessionEvent(MessageDirection.OUTBOUND, instant.minusMillis(50), "sessionId", 2, SessionData()),
-                SessionEvent(MessageDirection.OUTBOUND, instant, "sessionId", 3, SessionData()),
-                SessionEvent(MessageDirection.OUTBOUND, instant, "sessionId", null, SessionAck(1)),
-                SessionEvent(MessageDirection.OUTBOUND, instant.plusMillis(100), "sessionId", null, SessionAck(2)),
-                SessionEvent(MessageDirection.OUTBOUND, instant.plusMillis(100), "sessionId", 4, SessionData()),
+                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 2, SessionData(), 0, emptyList(), instant.minusMillis(50)),
+                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 3, SessionData(), 0, emptyList(), instant),
+                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", null, SessionAck(), 1, emptyList(), instant),
+                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", null, SessionAck(), 2, emptyList(), instant.plusMillis(100)),
+                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 4, SessionData(), 0, emptyList(), instant.plusMillis(100)),
             ),
         )
         //validate only messages with a timestamp in the past are returned.
         val (outputState, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig)
-        assertThat(messagesToSend.size).isEqualTo(4)
+        assertThat(messagesToSend.size).isEqualTo(2)
         //validate all acks removed
         assertThat(outputState.sendEventsState.undeliveredMessages.size).isEqualTo(3)
         assertThat(outputState.sendEventsState.undeliveredMessages.filter { it.payload::class.java == SessionAck::class.java }).isEmpty()
@@ -139,8 +138,7 @@ class SessionManagerImplTest {
         assertThat(secondMessagesToSend.size).isEqualTo(1)
         val messageToSend = secondMessagesToSend.first()
         assertThat(messageToSend.payload::class.java).isEqualTo(SessionAck::class.java)
-        val ack = messageToSend.payload as SessionAck
-        assertThat(ack.sequenceNum).isEqualTo(0)
+        assertThat(messageToSend.receivedSequenceNum).isEqualTo(0)
     }
 
     @Test
@@ -171,5 +169,52 @@ class SessionManagerImplTest {
         val messageToSend = secondMessagesToSend.first()
         assertThat(messageToSend.payload::class.java).isEqualTo(SessionError::class.java)
         assertThat(messageToSend.payload::class.java).isEqualTo(SessionError::class.java)
+    }
+
+    @Test
+    fun `CREATED state, ack received for init message sent, state moves to CONFIRMED`() {
+        val init = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionInit())
+        val sessionState = buildSessionState(
+            SessionStateType.CREATED, 0, emptyList(), 1,
+            mutableListOf(init)
+        )
+
+        val sessionEvent = buildSessionEvent(MessageDirection.INBOUND, "sessionId", null, SessionAck(), 1)
+        val updatedState = sessionManager.processMessageReceived("key", sessionState, sessionEvent, Instant.now())
+
+        assertThat(updatedState.status).isEqualTo(SessionStateType.CONFIRMED)
+        assertThat(updatedState.sendEventsState?.undeliveredMessages).isEmpty()
+    }
+
+    @Test
+    fun `CONFIRMED state, ack received for 1 or 2 data events, 1 data is left`() {
+        val sessionState = buildSessionState(
+            SessionStateType.CONFIRMED, 0, emptyList(), 3, mutableListOf(
+                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 2, SessionData()),
+                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 3, SessionData()),
+            )
+        )
+
+        val sessionEvent = buildSessionEvent(MessageDirection.INBOUND, "sessionId", null, SessionAck(), 2)
+
+        val updatedState = sessionManager.processMessageReceived("key", sessionState, sessionEvent, Instant.now())
+
+        assertThat(updatedState.status).isEqualTo(SessionStateType.CONFIRMED)
+        assertThat(updatedState.sendEventsState?.undeliveredMessages?.size).isEqualTo(1)
+    }
+
+    @Test
+    fun `WAIT_FOR_FINAL_ACK state, final ack is received via out of order acks, state moves to CLOSED`() {
+        val close = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 3, SessionClose(), 2)
+        val sessionState = buildSessionState(
+            SessionStateType.WAIT_FOR_FINAL_ACK, 0, emptyList(), 3,
+            mutableListOf(close)
+        )
+
+        val sessionEvent = buildSessionEvent(MessageDirection.INBOUND, "sessionId", null, SessionAck(), 0, listOf(3))
+        val updatedState = sessionManager.processMessageReceived("key", sessionState, sessionEvent, Instant.now())
+
+        assertThat(updatedState.status).isEqualTo(SessionStateType.CLOSED)
+        assertThat(updatedState.sendEventsState?.undeliveredMessages).isEmpty()
     }
 }

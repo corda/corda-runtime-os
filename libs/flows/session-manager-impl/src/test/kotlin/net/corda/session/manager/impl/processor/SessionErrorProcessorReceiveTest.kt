@@ -2,9 +2,9 @@ package net.corda.session.manager.impl.processor
 
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.MessageDirection
-import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.session.SessionStateType
+import net.corda.session.manager.impl.buildSessionEvent
 import net.corda.session.manager.impl.buildSessionState
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
@@ -14,7 +14,7 @@ class SessionErrorProcessorReceiveTest {
 
     @Test
     fun testNullState() {
-        val sessionEvent = SessionEvent(MessageDirection.INBOUND, Instant.now(), "1", 1, SessionError(ExceptionEnvelope()))
+        val sessionEvent = buildSessionEvent(MessageDirection.INBOUND, "sessionId", null, SessionError(ExceptionEnvelope()))
         val sessionState = SessionErrorProcessorReceive("Key", null, sessionEvent, ExceptionEnvelope(), Instant.now()).execute()
         Assertions.assertThat(sessionState).isNotNull
         Assertions.assertThat(sessionState.sendEventsState.undeliveredMessages.first().payload::class.java)
@@ -23,7 +23,8 @@ class SessionErrorProcessorReceiveTest {
 
     @Test
     fun testErrorMessage() {
-        val sessionEvent = SessionEvent(MessageDirection.INBOUND, Instant.now(), "1", 1, SessionError(ExceptionEnvelope()))
+        val sessionEvent = buildSessionEvent(MessageDirection.INBOUND, "sessionId", null, SessionError(ExceptionEnvelope()))
+
         val inputState = buildSessionState(
             SessionStateType.CONFIRMED, 0, mutableListOf(), 0, mutableListOf()
         )

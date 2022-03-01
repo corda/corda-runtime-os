@@ -101,6 +101,7 @@
 	net.corda.messaging-impl;version='[5.0.0,5.0.1)',\
 	net.corda.packaging;version='[5.0.0,5.0.1)',\
 	net.corda.packaging-avro-converters;version='[5.0.0,5.0.1)',\
+	net.corda.packaging-core;version='[5.0.0,5.0.1)',\
 	net.corda.registration;version='[5.0.0,5.0.1)',\
 	net.corda.registration-impl;version='[5.0.0,5.0.1)',\
 	net.corda.registry;version='[5.0.0,5.0.1)',\

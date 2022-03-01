@@ -22,7 +22,7 @@ class SessionInitExecutorTest {
         val holdingIdentity = HoldingIdentity()
         val flowKey = FlowKey("", holdingIdentity)
         val sessionInit = SessionInit("", "", flowKey, holdingIdentity, holdingIdentity, null)
-        val payload = SessionEvent(MessageDirection.OUTBOUND, Instant.now(), "sessionId", 1, sessionInit)
+        val payload = SessionEvent(MessageDirection.OUTBOUND, Instant.now(), "sessionId", 1, 0, listOf(), sessionInit)
 
         val result = SessionInitExecutor("sessionId",  payload, sessionInit, null).execute()
         val state = result.flowMapperState
@@ -45,7 +45,7 @@ class SessionInitExecutorTest {
     fun `Inbound session init creates new state and forwards to flow event`() {
         val holdingIdentity = HoldingIdentity()
         val sessionInit = SessionInit("", "", null, holdingIdentity, holdingIdentity, null)
-        val payload = SessionEvent(MessageDirection.INBOUND, Instant.now(), "sessionId-INITIATED", 1, sessionInit)
+        val payload = SessionEvent(MessageDirection.INBOUND, Instant.now(), "sessionId-INITIATED", 1, 0, listOf(), sessionInit)
         val result = SessionInitExecutor("sessionId-INITIATED", payload, sessionInit, null).execute()
 
         val state = result.flowMapperState
@@ -68,7 +68,7 @@ class SessionInitExecutorTest {
     fun `Session init with non null state ignored`() {
         val holdingIdentity = HoldingIdentity()
         val sessionInit = SessionInit("", "", null, holdingIdentity, holdingIdentity, null)
-        val payload = SessionEvent(MessageDirection.INBOUND, Instant.now(), "", 1, sessionInit)
+        val payload = SessionEvent(MessageDirection.INBOUND, Instant.now(), "", 1, 0, listOf(), sessionInit)
         val result = SessionInitExecutor("sessionId-INITIATED", payload, sessionInit, FlowMapperState()).execute()
 
         val state = result.flowMapperState

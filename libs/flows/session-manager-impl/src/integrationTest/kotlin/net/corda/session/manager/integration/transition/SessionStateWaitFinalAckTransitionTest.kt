@@ -1,7 +1,6 @@
 package net.corda.session.manager.integration.transition
 
 import net.corda.data.flow.event.MessageDirection
-import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.impl.SessionManagerImpl
@@ -79,7 +78,7 @@ class SessionStateWaitFinalAckTransitionTest {
         val sessionState = buildWaitFinalAck()
 
         val sessionEvent = generateMessage(SessionMessageType.ACK, instant, MessageDirection.INBOUND)
-        (sessionEvent.payload as SessionAck).sequenceNum = 2
+        sessionEvent.receivedSequenceNum = 2
 
         val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, Instant.now())
         Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CLOSED)

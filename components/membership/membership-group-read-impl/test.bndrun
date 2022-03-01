@@ -68,6 +68,7 @@
 	net.corda.messaging;version='[5.0.0,5.0.1)',\
 	net.corda.packaging;version='[5.0.0,5.0.1)',\
 	net.corda.packaging-avro-converters;version='[5.0.0,5.0.1)',\
+	net.corda.packaging-core;version='[5.0.0,5.0.1)',\
 	net.corda.registry;version='[5.0.0,5.0.1)',\
 	net.corda.test-utilities;version='[5.0.0,5.0.1)',\
 	net.corda.virtual-node-common;version='[5.0.0,5.0.1)',\
@@ -82,6 +83,5 @@
 	org.osgi.test.junit5;version='[1.0.1,1.0.2)',\
 	org.osgi.util.function;version='[1.1.0,1.1.1)',\
 	org.osgi.util.promise;version='[1.1.1,1.1.2)',\
-	slf4j.api;version='[1.7.26,1.7.27)',\
 	slf4j.api;version='[1.7.32,1.7.33)',\
 	slf4j.simple;version='[1.7.32,1.7.33)'

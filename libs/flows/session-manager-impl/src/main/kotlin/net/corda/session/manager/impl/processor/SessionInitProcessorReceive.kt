@@ -6,7 +6,7 @@ import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.impl.SessionEventProcessor
-import net.corda.session.manager.impl.processor.helper.generateAckEvent
+import net.corda.session.manager.impl.processor.helper.addAckToSendEvents
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -32,13 +32,13 @@ class SessionInitProcessorReceive(
     }
 
     override fun execute(): SessionState {
-        if (sessionState != null) {
+        return if (sessionState != null) {
             val seqNum = sessionEvent.sequenceNum
-            return if (sessionState.status == SessionStateType.CREATED || seqNum > 1) {
+            if (sessionState.status == SessionStateType.CREATED || seqNum > 1) {
                 sessionState.apply {
                     status = SessionStateType.ERROR
                     sendEventsState.undeliveredMessages = sendEventsState.undeliveredMessages.plus(
-                            generateErrorEvent(sessionId,
+                            generateErrorEvent(sessionState,
                                 "Received SessionInit with seqNum $seqNum when session state which was not null: $sessionState",
                                 "SessionInit-SessionMismatch",
                                 instant
@@ -48,29 +48,29 @@ class SessionInitProcessorReceive(
             } else {
                 logger.debug { "Received duplicate SessionInit on key $key for session which was not null: $sessionState" }
                 sessionState.apply {
-                    sendEventsState.undeliveredMessages =
-                        sendEventsState.undeliveredMessages.plus(generateAckEvent(sessionEvent.sequenceNum, sessionId, instant))
+                    sendEventsState.undeliveredMessages = addAckToSendEvents(sessionState, instant)
                 }
             }
+        } else {
+            val sessionInit: SessionInit = uncheckedCast(sessionEvent.payload)
+            val sessionId = sessionEvent.sessionId
+            val seqNum = sessionEvent.sequenceNum
+            val newSessionState = SessionState.newBuilder()
+                .setSessionId(sessionId)
+                .setSessionStartTime(instant)
+                .setLastReceivedMessageTime(instant)
+                .setLastSentMessageTime(instant)
+                .setIsInitiator(false)
+                .setCounterpartyIdentity(sessionInit.initiatingIdentity)
+                .setReceivedEventsState(SessionProcessState(seqNum, mutableListOf(sessionEvent)))
+                .setSendEventsState(SessionProcessState(0, mutableListOf()))
+                .setStatus(SessionStateType.CONFIRMED)
+                .build()
+
+            logger.debug { "Created new session with id $sessionId for SessionInit received on key $key. sessionState $newSessionState" }
+            newSessionState.apply {
+                sendEventsState.undeliveredMessages = addAckToSendEvents(newSessionState, instant)
+            }
         }
-
-        val sessionInit: SessionInit = uncheckedCast(sessionEvent.payload)
-        val sessionId = sessionEvent.sessionId
-        val seqNum = sessionEvent.sequenceNum
-        val newSessionState = SessionState.newBuilder()
-            .setSessionId(sessionId)
-            .setSessionStartTime(instant)
-            .setLastReceivedMessageTime(instant)
-            .setLastSentMessageTime(instant)
-            .setIsInitiator(false)
-            .setCounterpartyIdentity(sessionInit.initiatingIdentity)
-            .setReceivedEventsState(SessionProcessState(seqNum, mutableListOf(sessionEvent)))
-            .setSendEventsState(SessionProcessState(seqNum - 1, mutableListOf(generateAckEvent(seqNum, sessionId, instant))))
-            .setStatus(SessionStateType.CONFIRMED)
-            .build()
-
-        logger.debug { "Created new session with id $sessionId for SessionInit received on key $key. sessionState $newSessionState" }
-
-        return newSessionState
     }
 }

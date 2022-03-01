@@ -90,7 +90,7 @@ class FlowMapperServiceIntegrationTest {
         val sessionInitEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
                 SessionEvent(
-                    MessageDirection.OUTBOUND, Instant.now(), testId, 1, SessionInit(
+                    MessageDirection.OUTBOUND, Instant.now(), testId, 1, 0, listOf(), SessionInit(
                         testId, testId, flowKey, identity,
                         identity, null
                     )
@@ -112,7 +112,7 @@ class FlowMapperServiceIntegrationTest {
         //send data back
         val sessionDataEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
-                SessionEvent(MessageDirection.INBOUND, Instant.now(), testId, 2, SessionData())
+                SessionEvent(MessageDirection.INBOUND, Instant.now(), testId, 2, 0, listOf(), SessionData())
             )
         )
         publisher.publish(listOf(sessionDataEvent))
@@ -189,7 +189,7 @@ class FlowMapperServiceIntegrationTest {
         //send data, no state
         val sessionDataEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
-                SessionEvent(MessageDirection.OUTBOUND, Instant.now(), testId, 1, SessionData())
+                SessionEvent(MessageDirection.OUTBOUND, Instant.now(), testId, 1, 0, listOf(), SessionData())
             )
         )
         publisher.publish(listOf(sessionDataEvent))

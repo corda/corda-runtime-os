@@ -11,8 +11,9 @@ import net.corda.schema.configuration.FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDO
 import net.corda.schema.configuration.FlowConfig.SESSION_MESSAGE_RESEND_WINDOW
 import net.corda.session.manager.SessionManager
 import net.corda.session.manager.impl.factory.SessionEventProcessorFactory
-import net.corda.session.manager.impl.processor.helper.generateAckEvent
+import net.corda.session.manager.impl.processor.helper.generateAck
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
+import net.corda.session.manager.impl.processor.helper.processAcks
 import org.osgi.service.component.annotations.Component
 import java.time.Instant
 
@@ -25,8 +26,12 @@ class SessionManagerImpl : SessionManager {
 
     override fun processMessageReceived(key: Any, sessionState: SessionState?, event: SessionEvent, instant: Instant):
             SessionState {
-        sessionState?.lastReceivedMessageTime = instant
-        return sessionEventProcessorFactory.createEventReceivedProcessor(key, event, sessionState, instant).execute()
+        val updatedSessionState = sessionState?.let {
+            it.lastReceivedMessageTime = instant
+            processAcks(event, it)
+        }
+
+        return sessionEventProcessorFactory.createEventReceivedProcessor(key, event, updatedSessionState, instant).execute()
     }
 
     override fun processMessageToSend(key: Any, sessionState: SessionState?, event: SessionEvent, instant: Instant):
@@ -95,7 +100,6 @@ class SessionManagerImpl : SessionManager {
     ) {
         val messageResendWindow = config.getLong(SESSION_MESSAGE_RESEND_WINDOW)
         val lastReceivedMessageTime = sessionState.lastReceivedMessageTime
-        val sessionId = sessionState.sessionId
 
         val sessionTimeoutTimestamp = lastReceivedMessageTime.plusMillis(config.getLong(SESSION_HEARTBEAT_TIMEOUT_WINDOW))
         val scheduledHeartbeatTimestamp = sessionState.lastSentMessageTime.plusMillis(messageResendWindow)
@@ -105,21 +109,22 @@ class SessionManagerImpl : SessionManager {
             sessionState.status = SessionStateType.ERROR
             messagesToReturn.add(
                 generateErrorEvent(
-                    sessionId,
+                    sessionState,
                     "Session has timed out. No messages received since $lastReceivedMessageTime",
                     "SessionTimeout-Heartbeat",
                     instant
                 )
             )
         } else if (messagesToReturn.isEmpty() && instant > scheduledHeartbeatTimestamp) {
-            messagesToReturn.add(generateAckEvent(0, sessionId, instant))
+            messagesToReturn.add(generateAck(sessionState, instant))
         }
     }
 
     /**
      * Get any new messages to send from the sendEvents state within [sessionState].
      * Send any Acks or Errors regardless of timestamps.
-     * Send any other messages with a timestamp less than that of [instantInMillis]
+     * Send any other messages with a timestamp less than that of [instantInMillis].
+     * Don't send a SessionAck if other events present in the send list as ack info is present at SessionEvent level on all events.
      * @param sessionState to examine sendEventsState.undeliveredMessages
      * @param instant to compare against messages to avoid resending messages in quick succession
      * @return Messages to send
@@ -127,10 +132,26 @@ class SessionManagerImpl : SessionManager {
     private fun getMessagesToSend(
         sessionState: SessionState,
         instant: Instant
-    ) = sessionState.sendEventsState.undeliveredMessages.filter {
-        it.timestamp <= instant || it
-            .payload is SessionAck || it.payload is SessionError
-    }.toMutableList()
+    ) : MutableList<SessionEvent> {
+        //get all events with a timestamp in the past, as well as any acks or errors
+        val sessionEvents = sessionState.sendEventsState.undeliveredMessages.filter {
+            it.timestamp <= instant || it
+                .payload is SessionAck || it.payload is SessionError
+        }.toMutableList()
+
+        //If list contains SessionAcks and non SessionAcks, remove the SessionAcks as ack info is already at SessionEvent level
+        if (sessionEvents.any { it.payload is SessionAck} && sessionEvents.any { it.payload !is SessionAck }) {
+            sessionEvents.removeIf { it.payload is SessionAck }
+        }
+
+        //update events with the latest ack info from the current state
+        sessionEvents.forEach { sessionEvent ->
+            sessionEvent.receivedSequenceNum = sessionState.receivedEventsState.lastProcessedSequenceNum
+            sessionEvent.outOfOrderSequenceNums = sessionState.receivedEventsState.undeliveredMessages.map { it.sequenceNum }
+        }
+
+        return sessionEvents
+    }
 
     /**
      * Remove Acks and Errors from the session state sendEvents.undeliveredMessages as these cannot be acked by a counterparty.
