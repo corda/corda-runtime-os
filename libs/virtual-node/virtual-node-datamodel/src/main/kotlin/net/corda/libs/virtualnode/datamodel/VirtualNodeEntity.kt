@@ -3,11 +3,12 @@ package net.corda.libs.virtualnode.datamodel
 import net.corda.db.schema.DbSchema.CONFIG
 import net.corda.db.schema.DbSchema.VNODE_INSTANCE_DB_TABLE
 import java.io.Serializable
-import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
 import javax.persistence.IdClass
 import javax.persistence.Table
+import javax.persistence.Column
+import javax.persistence.Embeddable
 
 /**
  * The entity for a virtual node instance in the cluster database.
@@ -36,6 +37,7 @@ data class VirtualNodeEntity(
 )
 
 /** The composite primary key for a virtual node instance. */
+@Embeddable // Set so that kotlin-jpa creates no-argument constructor required by JPA
 @Suppress("Unused")
 class VirtualNodeEntityKey(
     private val holdingIdentityId: String,

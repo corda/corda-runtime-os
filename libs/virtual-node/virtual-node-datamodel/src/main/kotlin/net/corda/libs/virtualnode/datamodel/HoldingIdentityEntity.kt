@@ -33,14 +33,21 @@ data class HoldingIdentityEntity(
     var x500Name: String,
     @Column(name = "mgm_group_id", nullable = false)
     var mgmGroupId: String,
-    @Column(name = "vault_ddl_connection_id", nullable = false)
-    var vaultDDLConnectionId: UUID,
-    @Column(name = "crypto_ddl_connection_id", nullable = false)
-    var cryptoDDLConnectionId: UUID,
-    @Column(name = "vault_dml_connection_id", nullable = false)
-    var vaultDMLConnectionId: UUID,
-    @Column(name = "crypto_dml_connection_id", nullable = false)
-    var cryptoDMLConnectionId: UUID,
-    @Column(name = "hsm_connection_id", nullable = false)
-    var hsmConnectionId: UUID
-)
+    @Column(name = "vault_ddl_connection_id", nullable = true)
+    var vaultDDLConnectionId: UUID?,
+    @Column(name = "vault_dml_connection_id", nullable = true)
+    var vaultDMLConnectionId: UUID?,
+    @Column(name = "crypto_ddl_connection_id", nullable = true)
+    var cryptoDDLConnectionId: UUID?,
+    @Column(name = "crypto_dml_connection_id", nullable = true)
+    var cryptoDMLConnectionId: UUID?,
+    @Column(name = "hsm_connection_id", nullable = true)
+    var hsmConnectionId: UUID?
+) {
+    fun update(vaultDdlConnectionId: UUID?, vaultDmlConnectionId: UUID?, cryptoDdlConnectionId: UUID?, cryptoDmlConnectionId: UUID?) {
+        this.vaultDDLConnectionId = vaultDdlConnectionId
+        this.vaultDMLConnectionId = vaultDmlConnectionId
+        this.cryptoDDLConnectionId = cryptoDdlConnectionId
+        this.cryptoDMLConnectionId = cryptoDmlConnectionId
+    }
+}

@@ -1,6 +1,7 @@
 package net.corda.sandboxgroupcontext
 
-import net.corda.packaging.CPK
+import net.corda.libs.packaging.CpkIdentifier
+import net.corda.libs.packaging.CpkMetadata
 
 interface SandboxGroupContextService {
     /**
@@ -91,7 +92,7 @@ interface SandboxGroupContextService {
      */
     fun registerMetadataServices(
         sandboxGroupContext: SandboxGroupContext,
-        serviceNames: (CPK.Metadata) -> Iterable<String>,
+        serviceNames: (CpkMetadata) -> Iterable<String>,
         isMetadataService: (Class<*>) -> Boolean = { true },
         serviceMarkerType: Class<*> = sandboxGroupContext.virtualNodeContext.serviceMarkerType
     ): AutoCloseable
@@ -118,5 +119,5 @@ interface SandboxGroupContextService {
      *        service.getOrCreate(virtualNodeContext) { .... }
      *     }
      */
-    fun hasCpks(cpkIdentifiers: Set<CPK.Identifier>) : Boolean
+    fun hasCpks(cpkIdentifiers: Set<CpkIdentifier>) : Boolean
 }

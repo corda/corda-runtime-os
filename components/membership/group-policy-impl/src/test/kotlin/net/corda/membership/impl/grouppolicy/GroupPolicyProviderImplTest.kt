@@ -1,6 +1,8 @@
 package net.corda.membership.impl.grouppolicy
 
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.libs.packaging.CpiIdentifier
+import net.corda.libs.packaging.CpiMetadata
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEventHandler
@@ -9,7 +11,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.GroupPolicy
-import net.corda.packaging.CPI
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.membership.identity.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
@@ -60,7 +61,7 @@ class GroupPolicyProviderImplTest {
     val holdingIdentity3 = HoldingIdentity(alice.toString(), groupId2)
     val holdingIdentity4 = HoldingIdentity(bob.toString(), groupId2)
 
-    fun mockMetadata(resultGroupPolicy: String?) = mock<CPI.Metadata> {
+    fun mockMetadata(resultGroupPolicy: String?) = mock<CpiMetadata> {
         on { groupPolicy } doReturn resultGroupPolicy
     }
 
@@ -69,10 +70,10 @@ class GroupPolicyProviderImplTest {
     val cpiMetadata3 = mockMetadata(groupPolicy3)
     val cpiMetadata4 = mockMetadata(groupPolicy4)
 
-    val cpiIdentifier1: CPI.Identifier = mock()
-    val cpiIdentifier2: CPI.Identifier = mock()
-    val cpiIdentifier3: CPI.Identifier = mock()
-    val cpiIdentifier4: CPI.Identifier = mock()
+    val cpiIdentifier1: CpiIdentifier= mock()
+    val cpiIdentifier2: CpiIdentifier = mock()
+    val cpiIdentifier3: CpiIdentifier = mock()
+    val cpiIdentifier4: CpiIdentifier = mock()
 
     var virtualNodeListener: VirtualNodeInfoListener? = null
 

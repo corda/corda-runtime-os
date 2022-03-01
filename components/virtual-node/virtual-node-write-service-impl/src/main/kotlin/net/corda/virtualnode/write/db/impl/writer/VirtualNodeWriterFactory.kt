@@ -2,6 +2,8 @@ package net.corda.virtualnode.write.db.impl.writer
 
 import net.corda.data.virtualnode.VirtualNodeCreationRequest
 import net.corda.data.virtualnode.VirtualNodeCreationResponse
+import net.corda.db.admin.LiquibaseSchemaMigrator
+import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.publisher.Publisher
@@ -16,7 +18,9 @@ import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_CREATION_REQU
 internal class VirtualNodeWriterFactory(
     private val subscriptionFactory: SubscriptionFactory,
     private val publisherFactory: PublisherFactory,
-    private val dbConnectionManager: DbConnectionManager
+    private val dbConnectionManager: DbConnectionManager,
+    private val dbAdmin: DbAdmin,
+    private val schemaMigrator: LiquibaseSchemaMigrator
 ) {
 
     /**
@@ -50,7 +54,7 @@ internal class VirtualNodeWriterFactory(
      */
     private fun createRPCSubscription(
         config: SmartConfig,
-        vnodePublisher: Publisher
+        vnodePublisher: Publisher,
     ): RPCSubscription<VirtualNodeCreationRequest, VirtualNodeCreationResponse> {
 
         val rpcConfig = RPCConfig(
@@ -61,7 +65,8 @@ internal class VirtualNodeWriterFactory(
             VirtualNodeCreationResponse::class.java,
         )
         val virtualNodeEntityRepository = VirtualNodeEntityRepository(dbConnectionManager)
-        val processor = VirtualNodeWriterProcessor(vnodePublisher, virtualNodeEntityRepository)
+        val vnodeDbFactory = VirtualNodeDbFactory(dbConnectionManager, dbAdmin, schemaMigrator)
+        val processor = VirtualNodeWriterProcessor(vnodePublisher, dbConnectionManager, virtualNodeEntityRepository, vnodeDbFactory)
 
         return subscriptionFactory.createRPCSubscription(rpcConfig, config, processor)
     }

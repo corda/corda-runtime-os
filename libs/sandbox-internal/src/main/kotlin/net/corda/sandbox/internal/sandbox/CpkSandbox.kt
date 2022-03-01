@@ -1,12 +1,12 @@
 package net.corda.sandbox.internal.sandbox
 
-import net.corda.packaging.CPK
+import net.corda.libs.packaging.CpkMetadata
 import org.osgi.framework.Bundle
 
 /** A container for isolating a set of bundles created from a CPK. */
 internal interface CpkSandbox : Sandbox {
     /** The CPK the sandbox was created from. */
-    val cpk: CPK
+    val cpkMetadata: CpkMetadata
 
     /** The CPK's main bundle. */
     val mainBundle: Bundle

@@ -3,6 +3,8 @@ package net.corda.processor.member
 import com.typesafe.config.ConfigFactory
 import net.corda.data.config.Configuration
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.packaging.CpiIdentifier
+import net.corda.libs.packaging.CpiMetadata
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.GroupPolicy
 import net.corda.membership.grouppolicy.GroupPolicyProvider
@@ -137,13 +139,13 @@ class MemberProcessorTestUtils {
         fun getCpiIdentifier(
             name: String = "INTEGRATION_TEST",
             version: String
-        ) = CPI.Identifier.newInstance(name, version)
+        ) = CpiIdentifier(name, version, SecureHash.create("SHA-256:0000000000000000"))
 
         fun getCpiMetadata(
             cpiVersion: String,
             groupPolicy: String,
-            cpiIdentifier: CPI.Identifier = getCpiIdentifier(version = cpiVersion)
-        ) = CPI.Metadata.newInstance(
+            cpiIdentifier: CpiIdentifier = getCpiIdentifier(version = cpiVersion)
+        ) = CpiMetadata(
             cpiIdentifier,
             SecureHash.create("SHA-256:0000000000000000"),
             emptyList(),
@@ -165,7 +167,7 @@ class MemberProcessorTestUtils {
             )
         }
 
-        fun Publisher.publishCpiMetadata(cpiMetadata: CPI.Metadata) =
+        fun Publisher.publishCpiMetadata(cpiMetadata: CpiMetadata) =
             publishRecord(Schemas.VirtualNode.CPI_INFO_TOPIC, cpiMetadata.id.toAvro(), cpiMetadata.toAvro())
 
         fun Publisher.publishMessagingConf() =

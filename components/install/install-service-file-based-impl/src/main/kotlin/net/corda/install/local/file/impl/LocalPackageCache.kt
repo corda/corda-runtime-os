@@ -3,7 +3,7 @@ package net.corda.install.local.file.impl
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.install.InstallService
-import net.corda.install.InstallServiceListener
+import net.corda.libs.packaging.CpkIdentifier
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -60,10 +60,14 @@ class LocalPackageCache @Activate constructor(
                 { set1, set2 -> set1.putAll(set2); set1 },
                 Collections::unmodifiableNavigableMap
             )
-        private val cpkMapCollector: Collector<CPK, TreeMap<CPK.Identifier, CPK>, NavigableMap<CPK.Identifier, CPK>> =
+        private val cpkMapCollector: Collector<CPK, TreeMap<CpkIdentifier, CPK>, NavigableMap<CpkIdentifier, CPK>> =
             Collector.of(
                 ::TreeMap,
-                { map, el -> map[el.metadata.id] = el },
+                { map, el -> map[CpkIdentifier(
+                    el.metadata.id.name,
+                    el.metadata.id.version,
+                    el.metadata.id.signerSummaryHash
+                )] = el },
                 { set1, set2 -> set1.putAll(set2); set1 },
                 Collections::unmodifiableNavigableMap
             )
@@ -73,7 +77,7 @@ class LocalPackageCache @Activate constructor(
 
     private data class PackageCache(
         val cpiByIdMap: NavigableMap<CPI.Identifier, CPI> = emptyNavigableMap(),
-        val cpkByIdMap: NavigableMap<CPK.Identifier, CPK> = emptyNavigableMap(),
+        val cpkByIdMap: NavigableMap<CpkIdentifier, CPK> = emptyNavigableMap(),
         val cpkByHashMap: Map<SecureHash, CPK> = emptyMap(),
     )
 
@@ -85,9 +89,7 @@ class LocalPackageCache @Activate constructor(
 
     private val subscribersLock = ReentrantReadWriteLock(true)
 
-    private val subscribers: MutableList<InstallServiceListener> = Collections.synchronizedList(ArrayList())
-
-    private fun scanCPKs(packageRepository: Path): NavigableMap<CPK.Identifier, CPK> {
+    private fun scanCPKs(packageRepository: Path): NavigableMap<CpkIdentifier, CPK> {
         return packageRepository.takeIf(Files::exists)?.let { path ->
             Files.list(path).use { stream ->
                 stream.filter {
@@ -115,12 +117,6 @@ class LocalPackageCache @Activate constructor(
     @Suppress("UNUSED_PARAMETER")
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
-            is UpdatedCPIList -> {
-                val cpiList = packageCache.cpiByIdMap.navigableKeySet()
-                subscribersLock.read {
-                    for (subscriber in subscribers) subscriber.onUpdatedCPIList(cpiList, event.delta)
-                }
-            }
             is StartEvent -> {
                 logger.debug { "${javaClass.name} service starting..." }
                 onStartEvent()
@@ -145,33 +141,8 @@ class LocalPackageCache @Activate constructor(
             ?: throw CordaRuntimeException("No CPI found in local package cache with id:  ${id}")
     }
 
-    override fun get(id: CPI.Identifier): CompletableFuture<CPI?> = packageCacheLock.read {
-        CompletableFuture.completedFuture(packageCache.cpiByIdMap[getIdOrClosestMatch(id)])
-    }
-
-    override fun get(id: CPK.Identifier): CompletableFuture<CPK?> = packageCacheLock.read {
+    override fun get(id: CpkIdentifier): CompletableFuture<CPK?> = packageCacheLock.read {
         CompletableFuture.completedFuture(packageCache.cpkByIdMap[id])
-    }
-
-    override fun getCPKByHash(hash: SecureHash): CompletableFuture<CPK?> = packageCacheLock.read {
-        CompletableFuture.completedFuture(packageCache.cpkByHashMap[hash])
-    }
-
-    override fun listCPK() = packageCacheLock.read {
-        packageCache.cpkByHashMap.values.map(CPK::metadata)
-    }
-
-    override fun listCPI() = packageCacheLock.read {
-        packageCache.cpiByIdMap.values.map(CPI::metadata)
-    }
-
-    override fun registerForUpdates(installServiceListener: InstallServiceListener) = packageCacheLock.read {
-        subscribers.add(installServiceListener)
-        AutoCloseable {
-            subscribersLock.write {
-                subscribers.remove(installServiceListener)
-            }
-        }
     }
 
     private fun setup() {

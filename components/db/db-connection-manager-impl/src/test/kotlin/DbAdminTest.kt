@@ -1,5 +1,5 @@
 import com.typesafe.config.ConfigFactory
-import net.corda.db.connection.manager.DbConnectionsRepository
+import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.impl.DbAdminImpl
 import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.SmartConfig
@@ -23,8 +23,8 @@ class DbAdminTest {
     private val dataSource = mock<DataSource>() {
         on { connection }.doReturn(connection)
     }
-    private val dbConnectionsRepository = mock<DbConnectionsRepository>() {
-        on { clusterDataSource }.doReturn(dataSource)
+    private val dbConnectionManager = mock<DbConnectionManager>() {
+        on { getClusterDataSource() }.doReturn(dataSource)
     }
     private val secretConfig = SmartConfigImpl(ConfigFactory.empty(), mock(), mock())
     private val config = mock<SmartConfig>()
@@ -35,7 +35,7 @@ class DbAdminTest {
 
     @Test
     fun `when create DDL user grant all`() {
-        val dba = DbAdminImpl(dbConnectionsRepository)
+        val dba = DbAdminImpl(dbConnectionManager)
 
         dba.createDbAndUser(
             "test",
@@ -56,7 +56,7 @@ class DbAdminTest {
 
     @Test
     fun `when create DML limited grant`() {
-        val dba = DbAdminImpl(dbConnectionsRepository)
+        val dba = DbAdminImpl(dbConnectionManager)
 
         dba.createDbAndUser(
             "test",

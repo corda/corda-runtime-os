@@ -1,7 +1,7 @@
 package net.corda.db.connection.manager.impl
 
 import net.corda.db.connection.manager.DBConfigurationException
-import net.corda.db.connection.manager.DbConnectionsRepository
+import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
@@ -14,7 +14,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 
 class DbConnectionManagerEventHandler(
-    private val connectionsRepository: DbConnectionsRepository
+    private val dbConnectionManager: DbConnectionManager
 ) : LifecycleEventHandler {
 
     private companion object {
@@ -39,7 +39,7 @@ class DbConnectionManagerEventHandler(
                 } else {
                     bootstrapConfig = event.config
                     // initialise the DB connections Repo
-                    connectionsRepository.initialise(bootstrapConfig)
+                    dbConnectionManager.initialise(bootstrapConfig)
                     // component is ready
                     coordinator.updateStatus(LifecycleStatus.UP)
                 }
