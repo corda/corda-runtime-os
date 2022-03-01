@@ -8,7 +8,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.membership.httprpc.MemberOpsClient
+import net.corda.membership.client.MemberOpsClient
 
 class RegistrationRpcOpsLifecycleHandler : LifecycleEventHandler {
     // for checking the components' health

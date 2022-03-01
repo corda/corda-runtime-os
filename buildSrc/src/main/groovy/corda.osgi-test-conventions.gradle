@@ -28,7 +28,9 @@ dependencies {
     // OSGi frameworks containing Quasar and Kryo must resolve
     // the version of ASM as specified in the OSGi metadata.
     quasarBundles "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
-    integrationTestRuntimeOnly "co.paralleluniverse:quasar-core-osgi:$quasarVersion:agent"
+    integrationTestRuntimeOnly("co.paralleluniverse:quasar-core-osgi:$quasarVersion:agent") {
+        transitive = false
+    }
     integrationTestRuntimeOnly files(configurations.quasarBundles)
 
     integrationTestImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"

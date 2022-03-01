@@ -105,11 +105,12 @@ internal class TrustStoresPublisher(
     private fun createResources(
         @Suppress("UNUSED_PARAMETER") resourcesHolder: ResourcesHolder
     ): CompletableFuture<Unit> {
+        publishQueueIfPossible()
         return ready
     }
 
     private fun publishQueueIfPossible() {
-        while (ready.isDone) {
+        while ((publisher.isRunning) && (ready.isDone)) {
             val groupInfo = toPublish.poll() ?: return
             val groupId = groupInfo.groupId
             val certificates = groupInfo.trustedCertificates

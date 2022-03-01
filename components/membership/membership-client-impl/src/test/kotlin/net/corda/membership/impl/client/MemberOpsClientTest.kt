@@ -14,8 +14,8 @@ import net.corda.data.membership.rpc.response.RegistrationStatus
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.membership.httprpc.types.MemberRegistrationRequest
-import net.corda.membership.httprpc.types.RegistrationAction
+import net.corda.membership.client.dto.MemberRegistrationRequestDto
+import net.corda.membership.client.dto.RegistrationActionDto
 import net.corda.membership.impl.client.lifecycle.MemberOpsClientLifecycleHandler
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.api.publisher.RPCSender
@@ -90,7 +90,7 @@ class MemberOpsClientTest {
         )
     }
 
-    private val request = MemberRegistrationRequest(VIRTUAL_NODE_ID, RegistrationAction.REQUEST_JOIN)
+    private val request = MemberRegistrationRequestDto(VIRTUAL_NODE_ID, RegistrationActionDto.REQUEST_JOIN)
 
     @BeforeEach
     fun setUp() {
