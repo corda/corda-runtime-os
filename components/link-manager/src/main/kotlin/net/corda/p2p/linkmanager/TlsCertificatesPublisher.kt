@@ -128,11 +128,12 @@ internal class TlsCertificatesPublisher(
         @Suppress("UNUSED_PARAMETER")
         resourcesHolder: ResourcesHolder
     ): CompletableFuture<Unit> {
+        publishQueueIfPossible()
         return ready
     }
 
     private fun publishQueueIfPossible() {
-        while (ready.isDone) {
+        while ((publisher.isRunning) && (ready.isDone)) {
             val identityInfo = toPublish.poll() ?: return
             publishIfNeeded(
                 identityInfo.holdingIdentity.toCorda(),
