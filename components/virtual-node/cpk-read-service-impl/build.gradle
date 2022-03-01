@@ -38,24 +38,6 @@ dependencies {
 
     runtimeOnly project(":components:configuration:configuration-read-service-impl")
 
-    integrationTestCompileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
-    integrationTestCompileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
-    integrationTestImplementation "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
-
-    integrationTestImplementation project(":libs:lifecycle:registry")
-
-    integrationTestImplementation project(":components:virtual-node:cpk-read-service-impl")
-    integrationTestImplementation project(":components:virtual-node:cpk-write-service-impl")
-
-    integrationTestRuntimeOnly project(":components:virtual-node:cpk-write-service-impl")
-    integrationTestRuntimeOnly project(":components:configuration:configuration-read-service-impl")
-    integrationTestRuntimeOnly project(":libs:configuration:configuration-core")
-    integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")
-
-//    integrationTestRuntimeOnly project(":libs:configuration:file-configuration-read-impl")
-    integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
-
-
     // THIS IS THE LIST OF CPKS WE'RE USING IN THE INTEGRATION TESTS
     cpks project(path: ':components:install:test-resources:contract-cpk', configuration: 'cordaCPK')
 
