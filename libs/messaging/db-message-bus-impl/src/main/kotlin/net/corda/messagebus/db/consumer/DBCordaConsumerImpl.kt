@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory
 import java.time.Duration
 
 @Suppress("TooManyFunctions", "LongParameterList")
-class DBCordaConsumerImpl<K : Any, V : Any> internal constructor(
+internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
     private val consumerConfig: Config,
     private val dbAccess: DBAccess,
     private val consumerGroup: ConsumerGroup?,
