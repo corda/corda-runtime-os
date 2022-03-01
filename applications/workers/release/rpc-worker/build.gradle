@@ -41,6 +41,7 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 
+    e2eTestImplementation project(":components:membership:membership-http-rpc")
     e2eTestImplementation project(":libs:http-rpc:http-rpc-client")
     e2eTestImplementation project(":libs:permissions:permission-endpoint")
     e2eTestImplementation project(":testing:test-utilities")
