@@ -11,6 +11,7 @@ import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
 import net.corda.v5.crypto.SecureHash
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
@@ -38,6 +39,8 @@ class DBCpkStorageTest {
         val DUMMY_HASH_2 = SecureHash.create("SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FB")
         val DUMMY_HASH_3 = SecureHash.create("SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FC")
 
+        const val UN_PARSABLE_HASH = "BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FC"
+
         fun storeCpkDataEntity(checksum: SecureHash, bytes: ByteArray, emFactory: EntityManagerFactory) {
             val cpkDataEntity = CpkDataEntity(
                 checksum.toString(),
@@ -48,13 +51,12 @@ class DBCpkStorageTest {
             }
         }
 
-        fun removeCpkDataEntity(checksum: SecureHash, emFactory: EntityManagerFactory) {
+        fun removeAllCpkDataEntities(emFactory: EntityManagerFactory) {
             emFactory.createEntityManager().transaction {
                 it.createQuery(
-                    "DELETE FROM ${CpkDataEntity::class.simpleName} cpk " +
-                            "WHERE cpk.fileChecksum=:checksum"
+                    "DELETE FROM ${CpkDataEntity::class.simpleName} " +
+                            "WHERE 1 = 1"
                 )
-                    .setParameter("checksum", checksum.toString())
                     .executeUpdate()
             }
         }
@@ -84,9 +86,7 @@ class DBCpkStorageTest {
 
     @BeforeEach
     fun cleanDb() {
-        setOf(DUMMY_HASH_1, DUMMY_HASH_2, DUMMY_HASH_3).forEach {
-            removeCpkDataEntity(it, emFactory)
-        }
+        removeAllCpkDataEntities(emFactory)
     }
 
     @Test
@@ -107,6 +107,34 @@ class DBCpkStorageTest {
 
         val cpkIds = dbCpkStorage.getCpkIdsNotIn(setOf())
         assertEquals(checksums, cpkIds)
+    }
+
+    @Test
+    fun `on get cpk ids with empty string for checksum does not include it to the returned checksums`() {
+        val cpkDataEntity = CpkDataEntity(
+            "",
+            byteArrayOf(0x01, 0x02)
+        )
+        emFactory.createEntityManager().transaction {
+            it.persist(cpkDataEntity)
+        }
+
+        val cpkIds = dbCpkStorage.getCpkIdsNotIn(setOf())
+        assertThat(cpkIds).isEmpty()
+    }
+
+    @Test
+    fun `on get cpk ids with invalid checksum format for checksum does not include it to the returned checksums`() {
+        val cpkDataEntity = CpkDataEntity(
+            UN_PARSABLE_HASH,
+            byteArrayOf(0x01, 0x02)
+        )
+        emFactory.createEntityManager().transaction {
+            it.persist(cpkDataEntity)
+        }
+
+        val cpkIds = dbCpkStorage.getCpkIdsNotIn(setOf())
+        assertThat(cpkIds).isEmpty()
     }
 
     @Test
