@@ -173,6 +173,7 @@ class CpkWriteServiceImpl @Activate constructor(
     }
 
     private fun createCpkChunksPublisher(config: SmartConfig) {
+        cpkChunksPublisher?.close()
         val publisher = publisherFactory.createPublisher(
             PublisherConfig(CPK_WRITE_CLIENT),
             config
