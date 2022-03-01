@@ -155,7 +155,7 @@ class CpkWriteServiceImpl @Activate constructor(
             createCpkChunksPublisher(config)
         } catch (e: Exception) {
             closeResources()
-            coordinator.updateStatus(LifecycleStatus.ERROR)
+            coordinator.updateStatus(LifecycleStatus.DOWN)
         }
         createCpkChecksumsCache(config)
         createCpkStorage()
