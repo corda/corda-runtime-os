@@ -189,7 +189,7 @@ class CpkWriteServiceImpl @Activate constructor(
         try {
             putMissingCpk()
         } catch (e: Exception) {
-            logger.warn("Caught exception ${e.cause} ${e.message}")
+            logger.warn("Caught exception $e")
         }
         setTimerEvent(coordinator)
     }
