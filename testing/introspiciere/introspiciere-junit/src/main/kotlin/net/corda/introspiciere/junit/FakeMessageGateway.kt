@@ -9,9 +9,20 @@ class FakeMessageGateway : MessagesGateway {
 
     private val messages = mutableMapOf<String, MutableList<Msg>>()
 
+    override fun readFromEnd(topic: String, schema: String): Pair<List<Msg>, Long> {
+        val nowTimestamp = now
+        val msgs = messages[topic]!!.filter { it.timestamp >= nowTimestamp }
+        return msgs to (msgs.maxOfOrNull { it.timestamp + 1 } ?: nowTimestamp)
+    }
+
+    override fun readFromBeginning(topic: String, schema: String): Pair<List<Msg>, Long> {
+        val msgs = messages[topic].orEmpty()
+        return msgs to (msgs.maxOfOrNull { it.timestamp + 1 } ?: 0L)
+    }
+
     override fun readFrom(topic: String, schema: String, from: Long): Pair<List<Msg>, Long> {
-        val timestamp = if (from < 0) now else from
-        return messages[topic]!!.filter { it.timestamp >= timestamp } to timestamp
+        val msgs = messages[topic].orEmpty().filter { it.timestamp >= from }
+        return msgs to (msgs.maxOfOrNull { it.timestamp + 1 } ?: from)
     }
 
     override fun send(topic: String, message: KafkaMessage) {

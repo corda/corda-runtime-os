@@ -2,6 +2,7 @@ package net.corda.introspiciere.junit
 
 import net.corda.introspiciere.domain.TopicDefinition
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
 
@@ -42,12 +43,14 @@ internal class TopicManagementTest {
 
     @Test
     fun `delete a topic`() {
+        Thread.sleep(1000)
         val definition = TopicDefinition("topic1")
         introspiciere.appContext.topicGateway.create(definition)
 
         introspiciere.client.deleteTopic(definition.name)
 
-        Assertions.assertFalse(
+        println(introspiciere.appContext.topicGateway.findAll())
+        assertFalse(
             definition.name in introspiciere.appContext.topicGateway.findAll(),
             "Topic should not exist"
         )

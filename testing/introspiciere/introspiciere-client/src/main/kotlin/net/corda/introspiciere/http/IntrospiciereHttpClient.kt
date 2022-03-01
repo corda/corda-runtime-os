@@ -11,7 +11,6 @@ import net.corda.introspiciere.domain.IntrospiciereException
 import net.corda.introspiciere.domain.KafkaMessage
 import net.corda.introspiciere.domain.TopicDefinitionPayload
 import net.corda.introspiciere.domain.TopicDescription
-import net.corda.introspiciere.payloads.KafkaMessagesBatch
 import net.corda.introspiciere.payloads.MsgBatch
 
 class IntrospiciereHttpClient(private val endpoint: String) {
@@ -78,23 +77,6 @@ class IntrospiciereHttpClient(private val endpoint: String) {
 
     private fun readInternal(topic: String, key: String?, schema: String, from: Long): MsgBatch =
         get("$endpoint/topics/$topic/messages", "key" to key, "schema" to schema, "from" to from)
-
-    /**
-     * Fetch messages from a topic for a [key]. [beginningOffsets] or [endOffsets] should be called before [readMessages].
-     */
-    fun readMessages(topic: String, key: String, schema: String, from: LongArray): KafkaMessagesBatch {
-        val (_, response, result) = "$endpoint/topics/$topic/messages/$key"
-            .httpGet(
-                "schema" to schema,
-                "from" to from.joinToString(","),
-            ).timeoutRead(180000)
-            .responseObject<KafkaMessagesBatch>()
-
-        return when (result) {
-            is Result.Success -> result.get()
-            is Result.Failure -> throw IntrospiciereException(result.getException().message, response.buildException())
-        }
-    }
 
     /**
      * Request to send a message to Kafka.

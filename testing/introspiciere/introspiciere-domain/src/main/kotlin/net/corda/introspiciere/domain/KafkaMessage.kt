@@ -16,9 +16,12 @@ data class KafkaMessage(
     }
 
     @Suppress("UNCHECKED_CAST")
-    fun <T> toAvro(clazz: Class<T>): T {
-        val fromByteBuffer = clazz.getMethod("fromByteBuffer", ByteBuffer::class.java)
-        return fromByteBuffer.invoke(null, ByteBuffer.wrap(schema)) as T
+    fun <T> toAvro(): T = toAny() as T
+
+    fun toAny(): Any {
+        val clss = Class.forName(schemaClass)
+        val method = clss.getMethod("fromByteBuffer", ByteBuffer::class.java)
+        return method.invoke(null, ByteBuffer.wrap(schema))
     }
 }
 

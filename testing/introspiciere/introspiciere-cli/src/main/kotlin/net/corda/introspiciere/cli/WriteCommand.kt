@@ -51,8 +51,8 @@ class WriteCommand : BaseCommand() {
             schemaClass = schemaName
         )
 
-        httpClient.sendMessage(kafkaMessage)
-        println("Message successfully sent to topic $topicName")
+//        httpClient.sendMessage(kafkaMessage)
+//        println("Message successfully sent to topic $topicName")
     }
 
     private fun ByteBuffer.toByteArray(): ByteArray {

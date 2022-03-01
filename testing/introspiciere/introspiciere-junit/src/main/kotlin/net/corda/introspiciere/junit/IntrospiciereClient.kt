@@ -91,15 +91,15 @@ class IntrospiciereClient(private val endpoint: String) {
     private fun <T> readInternal(
         topic: String, key: String?, schemaClass: Class<T>, readFromMethod: (String, String?, String) -> MsgBatch,
     ): Sequence<T?> {
-        val qualifiedName = schemaClass::class.qualifiedName!!
+        val qualifiedName = schemaClass.canonicalName
         var batch = readFromMethod(topic, key, qualifiedName)
 
         return sequence {
             batch.messages.forEach { msg -> yield(msg.deserialize(schemaClass)) }
             while (true) {
                 batch = httpClient.readFrom(topic, key, qualifiedName, batch.nextBatchTimestamp)
-                batch.messages.forEach { msg -> yield(msg.deserialize(schemaClass)) }
                 if (batch.messages.isEmpty()) yield(null)
+                else batch.messages.forEach { msg -> yield(msg.deserialize(schemaClass)) }
             }
         }
     }

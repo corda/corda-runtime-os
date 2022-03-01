@@ -14,9 +14,15 @@ internal class MessagesController(private val appContext: AppContext) {
     }
 
     fun getMessages() = Handler { ctx ->
-        val (messages, timestamp) = appContext.messagesGateway.readFrom(ctx.topicParam, ctx.schemaQuery, ctx.fromQuery)
-        val nextBatchTimestamp = if (messages.isEmpty()) timestamp else messages.maxOf { it.timestamp } + 1
-        val batch = MsgBatch(ctx.schemaQuery, messages, nextBatchTimestamp)
+        val (messages, nextBatchTimestamp) = when  {
+            ctx.fromQuery < 0L -> appContext.messagesGateway.readFromEnd(ctx.topicParam, ctx.schemaQuery)
+            ctx.fromQuery == 0L -> appContext.messagesGateway.readFromBeginning(ctx.topicParam, ctx.schemaQuery)
+            else -> appContext.messagesGateway.readFrom(ctx.topicParam, ctx.schemaQuery, ctx.fromQuery)
+        }
+
+        val filter = if (ctx.keyQuery == null) messages else messages.filter { it.key == ctx.keyQuery }
+        val batch = MsgBatch(ctx.schemaQuery, filter, nextBatchTimestamp)
+
         ctx.json(batch)
     }
 
