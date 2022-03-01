@@ -177,7 +177,7 @@ class CpkWriteServiceImpl @Activate constructor(
         val publisher = publisherFactory.createPublisher(
             PublisherConfig(CPK_WRITE_CLIENT),
             config
-        )
+        ).also { it.start() }
         cpkChunksPublisher = KafkaCpkChunksPublisher(publisher, timeout!!, VirtualNode.CPK_FILE_TOPIC)
     }
 
