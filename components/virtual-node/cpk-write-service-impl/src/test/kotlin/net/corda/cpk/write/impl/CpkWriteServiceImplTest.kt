@@ -98,7 +98,7 @@ class CpkWriteServiceImplTest {
         whenever(config[ConfigKeys.MESSAGING_CONFIG]).thenReturn(mock())
         whenever(config.toMessagingConfig()).thenReturn(mock())
         whenever(publisherFactory.createPublisher(any(), any())).thenReturn(mock())
-        whenever(dbConnectionManager.clusterDbEntityManagerFactory).thenReturn(mock())
+        whenever(dbConnectionManager.getClusterEntityManagerFactory()).thenReturn(mock())
         whenever(subscriptionFactory.createCompactedSubscription<Any, Any>(any(), any(), any())).thenReturn(mock())
 
         cpkWriteServiceImpl.processEvent(ConfigChangedEvent(keys, config), coordinator)
