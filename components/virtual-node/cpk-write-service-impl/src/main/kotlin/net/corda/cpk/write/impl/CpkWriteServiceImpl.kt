@@ -15,6 +15,7 @@ import net.corda.cpk.write.impl.services.kafka.impl.CpkChecksumsCacheImpl
 import net.corda.cpk.write.impl.services.kafka.impl.KafkaCpkChunksPublisher
 import net.corda.data.chunking.CpkChunkId
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -149,20 +150,34 @@ class CpkWriteServiceImpl @Activate constructor(
         // TODO fill the following with configuration once we know where they lie?
         timeout = 20.seconds
         timerEventInterval = 10.seconds
+
+        createCpkChecksumsCache(config)
+        createCpkChunksPublisher(config)
+        createCpkStorage()
+
+        coordinator.updateStatus(LifecycleStatus.UP)
+        setTimerEvent(coordinator)
+    }
+
+    private fun createCpkChecksumsCache(config: SmartConfig) {
+        cpkChecksumsCache?.close()
         cpkChecksumsCache = CpkChecksumsCacheImpl(
             subscriptionFactory,
             SubscriptionConfig(CPK_WRITE_GROUP, CPK_WRITE_TOPIC),
             config
         ).also { it.start() }
+    }
 
+    private fun createCpkChunksPublisher(config: SmartConfig) {
         val publisher = publisherFactory.createPublisher(
             PublisherConfig(CPK_WRITE_CLIENT),
             config
         )
         cpkChunksPublisher = KafkaCpkChunksPublisher(publisher, timeout!!, CPK_WRITE_TOPIC)
+    }
+
+    private fun createCpkStorage() {
         cpkStorage = DBCpkStorage(dbConnectionManager.clusterDbEntityManagerFactory)
-        coordinator.updateStatus(LifecycleStatus.UP)
-        setTimerEvent(coordinator)
     }
 
     private fun onReconcileCpkEvent(coordinator: LifecycleCoordinator) {
