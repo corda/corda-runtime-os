@@ -9,7 +9,7 @@ import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
 import net.corda.data.membership.rpc.response.RegistrationResponse
 import net.corda.data.membership.rpc.response.RegistrationStatus
-import net.corda.membership.MembershipRegistrationException
+import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.membership.registration.provider.RegistrationProvider
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.v5.base.util.contextLogger
@@ -107,8 +107,8 @@ class MemberOpsServiceProcessor(
                 context.requestTimestamp,
                 RegistrationStatus.valueOf(result.outcome.toString()),
                 REGISTRATION_PROTOCOL_VERSION,
-                KeyValuePairList(),
-                KeyValuePairList()
+                KeyValuePairList(emptyList()),
+                KeyValuePairList(emptyList())
             )
         }
     }
