@@ -33,7 +33,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.Schemas
+import net.corda.schema.Schemas.VirtualNode
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -66,7 +66,6 @@ class CpkWriteServiceImpl @Activate constructor(
     companion object {
         val logger: Logger = contextLogger()
 
-        const val CPK_WRITE_TOPIC = Schemas.VirtualNode.CPK_FILE_TOPIC
         const val CPK_WRITE_GROUP = "cpk.writer"
         const val CPK_WRITE_CLIENT = "$CPK_WRITE_GROUP.client"
     }
@@ -168,7 +167,7 @@ class CpkWriteServiceImpl @Activate constructor(
         cpkChecksumsCache?.close()
         cpkChecksumsCache = CpkChecksumsCacheImpl(
             subscriptionFactory,
-            SubscriptionConfig(CPK_WRITE_GROUP, CPK_WRITE_TOPIC),
+            SubscriptionConfig(CPK_WRITE_GROUP, VirtualNode.CPK_FILE_TOPIC),
             config
         ).also { it.start() }
     }
@@ -178,7 +177,7 @@ class CpkWriteServiceImpl @Activate constructor(
             PublisherConfig(CPK_WRITE_CLIENT),
             config
         )
-        cpkChunksPublisher = KafkaCpkChunksPublisher(publisher, timeout!!, CPK_WRITE_TOPIC)
+        cpkChunksPublisher = KafkaCpkChunksPublisher(publisher, timeout!!, VirtualNode.CPK_FILE_TOPIC)
     }
 
     private fun createCpkStorage() {
