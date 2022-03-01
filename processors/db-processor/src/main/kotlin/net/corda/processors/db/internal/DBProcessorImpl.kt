@@ -9,7 +9,6 @@ import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.ClassloaderChangeLog.ChangeLogResourceFiles
 import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.db.connection.manager.DbConnectionsRepository
 import net.corda.db.connection.manager.dbFallbackConfig
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
