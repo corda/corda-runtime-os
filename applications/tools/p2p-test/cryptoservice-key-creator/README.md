@@ -29,7 +29,7 @@ The file provided on the `--keys-config` CLI parameter should have the following
           "password": "keystore-password",
           "algo": "RSA",
           "holdingIdentity": {
-            "x500name": "O=Alice, L=London, C=GB",
+            "x500Name": "O=Alice, L=London, C=GB",
             "groupId": "group-1"
           }
         },

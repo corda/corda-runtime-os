@@ -242,7 +242,7 @@ class ConfigureAll : Runnable {
                     "password" to "password",
                     "algo" to "ECDSA",
                     "holdingIdentity" to mapOf(
-                        "x500name" to x500name,
+                        "x500Name" to x500name,
                         "groupId" to groupId
                     ),
                 ),
@@ -252,7 +252,7 @@ class ConfigureAll : Runnable {
                     "password" to "password",
                     "algo" to "RSA",
                     "holdingIdentity" to mapOf(
-                        "x500name" to x500name,
+                        "x500Name" to x500name,
                         "groupId" to groupId
                     ),
                 )
