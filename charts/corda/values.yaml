@@ -1,0 +1,6 @@
+# Default values for corda.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+fullnameOverride: ""
+imageTagOverride: ""

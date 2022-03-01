@@ -82,29 +82,29 @@ pipeline {
                script {
                   env.BASE_IMAGE = params.BUILD_REV ? "preTest-${params.BUILD_REV}" : "unstable"
                }
-               sh './corda-cli/bin/corda-cli cluster configure k8s "${NAMESPACE}"'
-               sh './corda-cli/bin/corda-cli --stacktrace cluster deploy -t "${BASE_IMAGE}" -c "${NAMESPACE}" -f .ci/e2eTests/cluster.yaml | kubectl apply -f /dev/stdin'
+               sh 'helm install corda ./charts/corda \
+                    --set fullnameOverride=$NAMESPACE --set imageTag=$BASE_IMAGE -n $NAMESPACE --wait'
             }
         }
-        stage('Wait for cluster') {
-            steps {
-                sh '''
-                    ./corda-cli/bin/corda-cli cluster wait -c "${NAMESPACE}"
-                    # Wait for the job to create the topics
-                    kubectl wait -n ${NAMESPACE} --for=condition=complete --timeout=30s job/create-topics
-                '''
-            }
-            post {
-                unsuccessful {
-                    sh '''
-                        kubectl logs -lfamily=e2e -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
-                        kubectl describe all -n ${NAMESPACE} > describe.txt
-                    '''
-                    archiveArtifacts artifacts: 'logs.txt, describe.txt', allowEmptyArchive: true
-                    sh 'rm -f logs.txt describe.txt'
-                }
-            }
-        }
+        // stage('Wait for cluster') {
+        //     steps {
+        //         sh '''
+        //             ./corda-cli/bin/corda-cli cluster wait -c "${NAMESPACE}"
+        //             # Wait for the job to create the topics
+        //             kubectl wait -n ${NAMESPACE} --for=condition=complete --timeout=30s job/create-topics
+        //         '''
+        //     }
+        //     post {
+        //         unsuccessful {
+        //             sh '''
+        //                 kubectl logs -lfamily=e2e -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
+        //                 kubectl describe all -n ${NAMESPACE} > describe.txt
+        //             '''
+        //             archiveArtifacts artifacts: 'logs.txt, describe.txt', allowEmptyArchive: true
+        //             sh 'rm -f logs.txt describe.txt'
+        //         }
+        //     }
+        // }
         stage('Forward port and run tests') {
             steps {
 
