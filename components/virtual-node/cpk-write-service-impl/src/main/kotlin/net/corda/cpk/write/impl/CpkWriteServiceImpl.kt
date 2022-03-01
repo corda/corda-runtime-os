@@ -266,7 +266,7 @@ class CpkWriteServiceImpl @Activate constructor(
     }
 
     private fun createCpkStorage() {
-        cpkStorage = DBCpkStorage(dbConnectionManager.clusterDbEntityManagerFactory)
+        cpkStorage = DBCpkStorage(dbConnectionManager.getClusterEntityManagerFactory())
     }
 
     data class ReconcileCpkEvent(override val key: String): TimerEvent
