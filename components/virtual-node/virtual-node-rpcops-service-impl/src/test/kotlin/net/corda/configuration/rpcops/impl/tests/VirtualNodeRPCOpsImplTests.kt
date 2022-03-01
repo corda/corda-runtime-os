@@ -36,7 +36,7 @@ class VirtualNodeRPCOpsImplTests {
     private val cpiId = CPIIdentifier(cpiIdAvro.name, cpiIdAvro.version, cpiIdAvro.signerSummaryHash.toString())
     private val holdingId = HoldingIdentity("o=test,l=test,c=GB", "mgmGroupId")
 
-    private val httpCreateVNRequest = HTTPCreateVirtualNodeRequest(holdingId.x500Name, "hash")
+    private val httpCreateVNRequest = HTTPCreateVirtualNodeRequest(holdingId.x500Name, "hash", null, null, null, null)
     private val vnCreateSuccessfulResponse = VirtualNodeCreationResponse(
         true,
         null,
@@ -81,7 +81,7 @@ class VirtualNodeRPCOpsImplTests {
 
     @Test
     fun `createVirtualNode sends the correct request to the RPC sender`() {
-        val rpcRequest = httpCreateVNRequest.run { VirtualNodeCreationRequest(x500Name, cpiIdHash) }
+        val rpcRequest = httpCreateVNRequest.run { VirtualNodeCreationRequest(x500Name, cpiIdHash, null, null, null, null, null) }
 
         val (rpcSender, vnodeRPCOps) = getVirtualNodeRPCOps()
 
@@ -109,7 +109,7 @@ class VirtualNodeRPCOpsImplTests {
         val (_, vnodeRPCOps) = getVirtualNodeRPCOps()
 
         val badX500 = "invalid"
-        val badX500Req = HTTPCreateVirtualNodeRequest(badX500, "hash")
+        val badX500Req = HTTPCreateVirtualNodeRequest(badX500, "hash", null, null, null, null)
 
         vnodeRPCOps.createAndStartRpcSender(mock())
         vnodeRPCOps.setTimeout(rpcRequestTimeoutDuration)
