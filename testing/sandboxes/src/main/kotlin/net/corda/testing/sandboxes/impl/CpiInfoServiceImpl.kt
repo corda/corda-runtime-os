@@ -2,7 +2,8 @@ package net.corda.testing.sandboxes.impl
 
 import net.corda.cpiinfo.read.CpiInfoListener
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.packaging.CPI
+import net.corda.libs.packaging.CpiIdentifier
+import net.corda.libs.packaging.CpiMetadata
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.v5.base.util.loggerFor
 import org.osgi.service.component.annotations.Activate
@@ -20,8 +21,9 @@ class CpiInfoServiceImpl @Activate constructor(
     override val isRunning: Boolean
         get() = true
 
-    override fun get(identifier: CPI.Identifier): CPI.Metadata? {
-        return loader.get(identifier).get()?.metadata
+    override fun get(identifier: CpiIdentifier): CpiMetadata? {
+        val cpiFile = loader.get(identifier)
+        return cpiFile.get()
     }
 
     override fun registerCallback(listener: CpiInfoListener): AutoCloseable {

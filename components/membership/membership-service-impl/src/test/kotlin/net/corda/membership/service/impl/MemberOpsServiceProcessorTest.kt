@@ -9,12 +9,12 @@ import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
 import net.corda.data.membership.rpc.response.RegistrationResponse
 import net.corda.data.membership.rpc.response.RegistrationStatus
-import net.corda.membership.registration.MembershipRegistrationException
+import net.corda.libs.packaging.CpiIdentifier
 import net.corda.membership.registration.MemberRegistrationService
+import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
 import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.membership.registration.provider.RegistrationProvider
-import net.corda.packaging.CPI
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -60,7 +60,7 @@ class MemberOpsServiceProcessorTest {
             virtualNodeInfoReadService = mock {
                 on { getById(HOLDING_IDENTITY_STRING) } doReturn VirtualNodeInfo(
                     holdingIdentity,
-                    CPI.Identifier.newInstance("test", "test", SecureHash("algorithm", "1234".toByteArray()))
+                    CpiIdentifier("test", "test", SecureHash("algorithm", "1234".toByteArray()))
                 )
             }
             processor = MemberOpsServiceProcessor(registrationProvider, virtualNodeInfoReadService)
