@@ -1,6 +1,6 @@
 package net.corda.sandbox.internal.sandbox
 
-import net.corda.packaging.CPK
+import net.corda.libs.packaging.CpkMetadata
 import net.corda.sandbox.SandboxException
 import org.osgi.framework.Bundle
 import org.osgi.framework.Constants.SYSTEM_BUNDLE_ID
@@ -11,7 +11,7 @@ import java.util.UUID
 /** Extends [SandboxImpl] to implement [CpkSandbox]. */
 internal class CpkSandboxImpl(
     id: UUID,
-    override val cpk: CPK,
+    override val cpkMetadata: CpkMetadata,
     override val mainBundle: Bundle,
     privateBundles: Set<Bundle>
 ) : SandboxImpl(id, setOf(mainBundle), privateBundles), CpkSandbox {

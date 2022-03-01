@@ -3,10 +3,10 @@ package net.corda.cpiinfo.read.impl
 import net.corda.cpiinfo.read.CpiInfoListener
 import net.corda.data.packaging.CPIIdentifier
 import net.corda.data.packaging.CPIMetadata
+import net.corda.libs.packaging.CpiIdentifier
+import net.corda.libs.packaging.CpiMetadata
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.packaging.CPI
-import net.corda.packaging.converters.toAvro
 import net.corda.packaging.converters.toCorda
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
@@ -106,8 +106,9 @@ class CpiInfoReaderProcessor(private val onStatusUpCallback: () -> Unit, private
         listeners.forEach { it.value.onUpdate(setOf(newRecord.key.toCorda()), currentSnapshot) }
     }
 
-    fun get(identifier: CPI.Identifier): CPI.Metadata? {
-        return cpiInfoMap.get(identifier.toAvro())?.toCorda()
+    fun get(identifier: CpiIdentifier): CpiMetadata? {
+        val avroMsg = cpiInfoMap.get(identifier.toAvro()) ?: return null
+        return CpiMetadata.fromAvro(avroMsg)
     }
 
     fun registerCallback(listener: CpiInfoListener): AutoCloseable {

@@ -5,6 +5,7 @@ package net.corda.applications.flowworker.setup.tasks
 import net.corda.applications.flowworker.setup.Task
 import net.corda.applications.flowworker.setup.TaskContext
 import net.corda.data.config.Configuration
+import net.corda.libs.packaging.CpiIdentifier
 import net.corda.messaging.api.records.Record
 import net.corda.packaging.CPI
 import net.corda.packaging.converters.toAvro
@@ -49,7 +50,9 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
 
         val cpi = cpis.first()
         val x500Name = context.startArgs.x500NName
-        val vNode = VirtualNodeInfo(HoldingIdentity(x500Name, "1"), cpi.metadata.id)
+        val vNode = VirtualNodeInfo(
+            HoldingIdentity(x500Name, "1"),
+            CpiIdentifier.fromLegacy(cpi.metadata.id))
         val shortId = HoldingIdentity(x500Name, "1").id
         log.info("Published Holding Identity with short ID='${shortId}'")
 

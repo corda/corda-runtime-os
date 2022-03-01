@@ -1,9 +1,10 @@
 package net.corda.virtualnode
 
+import net.corda.libs.packaging.CpiIdentifier
 import net.corda.packaging.CPI
 import net.corda.packaging.converters.toAvro
 import net.corda.packaging.converters.toCorda
-import java.util.*
+import java.util.UUID
 
 /**
  * Contains information relevant to a particular virtual node (a CPI and a holding identity).
@@ -16,7 +17,7 @@ import java.util.*
  *
  * Also see https://github.com/corda/platform-eng-design/blob/mnesbit-rpc-apis/core/corda-5/corda-5.1/rpc-apis/rpc_api.md#cluster-database
  */
-data class VirtualNodeInfo(val holdingIdentity: HoldingIdentity, val cpiIdentifier: CPI.Identifier)
+data class VirtualNodeInfo(val holdingIdentity: HoldingIdentity, val cpiIdentifier: CpiIdentifier)
 
 fun VirtualNodeInfo.toAvro(): net.corda.data.virtualnode.VirtualNodeInfo =
     with (holdingIdentity) {
@@ -37,5 +38,5 @@ fun net.corda.data.virtualnode.VirtualNodeInfo.toCorda(): VirtualNodeInfo {
     holdingIdentity.vaultDmlConnectionId = vaultDmlConnectionId?.let { UUID.fromString(vaultDmlConnectionId) }
     holdingIdentity.cryptoDdlConnectionId = cryptoDdlConnectionId?.let { UUID.fromString(cryptoDdlConnectionId) }
     holdingIdentity.cryptoDmlConnectionId = cryptoDmlConnectionId?.let { UUID.fromString(cryptoDmlConnectionId) }
-    return VirtualNodeInfo(holdingIdentity, cpiIdentifier.toCorda())
+    return VirtualNodeInfo(holdingIdentity, CpiIdentifier.fromAvro(cpiIdentifier))
 }
