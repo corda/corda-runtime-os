@@ -151,8 +151,13 @@ class CpkWriteServiceImpl @Activate constructor(
         timeout = 20.seconds
         timerEventInterval = 10.seconds
 
+        try {
+            createCpkChunksPublisher(config)
+        } catch (e: Exception) {
+            closeResources()
+            coordinator.updateStatus(LifecycleStatus.ERROR)
+        }
         createCpkChecksumsCache(config)
-        createCpkChunksPublisher(config)
         createCpkStorage()
 
         coordinator.updateStatus(LifecycleStatus.UP)
