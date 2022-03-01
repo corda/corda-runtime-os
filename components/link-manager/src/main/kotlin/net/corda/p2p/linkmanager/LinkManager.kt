@@ -33,7 +33,6 @@ import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.protocol.api.Session
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.delivery.DeliveryTracker
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.DataMessage
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.extractPayload
@@ -59,6 +58,8 @@ import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
+import net.corda.virtualnode.toAvro
+import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.time.Instant
@@ -239,8 +240,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         }
 
         private fun processUnauthenticatedMessage(message: UnauthenticatedMessage): List<Record<String, *>> {
-            logger.debug { "Processing outbound ${message.javaClass} to ${message.header.destination.toHoldingIdentity()}." }
-            return if (linkManagerHostingMap.isHostedLocally(message.header.destination.toHoldingIdentity())) {
+            logger.debug { "Processing outbound ${message.javaClass} to ${message.header.destination.toCorda()}." }
+            return if (linkManagerHostingMap.isHostedLocally(message.header.destination.toCorda())) {
                 listOf(Record(P2P_IN_TOPIC, generateKey(), AppMessage(message)))
             } else {
                 val linkOutMessage = linkOutFromUnauthenticatedMessage(message, networkMap)
@@ -259,24 +260,24 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             isReplay: Boolean = false
         ): List<Record<String, *>> {
             logger.trace{ "Processing outbound ${messageAndKey.message.javaClass} with ID ${messageAndKey.message.header.messageId} " +
-                    "to ${messageAndKey.message.header.destination.toHoldingIdentity()}." }
-            val isHostedLocally = linkManagerHostingMap.isHostedLocally(messageAndKey.message.header.destination.toHoldingIdentity())
+                    "to ${messageAndKey.message.header.destination.toCorda()}." }
+            val isHostedLocally = linkManagerHostingMap.isHostedLocally(messageAndKey.message.header.destination.toCorda())
             return if (isHostedLocally) {
                 mutableListOf(Record(P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)))
             } else {
                 when (val state = sessionManager.processOutboundMessage(messageAndKey)) {
                     is SessionState.NewSessionNeeded -> {
-                        logger.trace { "No existing session with ${messageAndKey.message.header.destination.toHoldingIdentity()}. " +
+                        logger.trace { "No existing session with ${messageAndKey.message.header.destination.toCorda()}. " +
                                 "Initiating a new one.." }
                         recordsForNewSession(state)
                     }
                     is SessionState.SessionEstablished -> {
-                        logger.trace { "Session already established with ${messageAndKey.message.header.destination.toHoldingIdentity()}." +
+                        logger.trace { "Session already established with ${messageAndKey.message.header.destination.toCorda()}." +
                                 " Using this to send outbound message." }
                         recordsForSessionEstablished(state, messageAndKey)
                     }
                     is SessionState.SessionAlreadyPending, SessionState.CannotEstablishSession -> {
-                        logger.trace { "Session already pending with ${messageAndKey.message.header.destination.toHoldingIdentity()}. " +
+                        logger.trace { "Session already pending with ${messageAndKey.message.header.destination.toCorda()}. " +
                                 "Message queued until session is established." }
                         emptyList()
                     }
@@ -431,8 +432,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             messages: MutableList<Record<*, *>>
         )
         {
-            val sessionSource = counterparties.counterpartyId.toHoldingIdentity()
-            val sessionDestination = counterparties.ourId.toHoldingIdentity()
+            val sessionSource = counterparties.counterpartyId.toAvro()
+            val sessionDestination = counterparties.ourId.toAvro()
             val messageDestination = innerMessage.message.header.destination
             val messageSource = innerMessage.message.header.source
             if(sessionSource == messageSource && sessionDestination == messageDestination) {
@@ -482,8 +483,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             counterparties: SessionCounterparties,
             session: Session
         ): Record<String, LinkOutMessage>? {
-            val ackDest = counterparties.counterpartyId.toHoldingIdentity()
-            val ackSource = counterparties.ourId.toHoldingIdentity()
+            val ackDest = counterparties.counterpartyId.toAvro()
+            val ackSource = counterparties.ourId.toAvro()
             val ack = linkOutMessageFromAck(
                 MessageAck(HeartbeatMessageAck()),
                 ackSource,

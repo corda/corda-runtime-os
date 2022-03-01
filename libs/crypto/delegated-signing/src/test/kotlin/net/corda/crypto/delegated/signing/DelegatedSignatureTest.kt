@@ -119,15 +119,17 @@ class DelegatedSignatureTest {
     @Test
     fun `engineSign returns data from service`() {
         val mockPublicKey = mock<PublicKey>()
+        val tenant = "id"
         val data = "data".toByteArray()
         val sign = "sign".toByteArray()
         val signature = Signature.getInstance(name)
         val service = mock<DelegatedSigner> {
-            on { sign(eq(mockPublicKey), any(), eq(data)) } doReturn sign
+            on { sign(eq(tenant), eq(mockPublicKey), any(), eq(data)) } doReturn sign
         }
         val privateKey = mock<DelegatedPrivateKey> {
             on { publicKey } doReturn mockPublicKey
             on { signer } doReturn service
+            on { tenantId } doReturn tenant
         }
         signature.initSign(privateKey)
         signature.update(data)
@@ -141,12 +143,14 @@ class DelegatedSignatureTest {
         val data = "data".toByteArray()
         val signature = Signature.getInstance(name)
         val spec = argumentCaptor<SignatureSpec>()
+        val tenant = "id"
         val service = mock<DelegatedSigner> {
-            on { sign(eq(mockPublicKey), spec.capture(), eq(data)) } doReturn ByteArray(0)
+            on { sign(eq(tenant), eq(mockPublicKey), spec.capture(), eq(data)) } doReturn ByteArray(0)
         }
         val privateKey = mock<DelegatedPrivateKey> {
             on { signer } doReturn service
             on { publicKey } doReturn mockPublicKey
+            on { tenantId } doReturn tenant
         }
         val parameter = mock<AlgorithmParameterSpec>()
 
@@ -164,14 +168,16 @@ class DelegatedSignatureTest {
     fun `engineSign set the correct name`() {
         val mockPublicKey = mock<PublicKey>()
         val data = "data".toByteArray()
+        val tenant = "id"
         val signature = Signature.getInstance(name)
         val spec = argumentCaptor<SignatureSpec>()
         val service = mock<DelegatedSigner> {
-            on { sign(eq(mockPublicKey), spec.capture(), eq(data)) } doReturn ByteArray(0)
+            on { sign(eq(tenant), eq(mockPublicKey), spec.capture(), eq(data)) } doReturn ByteArray(0)
         }
         val privateKey = mock<DelegatedPrivateKey> {
             on { signer } doReturn service
             on { publicKey } doReturn mockPublicKey
+            on { tenantId } doReturn tenant
         }
 
         signature.initSign(privateKey)

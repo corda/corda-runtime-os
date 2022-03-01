@@ -27,19 +27,25 @@ The file provided on the `--keys-config` CLI parameter should have the following
           "alias": "key1",
           "keystoreFile": "<path_to_the_keystore_file>",
           "password": "keystore-password",
-          "algo": "RSA"
+          "algo": "RSA",
+          "holdingIdentity": {
+            "x500name": "O=Alice, L=London, C=GB",
+            "groupId": "group-1"
+          }
         },
         {
           "alias": "key2",
           "keystoreFile": "<path_to_the_keystore_file>",
           "password": "keystore-password",
-          "algo": "ECDSA"
+          "algo": "ECDSA",
+          "tenantId": "0F0A1424B0E0"
         }
     ]
 }
 ```
 Note: the `alias` field acts as a unique identifier for each key pair entry and thus needs to be unique for each entry. If you want to deploy multiple identities behind a single host, make sure you use a different alias for the entry of each identity. 
 
+Note: If the `tenantId` will be omitted, it will be calculated based on the `holdingIdentity`. If the `tenantId` will be provided, the `holdingIdentity` will be ignored.
 
 Key files are expected to be `.jks` files. You can create them using Java's `keytool`, e.g.:
 ```

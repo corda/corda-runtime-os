@@ -240,13 +240,21 @@ class ConfigureAll : Runnable {
                     "alias" to "ec",
                     "keystoreFile" to keyStoreFile.absolutePath,
                     "password" to "password",
-                    "algo" to "ECDSA"
+                    "algo" to "ECDSA",
+                    "holdingIdentity" to mapOf(
+                        "x500name" to x500name,
+                        "groupId" to groupId
+                    ),
                 ),
                 mapOf(
                     "alias" to "$host.$x500name.rsa",
                     "keystoreFile" to sslKeyStore.absolutePath,
                     "password" to "password",
                     "algo" to "RSA",
+                    "holdingIdentity" to mapOf(
+                        "x500name" to x500name,
+                        "groupId" to groupId
+                    ),
                 )
             ),
         )

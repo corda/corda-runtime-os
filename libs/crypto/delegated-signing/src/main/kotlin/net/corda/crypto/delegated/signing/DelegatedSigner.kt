@@ -5,5 +5,10 @@ import java.security.PublicKey
 
 interface DelegatedSigner {
 
-    fun sign(publicKey: PublicKey, spec: SignatureSpec, data: ByteArray): ByteArray
+    fun sign(
+        tenantId: String,
+        publicKey: PublicKey,
+        signatureSpec: SignatureSpec,
+        data: ByteArray
+    ): ByteArray
 }

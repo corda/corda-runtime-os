@@ -30,6 +30,7 @@ import net.corda.p2p.gateway.messaging.http.SniCalculator
 import net.corda.p2p.gateway.messaging.http.TrustStoresMap
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
+import net.corda.p2p.test.TenantKeys
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.TestSchema
@@ -196,11 +197,15 @@ open class TestBase {
                     str.toString()
                 }
             }
+            val tenantId = "id"
             val name = PrincipalUtil.getSubjectX509Principal(certificateChain.first() as X509Certificate).name
             val certificateRecord = Record(
                 Schemas.P2P.GATEWAY_TLS_CERTIFICATES,
                 name,
-                GatewayTlsCertificates(pems)
+                GatewayTlsCertificates(
+                    tenantId,
+                    pems,
+                )
             )
             val privateKey = keyStoreWithPassword.keyStore.getKey(alias, keyStoreWithPassword.password.toCharArray())
             val publicKey = keyStoreWithPassword.keyStore.getCertificate(alias).publicKey
@@ -215,10 +220,14 @@ open class TestBase {
                 ByteBuffer.wrap(publicKey.encoded),
                 ByteBuffer.wrap(privateKey.encoded)
             )
+            val tenantKeys = TenantKeys(
+                tenantId,
+                keyPair,
+            )
             val keysRecord = Record(
                 TestSchema.CRYPTO_KEYS_TOPIC,
                 alias,
-                keyPair
+                tenantKeys
             )
             listOf(certificateRecord, keysRecord)
         }

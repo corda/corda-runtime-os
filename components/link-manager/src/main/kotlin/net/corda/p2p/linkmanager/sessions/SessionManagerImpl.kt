@@ -32,7 +32,6 @@ import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
 import net.corda.p2p.linkmanager.messaging.MessageConverter
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.createLinkOutMessage
@@ -51,6 +50,8 @@ import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
+import net.corda.virtualnode.toAvro
+import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.time.Clock
 import java.time.Duration
@@ -88,8 +89,8 @@ open class SessionManagerImpl(
 
     companion object {
         fun getSessionCounterpartiesFromMessage(message: AuthenticatedMessage): SessionCounterparties {
-            val peer = message.header.destination.toHoldingIdentity()
-            val us = message.header.source.toHoldingIdentity()
+            val peer = message.header.destination.toCorda()
+            val us = message.header.source.toCorda()
             return SessionCounterparties(us, peer)
         }
         private const val SESSION_MANAGER_CLIENT_ID = "session-manager"
@@ -364,7 +365,7 @@ open class SessionManagerImpl(
         }
 
         val signWithOurGroupId = { data: ByteArray ->
-            cryptoService.sign(ourMemberInfo.publicKey, ourMemberInfo.getSignatureSpec(), data)
+            cryptoService.sign(ourMemberInfo.holdingIdentity.id, ourMemberInfo.publicKey, ourMemberInfo.getSignatureSpec(), data)
         }
         val payload = try {
             session.generateOurHandshakeMessage(
@@ -535,7 +536,15 @@ open class SessionManagerImpl(
 
         val response = try {
             val ourPublicKey = ourMemberInfo.publicKey
-            val signData = { data: ByteArray -> cryptoService.sign(ourMemberInfo.publicKey, ourMemberInfo.getSignatureSpec(), data) }
+            val tenantId = ourMemberInfo.holdingIdentity.id
+            val signData = { data: ByteArray ->
+                cryptoService.sign(
+                    tenantId,
+                    ourMemberInfo.publicKey,
+                    ourMemberInfo.getSignatureSpec(),
+                    data
+                )
+            }
             session.generateOurHandshakeMessage(ourPublicKey, signData)
         } catch (exception: SecurityException) {
             logger.warn(
@@ -725,8 +734,8 @@ open class SessionManagerImpl(
                 logger.trace { "Sending heartbeat message between ${counterparties.ourId} (our Identity) and " +
                     "${counterparties.counterpartyId}." }
                 sendHeartbeatMessage(
-                    counterparties.ourId.toHoldingIdentity(),
-                    counterparties.counterpartyId.toHoldingIdentity(),
+                    counterparties.ourId.toAvro(),
+                    counterparties.counterpartyId.toAvro(),
                     session,
                 )
                 executorService.schedule(

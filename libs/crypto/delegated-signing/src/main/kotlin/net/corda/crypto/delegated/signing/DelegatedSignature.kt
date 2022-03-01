@@ -39,6 +39,7 @@ internal class DelegatedSignature(
                 "'engineSign' invoked without a key having been assigned previously via 'engineInitSign'"
             )
             key.signer.sign(
+                key.tenantId,
                 key.publicKey,
                 spec,
                 data.toByteArray()

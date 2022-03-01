@@ -1,6 +1,7 @@
 package net.corda.p2p.linkmanager
 
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.virtualnode.HoldingIdentity
 
 /**
  * This interface represents a component that has knowledge about the identities that are hosted locally.
@@ -10,7 +11,7 @@ import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
  */
 interface LinkManagerHostingMap : LifecycleWithDominoTile {
 
-    fun isHostedLocally(identity: LinkManagerNetworkMap.HoldingIdentity): Boolean
+    fun isHostedLocally(identity: HoldingIdentity): Boolean
 
     fun registerListener(listener: HostingMapListener)
 }

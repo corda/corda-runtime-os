@@ -14,6 +14,7 @@ import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
 import net.corda.p2p.test.NetworkMapEntry
 import net.corda.schema.TestSchema.Companion.NETWORK_MAP_TOPIC
+import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
@@ -114,7 +115,7 @@ class StubNetworkMapTest {
         assertThat(networkMap.getNetworkType(groupId1)).isEqualTo(LinkManagerNetworkMap.NetworkType.CORDA_4)
         assertThat(networkMap.getNetworkType(groupId2)).isEqualTo(LinkManagerNetworkMap.NetworkType.CORDA_5)
 
-        val aliceMemberInfoByIdentity = networkMap.getMemberInfo(LinkManagerNetworkMap.HoldingIdentity(aliceName, groupId1))
+        val aliceMemberInfoByIdentity = networkMap.getMemberInfo(HoldingIdentity(aliceName, groupId1).toCorda())
         assertThat(aliceMemberInfoByIdentity!!.publicKey).isEqualTo(aliceKeyPair.public)
         assertThat(aliceMemberInfoByIdentity.endPoint.address).isEqualTo(aliceAddress)
         assertThat(aliceMemberInfoByIdentity.publicKeyAlgorithm).isEqualTo(net.corda.p2p.crypto.protocol.api.KeyAlgorithm.RSA)
@@ -122,12 +123,12 @@ class StubNetworkMapTest {
         val aliceMemberInfoByKeyHash = networkMap.getMemberInfo(calculateHash(aliceKeyPair.public.encoded), groupId1)
         assertThat(aliceMemberInfoByKeyHash).isEqualTo(aliceMemberInfoByIdentity)
 
-        assertThat(networkMap.getMemberInfo(LinkManagerNetworkMap.HoldingIdentity(bobName, groupId1))).isNotNull
-        assertThat(networkMap.getMemberInfo(LinkManagerNetworkMap.HoldingIdentity(charlieName, groupId2))).isNotNull
+        assertThat(networkMap.getMemberInfo(HoldingIdentity(bobName, groupId1).toCorda())).isNotNull
+        assertThat(networkMap.getMemberInfo(HoldingIdentity(charlieName, groupId2).toCorda())).isNotNull
 
         clientProcessor!!.onNext(Record(NETWORK_MAP_TOPIC, charlieEntry.first, null), charlieEntry.second, snapshot)
 
-        assertThat(networkMap.getMemberInfo(LinkManagerNetworkMap.HoldingIdentity(charlieName, groupId1))).isNull()
+        assertThat(networkMap.getMemberInfo(HoldingIdentity(charlieName, groupId1).toCorda())).isNull()
     }
 
     @Test

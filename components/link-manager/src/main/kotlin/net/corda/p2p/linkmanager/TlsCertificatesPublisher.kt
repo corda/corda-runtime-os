@@ -14,9 +14,10 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.GatewayTlsCertificates
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_CERTIFICATES
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_TRUSTSTORES
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toCorda
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -45,15 +46,15 @@ internal class TlsCertificatesPublisher(
         configuration,
     )
 
-    private fun LinkManagerNetworkMap.HoldingIdentity.asString(): String {
+    private fun HoldingIdentity.asString(): String {
         return "${this.groupId}-${this.x500Name}"
     }
 
-    private fun publishIfNeeded(identity: LinkManagerNetworkMap.HoldingIdentity, certificates: List<PemCertificates>) {
+    private fun publishIfNeeded(identity: HoldingIdentity, certificates: List<PemCertificates>) {
         publishedIds.compute(identity.asString()) { id, publishedCertificates ->
             val certificatesSet = certificates.toSet()
             if (certificatesSet != publishedCertificates) {
-                val record = Record(GATEWAY_TLS_CERTIFICATES, id, GatewayTlsCertificates(certificates))
+                val record = Record(GATEWAY_TLS_CERTIFICATES, id, GatewayTlsCertificates(identity.id, certificates))
                 publisher.publish(
                     listOf(record)
                 ).forEach {
@@ -134,7 +135,7 @@ internal class TlsCertificatesPublisher(
         while (ready.isDone) {
             val identityInfo = toPublish.poll() ?: return
             publishIfNeeded(
-                identityInfo.holdingIdentity.toHoldingIdentity(),
+                identityInfo.holdingIdentity.toCorda(),
                 identityInfo.tlsCertificates
             )
         }

@@ -98,18 +98,18 @@ class CertificatesReaderTest {
         fun `onSnapshot save the correct data`() {
             processor.firstValue.onSnapshot(
                 mapOf(
-                    "one" to GatewayTlsCertificates(certificates.keys.toList())
+                    "one" to GatewayTlsCertificates("one", certificates.keys.toList())
                 )
             )
 
-            assertThat(reader.aliasToCertificates["one"]).containsAll(certificates.values)
+            assertThat(reader.aliasToTenantInfo["one"]?.certificateChain).containsAll(certificates.values)
         }
 
         @Test
         fun `onNext remove data with null value`() {
             processor.firstValue.onSnapshot(
                 mapOf(
-                    "one" to GatewayTlsCertificates(certificates.keys.toList())
+                    "one" to GatewayTlsCertificates("one", certificates.keys.toList())
                 )
             )
 
@@ -123,7 +123,7 @@ class CertificatesReaderTest {
                 emptyMap()
             )
 
-            assertThat(reader.aliasToCertificates["one"]).isNull()
+            assertThat(reader.aliasToTenantInfo["one"]?.certificateChain).isNull()
         }
 
         @Test
@@ -132,13 +132,13 @@ class CertificatesReaderTest {
                 Record(
                     GATEWAY_TLS_CERTIFICATES,
                     "one",
-                    GatewayTlsCertificates(certificates.keys.toList()),
+                    GatewayTlsCertificates("one", certificates.keys.toList()),
                 ),
                 null,
                 emptyMap()
             )
 
-            assertThat(reader.aliasToCertificates["one"]).containsAll(certificates.values)
+            assertThat(reader.aliasToTenantInfo["one"]?.certificateChain).containsAll(certificates.values)
         }
     }
 }

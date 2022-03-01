@@ -1,5 +1,6 @@
 package net.corda.p2p.cryptoservice
 
+import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfigFactory
@@ -10,8 +11,10 @@ import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
+import net.corda.p2p.test.TenantKeys
 import net.corda.schema.TestSchema.Companion.CRYPTO_KEYS_TOPIC
 import net.corda.v5.base.util.contextLogger
+import net.corda.virtualnode.HoldingIdentity
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -111,11 +114,21 @@ class CryptoServiceKeyCreator @Activate constructor(
         consoleLogger.error(error)
     }
 
-    private fun readKeys(keysConfigFile: File): List<Pair<String, KeyPairEntry>>? {
+    private fun readKeys(keysConfigFile: File): List<Pair<String, TenantKeys>>? {
         val keysConfig = ConfigFactory.parseFile(keysConfigFile)
         return keysConfig.getConfigList("keys").map { config ->
             val alias = config.getString("alias")
             val algo = config.getString("algo")
+            val tenantId = try {
+                config.getString("tenantId")
+            } catch (e: ConfigException.Missing) {
+                val holdingIdentityConfig = config.getConfig("holdingIdentity")
+                val holdingIdentity = HoldingIdentity(
+                    groupId = holdingIdentityConfig.getString("groupId"),
+                    x500Name = holdingIdentityConfig.getString("x500Name"),
+                )
+                holdingIdentity.id
+            }
             val keystoreFilePath = config.getString("keystoreFile")
             val keystorePassword = config.getString("password")
 
@@ -135,8 +148,13 @@ class CryptoServiceKeyCreator @Activate constructor(
                     return null
                 }
             }
+            val keys = KeyPairEntry(keyAlgorithm, ByteBuffer.wrap(publicKey.encoded), ByteBuffer.wrap(privateKey.encoded))
+            val tenantKeys = TenantKeys(
+                tenantId,
+                keys,
+            )
 
-            alias to KeyPairEntry(keyAlgorithm, ByteBuffer.wrap(publicKey.encoded), ByteBuffer.wrap(privateKey.encoded))
+            alias to tenantKeys
         }
     }
 }

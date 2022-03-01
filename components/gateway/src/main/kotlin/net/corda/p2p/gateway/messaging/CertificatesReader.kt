@@ -1,7 +1,6 @@
 package net.corda.p2p.gateway.messaging
 
 import net.corda.crypto.delegated.signing.Alias
-import net.corda.crypto.delegated.signing.CertificateChain
 import net.corda.crypto.delegated.signing.DelegatedCertificateStore
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -30,7 +29,9 @@ internal class CertificatesReader(
     companion object {
         private const val CONSUMER_GROUP_ID = "gateway_certificates_truststores_reader"
     }
-    override val aliasToCertificates = ConcurrentHashMap<Alias, CertificateChain>()
+
+    override val aliasToTenantInfo =
+        ConcurrentHashMap<Alias, DelegatedCertificateStore.TenantInfo>()
 
     private val subscription = subscriptionFactory.createCompactedSubscription(
         SubscriptionConfig(CONSUMER_GROUP_ID, Schemas.P2P.GATEWAY_TLS_CERTIFICATES, instanceId),
@@ -60,13 +61,17 @@ internal class CertificatesReader(
         override val valueClass = GatewayTlsCertificates::class.java
 
         override fun onSnapshot(currentData: Map<String, GatewayTlsCertificates>) {
-            aliasToCertificates.putAll(
+            aliasToTenantInfo.putAll(
                 currentData.mapValues { entry ->
-                    entry.value.tlsCertificates.map { pemCertificate ->
+                    val certificates = entry.value.tlsCertificates.map { pemCertificate ->
                         ByteArrayInputStream(pemCertificate.toByteArray()).use {
                             certificateFactory.generateCertificate(it)
                         }
                     }
+                    DelegatedCertificateStore.TenantInfo(
+                        entry.value.tenantId,
+                        certificates,
+                    )
                 }
             )
             ready.complete(Unit)
@@ -77,15 +82,18 @@ internal class CertificatesReader(
             oldValue: GatewayTlsCertificates?,
             currentData: Map<String, GatewayTlsCertificates>,
         ) {
-            val chain = newRecord.value
-            if (chain == null) {
-                aliasToCertificates.remove(newRecord.key)
+            val value = newRecord.value
+            if (value == null) {
+                aliasToTenantInfo.remove(newRecord.key)
             } else {
-                aliasToCertificates[newRecord.key] = chain.tlsCertificates.map { pemCertificate ->
-                    ByteArrayInputStream(pemCertificate.toByteArray()).use {
-                        certificateFactory.generateCertificate(it)
+                aliasToTenantInfo[newRecord.key] = DelegatedCertificateStore.TenantInfo(
+                    value.tenantId,
+                    value.tlsCertificates.map { pemCertificate ->
+                        ByteArrayInputStream(pemCertificate.toByteArray()).use {
+                            certificateFactory.generateCertificate(it)
+                        }
                     }
-                }
+                )
             }
         }
     }

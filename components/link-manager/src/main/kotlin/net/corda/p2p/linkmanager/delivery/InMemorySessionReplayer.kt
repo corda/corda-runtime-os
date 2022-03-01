@@ -16,6 +16,7 @@ import net.corda.p2p.linkmanager.messaging.MessageConverter
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.v5.base.util.debug
+import net.corda.virtualnode.HoldingIdentity
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
@@ -54,8 +55,8 @@ class InMemorySessionReplayer(
     data class SessionMessageReplay(
         val message: Any,
         val sessionId: String,
-        val source: LinkManagerNetworkMap.HoldingIdentity,
-        val dest: LinkManagerNetworkMap.HoldingIdentity,
+        val source: HoldingIdentity,
+        val dest: HoldingIdentity,
         val sentSessionMessageCallback: (counterparties: SessionManager.SessionCounterparties, sessionId: String) -> Unit
     )
 

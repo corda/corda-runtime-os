@@ -11,6 +11,8 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toAvro
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
@@ -30,9 +32,9 @@ class ConfigBasedLinkManagerHostingMap(
         configurationChangeHandler = HostingMapConfigurationChangeHandler()
     )
 
-    private val locallyHostedIdentities = ConcurrentHashMap.newKeySet<LinkManagerNetworkMap.HoldingIdentity>()
+    private val locallyHostedIdentities = ConcurrentHashMap.newKeySet<HoldingIdentity>()
 
-    override fun isHostedLocally(identity: LinkManagerNetworkMap.HoldingIdentity): Boolean {
+    override fun isHostedLocally(identity: HoldingIdentity): Boolean {
         return locallyHostedIdentities.contains(identity)
     }
 
@@ -41,14 +43,14 @@ class ConfigBasedLinkManagerHostingMap(
     }
 
     inner class HostingMapConfigurationChangeHandler :
-        ConfigurationChangeHandler<Map<LinkManagerNetworkMap.HoldingIdentity, List<PemCertificates>>>(
+        ConfigurationChangeHandler<Map<HoldingIdentity, List<PemCertificates>>>(
             configReadService,
             CONFIG_KEY,
             ::fromConfig,
         ) {
         override fun applyNewConfiguration(
-            newConfiguration: Map<LinkManagerNetworkMap.HoldingIdentity, List<PemCertificates>>,
-            oldConfiguration: Map<LinkManagerNetworkMap.HoldingIdentity, List<PemCertificates>>?,
+            newConfiguration: Map<HoldingIdentity, List<PemCertificates>>,
+            oldConfiguration: Map<HoldingIdentity, List<PemCertificates>>?,
             resources: ResourcesHolder,
         ): CompletableFuture<Unit> {
             val oldIdentities = (oldConfiguration?.keys ?: emptySet())
@@ -57,7 +59,7 @@ class ConfigBasedLinkManagerHostingMap(
             locallyHostedIdentities.removeAll(identitiesToRemove)
             locallyHostedIdentities.addAll(identitiesToAdd)
             newConfiguration.map {
-                HostingMapListener.IdentityInfo(it.key.toHoldingIdentity(), it.value)
+                HostingMapListener.IdentityInfo(it.key.toAvro(), it.value)
             }.forEach { identity ->
                 listeners.forEach { listener ->
                     listener.identityAdded(identity)
@@ -67,7 +69,7 @@ class ConfigBasedLinkManagerHostingMap(
         }
     }
 
-    private fun fromConfig(config: Config): Map<LinkManagerNetworkMap.HoldingIdentity, List<PemCertificates>> {
+    private fun fromConfig(config: Config): Map<HoldingIdentity, List<PemCertificates>> {
         val holdingIdentitiesConfig = config.getConfigList(LOCALLY_HOSTED_IDENTITIES_KEY)
             ?: throw InvalidLinkManagerConfigException(
                 "Invalid LinkManager config. getConfigList with key = $LOCALLY_HOSTED_IDENTITIES_KEY returned null."
@@ -76,7 +78,7 @@ class ConfigBasedLinkManagerHostingMap(
             val x500name = identityConfig.getString(LOCALLY_HOSTED_IDENTITY_X500_NAME)
             val groupId = identityConfig.getString(LOCALLY_HOSTED_IDENTITY_GPOUP_ID)
             val certificates = identityConfig.getStringList(LOCALLY_HOSTED_TLS_CERTIFICATES)
-            LinkManagerNetworkMap.HoldingIdentity(x500name, groupId) to certificates
+            HoldingIdentity(x500name, groupId) to certificates
         }.toMap()
     }
 

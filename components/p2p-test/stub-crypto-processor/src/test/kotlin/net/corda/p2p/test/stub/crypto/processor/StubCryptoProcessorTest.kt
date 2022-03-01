@@ -11,6 +11,7 @@ import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
+import net.corda.p2p.test.TenantKeys
 import net.corda.schema.TestSchema.Companion.CRYPTO_KEYS_TOPIC
 import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
@@ -38,9 +39,9 @@ import java.security.spec.AlgorithmParameterSpec
 import java.util.concurrent.CompletableFuture
 
 class StubCryptoProcessorTest {
-    private val processor = argumentCaptor<CompactedProcessor<String, KeyPairEntry>>()
+    private val processor = argumentCaptor<CompactedProcessor<String, TenantKeys>>()
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>()
-    private val subscription = mock< CompactedSubscription<String, KeyPairEntry>>()
+    private val subscription = mock< CompactedSubscription<String, TenantKeys>>()
     private val subscriptionFactory = mock<SubscriptionFactory> {
         on { createCompactedSubscription(any(), processor.capture(), any()) } doReturn subscription
     }
@@ -80,6 +81,7 @@ class StubCryptoProcessorTest {
         }.doReturn(ecSignature)
     }
     private val mockSubscriptionTile = mockConstruction(SubscriptionDominoTile::class.java)
+    private val tenantId = "Id"
 
     private val testObject = StubCryptoProcessor(lifecycleCoordinatorFactory, subscriptionFactory, 100, configuration)
 
@@ -98,9 +100,12 @@ class StubCryptoProcessorTest {
                 Record(
                     CRYPTO_KEYS_TOPIC,
                     "key1",
-                    KeyPairEntry(
-                        KeyAlgorithm.RSA,
-                        ByteBuffer.wrap(data), ByteBuffer.wrap(data)
+                    TenantKeys(
+                        tenantId,
+                        KeyPairEntry(
+                            KeyAlgorithm.RSA,
+                            ByteBuffer.wrap(data), ByteBuffer.wrap(data)
+                        )
                     )
                 ),
                 null, emptyMap()
@@ -109,9 +114,12 @@ class StubCryptoProcessorTest {
                 Record(
                     CRYPTO_KEYS_TOPIC,
                     "key1",
-                    KeyPairEntry(
-                        KeyAlgorithm.ECDSA,
-                        ByteBuffer.wrap(data), ByteBuffer.wrap(data)
+                    TenantKeys(
+                        tenantId,
+                        KeyPairEntry(
+                            KeyAlgorithm.ECDSA,
+                            ByteBuffer.wrap(data), ByteBuffer.wrap(data)
+                        )
                     )
                 ),
                 null, emptyMap()
@@ -121,7 +129,7 @@ class StubCryptoProcessorTest {
         @Test
         fun `sign throws exception for unknown key`() {
             assertThrows<InvalidParameterException> {
-                testObject.sign(mock(), spec, data)
+                testObject.sign(tenantId, mock(), spec, data)
             }
         }
 
@@ -135,22 +143,25 @@ class StubCryptoProcessorTest {
                 Record(
                     CRYPTO_KEYS_TOPIC,
                     "key1",
-                    KeyPairEntry(
-                        KeyAlgorithm.ECDSA,
-                        ByteBuffer.wrap(data), ByteBuffer.wrap(data)
+                    TenantKeys(
+                        tenantId,
+                        KeyPairEntry(
+                            KeyAlgorithm.ECDSA,
+                            ByteBuffer.wrap(data), ByteBuffer.wrap(data)
+                        )
                     )
                 ),
                 null, emptyMap()
             )
 
             assertThrows<InvalidParameterException> {
-                testObject.sign(key, spec, data)
+                testObject.sign(tenantId, key, spec, data)
             }
         }
 
         @Test
         fun `sign send the correct parameters`() {
-            testObject.sign(rsaPublicKey, spec, data)
+            testObject.sign(tenantId, rsaPublicKey, spec, data)
 
             verify(rsaSignature).initSign(privateKey)
             verify(rsaSignature).setParameter(algorithmParameterSpec)
@@ -159,7 +170,7 @@ class StubCryptoProcessorTest {
 
         @Test
         fun `sign returns the correct parameters`() {
-            val signature = testObject.sign(ecPublicKey, spec, data)
+            val signature = testObject.sign(tenantId, ecPublicKey, spec, data)
 
             assertThat(signature).isEqualTo("EC-Signature".toByteArray())
         }
@@ -191,14 +202,17 @@ class StubCryptoProcessorTest {
         fun `onSnapshot adds data`() {
             processor.firstValue.onSnapshot(
                 mapOf(
-                    "RSA" to KeyPairEntry(
-                        KeyAlgorithm.RSA,
-                        ByteBuffer.wrap(data), ByteBuffer.wrap(data)
+                    "RSA" to TenantKeys(
+                        tenantId,
+                        KeyPairEntry(
+                            KeyAlgorithm.RSA,
+                            ByteBuffer.wrap(data), ByteBuffer.wrap(data)
+                        )
                     )
                 )
             )
 
-            testObject.sign(rsaPublicKey, spec, data)
+            testObject.sign(tenantId, rsaPublicKey, spec, data)
             verify(rsaSignature).initSign(privateKey)
         }
 
@@ -208,10 +222,13 @@ class StubCryptoProcessorTest {
             val publicData = "two".toByteArray()
             processor.firstValue.onSnapshot(
                 mapOf(
-                    "EC" to KeyPairEntry(
-                        KeyAlgorithm.ECDSA,
-                        ByteBuffer.wrap(publicData),
-                        ByteBuffer.wrap(privateData),
+                    "EC" to TenantKeys(
+                        tenantId,
+                        KeyPairEntry(
+                            KeyAlgorithm.ECDSA,
+                            ByteBuffer.wrap(publicData),
+                            ByteBuffer.wrap(privateData),
+                        ),
                     )
                 )
             )
@@ -228,7 +245,7 @@ class StubCryptoProcessorTest {
             )
             processor.firstValue.onSnapshot(
                 mapOf(
-                    "RSA" to oldPair
+                    "RSA" to TenantKeys(tenantId, oldPair)
                 )
             )
 
@@ -238,12 +255,12 @@ class StubCryptoProcessorTest {
                     "RSA",
                     null,
                 ),
-                oldPair,
+                TenantKeys(tenantId, oldPair),
                 emptyMap()
             )
 
             assertThrows<InvalidParameterException> {
-                testObject.sign(rsaPublicKey, spec, data)
+                testObject.sign(tenantId, rsaPublicKey, spec, data)
             }
         }
 
@@ -258,10 +275,13 @@ class StubCryptoProcessorTest {
                     "RSA",
                     null,
                 ),
-                KeyPairEntry(
-                    KeyAlgorithm.ECDSA,
-                    ByteBuffer.wrap(publicData),
-                    ByteBuffer.wrap(privateData),
+                TenantKeys(
+                    tenantId,
+                    KeyPairEntry(
+                        KeyAlgorithm.ECDSA,
+                        ByteBuffer.wrap(publicData),
+                        ByteBuffer.wrap(privateData),
+                    ),
                 ),
                 emptyMap(),
             )
@@ -274,10 +294,14 @@ class StubCryptoProcessorTest {
         fun `onNext with new value value will replace the private key`() {
             processor.firstValue.onSnapshot(
                 mapOf(
-                    "RSA" to KeyPairEntry(
-                        KeyAlgorithm.RSA,
-                        ByteBuffer.wrap(data), ByteBuffer.wrap(data)
-                    )
+                    "RSA" to
+                        TenantKeys(
+                            tenantId,
+                            KeyPairEntry(
+                                KeyAlgorithm.RSA,
+                                ByteBuffer.wrap(data), ByteBuffer.wrap(data)
+                            ),
+                        )
                 )
             )
             val newPrivateKeyData = "three".toByteArray()
@@ -288,17 +312,20 @@ class StubCryptoProcessorTest {
                 Record(
                     CRYPTO_KEYS_TOPIC,
                     "RSA",
-                    KeyPairEntry(
-                        KeyAlgorithm.RSA,
-                        ByteBuffer.wrap(data),
-                        ByteBuffer.wrap(newPrivateKeyData),
+                    TenantKeys(
+                        tenantId,
+                        KeyPairEntry(
+                            KeyAlgorithm.RSA,
+                            ByteBuffer.wrap(data),
+                            ByteBuffer.wrap(newPrivateKeyData),
+                        ),
                     ),
                 ),
                 null,
                 emptyMap(),
             )
 
-            testObject.sign(rsaPublicKey, spec, data)
+            testObject.sign(tenantId, rsaPublicKey, spec, data)
             verify(rsaSignature).initSign(newPrivateKey)
         }
 
@@ -311,10 +338,13 @@ class StubCryptoProcessorTest {
                 Record(
                     CRYPTO_KEYS_TOPIC,
                     "RSA",
-                    KeyPairEntry(
-                        KeyAlgorithm.ECDSA,
-                        ByteBuffer.wrap(publicData),
-                        ByteBuffer.wrap(privateData),
+                    TenantKeys(
+                        tenantId,
+                        KeyPairEntry(
+                            KeyAlgorithm.ECDSA,
+                            ByteBuffer.wrap(publicData),
+                            ByteBuffer.wrap(privateData),
+                        ),
                     ),
                 ),
                 null,
