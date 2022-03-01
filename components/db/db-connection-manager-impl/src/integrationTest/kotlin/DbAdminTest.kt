@@ -4,6 +4,7 @@ import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.connection.manager.impl.DbAdminImpl
 import net.corda.db.connection.manager.impl.DbConnectionManagerImpl
 import net.corda.db.core.DbPrivilege
+import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.libs.configuration.SmartConfigFactory
@@ -85,8 +86,13 @@ class DbAdminTest {
 
     @Test
     fun `when createDbAndUser create schema and persist config`() {
-        val dbm = DbConnectionManagerImpl(lifecycleCoordinatorFactory, EntityManagerFactoryFactoryImpl(), JpaEntitiesRegistryImpl())
+        val entitiesRegistry = JpaEntitiesRegistryImpl()
+        val dbm = DbConnectionManagerImpl(lifecycleCoordinatorFactory, EntityManagerFactoryFactoryImpl(), entitiesRegistry)
         val config = configFactory.create(DbUtils.createConfig("configuration_db"))
+        entitiesRegistry.register(
+            CordaDb.CordaCluster.persistenceUnitName,
+            ConfigurationEntities.classes
+        )
         dbm.initialise(config)
         val dba = DbAdminImpl(dbm)
 
