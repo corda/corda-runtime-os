@@ -14,6 +14,7 @@ dependencies {
     implementation project(':components:virtual-node:virtual-node-rpcops-service')
     implementation project(':libs:virtual-node:virtual-node-endpoints')
     implementation project(':libs:http-rpc:http-rpc')
+    implementation project(':libs:http-rpc:http-rpc-common')
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:messaging:messaging')
     implementation 'net.corda:corda-avro-schema'

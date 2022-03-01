@@ -1,6 +1,7 @@
 package net.corda.virtualnode
 
 import net.corda.libs.packaging.CpiIdentifier
+import java.util.UUID
 
 /**
  * Contains information relevant to a particular virtual node (a CPI and a holding identity).
@@ -16,7 +17,23 @@ import net.corda.libs.packaging.CpiIdentifier
 data class VirtualNodeInfo(val holdingIdentity: HoldingIdentity, val cpiIdentifier: CpiIdentifier)
 
 fun VirtualNodeInfo.toAvro(): net.corda.data.virtualnode.VirtualNodeInfo =
-    net.corda.data.virtualnode.VirtualNodeInfo(holdingIdentity.toAvro(), cpiIdentifier.toAvro())
+    with (holdingIdentity) {
+        net.corda.data.virtualnode.VirtualNodeInfo(
+            toAvro(),
+            cpiIdentifier.toAvro(),
+            vaultDdlConnectionId?.let{ vaultDdlConnectionId.toString() },
+            vaultDmlConnectionId?.let{ vaultDmlConnectionId.toString() },
+            cryptoDdlConnectionId?.let{ cryptoDdlConnectionId.toString() },
+            cryptoDmlConnectionId?.let{ cryptoDmlConnectionId.toString() },
+            hsmConnectionId?.let { hsmConnectionId.toString() }
+        )
+    }
 
-fun net.corda.data.virtualnode.VirtualNodeInfo.toCorda(): VirtualNodeInfo =
-    VirtualNodeInfo(holdingIdentity.toCorda(), CpiIdentifier.fromAvro(cpiIdentifier))
+fun net.corda.data.virtualnode.VirtualNodeInfo.toCorda(): VirtualNodeInfo {
+    val holdingIdentity = holdingIdentity.toCorda()
+    holdingIdentity.vaultDdlConnectionId = vaultDdlConnectionId?.let { UUID.fromString(vaultDdlConnectionId) }
+    holdingIdentity.vaultDmlConnectionId = vaultDmlConnectionId?.let { UUID.fromString(vaultDmlConnectionId) }
+    holdingIdentity.cryptoDdlConnectionId = cryptoDdlConnectionId?.let { UUID.fromString(cryptoDdlConnectionId) }
+    holdingIdentity.cryptoDmlConnectionId = cryptoDmlConnectionId?.let { UUID.fromString(cryptoDmlConnectionId) }
+    return VirtualNodeInfo(holdingIdentity, CpiIdentifier.fromAvro(cpiIdentifier))
+}

@@ -1,5 +1,6 @@
 package net.corda.db.connection.manager
 
+import net.corda.db.core.DataSourceFactory
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
@@ -28,57 +29,19 @@ import javax.persistence.EntityManagerFactory
  *
  * @constructor Create empty Db connection manager
  */
-interface DbConnectionManager : Lifecycle {
+interface DbConnectionManager : DbConnectionOps, DataSourceFactory, Lifecycle {
 
     /**
-     * Get an instance of [EntityManagerFactory] for the named [db] from cache or create one if necessary.
+     * Initialise the [DbConnectionManager] with the given Cluster DB config.
      *
-     * @param db Name of the DB to use.
-     * @param privilege [DbPrivilege] required (DML or DDL).
-     * @return [EntityManagerFactory] from cache, or created on demand.
-     * @throws [DBConfigurationException] if connection details for the requested DB/Privilege does not exist
-     *              or if entities associated to the DB are not defined.
+     * This also validates we can connect to the configured cluster DB and retries until it is successful.
      */
-    fun getOrCreateEntityManagerFactory(db: CordaDb, privilege: DbPrivilege): EntityManagerFactory
+    fun initialise(config: SmartConfig)
 
     /**
-     * Get an instance of [EntityManagerFactory] for the connection ID. Use cache or create one if necessary.
-     *
-     * @param name name for the connection to be used.
-     * @param privilege [DbPrivilege] required (DML or DDL).
-     * @param entitiesSet Set of all entities managed by [javax.persistence.EntityManager]s created by the
-     *                  [EntityManagerFactory] returned
-     * @return [EntityManagerFactory] from cache, or created on demand.
-     * @throws [DBConfigurationException] if connection details for the requested DB/Privilege does not exist.
+     * Get the main cluster DB configuration.
      */
-    fun getOrCreateEntityManagerFactory(name: String, privilege: DbPrivilege, entitiesSet: JpaEntitiesSet):
-            EntityManagerFactory
-
-    /**
-     * Persist new DB connection with given [config].
-     *
-     * Replaces if the connection already exists.
-     * The [name] and [privilege] pair are unique in the DB Connections Configuration database.
-     *
-     * @param name Name of the DB to use.
-     * @param privilege [DbPrivilege] (DML or DDL).
-     * @param config smart config object to be used to create a DataSource using the
-     *      [DataSourceFactory.createFromConfig] extension method. This should contain all JDBC connection details
-     *      needed to create a [javax.sql.DataSource] from [DataSourceFactory].
-     * @param description (optional)
-     * @param name of the actor responsible for the insert or update.
-     */
-    fun putConnection(
-        name: String,
-        privilege: DbPrivilege,
-        config: SmartConfig,
-        description: String?,
-        updateActor: String)
-
-    /**
-     * Return the [EntityManagerFactory] object for the cluster DB.
-     */
-    val clusterDbEntityManagerFactory: EntityManagerFactory
+    val clusterConfig: SmartConfig
 
     // lifecycle
     /**
