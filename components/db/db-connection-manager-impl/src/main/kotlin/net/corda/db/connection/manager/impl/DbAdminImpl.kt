@@ -88,6 +88,7 @@ class DbAdminImpl @Activate constructor(
         }
     }
 
+    @Suppress("NestedBlockDepth")
     override fun userExists(user: String): Boolean {
         // NOTE - This is currently Postgres specific and we will need to provide alternative implementations
         //  for other DBs. So we may need to wrap this in a factory.

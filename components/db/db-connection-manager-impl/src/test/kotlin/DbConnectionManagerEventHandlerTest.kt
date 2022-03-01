@@ -2,7 +2,6 @@ import net.corda.db.connection.manager.impl.BootstrapConfigProvided
 import net.corda.db.connection.manager.DBConfigurationException
 import net.corda.db.connection.manager.impl.DbConnectionManagerEventHandler
 import net.corda.db.connection.manager.impl.DbConnectionManagerImpl
-import net.corda.db.connection.manager.impl.DbConnectionsRepositoryImpl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator

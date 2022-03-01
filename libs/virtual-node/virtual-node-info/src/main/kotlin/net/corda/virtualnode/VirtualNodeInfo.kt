@@ -31,9 +31,9 @@ fun VirtualNodeInfo.toAvro(): net.corda.data.virtualnode.VirtualNodeInfo =
 
 fun net.corda.data.virtualnode.VirtualNodeInfo.toCorda(): VirtualNodeInfo {
     val holdingIdentity = holdingIdentity.toCorda()
-    holdingIdentity.vaultDdlConnectionId = UUID.fromString(vaultDdlConnectionId)
-    holdingIdentity.vaultDmlConnectionId = UUID.fromString(vaultDmlConnectionId)
-    holdingIdentity.cryptoDdlConnectionId = UUID.fromString(cryptoDdlConnectionId)
-    holdingIdentity.cryptoDdlConnectionId = UUID.fromString(cryptoDdlConnectionId)
+    holdingIdentity.vaultDdlConnectionId = vaultDdlConnectionId?.let { UUID.fromString(vaultDdlConnectionId) }
+    holdingIdentity.vaultDmlConnectionId = vaultDmlConnectionId?.let { UUID.fromString(vaultDmlConnectionId) }
+    holdingIdentity.cryptoDdlConnectionId = cryptoDdlConnectionId?.let { UUID.fromString(cryptoDdlConnectionId) }
+    holdingIdentity.cryptoDdlConnectionId = cryptoDdlConnectionId?.let { UUID.fromString(cryptoDdlConnectionId) }
     return VirtualNodeInfo(holdingIdentity, cpiIdentifier.toCorda())
 }

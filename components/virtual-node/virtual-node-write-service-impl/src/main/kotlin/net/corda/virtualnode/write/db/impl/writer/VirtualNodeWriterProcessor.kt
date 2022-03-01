@@ -7,7 +7,8 @@ import net.corda.data.virtualnode.VirtualNodeCreationRequest
 import net.corda.data.virtualnode.VirtualNodeCreationResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
-import net.corda.db.core.DbPrivilege.*
+import net.corda.db.core.DbPrivilege.DDL
+import net.corda.db.core.DbPrivilege.DML
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -19,7 +20,8 @@ import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
-import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbType.*
+import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbType.CRYPTO
+import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbType.VAULT
 import java.nio.ByteBuffer
 import java.util.*
 import java.util.concurrent.CompletableFuture
@@ -116,7 +118,8 @@ internal class VirtualNodeWriterProcessor(
     private fun checkUniqueId(holdingId: HoldingIdentity) {
         virtualNodeEntityRepository.getHoldingIdentity(holdingId.id)?.let { storedHoldingId ->
             if (storedHoldingId != holdingId) {
-                throw VirtualNodeWriteServiceException("New holding identity $holdingId has a short hash that collided with existing holding identity $storedHoldingId.")
+                throw VirtualNodeWriteServiceException(
+                    "New holding identity $holdingId has a short hash that collided with existing holding identity $storedHoldingId.")
             }
         }
     }
@@ -125,7 +128,8 @@ internal class VirtualNodeWriterProcessor(
         try {
             vNodeDbs.filter { it.isClusterDb }.forEach { it.createSchemasAndUsers() }
         } catch (e: Exception) {
-            throw VirtualNodeWriteServiceException("Error creating virtual node DB schemas and users for holding identity $holdingIdentity", e)
+            throw VirtualNodeWriteServiceException(
+                "Error creating virtual node DB schemas and users for holding identity $holdingIdentity", e)
         }
     }
 
@@ -186,7 +190,8 @@ internal class VirtualNodeWriterProcessor(
             // TODO - CORE-3730 - Define timeout policy.
             future.get()
         } catch (e: Exception) {
-            throw VirtualNodeWriteServiceException("Record $virtualNodeRecord was written to the database, but couldn't be published. Cause: $e", e)
+            throw VirtualNodeWriteServiceException(
+                "Record $virtualNodeRecord was written to the database, but couldn't be published. Cause: $e", e)
         }
     }
 

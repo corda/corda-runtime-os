@@ -38,7 +38,8 @@ class VirtualNodeWriterFactoryTests {
 
     @Test
     fun `factory does not start the virtual node writer`() {
-        val virtualNodeWriterFactory = VirtualNodeWriterFactory(getSubscriptionFactory(), getPublisherFactory(), mock(), mock(), mock(), mock())
+        val virtualNodeWriterFactory = VirtualNodeWriterFactory(
+            getSubscriptionFactory(), getPublisherFactory(), mock(), mock(), mock())
         val virtualNodeWriter = virtualNodeWriterFactory.create(mock(), 0)
         assertFalse(virtualNodeWriter.isRunning)
     }
@@ -49,7 +50,7 @@ class VirtualNodeWriterFactoryTests {
         val expectedConfig = configFactory.create(ConfigFactory.parseMap(mapOf("dummyKey" to "dummyValue")))
 
         val publisherFactory = getPublisherFactory()
-        val virtualNodeWriterFactory = VirtualNodeWriterFactory(getSubscriptionFactory(), publisherFactory, mock(), mock(), mock(), mock())
+        val virtualNodeWriterFactory = VirtualNodeWriterFactory(getSubscriptionFactory(), publisherFactory, mock(), mock(), mock())
         virtualNodeWriterFactory.create(expectedConfig, expectedPublisherConfig.instanceId!!)
 
         verify(publisherFactory).createPublisher(expectedPublisherConfig, expectedConfig)
@@ -67,7 +68,7 @@ class VirtualNodeWriterFactoryTests {
         val expectedConfig = configFactory.create(ConfigFactory.parseMap(mapOf("dummyKey" to "dummyValue")))
 
         val subscriptionFactory = getSubscriptionFactory()
-        val virtualNodeWriterFactory = VirtualNodeWriterFactory(subscriptionFactory, getPublisherFactory(), mock(), mock(), mock(), mock())
+        val virtualNodeWriterFactory = VirtualNodeWriterFactory(subscriptionFactory, getPublisherFactory(), mock(), mock(), mock())
         virtualNodeWriterFactory.create(expectedConfig, 777)
 
         verify(subscriptionFactory).createRPCSubscription(eq(expectedRPCConfig), eq(expectedConfig), any())

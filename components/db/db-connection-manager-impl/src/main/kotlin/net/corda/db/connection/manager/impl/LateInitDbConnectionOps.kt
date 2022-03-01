@@ -13,7 +13,7 @@ import javax.sql.DataSource
 /**
  * [DbConnectionOps] delegate that supports late initialization
  */
-class LateInitDbConnectionOps(): DbConnectionOps {
+class LateInitDbConnectionOps: DbConnectionOps {
     lateinit var delegate: DbConnectionOps
 
     override fun putConnection(

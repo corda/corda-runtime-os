@@ -15,7 +15,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 /** An implementation of [VirtualNodeWriteService]. */
-@Suppress("Unused")
+@Suppress("LongParameterList")
 @Component(service = [VirtualNodeWriteService::class])
 internal class VirtualNodeWriteServiceImpl @Activate constructor(
     @Reference(service = ConfigurationReadService::class)

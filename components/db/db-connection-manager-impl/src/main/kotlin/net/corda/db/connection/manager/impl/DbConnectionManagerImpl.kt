@@ -1,6 +1,9 @@
 package net.corda.db.connection.manager.impl
 
-import net.corda.db.connection.manager.*
+import net.corda.db.connection.manager.DBConfigurationException
+import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.db.connection.manager.DbConnectionOps
+import net.corda.db.connection.manager.createFromConfig
 import net.corda.db.core.DataSourceFactory
 import net.corda.db.core.HikariDataSourceFactory
 import net.corda.db.schema.CordaDb
@@ -19,6 +22,7 @@ import javax.persistence.EntityManagerFactory
 import javax.sql.DataSource
 
 @Component(service = [DbConnectionManager::class])
+@Suppress("LongParameterList")
 class DbConnectionManagerImpl (
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val dataSourceFactory: DataSourceFactory,
@@ -93,7 +97,8 @@ class DbConnectionManagerImpl (
         this.lateInitialisedConfig = config
         val clusterDataSource = dataSourceFactory.createFromConfig(config)
         val clusterEntityManagerFactory = createManagerFactory(CordaDb.CordaCluster.persistenceUnitName, clusterDataSource)
-        val dbConnectionsRepository = dbConnectionRepositoryFactory.create(clusterDataSource, dataSourceFactory, clusterEntityManagerFactory, config.factory)
+        val dbConnectionsRepository = dbConnectionRepositoryFactory.create(
+            clusterDataSource, dataSourceFactory, clusterEntityManagerFactory, config.factory)
         if (dbConnectionOps is LateInitDbConnectionOps) {
             dbConnectionOps.delegate = DbConnectionOpsCachedImpl(
                 DbConnectionOpsImpl(dbConnectionsRepository, entitiesRegistry, entityManagerFactoryFactory),

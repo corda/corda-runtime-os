@@ -71,7 +71,10 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
         validateX500Name(request.x500Name)
 
         val actor = CURRENT_RPC_CONTEXT.get().principal
-        val rpcRequest = with (request) { VirtualNodeCreationRequest(x500Name, cpiIdHash, vaultDdlConnection, vaultDmlConnection, cryptoDdlConnection, cryptoDmlConnection, actor) }
+        val rpcRequest = with (request) {
+            VirtualNodeCreationRequest(
+                x500Name, cpiIdHash, vaultDdlConnection, vaultDmlConnection, cryptoDdlConnection, cryptoDmlConnection, actor)
+        }
         val resp = sendRequest(rpcRequest)
 
         return if (resp.success) {

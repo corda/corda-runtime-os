@@ -7,9 +7,11 @@ import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.createDbConfig
 import net.corda.db.core.DbPrivilege
-import net.corda.db.core.DbPrivilege.*
+import net.corda.db.core.DbPrivilege.DDL
+import net.corda.db.core.DbPrivilege.DML
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbType.*
+import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbType.CRYPTO
+import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbType.VAULT
 import java.security.SecureRandom
 
 /**
@@ -80,7 +82,8 @@ class VirtualNodeDbFactory(
      *
      * @return [DbConnection] created from provided connection configuration
      */
-    private fun createConnection(dbType: VirtualNodeDbType, holdingIdentityId: String, dbPrivilege: DbPrivilege, config: String): DbConnection {
+    private fun createConnection(
+        dbType: VirtualNodeDbType, holdingIdentityId: String, dbPrivilege: DbPrivilege, config: String): DbConnection {
         with (dbType) {
             return DbConnection(
                 getConnectionName(holdingIdentityId),
@@ -105,7 +108,9 @@ class VirtualNodeDbFactory(
             val user = getUserName(dbPrivilege, holdingIdentityId)
             val password = generatePassword()
             // TODO support for CharArray passwords in SmartConfig
-            val config = createDbConfig(smartConfigFactory, user, password.concatToString(), jdbcUrl = dbAdmin.createJdbcUrl(adminJdbcUrl, getSchemaName(holdingIdentityId)))
+            val config = createDbConfig(
+                smartConfigFactory, user, password.concatToString(),
+                jdbcUrl = dbAdmin.createJdbcUrl(adminJdbcUrl, getSchemaName(holdingIdentityId)))
             return DbConnection(
                 getConnectionName(holdingIdentityId),
                 dbPrivilege,
