@@ -34,6 +34,7 @@ interface DbConnectionsRepository {
     * @param updateActor actor on whose behalf the update is on
     * @return ID of persisted DB connection
     */
+    @Suppress("LongParameterList")
     fun put(entityManager: EntityManager,
             name: String,
             privilege: DbPrivilege,

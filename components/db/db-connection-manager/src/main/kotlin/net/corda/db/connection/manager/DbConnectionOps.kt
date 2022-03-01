@@ -115,6 +115,7 @@ interface DbConnectionOps {
      * @return [EntityManagerFactory] from cache, or created on demand.
      * @throws [DBConfigurationException] if connection details for the requested DB/Privilege does not exist.
      */
+    @Suppress("LongParameterList")
     fun getOrCreateEntityManagerFactory(name: String, privilege: DbPrivilege, entitiesSet: JpaEntitiesSet):
             EntityManagerFactory
 }
