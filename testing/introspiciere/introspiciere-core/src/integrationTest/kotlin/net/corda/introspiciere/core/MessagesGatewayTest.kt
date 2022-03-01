@@ -50,7 +50,7 @@ internal class MessagesGatewayTest {
 
     @Test
     fun `read empty topic returns timestasmp and read from timestamp`() {
-        val (_, timestamp) = messagesGateway.readFrom(topic, DemoRecord::class.qualifiedName!!, -1)
+        val (_, timestamp) = messagesGateway.readFromEnd(topic, DemoRecord::class.qualifiedName!!)
 
         val demos = listOf(DemoRecord(20), DemoRecord(21))
         messagesGateway.send(topic, KafkaMessage.create(topic, "key1", demos[0]))
