@@ -4,14 +4,13 @@ package net.corda.internal.serialization.amqp.testutils
 
 import net.corda.internal.serialization.SerializationContextImpl
 import net.corda.internal.serialization.amqp.amqpMagic
-import net.corda.packaging.CPK
+import net.corda.libs.packaging.CpkMetadata
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
 import org.osgi.framework.Bundle
 
 private class MockSandboxGroup(private val classLoader: ClassLoader = ClassLoader.getSystemClassLoader()) : SandboxGroup {
-        override val cpks: Collection<CPK> = emptyList()
-        override val metadata: Map<Bundle, CPK.Metadata> = emptyMap()
+        override val metadata: Map<Bundle, CpkMetadata> = emptyMap()
 
         override fun loadClassFromMainBundles(className: String): Class<*> =
                 Class.forName(className, false, classLoader)

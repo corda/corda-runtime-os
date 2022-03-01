@@ -143,7 +143,7 @@ class CordaVNode @Activate constructor(
             // Checkpoint: We have created a sandbox for this CPI.
             val sandboxContext = vnode.getOrCreateSandbox(holdingIdentity)
             try {
-                logger.info("Created sandbox: {}", sandboxContext.sandboxGroup.cpks.map(CPK::id))
+                logger.info("Created sandbox: {}", sandboxContext.sandboxGroup.metadata.values.map {it.id})
                 dumpHeap("created")
 
                 val rpcStartFlow = createRPCStartFlow(clientId, vnodeInfo.toAvro())

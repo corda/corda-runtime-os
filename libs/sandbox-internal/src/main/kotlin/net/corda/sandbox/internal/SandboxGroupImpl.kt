@@ -1,6 +1,6 @@
 package net.corda.sandbox.internal
 
-import net.corda.packaging.CPK
+import net.corda.libs.packaging.CpkMetadata
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandbox.internal.classtag.ClassTagFactory
@@ -11,7 +11,6 @@ import net.corda.sandbox.internal.sandbox.CpkSandbox
 import net.corda.sandbox.internal.sandbox.Sandbox
 import net.corda.sandbox.internal.utilities.BundleUtils
 import org.osgi.framework.Bundle
-import java.util.Collections.unmodifiableList
 import java.util.Collections.unmodifiableMap
 
 /**
@@ -29,9 +28,8 @@ internal class SandboxGroupImpl(
     private val bundleUtils: BundleUtils
 ) : SandboxGroupInternal {
 
-    override val cpks: Collection<CPK> = unmodifiableList(cpkSandboxes.map(CpkSandbox::cpk))
-    override val metadata: Map<Bundle, CPK.Metadata> = unmodifiableMap(cpkSandboxes.associate { cpk ->
-        cpk.mainBundle to cpk.cpk.metadata
+    override val metadata: Map<Bundle, CpkMetadata> = unmodifiableMap(cpkSandboxes.associate { cpk ->
+        cpk.mainBundle to cpk.cpkMetadata
     })
 
     override fun loadClassFromMainBundles(className: String): Class<*> {
@@ -77,10 +75,10 @@ internal class SandboxGroupImpl(
 
             ClassType.CpkSandboxClass -> {
                 val sandbox = when (classTag) {
-                    is StaticTag -> cpkSandboxes.find { sandbox -> sandbox.cpk.metadata.hash == classTag.cpkFileHash }
+                    is StaticTag -> cpkSandboxes.find { sandbox -> sandbox.cpkMetadata.hash == classTag.cpkFileHash }
                     is EvolvableTag -> {
                         val sandbox = cpkSandboxes.find {
-                            it.cpk.metadata.id.signerSummaryHash == classTag.cpkSignerSummaryHash
+                            it.cpkMetadata.id.signerSummaryHash == classTag.cpkSignerSummaryHash
                                     && it.mainBundle.symbolicName == classTag.mainBundleName
                         }
                         sandbox?.let {

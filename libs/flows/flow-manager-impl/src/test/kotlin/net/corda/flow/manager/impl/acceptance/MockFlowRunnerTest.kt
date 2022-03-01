@@ -37,7 +37,7 @@ class MockFlowRunnerTest {
 
     private val holdingIdentity = HoldingIdentity("x500 name","group id")
     private val cpi = CPIIdentifier("cpi id","1.0",null)
-    private val virtualNode = VirtualNodeInfo(holdingIdentity,cpi)
+    private val virtualNode = VirtualNodeInfo(holdingIdentity,cpi,null,null,null,null,null)
     private val startContext = FlowStartContext.newBuilder()
         .setStatusKey(FlowStatusKey("request id",holdingIdentity))
         .setInitiatorType(FlowInitiatorType.RPC)
