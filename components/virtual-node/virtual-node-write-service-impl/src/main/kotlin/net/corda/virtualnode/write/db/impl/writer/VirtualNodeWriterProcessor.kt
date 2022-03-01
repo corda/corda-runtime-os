@@ -9,6 +9,7 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.DDL
 import net.corda.db.core.DbPrivilege.DML
+import net.corda.libs.packaging.CpiIdentifier
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -177,7 +178,8 @@ internal class VirtualNodeWriterProcessor(
 
     private fun createVirtualNodeRecord(holdingIdentity: HoldingIdentity, cpiMetadata: CPIMetadata):
             Record<net.corda.data.identity.HoldingIdentity, net.corda.data.virtualnode.VirtualNodeInfo> {
-        val virtualNodeInfo = VirtualNodeInfo(holdingIdentity, cpiMetadata.id).toAvro()
+        val cpiIdentifier = CpiIdentifier(cpiMetadata.id.name, cpiMetadata.id.version, cpiMetadata.id.signerSummaryHash)
+        val virtualNodeInfo = VirtualNodeInfo(holdingIdentity, cpiIdentifier).toAvro()
         return Record(VIRTUAL_NODE_INFO_TOPIC, virtualNodeInfo.holdingIdentity, virtualNodeInfo)
     }
 

@@ -1,9 +1,6 @@
 package net.corda.virtualnode
 
 import net.corda.libs.packaging.CpiIdentifier
-import net.corda.packaging.CPI
-import net.corda.packaging.converters.toAvro
-import net.corda.packaging.converters.toCorda
 import java.util.UUID
 
 /**
