@@ -385,6 +385,7 @@ open class SessionManagerImpl(
                 Pair(sessionType.sessionCounterparties, sessionType.protocol)
             }
         }
+        logger.info("processResponderHello Session ID from message ${message.header.sessionId} Session ID from session ${session.sessionId}.")
 
         session.receiveResponderHello(message)
         session.generateHandshakeSecrets()
@@ -458,6 +459,7 @@ open class SessionManagerImpl(
                 Pair(sessionType.sessionCounterparties, sessionType.protocol)
             }
         }
+        logger.info("processResponderHandshake Session ID from message ${message.header.sessionId} Session ID from session ${session.sessionId}.")
 
         val memberInfo = networkMap.getMemberInfo(sessionCounterparties.counterpartyId)
         if (memberInfo == null) {
