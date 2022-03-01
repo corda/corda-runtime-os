@@ -38,8 +38,8 @@ import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.p2p.gateway.messaging.http.HttpConnectionEvent
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.HttpServer
-import net.corda.p2p.gateway.messaging.http.TlsKeysFactory
 import net.corda.p2p.gateway.messaging.http.ListenerWithServer
+import net.corda.p2p.gateway.messaging.http.StubCertificatesAuthority
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_TRUSTSTORES
@@ -726,111 +726,108 @@ class GatewayIntegrationTest : TestBase() {
                 instanceId.incrementAndGet(),
             ).use { gateway ->
                 gateway.startAndWaitForStarted()
-                val oldTrustStore = TlsKeysFactory("password", KeyAlgorithm.RSA).use { keyStoreFactory ->
-                    // Client should fail without trust store certificates
-                    assertThrows<RuntimeException> {
-                        testClientWith(aliceAddress, keyStoreFactory.trustStoreKeyStore)
-                    }
-
-                    // Publish the trust store
-                    server.publish(
-                        Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, keyStoreFactory.gatewayTrustStore),
-                    )
-
-                    // Client should fail without any keys
-                    assertThrows<RuntimeException> {
-                        testClientWith(aliceAddress, keyStoreFactory.trustStoreKeyStore)
-                    }
-
-                    // Publish the first key pair
-                    val keyStore = keyStoreFactory.createKeyStore(aliceAddress.host, "one")
-                    publishKeyStoreCertificatesAndKeys(server.publisher, keyStore)
-
-                    // Client should now pass
-                    testClientWith(aliceAddress, keyStoreFactory.trustStoreKeyStore)
-
-                    // Delete the first pair
-                    server.publish(
-                        Record(
-                            TestSchema.CRYPTO_KEYS_TOPIC,
-                            "one",
-                            null
-                        )
-                    )
-
-                    // Client should fail again...
-                    eventually {
-                        assertThrows<RuntimeException> {
-                            testClientWith(aliceAddress, keyStoreFactory.trustStoreKeyStore)
-                        }
-                    }
-
-                    // publish the same pair again
-                    publishKeyStoreCertificatesAndKeys(server.publisher, keyStore)
-
-                    // Client should now pass
-                    testClientWith(aliceAddress, keyStoreFactory.trustStoreKeyStore)
-
-                    // Delete the trust store
-                    val subject = PrincipalUtil.getSubjectX509Principal(keyStore.keyStore.getCertificate("one") as X509Certificate).name
-                    server.publish(
-                        Record(
-                            Schemas.P2P.GATEWAY_TLS_CERTIFICATES,
-                            subject,
-                            null
-                        )
-                    )
-                    eventually {
-                        assertThrows<RuntimeException> {
-                            testClientWith(aliceAddress, keyStoreFactory.trustStoreKeyStore)
-                        }
-                    }
-
-                    // publish it again
-                    publishKeyStoreCertificatesAndKeys(server.publisher, keyStore)
-                    testClientWith(aliceAddress, keyStoreFactory.trustStoreKeyStore)
-
-                    // Change the host
-                    configPublisher.publishConfig(GatewayConfiguration(bobAddress.host, bobAddress.port, aliceSslConfig))
-                    val bobKeyStore = keyStoreFactory.createKeyStore(bobAddress.host, "one")
-                    publishKeyStoreCertificatesAndKeys(server.publisher, bobKeyStore)
-
-                    // Client should pass with new host
-                    testClientWith(bobAddress, keyStoreFactory.trustStoreKeyStore)
-
-                    keyStoreFactory.trustStoreKeyStore
+                val firstCertificatesAuthority = StubCertificatesAuthority("password", KeyAlgorithm.RSA)
+                // Client should fail without trust store certificates
+                assertThrows<RuntimeException> {
+                    testClientWith(aliceAddress, firstCertificatesAuthority.trustStoreKeyStore)
                 }
 
-                // new trust store...
-                TlsKeysFactory("password", KeyAlgorithm.ECDSA).use { keyStoreFactory ->
-                    server.publish(
-                        Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, keyStoreFactory.gatewayTrustStore),
+                // Publish the trust store
+                server.publish(
+                    Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, firstCertificatesAuthority.gatewayTrustStore),
+                )
+
+                // Client should fail without any keys
+                assertThrows<RuntimeException> {
+                    testClientWith(aliceAddress, firstCertificatesAuthority.trustStoreKeyStore)
+                }
+
+                // Publish the first key pair
+                val keyStore = firstCertificatesAuthority.createKeyStore(aliceAddress.host)
+                publishKeyStoreCertificatesAndKeys(server.publisher, keyStore)
+
+                // Client should now pass
+                testClientWith(aliceAddress, firstCertificatesAuthority.trustStoreKeyStore)
+
+                // Delete the first pair
+                server.publish(
+                    Record(
+                        TestSchema.CRYPTO_KEYS_TOPIC,
+                        keyStore.keyStore.aliases().nextElement(),
+                        null
                     )
+                )
 
-                    // replace the first pair
-                    val newKeyStore = keyStoreFactory.createKeyStore(bobAddress.host, "one")
-                    publishKeyStoreCertificatesAndKeys(server.publisher, newKeyStore)
-                    testClientWith(bobAddress, keyStoreFactory.trustStoreKeyStore)
+                // Client should fail again...
+                eventually {
+                    assertThrows<RuntimeException> {
+                        testClientWith(aliceAddress, firstCertificatesAuthority.trustStoreKeyStore)
+                    }
+                }
 
-                    // verify that the old trust store will fail
-                    eventually {
-                        assertThrows<RuntimeException> {
-                            testClientWith(bobAddress, oldTrustStore)
-                        }
+                // publish the same pair again
+                publishKeyStoreCertificatesAndKeys(server.publisher, keyStore)
+
+                // Client should now pass
+                testClientWith(aliceAddress, firstCertificatesAuthority.trustStoreKeyStore)
+
+                // Delete the trust store
+                val subject = PrincipalUtil.getSubjectX509Principal(
+                    keyStore.keyStore.getCertificate(keyStore.keyStore.aliases().nextElement()) as X509Certificate
+                ).name
+                server.publish(
+                    Record(
+                        Schemas.P2P.GATEWAY_TLS_CERTIFICATES,
+                        subject,
+                        null
+                    )
+                )
+                eventually {
+                    assertThrows<RuntimeException> {
+                        testClientWith(aliceAddress, firstCertificatesAuthority.trustStoreKeyStore)
+                    }
+                }
+
+                // publish it again
+                publishKeyStoreCertificatesAndKeys(server.publisher, keyStore)
+                testClientWith(aliceAddress, firstCertificatesAuthority.trustStoreKeyStore)
+
+                // Change the host
+                configPublisher.publishConfig(GatewayConfiguration(bobAddress.host, bobAddress.port, aliceSslConfig))
+                val bobKeyStore = firstCertificatesAuthority.createKeyStore(bobAddress.host)
+                publishKeyStoreCertificatesAndKeys(server.publisher, bobKeyStore)
+
+                // Client should pass with new host
+                testClientWith(bobAddress, firstCertificatesAuthority.trustStoreKeyStore)
+
+                // new trust store...
+                val secondCertificatesAuthority = StubCertificatesAuthority("password", KeyAlgorithm.ECDSA)
+                server.publish(
+                    Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, secondCertificatesAuthority.gatewayTrustStore),
+                )
+
+                // replace the first pair
+                val newKeyStore = secondCertificatesAuthority.createKeyStore(bobAddress.host)
+                publishKeyStoreCertificatesAndKeys(server.publisher, newKeyStore)
+                testClientWith(bobAddress, secondCertificatesAuthority.trustStoreKeyStore)
+
+                // verify that the old trust store will fail
+                eventually {
+                    assertThrows<RuntimeException> {
+                        testClientWith(bobAddress, firstCertificatesAuthority.trustStoreKeyStore)
                     }
                 }
 
                 // new trust store and pair...
-                TlsKeysFactory("password", KeyAlgorithm.ECDSA).use { keyStoreFactory ->
-                    server.publish(
-                        Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, keyStoreFactory.gatewayTrustStore),
-                    )
+                val thirdCertificatesAuthority = StubCertificatesAuthority("password", KeyAlgorithm.ECDSA)
+                server.publish(
+                    Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, thirdCertificatesAuthority.gatewayTrustStore),
+                )
 
-                    // publish new pair with new alias
-                    val newKeyStore = keyStoreFactory.createKeyStore(bobAddress.host, "two")
-                    publishKeyStoreCertificatesAndKeys(server.publisher, newKeyStore)
-                    testClientWith(bobAddress, keyStoreFactory.trustStoreKeyStore)
-                }
+                // publish new pair with new alias
+                val newerKeyStore = thirdCertificatesAuthority.createKeyStore(bobAddress.host)
+                publishKeyStoreCertificatesAndKeys(server.publisher, newerKeyStore)
+                testClientWith(bobAddress, thirdCertificatesAuthority.trustStoreKeyStore)
             }
         }
     }
