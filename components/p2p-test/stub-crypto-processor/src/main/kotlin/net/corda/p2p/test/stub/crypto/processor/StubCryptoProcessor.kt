@@ -9,7 +9,7 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.test.TenantKeys
+import net.corda.p2p.test.KeyPairEntry
 import net.corda.schema.TestSchema.Companion.CRYPTO_KEYS_TOPIC
 import net.corda.v5.crypto.SignatureSpec
 import java.security.InvalidParameterException
@@ -30,11 +30,8 @@ class StubCryptoProcessor(
     private val subscriptionConfig = SubscriptionConfig("crypto-service", CRYPTO_KEYS_TOPIC, instanceId)
     private val subscription =
         subscriptionFactory.createCompactedSubscription(subscriptionConfig, keyPairEntryProcessor, configuration)
-    private class TenantInfo {
-        val publicKeyToPrivateKey = ConcurrentHashMap<PublicKey, PrivateKey>()
-    }
 
-    private val tenants = ConcurrentHashMap<String, TenantInfo>()
+    private val publicKeyToPrivateKey = ConcurrentHashMap<PublicKey, PrivateKey>()
     private val keyDeserialiser = KeyDeserialiser()
 
     private val readyFuture = CompletableFuture<Unit>()
@@ -52,32 +49,6 @@ class StubCryptoProcessor(
         dependentChildren = listOf(subscriptionTile),
     )
 
-    override fun sign(
-        tenantId: String,
-        publicKey: PublicKey,
-        signatureSpec: SignatureSpec,
-        data: ByteArray,
-    ): ByteArray {
-        val privateKey =
-            tenants[tenantId]
-                ?.publicKeyToPrivateKey
-                ?.get(publicKey)
-                ?: throw InvalidParameterException("Could not find private key")
-        val providerName = when (publicKey.algorithm) {
-            "RSA" -> "SunRsaSign"
-            "EC" -> "SunEC"
-            else -> throw InvalidParameterException("Unsupported algorithm ${publicKey.algorithm}")
-        }
-        val signature = Signature.getInstance(
-            signatureSpec.signatureName,
-            providerName
-        )
-        signature.initSign(privateKey)
-        signature.setParameter(signatureSpec.params)
-        signature.update(data)
-        return signature.sign()
-    }
-
     private fun createResources(
         @Suppress("UNUSED_PARAMETER")
         resources: ResourcesHolder
@@ -85,46 +56,52 @@ class StubCryptoProcessor(
         return readyFuture
     }
 
-    private inner class KeyPairEntryProcessor : CompactedProcessor<String, TenantKeys> {
+    override fun sign(publicKey: PublicKey, spec: SignatureSpec, data: ByteArray): ByteArray {
+        val privateKey = publicKeyToPrivateKey[publicKey] ?: throw InvalidParameterException("Could not find private key")
+        val providerName = when (publicKey.algorithm) {
+            "RSA" -> "SunRsaSign"
+            "EC" -> "SunEC"
+            else -> throw InvalidParameterException("Unsupported algorithm ${publicKey.algorithm}")
+        }
+        val signature = Signature.getInstance(
+            spec.signatureName,
+            providerName
+        )
+        signature.initSign(privateKey)
+        signature.setParameter(spec.params)
+        signature.update(data)
+        return signature.sign()
+    }
+
+    private inner class KeyPairEntryProcessor : CompactedProcessor<String, KeyPairEntry> {
 
         override val keyClass: Class<String>
             get() = String::class.java
-        override val valueClass: Class<TenantKeys>
-            get() = TenantKeys::class.java
+        override val valueClass: Class<KeyPairEntry>
+            get() = KeyPairEntry::class.java
 
-        override fun onSnapshot(currentData: Map<String, TenantKeys>) {
-            currentData.values.groupBy {
-                it.tenantId
-            }.forEach { tenantId, keys ->
-                tenants.computeIfAbsent(tenantId) {
-                    TenantInfo()
-                }.publicKeyToPrivateKey += keys.map {
-                    it.keys
-                }.map {
-                    keyPairEntry ->
-                    val privateKey = keyDeserialiser.toPrivateKey(keyPairEntry.privateKey.array(), keyPairEntry.keyAlgo)
-                    val publicKey = keyDeserialiser.toPublicKey(keyPairEntry.publicKey.array(), keyPairEntry.keyAlgo)
-                    publicKey to privateKey
-                }
+        override fun onSnapshot(currentData: Map<String, KeyPairEntry>) {
+            publicKeyToPrivateKey += currentData.values.map { keyPairEntry ->
+                val privateKey = keyDeserialiser.toPrivateKey(keyPairEntry.privateKey.array(), keyPairEntry.keyAlgo)
+                val publicKey = keyDeserialiser.toPublicKey(keyPairEntry.publicKey.array(), keyPairEntry.keyAlgo)
+                publicKey to privateKey
             }
             readyFuture.complete(Unit)
         }
 
         override fun onNext(
-            newRecord: Record<String, TenantKeys>,
-            oldValue: TenantKeys?,
-            currentData: Map<String, TenantKeys>
+            newRecord: Record<String, KeyPairEntry>,
+            oldValue: KeyPairEntry?,
+            currentData: Map<String, KeyPairEntry>
         ) {
-            oldValue?.let { oldKeyEntry ->
-                val publicKey = keyDeserialiser.toPublicKey(oldKeyEntry.keys.publicKey.array(), oldKeyEntry.keys.keyAlgo)
-                tenants[oldKeyEntry.tenantId]?.publicKeyToPrivateKey?.remove(publicKey)
+            oldValue?.let { oldKeyPairEntry ->
+                val publicKey = keyDeserialiser.toPublicKey(oldKeyPairEntry.publicKey.array(), oldKeyPairEntry.keyAlgo)
+                publicKeyToPrivateKey.remove(publicKey)
             }
-            newRecord.value?.let { keyEntry ->
-                val privateKey = keyDeserialiser.toPrivateKey(keyEntry.keys.privateKey.array(), keyEntry.keys.keyAlgo)
-                val publicKey = keyDeserialiser.toPublicKey(keyEntry.keys.publicKey.array(), keyEntry.keys.keyAlgo)
-                tenants.computeIfAbsent(keyEntry.tenantId) {
-                    TenantInfo()
-                }.publicKeyToPrivateKey[publicKey] = privateKey
+            newRecord.value?.let { keyPairEntry ->
+                val privateKey = keyDeserialiser.toPrivateKey(keyPairEntry.privateKey.array(), keyPairEntry.keyAlgo)
+                val publicKey = keyDeserialiser.toPublicKey(keyPairEntry.publicKey.array(), keyPairEntry.keyAlgo)
+                publicKeyToPrivateKey[publicKey] = privateKey
             }
         }
     }

@@ -14,16 +14,13 @@ internal class DelegatedKeystore(
     private val certificateStore: DelegatedCertificateStore,
     private val signer: DelegatedSigner,
 ) : KeyStoreSpi() {
-    private fun getCertificates(alias: String): Collection<Certificate>? = certificateStore.aliasToTenantInfo[alias]?.certificateChain
+    private fun getCertificates(alias: String): Collection<Certificate>? = certificateStore.aliasToCertificates[alias]
 
     override fun engineGetKey(alias: String, password: CharArray): Key? =
-        certificateStore.aliasToTenantInfo[alias]
-            ?.let { tenantInfo ->
-                tenantInfo.certificateChain.firstOrNull()?.let { certificate ->
-                    certificate.publicKey?.let { publicKey ->
-                        DelegatedPrivateKey(tenantInfo.tenantId, publicKey, signer)
-                    }
-                }
+        getCertificates(alias)
+            ?.firstOrNull()
+            ?.publicKey?.let {
+                DelegatedPrivateKey(it, signer)
             }
 
     override fun engineGetCertificate(alias: String): Certificate? =
@@ -33,11 +30,11 @@ internal class DelegatedKeystore(
         getCertificates(alias)?.toTypedArray()
 
     override fun engineAliases(): Enumeration<String> =
-        Collections.enumeration(certificateStore.aliasToTenantInfo.keys)
+        Collections.enumeration(certificateStore.aliasToCertificates.keys)
 
-    override fun engineContainsAlias(alias: String): Boolean = certificateStore.aliasToTenantInfo.containsKey(alias)
+    override fun engineContainsAlias(alias: String): Boolean = certificateStore.aliasToCertificates.containsKey(alias)
 
-    override fun engineSize() = certificateStore.aliasToTenantInfo.size
+    override fun engineSize() = certificateStore.aliasToCertificates.size
 
     override fun engineIsKeyEntry(alias: String): Boolean = engineContainsAlias(alias)
 

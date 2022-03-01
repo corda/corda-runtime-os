@@ -19,6 +19,7 @@ import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.AuthenticatedMessageDeliveryState
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
+import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
@@ -27,7 +28,6 @@ import net.corda.p2p.test.stub.crypto.processor.SigningCryptoService
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 
@@ -188,8 +188,8 @@ class DeliveryTracker(
             private fun sessionCounterpartiesFromState(state: AuthenticatedMessageDeliveryState): SessionManager.SessionCounterparties {
                 val header = state.message.message.header
                 return SessionManager.SessionCounterparties(
-                    header.source.toCorda(),
-                    header.destination.toCorda()
+                    header.source.toHoldingIdentity(),
+                    header.destination.toHoldingIdentity()
                 )
             }
         }

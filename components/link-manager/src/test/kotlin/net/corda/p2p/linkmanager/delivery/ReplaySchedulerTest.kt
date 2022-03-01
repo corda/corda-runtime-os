@@ -4,13 +4,13 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.AutoClosableScheduledExecutorService
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
-import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -39,8 +39,8 @@ class ReplaySchedulerTest {
         private const val MAX_REPLAYING_MESSAGES = 100
         private val replayPeriod = Duration.ofMillis(2)
         private val sessionCounterparties = SessionManager.SessionCounterparties(
-            HoldingIdentity("Source", DeliveryTrackerTest.groupId),
-            HoldingIdentity("Dest", DeliveryTrackerTest.groupId)
+            LinkManagerNetworkMap.HoldingIdentity("Source", DeliveryTrackerTest.groupId),
+            LinkManagerNetworkMap.HoldingIdentity("Dest", DeliveryTrackerTest.groupId)
         )
         lateinit var loggingInterceptor: LoggingInterceptor
 

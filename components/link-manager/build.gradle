@@ -18,7 +18,6 @@ dependencies {
     implementation project(":libs:configuration:configuration-schema:p2p")
     implementation project(':components:domino-logic')
     implementation project(':components:p2p-test:stub-crypto-processor')
-    implementation project(':libs:virtual-node:virtual-node-info')
     implementation "net.corda:corda-crypto"
     implementation "net.corda:corda-cipher-suite"
 

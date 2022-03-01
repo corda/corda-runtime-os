@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager
 
+import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
@@ -15,8 +16,6 @@ import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.NetworkMapEntry
 import net.corda.p2p.test.stub.crypto.processor.KeyDeserialiser
 import net.corda.schema.TestSchema.Companion.NETWORK_MAP_TOPIC
-import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.toCorda
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.nio.ByteBuffer
 import java.security.MessageDigest
@@ -56,7 +55,7 @@ class StubNetworkMap(
     }
 
     @Suppress("TYPE_INFERENCE_ONLY_INPUT_TYPES_WARNING")
-    override fun getMemberInfo(holdingIdentity: HoldingIdentity): LinkManagerNetworkMap.MemberInfo? {
+    override fun getMemberInfo(holdingIdentity: LinkManagerNetworkMap.HoldingIdentity): LinkManagerNetworkMap.MemberInfo? {
         return dominoTile.withLifecycleLock {
             if (!isRunning) {
                 throw IllegalStateException("getMemberInfo operation invoked while component was stopped.")
@@ -94,7 +93,7 @@ class StubNetworkMap(
 
     private fun NetworkMapEntry.toMemberInfo(): LinkManagerNetworkMap.MemberInfo {
         return LinkManagerNetworkMap.MemberInfo(
-            HoldingIdentity(this.holdingIdentity.x500Name, this.holdingIdentity.groupId),
+            LinkManagerNetworkMap.HoldingIdentity(this.holdingIdentity.x500Name, this.holdingIdentity.groupId),
             keyDeserialiser.toPublicKey(this.publicKey.array(), this.publicKeyAlgorithm),
             this.publicKeyAlgorithm.toKeyAlgorithm(),
             LinkManagerNetworkMap.EndPoint(this.address),
@@ -120,7 +119,7 @@ class StubNetworkMap(
         private val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, BouncyCastleProvider())
 
         val netMapEntriesByGroupIdPublicKeyHash = ConcurrentHashMap<String, ConcurrentHashMap<ByteBuffer, NetworkMapEntry>>()
-        val netmapEntriesByHoldingIdentity = ConcurrentHashMap<HoldingIdentity, NetworkMapEntry>()
+        val netmapEntriesByHoldingIdentity = ConcurrentHashMap<LinkManagerNetworkMap.HoldingIdentity, NetworkMapEntry>()
 
         override val keyClass: Class<String>
             get() = String::class.java
@@ -141,7 +140,7 @@ class StubNetworkMap(
                 if (oldValue != null) {
                     val publicKeyHash = calculateHash(oldValue.publicKey.array())
                     netMapEntriesByGroupIdPublicKeyHash[oldValue.holdingIdentity.groupId]!!.remove(ByteBuffer.wrap(publicKeyHash))
-                    netmapEntriesByHoldingIdentity.remove(oldValue.holdingIdentity.toCorda())
+                    netmapEntriesByHoldingIdentity.remove(oldValue.holdingIdentity.toLMHoldingIdentity())
                 }
             } else {
                 addEntry(newRecord.value!!)
@@ -154,7 +153,7 @@ class StubNetworkMap(
             }
 
             val publicKeyHash = calculateHash(networkMapEntry.publicKey.array())
-            val identity = networkMapEntry.holdingIdentity.toCorda()
+            val identity = networkMapEntry.holdingIdentity.toLMHoldingIdentity()
             netMapEntriesByGroupIdPublicKeyHash[networkMapEntry.holdingIdentity.groupId]!![ByteBuffer.wrap(publicKeyHash)] = networkMapEntry
             netmapEntriesByHoldingIdentity[identity] = networkMapEntry
 
@@ -166,6 +165,10 @@ class StubNetworkMap(
             listeners.forEach { listener ->
                 listener.groupAdded(groupInfo)
             }
+        }
+
+        private fun HoldingIdentity.toLMHoldingIdentity(): LinkManagerNetworkMap.HoldingIdentity {
+            return LinkManagerNetworkMap.HoldingIdentity(this.x500Name, this.groupId)
         }
 
         fun calculateHash(publicKey: ByteArray): ByteArray {

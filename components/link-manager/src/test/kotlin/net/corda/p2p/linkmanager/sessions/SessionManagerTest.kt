@@ -43,8 +43,6 @@ import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.toBase64
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC
-import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
@@ -97,11 +95,11 @@ class SessionManagerTest {
         val keyGenerator = KeyPairGenerator.getInstance("EC", BouncyCastleProvider())
         val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, BouncyCastleProvider())
 
-        val OUR_PARTY = HoldingIdentity("Alice", GROUP_ID)
+        val OUR_PARTY = LinkManagerNetworkMap.HoldingIdentity("Alice", GROUP_ID)
         val OUR_KEY = keyGenerator.genKeyPair()
         val OUR_MEMBER_INFO = LinkManagerNetworkMap.MemberInfo(OUR_PARTY, OUR_KEY.public, KeyAlgorithm.ECDSA,
             LinkManagerNetworkMap.EndPoint("http://alice.com"))
-        val PEER_PARTY = HoldingIdentity("Bob", GROUP_ID)
+        val PEER_PARTY = LinkManagerNetworkMap.HoldingIdentity("Bob", GROUP_ID)
         val PEER_KEY = keyGenerator.genKeyPair()
         val PEER_MEMBER_INFO = LinkManagerNetworkMap.MemberInfo(PEER_PARTY, PEER_KEY.public, KeyAlgorithm.ECDSA,
             LinkManagerNetworkMap.EndPoint("http://bob.com"))
@@ -164,7 +162,7 @@ class SessionManagerTest {
         on { getMemberInfo(messageDigest.hash(PEER_KEY.public.encoded), GROUP_ID) } doReturn PEER_MEMBER_INFO
     }
     private val cryptoService = mock<StubCryptoProcessor> {
-        on { sign(eq(OUR_PARTY.id), eq(OUR_KEY.public), any(), any()) } doReturn "signature-from-A".toByteArray()
+        on { sign(eq(OUR_KEY.public), any(), any()) } doReturn "signature-from-A".toByteArray()
     }
     private val pendingSessionMessageQueues = Mockito.mock(LinkManager.PendingSessionMessageQueues::class.java)
     private val sessionReplayer = Mockito.mock(InMemorySessionReplayer::class.java)
@@ -229,8 +227,8 @@ class SessionManagerTest {
     private val message = AuthenticatedMessageAndKey(
         AuthenticatedMessage(
             AuthenticatedMessageHeader(
-                PEER_PARTY.toAvro(),
-                OUR_PARTY.toAvro(),
+                PEER_PARTY.toHoldingIdentity(),
+                OUR_PARTY.toHoldingIdentity(),
                 null,
                 "messageId",
                 "", "system-1"

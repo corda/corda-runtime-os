@@ -2,12 +2,11 @@ package net.corda.p2p.linkmanager
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
-import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
@@ -30,9 +29,9 @@ class ConfigBasedLinkManagerHostingMapTest {
         dominoTile.close()
     }
 
-    private val alice = HoldingIdentity("O=Alice, L=London, C=GB", "group1")
-    private val bob = HoldingIdentity("O=Bob, L=London, C=GB", "group1")
-    private val charlie = HoldingIdentity("O=Charlie, L=London, C=GB", "group1")
+    private val alice = LinkManagerNetworkMap.HoldingIdentity("O=Alice, L=London, C=GB", "group1")
+    private val bob = LinkManagerNetworkMap.HoldingIdentity("O=Bob, L=London, C=GB", "group1")
+    private val charlie = LinkManagerNetworkMap.HoldingIdentity("O=Charlie, L=London, C=GB", "group1")
     private val configResourcesHolder = mock<ResourcesHolder>()
     private val localTlsCertificates = mapOf(
         bob to listOf("bobOne"),
@@ -83,7 +82,7 @@ class ConfigBasedLinkManagerHostingMapTest {
         val identities = mutableMapOf<HoldingIdentity, Collection<PemCertificates>>()
         val listener = object : HostingMapListener {
             override fun identityAdded(identityInfo: HostingMapListener.IdentityInfo) {
-                identities[identityInfo.holdingIdentity.toCorda()] = identityInfo.tlsCertificates
+                identities[identityInfo.holdingIdentity] = identityInfo.tlsCertificates
             }
         }
         setRunning()
@@ -92,8 +91,8 @@ class ConfigBasedLinkManagerHostingMapTest {
         configHandler.applyNewConfiguration(typedConfig, null, configResourcesHolder)
 
         assertThat(identities)
-            .containsEntry(bob, localTlsCertificates[bob])
-            .containsEntry(alice, localTlsCertificates[alice])
+            .containsEntry(bob.toHoldingIdentity(), localTlsCertificates[bob])
+            .containsEntry(alice.toHoldingIdentity(), localTlsCertificates[alice])
     }
 
     private fun setRunning() {

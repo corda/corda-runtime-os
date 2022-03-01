@@ -47,7 +47,6 @@ import net.corda.p2p.linkmanager.StubNetworkMap
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
 import net.corda.p2p.test.NetworkMapEntry
-import net.corda.p2p.test.TenantKeys
 import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
@@ -57,7 +56,6 @@ import net.corda.schema.TestSchema.Companion.NETWORK_MAP_TOPIC
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
-import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -393,14 +391,11 @@ class P2PLayerEndToEndTest {
                         Record(
                             CRYPTO_KEYS_TOPIC,
                             "key-1",
-                            TenantKeys(
-                                HoldingIdentity(x500Name, GROUP_ID).toCorda().id,
-                                KeyPairEntry(
-                                    identitiesKeyAlgorithm,
-                                    ByteBuffer.wrap(keyPair.public.encoded),
-                                    ByteBuffer.wrap(keyPair.private.encoded),
-                                ),
-                            ),
+                            KeyPairEntry(
+                                identitiesKeyAlgorithm,
+                                ByteBuffer.wrap(keyPair.public.encoded),
+                                ByteBuffer.wrap(keyPair.private.encoded)
+                            )
                         )
                     )
                 ).forEach { it.get() }
@@ -425,10 +420,7 @@ class P2PLayerEndToEndTest {
                 Record(
                     CRYPTO_KEYS_TOPIC,
                     alias,
-                    TenantKeys(
-                        HoldingIdentity(x500Name, GROUP_ID).toCorda().id,
-                        keyPair
-                    ),
+                    keyPair
                 )
             }
             publisherFactory.createPublisher(

@@ -6,7 +6,6 @@ import java.security.PublicKey
 import java.security.interfaces.RSAPrivateKey
 
 internal class DelegatedPrivateKey(
-    val tenantId: String,
     val publicKey: PublicKey,
     val signer: DelegatedSigner,
 ) : PrivateKey,

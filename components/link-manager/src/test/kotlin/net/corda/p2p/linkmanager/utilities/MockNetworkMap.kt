@@ -5,7 +5,6 @@ import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.NetworkMapListener
-import net.corda.virtualnode.HoldingIdentity
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Assertions
 import org.mockito.kotlin.mock
@@ -15,7 +14,7 @@ import java.security.MessageDigest
 import java.security.PrivateKey
 import java.security.PublicKey
 
-class MockNetworkMap(nodes: List<HoldingIdentity>) {
+class MockNetworkMap(nodes: List<LinkManagerNetworkMap.HoldingIdentity>) {
 
     private val FAKE_ENDPOINT = LinkManagerNetworkMap.EndPoint("http://10.0.0.1/")
 
@@ -23,8 +22,8 @@ class MockNetworkMap(nodes: List<HoldingIdentity>) {
     private val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
     private val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, provider)
 
-    val keys = HashMap<HoldingIdentity, KeyPair>()
-    private val holdingIdentityForGroupIdAndHash = HashMap<String, HashMap<Int, HoldingIdentity>>()
+    val keys = HashMap<LinkManagerNetworkMap.HoldingIdentity, KeyPair>()
+    private val holdingIdentityForGroupIdAndHash = HashMap<String, HashMap<Int, LinkManagerNetworkMap.HoldingIdentity>>()
 
     private fun MessageDigest.hash(data: ByteArray): ByteArray {
         this.reset()
@@ -49,7 +48,7 @@ class MockNetworkMap(nodes: List<HoldingIdentity>) {
         fun getOurMemberInfo(): LinkManagerNetworkMap.MemberInfo
     }
 
-    fun getSessionNetworkMapForNode(node: HoldingIdentity): MockLinkManagerNetworkMap {
+    fun getSessionNetworkMapForNode(node: LinkManagerNetworkMap.HoldingIdentity): MockLinkManagerNetworkMap {
         return object : MockLinkManagerNetworkMap {
             override fun getPrivateKeyFromPublicKey(publicKey: PublicKey): PrivateKey {
                 Assertions.assertArrayEquals(keys[node]!!.public.encoded, publicKey.encoded)
@@ -64,7 +63,7 @@ class MockNetworkMap(nodes: List<HoldingIdentity>) {
                 return LinkManagerNetworkMap.MemberInfo(node, getKeyPair().public, KeyAlgorithm.ECDSA, FAKE_ENDPOINT)
             }
 
-            override fun getMemberInfo(holdingIdentity: HoldingIdentity): LinkManagerNetworkMap.MemberInfo? {
+            override fun getMemberInfo(holdingIdentity: LinkManagerNetworkMap.HoldingIdentity): LinkManagerNetworkMap.MemberInfo? {
                 val publicKey = keys[holdingIdentity]?.public ?: return null
                 return LinkManagerNetworkMap.MemberInfo(holdingIdentity, publicKey, KeyAlgorithm.ECDSA, FAKE_ENDPOINT)
             }

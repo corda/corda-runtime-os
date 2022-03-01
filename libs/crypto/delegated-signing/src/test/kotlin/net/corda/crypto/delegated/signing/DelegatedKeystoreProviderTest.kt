@@ -44,33 +44,23 @@ class DelegatedKeystoreProviderTest {
         val delegateSignerTwo = mock<DelegatedSigner>()
         val publicKeyOne = mock<PublicKey>()
         val delegateCertificatesOne = object : DelegatedCertificateStore {
-            override val aliasToTenantInfo: Map<Alias, DelegatedCertificateStore.TenantInfo> =
-                (1..3).associate {
-                    val certificate = mock<Certificate> {
-                        on { publicKey } doReturn publicKeyOne
-                    }
-                    val tenantInfo = DelegatedCertificateStore.TenantInfo(
-                        "One.$it",
-                        listOf(certificate)
-                    )
-
-                    tenantInfo.tenantId to tenantInfo
+            override val aliasToCertificates = (1..3).associate {
+                val certificate = mock<Certificate> {
+                    on { publicKey } doReturn publicKeyOne
                 }
+
+                "One.$it" to listOf(certificate)
+            }
         }
         val publicKeyTwo = mock<PublicKey>()
         val delegateCertificatesTwo = object : DelegatedCertificateStore {
-            override val aliasToTenantInfo: Map<Alias, DelegatedCertificateStore.TenantInfo> =
-                (1..3).associate {
-                    val certificate = mock<Certificate> {
-                        on { publicKey } doReturn publicKeyTwo
-                    }
-                    val tenantInfo = DelegatedCertificateStore.TenantInfo(
-                        "Two.$it",
-                        listOf(certificate)
-                    )
-
-                    tenantInfo.tenantId to tenantInfo
+            override val aliasToCertificates = (1..3).associate {
+                val certificate = mock<Certificate> {
+                    on { publicKey } doReturn publicKeyTwo
                 }
+
+                "Two.$it" to listOf(certificate)
+            }
         }
 
         val provider = DelegatedKeystoreProvider()

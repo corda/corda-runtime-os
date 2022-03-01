@@ -12,11 +12,11 @@ import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
+import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.LinkManagerTest.Companion.authenticatedMessageAndKey
 import net.corda.p2p.linkmanager.LinkManagerTest.Companion.createSessionPair
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.SessionAndMessage
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
-import net.corda.virtualnode.toCorda
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertNull
@@ -108,7 +108,7 @@ class MessageConverterTest {
         val networkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
         Mockito.`when`(networkMap.getMemberInfo(any())).thenReturn(
             LinkManagerNetworkMap.MemberInfo(
-                us.toCorda(),
+                us.toHoldingIdentity(),
                 keyPairGenerator.genKeyPair().public,
                 KeyAlgorithm.ECDSA,
                 LinkManagerNetworkMap.EndPoint(""),
@@ -148,7 +148,7 @@ class MessageConverterTest {
         val networkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
         Mockito.`when`(networkMap.getMemberInfo(any())).thenReturn(
             LinkManagerNetworkMap.MemberInfo(
-                peer.toCorda(),
+                peer.toHoldingIdentity(),
                 keyPairGenerator.genKeyPair().public,
                 KeyAlgorithm.ECDSA,
                 LinkManagerNetworkMap.EndPoint(""),

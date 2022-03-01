@@ -12,7 +12,6 @@ import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.linkmanager.utilities.MockNetworkMap
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
-import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
@@ -35,8 +34,8 @@ class InMemorySessionReplayerTest {
 
     companion object {
         private const val GROUP_ID = "myGroup"
-        private val US = HoldingIdentity("Us", GROUP_ID)
-        private val COUNTER_PARTY = HoldingIdentity("CounterParty", GROUP_ID)
+        private val US = LinkManagerNetworkMap.HoldingIdentity("Us",GROUP_ID)
+        private val COUNTER_PARTY = LinkManagerNetworkMap.HoldingIdentity("CounterParty", GROUP_ID)
         private val SESSION_COUNTERPARTIES = SessionManager.SessionCounterparties(US, COUNTER_PARTY)
         private const val MAX_MESSAGE_SIZE = 100000
         lateinit var loggingInterceptor: LoggingInterceptor

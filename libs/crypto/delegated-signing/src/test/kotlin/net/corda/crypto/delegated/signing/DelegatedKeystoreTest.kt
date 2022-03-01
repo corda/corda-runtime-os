@@ -16,17 +16,10 @@ class DelegatedKeystoreTest {
         mock<Certificate>()
     }
     private val certificatesStore = object : DelegatedCertificateStore {
-        override val aliasToTenantInfo =
-            mapOf(
-                "one" to DelegatedCertificateStore.TenantInfo(
-                    "one",
-                    firstCertificates,
-                ),
-                "two" to DelegatedCertificateStore.TenantInfo(
-                    "two",
-                    emptyList(),
-                )
-            )
+        override val aliasToCertificates = mapOf(
+            "one" to firstCertificates,
+            "two" to emptyList()
+        )
     }
     private val delegatedKeystore = DelegatedKeystore(
         certificatesStore,
