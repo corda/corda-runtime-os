@@ -113,7 +113,7 @@ class CpkWriteServiceImplTest {
         val cpkData = byteArrayOf(0x01, 0x02, 0x03)
         val cpkChecksum = secureHash(cpkData)
         val cpkStorage = mock<CpkStorage>()
-        whenever(cpkStorage.getCpkIdsNotIn(emptySet())).thenReturn(setOf(cpkChecksum))
+        whenever(cpkStorage.getCpkIdsNotIn(emptyList())).thenReturn(listOf(cpkChecksum))
         whenever(cpkStorage.getCpkDataByCpkId(cpkChecksum)).thenReturn(CpkChecksumToData(cpkChecksum, cpkData))
         cpkWriteServiceImpl.cpkStorage = cpkStorage
 

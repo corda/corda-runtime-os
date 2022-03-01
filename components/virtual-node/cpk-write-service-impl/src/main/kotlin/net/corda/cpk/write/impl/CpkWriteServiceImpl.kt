@@ -195,7 +195,7 @@ class CpkWriteServiceImpl @Activate constructor(
 
         val cachedCpkIds = cpkChecksumsCache?.getCachedCpkIds() ?: run {
             logger.info("CPK Checksums Cache is not set yet, therefore will run a full db to kafka reconciliation")
-            emptySet()
+            emptyList()
         }
 
         val cpkStorage =

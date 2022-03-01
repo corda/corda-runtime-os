@@ -15,7 +15,8 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
 import java.nio.ByteBuffer
-import java.util.concurrent.ConcurrentHashMap
+import java.util.Collections
+import kotlin.collections.LinkedHashMap
 
 /**
  * This cache will get updated everytime a zero chunk is pushed to Kafka and gets picked up by [CacheSynchronizer].
@@ -31,7 +32,7 @@ class CpkChecksumsCacheImpl(
         private fun ByteBuffer.isZeroChunk() = this.limit() == 0
     }
 
-    private val cpkChecksums: MutableMap<SecureHash, SecureHash> = ConcurrentHashMap()
+    private val cpkChecksums: MutableMap<SecureHash, SecureHash> = Collections.synchronizedMap(LinkedHashMap())
 
     @VisibleForTesting
     internal val compactedSubscription =
@@ -47,7 +48,7 @@ class CpkChecksumsCacheImpl(
         compactedSubscription.close()
 
     override fun getCachedCpkIds() =
-        cpkChecksums.keys
+        cpkChecksums.keys.toList()
 
     override fun add(cpkChecksum: SecureHash) {
         logger.debug { "Adding CPK checksum to cache $cpkChecksum" }

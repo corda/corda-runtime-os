@@ -36,7 +36,6 @@ dependencies {
     runtimeOnly project(":components:configuration:configuration-read-service-impl")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
@@ -44,13 +43,4 @@ dependencies {
     testImplementation project(":components:virtual-node:cpk-service-common")
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:registry")
-
-    integrationTestImplementation project(':libs:db:db-admin')
-    integrationTestImplementation project(':libs:db:db-admin-impl')
-    integrationTestImplementation project(':libs:db:db-orm')
-    integrationTestImplementation project(':libs:db:db-orm-impl')
-    integrationTestImplementation project(':testing:db-testkit')
-
-    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 }
