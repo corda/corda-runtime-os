@@ -9,8 +9,13 @@ import net.corda.data.messaging.ResponseStatus
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.messagebus.api.configuration.ConsumerConfig
+import net.corda.messagebus.api.configuration.ProducerConfig
+import net.corda.messagebus.api.constants.ConsumerRoles
+import net.corda.messagebus.api.constants.ProducerRoles
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
+import net.corda.messagebus.api.consumer.builder.MessageBusConsumerBuilder
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
@@ -38,9 +43,9 @@ import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
 @Suppress("LongParameterList")
-class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
+internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private val config: ResolvedSubscriptionConfig,
-    private val cordaConsumerBuilder: CordaConsumerBuilder,
+    private val cordaConsumerBuilder: MessageBusConsumerBuilder,
     private val cordaProducerBuilder: CordaProducerBuilder,
     private val serializer: CordaAvroSerializer<REQUEST>,
     private val deserializer: CordaAvroDeserializer<RESPONSE>,
@@ -132,8 +137,11 @@ class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             attempts++
             try {
                 log.debug { "Creating rpc response consumer.  Attempt: $attempts" }
-                producer = cordaProducerBuilder.createProducer(config.busConfig)
-                cordaConsumerBuilder.createRPCConsumer(
+                val producerConfig = ProducerConfig(config.clientId, config.instanceId, ProducerRoles.RPC_SENDER)
+                producer = cordaProducerBuilder.createProducer(producerConfig, config.busConfig)
+                val consumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.RPC_SENDER)
+                cordaConsumerBuilder.createConsumer(
+                    consumerConfig,
                     config.busConfig,
                     String::class.java,
                     RPCResponse::class.java

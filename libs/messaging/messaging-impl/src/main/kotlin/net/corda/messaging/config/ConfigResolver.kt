@@ -1,5 +1,6 @@
 package net.corda.messaging.config
 
+import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -29,7 +30,15 @@ internal class ConfigResolver(private val smartConfigFactory: SmartConfigFactory
         counter: Long
     ): ResolvedSubscriptionConfig {
         val config = messagingConfig.withFallback(defaults)
-        return ResolvedSubscriptionConfig.merge(subscriptionType, subscriptionConfig, config, counter)
+        return try {
+            ResolvedSubscriptionConfig.merge(subscriptionType, subscriptionConfig, config, counter)
+        } catch (e: ConfigException) {
+            logger.error("Failed to resolve subscription config $subscriptionConfig: ${e.message}")
+            throw CordaMessageAPIConfigException(
+                "Failed to resolve subscription config $subscriptionConfig: ${e.message}",
+                e
+            )
+        }
     }
 
     fun buildPublisherConfig(
@@ -37,7 +46,12 @@ internal class ConfigResolver(private val smartConfigFactory: SmartConfigFactory
         messagingConfig: SmartConfig
     ): ResolvedPublisherConfig {
         val config = messagingConfig.withFallback(defaults)
-        return ResolvedPublisherConfig.merge(publisherConfig, config)
+        return try {
+            ResolvedPublisherConfig.merge(publisherConfig, config)
+        } catch (e: ConfigException) {
+            logger.error("Failed to resolve publisher config $publisherConfig: ${e.message}")
+            throw CordaMessageAPIConfigException("Failed to resolve publisher config $publisherConfig: ${e.message}", e)
+        }
     }
 
     private fun getResourceConfig(resource: String): SmartConfig {

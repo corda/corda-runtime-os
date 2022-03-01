@@ -3,9 +3,14 @@ package net.corda.messaging.subscription
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.messagebus.api.configuration.ConsumerConfig
+import net.corda.messagebus.api.configuration.ProducerConfig
+import net.corda.messagebus.api.constants.ConsumerRoles
+import net.corda.messagebus.api.constants.ProducerRoles
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
+import net.corda.messagebus.api.consumer.builder.MessageBusConsumerBuilder
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
@@ -15,7 +20,6 @@ import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
 import net.corda.messaging.config.ResolvedSubscriptionConfig
-import net.corda.messaging.subscription.consumer.builder.CordaConsumerBuilder
 import net.corda.messaging.subscription.consumer.listener.ForwardingRebalanceListener
 import net.corda.messaging.utils.toCordaProducerRecords
 import net.corda.messaging.utils.toEventLogRecord
@@ -46,7 +50,7 @@ import kotlin.concurrent.withLock
 @Suppress("LongParameterList")
 internal class EventLogSubscriptionImpl<K : Any, V : Any>(
     private val config: ResolvedSubscriptionConfig,
-    private val cordaConsumerBuilder: CordaConsumerBuilder,
+    private val cordaConsumerBuilder: MessageBusConsumerBuilder,
     private val cordaProducerBuilder: CordaProducerBuilder,
     private val processor: EventLogProcessor<K, V>,
     private val partitionAssignmentListener: PartitionAssignmentListener?,
@@ -65,7 +69,7 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
         LifecycleCoordinatorName(
             "${config.group}-KafkaDurableSubscription-${config.topic}",
             //we use instanceId here as transactionality is a concern in this subscription
-            config.instanceId
+            config.clientId
         )
     ) { _, _ -> }
 
@@ -144,32 +148,23 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
             try {
                 log.debug { "Attempt: $attempts" }
                 deadLetterRecords = mutableListOf()
-                consumer = if (partitionAssignmentListener != null) {
-                    val consumerGroup = config.group
-                    val rebalanceListener =
-                        ForwardingRebalanceListener(config.topic, consumerGroup, partitionAssignmentListener)
-                    cordaConsumerBuilder.createDurableConsumer(
-                        config.busConfig,
-                        processor.keyClass,
-                        processor.valueClass,
-                        { data ->
-                            log.error("Failed to deserialize record from ${config.topic}")
-                            deadLetterRecords.add(data)
-                        },
-                        cordaConsumerRebalanceListener = rebalanceListener
-                    )
-                } else {
-                    cordaConsumerBuilder.createDurableConsumer(
-                        config.busConfig,
-                        processor.keyClass,
-                        processor.valueClass,
-                        { data ->
-                            log.error("Failed to deserialize record from ${config.topic}")
-                            deadLetterRecords.add(data)
-                        }
-                    )
+                val rebalanceListener = partitionAssignmentListener?.let {
+                    ForwardingRebalanceListener(config.topic, config.group, it)
                 }
-                producer = cordaProducerBuilder.createProducer(config.busConfig)
+                val consumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.EVENT_LOG)
+                consumer = cordaConsumerBuilder.createConsumer(
+                    consumerConfig,
+                    config.busConfig,
+                    processor.keyClass,
+                    processor.valueClass,
+                    { data ->
+                        log.error("Failed to deserialize record from ${config.topic}")
+                        deadLetterRecords.add(data)
+                    },
+                    rebalanceListener
+                )
+                val producerConfig = ProducerConfig(config.clientId, config.instanceId, ProducerRoles.EVENT_LOG)
+                producer = cordaProducerBuilder.createProducer(producerConfig, config.busConfig)
                 consumer.use { cordaConsumer ->
                     cordaConsumer.subscribe(config.topic)
                     producer.use { cordaProducer ->

@@ -3,12 +3,13 @@ package net.corda.messaging.config
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.constants.SubscriptionType
-import net.corda.schema.configuration.MessagingKeys.Subscription.COMMIT_RETRIES
-import net.corda.schema.configuration.MessagingKeys.Subscription.POLL_TIMEOUT
-import net.corda.schema.configuration.MessagingKeys.Subscription.PROCESSOR_RETRIES
-import net.corda.schema.configuration.MessagingKeys.Subscription.PROCESSOR_TIMEOUT
-import net.corda.schema.configuration.MessagingKeys.Subscription.SUBSCRIBE_RETRIES
-import net.corda.schema.configuration.MessagingKeys.Subscription.THREAD_STOP_TIMEOUT
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
+import net.corda.schema.configuration.MessagingConfig.Subscription.COMMIT_RETRIES
+import net.corda.schema.configuration.MessagingConfig.Subscription.POLL_TIMEOUT
+import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_RETRIES
+import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
+import net.corda.schema.configuration.MessagingConfig.Subscription.SUBSCRIBE_RETRIES
+import net.corda.schema.configuration.MessagingConfig.Subscription.THREAD_STOP_TIMEOUT
 import java.time.Duration
 
 internal data class ResolvedSubscriptionConfig(
@@ -16,6 +17,7 @@ internal data class ResolvedSubscriptionConfig(
     val topic: String,
     val group: String,
     val idCounter: Long,
+    val instanceId: Int,
     val pollTimeout: Duration,
     val threadStopTimeout: Duration,
     val processorRetries: Int,
@@ -36,6 +38,7 @@ internal data class ResolvedSubscriptionConfig(
                 subscriptionConfig.eventTopic,
                 subscriptionConfig.groupName,
                 idCounter,
+                messagingConfig.getInt(INSTANCE_ID),
                 Duration.ofMillis(messagingConfig.getLong(POLL_TIMEOUT)),
                 Duration.ofMillis(messagingConfig.getLong(THREAD_STOP_TIMEOUT)),
                 messagingConfig.getInt(PROCESSOR_RETRIES),

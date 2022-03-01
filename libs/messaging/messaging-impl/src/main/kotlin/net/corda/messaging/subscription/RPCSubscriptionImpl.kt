@@ -9,8 +9,13 @@ import net.corda.data.messaging.ResponseStatus
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.messagebus.api.configuration.ConsumerConfig
+import net.corda.messagebus.api.configuration.ProducerConfig
+import net.corda.messagebus.api.constants.ConsumerRoles
+import net.corda.messagebus.api.constants.ProducerRoles
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
+import net.corda.messagebus.api.consumer.builder.MessageBusConsumerBuilder
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
@@ -19,7 +24,6 @@ import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.config.ResolvedSubscriptionConfig
-import net.corda.messaging.subscription.consumer.builder.CordaConsumerBuilder
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
@@ -32,7 +36,7 @@ import kotlin.concurrent.withLock
 @Suppress("LongParameterList")
 internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private val config: ResolvedSubscriptionConfig,
-    private val cordaConsumerBuilder: CordaConsumerBuilder,
+    private val cordaConsumerBuilder: MessageBusConsumerBuilder,
     private val producerBuilder: CordaProducerBuilder,
     private val responderProcessor: RPCResponderProcessor<REQUEST, RESPONSE>,
     private val serializer: CordaAvroSerializer<RESPONSE>,
@@ -46,7 +50,7 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
         LifecycleCoordinatorName(
             "${config.group}-RPCSubscription-${config.topic}",
             //we use instanceId here as transactionality is a concern in this subscription
-            config.instanceId
+            config.instanceId.toString()
         )
     ) { _, _ -> }
 
@@ -130,8 +134,11 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     }
 
     private fun createProducerConsumerAndStartPolling() {
-        producerBuilder.createProducer(config.busConfig).use { producer ->
-            cordaConsumerBuilder.createRPCConsumer(
+        val producerConfig = ProducerConfig(config.clientId, config.instanceId, ProducerRoles.RPC_RESPONDER)
+        producerBuilder.createProducer(producerConfig, config.busConfig).use { producer ->
+            val consumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.RPC_RESPONDER)
+            cordaConsumerBuilder.createConsumer(
+                consumerConfig,
                 config.busConfig,
                 String::class.java,
                 RPCRequest::class.java

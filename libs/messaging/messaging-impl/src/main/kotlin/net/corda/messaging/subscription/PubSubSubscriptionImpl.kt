@@ -3,15 +3,18 @@ package net.corda.messaging.subscription
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.messagebus.api.configuration.ConsumerConfig
+import net.corda.messagebus.api.constants.ConsumerRoles
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
+import net.corda.messagebus.api.consumer.builder.MessageBusConsumerBuilder
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.config.ResolvedSubscriptionConfig
-import net.corda.messaging.subscription.consumer.builder.CordaConsumerBuilder
+import net.corda.messaging.subscription.consumer.listener.PubSubConsumerRebalanceListener
 import net.corda.messaging.utils.toRecord
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.base.util.debug
@@ -36,7 +39,7 @@ import kotlin.concurrent.withLock
  */
 internal class PubSubSubscriptionImpl<K : Any, V : Any>(
     private val config: ResolvedSubscriptionConfig,
-    private val cordaConsumerBuilder: CordaConsumerBuilder,
+    private val cordaConsumerBuilder: MessageBusConsumerBuilder,
     private val processor: PubSubProcessor<K, V>,
     private val executor: ExecutorService?,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
@@ -134,9 +137,18 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
         while (!stopped) {
             attempts++
             try {
-                cordaConsumerBuilder.createPubSubConsumer(
-                    config.busConfig, processor.keyClass, processor.valueClass,::logFailedDeserialize
+                val consumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.PUBSUB)
+                cordaConsumerBuilder.createConsumer(
+                    consumerConfig,
+                    config.busConfig,
+                    processor.keyClass,
+                    processor.valueClass,
+                    ::logFailedDeserialize
                 ).use {
+                    val listener = PubSubConsumerRebalanceListener(
+                        config.topic, config.group, it
+                    )
+                    it.setDefaultRebalanceListener(listener)
                     it.subscribe(config.topic)
                     lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
                     pollAndProcessRecords(it)
@@ -201,7 +213,10 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
      * thread otherwise. Commit the offset for each record back to the topic after processing them synchronously.
      * If a record fails to deserialize skip this record and log the error.
      */
-    private fun processPubSubRecords(cordaConsumerRecords: List<CordaConsumerRecord<K, V>>, consumer: CordaConsumer<K, V>) {
+    private fun processPubSubRecords(
+        cordaConsumerRecords: List<CordaConsumerRecord<K, V>>,
+        consumer: CordaConsumer<K, V>
+    ) {
         cordaConsumerRecords.forEach {
             if (executor != null) {
                 executor.submit { processor.onNext(it.toRecord()) }.get()

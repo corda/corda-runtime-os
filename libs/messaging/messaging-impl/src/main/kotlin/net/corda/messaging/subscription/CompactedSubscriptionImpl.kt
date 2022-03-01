@@ -3,14 +3,16 @@ package net.corda.messaging.subscription
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.messagebus.api.configuration.ConsumerConfig
+import net.corda.messagebus.api.constants.ConsumerRoles
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
+import net.corda.messagebus.api.consumer.builder.MessageBusConsumerBuilder
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.config.ResolvedSubscriptionConfig
-import net.corda.messaging.subscription.consumer.builder.CordaConsumerBuilder
 import net.corda.messaging.subscription.factory.MapFactory
 import net.corda.messaging.utils.toRecord
 import net.corda.v5.base.util.debug
@@ -22,7 +24,7 @@ import kotlin.concurrent.withLock
 internal class CompactedSubscriptionImpl<K : Any, V : Any>(
     private val config: ResolvedSubscriptionConfig,
     private val mapFactory: MapFactory<K, V>,
-    private val cordaConsumerBuilder: CordaConsumerBuilder,
+    private val cordaConsumerBuilder: MessageBusConsumerBuilder,
     private val processor: CompactedProcessor<K, V>,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : CompactedSubscription<K, V> {
@@ -103,7 +105,9 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
             attempts++
             try {
                 log.debug { "Creating compacted consumer.  Attempt: $attempts" }
-                cordaConsumerBuilder.createCompactedConsumer(
+                val consumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.COMPACTED)
+                cordaConsumerBuilder.createConsumer(
+                    consumerConfig,
                     config.busConfig,
                     processor.keyClass,
                     processor.valueClass,

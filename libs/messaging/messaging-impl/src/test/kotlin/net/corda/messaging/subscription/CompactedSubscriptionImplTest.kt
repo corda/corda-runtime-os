@@ -6,6 +6,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
+import net.corda.messagebus.api.consumer.builder.MessageBusConsumerBuilder
 import net.corda.messaging.TOPIC_PREFIX
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
@@ -251,7 +252,7 @@ class CompactedSubscriptionImplTest {
         }
 
         // Three calls: First time and after each exception thrown
-        verify(consumerBuilder, times(3)).createCompactedConsumer<String, String>(any(), any(), any(), any())
+        verify(consumerBuilder, times(3)).createConsumer<String, String>(any(), any(), any(), any(), any())
     }
 
     @Test
@@ -298,13 +299,13 @@ class CompactedSubscriptionImplTest {
         }
 
         // Four calls: First time and after each exception thrown
-        verify(consumerBuilder, times(4)).createCompactedConsumer<String, String>(any(), any(), any(), any())
+        verify(consumerBuilder, times(4)).createConsumer<String, String>(any(), any(), any(), any(), any())
     }
 
-    private fun setupStandardMocks(numberOfRecords: Long): Pair<CordaConsumer<String, String>, CordaConsumerBuilder> {
+    private fun setupStandardMocks(numberOfRecords: Long): Pair<CordaConsumer<String, String>, MessageBusConsumerBuilder> {
         val kafkaConsumer: CordaConsumer<String, String> = mock()
-        val cordaConsumerBuilder: CordaConsumerBuilder = mock()
-        doReturn(kafkaConsumer).whenever(cordaConsumerBuilder).createCompactedConsumer<String, String>(any(), any(), any(), any())
+        val cordaConsumerBuilder: MessageBusConsumerBuilder = mock()
+        doReturn(kafkaConsumer).whenever(cordaConsumerBuilder).createConsumer<String, String>(any(), any(), any(), any(), any())
         doReturn(mutableMapOf(CordaTopicPartition(TOPIC, 0) to 0L, CordaTopicPartition(TOPIC, 1) to 0L))
             .whenever(kafkaConsumer).beginningOffsets(any())
         doReturn(

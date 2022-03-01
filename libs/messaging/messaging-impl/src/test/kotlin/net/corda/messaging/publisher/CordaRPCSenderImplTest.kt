@@ -6,6 +6,7 @@ import net.corda.data.CordaAvroSerializer
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messagebus.api.consumer.CordaConsumer
+import net.corda.messagebus.api.consumer.builder.MessageBusConsumerBuilder
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
@@ -57,9 +58,9 @@ class CordaRPCSenderImplTest {
         val cordaProducer: CordaProducer = mock()
         val cordaConsumer: CordaConsumer<Any, Any> = mock()
         val cordaProducerBuilder: CordaProducerBuilder = mock()
-        val cordaConsumerBuilder: CordaConsumerBuilder = mock()
-        doAnswer { cordaProducer }.whenever(cordaProducerBuilder).createProducer(any())
-        doAnswer { cordaConsumer }.whenever(cordaConsumerBuilder).createRPCConsumer<Any, Any>(any(), any(), any(), any())
+        val cordaConsumerBuilder: MessageBusConsumerBuilder = mock()
+        doAnswer { cordaProducer }.whenever(cordaProducerBuilder).createProducer(any(), any())
+        doAnswer { cordaConsumer }.whenever(cordaConsumerBuilder).createConsumer<Any, Any>(any(), any(), any(), any(), any())
         doReturn(lifecycleCoordinator).`when`(lifecycleCoordinatorFactory).createCoordinator(any(), any())
 
         val cordaSenderImpl = CordaRPCSenderImpl(

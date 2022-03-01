@@ -69,7 +69,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         LifecycleCoordinatorName(
             "${config.group}-KafkaStateAndEventSubscription-${config.topic}",
             //we use instanceId here as transactionality is a concern in this subscription
-            config.instanceId
+            config.instanceId.toString()
         )
     ) { _, _ -> }
 

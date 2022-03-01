@@ -6,8 +6,8 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messaging.api.exception.CordaMessageAPIConfigException
-import net.corda.schema.configuration.MessagingKeys.Bus.BUS_TYPE
-import net.corda.schema.configuration.MessagingKeys.Bus.KAFKA_PROPERTIES
+import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
+import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PROPERTIES
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.osgi.framework.FrameworkUtil

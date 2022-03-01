@@ -66,13 +66,6 @@ class CordaSubscriptionFactory @Activate constructor(
         executor: ExecutorService?,
         nodeConfig: SmartConfig
     ): Subscription<K, V> {
-//        val config = resolveSubscriptionConfiguration(
-//            subscriptionConfig.toConfig(),
-//            nodeConfig,
-//            clientIdCounter.getAndIncrement(),
-//            PATTERN_PUBSUB
-//        )
-
         val config = getConfig(SubscriptionType.PUB_SUB, subscriptionConfig, nodeConfig)
         return PubSubSubscriptionImpl(
             config,
@@ -94,13 +87,6 @@ class CordaSubscriptionFactory @Activate constructor(
                 "Cannot create durable subscription producer for $subscriptionConfig. No instanceId configured"
             )
         }
-
-//        val config = resolveSubscriptionConfiguration(
-//            subscriptionConfig.toConfig(),
-//            nodeConfig,
-//            clientIdCounter.getAndIncrement(),
-//            PATTERN_DURABLE
-//        )
         val config = getConfig(SubscriptionType.DURABLE, subscriptionConfig, nodeConfig)
         return DurableSubscriptionImpl(
             config,
@@ -117,12 +103,6 @@ class CordaSubscriptionFactory @Activate constructor(
         processor: CompactedProcessor<K, V>,
         nodeConfig: SmartConfig
     ): CompactedSubscription<K, V> {
-//        val config = resolveSubscriptionConfiguration(
-//            subscriptionConfig.toConfig(),
-//            nodeConfig,
-//            clientIdCounter.getAndIncrement(),
-//            PATTERN_COMPACTED
-//        )
         val config = getConfig(SubscriptionType.COMPACTED, subscriptionConfig, nodeConfig)
         val mapFactory = object : MapFactory<K, V> {
             override fun createMap(): MutableMap<K, V> = ConcurrentHashMap<K, V>()
@@ -146,17 +126,6 @@ class CordaSubscriptionFactory @Activate constructor(
         nodeConfig: SmartConfig,
         stateAndEventListener: StateAndEventListener<K, S>?
     ): StateAndEventSubscription<K, S, E> {
-
-//        val subscriptionConfiguration = subscriptionConfig.toConfig()
-//        val config = resolveSubscriptionConfiguration(
-//            subscriptionConfiguration,
-//            nodeConfig,
-//            clientIdCounter.getAndIncrement(),
-//            PATTERN_STATEANDEVENT
-//        )
-//
-//        val stateAndEventConfig = getStateAndEventConfig(config)
-
         val config = getConfig(SubscriptionType.STATE_AND_EVENT, subscriptionConfig, nodeConfig)
         val serializer = cordaAvroSerializationFactory.createAvroSerializer<Any> { }
         return StateAndEventSubscriptionImpl(
@@ -180,14 +149,6 @@ class CordaSubscriptionFactory @Activate constructor(
                 "Cannot create durable subscription producer for $subscriptionConfig. No instanceId configured"
             )
         }
-
-//        val config = resolveSubscriptionConfiguration(
-//            subscriptionConfig.toConfig(),
-//            nodeConfig,
-//            clientIdCounter.getAndIncrement(),
-//            PATTERN_EVENTLOG
-//        )
-
         val config = getConfig(SubscriptionType.EVENT_LOG, subscriptionConfig, nodeConfig)
         return EventLogSubscriptionImpl(
             config,
@@ -204,19 +165,6 @@ class CordaSubscriptionFactory @Activate constructor(
         nodeConfig: SmartConfig,
         responderProcessor: RPCResponderProcessor<REQUEST, RESPONSE>
     ): RPCSubscription<REQUEST, RESPONSE> {
-
-//        val rpcConfiguration = ConfigFactory.empty()
-//            .withValue(GROUP, ConfigValueFactory.fromAnyRef(rpcConfig.groupName))
-//            .withValue(TOPIC, ConfigValueFactory.fromAnyRef(rpcConfig.requestTopic))
-//            .withValue("clientName", ConfigValueFactory.fromAnyRef(rpcConfig.clientName))
-//
-//        val config = resolveSubscriptionConfiguration(
-//            rpcConfiguration,
-//            nodeConfig,
-//            clientIdCounter.getAndIncrement(),
-//            PATTERN_RPC_RESPONDER
-//        ).withoutPath(PRODUCER_TRANSACTIONAL_ID)
-
         val config = getConfig(SubscriptionType.RPC_RESPONDER, rpcConfig, nodeConfig)
         val cordaAvroSerializer = cordaAvroSerializationFactory.createAvroSerializer<RESPONSE> { }
         val cordaAvroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({ }, rpcConfig.requestType)
@@ -238,7 +186,12 @@ class CordaSubscriptionFactory @Activate constructor(
         messagingConfig: SmartConfig
     ): ResolvedSubscriptionConfig {
         val configBuilder = ConfigResolver(messagingConfig.factory)
-        return configBuilder.buildSubscriptionConfig(subscriptionType, subscriptionConfig, messagingConfig, clientIdCounter.getAndIncrement())
+        return configBuilder.buildSubscriptionConfig(
+            subscriptionType,
+            subscriptionConfig,
+            messagingConfig,
+            clientIdCounter.getAndIncrement()
+        )
     }
 
     private fun getConfig(
