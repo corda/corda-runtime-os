@@ -109,6 +109,8 @@ internal class InboundMessageHandler(
     private fun processSessionMessage(p2pMessage: LinkInMessage): HttpResponseStatus {
         val sessionId = getSessionId(p2pMessage) ?: return HttpResponseStatus.INTERNAL_SERVER_ERROR
         if (p2pMessage.payload is InitiatorHelloMessage) {
+            /* we are using the session identifier as key to ensure replayed initiator hello messages will end up on the same partition, and
+             * thus processed by the same link manager instance under normal conditions. */
             p2pInPublisher.publish(listOf(Record(LINK_IN_TOPIC, sessionId, p2pMessage)))
             return HttpResponseStatus.OK
         }

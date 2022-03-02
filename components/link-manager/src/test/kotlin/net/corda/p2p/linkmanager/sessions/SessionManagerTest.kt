@@ -683,7 +683,7 @@ class SessionManagerTest {
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
 
         assertThat(responseMessage).isNull()
-        loggingInterceptor.assertInfoContains("The message was discarded.")
+        loggingInterceptor.assertSingleWarningContains("The message was discarded.")
     }
 
     @Test

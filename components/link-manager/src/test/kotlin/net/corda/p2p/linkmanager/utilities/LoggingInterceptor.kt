@@ -55,11 +55,6 @@ class LoggingInterceptor private constructor(private val testAppender: TestAppen
         assertThat(warnings.single().message).contains(expectedMessagePart)
     }
 
-    fun assertInfoContains(expectedMessagePart: String) {
-        val info = testAppender.messages.filter { it.level == Level.INFO }
-        assertThat(info.joinToString("\n") { it.message }).contains(expectedMessagePart)
-    }
-
     fun assertSingleError(expectedMessage: String) {
         val errors = testAppender.messages.filter { it.level == Level.ERROR }
         assertEquals(1, errors.size)
