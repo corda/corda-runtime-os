@@ -36,7 +36,7 @@ import java.security.cert.Certificate
 import java.security.cert.CertificateFactory
 import java.util.concurrent.CompletableFuture
 
-class CertificatesReaderTest {
+class DynamicKeyStoreTest {
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>()
     private val nodeConfiguration = mock<SmartConfig>()
     private val subscription = mock<CompactedSubscription<String, GatewayTlsCertificates>>()
@@ -53,7 +53,7 @@ class CertificatesReaderTest {
     private val subscriptionDominoTile = mockConstruction(SubscriptionDominoTile::class.java)
     private val signer = mockConstruction(StubCryptoProcessor::class.java)
 
-    private val reader = CertificatesReader(
+    private val dynamicKeyStore = DynamicKeyStore(
         lifecycleCoordinatorFactory,
         subscriptionFactory,
         nodeConfiguration,
@@ -92,7 +92,7 @@ class CertificatesReaderTest {
     @Nested
     inner class ProcessorTest {
         private val certificates = (1..4).associate {
-            "certifivcate$it" to mock<Certificate>()
+            "certificate$it" to mock<Certificate>()
         }
 
         @BeforeEach
@@ -112,7 +112,7 @@ class CertificatesReaderTest {
                 )
             )
 
-            assertThat(reader.aliasToCertificates["one"]).containsAll(certificates.values)
+            assertThat(dynamicKeyStore.aliasToCertificates["one"]).containsAll(certificates.values)
         }
 
         @Test
@@ -133,7 +133,7 @@ class CertificatesReaderTest {
                 emptyMap()
             )
 
-            assertThat(reader.aliasToCertificates["one"]).isNull()
+            assertThat(dynamicKeyStore.aliasToCertificates["one"]).isNull()
         }
 
         @Test
@@ -148,17 +148,17 @@ class CertificatesReaderTest {
                 emptyMap()
             )
 
-            assertThat(reader.aliasToCertificates["one"]).containsAll(certificates.values)
+            assertThat(dynamicKeyStore.aliasToCertificates["one"]).containsAll(certificates.values)
         }
     }
 
     @Nested
     inner class DelegatedSignerTest {
-        val publicKeyOne = mock<PublicKey>()
+        private val publicKeyOne = mock<PublicKey>()
         private val certificateOne = mock<Certificate> {
             on { publicKey } doReturn publicKeyOne
         }
-        val publicKeyTwo = mock<PublicKey>()
+        private val publicKeyTwo = mock<PublicKey>()
         private val certificateTwo = mock<Certificate> {
             on { publicKey } doReturn publicKeyTwo
         }
@@ -174,8 +174,7 @@ class CertificatesReaderTest {
         fun setUp() {
             whenever(certificateFactory.generateCertificate(any())).doAnswer {
                 val inputStream = it.arguments[0] as InputStream
-                val name = inputStream.reader().readText()
-                when (name) {
+                when (inputStream.reader().readText()) {
                     "1" -> certificateOne
                     "2" -> certificateTwo
                     else -> certificateWithoutPublicKey
@@ -199,13 +198,13 @@ class CertificatesReaderTest {
         @Test
         fun `sign with unknown publicKey will throw an exception`() {
             assertThrows<InvalidKeyException> {
-                reader.sign(mock(), spec, data)
+                dynamicKeyStore.sign(mock(), spec, data)
             }
         }
 
         @Test
         fun `sign with known publicKey will send the correct data`() {
-            reader.sign(publicKeyOne, spec, data)
+            dynamicKeyStore.sign(publicKeyOne, spec, data)
 
             verify(signer.constructed().first()).sign(tenantIdOne, publicKeyOne, spec, data)
         }
@@ -215,7 +214,7 @@ class CertificatesReaderTest {
             val returnedData = "ok".toByteArray()
             whenever(signer.constructed().first().sign(any(), any(), any(), any())).doReturn(returnedData)
 
-            assertThat(reader.sign(publicKeyOne, spec, data)).isEqualTo(returnedData)
+            assertThat(dynamicKeyStore.sign(publicKeyOne, spec, data)).isEqualTo(returnedData)
         }
 
         @Test
@@ -231,7 +230,7 @@ class CertificatesReaderTest {
             )
 
             assertThrows<InvalidKeyException> {
-                reader.sign(publicKeyOne, spec, data)
+                dynamicKeyStore.sign(publicKeyOne, spec, data)
             }
         }
 
@@ -251,7 +250,19 @@ class CertificatesReaderTest {
             )
 
             assertDoesNotThrow {
-                reader.sign(publicKeyTwo, spec, data)
+                dynamicKeyStore.sign(publicKeyTwo, spec, data)
+            }
+        }
+    }
+
+    @Nested
+    inner class KeyStoreTest {
+        @Test
+        fun `keyStore creates a new keystore`() {
+            mockConstruction(KeyStoreFactory::class.java).use {
+                dynamicKeyStore.keyStore
+
+                verify(it.constructed().first()).createDelegatedKeyStore()
             }
         }
     }

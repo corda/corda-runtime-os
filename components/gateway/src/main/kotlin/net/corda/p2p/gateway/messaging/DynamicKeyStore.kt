@@ -25,7 +25,7 @@ import java.security.cert.CertificateFactory
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
-internal class CertificatesReader(
+internal class DynamicKeyStore(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     subscriptionFactory: SubscriptionFactory,
     nodeConfiguration: SmartConfig,
@@ -38,6 +38,10 @@ internal class CertificatesReader(
     override val aliasToCertificates = ConcurrentHashMap<Alias, CertificateChain>()
 
     private val publicKeyToTenantId = ConcurrentHashMap<PublicKey, String>()
+
+    val keyStore by lazy {
+        KeyStoreFactory(this, this).createDelegatedKeyStore()
+    }
 
     private val subscription = subscriptionFactory.createCompactedSubscription(
         SubscriptionConfig(CONSUMER_GROUP_ID, Schemas.P2P.GATEWAY_TLS_CERTIFICATES, instanceId),

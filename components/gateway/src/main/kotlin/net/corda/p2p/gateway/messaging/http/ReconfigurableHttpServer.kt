@@ -10,9 +10,8 @@ import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.gateway.Gateway
-import net.corda.p2p.gateway.messaging.CertificatesReader
+import net.corda.p2p.gateway.messaging.DynamicKeyStore
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
-import net.corda.p2p.gateway.messaging.KeyStoreFactory
 import net.corda.p2p.gateway.messaging.toGatewayConfiguration
 import net.corda.v5.base.util.contextLogger
 import java.net.SocketAddress
@@ -35,25 +34,22 @@ class ReconfigurableHttpServer(
     private var httpServer: HttpServer? = null
     private val serverLock = ReentrantReadWriteLock()
 
-    private val certificatesReader = CertificatesReader(
+    private val dynamicKeyStore = DynamicKeyStore(
         lifecycleCoordinatorFactory,
         subscriptionFactory,
         nodeConfiguration,
         instanceId,
     )
-    private val keyStore by lazy {
-        KeyStoreFactory(certificatesReader, certificatesReader).createDelegatedKeyStore()
-    }
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         configurationChangeHandler = ReconfigurableHttpServerConfigChangeHandler(),
         dependentChildren = listOf(
-            certificatesReader.dominoTile,
+            dynamicKeyStore.dominoTile,
         ),
         managedChildren = listOf(
-            certificatesReader.dominoTile,
+            dynamicKeyStore.dominoTile,
         ),
     )
 
@@ -90,7 +86,11 @@ class ReconfigurableHttpServer(
                         val oldServer = httpServer
                         httpServer = null
                         oldServer?.stop()
-                        val newServer = HttpServer(listener, newConfiguration, keyStore)
+                        val newServer = HttpServer(
+                            listener,
+                            newConfiguration,
+                            dynamicKeyStore.keyStore
+                        )
                         newServer.start()
                         resources.keep(newServer)
                         httpServer = newServer
@@ -100,7 +100,11 @@ class ReconfigurableHttpServer(
                         "New server configuration, ${dominoTile.coordinatorName} will be connected to " +
                             "${newConfiguration.hostAddress}:${newConfiguration.hostPort}"
                     )
-                    val newServer = HttpServer(listener, newConfiguration, keyStore)
+                    val newServer = HttpServer(
+                        listener,
+                        newConfiguration,
+                        dynamicKeyStore.keyStore
+                    )
                     newServer.start()
                     resources.keep(newServer)
                     serverLock.write {
