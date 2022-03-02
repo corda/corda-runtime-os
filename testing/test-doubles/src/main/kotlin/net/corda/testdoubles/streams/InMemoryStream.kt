@@ -11,6 +11,9 @@ class InMemoryStream : Closeable {
     val outputStream: OutputStream get() = temp.outputStream()
     val inputStream: InputStream get() = temp.inputStream()
 
+    /**
+     * Shortcut to read all text from the inputStream.
+     */
     fun readText(): String = inputStream.bufferedReader().readText()
 
     override fun close() {

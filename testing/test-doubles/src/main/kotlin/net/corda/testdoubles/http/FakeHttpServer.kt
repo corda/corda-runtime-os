@@ -2,6 +2,7 @@ package net.corda.testdoubles.http
 
 import io.javalin.Javalin
 import io.javalin.http.Context
+import io.javalin.http.HandlerType
 
 class FakeHttpServer(private val port: Int = 0) {
     private lateinit var app: Javalin
@@ -18,8 +19,8 @@ class FakeHttpServer(private val port: Int = 0) {
         app.stop()
     }
 
-    fun addGetHandler(path: String, action: HandlerContext.(Request) -> Unit) {
-        app.get(path) {
+    fun handle(method: String, path: String, action: HandlerContext.(Request) -> Unit) {
+        app.addHandler(HandlerType.valueOf(method.toUpperCase()), path) {
             val handlerContext = HandlerContextImpl(it)
             val request = Request(path, it.queryParamMap())
             action(handlerContext, request)

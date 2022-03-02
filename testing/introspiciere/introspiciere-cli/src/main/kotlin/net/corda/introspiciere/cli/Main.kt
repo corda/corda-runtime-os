@@ -44,6 +44,13 @@ internal lateinit var stderr: OutputStream
     private set
 
 /**
+ * Simple method to write to [stdout] a string.
+ */
+internal fun appendToStdout(value: CharSequence) {
+    stdout.bufferedWriter().autoFlush { it.appendLine(value) }
+}
+
+/**
  * Similar behaviour as [use] with [Closeable] but flusing the resource instead of closing it.
  */
 internal fun <T: Flushable, R> T.autoFlush(block: (T) -> R): R {
