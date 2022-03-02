@@ -1,6 +1,6 @@
 package net.corda.membership.impl.read
 
-import net.corda.v5.membership.identity.MemberX500Name
+import net.corda.v5.base.types.MemberX500Name
 
 class TestProperties {
     companion object {

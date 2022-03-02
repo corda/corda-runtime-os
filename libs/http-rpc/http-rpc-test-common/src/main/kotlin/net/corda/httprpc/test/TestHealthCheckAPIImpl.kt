@@ -64,4 +64,12 @@ class TestHealthCheckAPIImpl : TestHealthCheckAPI, PluggableRPCOps<TestHealthChe
     }
 
     override fun parseUuid(uuid: String): UUID = UUID.fromString(uuid)
+
+    override fun echoQuery(requestString: String): String {
+        return requestString
+    }
+
+    override fun echoPath(requestString: String): String {
+        return requestString
+    }
 }
