@@ -1,9 +1,9 @@
 package net.corda.v5.ledger.schemas.vault
 
 import net.corda.v5.application.identity.AbstractParty
-import net.corda.v5.application.identity.CordaX500Name
 import net.corda.v5.application.identity.Party
 import net.corda.v5.base.annotations.CordaSerializable
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.toStringShort
 import net.corda.v5.ledger.UniqueIdentifier
 import net.corda.v5.ledger.contracts.CPKConstraint
@@ -272,7 +272,7 @@ object VaultSchemaV1 : MappedSchema(
         val contractStateClassName: String,
         val eventTimestamp: Instant,
         val eventType: DbVaultStateEvent.DbVaultEventType,
-        val notary: CordaX500Name,
+        val notary: MemberX500Name,
         val relevancyStatus: RelevancyStatus,
         val stateStatus: StateStatus,
     ) {

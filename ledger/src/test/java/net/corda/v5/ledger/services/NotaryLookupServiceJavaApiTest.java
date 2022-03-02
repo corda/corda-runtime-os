@@ -1,7 +1,7 @@
 package net.corda.v5.ledger.services;
 
-import net.corda.v5.application.identity.CordaX500Name;
 import net.corda.v5.application.identity.Party;
+import net.corda.v5.base.types.MemberX500Name;
 import net.corda.v5.ledger.NotaryInfo;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -15,7 +15,7 @@ import static org.mockito.Mockito.when;
 public class NotaryLookupServiceJavaApiTest {
 
     private final NotaryLookupService notaryLookupService = mock(NotaryLookupService.class);
-    private final CordaX500Name testCordaX500Name = new CordaX500Name("Bob Plc", "Rome", "IT");
+    private final MemberX500Name testMemberX500Name = new MemberX500Name("Bob Plc", "Rome", "IT");
     private final Party party = mock(Party.class);
     private final NotaryInfo notaryInfo = mock(NotaryInfo.class);
     private final List<NotaryInfo> notaryInfoList = List.of(notaryInfo);
@@ -32,9 +32,9 @@ public class NotaryLookupServiceJavaApiTest {
 
     @Test
     public void getNotaryByName() {
-        when(notaryLookupService.lookup(testCordaX500Name)).thenReturn(notaryInfo);
+        when(notaryLookupService.lookup(testMemberX500Name)).thenReturn(notaryInfo);
 
-        NotaryInfo result = notaryLookupService.lookup(testCordaX500Name);
+        NotaryInfo result = notaryLookupService.lookup(testMemberX500Name);
 
         Assertions.assertThat(result).isNotNull();
         Assertions.assertThat(result).isEqualTo(notaryInfo);

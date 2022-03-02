@@ -1,9 +1,9 @@
 package net.corda.v5.application.services
 
-import net.corda.v5.application.identity.CordaX500Name
 import net.corda.v5.application.injection.CordaFlowInjectable
 import net.corda.v5.application.injection.CordaServiceInjectable
 import net.corda.v5.base.annotations.DoNotImplement
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.identity.MemberInfo
 import java.security.PublicKey
 
@@ -21,7 +21,7 @@ interface MemberLookupService : CordaFlowInjectable, CordaServiceInjectable {
     fun myInfo(): MemberInfo
 
     /** Returns the [MemberInfo]  inside Membership Group with the given [name] name, or null if no such identity is found.**/
-    fun lookup(name: CordaX500Name): MemberInfo?
+    fun lookup(name: MemberX500Name): MemberInfo?
 
     /** Returns the [MemberInfo] inside Membership Group with the given [key] public key, or null if no such identity is found.**/
     fun lookup(key: PublicKey): MemberInfo?

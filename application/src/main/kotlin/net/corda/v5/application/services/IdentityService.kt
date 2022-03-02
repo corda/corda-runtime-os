@@ -2,11 +2,11 @@ package net.corda.v5.application.services
 
 import net.corda.v5.application.identity.AbstractParty
 import net.corda.v5.application.identity.AnonymousParty
-import net.corda.v5.application.identity.CordaX500Name
 import net.corda.v5.application.identity.Party
 import net.corda.v5.application.injection.CordaFlowInjectable
 import net.corda.v5.application.injection.CordaServiceInjectable
 import net.corda.v5.base.annotations.DoNotImplement
+import net.corda.v5.base.types.MemberX500Name
 import java.security.PublicKey
 import java.util.*
 
@@ -33,7 +33,7 @@ interface IdentityService : CordaServiceInjectable, CordaFlowInjectable {
      *
      * @return X.500 name if identity is known, else returns null.
      */
-    fun nameFromKey(publicKey: PublicKey): CordaX500Name?
+    fun nameFromKey(publicKey: PublicKey): MemberX500Name?
 
     /**
      * Creates a new [AnonymousParty] concrete object and returns it out of [publicKey].
@@ -44,11 +44,11 @@ interface IdentityService : CordaServiceInjectable, CordaFlowInjectable {
      * Resolves a party name to the well-known identity [Party] instance for this name. Where possible well-known identity lookup by name
      * should be done using [MemberLookupService] instead, as it is the authoritative source of well-known identities.
      *
-     * @param name The [CordaX500Name] to determine well known identity for.
+     * @param name The [MemberX500Name] to determine well known identity for.
      *
      * @return If known the canonical [Party] with that name, else null.
      */
-    fun partyFromName(name: CordaX500Name): Party?
+    fun partyFromName(name: MemberX500Name): Party?
 
     /**
      * Resolves a (optionally) confidential identity to the corresponding well-known identity [Party]. It transparently handles returning
@@ -62,32 +62,32 @@ interface IdentityService : CordaServiceInjectable, CordaFlowInjectable {
     fun partyFromAnonymous(party: AbstractParty): Party?
 
     /**
-     * Registers a mapping in the database between the provided [PublicKey] and [CordaX500Name] if one does not already exist.
-     * If an entry exists for the supplied [PublicKey] but the associated [CordaX500Name] does not match the one supplied to the method
+     * Registers a mapping in the database between the provided [PublicKey] and [MemberX500Name] if one does not already exist.
+     * If an entry exists for the supplied [PublicKey] but the associated [MemberX500Name] does not match the one supplied to the method
      * then an exception will be thrown.
      *
      * This method also optionally adds a mapping from [PublicKey] to external ID if one is provided. Lastly, the [PublicKey] is also stored
      * (as well as the [PublicKey] hash).
      *
      * @param publicKey The [PublicKey] that will be registered to the supplied [Party].
-     * @param name The [CordaX500Name] that the supplied [PublicKey] will be registered to.
+     * @param name The [MemberX500Name] that the supplied [PublicKey] will be registered to.
      * @param externalId The [UUID] that the supplied public key can be optionally registered to.
      *
      * @throws IllegalArgumentException If the [PublicKey] is already registered to a name that does not match the supplied party.
      */
-    fun registerKey(publicKey: PublicKey, name: CordaX500Name, externalId: UUID)
+    fun registerKey(publicKey: PublicKey, name: MemberX500Name, externalId: UUID)
 
     /**
-     * Registers a mapping in the database between the provided [PublicKey] and [CordaX500Name] if one does not already exist.
-     * If an entry exists for the supplied [PublicKey] but the associated [CordaX500Name] does not match the one supplied to the method
+     * Registers a mapping in the database between the provided [PublicKey] and [MemberX500Name] if one does not already exist.
+     * If an entry exists for the supplied [PublicKey] but the associated [MemberX500Name] does not match the one supplied to the method
      * then an exception will be thrown.
      *
      * @param publicKey The [PublicKey] that will be registered to the supplied [Party].
-     * @param name The [CordaX500Name] that the supplied [PublicKey] will be registered to.
+     * @param name The [MemberX500Name] that the supplied [PublicKey] will be registered to.
      *
      * @throws IllegalArgumentException If the [PublicKey] is already registered to a name that does not match the supplied party.
      */
-    fun registerKey(publicKey: PublicKey, name: CordaX500Name)
+    fun registerKey(publicKey: PublicKey, name: MemberX500Name)
 
     /**
      * Returns the external ID (as an [UUID]) related to the passed in [PublicKey]. Providing a [PublicKey] that is unknown by the node or

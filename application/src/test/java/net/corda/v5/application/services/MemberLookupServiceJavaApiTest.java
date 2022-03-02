@@ -1,6 +1,6 @@
 package net.corda.v5.application.services;
 
-import net.corda.v5.application.identity.CordaX500Name;
+import net.corda.v5.base.types.MemberX500Name;
 import net.corda.v5.membership.identity.MemberInfo;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -15,7 +15,7 @@ public class MemberLookupServiceJavaApiTest {
 
     private final MemberLookupService memberLookupService = mock(MemberLookupService.class);
 
-    private final CordaX500Name bobName = new CordaX500Name("Bob Plc", "Rome", "IT");
+    private final MemberX500Name bobName = new MemberX500Name("Bob Plc", "Rome", "IT");
     private final MemberInfo memberInfo = mock(MemberInfo.class);
     private final PublicKey bobPublicKey = mock(PublicKey.class);
 
@@ -30,7 +30,7 @@ public class MemberLookupServiceJavaApiTest {
     }
 
     @Test
-    public void lookupCordaX500Name() {
+    public void lookupMemberX500Name() {
         when(memberLookupService.lookup(bobName)).thenReturn(memberInfo);
 
         MemberInfo test = memberLookupService.lookup(bobName);

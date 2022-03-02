@@ -1,6 +1,7 @@
 package net.corda.v5.membership.identity
 
 import net.corda.v5.base.annotations.CordaSerializable
+import net.corda.v5.base.types.MemberX500Name
 import java.security.PublicKey
 
 /**

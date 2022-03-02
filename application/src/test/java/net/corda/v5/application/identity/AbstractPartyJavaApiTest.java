@@ -1,5 +1,6 @@
 package net.corda.v5.application.identity;
 
+import net.corda.v5.base.types.MemberX500Name;
 import net.corda.v5.base.types.OpaqueBytes;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -32,7 +33,7 @@ class AbstractPartyJavaApiTest {
 
     @Test
     void nameOrNullTest() {
-        final CordaX500Name x500Name = CordaX500Name.parse("O=Bank A, L=New York, C=US");
+        final MemberX500Name x500Name = MemberX500Name.parse("O=Bank A, L=New York, C=US");
         Mockito.when(abstractParty.nameOrNull()).thenReturn(x500Name);
 
         Assertions.assertThat(abstractParty.nameOrNull()).isNotNull();

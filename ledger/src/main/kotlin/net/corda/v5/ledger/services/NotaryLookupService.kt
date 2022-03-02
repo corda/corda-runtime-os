@@ -1,10 +1,10 @@
 package net.corda.v5.ledger.services
 
-import net.corda.v5.application.identity.CordaX500Name
 import net.corda.v5.application.identity.Party
 import net.corda.v5.application.injection.CordaFlowInjectable
 import net.corda.v5.application.injection.CordaServiceInjectable
 import net.corda.v5.base.annotations.DoNotImplement
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.NotaryInfo
 import java.security.PublicKey
 
@@ -26,7 +26,7 @@ interface NotaryLookupService : CordaFlowInjectable, CordaServiceInjectable {
      * list.map { "[$it]" }.toString()
      * ```
      * This allows to distinguish between each element of a map, as [Party.toString] returns comma separated values of
-     * [CordaX500Name].
+     * [MemberX500Name].
      *
      * @return A list of the network's Notary services.
      */
@@ -35,11 +35,11 @@ interface NotaryLookupService : CordaFlowInjectable, CordaServiceInjectable {
     /**
      * Looks up the notary information of a notary by legal name.
      *
-     * @param notaryServiceName The [CordaX500Name] of the notary service to retrieve.
+     * @param notaryServiceName The [MemberX500Name] of the notary service to retrieve.
      *
      * @return The [NotaryInfo] that matches the input [notaryServiceName], or null if no such notary exists.
      */
-    fun lookup(notaryServiceName: CordaX500Name): NotaryInfo?
+    fun lookup(notaryServiceName: MemberX500Name): NotaryInfo?
 
     /**
      * Looks up the notary information of a notary by public key.

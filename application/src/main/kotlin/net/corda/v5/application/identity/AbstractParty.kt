@@ -3,6 +3,7 @@ package net.corda.v5.application.identity
 import net.corda.v5.application.flows.Destination
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.DoNotImplement
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.types.OpaqueBytes
 import java.security.PublicKey
 
@@ -15,7 +16,7 @@ import java.security.PublicKey
 interface AbstractParty : Destination {
     val owningKey: PublicKey
 
-    fun nameOrNull(): CordaX500Name?
+    fun nameOrNull(): MemberX500Name?
 
     /**
      * Build a reference to something being stored or issued by a party e.g. in a vault or (more likely) on their normal

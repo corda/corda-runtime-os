@@ -1,11 +1,14 @@
-package net.corda.v5.application.identity;
+package net.corda.v5.base.types;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import javax.security.auth.x500.X500Principal;
+import java.util.Map;
 
-public class CordaX500NameJavaApiTest {
+import static java.util.Map.entry;
+
+class MemberX500NameJavaApiTest {
 
     private final String commonName = "commonName";
     private final String organisationUnit = "organisationUnit";
@@ -18,7 +21,7 @@ public class CordaX500NameJavaApiTest {
 
     @Test
     public void requiredArguments() {
-        final CordaX500Name cordaX500Name = new CordaX500Name(organization, locality, country);
+        final MemberX500Name cordaX500Name = new MemberX500Name(organization, locality, country);
 
         Assertions.assertThat(cordaX500Name.getCommonName()).isNull();
         Assertions.assertThat(cordaX500Name.getOrganisationUnit()).isNull();
@@ -30,7 +33,7 @@ public class CordaX500NameJavaApiTest {
 
     @Test
     public void allArguments() {
-        final CordaX500Name cordaX500Name = new CordaX500Name(
+        final MemberX500Name cordaX500Name = new MemberX500Name(
                 commonName, organisationUnit, organization, locality, state, country
         );
 
@@ -46,7 +49,7 @@ public class CordaX500NameJavaApiTest {
 
     @Test
     public void constructor_withCommonNameOrganizationLocalityAndCountry() {
-        final CordaX500Name cordaX500Name = new CordaX500Name(
+        final MemberX500Name cordaX500Name = new MemberX500Name(
                 commonName, organization, locality, country
         );
 
@@ -61,7 +64,7 @@ public class CordaX500NameJavaApiTest {
     @Test
     public void build() {
         final X500Principal principal = new X500Principal(name);
-        final CordaX500Name cordaX500Name = CordaX500Name.build(principal);
+        final MemberX500Name cordaX500Name = MemberX500Name.build(principal);
 
         Assertions.assertThat(cordaX500Name.getOrganisation()).isEqualTo(organization);
         Assertions.assertThat(cordaX500Name.getLocality()).isEqualTo(locality);
@@ -70,7 +73,7 @@ public class CordaX500NameJavaApiTest {
 
     @Test
     public void parse() {
-        final CordaX500Name cordaX500Name = CordaX500Name.parse(name);
+        final MemberX500Name cordaX500Name = MemberX500Name.parse(name);
 
         Assertions.assertThat(cordaX500Name.getOrganisation()).isEqualTo(organization);
         Assertions.assertThat(cordaX500Name.getLocality()).isEqualTo(locality);
@@ -79,10 +82,23 @@ public class CordaX500NameJavaApiTest {
 
     @Test
     public void x500Principal() {
-        final CordaX500Name cordaX500Name = new CordaX500Name(organization, locality, country);
+        final MemberX500Name cordaX500Name = new MemberX500Name(organization, locality, country);
 
         final X500Principal principal = cordaX500Name.getX500Principal();
 
         Assertions.assertThat(principal).isNotNull();
+    }
+
+    @Test
+    public void toAttributesMap() {
+        final Map<String, String > map = MemberX500Name.toAttributesMap(
+                "CN=alice, OU=Accounting, O=R3, L=Seattle, ST=Washington, C=US"
+        );
+        Assertions.assertThat(map).contains(entry("CN", "alice"));
+        Assertions.assertThat(map).contains(entry("OU", "Accounting"));
+        Assertions.assertThat(map).contains(entry("O", "R3"));
+        Assertions.assertThat(map).contains(entry("L", "Seattle"));
+        Assertions.assertThat(map).contains(entry("ST", "Washington"));
+        Assertions.assertThat(map).contains(entry("C", "US"));
     }
 }

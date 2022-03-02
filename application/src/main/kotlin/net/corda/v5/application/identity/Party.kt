@@ -2,6 +2,7 @@ package net.corda.v5.application.identity
 
 import net.corda.v5.application.flows.flowservices.FlowMessaging
 import net.corda.v5.base.annotations.DoNotImplement
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.toStringShort
 
@@ -31,7 +32,7 @@ import net.corda.v5.crypto.toStringShort
  */
 @DoNotImplement
 interface Party : AbstractParty {
-    val name: CordaX500Name
+    val name: MemberX500Name
 
     fun anonymise(): AnonymousParty
     fun description() = "$name (owningKey = ${owningKey.toStringShort()})"

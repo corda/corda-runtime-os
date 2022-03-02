@@ -2,6 +2,5 @@
 <SmellBaseline>
   <ManuallySuppressedIssues></ManuallySuppressedIssues>
   <CurrentIssues>
-    <ID>SpreadOperator:CordaX500Name.kt$CordaX500Name.Companion$(*Locale.getISOCountries(), unspecifiedCountry)</ID>
   </CurrentIssues>
 </SmellBaseline>

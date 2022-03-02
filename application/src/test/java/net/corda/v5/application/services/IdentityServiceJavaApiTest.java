@@ -1,8 +1,8 @@
 package net.corda.v5.application.services;
 
 import net.corda.v5.application.identity.AnonymousParty;
-import net.corda.v5.application.identity.CordaX500Name;
 import net.corda.v5.application.identity.Party;
+import net.corda.v5.base.types.MemberX500Name;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -17,7 +17,7 @@ import static org.mockito.Mockito.when;
 
 public class IdentityServiceJavaApiTest {
     private final IdentityService identityService = mock(IdentityService.class);
-    private final CordaX500Name bobName = new CordaX500Name("Bob Plc", "Rome", "IT");
+    private final MemberX500Name bobName = new MemberX500Name("Bob Plc", "Rome", "IT");
     private final Party bobParty = mock(Party.class);
     private final PublicKey bobPublicKey = mock(PublicKey.class);
     private final AnonymousParty anonymousParty = mock(AnonymousParty.class);
@@ -27,7 +27,7 @@ public class IdentityServiceJavaApiTest {
     public void nameFromKey() {
         when(identityService.nameFromKey(bobPublicKey)).thenReturn(bobName);
 
-        CordaX500Name name = identityService.nameFromKey(bobPublicKey);
+        MemberX500Name name = identityService.nameFromKey(bobPublicKey);
 
         Assertions.assertThat(name).isNotNull();
         Assertions.assertThat(name).isEqualTo(bobName);

@@ -1,5 +1,6 @@
 package net.corda.v5.application.identity;
 
+import net.corda.v5.base.types.MemberX500Name;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -11,13 +12,13 @@ public class PartyJavaApiTest {
 
     @Test
     public void getName() {
-        CordaX500Name testCordaX500Name = new CordaX500Name("Bob Plc", "Rome", "IT");
-        when(party.getName()).thenReturn(testCordaX500Name);
+        MemberX500Name testMemberX500Name = new MemberX500Name("Bob Plc", "Rome", "IT");
+        when(party.getName()).thenReturn(testMemberX500Name);
 
-        CordaX500Name result = party.getName();
+        MemberX500Name result = party.getName();
 
         Assertions.assertThat(result).isNotNull();
-        Assertions.assertThat(result).isEqualTo(testCordaX500Name);
+        Assertions.assertThat(result).isEqualTo(testMemberX500Name);
     }
 
     @Test
