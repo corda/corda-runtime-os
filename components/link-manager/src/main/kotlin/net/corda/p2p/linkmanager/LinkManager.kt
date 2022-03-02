@@ -108,7 +108,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         publisherFactory,
         configurationReaderService,
         lifecycleCoordinatorFactory,
-        configuration
+        configuration,
+        linkManagerHostingMap,
     )
 
     private val outboundMessageProcessor = OutboundMessageProcessor(

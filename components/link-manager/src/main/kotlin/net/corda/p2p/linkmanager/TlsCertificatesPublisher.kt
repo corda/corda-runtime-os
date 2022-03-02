@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager
 
+import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
@@ -14,7 +15,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.GatewayTlsCertificates
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_CERTIFICATES
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_TRUSTSTORES
 import java.util.concurrent.CompletableFuture
@@ -45,15 +45,21 @@ internal class TlsCertificatesPublisher(
         configuration,
     )
 
-    private fun LinkManagerNetworkMap.HoldingIdentity.asString(): String {
+    private fun HoldingIdentity.asString(): String {
         return "${this.groupId}-${this.x500Name}"
     }
 
-    private fun publishIfNeeded(identity: LinkManagerNetworkMap.HoldingIdentity, certificates: List<PemCertificates>) {
-        publishedIds.compute(identity.asString()) { id, publishedCertificates ->
-            val certificatesSet = certificates.toSet()
+    private fun publishIfNeeded(identity: HostingMapListener.IdentityInfo) {
+        publishedIds.compute(identity.holdingIdentity.asString()) { id, publishedCertificates ->
+            val certificatesSet = identity.tlsCertificates.toSet()
             if (certificatesSet != publishedCertificates) {
-                val record = Record(GATEWAY_TLS_CERTIFICATES, id, GatewayTlsCertificates(certificates))
+                val record = Record(
+                    GATEWAY_TLS_CERTIFICATES, id,
+                    GatewayTlsCertificates(
+                        identity.tenantId,
+                        identity.tlsCertificates
+                    )
+                )
                 publisher.publish(
                     listOf(record)
                 ).forEach {
@@ -134,10 +140,7 @@ internal class TlsCertificatesPublisher(
     private fun publishQueueIfPossible() {
         while ((publisher.isRunning) && (ready.isDone)) {
             val identityInfo = toPublish.poll() ?: return
-            publishIfNeeded(
-                identityInfo.holdingIdentity.toHoldingIdentity(),
-                identityInfo.tlsCertificates
-            )
+            publishIfNeeded(identityInfo)
         }
     }
 }

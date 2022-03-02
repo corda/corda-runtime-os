@@ -6,6 +6,7 @@ import net.corda.libs.configuration.publish.CordaConfigurationKey
 import net.corda.libs.configuration.publish.CordaConfigurationVersion
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_GPOUP_ID
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_TENANT_ID
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_X500_NAME
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_TLS_CERTIFICATES
 import net.corda.p2p.crypto.ProtocolMode
@@ -24,7 +25,10 @@ import java.io.File
 class LinkManagerConfiguration : ConfigProducer() {
     @Option(
         names = ["--locallyHostedIdentity"],
-        description = ["Local hosted identity (in the form of <x500Name>:<groupId>:<pemTlsCertificate1File>:<pemTlsCertificate2File>...)"],
+        description = [
+            "Local hosted identity (in the form of " +
+                "<x500Name>:<groupId>:<tenentId>:<pemTlsCertificate1File>:<pemTlsCertificate2File>...)"
+        ],
         required = true,
     )
     lateinit var locallyHostedIdentity: List<String>
@@ -75,16 +79,18 @@ class LinkManagerConfiguration : ConfigProducer() {
         val locallyHostedIdentities = locallyHostedIdentity.map {
             it.split(":")
         }.onEach {
-            if (it.size < 2) {
+            if (it.size < 3) {
                 throw TypeConversionException(
-                    "locallyHostedIdentity must have the format <x500Name>:<groupId>:<pemTlsCertificate1File>:<pemTlsCertificate2File>"
+                    "locallyHostedIdentity must have the format " +
+                        "<x500Name>:<groupId>:<tenentId>:<pemTlsCertificate1File>:<pemTlsCertificate2File>"
                 )
             }
         }.map {
             mapOf(
                 LOCALLY_HOSTED_IDENTITY_X500_NAME to it[0],
                 LOCALLY_HOSTED_IDENTITY_GPOUP_ID to it[1],
-                LOCALLY_HOSTED_TLS_CERTIFICATES to it.drop(2).map {
+                LOCALLY_HOSTED_IDENTITY_TENANT_ID to it[2],
+                LOCALLY_HOSTED_TLS_CERTIFICATES to it.drop(3).map {
                     File(it)
                 }.map {
                     it.readText()

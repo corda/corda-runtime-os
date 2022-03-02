@@ -102,6 +102,10 @@ class ConfigureAll : Runnable {
         keyStoreFile(host)
     }
 
+    private val tenantId by lazy {
+        "$groupId:$x500name"
+    }
+
     private fun tlsCertificates(host: String): File {
         return File(keyStoreDir.absolutePath, "$host.tlsCertificates.pem").also {
             if (!it.exists()) {
@@ -241,12 +245,14 @@ class ConfigureAll : Runnable {
                     "keystoreFile" to keyStoreFile.absolutePath,
                     "password" to "password",
                     "algo" to "ECDSA",
+                    "tenantId" to tenantId,
                 ),
                 mapOf(
                     "alias" to "$host.$x500name.rsa",
                     "keystoreFile" to sslKeyStore.absolutePath,
                     "password" to "password",
                     "algo" to "RSA",
+                    "tenantId" to tenantId,
                 )
             ),
         )
@@ -269,7 +275,7 @@ class ConfigureAll : Runnable {
                 "-k",
                 RunJar.kafkaServers(namespaceName),
                 "link-manager",
-                "--locallyHostedIdentity=$x500name:$groupId:${tlsCertificates(host).absolutePath}",
+                "--locallyHostedIdentity=$x500name:$groupId:$tenantId:${tlsCertificates(host).absolutePath}",
             ) + linkManagerExtraArguments
         ).run()
     }

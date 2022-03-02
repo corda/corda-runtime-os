@@ -33,6 +33,7 @@ import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
 import net.corda.p2p.linkmanager.LinkManager
+import net.corda.p2p.linkmanager.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionNeeded
@@ -161,8 +162,11 @@ class SessionManagerTest {
         on { getMemberInfo(PEER_PARTY) } doReturn PEER_MEMBER_INFO
         on { getMemberInfo(messageDigest.hash(PEER_KEY.public.encoded), GROUP_ID) } doReturn PEER_MEMBER_INFO
     }
+    private val linkManagerHostingMap = mock<LinkManagerHostingMap> {
+        on { getTenantId(any()) } doReturn "id"
+    }
     private val cryptoService = mock<StubCryptoProcessor> {
-        on { sign(eq(OUR_KEY.public), any(), any()) } doReturn "signature-from-A".toByteArray()
+        on { sign(any(), eq(OUR_KEY.public), any(), any()) } doReturn "signature-from-A".toByteArray()
     }
     private val pendingSessionMessageQueues = Mockito.mock(LinkManager.PendingSessionMessageQueues::class.java)
     private val sessionReplayer = Mockito.mock(InMemorySessionReplayer::class.java)
@@ -202,6 +206,7 @@ class SessionManagerTest {
         mock(),
         mock(),
         mock(),
+        linkManagerHostingMap,
         protocolFactory,
         sessionReplayer,
         clock,
@@ -916,6 +921,7 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
+            mock(),
             protocolFactory,
             sessionReplayer,
             clock,
@@ -955,6 +961,7 @@ class SessionManagerTest {
             networkMap,
             cryptoService,
             pendingSessionMessageQueues,
+            mock(),
             mock(),
             mock(),
             mock(),
@@ -1013,6 +1020,7 @@ class SessionManagerTest {
             networkMap,
             cryptoService,
             pendingSessionMessageQueues,
+            mock(),
             mock(),
             mock(),
             mock(),
@@ -1083,6 +1091,7 @@ class SessionManagerTest {
             networkMap,
             cryptoService,
             pendingSessionMessageQueues,
+            mock(),
             mock(),
             mock(),
             mock(),
@@ -1159,6 +1168,7 @@ class SessionManagerTest {
             networkMap,
             cryptoService,
             pendingSessionMessageQueues,
+            mock(),
             mock(),
             mock(),
             mock(),
@@ -1244,6 +1254,7 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
+            mock(),
             protocolFactory,
             sessionReplayer,
             clock,
@@ -1324,6 +1335,7 @@ class SessionManagerTest {
             networkMap,
             cryptoService,
             pendingSessionMessageQueues,
+            mock(),
             mock(),
             mock(),
             mock(),

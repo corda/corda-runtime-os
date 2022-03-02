@@ -30,6 +30,7 @@ import net.corda.p2p.gateway.messaging.http.SniCalculator
 import net.corda.p2p.gateway.messaging.http.TrustStoresMap
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
+import net.corda.p2p.test.TenantKeys
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.TestSchema
@@ -187,6 +188,7 @@ open class TestBase {
 
     protected fun publishKeyStoreCertificatesAndKeys(publisher: Publisher, keyStoreWithPassword: KeyStoreWithPassword) {
         val records = keyStoreWithPassword.keyStore.aliases().toList().flatMap { alias ->
+            val tenantId = "tenantId"
             val certificateChain = keyStoreWithPassword.keyStore.getCertificateChain(alias)
             val pems = certificateChain.map { certificate ->
                 StringWriter().use { str ->
@@ -200,7 +202,7 @@ open class TestBase {
             val certificateRecord = Record(
                 Schemas.P2P.GATEWAY_TLS_CERTIFICATES,
                 name,
-                GatewayTlsCertificates(pems)
+                GatewayTlsCertificates(tenantId, pems)
             )
             val privateKey = keyStoreWithPassword.keyStore.getKey(alias, keyStoreWithPassword.password.toCharArray())
             val publicKey = keyStoreWithPassword.keyStore.getCertificate(alias).publicKey
@@ -218,7 +220,10 @@ open class TestBase {
             val keysRecord = Record(
                 TestSchema.CRYPTO_KEYS_TOPIC,
                 alias,
-                keyPair
+                TenantKeys(
+                    tenantId,
+                    keyPair
+                )
             )
             listOf(certificateRecord, keysRecord)
         }

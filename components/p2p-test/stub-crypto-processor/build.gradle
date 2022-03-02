@@ -8,7 +8,6 @@ dependencies {
     implementation 'net.corda:corda-base'
     api project(":libs:messaging:messaging")
     api project(":libs:lifecycle:lifecycle")
-    api project(':libs:crypto:delegated-signing')
     implementation project(':libs:configuration:configuration-core')
 
     api project(':components:domino-logic')

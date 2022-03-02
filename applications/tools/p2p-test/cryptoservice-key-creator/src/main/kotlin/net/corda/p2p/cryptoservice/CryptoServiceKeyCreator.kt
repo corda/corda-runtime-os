@@ -10,6 +10,7 @@ import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
+import net.corda.p2p.test.TenantKeys
 import net.corda.schema.TestSchema.Companion.CRYPTO_KEYS_TOPIC
 import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.FrameworkUtil
@@ -111,7 +112,7 @@ class CryptoServiceKeyCreator @Activate constructor(
         consoleLogger.error(error)
     }
 
-    private fun readKeys(keysConfigFile: File): List<Pair<String, KeyPairEntry>>? {
+    private fun readKeys(keysConfigFile: File): List<Pair<String, TenantKeys>>? {
         val keysConfig = ConfigFactory.parseFile(keysConfigFile)
         return keysConfig.getConfigList("keys").map { config ->
             val alias = config.getString("alias")
@@ -135,8 +136,18 @@ class CryptoServiceKeyCreator @Activate constructor(
                     return null
                 }
             }
+            val tenantId = config.getString("tenantId")
 
-            alias to KeyPairEntry(keyAlgorithm, ByteBuffer.wrap(publicKey.encoded), ByteBuffer.wrap(privateKey.encoded))
+            alias to
+                    TenantKeys(
+                        tenantId,
+                        KeyPairEntry(
+                            keyAlgorithm,
+                            ByteBuffer.wrap(publicKey.encoded),
+                            ByteBuffer.wrap(privateKey.encoded)
+                        ),
+                    )
+
         }
     }
 }

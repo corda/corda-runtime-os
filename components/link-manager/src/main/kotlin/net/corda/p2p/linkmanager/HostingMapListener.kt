@@ -6,6 +6,7 @@ interface HostingMapListener {
     data class IdentityInfo(
         val holdingIdentity: HoldingIdentity,
         val tlsCertificates: List<PemCertificates>,
+        val tenantId: String,
     )
     fun identityAdded(identityInfo: IdentityInfo)
 }

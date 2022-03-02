@@ -14,7 +14,6 @@ import net.corda.p2p.gateway.messaging.CertificatesReader
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.KeyStoreFactory
 import net.corda.p2p.gateway.messaging.toGatewayConfiguration
-import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.v5.base.util.contextLogger
 import java.net.SocketAddress
 import java.util.concurrent.CompletableFuture
@@ -42,15 +41,8 @@ class ReconfigurableHttpServer(
         nodeConfiguration,
         instanceId,
     )
-    private val signer = StubCryptoProcessor(
-        lifecycleCoordinatorFactory,
-        subscriptionFactory,
-        instanceId,
-        nodeConfiguration,
-    )
-
     private val keyStore by lazy {
-        KeyStoreFactory(signer, certificatesReader).createDelegatedKeyStore()
+        KeyStoreFactory(certificatesReader, certificatesReader).createDelegatedKeyStore()
     }
 
     override val dominoTile = ComplexDominoTile(
@@ -58,11 +50,9 @@ class ReconfigurableHttpServer(
         lifecycleCoordinatorFactory,
         configurationChangeHandler = ReconfigurableHttpServerConfigChangeHandler(),
         dependentChildren = listOf(
-            signer.dominoTile,
             certificatesReader.dominoTile,
         ),
         managedChildren = listOf(
-            signer.dominoTile,
             certificatesReader.dominoTile,
         ),
     )

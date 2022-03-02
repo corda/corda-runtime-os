@@ -31,6 +31,7 @@ import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
 import net.corda.p2p.linkmanager.LinkManager
+import net.corda.p2p.linkmanager.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
@@ -40,6 +41,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManager.SessionCounterparties
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.couldNotFindNetworkType
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.noSessionWarning
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.noTenantId
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourHashNotInNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourIdNotInNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerHashNotInNetworkMapWarning
@@ -74,6 +76,7 @@ open class SessionManagerImpl(
     private val configurationReaderService: ConfigurationReadService,
     coordinatorFactory: LifecycleCoordinatorFactory,
     configuration: SmartConfig,
+    private val linkManagerHostingMap: LinkManagerHostingMap,
     private val protocolFactory: ProtocolFactory = CryptoProtocolFactory(),
     private val sessionReplayer: InMemorySessionReplayer = InMemorySessionReplayer(
         publisherFactory,
@@ -363,8 +366,19 @@ open class SessionManagerImpl(
             return null
         }
 
+        val tenantId = linkManagerHostingMap.getTenantId(ourMemberInfo.holdingIdentity)
+        if(tenantId == null) {
+            logger.noTenantId(message::class.java.simpleName, message.header.sessionId, ourMemberInfo.holdingIdentity)
+            return null
+        }
+
         val signWithOurGroupId = { data: ByteArray ->
-            cryptoService.sign(ourMemberInfo.publicKey, ourMemberInfo.getSignatureSpec(), data)
+            cryptoService.sign(
+                tenantId,
+                ourMemberInfo.publicKey,
+                ourMemberInfo.getSignatureSpec(),
+                data
+            )
         }
         val payload = try {
             session.generateOurHandshakeMessage(
@@ -533,9 +547,22 @@ open class SessionManagerImpl(
             return null
         }
 
+        val tenantId = linkManagerHostingMap.getTenantId(ourMemberInfo.holdingIdentity)
+        if(tenantId == null) {
+            logger.noTenantId(message::class.java.simpleName, message.header.sessionId, ourMemberInfo.holdingIdentity)
+            return null
+        }
+
         val response = try {
             val ourPublicKey = ourMemberInfo.publicKey
-            val signData = { data: ByteArray -> cryptoService.sign(ourMemberInfo.publicKey, ourMemberInfo.getSignatureSpec(), data) }
+            val signData = { data: ByteArray ->
+                cryptoService.sign(
+                    tenantId,
+                    ourMemberInfo.publicKey,
+                    ourMemberInfo.getSignatureSpec(),
+                    data
+                )
+            }
             session.generateOurHandshakeMessage(ourPublicKey, signData)
         } catch (exception: SecurityException) {
             logger.warn(

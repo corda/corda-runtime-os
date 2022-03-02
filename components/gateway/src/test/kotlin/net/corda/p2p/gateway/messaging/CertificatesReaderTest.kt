@@ -98,7 +98,7 @@ class CertificatesReaderTest {
         fun `onSnapshot save the correct data`() {
             processor.firstValue.onSnapshot(
                 mapOf(
-                    "one" to GatewayTlsCertificates(certificates.keys.toList())
+                    "one" to GatewayTlsCertificates("id", certificates.keys.toList())
                 )
             )
 
@@ -109,7 +109,7 @@ class CertificatesReaderTest {
         fun `onNext remove data with null value`() {
             processor.firstValue.onSnapshot(
                 mapOf(
-                    "one" to GatewayTlsCertificates(certificates.keys.toList())
+                    "one" to GatewayTlsCertificates("id", certificates.keys.toList())
                 )
             )
 
@@ -132,7 +132,7 @@ class CertificatesReaderTest {
                 Record(
                     GATEWAY_TLS_CERTIFICATES,
                     "one",
-                    GatewayTlsCertificates(certificates.keys.toList()),
+                    GatewayTlsCertificates("id", certificates.keys.toList()),
                 ),
                 null,
                 emptyMap()
