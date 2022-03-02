@@ -1,6 +1,6 @@
 package net.corda.virtualnode.impl
 
-import net.corda.packaging.CPI
+import net.corda.libs.packaging.CpiIdentifier
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -21,7 +21,7 @@ class VirtualNodeInfoMapTest {
     private val secureHash = SecureHash("algorithm", "1234".toByteArray())
     private val fakeShortHash = "BEEFDEADBEEF"
     private val otherShortHash = "F0000000000D"
-    private val cpiIdentifier = CPI.Identifier.newInstance("ghi", "hjk", secureHash)
+    private val cpiIdentifier = CpiIdentifier("ghi", "hjk", secureHash)
 
     @BeforeEach
     fun beforeEach() {

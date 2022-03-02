@@ -1,31 +1,31 @@
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import net.corda.db.connection.manager.createFromConfig
-import net.corda.db.connection.manager.impl.DbConnectionsRepositoryImpl
+//import net.corda.db.connection.manager.impl.DbConnectionsRepositoryImpl
 import net.corda.db.core.DataSourceFactory
-import net.corda.db.core.DbPrivilege
+//import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigObject
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.orm.EntityManagerFactoryFactory
-import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.SoftAssertions.assertSoftly
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.ValueSource
-import org.mockito.ArgumentCaptor
+//import org.assertj.core.api.Assertions.assertThat
+//import org.assertj.core.api.SoftAssertions.assertSoftly
+//import org.junit.jupiter.api.Test
+//import org.junit.jupiter.params.ParameterizedTest
+//import org.junit.jupiter.params.provider.ValueSource
+//import org.mockito.ArgumentCaptor
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argThat
-import org.mockito.kotlin.atLeastOnce
+//import org.mockito.kotlin.argThat
+//import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
+//import org.mockito.kotlin.verify
+//import org.mockito.kotlin.whenever
 import java.sql.Connection
 import java.time.Duration
-import java.time.Instant
-import java.util.UUID
+//import java.time.Instant
+//import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.Query
@@ -86,7 +86,7 @@ class DbConnectionsRepositoryTest {
 
     private val duration = Duration.ofNanos(1)
     private val sleeper = { _: Duration -> println("Don't sleep") }
-
+/*
     @Test
     fun `initialise sets cluster db connection`() {
         val repository = DbConnectionsRepositoryImpl(entityManagerFactoryFactory, dataSourceFactory, duration, sleeper)
@@ -209,4 +209,6 @@ class DbConnectionsRepositoryTest {
             true
         })
     }
+
+ */
 }

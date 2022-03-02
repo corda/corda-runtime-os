@@ -1,6 +1,5 @@
 package net.corda.membership.impl.grouppolicy.factory
 
-import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.mgmKeyAlias
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.uncheckedCast
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -44,7 +43,6 @@ class GroupPolicyParserTest {
 
     private lateinit var groupPolicyParser: GroupPolicyParser
     private val testGroupId = "ABC123"
-    private val testMgmKeyAlias = "mgm-alias"
 
     @BeforeEach
     fun setUp() {
@@ -79,7 +77,7 @@ class GroupPolicyParserTest {
         // Top level properties
         assertEquals(1, result[FILE_FORMAT_VERSION])
         assertEquals(testGroupId, result.groupId)
-        assertEquals("net.corda.membership.staticnetwork.StaticMemberRegistrationService", result.registrationProtocol)
+        assertEquals("net.corda.membership.impl.registration.staticnetwork.StaticMemberRegistrationService", result.registrationProtocol)
         assertEquals("net.corda.v5.mgm.MGMSynchronisationProtocolFactory", result[SYNC_PROTOCOL_FACTORY])
         assertTrue(result[PROTOCOL_PARAMETERS] is Map<*, *>)
         assertTrue(result[STATIC_NETWORK] is Map<*, *>)
@@ -139,12 +137,6 @@ class GroupPolicyParserTest {
         assertEquals(charlie[ENDPOINT_PROTOCOL_1], 1)
         assertEquals(charlie[ENDPOINT_URL_2], "https://charlie-dr.corda5.r3.com:10001")
         assertEquals(charlie[ENDPOINT_PROTOCOL_2], 1)
-    }
-
-    @Test
-    fun `Parse group policy - verify MGM private key alias`() {
-        val result = groupPolicyParser.parse(getSampleGroupPolicy())
-        assertEquals(testMgmKeyAlias, result.mgmKeyAlias)
     }
 
     private fun getSampleGroupPolicy(): String {

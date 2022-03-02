@@ -2,15 +2,19 @@ import com.typesafe.config.ConfigFactory
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.connection.manager.impl.DbAdminImpl
-import net.corda.db.connection.manager.impl.DbConnectionsRepositoryImpl
+import net.corda.db.connection.manager.impl.DbConnectionManagerImpl
 import net.corda.db.core.DbPrivilege
+import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigFactory.Companion.SECRET_PASSPHRASE_KEY
 import net.corda.libs.configuration.SmartConfigFactory.Companion.SECRET_SALT_KEY
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
+import net.corda.orm.impl.JpaEntitiesRegistryImpl
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.testing.bundles.cats.Cat
 import org.assertj.core.api.Assertions.assertThat
@@ -19,6 +23,9 @@ import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import javax.persistence.EntityManagerFactory
 import kotlin.random.Random
 
@@ -41,7 +48,7 @@ class DbAdminTest {
         private fun prepareDatabase() {
 
             // uncomment this to run the test against local Postgres
-//            System.setProperty("postgresPort", "5432")
+            // System.setProperty("postgresPort", "5432")
 
             val dbConfig = DbUtils.getEntityManagerConfiguration("configuration_db")
 
@@ -72,12 +79,22 @@ class DbAdminTest {
         }
     }
 
+    private val lifecycleCoordinator = mock<LifecycleCoordinator>()
+    private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory> {
+        on { createCoordinator(any(), any()) }.doReturn(lifecycleCoordinator)
+    }
+
     @Test
     fun `when createDbAndUser create schema and persist config`() {
-        val dbc = DbConnectionsRepositoryImpl(EntityManagerFactoryFactoryImpl())
+        val entitiesRegistry = JpaEntitiesRegistryImpl()
+        val dbm = DbConnectionManagerImpl(lifecycleCoordinatorFactory, EntityManagerFactoryFactoryImpl(), entitiesRegistry)
         val config = configFactory.create(DbUtils.createConfig("configuration_db"))
-        dbc.initialise(config)
-        val dba = DbAdminImpl(dbc)
+        entitiesRegistry.register(
+            CordaDb.CordaCluster.persistenceUnitName,
+            ConfigurationEntities.classes
+        )
+        dbm.initialise(config)
+        val dba = DbAdminImpl(dbm)
 
         Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
 
@@ -95,7 +112,7 @@ class DbAdminTest {
             DbPrivilege.DDL,
             configFactory
         )
-        val dbConfig = dbc.get(persistenceUnitName, DbPrivilege.DDL)
+        val dbConfig = dbm.getDataSource(persistenceUnitName, DbPrivilege.DDL)
         assertThat(dbConfig?.connection).isNotNull
         assertDoesNotThrow { dbConfig?.connection?.close() }
 

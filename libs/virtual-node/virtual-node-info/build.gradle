@@ -12,6 +12,8 @@ dependencies {
     api "net.corda:corda-packaging"
     api "net.corda:corda-avro-schema"
 
+    api project(':libs:virtual-node:packaging-core')
+
     implementation "net.corda:corda-packaging-avro-converters"
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"

@@ -6,7 +6,7 @@ import net.corda.flow.manager.FlowSandboxContextTypes.CHECKPOINT_SERIALIZER
 import net.corda.flow.manager.FlowSandboxContextTypes.DEPENDENCY_INJECTOR
 import net.corda.flow.manager.FlowSandboxService
 import net.corda.flow.manager.factory.SandboxDependencyInjectorFactory
-import net.corda.packaging.CPK
+import net.corda.libs.packaging.CpkMetadata
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
@@ -59,7 +59,7 @@ class FlowSandboxServiceImpl @Activate constructor(
 
         val vNodeContext = VirtualNodeContext(
             holdingIdentity,
-            cpiMeta.cpks.mapTo(LinkedHashSet(), CPK.Metadata::id),
+            cpiMeta.cpks.mapTo(LinkedHashSet(), CpkMetadata::id),
             SandboxGroupType.FLOW,
             SingletonSerializeAsToken::class.java,
             null

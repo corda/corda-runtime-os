@@ -11,7 +11,7 @@ import java.time.Instant
 fun getBasicFlowStartContext():FlowStartContext{
     val holdingIdentity = HoldingIdentity("x500 name","group id")
     val cpi = CPIIdentifier("cpi id","1.0",null)
-    val virtualNode = VirtualNodeInfo(holdingIdentity,cpi)
+    val virtualNode = VirtualNodeInfo(holdingIdentity,cpi,null,null,null,null,null)
     return  FlowStartContext.newBuilder()
         .setStatusKey(FlowStatusKey("request id",holdingIdentity))
         .setInitiatorType(FlowInitiatorType.RPC)

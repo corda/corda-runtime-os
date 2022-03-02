@@ -3,11 +3,12 @@ package net.corda.cpiinfo.read.impl
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoListener
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.libs.packaging.CpiIdentifier
+import net.corda.libs.packaging.CpiMetadata
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.packaging.CPI
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.common.ConfigChangedEvent
@@ -85,7 +86,7 @@ class CpiInfoReadServiceImpl @Activate constructor(
         cpiInfoProcessor.close()
     }
 
-    override fun get(identifier: CPI.Identifier): CPI.Metadata? = cpiInfoProcessor.get(identifier)
+    override fun get(identifier: CpiIdentifier): CpiMetadata? = cpiInfoProcessor.get(identifier)
 
     override fun registerCallback(listener: CpiInfoListener): AutoCloseable =
         cpiInfoProcessor.registerCallback(listener)

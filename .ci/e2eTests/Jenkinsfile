@@ -1,5 +1,3 @@
-//placeholder pipeline WIP for e2e tests
-
 pipeline {
     agent {
         docker {
@@ -29,6 +27,8 @@ pipeline {
         CORDA_REVISION = "${env.GIT_COMMIT}"
         NAMESPACE = "run-${UUID.randomUUID().toString()}"
         CLUSTER_NAME = "eks-e2e.e2e.awsdev.r3.com"
+        HELM_CONFIG_HOME = "/tmp/helm"
+        HELM_REPOSITORY_CACHE = "/host_tmp/helm/repository"
     }
 
     options {
@@ -38,7 +38,7 @@ pipeline {
     }
 
     stages {
-        stage('Prepare') {
+        stage('Install CLI') {
             steps {
                 sh 'mkdir -p "${GRADLE_USER_HOME}"'
                 //download and set up CLI
@@ -48,21 +48,54 @@ pipeline {
                 sh "./corda-cli/bin/corda-cli -v"
             }
         }
-        stage('Set up cluster') {
+        stage ('Create namespace') {
+            steps {
+                sh '''
+                    kubectl create ns $NAMESPACE
+                    kubectl label ns $NAMESPACE namespace-type=corda-e2e --overwrite=true
+                '''
+            }
+        }
+        stage('Install prereqs') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'artifactory-credentials', passwordVariable: 'PASSWORD', usernameVariable: 'USER')]) {
+                    sh '''
+                        echo $PASSWORD | helm registry login corda-os-docker.software.r3.com -u $USER --password-stdin
+                        helm install prereqs oci://corda-os-docker.software.r3.com/helm-charts/corda-prereqs \
+                            -f .ci/e2eTests/prereqs.yaml -n $NAMESPACE --wait
+                    '''
+                }
+            }
+        }
+        stage('Deploy cluster') {
             steps {
                script {
                   env.BASE_IMAGE = params.BUILD_REV ? "preTest-${params.BUILD_REV}" : "unstable"
                }
                sh './corda-cli/bin/corda-cli cluster configure k8s "${NAMESPACE}"'
-               sh 'echo """cluster:""" | ./corda-cli/bin/corda-cli --stacktrace cluster deploy -t "${BASE_IMAGE}" -c "${NAMESPACE}" -f /dev/stdin | tee spec.yaml | kubectl apply -f /dev/stdin'
+               sh './corda-cli/bin/corda-cli --stacktrace cluster deploy -t "${BASE_IMAGE}" -c "${NAMESPACE}" -f .ci/e2eTests/cluster.yaml | kubectl apply -f /dev/stdin'
             }
         }
         stage('Wait for cluster') {
             steps {
-                sh './corda-cli/bin/corda-cli cluster wait -c "${NAMESPACE}"'
+                sh '''
+                    ./corda-cli/bin/corda-cli cluster wait -c "${NAMESPACE}"
+                    # Wait for the job to create the topics
+                    kubectl wait -n ${NAMESPACE} --for=condition=complete --timeout=30s job/create-topics
+                '''
+            }
+            post {
+                unsuccessful {
+                    sh '''
+                        kubectl logs -lfamily=e2e -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
+                        kubectl describe all -n ${NAMESPACE} > describe.txt
+                    '''
+                    archiveArtifacts artifacts: 'logs.txt, describe.txt', allowEmptyArchive: true
+                    sh 'rm -f logs.txt describe.txt'
+                }
             }
         }
-        stage('Forward port and run the tests') {
+        stage('Forward port and run tests') {
             steps {
 
                 //for details see
@@ -74,10 +107,6 @@ pipeline {
                     nohup kubectl port-forward -n ${NAMESPACE} deploy/${NAMESPACE}-rpc 8888 > forward.txt 2>&1 &
                     procno=$! #remember process number started in background
                     trap "kill -9 ${procno}" EXIT
-
-                    echo forward.txt
-                    # Wait for the job to create the topics
-                    kubectl wait -n ${NAMESPACE} --for=condition=complete --timeout=30s job/create-topics
 
                     ./gradlew cleanE2eTest :applications:workers:release:rpc-worker:e2eTest
                 '''

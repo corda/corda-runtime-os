@@ -50,6 +50,7 @@ class TrustStoresPublisherTest {
     }
     private val mockPublisher = mockConstruction(PublisherWithDominoLogic::class.java) { mock, _ ->
         whenever(mock.publish(publishedRecords.capture())).doReturn(emptyList())
+        whenever(mock.isRunning).doReturn(true)
     }
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>()
     private val configuration = mock<SmartConfig>()
@@ -167,6 +168,18 @@ class TrustStoresPublisherTest {
         fun `groupAdded will not publish before it has the snapshots`() {
             trustStoresPublisher.start()
             creteResources.get().invoke(ResourcesHolder())
+
+            trustStoresPublisher.groupAdded(groupInfo)
+
+            verify(mockPublisher.constructed().first(), never()).publish(any())
+        }
+
+        @Test
+        fun `groupAdded will not publish before the publisher is ready`() {
+            trustStoresPublisher.start()
+            whenever(mockPublisher.constructed().first().isRunning).doReturn(false)
+            creteResources.get().invoke(ResourcesHolder())
+            processor.firstValue.onSnapshot(emptyMap())
 
             trustStoresPublisher.groupAdded(groupInfo)
 
