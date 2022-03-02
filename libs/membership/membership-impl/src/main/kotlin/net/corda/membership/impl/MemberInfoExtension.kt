@@ -1,4 +1,4 @@
-package net.corda.membership.identity
+package net.corda.membership.impl
 
 import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.v5.base.util.parse

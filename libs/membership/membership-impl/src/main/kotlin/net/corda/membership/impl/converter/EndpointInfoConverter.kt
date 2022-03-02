@@ -1,8 +1,8 @@
-package net.corda.membership.identity.converter
+package net.corda.membership.impl.converter
 
 import net.corda.layeredpropertymap.ConversionContext
 import net.corda.layeredpropertymap.CustomPropertyConverter
-import net.corda.membership.identity.EndpointInfoImpl
+import net.corda.membership.impl.EndpointInfoImpl
 import net.corda.v5.base.exceptions.ValueNotFoundException
 import net.corda.v5.membership.EndpointInfo
 import org.osgi.service.component.annotations.Component

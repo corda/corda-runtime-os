@@ -12,7 +12,6 @@ dependencies {
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
     implementation project(":libs:configuration:configuration-schema:messaging-configuration")
-    implementation project(":libs:membership:membership-identity-impl")
     implementation project(":libs:membership:membership-impl")
     implementation project(":libs:membership:membership-internal")
     implementation project(":libs:messaging:messaging")
