@@ -27,7 +27,7 @@ internal object HttpExceptionMapper {
             // TODO restore these when possible
             //  is StartFlowPermissionException -> ForbiddenResponse(loggedMessage)
             //  is FlowNotFoundException -> NotFoundResponse(loggedMessage)
-            //  is InvalidCordaX500NameException -> BadRequestResponse(loggedMessage)
+            //  is InvalidMemberX500NameException -> BadRequestResponse(loggedMessage)
             //  is MemberNotFoundException -> NotFoundResponse(loggedMessage)
 
             // catch-all for failed login attempts

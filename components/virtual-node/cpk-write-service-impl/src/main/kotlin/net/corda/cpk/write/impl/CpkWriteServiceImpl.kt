@@ -269,7 +269,7 @@ class CpkWriteServiceImpl @Activate constructor(
         cpkStorage = DBCpkStorage(dbConnectionManager.getClusterEntityManagerFactory())
     }
 
-    data class ReconcileCpkEvent(override val key: String): TimerEvent
+    private data class ReconcileCpkEvent(override val key: String): TimerEvent
 }
 
 // Must not call SecureHash.toString() because it contains delimiter : that fails on Path creation.

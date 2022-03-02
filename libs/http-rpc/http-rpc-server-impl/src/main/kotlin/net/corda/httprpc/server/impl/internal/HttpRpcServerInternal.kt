@@ -23,8 +23,8 @@ import net.corda.httprpc.server.impl.security.HttpRpcSecurityManager
 import net.corda.httprpc.server.impl.security.provider.credentials.DefaultCredentialResolver
 import net.corda.httprpc.server.impl.utils.addHeaderValues
 import net.corda.httprpc.server.impl.utils.executeWithThreadContextClassLoader
-import net.corda.v5.application.identity.CordaX500Name
 import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
@@ -159,7 +159,7 @@ internal class HttpRpcServerInternal(
                     InvocationContext(
                         Actor.service(
                             this::javaClass.toString(),
-                            CordaX500Name.parse(CORDA_X500_NAME)
+                            MemberX500Name.parse(CORDA_X500_NAME)
                         )
                     ), it
                 )

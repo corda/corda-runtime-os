@@ -6,7 +6,7 @@ import net.corda.membership.impl.read.TestProperties.Companion.aliceName
 import net.corda.membership.impl.read.TestProperties.Companion.bobName
 import net.corda.membership.impl.read.TestProperties.Companion.charlieName
 import net.corda.v5.membership.identity.MemberInfo
-import net.corda.v5.membership.identity.MemberX500Name
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
