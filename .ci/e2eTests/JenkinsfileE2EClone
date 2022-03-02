@@ -1,0 +1,11 @@
+// temp mesure to allow for non blocking PR gate for e2e tests while stability issues arise
+@Library('corda-shared-build-pipeline-steps@5.0') _
+
+cordaPipeline(
+    runIntegrationTests: false,
+    createPostgresDb: false,
+    publishOSGiImage: false,
+    publishPreTestImage: true,
+    e2eTestName: 'corda-runtime-os-e2e-tests',
+    runE2eTests: true
+    )

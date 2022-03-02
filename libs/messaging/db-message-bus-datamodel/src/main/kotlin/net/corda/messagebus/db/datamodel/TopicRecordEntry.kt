@@ -8,6 +8,8 @@ import javax.persistence.Embeddable
 import javax.persistence.Entity
 import javax.persistence.Id
 import javax.persistence.IdClass
+import javax.persistence.JoinColumn
+import javax.persistence.ManyToOne
 import javax.persistence.Table
 
 /**
@@ -37,8 +39,9 @@ class TopicRecordEntry(
     val key: ByteArray,
     @Column(name = "record_value")
     val value: ByteArray?,
-    @Column(name = "transaction_id")
-    val transactionId: String,
+    @ManyToOne
+    @JoinColumn(name = "transaction_id")
+    val transactionId: TransactionRecordEntry,
     @Column
     val timestamp: Instant = Instant.now().truncatedTo(ChronoUnit.MILLIS),
 )

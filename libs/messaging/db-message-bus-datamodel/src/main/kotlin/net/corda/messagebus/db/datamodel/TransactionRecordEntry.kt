@@ -23,4 +23,21 @@ class TransactionRecordEntry(
 
     @Column
     var state: TransactionState = TransactionState.PENDING,
-)
+) {
+    // Overrides needed for comparison in tests
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is TransactionRecordEntry) return false
+
+        if (transactionId != other.transactionId) return false
+        if (state != other.state) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = transactionId.hashCode()
+        result = 31 * result + state.hashCode()
+        return result
+    }
+}

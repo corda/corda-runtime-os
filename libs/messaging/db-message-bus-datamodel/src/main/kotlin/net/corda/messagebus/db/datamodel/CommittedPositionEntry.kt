@@ -7,6 +7,8 @@ import javax.persistence.Embeddable
 import javax.persistence.Entity
 import javax.persistence.Id
 import javax.persistence.IdClass
+import javax.persistence.JoinColumn
+import javax.persistence.ManyToOne
 import javax.persistence.Table
 
 /**
@@ -20,7 +22,7 @@ import javax.persistence.Table
 @Entity(name = "topic_consumer_offset")
 @Table(name = "topic_consumer_offset")
 @IdClass(CommittedOffsetEntryKey::class)
-class CommittedOffsetEntry(
+class CommittedPositionEntry(
     @Id
     val topic: String,
 
@@ -33,10 +35,11 @@ class CommittedOffsetEntry(
 
     @Id
     @Column(name = "record_offset")
-    val recordOffset: Long,
+    val recordPosition: Long,
 
-    @Column(name = "transaction_id")
-    val transactionId: String,
+    @ManyToOne
+    @JoinColumn(name = "transaction_id")
+    val transactionId: TransactionRecordEntry,
 
     @Column
     val timestamp: Instant = Instant.now(),
@@ -49,5 +52,5 @@ data class CommittedOffsetEntryKey(
     val consumerGroup: String,
     val partition: Int,
     @Column(name = "record_offset")
-    val recordOffset: Long
+    val recordPosition: Long
 ): Serializable
