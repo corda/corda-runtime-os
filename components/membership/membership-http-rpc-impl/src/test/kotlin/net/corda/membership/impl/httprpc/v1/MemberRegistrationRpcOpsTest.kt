@@ -23,7 +23,7 @@ import kotlin.test.assertFailsWith
 
 class MemberRegistrationRpcOpsTest {
     companion object {
-        private const val VIRTUAL_NODE_ID = "DUMMY_ID"
+        private const val HOLDING_IDENTITY_ID = "DUMMY_ID"
     }
 
     private var coordinatorIsRunning = false
@@ -54,7 +54,7 @@ class MemberRegistrationRpcOpsTest {
     )
 
     private val registrationRequest = MemberRegistrationRequest(
-        VIRTUAL_NODE_ID,
+        HOLDING_IDENTITY_ID,
         RegistrationAction.REQUEST_JOIN
     )
 
@@ -77,15 +77,15 @@ class MemberRegistrationRpcOpsTest {
     @Test
     fun `checking registration progress calls the client svc`() {
         memberRegistrationRpcOps.start()
-        memberRegistrationRpcOps.checkRegistrationProgress(VIRTUAL_NODE_ID)
-        verify(memberOpsClient).checkRegistrationProgress(eq(VIRTUAL_NODE_ID))
+        memberRegistrationRpcOps.checkRegistrationProgress(HOLDING_IDENTITY_ID)
+        verify(memberOpsClient).checkRegistrationProgress(eq(HOLDING_IDENTITY_ID))
         memberRegistrationRpcOps.stop()
     }
 
     @Test
     fun `operation fails when svc is not running`() {
         val ex = assertFailsWith<ServiceUnavailableException> {
-            memberRegistrationRpcOps.checkRegistrationProgress(VIRTUAL_NODE_ID)
+            memberRegistrationRpcOps.checkRegistrationProgress(HOLDING_IDENTITY_ID)
         }
         assertEquals("MemberRegistrationRpcOpsImpl is not running. Operation cannot be fulfilled.", ex.message)
     }

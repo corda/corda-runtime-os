@@ -47,13 +47,11 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
 
     override fun start() {
         logger.info("$className started.")
-        memberOpsClient.start()
         coordinator.start()
     }
 
     override fun stop() {
         logger.info("$className stopped.")
-        memberOpsClient.stop()
         coordinator.stop()
     }
 
@@ -62,9 +60,9 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
         return memberOpsClient.startRegistration(memberRegistrationRequest.toDto()).fromDto()
     }
 
-    override fun checkRegistrationProgress(virtualNodeId: String): RegistrationRequestProgress {
+    override fun checkRegistrationProgress(holdingIdentityId: String): RegistrationRequestProgress {
         serviceIsRunning()
-        return memberOpsClient.checkRegistrationProgress(virtualNodeId).fromDto()
+        return memberOpsClient.checkRegistrationProgress(holdingIdentityId).fromDto()
     }
 
     private fun serviceIsRunning() {
