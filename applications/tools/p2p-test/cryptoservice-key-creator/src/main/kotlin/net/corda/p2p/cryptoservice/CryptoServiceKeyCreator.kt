@@ -1,5 +1,6 @@
 package net.corda.p2p.cryptoservice
 
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
@@ -26,6 +27,7 @@ import java.io.FileInputStream
 import java.nio.ByteBuffer
 import java.security.KeyStore
 import java.security.PrivateKey
+import java.security.PublicKey
 import java.util.*
 
 @Suppress("SpreadOperator")
@@ -81,7 +83,10 @@ class CryptoServiceKeyCreator @Activate constructor(
             val secretsConfig = ConfigFactory.empty()
             val publisherConfig = SmartConfigFactory.create(secretsConfig).create(
                 ConfigFactory.empty()
-                    .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(kafkaProperties[KAFKA_BOOTSTRAP_SERVER].toString()))
+                    .withValue(
+                        KAFKA_COMMON_BOOTSTRAP_SERVER,
+                        ConfigValueFactory.fromAnyRef(kafkaProperties[KAFKA_BOOTSTRAP_SERVER].toString())
+                    )
                     .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("crypto-key-creator"))
             )
 
@@ -115,62 +120,72 @@ class CryptoServiceKeyCreator @Activate constructor(
         consoleLogger.error(error)
     }
 
+    private fun getAlgorithm(config: Config, publicKey: PublicKey): KeyAlgorithm? {
+        return try {
+            when (config.getString("algo")) {
+                "RSA" -> KeyAlgorithm.RSA
+                "ECDSA" -> KeyAlgorithm.ECDSA
+                else -> {
+                    logger.error("Invalid key algorithm value")
+                    return null
+                }
+            }
+        } catch (_: ConfigException.Missing) {
+            when (publicKey.algorithm) {
+                "RSA" -> KeyAlgorithm.RSA
+                "EC" -> KeyAlgorithm.ECDSA
+                else -> {
+                    logger.error("Algorithm ${publicKey.algorithm} not supported")
+                    return null
+                }
+            }
+        }
+    }
+
+    private fun readEntry(config: Config): Pair<String, TenantKeys>? {
+        val publishAlias = try {
+            config.getString("publish_alias")
+        } catch (_: ConfigException.Missing) {
+            UUID.randomUUID().toString()
+        }
+        val keystoreFilePath = config.getString("keystoreFile")
+        val keystorePassword = config.getString("password")
+
+        val keystore = KeyStore.getInstance("JKS")
+        keystore.load(FileInputStream(keystoreFilePath), keystorePassword.toCharArray())
+        val keyStoreAlias = try {
+            config.getString("keystore_alias")
+        } catch (_: ConfigException.Missing) {
+            keystore.aliases().nextElement()
+        }
+
+        val privateKey = keystore.getKey(keyStoreAlias, keystorePassword.toCharArray()) as PrivateKey
+        val publicKey = keystore.getCertificate(keyStoreAlias).publicKey
+
+        val keyAlgorithm = getAlgorithm(config, publicKey) ?: return null
+
+        val tenantId = config.getString("tenantId")
+
+        return publishAlias to
+            TenantKeys(
+                tenantId,
+                KeyPairEntry(
+                    keyAlgorithm,
+                    ByteBuffer.wrap(publicKey.encoded),
+                    ByteBuffer.wrap(privateKey.encoded)
+                ),
+            )
+    }
+
     private fun readKeys(keysConfigFile: File): List<Pair<String, TenantKeys>>? {
         val keysConfig = ConfigFactory.parseFile(keysConfigFile)
         return keysConfig.getConfigList("keys").map { config ->
-            val publishAlias = try {
-                config.getString("publish_alias")
-            } catch (_: ConfigException.Missing) {
-                UUID.randomUUID().toString()
+            val entry = readEntry(config)
+            if (entry == null) {
+                shutdown()
+                return null
             }
-            val keystoreFilePath = config.getString("keystoreFile")
-            val keystorePassword = config.getString("password")
-
-            val keystore = KeyStore.getInstance("JKS")
-            keystore.load(FileInputStream(keystoreFilePath), keystorePassword.toCharArray())
-            val keyStoreAlias = try {
-                config.getString("keystore_alias")
-            } catch (_: ConfigException.Missing) {
-                keystore.aliases().nextElement()
-            }
-
-            val privateKey = keystore.getKey(keyStoreAlias, keystorePassword.toCharArray()) as PrivateKey
-            val publicKey = keystore.getCertificate(keyStoreAlias).publicKey
-
-            val keyAlgorithm: KeyAlgorithm = try {
-                when (config.getString("algo")) {
-                    "RSA" -> KeyAlgorithm.RSA
-                    "ECDSA" -> KeyAlgorithm.ECDSA
-                    else -> {
-                        logger.error("Invalid key algorithm value")
-                        shutdown()
-                        return null
-                    }
-                }
-
-            } catch (_: ConfigException.Missing) {
-                when (publicKey.algorithm) {
-                    "RSA" -> KeyAlgorithm.RSA
-                    "EC" -> KeyAlgorithm.ECDSA
-                    else -> {
-                        logger.error("Algorithm ${publicKey.algorithm} not supported")
-                        shutdown()
-                        return null
-                    }
-                }
-            }
-
-            val tenantId = config.getString("tenantId")
-
-            publishAlias to
-                TenantKeys(
-                    tenantId,
-                    KeyPairEntry(
-                        keyAlgorithm,
-                        ByteBuffer.wrap(publicKey.encoded),
-                        ByteBuffer.wrap(privateKey.encoded)
-                    ),
-                )
+            entry
         }
     }
 }
