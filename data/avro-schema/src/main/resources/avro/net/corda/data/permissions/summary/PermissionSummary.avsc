@@ -4,6 +4,10 @@
   "namespace": "net.corda.data.permissions.summary",
   "fields": [
     {
+      "name": "id",
+      "type": "string"
+    },
+    {
       "name": "groupVisibility",
       "type": [ "null", "string" ]
     },
