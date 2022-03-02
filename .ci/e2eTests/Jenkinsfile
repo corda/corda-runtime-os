@@ -66,6 +66,16 @@ pipeline {
                     '''
                 }
             }
+            post {
+                unsuccessful {
+                    sh '''
+                        kubectl logs -lapp.kubernetes.io/instance=prereqs -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
+                        kubectl describe all -n ${NAMESPACE} > describe.txt
+                    '''
+                    archiveArtifacts artifacts: 'logs.txt, describe.txt', allowEmptyArchive: true
+                    sh 'rm -f logs.txt describe.txt'
+                }
+            }
         }
         stage('Deploy cluster') {
             steps {
@@ -129,7 +139,7 @@ pipeline {
     post {
         success {
             // Only delete namespace if we're successful (though it'll get pruned in 3 hours anyway)
-            sh 'kubectl delete ns "${NAMESPACE}" &'
+            sh 'kubectl delete ns "${NAMESPACE}"'
         }
     }
 }

@@ -3,9 +3,9 @@ package net.corda.membership.application.converter
 import net.corda.layeredpropertymap.ConversionContext
 import net.corda.layeredpropertymap.CustomPropertyConverter
 import net.corda.membership.application.PartyImpl
-import net.corda.v5.application.identity.CordaX500Name
 import net.corda.v5.application.identity.Party
 import net.corda.v5.base.exceptions.ValueNotFoundException
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.KeyEncodingService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -30,7 +30,7 @@ class PartyConverter @Activate constructor(
     override fun convert(context: ConversionContext): Party =
         PartyImpl(
             name = context.value(NAME)?.let {
-                CordaX500Name.parse(it)
+                MemberX500Name.parse(it)
             } ?: throw ValueNotFoundException("'$NAME' is null or missing"),
             owningKey = context.value(OWNING_KEY)?.let {
                 keyEncodingService.decodePublicKey(it)
