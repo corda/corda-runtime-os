@@ -31,8 +31,8 @@ import net.corda.membership.identity.converter.PublicKeyConverter
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.messaging.api.records.Record
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.membership.identity.EndpointInfo
-import net.corda.v5.membership.identity.MemberInfo
+import net.corda.v5.membership.EndpointInfo
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.junit.jupiter.api.Assertions.assertEquals

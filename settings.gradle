@@ -332,7 +332,6 @@ if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
             substitute module('net.corda:corda-topic-schema') using project(':data:topic-schema')
             substitute module('net.corda:corda-ledger') using project(':ledger')
             substitute module('net.corda:corda-membership') using project(':membership')
-            substitute module('net.corda:corda-membership-identity') using project(':membership-identity')
             substitute module('net.corda:corda-packaging') using project(':packaging')
             substitute module('net.corda:corda-packaging-avro-converters') using project(':packaging:packaging-avro-converters')
             substitute module('net.corda:corda-persistence') using project(':persistence')

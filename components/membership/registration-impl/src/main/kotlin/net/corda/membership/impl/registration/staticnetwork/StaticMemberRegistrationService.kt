@@ -42,9 +42,9 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.calculateHash
-import net.corda.v5.membership.identity.EndpointInfo
-import net.corda.v5.membership.identity.MemberInfo
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.membership.EndpointInfo
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate

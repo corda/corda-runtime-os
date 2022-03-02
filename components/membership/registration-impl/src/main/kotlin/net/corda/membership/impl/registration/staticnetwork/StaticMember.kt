@@ -9,7 +9,7 @@ import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplate
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.STATIC_PLATFORM_VERSION
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.STATIC_SERIAL
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.STATIC_SOFTWARE_VERSION
-import net.corda.v5.membership.identity.EndpointInfo
+import net.corda.v5.membership.EndpointInfo
 import java.time.Instant
 
 /**

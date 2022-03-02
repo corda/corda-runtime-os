@@ -8,8 +8,8 @@ import net.corda.membership.impl.read.cache.MemberListCache
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.crypto.sha256Bytes
-import net.corda.v5.membership.identity.MemberContext
-import net.corda.v5.membership.identity.MemberInfo
+import net.corda.v5.membership.MemberContext
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull

@@ -1,7 +1,7 @@
 package net.corda.membership.identity
 
 import net.corda.v5.base.types.LayeredPropertyMap
-import net.corda.v5.membership.identity.MemberContext
+import net.corda.v5.membership.MemberContext
 
 class MemberContextImpl(
     private val map: LayeredPropertyMap

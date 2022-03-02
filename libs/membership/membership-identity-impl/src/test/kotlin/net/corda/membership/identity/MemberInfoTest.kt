@@ -28,8 +28,8 @@ import net.corda.v5.base.exceptions.ValueNotFoundException
 import net.corda.v5.base.util.parse
 import net.corda.v5.base.util.parseList
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.membership.identity.EndpointInfo
-import net.corda.v5.membership.identity.MemberInfo
+import net.corda.v5.membership.EndpointInfo
+import net.corda.v5.membership.MemberInfo
 import org.apache.avro.file.DataFileReader
 import org.apache.avro.file.DataFileWriter
 import org.apache.avro.io.DatumReader

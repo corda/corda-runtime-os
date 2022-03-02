@@ -1,7 +1,7 @@
 package net.corda.membership.identity
 
 import net.corda.v5.base.util.NetworkHostAndPort
-import net.corda.v5.membership.identity.EndpointInfo
+import net.corda.v5.membership.EndpointInfo
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 

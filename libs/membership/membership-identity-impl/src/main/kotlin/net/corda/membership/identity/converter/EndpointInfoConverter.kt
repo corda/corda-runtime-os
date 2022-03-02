@@ -4,7 +4,7 @@ import net.corda.layeredpropertymap.ConversionContext
 import net.corda.layeredpropertymap.CustomPropertyConverter
 import net.corda.membership.identity.EndpointInfoImpl
 import net.corda.v5.base.exceptions.ValueNotFoundException
-import net.corda.v5.membership.identity.EndpointInfo
+import net.corda.v5.membership.EndpointInfo
 import org.osgi.service.component.annotations.Component
 
 /**

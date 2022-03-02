@@ -50,7 +50,7 @@ dependencies {
     testImplementation "net.corda:corda-topic-schema"
     testImplementation "net.corda:corda-config-schema"
     testImplementation "net.corda:corda-packaging-avro-converters"
-    testImplementation "net.corda:corda-membership-identity"
+    testImplementation "net.corda:corda-membership"
 
     integrationTestCompile project(":components:membership:membership-group-read")
     integrationTestImplementation project(":processors:crypto-processor")
