@@ -17,11 +17,11 @@ import java.nio.file.Path
 class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPolicyOutput()) : Runnable {
 
     @CommandLine.Option(
-        names = ["--endpoint-url"],
+        names = ["--endpoint"],
         arity = "0..1",
         description = ["Endpoint base URL"]
     )
-    var endpointUrl: String? = null
+    var endpoint: String? = null
 
     @CommandLine.Option(
         names = ["--endpoint-protocol"],
@@ -173,7 +173,7 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
      */
     private fun memberListFromInput(): List<Map<String, Any>>? {
         if (filePath != null) {
-            require(endpointUrl == null) { "Endpoint URL may not be specified when '--file' is set." }
+            require(endpoint == null) { "Endpoint may not be specified when '--file' is set." }
             require(endpointProtocol == null) { "Endpoint protocol may not be specified when '--file' is set." }
             require(names == null) { "Member name(s) may not be specified when '--file' is set." }
             return membersFromFile()
@@ -198,7 +198,7 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
                         "keyAlias" to name,
                         "rotatedKeyAlias-1" to name.toString() + "_old",
                         "memberStatus" to MEMBER_STATUS_ACTIVE,
-                        "endpointUrl-1" to content["endpointUrl"]!!,
+                        "endpointUrl-1" to content["endpoint"]!!,
                         "endpointProtocol-1" to content["endpointProtocol"]!!
                     )
                 )
@@ -215,8 +215,8 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
                         "keyAlias" to x500,
                         "rotatedKeyAlias-1" to x500 + "_old",
                         "memberStatus" to (member["status"] ?: MEMBER_STATUS_ACTIVE),
-                        "endpointUrl-1" to (member["endpointUrl"] ?: content["endpointUrl"]
-                        ?: throw IllegalArgumentException("No endpoint URL specified.")),
+                        "endpointUrl-1" to (member["endpoint"] ?: content["endpoint"]
+                        ?: throw IllegalArgumentException("No endpoint specified.")),
                         "endpointProtocol-1" to (member["endpointProtocol"] ?: content["endpointProtocol"]
                         ?: throw IllegalArgumentException("No endpoint protocol specified."))
                     )
@@ -233,7 +233,7 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
      */
     private fun membersFromStringParameters(): List<Map<String, Any>>? {
         validateStringParameters()
-        if (endpointUrl == null && endpointProtocol == null && names == null) {
+        if (endpoint == null && endpointProtocol == null && names == null) {
             return null
         }
         val members = mutableListOf<Map<String, Any>>()
@@ -244,7 +244,7 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
                     "keyAlias" to name,
                     "rotatedKeyAlias-1" to name + "_old",
                     "memberStatus" to MEMBER_STATUS_ACTIVE,
-                    "endpointUrl-1" to endpointUrl!!,
+                    "endpointUrl-1" to endpoint!!,
                     "endpointProtocol-1" to endpointProtocol!!
                 )
             )
@@ -259,7 +259,7 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
      */
     private fun validateStringParameters() {
         if (names != null) {
-            require(endpointUrl != null) { "Endpoint URL must be specified using '--endpoint-url'." }
+            require(endpoint != null) { "Endpoint must be specified using '--endpoint'." }
             require(endpointProtocol != null) { "Endpoint protocol must be specified using '--endpoint-protocol'." }
         }
     }
@@ -296,7 +296,7 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
                     throw IllegalArgumentException("Only one of 'memberNames' and 'members' blocks may be specified.")
                 }
                 if (hasMemberNames) {
-                    require(parsed["endpointUrl"] != null) { "Endpoint URL must be specified." }
+                    require(parsed["endpoint"] != null) { "Endpoint must be specified." }
                     require(parsed["endpointProtocol"] != null) { "Endpoint protocol must be specified." }
                 }
             }

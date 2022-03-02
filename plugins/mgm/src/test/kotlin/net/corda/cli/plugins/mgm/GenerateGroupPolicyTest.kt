@@ -61,11 +61,11 @@ class GenerateGroupPolicyTest {
         tapSystemErrAndOutNormalized {
             CommandLine(GenerateGroupPolicy()).execute("--name=XYZ")
         }.apply {
-            assertTrue(this.contains("Endpoint URL must be specified using '--endpoint-url'."))
+            assertTrue(this.contains("Endpoint must be specified using '--endpoint'."))
         }
 
         tapSystemErrAndOutNormalized {
-            CommandLine(GenerateGroupPolicy()).execute("--name=XYZ", "--endpoint-url=dummy")
+            CommandLine(GenerateGroupPolicy()).execute("--name=XYZ", "--endpoint=dummy")
         }.apply {
             assertTrue(this.contains("Endpoint protocol must be specified using '--endpoint-protocol'."))
         }
@@ -73,7 +73,7 @@ class GenerateGroupPolicyTest {
         tapSystemErrAndOutNormalized {
             CommandLine(GenerateGroupPolicy()).execute("--name=XYZ", "--endpoint-protocol=5")
         }.apply {
-            assertTrue(this.contains("Endpoint URL must be specified using '--endpoint-url'."))
+            assertTrue(this.contains("Endpoint must be specified using '--endpoint'."))
         }
     }
 
@@ -83,7 +83,7 @@ class GenerateGroupPolicyTest {
 
         tapSystemErrAndOutNormalized {
             CommandLine(app).execute(
-                "--endpoint-url=http://dummy-url",
+                "--endpoint=http://dummy-url",
                 "--endpoint-protocol=5"
             )
         }.apply {
@@ -101,7 +101,7 @@ class GenerateGroupPolicyTest {
             CommandLine(app).execute(
                 "--name=C=GB, L=London, O=Member1",
                 "--name=C=GB, L=London, O=Member2",
-                "--endpoint-url=http://dummy-url",
+                "--endpoint=http://dummy-url",
                 "--endpoint-protocol=5"
             )
         }.apply {
@@ -110,16 +110,16 @@ class GenerateGroupPolicyTest {
                     "\"members\" : [\n" +
                             "      {\n" +
                             "        \"name\" : \"C=GB, L=London, O=Member1\",\n" +
-                            "        \"keyAlias\" : \"alias\",\n" +
-                            "        \"rotatedKeyAlias-1\" : \"historic-alias-1\",\n" +
+                            "        \"keyAlias\" : \"C=GB, L=London, O=Member1\",\n" +
+                            "        \"rotatedKeyAlias-1\" : \"C=GB, L=London, O=Member1_old\",\n" +
                             "        \"memberStatus\" : \"ACTIVE\",\n" +
                             "        \"endpointUrl-1\" : \"http://dummy-url\",\n" +
                             "        \"endpointProtocol-1\" : 5\n" +
                             "      },\n" +
                             "      {\n" +
                             "        \"name\" : \"C=GB, L=London, O=Member2\",\n" +
-                            "        \"keyAlias\" : \"alias\",\n" +
-                            "        \"rotatedKeyAlias-1\" : \"historic-alias-1\",\n" +
+                            "        \"keyAlias\" : \"C=GB, L=London, O=Member2\",\n" +
+                            "        \"rotatedKeyAlias-1\" : \"C=GB, L=London, O=Member2_old\",\n" +
                             "        \"memberStatus\" : \"ACTIVE\",\n" +
                             "        \"endpointUrl-1\" : \"http://dummy-url\",\n" +
                             "        \"endpointProtocol-1\" : 5\n" +
@@ -158,7 +158,7 @@ class GenerateGroupPolicyTest {
         val filePath = Files.createFile(tempDir.resolve("src.json"))
         filePath.toFile().writeText(
             "{\n" +
-                    "  \"endpointUrl\": \"http://dummy-url\",\n" +
+                    "  \"endpoint\": \"http://dummy-url\",\n" +
                     "  \"endpointProtocol\": 5,\n" +
                     "  \"members\": [\n" +
                     "    {\n" +
@@ -181,16 +181,16 @@ class GenerateGroupPolicyTest {
                     "\"members\" : [\n" +
                             "      {\n" +
                             "        \"name\" : \"C=GB, L=London, O=Member1\",\n" +
-                            "        \"keyAlias\" : \"alias\",\n" +
-                            "        \"rotatedKeyAlias-1\" : \"historic-alias-1\",\n" +
+                            "        \"keyAlias\" : \"C=GB, L=London, O=Member1\",\n" +
+                            "        \"rotatedKeyAlias-1\" : \"C=GB, L=London, O=Member1_old\",\n" +
                             "        \"memberStatus\" : \"PENDING\",\n" +
                             "        \"endpointUrl-1\" : \"http://dummy-url\",\n" +
                             "        \"endpointProtocol-1\" : 10\n" +
                             "      },\n" +
                             "      {\n" +
                             "        \"name\" : \"C=GB, L=London, O=Member2\",\n" +
-                            "        \"keyAlias\" : \"alias\",\n" +
-                            "        \"rotatedKeyAlias-1\" : \"historic-alias-1\",\n" +
+                            "        \"keyAlias\" : \"C=GB, L=London, O=Member2\",\n" +
+                            "        \"rotatedKeyAlias-1\" : \"C=GB, L=London, O=Member2_old\",\n" +
                             "        \"memberStatus\" : \"ACTIVE\",\n" +
                             "        \"endpointUrl-1\" : \"http://dummy-url\",\n" +
                             "        \"endpointProtocol-1\" : 5\n" +
@@ -206,7 +206,7 @@ class GenerateGroupPolicyTest {
         val app = GenerateGroupPolicy()
         val filePath = Files.createFile(tempDir.resolve("src.yaml"))
         filePath.toFile().writeText(
-            "endpointUrl: \"http://dummy-url\"\n" +
+            "endpoint: \"http://dummy-url\"\n" +
                     "endpointProtocol: 5\n" +
                     "memberNames: [\"C=GB, L=London, O=Member1\", \"C=GB, L=London, O=Member2\"]\n"
         )
@@ -219,16 +219,16 @@ class GenerateGroupPolicyTest {
                     "\"members\" : [\n" +
                             "      {\n" +
                             "        \"name\" : \"C=GB, L=London, O=Member1\",\n" +
-                            "        \"keyAlias\" : \"alias\",\n" +
-                            "        \"rotatedKeyAlias-1\" : \"historic-alias-1\",\n" +
+                            "        \"keyAlias\" : \"C=GB, L=London, O=Member1\",\n" +
+                            "        \"rotatedKeyAlias-1\" : \"C=GB, L=London, O=Member1_old\",\n" +
                             "        \"memberStatus\" : \"ACTIVE\",\n" +
                             "        \"endpointUrl-1\" : \"http://dummy-url\",\n" +
                             "        \"endpointProtocol-1\" : 5\n" +
                             "      },\n" +
                             "      {\n" +
                             "        \"name\" : \"C=GB, L=London, O=Member2\",\n" +
-                            "        \"keyAlias\" : \"alias\",\n" +
-                            "        \"rotatedKeyAlias-1\" : \"historic-alias-1\",\n" +
+                            "        \"keyAlias\" : \"C=GB, L=London, O=Member2\",\n" +
+                            "        \"rotatedKeyAlias-1\" : \"C=GB, L=London, O=Member2_old\",\n" +
                             "        \"memberStatus\" : \"ACTIVE\",\n" +
                             "        \"endpointUrl-1\" : \"http://dummy-url\",\n" +
                             "        \"endpointProtocol-1\" : 5\n" +
@@ -244,7 +244,7 @@ class GenerateGroupPolicyTest {
         val app = GenerateGroupPolicy()
         val filePath = Files.createFile(tempDir.resolve("src.yaml"))
         filePath.toFile().writeText(
-            "endpointUrl: \"http://dummy-url\"\n" +
+            "endpoint: \"http://dummy-url\"\n" +
                     "endpointProtocol: 5\n" +
                     "memberNames:\n" +
                     "  - \"C=GB, L=London, O=Member1\"\n" +
@@ -286,7 +286,7 @@ class GenerateGroupPolicyTest {
         tapSystemErrAndOutNormalized {
             CommandLine(app).execute("--file=$filePath1")
         }.apply {
-            assertTrue(this.contains("Endpoint URL must be specified."))
+            assertTrue(this.contains("Endpoint must be specified."))
         }
 
         val filePath2 = Files.createFile(tempDir.resolve("src2.yaml"))
@@ -299,7 +299,7 @@ class GenerateGroupPolicyTest {
         tapSystemErrAndOutNormalized {
             CommandLine(app).execute("--file=$filePath2")
         }.apply {
-            assertTrue(this.contains("No endpoint URL specified."))
+            assertTrue(this.contains("No endpoint specified."))
         }
     }
 
