@@ -24,7 +24,7 @@ import java.util.concurrent.CompletableFuture
  * Producer will automatically attempt resends based on [kafkaConfig].
  * Any Exceptions thrown during publish are returned in a [CompletableFuture]
  */
-class CordaPublisherImpl(
+internal class CordaPublisherImpl(
     private val config: ResolvedPublisherConfig,
     private val cordaProducer: CordaProducer,
 ) : Publisher {
@@ -202,7 +202,7 @@ class CordaPublisherImpl(
      */
     override fun close() {
         try {
-            cordaProducer.close(config.closeTimeout)
+            cordaProducer.close()
         } catch (ex: Exception) {
             log.error("CordaKafkaPublisher failed to close producer safely. ClientId: ${config.clientId}", ex)
         }

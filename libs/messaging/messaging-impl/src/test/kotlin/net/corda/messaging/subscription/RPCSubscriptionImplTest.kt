@@ -1,6 +1,5 @@
 package net.corda.messaging.subscription
 
-import com.typesafe.config.Config
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
@@ -20,10 +19,8 @@ import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.TOPIC_PREFIX
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.processor.RPCResponderProcessor
-import net.corda.messaging.createStandardTestConfig
-import net.corda.messaging.properties.ConfigProperties.Companion.PATTERN_RPC_RESPONDER
-import net.corda.messaging.properties.ConfigProperties.Companion.TOPIC
-import net.corda.messaging.subscription.consumer.builder.CordaConsumerBuilder
+import net.corda.messaging.constants.SubscriptionType
+import net.corda.messaging.createResolvedSubscriptionConfig
 import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -44,21 +41,21 @@ import java.util.concurrent.CompletableFuture
 
 class RPCSubscriptionImplTest {
 
-    private val config: Config = createStandardTestConfig().getConfig(PATTERN_RPC_RESPONDER)
+    private val config = createResolvedSubscriptionConfig(SubscriptionType.RPC_RESPONDER)
     private val dummyRequest = HoldingIdentity(
         "identity",
         "group"
     )
     private val requestRecord = listOf(
         CordaConsumerRecord(
-            TOPIC_PREFIX + TOPIC,
+            TOPIC_PREFIX + config.topic,
             0,
             0,
             "0",
             RPCRequest(
                 "0",
                 Instant.now().toEpochMilli(),
-                "$TOPIC_PREFIX$TOPIC.resp",
+                "$TOPIC_PREFIX${config.topic}.resp",
                 0,
                 dummyRequest.toByteBuffer()
             ),
@@ -88,14 +85,14 @@ class RPCSubscriptionImplTest {
         this.kafkaConsumer = kafkaConsumer
         this.cordaConsumerBuilder = consumerBuilder
 
-        doAnswer { kafkaProducer }.whenever(cordaProducerBuilder).createProducer(any())
+        doAnswer { kafkaProducer }.whenever(cordaProducerBuilder).createProducer(any(), any())
 
         doAnswer {
             requestRecord
-        }.whenever(kafkaConsumer).poll()
+        }.whenever(kafkaConsumer).poll(config.pollTimeout)
 
         doAnswer {
-            listOf(CordaTopicPartition(TOPIC, 0))
+            listOf(CordaTopicPartition(config.topic, 0))
         }.whenever(kafkaConsumer).getPartitions(any(), any())
 
         doReturn(lifecycleCoordinator).`when`(lifecycleCoordinatorFactory).createCoordinator(any(), any())
@@ -119,7 +116,7 @@ class RPCSubscriptionImplTest {
             Thread.sleep(10)
         }
 
-        verify(kafkaConsumer, times(1)).subscribe(TOPIC)
+        verify(kafkaConsumer, times(1)).subscribe(config.topic)
         assertThat(processor.incomingRecords.size).isEqualTo(1)
         verify(kafkaProducer, times(1)).sendRecordsToPartitions(captor.capture())
         val capturedValue = captor.firstValue
@@ -145,7 +142,7 @@ class RPCSubscriptionImplTest {
             Thread.sleep(10)
         }
 
-        verify(kafkaConsumer, times(1)).subscribe(TOPIC)
+        verify(kafkaConsumer, times(1)).subscribe(config.topic)
         assertThat(processor.incomingRecords.size).isEqualTo(1)
         verify(kafkaProducer, times(1)).sendRecordsToPartitions(captor.capture())
         val capturedValue = captor.firstValue
@@ -174,7 +171,7 @@ class RPCSubscriptionImplTest {
             Thread.sleep(10)
         }
 
-        verify(kafkaConsumer, times(1)).subscribe(TOPIC)
+        verify(kafkaConsumer, times(1)).subscribe(config.topic)
         assertThat(processor.incomingRecords.size).isEqualTo(1)
         verify(kafkaProducer, times(1)).sendRecordsToPartitions(captor.capture())
         val capturedValue = captor.firstValue
@@ -188,8 +185,8 @@ class RPCSubscriptionImplTest {
             .createConsumer<String, RPCRequest>(any(), any(), any(), any(), any())
         doReturn(
             mutableMapOf(
-                CordaTopicPartition(TOPIC, 0) to 0L,
-                CordaTopicPartition(TOPIC, 1) to 0L
+                CordaTopicPartition(config.topic, 0) to 0L,
+                CordaTopicPartition(config.topic, 1) to 0L
             )
         ).whenever(kafkaConsumer)
             .beginningOffsets(any())

@@ -1,6 +1,5 @@
 package net.corda.messaging.publisher
 
-import com.typesafe.config.Config
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializer
 import net.corda.lifecycle.LifecycleCoordinator
@@ -10,9 +9,8 @@ import net.corda.messagebus.api.consumer.builder.MessageBusConsumerBuilder
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
-import net.corda.messaging.createStandardTestConfig
-import net.corda.messaging.properties.ConfigProperties.Companion.PATTERN_RPC_SENDER
-import net.corda.messaging.subscription.consumer.builder.CordaConsumerBuilder
+import net.corda.messaging.constants.SubscriptionType
+import net.corda.messaging.createResolvedSubscriptionConfig
 import net.corda.test.util.eventually
 import net.corda.v5.base.concurrent.getOrThrow
 import org.junit.jupiter.api.Test
@@ -27,7 +25,7 @@ import org.mockito.kotlin.whenever
 
 class CordaRPCSenderImplTest {
 
-    private val config: Config = createStandardTestConfig().getConfig(PATTERN_RPC_SENDER)
+    private val config = createResolvedSubscriptionConfig(SubscriptionType.RPC_SENDER)
 
     @Test
     fun `test send request finishes exceptionally due to lack of partitions`() {
@@ -73,7 +71,7 @@ class CordaRPCSenderImplTest {
         )
         cordaSenderImpl.start()
         eventually {
-            verify(cordaProducerBuilder).createProducer(any())
+            verify(cordaProducerBuilder).createProducer(any(), config.busConfig)
         }
         cordaSenderImpl.close()
         verify(cordaProducer, times(1)).close()

@@ -27,7 +27,6 @@ import net.corda.messaging.kafka.integration.getKafkaProperties
 import net.corda.messaging.kafka.integration.getStringRecords
 import net.corda.messaging.kafka.integration.processors.TestDurableProcessor
 import net.corda.messaging.kafka.integration.processors.TestDurableStringProcessor
-import net.corda.messaging.properties.ConfigProperties.Companion.MESSAGING_KAFKA
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
@@ -100,7 +99,7 @@ class DurableSubscriptionIntegrationTest {
         val CONSUMER_MAX_POLL_INTERVAL = "consumer.max.poll.interval.ms"
         val triggerRebalanceQuicklyConfig = kafkaConfig
             .withValue(
-                "$MESSAGING_KAFKA.${CONSUMER_MAX_POLL_INTERVAL}",
+                CONSUMER_MAX_POLL_INTERVAL,
                 ConfigValueFactory.fromAnyRef(1000)
             )
         //long delay to not allow sub to to try rejoin group after rebalance

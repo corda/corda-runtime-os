@@ -21,7 +21,7 @@ class CordaPublisherImplFactoryTest {
 
     @BeforeEach
     fun beforeEach() {
-        doReturn(cordaProducer).`when`(cordaProducerBuilder).createProducer(any())
+        doReturn(cordaProducer).`when`(cordaProducerBuilder).createProducer(any(), any())
         cordaPublisherFactory = CordaPublisherFactory(mock(), cordaProducerBuilder, mock(), mock())
     }
 

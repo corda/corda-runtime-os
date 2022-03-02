@@ -1,24 +1,36 @@
 package net.corda.messaging
 
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
-import net.corda.messaging.properties.ConfigProperties.Companion.CLIENT_ID_COUNTER
-import net.corda.messaging.properties.ConfigProperties.Companion.GROUP
-import net.corda.messaging.properties.ConfigProperties.Companion.TOPIC
+import net.corda.messaging.config.ResolvedSubscriptionConfig
+import net.corda.messaging.constants.SubscriptionType
+import java.time.Duration
 
 const val TOPIC_PREFIX = "test"
+const val TOPIC = "topic"
+const val GROUP = "group"
 
-fun createStandardTestConfig(): Config = ConfigFactory.parseResourcesAnySyntax("messaging-enforced.conf")
-    .withValue(GROUP, ConfigValueFactory.fromAnyRef(GROUP))
-    .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
-    .withValue(CLIENT_ID_COUNTER, ConfigValueFactory.fromAnyRef(1))
-    .withValue(TOPIC, ConfigValueFactory.fromAnyRef(TOPIC))
-    .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef("test"))
-    .withFallback(ConfigFactory.parseResourcesAnySyntax("messaging-defaults.conf"))
-    .resolve()
+internal fun createResolvedSubscriptionConfig(type: SubscriptionType): ResolvedSubscriptionConfig {
+    val config = ConfigFactory.empty()
+        .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef("test"))
+    val busConfig = SmartConfigFactory.create(ConfigFactory.empty()).create(config)
+    return ResolvedSubscriptionConfig(
+        type,
+        TOPIC,
+        GROUP,
+        1L,
+        1,
+        Duration.ofMillis(100L),
+        Duration.ofMillis(100L),
+        3,
+        3,
+        3,
+        Duration.ofMillis(1000L),
+        busConfig
+    )
+}
 
 /**
  * Generate a list of size [numberOfRecords] ConsumerRecords.

@@ -1,19 +1,12 @@
 package net.corda.messaging.publisher
 
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigValueFactory
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.GROUP_INSTANCE_ID
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.PRODUCER_CLIENT_ID
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.PRODUCER_CLOSE_TIMEOUT
+import com.typesafe.config.ConfigFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messagebus.api.producer.CordaProducer
-import net.corda.messaging.TOPIC_PREFIX
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
-import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.createStandardTestConfig
-import net.corda.messaging.properties.ConfigProperties.Companion.PATTERN_PUBLISHER
-import net.corda.messaging.properties.ConfigProperties.Companion.PRODUCER_TRANSACTIONAL_ID
+import net.corda.messaging.config.ResolvedPublisherConfig
 import net.corda.messaging.utils.toCordaProducerRecord
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
@@ -31,14 +24,14 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.ExecutionException
 
 class CordaPublisherImplTest {
-    private lateinit var publisherConfig: PublisherConfig
+    private lateinit var publisherConfig: ResolvedPublisherConfig
     private lateinit var cordaPublisherImpl: CordaPublisherImpl
-    private lateinit var kafkaConfig: Config
     private lateinit var producer: CordaProducer
     private val record = Record("topic", "key1", ByteBuffer.wrap("value1".toByteArray()))
 
@@ -56,11 +49,12 @@ class CordaPublisherImplTest {
     @BeforeEach
     fun beforeEach() {
         producer = mock()
-        publisherConfig = PublisherConfig("clientId")
-        kafkaConfig = createStandardTestConfig().getConfig(PATTERN_PUBLISHER)
-            .withValue(PRODUCER_CLOSE_TIMEOUT, ConfigValueFactory.fromAnyRef(1))
-            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef("prefix"))
-            .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("clientId1"))
+        publisherConfig = ResolvedPublisherConfig(
+            "clientId1",
+            1,
+            Duration.ofMillis(100L),
+            SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
+        )
     }
 
     @Test
@@ -214,23 +208,14 @@ class CordaPublisherImplTest {
 
     @Test
     fun testSafeClose() {
-        cordaPublisherImpl = CordaPublisherImpl(kafkaConfig, producer)
+        cordaPublisherImpl = CordaPublisherImpl(publisherConfig, producer)
 
         cordaPublisherImpl.close()
-        verify(producer, times(1)).close(any())
+        verify(producer, times(1)).close()
     }
 
     private fun publish(isTransaction: Boolean = false, records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
-        val publisherConfig = if (isTransaction) {
-            kafkaConfig
-                .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef(publisherConfig.clientId))
-                .withValue(GROUP_INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
-        } else {
-            kafkaConfig
-                .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef(publisherConfig.clientId))
-                .withoutPath(PRODUCER_TRANSACTIONAL_ID)
-        }
-        cordaPublisherImpl = CordaPublisherImpl(publisherConfig, producer)
+        cordaPublisherImpl = createPublisher(isTransaction)
 
         return cordaPublisherImpl.publish(records)
     }
@@ -239,17 +224,18 @@ class CordaPublisherImplTest {
         isTransaction: Boolean = false,
         recordsWithPartitions: List<Pair<Int, Record<*, *>>>
     ): List<CompletableFuture<Unit>> {
-        val publisherConfig = if (isTransaction) {
-            kafkaConfig
-                .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef(publisherConfig.clientId))
-                .withValue(GROUP_INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
-        } else {
-            kafkaConfig
-                .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef(publisherConfig.clientId))
-                .withoutPath(PRODUCER_TRANSACTIONAL_ID)
-        }
-        cordaPublisherImpl = CordaPublisherImpl(publisherConfig, producer)
+        cordaPublisherImpl = createPublisher(isTransaction)
 
         return cordaPublisherImpl.publishToPartition(recordsWithPartitions)
+    }
+
+    private fun createPublisher(transactional: Boolean): CordaPublisherImpl {
+        val publisherConfig = ResolvedPublisherConfig(
+            "clientId1",
+            if (transactional) 1 else null,
+            Duration.ofMillis(100L),
+            SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
+        )
+        return CordaPublisherImpl(publisherConfig, producer)
     }
 }

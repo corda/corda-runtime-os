@@ -26,7 +26,6 @@ import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.config.ResolvedSubscriptionConfig
-import net.corda.messaging.subscription.consumer.builder.CordaConsumerBuilder
 import net.corda.messaging.subscription.consumer.listener.RPCConsumerRebalanceListener
 import net.corda.messaging.utils.FutureTracker
 import net.corda.schema.Schemas.Companion.getRPCResponseTopic
@@ -74,7 +73,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
         LifecycleCoordinatorName(
             "${config.group}-RPCSender-${config.topic}",
             //we use instanceId here as transactionality is a concern in this subscription
-            config.instanceId
+            config.clientId
         )
     ) { _, _ -> }
     private val partitionListener = RPCConsumerRebalanceListener(
@@ -171,7 +170,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
 
     private fun pollAndProcessRecords(consumer: CordaConsumer<String, RPCResponse>) {
         while (!stopped) {
-            val consumerRecords = consumer.poll()
+            val consumerRecords = consumer.poll(config.pollTimeout)
             try {
                 processRecords(consumerRecords)
             } catch (ex: Exception) {

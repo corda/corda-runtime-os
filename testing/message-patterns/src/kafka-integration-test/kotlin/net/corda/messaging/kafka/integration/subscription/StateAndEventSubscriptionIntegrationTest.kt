@@ -44,7 +44,6 @@ import net.corda.messaging.kafka.integration.processors.TestDurableProcessorStri
 import net.corda.messaging.kafka.integration.processors.TestDurableStringProcessor
 import net.corda.messaging.kafka.integration.processors.TestStateEventProcessor
 import net.corda.messaging.kafka.integration.processors.TestStateEventProcessorStrings
-import net.corda.messaging.properties.ConfigProperties.Companion.MESSAGING_KAFKA
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
@@ -277,7 +276,7 @@ class StateAndEventSubscriptionIntegrationTest {
         )
 
         val longWaitProcessorConfig = kafkaConfig
-            .withValue("$MESSAGING_KAFKA.${CONSUMER_PROCESSOR_TIMEOUT}", ConfigValueFactory.fromAnyRef(30000))
+            .withValue(CONSUMER_PROCESSOR_TIMEOUT, ConfigValueFactory.fromAnyRef(30000))
         val onNextLatch2 = CountDownLatch(1)
 
         //fail slowly on first record. allow time for subscription to be stopped to force rebalance
@@ -327,7 +326,7 @@ class StateAndEventSubscriptionIntegrationTest {
         topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC5_TEMPLATE)
 
         val shortIntervalTimeoutConfig = kafkaConfig
-            .withValue("$MESSAGING_KAFKA.$CONSUMER_MAX_POLL_INTERVAL", ConfigValueFactory.fromAnyRef(15000))
+            .withValue(CONSUMER_MAX_POLL_INTERVAL, ConfigValueFactory.fromAnyRef(15000))
 
         val stateAndEventLatch = CountDownLatch(10)
         val stateEventSub1 = subscriptionFactory.createStateAndEventSubscription(
@@ -381,7 +380,7 @@ class StateAndEventSubscriptionIntegrationTest {
         publisher.publish(getStringRecords(EVENT_TOPIC6, 1, 3)).forEach { it.get() }
 
         val shortIntervalTimeoutConfig = kafkaConfig
-            .withValue("$MESSAGING_KAFKA.$CONSUMER_MAX_POLL_INTERVAL", ConfigValueFactory.fromAnyRef(11000))
+            .withValue(CONSUMER_MAX_POLL_INTERVAL, ConfigValueFactory.fromAnyRef(11000))
 
         val stateAndEventLatch = CountDownLatch(3)
         val onCommitLatch = CountDownLatch(3)
