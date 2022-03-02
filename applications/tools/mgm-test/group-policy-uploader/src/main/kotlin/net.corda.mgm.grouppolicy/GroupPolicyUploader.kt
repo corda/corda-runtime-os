@@ -4,18 +4,18 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.packaging.CpiIdentifier
+import net.corda.libs.packaging.CpiMetadata
+import net.corda.libs.packaging.CpkMetadata
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
-import net.corda.packaging.CPI
-import net.corda.packaging.CPK
-import net.corda.packaging.converters.toAvro
 import net.corda.schema.Schemas
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.membership.identity.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
@@ -92,7 +92,10 @@ class GroupPolicyUploader @Activate constructor(
         // Link each parameter member with the group ID in the group policy and the CPI info created previously.
         val vnodeInfos = memberX500Names.map {
             VirtualNodeInfo(
-                HoldingIdentity(it.toString(), groupId),
+                HoldingIdentity(it.toString(), groupId).apply {
+                    vaultDmlConnectionId = UUID.randomUUID()
+                    cryptoDmlConnectionId = UUID.randomUUID()
+                },
                 cpiMetadata.id
             )
         }
@@ -139,14 +142,14 @@ class GroupPolicyUploader @Activate constructor(
     private fun createCpiIdentifier(
         name: String = "MGM_TEST",
         version: String = "1.0"
-    ) = CPI.Identifier.newInstance(name, version)
+    ) = CpiIdentifier(name, version, null)
 
     private fun createCpiMetadata(
-        cpiIdentifier: CPI.Identifier,
+        cpiIdentifier: CpiIdentifier,
         groupPolicy: String,
         hash: SecureHash = SecureHash.create("SHA-256:0000000000000000"),
-        cpks: Iterable<CPK.Metadata> = emptyList()
-    ) = CPI.Metadata.newInstance(
+        cpks: Collection<CpkMetadata> = emptyList()
+    ) = CpiMetadata(
         cpiIdentifier,
         hash,
         cpks,
@@ -162,7 +165,7 @@ class GroupPolicyUploader @Activate constructor(
             )
         }
 
-    private fun CPI.Metadata.toKafkaRecords() =
+    private fun CpiMetadata.toKafkaRecords() =
         listOf(
             Record(
                 Schemas.VirtualNode.CPI_INFO_TOPIC,
