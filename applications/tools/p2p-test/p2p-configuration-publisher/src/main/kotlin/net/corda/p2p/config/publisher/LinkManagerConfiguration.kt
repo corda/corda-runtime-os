@@ -27,7 +27,7 @@ class LinkManagerConfiguration : ConfigProducer() {
         names = ["--locallyHostedIdentity"],
         description = [
             "Local hosted identity (in the form of " +
-                "<x500Name>:<groupId>:<tenentId>:<pemTlsCertificate1File>:<pemTlsCertificate2File>...)"
+                "<x500Name>:<groupId>:<tenantId>:<pemTlsCertificate1File>:<pemTlsCertificate2File>...)"
         ],
         required = true,
     )
@@ -82,7 +82,7 @@ class LinkManagerConfiguration : ConfigProducer() {
             if (it.size < 3) {
                 throw TypeConversionException(
                     "locallyHostedIdentity must have the format " +
-                        "<x500Name>:<groupId>:<tenentId>:<pemTlsCertificate1File>:<pemTlsCertificate2File>"
+                        "<x500Name>:<groupId>:<tenantId>:<pemTlsCertificate1File>:<pemTlsCertificate2File>"
                 )
             }
         }.map {
