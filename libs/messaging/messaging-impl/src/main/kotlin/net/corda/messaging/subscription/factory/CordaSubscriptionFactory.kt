@@ -3,6 +3,7 @@ package net.corda.messaging.subscription.factory
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.messagebus.api.consumer.builder.MessageBusConsumerBuilder
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.processor.CompactedProcessor
@@ -29,7 +30,6 @@ import net.corda.messaging.subscription.EventLogSubscriptionImpl
 import net.corda.messaging.subscription.PubSubSubscriptionImpl
 import net.corda.messaging.subscription.RPCSubscriptionImpl
 import net.corda.messaging.subscription.StateAndEventSubscriptionImpl
-import net.corda.messaging.subscription.consumer.builder.CordaConsumerBuilder
 import net.corda.messaging.subscription.consumer.builder.StateAndEventBuilder
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -44,15 +44,15 @@ import java.util.concurrent.atomic.AtomicLong
  */
 @Suppress("LongParameterList")
 @Component(service = [SubscriptionFactory::class])
-class CordaSubscriptionFactory @Activate constructor(
+internal class CordaSubscriptionFactory @Activate constructor(
     @Reference(service = CordaAvroSerializationFactory::class)
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = CordaProducerBuilder::class)
     private val cordaProducerBuilder: CordaProducerBuilder,
-    @Reference(service = CordaConsumerBuilder::class)
-    private val cordaConsumerBuilder: CordaConsumerBuilder,
+    @Reference(service = MessageBusConsumerBuilder::class)
+    private val cordaConsumerBuilder: MessageBusConsumerBuilder,
     @Reference(service = StateAndEventBuilder::class)
     private val stateAndEventBuilder: StateAndEventBuilder,
 ) : SubscriptionFactory {

@@ -12,7 +12,7 @@ import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
-class StateAndEventRebalanceListener<K : Any, S : Any, E : Any>(
+internal class StateAndEventRebalanceListener<K : Any, S : Any, E : Any>(
     private val config: ResolvedSubscriptionConfig,
     private val mapFactory: MapFactory<K, Pair<Long, S>>,
     stateAndEventConsumer: StateAndEventConsumer<K, S, E>,

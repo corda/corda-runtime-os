@@ -61,10 +61,6 @@ class DBCordaConsumerImpl<K : Any, V: Any>: CordaConsumer<K, V> {
         TODO("Not yet implemented")
     }
 
-    override fun poll(): List<CordaConsumerRecord<K, V>> {
-        TODO("Not yet implemented")
-    }
-
     override fun poll(timeout: Duration): List<CordaConsumerRecord<K, V>> {
         TODO("Not yet implemented")
     }
@@ -78,10 +74,6 @@ class DBCordaConsumerImpl<K : Any, V: Any>: CordaConsumer<K, V> {
     }
 
     override fun getPartitions(topic: String, timeout: Duration): List<CordaTopicPartition> {
-        TODO("Not yet implemented")
-    }
-
-    override fun close(timeout: Duration) {
         TODO("Not yet implemented")
     }
 

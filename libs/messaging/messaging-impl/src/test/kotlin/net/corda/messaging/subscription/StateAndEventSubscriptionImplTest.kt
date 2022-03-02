@@ -44,7 +44,7 @@ class StateAndEventSubscriptionImplTest {
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
     private val lifecycleCoordinator: LifecycleCoordinator = mock()
 
-    data class Mocks(
+    private data class Mocks(
         val builder: StateAndEventBuilder,
         val producer: CordaProducer,
         val stateAndEventConsumer: StateAndEventConsumer<String, String, String>,

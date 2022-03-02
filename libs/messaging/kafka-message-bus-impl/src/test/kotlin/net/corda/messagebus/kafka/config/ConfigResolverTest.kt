@@ -27,7 +27,6 @@ class ConfigResolverTest {
 
         private const val GROUP_NAME = "group"
         private const val CLIENT_ID = "test-client-id"
-        private const val TOPIC_PREFIX = "topic-prefix"
         private const val INSTANCE_ID = 1
 
         private const val GROUP_ID_PROP = "group.id"
@@ -192,9 +191,9 @@ class ConfigResolverTest {
     fun `config resolution for consumers`(role: ConsumerRoles, expectedProperties: Properties) {
         val busConfig = loadTestConfig(TEST_CONFIG)
         val resolver = ConfigResolver(smartConfigFactory)
-        val properties = resolver.resolve(
+        val (_, properties) = resolver.resolve(
             busConfig,
-            ConsumerConfig(GROUP_NAME, CLIENT_ID, TOPIC_PREFIX, role)
+            ConsumerConfig(GROUP_NAME, CLIENT_ID, role)
         )
         assertConsumerProperties(expectedProperties, properties)
     }
@@ -203,9 +202,9 @@ class ConfigResolverTest {
     fun `an empty config can be resolved correctly for consumers`() {
         val busConfig = loadTestConfig(EMPTY_CONFIG)
         val resolver = ConfigResolver(smartConfigFactory)
-        val properties = resolver.resolve(
+        val (_, properties) = resolver.resolve(
             busConfig,
-            ConsumerConfig(GROUP_NAME, CLIENT_ID, TOPIC_PREFIX, ConsumerRoles.COMPACTED)
+            ConsumerConfig(GROUP_NAME, CLIENT_ID, ConsumerRoles.COMPACTED)
         )
         val expectedProperties = getExpectedConsumerProperties(mapOf())
         // Verify substitutions
@@ -217,8 +216,8 @@ class ConfigResolverTest {
     fun `config resolution for producers`(role: ProducerRoles, expectedProperties: Properties) {
         val busConfig = loadTestConfig(TEST_CONFIG)
         val resolver = ConfigResolver(smartConfigFactory)
-        val properties =
-            resolver.resolve(busConfig, ProducerConfig(CLIENT_ID, INSTANCE_ID, TOPIC_PREFIX, role))
+        val (_, properties) =
+            resolver.resolve(busConfig, ProducerConfig(CLIENT_ID, INSTANCE_ID, role))
         assertProducerProperties(expectedProperties, properties)
     }
 
@@ -226,10 +225,10 @@ class ConfigResolverTest {
     fun `an empty config can be resolved for producers`() {
         val busConfig = loadTestConfig(EMPTY_CONFIG)
         val resolver = ConfigResolver(smartConfigFactory)
-        val properties =
+        val (_, properties) =
             resolver.resolve(
                 busConfig,
-                ProducerConfig(CLIENT_ID, INSTANCE_ID, TOPIC_PREFIX, ProducerRoles.RPC_RESPONDER)
+                ProducerConfig(CLIENT_ID, INSTANCE_ID, ProducerRoles.RPC_RESPONDER)
             )
         val expectedProperties = getExpectedProducerProperties(mapOf())
         // Verify substitutions
@@ -240,8 +239,8 @@ class ConfigResolverTest {
     fun `no transactional id is present if the instance id is not set`() {
         val busConfig = loadTestConfig(TEST_CONFIG)
         val resolver = ConfigResolver(smartConfigFactory)
-        val properties =
-            resolver.resolve(busConfig, ProducerConfig(CLIENT_ID, null, TOPIC_PREFIX, ProducerRoles.PUBLISHER))
+        val (_, properties) =
+            resolver.resolve(busConfig, ProducerConfig(CLIENT_ID, null, ProducerRoles.PUBLISHER))
         val expectedProperties = getExpectedProducerProperties(
             mapOf(
                 TRANSACTIONAL_ID_PROP to null,
@@ -257,10 +256,10 @@ class ConfigResolverTest {
         val busConfig = loadTestConfig(INCORRECT_BUS_CONFIG)
         val resolver = ConfigResolver(smartConfigFactory)
         assertThrows<CordaMessageAPIConfigException> {
-            resolver.resolve(busConfig, ConsumerConfig(GROUP_NAME, CLIENT_ID, TOPIC_PREFIX, ConsumerRoles.DURABLE))
+            resolver.resolve(busConfig, ConsumerConfig(GROUP_NAME, CLIENT_ID, ConsumerRoles.DURABLE))
         }
         assertThrows<CordaMessageAPIConfigException> {
-            resolver.resolve(busConfig, ProducerConfig(CLIENT_ID, 1, TOPIC_PREFIX, ProducerRoles.DURABLE))
+            resolver.resolve(busConfig, ProducerConfig(CLIENT_ID, 1, ProducerRoles.DURABLE))
         }
     }
 

@@ -157,14 +157,12 @@ class CordaTransactionalDBProducerImpl(
         transaction.set(null)
     }
 
-    override fun close(timeout: Duration) {
+    override fun close() {
         if (inTransaction) {
             log.error("Close called during transaction.  Some data may be lost.")
             abortTransaction()
         }
     }
-
-    override fun close() = close(defaultTimeout)
 
     private fun verifyInTransaction() {
         if (!inTransaction) {

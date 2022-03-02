@@ -37,10 +37,10 @@ class KafkaCordaProducerBuilderImpl @Activate constructor(
 
     override fun createProducer(producerConfig: ProducerConfig, busConfig: SmartConfig): CordaProducer {
         val configResolver = ConfigResolver(busConfig.factory)
-        val kafkaProperties = configResolver.resolve(busConfig, producerConfig)
+        val (resolvedConfig, kafkaProperties) = configResolver.resolve(busConfig, producerConfig)
         return try {
             val producer = createKafkaProducer(kafkaProperties)
-            CordaKafkaProducerImpl(producerConfig, producer)
+            CordaKafkaProducerImpl(resolvedConfig, producer)
         } catch (ex: KafkaException) {
             val message = "SubscriptionSubscriptionProducerBuilderImpl failed to producer with clientId ${producerConfig.clientId}."
             log.error(message, ex)

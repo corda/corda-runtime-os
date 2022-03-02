@@ -2,6 +2,7 @@ package net.corda.messaging.subscription
 
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.messagebus.api.consumer.builder.MessageBusConsumerBuilder
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.EventLogProcessor
@@ -10,7 +11,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
 import net.corda.messaging.config.ResolvedSubscriptionConfig
-import net.corda.messaging.subscription.consumer.builder.CordaConsumerBuilder
 import org.slf4j.LoggerFactory
 
 /**
@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory
 @Suppress("LongParameterList")
 internal class DurableSubscriptionImpl<K : Any, V : Any>(
     private val config: ResolvedSubscriptionConfig,
-    private val cordaConsumerBuilder: CordaConsumerBuilder,
+    private val cordaConsumerBuilder: MessageBusConsumerBuilder,
     private val cordaProducerBuilder: CordaProducerBuilder,
     private val processor: DurableProcessor<K, V>,
     private val partitionAssignmentListener: PartitionAssignmentListener?,

@@ -6,6 +6,7 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messaging.api.exception.CordaMessageAPIConfigException
+import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PROPERTIES
 import net.corda.v5.base.util.contextLogger
@@ -28,7 +29,6 @@ internal class ConfigResolver(private val smartConfigFactory: SmartConfigFactory
 
         private const val GROUP_PATH = "group"
         private const val CLIENT_ID_PATH = "clientId"
-        private const val TOPIC_PREFIX_PATH = "topicPrefix"
         private const val INSTANCE_ID_PATH = "instanceId"
         private const val TRANSACTIONAL_ID_PATH = "transactionalId"
     }
@@ -70,12 +70,24 @@ internal class ConfigResolver(private val smartConfigFactory: SmartConfigFactory
         return properties
     }
 
-    fun resolve(busConfig: SmartConfig, consumerConfig: ConsumerConfig): Properties {
-        return resolve(busConfig, consumerConfig.role.configPath, consumerConfig.toSmartConfig())
+    fun resolve(busConfig: SmartConfig, consumerConfig: ConsumerConfig): Pair<ResolvedConsumerConfig, Properties> {
+        val kafkaProperties = resolve(busConfig, consumerConfig.role.configPath, consumerConfig.toSmartConfig())
+        val resolvedConfig = ResolvedConsumerConfig(
+            consumerConfig.group,
+            consumerConfig.clientId,
+            busConfig.getString(MessagingConfig.Boot.TOPIC_PREFIX)
+        )
+        return Pair(resolvedConfig, kafkaProperties)
     }
 
-    fun resolve(busConfig: SmartConfig, producerConfig: ProducerConfig): Properties {
-        return resolve(busConfig, producerConfig.role.configPath, producerConfig.toSmartConfig())
+    fun resolve(busConfig: SmartConfig, producerConfig: ProducerConfig): Pair<ResolvedProducerConfig, Properties> {
+        val kafkaProperties = resolve(busConfig, producerConfig.role.configPath, producerConfig.toSmartConfig())
+        val resolvedConfig = ResolvedProducerConfig(
+            producerConfig.clientId,
+            producerConfig.instanceId,
+            busConfig.getString(MessagingConfig.Boot.TOPIC_PREFIX)
+        )
+        return Pair(resolvedConfig, kafkaProperties)
     }
 
     /**
@@ -110,7 +122,6 @@ internal class ConfigResolver(private val smartConfigFactory: SmartConfigFactory
                 mapOf(
                     GROUP_PATH to group,
                     CLIENT_ID_PATH to clientId,
-                    TOPIC_PREFIX_PATH to topicPrefix,
                     INSTANCE_ID_PATH to "<undefined>",
                     TRANSACTIONAL_ID_PATH to "<undefined>"
                 )

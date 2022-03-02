@@ -1,10 +1,10 @@
 package net.corda.messagebus.kafka.producer
 
-import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
+import net.corda.messagebus.kafka.config.ResolvedProducerConfig
 import net.corda.messagebus.kafka.consumer.CordaKafkaConsumerImpl
 import net.corda.messagebus.kafka.utils.toKafkaRecords
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
@@ -35,7 +35,7 @@ import org.slf4j.Logger
  */
 @Suppress("TooManyFunctions")
 class CordaKafkaProducerImpl(
-    private val config: ProducerConfig,
+    private val config: ResolvedProducerConfig,
     private val producer: Producer<Any, Any>
 ) : CordaProducer {
     private val topicPrefix = config.topicPrefix

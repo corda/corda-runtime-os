@@ -1,11 +1,11 @@
 package net.corda.messagebus.kafka.consumer
 
 import net.corda.messagebus.api.CordaTopicPartition
-import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
+import net.corda.messagebus.kafka.config.ResolvedConsumerConfig
 import net.corda.messagebus.kafka.utils.toCordaTopicPartition
 import net.corda.messagebus.kafka.utils.toTopicPartition
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
@@ -34,7 +34,7 @@ import java.time.Duration
  */
 @Suppress("TooManyFunctions")
 class CordaKafkaConsumerImpl<K : Any, V : Any>(
-    private val config: ConsumerConfig,
+    private val config: ResolvedConsumerConfig,
     private val consumer: Consumer<K, V>,
     private var defaultListener: CordaConsumerRebalanceListener? = null,
 ) : CordaConsumer<K, V> {

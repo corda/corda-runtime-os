@@ -120,10 +120,7 @@ class CordaAtomicDBProducerImpl(
         throwNonTransactionalLogic()
     }
 
-    override fun close(timeout: Duration) {
-    }
-
-    override fun close() = close(defaultTimeout)
+    override fun close() {}
 
     private fun throwNonTransactionalLogic() {
         throw CordaMessageAPIFatalException("Non transactional producer can't do transactional logic.")

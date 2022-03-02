@@ -2,7 +2,8 @@ package net.corda.messagebus.db.producer.builder
 
 import com.typesafe.config.Config
 import net.corda.db.core.PostgresDataSourceFactory
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CLIENT_ID
+import net.corda.libs.configuration.SmartConfig
+import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messagebus.db.datamodel.CommittedOffsetEntry
@@ -29,13 +30,13 @@ class DBCordaProducerBuilderImpl @Activate constructor(
     @Reference(service = EntityManagerFactoryFactory::class)
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
 ) : CordaProducerBuilder {
-    override fun createProducer(producerConfig: Config): CordaProducer {
-        val isTransactional = producerConfig.hasPath("instanceId")
+    override fun createProducer(producerConfig: ProducerConfig, busConfig: SmartConfig): CordaProducer {
+        val isTransactional = producerConfig.instanceId == null
         val dbAccess = DBAccess(
             obtainEntityManagerFactory(
-                producerConfig,
+                busConfig,
                 entityManagerFactoryFactory,
-                    "DB Producer for ${producerConfig.getString(CLIENT_ID)}",
+                    "DB Producer for ${producerConfig.clientId}",
                     listOf(TopicRecordEntry::class.java, CommittedOffsetEntry::class.java, TopicEntry::class.java)
             )
         )
