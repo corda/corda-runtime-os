@@ -3,10 +3,10 @@ package net.corda.application.impl.flow.flowservices
 import net.corda.flow.manager.fiber.FlowFiberService
 import net.corda.v5.application.flows.flowservices.FlowIdentity
 import net.corda.v5.application.identity.AnonymousParty
-import net.corda.v5.application.identity.CordaX500Name
 import net.corda.v5.application.identity.Party
 import net.corda.v5.application.identity.PartyAndReference
 import net.corda.v5.application.injection.CordaFlowInjectable
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.types.OpaqueBytes
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -29,7 +29,7 @@ class FlowIdentityImpl @Activate constructor(
      */
     override val ourIdentity
         get() = TempPartyImpl(
-            CordaX500Name.parse(flowFiberService.getExecutingFiber().getExecutionContext().holdingIdentity.x500Name),
+            MemberX500Name.parse(flowFiberService.getExecutingFiber().getExecutionContext().holdingIdentity.x500Name),
             NullPublicKey()
         )
 
@@ -40,12 +40,12 @@ class FlowIdentityImpl @Activate constructor(
     }
 
     class TempAnonymousPartyImpl(override val owningKey: PublicKey) : AnonymousParty {
-        override fun nameOrNull(): CordaX500Name? = null
+        override fun nameOrNull(): MemberX500Name? = null
         override fun ref(bytes: OpaqueBytes): PartyAndReference = PartyAndReference(this, bytes)
     }
 
-    class TempPartyImpl(override val name: CordaX500Name, override val owningKey: PublicKey) : Party {
-        override fun nameOrNull(): CordaX500Name = name
+    class TempPartyImpl(override val name: MemberX500Name, override val owningKey: PublicKey) : Party {
+        override fun nameOrNull(): MemberX500Name = name
         override fun ref(bytes: OpaqueBytes): PartyAndReference = PartyAndReference(this, bytes)
         override fun anonymise(): AnonymousParty = TempAnonymousPartyImpl(owningKey)
     }

@@ -4,7 +4,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.manager.fiber.FlowFiber
 import net.corda.flow.manager.fiber.FlowFiberExecutionContext
 import net.corda.flow.manager.fiber.FlowFiberService
-import net.corda.v5.membership.identity.MemberX500Name
+import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
