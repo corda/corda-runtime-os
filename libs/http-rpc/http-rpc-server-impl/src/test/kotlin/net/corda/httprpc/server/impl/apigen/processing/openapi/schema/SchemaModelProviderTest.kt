@@ -13,8 +13,8 @@ import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.Sche
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.SchemaRefObjectModel
 import net.corda.httprpc.server.impl.apigen.processing.streams.DurableReturnResult
 import net.corda.httprpc.server.impl.apigen.processing.streams.FiniteDurableReturnResult
-import net.corda.v5.application.identity.CordaX500Name
 import net.corda.v5.base.stream.Cursor
+import net.corda.v5.base.types.MemberX500Name
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
@@ -72,9 +72,9 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build with CordaX500Name succeeds`() {
+    fun `build with MemberX500Name succeeds`() {
         val provider = DefaultSchemaModelProvider(SchemaModelContextHolder())
-        val data = CordaX500Name.parse("O=Bank A, L=New York, C=US, OU=Org Unit, CN=Service Name")
+        val data = MemberX500Name.parse("O=Bank A, L=New York, C=US, OU=Org Unit, CN=Service Name")
         val mockParam = endpointParameter(data::class.javaObjectType)
 
         val result = provider.toSchemaModel(mockParam)

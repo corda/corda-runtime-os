@@ -2,18 +2,18 @@ package net.corda.membership.application
 
 import net.corda.v5.application.identity.AbstractParty
 import net.corda.v5.application.identity.AnonymousParty
-import net.corda.v5.application.identity.CordaX500Name
 import net.corda.v5.application.identity.Party
 import net.corda.v5.application.identity.PartyAndReference
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.types.OpaqueBytes
 import java.security.PublicKey
 import java.security.cert.X509Certificate
 
-class PartyImpl(override val name: CordaX500Name, override val owningKey: PublicKey) : Party {
+class PartyImpl(override val name: MemberX500Name, override val owningKey: PublicKey) : Party {
     constructor(certificate: X509Certificate)
-            : this(CordaX500Name.build(certificate.subjectX500Principal), certificate.publicKey)
+            : this(MemberX500Name.build(certificate.subjectX500Principal), certificate.publicKey)
 
-    override fun nameOrNull(): CordaX500Name = name
+    override fun nameOrNull(): MemberX500Name = name
     override fun ref(bytes: OpaqueBytes): PartyAndReference = PartyAndReference(this, bytes)
     override fun anonymise(): AnonymousParty = AnonymousPartyImpl(owningKey)
 

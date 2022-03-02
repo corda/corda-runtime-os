@@ -4,16 +4,16 @@ import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.JsonDeserializer
-import net.corda.v5.application.identity.CordaX500Name
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.trace
 import org.slf4j.LoggerFactory
 
-object CordaX500NameDeserializer : JsonDeserializer<CordaX500Name>() {
+object MemberX500NameDeserializer : JsonDeserializer<MemberX500Name>() {
     private val log = LoggerFactory.getLogger(this::class.java)
-    override fun deserialize(parser: JsonParser, context: DeserializationContext): CordaX500Name {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): MemberX500Name {
         log.trace { "Deserialize." }
         return try {
-            CordaX500Name.parse(parser.text)
+            MemberX500Name.parse(parser.text)
         } catch (e: IllegalArgumentException) {
             "Invalid Corda X.500 name ${parser.text}: ${e.message}".let {
                 log.error(it)

@@ -14,7 +14,7 @@ import net.corda.v5.base.util.parseList
 import net.corda.v5.membership.identity.MGMContext
 import net.corda.v5.membership.identity.MemberContext
 import net.corda.v5.membership.identity.MemberInfo
-import net.corda.v5.membership.identity.MemberX500Name
+import net.corda.v5.base.types.MemberX500Name
 import java.security.PublicKey
 
 class MemberInfoImpl(
