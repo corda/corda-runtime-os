@@ -8,7 +8,7 @@ import java.net.ServerSocket
 
 class IntrospiciereServer(appContext: AppContext = DefaultAppContext()) : Closeable {
 
-    var app: Javalin = Javalin.create()
+    private var app: Javalin = Javalin.create()
 
     init {
         val helloWorldController = HelloWorldController()
@@ -34,7 +34,7 @@ class IntrospiciereServer(appContext: AppContext = DefaultAppContext()) : Closea
         get() = app.port()
 
     override fun close() {
-        app.close()
+        app.stop()
     }
 
     private fun availablePort(startingPort: Int): Int {

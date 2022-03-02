@@ -9,12 +9,12 @@ import net.corda.introspiciere.payloads.MsgBatch
 internal class MessagesController(private val appContext: AppContext) {
 
     fun writeMessage() = Handler { ctx ->
-        val kafkaMessage = ctx.bodyAsClass<KafkaMessage>()
+        val kafkaMessage = ctx.bodyAsClass(KafkaMessage::class.java)
         appContext.messagesGateway.send(ctx.topicParam, kafkaMessage)
     }
 
     fun getMessages() = Handler { ctx ->
-        val (messages, nextBatchTimestamp) = when  {
+        val (messages, nextBatchTimestamp) = when {
             ctx.fromQuery < 0L -> appContext.messagesGateway.readFromEnd(ctx.topicParam, ctx.schemaQuery)
             ctx.fromQuery == 0L -> appContext.messagesGateway.readFromBeginning(ctx.topicParam, ctx.schemaQuery)
             else -> appContext.messagesGateway.readFrom(ctx.topicParam, ctx.schemaQuery, ctx.fromQuery)

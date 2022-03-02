@@ -1,4 +1,4 @@
-package net.corda.testdoubles
+package net.corda.testdoubles.streams
 
 import org.junit.jupiter.api.extension.ExtendWith
 

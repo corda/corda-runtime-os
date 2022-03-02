@@ -1,5 +1,6 @@
-package net.corda.testdoubles
+package net.corda.testdoubles.streams
 
+import net.corda.testdoubles.GlobalVariableNotInitialised
 import org.junit.jupiter.api.extension.AfterEachCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
@@ -16,13 +17,13 @@ internal class StandardStreamsExtension : BeforeEachCallback, AfterEachCallback 
 }
 
 val inMemoryStdin: InMemoryStream
-    get() = streams[0] ?: throw InMemoryStandardStreamNotInitException("stdin")
+    get() = streams[0] ?: throw GlobalVariableNotInitialised(::inMemoryStdin)
 
 val inMemoryStdout: InMemoryStream
-    get() = streams[1] ?: throw InMemoryStandardStreamNotInitException("stdout")
+    get() = streams[1] ?: throw GlobalVariableNotInitialised(::inMemoryStdout)
 
 val inMemoryStderr: InMemoryStream
-    get() = streams[2] ?: throw InMemoryStandardStreamNotInitException("stderr")
+    get() = streams[2] ?: throw GlobalVariableNotInitialised(::inMemoryStderr)
 
 private var streams: Array<InMemoryStream?> = arrayOf(null, null, null)
 
