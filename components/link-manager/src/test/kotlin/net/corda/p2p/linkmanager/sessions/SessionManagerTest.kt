@@ -192,7 +192,6 @@ class SessionManagerTest {
         }
     }
 
-
     private val sessionManager = SessionManagerImpl(
         networkMap,
         cryptoService,
@@ -203,9 +202,8 @@ class SessionManagerTest {
         mock(),
         protocolFactory,
         sessionReplayer,
-        clock,
-        mockScheduledExecutor
-    ).apply {
+        clock
+    ) { mockScheduledExecutor }.apply {
         setRunning()
         configHandler.applyNewConfiguration(
             SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
@@ -213,6 +211,7 @@ class SessionManagerTest {
             mock(),
         )
         heartbeatConfigHandler.applyNewConfiguration(configNoHeartbeat, null, mock())
+        createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]!!(resources)
     }
 
     private fun MessageDigest.hash(data: ByteArray): ByteArray {
@@ -897,9 +896,8 @@ class SessionManagerTest {
             mock(),
             protocolFactory,
             sessionReplayer,
-            clock,
-            mockScheduledExecutor
-        ).apply {
+            clock
+        ) { mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
                 SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
@@ -940,9 +938,8 @@ class SessionManagerTest {
             mock(),
             protocolFactory,
             sessionReplayer,
-            clock,
-            mockScheduledExecutor
-        ).apply {
+            clock
+        ) { mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
                 SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
@@ -998,9 +995,8 @@ class SessionManagerTest {
             mock(),
             protocolFactory,
             sessionReplayer,
-            clock,
-            mockScheduledExecutor
-        ).apply {
+            clock
+        ) { mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
                 SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
@@ -1068,9 +1064,8 @@ class SessionManagerTest {
             mock(),
             protocolFactory,
             sessionReplayer,
-            clock,
-            mockScheduledExecutor
-        ).apply {
+            clock
+        ) { mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
                 SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
@@ -1144,9 +1139,8 @@ class SessionManagerTest {
             mock(),
             protocolFactory,
             sessionReplayer,
-            clock,
-            mockScheduledExecutor
-        ).apply {
+            clock
+        ) { mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
                 SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
@@ -1225,9 +1219,8 @@ class SessionManagerTest {
             mock(),
             protocolFactory,
             sessionReplayer,
-            clock,
-            mockScheduledExecutor
-        ).apply {
+            clock
+        ) { mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
                 SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
@@ -1309,9 +1302,8 @@ class SessionManagerTest {
             mock(),
             protocolFactory,
             sessionReplayer,
-            clock,
-            mockScheduledExecutor
-        ).apply {
+            clock
+        ) { mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
                 SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
