@@ -1,9 +1,7 @@
 package net.corda.messagebus.db.persistence
 
 import com.typesafe.config.Config
-import net.corda.db.core.InMemoryDataSourceFactory
 import net.corda.db.core.PostgresDataSourceFactory
-import net.corda.messagebus.api.configuration.getStringOrNull
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import javax.persistence.EntityManagerFactory
@@ -15,20 +13,15 @@ fun EntityManagerFactoryFactory.create(
     entities: List<Class<out Any>>,
 ): EntityManagerFactory {
 
-    val jdbcUrl = dbConfig.getStringOrNull("jdbc.url")
-    val username = dbConfig.getStringOrNull("user")
-    val pass = dbConfig.getStringOrNull("pass")
+    val jdbcUrl = dbConfig.getString("jdbc.url")
+    val username = dbConfig.getString("user")
+    val pass = dbConfig.getString("pass")
 
-    val dbSource =
-        if (jdbcUrl == null || username == null || pass == null || jdbcUrl.contains("hsqldb")) {
-            InMemoryDataSourceFactory().create(persistenceName)
-        } else {
-            PostgresDataSourceFactory().create(
-                jdbcUrl,
-                username,
-                pass
-            )
-        }
+    val dbSource = PostgresDataSourceFactory().create(
+        jdbcUrl,
+        username,
+        pass
+    )
 
     return create(
         persistenceName,
