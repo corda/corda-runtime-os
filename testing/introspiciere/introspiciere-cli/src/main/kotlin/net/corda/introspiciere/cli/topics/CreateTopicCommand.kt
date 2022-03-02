@@ -1,5 +1,6 @@
 package net.corda.introspiciere.cli.topics
 
+import net.corda.introspiciere.cli.appendToStdout
 import picocli.CommandLine
 import picocli.CommandLine.Option
 
@@ -8,6 +9,10 @@ import picocli.CommandLine.Option
  */
 @CommandLine.Command(name = "create")
 class CreateTopicCommand : BaseTopicCommand() {
+
+    companion object {
+        internal const val successMessage = "Topic %s created successfully"
+    }
 
     @Option(names = ["--partitions"], description = ["Number of partitions when creating the topic."])
     private var partitions: Int? = null
@@ -21,6 +26,6 @@ class CreateTopicCommand : BaseTopicCommand() {
     override fun run() {
         val config = configArray.map { it.split("=") }.associate { it[0] to it[1] }
         httpClient.createTopic(topicName, partitions, replicationFactor, config)
-        println("Topic $topicName created successfully")
+        appendToStdout(String.format(successMessage, topicName))
     }
 }

@@ -24,7 +24,7 @@ class DeleteTopicCommandTest {
         assertEquals(
             String.format(DeleteTopicCommand.successMessage, "topic1"),
             inMemoryStdout.readText().trim(),
-            "expeced output"
+            "expected output"
         )
     }
 }
