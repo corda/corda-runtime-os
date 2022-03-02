@@ -32,6 +32,11 @@ interface MembershipGroupReader {
     val cpiWhiteList: CPIWhiteList
 
     /**
+     * Returns a list of all visible [MemberInfo]s in the group for this holding identity.
+     */
+    fun lookup(): Collection<MemberInfo>
+
+    /**
      * Looks up a group member of the specified group by the public key SHA-256 hash
      * belonging to the member.
      * If the member is not found then the null value is returned.
