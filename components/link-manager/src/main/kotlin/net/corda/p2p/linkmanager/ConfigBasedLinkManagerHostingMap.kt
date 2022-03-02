@@ -6,7 +6,8 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.CONFIG_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITIES_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_GPOUP_ID
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_TENANT_ID
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_IDENTITY_TENANT_ID
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_TLS_TENANT_ID
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_X500_NAME
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_TLS_CERTIFICATES
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -58,7 +59,7 @@ class ConfigBasedLinkManagerHostingMap(
         ): CompletableFuture<Unit> {
             locallyHostedIdentityToTenantId.clear()
             newConfiguration.forEach { identity ->
-                locallyHostedIdentityToTenantId[identity.holdingIdentity.toHoldingIdentity()] = identity.tenantId
+                locallyHostedIdentityToTenantId[identity.holdingIdentity.toHoldingIdentity()] = identity.identityTenantId
                 listeners.forEach { listener ->
                     listener.identityAdded(identity)
                 }
@@ -76,11 +77,13 @@ class ConfigBasedLinkManagerHostingMap(
             val x500name = identityConfig.getString(LOCALLY_HOSTED_IDENTITY_X500_NAME)
             val groupId = identityConfig.getString(LOCALLY_HOSTED_IDENTITY_GPOUP_ID)
             val certificates = identityConfig.getStringList(LOCALLY_HOSTED_TLS_CERTIFICATES)
-            val tenantId = identityConfig.getString(LOCALLY_HOSTED_IDENTITY_TENANT_ID)
+            val tlsTenantId = identityConfig.getString(LOCALLY_HOSTED_IDENTITY_TLS_TENANT_ID)
+            val identityTenantId = identityConfig.getString(LOCALLY_HOSTED_IDENTITY_IDENTITY_TENANT_ID)
             HostingMapListener.IdentityInfo(
                 holdingIdentity = HoldingIdentity(x500name, groupId),
                 tlsCertificates = certificates,
-                tenantId = tenantId,
+                tlsTenantId = tlsTenantId,
+                identityTenantId = identityTenantId,
             )
         }
     }

@@ -63,7 +63,8 @@ class TlsCertificatesPublisherTest {
             "Group1",
         ),
         listOf("one", "two"),
-        "id",
+        "id1",
+        "id2"
     )
 
     private val publisher = TlsCertificatesPublisher(
@@ -97,7 +98,7 @@ class TlsCertificatesPublisherTest {
                     Record(
                         GATEWAY_TLS_CERTIFICATES, "Group1-Alice",
                         GatewayTlsCertificates(
-                            "id",
+                            "id1",
                             listOf("one", "two"),
                         )
                     )
@@ -148,8 +149,8 @@ class TlsCertificatesPublisherTest {
             )
 
             assertThat(publishedRecords.allValues).containsExactly(
-                listOf(Record(GATEWAY_TLS_CERTIFICATES, "Group1-Alice", GatewayTlsCertificates("id", identityInfo.tlsCertificates))),
-                listOf(Record(GATEWAY_TLS_CERTIFICATES, "Group1-Alice", GatewayTlsCertificates("id", certificatesTwo))),
+                listOf(Record(GATEWAY_TLS_CERTIFICATES, "Group1-Alice", GatewayTlsCertificates("id1", identityInfo.tlsCertificates))),
+                listOf(Record(GATEWAY_TLS_CERTIFICATES, "Group1-Alice", GatewayTlsCertificates("id1", certificatesTwo))),
             )
         }
 
@@ -228,7 +229,7 @@ class TlsCertificatesPublisherTest {
             processor.firstValue.onSnapshot(
                 mapOf(
                     "Group1-Alice" to GatewayTlsCertificates(
-                        identityInfo.tenantId,
+                        identityInfo.tlsTenantId,
                         identityInfo.tlsCertificates,
                     )
                 )
@@ -245,7 +246,7 @@ class TlsCertificatesPublisherTest {
             processor.firstValue.onSnapshot(
                 mapOf(
                     "Group1-Alice" to GatewayTlsCertificates(
-                        identityInfo.tenantId,
+                        identityInfo.tlsTenantId,
                         identityInfo.tlsCertificates,
                     )
                 )
@@ -274,7 +275,7 @@ class TlsCertificatesPublisherTest {
                     "",
                     "Group1-Alice",
                     GatewayTlsCertificates(
-                        identityInfo.tenantId,
+                        identityInfo.tlsTenantId,
                         identityInfo.tlsCertificates,
                     )
                 ),

@@ -271,7 +271,7 @@ class ConfigureAll : Runnable {
                 "-k",
                 RunJar.kafkaServers(namespaceName),
                 "link-manager",
-                "--locallyHostedIdentity=$x500name:$groupId:$tenantId:${tlsCertificates(host).absolutePath}",
+                "--locallyHostedIdentity=$x500name:$groupId:$tenantId:$tenantId:${tlsCertificates(host).absolutePath}",
             ) + linkManagerExtraArguments
         ).run()
     }

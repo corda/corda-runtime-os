@@ -6,7 +6,8 @@ import net.corda.libs.configuration.publish.CordaConfigurationKey
 import net.corda.libs.configuration.publish.CordaConfigurationVersion
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_GPOUP_ID
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_TENANT_ID
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_IDENTITY_TENANT_ID
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_TLS_TENANT_ID
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_X500_NAME
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_TLS_CERTIFICATES
 import net.corda.p2p.crypto.ProtocolMode
@@ -27,7 +28,8 @@ class LinkManagerConfiguration : ConfigProducer() {
         names = ["--locallyHostedIdentity"],
         description = [
             "Local hosted identity (in the form of " +
-                "<x500Name>:<groupId>:<tenantId>:<pemTlsCertificate1File>:<pemTlsCertificate2File>...)"
+                "<x500Name>:<groupId>:<identityTenantId>:" +
+                "<tlsTenantId>:<pemTlsCertificate1File>:<pemTlsCertificate2File>...)"
         ],
         required = true,
     )
@@ -79,18 +81,20 @@ class LinkManagerConfiguration : ConfigProducer() {
         val locallyHostedIdentities = locallyHostedIdentity.map {
             it.split(":")
         }.onEach {
-            if (it.size < 3) {
+            if (it.size < 4) {
                 throw TypeConversionException(
                     "locallyHostedIdentity must have the format " +
-                        "<x500Name>:<groupId>:<tenantId>:<pemTlsCertificate1File>:<pemTlsCertificate2File>"
+                        "<x500Name>:<groupId>:<identityTenantId>:" +
+                        "<tlsTenantId>:<pemTlsCertificate1File>:<pemTlsCertificate2File>"
                 )
             }
         }.map {
             mapOf(
                 LOCALLY_HOSTED_IDENTITY_X500_NAME to it[0],
                 LOCALLY_HOSTED_IDENTITY_GPOUP_ID to it[1],
-                LOCALLY_HOSTED_IDENTITY_TENANT_ID to it[2],
-                LOCALLY_HOSTED_TLS_CERTIFICATES to it.drop(3).map {
+                LOCALLY_HOSTED_IDENTITY_IDENTITY_TENANT_ID to it[2],
+                LOCALLY_HOSTED_IDENTITY_TLS_TENANT_ID to it[3],
+                LOCALLY_HOSTED_TLS_CERTIFICATES to it.drop(4).map {
                     File(it)
                 }.map {
                     it.readText()

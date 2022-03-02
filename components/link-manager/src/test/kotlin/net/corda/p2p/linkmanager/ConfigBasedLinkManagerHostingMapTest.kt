@@ -49,7 +49,8 @@ class ConfigBasedLinkManagerHostingMapTest {
                                 LinkManagerConfiguration.LOCALLY_HOSTED_IDENTITY_X500_NAME to identity.x500Name,
                                 LinkManagerConfiguration.LOCALLY_HOSTED_IDENTITY_GPOUP_ID to identity.groupId,
                                 LinkManagerConfiguration.LOCALLY_HOSTED_TLS_CERTIFICATES to certificate,
-                                LinkManagerConfiguration.LOCALLY_HOSTED_IDENTITY_TENANT_ID to "${identity.groupId}:${identity.x500Name}"
+                                LinkManagerConfiguration.LOCALLY_HOSTED_IDENTITY_TLS_TENANT_ID to "TLS:${identity.groupId}:${identity.x500Name}",
+                                LinkManagerConfiguration.LOCALLY_HOSTED_IDENTITY_IDENTITY_TENANT_ID to "ID:${identity.groupId}:${identity.x500Name}"
                             )
                         }
                     )
@@ -96,12 +97,14 @@ class ConfigBasedLinkManagerHostingMapTest {
                 HostingMapListener.IdentityInfo(
                     bob.toHoldingIdentity(),
                     localTlsCertificates[bob]!!,
-                    "${bob.groupId}:${bob.x500Name}"
+                    "TLS:${bob.groupId}:${bob.x500Name}",
+                    "ID:${bob.groupId}:${bob.x500Name}",
                 ),
                 HostingMapListener.IdentityInfo(
                     alice.toHoldingIdentity(),
                     localTlsCertificates[alice]!!,
-                    "${alice.groupId}:${alice.x500Name}"
+                    "TLS:${alice.groupId}:${alice.x500Name}",
+                    "ID:${alice.groupId}:${alice.x500Name}",
                 ),
             )
     }

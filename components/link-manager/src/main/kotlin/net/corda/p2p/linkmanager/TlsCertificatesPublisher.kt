@@ -56,7 +56,7 @@ internal class TlsCertificatesPublisher(
                 val record = Record(
                     GATEWAY_TLS_CERTIFICATES, id,
                     GatewayTlsCertificates(
-                        identity.tenantId,
+                        identity.tlsTenantId,
                         identity.tlsCertificates
                     )
                 )

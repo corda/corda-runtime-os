@@ -16,7 +16,8 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.HEARTBEAT_MESSAGE_PERIOD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITIES_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_GPOUP_ID
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_TENANT_ID
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_IDENTITY_TENANT_ID
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_TLS_TENANT_ID
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_X500_NAME
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_TLS_CERTIFICATES
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_MESSAGE_SIZE_KEY
@@ -245,8 +246,11 @@ class P2PLayerEndToEndTest {
             ConfigPublisherImpl(CONFIG_TOPIC, it)
         }
         val gatewayConfig = createGatewayConfig(p2pPort, p2pAddress, sslConfig)
-        val tenantId by lazy {
-            "$GROUP_ID:$x500Name"
+        val tlsTenantId by lazy {
+            GROUP_ID
+        }
+        val identityTenantId by lazy {
+            x500Name
         }
         val linkManagerConfig by lazy {
             val locallyHostedIdentities = ConfigValueFactory.fromAnyRef(
@@ -255,7 +259,8 @@ class P2PLayerEndToEndTest {
                         LOCALLY_HOSTED_IDENTITY_X500_NAME to x500Name,
                         LOCALLY_HOSTED_IDENTITY_GPOUP_ID to GROUP_ID,
                         LOCALLY_HOSTED_TLS_CERTIFICATES to tlsCertificatesPem,
-                        LOCALLY_HOSTED_IDENTITY_TENANT_ID to tenantId,
+                        LOCALLY_HOSTED_IDENTITY_TLS_TENANT_ID to tlsTenantId,
+                        LOCALLY_HOSTED_IDENTITY_IDENTITY_TENANT_ID to identityTenantId,
                     )
                 )
             )
@@ -398,7 +403,7 @@ class P2PLayerEndToEndTest {
                             CRYPTO_KEYS_TOPIC,
                             "key-1",
                             TenantKeys(
-                                tenantId,
+                                identityTenantId,
                                 KeyPairEntry(
                                     identitiesKeyAlgorithm,
                                     ByteBuffer.wrap(keyPair.public.encoded),
@@ -430,7 +435,7 @@ class P2PLayerEndToEndTest {
                     CRYPTO_KEYS_TOPIC,
                     alias,
                     TenantKeys(
-                        tenantId,
+                        tlsTenantId,
                         keyPair,
                     )
                 )
