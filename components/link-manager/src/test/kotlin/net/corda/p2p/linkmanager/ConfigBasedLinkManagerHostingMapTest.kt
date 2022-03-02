@@ -80,10 +80,10 @@ class ConfigBasedLinkManagerHostingMapTest {
 
     @Test
     fun `applyNewConfiguration notify the listeners of new identity`() {
-        val identities = mutableMapOf<HoldingIdentity, Collection<PemCertificates>>()
+        val identities = mutableListOf<HostingMapListener.IdentityInfo>()
         val listener = object : HostingMapListener {
             override fun identityAdded(identityInfo: HostingMapListener.IdentityInfo) {
-                identities[identityInfo.holdingIdentity] = identityInfo.tlsCertificates
+                identities += identityInfo
             }
         }
         setRunning()
@@ -92,8 +92,18 @@ class ConfigBasedLinkManagerHostingMapTest {
         configHandler.applyNewConfiguration(typedConfig, null, configResourcesHolder)
 
         assertThat(identities)
-            .containsEntry(bob.toHoldingIdentity(), localTlsCertificates[bob])
-            .containsEntry(alice.toHoldingIdentity(), localTlsCertificates[alice])
+            .containsExactlyInAnyOrder(
+                HostingMapListener.IdentityInfo(
+                    bob.toHoldingIdentity(),
+                    localTlsCertificates[bob]!!,
+                    "${bob.groupId}:${bob.x500Name}"
+                ),
+                HostingMapListener.IdentityInfo(
+                    alice.toHoldingIdentity(),
+                    localTlsCertificates[alice]!!,
+                    "${alice.groupId}:${alice.x500Name}"
+                ),
+            )
     }
 
     private fun setRunning() {

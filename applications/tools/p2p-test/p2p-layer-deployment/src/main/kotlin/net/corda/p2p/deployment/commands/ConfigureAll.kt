@@ -103,7 +103,7 @@ class ConfigureAll : Runnable {
     }
 
     private val tenantId by lazy {
-        "$groupId:$x500name"
+        "$groupId|$x500name"
     }
 
     private fun tlsCertificates(host: String): File {
