@@ -24,14 +24,16 @@ The file provided on the `--keys-config` CLI parameter should have the following
 {
     "keys": [
         {
-          "alias": "key1",
+          "publish_alias": "key1",
+          "keystore_alias": "1",
           "keystoreFile": "<path_to_the_keystore_file>",
           "password": "keystore-password",
           "algo": "RSA",
           "tenantId": "tenantID"
         },
         {
-          "alias": "key2",
+          "publish_alias": "key2",
+          "keystore_alias": "2",
           "keystoreFile": "<path_to_the_keystore_file>",
           "password": "keystore-password",
           "algo": "ECDSA",
@@ -40,14 +42,16 @@ The file provided on the `--keys-config` CLI parameter should have the following
     ]
 }
 ```
-Note: the `alias` field acts as a unique identifier for each key pair entry and thus needs to be unique for each entry. If you want to deploy multiple identities behind a single host, make sure you use a different alias for the entry of each identity. 
-
-Note: The `tenantId` is a non-unique ID for the tenant.
-
-Key files are expected to be `.jks` files. You can create them using Java's `keytool`, e.g.:
+Where:
+* `publish_alias` is a unique name to publish the keys under. If omitted, a random UUID will be used.
+* `keystore_alias` is the keys alias in the key store. If omitted, the first alias will be used.
+* `keystoreFile` is a valid JKS keystore file. You can create them using Java's `keytool`, e.g.:
 ```
 keytool -genkeypair -alias ec -keyalg EC -storetype JKS -keystore ec_key.jks -storepass 123456
 ```
+* `password` is the JKS keystore password.
+* `algo` either `RSA` or `ECDSA`. If omitted, the private key algorithm will be used.
+* `tenantId` A non-unique ID for the tenant
 
 ### Populating a custom topic
 

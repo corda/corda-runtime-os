@@ -771,7 +771,7 @@ class GatewayIntegrationTest : TestBase() {
                 // Client should now pass
                 testClientWith(aliceAddress, firstCertificatesAuthority.trustStoreKeyStore)
 
-                // Delete the trust store
+                // Delete the certificates
                 val subject = PrincipalUtil.getSubjectX509Principal(
                     keyStore.keyStore.getCertificate(keyStore.keyStore.aliases().nextElement()) as X509Certificate
                 ).name

@@ -241,17 +241,13 @@ class ConfigureAll : Runnable {
         val configurationMap = mapOf(
             "keys" to listOf(
                 mapOf(
-                    "alias" to "ec",
                     "keystoreFile" to keyStoreFile.absolutePath,
                     "password" to "password",
-                    "algo" to "ECDSA",
                     "tenantId" to tenantId,
                 ),
                 mapOf(
-                    "alias" to "$host.$x500name.rsa",
                     "keystoreFile" to sslKeyStore.absolutePath,
                     "password" to "password",
-                    "algo" to "RSA",
                     "tenantId" to tenantId,
                 )
             ),
