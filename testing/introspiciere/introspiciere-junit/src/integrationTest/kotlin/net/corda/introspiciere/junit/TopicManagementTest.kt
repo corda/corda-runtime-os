@@ -1,8 +1,9 @@
 package net.corda.introspiciere.junit
 
 import net.corda.introspiciere.domain.TopicDefinition
-import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
 
@@ -17,8 +18,8 @@ internal class TopicManagementTest {
         introspiciere.client.createTopic(name)
 
         val topics = introspiciere.appContext.topicGateway.findAll()
-        Assertions.assertEquals(1, topics.size, "Only one topic")
-        Assertions.assertEquals(name, topics.single(), "Topic name")
+        assertEquals(1, topics.size, "Only one topic")
+        assertEquals(name, topics.single(), "Topic name")
     }
 
     @Test
@@ -27,7 +28,7 @@ internal class TopicManagementTest {
         introspiciere.appContext.topicGateway.create(TopicDefinition(names[0]))
         introspiciere.appContext.topicGateway.create(TopicDefinition(names[1]))
 
-        Assertions.assertEquals(names.toSet(), introspiciere.client.listTopics())
+        assertEquals(names.toSet(), introspiciere.client.listTopics())
     }
 
     @Test
@@ -36,14 +37,14 @@ internal class TopicManagementTest {
         introspiciere.appContext.topicGateway.create(definition)
 
         val description = introspiciere.client.describeTopic(definition.name)
-        Assertions.assertEquals(definition.name, description.name, "Topic name")
-        Assertions.assertEquals(definition.partitions, description.partitions, "Topic partitions")
-        Assertions.assertEquals(definition.replicationFactor, description.replicas, "Topic replica")
+        assertEquals(definition.name, description.name, "Topic name")
+        assertEquals(definition.partitions, description.partitions, "Topic partitions")
+        assertEquals(definition.replicationFactor, description.replicas, "Topic replica")
     }
 
     @Test
+    @Disabled
     fun `delete a topic`() {
-        Thread.sleep(1000)
         val definition = TopicDefinition("topic1")
         introspiciere.appContext.topicGateway.create(definition)
 
