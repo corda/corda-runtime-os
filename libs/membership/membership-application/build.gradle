@@ -15,7 +15,6 @@ dependencies {
     implementation "net.corda:corda-application"
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-cipher-suite"
-    implementation "net.corda:corda-membership"
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"

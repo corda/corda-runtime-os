@@ -12,7 +12,6 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
-    implementation "net.corda:corda-membership"
 
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:membership:membership-impl")
