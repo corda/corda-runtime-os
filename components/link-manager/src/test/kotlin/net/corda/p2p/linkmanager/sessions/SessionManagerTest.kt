@@ -518,6 +518,24 @@ class SessionManagerTest {
     }
 
     @Test
+    fun `when responder hello is received, but tenant ID cannot be found to sign, message is dropped`() {
+        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
+        whenever(linkManagerHostingMap.getTenantId(any())).thenReturn(null)
+        val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
+
+        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
+        val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
+        val responseMessage = sessionManager.processSessionMessage(LinkInMessage(responderHello))
+
+        assertThat(responseMessage).isNull()
+        loggingInterceptor.assertSingleWarningContains(
+            "Received ${ResponderHelloMessage::class.java.simpleName} with sessionId " +
+                "${sessionState.sessionId} but $OUR_PARTY has no tenant ID." +
+                " The message was discarded."
+        )
+    }
+
+    @Test
     fun `when responder hello is received, but network type is missing from network map, message is dropped`() {
         whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
         val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
@@ -775,6 +793,31 @@ class SessionManagerTest {
             .thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
         whenever(protocolResponder.generateOurHandshakeMessage(eq(OUR_KEY.public), any()))
             .thenThrow(SecurityException(""))
+        val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
+
+        assertThat(responseMessage).isNull()
+        loggingInterceptor.assertSingleWarningContains("The message was discarded.")
+    }
+
+    @Test
+    fun `when initiator handshake is received, but our tenant ID not found to sign responder handshake, message is dropped`() {
+        val sessionId = "some-session-id"
+        val initiatorPublicKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
+        val responderPublicKeyHash = messageDigest.hash(OUR_KEY.public.encoded)
+        whenever(protocolResponder.generateResponderHello()).thenReturn(mock())
+        whenever(linkManagerHostingMap.getTenantId(any())).doReturn(null)
+
+        val initiatorHelloHeader = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
+        val initiatorHelloMessage = InitiatorHelloMessage(initiatorHelloHeader, ByteBuffer.wrap(PEER_KEY.public.encoded),
+            PROTOCOL_MODES, InitiatorHandshakeIdentity(ByteBuffer.wrap(messageDigest.hash(PEER_KEY.public.encoded)), GROUP_ID))
+        sessionManager.processSessionMessage(LinkInMessage(initiatorHelloMessage))
+
+        val initiatorHandshakeHeader = CommonHeader(MessageType.INITIATOR_HANDSHAKE, 1, sessionId, 3, Instant.now().toEpochMilli())
+        val initiatorHandshake = InitiatorHandshakeMessage(initiatorHandshakeHeader, RANDOM_BYTES, RANDOM_BYTES)
+        whenever(protocolResponder.getInitiatorIdentity())
+            .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
+        whenever(protocolResponder.validatePeerHandshakeMessage(initiatorHandshake, PEER_KEY.public, ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC))
+            .thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
 
         assertThat(responseMessage).isNull()
