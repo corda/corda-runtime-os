@@ -29,8 +29,8 @@ class PublicKeyConverterTest {
     @BeforeEach
     fun setup() {
         keyEncodingService = mock {
-            on { decodePublicKey(net.corda.membership.impl.PublicKeyConverterTest.IDENTITY_KEY) } doReturn identityKey
-            on { encodeAsString(net.corda.membership.impl.PublicKeyConverterTest.identityKey) } doReturn IDENTITY_KEY
+            on { decodePublicKey(IDENTITY_KEY) } doReturn identityKey
+            on { encodeAsString(identityKey) } doReturn IDENTITY_KEY
         }
         converters = listOf(PublicKeyConverter(keyEncodingService))
     }
