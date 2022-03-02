@@ -1,11 +1,10 @@
 package net.corda.messagebus.kafka.consumer
 
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.TOPIC
-import net.corda.messagebus.api.configuration.ConsumerConfig
-import net.corda.messagebus.api.constants.ConsumerRoles
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
+import net.corda.messagebus.kafka.config.ResolvedConsumerConfig
 import net.corda.messagebus.kafka.utils.toKafka
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
@@ -47,7 +46,7 @@ class CordaKafkaConsumerImplTest {
     private lateinit var partition: TopicPartition
     private val avroSchemaRegistry: AvroSchemaRegistry = mock()
     private val consumerRecord = CordaConsumerRecord("prefixtopic", 1, 1, "key", "value", 0)
-    private val consumerConfig = ConsumerConfig("group", "clientId", "prefix", ConsumerRoles.PUBSUB)
+    private val consumerConfig = ResolvedConsumerConfig("group", "clientId", "prefix")
 
     @BeforeEach
     fun beforeEach() {

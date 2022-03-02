@@ -1,9 +1,8 @@
 package net.corda.messagebus.kafka.producer
 
-import net.corda.messagebus.api.configuration.ProducerConfig
-import net.corda.messagebus.api.constants.ProducerRoles
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducerRecord
+import net.corda.messagebus.kafka.config.ResolvedProducerConfig
 import net.corda.messagebus.kafka.consumer.CordaKafkaConsumerImpl
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
@@ -30,7 +29,7 @@ import java.time.Duration
 
 class CordaKafkaProducerImplTest {
 
-    private val config: ProducerConfig = ProducerConfig("clientId", 1, "prefix", ProducerRoles.PUBLISHER)
+    private val config = ResolvedProducerConfig("clientId", 1, "prefix")
     private val producer: Producer<Any, Any> = mock()
     private val consumer: Consumer<Any, Any> = mock()
     private val cordaConsumer: CordaKafkaConsumerImpl<*, *> = CordaKafkaConsumerImpl(mock(), consumer, null)

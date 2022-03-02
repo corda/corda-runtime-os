@@ -17,7 +17,7 @@ import net.corda.schema.registry.AvroSchemaRegistry
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
-import java.util.*
+import java.util.UUID
 import kotlin.math.abs
 
 class CordaTransactionalDBProducerImpl(
