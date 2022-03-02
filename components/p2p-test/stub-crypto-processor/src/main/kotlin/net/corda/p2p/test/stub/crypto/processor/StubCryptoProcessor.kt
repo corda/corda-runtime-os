@@ -24,7 +24,7 @@ class StubCryptoProcessor(
     subscriptionFactory: SubscriptionFactory,
     instanceId: Int,
     configuration: SmartConfig
-) : SigningCryptoService {
+) : CryptoProcessor {
 
     private val keyPairEntryProcessor = KeyPairEntryProcessor()
     private val subscriptionConfig = SubscriptionConfig("crypto-service", CRYPTO_KEYS_TOPIC, instanceId)

@@ -4,7 +4,7 @@ import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.v5.crypto.SignatureSpec
 import java.security.PublicKey
 
-interface SigningCryptoService : LifecycleWithDominoTile {
+interface CryptoProcessor : LifecycleWithDominoTile {
     fun sign(
         tenantId: String,
         publicKey: PublicKey,

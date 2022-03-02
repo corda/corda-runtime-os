@@ -47,7 +47,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourId
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerHashNotInNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerNotInTheNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.validationFailedWarning
-import net.corda.p2p.test.stub.crypto.processor.SigningCryptoService
+import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.v5.base.annotations.VisibleForTesting
@@ -70,7 +70,7 @@ import kotlin.concurrent.write
 @Suppress("LongParameterList", "TooManyFunctions")
 open class SessionManagerImpl(
     private val networkMap: LinkManagerNetworkMap,
-    private val cryptoService: SigningCryptoService,
+    private val cryptoProcessor: CryptoProcessor,
     private val pendingOutboundSessionMessageQueues: LinkManager.PendingSessionMessageQueues,
     publisherFactory: PublisherFactory,
     private val configurationReaderService: ConfigurationReadService,
@@ -134,7 +134,7 @@ open class SessionManagerImpl(
         this::class.java.simpleName,
         coordinatorFactory,
         dependentChildren = setOf(
-            heartbeatManager.dominoTile, sessionReplayer.dominoTile, networkMap.dominoTile, cryptoService.dominoTile,
+            heartbeatManager.dominoTile, sessionReplayer.dominoTile, networkMap.dominoTile, cryptoProcessor.dominoTile,
             pendingOutboundSessionMessageQueues.dominoTile, publisher.dominoTile
         ),
         managedChildren = setOf(heartbeatManager.dominoTile, sessionReplayer.dominoTile, publisher.dominoTile),
@@ -373,7 +373,7 @@ open class SessionManagerImpl(
         }
 
         val signWithOurGroupId = { data: ByteArray ->
-            cryptoService.sign(
+            cryptoProcessor.sign(
                 tenantId,
                 ourMemberInfo.publicKey,
                 ourMemberInfo.getSignatureSpec(),
@@ -556,7 +556,7 @@ open class SessionManagerImpl(
         val response = try {
             val ourPublicKey = ourMemberInfo.publicKey
             val signData = { data: ByteArray ->
-                cryptoService.sign(
+                cryptoProcessor.sign(
                     tenantId,
                     ourMemberInfo.publicKey,
                     ourMemberInfo.getSignatureSpec(),
