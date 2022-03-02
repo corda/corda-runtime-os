@@ -10,6 +10,7 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import java.io.InputStream
 import java.nio.file.Path
+import java.nio.file.Paths
 import java.security.DigestInputStream
 import java.security.MessageDigest
 import java.util.jar.JarInputStream
@@ -56,7 +57,9 @@ internal object CPILoader {
                                 uncloseableInputStream,
                                 expansionLocation,
                                 cpkLocation = cpiLocation.plus("/${entry.name}"),
-                                verifySignature = verifySignature)
+                                verifySignature = verifySignature,
+                                cpkFileName = Paths.get(entry.name).fileName.toString()
+                            )
                             cpks += cpk
                             cpkMetadata += cpk.metadata
                         } else {

@@ -120,7 +120,8 @@ internal object CPKLoader {
         var cpkManifest: CPK.Manifest?,
         val libraryMap: NavigableMap<String, SecureHash>,
         var libraryConstraints: NavigableMap<String, SecureHash>,
-        var cpkDependencies: NavigableSet<CPK.Identifier>
+        var cpkDependencies: NavigableSet<CPK.Identifier>,
+        val cpkFileName: String?
     ) {
         @Suppress("ThrowsCount")
         fun validate() {
@@ -153,7 +154,9 @@ internal object CPKLoader {
 
             return CPKImpl(
                 metadata = metadata,
-                jarFile = JarFile(finalCPKFile, verifySignature)
+                jarFile = JarFile(finalCPKFile, verifySignature),
+                cpkPath = finalCPKFile.toPath(),
+                cpkFileName = cpkFileName
             )
         }
 
@@ -283,7 +286,8 @@ internal object CPKLoader {
         source: InputStream,
         cacheDir: Path?,
         cpkLocation: String?,
-        verifySignature: Boolean
+        verifySignature: Boolean,
+        cpkFileName: String?
     ): CPKContext {
         val ctx = CPKContext(
             buffer = ByteArray(DEFAULT_BUFFER_SIZE),
@@ -306,7 +310,8 @@ internal object CPKLoader {
                 { msg: String -> msg }
             } else {
                 { msg: String -> "$msg in CPK at $cpkLocation" }
-            }
+            },
+            cpkFileName = cpkFileName
         )
         var stream2BeFullyConsumed: InputStream = DigestInputStream(source, ctx.cpkDigest)
         val temporaryCPKFile = ctx.temporaryCPKFile
@@ -339,11 +344,11 @@ internal object CPKLoader {
         return ctx
     }
 
-    fun loadCPK(source: InputStream, cacheDir: Path?, cpkLocation: String?, verifySignature: Boolean) =
-        createContext(source, cacheDir, cpkLocation, verifySignature).buildCPK()
+    fun loadCPK(source: InputStream, cacheDir: Path?, cpkLocation: String?, verifySignature: Boolean, cpkFileName: String?) =
+        createContext(source, cacheDir, cpkLocation, verifySignature, cpkFileName).buildCPK()
 
     fun loadMetadata(source: InputStream, cpkLocation: String?, verifySignature: Boolean) =
-        createContext(source, null, cpkLocation, verifySignature).buildMetadata()
+        createContext(source, null, cpkLocation, verifySignature, null).buildMetadata()
 
     /**
      * [Iterator] for traversing every [Element] within a [NodeList].

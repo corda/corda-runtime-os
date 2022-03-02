@@ -26,8 +26,10 @@ interface CPK : AutoCloseable {
         fun from(inputStream : InputStream,
                  cacheDir : Path,
                  cpkLocation : String? = null,
-                 verifySignature : Boolean = jarSignatureVerificationEnabledByDefault()) : CPK =
-            CPKLoader.loadCPK(inputStream, cacheDir, cpkLocation, verifySignature)
+                 verifySignature : Boolean = jarSignatureVerificationEnabledByDefault(),
+                 cpkFileName: String? = null
+        ) : CPK =
+            CPKLoader.loadCPK(inputStream, cacheDir, cpkLocation, verifySignature, cpkFileName)
 
         @JvmStatic
         @JvmOverloads
@@ -197,6 +199,16 @@ interface CPK : AutoCloseable {
      * Stores the metadata associated with this [CPK] file
      */
     val metadata : Metadata
+
+    /**
+     * Path to cpk if it has been extracted or unpacked.  The filename
+     * part of the path should not be depended on and probably won't be the
+     * original name of the cpk.
+     */
+    val path : Path? get() = null
+
+    /** File name of cpk, if known */
+    val originalFileName : String? get() = null
 
     /**
      * Returns an [InputStream] with the content of the associated resource inside the [CPK] archive

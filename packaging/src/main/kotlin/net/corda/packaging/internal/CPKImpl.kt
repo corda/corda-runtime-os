@@ -6,6 +6,7 @@ import net.corda.packaging.PackagingException
 import net.corda.packaging.VersionComparator
 import net.corda.v5.crypto.SecureHash
 import java.io.IOException
+import java.nio.file.Path
 import java.security.cert.Certificate
 import java.util.NavigableSet
 import java.util.jar.JarFile
@@ -44,12 +45,23 @@ internal data class CPKMetadataImpl(
     )
 }
 
-internal class CPKImpl(override val metadata: CPK.Metadata, private val jarFile : JarFile) : CPK {
+internal class CPKImpl(
+    override val metadata: CPK.Metadata,
+    private val jarFile: JarFile,
+    private val cpkPath: Path,
+    private val cpkFileName: String?
+) : CPK {
     override fun getResourceAsStream(resourceName: String) = jarFile.getJarEntry(resourceName)
         ?.let(jarFile::getInputStream)
         ?: throw IOException("Unknown resource $resourceName")
 
     override fun close() = jarFile.close()
+
+    override val path: Path?
+        get() = cpkPath
+
+    override val originalFileName: String?
+        get() = cpkFileName
 }
 
 internal data class CPKFormatVersionImpl(override val major: Int, override val minor: Int) : CPK.FormatVersion {
