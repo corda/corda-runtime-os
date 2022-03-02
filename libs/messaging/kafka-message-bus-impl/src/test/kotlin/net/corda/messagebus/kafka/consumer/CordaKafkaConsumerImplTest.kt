@@ -1,5 +1,6 @@
 package net.corda.messagebus.kafka.consumer
 
+import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.TOPIC
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
@@ -55,7 +56,7 @@ class CordaKafkaConsumerImplTest {
         subscriptionConfig = SubscriptionConfig("groupName1", eventTopic)
 
         val (mockConsumer, mockTopicPartition) = createMockConsumerAndAddRecords(
-            eventTopic,
+            consumerConfig.topicPrefix + eventTopic,
             numberOfRecords,
             CordaOffsetResetStrategy.EARLIEST.toKafka()
         )
@@ -142,33 +143,20 @@ class CordaKafkaConsumerImplTest {
         )
 
         cordaKafkaConsumer.close()
-        verify(consumer, times(1)).close(Mockito.any(Duration::class.java))
-    }
-
-    @Test
-    fun testCloseWithDurationInvoked() {
-        consumer = mock()
-        cordaKafkaConsumer = CordaKafkaConsumerImpl(
-            consumerConfig,
-            consumer,
-            listener
-        )
-
-        cordaKafkaConsumer.close()
-        verify(consumer, times(1)).close(Duration.ZERO)
+        verify(consumer, times(1)).close()
     }
 
     @Test
     fun testCloseFailNoException() {
         consumer = mock()
-        doThrow(KafkaException()).whenever(consumer).close(any())
+        doThrow(KafkaException()).whenever(consumer).close()
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
             consumerConfig,
             consumer,
             listener
         )
         cordaKafkaConsumer.close()
-        verify(consumer, times(1)).close(Mockito.any(Duration::class.java))
+        verify(consumer, times(1)).close()
     }
 
     @Test
@@ -352,11 +340,15 @@ class CordaKafkaConsumerImplTest {
             consumer,
             listener
         )
-        doThrow(IllegalStateException()).whenever(consumer).position(TopicPartition("null", 0))
+        doThrow(IllegalStateException()).whenever(consumer).position(
+            TopicPartition(consumerConfig.topicPrefix + "null", 0)
+        )
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
-            cordaKafkaConsumer.position(net.corda.messagebus.api.CordaTopicPartition("null", 0))
+            cordaKafkaConsumer.position(CordaTopicPartition("null", 0))
         }
-        verify(consumer, times(1)).position(TopicPartition("null", 0))
+        verify(consumer, times(1)).position(
+            TopicPartition(consumerConfig.topicPrefix + "null", 0)
+        )
     }
 
     @Test
@@ -367,11 +359,15 @@ class CordaKafkaConsumerImplTest {
             consumer,
             listener
         )
-        doThrow(IllegalStateException()).whenever(consumer).seek(TopicPartition("null", 0), 0)
+        doThrow(IllegalStateException()).whenever(consumer).seek(
+            TopicPartition(consumerConfig.topicPrefix + "null", 0), 0
+        )
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
-            cordaKafkaConsumer.seek(net.corda.messagebus.api.CordaTopicPartition("null", 0), 0)
+            cordaKafkaConsumer.seek(CordaTopicPartition("null", 0), 0)
         }
-        verify(consumer, times(1)).seek(TopicPartition("null", 0), 0)
+        verify(consumer, times(1)).seek(
+            TopicPartition(consumerConfig.topicPrefix + "null", 0), 0
+        )
     }
 
     @Test
@@ -382,11 +378,15 @@ class CordaKafkaConsumerImplTest {
             consumer,
             listener
         )
-        doThrow(IllegalStateException()).whenever(consumer).seekToBeginning(mutableListOf(TopicPartition("test", 0)))
+        doThrow(IllegalStateException()).whenever(consumer).seekToBeginning(
+            mutableListOf(TopicPartition(consumerConfig.topicPrefix + "test", 0))
+        )
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
-            cordaKafkaConsumer.seekToBeginning(mutableListOf(net.corda.messagebus.api.CordaTopicPartition("test", 0)))
+            cordaKafkaConsumer.seekToBeginning(mutableListOf(CordaTopicPartition("test", 0)))
         }
-        verify(consumer, times(1)).seekToBeginning(mutableListOf(TopicPartition("test", 0)))
+        verify(consumer, times(1)).seekToBeginning(
+            mutableListOf(TopicPartition(consumerConfig.topicPrefix + "test", 0))
+        )
     }
 
     @Test
@@ -397,11 +397,15 @@ class CordaKafkaConsumerImplTest {
             consumer,
             listener
         )
-        doThrow(IllegalStateException()).whenever(consumer).beginningOffsets(mutableListOf(TopicPartition("test", 0)))
+        doThrow(IllegalStateException()).whenever(consumer).beginningOffsets(
+            mutableListOf(TopicPartition(consumerConfig.topicPrefix + "test", 0))
+        )
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
-            cordaKafkaConsumer.beginningOffsets(mutableListOf(net.corda.messagebus.api.CordaTopicPartition("test", 0)))
+            cordaKafkaConsumer.beginningOffsets(mutableListOf(CordaTopicPartition("test", 0)))
         }
-        verify(consumer, times(1)).beginningOffsets(mutableListOf(TopicPartition("test", 0)))
+        verify(consumer, times(1)).beginningOffsets(
+            mutableListOf(TopicPartition(consumerConfig.topicPrefix + "test", 0))
+        )
     }
 
     @Test
@@ -412,11 +416,12 @@ class CordaKafkaConsumerImplTest {
             consumer,
             listener
         )
-        doThrow(IllegalStateException()).whenever(consumer).endOffsets(mutableListOf(TopicPartition("test", 0)))
+        doThrow(IllegalStateException()).whenever(consumer)
+            .endOffsets(mutableListOf(TopicPartition(consumerConfig.topicPrefix + "test", 0)))
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
-            cordaKafkaConsumer.endOffsets(mutableListOf(net.corda.messagebus.api.CordaTopicPartition("test", 0)))
+            cordaKafkaConsumer.endOffsets(mutableListOf(CordaTopicPartition("test", 0)))
         }
-        verify(consumer, times(1)).endOffsets(mutableListOf(TopicPartition("test", 0)))
+        verify(consumer, times(1)).endOffsets(mutableListOf(TopicPartition(consumerConfig.topicPrefix + "test", 0)))
     }
 
     @Test
@@ -427,11 +432,14 @@ class CordaKafkaConsumerImplTest {
             consumer,
             listener
         )
-        doThrow(IllegalStateException()).whenever(consumer).resume(mutableListOf(TopicPartition("test", 0)))
+        doThrow(IllegalStateException()).whenever(consumer)
+            .resume(mutableListOf(TopicPartition(consumerConfig.topicPrefix + "test", 0)))
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
-            cordaKafkaConsumer.resume(mutableListOf(net.corda.messagebus.api.CordaTopicPartition("test", 0)))
+            cordaKafkaConsumer.resume(mutableListOf(CordaTopicPartition("test", 0)))
         }
-        verify(consumer, times(1)).resume(mutableListOf(TopicPartition("test", 0)))
+        verify(consumer, times(1)).resume(
+            mutableListOf(TopicPartition(consumerConfig.topicPrefix + "test", 0))
+        )
     }
 
     @Test
@@ -442,11 +450,14 @@ class CordaKafkaConsumerImplTest {
             consumer,
             listener
         )
-        doThrow(IllegalStateException()).whenever(consumer).pause(mutableListOf(TopicPartition("test", 0)))
+        doThrow(IllegalStateException()).whenever(consumer)
+            .pause(mutableListOf(TopicPartition(consumerConfig.topicPrefix + "test", 0)))
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
-            cordaKafkaConsumer.pause(mutableListOf(net.corda.messagebus.api.CordaTopicPartition("test", 0)))
+            cordaKafkaConsumer.pause(mutableListOf(CordaTopicPartition("test", 0)))
         }
-        verify(consumer, times(1)).pause(mutableListOf(TopicPartition("test", 0)))
+        verify(consumer, times(1)).pause(
+            mutableListOf(TopicPartition(consumerConfig.topicPrefix + "test", 0))
+        )
     }
 
     @Test
