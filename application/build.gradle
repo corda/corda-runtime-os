@@ -11,11 +11,10 @@ dependencies {
 
     api platform(project(':corda-api'))
     api project(":base")
-    api project(":membership-identity")
+    api project(":membership")
     api project(":serialization")
 
     implementation project(":crypto")
-    implementation project(":membership")
 
     implementation "org.bouncycastle:bcprov-jdk15on:$bouncycastleVersion"
     implementation "org.bouncycastle:bcpkix-jdk15on:$bouncycastleVersion"

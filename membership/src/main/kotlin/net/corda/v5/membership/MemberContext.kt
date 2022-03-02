@@ -1,4 +1,4 @@
-package net.corda.v5.membership.identity
+package net.corda.v5.membership
 
 import net.corda.v5.base.types.LayeredPropertyMap
 

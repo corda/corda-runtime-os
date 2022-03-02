@@ -4,7 +4,7 @@ import net.corda.v5.application.injection.CordaFlowInjectable
 import net.corda.v5.application.injection.CordaServiceInjectable
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.membership.identity.MemberInfo
+import net.corda.v5.membership.MemberInfo
 import java.security.PublicKey
 
 /**

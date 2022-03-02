@@ -1,4 +1,4 @@
-package net.corda.v5.membership.identity;
+package net.corda.v5.membership;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
