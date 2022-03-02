@@ -1,20 +1,20 @@
-package net.corda.membership.identity
+package net.corda.membership.impl
 
-import net.corda.membership.identity.MemberInfoExtension.Companion.IDENTITY_KEYS
-import net.corda.membership.identity.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
-import net.corda.membership.identity.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.identity.MemberInfoExtension.Companion.PARTY_OWNING_KEY
-import net.corda.membership.identity.MemberInfoExtension.Companion.PLATFORM_VERSION
-import net.corda.membership.identity.MemberInfoExtension.Companion.SERIAL
-import net.corda.membership.identity.MemberInfoExtension.Companion.STATUS
-import net.corda.membership.identity.MemberInfoExtension.Companion.endpoints
-import net.corda.membership.identity.MemberInfoExtension.Companion.softwareVersion
+import net.corda.membership.impl.MemberInfoExtension.Companion.IDENTITY_KEYS
+import net.corda.membership.impl.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_NAME
+import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_OWNING_KEY
+import net.corda.membership.impl.MemberInfoExtension.Companion.PLATFORM_VERSION
+import net.corda.membership.impl.MemberInfoExtension.Companion.SERIAL
+import net.corda.membership.impl.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.impl.MemberInfoExtension.Companion.endpoints
+import net.corda.membership.impl.MemberInfoExtension.Companion.softwareVersion
 import net.corda.v5.base.util.parse
 import net.corda.v5.base.util.parseList
-import net.corda.v5.membership.identity.MGMContext
-import net.corda.v5.membership.identity.MemberContext
-import net.corda.v5.membership.identity.MemberInfo
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.membership.MGMContext
+import net.corda.v5.membership.MemberContext
+import net.corda.v5.membership.MemberInfo
 import java.security.PublicKey
 
 class MemberInfoImpl(

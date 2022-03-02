@@ -1,8 +1,8 @@
-package net.corda.membership.identity
+package net.corda.membership.impl
 
 import net.corda.layeredpropertymap.CustomPropertyConverter
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
-import net.corda.membership.identity.converter.PublicKeyConverter
+import net.corda.membership.impl.converter.PublicKeyConverter
 import net.corda.v5.base.exceptions.ValueNotFoundException
 import net.corda.v5.base.util.parse
 import net.corda.v5.base.util.parseList

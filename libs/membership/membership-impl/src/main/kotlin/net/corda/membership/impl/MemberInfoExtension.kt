@@ -1,11 +1,11 @@
-package net.corda.membership.identity
+package net.corda.membership.impl
 
 import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.v5.base.util.parse
 import net.corda.v5.base.util.parseList
 import net.corda.v5.crypto.PublicKeyHash
-import net.corda.v5.membership.identity.EndpointInfo
-import net.corda.v5.membership.identity.MemberInfo
+import net.corda.v5.membership.EndpointInfo
+import net.corda.v5.membership.MemberInfo
 import java.net.URL
 import java.time.Instant
 

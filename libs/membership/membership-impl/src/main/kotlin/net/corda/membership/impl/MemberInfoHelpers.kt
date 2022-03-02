@@ -1,12 +1,12 @@
-package net.corda.membership.identity
+package net.corda.membership.impl
 
 import net.corda.data.KeyValuePairList
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.MerkleTree
-import net.corda.v5.membership.identity.MGMContext
-import net.corda.v5.membership.identity.MemberContext
-import net.corda.v5.membership.identity.MemberInfo
+import net.corda.v5.membership.MGMContext
+import net.corda.v5.membership.MemberContext
+import net.corda.v5.membership.MemberInfo
 import java.nio.ByteBuffer
 import java.util.SortedMap
 

@@ -1,4 +1,4 @@
-package net.corda.membership.identity.converter
+package net.corda.membership.impl.converter
 
 import net.corda.layeredpropertymap.ConversionContext
 import net.corda.layeredpropertymap.CustomPropertyConverter
