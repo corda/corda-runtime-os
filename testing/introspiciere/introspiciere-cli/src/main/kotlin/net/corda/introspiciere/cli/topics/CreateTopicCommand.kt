@@ -1,4 +1,4 @@
-package net.corda.introspiciere.cli
+package net.corda.introspiciere.cli.topics
 
 import picocli.CommandLine
 import picocli.CommandLine.Option
@@ -6,11 +6,8 @@ import picocli.CommandLine.Option
 /**
  * Create a Kafka topic.
  */
-@CommandLine.Command(name = "create-topic")
-class CreateTopicCommand : BaseCommand() {
-
-    @Option(names = ["--topic"], required = true, description = ["Topic name"])
-    private lateinit var topicName: String
+@CommandLine.Command(name = "create")
+class CreateTopicCommand : BaseTopicCommand() {
 
     @Option(names = ["--partitions"], description = ["Number of partitions when creating the topic."])
     private var partitions: Int? = null

@@ -1,0 +1,10 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+}
+
+description "Test doubles to import in your projects"
+
+dependencies {
+    implementation "io.javalin:javalin:$javalinVersion"
+    implementation "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
+}

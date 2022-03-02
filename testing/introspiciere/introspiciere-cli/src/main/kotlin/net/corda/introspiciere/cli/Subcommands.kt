@@ -1,10 +1,11 @@
 package net.corda.introspiciere.cli
 
+import net.corda.introspiciere.cli.topics.TopicCommands
 import picocli.CommandLine
 
 @CommandLine.Command(subcommands = [
     HelloWorldCommand::class,
-    CreateTopicCommand::class,
+    TopicCommands::class,
     WriteCommand::class,
     ReadCommand::class
 ])

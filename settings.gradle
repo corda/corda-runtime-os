@@ -319,6 +319,7 @@ include 'testing:introspiciere:introspiciere-server'
 include 'testing:layered-property-map-testkit'
 include 'testing:message-patterns'
 include 'testing:sandboxes'
+include 'testing:test-doubles'
 include 'testing:test-utilities'
 
 // The following logic dictates if we use the composite build gradle functionality,

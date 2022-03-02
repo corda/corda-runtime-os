@@ -2,13 +2,12 @@ package net.corda.introspiciere.server
 
 import io.javalin.http.Context
 import io.javalin.http.Handler
-import io.javalin.http.HttpCode.OK
 import net.corda.introspiciere.domain.TopicDefinition
 import net.corda.introspiciere.domain.TopicDefinitionPayload
 
 internal class TopicController(private val appContext: AppContext) {
     fun create(): Handler = Handler { ctx ->
-        val kafkaMessage = ctx.bodyAsClass<TopicDefinitionPayload>()
+        val kafkaMessage = ctx.bodyAsClass(TopicDefinitionPayload::class.java)
         appContext.topicGateway.create(TopicDefinition(
             kafkaMessage.name,
             kafkaMessage.partitions,
@@ -30,7 +29,6 @@ internal class TopicController(private val appContext: AppContext) {
     fun delete() = Handler { ctx ->
         wrapException {
             appContext.topicGateway.removeByName(ctx.topicParam)
-            ctx.status(OK)
         }
     }
 
