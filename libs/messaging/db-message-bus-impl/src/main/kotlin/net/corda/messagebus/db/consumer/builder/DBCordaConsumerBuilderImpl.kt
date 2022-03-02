@@ -1,7 +1,6 @@
 package net.corda.messagebus.db.consumer.builder
 
 import com.typesafe.config.Config
-import net.corda.db.core.PostgresDataSourceFactory
 import net.corda.messagebus.api.configuration.ConfigProperties
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
@@ -13,14 +12,13 @@ import net.corda.messagebus.db.datamodel.TopicEntry
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.messagebus.db.persistence.DBAccess
+import net.corda.messagebus.db.persistence.create
 import net.corda.messagebus.db.serialization.CordaDBAvroDeserializerImpl
-import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import javax.persistence.EntityManagerFactory
 
 /**
  * Generate a DB-backed [CordaConsumer].
@@ -43,9 +41,8 @@ class DBCordaConsumerBuilderImpl @Activate constructor(
         listener: CordaConsumerRebalanceListener?
     ): CordaConsumer<K, V> {
         val dbAccess = DBAccess(
-            obtainEntityManagerFactory(
+            entityManagerFactoryFactory.create(
                 consumerConfig,
-                entityManagerFactoryFactory,
                 "DB Consumer for ${consumerConfig.getString(ConfigProperties.CLIENT_ID)}",
                 listOf(
                     TopicRecordEntry::class.java,
@@ -72,30 +69,6 @@ class DBCordaConsumerBuilderImpl @Activate constructor(
             CordaDBAvroDeserializerImpl(avroSchemaRegistry, onSerializationError, kClazz),
             CordaDBAvroDeserializerImpl(avroSchemaRegistry, onSerializationError, vClazz),
             listener
-        )
-    }
-
-    private fun obtainEntityManagerFactory(
-        dbConfig: Config,
-        entityManagerFactoryFactory: EntityManagerFactoryFactory,
-        persistenceName: String,
-        entities: List<Class<out Any>>,
-    ): EntityManagerFactory {
-
-        val jdbcUrl = dbConfig.getString("jdbc.url")
-        val username = dbConfig.getString("user")
-        val pass = dbConfig.getString("pass")
-
-        val dbSource = PostgresDataSourceFactory().create(
-            jdbcUrl,
-            username,
-            pass
-        )
-
-        return entityManagerFactoryFactory.create(
-            persistenceName,
-            entities,
-            DbEntityManagerConfiguration(dbSource),
         )
     }
 }

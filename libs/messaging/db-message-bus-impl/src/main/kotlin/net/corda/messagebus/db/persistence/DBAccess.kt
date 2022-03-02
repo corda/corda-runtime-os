@@ -27,27 +27,6 @@ class DBAccess(
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
     }
 
-    private fun getCommittedPositions(
-        groupId: String,
-        topicPartitions: Set<CordaTopicPartition>
-    ): Map<CordaTopicPartition, List<CommittedPositionEntry>> {
-        return executeWithErrorHandling("get committed positions") { entityManager ->
-            entityManager.createQuery(
-                """
-                    FROM topic_consumer_offset 
-                    WHERE ${CommittedPositionEntry::consumerGroup.name} = '$groupId'
-                    """,
-                CommittedPositionEntry::class.java
-            ).resultList.takeWhile {
-                it.transactionId.state == TransactionState.COMMITTED
-            }.groupBy {
-                CordaTopicPartition(it.topic, it.partition)
-            }.filter {
-                it.key in topicPartitions
-            }
-        }
-    }
-
     fun getMaxCommittedPositions(
         groupId: String,
         topicPartitions: Set<CordaTopicPartition>
@@ -56,28 +35,26 @@ class DBAccess(
             return emptyMap()
         }
 
-        val returnedPositions = getCommittedPositions(groupId, topicPartitions)
-            .mapValues {
+        val returnedPositions = executeWithErrorHandling("get max committed positions") { entityManager ->
+            entityManager.createQuery(
+                """
+                    FROM topic_consumer_offset 
+                    WHERE ${CommittedPositionEntry::consumerGroup.name} = '$groupId'
+                    ORDER BY ${CommittedPositionEntry::recordPosition.name}
+                    """,
+                CommittedPositionEntry::class.java
+            ).resultList.takeWhile {
+                it.transactionId.state == TransactionState.COMMITTED
+            }.groupBy {
+                CordaTopicPartition(it.topic, it.partition)
+            }.filter {
+                it.key in topicPartitions
+            }.mapValues {
                 it.value.maxOf { committedOffsetEntry -> committedOffsetEntry.recordPosition }
             }
+        }
         val missingPartitions = topicPartitions - returnedPositions.keys
         return returnedPositions + missingPartitions.associateWith { null }
-    }
-
-    fun getMinCommittedPositions(
-        groupId: String,
-        topicPartitions: Set<CordaTopicPartition>
-    ): Map<CordaTopicPartition, Long> {
-        if (topicPartitions.isEmpty()) {
-            return emptyMap()
-        }
-
-        val returnedPositions = getCommittedPositions(groupId, topicPartitions)
-            .mapValues {
-                it.value.minOf { committedOffsetEntry -> committedOffsetEntry.recordPosition }
-            }
-        val missingPartitions = topicPartitions - returnedPositions.keys
-        return returnedPositions + missingPartitions.associateWith { 0L }
     }
 
     fun getMaxOffsetsPerTopicPartition(): Map<CordaTopicPartition, Long> {

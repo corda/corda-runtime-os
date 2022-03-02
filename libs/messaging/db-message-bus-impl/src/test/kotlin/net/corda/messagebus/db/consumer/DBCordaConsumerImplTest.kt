@@ -334,4 +334,16 @@ internal class DBCordaConsumerImplTest {
         }
     }
 
+    @Test
+    fun `consumer returns correct values for beginning and end offsets`() {
+        val earliestPositions = mapOf(partition0 to 1, partition1 to 3, partition2 to 6)
+        val latestPositions = mapOf(partition0 to 10, partition1 to 30, partition2 to 60)
+        whenever(dbAccess.getEarliestRecordOffset(any())).thenAnswer { earliestPositions }
+        whenever(dbAccess.getLatestRecordOffset(any())).thenAnswer { latestPositions }
+
+        val consumer = makeConsumer()
+
+        assertThat(consumer.beginningOffsets(setOf(partition0, partition1, partition2))).isEqualTo(earliestPositions)
+        assertThat(consumer.endOffsets(setOf(partition0, partition1, partition2))).isEqualTo(latestPositions)
+    }
 }

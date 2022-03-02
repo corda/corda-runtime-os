@@ -327,11 +327,6 @@ class DBAccessIntegrationTest {
 
         dbAccess.writeOffsets(offsets)
 
-        val minOffsets = dbAccess.getMinCommittedPositions(group1, setOf(partition0, partition1))
-        assertThat(minOffsets.size).isEqualTo(2)
-        assertThat(minOffsets[partition0]).isEqualTo(2)
-        assertThat(minOffsets[partition1]).isEqualTo(1)
-
         val maxOffsets = dbAccess.getMaxCommittedPositions(group1, setOf(partition0, partition1))
         assertThat(maxOffsets.size).isEqualTo(2)
         assertThat(maxOffsets[partition0]).isEqualTo(3)
