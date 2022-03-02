@@ -66,6 +66,16 @@ pipeline {
                     '''
                 }
             }
+            post {
+                unsuccessful {
+                    sh '''
+                        kubectl logs -lapp.kubernetes.io/instance=prereqs -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
+                        kubectl describe all -n ${NAMESPACE} > describe.txt
+                    '''
+                    archiveArtifacts artifacts: 'logs.txt, describe.txt', allowEmptyArchive: true
+                    sh 'rm -f logs.txt describe.txt'
+                }
+            }
         }
         stage('Deploy cluster') {
             steps {
