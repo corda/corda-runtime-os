@@ -79,6 +79,9 @@ class PermissionSummaryReconcilerImpl : PermissionSummaryReconciler {
 
             if (permissionsDb[i].virtualNode != permissionsCache[i].virtualNode)
                 return permissionSummaryDb.toAvroUserPermissionSummary()
+
+            if (permissionsDb[i].id != permissionsCache[i].id)
+                return permissionSummaryDb.toAvroUserPermissionSummary()
         }
 
         // permission reconciliation is not necessary for this user

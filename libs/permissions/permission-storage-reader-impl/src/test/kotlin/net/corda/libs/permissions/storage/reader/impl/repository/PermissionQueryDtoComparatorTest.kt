@@ -10,8 +10,8 @@ internal class PermissionQueryDtoComparatorTest {
 
     @Test
     fun `DENY should appear in sorted list before ALLOW`() {
-        val perm1 = InternalPermissionQueryDto("user1", null, null, "ABC", PermissionType.ALLOW)
-        val perm2 = InternalPermissionQueryDto("user1", null, null, "XYZ", PermissionType.DENY)
+        val perm1 = InternalPermissionQueryDto("user1", "id", null, null, "ABC", PermissionType.ALLOW)
+        val perm2 = InternalPermissionQueryDto("user1", "id", null, null, "XYZ", PermissionType.DENY)
         val list = listOf(perm1, perm2)
 
         val sortedList = list.sortedWith(PermissionQueryDtoComparator())
@@ -22,8 +22,8 @@ internal class PermissionQueryDtoComparatorTest {
 
     @Test
     fun `permission string sorted alphabetically`() {
-        val perm1 = InternalPermissionQueryDto("user1", null, null, "ABC", PermissionType.DENY)
-        val perm2 = InternalPermissionQueryDto("user1", null, null, "XYZ", PermissionType.DENY)
+        val perm1 = InternalPermissionQueryDto("user1", "id", null, null, "ABC", PermissionType.DENY)
+        val perm2 = InternalPermissionQueryDto("user1", "id", null, null, "XYZ", PermissionType.DENY)
         val list = listOf(perm2, perm1)
 
         val sortedList = list.sortedWith(PermissionQueryDtoComparator())
@@ -34,8 +34,8 @@ internal class PermissionQueryDtoComparatorTest {
 
     @Test
     fun `virtual node null first`() {
-        val perm1 = InternalPermissionQueryDto("user1", null, "abc", "ABC", PermissionType.DENY)
-        val perm2 = InternalPermissionQueryDto("user1", null, null, "ABC", PermissionType.DENY)
+        val perm1 = InternalPermissionQueryDto("user1", "id", null, "abc", "ABC", PermissionType.DENY)
+        val perm2 = InternalPermissionQueryDto("user1", "id", null, null, "ABC", PermissionType.DENY)
         val list = listOf(perm1, perm2)
 
         val sortedList = list.sortedWith(PermissionQueryDtoComparator())
@@ -46,8 +46,8 @@ internal class PermissionQueryDtoComparatorTest {
 
     @Test
     fun `virtual node alphabetically ordered`() {
-        val perm1 = InternalPermissionQueryDto("user1", null, "zzz", "ABC", PermissionType.DENY)
-        val perm2 = InternalPermissionQueryDto("user1", null, "aaa", "ABC", PermissionType.DENY)
+        val perm1 = InternalPermissionQueryDto("user1", "id", null, "zzz", "ABC", PermissionType.DENY)
+        val perm2 = InternalPermissionQueryDto("user1", "id", null, "aaa", "ABC", PermissionType.DENY)
         val list = listOf(perm1, perm2)
 
         val sortedList = list.sortedWith(PermissionQueryDtoComparator())
@@ -58,8 +58,8 @@ internal class PermissionQueryDtoComparatorTest {
 
     @Test
     fun `group visibility null first`() {
-        val perm1 = InternalPermissionQueryDto("user1", "aaa", "aaa", "ABC", PermissionType.DENY)
-        val perm2 = InternalPermissionQueryDto("user1", null, "aaa", "ABC", PermissionType.DENY)
+        val perm1 = InternalPermissionQueryDto("user1", "id", "aaa", "aaa", "ABC", PermissionType.DENY)
+        val perm2 = InternalPermissionQueryDto("user1", "id", null, "aaa", "ABC", PermissionType.DENY)
         val list = listOf(perm1, perm2)
 
         val sortedList = list.sortedWith(PermissionQueryDtoComparator())
@@ -70,8 +70,20 @@ internal class PermissionQueryDtoComparatorTest {
 
     @Test
     fun `group visibility alphabetically sorted`() {
-        val perm1 = InternalPermissionQueryDto("user1", "zzz", "aaa", "ABC", PermissionType.DENY)
-        val perm2 = InternalPermissionQueryDto("user1", "aaa", "aaa", "ABC", PermissionType.DENY)
+        val perm1 = InternalPermissionQueryDto("user1", "id", "zzz", "aaa", "ABC", PermissionType.DENY)
+        val perm2 = InternalPermissionQueryDto("user1", "id", "aaa", "aaa", "ABC", PermissionType.DENY)
+        val list = listOf(perm1, perm2)
+
+        val sortedList = list.sortedWith(PermissionQueryDtoComparator())
+
+        assertEquals(perm2, sortedList[0])
+        assertEquals(perm1, sortedList[1])
+    }
+
+    @Test
+    fun `lastly permission id should be sorted alphabetically`() {
+        val perm1 = InternalPermissionQueryDto("user1", "bbb", "zzz", "aaa", "ABC", PermissionType.DENY)
+        val perm2 = InternalPermissionQueryDto("user1", "aaa", "aaa", "aaa", "ABC", PermissionType.DENY)
         val list = listOf(perm1, perm2)
 
         val sortedList = list.sortedWith(PermissionQueryDtoComparator())

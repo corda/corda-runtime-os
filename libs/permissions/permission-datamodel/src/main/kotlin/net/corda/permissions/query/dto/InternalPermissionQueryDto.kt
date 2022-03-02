@@ -7,6 +7,7 @@ import net.corda.permissions.model.PermissionType
  */
 data class InternalPermissionQueryDto(
     val loginName: String,
+    val id: String,
     val groupVisibility: String?,
     val virtualNode: String?,
     val permissionString: String,
