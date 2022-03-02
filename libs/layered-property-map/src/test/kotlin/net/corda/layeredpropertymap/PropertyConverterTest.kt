@@ -2,7 +2,7 @@ package net.corda.layeredpropertymap
 
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapImpl
 import net.corda.layeredpropertymap.impl.PropertyConverter
-import net.corda.v5.membership.identity.MemberX500Name
+import net.corda.v5.base.types.MemberX500Name
 import org.junit.jupiter.api.Test
 import java.time.Instant
 import java.time.format.DateTimeParseException
