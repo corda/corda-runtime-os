@@ -11,6 +11,7 @@ import net.corda.permissions.query.dto.InternalPermissionQueryDto
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 internal class PermissionSummaryReconcilerImplTest {
@@ -25,9 +26,9 @@ internal class PermissionSummaryReconcilerImplTest {
         val dbSummary = InternalUserPermissionSummary(
             "loginName",
             listOf(
-                InternalPermissionQueryDto("loginName", null, null, "A", PermissionType.ALLOW),
-                InternalPermissionQueryDto("loginName", null, null, "B", PermissionType.DENY),
-                InternalPermissionQueryDto("loginName", null, null, "C", PermissionType.DENY),
+                InternalPermissionQueryDto("loginName", "id1", null, null, "A", PermissionType.ALLOW),
+                InternalPermissionQueryDto("loginName", "id2", null, null, "B", PermissionType.DENY),
+                InternalPermissionQueryDto("loginName", "id3", null, null, "C", PermissionType.DENY),
             ),
             now
         )
@@ -36,10 +37,10 @@ internal class PermissionSummaryReconcilerImplTest {
         val cacheSummary = AvroUserPermissionSummary(
             "loginName",
             listOf(
-                AvroPermissionSummary(null, null, "A", AvroPermissionType.ALLOW),
-                AvroPermissionSummary(null, null, "B", AvroPermissionType.DENY),
-                AvroPermissionSummary(null, null, "C", AvroPermissionType.DENY),
-                AvroPermissionSummary(null, null, "D", AvroPermissionType.DENY),
+                AvroPermissionSummary("id1", null, null, "A", AvroPermissionType.ALLOW),
+                AvroPermissionSummary("id2", null, null, "B", AvroPermissionType.DENY),
+                AvroPermissionSummary("id3", null, null, "C", AvroPermissionType.DENY),
+                AvroPermissionSummary("id4", null, null, "D", AvroPermissionType.DENY),
             ),
             earlier
         )
@@ -77,11 +78,11 @@ internal class PermissionSummaryReconcilerImplTest {
         val dbSummary = InternalUserPermissionSummary(
             "loginName",
             listOf(
-                InternalPermissionQueryDto("loginName", null, null, "A", PermissionType.ALLOW),
-                InternalPermissionQueryDto("loginName", null, null, "B", PermissionType.DENY),
-                InternalPermissionQueryDto("loginName", null, null, "C", PermissionType.DENY),
-                InternalPermissionQueryDto("loginName", null, null, "D", PermissionType.DENY),
-                InternalPermissionQueryDto("loginName", null, null, "E", PermissionType.DENY)
+                InternalPermissionQueryDto("loginName", "id1", null, null, "A", PermissionType.ALLOW),
+                InternalPermissionQueryDto("loginName", "id2", null, null, "B", PermissionType.DENY),
+                InternalPermissionQueryDto("loginName", "id3", null, null, "C", PermissionType.DENY),
+                InternalPermissionQueryDto("loginName", "id4", null, null, "D", PermissionType.DENY),
+                InternalPermissionQueryDto("loginName", "id5", null, null, "E", PermissionType.DENY)
             ),
             now
         )
@@ -90,10 +91,10 @@ internal class PermissionSummaryReconcilerImplTest {
         val cacheSummary = AvroUserPermissionSummary(
             "loginName",
             listOf(
-                AvroPermissionSummary(null, null, "A", AvroPermissionType.ALLOW),
-                AvroPermissionSummary(null, null, "B", AvroPermissionType.DENY),
-                AvroPermissionSummary(null, null, "C", AvroPermissionType.DENY),
-                AvroPermissionSummary(null, null, "D", AvroPermissionType.DENY),
+                AvroPermissionSummary("id1", null, null, "A", AvroPermissionType.ALLOW),
+                AvroPermissionSummary("id2", null, null, "B", AvroPermissionType.DENY),
+                AvroPermissionSummary("id3", null, null, "C", AvroPermissionType.DENY),
+                AvroPermissionSummary("id4", null, null, "D", AvroPermissionType.DENY),
             ),
             earlier
         )
@@ -113,6 +114,12 @@ internal class PermissionSummaryReconcilerImplTest {
 
         val resultPermissionsList = resultAvroObject.permissions
         assertEquals(5, resultPermissionsList.size)
+        assertEquals("id1", resultPermissionsList[0].id)
+        assertEquals("id2", resultPermissionsList[1].id)
+        assertEquals("id3", resultPermissionsList[2].id)
+        assertEquals("id4", resultPermissionsList[3].id)
+        assertEquals("id5", resultPermissionsList[4].id)
+
         assertEquals("A", resultPermissionsList[0].permissionString)
         assertEquals("B", resultPermissionsList[1].permissionString)
         assertEquals("C", resultPermissionsList[2].permissionString)
@@ -135,9 +142,9 @@ internal class PermissionSummaryReconcilerImplTest {
         val dbSummary = InternalUserPermissionSummary(
             "loginName",
             listOf(
-                InternalPermissionQueryDto("loginName", null, null, "A", PermissionType.ALLOW),
-                InternalPermissionQueryDto("loginName", null, null, "F", PermissionType.DENY),
-                InternalPermissionQueryDto("loginName", null, null, "C", PermissionType.DENY),
+                InternalPermissionQueryDto("loginName", "id1", null, null, "A", PermissionType.ALLOW),
+                InternalPermissionQueryDto("loginName", "id2", null, null, "F", PermissionType.DENY),
+                InternalPermissionQueryDto("loginName", "id3", null, null, "C", PermissionType.DENY),
             ),
             now
         )
@@ -146,9 +153,9 @@ internal class PermissionSummaryReconcilerImplTest {
         val cacheSummary = AvroUserPermissionSummary(
             "loginName",
             listOf(
-                AvroPermissionSummary(null, null, "A", AvroPermissionType.ALLOW),
-                AvroPermissionSummary(null, null, "B", AvroPermissionType.DENY),
-                AvroPermissionSummary(null, null, "C", AvroPermissionType.DENY),
+                AvroPermissionSummary("id1", null, null, "A", AvroPermissionType.ALLOW),
+                AvroPermissionSummary("id2", null, null, "B", AvroPermissionType.DENY),
+                AvroPermissionSummary("id3", null, null, "C", AvroPermissionType.DENY),
             ),
             earlier
         )
@@ -168,6 +175,10 @@ internal class PermissionSummaryReconcilerImplTest {
 
         val resultPermissionsList = resultAvroObject.permissions
         assertEquals(3, resultPermissionsList.size)
+        assertEquals("id1", resultPermissionsList[0].id)
+        assertEquals("id2", resultPermissionsList[1].id)
+        assertEquals("id3", resultPermissionsList[2].id)
+
         assertEquals("A", resultPermissionsList[0].permissionString)
         assertEquals(AvroPermissionType.ALLOW, resultPermissionsList[0].permissionType)
         assertEquals("F", resultPermissionsList[1].permissionString)
@@ -185,9 +196,9 @@ internal class PermissionSummaryReconcilerImplTest {
         val dbSummary = InternalUserPermissionSummary(
             "loginName",
             listOf(
-                InternalPermissionQueryDto("loginName", null, null, "A", PermissionType.ALLOW),
-                InternalPermissionQueryDto("loginName", null, null, "B", PermissionType.ALLOW),
-                InternalPermissionQueryDto("loginName", null, null, "C", PermissionType.DENY),
+                InternalPermissionQueryDto("loginName", "id1", null, null, "A", PermissionType.ALLOW),
+                InternalPermissionQueryDto("loginName", "id2", null, null, "B", PermissionType.ALLOW),
+                InternalPermissionQueryDto("loginName", "id3", null, null, "C", PermissionType.DENY),
             ),
             now
         )
@@ -196,9 +207,9 @@ internal class PermissionSummaryReconcilerImplTest {
         val cacheSummary = AvroUserPermissionSummary(
             "loginName",
             listOf(
-                AvroPermissionSummary(null, null, "A", AvroPermissionType.ALLOW),
-                AvroPermissionSummary(null, null, "B", AvroPermissionType.DENY),
-                AvroPermissionSummary(null, null, "C", AvroPermissionType.DENY),
+                AvroPermissionSummary("id1", null, null, "A", AvroPermissionType.ALLOW),
+                AvroPermissionSummary("id2", null, null, "B", AvroPermissionType.DENY),
+                AvroPermissionSummary("id3", null, null, "C", AvroPermissionType.DENY),
             ),
             earlier
         )
@@ -218,6 +229,11 @@ internal class PermissionSummaryReconcilerImplTest {
 
         val resultPermissionsList = resultAvroObject.permissions
         assertEquals(3, resultPermissionsList.size)
+
+        assertEquals("id1", resultPermissionsList[0].id)
+        assertEquals("id2", resultPermissionsList[1].id)
+        assertEquals("id3", resultPermissionsList[2].id)
+
         assertEquals("A", resultPermissionsList[0].permissionString)
         assertEquals("B", resultPermissionsList[1].permissionString)
         assertEquals("C", resultPermissionsList[2].permissionString)
@@ -236,7 +252,7 @@ internal class PermissionSummaryReconcilerImplTest {
         val dbSummary = InternalUserPermissionSummary(
             "loginName",
             listOf(
-                InternalPermissionQueryDto("loginName", "grp", null, "A", PermissionType.ALLOW)
+                InternalPermissionQueryDto("loginName", "id1", "grp", null, "A", PermissionType.ALLOW)
             ),
             now
         )
@@ -245,7 +261,7 @@ internal class PermissionSummaryReconcilerImplTest {
         val cacheSummary = AvroUserPermissionSummary(
             "loginName",
             listOf(
-                AvroPermissionSummary(null, null, "A", AvroPermissionType.ALLOW)
+                AvroPermissionSummary("id1", null, null, "A", AvroPermissionType.ALLOW)
             ),
             earlier
         )
@@ -265,6 +281,7 @@ internal class PermissionSummaryReconcilerImplTest {
 
         val resultPermissionsList = resultAvroObject.permissions
         assertEquals(1, resultPermissionsList.size)
+        assertEquals("id1", resultPermissionsList[0].id)
         assertEquals("A", resultPermissionsList[0].permissionString)
         assertEquals(AvroPermissionType.ALLOW, resultPermissionsList[0].permissionType)
         assertEquals("grp", resultPermissionsList[0].groupVisibility)
@@ -280,7 +297,7 @@ internal class PermissionSummaryReconcilerImplTest {
         val dbSummary = InternalUserPermissionSummary(
             "loginName",
             listOf(
-                InternalPermissionQueryDto("loginName", null, "vrtnode", "A", PermissionType.ALLOW)
+                InternalPermissionQueryDto("loginName", "id1", null, "vrtnode", "A", PermissionType.ALLOW)
             ),
             now
         )
@@ -289,7 +306,7 @@ internal class PermissionSummaryReconcilerImplTest {
         val cacheSummary = AvroUserPermissionSummary(
             "loginName",
             listOf(
-                AvroPermissionSummary(null, null, "A", AvroPermissionType.ALLOW)
+                AvroPermissionSummary("id1", null, null, "A", AvroPermissionType.ALLOW)
             ),
             earlier
         )
@@ -309,6 +326,7 @@ internal class PermissionSummaryReconcilerImplTest {
 
         val resultPermissionsList = resultAvroObject.permissions
         assertEquals(1, resultPermissionsList.size)
+        assertEquals("id1", resultPermissionsList[0].id)
         assertEquals("A", resultPermissionsList[0].permissionString)
         assertEquals(AvroPermissionType.ALLOW, resultPermissionsList[0].permissionType)
         assertEquals("vrtnode", resultPermissionsList[0].virtualNode)
@@ -324,8 +342,8 @@ internal class PermissionSummaryReconcilerImplTest {
         val dbSummary = InternalUserPermissionSummary(
             "loginName",
             listOf(
-                InternalPermissionQueryDto("loginName", null, "vrtnode", "A", PermissionType.ALLOW),
-                InternalPermissionQueryDto("loginName", "grp", null, "B", PermissionType.DENY)
+                InternalPermissionQueryDto("loginName", "id1", null, "vrtnode", "A", PermissionType.ALLOW),
+                InternalPermissionQueryDto("loginName", "id2", "grp", null, "B", PermissionType.DENY)
             ),
             now
         )
@@ -334,7 +352,7 @@ internal class PermissionSummaryReconcilerImplTest {
         val cacheSummary = AvroUserPermissionSummary(
             "loginName",
             listOf(
-                AvroPermissionSummary("cgrp", null, "C", AvroPermissionType.DENY)
+                AvroPermissionSummary("id1", "cgrp", null, "C", AvroPermissionType.DENY)
             ),
             earlier
         )
@@ -354,6 +372,8 @@ internal class PermissionSummaryReconcilerImplTest {
 
         val resultPermissionsList = resultAvroObject.permissions
         assertEquals(2, resultPermissionsList.size)
+        assertEquals("id1", resultPermissionsList[0].id)
+        assertEquals("id2", resultPermissionsList[1].id)
         assertEquals("A", resultPermissionsList[0].permissionString)
         assertEquals("B", resultPermissionsList[1].permissionString)
         assertEquals(AvroPermissionType.ALLOW, resultPermissionsList[0].permissionType)
@@ -373,9 +393,9 @@ internal class PermissionSummaryReconcilerImplTest {
         val dbSummary = InternalUserPermissionSummary(
             "loginName",
             listOf(
-                InternalPermissionQueryDto("loginName", null, null, "A", PermissionType.ALLOW),
-                InternalPermissionQueryDto("loginName", null, null, "B", PermissionType.DENY),
-                InternalPermissionQueryDto("loginName", null, null, "C", PermissionType.DENY),
+                InternalPermissionQueryDto("loginName", "id1", null, null, "A", PermissionType.ALLOW),
+                InternalPermissionQueryDto("loginName", "id2", null, null, "B", PermissionType.DENY),
+                InternalPermissionQueryDto("loginName", "id3", null, null, "C", PermissionType.DENY),
             ),
             now
         )
@@ -384,9 +404,9 @@ internal class PermissionSummaryReconcilerImplTest {
         val cacheSummary = AvroUserPermissionSummary(
             "loginName",
             listOf(
-                AvroPermissionSummary(null, null, "A", AvroPermissionType.ALLOW),
-                AvroPermissionSummary(null, null, "B", AvroPermissionType.DENY),
-                AvroPermissionSummary(null, null, "C", AvroPermissionType.DENY),
+                AvroPermissionSummary("id1", null, null, "A", AvroPermissionType.ALLOW),
+                AvroPermissionSummary("id2", null, null, "B", AvroPermissionType.DENY),
+                AvroPermissionSummary("id3", null, null, "C", AvroPermissionType.DENY),
             ),
             earlier
         )
@@ -410,8 +430,8 @@ internal class PermissionSummaryReconcilerImplTest {
         val dbSummary = InternalUserPermissionSummary(
             "loginName",
             listOf(
-                InternalPermissionQueryDto("loginName", null, null, "A", PermissionType.ALLOW),
-                InternalPermissionQueryDto("loginName", null, null, "B", PermissionType.DENY)
+                InternalPermissionQueryDto("loginName", "id1", null, null, "A", PermissionType.ALLOW),
+                InternalPermissionQueryDto("loginName", "id2", null, null, "B", PermissionType.DENY)
             ),
             now
         )
@@ -420,16 +440,16 @@ internal class PermissionSummaryReconcilerImplTest {
         val cacheSummary1 = AvroUserPermissionSummary(
             "loginName",
             listOf(
-                AvroPermissionSummary(null, null, "A", AvroPermissionType.ALLOW),
-                AvroPermissionSummary(null, null, "B", AvroPermissionType.DENY)
+                AvroPermissionSummary("id1", null, null, "A", AvroPermissionType.ALLOW),
+                AvroPermissionSummary("id2", null, null, "B", AvroPermissionType.DENY)
             ),
             earlier
         )
         val cacheSummary2 = AvroUserPermissionSummary(
             "removedUser",
             listOf(
-                AvroPermissionSummary(null, null, "A", AvroPermissionType.ALLOW),
-                AvroPermissionSummary(null, null, "B", AvroPermissionType.DENY)
+                AvroPermissionSummary("id1", null, null, "A", AvroPermissionType.ALLOW),
+                AvroPermissionSummary("id2", null, null, "B", AvroPermissionType.DENY)
             ),
             earlier
         )
@@ -444,6 +464,7 @@ internal class PermissionSummaryReconcilerImplTest {
         )
 
         assertEquals(1, result.size)
+        assertTrue(result.containsKey("removedUser"))
         assertNull(result["removedUser"])
     }
 
@@ -457,14 +478,14 @@ internal class PermissionSummaryReconcilerImplTest {
             "loginName" to InternalUserPermissionSummary(
                 "loginName",
                 listOf(
-                    InternalPermissionQueryDto("loginName", null, null, "A", PermissionType.ALLOW)
+                    InternalPermissionQueryDto("loginName", "id1", null, null, "A", PermissionType.ALLOW)
                 ),
                 now
             ),
             "addedUser" to InternalUserPermissionSummary(
                 "addedUser",
                 listOf(
-                    InternalPermissionQueryDto("addedUser", "grp", "vrtnode", "A", PermissionType.ALLOW)
+                    InternalPermissionQueryDto("addedUser", "id1", "grp", "vrtnode", "A", PermissionType.ALLOW)
                 ),
                 now
             )
@@ -474,7 +495,7 @@ internal class PermissionSummaryReconcilerImplTest {
             "loginName" to AvroUserPermissionSummary(
                 "loginName",
                 listOf(
-                    AvroPermissionSummary(null, null, "A", AvroPermissionType.ALLOW)
+                    AvroPermissionSummary("id1", null, null, "A", AvroPermissionType.ALLOW)
                 ),
                 earlier
             )
@@ -494,6 +515,7 @@ internal class PermissionSummaryReconcilerImplTest {
 
         val resultPermissionsList = resultAvroObject.permissions
         assertEquals(1, resultPermissionsList.size)
+        assertEquals("id1", resultPermissionsList[0].id)
         assertEquals("A", resultPermissionsList[0].permissionString)
         assertEquals(AvroPermissionType.ALLOW, resultPermissionsList[0].permissionType)
         assertEquals("vrtnode", resultPermissionsList[0].virtualNode)
@@ -510,7 +532,7 @@ internal class PermissionSummaryReconcilerImplTest {
             "loginName" to InternalUserPermissionSummary(
                 "loginName",
                 listOf(
-                    InternalPermissionQueryDto("loginName", null, null, "A", PermissionType.ALLOW)
+                    InternalPermissionQueryDto("loginName", "id1", null, null, "A", PermissionType.ALLOW)
                 ),
                 now
             )
@@ -520,7 +542,7 @@ internal class PermissionSummaryReconcilerImplTest {
             "loginName" to AvroUserPermissionSummary(
                 "loginName",
                 listOf(
-                    AvroPermissionSummary(null, null, "B", AvroPermissionType.ALLOW)
+                    AvroPermissionSummary("id1", null, null, "B", AvroPermissionType.ALLOW)
                 ),
                 later
             )
@@ -532,6 +554,53 @@ internal class PermissionSummaryReconcilerImplTest {
         )
 
         assertEquals(0, result.size)
-        assertNull(result["loginName"])
     }
+
+    @Test
+    fun `getSummariesForReconciliation detects when an id is the only difference`() {
+
+        val now = Instant.now().truncatedTo(ChronoUnit.MILLIS)
+        val earlier = now.minusMillis(1000)
+
+        val dbPermissionSummaries = mutableMapOf(
+            "loginName" to InternalUserPermissionSummary(
+                "loginName",
+                listOf(
+                    InternalPermissionQueryDto("loginName", "new", "grp", "vrtnode", "A", PermissionType.ALLOW)
+                ),
+                now
+            )
+        )
+
+        val cachedPermissionSummaries = mutableMapOf(
+            "loginName" to AvroUserPermissionSummary(
+                "loginName",
+                listOf(
+                    AvroPermissionSummary("old", "grp", "vrtnode", "A", AvroPermissionType.ALLOW)
+                ),
+                earlier
+            )
+        )
+
+        val result = reconciler.getSummariesForReconciliation(
+            dbPermissionSummaries,
+            cachedPermissionSummaries
+        )
+
+        assertEquals(1, result.size)
+        assertTrue(result.containsKey("loginName"))
+
+        val resultAvroObject = result["loginName"]!!
+        assertEquals(now, resultAvroObject.lastUpdateTimestamp)
+        assertEquals("loginName", resultAvroObject.loginName)
+
+        val resultPermissionsList = resultAvroObject.permissions
+        assertEquals(1, resultPermissionsList.size)
+        assertEquals("A", resultPermissionsList[0].permissionString)
+        assertEquals(AvroPermissionType.ALLOW, resultPermissionsList[0].permissionType)
+        assertEquals("vrtnode", resultPermissionsList[0].virtualNode)
+        assertEquals("grp", resultPermissionsList[0].groupVisibility)
+        assertEquals("new", resultPermissionsList[0].id)
+    }
+
 }

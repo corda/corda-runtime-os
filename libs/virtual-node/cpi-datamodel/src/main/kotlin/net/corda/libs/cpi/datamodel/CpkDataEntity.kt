@@ -7,6 +7,7 @@ import javax.persistence.Entity
 import javax.persistence.Id
 import javax.persistence.Lob
 import javax.persistence.Table
+import javax.persistence.EntityManager
 
 /**
  * Cpk binary data
@@ -49,3 +50,20 @@ data class CpkDataEntity(
         return result
     }
 }
+
+fun EntityManager.findCpkChecksumsNotIn(checksums: List<String>): List<String> {
+    return createQuery(
+        "SELECT cpk.fileChecksum FROM ${CpkDataEntity::class.simpleName} cpk " +
+                "WHERE cpk.fileChecksum NOT IN (:checksums)",
+        String::class.java
+    )
+        .setParameter(
+            "checksums",
+            checksums.ifEmpty { "null" })
+        .resultList
+}
+
+fun EntityManager.findCpkDataEntity(checksum: String): CpkDataEntity? = find(
+    CpkDataEntity::class.java,
+    checksum
+)

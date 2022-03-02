@@ -28,7 +28,7 @@ interface VirtualNodeRPCOps : RpcOps {
         responseDescription = "The details of the created virtual node."
     )
     fun createVirtualNode(
-        @HttpRpcRequestBodyParameter(description = "Details of the virtual node to be created", required = true)
+        @HttpRpcRequestBodyParameter(description = "Details of the virtual node to be created")
         request: HTTPCreateVirtualNodeRequest
     ): HTTPCreateVirtualNodeResponse
 }

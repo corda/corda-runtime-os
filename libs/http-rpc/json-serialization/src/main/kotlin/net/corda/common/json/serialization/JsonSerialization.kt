@@ -8,10 +8,10 @@ import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import net.corda.common.identity.CordaX500NameDeserializer
-import net.corda.v5.application.identity.CordaX500Name
+import net.corda.common.identity.MemberX500NameDeserializer
 import net.corda.v5.application.utilities.JsonRepresentable
 import net.corda.v5.base.annotations.CordaInternal
+import net.corda.v5.base.types.MemberX500Name
 import java.util.TimeZone
 
 private val jsonMapper = JsonMapper.builder().enable(MapperFeature.BLOCK_UNSAFE_POLYMORPHIC_BASE_TYPES).build()
@@ -28,7 +28,7 @@ fun jacksonObjectMapper(): JsonMapper = jsonMapper.apply {
     disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
 
     registerModule(with(SimpleModule("Standard types")) {
-        addDeserializer(CordaX500Name::class.java, CordaX500NameDeserializer)
+        addDeserializer(MemberX500Name::class.java, MemberX500NameDeserializer)
         this
     })
 }
