@@ -19,10 +19,9 @@ import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
-import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -91,17 +90,19 @@ class CpkWriteServiceImplTest {
 
     @Test
     fun `on onConfigChangedEvent fully sets the component`() {
+        whenever(publisherFactory.createPublisher(any(), any())).thenReturn(mock())
+        whenever(subscriptionFactory.createCompactedSubscription<Any, Any>(any(), any(), any())).thenReturn(mock())
+        whenever(dbConnectionManager.getClusterEntityManagerFactory()).thenReturn(mock())
+
         val keys = mock<Set<String>>()
         whenever(keys.contains(ConfigKeys.BOOT_CONFIG)).thenReturn(true)
         val config = mock<Map<String, SmartConfig>>()
         whenever(config[ConfigKeys.BOOT_CONFIG]).thenReturn(mock())
         whenever(config[ConfigKeys.MESSAGING_CONFIG]).thenReturn(mock())
         whenever(config.toMessagingConfig()).thenReturn(mock())
-        whenever(publisherFactory.createPublisher(any(), any())).thenReturn(mock())
-        whenever(dbConnectionManager.getClusterEntityManagerFactory()).thenReturn(mock())
-        whenever(subscriptionFactory.createCompactedSubscription<Any, Any>(any(), any(), any())).thenReturn(mock())
+        val configChangedEvent = ConfigChangedEvent(keys, config)
+        cpkWriteServiceImpl.processEvent(configChangedEvent, coordinator)
 
-        cpkWriteServiceImpl.processEvent(ConfigChangedEvent(keys, config), coordinator)
         assertNotNull(cpkWriteServiceImpl.timeout)
         assertNotNull(cpkWriteServiceImpl.timerEventInterval)
         assertNotNull(cpkWriteServiceImpl.cpkChecksumsCache)
@@ -130,5 +131,25 @@ class CpkWriteServiceImplTest {
         assertTrue(chunks.size == 2)
         assertTrue(chunks[0].data.equals(ByteBuffer.wrap(cpkData)))
         assertEquals("${cpkChecksum.toHexString()}.cpk", chunks[0].fileName)
+    }
+
+    @Test
+    fun `on failing at sub services creation closes the component`() {
+        whenever(publisherFactory.createPublisher(any(), any())).thenThrow(CordaRuntimeException(""))
+
+        val keys = mock<Set<String>>()
+        whenever(keys.contains(ConfigKeys.BOOT_CONFIG)).thenReturn(true)
+        val config = mock<Map<String, SmartConfig>>()
+        whenever(config[ConfigKeys.BOOT_CONFIG]).thenReturn(mock())
+        whenever(config[ConfigKeys.MESSAGING_CONFIG]).thenReturn(mock())
+        whenever(config.toMessagingConfig()).thenReturn(mock())
+        val configChangedEvent = ConfigChangedEvent(keys, config)
+        cpkWriteServiceImpl.processEvent(configChangedEvent, coordinator)
+
+        assertNull(cpkWriteServiceImpl.configReadServiceRegistration)
+        assertNull(cpkWriteServiceImpl.configSubscription)
+        assertNull(cpkWriteServiceImpl.cpkChecksumsCache)
+        assertNull(cpkWriteServiceImpl.cpkChunksPublisher)
+        verify(coordinator).updateStatus(LifecycleStatus.DOWN)
     }
 }
