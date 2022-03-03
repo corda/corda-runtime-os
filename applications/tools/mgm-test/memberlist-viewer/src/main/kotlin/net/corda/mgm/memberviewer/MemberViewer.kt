@@ -14,12 +14,15 @@ import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.membership.EndpointInfo
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import org.osgi.framework.BundleContext
 import org.osgi.framework.FrameworkUtil
+import org.osgi.framework.ServiceReference
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -32,8 +35,6 @@ import java.util.*
 @Component(immediate = true)
 @Suppress("LongParameterList")
 class MemberViewer @Activate constructor(
-    @Reference(service = Shutdown::class)
-    private val shutDownService: Shutdown,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = MembershipGroupReaderProvider::class)
@@ -87,6 +88,7 @@ class MemberViewer @Activate constructor(
                 shutdown()
                 return
             }
+
             configurationReadService.start()
             membershipGroupReaderProvider.start()
             groupPolicyProvider.start()
@@ -107,50 +109,52 @@ class MemberViewer @Activate constructor(
             val members = parameters.memberNames!!.map {
                 HoldingIdentity(MemberX500Name.parse(it).toString(), parameters.groupId!!)
             }
+            Thread.sleep(3000)
             members.forEach {
-                try {
-                    membershipGroupReaderProvider.getGroupReader(it).printMemberListToConsole()
-                } catch (e: CordaRuntimeException) {
-                    Thread.sleep(5000)
-                    membershipGroupReaderProvider.getGroupReader(it).printMemberListToConsole()
-                }
+                membershipGroupReaderProvider.getGroupReader(it).printMemberListToConsole()
             }
 
             shutdown()
         }
     }
 
-    fun MembershipGroupReader.printMemberListToConsole() {
+    private fun MemberInfo.readableString(): String {
+        return """{
+            name: ${name},
+            status: ${status},
+            platformVersion: ${platformVersion},
+            endpoints: [
+                ${endpoints.joinToString(",\n") { endpoint -> endpoint.readableString() }}
+            ],
+            modifiedTime: ${modifiedTime},
+            identityKeyHashes: [
+                ${identityKeyHashes.joinToString(",\n") { hash -> hash.value }}
+            ]
+        }"""
+    }
+
+    private fun EndpointInfo.readableString(): String {
+        return """{
+                    url: $url,
+                    protocol: $protocolVersion
+                }"""
+    }
+
+    private fun MembershipGroupReader.printMemberListToConsole() {
         logger.info("=================")
         logger.info("View of group data for member [$owningMember] in group [$groupId]")
-        lookup().forEach {
-            logger.info(
-"""
+        logger.info(
+            """
 {
-    name: ${it.name},
-    status: ${it.status},
-    platformVersion: ${it.platformVersion},
-    endpoints: [
-    ${
-        it.endpoints.joinToString(",\n") { endpoint ->
-    """
-        {
-            url: ${endpoint.url},
-            protocol: ${endpoint.protocolVersion}
-        }
-    """.trimIndent()
-        }
-    }
-    ],
-    modifiedTime: ${it.modifiedTime},
-    publicKeyHashes: [
-        ${it.identityKeyHashes.joinToString(",\n") { hash -> hash.value }}
+    members: [
+        ${lookup().joinToString(",\n") { it.readableString() }}
     ]
 }
-""".trimIndent()
-            )
-        }
+        """
+        )
+        logger.info("=================")
     }
+
 
     override fun shutdown() {
         logger.info("Shutting down member list viewer tool")
@@ -158,7 +162,14 @@ class MemberViewer @Activate constructor(
     }
 
     private fun shutdownOSGiFramework() {
-        shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
+        val bundleContext: BundleContext? = FrameworkUtil.getBundle(MemberViewer::class.java).bundleContext
+        if (bundleContext != null) {
+            val shutdownServiceReference: ServiceReference<Shutdown>? =
+                bundleContext.getServiceReference(Shutdown::class.java)
+            if (shutdownServiceReference != null) {
+                bundleContext.getService(shutdownServiceReference)?.shutdown(bundleContext.bundle)
+            }
+        }
     }
 
     private fun logError(error: String) {
