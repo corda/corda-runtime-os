@@ -3,13 +3,13 @@ package net.corda.testdoubles.util
 /**
  * Parsers a command and returns it as string. In the future it should handle double quotes and more advance syntax.
  */
-fun String.parse(): Array<String> {
+fun parse(value: CharSequence): Array<String> {
     val builders = mutableListOf(StringBuilder())
 
     var prevChar = ' '
     var withinQuotes = false
 
-    for (c in this) {
+    for (c in value) {
         if (c == ' ')
             if (withinQuotes || prevChar == '\\')
                 builders.last().append(c)

@@ -21,7 +21,7 @@ class ListTopicCommandTest {
         }
 
         internalMain(
-            *"topics list --endpoint ${fakeHttpServer.endpoint}".parse(),
+            *parse("topics list --endpoint ${fakeHttpServer.endpoint}"),
             overrideStdout = inMemoryStdout.outputStream
         )
 
@@ -38,7 +38,7 @@ class ListTopicCommandTest {
         }
 
         internalMain(
-            *"topics list --endpoint ${fakeHttpServer.endpoint}".parse(),
+            *parse("topics list --endpoint ${fakeHttpServer.endpoint}"),
             overrideStdout = inMemoryStdout.outputStream
         )
 

@@ -17,12 +17,14 @@ class DeleteTopicCommandTest {
         fakeHttpServer.handle("delete", "/topics/topic1") { }
 
         internalMain(
-            *"topics delete --endpoint ${fakeHttpServer.endpoint} --topic topic1".parse(),
+            *parse("topics delete"),
+            *parse("--endpoint ${fakeHttpServer.endpoint}"),
+            *parse("--topic topic1"),
             overrideStdout = inMemoryStdout.outputStream
         )
 
         assertEquals(
-            String.format(DeleteTopicCommand.successMessage, "topic1"),
+            DeleteTopicCommand.successMessage.format("topic1"),
             inMemoryStdout.readText().trim(),
             "expected output"
         )

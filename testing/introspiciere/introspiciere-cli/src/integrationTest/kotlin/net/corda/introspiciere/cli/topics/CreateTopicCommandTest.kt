@@ -25,15 +25,20 @@ class CreateTopicCommandTest {
         }
 
         internalMain(
-            *("""topics create --endpoint ${fakeHttpServer.endpoint} --topic topic1 --partitions 5 """ +
-                    """--replication-factor 2 --config "cleanup.policy=compact" --config "segment.ms=300000"""").parse(),
+            *parse("topics create --endpoint ${fakeHttpServer.endpoint}"),
+            *parse("--topic topic1"),
+            *parse("--partitions 5"),
+            *parse("--replication-factor 2"),
+            *parse("--config \"cleanup.policy=compact\""),
+            *parse("--config \"segment.ms=300000\""),
             overrideStdout = inMemoryStdout.outputStream
         )
 
         assertEquals(
-            String.format(CreateTopicCommand.successMessage, "topic1"),
+            CreateTopicCommand.successMessage.format("topic1"),
             inMemoryStdout.readText().trim(),
             "expected output"
         )
     }
 }
+

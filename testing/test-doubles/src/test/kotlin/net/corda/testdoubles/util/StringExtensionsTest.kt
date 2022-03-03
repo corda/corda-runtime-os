@@ -18,7 +18,7 @@ internal class StringExtensionsTest {
     }
 
     private fun assertCommandParsing(actual: String, expected: Array<String>) {
-        val parsed = actual.parse()
+        val parsed = parse(actual)
         assertEquals(expected.toList(), parsed.toList(), "expected command parse")
     }
 }

@@ -16,6 +16,12 @@ class InMemoryStream : Closeable {
      */
     fun readText(): String = inputStream.bufferedReader().readText()
 
+    fun writeText(sequence: CharSequence) {
+        val writer = outputStream.bufferedWriter()
+        writer.appendLine(sequence)
+        writer.flush()
+    }
+
     override fun close() {
         temp.delete()
     }

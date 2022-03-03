@@ -20,7 +20,9 @@ class DescribeTopicCommandTest {
         }
 
         internalMain(
-            *"topics describe --endpoint ${fakeHttpServer.endpoint} --topic topic1".parse(),
+            *parse("topics describe"),
+            *parse("--endpoint ${fakeHttpServer.endpoint}"),
+            *parse("--topic topic1"),
             overrideStdout = inMemoryStdout.outputStream
         )
 
