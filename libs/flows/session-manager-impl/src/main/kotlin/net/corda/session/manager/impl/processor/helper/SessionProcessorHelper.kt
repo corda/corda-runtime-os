@@ -13,10 +13,10 @@ import java.time.Instant
 
 /**
  * Remove any messages from the send events state that have been acknowledged by the counterparty.
- * Examine the [sessionEvent] to get the highest contiguous SeqNum received by the other side as well as any out of order messages
+ * Examine the [sessionEvent] to get the highest contiguous sequence number received by the other side as well as any out of order messages
  * they have also received. Remove these events if present from the sendEvents undelivered messages.
- * If the current session state has a status of WAIT_FOR_FINAL_ACK then this is the final ACK of the session close message
- * and so the session can be set to CLOSED.
+ * If the current session state has a status of WAIT_FOR_FINAL_ACK and the ack info contains the sequence number of the session close
+ * message then the session can be set to CLOSED.
  * If the current session state has a status of CREATED and the SessionInit has been acked then the session can be set to CONFIRMED
  *
  * @param sessionEvent to get ack info from
@@ -28,8 +28,9 @@ fun processAcks(sessionEvent: SessionEvent, sessionState: SessionState): Session
     val outOfOrderSeqNums = sessionEvent.outOfOrderSequenceNums
 
     val undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.filter {
-        it.sequenceNum == null || (it.sequenceNum > highestContiguousSeqNum && (outOfOrderSeqNums.isNullOrEmpty() || !outOfOrderSeqNums
-            .contains(it.sequenceNum)))
+        it.sequenceNum == null ||
+                (it.sequenceNum > highestContiguousSeqNum &&
+                        (outOfOrderSeqNums.isNullOrEmpty() || !outOfOrderSeqNums.contains(it.sequenceNum)))
     }
 
     return sessionState.apply {
