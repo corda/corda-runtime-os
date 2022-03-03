@@ -83,7 +83,6 @@ class NetworkMapCreator @Activate constructor(
                 val publicKeyStoreFile = dataConfig.getString("publicKeyStoreFile")
                 val publicKeyAlias = dataConfig.getString("publicKeyAlias")
                 val keystorePassword = dataConfig.getString("keystorePassword")
-                val publicKeyAlgo = dataConfig.getString("publicKeyAlgo")
                 val address = dataConfig.getString("address")
                 val networkType = parseNetworkType(dataConfig.getString("networkType"))
                 val trustStoreCertificates = dataConfig.getList("trustStoreCertificates")
@@ -93,7 +92,7 @@ class NetworkMapCreator @Activate constructor(
                         File(it)
                     }.map { it.readText() }
 
-                val (keyAlgo, publicKey) = readKey(publicKeyStoreFile, publicKeyAlgo, publicKeyAlias, keystorePassword)
+                val (keyAlgo, publicKey) = readKey(publicKeyStoreFile, publicKeyAlias, keystorePassword)
                 val networkMapEntry = NetworkMapEntry(
                     HoldingIdentity(x500Name, groupId),
                     ByteBuffer.wrap(publicKey.encoded),
@@ -160,7 +159,6 @@ class NetworkMapCreator @Activate constructor(
 
     private fun readKey(
         keyStoreFilePath: String,
-        keyAlgo: String,
         keyAlias: String,
         keystorePassword: String
     ): Pair<KeyAlgorithm, PublicKey> {
@@ -169,16 +167,16 @@ class NetworkMapCreator @Activate constructor(
 
         val publicKey = keystore.getCertificate(keyAlias).publicKey
 
-        val keyAlgorithm: KeyAlgorithm? = when (keyAlgo) {
+        val keyAlgorithm: KeyAlgorithm? = when (publicKey.algorithm) {
             "RSA" -> KeyAlgorithm.RSA
-            "ECDSA" -> KeyAlgorithm.ECDSA
+            "EC" -> KeyAlgorithm.ECDSA
             else -> {
                 null
             }
         }
 
         if (keyAlgorithm == null) {
-            logError("Invalid key algorithm value: $keyAlgo")
+            logError("Invalid key algorithm value: ${publicKey.algorithm}")
             shutdown()
         }
 

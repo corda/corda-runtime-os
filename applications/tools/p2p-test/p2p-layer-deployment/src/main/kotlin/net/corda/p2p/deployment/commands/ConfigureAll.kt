@@ -163,7 +163,6 @@ class ConfigureAll : Runnable {
                     "publicKeyStoreFile" to keyStoreFile.absolutePath,
                     "publicKeyAlias" to "ec",
                     "keystorePassword" to "password",
-                    "publicKeyAlgo" to "ECDSA",
                     "address" to "http://$host:${Port.Gateway.port}",
                     "networkType" to "CORDA_5",
                     "trustStoreCertificates" to listOf(trustStoreFile.absolutePath),
@@ -207,7 +206,6 @@ class ConfigureAll : Runnable {
                         "publicKeyStoreFile" to keyStoreFile(host).absolutePath,
                         "publicKeyAlias" to "ec",
                         "keystorePassword" to "password",
-                        "publicKeyAlgo" to "ECDSA",
                         "address" to "http://$host:${Port.Gateway.port}",
                         "networkType" to "CORDA_5",
                         "trustStoreCertificates" to listOf(trustStoreFile.absolutePath),
@@ -244,11 +242,13 @@ class ConfigureAll : Runnable {
                     "keystoreFile" to keyStoreFile.absolutePath,
                     "password" to "password",
                     "tenantId" to tenantId,
+                    "publishAlias" to "$x500name-$groupId:identity",
                 ),
                 mapOf(
                     "keystoreFile" to sslKeyStore.absolutePath,
                     "password" to "password",
                     "tenantId" to tenantId,
+                    "publishAlias" to "$x500name-$groupId:tls"
                 )
             ),
         )

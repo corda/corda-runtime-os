@@ -242,9 +242,10 @@ class P2PLayerEndToEndTest {
         val subscriptionFactory = InMemSubscriptionFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
         val publisherFactory = CordaPublisherFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
         val configReadService = ConfigurationReadServiceImpl(lifecycleCoordinatorFactory, subscriptionFactory)
-        val configPublisher = publisherFactory.createPublisher(PublisherConfig("config-writer")).let {
-            ConfigPublisherImpl(CONFIG_TOPIC, it)
-        }
+        val configPublisher = ConfigPublisherImpl(
+            CONFIG_TOPIC,
+            publisherFactory.createPublisher(PublisherConfig("config-writer"))
+        )
         val gatewayConfig = createGatewayConfig(p2pPort, p2pAddress, sslConfig)
         val tlsTenantId by lazy {
             GROUP_ID
@@ -387,7 +388,7 @@ class P2PLayerEndToEndTest {
                 listOf(String(readKeyStore("$trustStoreFileName.pem"))),
             )
 
-        private fun publishNetworkMapAndKeys(otherHost: Host) {
+        private fun publishNetworkMapAndIdentityKeys(otherHost: Host) {
             val publisherForHost = publisherFactory.createPublisher(PublisherConfig("test-runner-publisher", 1), bootstrapConfig)
             val networkMapEntries = mapOf(
                 "$x500Name-$GROUP_ID" to networkMapEntry,
@@ -416,7 +417,7 @@ class P2PLayerEndToEndTest {
             }
         }
 
-        fun publishKeys() {
+        fun publishTlsKeys() {
             val records = keyStore.aliases().toList().map { alias ->
                 val privateKey = keyStore.getKey(alias, "password".toCharArray())
                 val publicKey = keyStore.getCertificate(alias).publicKey
@@ -455,13 +456,13 @@ class P2PLayerEndToEndTest {
         fun startWith(otherHost: Host) {
             configReadService.start()
             configReadService.bootstrapConfig(bootstrapConfig)
-            publishKeys()
+            publishTlsKeys()
 
             linkManager.start()
             gateway.start()
 
             publishConfig()
-            publishNetworkMapAndKeys(otherHost)
+            publishNetworkMapAndIdentityKeys(otherHost)
 
             eventually(30.seconds) {
                 assertThat(linkManager.isRunning).isTrue

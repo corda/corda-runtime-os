@@ -120,31 +120,20 @@ class CryptoServiceKeyCreator @Activate constructor(
         consoleLogger.error(error)
     }
 
-    private fun getAlgorithm(config: Config, publicKey: PublicKey): KeyAlgorithm? {
-        return try {
-            when (config.getString("algo")) {
-                "RSA" -> KeyAlgorithm.RSA
-                "ECDSA" -> KeyAlgorithm.ECDSA
-                else -> {
-                    logger.error("Invalid key algorithm value")
-                    return null
-                }
-            }
-        } catch (_: ConfigException.Missing) {
-            when (publicKey.algorithm) {
-                "RSA" -> KeyAlgorithm.RSA
-                "EC" -> KeyAlgorithm.ECDSA
-                else -> {
-                    logger.error("Algorithm ${publicKey.algorithm} not supported")
-                    return null
-                }
+    private fun getAlgorithm(publicKey: PublicKey): KeyAlgorithm? {
+        return when (publicKey.algorithm) {
+            "RSA" -> KeyAlgorithm.RSA
+            "EC" -> KeyAlgorithm.ECDSA
+            else -> {
+                logger.error("Algorithm ${publicKey.algorithm} not supported")
+                return null
             }
         }
     }
 
     private fun readEntry(config: Config): Pair<String, TenantKeys>? {
         val publishAlias = try {
-            config.getString("publish_alias")
+            config.getString("publishAlias")
         } catch (_: ConfigException.Missing) {
             UUID.randomUUID().toString()
         }
@@ -154,7 +143,7 @@ class CryptoServiceKeyCreator @Activate constructor(
         val keystore = KeyStore.getInstance("JKS")
         keystore.load(FileInputStream(keystoreFilePath), keystorePassword.toCharArray())
         val keyStoreAlias = try {
-            config.getString("keystore_alias")
+            config.getString("keystoreAlias")
         } catch (_: ConfigException.Missing) {
             keystore.aliases().nextElement()
         }
@@ -162,7 +151,7 @@ class CryptoServiceKeyCreator @Activate constructor(
         val privateKey = keystore.getKey(keyStoreAlias, keystorePassword.toCharArray()) as PrivateKey
         val publicKey = keystore.getCertificate(keyStoreAlias).publicKey
 
-        val keyAlgorithm = getAlgorithm(config, publicKey) ?: return null
+        val keyAlgorithm = getAlgorithm(publicKey) ?: return null
 
         val tenantId = config.getString("tenantId")
 

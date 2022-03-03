@@ -24,19 +24,17 @@ The file provided on the `--keys-config` CLI parameter should have the following
 {
     "keys": [
         {
-          "publish_alias": "key1",
-          "keystore_alias": "1",
+          "publishAlias": "key1",
+          "keystoreAlias": "1",
           "keystoreFile": "<path_to_the_keystore_file>",
           "password": "keystore-password",
-          "algo": "RSA",
           "tenantId": "tenantID"
         },
         {
-          "publish_alias": "key2",
-          "keystore_alias": "2",
+          "publishAlias": "key2",
+          "keystoreAlias": "2",
           "keystoreFile": "<path_to_the_keystore_file>",
           "password": "keystore-password",
-          "algo": "ECDSA",
           "tenantId": "tenantID"
         }
     ]
@@ -50,7 +48,6 @@ Where:
 keytool -genkeypair -alias ec -keyalg EC -storetype JKS -keystore ec_key.jks -storepass 123456
 ```
 * `password` is the JKS keystore password.
-* `algo` either `RSA` or `ECDSA`. If omitted, the private key algorithm will be used.
 * `tenantId` A non-unique ID for the tenant
 
 ### Populating a custom topic

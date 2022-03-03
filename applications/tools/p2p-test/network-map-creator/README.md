@@ -30,7 +30,6 @@ The file provided on the `--netmap-file` CLI parameter should have the following
                "publicKeyStoreFile": "<path_to_the_keystore_file>",
                "publicKeyAlias": "<alias_of_public_key>", 
                "keystorePassword": "keystore-password",
-               "publicKeyAlgo": "RSA",
                "address": "http://alice.com",
                "networkType": "CORDA_4",
                "trustStoreCertificates": ["<path_to_trust_certificate_files>"]
@@ -43,7 +42,6 @@ The file provided on the `--netmap-file` CLI parameter should have the following
               "publicKeyStoreFile": "<path_to_the_keystore_file>",
               "publicKeyAlias": "<alias_of_public_key>", 
               "keystorePassword": "keystore-password",
-              "publicKeyAlgo": "ECDSA",
               "address": "http://bob.com",
               "networkType": "CORDA_5",
               "trustStoreCertificates": ["<path_to_trust_certificate_files>"]
