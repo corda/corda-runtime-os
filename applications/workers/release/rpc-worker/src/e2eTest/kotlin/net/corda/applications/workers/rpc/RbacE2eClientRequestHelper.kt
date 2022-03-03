@@ -11,6 +11,7 @@ import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
 import net.corda.libs.permissions.endpoints.v1.role.types.RoleResponseType
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
+import net.corda.libs.permissions.endpoints.v1.user.types.UserPermissionSummaryResponseType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
 import net.corda.test.util.eventually
 import org.assertj.core.api.SoftAssertions
@@ -171,6 +172,17 @@ class RbacE2eClientRequestHelper(
         return with(proxy.getPermission(permissionId)) {
             SoftAssertions.assertSoftly {
                 it.assertThat(this.id).isEqualTo(permissionId)
+            }
+            this
+        }
+    }
+
+    fun getPermissionSummary(userLogin: String): UserPermissionSummaryResponseType {
+        val client = testToolkit.httpClientFor(UserEndpoint::class.java, requestUserName, requestUserPassword)
+        val proxy = client.start().proxy
+        return with(proxy.getPermissionSummary(userLogin)) {
+            SoftAssertions.assertSoftly {
+                it.assertThat(this.loginName).isEqualToIgnoringCase(userLogin)
             }
             this
         }

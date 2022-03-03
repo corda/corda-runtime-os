@@ -7,6 +7,7 @@ import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
+import net.corda.libs.permissions.endpoints.v1.user.types.UserPermissionSummaryResponseType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
 
 /**
@@ -58,4 +59,14 @@ interface UserEndpoint : RpcOps {
         @HttpRpcRequestBodyParameter(description = "Id of the role to un-assign from this user")
         roleId: String
     ): UserResponseType
+
+    /**
+     * Get a summary of a user's permissions.
+     */
+    @HttpRpcGET(description = "Get a summary of a User's permissions")
+    fun getPermissionSummary(
+        @HttpRpcQueryParameter(description = "Login Name of the user.")
+        loginName: String
+    ): UserPermissionSummaryResponseType
+
 }

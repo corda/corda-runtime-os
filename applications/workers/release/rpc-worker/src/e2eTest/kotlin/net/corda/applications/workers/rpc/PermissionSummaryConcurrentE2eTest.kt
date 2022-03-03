@@ -1,0 +1,81 @@
+package net.corda.applications.workers.rpc
+
+import java.time.Instant
+import java.time.temporal.ChronoUnit.DAYS
+import java.util.concurrent.Executors
+import net.corda.applications.workers.rpc.http.TestToolkitProperty
+import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
+import net.corda.test.util.eventually
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
+
+/**
+ * These tests make assertions about permission summaries utilizing the `getPermissionSummary` API.
+ */
+class PermissionSummaryConcurrentE2eTest {
+
+    companion object {
+        private val testToolkit by TestToolkitProperty()
+        private val concurrentTestToolkit by TestToolkitProperty()
+        private val adminTestHelper = RbacE2eClientRequestHelper(testToolkit, "admin", "admin")
+        private val concurrentAdminTestHelper = RbacE2eClientRequestHelper(concurrentTestToolkit, "admin", "admin")
+    }
+
+    @Test
+    fun `permission summary eventually consistent`() {
+        val newUser1: String = testToolkit.uniqueName
+        val newUser2: String = testToolkit.uniqueName
+        val newUserPassword: String = testToolkit.uniqueName
+
+        val passwordExpiry = Instant.now().plus(1, DAYS).truncatedTo(DAYS)
+        adminTestHelper.createUser(newUser1, newUserPassword, passwordExpiry)
+        adminTestHelper.createUser(newUser2, newUserPassword, passwordExpiry)
+
+        val roleId1 = adminTestHelper.createRole(testToolkit.uniqueName)
+        val roleId2 = adminTestHelper.createRole(testToolkit.uniqueName)
+
+        adminTestHelper.addRoleToUser(newUser1, roleId1)
+        adminTestHelper.addRoleToUser(newUser1, roleId2)
+        adminTestHelper.addRoleToUser(newUser2, roleId1)
+        adminTestHelper.addRoleToUser(newUser2, roleId2)
+
+        with(adminTestHelper.getPermissionSummary(newUser1)) {
+            assertEquals(0, this.permissions.size, "Permission summary should be empty before the role is assigned")
+        }
+        with(adminTestHelper.getPermissionSummary(newUser2)) {
+            assertEquals(0, this.permissions.size, "Permission summary should be empty before the role is assigned")
+        }
+
+        val permissionIdsAllow = (1..25).map {
+            adminTestHelper.createPermission(PermissionType.ALLOW, "$it-allow-${testToolkit.uniqueName}")
+        }
+        val permissionIdsDeny = (1..25).map {
+            adminTestHelper.createPermission(PermissionType.DENY, "$it-deny-${testToolkit.uniqueName}")
+        }
+
+        val executorService = Executors.newFixedThreadPool(2)
+        val role1PopulationFuture = executorService.submit {
+            permissionIdsAllow.forEach { permId ->
+                adminTestHelper.addPermissionsToRole(roleId1, permId)
+            }
+        }
+        val role2PopulationFuture = executorService.submit {
+            permissionIdsDeny.forEach { permId ->
+                concurrentAdminTestHelper.addPermissionsToRole(roleId2, permId)
+            }
+        }
+
+        role1PopulationFuture.get()
+        role2PopulationFuture.get()
+        executorService.shutdown()
+
+        eventually {
+            with(adminTestHelper.getPermissionSummary(newUser1)) {
+                assertEquals(50, this.permissions.size)
+            }
+            with(adminTestHelper.getPermissionSummary(newUser2)) {
+                assertEquals(50, this.permissions.size)
+            }
+        }
+    }
+}
