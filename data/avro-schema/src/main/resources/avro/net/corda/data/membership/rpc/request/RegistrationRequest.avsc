@@ -5,8 +5,8 @@
   "doc": "Request to start the registration process.",
   "fields": [
     {
-      "name": "virtualNodeId",
-      "doc": "ID of the virtual node applying for registration.",
+      "name": "holdingIdentityId",
+      "doc": "ID of the holding identity applying for registration.",
       "type": "string"
     },
     {
