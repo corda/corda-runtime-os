@@ -4,3 +4,16 @@
 
 fullnameOverride: ""
 imageTagOverride: "unstable"
+
+db:
+  cluster:
+    url: postgresql://prereqs-postgresql:5432/cordacluster
+    user: user
+    secret: 4LNuCvt+NhGIBwL7gRRhvAZh3k6JRN9NHv0aG3pi1xM=
+
+debug:
+  suspend: "n"
+  server: "y"
+
+kafka:
+  url: prereqs-kafka:9092

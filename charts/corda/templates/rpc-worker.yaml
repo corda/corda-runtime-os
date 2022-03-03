@@ -1,0 +1,105 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "corda.fullname" . }}-rpc
+  labels: &id004
+    app: {{ include "corda.fullname" . }}-rpc-node
+    type: rpc-worker
+spec:
+  type: NodePort
+  selector: *id004
+  ports:
+  - name: node-rpc
+    port: 443
+    targetPort: 8888
+  - name: worker-debug
+    port: 5005
+    targetPort: 5005
+  - name: worker-health
+    port: 7000
+    targetPort: 7000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "corda.fullname" . }}-rpc
+  labels:
+    app: {{ include "corda.fullname" . }}-rpc-node
+    family: e2e
+    type: rpc-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "corda.fullname" . }}-rpc-node
+      family: e2e
+      type: rpc-worker
+  template:
+    metadata:
+      labels:
+        app: {{ include "corda.fullname" . }}-rpc-node
+        family: e2e
+        type: rpc-worker
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      volumes:
+      - name: {{ include "corda.fullname" . }}-rpc-volume
+        persistentVolumeClaim:
+          claimName: {{ include "corda.fullname" . }}-rpc-ebs-claim
+      imagePullSecrets:
+      - name: docker-registry-cred
+      containers:
+      - name: {{ include "corda.fullname" . }}-rpc
+        image: corda-os-docker.software.r3.com/corda-os-rpc-worker:{{ .Values.imageTagOverride }}
+        imagePullPolicy: Always
+        volumeMounts:
+        - name: {{ include "corda.fullname" . }}-rpc-volume
+          mountPath: /logs
+        securityContext:
+          allowPrivilegeEscalation: false
+        env:
+        - name: JAVA_TOOL_OPTIONS
+          value: -agentlib:jdwp=transport=dt_socket,server={{ .Values.debug.server }},suspend={{ .Values.debug.suspend }},address=*:5005
+        args:
+        - -mkafka.common.bootstrap.servers={{ .Values.kafka.url }}
+        ports:
+        - name: node-rpc
+          containerPort: 8888
+        - name: worker-debug
+          containerPort: 5005
+        - name: worker-health
+          containerPort: 7000
+        livenessProbe:
+          httpGet:
+            path: /isHealthy
+            port: 7000
+            scheme: HTTP
+          periodSeconds: 5
+          failureThreshold: 1
+        startupProbe:
+          httpGet:
+            path: /isHealthy
+            port: 7000
+            scheme: HTTP
+          periodSeconds: 5
+          failureThreshold: 5
+      nodeSelector:
+        kubernetes.io/os: linux
+        kubernetes.io/arch: amd64
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "corda.fullname" . }}-rpc-ebs-claim
+  labels:
+    app: {{ include "corda.fullname" . }}-rpc-node
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: corda-sc
+  resources:
+    requests:
+      storage: 5Gi
