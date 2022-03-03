@@ -21,9 +21,9 @@ import java.time.Duration
 import java.time.Instant
 
 interface MessagesGateway {
-    fun readFromEnd(topic: String, schema: String): Pair<List<Msg>, Long>
-    fun readFromBeginning(topic: String, schema: String): Pair<List<Msg>, Long>
-    fun readFrom(topic: String, schema: String, from: Long): Pair<List<Msg>, Long>
+    fun readFromEnd(topic: String, schema: String, timeout: Duration?): Pair<List<Msg>, Long>
+    fun readFromBeginning(topic: String, schema: String, timeout: Duration?): Pair<List<Msg>, Long>
+    fun readFrom(topic: String, schema: String, from: Long, timeout: Duration?): Pair<List<Msg>, Long>
     fun send(topic: String, message: KafkaMessage)
 }
 
@@ -32,16 +32,18 @@ class MessagesGatewayImpl(private val kafkaConfig: KafkaConfig) : MessagesGatewa
     companion object {
         private val classes: MutableSet<Class<out SpecificRecordBase>> =
             Reflections("net.corda").getSubTypesOf(SpecificRecordBase::class.java)
+
+        private val defaultTimeout = Duration.ofSeconds(1)
     }
 
-    override fun readFromEnd(topic: String, schema: String): Pair<List<Msg>, Long> {
+    override fun readFromEnd(topic: String, schema: String, timeout: Duration?): Pair<List<Msg>, Long> {
         createConsumer(schema).use { consumer ->
             val partitions = consumer.topicPartitionsFor(topic)
 
             consumer.assign(partitions)
             consumer.seekToEnd(partitions)
 
-            val records = consumer.poll(Duration.ofSeconds(5))
+            val records = consumer.poll(timeout ?: defaultTimeout)
             return if (records.isEmpty) {
                 // Workaround to fetch the current timestamp of the Kafka cluster if no messages are returned.
                 // There must be a better way of doing it but I don't know it.
@@ -53,14 +55,14 @@ class MessagesGatewayImpl(private val kafkaConfig: KafkaConfig) : MessagesGatewa
         }
     }
 
-    override fun readFromBeginning(topic: String, schema: String): Pair<List<Msg>, Long> {
+    override fun readFromBeginning(topic: String, schema: String, timeout: Duration?): Pair<List<Msg>, Long> {
         createConsumer(schema).use { consumer ->
             val partitions = consumer.topicPartitionsFor(topic)
 
             consumer.assign(partitions)
             consumer.seekToBeginning(partitions)
 
-            val records = consumer.poll(Duration.ofSeconds(5))
+            val records = consumer.poll(timeout ?: defaultTimeout)
             return if (records.isEmpty) {
                 return emptyList<Msg>() to 0L
             } else {
@@ -70,7 +72,7 @@ class MessagesGatewayImpl(private val kafkaConfig: KafkaConfig) : MessagesGatewa
         }
     }
 
-    override fun readFrom(topic: String, schema: String, from: Long): Pair<List<Msg>, Long> {
+    override fun readFrom(topic: String, schema: String, from: Long, timeout: Duration?): Pair<List<Msg>, Long> {
         createConsumer(schema).use { consumer ->
             val partitions = consumer.topicPartitionsFor(topic)
 
@@ -87,7 +89,7 @@ class MessagesGatewayImpl(private val kafkaConfig: KafkaConfig) : MessagesGatewa
                 consumer.seek(k, v.offset())
             }
 
-            val records = consumer.poll(Duration.ofSeconds(5))
+            val records = consumer.poll(timeout ?: defaultTimeout)
             return if (records.isEmpty) {
                 return emptyList<Msg>() to from
             } else {
@@ -115,8 +117,14 @@ class MessagesGatewayImpl(private val kafkaConfig: KafkaConfig) : MessagesGatewa
             topicGateway.create(TopicDefinition(hackTopic))
             send(hackTopic, KafkaMessage.create(hackTopic, null, DemoRecord(0)))
             while (true) {
-                val (msgs, timestamp) = readFrom(hackTopic, DemoRecord::class.qualifiedName!!, 0)
-                if (msgs.isNotEmpty()) return timestamp
+                val (msgs, timestamp) = readFrom(
+                    hackTopic,
+                    DemoRecord::class.qualifiedName!!,
+                    0,
+                    Duration.ofMillis(100)
+                )
+                if (msgs.isNotEmpty())
+                    return timestamp
             }
         } finally {
             topicGateway.removeByName(hackTopic)

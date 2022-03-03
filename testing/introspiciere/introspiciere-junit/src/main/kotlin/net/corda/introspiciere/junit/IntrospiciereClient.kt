@@ -5,6 +5,7 @@ import net.corda.introspiciere.domain.TopicDescription
 import net.corda.introspiciere.http.IntrospiciereHttpClient
 import net.corda.introspiciere.payloads.MsgBatch
 import net.corda.introspiciere.payloads.deserialize
+import java.time.Duration
 import kotlin.concurrent.thread
 
 /**
@@ -68,37 +69,37 @@ class IntrospiciereClient(private val endpoint: String) {
     /**
      * Returns a sequence with all messages from a [topic] with a [key]. Starts reading messages from the beginning.
      */
-    inline fun <reified T> readFromBeginning(topic: String, key: String?): Sequence<T?> =
-        readFromBeginning(topic, key, T::class.java)
+    fun <T> readFromBeginning(
+        topic: String,
+        key: String?,
+        schemaClass: Class<T>,
+        timeout: Duration = Duration.ofSeconds(1),
+    ): Sequence<T?> = readInternal(topic, key, schemaClass, timeout, httpClient::readFromBeginning)
 
     /**
      * Returns a sequence with all messages from a [topic] with a [key]. Starts reading messages from the end.
      */
-    inline fun <reified T> readFromLatest(topic: String, key: String?): Sequence<T?> =
-        readFromLatest(topic, key, T::class.java)
-
-    /**
-     * Returns a sequence with all messages from a [topic] with a [key]. Starts reading messages from the beginning.
-     */
-    fun <T> readFromBeginning(topic: String, key: String?, schemaClass: Class<T>): Sequence<T?> =
-        readInternal(topic, key, schemaClass, httpClient::readFromBeginning)
-
-    /**
-     * Returns a sequence with all messages from a [topic] with a [key]. Starts reading messages from the end.
-     */
-    fun <T> readFromLatest(topic: String, key: String?, schemaClass: Class<T>): Sequence<T?> =
-        readInternal(topic, key, schemaClass, httpClient::readFromEnd)
+    fun <T> readFromLatest(
+        topic: String,
+        key: String?,
+        schemaClass: Class<T>,
+        timeout: Duration = Duration.ofSeconds(1),
+    ): Sequence<T?> = readInternal(topic, key, schemaClass, timeout, httpClient::readFromEnd)
 
     private fun <T> readInternal(
-        topic: String, key: String?, schemaClass: Class<T>, readFromMethod: (String, String?, String) -> MsgBatch,
+        topic: String,
+        key: String?,
+        schemaClass: Class<T>,
+        timeout: Duration,
+        readFromMethod: (String, String?, String, Duration) -> MsgBatch,
     ): Sequence<T?> {
         val qualifiedName = schemaClass.canonicalName
-        var batch = readFromMethod(topic, key, qualifiedName)
+        var batch = readFromMethod(topic, key, qualifiedName, timeout)
 
         return sequence {
             batch.messages.forEach { msg -> yield(msg.deserialize(schemaClass)) }
             while (true) {
-                batch = httpClient.readFrom(topic, key, qualifiedName, batch.nextBatchTimestamp)
+                batch = httpClient.readFrom(topic, key, qualifiedName, batch.nextBatchTimestamp, timeout)
                 if (batch.messages.isEmpty()) yield(null)
                 else batch.messages.forEach { msg -> yield(msg.deserialize(schemaClass)) }
             }
@@ -136,6 +137,18 @@ class IntrospiciereClient(private val endpoint: String) {
 
     class ExceptionsFound(throwable: Throwable) : Exception("Exceptions found in any of the threads", throwable)
 }
+
+/**
+ * Returns a sequence with all messages from a [topic] with a [key]. Starts reading messages from the beginning.
+ */
+inline fun <reified T> IntrospiciereClient.readFromBeginning(topic: String, key: String?): Sequence<T?> =
+    readFromBeginning(topic, key, T::class.java)
+
+/**
+ * Returns a sequence with all messages from a [topic] with a [key]. Starts reading messages from the end.
+ */
+inline fun <reified T> IntrospiciereClient.readFromLatest(topic: String, key: String?): Sequence<T?> =
+    readFromLatest(topic, key, T::class.java)
 
 inline fun <reified T> IntrospiciereClient.handle(
     topic: String,

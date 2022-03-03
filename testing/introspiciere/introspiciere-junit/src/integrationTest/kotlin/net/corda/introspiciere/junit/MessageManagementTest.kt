@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
+import java.time.Duration.ZERO
 
 internal class MessageManagementTest {
 
@@ -20,7 +21,7 @@ internal class MessageManagementTest {
         introspiciere.client.write(topic, "key1", demo)
 
         val (messages, _) =
-            introspiciere.appContext.messagesGateway.readFrom(topic, DemoRecord::class.qualifiedName!!, 0)
+            introspiciere.appContext.messagesGateway.readFrom(topic, DemoRecord::class.qualifiedName!!, 0, ZERO)
         assertEquals(1, messages.size, "number of messages")
         assertEquals(demo, messages.first().deserialize<DemoRecord>(), "the message")
     }

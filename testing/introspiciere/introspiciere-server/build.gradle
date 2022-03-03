@@ -13,8 +13,6 @@ dependencies {
     implementation project(':testing:introspiciere:introspiciere-core')
     implementation project(':testing:introspiciere:introspiciere-payloads')
     implementation project(':testing:introspiciere:introspiciere-domain')
-
-//    integrationTestImplementationdd "io.javalin:javalin-testtools:$javalinVersion"
 }
 
 jar {

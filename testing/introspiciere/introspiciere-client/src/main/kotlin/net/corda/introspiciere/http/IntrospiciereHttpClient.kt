@@ -12,6 +12,7 @@ import net.corda.introspiciere.domain.KafkaMessage
 import net.corda.introspiciere.domain.TopicDefinitionPayload
 import net.corda.introspiciere.domain.TopicDescription
 import net.corda.introspiciere.payloads.MsgBatch
+import java.time.Duration
 
 class IntrospiciereHttpClient(private val endpoint: String) {
 
@@ -38,17 +39,23 @@ class IntrospiciereHttpClient(private val endpoint: String) {
 
     fun deleteTopic(name: String) = delete("$endpoint/topics/$name")
 
-    fun readFromBeginning(topic: String, key: String?, schema: String): MsgBatch =
-        readInternal(topic, key, schema, 0)
+    fun readFromBeginning(topic: String, key: String?, schema: String, timeout: Duration): MsgBatch =
+        readInternal(topic, key, schema, 0, timeout)
 
-    fun readFromEnd(topic: String, key: String?, schema: String): MsgBatch =
-        readInternal(topic, key, schema, -1)
+    fun readFromEnd(topic: String, key: String?, schema: String, timeout: Duration): MsgBatch =
+        readInternal(topic, key, schema, -1, timeout)
 
-    fun readFrom(topic: String, key: String?, schema: String, from: Long): MsgBatch =
-        readInternal(topic, key, schema, from)
+    fun readFrom(topic: String, key: String?, schema: String, from: Long, timeout: Duration): MsgBatch =
+        readInternal(topic, key, schema, from, timeout)
 
-    private fun readInternal(topic: String, key: String?, schema: String, from: Long): MsgBatch =
-        get("$endpoint/topics/$topic/messages", "key" to key, "schema" to schema, "from" to from)
+    private fun readInternal(topic: String, key: String?, schema: String, from: Long, timeout: Duration): MsgBatch =
+        get(
+            "$endpoint/topics/$topic/messages",
+            "key" to key,
+            "schema" to schema,
+            "from" to from,
+            "timeout" to timeout.toMillis()
+        )
 
     /**
      * Request to send a message to Kafka.

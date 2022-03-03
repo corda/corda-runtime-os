@@ -5,6 +5,7 @@ import io.javalin.http.Handler
 import net.corda.introspiciere.domain.IntrospiciereException
 import net.corda.introspiciere.domain.KafkaMessage
 import net.corda.introspiciere.payloads.MsgBatch
+import java.time.Duration
 
 internal class MessagesController(private val appContext: AppContext) {
 
@@ -15,14 +16,25 @@ internal class MessagesController(private val appContext: AppContext) {
 
     fun getMessages() = Handler { ctx ->
         val (messages, nextBatchTimestamp) = when {
-            ctx.fromQuery < 0L -> appContext.messagesGateway.readFromEnd(ctx.topicParam, ctx.schemaQuery)
-            ctx.fromQuery == 0L -> appContext.messagesGateway.readFromBeginning(ctx.topicParam, ctx.schemaQuery)
-            else -> appContext.messagesGateway.readFrom(ctx.topicParam, ctx.schemaQuery, ctx.fromQuery)
+            ctx.fromQuery < 0L -> appContext.messagesGateway.readFromEnd(
+                ctx.topicParam,
+                ctx.schemaQuery,
+                ctx.timeoutQuery)
+            ctx.fromQuery == 0L -> appContext.messagesGateway.readFromBeginning(
+                ctx.topicParam,
+                ctx.schemaQuery,
+                ctx.timeoutQuery)
+            else -> appContext.messagesGateway.readFrom(
+                ctx.topicParam,
+                ctx.schemaQuery,
+                ctx.fromQuery,
+                ctx.timeoutQuery)
         }
 
-        val filter = if (ctx.keyQuery == null) messages else messages.filter { it.key == ctx.keyQuery }
-        val batch = MsgBatch(ctx.schemaQuery, filter, nextBatchTimestamp)
+        val filter = if (ctx.keyQuery == null) messages
+        else messages.filter { it.key == ctx.keyQuery }
 
+        val batch = MsgBatch(ctx.schemaQuery, filter, nextBatchTimestamp)
         ctx.json(batch)
     }
 
@@ -34,6 +46,9 @@ internal class MessagesController(private val appContext: AppContext) {
 
     private val Context.keyQuery: String?
         get() = queryParam("key")
+
+    private val Context.timeoutQuery: Duration?
+        get() = queryParam("timeout")?.toLong()?.let(Duration::ofMillis)
 
     private val Context.schemaQuery: String
         get() = queryParam("schema") ?: throw IntrospiciereException("schema is mandatory field in query")
