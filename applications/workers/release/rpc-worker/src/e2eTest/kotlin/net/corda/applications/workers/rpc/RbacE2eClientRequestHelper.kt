@@ -77,39 +77,11 @@ class RbacE2eClientRequestHelper(
         }
     }
 
-    fun createPermission(permissionType: PermissionType, permissionString: String): String {
+    fun createPermission(permissionType: PermissionType, permissionString: String, verify: Boolean = true): String {
         val client = testToolkit.httpClientFor(PermissionEndpoint::class.java, requestUserName, requestUserPassword)
         val proxy = client.start().proxy
 
-        val type = CreatePermissionType(permissionType, permissionString, null, null)
-        val permissionId = with(proxy.createPermission(type)) {
-            SoftAssertions.assertSoftly {
-                it.assertThat(this.permissionType).isEqualTo(permissionType)
-                it.assertThat(this.permissionString).isEqualTo(permissionString)
-            }
-            this.id
-        }
-        verifyPermissionCreationPersisted(proxy, permissionId, permissionType, permissionString)
-        return permissionId
-    }
-
-    private fun verifyPermissionCreationPersisted(
-        proxy: PermissionEndpoint,
-        permissionId: String,
-        permissionType: PermissionType,
-        permissionString: String
-    ) {
-        eventually {
-            assertDoesNotThrow {
-                with(proxy.getPermission(permissionId)) {
-                    SoftAssertions.assertSoftly {
-                        it.assertThat(this.id).isEqualTo(permissionId)
-                        it.assertThat(this.permissionType).isEqualTo(permissionType)
-                        it.assertThat(this.permissionString).isEqualTo(permissionString)
-                    }
-                }
-            }
-        }
+        return proxy.createPermission(permissionType, permissionString, verify)
     }
 
     fun addPermissionsToRole(roleId: String, vararg permissionIds: String) {
@@ -185,6 +157,44 @@ class RbacE2eClientRequestHelper(
                 it.assertThat(this.loginName).isEqualToIgnoringCase(userLogin)
             }
             this
+        }
+    }
+}
+
+fun PermissionEndpoint.createPermission(
+    permissionType: PermissionType,
+    permissionString: String,
+    verify: Boolean
+): String {
+    val type = CreatePermissionType(permissionType, permissionString, null, null)
+    val permissionId = with(createPermission(type)) {
+        SoftAssertions.assertSoftly {
+            it.assertThat(this.permissionType).isEqualTo(permissionType)
+            it.assertThat(this.permissionString).isEqualTo(permissionString)
+        }
+        this.id
+    }
+    if (verify) {
+        verifyPermissionCreationPersisted(this, permissionId, permissionType, permissionString)
+    }
+    return permissionId
+}
+
+private fun verifyPermissionCreationPersisted(
+    proxy: PermissionEndpoint,
+    permissionId: String,
+    permissionType: PermissionType,
+    permissionString: String
+) {
+    eventually {
+        assertDoesNotThrow {
+            with(proxy.getPermission(permissionId)) {
+                SoftAssertions.assertSoftly {
+                    it.assertThat(this.id).isEqualTo(permissionId)
+                    it.assertThat(this.permissionType).isEqualTo(permissionType)
+                    it.assertThat(this.permissionString).isEqualTo(permissionString)
+                }
+            }
         }
     }
 }
