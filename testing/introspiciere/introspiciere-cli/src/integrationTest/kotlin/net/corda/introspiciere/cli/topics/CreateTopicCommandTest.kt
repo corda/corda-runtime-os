@@ -25,7 +25,8 @@ class CreateTopicCommandTest {
         }
 
         internalMain(
-            *parse("topics create --endpoint ${fakeHttpServer.endpoint}"),
+            *parse("topics"),
+            *parse("create --endpoint ${fakeHttpServer.endpoint}"),
             *parse("--topic topic1"),
             *parse("--partitions 5"),
             *parse("--replication-factor 2"),
@@ -41,4 +42,3 @@ class CreateTopicCommandTest {
         )
     }
 }
-

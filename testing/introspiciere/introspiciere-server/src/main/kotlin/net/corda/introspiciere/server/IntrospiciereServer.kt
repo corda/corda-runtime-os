@@ -17,12 +17,12 @@ class IntrospiciereServer(appContext: AppContext = DefaultAppContext()) : Closea
         val topicController = TopicController(appContext)
         app.post("/topics", topicController.create()) // This one is wrong
         app.get("/topics", topicController.getAll())
-        app.get("/topics/{topic}", topicController.getByName())
-        app.delete("/topics/{topic}", topicController.delete())
+        app.get("/topics/:topic", topicController.getByName())
+        app.delete("/topics/:topic", topicController.delete())
 
         val messagesController = MessagesController(appContext)
-        app.get("/topics/{topic}/messages", messagesController.getMessages())
-        app.post("/topics/{topic}/messages", messagesController.writeMessage())
+        app.get("/topics/:topic/messages", messagesController.getMessages())
+        app.post("/topics/:topic/messages", messagesController.writeMessage())
     }
 
     fun start(port: Int = 0) {

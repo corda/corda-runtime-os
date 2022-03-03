@@ -70,7 +70,8 @@ class WriteMessageCommandTest {
         value.toString().let(inMemoryStdin::writeText)
 
         internalMain(
-            *parse("write --endpoint ${fakeHttpServer.endpoint}"),
+            *parse("write"),
+            *parse("--endpoint ${fakeHttpServer.endpoint}"),
             *parse("--topic topic1"),
             *parse("--schema net.corda.data.demo.DemoRecord"),
             overrideStdin = inMemoryStdin.inputStream,

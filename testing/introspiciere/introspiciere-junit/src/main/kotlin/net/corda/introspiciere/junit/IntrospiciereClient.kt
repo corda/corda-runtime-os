@@ -5,6 +5,7 @@ import net.corda.introspiciere.domain.TopicDescription
 import net.corda.introspiciere.http.IntrospiciereHttpClient
 import net.corda.introspiciere.payloads.MsgBatch
 import net.corda.introspiciere.payloads.deserialize
+import kotlin.concurrent.thread
 
 /**
  * Client to interact with the instrospiciere server.
@@ -103,4 +104,43 @@ class IntrospiciereClient(private val endpoint: String) {
             }
         }
     }
+
+    private val threads = mutableListOf<Thread>()
+    private val exceptions = mutableListOf<Throwable>()
+    private var continueThread = true
+
+    fun <T> handle(topic: String, key: String?, schemaClass: Class<T>, action: (IntrospiciereClient, T) -> Unit) {
+        threads += thread {
+            val iter = readFromLatest(topic, key, schemaClass).iterator()
+            while (continueThread) {
+                val message = iter.next()
+
+                if (message == null) {
+                    Thread.sleep(2000)
+                    continue
+                }
+
+                action(this, message)
+            }
+        }.apply {
+            this.uncaughtExceptionHandler = Thread.UncaughtExceptionHandler { _, e -> exceptions += e }
+        }
+    }
+
+    fun endAndjoinThreads() {
+        continueThread = false
+        threads.forEach(Thread::join)
+        if (exceptions.isNotEmpty())
+            throw ExceptionsFound(exceptions.first())
+    }
+
+    class ExceptionsFound(throwable: Throwable) : Exception("Exceptions found in any of the threads", throwable)
+}
+
+inline fun <reified T> IntrospiciereClient.handle(
+    topic: String,
+    key: String? = null,
+    noinline action: (IntrospiciereClient, T) -> Unit,
+) {
+    return handle(topic, key, T::class.java, action)
 }

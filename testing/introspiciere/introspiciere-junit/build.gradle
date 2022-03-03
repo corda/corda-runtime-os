@@ -10,6 +10,7 @@ dependencies {
     implementation project(":testing:introspiciere:introspiciere-domain")
     implementation project(":testing:introspiciere:introspiciere-payloads")
     implementation project(":testing:introspiciere:introspiciere-server")
+    implementation project(":testing:test-doubles")
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
     implementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
