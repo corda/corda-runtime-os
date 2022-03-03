@@ -3,10 +3,10 @@ package net.corda.membership.client.dto
 /**
  * Request sent during member registration.
  *
- * @param virtualNodeId The ID of the virtual node the member is running on.
+ * @param holdingIdentityId The ID of the holding identity the member is using.
  * @param action The action to take during registration.
  */
 data class MemberRegistrationRequestDto(
-    val virtualNodeId: String,
+    val holdingIdentityId: String,
     val action: RegistrationActionDto
 )

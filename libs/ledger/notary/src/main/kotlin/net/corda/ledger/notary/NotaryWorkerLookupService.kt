@@ -1,7 +1,7 @@
 package net.corda.ledger.notary
 
 import net.corda.v5.ledger.NotaryInfo
-import net.corda.v5.membership.identity.MemberInfo
+import net.corda.v5.membership.MemberInfo
 
 /**
  *  Lookup of a notary service's workers on the network.

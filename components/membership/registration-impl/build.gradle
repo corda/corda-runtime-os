@@ -15,13 +15,12 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-cipher-suite"
     implementation "net.corda:corda-config-schema"
-    implementation "net.corda:corda-membership-identity"
+    implementation "net.corda:corda-membership"
     implementation "net.corda:corda-topic-schema"
 
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:lifecycle:lifecycle")
-    implementation project(":libs:membership:membership-identity-impl")
     implementation project(":libs:membership:membership-impl")
     implementation project(":libs:membership:membership-internal")
     implementation project(":libs:messaging:messaging")

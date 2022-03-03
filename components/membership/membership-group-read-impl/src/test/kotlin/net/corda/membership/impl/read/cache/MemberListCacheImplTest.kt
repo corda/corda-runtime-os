@@ -5,7 +5,7 @@ import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_2
 import net.corda.membership.impl.read.TestProperties.Companion.aliceName
 import net.corda.membership.impl.read.TestProperties.Companion.bobName
 import net.corda.membership.impl.read.TestProperties.Companion.charlieName
-import net.corda.v5.membership.identity.MemberInfo
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
