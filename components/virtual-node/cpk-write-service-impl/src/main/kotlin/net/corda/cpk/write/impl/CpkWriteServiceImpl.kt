@@ -50,6 +50,7 @@ import java.io.ByteArrayInputStream
 import java.nio.file.Paths
 import java.time.Duration
 
+// TODO at some later point consider deleting CPKs blobs in the database by nulling their blob values and pass the null value to Kafka
 @Suppress("TooManyFunctions")
 @Component(service = [CpkWriteService::class])
 class CpkWriteServiceImpl @Activate constructor(
@@ -156,6 +157,7 @@ class CpkWriteServiceImpl @Activate constructor(
         } catch (e: Exception) {
             closeResources()
             coordinator.updateStatus(LifecycleStatus.DOWN)
+            return
         }
         createCpkChecksumsCache(config)
         createCpkStorage()
