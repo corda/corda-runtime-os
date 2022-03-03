@@ -18,6 +18,7 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -58,7 +59,8 @@ class CordaRPCSenderImplTest {
         val cordaProducerBuilder: CordaProducerBuilder = mock()
         val cordaConsumerBuilder: MessageBusConsumerBuilder = mock()
         doAnswer { cordaProducer }.whenever(cordaProducerBuilder).createProducer(any(), any())
-        doAnswer { cordaConsumer }.whenever(cordaConsumerBuilder).createConsumer<Any, Any>(any(), any(), any(), any(), any())
+        doAnswer { cordaConsumer }.whenever(cordaConsumerBuilder)
+            .createConsumer<Any, Any>(any(), any(), any(), any(), any(), any())
         doReturn(lifecycleCoordinator).`when`(lifecycleCoordinatorFactory).createCoordinator(any(), any())
 
         val cordaSenderImpl = CordaRPCSenderImpl(
@@ -71,7 +73,7 @@ class CordaRPCSenderImplTest {
         )
         cordaSenderImpl.start()
         eventually {
-            verify(cordaProducerBuilder).createProducer(any(), config.busConfig)
+            verify(cordaProducerBuilder).createProducer(any(), eq(config.busConfig))
         }
         cordaSenderImpl.close()
         verify(cordaProducer, times(1)).close()
