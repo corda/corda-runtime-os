@@ -8,6 +8,7 @@ import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import net.corda.test.util.eventually
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
@@ -56,6 +57,7 @@ class PermissionSummaryConcurrentE2eTest {
         val permissionIdsDeny = (1..permissionsCount).map {
             proxy.createPermission(PermissionType.DENY, "$it-deny-${testToolkit.uniqueName}", false)
         }
+        val allPermissionIds = permissionIdsAllow + permissionIdsDeny
 
         val executorService = Executors.newFixedThreadPool(2)
         val role1PopulationFuture = executorService.submit {
@@ -72,9 +74,13 @@ class PermissionSummaryConcurrentE2eTest {
         eventually {
             with(adminTestHelper.getPermissionSummary(newUser1)) {
                 assertEquals(permissionsCount * 2, this.permissions.size)
+                val discoveredPermissionIds = this.permissions.map { it.id }
+                assertTrue(discoveredPermissionIds.containsAll(allPermissionIds))
             }
             with(adminTestHelper.getPermissionSummary(newUser2)) {
                 assertEquals(permissionsCount * 2, this.permissions.size)
+                val discoveredPermissionIds = this.permissions.map { it.id }
+                assertTrue(discoveredPermissionIds.containsAll(allPermissionIds))
             }
         }
     }
