@@ -22,9 +22,9 @@ interface RoleEndpoint : RpcOps {
     /**
      * Create a role in the RBAC permission system.
      */
-    @HttpRpcPOST(description = "Create a Role", path = "createRole")
+    @HttpRpcPOST(description = "Create a Role")
     fun createRole(
-        @HttpRpcRequestBodyParameter(description = "Details of the role to be created", required = true)
+        @HttpRpcRequestBodyParameter(description = "Details of the role to be created")
         createRoleType: CreateRoleType
     ): RoleResponseType
 
@@ -33,29 +33,29 @@ interface RoleEndpoint : RpcOps {
      */
     @HttpRpcGET(description = "Get a Role by its ID", path = "")
     fun getRole(
-        @HttpRpcQueryParameter(name = "id", description = "ID of the role to be returned.", required = true)
+        @HttpRpcQueryParameter(description = "ID of the role to be returned.")
         id: String
     ): RoleResponseType
 
     /**
      * Associates a role with a permission
      */
-    @HttpRpcPOST(description = "Add a permission to a role", path = "addPermission")
+    @HttpRpcPOST(description = "Add a permission to a role")
     fun addPermission(
-        @HttpRpcRequestBodyParameter(description = "Identifier for an existing role", required = true)
+        @HttpRpcRequestBodyParameter(description = "Identifier for an existing role")
         roleId: String,
-        @HttpRpcRequestBodyParameter(description = "Identifier for an existing permission", required = true)
+        @HttpRpcRequestBodyParameter(description = "Identifier for an existing permission")
         permissionId: String
     ): RoleResponseType
 
     /**
      * Removes Association between a role and a permission
      */
-    @HttpRpcPOST(description = "Removes a permission from a role", path = "removePermission")
+    @HttpRpcPOST(description = "Removes a permission from a role")
     fun removePermission(
-        @HttpRpcRequestBodyParameter(description = "Identifier for an existing role", required = true)
+        @HttpRpcRequestBodyParameter(description = "Identifier for an existing role")
         roleId: String,
-        @HttpRpcRequestBodyParameter(description = "Identifier for an existing permission", required = true)
+        @HttpRpcRequestBodyParameter(description = "Identifier for an existing permission")
         permissionId: String
     ): RoleResponseType
 }

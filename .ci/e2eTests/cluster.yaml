@@ -12,8 +12,6 @@ cluster:
         username: "user"
         password: "4LNuCvt+NhGIBwL7gRRhvAZh3k6JRN9NHv0aG3pi1xM="
   workers:
-    p2p-worker: {}
-    p2p-link-worker: {}
     rpc-worker: {}
     crypto-worker: {}
     db-worker: {}

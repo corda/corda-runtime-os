@@ -190,10 +190,4 @@ class FlowRPCOpsServiceImplTest {
         eventHandler.processEvent(StopEvent(), lifecycleCoordinator)
         verify(flowStatusCacheService).close()
     }
-
-    @Test
-    fun `Test stop event closes flow RPC service`() {
-        eventHandler.processEvent(StopEvent(), lifecycleCoordinator)
-        verify(flowRpcOps).close()
-    }
 }

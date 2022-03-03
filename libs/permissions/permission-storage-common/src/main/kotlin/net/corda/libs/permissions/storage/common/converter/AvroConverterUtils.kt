@@ -168,6 +168,7 @@ fun RoleGroupAssociation.toAvroRoleAssociation(): AvroRoleAssociation {
  * Convert from permission query data transfer object to avro permission summary object.
  */
 fun InternalPermissionQueryDto.toAvroPermissionSummary() = AvroPermissionSummary(
+    id,
     groupVisibility,
     virtualNode,
     permissionString,

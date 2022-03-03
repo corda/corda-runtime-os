@@ -3,10 +3,10 @@ package net.corda.membership.httprpc.v1.types.request
 /**
  * Request sent during member registration.
  *
- * @param virtualNodeId The ID of the virtual node the member is running on.
+ * @param holdingIdentityId The ID of the holding identity the member is using.
  * @param action The action to take during registration.
  */
 data class MemberRegistrationRequest(
-    val virtualNodeId: String,
+    val holdingIdentityId: String,
     val action: RegistrationAction
 )

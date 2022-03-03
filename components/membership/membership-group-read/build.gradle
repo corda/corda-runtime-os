@@ -15,5 +15,4 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-membership"
-    implementation "net.corda:corda-membership-identity"
 }

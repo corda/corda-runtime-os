@@ -3,8 +3,8 @@ package net.corda.membership.application.converter
 import net.corda.layeredpropertymap.create
 import net.corda.membership.application.PartyImpl
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
-import net.corda.membership.identity.MemberContextImpl
-import net.corda.membership.identity.MemberInfoExtension
+import net.corda.membership.impl.MemberContextImpl
+import net.corda.membership.impl.MemberInfoExtension
 import net.corda.v5.application.identity.Party
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.CipherSchemeMetadata

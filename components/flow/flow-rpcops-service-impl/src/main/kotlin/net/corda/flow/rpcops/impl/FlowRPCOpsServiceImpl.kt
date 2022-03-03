@@ -87,7 +87,6 @@ internal class FlowRPCOpsServiceImpl @Activate constructor(
                 }
             }
             is StopEvent -> {
-                flowRpcOps.close()
                 flowStatusCacheService.close()
             }
             else -> {

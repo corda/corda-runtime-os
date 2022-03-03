@@ -14,7 +14,6 @@ dependencies {
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-base"
-    implementation "net.corda:corda-membership-identity"
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "net.corda:corda-crypto"
