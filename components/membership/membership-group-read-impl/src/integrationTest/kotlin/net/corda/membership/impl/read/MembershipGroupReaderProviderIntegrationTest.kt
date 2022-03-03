@@ -8,7 +8,6 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.packaging.CpiIdentifier
 import net.corda.libs.packaging.CpiMetadata
 import net.corda.lifecycle.Lifecycle
-import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
@@ -55,9 +54,6 @@ class MembershipGroupReaderProviderIntegrationTest {
     lateinit var membershipGroupReaderProvider: MembershipGroupReaderProvider
 
     @InjectService(timeout = 5000L)
-    lateinit var groupPolicyProvider: GroupPolicyProvider
-
-    @InjectService(timeout = 5000L)
     lateinit var virtualNodeInfoReader: VirtualNodeInfoReadService
 
     @InjectService(timeout = 5000L)
@@ -97,7 +93,6 @@ class MembershipGroupReaderProviderIntegrationTest {
     private val startableServices
         get() = listOf(
             configurationReadService,
-            groupPolicyProvider,
             virtualNodeInfoReader,
             cpiInfoReader
         )
@@ -186,7 +181,6 @@ class MembershipGroupReaderProviderIntegrationTest {
 
         configurationReadService.startAndWait()
         eventually { assertTrue(startableServices.all { it.isRunning }) }
-        eventually { assertDoesNotThrow { groupPolicyProvider.getGroupPolicy(aliceHoldingIdentity) } }
         eventually { assertDoesNotThrow { membershipGroupReaderProvider.getAliceGroupReader() } }
     }
 

@@ -7,7 +7,6 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.impl.read.lifecycle.MembershipGroupReadLifecycleHandler
 import net.corda.membership.impl.read.reader.MembershipGroupReaderFactory
@@ -42,9 +41,7 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = LayeredPropertyMapFactory::class)
-    layeredPropertyMapFactory: LayeredPropertyMapFactory,
-    @Reference(service = GroupPolicyProvider::class)
-    groupPolicyProvider: GroupPolicyProvider
+    layeredPropertyMapFactory: LayeredPropertyMapFactory
 ) : MembershipGroupReaderProvider {
 
     companion object {
@@ -57,7 +54,7 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
 
     // Factory responsible for creating group readers or taking existing instances from the cache.
     private val membershipGroupReaderFactory =
-        MembershipGroupReaderFactory.Impl(membershipGroupReadCache, groupPolicyProvider)
+        MembershipGroupReaderFactory.Impl(membershipGroupReadCache)
 
     // Membership group topic subscriptions
     private val membershipGroupReadSubscriptions = MembershipGroupReadSubscriptions.Impl(

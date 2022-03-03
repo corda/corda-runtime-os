@@ -19,7 +19,6 @@ dependencies {
     implementation project(":libs:virtual-node:virtual-node-info")
 
     implementation project(":components:configuration:configuration-read-service")
-    implementation project(":components:membership:group-policy")
     implementation project(":components:membership:membership-group-read")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
