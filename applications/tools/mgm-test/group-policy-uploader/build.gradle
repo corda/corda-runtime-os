@@ -19,7 +19,6 @@ dependencies {
     implementation "org.slf4j:slf4j-api"
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-crypto"
-    implementation "net.corda:corda-membership-identity"
     implementation "net.corda:corda-packaging"
     implementation "net.corda:corda-packaging-avro-converters"
     implementation project(":libs:configuration:configuration-core")
