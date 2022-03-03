@@ -242,13 +242,13 @@ class ConfigureAll : Runnable {
                     "keystoreFile" to keyStoreFile.absolutePath,
                     "password" to "password",
                     "tenantId" to tenantId,
-                    "publishAlias" to "$x500name-$groupId:identity",
+                    "publishAlias" to "$x500name.$groupId.ec",
                 ),
                 mapOf(
                     "keystoreFile" to sslKeyStore.absolutePath,
                     "password" to "password",
                     "tenantId" to tenantId,
-                    "publishAlias" to "$x500name-$groupId:tls"
+                    "publishAlias" to "$host.$x500name.rsa"
                 )
             ),
         )
