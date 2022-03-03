@@ -22,7 +22,7 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.framework.BundleContext
-import org.osgi.framework.Constants.SCOPE_SINGLETON
+import org.osgi.framework.Constants.SCOPE_PROTOTYPE
 import org.osgi.framework.Constants.SERVICE_SCOPE
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -44,6 +44,10 @@ class FlowSandboxServiceImpl @Activate constructor(
     private val checkpointSerializerBuilderFactory: CheckpointSerializerBuilderFactory,
     private val bundleContext: BundleContext
 ) : FlowSandboxService {
+    private companion object {
+        private const val NON_PROTOTYPE_SERVICES = "(!($SERVICE_SCOPE=$SCOPE_PROTOTYPE))"
+    }
+
     private val logger = loggerFor<FlowSandboxServiceImpl>()
 
     override fun get(
@@ -115,9 +119,11 @@ class FlowSandboxServiceImpl @Activate constructor(
     }
 
     private fun getNonInjectableSingletons(cleanups: MutableList<AutoCloseable>): Set<SingletonSerializeAsToken> {
-        return bundleContext.getServiceReferences(SingletonSerializeAsToken::class.java, "($SERVICE_SCOPE=$SCOPE_SINGLETON)")
-            .mapTo(HashSet()) { ref ->
-                bundleContext.getService(ref).also {
+        // An OSGi singleton component can still register bundle-scoped services, so
+        // select the non-prototype ones here. They should all be internal to Corda.
+        return bundleContext.getServiceReferences(SingletonSerializeAsToken::class.java, NON_PROTOTYPE_SERVICES)
+            .mapNotNullTo(HashSet()) { ref ->
+                bundleContext.getService(ref)?.also {
                     cleanups.add(AutoCloseable { bundleContext.ungetService(ref) })
                 }
             }
