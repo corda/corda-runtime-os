@@ -8,6 +8,7 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -109,6 +110,46 @@ class ConfigBasedLinkManagerHostingMapTest {
                     "ID:${alice.groupId}:${alice.x500Name}",
                 ),
             )
+    }
+
+    @Test
+    fun `applyNewConfiguration remove previous identities`() {
+        setRunning()
+        val typedConfig = configHandler.configFactory(config)
+        configHandler.applyNewConfiguration(typedConfig, null, configResourcesHolder)
+
+        val newTlsCertificates = mapOf(
+            bob to listOf("bobOne"),
+            charlie to listOf("aliceOne", "aliceTwo")
+        )
+        val newConfig = SmartConfigFactory.create(ConfigFactory.empty())
+            .create(
+                ConfigFactory.empty()
+                    .withValue(
+                        LinkManagerConfiguration.LOCALLY_HOSTED_IDENTITIES_KEY,
+                        ConfigValueFactory.fromAnyRef(
+                            newTlsCertificates.map { (identity, certificate) ->
+                                mapOf(
+                                    LinkManagerConfiguration.LOCALLY_HOSTED_IDENTITY_X500_NAME to identity.x500Name,
+                                    LinkManagerConfiguration.LOCALLY_HOSTED_IDENTITY_GPOUP_ID to identity.groupId,
+                                    LinkManagerConfiguration.LOCALLY_HOSTED_TLS_CERTIFICATES to certificate,
+                                    LinkManagerConfiguration.LOCALLY_HOSTED_IDENTITY_TLS_TENANT_ID
+                                        to "TLS:${identity.groupId}:${identity.x500Name}",
+                                    LinkManagerConfiguration.LOCALLY_HOSTED_IDENTITY_IDENTITY_TENANT_ID
+                                        to "ID:${identity.groupId}:${identity.x500Name}"
+                                )
+                            }
+                        )
+                    )
+            )
+        val newTypedConfig = configHandler.configFactory(newConfig)
+        configHandler.applyNewConfiguration(newTypedConfig, typedConfig, configResourcesHolder)
+
+        assertSoftly {
+            it.assertThat(hostingMap.isHostedLocally(alice)).isFalse
+            it.assertThat(hostingMap.isHostedLocally(bob)).isTrue
+            it.assertThat(hostingMap.isHostedLocally(charlie)).isTrue
+        }
     }
 
     private fun setRunning() {

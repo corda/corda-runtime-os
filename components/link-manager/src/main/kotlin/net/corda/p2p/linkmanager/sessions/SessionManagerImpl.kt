@@ -48,6 +48,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerH
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerNotInTheNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.validationFailedWarning
 import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
+import net.corda.p2p.test.stub.crypto.processor.CryptoProcessorException
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.v5.base.annotations.VisibleForTesting
@@ -385,7 +386,7 @@ open class SessionManagerImpl(
                 responderMemberInfo.publicKey,
                 signWithOurGroupId
             )
-        } catch (exception: SecurityException) {
+        } catch (exception: CryptoProcessorException) {
             logger.warn(
                 "${exception.message}. The ${message::class.java.simpleName} with sessionId ${message.header.sessionId}" +
                         " was discarded."
@@ -564,7 +565,7 @@ open class SessionManagerImpl(
                 )
             }
             session.generateOurHandshakeMessage(ourPublicKey, signData)
-        } catch (exception: SecurityException) {
+        } catch (exception: CryptoProcessorException) {
             logger.warn(
                 "Received ${message::class.java.simpleName} with sessionId ${message.header.sessionId}. ${exception.message}." +
                         " The message was discarded."

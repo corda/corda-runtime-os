@@ -31,7 +31,6 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
-import java.security.InvalidParameterException
 import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.Signature
@@ -128,7 +127,7 @@ class StubCryptoProcessorTest {
 
         @Test
         fun `sign throws exception for unknown key`() {
-            assertThrows<InvalidParameterException> {
+            assertThrows<CouldNotFindPrivateKey> {
                 testObject.sign(tenantId, mock(), spec, data)
             }
         }
@@ -154,7 +153,7 @@ class StubCryptoProcessorTest {
                 null, emptyMap()
             )
 
-            assertThrows<InvalidParameterException> {
+            assertThrows<UnsupportedAlgorithm> {
                 testObject.sign(tenantId, key, spec, data)
             }
         }
@@ -177,7 +176,7 @@ class StubCryptoProcessorTest {
 
         @Test
         fun `sign throws exception for unknown tenantID`() {
-            assertThrows<InvalidParameterException> {
+            assertThrows<CouldNotFindPrivateKey> {
                 testObject.sign("$tenantId-1", ecPublicKey, spec, data)
             }
         }
@@ -270,7 +269,7 @@ class StubCryptoProcessorTest {
                 emptyMap()
             )
 
-            assertThrows<InvalidParameterException> {
+            assertThrows<CouldNotFindPrivateKey> {
                 testObject.sign(tenantId, rsaPublicKey, spec, data)
             }
         }

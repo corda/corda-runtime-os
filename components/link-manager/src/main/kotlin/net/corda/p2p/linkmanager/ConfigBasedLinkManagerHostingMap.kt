@@ -57,12 +57,16 @@ class ConfigBasedLinkManagerHostingMap(
             oldConfiguration: Collection<HostingMapListener.IdentityInfo>?,
             resources: ResourcesHolder,
         ): CompletableFuture<Unit> {
-            locallyHostedIdentityToTenantId.clear()
-            newConfiguration.forEach { identity ->
+            val identitiesToKeep = newConfiguration.map { identity ->
                 locallyHostedIdentityToTenantId[identity.holdingIdentity.toHoldingIdentity()] = identity.identityTenantId
                 listeners.forEach { listener ->
                     listener.identityAdded(identity)
                 }
+                identity.holdingIdentity.toHoldingIdentity()
+            }.toSet()
+
+            (locallyHostedIdentityToTenantId.keys().toList() - identitiesToKeep).forEach {
+                locallyHostedIdentityToTenantId.remove(it)
             }
             return CompletableFuture.completedFuture(Unit)
         }

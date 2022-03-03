@@ -12,7 +12,6 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.test.TenantKeys
 import net.corda.schema.TestSchema.Companion.CRYPTO_KEYS_TOPIC
 import net.corda.v5.crypto.SignatureSpec
-import java.security.InvalidParameterException
 import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.Signature
@@ -68,11 +67,11 @@ class StubCryptoProcessor(
         val privateKey = tenantIdToKeys[tenantId]
             ?.publicKeyToPrivateKey
             ?.get(publicKey)
-            ?: throw InvalidParameterException("Could not find private key")
+            ?: throw CouldNotFindPrivateKey()
         val providerName = when (publicKey.algorithm) {
             "RSA" -> "SunRsaSign"
             "EC" -> "SunEC"
-            else -> throw InvalidParameterException("Unsupported algorithm ${publicKey.algorithm}")
+            else -> throw UnsupportedAlgorithm(publicKey)
         }
         val signature = Signature.getInstance(
             spec.signatureName,
