@@ -4,10 +4,10 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.create
-import net.corda.membership.identity.MGMContextImpl
-import net.corda.membership.identity.MemberContextImpl
-import net.corda.membership.identity.toMemberInfo
-import net.corda.membership.identity.toSortedMap
+import net.corda.membership.impl.MGMContextImpl
+import net.corda.membership.impl.MemberContextImpl
+import net.corda.membership.impl.toMemberInfo
+import net.corda.membership.impl.toSortedMap
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record

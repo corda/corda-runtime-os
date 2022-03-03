@@ -230,7 +230,7 @@ class PermissionValidatorImplTest {
 
         val userPermissionSummary = UserPermissionSummary(
             user.loginName,
-            listOf(PermissionSummary(null, null, permissionString, PermissionType.ALLOW)),
+            listOf(PermissionSummary("id1", null, null, permissionString, PermissionType.ALLOW)),
             Instant.now()
         )
         whenever(permissionCache.getPermissionSummary(user.loginName)).thenReturn(userPermissionSummary)
@@ -249,7 +249,7 @@ class PermissionValidatorImplTest {
 
         val userPermissionSummary = UserPermissionSummary(
             userWithPermDenied.loginName,
-            listOf(PermissionSummary(null, null, permissionString, PermissionType.DENY)),
+            listOf(PermissionSummary("id2",null, null, permissionString, PermissionType.DENY)),
             Instant.now()
         )
         whenever(permissionCache.getPermissionSummary(userWithPermDenied.loginName)).thenReturn(userPermissionSummary)

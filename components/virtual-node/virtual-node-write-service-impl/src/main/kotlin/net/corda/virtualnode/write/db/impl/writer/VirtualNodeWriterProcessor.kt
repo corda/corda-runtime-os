@@ -16,7 +16,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.orm.utils.transaction
 import net.corda.packaging.CPI
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
-import net.corda.v5.membership.identity.MemberX500Name
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro

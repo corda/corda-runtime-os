@@ -17,7 +17,6 @@
     bnd.identity;id='net.corda.registration-impl',\
     bnd.identity;id='net.corda.configuration-read-service-impl',\
     bnd.identity;id='net.corda.cpi-info-read-service-impl',\
-    bnd.identity;id='net.corda.membership-identity-impl',\
     bnd.identity;id='net.corda.layered-property-map',\
     bnd.identity;id='net.corda.membership-application',\
     bnd.identity;id='net.corda.membership-group-read-impl',\
@@ -91,7 +90,6 @@
 	net.corda.membership-group-read;version='[5.0.0,5.0.1)',\
 	net.corda.membership-group-read-impl;version='[5.0.0,5.0.1)',\
 	net.corda.membership-identity;version='[5.0.0,5.0.1)',\
-	net.corda.membership-identity-impl;version='[5.0.0,5.0.1)',\
 	net.corda.membership-impl;version='[5.0.0,5.0.1)',\
 	net.corda.membership-internal;version='[5.0.0,5.0.1)',\
 	net.corda.membership-service;version='[5.0.0,5.0.1)',\

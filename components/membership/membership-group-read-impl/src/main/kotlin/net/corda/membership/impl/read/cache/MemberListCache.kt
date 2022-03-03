@@ -1,6 +1,6 @@
 package net.corda.membership.impl.read.cache
 
-import net.corda.v5.membership.identity.MemberInfo
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import java.util.ArrayList
 import java.util.concurrent.ConcurrentHashMap

@@ -31,8 +31,7 @@ interface MemberRegistrationRpcOps : RpcOps {
     )
     fun startRegistration(
         @HttpRpcRequestBodyParameter(
-            description = "Data required to initialise the registration process.",
-            required = true
+            description = "Data required to initialise the registration process."
         )
         memberRegistrationRequest: MemberRegistrationRequest
     ): RegistrationRequestProgress
@@ -50,11 +49,7 @@ interface MemberRegistrationRpcOps : RpcOps {
         path = ""
     )
     fun checkRegistrationProgress(
-        @HttpRpcQueryParameter(
-            name = "virtualNodeId",
-            description = "ID of the virtual node to be checked.",
-            required = true
-        )
+        @HttpRpcQueryParameter(description = "ID of the virtual node to be checked.")
         virtualNodeId: String
     ): RegistrationRequestProgress
 }
