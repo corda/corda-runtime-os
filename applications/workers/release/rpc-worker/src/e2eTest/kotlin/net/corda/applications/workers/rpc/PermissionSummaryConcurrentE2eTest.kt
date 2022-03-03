@@ -4,6 +4,7 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit.DAYS
 import java.util.concurrent.Executors
 import net.corda.applications.workers.rpc.http.TestToolkitProperty
+import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import net.corda.test.util.eventually
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -47,11 +48,13 @@ class PermissionSummaryConcurrentE2eTest {
         }
 
         val permissionsCount = 100
+        val client = testToolkit.httpClientFor(PermissionEndpoint::class.java, "admin", "admin")
+        val proxy = client.start().proxy
         val permissionIdsAllow = (1..permissionsCount).map {
-            adminTestHelper.createPermission(PermissionType.ALLOW, "$it-allow-${testToolkit.uniqueName}", false)
+            proxy.createPermission(PermissionType.ALLOW, "$it-allow-${testToolkit.uniqueName}", false)
         }
         val permissionIdsDeny = (1..permissionsCount).map {
-            adminTestHelper.createPermission(PermissionType.DENY, "$it-deny-${testToolkit.uniqueName}", false)
+            proxy.createPermission(PermissionType.DENY, "$it-deny-${testToolkit.uniqueName}", false)
         }
 
         val executorService = Executors.newFixedThreadPool(2)
