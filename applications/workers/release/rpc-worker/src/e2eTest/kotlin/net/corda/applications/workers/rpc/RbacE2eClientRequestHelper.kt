@@ -77,7 +77,7 @@ class RbacE2eClientRequestHelper(
         }
     }
 
-    fun createPermission(permissionType: PermissionType, permissionString: String): String {
+    fun createPermission(permissionType: PermissionType, permissionString: String, verify: Boolean = true): String {
         val client = testToolkit.httpClientFor(PermissionEndpoint::class.java, requestUserName, requestUserPassword)
         val proxy = client.start().proxy
 
@@ -89,7 +89,9 @@ class RbacE2eClientRequestHelper(
             }
             this.id
         }
-        verifyPermissionCreationPersisted(proxy, permissionId, permissionType, permissionString)
+        if (verify) {
+            verifyPermissionCreationPersisted(proxy, permissionId, permissionType, permissionString)
+        }
         return permissionId
     }
 

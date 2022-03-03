@@ -46,23 +46,20 @@ class PermissionSummaryConcurrentE2eTest {
             assertEquals(0, this.permissions.size, "Permission summary should be empty before the role is assigned")
         }
 
-        val permissionIdsAllow = (1..25).map {
-            adminTestHelper.createPermission(PermissionType.ALLOW, "$it-allow-${testToolkit.uniqueName}")
+        val permissionsCount = 100
+        val permissionIdsAllow = (1..permissionsCount).map {
+            adminTestHelper.createPermission(PermissionType.ALLOW, "$it-allow-${testToolkit.uniqueName}", false)
         }
-        val permissionIdsDeny = (1..25).map {
-            adminTestHelper.createPermission(PermissionType.DENY, "$it-deny-${testToolkit.uniqueName}")
+        val permissionIdsDeny = (1..permissionsCount).map {
+            adminTestHelper.createPermission(PermissionType.DENY, "$it-deny-${testToolkit.uniqueName}", false)
         }
 
         val executorService = Executors.newFixedThreadPool(2)
         val role1PopulationFuture = executorService.submit {
-            permissionIdsAllow.forEach { permId ->
-                adminTestHelper.addPermissionsToRole(roleId1, permId)
-            }
+            adminTestHelper.addPermissionsToRole(roleId1, *permissionIdsAllow.toTypedArray())
         }
         val role2PopulationFuture = executorService.submit {
-            permissionIdsDeny.forEach { permId ->
-                concurrentAdminTestHelper.addPermissionsToRole(roleId2, permId)
-            }
+            concurrentAdminTestHelper.addPermissionsToRole(roleId2, *permissionIdsDeny.toTypedArray())
         }
 
         role1PopulationFuture.get()
@@ -71,10 +68,10 @@ class PermissionSummaryConcurrentE2eTest {
 
         eventually {
             with(adminTestHelper.getPermissionSummary(newUser1)) {
-                assertEquals(50, this.permissions.size)
+                assertEquals(permissionsCount * 2, this.permissions.size)
             }
             with(adminTestHelper.getPermissionSummary(newUser2)) {
-                assertEquals(50, this.permissions.size)
+                assertEquals(permissionsCount * 2, this.permissions.size)
             }
         }
     }
