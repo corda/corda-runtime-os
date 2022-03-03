@@ -19,7 +19,7 @@ import java.util.TreeSet
 // no test case writes anything to the filesystem, nor alters the state of the test class instance;
 // this makes it safe to use the same instance for all test cases (test case execution order is irrelevant)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class CPITests {
+class CpiWithGroupPolicyTests {
 
     private lateinit var testDir: Path
 
@@ -35,6 +35,9 @@ class CPITests {
     private val cpiVersion = "1.5"
     private lateinit var cpiHash: SecureHash
 
+    private val groupId = "53ab914b-e746-4e85-8d4f-38b38fa3152b"
+    private val groupPolicy = "{ groupId: '$groupId'}"
+
     @BeforeAll
     fun setup(@TempDir junitTestDir: Path) {
         testDir = junitTestDir
@@ -47,7 +50,7 @@ class CPITests {
         contractCPK = Files.newInputStream(contractCPKPath).use { CPK.Metadata.from(it, contractCPKPath.toString()) }
         workflowCPK = Files.newInputStream(workflowCPKPath).use { CPK.Metadata.from(it, workflowCPKPath.toString()) }
         Files.newOutputStream(testCPIPath).use {
-            CPI.assemble(it, cpiName, cpiVersion, listOf(workflowCPKPath, contractCPKPath))
+            CPI.assemble(it, cpiName, cpiVersion, listOf(workflowCPKPath, contractCPKPath), emptyList(), groupPolicy = groupPolicy)
         }
         val md = MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name)
         testCPI = DigestInputStream(Files.newInputStream(testCPIPath), md).use { inputStream ->
@@ -62,18 +65,15 @@ class CPITests {
     }
 
     @Test
-    fun `CPI metadata are correct`() {
+    fun `check all CPKs have been included and their metadata are correct and group policy has been read`() {
         Assertions.assertEquals(cpiName, testCPI.metadata.id.name)
         Assertions.assertEquals(cpiVersion, testCPI.metadata.id.version)
         Assertions.assertEquals(cpiHash, testCPI.metadata.hash)
-    }
 
-    @Test
-    fun `check all CPKs have been included and their metadata are correct`() {
         val expectedCPKs = sequenceOf(workflowCPK, contractCPK).toCollection(TreeSet(Comparator.comparing(CPK.Metadata::id)))
         val actualCPKs = testCPI.cpks.asSequence().map { it.metadata }.toCollection(TreeSet(Comparator.comparing(CPK.Metadata::id)))
         Assertions.assertEquals(expectedCPKs, actualCPKs)
 
-        Assertions.assertEquals(testCPI.metadata.groupPolicy, null)
+        Assertions.assertEquals(testCPI.metadata.groupPolicy, groupPolicy)
     }
 }

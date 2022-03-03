@@ -3,6 +3,7 @@ package net.corda.packaging.internal
 import net.corda.packaging.CPI
 import net.corda.packaging.CPK
 import net.corda.packaging.PackagingException
+import net.corda.packaging.internal.PackagingConstants.CPI_GROUP_POLICY_ENTRY
 import net.corda.packaging.internal.PackagingConstants.CPI_NAME_ATTRIBUTE
 import net.corda.packaging.internal.PackagingConstants.CPI_VERSION_ATTRIBUTE
 import net.corda.packaging.util.UncloseableInputStream
@@ -19,6 +20,7 @@ import java.util.zip.ZipEntry
 
 internal object CPILoader {
     private fun isCPK(entry : ZipEntry) = !entry.isDirectory && entry.name.endsWith(CPK.fileExtension)
+    private fun isGroupPolicy(entry : ZipEntry) = !entry.isDirectory && entry.name.endsWith(CPI_GROUP_POLICY_ENTRY)
 
     fun loadMetadata(inputStream : InputStream, cpiLocation : String?, verifySignature : Boolean) : CPI.Metadata {
         return load(inputStream, null, cpiLocation, verifySignature).metadata
@@ -40,6 +42,8 @@ internal object CPILoader {
         var name : String? = null
         var version : String? = null
         val signatureCollector = SignatureCollector()
+
+        var groupPolicy : String? = null
         JarInputStream(DigestInputStream(inputStream, md), verifySignature).use { jarInputStream ->
             jarInputStream.manifest?.let(Manifest::getMainAttributes)?.let { mainAttributes ->
                 name = mainAttributes.getValue(CPI_NAME_ATTRIBUTE)
@@ -68,6 +72,9 @@ internal object CPILoader {
                                     verifySignature = verifySignature)
                         }
                     }
+                    isGroupPolicy(entry) -> {
+                        groupPolicy = jarInputStream.reader().readText()
+                    }
                 }
                 jarInputStream.closeEntry()
             }
@@ -80,7 +87,7 @@ internal object CPILoader {
                 signatureCollector.certificates.asSequence().certSummaryHash()),
             hash = SecureHash(DigestAlgorithmName.SHA2_256.name, md.digest()),
             cpks = cpkMetadata,
-            groupPolicy = null
+            groupPolicy = groupPolicy
         ), cpks.takeIf { expansionLocation != null } )
     }
 }

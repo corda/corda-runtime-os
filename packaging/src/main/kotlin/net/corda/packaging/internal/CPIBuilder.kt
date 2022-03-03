@@ -7,6 +7,7 @@ import com.typesafe.config.ConfigRenderOptions
 import net.corda.packaging.CPK
 import net.corda.packaging.DependencyResolutionException
 import net.corda.packaging.SigningParameters
+import net.corda.packaging.internal.PackagingConstants.CPI_GROUP_POLICY_ENTRY
 import net.corda.packaging.util.ZipTweaker
 import java.io.BufferedOutputStream
 import java.io.OutputStream
@@ -30,7 +31,9 @@ internal class CPIBuilder(
         private val cpkArchives: Iterable<Path>,
         metadataReader: Reader? = null,
         private val signingParams: SigningParameters?,
-        private val useSignatures : Boolean) {
+        private val useSignatures : Boolean,
+        private val groupPolicy: String?
+) {
 
     private val metadata : Config = metadataReader?.use {
         ConfigFactory.parseReader(it, ConfigParseOptions.defaults())
@@ -80,6 +83,13 @@ internal class CPIBuilder(
                 mainAttributes[Attributes.Name(PackagingConstants.CPI_VERSION_ATTRIBUTE)] = version
             }.write(os)
             os.closeEntry()
+
+            if (groupPolicy != null) {
+                val groupPolicyEntry = ZipEntry(CPI_GROUP_POLICY_ENTRY).apply { method = ZipEntry.DEFLATED }
+                os.putNextEntry(groupPolicyEntry)
+                os.write(groupPolicy.toByteArray())
+                os.closeEntry()
+            }
 
             val resolvedCPKSet = resolveDependencies(cpkFiles, cpkArchives)
             ZipTweaker.writeZipEntry(os, {
