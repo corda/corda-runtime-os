@@ -11,6 +11,7 @@ import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
+import net.corda.session.manager.impl.buildSessionEvent
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.time.Instant
@@ -19,7 +20,7 @@ class SessionEventExecutorTest {
 
     @Test
     fun `Session event executor test outbound data message and non null state`() {
-        val payload = SessionEvent(MessageDirection.OUTBOUND,Instant.now(), "sessionId", 1, 0, listOf(), SessionData(null))
+        val payload = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionData())
 
         val result = SessionEventExecutor("sessionId",  payload, FlowMapperState(), Instant.now()).execute()
         val state = result.flowMapperState
@@ -37,7 +38,7 @@ class SessionEventExecutorTest {
     @Test
     fun `Session event executor test inbound data message and non null state`() {
         val flowKey = FlowKey()
-        val payload = SessionEvent(MessageDirection.INBOUND, Instant.now(), "sessionId-INITIATED", 1, 0, listOf(), SessionData(null))
+        val payload = buildSessionEvent(MessageDirection.INBOUND, "sessionId-INITIATED", 1, SessionData())
 
         val result = SessionEventExecutor(
             "sessionId-INITIATED", payload, FlowMapperState(
@@ -59,7 +60,7 @@ class SessionEventExecutorTest {
 
     @Test
     fun `Session event with null state`() {
-        val payload = SessionEvent(MessageDirection.INBOUND, Instant.now(), "sessionId", 1, 0, listOf(), SessionData(null))
+        val payload = buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionData())
         val result = SessionEventExecutor("sessionId",  payload, null, Instant.now()).execute()
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents
