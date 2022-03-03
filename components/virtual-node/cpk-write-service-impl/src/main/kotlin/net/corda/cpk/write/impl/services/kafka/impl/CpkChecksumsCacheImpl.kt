@@ -79,6 +79,9 @@ class CpkChecksumsCacheImpl(
             updateCacheOnZeroChunk(cpkChunkId, cpkChunk)
         }
 
+        //TODO - fix the logic so that we update the cache when we are 100 % sure that the full CPK has been seen on Kafka.
+        // i.e check that all chunks have been received for a CPK because it could be that zero chunk was received but others
+        // did not for some reason.
         private fun updateCacheOnZeroChunk(cpkChunkId: CpkChunkId, cpkChunk: Chunk?) {
             if (cpkChunk?.data?.isZeroChunk() == true) {
                 val cpkChecksum = cpkChunkId.cpkChecksum.toCorda()
