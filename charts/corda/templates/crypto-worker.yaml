@@ -25,7 +25,7 @@ metadata:
     family: e2e
     type: crypto-worker
 spec:
-  replicas: 1
+  replicas: {{ .Values.workers.crypto.replicas }}
   selector:
     matchLabels:
       app: {{ include "corda.fullname" . }}-crypto-node

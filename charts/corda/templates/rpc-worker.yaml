@@ -28,7 +28,7 @@ metadata:
     family: e2e
     type: rpc-worker
 spec:
-  replicas: 1
+  replicas: {{ .Values.workers.rpc.replicas }}
   selector:
     matchLabels:
       app: {{ include "corda.fullname" . }}-rpc-node

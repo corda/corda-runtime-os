@@ -25,7 +25,7 @@ metadata:
     family: e2e
     type: database-worker
 spec:
-  replicas: 1
+  replicas: {{ .Values.workers.db.replicas }}
   selector:
     matchLabels:
       app: {{ include "corda.fullname" . }}-dbw-node

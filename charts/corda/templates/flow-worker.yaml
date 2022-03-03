@@ -25,7 +25,7 @@ metadata:
     family: e2e
     type: flow-worker
 spec:
-  replicas: 1
+  replicas: {{ .Values.workers.flow.replicas }}
   selector:
     matchLabels:
       app: {{ include "corda.fullname" . }}-flow-node
