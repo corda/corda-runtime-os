@@ -19,7 +19,7 @@ dependencies {
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation project(":libs:flows:session-manager-impl").sourceSets.test.output
+    testImplementation project(":testing:flow-utilities")
 
     integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 }

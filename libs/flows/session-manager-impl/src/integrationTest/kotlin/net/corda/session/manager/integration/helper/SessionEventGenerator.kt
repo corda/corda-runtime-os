@@ -9,7 +9,7 @@ import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.identity.HoldingIdentity
-import net.corda.session.manager.impl.buildSessionEvent
+import net.corda.test.flow.util.buildSessionEvent
 import net.corda.session.manager.integration.SessionMessageType
 import java.nio.ByteBuffer
 import java.time.Instant

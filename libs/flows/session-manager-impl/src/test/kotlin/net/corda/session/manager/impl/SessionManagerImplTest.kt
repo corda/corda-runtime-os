@@ -11,6 +11,8 @@ import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.FlowConfig
+import net.corda.test.flow.util.buildSessionEvent
+import net.corda.test.flow.util.buildSessionState
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.time.Instant

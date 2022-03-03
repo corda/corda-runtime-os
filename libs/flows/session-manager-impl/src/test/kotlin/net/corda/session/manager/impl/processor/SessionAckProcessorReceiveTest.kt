@@ -4,7 +4,7 @@ import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.session.SessionStateType
-import net.corda.session.manager.impl.buildSessionEvent
+import net.corda.test.flow.util.buildSessionEvent
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.time.Instant

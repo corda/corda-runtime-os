@@ -20,6 +20,7 @@
     bnd.identity;id='net.corda.flow-mapper-service',\
     bnd.identity;id='net.corda.flow-mapper-impl',\
     bnd.identity;id='net.corda.lifecycle-impl',\
+    bnd.identity;id='net.corda.flow-utilities',\
     bnd.identity;id='net.corda.configuration-read-service-impl',\
     bnd.identity;id='${project.archivesBaseName}-tests',\
     bnd.identity;id='net.corda.inmemory-messaging-impl',\
@@ -56,6 +57,7 @@
 	net.corda.flow-mapper;version='[5.0.0,5.0.1)',\
 	net.corda.flow-mapper-impl;version='[5.0.0,5.0.1)',\
 	net.corda.flow-mapper-service;version='[5.0.0,5.0.1)',\
+	net.corda.flow-utilities;version='[5.0.0,5.0.1)',\
 	net.corda.inmemory-messaging-impl;version='[5.0.0,5.0.1)',\
 	net.corda.lifecycle;version='[5.0.0,5.0.1)',\
 	net.corda.lifecycle-impl;version='[5.0.0,5.0.1)',\

@@ -1,4 +1,4 @@
-package net.corda.session.manager.impl
+package net.corda.test.flow.util
 
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
@@ -7,7 +7,6 @@ import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
 import java.time.Instant
-
 
 @Suppress("LongParameterList")
 fun buildSessionState(
