@@ -81,7 +81,7 @@ class CpkChecksumsCacheImpl(
 
         //TODO - caching logic needs changing upon implementing https://r3-cev.atlassian.net/browse/CORE-4041.
         // It needs to be updated faster (maybe updated upon first chunk per CPK) so that other DB workers avoid
-        // picking up the same CPK for chunking.
+        // picking up the same CPK for chunking and publishing.
         private fun updateCacheOnZeroChunk(cpkChunkId: CpkChunkId, cpkChunk: Chunk?) {
             if (cpkChunk?.data?.isZeroChunk() == true) {
                 val cpkChecksum = cpkChunkId.cpkChecksum.toCorda()
