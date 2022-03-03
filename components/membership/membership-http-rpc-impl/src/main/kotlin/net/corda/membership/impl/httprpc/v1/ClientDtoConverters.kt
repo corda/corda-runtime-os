@@ -13,7 +13,7 @@ import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgres
  * Convert [MemberRegistrationRequest] from the HTTP API to the internal DTO [MemberRegistrationRequestDto].
  */
 fun MemberRegistrationRequest.toDto() = MemberRegistrationRequestDto(
-    virtualNodeId,
+    holdingIdentityId,
     action.toDto()
 )
 

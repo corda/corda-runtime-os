@@ -10,7 +10,7 @@ import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgress
 
 /**
- * RPC operations for registering a member (i.e. virtual node) within a group.
+ * RPC operations for registering a member (i.e. holding identity) within a group.
  */
 @HttpRpcResource(
     name = "MemberRegistrationRpcOps",
@@ -40,7 +40,7 @@ interface MemberRegistrationRpcOps : RpcOps {
      * GET endpoint which checks the latest known status of registration based on a member's own local data and without
      * outwards communication.
      *
-     * @param virtualNodeId The ID of the virtual node to be checked.
+     * @param holdingIdentityId The ID of the holding identity to be checked.
      * @return [RegistrationRequestProgress] to indicate the last known status of the registration request based on
      *  local member data.
      */
@@ -49,7 +49,7 @@ interface MemberRegistrationRpcOps : RpcOps {
         path = ""
     )
     fun checkRegistrationProgress(
-        @HttpRpcQueryParameter(description = "ID of the virtual node to be checked.")
-        virtualNodeId: String
+        @HttpRpcQueryParameter(description = "ID of the holding identity to be checked.")
+        holdingIdentityId: String
     ): RegistrationRequestProgress
 }
