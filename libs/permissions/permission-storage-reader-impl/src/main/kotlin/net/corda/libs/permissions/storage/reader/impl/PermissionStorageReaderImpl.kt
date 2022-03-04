@@ -24,6 +24,7 @@ import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_ROLE_TOPIC
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_USER_TOPIC
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.trace
 import net.corda.data.permissions.Group as AvroGroup
 import net.corda.data.permissions.Permission as AvroPermission
 import net.corda.data.permissions.Role as AvroRole
@@ -83,7 +84,9 @@ class PermissionStorageReaderImpl(
     }
 
     override fun reconcilePermissionSummaries() {
-        log.info("Reconciliation of permission summaries started.")
+        log.trace { "Reconciliation of permission summaries triggered." }
+        val startTime = System.currentTimeMillis()
+
         val permissionSummariesFromDb: Map<UserLogin, InternalUserPermissionSummary> = permissionRepository.findAllPermissionSummaries()
 
         val permissionsToReconcile: Map<UserLogin, AvroUserPermissionSummary?> = permissionSummaryReconciler.getSummariesForReconciliation(
@@ -91,8 +94,13 @@ class PermissionStorageReaderImpl(
             permissionCache.permissionSummaries
         )
 
-        log.info("Publishing permission summary records for ${permissionsToReconcile.size} unique users that require reconciliation.")
+        if (permissionsToReconcile.isNotEmpty()) {
+            log.trace { "Publishing permission summaries for ${permissionsToReconcile.size} user(s) that require reconciliation." }
+        }
         publisher.publish(createPermissionSummaryRecords(permissionsToReconcile))
+
+        val duration = System.currentTimeMillis() - startTime
+        log.info("Permission summary reconciliation completed and published ${permissionsToReconcile.size} user(s) in ${duration}ms.")
     }
 
     private fun publishOnStartup() {
