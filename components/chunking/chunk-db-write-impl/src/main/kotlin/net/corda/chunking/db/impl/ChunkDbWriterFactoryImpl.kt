@@ -27,7 +27,6 @@ class ChunkDbWriterFactoryImpl @Activate constructor(
 ) : ChunkDbWriterFactory {
     companion object {
         internal const val GROUP_NAME = "cpi.chunk.writer"
-        internal const val CLIENT_ID = "cpk.chunk.writer"
     }
 
     override fun create(
