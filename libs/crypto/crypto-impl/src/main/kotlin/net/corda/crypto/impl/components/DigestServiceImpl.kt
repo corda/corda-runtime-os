@@ -83,7 +83,7 @@ class DigestServiceImpl @Activate constructor(
                 val messageDigest = MessageDigest.getInstance(algorithm, provider)
                 return MessageDigestWrapper(messageDigest, algorithm)
             } catch (e: NoSuchAlgorithmException) {
-                throw IllegalArgumentException("Unknown hash algorithm $algorithm")
+                throw IllegalArgumentException("Unknown hash algorithm $algorithm for provider ${provider.name}")
             }
         }
 
