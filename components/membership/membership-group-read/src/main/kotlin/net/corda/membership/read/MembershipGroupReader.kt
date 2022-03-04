@@ -1,7 +1,6 @@
 package net.corda.membership.read
 
 import net.corda.membership.CPIWhiteList
-import net.corda.membership.GroupPolicy
 import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.base.types.MemberX500Name
@@ -21,11 +20,6 @@ interface MembershipGroupReader {
      * The member for which this group information is visible for.
      */
     val owningMember: MemberX500Name
-
-    /**
-     * The group policy information for this group.
-     */
-    val policy: GroupPolicy
 
     /**
      * The current group parameters for this group.

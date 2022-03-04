@@ -1,6 +1,5 @@
 package net.corda.membership.impl.read.reader
 
-import net.corda.membership.GroupPolicy
 import net.corda.membership.impl.MemberInfoExtension.Companion.IDENTITY_KEY_HASHES
 import net.corda.membership.impl.read.TestProperties
 import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_1
@@ -26,7 +25,6 @@ class MembershipGroupReaderImplTest {
 
     private val aliceName = TestProperties.aliceName
     private val aliceIdGroup1 = HoldingIdentity(aliceName.toString(), GROUP_ID_1)
-    private val groupPolicy: GroupPolicy = mock()
     private val memberCache: MemberListCache = mock()
     private val membershipGroupCache: MembershipGroupReadCache = mock<MembershipGroupReadCache>().apply {
         whenever(this.memberListCache).thenReturn(memberCache)
@@ -48,7 +46,6 @@ class MembershipGroupReaderImplTest {
     fun setUp() {
         membershipGroupReaderImpl = MembershipGroupReaderImpl(
             aliceIdGroup1,
-            groupPolicy,
             membershipGroupCache
         )
     }
