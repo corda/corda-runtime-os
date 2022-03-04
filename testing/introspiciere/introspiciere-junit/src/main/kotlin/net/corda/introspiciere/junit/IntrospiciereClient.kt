@@ -31,7 +31,7 @@ class IntrospiciereClient(private val endpoint: String) {
         replicationFactor: Short? = null,
         config: Map<String, Any>? = null,
     ) {
-        val mapOfStrings = (config ?: emptyMap()).map { it.key to it.value.toString() }.toMap()
+        val mapOfStrings = config?.entries?.associateBy({ it.key }, { it.value.toString() }).orEmpty()
         httpClient.createTopic(name, partitions, replicationFactor, mapOfStrings)
     }
 
@@ -111,20 +111,17 @@ class IntrospiciereClient(private val endpoint: String) {
 
     fun <T> handle(topic: String, key: String?, schemaClass: Class<T>, action: (IntrospiciereClient, T) -> Unit) {
         val iter = readFromLatest(topic, key, schemaClass).iterator()
-        threads += thread {
+        val thread = thread {
             while (continueThread) {
                 val message = iter.next()
-
-                if (message == null) {
-                    if (continueThread) Thread.sleep(1000)
-                    continue
+                when {
+                    message != null -> action(this, message)
+                    continueThread -> Thread.sleep(1000)
                 }
-
-                action(this, message)
             }
-        }.apply {
-            this.uncaughtExceptionHandler = Thread.UncaughtExceptionHandler { _, e -> exceptions += e }
         }
+        thread.uncaughtExceptionHandler = Thread.UncaughtExceptionHandler { _, e -> exceptions += e }
+        threads += thread
     }
 
     fun endAndjoinThreads() {
