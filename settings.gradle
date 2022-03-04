@@ -354,7 +354,7 @@ gradleEnterprise {
             capture {
                 taskInputFiles = true
             }
-            uploadInBackground = true // adjust to your CI provider
+            uploadInBackground = false
             accessKey = apiKey
         }
     }
