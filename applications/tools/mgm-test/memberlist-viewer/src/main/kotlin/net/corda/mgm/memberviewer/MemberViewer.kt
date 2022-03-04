@@ -3,9 +3,7 @@ package net.corda.mgm.memberviewer
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.impl.MemberInfoExtension.Companion.identityKeyHashes
 import net.corda.membership.impl.MemberInfoExtension.Companion.modifiedTime
@@ -19,7 +17,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.framework.BundleContext
 import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.ServiceReference
@@ -38,13 +35,7 @@ class MemberViewer @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = MembershipGroupReaderProvider::class)
-    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
-    @Reference(service = GroupPolicyProvider::class)
-    private val groupPolicyProvider: GroupPolicyProvider,
-    @Reference(service = VirtualNodeInfoReadService::class)
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
-    @Reference(service = CpiInfoReadService::class)
-    private val cpiInfoReader: CpiInfoReadService
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider
 ) : Application {
 
     private companion object {
@@ -91,10 +82,6 @@ class MemberViewer @Activate constructor(
 
             configurationReadService.start()
             membershipGroupReaderProvider.start()
-            groupPolicyProvider.start()
-            virtualNodeInfoReadService.start()
-            cpiInfoReader.start()
-
 
             val secretsConfig = ConfigFactory.empty()
             val bootConfig = ConfigFactory.empty()
