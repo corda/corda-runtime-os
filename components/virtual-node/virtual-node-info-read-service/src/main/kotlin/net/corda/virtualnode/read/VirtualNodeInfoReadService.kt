@@ -20,7 +20,7 @@ interface VirtualNodeInfoReadService : Lifecycle {
      * Returns virtual node info for all onboarded virtual nodes
      * without starting any bundles or instantiating any classes.
      *
-     * Returns empty list if no such information exists
+     * Returns empty list if no virtual nodes are onboarded
      */
     fun getAll(): List<VirtualNodeInfo>
 
