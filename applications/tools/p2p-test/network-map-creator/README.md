@@ -62,7 +62,7 @@ Key store files are expected to be `.jks` files. You can create them using Java'
 keytool -genkeypair -alias ec -keyalg EC -storetype JKS -keystore ec_key.jks -storepass 123456
 ```
 
-trust store files is expected to be `.pem` files.
+trust store files are expected to be `.pem` files.
 
 ### Populating a custom topic
 
