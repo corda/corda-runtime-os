@@ -23,13 +23,13 @@ internal class TopicController(private val appContext: AppContext) {
 
     fun getByName() = Handler { ctx ->
         val description = appContext.topicGateway.findByName(ctx.topicParam)
-        ctx.json(description)
+        if (description == null) ctx.status(404)
+        else ctx.json(description)
     }
 
     fun delete() = Handler { ctx ->
-        wrapException {
-            appContext.topicGateway.removeByName(ctx.topicParam)
-        }
+        val result = appContext.topicGateway.removeByName(ctx.topicParam)
+        if (!result) ctx.status(404)
     }
 
     private val Context.topicParam: String

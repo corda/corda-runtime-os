@@ -6,6 +6,7 @@ import net.corda.introspiciere.domain.IntrospiciereException
 import net.corda.introspiciere.domain.KafkaMessage
 import net.corda.introspiciere.payloads.MsgBatch
 import java.time.Duration
+import java.time.Instant
 
 internal class MessagesController(private val appContext: AppContext) {
 
@@ -15,22 +16,13 @@ internal class MessagesController(private val appContext: AppContext) {
     }
 
     fun getMessages() = Handler { ctx ->
-        val (messages, nextBatchTimestamp) = when {
-            ctx.fromQuery < 0L -> appContext.messagesGateway.readFromEnd(
-                ctx.topicParam,
-                ctx.schemaQuery,
-                ctx.timeoutQuery)
-            ctx.fromQuery == 0L -> appContext.messagesGateway.readFromBeginning(
-                ctx.topicParam,
-                ctx.schemaQuery,
-                ctx.timeoutQuery)
-            else -> appContext.messagesGateway.readFrom(
-                ctx.topicParam,
-                ctx.schemaQuery,
-                ctx.fromQuery,
-                ctx.timeoutQuery)
-        }
-
+        val (messages, nextBatchTimestamp) = appContext.messagesGateway.readFrom(
+            ctx.topicParam,
+            ctx.schemaQuery,
+            ctx.fromQuery ?: Instant.now().toEpochMilli(),
+            ctx.timeoutQuery ?: Duration.ofSeconds(1000)
+        )
+        
         val filter = if (ctx.keyQuery == null) messages
         else messages.filter { it.key == ctx.keyQuery }
 
@@ -41,8 +33,8 @@ internal class MessagesController(private val appContext: AppContext) {
     private val Context.topicParam: String
         get() = pathParam("topic")
 
-    private val Context.fromQuery: Long
-        get() = queryParam("from")?.toLong() ?: throw IntrospiciereException("from is mandatory field in query")
+    private val Context.fromQuery: Long?
+        get() = queryParam("from")?.toLong()
 
     private val Context.keyQuery: String?
         get() = queryParam("key")

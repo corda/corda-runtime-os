@@ -21,9 +21,7 @@ import java.time.Duration
 import java.time.Instant
 
 interface MessagesGateway {
-    fun readFromEnd(topic: String, schema: String, timeout: Duration?): Pair<List<Msg>, Long>
-    fun readFromBeginning(topic: String, schema: String, timeout: Duration?): Pair<List<Msg>, Long>
-    fun readFrom(topic: String, schema: String, from: Long, timeout: Duration?): Pair<List<Msg>, Long>
+    fun readFrom(topic: String, schema: String, from: Long, timeout: Duration): Pair<List<Msg>, Long>
     fun send(topic: String, message: KafkaMessage)
 }
 
@@ -32,47 +30,9 @@ class MessagesGatewayImpl(private val kafkaConfig: KafkaConfig) : MessagesGatewa
     companion object {
         private val classes: MutableSet<Class<out SpecificRecordBase>> =
             Reflections("net.corda").getSubTypesOf(SpecificRecordBase::class.java)
-
-        private val defaultTimeout = Duration.ofSeconds(1)
     }
 
-    override fun readFromEnd(topic: String, schema: String, timeout: Duration?): Pair<List<Msg>, Long> {
-        createConsumer(schema).use { consumer ->
-            val partitions = consumer.topicPartitionsFor(topic)
-
-            consumer.assign(partitions)
-            consumer.seekToEnd(partitions)
-
-            val records = consumer.poll(timeout ?: defaultTimeout)
-            return if (records.isEmpty) {
-                // Workaround to fetch the current timestamp of the Kafka cluster if no messages are returned.
-                // There must be a better way of doing it but I don't know it.
-                emptyList<Msg>() to workaroundToFetchCurrentTimestampFromTheKafkaCluster()
-            } else {
-                val msgs = records.mapToMsg()
-                msgs to msgs.maxOf { it.timestamp } + 1
-            }
-        }
-    }
-
-    override fun readFromBeginning(topic: String, schema: String, timeout: Duration?): Pair<List<Msg>, Long> {
-        createConsumer(schema).use { consumer ->
-            val partitions = consumer.topicPartitionsFor(topic)
-
-            consumer.assign(partitions)
-            consumer.seekToBeginning(partitions)
-
-            val records = consumer.poll(timeout ?: defaultTimeout)
-            return if (records.isEmpty) {
-                return emptyList<Msg>() to 0L
-            } else {
-                val msgs = records.mapToMsg()
-                msgs to msgs.maxOf { it.timestamp } + 1
-            }
-        }
-    }
-
-    override fun readFrom(topic: String, schema: String, from: Long, timeout: Duration?): Pair<List<Msg>, Long> {
+    override fun readFrom(topic: String, schema: String, from: Long, timeout: Duration): Pair<List<Msg>, Long> {
         createConsumer(schema).use { consumer ->
             val partitions = consumer.topicPartitionsFor(topic)
 
@@ -84,18 +44,14 @@ class MessagesGatewayImpl(private val kafkaConfig: KafkaConfig) : MessagesGatewa
                 return emptyList<Msg>() to from
             }
 
-            consumer.assign(notNullOffsets.keys)
+            consumer.assign(partitions)
             notNullOffsets.forEach { (k, v) ->
                 consumer.seek(k, v.offset())
             }
 
-            val records = consumer.poll(timeout ?: defaultTimeout)
-            return if (records.isEmpty) {
-                return emptyList<Msg>() to from
-            } else {
-                val msgs = records.mapToMsg()
-                msgs to msgs.maxOf { it.timestamp } + 1
-            }
+            val messages = consumer.poll(timeout).mapToMsg()
+            val maxTimestamp = messages.maxOfOrNull { it.timestamp } ?: from
+            return messages to maxTimestamp
         }
     }
 
@@ -107,25 +63,6 @@ class MessagesGatewayImpl(private val kafkaConfig: KafkaConfig) : MessagesGatewa
         return this.map {
             val value = toByteBufferMethod.invoke(it.value()) as ByteBuffer
             Msg(it.timestamp(), it.key(), value.toByteArray())
-        }
-    }
-
-    private fun workaroundToFetchCurrentTimestampFromTheKafkaCluster(): Long {
-        val topicGateway = TopicGatewayImpl(kafkaConfig)
-        val hackTopic = "hack-to-fetch-timestamp-" + Instant.now().toEpochMilli()
-        try {
-            topicGateway.create(TopicDefinition(hackTopic))
-            send(hackTopic, KafkaMessage.create(hackTopic, null, DemoRecord(0)))
-            createConsumer(DemoRecord::class.qualifiedName!!, mapOf(
-                ConsumerConfig.MAX_POLL_RECORDS_CONFIG to "1"
-            )).use {
-                val partitons = it.topicPartitionsFor(hackTopic)
-                it.assign(partitons)
-                it.seekToBeginning(partitons)
-                return it.poll(Duration.ofSeconds(10)).first().timestamp()
-            }
-        } finally {
-            topicGateway.removeByName(hackTopic)
         }
     }
 

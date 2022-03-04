@@ -19,6 +19,11 @@ internal class TopicGatewayTest {
     }
 
     @Test
+    fun `delete non existent topic`() {
+        topicGateway.removeByName("non-exist")
+    }
+
+    @Test
     fun `I can execute lifecycle of a topic`() {
         val definition = TopicDefinition(
             name = "topic-" + Instant.now().toEpochMilli(),
@@ -34,7 +39,7 @@ internal class TopicGatewayTest {
         topicGateway.create(definition)
         Assertions.assertTrue(definition.name in topicGateway.findAll(), "Topic should exist after creating it")
 
-        val description = topicGateway.findByName(definition.name)
+        val description = topicGateway.findByName(definition.name)!!
         Assertions.assertNotNull(description.id, "Topic id")
         Assertions.assertEquals(definition.name, description.name, "Topic name")
         Assertions.assertEquals(definition.partitions, description.partitions, "Topic partitions")

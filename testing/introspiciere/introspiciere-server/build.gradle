@@ -13,6 +13,8 @@ dependencies {
     implementation project(':testing:introspiciere:introspiciere-core')
     implementation project(':testing:introspiciere:introspiciere-payloads')
     implementation project(':testing:introspiciere:introspiciere-domain')
+
+    integrationTestImplementation 'io.rest-assured:rest-assured:4.5.1'
 }
 
 jar {
