@@ -65,13 +65,10 @@ import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.MessageDigest
-import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.util.Collections
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.TimeUnit
 
 class SessionManagerTest {
 
