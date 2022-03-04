@@ -10,12 +10,11 @@ dependencies {
     compileOnly "org.osgi:osgi.core"
     compileOnly "org.osgi:org.osgi.service.component.annotations"
 
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-membership"
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
-    implementation "net.corda:corda-avro-schema:$cordaApiVersion"
-    implementation "net.corda:corda-topic-schema:$cordaApiVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "info.picocli:picocli:$picocliVersion"
     implementation "org.slf4j:slf4j-api"
@@ -23,8 +22,6 @@ dependencies {
     implementation project(":components:membership:membership-group-read")
 
     implementation project(":libs:configuration:configuration-core")
-    implementation project(":libs:crypto:crypto-impl")
-    implementation project(":libs:messaging:messaging")
     implementation project(":libs:membership:membership-impl")
     implementation project(":libs:virtual-node:virtual-node-info")
 
@@ -35,6 +32,7 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 
+    runtimeOnly project(":libs:crypto:crypto-impl")
     runtimeOnly project(":libs:messaging:kafka-message-bus-impl")
     runtimeOnly project(":libs:messaging:messaging-impl")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
