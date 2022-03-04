@@ -8,6 +8,7 @@ import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
 import net.corda.libs.permissions.endpoints.v1.role.types.RoleAssociationResponseType
 import net.corda.libs.permissions.endpoints.v1.role.types.RoleResponseType
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
+import net.corda.libs.permissions.endpoints.v1.user.types.PermissionSummaryResponseType
 import net.corda.libs.permissions.endpoints.v1.user.types.PropertyResponseType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
 import net.corda.libs.permissions.manager.request.CreatePermissionRequestDto
@@ -15,6 +16,7 @@ import net.corda.libs.permissions.manager.request.CreateRoleRequestDto
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.libs.permissions.manager.response.PermissionAssociationResponseDto
 import net.corda.libs.permissions.manager.response.PermissionResponseDto
+import net.corda.libs.permissions.manager.response.PermissionSummaryResponseDto
 import net.corda.libs.permissions.manager.response.PropertyResponseDto
 import net.corda.libs.permissions.manager.response.RoleAssociationResponseDto
 import net.corda.libs.permissions.manager.response.RoleResponseDto
@@ -155,3 +157,15 @@ fun CreatePermissionType.convertToDto(requestedBy: String): CreatePermissionRequ
 }
 
 
+/**
+ * Convert a PermissionSummaryResponseDto to a v1 PermissionSummaryResponseType to be returned to the HTTP caller.
+ */
+fun PermissionSummaryResponseDto.convertToEndpointType(): PermissionSummaryResponseType {
+    return PermissionSummaryResponseType(
+        id,
+        groupVisibility,
+        virtualNode,
+        permissionType.toEndpointType(),
+        permissionString
+    )
+}

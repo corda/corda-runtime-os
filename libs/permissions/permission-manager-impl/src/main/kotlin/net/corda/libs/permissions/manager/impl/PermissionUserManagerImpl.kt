@@ -13,8 +13,10 @@ import net.corda.libs.permissions.manager.impl.SmartConfigUtil.getEndpointTimeou
 import net.corda.libs.permissions.manager.impl.converter.convertToResponseDto
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
+import net.corda.libs.permissions.manager.request.GetPermissionSummaryRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
+import net.corda.libs.permissions.manager.response.UserPermissionSummaryResponseDto
 import net.corda.libs.permissions.manager.response.UserResponseDto
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.permissions.password.PasswordService
@@ -91,5 +93,16 @@ class PermissionUserManagerImpl(
         )
 
         return result.convertToResponseDto()
+    }
+
+    override fun getPermissionSummary(permissionSummaryRequestDto: GetPermissionSummaryRequestDto): UserPermissionSummaryResponseDto? {
+
+        val cachedPermissionSummary = permissionCache.getPermissionSummary(permissionSummaryRequestDto.userLogin) ?: return null
+
+        return UserPermissionSummaryResponseDto(
+            cachedPermissionSummary.loginName,
+            cachedPermissionSummary.permissions.map { it.convertToResponseDto() },
+            cachedPermissionSummary.lastUpdateTimestamp
+        )
     }
 }
