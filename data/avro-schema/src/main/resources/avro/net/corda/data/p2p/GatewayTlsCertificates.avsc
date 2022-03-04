@@ -1,0 +1,20 @@
+{
+  "type": "record",
+  "name": "GatewayTlsCertificates",
+  "namespace": "net.corda.p2p",
+  "fields": [
+    {
+      "doc": "The tenant ID under which the keys of the leaf certificate are stored",
+      "name": "tenantId",
+      "type": "string"
+    },
+    {
+      "doc": "Collection of certificates in PEM format",
+      "name": "tlsCertificates",
+      "type": {
+        "type": "array",
+        "items": "string"
+      }
+    }
+  ]
+}
