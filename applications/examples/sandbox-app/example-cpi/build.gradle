@@ -24,6 +24,5 @@ dependencies {
     cordaProvided 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     cordaProvided 'net.corda:corda-application'
     cordaProvided 'net.corda:corda-cipher-suite'
-    cordaProvided 'net.corda:corda-crypto'
     cordaProvided 'org.slf4j:slf4j-api'
 }

@@ -13,12 +13,8 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     api "net.corda:corda-cipher-suite"
-    api "net.corda:corda-crypto"
     api 'net.corda:corda-serialization'
-    implementation "net.i2p.crypto:eddsa:$eddsaVersion"
     implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
-    implementation "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion"
-    implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
 
     implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:lifecycle:lifecycle")
@@ -30,16 +26,3 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }
 
-tasks.named('jar', Jar) {
-    bnd """\
-Import-Package:\
-    org.bouncycastle.jcajce.provider.asymmetric,\
-    org.bouncycastle.jcajce.provider.config,\
-    org.bouncycastle.jcajce.provider.digest,\
-    org.bouncycastle.jcajce.provider.keystore,\
-    org.bouncycastle.jcajce.provider.symmetric,\
-    org.bouncycastle.jcajce.provider.util,\
-    net.i2p.crypto.eddsa.math;resolution:=optional,\
-    *
-"""
-}

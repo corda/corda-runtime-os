@@ -17,7 +17,6 @@ dependencies {
     implementation "net.corda:corda-crypto"
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
     testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion") {
         exclude group: 'mockito-core'
     }

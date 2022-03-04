@@ -84,7 +84,6 @@
 	net.corda.virtual-node-common;version='[5.0.0,5.0.1)',\
 	net.corda.virtual-node-info;version='[5.0.0,5.0.1)',\
 	net.corda.virtual-node-info-read-service;version='[5.0.0,5.0.1)',\
-	net.i2p.crypto.eddsa;version='[0.3.0,0.3.1)',\
 	org.apache.commons.commons-compress;version='[1.21.0,1.21.1)',\
 	org.apache.commons.lang3;version='[3.9.0,3.9.1)',\
 	org.apache.felix.configadmin;version='[1.9.20,1.9.21)',\
