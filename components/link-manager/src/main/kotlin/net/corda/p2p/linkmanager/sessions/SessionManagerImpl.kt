@@ -84,7 +84,7 @@ open class SessionManagerImpl(
         networkMap
     ),
     clock: Clock = Clock.systemUTC(),
-    executorServiceFactory: () -> ScheduledExecutorService = { Executors.newSingleThreadScheduledExecutor() },
+    executorServiceFactory: () -> ScheduledExecutorService = {Executors.newSingleThreadScheduledExecutor()},
 ) : SessionManager {
 
     companion object {
