@@ -8,7 +8,6 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
 import java.io.InputStream
-import java.nio.file.Paths
 
 /**
  * Uploads a CPI on the supplied [uploadTopic]
@@ -35,7 +34,7 @@ class CpiUploadManagerImpl(
                 futures.forEach { f -> f.get() }
             }
         }
-        return chunkWriter.write(Paths.get(cpiFileName), cpiContent)
+        return chunkWriter.write(cpiFileName, cpiContent)
     }
 
     override fun status(requestId: RequestId) = statusProcessor.status(requestId)

@@ -1,6 +1,8 @@
 package net.corda.chunking.db.impl
 
+import net.corda.chunking.RequestId
 import net.corda.data.chunking.Chunk
+import net.corda.data.chunking.UploadFileStatus
 import net.corda.data.chunking.UploadStatus
 import net.corda.data.crypto.SecureHash
 import net.corda.messaging.api.records.Record
@@ -18,13 +20,14 @@ class ChunkWriteToDbProcessorSimpleTest {
     companion object {
         private const val topic = "unused"
         private const val fileName = "unused.txt"
-
+        val validator = { _ : RequestId ->  UploadFileStatus.OK }
     }
 
     @Test
     fun `persist is called onNext`() {
-        val queries = mock<ChunkDbQueries>()
-        val processor = ChunkWriteToDbProcessor(topic, queries)
+        val queries = mock<DatabaseQueries>()
+
+        val processor = ChunkWriteToDbProcessor(topic, queries, validator)
         val requestId = UUID.randomUUID().toString()
 
         val chunk = Chunk(
@@ -37,17 +40,17 @@ class ChunkWriteToDbProcessorSimpleTest {
         )
         processor.onNext(listOf(Record(topic, requestId, chunk)))
 
-        verify(queries).persist(chunk)
+        verify(queries).persistChunk(chunk)
     }
 
     @Test
     fun `exception is captured in onNext`() {
         val exceptionMessage = "exception message"
 
-        val queries = mock<ChunkDbQueries>().apply {
-            `when`(persist(any())).thenThrow(CordaRuntimeException(exceptionMessage))
+        val queries = mock<DatabaseQueries>().apply {
+            `when`(persistChunk(any())).thenThrow(CordaRuntimeException(exceptionMessage))
         }
-        val processor = ChunkWriteToDbProcessor(topic, queries)
+        val processor = ChunkWriteToDbProcessor(topic, queries, validator)
         val requestId = UUID.randomUUID().toString()
 
         val chunk = Chunk(
@@ -60,7 +63,7 @@ class ChunkWriteToDbProcessorSimpleTest {
         )
 
         val records = processor.onNext(listOf(Record(topic, requestId, chunk)))
-        verify(queries).persist(chunk)
+        verify(queries).persistChunk(chunk)
 
         assertThat(records.isNotEmpty()).isTrue
         assertThat(requestId).isEqualTo(records.first().key)

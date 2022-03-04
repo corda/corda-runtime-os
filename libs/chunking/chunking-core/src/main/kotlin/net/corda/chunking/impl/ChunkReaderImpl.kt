@@ -11,7 +11,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
 
 /**
@@ -71,7 +70,7 @@ internal class ChunkReaderImpl(private val destDir: Path) : ChunkReader {
                 throw IllegalArgumentException("Checksums do not match, one or more of the chunks may be corrupt")
             }
 
-            chunksCombinedCallback!!.onChunksCombined(Paths.get(chunk.fileName), path)
+            chunksCombinedCallback!!.onChunksCombined(chunk.fileName, path, actualChecksum)
         }
     }
 
