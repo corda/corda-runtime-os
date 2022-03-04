@@ -26,25 +26,6 @@ class GroupPolicyParser {
                         .root()
                         .unwrapped()
                 }
-
-                return events.mapNotNull { event ->
-                    event.value?.message?.takeIf {
-                        it is AuthenticatedMessage && it.header.subsystem == FLOW_SESSION_SUBSYSTEM
-                    }?.let {
-                        Record(FLOW_MAPPER_EVENT_TOPIC, event.key, it.payload)
-                    }
-                }
-
-                val outputEvents = mutableListOf<Record<*, *>>()
-                events
-                    .map{it.value?.message}
-                    .filterNotNull()
-                    .filter{it is AuthenticatedMessage && it.header.subsystem == FLOW_SESSION_SUBSYSTEM}
-                    .forEach {
-                        outputEvents.add(Record(FLOW_MAPPER_EVENT_TOPIC, it.key, message.payload))
-                    }
-                return outputEvents
-
             } catch (e: ConfigException.Parse) {
                 logger.error(FAILED_PARSING)
                 throw CordaRuntimeException(FAILED_PARSING, e)
