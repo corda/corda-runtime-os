@@ -15,6 +15,15 @@ import net.corda.virtualnode.VirtualNodeInfo
  * e.g. a status page listening all nodes in the system.
  */
 interface VirtualNodeInfoReadService : Lifecycle {
+
+    /**
+     * Returns virtual node info for all onboarded virtual nodes
+     * without starting any bundles or instantiating any classes.
+     *
+     * Returns empty list if no such information exists
+     */
+    fun getAll(): List<VirtualNodeInfo>
+
     /**
      * Returns virtual node context information for a given holding identity
      * without starting any bundles or instantiating any classes.
