@@ -82,29 +82,19 @@ pipeline {
                script {
                   env.BASE_IMAGE = params.BUILD_REV ? "preTest-${params.BUILD_REV}" : "unstable"
                }
-               sh 'helm install corda ./charts/corda \
-                    --set fullnameOverride=$NAMESPACE --set imageTag=$BASE_IMAGE -n $NAMESPACE --wait'
+               sh 'helm install corda ./charts/corda --set imageTag=$BASE_IMAGE -n $NAMESPACE --wait'
+            }
+            post {
+                unsuccessful {
+                    sh '''
+                        kubectl logs -lfamily=e2e -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
+                        kubectl describe all -n ${NAMESPACE} > describe.txt
+                    '''
+                    archiveArtifacts artifacts: 'logs.txt, describe.txt', allowEmptyArchive: true
+                    sh 'rm -f logs.txt describe.txt'
+                }
             }
         }
-        // stage('Wait for cluster') {
-        //     steps {
-        //         sh '''
-        //             ./corda-cli/bin/corda-cli cluster wait -c "${NAMESPACE}"
-        //             # Wait for the job to create the topics
-        //             kubectl wait -n ${NAMESPACE} --for=condition=complete --timeout=30s job/create-topics
-        //         '''
-        //     }
-        //     post {
-        //         unsuccessful {
-        //             sh '''
-        //                 kubectl logs -lfamily=e2e -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
-        //                 kubectl describe all -n ${NAMESPACE} > describe.txt
-        //             '''
-        //             archiveArtifacts artifacts: 'logs.txt, describe.txt', allowEmptyArchive: true
-        //             sh 'rm -f logs.txt describe.txt'
-        //         }
-        //     }
-        // }
         stage('Forward port and run tests') {
             steps {
 
@@ -114,7 +104,7 @@ pipeline {
 
                 sh '''
                     # Forward RPC worker port
-                    nohup kubectl port-forward -n ${NAMESPACE} deploy/${NAMESPACE}-rpc 8888 > forward.txt 2>&1 &
+                    nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-rpc 8888 > forward.txt 2>&1 &
                     procno=$! #remember process number started in background
                     trap "kill -9 ${procno}" EXIT
 

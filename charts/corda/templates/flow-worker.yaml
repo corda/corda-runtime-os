@@ -50,7 +50,7 @@ spec:
       - name: docker-registry-cred
       containers:
       - name: {{ include "corda.fullname" . }}-flow
-        image: corda-os-docker.software.r3.com/corda-os-flow-worker:{{ .Values.imageTagOverride }}
+        image: corda-os-docker.software.r3.com/corda-os-flow-worker:{{ .Values.imageTag }}
         imagePullPolicy: Always
         volumeMounts:
         - name: {{ include "corda.fullname" . }}-flow-volume

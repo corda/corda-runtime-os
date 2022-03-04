@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: create-topics
+  name: {{ include "corda.fullname" . }}-create-topics
   labels: &id012
     app: create-topics
 spec:

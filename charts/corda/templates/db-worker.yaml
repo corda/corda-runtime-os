@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "corda.fullname" . }}-dbw
+  name: {{ include "corda.fullname" . }}-db
   labels: &id002
-    app: {{ include "corda.fullname" . }}-dbw-node
+    app: {{ include "corda.fullname" . }}-db-node
     type: database-worker
 spec:
   type: NodePort
@@ -19,22 +19,22 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "corda.fullname" . }}-dbw
+  name: {{ include "corda.fullname" . }}-db
   labels:
-    app: {{ include "corda.fullname" . }}-dbw-node
+    app: {{ include "corda.fullname" . }}-db-node
     family: e2e
     type: database-worker
 spec:
   replicas: {{ .Values.workers.db.replicas }}
   selector:
     matchLabels:
-      app: {{ include "corda.fullname" . }}-dbw-node
+      app: {{ include "corda.fullname" . }}-db-node
       family: e2e
       type: database-worker
   template:
     metadata:
       labels:
-        app: {{ include "corda.fullname" . }}-dbw-node
+        app: {{ include "corda.fullname" . }}-db-node
         family: e2e
         type: database-worker
     spec:
@@ -43,17 +43,17 @@ spec:
         runAsGroup: 1000
         fsGroup: 1000
       volumes:
-      - name: {{ include "corda.fullname" . }}-dbw-volume
+      - name: {{ include "corda.fullname" . }}-db-volume
         persistentVolumeClaim:
-          claimName: {{ include "corda.fullname" . }}-dbw-ebs-claim
+          claimName: {{ include "corda.fullname" . }}-db-ebs-claim
       imagePullSecrets:
       - name: docker-registry-cred
       containers:
-      - name: {{ include "corda.fullname" . }}-dbw
-        image: corda-os-docker.software.r3.com/corda-os-db-worker:{{ .Values.imageTagOverride }}
+      - name: {{ include "corda.fullname" . }}-db
+        image: corda-os-docker.software.r3.com/corda-os-db-worker:{{ .Values.imageTag }}
         imagePullPolicy: Always
         volumeMounts:
-        - name: {{ include "corda.fullname" . }}-dbw-volume
+        - name: {{ include "corda.fullname" . }}-db-volume
           mountPath: /logs
         securityContext:
           allowPrivilegeEscalation: false
@@ -93,9 +93,9 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ include "corda.fullname" . }}-dbw-ebs-claim
+  name: {{ include "corda.fullname" . }}-db-ebs-claim
   labels:
-    app: {{ include "corda.fullname" . }}-dbw-node
+    app: {{ include "corda.fullname" . }}-db-node
 spec:
   accessModes:
   - ReadWriteOnce
