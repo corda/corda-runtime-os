@@ -29,6 +29,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.net.URI
+import java.security.KeyStore
 import java.security.SecureRandom
 import java.time.Instant
 import java.util.Arrays
@@ -75,6 +76,7 @@ class HttpTest : TestBase() {
                 serverAddress.port,
                 aliceSslConfig
             ),
+            aliceKeyStore,
         ).use { server ->
             listener.server = server
             server.startAndWaitForStarted()
@@ -111,7 +113,8 @@ class HttpTest : TestBase() {
                 serverAddress.host,
                 serverAddress.port,
                 aliceSslConfig
-            )
+            ),
+            aliceKeyStore,
         )
         val threadPool = NioEventLoopGroup(threadNo)
         httpServer.use { server ->
@@ -172,7 +175,8 @@ class HttpTest : TestBase() {
                 serverAddress.host,
                 serverAddress.port,
                 aliceSslConfig
-            )
+            ),
+            aliceKeyStore,
         ).use { server ->
             listener.server = server
             server.startAndWaitForStarted()
@@ -206,7 +210,8 @@ class HttpTest : TestBase() {
                 serverAddress.host,
                 serverAddress.port,
                 bobSslConfig
-            )
+            ),
+            bobKeyStore,
         ).use { server ->
             listener.server = server
             server.startAndWaitForStarted()
@@ -239,7 +244,8 @@ class HttpTest : TestBase() {
                 serverAddress.host,
                 serverAddress.port,
                 c4sslConfig
-            )
+            ),
+            c4sslKeyStore,
         ).use { server ->
             listener.server = server
             server.startAndWaitForStarted()
@@ -260,7 +266,7 @@ class HttpTest : TestBase() {
     @Test
     @Timeout(30)
     fun `tls handshake fails - server identity check fails C4`() {
-        MitmServer(serverAddress.host, serverAddress.port, c4sslConfig).use { server ->
+        MitmServer(serverAddress.host, serverAddress.port, c4sslKeyStore).use { server ->
             server.start()
             val expectedX500Name = "O=Test,L=London,C=GB"
             val sni = SniCalculator.calculateSni("O=Test,L=London,C=GB", NetworkType.CORDA_4, serverAddress.host)
@@ -294,7 +300,7 @@ class HttpTest : TestBase() {
     @Test
     @Timeout(30)
     fun `tls handshake fails - server identity check fails C5`() {
-        MitmServer(serverAddress.host, serverAddress.port, chipSslConfig).use { server ->
+        MitmServer(serverAddress.host, serverAddress.port, chipKeyStore).use { server ->
             server.start()
             HttpClient(
                 DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore),
@@ -335,7 +341,8 @@ class HttpTest : TestBase() {
                 serverAddress.host,
                 serverAddress.port,
                 aliceSslConfig
-            )
+            ),
+            aliceKeyStore,
         ).use { server ->
             server.startAndWaitForStarted()
             HttpClient(
@@ -377,7 +384,8 @@ class HttpTest : TestBase() {
                 serverAddress.host,
                 serverAddress.port,
                 bobSslConfig
-            )
+            ),
+            bobKeyStore,
         ).use { server ->
             server.startAndWaitForStarted()
             HttpClient(
@@ -411,7 +419,7 @@ class HttpTest : TestBase() {
     private class MitmServer(
         private val host: String,
         private val port: Int,
-        private val sslConfig: SslConfiguration
+        val keyStoreWithPassword: KeyStoreWithPassword,
     ) : Lifecycle {
 
         private val lock = ReentrantLock()
@@ -462,9 +470,7 @@ class HttpTest : TestBase() {
             private val keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm())
 
             init {
-                parent.sslConfig.run {
-                    keyManagerFactory.init(this.keyStore, this.keyStorePassword.toCharArray())
-                }
+                keyManagerFactory.init(parent.keyStoreWithPassword.keyStore, parent.keyStoreWithPassword.password.toCharArray())
             }
 
             override fun initChannel(ch: SocketChannel) {

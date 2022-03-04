@@ -20,6 +20,7 @@ dependencies {
     api project(":components:configuration:configuration-read-service")
     api project(':components:domino-logic')
     api project(':libs:crypto:delegated-signing')
+    implementation project(':components:p2p-test:stub-crypto-processor')
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "io.netty:netty-codec-http:$nettyVersion"
