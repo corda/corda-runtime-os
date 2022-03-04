@@ -48,6 +48,7 @@
 	net.corda.crypto-core;version='[5.0.0,5.0.1)',\
 	net.corda.flow-mapper;version='[5.0.0,5.0.1)',\
 	net.corda.flow-mapper-impl;version='[5.0.0,5.0.1)',\
+	net.corda.flow-utilities;version='[5.0.0,5.0.1)',\
 	net.corda.lifecycle;version='[5.0.0,5.0.1)',\
 	net.corda.messaging;version='[5.0.0,5.0.1)',\
 	net.i2p.crypto.eddsa;version='[0.3.0,0.3.1)',\
