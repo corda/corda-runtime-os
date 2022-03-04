@@ -1,5 +1,5 @@
 This is a tool that can be used to act as a client worker which uses the `MembershipGroupReaderProvider` to read member 
-lists from kafka and present a specific member's view on data. 
+lists from kafka and present a specific member's view on data. This is used mainly to verify member views on data and is not intended as a long term solution but rather a temporary tool until we have better methods of verification. The data printed to the console is a subset of member data and not intended to be a verbose list.
 
 ## Building the tool
 ```
