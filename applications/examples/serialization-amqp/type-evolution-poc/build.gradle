@@ -27,11 +27,12 @@ dependencies {
     implementation "net.corda:corda-serialization"
     implementation project(':libs:serialization:serialization-amqp')
     implementation project(':libs:serialization:serialization-internal')
-    implementation project(":components:install:install-legacy")
     implementation project(path: ':libs:kotlin-reflection', configuration: 'bundle')
-    implementation project(":libs:sandbox")
+    implementation project(':libs:sandbox')
     implementation project(path: ':libs:serialization:serialization-encoding', configuration: 'bundle')
-    implementation project(":libs:utilities")
+    implementation project(':libs:utilities')
+    implementation project(':libs:virtual-node:packaging-core')
+    implementation project(':components:virtual-node:cpk-read-service')
 
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "com.google.guava:guava:$guavaVersion"

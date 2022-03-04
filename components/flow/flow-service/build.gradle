@@ -62,6 +62,8 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:messaging:inmemory-messaging-impl')
     integrationTestRuntimeOnly project(':libs:serialization:serialization-checkpoint-api')
     integrationTestRuntimeOnly project(':libs:serialization:serialization-kryo')
+    integrationTestRuntimeOnly project(":components:virtual-node:cpk-read-service-impl")
+
 
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
 }
