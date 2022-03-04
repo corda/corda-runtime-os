@@ -1,11 +1,11 @@
 package net.corda.chunking.db.impl
 
-import com.typesafe.config.ConfigException
-import com.typesafe.config.ConfigFactory
+import com.fasterxml.jackson.core.JsonParseException
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import net.corda.v5.base.exceptions.CordaRuntimeException
 
 object GroupPolicyParser {
-    // Not much different from the `membership` version really.
     /**
      * Parse the group policy json string into a map
      *
@@ -14,11 +14,9 @@ object GroupPolicyParser {
      */
     fun parse(groupPolicyJson: String): Map<String, Any> {
         try {
-            return ConfigFactory
-                .parseString(groupPolicyJson)
-                .root()
-                .unwrapped()
-        } catch (e: ConfigException.Parse) {
+            val objectMapper = ObjectMapper()
+            return objectMapper.readValue<MutableMap<String, Any>>(groupPolicyJson)
+        } catch (e: JsonParseException) {
             throw CordaRuntimeException("Failed to parse group policy file", e)
         }
     }

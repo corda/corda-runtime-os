@@ -31,6 +31,10 @@ dependencies {
     implementation project(':components:chunking:chunk-db-write')
     implementation project(':components:virtual-node:cpi-info-write-service')
 
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+
+
     testImplementation project(':libs:db:db-admin')
     testImplementation project(':libs:db:db-admin-impl')
     testImplementation project(':libs:db:db-orm-impl')
