@@ -565,7 +565,7 @@ open class SessionManagerImpl(
         private val networkMap: LinkManagerNetworkMap,
         private val destroySession: (counterparties: SessionCounterparties, sessionId: String) -> Any,
         private val clock: Clock,
-        private val executorServiceFactory: () -> ScheduledExecutorService = { Executors.newSingleThreadScheduledExecutor() },
+        private val executorServiceFactory: () -> ScheduledExecutorService
     ) : LifecycleWithDominoTile {
 
         companion object {
