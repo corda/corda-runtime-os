@@ -8,7 +8,7 @@ the `corda-cli`.
 ```shell
 # cd into introspiciere-server directory and compile
 cd testing/introspiciere/introspiciere-cli
-../../../gradlew build -x test 
+../../../gradlew jar -x test 
 ```
 
 ## Commands

@@ -116,15 +116,13 @@ class MessagesGatewayImpl(private val kafkaConfig: KafkaConfig) : MessagesGatewa
         try {
             topicGateway.create(TopicDefinition(hackTopic))
             send(hackTopic, KafkaMessage.create(hackTopic, null, DemoRecord(0)))
-            while (true) {
-                val (msgs, timestamp) = readFrom(
-                    hackTopic,
-                    DemoRecord::class.qualifiedName!!,
-                    0,
-                    Duration.ofMillis(100)
-                )
-                if (msgs.isNotEmpty())
-                    return timestamp
+            createConsumer(DemoRecord::class.qualifiedName!!, mapOf(
+                ConsumerConfig.MAX_POLL_RECORDS_CONFIG to "1"
+            )).use {
+                val partitons = it.topicPartitionsFor(hackTopic)
+                it.assign(partitons)
+                it.seekToBeginning(partitons)
+                return it.poll(Duration.ofSeconds(10)).first().timestamp()
             }
         } finally {
             topicGateway.removeByName(hackTopic)
@@ -144,9 +142,12 @@ class MessagesGatewayImpl(private val kafkaConfig: KafkaConfig) : MessagesGatewa
         CordaAvroSerializerImpl(AvroSchemaRegistryImpl(specificRecordaBaseClasses = classes), Any::class.java)
     )
 
-    private fun createConsumer(schema: String): KafkaConsumer<String, out Any> {
+    private fun createConsumer(
+        schema: String,
+        overrideConfig: Map<String, Any> = emptyMap(),
+    ): KafkaConsumer<String, out Any> {
         return KafkaConsumer(
-            mapOf(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to kafkaConfig.brokers),
+            mapOf(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to kafkaConfig.brokers) + overrideConfig,
             CordaAvroDeserializerImpl(
                 AvroSchemaRegistryImpl(specificRecordaBaseClasses = classes), {}, String::class.java),
             CordaAvroDeserializerImpl(

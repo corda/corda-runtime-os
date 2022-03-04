@@ -11,7 +11,6 @@ import kotlin.concurrent.thread
 /**
  * Client to interact with the instrospiciere server.
  */
-@Suppress("UNUSED_PARAMETER")
 class IntrospiciereClient(private val endpoint: String) {
 
     private val httpClient = IntrospiciereHttpClient(endpoint)
@@ -62,7 +61,7 @@ class IntrospiciereClient(private val endpoint: String) {
         writeInternal(KafkaMessage(topic, key, schema, schemaClass))
     }
 
-    fun writeInternal(message: KafkaMessage) {
+    private fun writeInternal(message: KafkaMessage) {
         httpClient.sendMessage(message)
     }
 
@@ -111,13 +110,13 @@ class IntrospiciereClient(private val endpoint: String) {
     private var continueThread = true
 
     fun <T> handle(topic: String, key: String?, schemaClass: Class<T>, action: (IntrospiciereClient, T) -> Unit) {
+        val iter = readFromLatest(topic, key, schemaClass).iterator()
         threads += thread {
-            val iter = readFromLatest(topic, key, schemaClass).iterator()
             while (continueThread) {
                 val message = iter.next()
 
                 if (message == null) {
-                    Thread.sleep(2000)
+                    if (continueThread) Thread.sleep(1000)
                     continue
                 }
 
