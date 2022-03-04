@@ -96,7 +96,10 @@ class MemberViewer @Activate constructor(
             val members = parameters.memberNames!!.map {
                 HoldingIdentity(MemberX500Name.parse(it).toString(), parameters.groupId!!)
             }
+            // Sleep to allow group reader provider time to get config and start.
+            // Not ideal solution but just is just a temporary test tool so it will do.
             Thread.sleep(3000)
+
             members.forEach {
                 membershipGroupReaderProvider.getGroupReader(it).printMemberListToConsole()
             }
