@@ -2,13 +2,9 @@ package net.corda.membership.impl.read
 
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.config.Configuration
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.packaging.CpiIdentifier
-import net.corda.libs.packaging.CpiMetadata
 import net.corda.lifecycle.Lifecycle
-import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
@@ -20,13 +16,8 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import net.corda.virtualnode.toAvro
-import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
@@ -53,15 +44,6 @@ class MembershipGroupReaderProviderIntegrationTest {
 
     @InjectService(timeout = 4000L)
     lateinit var membershipGroupReaderProvider: MembershipGroupReaderProvider
-
-    @InjectService(timeout = 5000L)
-    lateinit var groupPolicyProvider: GroupPolicyProvider
-
-    @InjectService(timeout = 5000L)
-    lateinit var virtualNodeInfoReader: VirtualNodeInfoReadService
-
-    @InjectService(timeout = 5000L)
-    lateinit var cpiInfoReader: CpiInfoReadService
 
     @InjectService
     lateinit var configurationReadService: ConfigurationReadService
@@ -96,10 +78,7 @@ class MembershipGroupReaderProviderIntegrationTest {
 
     private val startableServices
         get() = listOf(
-            configurationReadService,
-            groupPolicyProvider,
-            virtualNodeInfoReader,
-            cpiInfoReader
+            configurationReadService
         )
 
     @BeforeEach
@@ -123,19 +102,10 @@ class MembershipGroupReaderProviderIntegrationTest {
                 )
             }
 
-            // Create test data
-            val cpiMetadata = getCpiMetadata()
-            val virtualNodeInfo = VirtualNodeInfo(aliceHoldingIdentity, cpiMetadata.id)
-
             // Publish test data
             with(publisherFactory.createPublisher(PublisherConfig(CLIENT_ID))) {
-                publishVirtualNodeInfo(virtualNodeInfo)
-                publishCpiMetadata(cpiMetadata)
                 publishMessagingConf()
             }
-
-            // Wait for published content to be picked up by components.
-            eventually { Assertions.assertNotNull(getVirtualNodeInfo()) }
 
             setUpComplete = true
         }
@@ -186,7 +156,6 @@ class MembershipGroupReaderProviderIntegrationTest {
 
         configurationReadService.startAndWait()
         eventually { assertTrue(startableServices.all { it.isRunning }) }
-        eventually { assertDoesNotThrow { groupPolicyProvider.getGroupPolicy(aliceHoldingIdentity) } }
         eventually { assertDoesNotThrow { membershipGroupReaderProvider.getAliceGroupReader() } }
     }
 
@@ -234,45 +203,6 @@ class MembershipGroupReaderProviderIntegrationTest {
         logger.info("Running test expecting exception to be thrown.")
         assertThrows<CordaRuntimeException> { getGroupReader(aliceHoldingIdentity) }
     }
-
-    private val sampleGroupPolicy1 get() = getSampleGroupPolicy("/SampleGroupPolicy.json")
-    private fun getVirtualNodeInfo() = virtualNodeInfoReader.get(aliceHoldingIdentity)
-
-    private fun getSampleGroupPolicy(fileName: String): String {
-        val url = this::class.java.getResource(fileName)
-        requireNotNull(url)
-        return url.readText()
-    }
-
-    private fun getCpiIdentifier(
-        name: String = "GROUP_POLICY_TEST",
-        version: String = "1.0"
-    ) = CpiIdentifier(name, version, SecureHash.create("SHA-256:0000000000000000"))
-
-    private fun getCpiMetadata(
-        cpiIdentifier: CpiIdentifier = getCpiIdentifier(),
-        groupPolicy: String = sampleGroupPolicy1
-    ) = CpiMetadata(
-        cpiIdentifier,
-        SecureHash.create("SHA-256:0000000000000000"),
-        emptyList(),
-        groupPolicy
-    )
-
-    private fun Publisher.publishVirtualNodeInfo(virtualNodeInfo: VirtualNodeInfo) {
-        publish(
-            listOf(
-                Record(
-                    Schemas.VirtualNode.VIRTUAL_NODE_INFO_TOPIC,
-                    virtualNodeInfo.holdingIdentity.toAvro(),
-                    virtualNodeInfo.toAvro()
-                )
-            )
-        )
-    }
-
-    private fun Publisher.publishCpiMetadata(cpiMetadata: CpiMetadata) =
-        publishRecord(Schemas.VirtualNode.CPI_INFO_TOPIC, cpiMetadata.id.toAvro(), cpiMetadata.toAvro())
 
     private fun Publisher.publishMessagingConf() =
         publishRecord(Schemas.Config.CONFIG_TOPIC, ConfigKeys.MESSAGING_CONFIG, Configuration(messagingConf, "1"))

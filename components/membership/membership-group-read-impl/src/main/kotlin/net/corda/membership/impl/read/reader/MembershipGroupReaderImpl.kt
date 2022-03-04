@@ -1,7 +1,6 @@
 package net.corda.membership.impl.read.reader
 
 import net.corda.membership.CPIWhiteList
-import net.corda.membership.GroupPolicy
 import net.corda.membership.impl.MemberInfoExtension.Companion.identityKeyHashes
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.read.MembershipGroupReader
@@ -13,7 +12,6 @@ import net.corda.virtualnode.HoldingIdentity
 
 class MembershipGroupReaderImpl(
     private val holdingIdentity: HoldingIdentity,
-    override val policy: GroupPolicy,
     private val membershipGroupReadCache: MembershipGroupReadCache
 ) : MembershipGroupReader {
     override val groupId: String = holdingIdentity.groupId

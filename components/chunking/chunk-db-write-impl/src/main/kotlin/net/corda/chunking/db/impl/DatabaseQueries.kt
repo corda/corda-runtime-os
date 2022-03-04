@@ -3,20 +3,25 @@ package net.corda.chunking.db.impl
 import net.corda.chunking.Checksum
 import net.corda.chunking.RequestId
 import net.corda.chunking.datamodel.ChunkEntity
+import net.corda.chunking.toAvro
 import net.corda.chunking.toCorda
 import net.corda.data.chunking.Chunk
+import net.corda.libs.cpi.datamodel.CpiMetadataEntity
+import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
+import net.corda.libs.cpi.datamodel.CpkDataEntity
+import net.corda.libs.cpi.datamodel.CpkMetadataEntity
 import net.corda.orm.utils.transaction
+import net.corda.packaging.CPK
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
+import java.nio.ByteBuffer
+import java.nio.file.Files
 import javax.persistence.EntityManagerFactory
 
-/**
- * This class provides some simple methods to put chunks and retrieve the status
- * of any given request.
- *
- * If all chunks are received, then we can also calculate its checksum.
+ /**
+ * This class provides some simple APIs to interact with the database.
  */
-class ChunkDbQueries(private val entityManagerFactory: EntityManagerFactory) {
+class DatabaseQueries(private val entityManagerFactory: EntityManagerFactory) {
 
     /**
      * Persist a chunk to the database and also check whether we have all chunks,
@@ -26,7 +31,7 @@ class ChunkDbQueries(private val entityManagerFactory: EntityManagerFactory) {
      * final message to the rest of the system to validate the complete binary.
      */
 
-    fun persist(chunk: Chunk): AllChunksReceived {
+    fun persistChunk(chunk: Chunk): AllChunksReceived {
         // We put `null` into the data field if the array is empty, i.e. the final chunk
         // so that we can write easier queries for the parts expected and received.
         val data = if (chunk.data.array().isEmpty()) null else chunk.data.array()
@@ -60,14 +65,19 @@ class ChunkDbQueries(private val entityManagerFactory: EntityManagerFactory) {
 
             // [chunkCountIfComplete] is either 0, i.e. incomplete, or some non-zero value
             // which is the total number chunks, if complete.
-            if (chunkCountIfComplete != 0) { status = AllChunksReceived.YES }
+            if (chunkCountIfComplete != 0) {
+                status = AllChunksReceived.YES
+            }
         }
 
         return status
     }
 
-
-    /** Is the checksum for the given [requestId] valid? */
+    /**
+     * Is the checksum for the given [requestId] valid?
+     *
+     * Assumes that all chunks have been received for the given [requestId]
+     */
     fun checksumIsValid(requestId: RequestId): Boolean {
         var expectedChecksum: SecureHash? = null
         var actualChecksum: ByteArray? = null
@@ -99,5 +109,71 @@ class ChunkDbQueries(private val entityManagerFactory: EntityManagerFactory) {
         }
 
         return expectedChecksum!!.bytes.contentEquals(actualChecksum)
+    }
+
+    /**
+     * Gets chunks (if any) for a given [requestId] from database and calls [onChunk] for each chunk that is returned.
+     *
+     * @param requestId the requestId of the chunks
+     * @param onChunk lambda method to be called on each chunk
+     */
+    fun forEachChunk(requestId: RequestId, onChunk: (chunk: Chunk) -> Unit) {
+        entityManagerFactory.createEntityManager().transaction {
+            val table = ChunkEntity::class.simpleName
+            val streamingResults = it.createQuery(
+                """
+                SELECT c FROM $table c
+                WHERE c.requestId = :requestId
+                ORDER BY c.requestId ASC
+                """.trimIndent(),
+                ChunkEntity::class.java
+            )
+                .setParameter("requestId", requestId)
+                .resultStream
+
+            streamingResults.forEach { entity ->
+                // Do the reverse of [persist] particularly for data - if null, return zero bytes.
+                val checksum = if (entity.checksum != null) SecureHash.create(entity.checksum!!).toAvro() else null
+                val data = if (entity.data != null) ByteBuffer.wrap(entity.data) else ByteBuffer.allocate(0)
+                val chunk = Chunk(requestId, entity.fileName, checksum, entity.partNumber, entity.offset, data)
+                onChunk(chunk)
+            }
+        }
+    }
+
+    /**
+     * Check if we already have a cpk persisted with this checksum
+     *
+     * @return true if checksum exists in database
+     */
+    fun containsCpkByChecksum(checksum: SecureHash): Boolean {
+        val entity = entityManagerFactory.createEntityManager().transaction {
+            it.find(CpkDataEntity::class.java, checksum.toString())
+        }
+
+        return entity != null
+    }
+
+    fun containsCpiByPrimaryKey(cpiMetadataEntity: CpiMetadataEntity): Boolean {
+        val primaryKey = CpiMetadataEntityKey(
+            cpiMetadataEntity.name,
+            cpiMetadataEntity.version,
+            cpiMetadataEntity.signerSummaryHash
+        )
+        val entity = entityManagerFactory.createEntityManager().transaction {
+            it.find(CpiMetadataEntity::class.java, primaryKey)
+        }
+        return entity != null
+    }
+
+    fun persistMetadataAndCpks(cpiMetadataEntity: CpiMetadataEntity, cpkFiles: Collection<CPK>) {
+        entityManagerFactory.createEntityManager().transaction { em ->
+            em.persist(cpiMetadataEntity)
+            cpkFiles.forEach {
+                val cpkChecksum = it.metadata.hash.toString()
+                em.persist(CpkDataEntity(cpkChecksum, Files.readAllBytes(it.path!!)))
+                em.merge(CpkMetadataEntity(cpiMetadataEntity, cpkChecksum, it.originalFileName!!))
+            }
+        }
     }
 }

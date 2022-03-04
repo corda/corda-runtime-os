@@ -15,6 +15,7 @@ import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeReques
 import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeResponse
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.rpcops.VirtualNodeRPCOpsServiceException
 import net.corda.virtualnode.rpcops.impl.v1.VirtualNodeRPCOpsImpl
 import net.corda.virtualnode.rpcops.impl.v1.VirtualNodeRPCOpsInternal
@@ -182,7 +183,7 @@ class VirtualNodeRPCOpsImplTests {
 
     @Test
     fun `createVirtualNode throws if RPC sender is not set`() {
-        val vnodeRPCOps = VirtualNodeRPCOpsImpl(mock())
+        val vnodeRPCOps = VirtualNodeRPCOpsImpl(mock(), mock())
 
         vnodeRPCOps.setTimeout(rpcRequestTimeoutDuration)
 
@@ -229,8 +230,16 @@ class VirtualNodeRPCOpsImplTests {
     }
 
     @Test
+    fun `getAllVirtualNodes calls VirtualNodeInfoReadService to retrieve all virtual nodes`() {
+        val vnodeInfoReadService = mock<VirtualNodeInfoReadService>()
+        val rpcOps = VirtualNodeRPCOpsImpl(mock(), vnodeInfoReadService)
+        rpcOps.getAllVirtualNodes()
+        verify(vnodeInfoReadService).getAll()
+    }
+
+    @Test
     fun `is not running if RPC sender is not created`() {
-        val vnodeRPCOps = VirtualNodeRPCOpsImpl(mock())
+        val vnodeRPCOps = VirtualNodeRPCOpsImpl(mock(), mock())
         vnodeRPCOps.setTimeout(rpcRequestTimeoutDuration)
         assertFalse(vnodeRPCOps.isRunning)
     }
@@ -275,6 +284,6 @@ class VirtualNodeRPCOpsImplTests {
             whenever(createRPCSender<VirtualNodeCreationRequest, VirtualNodeCreationResponse>(any(), any()))
                 .thenReturn(rpcSender)
         }
-        return rpcSender to VirtualNodeRPCOpsImpl(publisherFactory)
+        return rpcSender to VirtualNodeRPCOpsImpl(publisherFactory, mock())
     }
 }

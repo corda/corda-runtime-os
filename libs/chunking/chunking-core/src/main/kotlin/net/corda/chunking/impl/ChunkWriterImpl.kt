@@ -11,7 +11,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import java.io.InputStream
 import java.nio.ByteBuffer
-import java.nio.file.Path
 import java.security.DigestInputStream
 import java.util.UUID
 
@@ -27,7 +26,7 @@ internal class ChunkWriterImpl(val chunkSize: Int) : ChunkWriter {
 
     var chunkWriteCallback: ChunkWriteCallback? = null
 
-    override fun write(fileName: Path, inputStream: InputStream) : RequestId {
+    override fun write(fileName: String, inputStream: InputStream) : RequestId {
         if (chunkWriteCallback == null) {
             throw CordaRuntimeException("Chunk write callback not set")
         }
@@ -77,7 +76,7 @@ internal class ChunkWriterImpl(val chunkSize: Int) : ChunkWriter {
 
     private fun writeZeroChunk(
         identifier: String,
-        fileName: Path,
+        fileName: String,
         chunkNumber: Int,
         checksum: SecureHash,
         offset: Long
@@ -95,14 +94,14 @@ internal class ChunkWriterImpl(val chunkSize: Int) : ChunkWriter {
 
     private fun writeChunk(
         identifier: String,
-        fileName: Path,
+        fileName: String,
         chunkNumber: Int,
         byteBuffer: ByteBuffer,
         offset: Long
     ) = chunkWriteCallback!!.onChunk(
         Chunk().also {
             it.requestId = identifier
-            it.fileName = fileName.toString()
+            it.fileName = fileName
             it.partNumber = chunkNumber
             it.data = byteBuffer
             it.offset = offset

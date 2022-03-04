@@ -52,6 +52,10 @@ class VirtualNodeLoaderImpl @Activate constructor(
         resourcesLookup.remove(id)?.also(cpiResources::remove)
     }
 
+    override fun getAll(): List<VirtualNodeInfo> {
+        return virtualNodeInfoMap.values.toList()
+    }
+
     override fun get(holdingIdentity: HoldingIdentity): VirtualNodeInfo? {
         return virtualNodeInfoMap[holdingIdentity]
     }

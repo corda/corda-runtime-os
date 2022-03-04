@@ -16,7 +16,6 @@ import java.net.SocketAddress
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.locks.ReentrantLock
-import javax.net.ssl.KeyManagerFactory
 import kotlin.concurrent.withLock
 
 /**
@@ -33,6 +32,7 @@ import kotlin.concurrent.withLock
 class HttpServer(
     private val eventListener: HttpServerListener,
     private val configuration: GatewayConfiguration,
+    private val keyStore: KeyStoreWithPassword,
 ) : Lifecycle,
     HttpServerListener {
 
@@ -94,17 +94,9 @@ class HttpServer(
 
     private inner class ServerChannelInitializer : ChannelInitializer<SocketChannel>() {
 
-        private val keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm())
-
-        init {
-            configuration.sslConfig.run {
-                keyManagerFactory.init(this.keyStore, "".toCharArray())
-            }
-        }
-
         override fun initChannel(ch: SocketChannel) {
             val pipeline = ch.pipeline()
-            pipeline.addLast("sslHandler", createServerSslHandler(configuration.sslConfig.keyStore, keyManagerFactory))
+            pipeline.addLast("sslHandler", createServerSslHandler(keyStore))
             pipeline.addLast("idleStateHandler", IdleStateHandler(0, 0, SERVER_IDLE_TIME_SECONDS))
             pipeline.addLast(HttpServerCodec())
             pipeline.addLast(HttpServerChannelHandler(this@HttpServer, logger))

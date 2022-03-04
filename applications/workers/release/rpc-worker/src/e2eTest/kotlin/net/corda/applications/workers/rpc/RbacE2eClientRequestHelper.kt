@@ -11,6 +11,7 @@ import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
 import net.corda.libs.permissions.endpoints.v1.role.types.RoleResponseType
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
+import net.corda.libs.permissions.endpoints.v1.user.types.UserPermissionSummaryResponseType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
 import net.corda.test.util.eventually
 import org.assertj.core.api.SoftAssertions
@@ -76,39 +77,11 @@ class RbacE2eClientRequestHelper(
         }
     }
 
-    fun createPermission(permissionType: PermissionType, permissionString: String): String {
+    fun createPermission(permissionType: PermissionType, permissionString: String, verify: Boolean = true): String {
         val client = testToolkit.httpClientFor(PermissionEndpoint::class.java, requestUserName, requestUserPassword)
         val proxy = client.start().proxy
 
-        val type = CreatePermissionType(permissionType, permissionString, null, null)
-        val permissionId = with(proxy.createPermission(type)) {
-            SoftAssertions.assertSoftly {
-                it.assertThat(this.permissionType).isEqualTo(permissionType)
-                it.assertThat(this.permissionString).isEqualTo(permissionString)
-            }
-            this.id
-        }
-        verifyPermissionCreationPersisted(proxy, permissionId, permissionType, permissionString)
-        return permissionId
-    }
-
-    private fun verifyPermissionCreationPersisted(
-        proxy: PermissionEndpoint,
-        permissionId: String,
-        permissionType: PermissionType,
-        permissionString: String
-    ) {
-        eventually {
-            assertDoesNotThrow {
-                with(proxy.getPermission(permissionId)) {
-                    SoftAssertions.assertSoftly {
-                        it.assertThat(this.id).isEqualTo(permissionId)
-                        it.assertThat(this.permissionType).isEqualTo(permissionType)
-                        it.assertThat(this.permissionString).isEqualTo(permissionString)
-                    }
-                }
-            }
-        }
+        return proxy.createPermission(permissionType, permissionString, verify)
     }
 
     fun addPermissionsToRole(roleId: String, vararg permissionIds: String) {
@@ -173,6 +146,55 @@ class RbacE2eClientRequestHelper(
                 it.assertThat(this.id).isEqualTo(permissionId)
             }
             this
+        }
+    }
+
+    fun getPermissionSummary(userLogin: String): UserPermissionSummaryResponseType {
+        val client = testToolkit.httpClientFor(UserEndpoint::class.java, requestUserName, requestUserPassword)
+        val proxy = client.start().proxy
+        return with(proxy.getPermissionSummary(userLogin)) {
+            SoftAssertions.assertSoftly {
+                it.assertThat(this.loginName).isEqualToIgnoringCase(userLogin)
+            }
+            this
+        }
+    }
+}
+
+fun PermissionEndpoint.createPermission(
+    permissionType: PermissionType,
+    permissionString: String,
+    verify: Boolean
+): String {
+    val type = CreatePermissionType(permissionType, permissionString, null, null)
+    val permissionId = with(createPermission(type)) {
+        SoftAssertions.assertSoftly {
+            it.assertThat(this.permissionType).isEqualTo(permissionType)
+            it.assertThat(this.permissionString).isEqualTo(permissionString)
+        }
+        this.id
+    }
+    if (verify) {
+        verifyPermissionCreationPersisted(this, permissionId, permissionType, permissionString)
+    }
+    return permissionId
+}
+
+private fun verifyPermissionCreationPersisted(
+    proxy: PermissionEndpoint,
+    permissionId: String,
+    permissionType: PermissionType,
+    permissionString: String
+) {
+    eventually {
+        assertDoesNotThrow {
+            with(proxy.getPermission(permissionId)) {
+                SoftAssertions.assertSoftly {
+                    it.assertThat(this.id).isEqualTo(permissionId)
+                    it.assertThat(this.permissionType).isEqualTo(permissionType)
+                    it.assertThat(this.permissionString).isEqualTo(permissionString)
+                }
+            }
         }
     }
 }

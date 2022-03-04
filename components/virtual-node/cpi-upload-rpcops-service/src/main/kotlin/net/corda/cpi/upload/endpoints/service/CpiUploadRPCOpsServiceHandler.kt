@@ -13,7 +13,6 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys
@@ -38,7 +37,6 @@ class CpiUploadRPCOpsServiceHandler(
     @VisibleForTesting
     internal var configReadServiceRegistrationHandle: RegistrationHandle? = null
 
-    internal var publisher: Publisher? = null
     internal var cpiUploadManager: CpiUploadManager? = null
 
     private var configSubscription: AutoCloseable? = null

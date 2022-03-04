@@ -14,6 +14,7 @@ import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.NetworkMapEntry
+import net.corda.p2p.test.stub.crypto.processor.KeyDeserialiser
 import net.corda.schema.TestSchema.Companion.NETWORK_MAP_TOPIC
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.nio.ByteBuffer
@@ -95,7 +96,7 @@ class StubNetworkMap(
             LinkManagerNetworkMap.HoldingIdentity(this.holdingIdentity.x500Name, this.holdingIdentity.groupId),
             keyDeserialiser.toPublicKey(this.publicKey.array(), this.publicKeyAlgorithm),
             this.publicKeyAlgorithm.toKeyAlgorithm(),
-            LinkManagerNetworkMap.EndPoint(this.address)
+            LinkManagerNetworkMap.EndPoint(this.address),
         )
     }
 
