@@ -1,7 +1,5 @@
 package net.corda.membership.impl.read.reader
 
-import net.corda.membership.GroupPolicy
-import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_1
 import net.corda.membership.impl.read.TestProperties.Companion.aliceName
 import net.corda.membership.impl.read.TestProperties.Companion.bobName
@@ -13,7 +11,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -40,14 +37,10 @@ class MembershipGroupReaderFactoryTest {
     val cache: MembershipGroupReadCache = mock<MembershipGroupReadCache>().apply {
         doReturn(this@MembershipGroupReaderFactoryTest.groupReaderCache).whenever(this).groupReaderCache
     }
-    private val groupPolicyProvider: GroupPolicyProvider = mock {
-        val policy: GroupPolicy = mock()
-        on { getGroupPolicy(any()) } doReturn policy
-    }
 
     @BeforeEach
     fun setUp() {
-        membershipGroupReaderFactory = MembershipGroupReaderFactory.Impl(cache, groupPolicyProvider)
+        membershipGroupReaderFactory = MembershipGroupReaderFactory.Impl(cache)
     }
 
     @Test
@@ -57,7 +50,6 @@ class MembershipGroupReaderFactoryTest {
 
         verify(groupReaderCache).get(eq(aliceIdGroup1))
         verify(groupReaderCache, never()).put(eq(aliceIdGroup1), eq(result))
-        verify(groupPolicyProvider, never()).getGroupPolicy(eq(aliceIdGroup1))
     }
 
     @Test
@@ -67,6 +59,5 @@ class MembershipGroupReaderFactoryTest {
 
         verify(groupReaderCache).get(eq(bobIdGroup1))
         verify(groupReaderCache).put(eq(bobIdGroup1), eq(result))
-        verify(groupPolicyProvider).getGroupPolicy(eq(bobIdGroup1))
     }
 }

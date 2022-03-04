@@ -34,7 +34,6 @@ import net.corda.p2p.crypto.MessageType
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.internal.InitiatorHandshakeIdentity
-import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.ECDSA_SIGNATURE_ALGO
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
@@ -58,6 +57,7 @@ import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
+import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
@@ -100,7 +100,7 @@ class LinkManagerTest {
             FIRST_DEST.toHoldingIdentity(),
             keyPairGenerator.generateKeyPair().public,
             KeyAlgorithm.ECDSA,
-            FAKE_ENDPOINT
+            FAKE_ENDPOINT,
         )
 
         private val hostingMap = mock<LinkManagerHostingMap>().also {
@@ -137,7 +137,7 @@ class LinkManagerTest {
         fun createSessionPair(mode: ProtocolMode = ProtocolMode.AUTHENTICATION_ONLY): SessionPair {
             val partyAIdentityKey = keyPairGenerator.generateKeyPair()
             val partyBIdentityKey = keyPairGenerator.generateKeyPair()
-            val signature = Signature.getInstance(ECDSA_SIGNATURE_ALGO, provider)
+            val signature = Signature.getInstance(ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC.signatureName, provider)
 
             val initiator = AuthenticationProtocolInitiator(SESSION_ID, setOf(mode), MAX_MESSAGE_SIZE, partyAIdentityKey.public, GROUP_ID)
             val responder = AuthenticationProtocolResponder(SESSION_ID, setOf(mode), MAX_MESSAGE_SIZE)
@@ -161,7 +161,11 @@ class LinkManagerTest {
                 signingCallbackForA
             )
 
-            responder.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyAIdentityKey.public, KeyAlgorithm.ECDSA)
+            responder.validatePeerHandshakeMessage(
+                initiatorHandshakeMessage,
+                partyAIdentityKey.public,
+                ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC,
+            )
 
             val signingCallbackForB = { data: ByteArray ->
                 signature.initSign(partyBIdentityKey.private)
@@ -170,7 +174,11 @@ class LinkManagerTest {
             }
             val responderHandshakeMessage = responder.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForB)
 
-            initiator.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public, KeyAlgorithm.ECDSA)
+            initiator.validatePeerHandshakeMessage(
+                responderHandshakeMessage,
+                partyBIdentityKey.public,
+                ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC,
+            )
             return SessionPair(initiator.getSession(), responder.getSession())
         }
 

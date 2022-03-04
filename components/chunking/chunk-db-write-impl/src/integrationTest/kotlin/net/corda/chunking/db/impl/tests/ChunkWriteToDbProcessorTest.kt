@@ -1,9 +1,11 @@
 package net.corda.chunking.db.impl.tests
 
+import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.AllChunksReceived
-import net.corda.chunking.db.impl.ChunkDbQueries
+import net.corda.chunking.db.impl.DatabaseQueries
 import net.corda.chunking.db.impl.ChunkWriteToDbProcessor
 import net.corda.data.chunking.Chunk
+import net.corda.data.chunking.UploadFileStatus
 import net.corda.data.chunking.UploadStatus
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
@@ -24,9 +26,9 @@ internal class ChunkWriteToDbProcessorTest {
 
     private lateinit var processor: ChunkWriteToDbProcessor
 
-    private val queries = mock<ChunkDbQueries>().apply {
+    private val queries = mock<DatabaseQueries>().apply {
         whenever(checksumIsValid(any())).thenReturn(true)
-        whenever(persist(any())).thenReturn(AllChunksReceived.YES)
+        whenever(persistChunk(any())).thenReturn(AllChunksReceived.YES)
     }
 
     private fun processRequest(processor: ChunkWriteToDbProcessor, req: Chunk): UploadStatus {
@@ -38,7 +40,8 @@ internal class ChunkWriteToDbProcessorTest {
 
     @BeforeEach
     private fun beforeEach() {
-        processor = ChunkWriteToDbProcessor(topic, queries)
+        val validator = { _ : RequestId ->  UploadFileStatus.OK }
+        processor = ChunkWriteToDbProcessor(topic, queries, validator)
     }
 
     @Test
@@ -48,18 +51,19 @@ internal class ChunkWriteToDbProcessorTest {
 
         assertThat(ack.requestId).isEqualTo(chunk.requestId)
 
-        verify(queries).persist(chunk)
+        verify(queries).persistChunk(chunk)
     }
 
     @Test
     fun `processor calls through to checksum method`() {
-        val processor = ChunkWriteToDbProcessor(topic, queries)
+        val validator = { _ : RequestId ->  UploadFileStatus.OK }
+        val processor = ChunkWriteToDbProcessor(topic, queries, validator)
         val chunk = Chunk(randomString(), randomString(), null, 0, 0, ByteBuffer.wrap("1234".toByteArray()))
         val ack = processRequest(processor, chunk)
 
         assertThat(ack.requestId).isEqualTo(chunk.requestId)
 
-        verify(queries).persist(chunk)
+        verify(queries).persistChunk(chunk)
         verify(queries).checksumIsValid(chunk.requestId)
     }
 }

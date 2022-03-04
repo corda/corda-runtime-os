@@ -97,6 +97,7 @@ class PermissionRepositoryImpl(private val entityManagerFactory: EntityManagerFa
         val rolePermissionsQuery = """
             SELECT DISTINCT NEW net.corda.permissions.query.dto.InternalPermissionQueryDto(
                 u.loginName,
+                p.id,
                 p.groupVisibility.id, 
                 p.virtualNode, 
                 p.permissionString, 

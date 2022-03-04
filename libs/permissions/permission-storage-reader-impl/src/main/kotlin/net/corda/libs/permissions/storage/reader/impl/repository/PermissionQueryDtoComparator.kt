@@ -40,6 +40,10 @@ class PermissionQueryDtoComparator : Comparator<InternalPermissionQueryDto> {
                     o1.groupVisibility!!.compareTo(o2.groupVisibility!!)
                 }
             }
+            o1.id != o2.id -> {
+                // then ID will be sorted alphabetically
+                o1.id.compareTo(o2.id)
+            }
             else -> 0
         }
     }

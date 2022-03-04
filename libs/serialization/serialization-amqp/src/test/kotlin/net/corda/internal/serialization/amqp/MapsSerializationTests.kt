@@ -1,8 +1,8 @@
 package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.amqp.ReusableSerialiseDeserializeAssert.Companion.serializeDeserializeAssert
-import net.corda.v5.application.identity.CordaX500Name
 import net.corda.v5.base.annotations.CordaSerializable
+import net.corda.v5.base.types.MemberX500Name
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 
@@ -27,13 +27,13 @@ class MapsSerializationTests {
     data class MyKey(val keyContent: Double)
 
     @CordaSerializable
-    data class MyValue(val valueContent: CordaX500Name)
+    data class MyValue(val valueContent: MemberX500Name)
 
     @Test
     fun `check map serialization works with custom types`() {
         val myMap = mapOf(
-            MyKey(1.0) to MyValue(CordaX500Name("OOO", "LLL", "CC")),
-            MyKey(10.0) to MyValue(CordaX500Name("OO", "LL", "CC"))
+            MyKey(1.0) to MyValue(MemberX500Name("OOO", "LLL", "CC")),
+            MyKey(10.0) to MyValue(MemberX500Name("OO", "LL", "CC"))
         )
         serializeDeserializeAssert(myMap)
     }

@@ -2,7 +2,7 @@ package net.corda.layeredpropertymap.impl
 
 import net.corda.layeredpropertymap.ConversionContext
 import net.corda.layeredpropertymap.CustomPropertyConverter
-import net.corda.v5.membership.identity.MemberX500Name
+import net.corda.v5.base.types.MemberX500Name
 import java.time.Instant
 
 /**

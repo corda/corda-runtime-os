@@ -65,7 +65,7 @@ class MemberOpsClientImpl @Activate constructor(
                 Instant.now()
             ),
             RegistrationRequest(
-                memberRegistrationRequest.virtualNodeId,
+                memberRegistrationRequest.holdingIdentityId,
                 RegistrationAction.valueOf(memberRegistrationRequest.action.name)
             )
         )
@@ -73,14 +73,14 @@ class MemberOpsClientImpl @Activate constructor(
         return registrationResponse(request.sendRequest())
     }
 
-    override fun checkRegistrationProgress(virtualNodeId: String): RegistrationRequestProgressDto {
+    override fun checkRegistrationProgress(holdingIdentityId: String): RegistrationRequestProgressDto {
         serviceIsRunning()
         val request = MembershipRpcRequest(
             MembershipRpcRequestContext(
                 UUID.randomUUID().toString(),
                 Instant.now()
             ),
-            RegistrationStatusRequest(virtualNodeId)
+            RegistrationStatusRequest(holdingIdentityId)
         )
 
         return registrationResponse(request.sendRequest())

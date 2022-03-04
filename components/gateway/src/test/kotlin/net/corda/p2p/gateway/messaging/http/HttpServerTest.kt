@@ -42,10 +42,7 @@ class HttpServerTest {
     private val configuration = GatewayConfiguration(
         hostAddress = "www.r3.com",
         hostPort = 33,
-        sslConfig = mock {
-            on { keyStore } doReturn mock()
-            on { keyStorePassword } doReturn "hi"
-        }
+        sslConfig = mock()
     )
     private val address = InetSocketAddress("www.r3.com", 30)
     private val channel = mock<Channel> {
@@ -85,7 +82,7 @@ class HttpServerTest {
         groupFactory.close()
     }
 
-    private val server = HttpServer(listener, configuration)
+    private val server = HttpServer(listener, configuration, KeyStoreWithPassword(mock(), ""))
 
     @Test
     fun `write will throw an exception if the channel is not opened`() {

@@ -80,7 +80,6 @@ class InboundMessageHandlerTest {
         1
     )
 
-
     @AfterEach
     fun cleanUp() {
         server.close()
@@ -249,7 +248,7 @@ class InboundMessageHandlerTest {
 
         assertThat(published.firstValue).hasSize(1)
             .anyMatch { record ->
-                (record.topic == LINK_IN_TOPIC) && (record.value == linkInMessage)
+                (record.topic == LINK_IN_TOPIC) && (record.value == linkInMessage) && (record.key == sessionId)
             }
     }
 

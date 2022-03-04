@@ -1,7 +1,7 @@
 package net.corda.membership.impl.registration.staticnetwork
 
-import net.corda.membership.identity.EndpointInfoImpl
-import net.corda.membership.identity.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.impl.EndpointInfoImpl
+import net.corda.membership.impl.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_PROTOCOL
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_URL
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.MEMBER_STATUS
@@ -9,7 +9,7 @@ import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplate
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.STATIC_PLATFORM_VERSION
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.STATIC_SERIAL
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.STATIC_SOFTWARE_VERSION
-import net.corda.v5.membership.identity.EndpointInfo
+import net.corda.v5.membership.EndpointInfo
 import java.time.Instant
 
 /**

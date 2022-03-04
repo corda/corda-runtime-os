@@ -10,8 +10,8 @@ import com.fasterxml.jackson.databind.deser.ContextualDeserializer
 import com.fasterxml.jackson.databind.module.SimpleModule
 import net.corda.common.json.serialization.jacksonObjectMapper
 import net.corda.httprpc.durablestream.DurableCursorTransferObject
-import net.corda.v5.application.identity.CordaX500Name
 import net.corda.v5.base.stream.Cursor
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.trace
 import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.crypto.SecureHash
@@ -21,7 +21,7 @@ internal val objectMapper = jacksonObjectMapper().apply {
     val module = SimpleModule("Durable cursor related")
     module.addDeserializer(Cursor.PollResult.PositionedValue::class.java, PositionedValueDeserializer())
     module.addDeserializer(SecureHash::class.java, SecureHashDeserializer)
-    module.addDeserializer(CordaX500Name::class.java, CordaX500NameDeserializer)
+    module.addDeserializer(MemberX500Name::class.java, MemberX500NameDeserializer)
     this.registerModule(module)
 }
 
@@ -67,12 +67,12 @@ internal object SecureHashDeserializer : JsonDeserializer<SecureHash>() {
     }
 }
 
-internal object CordaX500NameDeserializer : JsonDeserializer<CordaX500Name>() {
+internal object MemberX500NameDeserializer : JsonDeserializer<MemberX500Name>() {
     private val log = LoggerFactory.getLogger(this::class.java)
-    override fun deserialize(parser: JsonParser, context: DeserializationContext): CordaX500Name {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): MemberX500Name {
         log.trace { "Deserialize." }
         return try {
-            CordaX500Name.parse(parser.text)
+            MemberX500Name.parse(parser.text)
         } catch (e: IllegalArgumentException) {
             "Invalid Corda X.500 name ${parser.text}: ${e.message}".let {
                 log.error(it)

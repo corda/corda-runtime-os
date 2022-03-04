@@ -1,26 +1,30 @@
 package net.corda.configuration.rpcops.impl.tests
 
-//import net.corda.data.ExceptionEnvelope
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.crypto.SecureHash
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.virtualnode.VirtualNodeCreationRequest
 import net.corda.data.virtualnode.VirtualNodeCreationResponse
-//import net.corda.httprpc.ResponseCode.INTERNAL_SERVER_ERROR
-//import net.corda.httprpc.ResponseCode.INVALID_INPUT_DATA
-//import net.corda.httprpc.exception.HttpApiException
+import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
+import net.corda.httprpc.security.RpcAuthContext
+import net.corda.httprpc.ResponseCode.INTERNAL_SERVER_ERROR
+import net.corda.httprpc.ResponseCode.INVALID_INPUT_DATA
+import net.corda.httprpc.exception.HttpApiException
 import net.corda.libs.virtualnode.endpoints.v1.types.CPIIdentifier
 import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeRequest
-//import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeResponse
+import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeResponse
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-//import net.corda.virtualnode.rpcops.VirtualNodeRPCOpsServiceException
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.virtualnode.rpcops.VirtualNodeRPCOpsServiceException
 import net.corda.virtualnode.rpcops.impl.v1.VirtualNodeRPCOpsImpl
 import net.corda.virtualnode.rpcops.impl.v1.VirtualNodeRPCOpsInternal
-//import org.junit.jupiter.api.Assertions.assertEquals
-//import org.junit.jupiter.api.Assertions.assertFalse
-//import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-//import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -31,6 +35,20 @@ import net.corda.data.packaging.CPIIdentifier as CPIIdAvro
 
 /** Tests of [VirtualNodeRPCOpsImpl]. */
 class VirtualNodeRPCOpsImplTests {
+    companion object {
+        private const val actor = "test_principal"
+
+        @Suppress("Unused")
+        @JvmStatic
+        @BeforeAll
+        fun setRPCContext() {
+            val rpcAuthContext = mock<RpcAuthContext>().apply {
+                whenever(principal).thenReturn(actor)
+            }
+            CURRENT_RPC_CONTEXT.set(rpcAuthContext)
+        }
+    }
+
     private val holdingIdHash = "holdingIdHash"
     private val cpiIdAvro = CPIIdAvro("cpiName", "1.0.0", SecureHash("SHA-256", ByteBuffer.wrap("a".toByteArray())))
     private val cpiId = CPIIdentifier(cpiIdAvro.name, cpiIdAvro.version, cpiIdAvro.signerSummaryHash.toString())
@@ -58,7 +76,7 @@ class VirtualNodeRPCOpsImplTests {
 
         verify(rpcSender).start()
     }
-/* TODO
+
     @Test
     fun `createAndStartRPCSender closes existing RPC sender if one exists`() {
         val (rpcSender, vnodeRPCOps) = getVirtualNodeRPCOps()
@@ -81,7 +99,9 @@ class VirtualNodeRPCOpsImplTests {
 
     @Test
     fun `createVirtualNode sends the correct request to the RPC sender`() {
-        val rpcRequest = httpCreateVNRequest.run { VirtualNodeCreationRequest(x500Name, cpiIdHash, null, null, null, null, null) }
+        val rpcRequest = httpCreateVNRequest.run {
+            VirtualNodeCreationRequest(x500Name, cpiIdHash, null, null, null, null, "test_principal")
+        }
 
         val (rpcSender, vnodeRPCOps) = getVirtualNodeRPCOps()
 
@@ -163,7 +183,7 @@ class VirtualNodeRPCOpsImplTests {
 
     @Test
     fun `createVirtualNode throws if RPC sender is not set`() {
-        val vnodeRPCOps = VirtualNodeRPCOpsImpl(mock())
+        val vnodeRPCOps = VirtualNodeRPCOpsImpl(mock(), mock())
 
         vnodeRPCOps.setTimeout(rpcRequestTimeoutDuration)
 
@@ -210,8 +230,16 @@ class VirtualNodeRPCOpsImplTests {
     }
 
     @Test
+    fun `getAllVirtualNodes calls VirtualNodeInfoReadService to retrieve all virtual nodes`() {
+        val vnodeInfoReadService = mock<VirtualNodeInfoReadService>()
+        val rpcOps = VirtualNodeRPCOpsImpl(mock(), vnodeInfoReadService)
+        rpcOps.getAllVirtualNodes()
+        verify(vnodeInfoReadService).getAll()
+    }
+
+    @Test
     fun `is not running if RPC sender is not created`() {
-        val vnodeRPCOps = VirtualNodeRPCOpsImpl(mock())
+        val vnodeRPCOps = VirtualNodeRPCOpsImpl(mock(), mock())
         vnodeRPCOps.setTimeout(rpcRequestTimeoutDuration)
         assertFalse(vnodeRPCOps.isRunning)
     }
@@ -242,7 +270,7 @@ class VirtualNodeRPCOpsImplTests {
         vnodeRPCOps.setTimeout(rpcRequestTimeoutDuration)
         assertTrue(vnodeRPCOps.isRunning)
     }
-*/
+
     /** Returns a [VirtualNodeRPCOpsInternal] where the RPC sender returns [future] in response to any RPC requests. */
     private fun getVirtualNodeRPCOps(
         vnCreateResponse: () -> VirtualNodeCreationResponse = { vnCreateSuccessfulResponse }
@@ -256,6 +284,6 @@ class VirtualNodeRPCOpsImplTests {
             whenever(createRPCSender<VirtualNodeCreationRequest, VirtualNodeCreationResponse>(any(), any()))
                 .thenReturn(rpcSender)
         }
-        return rpcSender to VirtualNodeRPCOpsImpl(publisherFactory)
+        return rpcSender to VirtualNodeRPCOpsImpl(publisherFactory, mock())
     }
 }

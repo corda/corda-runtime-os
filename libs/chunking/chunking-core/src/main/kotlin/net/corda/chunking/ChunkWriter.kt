@@ -2,7 +2,6 @@ package net.corda.chunking
 
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.io.InputStream
-import java.nio.file.Path
 
 interface ChunkWriter {
     /**
@@ -13,7 +12,7 @@ interface ChunkWriter {
      * @param inputStream a stream containing the binary - the caller should `close()` the stream
      * @return the `requestId` for this 'write'
      */
-    fun write(fileName: Path, inputStream: InputStream) : RequestId
+    fun write(fileName: String, inputStream: InputStream) : RequestId
 
     /**
      * When a chunk is created, it is passed to the [ChunkWriteCallback], it is up to the implementer to write the

@@ -88,6 +88,8 @@ class VirtualNodeInfoReadServiceImpl @Activate constructor(
         virtualNodeInfoProcessor.close()
     }
 
+    override fun getAll(): List<VirtualNodeInfo> = virtualNodeInfoProcessor.getAll()
+
     override fun get(holdingIdentity: HoldingIdentity): VirtualNodeInfo? = virtualNodeInfoProcessor.get(holdingIdentity)
 
     override fun getById(id: String): VirtualNodeInfo? = virtualNodeInfoProcessor.getById(id)

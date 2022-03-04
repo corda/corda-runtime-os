@@ -10,7 +10,6 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.impl.read.subscription.MembershipGroupReadSubscriptions
 import net.corda.messaging.api.config.toMessagingConfig
@@ -62,8 +61,7 @@ class MembershipGroupReadLifecycleHandlerTest {
         verify(coordinator).followStatusChangesByName(
             eq(
                 setOf(
-                    LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                    LifecycleCoordinatorName.forComponent<GroupPolicyProvider>()
+                    LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
                 )
             )
         )
@@ -81,8 +79,7 @@ class MembershipGroupReadLifecycleHandlerTest {
         verify(coordinator, times(2)).followStatusChangesByName(
             eq(
                 setOf(
-                    LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                    LifecycleCoordinatorName.forComponent<GroupPolicyProvider>()
+                    LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
                 )
             )
         )

@@ -76,10 +76,13 @@ fun createClientSslHandler(targetServerName: String,
     return sslHandler
 }
 
-fun createServerSslHandler(keyStore: KeyStore,
-                           keyManagerFactory: KeyManagerFactory): SslHandler {
+fun createServerSslHandler(keyStore: KeyStoreWithPassword): SslHandler {
+
     val sslContext = SSLContext.getInstance("TLS")
 
+    val keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm()).also {
+        it.init(keyStore.keyStore, keyStore.password.toCharArray())
+    }
     /**
      * As per the JavaDoc of SSLContext:
      * Only the first instance of a particular key and/or trust manager implementation type in the array is used.
@@ -87,7 +90,7 @@ fun createServerSslHandler(keyStore: KeyStore,
      * We shall initialise the SSLContext with an SNI enabled key manager instead
      */
     val keyManagers = keyManagerFactory.keyManagers
-    //May need to use secure random from crypto-api module
+    // May need to use secure random from crypto-api module
     sslContext.init(arrayOf(SNIKeyManager(keyManagers.first() as X509ExtendedKeyManager)), null, SecureRandom())
 
     val sslEngine = sslContext.createSSLEngine().also {
@@ -97,7 +100,7 @@ fun createServerSslHandler(keyStore: KeyStore,
         it.enabledCipherSuites = CIPHER_SUITES
         it.enableSessionCreation = true
         val sslParameters = it.sslParameters
-        sslParameters.sniMatchers = listOf(HostnameMatcher(keyStore))
+        sslParameters.sniMatchers = listOf(HostnameMatcher(keyStore.keyStore))
         it.sslParameters = sslParameters
     }
     val sslHandler = SslHandler(sslEngine)

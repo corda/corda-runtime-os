@@ -10,6 +10,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -212,6 +213,40 @@ class VirtualNodeInfoProcessorTest {
         assertNull(listener.lastSnapshot[holdingIdentity]?.holdingIdentity)
 
         assertEquals(0, listener.lastSnapshot.size, "No messages in snapshot")
+    }
+
+    @Test
+    fun `can get all`() {
+        processor.registerCallback(listener)
+        processor.onSnapshot(emptyMap())
+
+        var virtualNodeList = processor.getAll()
+        assertNotNull(virtualNodeList)
+        assertTrue(virtualNodeList.isEmpty())
+
+        val holdingIdentity = HoldingIdentity("x500", "groupId")
+        val virtualNodeInfo =
+            VirtualNodeInfo(holdingIdentity, CpiIdentifier("name", "version", secureHash))
+        val shortHash = holdingIdentity.id
+
+        listener.update = false
+        processor.onNext(Record("", holdingIdentity.toAvro(), virtualNodeInfo.toAvro()), null, emptyMap())
+
+        // Get all again
+        virtualNodeList = processor.getAll()
+        assertEquals(1, virtualNodeList.size)
+        assertEquals(shortHash, virtualNodeList[0].holdingIdentity.id)
+
+        val newHoldingIdentity = sendOnNextRandomMessage(processor)
+        val newShortHash = newHoldingIdentity.id
+        assertNotEquals(shortHash, newShortHash)
+
+        // Get all again
+        virtualNodeList = processor.getAll()
+        assertEquals(2, virtualNodeList.size)
+        val shortHashList = virtualNodeList.map{ it.holdingIdentity.id }
+        assertTrue(shortHashList.contains(shortHash))
+        assertTrue(shortHashList.contains(newShortHash))
     }
 
     @Test

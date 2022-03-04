@@ -4,6 +4,7 @@ import net.corda.chunking.datamodel.ChunkingEntities
 import net.corda.chunking.read.ChunkReadService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.write.ConfigWriteService
+import net.corda.cpk.write.CpkWriteService
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.ClassloaderChangeLog.ChangeLogResourceFiles
@@ -15,6 +16,7 @@ import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
+import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntities
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
@@ -73,13 +75,18 @@ class DBProcessorImpl @Activate constructor(
     private val dbAdmin: DbAdmin,
     @Reference(service = ChunkReadService::class)
     private val chunkReadService: ChunkReadService,
+    @Reference(service = CpkWriteService::class)
+    private val cpkWriteService: CpkWriteService
 ) : DBProcessor {
     init {
         // define the different DB Entity Sets
         //  entities can be in different packages, but all JPA classes must be passed in.
         entitiesRegistry.register(
             CordaDb.CordaCluster.persistenceUnitName,
-            ConfigurationEntities.classes + VirtualNodeEntities.classes + ChunkingEntities.classes
+            ConfigurationEntities.classes
+                    + VirtualNodeEntities.classes
+                    + ChunkingEntities.classes
+                    + CpiEntities.classes
         )
         entitiesRegistry.register(CordaDb.RBAC.persistenceUnitName, RbacEntities.classes)
     }
@@ -96,7 +103,8 @@ class DBProcessorImpl @Activate constructor(
         ::permissionStorageReaderService,
         ::permissionStorageWriterService,
         ::virtualNodeWriteService,
-        ::chunkReadService
+        ::chunkReadService,
+        ::cpkWriteService
     )
     // keeping track of the DB Managers registration handler specifically because the bootstrap process needs to be split
     //  into 2 parts.
