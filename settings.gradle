@@ -48,6 +48,8 @@ pluginManagement {
         }
     }
     plugins {
+        id 'com.gradle.enterprise' version gradleEnterpriseVersion
+        id 'com.gradle.common-custom-user-data-gradle-plugin' version gradleDataPlugin
         id 'net.corda.cordapp.cordapp-configuration' version cordaApiVersion
         id 'org.jetbrains.kotlin.jvm' version kotlinVersion
         id 'org.jetbrains.kotlin.plugin.allopen' version kotlinVersion
@@ -60,6 +62,11 @@ pluginManagement {
         id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
         id 'com.github.ben-manes.versions' version gradleVersions
     }
+}
+
+plugins {
+    id 'com.gradle.common-custom-user-data-gradle-plugin'
+    id 'com.gradle.enterprise'
 }
 
 dependencyResolutionManagement {
@@ -336,6 +343,22 @@ if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
             substitute module('net.corda:corda-packaging-avro-converters') using project(':packaging:packaging-avro-converters')
             substitute module('net.corda:corda-persistence') using project(':persistence')
             substitute module('net.corda:corda-serialization') using project(':serialization')
+        }
+    }
+}
+
+gradleEnterprise {
+    server = gradleEnterpriseUrl
+    allowUntrustedServer = false
+    buildScan {
+        def apiKey = settings.ext.find('CORDA_GRADLE_SCAN_KEY') ?: System.getenv('CORDA_GRADLE_SCAN_KEY')
+        if (apiKey?.trim()) {
+            publishAlways()
+            capture {
+                taskInputFiles = true
+            }
+            uploadInBackground = false
+            accessKey = apiKey
         }
     }
 }
