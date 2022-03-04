@@ -10,7 +10,7 @@ internal class GroupPolicyParserTest {
     fun parse() {
         val groupId = UUID.randomUUID().toString()
         val groupPolicyJson = """{ "groupId" : "$groupId"}"""
-        val groupPolicy = GroupPolicyParser.parse(groupPolicyJson)
-        assertThat(groupPolicy["groupId"]?.toString()).isEqualTo(groupId)
+        val actualGroupId = GroupPolicyParser.groupId(groupPolicyJson)
+        assertThat(actualGroupId).isEqualTo(groupId)
     }
 }

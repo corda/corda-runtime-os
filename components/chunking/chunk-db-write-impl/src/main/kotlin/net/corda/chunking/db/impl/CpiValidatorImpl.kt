@@ -146,9 +146,7 @@ class CpiValidatorImpl(
      */
     private fun getGroupId(cpi: CPI): String {
         if (cpi.metadata.groupPolicy == null) throw CordaRuntimeException("CPI is missing a group policy file")
-        val groupPolicy = GroupPolicyParser.parse(cpi.metadata.groupPolicy!!)
-        return groupPolicy["groupId"]?.toString()
-            ?: throw CordaRuntimeException("CPI group policy file does not contain groupId")
+        return GroupPolicyParser.groupId(cpi.metadata.groupPolicy!!)
     }
 
     @Suppress("UNUSED_PARAMETER")
