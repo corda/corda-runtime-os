@@ -47,6 +47,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourId
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerHashNotInNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerNotInTheNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.validationFailedWarning
+import net.corda.p2p.linkmanager.utilities.AutoClosableScheduledExecutorService
 import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
 import net.corda.p2p.test.stub.crypto.processor.CryptoProcessorException
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
@@ -87,7 +88,7 @@ open class SessionManagerImpl(
         networkMap
     ),
     clock: Clock = Clock.systemUTC(),
-    executorService: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
+    executorServiceFactory: () -> ScheduledExecutorService = {Executors.newSingleThreadScheduledExecutor()},
 ) : SessionManager {
 
     companion object {
@@ -121,7 +122,7 @@ open class SessionManagerImpl(
         networkMap,
         ::destroyOutboundSession,
         clock,
-        executorService
+        executorServiceFactory
     )
 
     private val publisher = PublisherWithDominoLogic(
@@ -594,7 +595,7 @@ open class SessionManagerImpl(
         private val networkMap: LinkManagerNetworkMap,
         private val destroySession: (counterparties: SessionCounterparties, sessionId: String) -> Any,
         private val clock: Clock,
-        private val executorService: ScheduledExecutorService
+        private val executorServiceFactory: () -> ScheduledExecutorService
     ) : LifecycleWithDominoTile {
 
         companion object {
@@ -628,6 +629,17 @@ open class SessionManagerImpl(
             }
         }
 
+        private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
+            val future = CompletableFuture<Unit>()
+            executorService = executorServiceFactory()
+            resources.keep(AutoClosableScheduledExecutorService(executorService))
+            future.complete(Unit)
+            return future
+        }
+
+        @Volatile
+        private lateinit var executorService: ScheduledExecutorService
+
         private fun fromConfig(config: Config): HeartbeatManagerConfig {
             return HeartbeatManagerConfig(Duration.ofMillis(config.getLong(LinkManagerConfiguration.HEARTBEAT_MESSAGE_PERIOD_KEY)),
             Duration.ofMillis(config.getLong(LinkManagerConfiguration.SESSION_TIMEOUT_KEY)))
@@ -645,6 +657,7 @@ open class SessionManagerImpl(
         override val dominoTile = ComplexDominoTile(
             this::class.java.simpleName,
             coordinatorFactory,
+            ::createResources,
             dependentChildren = setOf(networkMap.dominoTile, publisher.dominoTile),
             managedChildren = setOf(publisher.dominoTile),
             configurationChangeHandler = HeartbeatManagerConfigChangeHandler(),
