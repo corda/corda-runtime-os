@@ -8,7 +8,7 @@ import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.AutoClosableScheduledExecutorService
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
-import net.corda.p2p.linkmanager.utilities.MockExecutor
+import net.corda.p2p.linkmanager.utilities.MockTimeFacilitiesProvider
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
@@ -59,7 +59,7 @@ class ReplaySchedulerTest {
         createResources = context.arguments()[2] as ((ResourcesHolder) -> CompletableFuture<Unit>)
         configHandler = context.arguments()[5] as ReplayScheduler<*>.ReplaySchedulerConfigurationChangeHandler
     }
-    private val mockExecutor = MockExecutor()
+    private val mockTimeFacilitiesProvider = MockTimeFacilitiesProvider()
 
     @AfterEach
     fun cleanUp() {
@@ -111,7 +111,7 @@ class ReplaySchedulerTest {
             false,
             REPLAY_PERIOD_KEY,
             { _: Any -> },
-            {mockExecutor.mockScheduledExecutor}
+            {mockTimeFacilitiesProvider.mockScheduledExecutor}
         ) { 0 }
         val future = createResources(resourcesHolder)
         verify(resourcesHolder).keep(isA<AutoClosableScheduledExecutorService>())
@@ -130,7 +130,7 @@ class ReplaySchedulerTest {
             false,
             REPLAY_PERIOD_KEY,
             tracker::replayMessage,
-            {mockExecutor.mockScheduledExecutor}
+            {mockTimeFacilitiesProvider.mockScheduledExecutor}
         ) { 0 }
         setRunning()
         createResources(resourcesHolder)
@@ -154,7 +154,7 @@ class ReplaySchedulerTest {
 
         val repeats = 3
         for (i in 0 until repeats) {
-            mockExecutor.advanceTime(replayPeriod)
+            mockTimeFacilitiesProvider.advanceTime(replayPeriod)
             assertThat(tracker.messages).containsExactlyInAnyOrderElementsOf(messageIds)
             tracker.messages.clear()
         }
@@ -173,7 +173,7 @@ class ReplaySchedulerTest {
             false,
             REPLAY_PERIOD_KEY,
             tracker::replayMessage,
-            {mockExecutor.mockScheduledExecutor}
+            {mockTimeFacilitiesProvider.mockScheduledExecutor}
         ) { 0 }
         setRunning()
         createResources(resourcesHolder)
@@ -185,11 +185,11 @@ class ReplaySchedulerTest {
 
         val messageIds = (1..messages).map { UUID.randomUUID().toString() }
         messageIds.forEach { replayManager.addForReplay(0, it, it, sessionCounterparties) }
-        mockExecutor.advanceTime(replayPeriod)
+        mockTimeFacilitiesProvider.advanceTime(replayPeriod)
         assertThat(tracker.messages).containsExactlyInAnyOrderElementsOf(messageIds)
         tracker.messages.clear()
         replayManager.removeAllMessagesFromReplay()
-        mockExecutor.advanceTime(replayPeriod)
+        mockTimeFacilitiesProvider.advanceTime(replayPeriod)
         assertThat(tracker.messages).isEmpty()
     }
 
@@ -204,7 +204,7 @@ class ReplaySchedulerTest {
             false,
             REPLAY_PERIOD_KEY,
             tracker::replayMessage,
-            {mockExecutor.mockScheduledExecutor}
+            {mockTimeFacilitiesProvider.mockScheduledExecutor}
         ) { 0 }
         setRunning()
         createResources(resourcesHolder)
@@ -224,7 +224,7 @@ class ReplaySchedulerTest {
             replayManager.removeFromReplay(it, sessionCounterparties)
         }
 
-        mockExecutor.advanceTime(replayPeriod)
+        mockTimeFacilitiesProvider.advanceTime(replayPeriod)
         assertThat(tracker.messages).containsExactlyInAnyOrderElementsOf(messageIdsToNotRemove)
     }
 
@@ -248,7 +248,7 @@ class ReplaySchedulerTest {
             false,
             REPLAY_PERIOD_KEY,
             ::replayMessage,
-            {mockExecutor.mockScheduledExecutor}
+            {mockTimeFacilitiesProvider.mockScheduledExecutor}
         ) { 0 }
         replayManager.start()
         setRunning()
@@ -260,12 +260,12 @@ class ReplaySchedulerTest {
         )
 
         replayManager.addForReplay(0, "", message, sessionCounterparties)
-        mockExecutor.advanceTime(replayPeriod)
+        mockTimeFacilitiesProvider.advanceTime(replayPeriod)
         loggingInterceptor.assertErrorContains(
             "An exception was thrown when replaying a message. The task will be retried again in ${replayPeriod.toMillis()} ms.")
         assertThat(tracker.messages).isEmpty()
 
-        mockExecutor.advanceTime(replayPeriod)
+        mockTimeFacilitiesProvider.advanceTime(replayPeriod)
         assertThat(tracker.messages).containsOnly(message)
     }
 
@@ -278,7 +278,7 @@ class ReplaySchedulerTest {
             false,
             REPLAY_PERIOD_KEY,
             tracker::replayMessage,
-            {mockExecutor.mockScheduledExecutor}
+            {mockTimeFacilitiesProvider.mockScheduledExecutor}
         ) { 0 }
         replayManager.start()
         setRunning()
@@ -287,7 +287,7 @@ class ReplaySchedulerTest {
 
         val messageId = UUID.randomUUID().toString()
         replayManager.addForReplay(0, messageId, messageId, sessionCounterparties)
-        mockExecutor.advanceTime(replayPeriod)
+        mockTimeFacilitiesProvider.advanceTime(replayPeriod)
         tracker.messages.clear()
         configHandler.applyNewConfiguration(mock(), null, configResourcesHolder)
 
@@ -298,7 +298,7 @@ class ReplaySchedulerTest {
             messageIdAfterUpdate,
             sessionCounterparties
         )
-        mockExecutor.advanceTime(replayPeriod)
+        mockTimeFacilitiesProvider.advanceTime(replayPeriod)
 
         assertThat(tracker.messages).contains(messageId, messageIdAfterUpdate)
     }
@@ -313,7 +313,7 @@ class ReplaySchedulerTest {
             true,
             REPLAY_PERIOD_KEY,
             tracker::replayMessage,
-            {mockExecutor.mockScheduledExecutor}
+            {mockTimeFacilitiesProvider.mockScheduledExecutor}
         ) { 0 }
         replayManager.start()
         setRunning()
@@ -334,9 +334,9 @@ class ReplaySchedulerTest {
         val anotherQueuedMessageId = UUID.randomUUID().toString()
         replayManager.addForReplay(0, anotherQueuedMessageId, anotherQueuedMessageId, sessionCounterparties)
 
-        mockExecutor.advanceTime(replayPeriod)
+        mockTimeFacilitiesProvider.advanceTime(replayPeriod)
         replayManager.removeFromReplay(messageId, sessionCounterparties)
-        mockExecutor.advanceTime(replayPeriod)
+        mockTimeFacilitiesProvider.advanceTime(replayPeriod)
 
         assertThat(tracker.messages).containsOnly(messageId, anotherQueuedMessageId)
     }
@@ -351,7 +351,7 @@ class ReplaySchedulerTest {
             true,
             REPLAY_PERIOD_KEY,
             tracker::replayMessage,
-            {mockExecutor.mockScheduledExecutor}
+            {mockTimeFacilitiesProvider.mockScheduledExecutor}
         ) { 0 }
         replayManager.start()
         setRunning()
@@ -365,7 +365,7 @@ class ReplaySchedulerTest {
         val messageIds = (1..2 * messageCap).map { UUID.randomUUID().toString() }
         messageIds.forEach { replayManager.addForReplay(0, it, it, sessionCounterparties) }
 
-        mockExecutor.advanceTime(replayPeriod)
+        mockTimeFacilitiesProvider.advanceTime(replayPeriod)
         tracker.messages.clear()
 
         configHandler.applyNewConfiguration(
@@ -374,7 +374,7 @@ class ReplaySchedulerTest {
             configResourcesHolder
         )
 
-        mockExecutor.advanceTime(replayPeriod)
+        mockTimeFacilitiesProvider.advanceTime(replayPeriod)
         assertThat(tracker.messages).containsExactlyInAnyOrderElementsOf(messageIds)
     }
 

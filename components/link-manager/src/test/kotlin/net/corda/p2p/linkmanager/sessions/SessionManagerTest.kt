@@ -38,7 +38,7 @@ import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionNeeded
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
-import net.corda.p2p.linkmanager.utilities.MockExecutor
+import net.corda.p2p.linkmanager.utilities.MockTimeFacilitiesProvider
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.v5.base.util.millis
@@ -171,7 +171,7 @@ class SessionManagerTest {
     }
     val resources = ResourcesHolder()
 
-    private val mockExecutor = MockExecutor()
+    private val mockTimeFacilitiesProvider = MockTimeFacilitiesProvider()
 
     private val sessionManager = SessionManagerImpl(
         networkMap,
@@ -183,8 +183,8 @@ class SessionManagerTest {
         mock(),
         protocolFactory,
         sessionReplayer,
-        mockExecutor.clock
-    ) { mockExecutor.mockScheduledExecutor }.apply {
+        mockTimeFacilitiesProvider.clock
+    ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
         setRunning()
         configHandler.applyNewConfiguration(
             SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
@@ -877,8 +877,8 @@ class SessionManagerTest {
             mock(),
             protocolFactory,
             sessionReplayer,
-            mockExecutor.clock
-        ) { mockExecutor.mockScheduledExecutor }.apply {
+            mockTimeFacilitiesProvider.clock
+        ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
                 SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
@@ -900,7 +900,7 @@ class SessionManagerTest {
         val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
         sessionManager.processSessionMessage(LinkInMessage(responderHello))
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionAlreadyPending)
-        mockExecutor.advanceTime(configWithHeartbeat.sessionTimeout.plus(5.millis))
+        mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.sessionTimeout.plus(5.millis))
         assertThat(sessionManager.processOutboundMessage(message)).isInstanceOf(NewSessionNeeded::class.java)
         sessionManager.stop()
         resourceHolder.close()
@@ -919,8 +919,8 @@ class SessionManagerTest {
             mock(),
             protocolFactory,
             sessionReplayer,
-            mockExecutor.clock
-        ) { mockExecutor.mockScheduledExecutor }.apply {
+            mockTimeFacilitiesProvider.clock
+        ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
                 SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
@@ -946,7 +946,7 @@ class SessionManagerTest {
 
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
 
-        mockExecutor.advanceTime(configWithHeartbeat.sessionTimeout.plus(5.millis))
+        mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.sessionTimeout.plus(5.millis))
         assertThat(sessionManager.processOutboundMessage(message)).isInstanceOf(NewSessionNeeded::class.java)
         verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())
             .publish(listOf(Record(SESSION_OUT_PARTITIONS, sessionState.sessionId, null)))
@@ -976,8 +976,8 @@ class SessionManagerTest {
             mock(),
             protocolFactory,
             sessionReplayer,
-            mockExecutor.clock
-        ) { mockExecutor.mockScheduledExecutor }.apply {
+            mockTimeFacilitiesProvider.clock
+        ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
                 SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
@@ -1010,7 +1010,7 @@ class SessionManagerTest {
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
         sessionManager.dataMessageSent(authenticatedSession)
 
-        mockExecutor.advanceTime(configWithHeartbeat.sessionTimeout.plus(5.millis))
+        mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.sessionTimeout.plus(5.millis))
         assertThat(sessionManager.processOutboundMessage(message)).isInstanceOf(NewSessionNeeded::class.java)
         verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())
             .publish(listOf(Record(SESSION_OUT_PARTITIONS, sessionState.sessionId, null)))
@@ -1045,8 +1045,8 @@ class SessionManagerTest {
             mock(),
             protocolFactory,
             sessionReplayer,
-            mockExecutor.clock
-        ) { mockExecutor.mockScheduledExecutor }.apply {
+            mockTimeFacilitiesProvider.clock
+        ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
                 SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
@@ -1083,14 +1083,14 @@ class SessionManagerTest {
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
         sessionManager.dataMessageSent(authenticatedSession)
 
-        mockExecutor.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
-        mockExecutor.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
+        mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
+        mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
         assertThat(messages.size).isEqualTo(2)
 
         heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock())
 
-        mockExecutor.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
-        mockExecutor.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
+        mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
+        mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
         assertThat(messages.size).isEqualTo(4)
 
         sessionManager.stop()
@@ -1120,8 +1120,8 @@ class SessionManagerTest {
             mock(),
             protocolFactory,
             sessionReplayer,
-            mockExecutor.clock
-        ) { mockExecutor.mockScheduledExecutor }.apply {
+            mockTimeFacilitiesProvider.clock
+        ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
                 SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
@@ -1160,7 +1160,7 @@ class SessionManagerTest {
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
         sessionManager.dataMessageSent(authenticatedSession)
 
-        repeat(2) { mockExecutor.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis)) }
+        repeat(2) { mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis)) }
         assertThat(linkOutMessages).isEqualTo(2)
 
         configHandler.applyNewConfiguration(
@@ -1169,7 +1169,7 @@ class SessionManagerTest {
             resourcesHolder,
         )
 
-        mockExecutor.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
+        mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
         assertThat(linkOutMessages).isEqualTo(2)
         verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())
             .publish(listOf(Record(SESSION_OUT_PARTITIONS, sessionState.sessionId, null)))
@@ -1200,8 +1200,8 @@ class SessionManagerTest {
             mock(),
             protocolFactory,
             sessionReplayer,
-            mockExecutor.clock
-        ) { mockExecutor.mockScheduledExecutor }.apply {
+            mockTimeFacilitiesProvider.clock
+        ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
                 SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
@@ -1243,7 +1243,7 @@ class SessionManagerTest {
             (2 * (it.sessionTimeout.toMillis() / it.heartbeatPeriod.toMillis())).toInt()
         }
         repeat(numberOfHeartbeats) {
-            mockExecutor.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
+            mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
             sessionManager.messageAcknowledged(sessionState.sessionId)
         }
         assertThat(messages).hasSize(numberOfHeartbeats)
@@ -1283,8 +1283,8 @@ class SessionManagerTest {
             mock(),
             protocolFactory,
             sessionReplayer,
-            mockExecutor.clock
-        ) { mockExecutor.mockScheduledExecutor }.apply {
+            mockTimeFacilitiesProvider.clock
+        ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
                 SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
@@ -1305,7 +1305,7 @@ class SessionManagerTest {
 
         sessionManager.dataMessageSent(authenticatedSession)
 
-        repeat(3) { mockExecutor.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis)) }
+        repeat(3) { mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis)) }
         assertThat(sentHeartbeats).isEqualTo(3)
         loggingInterceptor.assertSingleWarningContains("An exception was thrown when sending a heartbeat message.")
         sessionManager.stop()

@@ -10,7 +10,7 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
-class MockExecutor {
+class MockTimeFacilitiesProvider {
 
     private val scheduledTasks: MutableList<Pair<Instant, Runnable>> = mutableListOf()
     private fun createFuture(timeAndTask: Pair<Instant, Runnable>): ScheduledFuture<*> {
