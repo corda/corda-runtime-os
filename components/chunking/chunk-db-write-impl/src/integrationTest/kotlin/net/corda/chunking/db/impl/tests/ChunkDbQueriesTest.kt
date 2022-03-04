@@ -352,7 +352,7 @@ internal class ChunkDbQueriesTest {
         val checksum = SecureHash.create("DUMMY:1234567890abcdef")
         val cpks = listOf(mockCpk(checksum, "1.cpk"))
 
-        queries.persistMetadata(cpiMetadataEntity, cpks)
+        queries.persistMetadataAndCpks(cpiMetadataEntity, cpks)
 
         val cpkDataEntity = entityManagerFactory.createEntityManager().transaction {
             it.find(CpkDataEntity::class.java, checksum.toString())
@@ -368,7 +368,7 @@ internal class ChunkDbQueriesTest {
 
         assertThat(queries.containsCpkByChecksum(checksum)).isFalse
         val cpks = listOf(mockCpk(checksum, "1.cpk"))
-        queries.persistMetadata(cpiMetadataEntity, cpks)
+        queries.persistMetadataAndCpks(cpiMetadataEntity, cpks)
         assertThat(queries.containsCpkByChecksum(checksum)).isTrue
     }
 
@@ -382,10 +382,10 @@ internal class ChunkDbQueriesTest {
             mockCpk(SecureHash.create("CCC:3456789012abcd"), "3.cpk"),
         )
 
-        queries.persistMetadata(cpiMetadataEntity, cpks)
+        queries.persistMetadataAndCpks(cpiMetadataEntity, cpks)
 
         assertThrows<PersistenceException> {
-            queries.persistMetadata(cpiMetadataEntity, cpks)
+            queries.persistMetadataAndCpks(cpiMetadataEntity, cpks)
         }
     }
 }

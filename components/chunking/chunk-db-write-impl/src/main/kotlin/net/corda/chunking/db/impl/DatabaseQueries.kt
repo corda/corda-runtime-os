@@ -166,7 +166,7 @@ class DatabaseQueries(private val entityManagerFactory: EntityManagerFactory) {
         return entity != null
     }
 
-    fun persistMetadata(cpiMetadataEntity: CpiMetadataEntity, cpkFiles: Collection<CPK>) {
+    fun persistMetadataAndCpks(cpiMetadataEntity: CpiMetadataEntity, cpkFiles: Collection<CPK>) {
         entityManagerFactory.createEntityManager().transaction { em ->
             em.persist(cpiMetadataEntity)
             cpkFiles.forEach {

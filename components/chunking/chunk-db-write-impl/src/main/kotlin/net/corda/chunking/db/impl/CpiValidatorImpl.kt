@@ -7,6 +7,7 @@ import net.corda.data.chunking.UploadFileStatus
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.packaging.CpiMetadata
 import net.corda.packaging.CPI
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import java.io.InputStream
@@ -77,20 +78,28 @@ class CpiValidatorImpl(
         val cpi = Files.newInputStream(tempPath).use { CPI.from(it, cpiExpansionDir) }
 
         // Can't necessarily compare the CPI.metadata.hash to our checksum above
-        // because two different digest algos might have been used to create them.
+        // because two different digest algorithms might have been used to create them.
         // We'll publish to the database using the de-chunking checksum
-        val cpiMetadataEntity = createCpiMetadataEntity(cpi, cpiFileName, checksum, requestId)
-
         try {
+            val cpiMetadataEntity = createCpiMetadataEntity(cpi, cpiFileName, checksum, requestId)
+
             if (!queries.containsCpiByPrimaryKey(cpiMetadataEntity)) {
-                queries.persistMetadata(cpiMetadataEntity, cpi.cpks)
+                queries.persistMetadataAndCpks(cpiMetadataEntity, cpi.cpks)
             } else {
-                // throws without this check.
                 log.warn("CPI has already been inserted with cpks for $cpiMetadataEntity")
             }
-        } catch (ex: PersistenceException) {
-            log.error("Error when trying to persist CPI and CPK to database", ex)
-            return UploadFileStatus.UPLOAD_FAILED
+        } catch (ex: Exception) {
+            return when (ex) {
+                is PersistenceException -> {
+                    log.error("Error when trying to persist CPI and CPK to database", ex)
+                    UploadFileStatus.UPLOAD_FAILED
+                }
+                is CordaRuntimeException -> {
+                    log.error("Error when trying to persist CPI and CPK to database", ex)
+                    UploadFileStatus.UPLOAD_FAILED
+                }
+                else -> throw ex
+            }
         }
 
         // Lastly publish the CPI info to Kafka.
@@ -113,31 +122,33 @@ class CpiValidatorImpl(
         checksum: SecureHash,
         requestId: RequestId
     ): CpiMetadataEntity {
-        val (groupPolicyAsJson, groupId) = getGroupPolicy(cpi)
+        val groupId = getGroupId(cpi)
 
         val cpiMetadata = cpi.metadata
 
         return CpiMetadataEntity(
             cpiMetadata.id.name,
             cpiMetadata.id.version,
-            cpiMetadata.id.signerSummaryHash?.toString() ?: "", // TODO....
+            cpiMetadata.id.signerSummaryHash?.toString() ?: "",
             cpiFileName,
             checksum.toString(),
-            groupPolicyAsJson,
+            cpi.metadata.groupPolicy!!,
             groupId,
             requestId
         )
     }
 
-    // This is on purpose - we *should* be uploading a CPI containing a `GroupPolicy.json`
-    // file but for the sake of this PR, we'll use a dummy group id if the file is missing.
-    private fun getGroupPolicy(cpi: CPI): Pair<String, String> {
-        log.error("Still using placeholder code for getting groupId")
-        val dummyGroupId = "00000000-0000-0000-0000-000000000000"
-        val groupPolicyAsJson = cpi.metadata.groupPolicy ?: "{ groupId: $dummyGroupId }"
-        val groupPolicy = GroupPolicyParser.parse(groupPolicyAsJson)
-        val groupId = groupPolicy["groupId"]?.toString() ?: dummyGroupId
-        return Pair(groupPolicyAsJson, groupId)
+    /**
+     * Get groupId from group policy JSON on the [CPI] object.
+     *
+     * @throws CordaRuntimeException if there is no group policy json.
+     * @return `groupId`
+     */
+    private fun getGroupId(cpi: CPI): String {
+        if (cpi.metadata.groupPolicy == null) throw CordaRuntimeException("CPI is missing a group policy file")
+        val groupPolicy = GroupPolicyParser.parse(cpi.metadata.groupPolicy!!)
+        return groupPolicy["groupId"]?.toString()
+            ?: throw CordaRuntimeException("CPI group policy file does not contain groupId")
     }
 
     @Suppress("UNUSED_PARAMETER")
