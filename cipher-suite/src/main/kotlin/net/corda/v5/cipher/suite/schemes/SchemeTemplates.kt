@@ -5,8 +5,6 @@ package net.corda.v5.cipher.suite.schemes
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.OID_COMPOSITE_KEY_IDENTIFIER
 import net.corda.v5.crypto.SignatureSpec
-import net.i2p.crypto.eddsa.EdDSAEngine
-import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable
 import org.bouncycastle.asn1.ASN1Integer
 import org.bouncycastle.asn1.ASN1ObjectIdentifier
 import org.bouncycastle.asn1.DLSequence
@@ -18,6 +16,7 @@ import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers
 import org.bouncycastle.asn1.sec.SECObjectIdentifiers
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.bouncycastle.asn1.x9.X9ObjectIdentifiers
+import org.bouncycastle.jcajce.spec.EdDSAParameterSpec
 import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.spec.GOST3410ParameterSpec
 import org.bouncycastle.pqc.jcajce.spec.SPHINCS256KeyGenParameterSpec
@@ -65,7 +64,7 @@ val ECDSA_SECP256R1_SHA256_SIGNATURE_SPEC = SignatureSpec(
 
 @JvmField
 val EDDSA_ED25519_NONE_SIGNATURE_SPEC = SignatureSpec(
-    signatureName = EdDSAEngine.SIGNATURE_ALGORITHM,
+    signatureName = "EdDSA",
     signatureOID = AlgorithmIdentifier(ID_CURVE_25519PH, null)
 )
 
@@ -128,8 +127,8 @@ val ECDSA_SECP256R1_SHA256_TEMPLATE = SignatureSchemeTemplate(
 val EDDSA_ED25519_NONE_TEMPLATE = SignatureSchemeTemplate(
     codeName = EDDSA_ED25519_CODE_NAME,
     algorithmOIDs = listOf(AlgorithmIdentifier(ID_CURVE_25519PH, null)),
-    algorithmName = "1.3.101.112",
-    algSpec = EdDSANamedCurveTable.getByName("ED25519"),
+    algorithmName = "Ed25519",
+    algSpec = EdDSAParameterSpec(EdDSAParameterSpec.Ed25519),
     keySize = null,
     signatureSpec = EDDSA_ED25519_NONE_SIGNATURE_SPEC
 )

@@ -4,7 +4,6 @@ package net.corda.v5.crypto.mocks
 
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.OID_COMPOSITE_KEY
-import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable
 import org.bouncycastle.asn1.ASN1ObjectIdentifier
 import org.bouncycastle.asn1.ASN1Primitive
 import org.bouncycastle.asn1.ASN1Sequence
@@ -17,6 +16,7 @@ import org.bouncycastle.asn1.x509.Time
 import org.bouncycastle.asn1.x9.X9ObjectIdentifiers
 import org.bouncycastle.cert.X509CertificateHolder
 import org.bouncycastle.cert.X509v3CertificateBuilder
+import org.bouncycastle.jcajce.spec.EdDSAParameterSpec
 import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.operator.ContentSigner
@@ -39,8 +39,8 @@ import java.time.temporal.ChronoUnit
 import java.util.Date
 
 val EDDSA_ED25519_SPEC = KeySpec(
-    name = "1.3.101.112",
-    spec = EdDSANamedCurveTable.getByName("ED25519")
+    name = "EdDSA",
+    spec = EdDSAParameterSpec(EdDSAParameterSpec.Ed25519)
 )
 
 val ECDSA_SECP256R1_SPEC = KeySpec(

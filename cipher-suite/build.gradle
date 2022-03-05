@@ -12,24 +12,10 @@ dependencies {
 
     compileOnly 'org.osgi:osgi.annotation'
 
-    implementation "org.bouncycastle:bcprov-jdk15on:$bouncycastleVersion"
-    implementation "org.bouncycastle:bcpkix-jdk15on:$bouncycastleVersion"
-    implementation "net.i2p.crypto:eddsa:$eddsaVersion"
-
     api platform(project(':corda-api'))
-    api project(':base')
     api project(':crypto')
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
 }
 
-tasks.named('jar', Jar) {
-    bundle {
-        bnd '''\
-Import-Package:\
-    net.i2p.crypto.eddsa.math;resolution:=optional,\
-    *
-'''
-    }
-}

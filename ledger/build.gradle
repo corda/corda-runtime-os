@@ -20,7 +20,7 @@ dependencies {
     }
 
     api project(":application")
-    implementation project(":crypto")
+    api project(":crypto")
     implementation project(":membership")
     implementation project(":serialization")
     implementation project(":persistence")

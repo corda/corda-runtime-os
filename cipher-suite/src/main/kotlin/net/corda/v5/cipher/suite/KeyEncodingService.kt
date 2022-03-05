@@ -1,7 +1,6 @@
 package net.corda.v5.cipher.suite
 
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
-import java.security.PrivateKey
 import java.security.PublicKey
 
 /**
@@ -45,12 +44,4 @@ interface KeyEncodingService {
      * is inappropriate for a supported key factory to produce a private key.
      */
     fun toSupportedPublicKey(key: PublicKey): PublicKey
-
-    /**
-     * Convert a private key to a supported implementation. This can be used to convert a SUN's EC key to an BC key.
-     *
-     * @throws IllegalArgumentException on not supported scheme or if the given key specification
-     * is inappropriate for a supported key factory to produce a private key.
-     */
-    fun toSupportedPrivateKey(key: PrivateKey): PrivateKey
 }
