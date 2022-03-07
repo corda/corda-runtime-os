@@ -43,21 +43,21 @@ internal class VirtualNodeEntityRepository(dbConnectionManager: DbConnectionMana
      * @param entityManager [EntityManager]
      * @param holdingIdentity Holding identity
      */
-    internal fun putHoldingIdentity(entityManager: EntityManager, holdingIdentity: HoldingIdentity) {
+    internal fun putHoldingIdentity(entityManager: EntityManager, holdingIdentity: HoldingIdentity, connections: VirtualNodeDbConnections) {
             val entity = entityManager.find(HoldingIdentityEntity::class.java, holdingIdentity.id)?.apply {
-                update(holdingIdentity.vaultDdlConnectionId,
-                    holdingIdentity.vaultDmlConnectionId,
-                    holdingIdentity.cryptoDdlConnectionId,
-                    holdingIdentity.cryptoDmlConnectionId)
+                update(connections.vaultDdlConnectionId,
+                    connections.vaultDmlConnectionId,
+                    connections.cryptoDdlConnectionId,
+                    connections.cryptoDmlConnectionId)
             } ?: HoldingIdentityEntity(
                 holdingIdentity.id,
                 holdingIdentity.hash,
                 holdingIdentity.x500Name,
                 holdingIdentity.groupId,
-                holdingIdentity.vaultDdlConnectionId,
-                holdingIdentity.vaultDmlConnectionId,
-                holdingIdentity.cryptoDdlConnectionId,
-                holdingIdentity.cryptoDmlConnectionId,
+                connections.vaultDdlConnectionId,
+                connections.vaultDmlConnectionId,
+                connections.cryptoDdlConnectionId,
+                connections.cryptoDmlConnectionId,
                 null
             )
         entityManager.persist(entity)

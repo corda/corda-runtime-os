@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.UUID
 import kotlin.streams.toList
 
 /**
@@ -58,7 +59,9 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
         val virtualNodes = cpiList.flatMap { cpi ->
             x500Identities.map { x500 -> cpi to VirtualNodeInfo(
                 HoldingIdentity(x500, cpi.metadata.id.name),
-                CpiIdentifier.fromLegacy(cpi.metadata.id)
+                CpiIdentifier.fromLegacy(cpi.metadata.id),
+                vaultDmlConnectionId = UUID.randomUUID(),
+                cryptoDmlConnectionId = UUID.randomUUID()
             ) }
         }
 
