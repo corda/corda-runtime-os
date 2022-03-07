@@ -36,8 +36,8 @@ class SessionInitExecutorTest {
         assertThat(outboundEvents.size).isEqualTo(1)
         val outboundEvent = outboundEvents.first()
         assertThat(outboundEvent.topic).isEqualTo(P2P_OUT_TOPIC)
-        assertThat(outboundEvent.key).isEqualTo("sessionId-INITIATED")
-        assertThat(payload.sessionId).isEqualTo("sessionId-INITIATED")
+        assertThat(outboundEvent.key).isEqualTo("sessionId")
+        assertThat(payload.sessionId).isEqualTo("sessionId")
         assertThat(outboundEvent.value!!::class).isEqualTo(FlowMapperEvent::class)
     }
 
