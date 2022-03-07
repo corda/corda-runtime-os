@@ -107,7 +107,7 @@ class MemberProcessorTestUtils {
             holdingIdentity: HoldingIdentity = aliceHoldingIdentity
         ) = eventually {
             assertThrows<CordaRuntimeException> {
-                getGroupPolicy(groupPolicyProvider, holdingIdentity)
+                groupPolicyProvider.getGroupPolicy(holdingIdentity)
             }
         }
 
