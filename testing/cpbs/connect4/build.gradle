@@ -6,7 +6,7 @@ cordapp {
     targetPlatformVersion platformVersion as Integer
     minimumPlatformVersion platformVersion as Integer
     workflow {
-        name "Corda Hello World"
+        name "Corda Connect 4"
         versionId 1
         vendor "R3"
     }
@@ -16,3 +16,4 @@ dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     cordaProvided 'net.corda:corda-application'
 }
+

@@ -117,3 +117,6 @@ p2p-deployment/keystores/
 
 # Ignore Visual studio directory
 bin/
+
+# Ignore node folders
+node_modules/

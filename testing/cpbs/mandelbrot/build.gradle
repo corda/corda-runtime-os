@@ -6,7 +6,7 @@ cordapp {
     targetPlatformVersion platformVersion as Integer
     minimumPlatformVersion platformVersion as Integer
     workflow {
-        name "Corda Hello World"
+        name "Mandelbrot"
         versionId 1
         vendor "R3"
     }
