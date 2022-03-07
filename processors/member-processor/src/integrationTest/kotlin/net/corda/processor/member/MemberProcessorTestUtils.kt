@@ -14,14 +14,17 @@ import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
-import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import java.util.UUID
 
@@ -52,10 +55,6 @@ class MemberProcessorTestUtils {
 
         val aliceName = "C=GB, L=London, O=Alice"
         val aliceX500Name = MemberX500Name.parse(aliceName)
-        val bobName = "C=GB, L=London, O=Bob"
-        val bobX500Name = MemberX500Name.parse(bobName)
-        val charlieName = "C=GB, L=London, O=Charlie"
-        val charlieX500Name = MemberX500Name.parse(charlieName)
         val groupId = "ABC123"
         val aliceHoldingIdentity = HoldingIdentity(aliceName, groupId)
 
@@ -96,9 +95,9 @@ class MemberProcessorTestUtils {
             isStarted()
         }
 
-        fun Lifecycle.isStopped() = eventually { Assertions.assertFalse(isRunning) }
+        fun Lifecycle.isStopped() = eventually { assertFalse(isRunning) }
 
-        fun Lifecycle.isStarted() = eventually { Assertions.assertTrue(isRunning) }
+        fun Lifecycle.isStarted() = eventually { assertTrue(isRunning) }
 
         val sampleGroupPolicy1 get() = getSampleGroupPolicy("/SampleGroupPolicy.json")
         val sampleGroupPolicy2 get() = getSampleGroupPolicy("/SampleGroupPolicy2.json")
@@ -106,27 +105,33 @@ class MemberProcessorTestUtils {
         fun getGroupPolicyFails(
             groupPolicyProvider: GroupPolicyProvider,
             holdingIdentity: HoldingIdentity = aliceHoldingIdentity
-        ) = assertThrows<CordaRuntimeException> {
-            getGroupPolicy(groupPolicyProvider, holdingIdentity)
+        ) = eventually {
+            assertThrows<CordaRuntimeException> {
+                getGroupPolicy(groupPolicyProvider, holdingIdentity)
+            }
         }
 
         fun getGroupPolicy(
             groupPolicyProvider: GroupPolicyProvider,
             holdingIdentity: HoldingIdentity = aliceHoldingIdentity
-        ) = groupPolicyProvider.getGroupPolicy(holdingIdentity)
+        ) = eventually {
+            assertDoesNotThrow {
+                groupPolicyProvider.getGroupPolicy(holdingIdentity)
+            }
+        }
 
         fun assertGroupPolicy(new: GroupPolicy, old: GroupPolicy? = null) {
             old?.let {
                 assertNotEquals(new, it)
             }
-            Assertions.assertEquals(groupId, new.groupId)
-            Assertions.assertEquals(6, new.keys.size)
+            assertEquals(groupId, new.groupId)
+            assertEquals(6, new.keys.size)
         }
 
         fun assertSecondGroupPolicy(new: GroupPolicy, old: GroupPolicy) {
             assertNotEquals(new, old)
-            Assertions.assertEquals("DEF456", new.groupId)
-            Assertions.assertEquals(2, new.size)
+            assertEquals("DEF456", new.groupId)
+            assertEquals(2, new.size)
         }
 
 
