@@ -4,7 +4,6 @@ import io.netty.handler.ssl.SslHandler
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
 import org.bouncycastle.asn1.ASN1InputStream
-import org.bouncycastle.asn1.DERIA5String
 import org.bouncycastle.asn1.DEROctetString
 import org.bouncycastle.asn1.x509.AuthorityKeyIdentifier
 import org.bouncycastle.asn1.x509.CRLDistPoint
@@ -40,6 +39,7 @@ import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509ExtendedKeyManager
 import javax.net.ssl.X509ExtendedTrustManager
 import net.corda.v5.base.util.toHex
+import org.bouncycastle.asn1.ASN1IA5String
 import org.bouncycastle.asn1.x500.X500Name
 
 const val HANDSHAKE_TIMEOUT = 10000L
@@ -152,9 +152,13 @@ fun X509Certificate.distributionPoints() : Set<String> {
         return emptySet()
     }
 
-    val dpNames = distPoint.distributionPoints.mapNotNull { it.distributionPoint }.filter { it.type == DistributionPointName.FULL_NAME }
+    val dpNames = distPoint.distributionPoints.mapNotNull { it.distributionPoint }.filter {
+        it.type == DistributionPointName.FULL_NAME
+    }
     val generalNames = dpNames.flatMap { GeneralNames.getInstance(it.name).names.asList() }
-    return generalNames.filter { it.tagNo == GeneralName.uniformResourceIdentifier}.map { DERIA5String.getInstance(it.name).string }.toSet()
+    return generalNames.filter { it.tagNo == GeneralName.uniformResourceIdentifier}.map {
+        ASN1IA5String.getInstance(it.name).string
+    }.toSet()
 }
 
 fun X509Certificate.toBc() = X509CertificateHolder(encoded)

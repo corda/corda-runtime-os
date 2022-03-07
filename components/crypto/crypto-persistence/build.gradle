@@ -8,15 +8,13 @@ description 'Crypto persistence internal API'
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
 
+    api "net.corda:corda-cipher-suite"
+
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation "net.i2p.crypto:eddsa:$eddsaVersion"
-    implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
-    implementation "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion"
     implementation "net.corda:corda-avro-schema"
-    implementation "net.corda:corda-cipher-suite"
 
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:crypto:crypto-core")
