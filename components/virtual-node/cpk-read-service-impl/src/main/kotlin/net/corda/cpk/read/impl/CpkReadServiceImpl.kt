@@ -31,7 +31,6 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import java.nio.file.Paths
 
-@Suppress("Unused")
 @Component(service = [CpkReadService::class])
 class CpkReadServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
@@ -58,19 +57,6 @@ class CpkReadServiceImpl @Activate constructor(
     internal var cpkChunksKafkaReaderSubscription: AutoCloseable? = null
 
 //    private var reader: CpkFileReader? = null // not used yet
-
-    override val isRunning: Boolean
-        get() = coordinator.isRunning
-
-    override fun start() {
-        logger.debug { "Cpk Read Service starting" }
-        coordinator.start()
-    }
-
-    override fun stop() {
-        logger.debug { "Cpk Read Service stopping" }
-        coordinator.stop()
-    }
 
     /**
      * Event loop
@@ -110,6 +96,7 @@ class CpkReadServiceImpl @Activate constructor(
     }
 
     private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
+        logger.info("Configuring CPK Read Service")
         val config = event.config.toMessagingConfig()
         // TODO fix configuration below
 
@@ -143,6 +130,19 @@ class CpkReadServiceImpl @Activate constructor(
             CpkChunksKafkaReader(cpkChunksFileManager),
             config
         )
+    }
+
+    override val isRunning: Boolean
+        get() = coordinator.isRunning
+
+    override fun start() {
+        logger.debug { "CPK Read Service starting" }
+        coordinator.start()
+    }
+
+    override fun stop() {
+        logger.debug { "CPK Read Service stopping" }
+        coordinator.stop()
     }
 
     private fun closeResources() {
