@@ -3,7 +3,9 @@ package net.corda.cpk.read.impl.services.persistence
 import com.google.common.jimfs.Configuration
 import com.google.common.jimfs.Jimfs
 import net.corda.chunking.toAvro
+import net.corda.chunking.toCorda
 import net.corda.cpk.read.impl.services.persistence.CpkChunksFileManagerImpl.Companion.toCpkDirName
+import net.corda.cpk.read.impl.services.persistence.CpkChunksFileManagerImpl.Companion.toCpkFileName
 import net.corda.data.chunking.CpkChunkId
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -43,7 +45,7 @@ class CpkChunksFileManagerImplTest {
     }
 
     private fun CpkChunkId.toPath(): Path {
-        val cpkXDir = commonCpkCacheDir.resolve(fs.getPath(this.toCpkDirName()))
+        val cpkXDir = commonCpkCacheDir.resolve(fs.getPath(this.cpkChecksum.toCorda().toCpkDirName()))
         if (!Files.exists(cpkXDir)) {
             Files.createDirectory(cpkXDir)
         }
@@ -60,12 +62,18 @@ class CpkChunksFileManagerImplTest {
         return filePath
     }
 
-    private fun CpkChunkId.fileExists() =
-        Files.exists(toPath())
+    private fun cpkChunkFileExists(chunkId: CpkChunkId) =
+        Files.exists(chunkId.toPath())
 
     private fun getCpkChunkContent(chunkId: CpkChunkId): ByteArray {
         val filePath = chunkId.toPath()
-        val inStream =  filePath.inputStream()
+        val inStream = filePath.inputStream()
+        return inStream.readAllBytes()
+    }
+
+    private fun getAssembledCpkContent(checksum: SecureHash): ByteArray {
+        val filePath = commonCpkCacheDir.resolve(checksum.toCpkDirName()).resolve(checksum.toCpkFileName())
+        val inStream = filePath.inputStream()
         return inStream.readAllBytes()
     }
 
@@ -111,9 +119,25 @@ class CpkChunksFileManagerImplTest {
         val (cpkChunkId, chunk) =
             dummyCpkChunkIdToChunk(SecureHash.create(DUMMY_HASH), 0, SecureHash.create(DUMMY_HASH), bytes)
         cpkChunksFileManagerImpl.writeChunkFile(cpkChunkId, chunk)
-        assertTrue(cpkChunkId.fileExists())
+        assertTrue(cpkChunkFileExists(cpkChunkId))
 
         val bytesRead = getCpkChunkContent(cpkChunkId)
         assertTrue(bytes.contentEquals(bytesRead))
+    }
+
+    @Test
+    fun `assembles cpk`() {
+        val cpkChecksum = SecureHash.create(DUMMY_HASH)
+        val bytes0 = byteArrayOf(0x01, 0x02)
+        val bytes1 = byteArrayOf(0x03, 0x04)
+        val (cpkChunkId0, chunk0) =
+            dummyCpkChunkIdToChunk(cpkChecksum, 0, SecureHash.create(DUMMY_HASH), bytes0)
+        val (cpkChunkId1, chunk1) =
+            dummyCpkChunkIdToChunk(cpkChecksum, 1, SecureHash.create(DUMMY_HASH), bytes1)
+
+        cpkChunksFileManagerImpl.writeChunkFile(cpkChunkId0, chunk0)
+        cpkChunksFileManagerImpl.writeChunkFile(cpkChunkId1, chunk1)
+        cpkChunksFileManagerImpl.assembleCpk(cpkChecksum, sortedSetOf(cpkChunkId0, cpkChunkId1))
+        assertTrue(byteArrayOf(0x01, 0x02, 0x03, 0x04).contentEquals(getAssembledCpkContent(cpkChecksum)))
     }
 }
