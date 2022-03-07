@@ -129,7 +129,7 @@ class CpkReadServiceImpl @Activate constructor(
             SubscriptionConfig(CPK_READ_GROUP, Schemas.VirtualNode.CPK_FILE_TOPIC),
             CpkChunksKafkaReader(cpkChunksFileManager),
             config
-        )
+        ).also { it.start() }
     }
 
     override val isRunning: Boolean
