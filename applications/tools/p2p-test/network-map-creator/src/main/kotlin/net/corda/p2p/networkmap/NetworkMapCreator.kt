@@ -10,8 +10,10 @@ import net.corda.messaging.api.records.Record
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.p2p.NetworkType
+import net.corda.p2p.test.HostingIdentityEntry
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.NetworkMapEntry
+import net.corda.schema.TestSchema.Companion.HOSTING_MAP_TOPIC
 import net.corda.schema.TestSchema.Companion.NETWORK_MAP_TOPIC
 import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.FrameworkUtil
@@ -74,9 +76,10 @@ class NetworkMapCreator @Activate constructor(
                 return
             }
 
-            val topic = parameters.topic ?: NETWORK_MAP_TOPIC
+            val networkMapTopic = parameters.networkMapTopic ?: NETWORK_MAP_TOPIC
+            val hostingMapTopic = parameters.hostingMapTopic ?: HOSTING_MAP_TOPIC
             val netmapConfig = ConfigFactory.parseFile(parameters.networkMapFile)
-            val recordsWithAdditions = netmapConfig.getConfigList("entriesToAdd").map { config ->
+            val recordsWithAdditions = netmapConfig.getConfigList("entriesToAdd").flatMap { config ->
                 val x500Name = config.getString("x500name")
                 val groupId = config.getString("groupId")
                 val dataConfig = config.getConfig("data")
@@ -93,21 +96,45 @@ class NetworkMapCreator @Activate constructor(
                     }.map { it.readText() }
 
                 val (keyAlgo, publicKey) = readKey(publicKeyStoreFile, publicKeyAlias, keystorePassword)
+                val holdingIdentity = HoldingIdentity(x500Name, groupId)
                 val networkMapEntry = NetworkMapEntry(
-                    HoldingIdentity(x500Name, groupId),
+                    holdingIdentity,
                     ByteBuffer.wrap(publicKey.encoded),
                     keyAlgo,
                     address,
                     networkType,
                     trustStoreCertificates,
                 )
-                Record(topic, "$x500Name-$groupId", networkMapEntry)
+                listOf(
+                    Record(networkMapTopic, "$x500Name-$groupId", networkMapEntry)
+                ) + if (config.hasPath("locallyHosted")) {
+                    val locallyHosted = config.getConfig("locallyHosted")
+                    val tlsTenantId = locallyHosted.getString("tlsTenantId")
+                    val identityTenantId = locallyHosted.getString("identityTenantId")
+                    val tlsCertificates = locallyHosted.getList("tlsCertificates")
+                        .unwrapped()
+                        .filterIsInstance<String>()
+                        .map {
+                            File(it)
+                        }.map { it.readText() }
+                    val hostingIdentityEntry = HostingIdentityEntry(
+                        holdingIdentity, tlsTenantId, identityTenantId, tlsCertificates
+                    )
+                    listOf(
+                        Record(hostingMapTopic, "$x500Name-$groupId", hostingIdentityEntry)
+                    )
+                } else {
+                    emptyList()
+                }
             }
-            val recordsWithRemovals = netmapConfig.getConfigList("entriesToDelete").map { config ->
+            val recordsWithRemovals = netmapConfig.getConfigList("entriesToDelete").flatMap { config ->
                 val x500Name = config.getString("x500name")
                 val groupId = config.getString("groupId")
 
-                Record(topic, "$x500Name-$groupId", null)
+                listOf(
+                    Record(networkMapTopic, "$x500Name-$groupId", null),
+                    Record(hostingMapTopic, "$x500Name-$groupId", null),
+                )
             }
             val totalRecords = recordsWithAdditions + recordsWithRemovals
 
@@ -122,7 +149,7 @@ class NetworkMapCreator @Activate constructor(
             publisher.start()
             publisher.publish(totalRecords).forEach { it.get() }
 
-            consoleLogger.info("Produced ${totalRecords.size} entries on topic $topic.")
+            consoleLogger.info("Produced ${totalRecords.size} entries on.")
             shutdown()
         }
     }
@@ -191,13 +218,22 @@ class CliParameters {
     var kafkaConnection: File? = null
 
     @CommandLine.Option(
-        names = ["--topic"],
+        names = ["--network-map-topic"],
         description = [
-            "Topic to write the records to. " +
+            "Topic to write the network map records to. " +
                 "Defaults to $NETWORK_MAP_TOPIC, if not specified."
         ]
     )
-    var topic: String? = null
+    var networkMapTopic: String? = null
+
+    @CommandLine.Option(
+        names = ["--locally-hosted-topic"],
+        description = [
+            "Topic to write the locally hosted records to. " +
+                "Defaults to $HOSTING_MAP_TOPIC, if not specified."
+        ]
+    )
+    var hostingMapTopic: String? = null
 
     @CommandLine.Option(names = ["--netmap-file"], description = ["File containing network map data used to populate Kafka."])
     var networkMapFile: File? = null

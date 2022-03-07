@@ -20,40 +20,54 @@ bootstrap.servers=localhost:9092
 ```
 
 The file provided on the `--netmap-file` CLI parameter should have the following structure:
+
 ```json
 {
-    "entriesToAdd": [
-        {
-          "x500name": "O=Alice, L=London, C=GB",
-          "groupId": "group-1",
-          "data": {
-               "publicKeyStoreFile": "<path_to_the_keystore_file>",
-               "publicKeyAlias": "<alias_of_public_key>", 
-               "keystorePassword": "keystore-password",
-               "address": "http://alice.com",
-               "networkType": "CORDA_4",
-               "trustStoreCertificates": ["<path_to_trust_certificate_files>"]
-          }
-        },
-        {
-          "x500name": "O=Bob, L=London, C=GB",
-          "groupId": "group-2",
-          "data": {
-              "publicKeyStoreFile": "<path_to_the_keystore_file>",
-              "publicKeyAlias": "<alias_of_public_key>", 
-              "keystorePassword": "keystore-password",
-              "address": "http://bob.com",
-              "networkType": "CORDA_5",
-              "trustStoreCertificates": ["<path_to_trust_certificate_files>"]
-          }
-        }
-    ],
-    "entriesToDelete": [
-        {
-          "x500name": "O=Charlie, L=London, C=GB",
-          "groupId": "group-1"
-        }
-    ]
+  "entriesToAdd": [
+    {
+      "x500name": "O=Alice, L=London, C=GB",
+      "groupId": "group-1",
+      "data": {
+        "publicKeyStoreFile": "<path_to_the_keystore_file>",
+        "publicKeyAlias": "<alias_of_public_key>",
+        "keystorePassword": "keystore-password",
+        "address": "http://alice.com",
+        "networkType": "CORDA_4",
+        "trustStoreCertificates": [
+          "<path_to_trust_certificate_files>"
+        ]
+      },
+      "locallyHosted": {
+        "tlsTenantId": "AliceId",
+        "identityTenantId": "AliceId",
+        "tlsCertificates": [
+          "<path_to_tls_certificate_files>"
+        ]
+      }
+    },
+    {
+      "x500name": "O=Bob, L=London, C=GB",
+      "groupId": "group-2",
+      "data": {
+        "publicKeyStoreFile": "<path_to_the_keystore_file>",
+        "publicKeyAlias": "<alias_of_public_key>",
+        "keystorePassword": "keystore-password",
+        "publicKeyAlgo": "ECDSA",
+        "address": "http://bob.com",
+        "networkType": "CORDA_5",
+        "trustStoreCertificates": [
+          "<path_to_trust_certificate_files>"
+        ]
+      },
+      "locallyHosted": false
+    }
+  ],
+  "entriesToDelete": [
+    {
+      "x500name": "O=Charlie, L=London, C=GB",
+      "groupId": "group-1"
+    }
+  ]
 }
 ```
 
@@ -64,9 +78,9 @@ keytool -genkeypair -alias ec -keyalg EC -storetype JKS -keystore ec_key.jks -st
 
 trust store files are expected to be `.pem` files.
 
-### Populating a custom topic
+### Populating a custom topics
 
-The key entries can also be written to a custom topic using the `--topic` parameter:
+The key entries can also be written to a custom topic using the `--network-map-topic` and/or `--locally-hosted-topic` parameter:
 ```
 java -jar applications/tools/p2p-test/network-map-creator/build/bin/corda-network-map-creator-5.0.0.0-SNAPSHOT.jar --netmap-file ~/Desktop/keys-config.json --kafka ~/Desktop/kafka.properties --topic test.topic
 ```
