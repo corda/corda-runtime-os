@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.UUID
 import kotlin.streams.toList
 
 /**
@@ -52,7 +53,9 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
         val x500Name = context.startArgs.x500NName
         val vNode = VirtualNodeInfo(
             HoldingIdentity(x500Name, "1"),
-            CpiIdentifier.fromLegacy(cpi.metadata.id))
+            CpiIdentifier.fromLegacy(cpi.metadata.id),
+            vaultDmlConnectionId = UUID.randomUUID(),
+            cryptoDmlConnectionId = UUID.randomUUID())
         val shortId = HoldingIdentity(x500Name, "1").id
         log.info("Published Holding Identity with short ID='${shortId}'")
 
