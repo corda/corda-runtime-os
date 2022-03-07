@@ -77,7 +77,7 @@ class CpkChunksFileManagerImpl(private val commonCpkCacheDir: Path) : CpkChunksF
                 sinkChannel.position(offset)
                 sinkChannel.write(ByteBuffer.wrap(bytes))
                 offset += bytes.size
-                }
+            }
         }
         return cpkFilePath
     }
