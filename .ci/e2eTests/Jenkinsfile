@@ -82,7 +82,7 @@ pipeline {
                script {
                   env.BASE_IMAGE = params.BUILD_REV ? "preTest-${params.BUILD_REV}" : "unstable"
                }
-               sh 'helm install corda ./charts/corda --set imageTag=$BASE_IMAGE -n $NAMESPACE --wait'
+               sh 'helm install corda ./charts/corda --set imageTag=$BASE_IMAGE -n $NAMESPACE --wait --timeout 600s'
             }
             post {
                 unsuccessful {
