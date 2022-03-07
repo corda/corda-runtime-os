@@ -73,7 +73,6 @@ class SessionInitExecutor(
             val tmpFLowEventKey = sessionInit.flowKey
             sessionInit.flowKey = null
             sessionEvent.payload = sessionInit
-            sessionEvent.sessionId = toggleSessionId(sessionEvent.sessionId)
 
             SessionInitOutputs(
                 tmpFLowEventKey,

@@ -20,6 +20,7 @@ dependencies {
     implementation project(":components:configuration:configuration-read-service")
     implementation project(":components:flow:flow-mapper-service")
     implementation project(":components:flow:flow-service")
+    implementation project(":components:flow:flow-session-filter-service")
     implementation project(":components:virtual-node:cpi-info-read-service")
     implementation project(":components:virtual-node:cpk-read-service")
     implementation project(":components:virtual-node:sandbox-group-context-service")

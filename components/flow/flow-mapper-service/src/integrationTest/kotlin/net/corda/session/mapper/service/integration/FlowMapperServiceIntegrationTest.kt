@@ -103,7 +103,7 @@ class FlowMapperServiceIntegrationTest {
         val p2pLatch = CountDownLatch(1)
         val p2pOutSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$testId-p2p-out", P2P_OUT_TOPIC),
-            TestP2POutProcessor("$testId-INITIATED", p2pLatch, 1), SmartConfigImpl.empty(), null
+            TestP2POutProcessor(testId, p2pLatch, 1), SmartConfigImpl.empty(), null
         )
         p2pOutSub.start()
         assertTrue(p2pLatch.await(3, TimeUnit.SECONDS))
@@ -198,7 +198,7 @@ class FlowMapperServiceIntegrationTest {
         val p2pLatch = CountDownLatch(1)
         val p2pOutSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$testId-p2p-out", P2P_OUT_TOPIC),
-            TestP2POutProcessor("$testId-INITIATED", p2pLatch, 0), SmartConfigImpl.empty(), null
+            TestP2POutProcessor(testId, p2pLatch, 0), SmartConfigImpl.empty(), null
         )
         p2pOutSub.start()
         assertFalse(p2pLatch.await(3, TimeUnit.SECONDS))

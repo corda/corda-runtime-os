@@ -2,6 +2,7 @@ package net.corda.processors.flow.internal
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.flow.session.filter.FlowSessionFilterService
 import net.corda.flow.service.FlowService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.DependentComponents
@@ -34,6 +35,8 @@ class FlowProcessorImpl @Activate constructor(
     private val flowService: FlowService,
     @Reference(service = FlowMapperService::class)
     private val flowMapperService: FlowMapperService,
+    @Reference(service = FlowSessionFilterService::class)
+    private val flowSessionFilterService: FlowSessionFilterService,
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = CpiInfoReadService::class)
@@ -51,6 +54,7 @@ class FlowProcessorImpl @Activate constructor(
         ::configurationReadService,
         ::flowService,
         ::flowMapperService,
+        ::flowSessionFilterService,
         ::virtualNodeInfoReadService,
         ::cpiInfoReadService,
         ::sandboxGroupContextComponent
