@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -33,7 +32,6 @@ import org.osgi.test.junit5.service.ServiceExtension
 import kotlin.reflect.KFunction
 
 @ExtendWith(ServiceExtension::class)
-@Disabled
 class MembershipGroupReaderProviderIntegrationTest {
 
     companion object {
