@@ -6,14 +6,11 @@ import net.corda.data.chunking.CpkChunkId
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
-import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
 import java.nio.ByteBuffer
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
-import java.util.*
+import java.util.TreeSet
 
 /**
  * Creates resources on disk, that something needs to clear them on shutdown.
