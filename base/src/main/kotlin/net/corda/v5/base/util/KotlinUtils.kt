@@ -153,3 +153,12 @@ inline fun <reified T> LayeredPropertyMap.parseOrNull(key: String): T? {
 inline fun <reified T> LayeredPropertyMap.parseList(itemKeyPrefix: String): List<T> {
     return parseList(itemKeyPrefix, T::class.java)
 }
+
+/**
+ * Function for reading and parsing the String values stored in the values to an actual set of objects.
+ *
+ * @param itemKeyPrefix The key prefix we are looking for in the store.
+ */
+inline fun <reified T> LayeredPropertyMap.parseSet(itemKeyPrefix: String): Set<T> {
+    return parseSet(itemKeyPrefix, T::class.java)
+}

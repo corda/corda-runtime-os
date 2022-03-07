@@ -73,6 +73,20 @@ interface LayeredPropertyMap {
      *  corda.endpoints.3.protocolVersion = 1
      */
     fun <T> parseList(itemKeyPrefix: String, clazz: Class<out T>): List<T>
+
+    /**
+     * Converts several items with the given prefix to [Set].
+     *
+     * @throws [IllegalArgumentException] if the [T] is not supported or the [itemKeyPrefix] is blank string.
+     * @throws [ValueNotFoundException] if one of the list values is null.
+     * @throws [ClassCastException] as the result of the conversion is cached, it'll be thrown if the second time around
+     * the [T] is different from it was called for the first time.
+     *
+     * Here is an example of what a set will look like
+     * (the [itemKeyPrefix] has to be "corda.identityKeyHashes" or "corda.identityKeyHashes."):
+     *  corda.identityKeyHashes.1 = <hash value of identity key 1>
+     *  corda.identityKeyHashes.2 = <hash value of identity key 2>
+     *  corda.identityKeyHashes.3 = <hash value of identity key 3>
+     */
+    fun <T> parseSet(itemKeyPrefix: String, clazz: Class<out T>): Set<T>
 }
-
-
