@@ -75,15 +75,17 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
 
         val x500Identities = listOf("CN=Bob, O=Bob Corp, L=LDN, C=GB","CN=Alice, O=Alice Corp, L=LDN, C=GB")
 
-        val virtualNodes = cpiList.flatMap { cpi ->
-            x500Identities.map { x500 -> cpi to VirtualNodeInfo(
-                HoldingIdentity(x500, cpi.metadata.id.name),
-                CpiIdentifier.fromLegacy(cpi.metadata.id)
+        val virtualNodes = cpiList.flatMap {
+            x500Identities.map { x500 -> it to VirtualNodeInfo(
+                HoldingIdentity(x500, it.metadata.id.name),
+                CpiIdentifier.fromLegacy(it.metadata.id),
+                vaultDmlConnectionId = UUID.randomUUID(),
+                cryptoDmlConnectionId = UUID.randomUUID()
             ) }
         }
 
-        virtualNodes.forEach { vNode ->
-            val hid = vNode.second.holdingIdentity
+        virtualNodes.forEach {
+            val hid = it.second.holdingIdentity
             log.info("Create vNode for '${hid.x500Name}'-'${hid.groupId}'  with short ID '${hid.id}'")
         }
 
