@@ -92,11 +92,10 @@ class GroupPolicyUploader @Activate constructor(
         // Link each parameter member with the group ID in the group policy and the CPI info created previously.
         val vnodeInfos = memberX500Names.map {
             VirtualNodeInfo(
-                HoldingIdentity(it.toString(), groupId).apply {
-                    vaultDmlConnectionId = UUID.randomUUID()
-                    cryptoDmlConnectionId = UUID.randomUUID()
-                },
-                cpiMetadata.id
+                HoldingIdentity(it.toString(), groupId),
+                cpiMetadata.id,
+                vaultDmlConnectionId = UUID.randomUUID(),
+                cryptoDmlConnectionId = UUID.randomUUID()
             )
         }
 
