@@ -11,7 +11,6 @@ import java.nio.file.StandardOpenOption
 
 /**
  * Creates resources on disk, that something needs to clear them on shutdown.
- * TODO this works for absolute paths only.
  */
 class CpkChunksFileManagerImpl(private val commonCpkCacheDir: Path) : CpkChunksFileManager {
     init {
