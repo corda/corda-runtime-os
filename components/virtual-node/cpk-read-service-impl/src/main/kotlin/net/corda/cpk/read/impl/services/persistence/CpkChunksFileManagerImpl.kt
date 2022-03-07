@@ -20,7 +20,7 @@ class CpkChunksFileManagerImpl(private val commonCpkCacheDir: Path) : CpkChunksF
     companion object {
         val logger = contextLogger()
 
-        private const val DELIMITER = "-"
+        private const val DELIMITER = ".cpk.part."
 
         internal fun CpkChunkId.toCpkDirName() =
             cpkChecksum.toCorda().toHexString()
