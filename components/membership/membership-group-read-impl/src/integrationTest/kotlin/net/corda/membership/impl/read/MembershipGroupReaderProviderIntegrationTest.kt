@@ -182,16 +182,20 @@ class MembershipGroupReaderProviderIntegrationTest {
     private fun Lifecycle.stopAndWait() {
         logger.info("Stopping component ${this::class.java.simpleName}.")
         stop()
-        eventually { isStopped() }
+        isStopped()
     }
 
     private fun Lifecycle.isStopped() {
-        assertFalse(isRunning)
+        eventually { assertFalse(isRunning) }
     }
 
     private fun MembershipGroupReaderProvider.getAliceGroupReader(): MembershipGroupReader {
         logger.info("Getting group reader for test.")
-        return getGroupReader(aliceHoldingIdentity).also {
+        return eventually {
+            assertDoesNotThrow {
+                getGroupReader(aliceHoldingIdentity)
+            }
+        }.also {
             assertEquals(groupId, it.groupId)
             assertEquals(aliceMemberName, it.owningMember)
         }
@@ -199,7 +203,9 @@ class MembershipGroupReaderProviderIntegrationTest {
 
     private fun MembershipGroupReaderProvider.failGetAliceGroupReader() {
         logger.info("Running test expecting exception to be thrown.")
-        assertThrows<CordaRuntimeException> { getGroupReader(aliceHoldingIdentity) }
+        eventually {
+            assertThrows<CordaRuntimeException> { getGroupReader(aliceHoldingIdentity) }
+        }
     }
 
     private fun Publisher.publishMessagingConf() =

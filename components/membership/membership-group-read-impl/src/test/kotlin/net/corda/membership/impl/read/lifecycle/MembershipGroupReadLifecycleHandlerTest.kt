@@ -56,7 +56,7 @@ class MembershipGroupReadLifecycleHandlerTest {
     fun `Start event`() {
         handler.processEvent(StartEvent(), coordinator)
 
-        verify(membershipGroupReadCache).start()
+        verify(membershipGroupReadCache).clear()
 
         verify(coordinator).followStatusChangesByName(
             eq(
@@ -72,7 +72,7 @@ class MembershipGroupReadLifecycleHandlerTest {
         handler.processEvent(StartEvent(), coordinator)
         handler.processEvent(StartEvent(), coordinator)
 
-        verify(membershipGroupReadCache, times(2)).start()
+        verify(membershipGroupReadCache, times(2)).clear()
 
         // by default this asserts for only one call
         verify(componentRegistrationHandle).close()
@@ -90,7 +90,7 @@ class MembershipGroupReadLifecycleHandlerTest {
         handler.processEvent(StopEvent(), coordinator)
 
         verify(membershipGroupReadSubscriptions).stop()
-        verify(membershipGroupReadCache).stop()
+        verify(membershipGroupReadCache).clear()
 
         //these handles are only set if other lifecycle events happen first. In this case they are null when stopping.
         verify(componentRegistrationHandle, never()).close()
@@ -155,11 +155,8 @@ class MembershipGroupReadLifecycleHandlerTest {
         )
         handler.processEvent(ConfigChangedEvent(setOf(BOOT_CONFIG, MESSAGING_CONFIG), configs), coordinator)
 
-        verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
         verify(coordinator).updateStatus(eq(LifecycleStatus.UP), any())
-        verify(membershipGroupReadCache).stop()
-        verify(membershipGroupReadSubscriptions).stop()
-        verify(membershipGroupReadCache).start()
+        verify(membershipGroupReadCache).clear()
         verify(membershipGroupReadSubscriptions, never()).start()
         verify(membershipGroupReadSubscriptions).start(eq(configs.toMessagingConfig()))
     }

@@ -15,6 +15,7 @@ import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -45,6 +46,8 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
 ) : MembershipGroupReaderProvider {
 
     companion object {
+        val logger = contextLogger()
+
         const val ILLEGAL_ACCESS = "Tried to read group data before starting the component " +
                 "or while the component is down."
     }
@@ -99,6 +102,8 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
     ) = if (isRunning && isUp) {
         membershipGroupReaderFactory.getGroupReader(holdingIdentity)
     } else {
+        logger.error("Service is in incorrect state for accessing group readers. " +
+                "Running: [$isRunning], Lifecycle status: [${coordinator.status}]")
         throw CordaRuntimeException(ILLEGAL_ACCESS)
     }
 }

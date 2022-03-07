@@ -43,11 +43,18 @@ class GroupPolicyProviderImpl @Activate constructor(
 
     private val groupPolicyParser = GroupPolicyParser()
 
-    private val groupPolicies: MutableMap<HoldingIdentity, GroupPolicy>
-        get() = _groupPolicies ?: throw CordaRuntimeException(
-            "Tried to access group policy information while the provider service is not running."
-        )
-    private var _groupPolicies: MutableMap<HoldingIdentity, GroupPolicy>? = null
+    private var groupPolicies: MutableMap<HoldingIdentity, GroupPolicy> = newCacheMap()
+        get() = if (isRunning && isUp) {
+            field
+        } else {
+            logger.error(
+                "Service is in incorrect state for accessing group policies. " +
+                        "Running: [$isRunning], Lifecycle status: [${coordinator.status}]"
+            )
+            throw CordaRuntimeException(
+                "Tried to access group policy information while the provider service is not running or is not UP."
+            )
+        }
 
     private val coordinator = lifecycleCoordinatorFactory
         .createCoordinator<GroupPolicyProvider>(::handleEvent)
@@ -57,6 +64,8 @@ class GroupPolicyProviderImpl @Activate constructor(
     ): GroupPolicy {
         return groupPolicies.computeIfAbsent(holdingIdentity) { parseGroupPolicy(holdingIdentity) }
     }
+
+    private fun newCacheMap(): MutableMap<HoldingIdentity, GroupPolicy> = ConcurrentHashMap()
 
     override fun start() = coordinator.start()
 
@@ -119,9 +128,8 @@ class GroupPolicyProviderImpl @Activate constructor(
     private fun handleStopEvent(coordinator: LifecycleCoordinator) {
         logger.debug { "Group policy provider stopping." }
         coordinator.updateStatus(LifecycleStatus.DOWN)
-        stopVirtualNodeHandle()
-        stopDependencyRegistrationHandle()
-        stopCache()
+        virtualNodeInfoCallbackHandle?.close()
+        registrationHandle?.close()
     }
 
     /**
@@ -133,42 +141,25 @@ class GroupPolicyProviderImpl @Activate constructor(
         logger.debug { "Group policy provider handling registration change. Event status: ${event.status}" }
         when (event.status) {
             LifecycleStatus.UP -> {
-                startCache()
+                groupPolicies = newCacheMap()
                 startVirtualNodeHandle()
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
             else -> {
                 coordinator.updateStatus(LifecycleStatus.DOWN)
-                stopVirtualNodeHandle()
-                stopCache()
+                virtualNodeInfoCallbackHandle?.close()
             }
         }
     }
 
-    private fun startCache() {
-        if (_groupPolicies == null) {
-            _groupPolicies = ConcurrentHashMap()
-        }
-    }
-
-    private fun stopCache() {
-        _groupPolicies = null
-    }
-
     private fun startDependencyRegistrationHandle(coordinator: LifecycleCoordinator) {
-        if (registrationHandle == null) {
-            registrationHandle = coordinator.followStatusChangesByName(
-                setOf(
-                    LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
-                    LifecycleCoordinatorName.forComponent<CpiInfoReadService>()
-                )
-            )
-        }
-    }
-
-    private fun stopDependencyRegistrationHandle() {
         registrationHandle?.close()
-        registrationHandle = null
+        registrationHandle = coordinator.followStatusChangesByName(
+            setOf(
+                LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
+                LifecycleCoordinatorName.forComponent<CpiInfoReadService>()
+            )
+        )
     }
 
     /**
@@ -177,20 +168,14 @@ class GroupPolicyProviderImpl @Activate constructor(
      * group policy file.
      */
     private fun startVirtualNodeHandle() {
-        if (virtualNodeInfoCallbackHandle == null) {
-            virtualNodeInfoCallbackHandle = virtualNodeInfoReadService.registerCallback { changed, snapshot ->
-                if (isRunning && isUp) {
-                    changed.filter { snapshot[it] != null }.forEach {
-                        parseGroupPolicy(it, virtualNodeInfo = snapshot[it])
-                            .apply { groupPolicies[it] = this }
-                    }
+        virtualNodeInfoCallbackHandle?.close()
+        virtualNodeInfoCallbackHandle = virtualNodeInfoReadService.registerCallback { changed, snapshot ->
+            if (isRunning && isUp) {
+                changed.filter { snapshot[it] != null }.forEach {
+                    parseGroupPolicy(it, virtualNodeInfo = snapshot[it])
+                        .apply { groupPolicies[it] = this }
                 }
             }
         }
-    }
-
-    private fun stopVirtualNodeHandle() {
-        virtualNodeInfoCallbackHandle?.close()
-        virtualNodeInfoCallbackHandle = null
     }
 }

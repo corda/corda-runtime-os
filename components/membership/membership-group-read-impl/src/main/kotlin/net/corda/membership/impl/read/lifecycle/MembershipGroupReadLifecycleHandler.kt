@@ -51,8 +51,8 @@ interface MembershipGroupReadLifecycleHandler : LifecycleEventHandler {
          * Start the cache and register to receive updates about dependency component statuses.
          */
         private fun handleStartEvent(coordinator: LifecycleCoordinator) {
-            logger.trace(MembershipGroupReaderProvider::class.simpleName + " handling start event.")
-            membershipGroupReadCache.start()
+            logger.info(MembershipGroupReaderProvider::class.simpleName + " handling start event.")
+            membershipGroupReadCache.clear()
             dependencyRegistrationHandle?.close()
             dependencyRegistrationHandle = coordinator.followStatusChangesByName(
                 setOf(
@@ -66,10 +66,10 @@ interface MembershipGroupReadLifecycleHandler : LifecycleEventHandler {
          * which are open.
          */
         private fun handleStopEvent(coordinator: LifecycleCoordinator) {
-            logger.trace(MembershipGroupReaderProvider::class.simpleName + " handling stop event.")
+            logger.info(MembershipGroupReaderProvider::class.simpleName + " handling stop event.")
             coordinator.updateStatus(LifecycleStatus.DOWN, "Stopped component.")
             membershipGroupReadSubscriptions.stop()
-            membershipGroupReadCache.stop()
+            membershipGroupReadCache.clear()
             dependencyRegistrationHandle?.close()
             configRegistrationHandle?.close()
         }
@@ -82,7 +82,7 @@ interface MembershipGroupReadLifecycleHandler : LifecycleEventHandler {
             event: RegistrationStatusChangeEvent,
             coordinator: LifecycleCoordinator
         ) {
-            logger.trace(MembershipGroupReaderProvider::class.simpleName + " handling registration changed event.")
+            logger.info(MembershipGroupReaderProvider::class.simpleName + " handling registration changed event.")
             // Respond to config read service lifecycle status change
             when (event.status) {
                 LifecycleStatus.UP -> {
@@ -104,13 +104,12 @@ interface MembershipGroupReadLifecycleHandler : LifecycleEventHandler {
          * finally starting the component again.
          */
         private fun handleConfigReceivedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-            logger.trace(MembershipGroupReaderProvider::class.simpleName + " handling new config event.")
-            coordinator.updateStatus(LifecycleStatus.DOWN, "Started processing updated configuration.")
-            membershipGroupReadSubscriptions.stop()
-            membershipGroupReadCache.stop()
-            membershipGroupReadCache.start()
+            logger.info(MembershipGroupReaderProvider::class.simpleName + " handling new config event.")
+            membershipGroupReadCache.clear()
             membershipGroupReadSubscriptions.start(event.config.toMessagingConfig())
-            coordinator.updateStatus(LifecycleStatus.UP, "Finished processing updated configuration.")
+            if(coordinator.status != LifecycleStatus.UP) {
+                coordinator.updateStatus(LifecycleStatus.UP)
+            }
         }
     }
 }
