@@ -1,0 +1,84 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "corda.fullname" . }}-db
+  labels: &id002
+    app: {{ include "corda.fullname" . }}-db-node
+    type: database-worker
+spec:
+  type: NodePort
+  selector: *id002
+  ports:
+  - name: worker-debug
+    port: 5005
+    targetPort: 5005
+  - name: worker-health
+    port: 7000
+    targetPort: 7000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "corda.fullname" . }}-db
+  labels:
+    app: {{ include "corda.fullname" . }}-db-node
+    family: e2e
+    type: database-worker
+spec:
+  replicas: {{ .Values.workers.db.replicas }}
+  selector:
+    matchLabels:
+      app: {{ include "corda.fullname" . }}-db-node
+      family: e2e
+      type: database-worker
+  template:
+    metadata:
+      labels:
+        app: {{ include "corda.fullname" . }}-db-node
+        family: e2e
+        type: database-worker
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      imagePullSecrets:
+      - name: docker-registry-cred
+      containers:
+      - name: {{ include "corda.fullname" . }}-db
+        image: corda-os-docker.software.r3.com/corda-os-db-worker:{{ .Values.imageTag }}
+        imagePullPolicy: Always
+        securityContext:
+          allowPrivilegeEscalation: false
+        env:
+        - name: JAVA_TOOL_OPTIONS
+          value: -agentlib:jdwp=transport=dt_socket,server={{ .Values.debug.server }},suspend={{ .Values.debug.suspend }},address=*:5005
+        args:
+        - -mkafka.common.bootstrap.servers={{ .Values.kafka.url }}
+        - -spassphrase=bad passphrase
+        - -ssalt=not so random
+        - -ddatabase.user={{ .Values.db.cluster.user }}
+        - -ddatabase.pass.configSecret.encryptedSecret={{ .Values.db.cluster.secret }}
+        - -ddatabase.jdbc.url=jdbc:{{ .Values.db.cluster.url }}
+        ports:
+        - name: worker-debug
+          containerPort: 5005
+        - name: worker-health
+          containerPort: 7000
+        livenessProbe:
+          httpGet:
+            path: /isHealthy
+            port: 7000
+            scheme: HTTP
+          periodSeconds: 10
+          failureThreshold: 1
+        startupProbe:
+          httpGet:
+            path: /isHealthy
+            port: 7000
+            scheme: HTTP
+          periodSeconds: 10
+          failureThreshold: 5
+      nodeSelector:
+        kubernetes.io/os: linux
+        kubernetes.io/arch: amd64
