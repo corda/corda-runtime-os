@@ -52,7 +52,6 @@ interface MembershipGroupReadLifecycleHandler : LifecycleEventHandler {
          */
         private fun handleStartEvent(coordinator: LifecycleCoordinator) {
             logger.info(MembershipGroupReaderProvider::class.simpleName + " handling start event.")
-            membershipGroupReadCache.clear()
             dependencyRegistrationHandle?.close()
             dependencyRegistrationHandle = coordinator.followStatusChangesByName(
                 setOf(
@@ -69,7 +68,6 @@ interface MembershipGroupReadLifecycleHandler : LifecycleEventHandler {
             logger.info(MembershipGroupReaderProvider::class.simpleName + " handling stop event.")
             coordinator.updateStatus(LifecycleStatus.DOWN, "Stopped component.")
             membershipGroupReadSubscriptions.stop()
-            membershipGroupReadCache.clear()
             dependencyRegistrationHandle?.close()
             configRegistrationHandle?.close()
         }

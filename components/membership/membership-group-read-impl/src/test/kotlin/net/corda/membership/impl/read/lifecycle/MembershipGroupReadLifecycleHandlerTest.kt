@@ -56,8 +56,6 @@ class MembershipGroupReadLifecycleHandlerTest {
     fun `Start event`() {
         handler.processEvent(StartEvent(), coordinator)
 
-        verify(membershipGroupReadCache).clear()
-
         verify(coordinator).followStatusChangesByName(
             eq(
                 setOf(
@@ -71,8 +69,6 @@ class MembershipGroupReadLifecycleHandlerTest {
     fun `Dependency handle is closed if it was already created`() {
         handler.processEvent(StartEvent(), coordinator)
         handler.processEvent(StartEvent(), coordinator)
-
-        verify(membershipGroupReadCache, times(2)).clear()
 
         // by default this asserts for only one call
         verify(componentRegistrationHandle).close()
@@ -90,7 +86,6 @@ class MembershipGroupReadLifecycleHandlerTest {
         handler.processEvent(StopEvent(), coordinator)
 
         verify(membershipGroupReadSubscriptions).stop()
-        verify(membershipGroupReadCache).clear()
 
         //these handles are only set if other lifecycle events happen first. In this case they are null when stopping.
         verify(componentRegistrationHandle, never()).close()

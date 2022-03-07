@@ -43,9 +43,16 @@ class GroupPolicyProviderImpl @Activate constructor(
 
     private val groupPolicyParser = GroupPolicyParser()
 
-    private var groupPolicies: MutableMap<HoldingIdentity, GroupPolicy> = newCacheMap()
-        get() = if (isRunning && isUp) {
-            field
+    private val groupPolicies: MutableMap<HoldingIdentity, GroupPolicy> = ConcurrentHashMap()
+
+    private val coordinator = lifecycleCoordinatorFactory
+        .createCoordinator<GroupPolicyProvider>(::handleEvent)
+
+    override fun getGroupPolicy(
+        holdingIdentity: HoldingIdentity
+    ): GroupPolicy {
+        if (isRunning && isUp) {
+            return groupPolicies.computeIfAbsent(holdingIdentity) { parseGroupPolicy(holdingIdentity) }
         } else {
             logger.error(
                 "Service is in incorrect state for accessing group policies. " +
@@ -55,17 +62,7 @@ class GroupPolicyProviderImpl @Activate constructor(
                 "Tried to access group policy information while the provider service is not running or is not UP."
             )
         }
-
-    private val coordinator = lifecycleCoordinatorFactory
-        .createCoordinator<GroupPolicyProvider>(::handleEvent)
-
-    override fun getGroupPolicy(
-        holdingIdentity: HoldingIdentity
-    ): GroupPolicy {
-        return groupPolicies.computeIfAbsent(holdingIdentity) { parseGroupPolicy(holdingIdentity) }
     }
-
-    private fun newCacheMap(): MutableMap<HoldingIdentity, GroupPolicy> = ConcurrentHashMap()
 
     override fun start() = coordinator.start()
 
@@ -141,7 +138,7 @@ class GroupPolicyProviderImpl @Activate constructor(
         logger.debug { "Group policy provider handling registration change. Event status: ${event.status}" }
         when (event.status) {
             LifecycleStatus.UP -> {
-                groupPolicies = newCacheMap()
+                groupPolicies.clear()
                 startVirtualNodeHandle()
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
