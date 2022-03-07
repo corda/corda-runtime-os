@@ -204,6 +204,7 @@ class CpkWriteServiceImpl @Activate constructor(
         this.cpkChunksPublisher?.let {
             missingCpkIdsOnKafka
                 .forEach { cpkChecksum ->
+                    // TODO probably replace the following logging with debug
                     logger.info("Putting missing CPK to Kafka: $cpkChecksum")
                     val cpkChecksumData = cpkStorage.getCpkDataByCpkId(cpkChecksum)
                     it.chunkAndPublishCpk(cpkChecksumData)
