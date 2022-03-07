@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.*
 import kotlin.streams.toList
 
 /**
@@ -29,7 +30,7 @@ import kotlin.streams.toList
 class SetupVirtualNode(private val context: TaskContext) : Task {
 
     private companion object {
-        val log : Logger = LoggerFactory.getLogger("SetupVirtualNode")
+        val log: Logger = LoggerFactory.getLogger("SetupVirtualNode")
     }
 
     override fun execute() {
@@ -53,13 +54,21 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
 
         val cpiList = scanCPIs(repositoryFolder, getTempDir("flow-worker-setup-cpi"))
 
-        val x500Identities = listOf("CN=Bob, O=Bob Corp, L=LDN, C=GB","CN=Alice, O=Alice Corp, L=LDN, C=GB")
+        val x500Identities = listOf("CN=Bob, O=Bob Corp, L=LDN, C=GB", "CN=Alice, O=Alice Corp, L=LDN, C=GB")
 
         val virtualNodes = cpiList.flatMap { cpi ->
-            x500Identities.map { x500 -> cpi to VirtualNodeInfo(
-                HoldingIdentity(x500, cpi.metadata.id.name),
-                CpiIdentifier.fromLegacy(cpi.metadata.id)
-            ) }
+            x500Identities.map { x500 ->
+                cpi to VirtualNodeInfo(
+                    HoldingIdentity(x500, cpi.metadata.id.name).apply {
+                        this.vaultDdlConnectionId = UUID.randomUUID()
+                        this.vaultDmlConnectionId = UUID.randomUUID()
+                        this.cryptoDdlConnectionId = UUID.randomUUID()
+                        this.cryptoDmlConnectionId = UUID.randomUUID()
+                        this.hsmConnectionId = UUID.randomUUID()
+                    },
+                    CpiIdentifier.fromLegacy(cpi.metadata.id)
+                )
+            }
         }
 
         virtualNodes.forEach { vNode ->
@@ -70,7 +79,8 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
         val vNodeCpiRecords = virtualNodes.flatMap {
             listOf(
                 Record(VIRTUAL_NODE_INFO_TOPIC, it.second.holdingIdentity.toAvro(), it.second.toAvro()),
-                Record(CPI_INFO_TOPIC, it.first.metadata.id.toAvro(), it.first.metadata.toAvro()))
+                Record(CPI_INFO_TOPIC, it.first.metadata.id.toAvro(), it.first.metadata.toAvro())
+            )
         }
 
         context.publish(vNodeCpiRecords + cpiConfigRecord)

@@ -2,14 +2,17 @@
 <html>
 
 <head>
+  <link href="stylesheets/mandy.css" rel="stylesheet">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 </head>
 
 <body>
-
-  <canvas id="myCanvas" width="1024" height="1024" style="border:1px solid #d3d3d3;">
+<div>
+  <h3>Flow Worker Mandelbrot Explorer</h3>
+  <button onclick="run()">Start</button>
+  <canvas id="mandyCanvas" width="1024" height="1024" class="canvas-center">
     Your browser does not support the HTML canvas tag.</canvas>
-
+  </div>
   <script>
     var blockSize = 128;
     var blockNumber = 8;
@@ -44,14 +47,16 @@
     var isRunning = false;
 
     setup();
-    run();
 
     function canvasClicked(e) {
       console.log(e.pageX)
       console.log(e.pageY)
+      const rect = mandyCanvas.getBoundingClientRect()
+      const pageX = e.clientX - rect.left
+      const pageY = e.clientY - rect.top
 
-      var x = blockLeft + ((xScale / (blockSize * blockNumber)) * e.pageX); 
-      var y = blockTop + (yScale / (blockSize * blockNumber)) * e.pageY;
+      var x = blockLeft + ((xScale / (blockSize * blockNumber)) * pageX); 
+      var y = blockTop + ((yScale / (blockSize * blockNumber)) * pageY);
       xScale = xScale / blockNumber;
       yScale = yScale / blockNumber;
 
@@ -74,10 +79,13 @@
 
     function setup() {
       setGfxContext();
+      blockList = getBlocksToRender();
+      setBlockIndex();
+      clearGrid();
     }
 
     function setGfxContext() {
-      var canvas = document.getElementById("myCanvas");
+      var canvas = document.getElementById("mandyCanvas");
 
       canvas.width = blockSize * blockNumber;
       canvas.height = blockSize * blockNumber;
@@ -98,12 +106,6 @@
 
     function run() {
       window.setInterval(onPoll, 100)
-
-      blockList = getBlocksToRender();
-
-      setBlockIndex();
-
-      clearGrid();
 
       // Queue 8 initial blocks for processing
       pushNextBlock();

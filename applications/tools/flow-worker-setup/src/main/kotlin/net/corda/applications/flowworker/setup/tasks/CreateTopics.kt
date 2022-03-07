@@ -26,14 +26,14 @@ class CreateTopics(private val context: TaskContext) : Task {
         val topics = listOf(
             createTopic(CONFIG_TOPIC, 1, 3, compactOption),
 
-            createTopic(FLOW_EVENT_TOPIC, 3, 3),
-            createTopic(FLOW_STATUS_TOPIC , 3, 3, compactOption),
-            createTopic(getStateAndEventDLQTopic(FLOW_EVENT_TOPIC), 3, 3),
-            createTopic(getStateAndEventStateTopic(FLOW_EVENT_TOPIC) , 3, 3, compactOption),
+            createTopic(FLOW_EVENT_TOPIC, 4, 3),
+            createTopic(FLOW_STATUS_TOPIC , 4, 3, compactOption),
+            createTopic(getStateAndEventDLQTopic(FLOW_EVENT_TOPIC), 4, 3),
+            createTopic(getStateAndEventStateTopic(FLOW_EVENT_TOPIC) , 4, 3, compactOption),
 
-            createTopic(FLOW_MAPPER_EVENT_TOPIC, 3, 3),
-            createTopic(getStateAndEventDLQTopic(FLOW_MAPPER_EVENT_TOPIC), 3, 3),
-            createTopic(getStateAndEventStateTopic(FLOW_MAPPER_EVENT_TOPIC), 3, 3, compactOption),
+            createTopic(FLOW_MAPPER_EVENT_TOPIC, 4, 3),
+            createTopic(getStateAndEventDLQTopic(FLOW_MAPPER_EVENT_TOPIC), 4, 3),
+            createTopic(getStateAndEventStateTopic(FLOW_MAPPER_EVENT_TOPIC), 4, 3, compactOption),
 
             createTopic(CPI_INFO_TOPIC, 3, 3, compactOption),
             createTopic(VIRTUAL_NODE_INFO_TOPIC, 3, 3, compactOption),

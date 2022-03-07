@@ -1,0 +1,31 @@
+h3{
+    text-align: center;
+    font-weight: bold;
+    font-family: "Lucida Grande", Helvetica, Arial, sans-serif;
+}
+div{
+    text-align: center;
+}
+
+button {
+    border: none;
+    color: white;
+    padding: 10px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+    background-color:darkgray
+  }
+
+.canvas-center {
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+    border-color:#636161; 
+    border:1px solid;
+}
