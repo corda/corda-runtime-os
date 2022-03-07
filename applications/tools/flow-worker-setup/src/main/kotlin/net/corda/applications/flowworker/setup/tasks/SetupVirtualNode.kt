@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.UUID
 import kotlin.streams.toList
 
 /**
@@ -38,6 +39,25 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
             context.startArgs.cpiDir ?: throw IllegalStateException("CPI Directory (--cpiDir) has not been set")
 
         val dockerCpiDir = context.startArgs.cpiDockerDir
+
+        /**
+         * We assume that there is only ever a single CPI and vNode. and publish that
+         * against the supplied x500 name.
+         */
+        val cpis = scanCPIs(repositoryFolder, getTempDir("flow-worker-setup-cpi"))
+        if (cpis.size != 1) {
+            throw IllegalStateException("Expected to find a single CPI in '${repositoryFolder}'")
+        }
+
+        val cpi = cpis.first()
+        val x500Name = context.startArgs.x500NName
+        val vNode = VirtualNodeInfo(
+            HoldingIdentity(x500Name, "1"),
+            CpiIdentifier.fromLegacy(cpi.metadata.id),
+            vaultDmlConnectionId = UUID.randomUUID(),
+            cryptoDmlConnectionId = UUID.randomUUID())
+        val shortId = HoldingIdentity(x500Name, "1").id
+        log.info("Published Holding Identity with short ID='${shortId}'")
 
         /**
          * To support the temporary local package cache used by the sandbox API,

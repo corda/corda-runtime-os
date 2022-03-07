@@ -84,7 +84,8 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
         return if (resp.success) {
             val cpiId = CPIIdentifier.fromAvro(resp.cpiIdentifier)
             HTTPCreateVirtualNodeResponse(
-                resp.x500Name, cpiId, resp.cpiIdentifierHash, resp.mgmGroupId, resp.holdingIdentifierHash
+                resp.x500Name, cpiId, resp.cpiIdentifierHash, resp.mgmGroupId, resp.holdingIdentifierHash,
+                resp.vaultDdlConnectionId, resp.vaultDmlConnectionId, resp.cryptoDdlConnectionId, resp.cryptoDmlConnectionId
             )
         } else {
             val exception = resp.exception
