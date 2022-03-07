@@ -165,6 +165,7 @@ class ConfigureAll : Runnable {
                     "keystorePassword" to "password",
                     "address" to "http://$host:${Port.Gateway.port}",
                     "networkType" to "CORDA_5",
+                    "protocolModes" to listOf("AUTHENTICATED_ENCRYPTION"),
                     "trustStoreCertificates" to listOf(trustStoreFile.absolutePath),
                 )
             )
@@ -208,6 +209,7 @@ class ConfigureAll : Runnable {
                         "keystorePassword" to "password",
                         "address" to "http://$host:${Port.Gateway.port}",
                         "networkType" to "CORDA_5",
+                        "protocolModes" to listOf("AUTHENTICATED_ENCRYPTION"),
                         "trustStoreCertificates" to listOf(trustStoreFile.absolutePath),
                     )
                 )

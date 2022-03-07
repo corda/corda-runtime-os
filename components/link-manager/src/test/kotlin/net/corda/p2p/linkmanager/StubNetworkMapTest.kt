@@ -9,6 +9,7 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.NetworkType
+import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
@@ -90,6 +91,7 @@ class StubNetworkMapTest {
                 ByteBuffer.wrap(aliceKeyPair.public.encoded),
                 KeyAlgorithm.RSA, aliceAddress,
                 NetworkType.CORDA_4,
+                listOf(ProtocolMode.AUTHENTICATION_ONLY),
                 certificates1,
             ),
             "$bobName-$groupId1" to NetworkMapEntry(
@@ -97,6 +99,7 @@ class StubNetworkMapTest {
                 ByteBuffer.wrap(bobKeyPair.public.encoded),
                 KeyAlgorithm.RSA, bobAddress,
                 NetworkType.CORDA_4,
+                listOf(ProtocolMode.AUTHENTICATION_ONLY),
                 certificates1,
             ),
         )
@@ -105,6 +108,7 @@ class StubNetworkMapTest {
             ByteBuffer.wrap(charlieKeyPair.public.encoded),
             KeyAlgorithm.ECDSA, charlieAddress,
             NetworkType.CORDA_5,
+            listOf(ProtocolMode.AUTHENTICATED_ENCRYPTION),
             certificates2,
         )
         createResources(resourcesHolder)
@@ -113,6 +117,10 @@ class StubNetworkMapTest {
 
         assertThat(networkMap.getNetworkType(groupId1)).isEqualTo(LinkManagerNetworkMap.NetworkType.CORDA_4)
         assertThat(networkMap.getNetworkType(groupId2)).isEqualTo(LinkManagerNetworkMap.NetworkType.CORDA_5)
+        assertThat(networkMap.getNetworkType("")).isNull()
+
+        assertThat(networkMap.getProtocolModes(groupId1)).containsExactlyInAnyOrder(ProtocolMode.AUTHENTICATION_ONLY)
+        assertThat(networkMap.getProtocolModes(groupId2)).containsExactlyInAnyOrder(ProtocolMode.AUTHENTICATED_ENCRYPTION)
 
         val aliceMemberInfoByIdentity = networkMap.getMemberInfo(LinkManagerNetworkMap.HoldingIdentity(aliceName, groupId1))
         assertThat(aliceMemberInfoByIdentity!!.publicKey).isEqualTo(aliceKeyPair.public)
@@ -157,6 +165,7 @@ class StubNetworkMapTest {
                     ByteBuffer.wrap(aliceKeyPair.public.encoded),
                     KeyAlgorithm.RSA, aliceAddress,
                     NetworkType.CORDA_4,
+                    listOf(),
                     certificates1,
                 )
             ),
@@ -168,6 +177,7 @@ class StubNetworkMapTest {
             NetworkMapListener.GroupInfo(
                 groupId1,
                 NetworkType.CORDA_4,
+                emptySet(),
                 certificates1,
             )
         )

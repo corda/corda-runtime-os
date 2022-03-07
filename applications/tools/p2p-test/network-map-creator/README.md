@@ -32,6 +32,7 @@ The file provided on the `--netmap-file` CLI parameter should have the following
                "keystorePassword": "keystore-password",
                "address": "http://alice.com",
                "networkType": "CORDA_4",
+               "protocolModes": ["AUTHENTICATION_ONLY", "AUTHENTICATED_ENCRYPTION"],
                "trustStoreCertificates": ["<path_to_trust_certificate_files>"]
           }
         },
@@ -44,6 +45,7 @@ The file provided on the `--netmap-file` CLI parameter should have the following
               "keystorePassword": "keystore-password",
               "address": "http://bob.com",
               "networkType": "CORDA_5",
+              "protocolModes": ["AUTHENTICATION_ONLY", "AUTHENTICATED_ENCRYPTION"],
               "trustStoreCertificates": ["<path_to_trust_certificate_files>"]
           }
         }

@@ -23,7 +23,6 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_MESSAGE_SIZE_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_REPLAYING_MESSAGES_PER_PEER_POSTFIX
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MESSAGE_REPLAY_KEY_PREFIX
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.PROTOCOL_MODE_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
@@ -268,15 +267,6 @@ class P2PLayerEndToEndTest {
             ConfigFactory.empty()
                 .withValue(LOCALLY_HOSTED_IDENTITIES_KEY, locallyHostedIdentities)
                 .withValue(MAX_MESSAGE_SIZE_KEY, ConfigValueFactory.fromAnyRef(1000000))
-                .withValue(
-                    PROTOCOL_MODE_KEY,
-                    ConfigValueFactory.fromAnyRef(
-                        listOf(
-                            ProtocolMode.AUTHENTICATION_ONLY,
-                            ProtocolMode.AUTHENTICATED_ENCRYPTION
-                        ).map { it.name }
-                    )
-                )
                 .withValue("$MESSAGE_REPLAY_KEY_PREFIX$BASE_REPLAY_PERIOD_KEY_POSTFIX", ConfigValueFactory.fromAnyRef(2000))
                 .withValue("$MESSAGE_REPLAY_KEY_PREFIX$CUTOFF_REPLAY_KEY_POSTFIX", ConfigValueFactory.fromAnyRef(10000))
                 .withValue("$MESSAGE_REPLAY_KEY_PREFIX$MAX_REPLAYING_MESSAGES_PER_PEER_POSTFIX", ConfigValueFactory.fromAnyRef(100))
@@ -385,6 +375,10 @@ class P2PLayerEndToEndTest {
                 identitiesKeyAlgorithm,
                 "http://$p2pAddress:$p2pPort",
                 NetworkType.CORDA_5,
+                listOf(
+                    ProtocolMode.AUTHENTICATION_ONLY,
+                    ProtocolMode.AUTHENTICATED_ENCRYPTION,
+                ),
                 listOf(String(readKeyStore("$trustStoreFileName.pem"))),
             )
 

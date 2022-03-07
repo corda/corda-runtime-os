@@ -10,7 +10,6 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_TLS_TENANT_ID
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_X500_NAME
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_TLS_CERTIFICATES
-import net.corda.p2p.crypto.ProtocolMode
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import picocli.CommandLine.TypeConversionException
@@ -40,12 +39,6 @@ class LinkManagerConfiguration : ConfigProducer() {
         description = ["The maximal message size in bytes"]
     )
     var maxMessageSize = 1_000_000
-
-    @Option(
-        names = ["--protocolMode"],
-        description = ["Supported protocol mode (out of: \${COMPLETION-CANDIDATES})"]
-    )
-    var protocolModes: List<ProtocolMode> = listOf(ProtocolMode.AUTHENTICATED_ENCRYPTION)
 
     @Option(
         names = ["--messageReplayPeriodBaseMilliSecs"],
@@ -110,10 +103,6 @@ class LinkManagerConfiguration : ConfigProducer() {
             .withValue(
                 LinkManagerConfiguration.MAX_MESSAGE_SIZE_KEY,
                 ConfigValueFactory.fromAnyRef(maxMessageSize)
-            )
-            .withValue(
-                LinkManagerConfiguration.PROTOCOL_MODE_KEY,
-                ConfigValueFactory.fromAnyRef(protocolModes.map { it.toString() })
             )
             .withValue(
                 LinkManagerConfiguration.MESSAGE_REPLAY_KEY_PREFIX + LinkManagerConfiguration.BASE_REPLAY_PERIOD_KEY_POSTFIX,
