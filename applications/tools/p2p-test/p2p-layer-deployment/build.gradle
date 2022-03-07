@@ -11,7 +11,6 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
     implementation "info.picocli:picocli:$picocliVersion"
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
-    implementation "org.bouncycastle:bcpkix-jdk15on:1.70"
     implementation "com.konghq:unirest-java:$unirestVersion"
 }
 application {
