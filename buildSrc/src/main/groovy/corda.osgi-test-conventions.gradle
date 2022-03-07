@@ -27,7 +27,9 @@ dependencies {
 
     // OSGi frameworks containing Quasar and Kryo must resolve
     // the version of ASM as specified in the OSGi metadata.
-    quasarBundles "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
+    quasarBundles("co.paralleluniverse:quasar-core-osgi:$quasarVersion") {
+        exclude group: 'org.slf4j'
+    }
     integrationTestRuntimeOnly("co.paralleluniverse:quasar-core-osgi:$quasarVersion:agent") {
         transitive = false
     }
