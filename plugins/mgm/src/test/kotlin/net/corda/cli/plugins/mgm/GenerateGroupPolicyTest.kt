@@ -1,16 +1,19 @@
 package net.corda.cli.plugins.mgm
 
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.github.stefanbirkner.systemlambda.SystemLambda.tapSystemErrAndOutNormalized
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import picocli.CommandLine
 import java.nio.file.Files
 import java.nio.file.Path
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotEquals
-import org.junit.jupiter.api.Assertions.assertTrue
 
 class GenerateGroupPolicyTest {
 
@@ -41,18 +44,17 @@ class GenerateGroupPolicyTest {
         tapSystemErrAndOutNormalized {
             CommandLine(app).execute()
         }.apply {
-            assertTrue(
-                this.contains(
-                    "{\n" +
-                            "        \"name\" : \"C=GB, L=London, O=Alice\",\n" +
-                            "        \"keyAlias\" : \"alice-alias\",\n" +
-                            "        \"rotatedKeyAlias-1\" : \"alice-historic-alias-1\",\n" +
-                            "        \"memberStatus\" : \"ACTIVE\",\n" +
-                            "        \"endpointUrl-1\" : \"https://alice.corda5.r3.com:10000\",\n" +
-                            "        \"endpointProtocol-1\" : 1\n" +
-                            "      }"
-                )
-            )
+            val memberList = memberList(this)
+            memberList.find { it["name"].asText()=="C=GB, L=London, O=Alice" }.apply {
+                assertEquals("alice-alias", this?.get("keyAlias")?.asText())
+                assertEquals("alice-historic-alias-1", this?.get("rotatedKeyAlias-1")?.asText())
+                assertEquals("ACTIVE", this?.get("memberStatus")?.asText())
+                assertEquals("https://alice.corda5.r3.com:10000", this?.get("endpointUrl-1")?.asText())
+                assertEquals("1", this?.get("endpointProtocol-1")?.asText())
+            }
+
+            assertNotNull(memberList.find { it["name"].asText()=="C=GB, L=London, O=Bob" })
+            assertNotNull(memberList.find { it["name"].asText()=="C=GB, L=London, O=Charlie" })
         }
     }
 
@@ -105,28 +107,14 @@ class GenerateGroupPolicyTest {
                 "--endpoint-protocol=5"
             )
         }.apply {
-            assertTrue(
-                this.contains(
-                    "\"members\" : [\n" +
-                            "      {\n" +
-                            "        \"name\" : \"C=GB, L=London, O=Member1\",\n" +
-                            "        \"keyAlias\" : \"C=GB, L=London, O=Member1\",\n" +
-                            "        \"rotatedKeyAlias-1\" : \"C=GB, L=London, O=Member1_old\",\n" +
-                            "        \"memberStatus\" : \"ACTIVE\",\n" +
-                            "        \"endpointUrl-1\" : \"http://dummy-url\",\n" +
-                            "        \"endpointProtocol-1\" : 5\n" +
-                            "      },\n" +
-                            "      {\n" +
-                            "        \"name\" : \"C=GB, L=London, O=Member2\",\n" +
-                            "        \"keyAlias\" : \"C=GB, L=London, O=Member2\",\n" +
-                            "        \"rotatedKeyAlias-1\" : \"C=GB, L=London, O=Member2_old\",\n" +
-                            "        \"memberStatus\" : \"ACTIVE\",\n" +
-                            "        \"endpointUrl-1\" : \"http://dummy-url\",\n" +
-                            "        \"endpointProtocol-1\" : 5\n" +
-                            "      }\n" +
-                            "    ]"
-                )
-            )
+            memberList(this).forEach {
+                assertTrue(it["name"].asText().contains("C=GB, L=London, O=Member"))
+                assertTrue(it["keyAlias"].asText().contains("C=GB, L=London, O=Member"))
+                assertTrue(it["rotatedKeyAlias-1"].asText().contains("C=GB, L=London, O=Member"))
+                assertEquals("ACTIVE", it["memberStatus"].asText())
+                assertEquals("http://dummy-url", it["endpointUrl-1"].asText())
+                assertEquals("5", it["endpointProtocol-1"].asText())
+            }
         }
     }
 
@@ -176,28 +164,13 @@ class GenerateGroupPolicyTest {
         tapSystemErrAndOutNormalized {
             CommandLine(app).execute("--file=$filePath")
         }.apply {
-            assertTrue(
-                this.contains(
-                    "\"members\" : [\n" +
-                            "      {\n" +
-                            "        \"name\" : \"C=GB, L=London, O=Member1\",\n" +
-                            "        \"keyAlias\" : \"C=GB, L=London, O=Member1\",\n" +
-                            "        \"rotatedKeyAlias-1\" : \"C=GB, L=London, O=Member1_old\",\n" +
-                            "        \"memberStatus\" : \"PENDING\",\n" +
-                            "        \"endpointUrl-1\" : \"http://dummy-url\",\n" +
-                            "        \"endpointProtocol-1\" : 10\n" +
-                            "      },\n" +
-                            "      {\n" +
-                            "        \"name\" : \"C=GB, L=London, O=Member2\",\n" +
-                            "        \"keyAlias\" : \"C=GB, L=London, O=Member2\",\n" +
-                            "        \"rotatedKeyAlias-1\" : \"C=GB, L=London, O=Member2_old\",\n" +
-                            "        \"memberStatus\" : \"ACTIVE\",\n" +
-                            "        \"endpointUrl-1\" : \"http://dummy-url\",\n" +
-                            "        \"endpointProtocol-1\" : 5\n" +
-                            "      }\n" +
-                            "    ]"
-                )
-            )
+            memberList(this).forEach {
+                assertTrue(it["name"].asText().contains("C=GB, L=London, O=Member"))
+                assertTrue(it["keyAlias"].asText().contains("C=GB, L=London, O=Member"))
+                assertTrue(it["rotatedKeyAlias-1"].asText().contains("C=GB, L=London, O=Member"))
+                assertTrue(it["memberStatus"].asText().contains("PENDING") || it["memberStatus"].asText().contains("ACTIVE"))
+                assertEquals("http://dummy-url", it["endpointUrl-1"].asText())
+            }
         }
     }
 
@@ -214,28 +187,14 @@ class GenerateGroupPolicyTest {
         tapSystemErrAndOutNormalized {
             CommandLine(app).execute("--file=$filePath")
         }.apply {
-            assertTrue(
-                this.contains(
-                    "\"members\" : [\n" +
-                            "      {\n" +
-                            "        \"name\" : \"C=GB, L=London, O=Member1\",\n" +
-                            "        \"keyAlias\" : \"C=GB, L=London, O=Member1\",\n" +
-                            "        \"rotatedKeyAlias-1\" : \"C=GB, L=London, O=Member1_old\",\n" +
-                            "        \"memberStatus\" : \"ACTIVE\",\n" +
-                            "        \"endpointUrl-1\" : \"http://dummy-url\",\n" +
-                            "        \"endpointProtocol-1\" : 5\n" +
-                            "      },\n" +
-                            "      {\n" +
-                            "        \"name\" : \"C=GB, L=London, O=Member2\",\n" +
-                            "        \"keyAlias\" : \"C=GB, L=London, O=Member2\",\n" +
-                            "        \"rotatedKeyAlias-1\" : \"C=GB, L=London, O=Member2_old\",\n" +
-                            "        \"memberStatus\" : \"ACTIVE\",\n" +
-                            "        \"endpointUrl-1\" : \"http://dummy-url\",\n" +
-                            "        \"endpointProtocol-1\" : 5\n" +
-                            "      }\n" +
-                            "    ]"
-                )
-            )
+            memberList(this).forEach {
+                assertTrue(it["name"].asText().contains("C=GB, L=London, O=Member"))
+                assertTrue(it["keyAlias"].asText().contains("C=GB, L=London, O=Member"))
+                assertTrue(it["rotatedKeyAlias-1"].asText().contains("C=GB, L=London, O=Member"))
+                assertEquals("ACTIVE", it["memberStatus"].asText())
+                assertEquals("http://dummy-url", it["endpointUrl-1"].asText())
+                assertEquals("5", it["endpointProtocol-1"].asText())
+            }
         }
     }
 
@@ -301,6 +260,11 @@ class GenerateGroupPolicyTest {
         }.apply {
             assertTrue(this.contains("No endpoint specified."))
         }
+    }
+
+    private fun memberList(output: String): JsonNode {
+        val mapper = ObjectMapper()
+        return mapper.readTree(output)["protocolParameters"]["staticNetwork"]["members"]
     }
 
     /**
