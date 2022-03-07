@@ -13,7 +13,6 @@ import net.corda.session.manager.SessionManager
 import net.corda.session.manager.impl.factory.SessionEventProcessorFactory
 import net.corda.session.manager.impl.processor.helper.generateAck
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
-import net.corda.session.manager.impl.processor.helper.processAcks
 import org.osgi.service.component.annotations.Component
 import java.time.Instant
 
@@ -172,6 +171,39 @@ class SessionManagerImpl : SessionManager {
                 it.timestamp = instant.plusMillis(messageResendWindow)
             }
             it
+        }
+    }
+
+    /**
+     * Remove any messages from the send events state that have been acknowledged by the counterparty.
+     * Examine the [sessionEvent] to get the highest contiguous sequence number received by the other side as well as any out of order messages
+     * they have also received. Remove these events if present from the sendEvents undelivered messages.
+     * If the current session state has a status of WAIT_FOR_FINAL_ACK and the ack info contains the sequence number of the session close
+     * message then the session can be set to CLOSED.
+     * If the current session state has a status of CREATED and the SessionInit has been acked then the session can be set to CONFIRMED
+     *
+     * @param sessionEvent to get ack info from
+     * @param sessionState to get the sent events
+     * @return Session state updated with any messages that were delivered to the counterparty removed from [sessionState].sendEventsState
+     */
+    private fun processAcks(sessionEvent: SessionEvent, sessionState: SessionState): SessionState {
+        val highestContiguousSeqNum = sessionEvent.receivedSequenceNum
+        val outOfOrderSeqNums = sessionEvent.outOfOrderSequenceNums
+
+        val undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.filter {
+            it.sequenceNum == null ||
+                    (it.sequenceNum > highestContiguousSeqNum &&
+                            (outOfOrderSeqNums.isNullOrEmpty() || !outOfOrderSeqNums.contains(it.sequenceNum)))
+        }
+
+        return sessionState.apply {
+            sendEventsState.undeliveredMessages = undeliveredMessages
+            val nonAckUndeliveredMessages = undeliveredMessages.filter { it.payload !is SessionAck }
+            if (sessionState.status == SessionStateType.WAIT_FOR_FINAL_ACK && nonAckUndeliveredMessages.isEmpty()) {
+                sessionState.status = SessionStateType.CLOSED
+            } else if (sessionState.status == SessionStateType.CREATED && nonAckUndeliveredMessages.isEmpty()) {
+                sessionState.status = SessionStateType.CONFIRMED
+            }
         }
     }
 }

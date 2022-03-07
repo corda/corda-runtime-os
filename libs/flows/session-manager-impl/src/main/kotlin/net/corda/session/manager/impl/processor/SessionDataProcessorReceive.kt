@@ -78,7 +78,6 @@ class SessionDataProcessorReceive(
         //store data event received regardless of current state status
         receivedEventState.undeliveredMessages = receivedEventState.undeliveredMessages.plus(sessionEvent)
 
-        //
         return if (isSessionMismatch(receivedEventState, expectedNextSeqNum, currentStatus)) {
             val errorMessage = "Received data message on key $key with sessionId $sessionId with sequence number of $seqNum when status" +
                     " is $currentStatus. Session mismatch error. SessionState: $sessionState"

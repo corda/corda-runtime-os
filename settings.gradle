@@ -311,8 +311,8 @@ include 'testing:cpbs:split-packages:split-packages-two:library-two'
 include 'testing:layered-property-map-testkit'
 include 'testing:message-patterns'
 include 'testing:sandboxes'
-include 'testing:test-utilities'
 include 'testing:flow-utilities'
+include 'testing:test-utilities'
 
 // The following logic dictates if we use the composite build gradle functionality,
 // If this evaluates to true local source code will be used in place of binary dependencies.

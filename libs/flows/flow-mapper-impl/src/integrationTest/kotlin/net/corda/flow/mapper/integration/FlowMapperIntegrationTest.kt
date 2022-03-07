@@ -50,7 +50,7 @@ class FlowMapperIntegrationTest {
     lateinit var executorFactory: FlowMapperEventExecutorFactory
 
     @Test
-    fun sendStartRPC() {
+    fun `Send StartRPC`() {
         val flowMapperEvent = FlowMapperEvent(startRPCFlow)
         val inputKey = "key1"
         val result = onNext(null, Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
@@ -65,7 +65,7 @@ class FlowMapperIntegrationTest {
     }
 
     @Test
-    fun sendScheduleCleanup() {
+    fun `Send ScheduleCleanup`() {
         val scheduleCleanup = ScheduleCleanup(Long.MAX_VALUE)
         val flowMapperEvent = FlowMapperEvent(scheduleCleanup)
         val inputKey = "sessionId"
@@ -81,7 +81,7 @@ class FlowMapperIntegrationTest {
     }
 
     @Test
-    fun sendExecuteCleanup() {
+    fun `Send ExecuteCleanup`() {
         val executeCleanup = ExecuteCleanup()
         val flowMapperEvent = FlowMapperEvent(executeCleanup)
         val inputKey = "sessionId"
@@ -96,14 +96,14 @@ class FlowMapperIntegrationTest {
     }
 
     @Test
-    fun sendSessionInit() {
+    fun `Send SessionInit`() {
         val flowKey = FlowKey("flowId", HoldingIdentity("x500-1", "group"))
         val inputKey = "sessionId"
-        val sessionInit =  SessionInit(
-                "flowName", "cpiId", flowKey,
-                HoldingIdentity("x500-2", "group"),
-                HoldingIdentity("x500-1", "group"), null
-            )
+        val sessionInit = SessionInit(
+            "flowName", "cpiId", flowKey,
+            HoldingIdentity("x500-2", "group"),
+            HoldingIdentity("x500-1", "group"), null
+        )
 
         val sessionEvent = buildSessionEvent(MessageDirection.OUTBOUND, inputKey, 1, sessionInit)
         val flowMapperEvent = FlowMapperEvent(sessionEvent)
@@ -122,10 +122,16 @@ class FlowMapperIntegrationTest {
     }
 
     @Test
-    fun receiveSessionInit() {
+    fun `Receive SessionInit`() {
         val inputKey = "sessionId-INITIATED"
-        val sessionInit =  SessionInit("flowName", "cpiId", null, HoldingIdentity
-            ("x500-2", "group"), HoldingIdentity("x500-1", "group"), null)
+        val sessionInit = SessionInit(
+            "flowName",
+            "cpiId",
+            null,
+            HoldingIdentity("x500-2", "group"),
+            HoldingIdentity("x500-1", "group"),
+            null
+        )
         val sessionEvent = buildSessionEvent(MessageDirection.INBOUND, inputKey, 1, sessionInit)
         val flowMapperEvent = FlowMapperEvent(sessionEvent)
         val result = onNext(null, Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
@@ -143,7 +149,7 @@ class FlowMapperIntegrationTest {
     }
 
     @Test
-    fun sendSessionDataAsInitiator() {
+    fun `Send SessionData as initiator`() {
         val flowKey = FlowKey("flowId", HoldingIdentity("x500-1", "group"))
         val inputKey = "sessionId"
         val sessionEvent = buildSessionEvent(MessageDirection.OUTBOUND, inputKey, 3, SessionData())
@@ -160,7 +166,7 @@ class FlowMapperIntegrationTest {
     }
 
     @Test
-    fun receiveSessionDataAsInitiator() {
+    fun `Receive SessionData as initiator`() {
         val flowKey = FlowKey("flowId", HoldingIdentity("x500-2", "group"))
         val inputKey = "sessionId"
         val sessionEvent = buildSessionEvent(MessageDirection.INBOUND, inputKey, 3, SessionData())
@@ -177,7 +183,7 @@ class FlowMapperIntegrationTest {
     }
 
     @Test
-    fun sendSessionDataAsInitiated() {
+    fun `Send SessionData as initiated`() {
         val flowKey = FlowKey("flowId", HoldingIdentity("x500-1", "group"))
         val inputKey = "sessionId-INITIATED"
         val sessionEvent = buildSessionEvent(MessageDirection.OUTBOUND, inputKey, 3, SessionData())
@@ -194,7 +200,7 @@ class FlowMapperIntegrationTest {
     }
 
     @Test
-    fun receiveSessionDataAsInitiated() {
+    fun `Receive SessionData as initiated`() {
         val flowKey = FlowKey("flowId", HoldingIdentity("x500-2", "group"))
         val inputKey = "sessionId-INITIATED"
         val sessionEvent = buildSessionEvent(MessageDirection.INBOUND, inputKey, 3, SessionData())
