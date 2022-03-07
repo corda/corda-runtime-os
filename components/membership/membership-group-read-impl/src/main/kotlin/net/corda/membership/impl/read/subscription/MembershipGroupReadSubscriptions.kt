@@ -62,8 +62,13 @@ interface MembershipGroupReadSubscriptions : Lifecycle {
          */
         private fun startMemberListSubscription(config: SmartConfig) {
             val instanceId = when {
-                config.getIsNull(INSTANCE_ID) -> null
-                else -> config.getInt(INSTANCE_ID)
+                config.hasPathOrNull(INSTANCE_ID) -> {
+                    when {
+                        config.getIsNull(INSTANCE_ID) -> null
+                        else -> config.getInt(INSTANCE_ID)
+                    }
+                }
+                else -> null
             }
 
             val subscriptionConfig = SubscriptionConfig(

@@ -27,7 +27,6 @@ dependencies {
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation "org.slf4j:slf4j-api"
     implementation "net.corda:corda-base"
-    implementation "net.corda:corda-crypto"
     implementation "net.corda:corda-cipher-suite"
     implementation "net.corda:corda-packaging"
     implementation "net.corda:corda-serialization"

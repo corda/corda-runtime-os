@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+</head>
+
+<body>
+
+  <canvas id="myCanvas" width="1024" height="1024" style="border:1px solid #d3d3d3;">
+    Your browser does not support the HTML canvas tag.</canvas>
+
+  <script>
+    var blockSize = 128;
+    var blockNumber = 8;
+    var blockTop = -1.3;
+    var blockLeft = -2;
+    var xScale = 2.6;
+    var yScale = 2.6;
+
+    const flow_status_start_requested = "START_REQUESTED";
+    const flow_status_running = "RUNNING";
+    const flow_status_completed = "COMPLETED";
+
+    const block_status_pending = "pending";
+    const block_status_sent = "sent";
+    const block_status_processing = "processing";
+    const block_status_complete = "complete";
+
+    const sent_colour = "#e0eae9";
+    const pending_colour = "#95acb7";
+    const processing_colour = "#498f63";
+
+    const holdingShortId = "28FD92C043BE";
+    const flowClass = "net.corda.demo.mandelbrot.CalculateBlockFlow";
+    const apiAddress = "http://localhost:3000/flow/"
+    const blockIndex = new Map();
+
+    var blockList = [];
+    var nextBlockIndex = 0;
+    var blockProcessingCount = 0;
+    var gfxContext = null;
+    var cellImage = null;
+    var isRunning = false;
+
+    setup();
+    run();
+
+    function canvasClicked(e) {
+      console.log(e.pageX)
+      console.log(e.pageY)
+
+      var x = blockLeft + ((xScale / (blockSize * blockNumber)) * e.pageX); 
+      var y = blockTop + (yScale / (blockSize * blockNumber)) * e.pageY;
+      xScale = xScale / blockNumber;
+      yScale = yScale / blockNumber;
+
+      blockTop = y - (xScale/2);
+      blockLeft = x - (xScale/2);
+
+      blockList = getBlocksToRender();
+
+      setBlockIndex();
+
+      nextBlockIndex = 0;
+      clearGrid();
+
+      // Queue 8 initial blocks for processing
+      pushNextBlock();
+      pushNextBlock();
+      pushNextBlock();
+      pushNextBlock();
+    }
+
+    function setup() {
+      setGfxContext();
+    }
+
+    function setGfxContext() {
+      var canvas = document.getElementById("myCanvas");
+
+      canvas.width = blockSize * blockNumber;
+      canvas.height = blockSize * blockNumber;
+      gfxContext = canvas.getContext("2d");
+      canvas.addEventListener('click', canvasClicked, false);
+
+      cellImage = gfxContext.createImageData(blockSize, blockSize);
+    }
+
+    function onPoll() {
+      blockList.forEach(block => {
+        if (block.status == block_status_sent || block.status == block_status_processing) {
+          var flowStatus = getFlowStatus(block.id);
+          onBlockResult(flowStatus);
+        }
+      });
+    }
+
+    function run() {
+      window.setInterval(onPoll, 100)
+
+      blockList = getBlocksToRender();
+
+      setBlockIndex();
+
+      clearGrid();
+
+      // Queue 8 initial blocks for processing
+      pushNextBlock();
+      pushNextBlock();
+      pushNextBlock();
+      pushNextBlock();
+    }
+
+    function setBlockIndex() {
+      blockList.forEach(block => {
+        blockIndex.set(block.id, block)
+      });
+    }
+
+    function onBlockResult(flowStatus) {
+      if (flowStatus == null) {
+        return flowStatus;
+      }
+
+      var block = blockIndex.get(flowStatus.clientRequestId);
+      if (!block) {
+        return;
+      }
+
+      if (flowStatus.flowStatus == flow_status_start_requested) {
+        block.status = block_status_sent
+      }
+      if (flowStatus.flowStatus == flow_status_running) {
+        block.status = block_status_sent
+      }
+      if (flowStatus.flowStatus == flow_status_completed) {
+        block.status = block_status_complete;
+        block.result = JSON.parse(flowStatus.flowResult);
+        pushNextBlock();
+      }
+
+      renderBlock(block);
+    }
+
+    function renderBlock(block) {
+      if (block.status == block_status_complete) {
+        renderImageCell(block);
+        return;
+      }
+
+      var colour = pending_colour;
+
+      if (block.status == block_status_sent) {
+        colour = sent_colour;
+      }
+      if (block.status == block_status_processing) {
+        colour = processing_colour;
+      }
+      renderCell(block, colour);
+    }
+
+    function pushNextBlock() {
+      if (nextBlockIndex >= blockList.length) {
+        return false;
+      }
+
+      var block = blockList[nextBlockIndex++];
+
+      var flowStatus = postBlockToApi(block);
+      block.status = block_status_sent;
+      renderCell(block, sent_colour);
+      onBlockResult(flowStatus);
+    }
+
+    function clearGrid() {
+      blockList.forEach(block => {
+        renderBlock(block)
+      });
+    }
+
+    function renderCell(block, colour) {
+      gfxContext.fillStyle = colour;
+      gfxContext.fillRect(block.x * blockSize, block.y * blockSize, blockSize, blockSize);
+
+      gfxContext.beginPath();
+      gfxContext.strokeStyle = '#274285';
+      gfxContext.lineWidth = 1;
+      gfxContext.rect((block.x * blockSize) + 1, (block.y * blockSize) + 1, blockSize - 2, blockSize - 2);
+      gfxContext.stroke()
+    }
+
+    function renderImageCell(block) {
+      var pixels = cellImage.data
+      var resultData = block.result;
+      var c = 0;
+      for (var i = 0; i < resultData.length; i++) {
+        var pi = i * 4;
+        pixels[pi] = resultData[i][0]; // Red
+        pixels[pi + 1] = resultData[i][1]; // Green
+        pixels[pi + 2] = resultData[i][2]; //Blue
+        pixels[pi + 3] = 255; //Alpha
+        c++;
+        if (c > 255) {
+          c = 0;
+        }
+        // Alpha skipped
+      }
+      gfxContext.putImageData(cellImage, block.x * blockSize, block.y * blockSize);
+    }
+
+    function postBlockToApi(block) {
+      var blockRequest = block.request;
+      var startMessage = `{\"pixelWidth\":\"${blockSize}\",\"pixelHeight\":\"${blockSize}\", \"startX\":\"${blockRequest.startX}\", \"startY\":\"${blockRequest.startY}\",\"width\":\"${blockRequest.width}\",\"height\":\"${blockRequest.height}\", \"iterationMax\":\"10240\" }`
+      return postStartRequest(block.id, startMessage);
+    }
+
+    function postStartRequest(requestId, startMessage) {
+      var Http = new XMLHttpRequest();
+      var url = apiAddress + 'start/' + holdingShortId + '/' + requestId + '/' + flowClass;
+
+      Http.open("POST", url, false);
+      Http.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+      var postData = { requestBody: startMessage }
+      Http.send(JSON.stringify(postData));
+
+      if (Http.readyState == 4 && Http.status == 200) {
+        var startResponse = JSON.parse(Http.responseText)
+        if (startResponse.isExistingFlow == false) {
+          return startResponse.flowStatus;
+        }
+      }
+      return null;
+    }
+
+    function getFlowStatus(requestId) {
+      var Http = new XMLHttpRequest();
+      var url = apiAddress + holdingShortId + '/' + requestId;
+
+      Http.open("GET", url, false);
+      Http.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+      Http.send();
+
+      if (Http.readyState == 4 && Http.status == 200) {
+        var statusUpdate = JSON.parse(Http.responseText);
+        if (statusUpdate != null) {
+          return statusUpdate;
+        }
+      }
+
+      return null;
+    }
+
+    function getBlocksToRender() {
+
+      var blockXSize = xScale / (blockSize * blockNumber);
+      var blockYSize = yScale / (blockSize * blockNumber);
+
+      var requestId = Date.now();
+      var idx = 0;
+      var blocks = [];
+      for (var y = 0; y < blockNumber; y++) {
+        for (var x = 0; x < blockNumber; x++) {
+          blocks[idx++] = {
+            id: (requestId++).toString(),
+            status: block_status_pending,
+            x: x,
+            y: y,
+            request: {
+              startY: blockTop + (blockYSize * (y * blockSize)),
+              startX: blockLeft + (blockXSize * (x * blockSize)),
+              width: xScale / blockNumber,
+              height: xScale / blockNumber
+            },
+            result: []
+          }
+        }
+      }
+
+      return blocks;
+    }
+  </script>
+</body>
+
+</html>

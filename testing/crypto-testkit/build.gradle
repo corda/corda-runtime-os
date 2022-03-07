@@ -9,11 +9,7 @@ dependencies {
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
-    implementation "net.corda:corda-crypto"
     implementation "net.corda:corda-cipher-suite"
-    implementation "net.i2p.crypto:eddsa:$eddsaVersion"
-    implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
-    implementation "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion"
 
     implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:crypto:crypto-impl")

@@ -80,7 +80,6 @@ class InboundMessageHandlerTest {
         1
     )
 
-
     @AfterEach
     fun cleanUp() {
         server.close()

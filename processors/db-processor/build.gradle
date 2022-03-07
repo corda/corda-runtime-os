@@ -30,6 +30,7 @@ dependencies {
     implementation project(":libs:permissions:permission-datamodel")
     implementation project(':libs:virtual-node:cpi-datamodel')
     implementation project(":libs:virtual-node:virtual-node-datamodel")
+    implementation project(":libs:virtual-node:cpi-datamodel")
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'
@@ -39,6 +40,7 @@ dependencies {
     runtimeOnly project(':components:chunking:chunk-db-write-impl')
     runtimeOnly project(':components:configuration:configuration-write-service-impl')
     runtimeOnly project(':components:virtual-node:virtual-node-write-service-impl')
+    runtimeOnly project(':components:virtual-node:cpi-info-write-service-impl')
     runtimeOnly project(':components:db:db-connection-manager-impl')
     runtimeOnly project(':components:virtual-node:cpk-write-service-impl')
     runtimeOnly project(':libs:configuration:configuration-publish-impl')

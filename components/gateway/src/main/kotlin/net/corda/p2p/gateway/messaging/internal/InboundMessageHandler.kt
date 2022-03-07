@@ -28,7 +28,7 @@ import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
 import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
 import net.corda.v5.base.util.contextLogger
 import java.nio.ByteBuffer
-import java.util.*
+import java.util.UUID
 
 /**
  * This class implements a simple message processor for p2p messages received from other Gateways.
@@ -41,7 +41,7 @@ internal class InboundMessageHandler(
     subscriptionFactory: SubscriptionFactory,
     nodeConfiguration: SmartConfig,
     instanceId: Int,
-    ) : HttpServerListener, LifecycleWithDominoTile {
+) : HttpServerListener, LifecycleWithDominoTile {
 
     companion object {
         private val logger = contextLogger()
@@ -59,12 +59,28 @@ internal class InboundMessageHandler(
         nodeConfiguration,
         instanceId
     )
-    private val server = ReconfigurableHttpServer(lifecycleCoordinatorFactory, configurationReaderService, this)
+
+    private val server = ReconfigurableHttpServer(
+        lifecycleCoordinatorFactory,
+        configurationReaderService,
+        this,
+        subscriptionFactory,
+        nodeConfiguration,
+        instanceId,
+    )
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        dependentChildren = listOf(sessionPartitionMapper.dominoTile, p2pInPublisher.dominoTile, server.dominoTile),
-        managedChildren = listOf(sessionPartitionMapper.dominoTile, p2pInPublisher.dominoTile, server.dominoTile)
+        dependentChildren = listOf(
+            sessionPartitionMapper.dominoTile,
+            p2pInPublisher.dominoTile,
+            server.dominoTile,
+        ),
+        managedChildren = listOf(
+            sessionPartitionMapper.dominoTile,
+            p2pInPublisher.dominoTile,
+            server.dominoTile,
+        )
     )
 
     /**

@@ -22,6 +22,7 @@ import net.corda.p2p.crypto.util.hash
 import net.corda.p2p.crypto.util.perform
 import net.corda.p2p.crypto.util.verify
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.crypto.SignatureSpec
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.security.spec.X509EncodedKeySpec
@@ -160,7 +161,7 @@ class AuthenticationProtocolInitiator(private val sessionId: String,
     @Suppress("ThrowsCount")
     fun validatePeerHandshakeMessage(responderHandshakeMessage: ResponderHandshakeMessage,
                                      theirPublicKey: PublicKey,
-                                     theirPublicKeyAlgo: KeyAlgorithm) {
+                                     theirSignatureSpec: SignatureSpec) {
         return transition(Step.SENT_HANDSHAKE_MESSAGE, Step.RECEIVED_HANDSHAKE_MESSAGE, {}) {
             val responderRecordHeader = responderHandshakeMessage.header.toByteBuffer().array()
             try {
@@ -189,7 +190,7 @@ class AuthenticationProtocolInitiator(private val sessionId: String,
             // validate signature
             val initiatorHelloToResponderParty = initiatorHelloToResponderHelloBytes!! + initiatorHandshakePayloadBytes!! +
                     responderHandshakePayloadIncomplete.toByteBuffer().array()
-            val signatureWasValid = getSignature(theirPublicKeyAlgo).verify(theirPublicKey,
+            val signatureWasValid = getSignature(theirSignatureSpec).verify(theirPublicKey,
                 RESPONDER_SIG_PAD.toByteArray(Charsets.UTF_8) + messageDigest.hash(initiatorHelloToResponderParty),
                 responderHandshakePayload.responderPartyVerify.array())
             if (!signatureWasValid) {

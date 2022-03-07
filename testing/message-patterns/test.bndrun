@@ -74,7 +74,6 @@
 	net.corda.topic-admin;version='[5.0.0,5.0.1)',\
 	net.corda.topic-admin-impl;version='[5.0.0,5.0.1)',\
 	net.corda.topic-schema;version='[5.0.0,5.0.1)',\
-	net.i2p.crypto.eddsa;version='[0.3.0,0.3.1)',\
 	org.apache.commons.commons-compress;version='[1.21.0,1.21.1)',\
 	org.apache.felix.scr;version='[2.1.28,2.1.29)',\
 	org.apache.servicemix.bundles.kafka-clients;version='[2.8.1,2.8.2)',\

@@ -35,7 +35,7 @@ class NetworkMapCreator @Activate constructor(
     private val shutDownService: Shutdown,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
-): Application {
+) : Application {
 
     private companion object {
         private val logger: Logger = contextLogger()
@@ -83,24 +83,23 @@ class NetworkMapCreator @Activate constructor(
                 val publicKeyStoreFile = dataConfig.getString("publicKeyStoreFile")
                 val publicKeyAlias = dataConfig.getString("publicKeyAlias")
                 val keystorePassword = dataConfig.getString("keystorePassword")
-                val publicKeyAlgo = dataConfig.getString("publicKeyAlgo")
                 val address = dataConfig.getString("address")
                 val networkType = parseNetworkType(dataConfig.getString("networkType"))
                 val trustStoreCertificates = dataConfig.getList("trustStoreCertificates")
                     .unwrapped()
                     .filterIsInstance<String>()
                     .map {
-                    File(it)
-                }.map { it.readText() }
+                        File(it)
+                    }.map { it.readText() }
 
-                val (keyAlgo, publicKey) = readKey(publicKeyStoreFile, publicKeyAlgo, publicKeyAlias, keystorePassword)
+                val (keyAlgo, publicKey) = readKey(publicKeyStoreFile, publicKeyAlias, keystorePassword)
                 val networkMapEntry = NetworkMapEntry(
                     HoldingIdentity(x500Name, groupId),
                     ByteBuffer.wrap(publicKey.encoded),
                     keyAlgo,
                     address,
                     networkType,
-                    trustStoreCertificates
+                    trustStoreCertificates,
                 )
                 Record(topic, "$x500Name-$groupId", networkMapEntry)
             }
@@ -144,7 +143,7 @@ class NetworkMapCreator @Activate constructor(
     }
 
     private fun parseNetworkType(networkType: String): NetworkType {
-        val parsedNetworkType = when(networkType) {
+        val parsedNetworkType = when (networkType) {
             "CORDA_4" -> NetworkType.CORDA_4
             "CORDA_5" -> NetworkType.CORDA_5
             else -> null
@@ -158,24 +157,26 @@ class NetworkMapCreator @Activate constructor(
         return parsedNetworkType!!
     }
 
-    private fun readKey(keyStoreFilePath: String,
-                        keyAlgo: String, keyAlias:
-                        String, keystorePassword: String): Pair<KeyAlgorithm, PublicKey> {
+    private fun readKey(
+        keyStoreFilePath: String,
+        keyAlias: String,
+        keystorePassword: String
+    ): Pair<KeyAlgorithm, PublicKey> {
         val keystore = KeyStore.getInstance("JKS")
         keystore.load(FileInputStream(keyStoreFilePath), keystorePassword.toCharArray())
 
         val publicKey = keystore.getCertificate(keyAlias).publicKey
 
-        val keyAlgorithm: KeyAlgorithm? = when (keyAlgo) {
+        val keyAlgorithm: KeyAlgorithm? = when (publicKey.algorithm) {
             "RSA" -> KeyAlgorithm.RSA
-            "ECDSA" -> KeyAlgorithm.ECDSA
+            "EC" -> KeyAlgorithm.ECDSA
             else -> {
                 null
             }
         }
 
         if (keyAlgorithm == null) {
-            logError("Invalid key algorithm value: $keyAlgo")
+            logError("Invalid key algorithm value: ${publicKey.algorithm}")
             shutdown()
         }
 
@@ -189,8 +190,13 @@ class CliParameters {
     )
     var kafkaConnection: File? = null
 
-    @CommandLine.Option(names = ["--topic"], description = ["Topic to write the records to. " +
-            "Defaults to ${NETWORK_MAP_TOPIC}, if not specified."])
+    @CommandLine.Option(
+        names = ["--topic"],
+        description = [
+            "Topic to write the records to. " +
+                "Defaults to $NETWORK_MAP_TOPIC, if not specified."
+        ]
+    )
     var topic: String? = null
 
     @CommandLine.Option(names = ["--netmap-file"], description = ["File containing network map data used to populate Kafka."])

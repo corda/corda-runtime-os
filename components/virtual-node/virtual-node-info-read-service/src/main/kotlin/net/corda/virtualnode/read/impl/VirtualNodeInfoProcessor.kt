@@ -116,6 +116,9 @@ class VirtualNodeInfoProcessor(private val onStatusUpCallback: () -> Unit, priva
         listeners.forEach { it.value.onUpdate(setOf(newRecord.key.toCorda()), currentSnapshot) }
     }
 
+    fun getAll(): List<VirtualNodeInfo> =
+        virtualNodeInfoMap.getAll().map{ vNode -> vNode.toCorda() }
+
     fun get(holdingIdentity: HoldingIdentity): VirtualNodeInfo? =
         virtualNodeInfoMap.get(holdingIdentity.toAvro())?.toCorda()
 

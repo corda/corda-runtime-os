@@ -10,30 +10,22 @@ import net.corda.v5.cipher.suite.schemes.SerializedAlgorithmParameterSpec
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
-import net.i2p.crypto.eddsa.EdDSAPrivateKey
-import net.i2p.crypto.eddsa.EdDSAPublicKey
 import org.bouncycastle.asn1.DERNull
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey
-import org.bouncycastle.jcajce.provider.asymmetric.edec.BCEdDSAPrivateKey
-import org.bouncycastle.jcajce.provider.asymmetric.edec.BCEdDSAPublicKey
-import org.bouncycastle.jcajce.provider.asymmetric.rsa.BCRSAPublicKey
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
-import org.bouncycastle.pqc.jcajce.provider.sphincs.BCSphincs256PublicKey
 import org.bouncycastle.util.io.pem.PemReader
 import org.osgi.service.component.annotations.Component
 import java.io.StringReader
 import java.io.StringWriter
 import java.security.KeyFactory
 import java.security.MessageDigest
-import java.security.PrivateKey
 import java.security.Provider
 import java.security.PublicKey
 import java.security.SecureRandom
 import java.security.spec.AlgorithmParameterSpec
-import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.PSSParameterSpec
 import java.security.spec.X509EncodedKeySpec
 
@@ -48,18 +40,6 @@ import java.security.spec.X509EncodedKeySpec
 class CipherSchemeMetadataImpl : CipherSchemeMetadata {
     companion object {
         val MESSAGE_DIGEST_TYPE: String = MessageDigest::class.java.simpleName
-
-        fun convertIfBCEdDSAPublicKey(key: PublicKey): PublicKey =
-            when (key) {
-                is BCEdDSAPublicKey -> EdDSAPublicKey(X509EncodedKeySpec(key.encoded))
-                else -> key
-            }
-
-        fun convertIfBCEdDSAPrivateKey(key: PrivateKey): PrivateKey =
-            when (key) {
-                is BCEdDSAPrivateKey -> EdDSAPrivateKey(PKCS8EncodedKeySpec(key.encoded))
-                else -> key
-            }
 
         private val DIGEST_CANDIDATES = listOf(
             "BLAKE2B-256",
@@ -167,7 +147,7 @@ class CipherSchemeMetadataImpl : CipherSchemeMetadata {
         val subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(encodedKey)
         val scheme = findSignatureScheme(subjectPublicKeyInfo.algorithm)
         val keyFactory = providerMap.keyFactories[scheme]
-        convertIfBCEdDSAPublicKey(keyFactory.generatePublic(X509EncodedKeySpec(encodedKey)))
+        keyFactory.generatePublic(X509EncodedKeySpec(encodedKey))
     } catch (e: CryptoServiceLibraryException) {
         throw e
     } catch (e: Throwable) {
@@ -201,19 +181,11 @@ class CipherSchemeMetadataImpl : CipherSchemeMetadata {
     }
 
     override fun toSupportedPublicKey(key: PublicKey): PublicKey {
-        return when (key) {
-            is BCECPublicKey -> key
-            is BCRSAPublicKey -> key
-            is BCSphincs256PublicKey -> key
-            is EdDSAPublicKey -> key
-            is CompositeKey -> key
-            is BCEdDSAPublicKey -> convertIfBCEdDSAPublicKey(key)
+        return when {
+            key::class.java.`package` == BCECPublicKey::class.java.`package` -> key
+            key is CompositeKey -> key
             else -> decodePublicKey(key.encoded)
         }
-    }
-
-    override fun toSupportedPrivateKey(key: PrivateKey): PrivateKey {
-        return convertIfBCEdDSAPrivateKey(key)
     }
 
     private fun getJcaPEMKeyConverter(publicKeyInfo: SubjectPublicKeyInfo): JcaPEMKeyConverter {

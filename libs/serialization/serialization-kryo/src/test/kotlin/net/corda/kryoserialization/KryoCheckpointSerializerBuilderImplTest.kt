@@ -7,12 +7,12 @@ import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.checkpoint.CheckpointSerializerBuilder
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.serialization.SingletonSerializeAsToken
-import net.i2p.crypto.eddsa.EdDSAPrivateKey
-import net.i2p.crypto.eddsa.EdDSAPublicKey
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey
 import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey
+import org.bouncycastle.jcajce.provider.asymmetric.edec.BCEdDSAPrivateKey
+import org.bouncycastle.jcajce.provider.asymmetric.edec.BCEdDSAPublicKey
 import org.bouncycastle.jcajce.provider.asymmetric.rsa.BCRSAPrivateCrtKey
 import org.bouncycastle.jcajce.provider.asymmetric.rsa.BCRSAPublicKey
 import org.bouncycastle.pqc.jcajce.provider.sphincs.BCSphincs256PrivateKey
@@ -64,7 +64,7 @@ internal class KryoCheckpointSerializerBuilderImplTest {
 
     @ParameterizedTest
     @ValueSource(classes = [
-        PublicKey::class, EdDSAPublicKey::class, CompositeKey::class,
+        PublicKey::class, BCEdDSAPublicKey::class, CompositeKey::class,
         BCECPublicKey::class, BCRSAPublicKey::class, BCSphincs256PublicKey::class
     ])
     fun `serializers of public keys cannot be added`(type: Class<*>) {
@@ -79,7 +79,7 @@ internal class KryoCheckpointSerializerBuilderImplTest {
 
     @ParameterizedTest
     @ValueSource(classes = [
-        PrivateKey::class, EdDSAPrivateKey::class, BCECPrivateKey::class,
+        PrivateKey::class, BCEdDSAPrivateKey::class, BCECPrivateKey::class,
         BCRSAPrivateCrtKey::class, BCSphincs256PrivateKey::class
     ])
     fun `serializers of private keys cannot be added`(type: Class<*>) {

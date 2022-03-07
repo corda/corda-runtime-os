@@ -10,6 +10,8 @@ dependencies {
 
     api project(':libs:http-rpc:http-rpc')
 
+    implementation project(":libs:virtual-node:virtual-node-info")
+
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-avro-schema'
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
