@@ -55,11 +55,11 @@ class CpiUploadRPCOpsImplTest {
     }
 
     @Test
-    fun `getAllCpis calls InfoReadService to retrieve all virtual nodes`() {
-        val vnodeInfoReadService = mock<CpiInfoReadService>()
-        val rpcOps = CpiUploadRPCOpsImpl(mock(), mock(), vnodeInfoReadService)
+    fun `getAllCpis calls CpiInfoReadService to retrieve all CPIs`() {
+        val cpiInfoReadService = mock<CpiInfoReadService>()
+        val rpcOps = CpiUploadRPCOpsImpl(mock(), mock(), cpiInfoReadService)
         rpcOps.getAllCpis()
-        verify(vnodeInfoReadService).getAll()
+        verify(cpiInfoReadService).getAll()
     }
 
 }
