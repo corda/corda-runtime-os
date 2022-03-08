@@ -125,8 +125,8 @@ class CpkReadServiceImpl @Activate constructor(
         // TODO cpks disk cache location should be made configurable as per https://r3-cev.atlassian.net/browse/CORE-4130
         val cpksAssembleCacheDir = Paths.get(System.getProperty("java.io.tmpdir"), "cpks-assemble")
         val cpksCacheDir = Paths.get(System.getProperty("java.io.tmpdir"), "cpks")
-        val cpkChunksFileManager = CpkChunksFileManagerImpl(
-            cpksAssembleCacheDir.apply { Files.createDirectories(this) })
+        val cpkChunksFileManager =
+            CpkChunksFileManagerImpl(cpksAssembleCacheDir.apply { Files.createDirectories(this) })
         cpkChunksKafkaReaderSubscription?.close()
         cpkChunksKafkaReaderSubscription = subscriptionFactory.createCompactedSubscription(
             SubscriptionConfig(CPK_READ_GROUP, Schemas.VirtualNode.CPK_FILE_TOPIC),
