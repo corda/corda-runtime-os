@@ -17,10 +17,6 @@ import java.util.TreeSet
  * Creates resources on disk, that something needs to clear them on shutdown.
  */
 class CpkChunksFileManagerImpl(private val commonCpkCacheDir: Path) : CpkChunksFileManager {
-    init {
-        Files.createDirectories(commonCpkCacheDir)
-    }
-
     companion object {
         val logger = contextLogger()
 

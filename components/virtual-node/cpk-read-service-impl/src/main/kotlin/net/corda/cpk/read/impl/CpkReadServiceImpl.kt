@@ -29,6 +29,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import java.nio.file.Files
 import java.nio.file.Paths
 
 @Component(service = [CpkReadService::class])
@@ -121,7 +122,9 @@ class CpkReadServiceImpl @Activate constructor(
 //    }
 
     private fun createCpkChunksKafkaReader(config: SmartConfig) {
-        val cpkChunksFileManager = CpkChunksFileManagerImpl(Paths.get("/temp"))
+        // TODO cpks disk cache location should be made configurable as per https://r3-cev.atlassian.net/browse/CORE-4130
+        val cpkChunksFileManager = CpkChunksFileManagerImpl(
+            Paths.get(System.getProperty("java.io.tmpdir"), "cpks").apply { Files.createDirectories(this) })
         cpkChunksKafkaReaderSubscription?.close()
         cpkChunksKafkaReaderSubscription = subscriptionFactory.createCompactedSubscription(
             SubscriptionConfig(CPK_READ_GROUP, Schemas.VirtualNode.CPK_FILE_TOPIC),
