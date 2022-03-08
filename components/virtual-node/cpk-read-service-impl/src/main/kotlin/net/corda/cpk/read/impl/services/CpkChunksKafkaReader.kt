@@ -51,8 +51,9 @@ class CpkChunksKafkaReader(private val cpkChunksFileManager: CpkChunksFileManage
             )
         }
 
-        // Update cache regardless if chunk file exists because it could be that another worker wrote the chunk
-        // and that could lead to cache inconsistency.
+        // We need to update CPK chunks received cache even if a CPK chunk file already exists on disk so that the worker
+        // can have a correct picture of received CPK chunks. A CPK chunk file could already exist in a scenario where
+        // for e.g. multiple DB workers would share the same filesystem.
         val cpkChecksum = chunkId.cpkChecksum.toCorda()
         val chunksReceived = chunksReceivedPerCpk[cpkChecksum]
             ?: ChunksReceived().also { chunksReceivedPerCpk[cpkChecksum] = it }
