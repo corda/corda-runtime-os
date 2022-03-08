@@ -6,11 +6,16 @@ import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.CpkChunkId
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import java.nio.ByteBuffer
 
 // TODO should be enough for now to keep it simple and not replace/ delete CPK chunks?
 class CpkChunksKafkaReader(private val cpkChunksFileManager: CpkChunksFileManager) : CompactedProcessor<CpkChunkId, Chunk> {
+    companion object {
+        val logger = contextLogger()
+    }
+
     // Assuming [CompactedProcessor.onSnapshot] and [CompactedProcessor.onNext] are not called concurrently.
     // This is not intended to be used as a cache, as it will not work among workers in different processes.
     // It is just used to save extra disk searches to check if all chunks are received.
@@ -36,8 +41,14 @@ class CpkChunksKafkaReader(private val cpkChunksFileManager: CpkChunksFileManage
     }
 
     private fun writeChunkFile(chunkId: CpkChunkId, chunk: Chunk) {
-        if (!cpkChunksFileManager.chunkFileExists(chunkId)) {
+        val cpkChunkFileLookUp = cpkChunksFileManager.chunkFileExists(chunkId)
+        if (!cpkChunkFileLookUp.exists) {
             cpkChunksFileManager.writeChunkFile(chunkId, chunk)
+        } else {
+            logger.info(
+                "Skipped persisting CPK chunk to disk as it already exists: " +
+                        "${cpkChunkFileLookUp.path}"
+            )
         }
 
         // Update cache regardless if chunk file exists because it could be that another worker wrote the chunk

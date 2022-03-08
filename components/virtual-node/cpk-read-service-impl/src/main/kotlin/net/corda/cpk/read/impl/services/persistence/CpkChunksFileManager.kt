@@ -7,7 +7,7 @@ import java.nio.file.Path
 import java.util.TreeSet
 
 interface CpkChunksFileManager : AutoCloseable {
-    fun chunkFileExists(chunkId: CpkChunkId): Boolean
+    fun chunkFileExists(chunkId: CpkChunkId): CpkChunkFileLookUp
 
     fun writeChunkFile(chunkId: CpkChunkId, chunk: Chunk)
 

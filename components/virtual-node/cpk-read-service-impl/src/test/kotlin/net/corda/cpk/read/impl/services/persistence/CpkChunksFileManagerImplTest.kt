@@ -98,11 +98,11 @@ class CpkChunksFileManagerImplTest {
         val (cpkChunkId0, _) =
             dummyCpkChunkIdToChunk(SecureHash.create(DUMMY_HASH), 0, SecureHash.create(DUMMY_HASH), byteArrayOf())
         cpkChunkId0.toDummyFile()
-        assertTrue(cpkChunksFileManagerImpl.chunkFileExists(cpkChunkId0))
+        assertTrue(cpkChunksFileManagerImpl.chunkFileExists(cpkChunkId0).exists)
 
         val (cpkChunkId1, _) =
             dummyCpkChunkIdToChunk(SecureHash.create(DUMMY_HASH), 1, SecureHash.create(DUMMY_HASH), byteArrayOf())
-        assertFalse(cpkChunksFileManagerImpl.chunkFileExists(cpkChunkId1))
+        assertFalse(cpkChunksFileManagerImpl.chunkFileExists(cpkChunkId1).exists)
     }
 
     @Test

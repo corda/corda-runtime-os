@@ -36,10 +36,10 @@ class CpkChunksFileManagerImpl(private val commonCpkCacheDir: Path) : CpkChunksF
         }
     }
 
-    override fun chunkFileExists(chunkId: CpkChunkId): Boolean {
+    override fun chunkFileExists(chunkId: CpkChunkId): CpkChunkFileLookUp {
         val cpkXDir = commonCpkCacheDir.resolve(chunkId.cpkChecksum.toCorda().toCpkDirName())
         val filePath = cpkXDir.resolve(chunkId.toFileName())
-        return Files.exists(filePath)
+        return CpkChunkFileLookUp(Files.exists(filePath), filePath)
     }
 
     override fun writeChunkFile(chunkId: CpkChunkId, chunk: Chunk) {
