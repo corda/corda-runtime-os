@@ -46,7 +46,7 @@ class CpkChunksKafkaReader(private val cpkChunksFileManager: CpkChunksFileManage
             cpkChunksFileManager.writeChunkFile(chunkId, chunk)
         } else {
             logger.info(
-                "Skipped persisting CPK chunk to disk as it already exists: " +
+                "Skipped writing CPK chunk to disk as it already exists: " +
                         "${cpkChunkFileLookUp.path}"
             )
         }
