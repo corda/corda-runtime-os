@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "SessionData",
+  "namespace": "net.corda.data.flow.state.waiting",
+  "fields": [
+    {
+    "name": "sessionIds",
+    "type": {
+      "type": "array",
+      "items": "string"
+    },
+    "doc": "The sessions that the flow is waiting to receive messages from"
+    }
+  ]
+}

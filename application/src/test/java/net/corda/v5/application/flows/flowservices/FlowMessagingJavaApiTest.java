@@ -1,9 +1,8 @@
 package net.corda.v5.application.flows.flowservices;
 
-import net.corda.v5.application.flows.Destination;
 import net.corda.v5.application.flows.FlowSession;
 import net.corda.v5.application.flows.UntrustworthyData;
-import net.corda.v5.application.identity.Party;
+import net.corda.v5.base.types.MemberX500Name;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -24,22 +23,11 @@ public class FlowMessagingJavaApiTest {
     private final FlowSession flowSession = mock(FlowSession.class);
 
     @Test
-    public void initiateFlowDestination() {
-        Destination destination = mock(Destination.class);
-        when(flowMessaging.initiateFlow(destination)).thenReturn(flowSession);
-
-        FlowSession result = flowMessaging.initiateFlow(destination);
-
-        Assertions.assertThat(result).isNotNull();
-        Assertions.assertThat(result).isEqualTo(flowSession);
-    }
-
-    @Test
     public void initiateFlowParty() {
-        Party party = mock(Party.class);
-        when(flowMessaging.initiateFlow(party)).thenReturn(flowSession);
+        final MemberX500Name counterparty = new MemberX500Name("Alice Corp", "LDN", "GB");
+        when(flowMessaging.initiateFlow(counterparty)).thenReturn(flowSession);
 
-        FlowSession result = flowMessaging.initiateFlow(party);
+        FlowSession result = flowMessaging.initiateFlow(counterparty);
 
         Assertions.assertThat(result).isNotNull();
         Assertions.assertThat(result).isEqualTo(flowSession);

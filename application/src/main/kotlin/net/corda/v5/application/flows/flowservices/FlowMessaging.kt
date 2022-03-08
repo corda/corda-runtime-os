@@ -1,28 +1,21 @@
 package net.corda.v5.application.flows.flowservices
 
-import net.corda.v5.application.flows.Destination
 import net.corda.v5.application.flows.FlowSession
 import net.corda.v5.application.injection.CordaFlowInjectable
-import net.corda.v5.application.identity.Party
 import net.corda.v5.application.flows.UntrustworthyData
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.types.MemberX500Name
 
 @DoNotImplement
 interface FlowMessaging : CordaFlowInjectable {
-    /**
-     * Creates a communication session with [destination]. Subsequently, you may send/receive using this session object. How the messaging
-     * is routed depends on the [Destination] type, including whether this call does any initial communication.
-     */
-    @Suspendable
-    fun initiateFlow(destination: Destination): FlowSession
 
     /**
      * Creates a communication session with [party]. Subsequently you may send/receive using this session object. Note
      * that this function does not communicate in itself, the counter-flow will be kicked off by the first send/receive.
      */
     @Suspendable
-    fun initiateFlow(party: Party): FlowSession
+    fun initiateFlow(x500Name: MemberX500Name): FlowSession
 
     /** Suspends until a message has been received for each session in the specified [sessions].
      *

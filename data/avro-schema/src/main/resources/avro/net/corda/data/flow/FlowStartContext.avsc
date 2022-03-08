@@ -15,14 +15,24 @@
       "doc": "The type of initiator that started the flow"
     },
     {
-      "name": "clientRequestId",
+      "name": "requestId",
       "type": "string",
-      "doc": "The request ID assigned by the client that created the flow."
+      "doc": "The request ID assigned by the client or session that created the flow."
     },
     {
-      "name": "virtualNode",
-      "type": "net.corda.data.virtualnode.VirtualNodeInfo",
-      "doc": "The virtual node the flow is executing on."
+      "name": "identity",
+      "type": "net.corda.data.identity.HoldingIdentity",
+      "doc": "The identity of the party executing the flow."
+    },
+    {
+      "name": "cpiId",
+      "type": "string",
+      "doc": "The CPI ID for the package containing the flow."
+    },
+    {
+      "name": "initiatedBy",
+      "type": "net.corda.data.identity.HoldingIdentity",
+      "doc": "The identity of the party that initiated the flow."
     },
     {
       "name": "flowClassName",

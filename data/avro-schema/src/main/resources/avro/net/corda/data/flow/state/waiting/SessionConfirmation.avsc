@@ -1,0 +1,26 @@
+{
+  "type": "record",
+  "name": "SessionConfirmation",
+  "namespace": "net.corda.data.flow.state.waiting",
+  "fields": [
+    {
+      "name": "sessionIds",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "doc": "The sessions that the flow is waiting to receive confirmations from"
+    },
+    {
+      "name": "type",
+      "type": {
+        "type": "enum",
+        "name": "SessionConfirmationType",
+        "symbols": [
+          "INITIATE",
+          "CLOSE"
+        ]
+      }
+    }
+  ]
+}

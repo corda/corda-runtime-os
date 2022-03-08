@@ -5,6 +5,7 @@ import net.corda.v5.application.identity.AnonymousParty
 import net.corda.v5.application.identity.Party
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.types.MemberX500Name
 
 /**
  * A [FlowSession] is a handle on a communication sequence between two paired flows, possibly running on separate nodes.
@@ -21,11 +22,6 @@ import net.corda.v5.base.annotations.Suspendable
  */
 @DoNotImplement
 interface FlowSession {
-    /**
-     * The [Destination] on the other side of this session. In the case of a session created by [FlowMessaging.initiateFlow] this is the
-     * same destination as the one passed to that function.
-     */
-    val destination: Destination
 
     /**
      * If the destination on the other side of this session is a [Party] then returns that, otherwise throws [IllegalStateException].
@@ -35,7 +31,7 @@ interface FlowSession {
      * @throws IllegalStateException if the other side is not a [Party].
      * @see destination
      */
-    val counterparty: Party
+    val counterparty: MemberX500Name
 
     /**
      * Returns a [FlowInfo] object describing the flow [counterparty] is using. With [FlowInfo.flowVersion] it provides the necessary
