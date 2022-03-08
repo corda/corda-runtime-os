@@ -66,6 +66,7 @@ class CpkChunksKafkaReader(private val cpkChunksFileManager: CpkChunksFileManage
 
         if (chunksReceived.allReceived()) {
             cpkChunksFileManager.assembleCpk(cpkChecksum, chunksReceived.chunks)
+            chunksReceivedPerCpk.remove(cpkChecksum)
         }
     }
 
