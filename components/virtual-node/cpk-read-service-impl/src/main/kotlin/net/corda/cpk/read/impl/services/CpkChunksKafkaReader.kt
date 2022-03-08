@@ -74,17 +74,13 @@ class CpkChunksKafkaReader(
         if (chunksReceived.allReceived()) {
             val cpkPath = cpkChunksFileManager.assembleCpk(cpkChecksum, chunksReceived.chunks)
             cpkPath?.let {
-                onCpkAssembled(it)
+                val cpk = it.inputStream().use { inStream ->
+                    CPK.from(inStream, tempCpkCacheDir)
+                }
+                onCpkAssembled(cpk.metadata.id, cpk)
             } ?: logger.warn("CPK assemble has failed for: $cpkChecksum")
             chunksReceivedPerCpk.remove(cpkChecksum)
         }
-    }
-
-    private fun onCpkAssembled(cpkPath: Path) {
-        val cpk = cpkPath.inputStream().use {
-            CPK.from(it, tempCpkCacheDir)
-        }
-        onCpkAssembled(cpk.metadata.id, cpk)
     }
 
     private class ChunksReceived {
