@@ -20,7 +20,6 @@ class LayeredPropertyMapImpl(
 
     override operator fun get(key: String): String? = properties[key]
 
-    @Transient
     override val entries: Set<Map.Entry<String, String?>> = properties.entries
 
     /**
@@ -99,7 +98,7 @@ class LayeredPropertyMapImpl(
         }
         // normalise prefix, add "." at the end to make processing easier and make usage foolproof
         val normalisedPrefix = normaliseListSearchKeyPrefix(itemKeyPrefix)
-        // 1. Check if list already in cache, if yes, return that list
+        // Check if list already in cache, if yes, return that list
         val cached = cache[normalisedPrefix]
         if (cached?.value != null) {
             // needed because the simple approach using as? T does not do the actual casting without value assignment,
@@ -113,37 +112,43 @@ class LayeredPropertyMapImpl(
             return converted
         }
 
-        // 2. Check the matching elements in entries
-        val matchingEntries = entries.filter { it.key.startsWith(normalisedPrefix) }
+        val result = parseCollectionTo(mutableListOf(), normalisedPrefix, itemKeyPrefix, clazz) as List<T>
 
-        // 3. If no matching elements in entries, return empty list
-        if (matchingEntries.isEmpty()) return emptyList()
+        // Put result into cache
+        cache[normalisedPrefix] = CachedValue(result)
+        return result
+    }
 
-        // 4. Checking that the structure has numbers in it, if not then throwing an exception
-        val entryList = matchingEntries.takeIf {
-            it.all { pair -> pair.key.removePrefix(normalisedPrefix).first().isDigit() }
-        } ?: throw IllegalArgumentException("Prefix is invalid, only number is accepted after prefix.")
-
-        // 5. grouping by the indexes
-        // then convert it to a map one by one and pass it to the converter
-        // 1 -> [corda.endpoints.1.url=localhost, corda.endpoints.1.protocolVersion=1]
-        // 2 -> [corda.endpoints.2.url=localhost, corda.endpoints.2.protocolVersion=1]
-        // 1 -> [corda.identityKeys.1=ABC]
-        val result = entryList.groupBy {
-            getIndexedPrefix(it.key, normalisedPrefix)
-        }.toSortedMap(indexedPrefixComparator).map { groupedEntry ->
-            groupedEntry.key to (groupedEntry.value.map { it.key to it.value }).toLinkedHashMap()
-        }.map {
-            // instead of the whole context, we are just passing a pre-processed properties to the converter one by one
-            val map = it.second.map { item ->
-                item.key.removePrefix(it.first.second) to item.value
-            }.toLinkedHashMap()
-            val itemContext =  ConversionContext(LayeredPropertyMapImpl(map, converter), "")
-            converter.convert(itemContext, clazz)
-                ?: throw ValueNotFoundException("Error while converting $itemKeyPrefix prefix.")
+    /**
+     * Function for reading and parsing a set of String values to a set of actual objects.
+     */
+    @Suppress("UNCHECKED_CAST")
+    override fun <T> parseSet(
+        itemKeyPrefix: String,
+        clazz: Class<out T>
+    ): Set<T> {
+        require(itemKeyPrefix.isNotBlank()) {
+            "The itemKeyPrefix cannot be blank string."
+        }
+        // normalise prefix, add "." at the end to make processing easier and make usage foolproof
+        val normalisedPrefix = normaliseListSearchKeyPrefix(itemKeyPrefix)
+        // Check if set already in cache, if yes, return that set
+        val cached = cache[normalisedPrefix]
+        if (cached?.value != null) {
+            // needed because the simple approach using as? T does not do the actual casting without value assignment,
+            // hence it won't throw the exception here
+            val converted = cached.value as HashSet<T>
+            converted.firstOrNull()?.let {
+                if (!clazz.isAssignableFrom(it::class.java)) {
+                    throw ClassCastException("Casting failed for $normalisedPrefix prefix.")
+                }
+            }
+            return converted
         }
 
-        // 6. put result into cache
+        val result = parseCollectionTo(mutableSetOf(), normalisedPrefix, itemKeyPrefix, clazz) as HashSet<T>
+
+        // Put result into cache
         cache[normalisedPrefix] = CachedValue(result)
         return result
     }
@@ -157,6 +162,44 @@ class LayeredPropertyMapImpl(
     override fun hashCode(): Int {
         var result = properties.hashCode()
         result = 31 * result + entries.hashCode()
+        return result
+    }
+
+    private fun <T> parseCollectionTo(
+        destination: MutableCollection<T>,
+        normalisedPrefix: String,
+        itemKeyPrefix: String,
+        clazz: Class<out T>,
+    ): Collection<T> {
+        // Check the matching elements in entries
+        val matchingEntries = entries.filter { it.key.startsWith(normalisedPrefix) }
+
+        // If no matching elements in entries, return empty collection
+        if (matchingEntries.isEmpty()) return destination
+
+        // Checking that the structure has numbers in it, if not then throwing an exception
+        val entryList = matchingEntries.takeIf {
+            it.all { pair -> pair.key.removePrefix(normalisedPrefix).first().isDigit() }
+        } ?: throw IllegalArgumentException("Prefix is invalid, only number is accepted after prefix.")
+
+        // Group by the index
+        // then convert it to a map one by one and pass it to the converter
+        // 1 -> [corda.endpoints.1.url=localhost, corda.endpoints.1.protocolVersion=1]
+        // 2 -> [corda.endpoints.2.url=localhost, corda.endpoints.2.protocolVersion=1]
+        // 1 -> [corda.identityKeys.1=ABC]
+        val result = entryList.groupBy {
+            getIndexedPrefix(it.key, normalisedPrefix)
+        }.toSortedMap(indexedPrefixComparator).map { groupedEntry ->
+            groupedEntry.key to (groupedEntry.value.map { it.key to it.value }).toLinkedHashMap()
+        }.mapTo(destination) {
+            // instead of the whole context, we are just passing a pre-processed properties to the converter one by one
+            val map = it.second.map { item ->
+                item.key.removePrefix(it.first.second) to item.value
+            }.toLinkedHashMap()
+            val itemContext =  ConversionContext(LayeredPropertyMapImpl(map, converter), "")
+            converter.convert(itemContext, clazz)
+                ?: throw ValueNotFoundException("Error while converting $itemKeyPrefix prefix.")
+        }
         return result
     }
 
