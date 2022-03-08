@@ -18,13 +18,13 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.AuthenticatedMessageDeliveryState
-import net.corda.p2p.linkmanager.LinkManagerCryptoService
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
+import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.v5.base.util.contextLogger
 import org.slf4j.LoggerFactory
@@ -35,12 +35,12 @@ class DeliveryTracker(
     coordinatorFactory: LifecycleCoordinatorFactory,
     configReadService: ConfigurationReadService,
     publisherFactory: PublisherFactory,
-    private val configuration: SmartConfig,
-    private val subscriptionFactory: SubscriptionFactory,
+    configuration: SmartConfig,
+    subscriptionFactory: SubscriptionFactory,
     networkMap: LinkManagerNetworkMap,
-    cryptoService: LinkManagerCryptoService,
+    cryptoProcessor: CryptoProcessor,
     sessionManager: SessionManager,
-    private val instanceId: Int,
+    instanceId: Int,
     processAuthenticatedMessage: (message: AuthenticatedMessageAndKey) -> List<Record<String, *>>,
     ): LifecycleWithDominoTile {
 
@@ -71,7 +71,7 @@ class DeliveryTracker(
         setOf(
             replayScheduler.dominoTile,
             networkMap.dominoTile,
-            cryptoService.dominoTile,
+            cryptoProcessor.dominoTile,
             sessionManager.dominoTile,
             appMessageReplayer.dominoTile
         ),

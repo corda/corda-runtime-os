@@ -2,6 +2,7 @@ package net.corda.httprpc.server.impl
 
 import io.swagger.v3.core.util.Json
 import io.swagger.v3.oas.models.OpenAPI
+import io.swagger.v3.oas.models.media.ArraySchema
 import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.impl.internal.OptionalDependency
@@ -10,6 +11,7 @@ import net.corda.httprpc.server.impl.utils.WebRequest
 import net.corda.httprpc.server.impl.utils.compact
 import net.corda.httprpc.test.CalendarRPCOpsImpl
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
+import net.corda.httprpc.tools.HttpVerb.GET
 
 import org.apache.http.HttpStatus
 import org.assertj.core.api.Assertions.assertThat
@@ -50,7 +52,7 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
     @Test
     fun `GET openapi should return the OpenApi spec json`() {
 
-        val apiSpec = client.call(net.corda.httprpc.tools.HttpVerb.GET, WebRequest<Any>("swagger.json"))
+        val apiSpec = client.call(GET, WebRequest<Any>("swagger.json"))
         assertEquals(HttpStatus.SC_OK, apiSpec.responseStatus)
         assertEquals("application/json", apiSpec.headers["Content-Type"])
         val body = apiSpec.body!!.compact()
@@ -75,12 +77,14 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
         //need to assert that FiniteDurableReturnResult is generated as a referenced schema rather than inline content
         assertEquals("#/components/schemas/FiniteDurableReturnResult_of_CalendarDay", responseOk.content["application/json"]!!.schema.`$ref`)
 
+        val compactBody = body.compact()
+
         // need to assert "items" by contains this way because when serializing the Schema is not delegated to ArraySchema
-        assertThat(body.compact()).contains(finiteDurableReturnResultRef.compact())
-        assertThat(body.compact()).contains(schemaDef.compact())
+        assertThat(compactBody).contains(finiteDurableReturnResultRef.compact())
+        assertThat(compactBody).contains(schemaDef.compact())
 
         assertTrue(openAPI.components.schemas.containsKey("FiniteDurableReturnResult_of_CalendarDay"))
-        assertThat(body.compact()).contains(finiteDurableReturnResultSchemaWithCalendarDayRef.compact())
+        assertThat(compactBody).contains(finiteDurableReturnResultSchemaWithCalendarDayRef.compact())
 
         assertTrue(openAPI.components.schemas.containsKey("TimeCallDto"))
         val timeCallDto = openAPI.components.schemas["TimeCallDto"]
@@ -88,12 +92,19 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
         val timeProperty = timeCallDto.properties["time"]
         assertNotNull(timeProperty)
         assertDoesNotThrow { ZonedDateTime.parse(timeProperty.example.toString()) }
+
+        // Check that generic type parameter for `plusOne` is correctly represented
+        val plusOnePath = openAPI.paths["/health/plusone"]
+        assertNotNull(plusOnePath)
+        val parameters = plusOnePath.get.parameters
+        val schema = parameters[0].schema as ArraySchema
+        assertThat(schema.items.type).isEqualTo("string")
     }
 
     @Test
     fun `GET swagger UI should return html with reference to swagger json`() {
 
-        val apiSpec = client.call(net.corda.httprpc.tools.HttpVerb.GET, WebRequest<Any>("swagger"))
+        val apiSpec = client.call(GET, WebRequest<Any>("swagger"))
         assertEquals(HttpStatus.SC_OK, apiSpec.responseStatus)
         assertEquals("text/html", apiSpec.headers["Content-Type"])
         val expected = """url: "/${context.basePath}/v${context.version}/swagger.json""""
@@ -104,10 +115,9 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
     fun `GET swagger UI dependencies should return non empty result`() {
         val baseClient = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/")
         val swaggerUIversion = OptionalDependency.SWAGGERUI.version
-        val swagger = baseClient.call(net.corda.httprpc.tools.HttpVerb.GET, WebRequest<Any>("api/v1/swagger"))
-        val swaggerUIBundleJS = baseClient.call(net.corda.httprpc.tools.HttpVerb.GET, WebRequest<Any>("webjars/swagger-ui/$swaggerUIversion/swagger-ui-bundle.js"))
-        val swaggerUIcss = baseClient.call(net.corda.httprpc.tools.HttpVerb.GET, WebRequest<Any>("webjars/swagger-ui/$swaggerUIversion/swagger-ui-bundle.js"))
-
+        val swagger = baseClient.call(GET, WebRequest<Any>("api/v1/swagger"))
+        val swaggerUIBundleJS = baseClient.call(GET, WebRequest<Any>("webjars/swagger-ui/$swaggerUIversion/swagger-ui-bundle.js"))
+        val swaggerUIcss = baseClient.call(GET, WebRequest<Any>("webjars/swagger-ui/$swaggerUIversion/swagger-ui-bundle.js"))
 
         assertEquals(HttpStatus.SC_OK, swagger.responseStatus)
         assertEquals(HttpStatus.SC_OK, swaggerUIBundleJS.responseStatus)
@@ -165,7 +175,7 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
             }
           }""".trimIndent()
 
-    private val finiteDurableReturnResultRef: String = """
+    private val finiteDurableReturnResultRef = """
          ref" : "#/components/schemas/FiniteDurableReturnResult_of_CalendarDay
         """.trimIndent()
 }

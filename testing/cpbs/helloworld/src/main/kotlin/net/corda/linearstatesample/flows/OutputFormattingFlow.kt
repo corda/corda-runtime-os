@@ -17,7 +17,7 @@ class OutputFormattingFlow(private val result: Int) : Flow<String> {
     override fun call(): String {
         try {
             return jsonMarshallingService.formatJson(OutputMessage(result))
-        } catch (e: Throwable) {
+        } catch (e: Exception) {
             log.warn("could not serialise result '$result'")
             throw e
         }

@@ -88,4 +88,10 @@ interface TestHealthCheckAPI : RpcOps {
     @Suppress("MagicNumber")
     @RPCSinceVersion(3)
     fun laterAddedCall(): String
+
+    @HttpRpcGET(description = "Echoes what has been supplied in the query")
+    fun echoQuery(@HttpRpcQueryParameter requestString: String): String
+
+    @HttpRpcGET(path = "echoPath/{requestString}", description = "Echoes what has been supplied in the path")
+    fun echoPath(@HttpRpcPathParameter(name = "requestString", description = "The name") requestString: String): String
 }

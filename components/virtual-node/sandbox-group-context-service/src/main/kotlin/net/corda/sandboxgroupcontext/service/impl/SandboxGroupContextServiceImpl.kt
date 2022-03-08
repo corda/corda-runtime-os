@@ -2,8 +2,10 @@
 package net.corda.sandboxgroupcontext.service.impl
 
 import net.corda.install.InstallService
-import net.corda.packaging.CPK
+import net.corda.libs.packaging.CpkIdentifier
+import net.corda.libs.packaging.CpkMetadata
 import net.corda.sandbox.SandboxCreationService
+import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX_FILTER
@@ -12,7 +14,6 @@ import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContextInitializer
 import net.corda.sandboxgroupcontext.SandboxGroupContextService
 import net.corda.sandboxgroupcontext.VirtualNodeContext
-import net.corda.sandbox.SandboxException
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.cipher.suite.DigestAlgorithmFactory
 import org.osgi.framework.Bundle
@@ -200,7 +201,7 @@ class SandboxGroupContextServiceImpl(
 
     override fun registerMetadataServices(
         sandboxGroupContext: SandboxGroupContext,
-        serviceNames: (CPK.Metadata) -> Iterable<String>,
+        serviceNames: (CpkMetadata) -> Iterable<String>,
         isMetadataService: (Class<*>) -> Boolean,
         serviceMarkerType: Class<*>
     ): AutoCloseable {
@@ -278,7 +279,7 @@ class SandboxGroupContextServiceImpl(
         )
     }
 
-    override fun hasCpks(cpkIdentifiers: Set<CPK.Identifier>) : Boolean {
+    override fun hasCpks(cpkIdentifiers: Set<CpkIdentifier>) : Boolean {
         // This needs to be updated when the CPK service is introduced.
         return true
     }

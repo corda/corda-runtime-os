@@ -5,6 +5,7 @@ package net.corda.applications.flowworker.setup.tasks
 import net.corda.applications.flowworker.setup.Task
 import net.corda.applications.flowworker.setup.TaskContext
 import net.corda.data.config.Configuration
+import net.corda.libs.packaging.CpiIdentifier
 import net.corda.messaging.api.records.Record
 import net.corda.packaging.CPI
 import net.corda.packaging.converters.toAvro
@@ -19,6 +20,7 @@ import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.UUID
 import kotlin.streams.toList
 
 /**
@@ -39,37 +41,42 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
         val dockerCpiDir = context.startArgs.cpiDockerDir
 
         /**
-         * We assume that there is only ever a single CPI and vNode. and publish that
-         * against the supplied x500 name.
-         */
-        val cpis = scanCPIs(repositoryFolder, getTempDir("flow-worker-setup-cpi"))
-        if (cpis.size != 1) {
-            throw IllegalStateException("Expected to find a single CPI in '${repositoryFolder}'")
-        }
-
-        val cpi = cpis.first()
-        val x500Name = context.startArgs.x500NName
-        val vNode = VirtualNodeInfo(HoldingIdentity(x500Name, "1"), cpi.metadata.id)
-        val shortId = HoldingIdentity(x500Name, "1").id
-        log.info("Published Holding Identity with short ID='${shortId}'")
-
-        /**
          * To support the temporary local package cache used by the sandbox API,
          * we need to publish the cpi dir as a config entry
          */
-        val cpiDirConfig: Configuration = if(dockerCpiDir != null){
-            Configuration("{ \"cacheDir\": \"${context.startArgs.cpiDockerDir.toString().replace("\\","/")}\"}" , "5.0")
-        } else {
-            Configuration("{ \"cacheDir\": \"${context.startArgs.cpiDir.toString().replace("\\","/")}\"}" , "5.0")
-        }
-
-        val records = listOf(
-            Record(Schemas.Config.CONFIG_TOPIC, "corda.cpi", cpiDirConfig),
-            Record(VIRTUAL_NODE_INFO_TOPIC, vNode.holdingIdentity.toAvro(), vNode.toAvro()),
-            Record(CPI_INFO_TOPIC, cpi.metadata.id.toAvro(), cpi.metadata.toAvro())
+        val configCpiPath = (dockerCpiDir ?: context.startArgs.cpiDir).toString().replace("\\", "/")
+        val cpiConfigRecord = Record(
+            Schemas.Config.CONFIG_TOPIC,
+            "corda.cpi",
+            Configuration("{ \"cacheDir\": \"${configCpiPath}\"}", "5.0")
         )
 
-        context.publish(records)
+
+        val cpiList = scanCPIs(repositoryFolder, getTempDir("flow-worker-setup-cpi"))
+
+        val x500Identities = listOf("CN=Bob, O=Bob Corp, L=LDN, C=GB","CN=Alice, O=Alice Corp, L=LDN, C=GB")
+
+        val virtualNodes = cpiList.flatMap { cpi ->
+            x500Identities.map { x500 -> cpi to VirtualNodeInfo(
+                HoldingIdentity(x500, cpi.metadata.id.name),
+                CpiIdentifier.fromLegacy(cpi.metadata.id),
+                vaultDmlConnectionId = UUID.randomUUID(),
+                cryptoDmlConnectionId = UUID.randomUUID()
+            ) }
+        }
+
+        virtualNodes.forEach { vNode ->
+            val hid = vNode.second.holdingIdentity
+            log.info("Create vNode for '${hid.x500Name}'-'${hid.groupId}'  with short ID '${hid.id}'")
+        }
+
+        val vNodeCpiRecords = virtualNodes.flatMap {
+            listOf(
+                Record(VIRTUAL_NODE_INFO_TOPIC, it.second.holdingIdentity.toAvro(), it.second.toAvro()),
+                Record(CPI_INFO_TOPIC, it.first.metadata.id.toAvro(), it.first.metadata.toAvro()))
+        }
+
+        context.publish(vNodeCpiRecords + cpiConfigRecord)
     }
 
     private fun scanCPIs(packageRepository: Path, cacheDir: Path): List<CPI> {

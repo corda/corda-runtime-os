@@ -5,17 +5,28 @@ import net.corda.data.crypto.SecureHash
 import net.corda.data.packaging.CPIIdentifier
 import net.corda.data.virtualnode.VirtualNodeCreationRequest
 import net.corda.data.virtualnode.VirtualNodeCreationResponse
-import net.corda.data.virtualnode.VirtualNodeInfo
+import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.db.core.DbPrivilege
+import net.corda.db.core.DbPrivilege.DDL
+import net.corda.db.core.DbPrivilege.DML
+import net.corda.libs.packaging.CpiIdentifier
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
+import net.corda.orm.utils.transaction
 import net.corda.packaging.CPI
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
+import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbType.CRYPTO
+import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbType.VAULT
 import java.nio.ByteBuffer
+import java.util.*
 import java.util.concurrent.CompletableFuture
+import javax.persistence.EntityManager
 
 /**
  * An RPC responder processor that handles virtual node creation requests.
@@ -28,7 +39,9 @@ import java.util.concurrent.CompletableFuture
  */
 internal class VirtualNodeWriterProcessor(
     private val vnodePublisher: Publisher,
-    private val virtualNodeEntityRepository: VirtualNodeEntityRepository
+    private val dbConnectionManager: DbConnectionManager,
+    private val virtualNodeEntityRepository: VirtualNodeEntityRepository,
+    private val vnodeDbFactory: VirtualNodeDbFactory
 ) : RPCResponderProcessor<VirtualNodeCreationRequest, VirtualNodeCreationResponse> {
 
     /**
@@ -41,54 +54,177 @@ internal class VirtualNodeWriterProcessor(
         request: VirtualNodeCreationRequest,
         respFuture: CompletableFuture<VirtualNodeCreationResponse>
     ) {
-
-        val cpiMetadata = virtualNodeEntityRepository.getCPIMetadata(request.cpiIdHash)
-        if (cpiMetadata == null) {
-            val errMsg = "CPI with hash ${request.cpiIdHash} was not found."
-            handleException(respFuture, errMsg, VirtualNodeWriteServiceException::class.java.name, null, null)
-            return
-        }
-
-        val holdingId = HoldingIdentity(request.x500Name, cpiMetadata.mgmGroupId)
-        val storedHoldingId = virtualNodeEntityRepository.getHoldingIdentity(holdingId.id)
-        if (storedHoldingId == null) {
-            virtualNodeEntityRepository.putHoldingIdentity(request.x500Name, cpiMetadata.mgmGroupId)
-        } else {
-            // We check whether the non-null stored holding ID is different to the one we just constructed.
-            if (storedHoldingId != holdingId) {
-                val errMsg = "New holding identity $holdingId has a short hash that collided with existing holding " +
-                        "identity $storedHoldingId."
-                handleException(respFuture, errMsg, VirtualNodeWriteServiceException::class.java.name, null, null)
+        var cpiMetadata: CPIMetadata? = null
+        var holdingId: HoldingIdentity? = null
+        try {
+            request.validationError()?.let { errMsg ->
+                handleException(respFuture, errMsg, request)
                 return
             }
+
+            cpiMetadata = virtualNodeEntityRepository.getCPIMetadata(request.cpiIdHash)
+            if (cpiMetadata == null) {
+                handleException(respFuture, "CPI with hash ${request.cpiIdHash} was not found.", request)
+                return
+            }
+
+            holdingId = HoldingIdentity(request.getX500CanonicalName(), cpiMetadata.mgmGroupId)
+            if (virtualNodeEntityRepository.virtualNodeExists(holdingId, cpiMetadata.id)) {
+                handleException(
+                    respFuture,
+                    "Virtual node for CPI with hash ${request.cpiIdHash} and x500Name ${request.x500Name} already exists.",
+                    request)
+                return
+            }
+            checkUniqueId(holdingId)
+
+            val vNodeDbs = vnodeDbFactory.createVNodeDbs(holdingId.id, request)
+
+            createSchemasAndUsers(holdingId, vNodeDbs.values)
+
+            runDbMigrations(holdingId, vNodeDbs.values)
+
+            val dbConnections = persistHoldingIdAndVirtualNode(holdingId, vNodeDbs, cpiMetadata.id, request.updateActor)
+
+            publishVNodeInfo(holdingId, cpiMetadata, dbConnections)
+
+            sendSuccessfulResponse(respFuture, request, holdingId, cpiMetadata, dbConnections)
+        } catch (e: Exception) {
+            handleException(respFuture, e, request, cpiMetadata, holdingId)
+        }
+    }
+
+    private fun VirtualNodeCreationRequest.validationError(): String? {
+        if (!vaultDdlConnection.isNullOrBlank() && vaultDmlConnection.isNullOrBlank()) {
+            return "If Vault DDL connection is provided, Vault DML connection needs to be provided as well."
         }
 
-        virtualNodeEntityRepository.putVirtualNode(holdingId, cpiMetadata.id)
-
-        val virtualNodeInfo = VirtualNodeInfo(holdingId.toAvro(), cpiMetadata.id.toAvro())
-        val virtualNodeRecord = Record(VIRTUAL_NODE_INFO_TOPIC, virtualNodeInfo.holdingIdentity, virtualNodeInfo)
-        // TODO - CORE-3319 - Strategy for DB and Kafka retries.
-        val future = vnodePublisher.publish(listOf(virtualNodeRecord)).first()
+        if (!cryptoDdlConnection.isNullOrBlank() && cryptoDmlConnection.isNullOrBlank()) {
+            return "If Crypto DDL connection is provided, Crypto DML connection needs to be provided as well."
+        }
 
         try {
+            MemberX500Name.parse(x500Name)
+        } catch (e: Exception) {
+            return "X500 name \"$x500Name\" could not be parsed. Cause: ${e.message}"
+        }
+        return null
+    }
+
+    private fun VirtualNodeCreationRequest.getX500CanonicalName(): String {
+        // TODO replace toString with method that returns canonical name
+        return MemberX500Name.parse(x500Name).toString()
+    }
+
+    private fun checkUniqueId(holdingId: HoldingIdentity) {
+        virtualNodeEntityRepository.getHoldingIdentity(holdingId.id)?.let { storedHoldingId ->
+            if (storedHoldingId != holdingId) {
+                throw VirtualNodeWriteServiceException(
+                    "New holding identity $holdingId has a short hash that collided with existing holding identity $storedHoldingId.")
+            }
+        }
+    }
+
+    private fun createSchemasAndUsers(holdingIdentity: HoldingIdentity, vNodeDbs: Collection<VirtualNodeDb>) {
+        try {
+            vNodeDbs.filter { it.isClusterDb }.forEach { it.createSchemasAndUsers() }
+        } catch (e: Exception) {
+            throw VirtualNodeWriteServiceException(
+                "Error creating virtual node DB schemas and users for holding identity $holdingIdentity", e)
+        }
+    }
+
+    private fun persistHoldingIdAndVirtualNode(holdingIdentity: HoldingIdentity, vNodeDbs: Map<VirtualNodeDbType,
+            VirtualNodeDb>, cpiId: CPI.Identifier, updateActor: String): VirtualNodeDbConnections {
+        try {
+            return dbConnectionManager.getClusterEntityManagerFactory().createEntityManager()
+                .transaction { entityManager ->
+                    val dbConnections = with(holdingIdentity) {
+                        VirtualNodeDbConnections(
+                            putConnection(entityManager, vNodeDbs, VAULT, DDL, updateActor),
+                            putConnection(entityManager, vNodeDbs, VAULT, DML, updateActor)!!,
+                            putConnection(entityManager, vNodeDbs, CRYPTO, DDL, updateActor),
+                            putConnection(entityManager,vNodeDbs, CRYPTO, DML, updateActor)!!)
+                    }
+                    virtualNodeEntityRepository.putHoldingIdentity(entityManager, holdingIdentity, dbConnections)
+                    virtualNodeEntityRepository.putVirtualNode(entityManager, holdingIdentity, cpiId)
+                    dbConnections
+                }
+        } catch (e: Exception) {
+            throw VirtualNodeWriteServiceException("Error persisting virtual node for holding identity $holdingIdentity", e)
+        }
+    }
+
+    private fun putConnection(
+        entityManager: EntityManager,
+        vNodeDbs: Map<VirtualNodeDbType, VirtualNodeDb>,
+        dbType: VirtualNodeDbType,
+        dbPrivilege: DbPrivilege,
+        updateActor: String): UUID? {
+        return vNodeDbs[dbType]?.let {  vNodeDb ->
+            vNodeDb.dbConnections[dbPrivilege]?.let { dbConnection ->
+                with (dbConnection) {
+                    dbConnectionManager.putConnection(entityManager, name, dbPrivilege, config, description, updateActor)
+                }
+            }
+        }
+    }
+
+    private fun runDbMigrations(holdingIdentity: HoldingIdentity, vNodeDbs: Collection<VirtualNodeDb>) {
+        try {
+            vNodeDbs.forEach{ it.runDbMigration() }
+        } catch (e: Exception) {
+            throw VirtualNodeWriteServiceException("Error running virtual node DB migration for holding identity $holdingIdentity", e)
+        }
+    }
+
+    private fun createVirtualNodeRecord(
+        holdingIdentity: HoldingIdentity, cpiMetadata: CPIMetadata, dbConnections: VirtualNodeDbConnections):
+            Record<net.corda.data.identity.HoldingIdentity, net.corda.data.virtualnode.VirtualNodeInfo> {
+
+        val cpiIdentifier = CpiIdentifier(cpiMetadata.id.name, cpiMetadata.id.version, cpiMetadata.id.signerSummaryHash)
+        val virtualNodeInfo = with (dbConnections) {
+            VirtualNodeInfo(
+                holdingIdentity,
+                cpiIdentifier,
+                vaultDdlConnectionId,
+                vaultDmlConnectionId,
+                cryptoDdlConnectionId,
+                cryptoDmlConnectionId)
+                .toAvro()
+        }
+        return Record(VIRTUAL_NODE_INFO_TOPIC, virtualNodeInfo.holdingIdentity, virtualNodeInfo)
+    }
+
+    private fun publishVNodeInfo(holdingIdentity: HoldingIdentity, cpiMetadata: CPIMetadata, dbConnections: VirtualNodeDbConnections) {
+        val virtualNodeRecord = createVirtualNodeRecord(holdingIdentity, cpiMetadata, dbConnections)
+        try {
+            // TODO - CORE-3319 - Strategy for DB and Kafka retries.
+            val future = vnodePublisher.publish(listOf(virtualNodeRecord)).first()
+
             // TODO - CORE-3730 - Define timeout policy.
             future.get()
         } catch (e: Exception) {
-            val errMsg = "Record $virtualNodeRecord was written to the database, but couldn't be published. Cause: $e"
-            handleException(respFuture, errMsg, e::class.java.name, cpiMetadata, holdingId)
-            return
+            throw VirtualNodeWriteServiceException(
+                "Record $virtualNodeRecord was written to the database, but couldn't be published. Cause: $e", e)
         }
+    }
 
-        val response = VirtualNodeCreationResponse(
-            true,
-            null,
-            request.x500Name,
-            cpiMetadata.id.toAvro(),
-            request.cpiIdHash,
-            cpiMetadata.mgmGroupId,
-            holdingId.toAvro(),
-            holdingId.id
-        )
+    private fun sendSuccessfulResponse(
+        respFuture: CompletableFuture<VirtualNodeCreationResponse>,
+        request: VirtualNodeCreationRequest,
+        holdingIdentity: HoldingIdentity,
+        cpiMetadata: CPIMetadata,
+        dbConnections: VirtualNodeDbConnections
+    ) {
+        val response =  VirtualNodeCreationResponse(
+            true, null, request.x500Name, cpiMetadata.id.toAvro(), cpiMetadata.idShortHash,
+            holdingIdentity.groupId, holdingIdentity.toAvro(), holdingIdentity.id,
+            dbConnections.vaultDdlConnectionId?.toString(),
+            dbConnections.vaultDmlConnectionId.toString(),
+            dbConnections.cryptoDdlConnectionId?.toString(),
+            dbConnections.cryptoDmlConnectionId.toString(),
+            null )
         respFuture.complete(response)
     }
 
@@ -97,22 +233,27 @@ internal class VirtualNodeWriterProcessor(
     private fun handleException(
         respFuture: CompletableFuture<VirtualNodeCreationResponse>,
         errMsg: String,
-        errClassName: String,
-        cpiMetadata: CPIMetadata?,
-        holdingId: HoldingIdentity?
+        request: VirtualNodeCreationRequest,
+        cpiMetadata: CPIMetadata? = null,
+        holdingId: HoldingIdentity? = null
     ): Boolean {
-        val exception = ExceptionEnvelope(errClassName, errMsg)
+        val exception = ExceptionEnvelope(VirtualNodeWriteServiceException::class.java.name, errMsg)
         val response = VirtualNodeCreationResponse(
-            false,
-            exception,
-            holdingId?.x500Name,
-            cpiMetadata?.id?.toAvro(),
-            cpiMetadata?.idShortHash,
-            holdingId?.groupId,
-            holdingId?.toAvro(),
-            holdingId?.id
-        )
+            false, exception, request.x500Name, cpiMetadata?.id?.toAvro(), cpiMetadata?.idShortHash,
+            holdingId?.groupId, holdingId?.toAvro(), holdingId?.id,
+            null, null, null, null, null)
         return respFuture.complete(response)
+    }
+
+    private fun handleException(
+        respFuture: CompletableFuture<VirtualNodeCreationResponse>,
+        exception: Exception,
+        request: VirtualNodeCreationRequest,
+        cpiMetadata: CPIMetadata? = null,
+        holdingId: HoldingIdentity? = null
+    ): Boolean {
+        val errMsg = if (exception.cause != null) "${exception.message} Cause: ${exception.cause}" else exception.message ?: ""
+        return handleException(respFuture, errMsg, request, cpiMetadata, holdingId)
     }
 
     /** Converts a [CPI.Identifier] to its Avro representation. */

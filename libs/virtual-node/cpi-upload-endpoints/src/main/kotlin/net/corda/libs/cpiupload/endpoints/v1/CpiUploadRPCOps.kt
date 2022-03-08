@@ -40,7 +40,7 @@ interface CpiUploadRPCOps : RpcOps {
      */
     @HttpRpcGET(path = "status/{id}", title = "CPI upload status", description = "Check upload status for given requestId")
     fun status(
-        @HttpRpcPathParameter(name = "id", description = "The requestId")
+        @HttpRpcPathParameter(description = "The requestId")
         id: String,
     ): Status
 }

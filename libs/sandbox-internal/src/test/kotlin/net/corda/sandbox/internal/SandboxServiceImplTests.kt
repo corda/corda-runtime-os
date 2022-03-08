@@ -1,5 +1,6 @@
 package net.corda.sandbox.internal
 
+import net.corda.libs.packaging.CpkMetadata
 import net.corda.packaging.CPK
 import net.corda.packaging.CordappManifest
 import net.corda.sandbox.SandboxException
@@ -107,7 +108,9 @@ class SandboxServiceImplTests {
         assertEquals(2, sandboxes.size)
 
         val sandboxesRetrievedFromSandboxGroup =
-            cpks.map { cpk -> sandboxGroup.cpkSandboxes.find { sandbox -> sandbox.cpk === cpk } }
+            cpks.map { cpk -> sandboxGroup.cpkSandboxes.find { sandbox ->
+                sandbox.cpkMetadata.hash == cpk.metadata.hash
+            } }
         assertEquals(sandboxes.toSet(), sandboxesRetrievedFromSandboxGroup.toSet())
     }
 
@@ -127,7 +130,7 @@ class SandboxServiceImplTests {
     fun `a sandbox correctly indicates which CPK it is created from`() {
         val sandboxGroup = sandboxService.createSandboxGroup(setOf(cpkOne))
         val sandbox = (sandboxGroup as SandboxGroupInternal).cpkSandboxes.single()
-        assertEquals(cpkOne, sandbox.cpk)
+        assertEquals(CpkMetadata.fromLegacyCpk(cpkOne), sandbox.cpkMetadata)
     }
 
     @Test

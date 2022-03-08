@@ -1,0 +1,15 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+description 'Member group registration API'
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(":libs:lifecycle:lifecycle")
+
+    api project(":libs:virtual-node:virtual-node-info")
+}

@@ -2,16 +2,11 @@ package net.corda.db.connection.manager
 
 import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.SmartConfig
+import java.util.*
+import javax.persistence.EntityManager
 import javax.sql.DataSource
 
 interface DbConnectionsRepository {
-    /**
-     * Initialise the [DbConnectionsRepository] with the given Cluster DB config.
-     *
-     * This also validates we can connect to the configured cluster DB and retries until it is successful.
-     */
-    fun initialise(config: SmartConfig)
-
     /**
      * Persist a new or updated DB connection with given [name], [privilege] and [config].
      *
@@ -20,12 +15,32 @@ interface DbConnectionsRepository {
      * @param config SmartConfig object to use
      * @param description
      * @param updateActor actor on whose behalf the update is on
+     * @return ID of persisted DB connection
      */
     fun put(name: String,
             privilege: DbPrivilege,
             config: SmartConfig,
             description: String?,
-            updateActor: String)
+            updateActor: String): UUID
+
+    /**
+    * Persist a new or updated DB connection with given [name], [privilege] and [config].
+    *
+    * @param entityManager [EntityManager]
+    * @param name
+    * @param privilege DML or DDL
+    * @param config SmartConfig object to use
+    * @param description
+    * @param updateActor actor on whose behalf the update is on
+    * @return ID of persisted DB connection
+    */
+    @Suppress("LongParameterList")
+    fun put(entityManager: EntityManager,
+            name: String,
+            privilege: DbPrivilege,
+            config: SmartConfig,
+            description: String?,
+            updateActor: String): UUID
 
     /**
      * Get DB connection for given [name].
@@ -38,9 +53,16 @@ interface DbConnectionsRepository {
     fun get(name: String, privilege: DbPrivilege): DataSource?
 
     /**
-     * Get the main cluster DB connection.
+     * Get DB connection for given configuration.
      *
-     * @throws [DBConfigurationException] if the cluster DB cannot be connected to.
+     * @param config DB config
      */
-    val clusterDataSource: DataSource
+    fun get(config: SmartConfig): DataSource
+
+    /**
+     * Get cluster DB [DataSource]
+     *
+     * @return The cluster DB [DataSource]
+     */
+    fun getClusterDataSource(): DataSource
 }

@@ -4,7 +4,6 @@ import io.netty.handler.ssl.SslHandler
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
 import org.bouncycastle.asn1.ASN1InputStream
-import org.bouncycastle.asn1.DERIA5String
 import org.bouncycastle.asn1.DEROctetString
 import org.bouncycastle.asn1.x509.AuthorityKeyIdentifier
 import org.bouncycastle.asn1.x509.CRLDistPoint
@@ -40,6 +39,7 @@ import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509ExtendedKeyManager
 import javax.net.ssl.X509ExtendedTrustManager
 import net.corda.v5.base.util.toHex
+import org.bouncycastle.asn1.ASN1IA5String
 import org.bouncycastle.asn1.x500.X500Name
 
 const val HANDSHAKE_TIMEOUT = 10000L
@@ -76,10 +76,13 @@ fun createClientSslHandler(targetServerName: String,
     return sslHandler
 }
 
-fun createServerSslHandler(keyStore: KeyStore,
-                           keyManagerFactory: KeyManagerFactory): SslHandler {
+fun createServerSslHandler(keyStore: KeyStoreWithPassword): SslHandler {
+
     val sslContext = SSLContext.getInstance("TLS")
 
+    val keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm()).also {
+        it.init(keyStore.keyStore, keyStore.password.toCharArray())
+    }
     /**
      * As per the JavaDoc of SSLContext:
      * Only the first instance of a particular key and/or trust manager implementation type in the array is used.
@@ -87,7 +90,7 @@ fun createServerSslHandler(keyStore: KeyStore,
      * We shall initialise the SSLContext with an SNI enabled key manager instead
      */
     val keyManagers = keyManagerFactory.keyManagers
-    //May need to use secure random from crypto-api module
+    // May need to use secure random from crypto-api module
     sslContext.init(arrayOf(SNIKeyManager(keyManagers.first() as X509ExtendedKeyManager)), null, SecureRandom())
 
     val sslEngine = sslContext.createSSLEngine().also {
@@ -97,7 +100,7 @@ fun createServerSslHandler(keyStore: KeyStore,
         it.enabledCipherSuites = CIPHER_SUITES
         it.enableSessionCreation = true
         val sslParameters = it.sslParameters
-        sslParameters.sniMatchers = listOf(HostnameMatcher(keyStore))
+        sslParameters.sniMatchers = listOf(HostnameMatcher(keyStore.keyStore))
         it.sslParameters = sslParameters
     }
     val sslHandler = SslHandler(sslEngine)
@@ -149,9 +152,13 @@ fun X509Certificate.distributionPoints() : Set<String> {
         return emptySet()
     }
 
-    val dpNames = distPoint.distributionPoints.mapNotNull { it.distributionPoint }.filter { it.type == DistributionPointName.FULL_NAME }
+    val dpNames = distPoint.distributionPoints.mapNotNull { it.distributionPoint }.filter {
+        it.type == DistributionPointName.FULL_NAME
+    }
     val generalNames = dpNames.flatMap { GeneralNames.getInstance(it.name).names.asList() }
-    return generalNames.filter { it.tagNo == GeneralName.uniformResourceIdentifier}.map { DERIA5String.getInstance(it.name).string }.toSet()
+    return generalNames.filter { it.tagNo == GeneralName.uniformResourceIdentifier}.map {
+        ASN1IA5String.getInstance(it.name).string
+    }.toSet()
 }
 
 fun X509Certificate.toBc() = X509CertificateHolder(encoded)

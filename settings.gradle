@@ -48,6 +48,8 @@ pluginManagement {
         }
     }
     plugins {
+        id 'com.gradle.enterprise' version gradleEnterpriseVersion
+        id 'com.gradle.common-custom-user-data-gradle-plugin' version gradleDataPlugin
         id 'net.corda.cordapp.cordapp-configuration' version cordaApiVersion
         id 'org.jetbrains.kotlin.jvm' version kotlinVersion
         id 'org.jetbrains.kotlin.plugin.allopen' version kotlinVersion
@@ -60,6 +62,11 @@ pluginManagement {
         id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
         id 'com.github.ben-manes.versions' version gradleVersions
     }
+}
+
+plugins {
+    id 'com.gradle.common-custom-user-data-gradle-plugin'
+    id 'com.gradle.enterprise'
 }
 
 dependencyResolutionManagement {
@@ -80,6 +87,8 @@ include 'applications:p2p-gateway'
 include 'applications:p2p-link-manager'
 include 'applications:tools:flow-worker-setup'
 include 'applications:tools:kafka-setup'
+include 'applications:tools:mgm-test:group-policy-uploader'
+include 'applications:tools:mgm-test:memberlist-viewer'
 include 'applications:tools:p2p-test:app-simulator'
 include 'applications:tools:p2p-test:p2p-configuration-publisher'
 include 'applications:tools:p2p-test:cryptoservice-key-creator'
@@ -128,12 +137,17 @@ include 'components:install:test-resources:workflow-cpk'
 include 'components:install:test-resources:system-cpk'
 include 'components:kafka-topic-admin'
 include 'components:link-manager'
+include 'components:p2p-test:stub-crypto-processor'
+include 'components:membership:group-policy'
 include 'components:membership:group-policy-impl'
+include 'components:membership:membership-client'
 include 'components:membership:membership-client-impl'
+include 'components:membership:membership-group-read'
 include 'components:membership:membership-group-read-impl'
+include 'components:membership:membership-http-rpc'
 include 'components:membership:membership-http-rpc-impl'
-include 'components:membership:registration-static-network-impl'
-include 'components:membership:registration-provider'
+include 'components:membership:registration'
+include 'components:membership:registration-impl'
 include 'components:membership:membership-service'
 include 'components:membership:membership-service-impl'
 include 'components:permissions:permission-cache-service'
@@ -207,14 +221,13 @@ include 'libs:kafka-utils:topic-admin-impl'
 include 'libs:kotlin-reflection'
 include 'libs:kotlin-reflection:kotlin-reflection-test-api'
 include 'libs:kotlin-reflection:kotlin-reflection-test-example'
+include 'libs:layered-property-map'
+include 'libs:layered-property-map:layered-property-map-test-converter'
 include 'libs:ledger:notary'
 include 'libs:lifecycle:lifecycle'
 include 'libs:lifecycle:lifecycle-impl'
 include 'libs:lifecycle:registry'
 include 'libs:membership:membership-application'
-include 'libs:membership:membership-conversion-impl'
-include 'libs:membership:membership-http-rpc'
-include 'libs:membership:membership-identity-impl'
 include 'libs:membership:membership-internal'
 include 'libs:membership:membership-impl'
 include 'libs:messaging:db-messaging-impl'
@@ -275,6 +288,7 @@ include 'libs:virtual-node:cpi-datamodel'
 include 'libs:virtual-node:cpi-upload-endpoints'
 include 'libs:virtual-node:cpi-upload-manager'
 include 'libs:virtual-node:cpi-upload-manager-impl'
+include 'libs:virtual-node:packaging-core'
 include 'libs:virtual-node:sandbox-group-context'
 include 'libs:virtual-node:virtual-node-datamodel'
 include 'libs:virtual-node:virtual-node-endpoints'
@@ -289,7 +303,6 @@ include 'processors:rpc-processor'
 include 'testing:apps:test-app'
 include 'testing:crypto-testkit'
 include 'testing:db-testkit'
-include 'testing:membership-testkit'
 include 'testing:bundles:testing-cats'
 include 'testing:bundles:testing-dogs'
 include 'testing:cpbs:corda-services'
@@ -298,13 +311,17 @@ include 'testing:cpbs:crypto-custom-digest-one-cpk'
 include 'testing:cpbs:crypto-custom-digest-one-consumer'
 include 'testing:cpbs:crypto-custom-digest-two-cpk'
 include 'testing:cpbs:crypto-custom-digest-two-consumer'
+include 'testing:cpbs:connect4'
 include 'testing:cpbs:helloworld'
+include 'testing:cpbs:mandelbrot'
 include 'testing:cpbs:sandbox-cpk-inject'
 include 'testing:cpbs:sandbox-scr-cpk'
 include 'testing:cpbs:split-packages:split-packages-one'
 include 'testing:cpbs:split-packages:split-packages-one:library-one'
 include 'testing:cpbs:split-packages:split-packages-two'
 include 'testing:cpbs:split-packages:split-packages-two:library-two'
+include 'testing:cpbs:tic-tac-toe'
+include 'testing:layered-property-map-testkit'
 include 'testing:message-patterns'
 include 'testing:sandboxes'
 include 'testing:test-utilities'
@@ -327,12 +344,26 @@ if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
             substitute module('net.corda:corda-topic-schema') using project(':data:topic-schema')
             substitute module('net.corda:corda-ledger') using project(':ledger')
             substitute module('net.corda:corda-membership') using project(':membership')
-            substitute module('net.corda:corda-membership-conversion') using project(':membership-conversion')
-            substitute module('net.corda:corda-membership-identity') using project(':membership-identity')
             substitute module('net.corda:corda-packaging') using project(':packaging')
             substitute module('net.corda:corda-packaging-avro-converters') using project(':packaging:packaging-avro-converters')
             substitute module('net.corda:corda-persistence') using project(':persistence')
             substitute module('net.corda:corda-serialization') using project(':serialization')
+        }
+    }
+}
+
+gradleEnterprise {
+    server = gradleEnterpriseUrl
+    allowUntrustedServer = false
+    buildScan {
+        def apiKey = settings.ext.find('CORDA_GRADLE_SCAN_KEY') ?: System.getenv('CORDA_GRADLE_SCAN_KEY')
+        if (apiKey?.trim()) {
+            publishAlways()
+            capture {
+                taskInputFiles = true
+            }
+            uploadInBackground = false
+            accessKey = apiKey
         }
     }
 }

@@ -1,7 +1,7 @@
 package net.corda.httprpc.security
 
 import net.corda.httprpc.durablestream.DurableStreamContext
-import net.corda.v5.application.identity.CordaX500Name
+import net.corda.v5.base.types.MemberX500Name
 import java.security.Principal
 
 /**
@@ -25,10 +25,10 @@ data class InvocationContext(
 /**
  * Models an initiator in Corda, can be a user, a service, etc.
  */
-data class Actor(val id: Id, val serviceId: AuthServiceId, val owningLegalIdentity: CordaX500Name) {
+data class Actor(val id: Id, val serviceId: AuthServiceId, val owningLegalIdentity: MemberX500Name) {
 
     companion object {
-        fun service(serviceClassName: String, owningLegalIdentity: CordaX500Name): Actor = Actor(
+        fun service(serviceClassName: String, owningLegalIdentity: MemberX500Name): Actor = Actor(
             Id(serviceClassName),
             AuthServiceId("SERVICE"), owningLegalIdentity
         )

@@ -1,12 +1,11 @@
 package net.corda.p2p.crypto
 
-import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.ECDSA_SIGNATURE_ALGO
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.InvalidMac
-import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.crypto.protocol.api.MessageTooLargeError
+import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Test
@@ -14,13 +13,13 @@ import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.Signature
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 
 class AuthenticatedSessionTest {
 
     private val provider = BouncyCastleProvider()
     private val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
-    private val signature = Signature.getInstance(ECDSA_SIGNATURE_ALGO, provider)
+    private val signature = Signature.getInstance(ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC.signatureName, provider)
 
     private val sessionId = UUID.randomUUID().toString()
     private val groupId = "some-group-id"
@@ -65,7 +64,11 @@ class AuthenticatedSessionTest {
         }
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForA)
 
-        authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyAIdentityKey.public, KeyAlgorithm.ECDSA)
+        authenticationProtocolB.validatePeerHandshakeMessage(
+            initiatorHandshakeMessage,
+            partyAIdentityKey.public,
+            ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC,
+        )
 
         // Step 4: responder sending handshake message and initiator validating it.
         val signingCallbackForB = { data: ByteArray ->
@@ -75,7 +78,11 @@ class AuthenticatedSessionTest {
         }
         val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForB)
 
-        authenticationProtocolA.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public, KeyAlgorithm.ECDSA)
+        authenticationProtocolA.validatePeerHandshakeMessage(
+            responderHandshakeMessage,
+            partyBIdentityKey.public,
+            ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC,
+        )
 
         // Both sides generate session secrets
         val authenticatedSessionOnA = authenticationProtocolA.getSession() as AuthenticatedSession
@@ -129,7 +136,11 @@ class AuthenticatedSessionTest {
         }
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForA)
 
-        authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyAIdentityKey.public, KeyAlgorithm.ECDSA)
+        authenticationProtocolB.validatePeerHandshakeMessage(
+            initiatorHandshakeMessage,
+            partyAIdentityKey.public,
+            ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC,
+        )
 
         // Step 4: responder sending handshake message and initiator validating it.
         val signingCallbackForB = { data: ByteArray ->
@@ -139,7 +150,11 @@ class AuthenticatedSessionTest {
         }
         val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForB)
 
-        authenticationProtocolA.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public, KeyAlgorithm.ECDSA)
+        authenticationProtocolA.validatePeerHandshakeMessage(
+            responderHandshakeMessage,
+            partyBIdentityKey.public,
+            ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC,
+        )
 
         // Both sides generate session secrets
         val authenticatedSessionOnA = authenticationProtocolA.getSession() as AuthenticatedSession
@@ -184,7 +199,11 @@ class AuthenticatedSessionTest {
         }
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForA)
 
-        authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyAIdentityKey.public, KeyAlgorithm.ECDSA)
+        authenticationProtocolB.validatePeerHandshakeMessage(
+            initiatorHandshakeMessage,
+            partyAIdentityKey.public,
+            ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC,
+        )
 
         // Step 4: responder sending handshake message and initiator validating it.
         val signingCallbackForB = { data: ByteArray ->
@@ -194,7 +213,11 @@ class AuthenticatedSessionTest {
         }
         val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForB)
 
-        authenticationProtocolA.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public, KeyAlgorithm.ECDSA)
+        authenticationProtocolA.validatePeerHandshakeMessage(
+            responderHandshakeMessage,
+            partyBIdentityKey.public,
+            ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC,
+        )
 
         // Both sides generate session secrets
         val authenticatedSessionOnA = authenticationProtocolA.getSession() as AuthenticatedSession

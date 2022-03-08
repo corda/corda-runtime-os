@@ -10,6 +10,6 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
-    implementation "net.corda:corda-membership-identity"
+    implementation "net.corda:corda-membership"
     implementation "net.corda:corda-ledger"
 }

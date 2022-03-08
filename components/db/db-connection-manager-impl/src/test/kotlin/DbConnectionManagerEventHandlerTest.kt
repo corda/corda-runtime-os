@@ -1,7 +1,7 @@
 import net.corda.db.connection.manager.impl.BootstrapConfigProvided
 import net.corda.db.connection.manager.DBConfigurationException
 import net.corda.db.connection.manager.impl.DbConnectionManagerEventHandler
-import net.corda.db.connection.manager.impl.DbConnectionsRepositoryImpl
+import net.corda.db.connection.manager.impl.DbConnectionManagerImpl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -13,7 +13,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 
 class DbConnectionManagerEventHandlerTest {
-    private val dbConnectionsRepository = mock< DbConnectionsRepositoryImpl>()
+    private val dbConnectionsManager = mock<DbConnectionManagerImpl>()
     private val configFactory = mock<SmartConfigFactory>()
     private val config = mock<SmartConfig>() {
         on { this.factory }.doReturn(configFactory)
@@ -22,16 +22,16 @@ class DbConnectionManagerEventHandlerTest {
 
     @Test
     fun `when bootstrap initialise connections repo`() {
-        val eventHandler = DbConnectionManagerEventHandler(dbConnectionsRepository)
+        val eventHandler = DbConnectionManagerEventHandler(dbConnectionsManager)
 
         eventHandler.processEvent(BootstrapConfigProvided(config), coordinator)
 
-        verify(dbConnectionsRepository).initialise(config)
+        verify(dbConnectionsManager).initialise(config)
     }
 
     @Test
     fun `when bootstrap initialised report UP`() {
-        val eventHandler = DbConnectionManagerEventHandler(dbConnectionsRepository)
+        val eventHandler = DbConnectionManagerEventHandler(dbConnectionsManager)
 
         eventHandler.processEvent(BootstrapConfigProvided(config), coordinator)
 
@@ -40,7 +40,7 @@ class DbConnectionManagerEventHandlerTest {
 
     @Test
     fun `when boostrap twice throw`() {
-        val eventHandler = DbConnectionManagerEventHandler(dbConnectionsRepository)
+        val eventHandler = DbConnectionManagerEventHandler(dbConnectionsManager)
 
         eventHandler.processEvent(BootstrapConfigProvided(config), coordinator)
 

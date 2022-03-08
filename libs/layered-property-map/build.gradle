@@ -1,0 +1,22 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+    id 'corda.osgi-test-conventions'
+}
+
+description 'Layered property map internal API and implementation'
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-base"
+
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "net.corda:corda-crypto"
+
+    integrationTestImplementation project(":libs:layered-property-map:layered-property-map-test-converter")
+}

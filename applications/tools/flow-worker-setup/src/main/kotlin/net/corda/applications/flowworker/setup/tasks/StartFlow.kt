@@ -42,7 +42,7 @@ class StartFlow(private val context: TaskContext) : Task {
             FlowStatusKey(clientId,identity),
             FlowInitiatorType.RPC,
             clientId,
-            VirtualNodeInfo(identity,null),
+            VirtualNodeInfo(identity,null, null,"",null,"",null),
             flowName,
             Instant.now())
 

@@ -39,7 +39,7 @@ class FlowMapperIntegrationTest {
             FlowStatusKey("a", identity),
             FlowInitiatorType.RPC,
             "clientId",
-            VirtualNodeInfo(identity, null),
+            VirtualNodeInfo(identity, null, null, null, null, null, null),
             "className",
             Instant.MIN
         ), null

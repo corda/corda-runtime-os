@@ -24,6 +24,7 @@ import net.corda.p2p.crypto.util.perform
 import net.corda.p2p.crypto.util.verify
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.crypto.SignatureSpec
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.security.spec.X509EncodedKeySpec
@@ -137,7 +138,7 @@ class AuthenticationProtocolResponder(val sessionId: String,
     fun validatePeerHandshakeMessage(
         initiatorHandshakeMessage: InitiatorHandshakeMessage,
         initiatorPublicKey: PublicKey,
-        initiatorPublicKeyAlgo: KeyAlgorithm
+        initiatorSignatureSpec: SignatureSpec,
     ): HandshakeIdentityData {
         return transition(Step.GENERATED_HANDSHAKE_SECRETS, Step.RECEIVED_HANDSHAKE_MESSAGE, { handshakeIdentityData!! }) {
             val initiatorPublicKeyHash = messageDigest.hash(initiatorPublicKey.encoded)
@@ -169,7 +170,7 @@ class AuthenticationProtocolResponder(val sessionId: String,
             // validate signature
             val initiatorHelloToInitiatorPublicKeyHash = initiatorHelloToResponderHelloBytes!! +
                     initiatorHandshakePayloadIncomplete.toByteBuffer().array()
-            val signatureWasValid = getSignature(initiatorPublicKeyAlgo).verify(initiatorPublicKey,
+            val signatureWasValid = getSignature(initiatorSignatureSpec).verify(initiatorPublicKey,
                 INITIATOR_SIG_PAD.toByteArray(Charsets.UTF_8) +
                         messageDigest.hash(initiatorHelloToInitiatorPublicKeyHash),
                 initiatorHandshakePayload.initiatorPartyVerify.array())

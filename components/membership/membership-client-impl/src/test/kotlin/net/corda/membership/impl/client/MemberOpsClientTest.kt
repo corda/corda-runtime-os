@@ -14,8 +14,8 @@ import net.corda.data.membership.rpc.response.RegistrationStatus
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.membership.httprpc.types.MemberRegistrationRequest
-import net.corda.membership.httprpc.types.RegistrationAction
+import net.corda.membership.client.dto.MemberRegistrationRequestDto
+import net.corda.membership.client.dto.RegistrationActionDto
 import net.corda.membership.impl.client.lifecycle.MemberOpsClientLifecycleHandler
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.api.publisher.RPCSender
@@ -39,7 +39,7 @@ import kotlin.test.assertTrue
 
 class MemberOpsClientTest {
     companion object {
-        private const val VIRTUAL_NODE_ID = "nodeId"
+        private const val HOLDING_IDENTITY_ID = "nodeId"
     }
 
     private var coordinatorIsRunning = false
@@ -90,7 +90,7 @@ class MemberOpsClientTest {
         )
     }
 
-    private val request = MemberRegistrationRequest(VIRTUAL_NODE_ID, RegistrationAction.REQUEST_JOIN)
+    private val request = MemberRegistrationRequestDto(HOLDING_IDENTITY_ID, RegistrationActionDto.REQUEST_JOIN)
 
     @BeforeEach
     fun setUp() {
@@ -149,7 +149,7 @@ class MemberOpsClientTest {
 
         val requestSent = rpcRequest?.request as RegistrationRequest
 
-        assertEquals(request.virtualNodeId, requestSent.virtualNodeId)
+        assertEquals(request.holdingIdentityId, requestSent.holdingIdentityId)
         assertEquals(request.action.name, requestSent.registrationAction.name)
     }
 
@@ -157,25 +157,29 @@ class MemberOpsClientTest {
     fun `rpc sender sends the expected request - checking registration progress`() {
         memberOpsClient.start()
         setUpRpcSender()
-        memberOpsClient.checkRegistrationProgress(request.virtualNodeId)
+        memberOpsClient.checkRegistrationProgress(request.holdingIdentityId)
         memberOpsClient.stop()
 
         val requestSent = rpcRequest?.request as RegistrationStatusRequest
 
-        assertEquals(request.virtualNodeId, requestSent.virtualNodeId)
+        assertEquals(request.holdingIdentityId, requestSent.holdingIdentityId)
     }
 
     @Test
     fun `should fail when rpc sender is not ready`() {
         memberOpsClient.start()
-        val ex = assertFailsWith<CordaRuntimeException> { memberOpsClient.checkRegistrationProgress(request.virtualNodeId) }
+        val ex = assertFailsWith<CordaRuntimeException> {
+            memberOpsClient.checkRegistrationProgress(request.holdingIdentityId)
+        }
         assertTrue { ex.message!!.contains("RPC sender") }
         memberOpsClient.stop()
     }
 
     @Test
     fun `should fail when service is not running`() {
-        val ex = assertFailsWith<CordaRuntimeException> { memberOpsClient.checkRegistrationProgress(request.virtualNodeId) }
+        val ex = assertFailsWith<CordaRuntimeException> {
+            memberOpsClient.checkRegistrationProgress(request.holdingIdentityId)
+        }
         assertTrue { ex.message!!.contains("MemberOpsClientImpl is not running.") }
     }
 
@@ -185,7 +189,9 @@ class MemberOpsClientTest {
         setUpRpcSender()
         val message = "Sender exception."
         whenever(rpcSender.sendRequest(any())).thenThrow(CordaRPCAPISenderException(message))
-        val ex = assertFailsWith<CordaRuntimeException> { memberOpsClient.checkRegistrationProgress(request.virtualNodeId) }
+        val ex = assertFailsWith<CordaRuntimeException> {
+            memberOpsClient.checkRegistrationProgress(request.holdingIdentityId)
+        }
         assertTrue { ex.message!!.contains(message) }
         memberOpsClient.stop()
     }
@@ -209,7 +215,9 @@ class MemberOpsClientTest {
             )
         }
 
-        val ex = assertFailsWith<CordaRuntimeException> { memberOpsClient.checkRegistrationProgress(request.virtualNodeId) }
+        val ex = assertFailsWith<CordaRuntimeException> {
+            memberOpsClient.checkRegistrationProgress(request.holdingIdentityId)
+        }
         assertTrue { ex.message!!.contains("null") }
         memberOpsClient.stop()
     }
@@ -239,7 +247,9 @@ class MemberOpsClientTest {
             )
         }
 
-        val ex = assertFailsWith<CordaRuntimeException> { memberOpsClient.checkRegistrationProgress(request.virtualNodeId) }
+        val ex = assertFailsWith<CordaRuntimeException> {
+            memberOpsClient.checkRegistrationProgress(request.holdingIdentityId)
+        }
         assertTrue { ex.message!!.contains("ID") }
         memberOpsClient.stop()
     }
@@ -269,7 +279,9 @@ class MemberOpsClientTest {
             )
         }
 
-        val ex = assertFailsWith<CordaRuntimeException> { memberOpsClient.checkRegistrationProgress(request.virtualNodeId) }
+        val ex = assertFailsWith<CordaRuntimeException> {
+            memberOpsClient.checkRegistrationProgress(request.holdingIdentityId)
+        }
         assertTrue { ex.message!!.contains("timestamp") }
         memberOpsClient.stop()
     }
@@ -293,7 +305,9 @@ class MemberOpsClientTest {
             )
         }
 
-        val ex = assertFailsWith<CordaRuntimeException> { memberOpsClient.checkRegistrationProgress(request.virtualNodeId) }
+        val ex = assertFailsWith<CordaRuntimeException> {
+            memberOpsClient.checkRegistrationProgress(request.holdingIdentityId)
+        }
         assertTrue { ex.message!!.contains("Expected class") }
         memberOpsClient.stop()
     }

@@ -1,6 +1,8 @@
 package net.corda.sandboxgroupcontext.service.impl
 
 import net.corda.install.InstallService
+import net.corda.libs.packaging.CpkIdentifier
+import net.corda.libs.packaging.CpkMetadata
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -11,7 +13,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.packaging.CPK
 import net.corda.sandbox.RequireSandboxHooks
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
@@ -84,7 +85,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
 
     override fun registerMetadataServices(
         sandboxGroupContext: SandboxGroupContext,
-        serviceNames: (CPK.Metadata) -> Iterable<String>,
+        serviceNames: (CpkMetadata) -> Iterable<String>,
         isMetadataService: (Class<*>) -> Boolean,
         serviceMarkerType: Class<*>
     ): AutoCloseable = sandboxGroupContextServiceImpl.registerMetadataServices(
@@ -95,7 +96,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
         sandboxGroupContext: SandboxGroupContext
     ): AutoCloseable = sandboxGroupContextServiceImpl.registerCustomCryptography(sandboxGroupContext)
 
-    override fun hasCpks(cpkIdentifiers: Set<CPK.Identifier>): Boolean =
+    override fun hasCpks(cpkIdentifiers: Set<CpkIdentifier>): Boolean =
         sandboxGroupContextServiceImpl.hasCpks(cpkIdentifiers)
 
     override val isRunning: Boolean

@@ -11,6 +11,7 @@ import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
+import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -37,7 +38,7 @@ class FlowRPCOpsImpl @Activate constructor(
     private val publisherFactory: PublisherFactory,
     @Reference(service = MessageFactory::class)
     private val messageFactory: MessageFactory
-) : FlowRpcOps, PluggableRPCOps<FlowRpcOps> {
+) : FlowRpcOps, PluggableRPCOps<FlowRpcOps>, Lifecycle {
 
     companion object {
         val log: Logger = contextLogger()

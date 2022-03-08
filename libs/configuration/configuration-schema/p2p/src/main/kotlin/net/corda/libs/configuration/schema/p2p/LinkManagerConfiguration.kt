@@ -12,7 +12,10 @@ class LinkManagerConfiguration {
          */
         const val LOCALLY_HOSTED_IDENTITIES_KEY = "locallyHostedIdentities"
         const val LOCALLY_HOSTED_IDENTITY_X500_NAME = "x500Name"
-        const val LOCALLY_HOSTED_IDENTITY_GROUP_ID = "groupId"
+        const val LOCALLY_HOSTED_IDENTITY_GPOUP_ID = "groupId"
+        const val LOCALLY_HOSTED_IDENTITY_TLS_TENANT_ID = "tlsTenantId"
+        const val LOCALLY_HOSTED_IDENTITY_IDENTITY_TENANT_ID = "identityTenantId"
+        const val LOCALLY_HOSTED_TLS_CERTIFICATES = "tlsCertificates"
         const val MAX_MESSAGE_SIZE_KEY = "maxMessageSize"
         const val PROTOCOL_MODE_KEY = "protocolMode"
         const val MESSAGE_REPLAY_KEY_PREFIX = "messageReplay"

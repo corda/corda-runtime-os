@@ -1,6 +1,6 @@
 package net.corda.sandbox
 
-import net.corda.packaging.CPK
+import net.corda.libs.packaging.CpkMetadata
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.framework.Bundle
 
@@ -10,8 +10,7 @@ import org.osgi.framework.Bundle
  * @property cpks The CPKs this sandbox group is constructed from.
  */
 interface SandboxGroup: SingletonSerializeAsToken {
-    val cpks: Collection<CPK>
-    val metadata: Map<Bundle, CPK.Metadata>
+    val metadata: Map<Bundle, CpkMetadata>
 
     /**
      * Attempts to load the [Class] with [className] from the main bundle of each sandbox in the

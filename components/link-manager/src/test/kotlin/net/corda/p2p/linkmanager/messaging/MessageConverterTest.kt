@@ -111,7 +111,7 @@ class MessageConverterTest {
                 us.toHoldingIdentity(),
                 keyPairGenerator.genKeyPair().public,
                 KeyAlgorithm.ECDSA,
-                LinkManagerNetworkMap.EndPoint("")
+                LinkManagerNetworkMap.EndPoint(""),
             )
         )
         val flowMessage = authenticatedMessageAndKey(us, peer, ByteBuffer.wrap("DATA".toByteArray()))
@@ -151,7 +151,7 @@ class MessageConverterTest {
                 peer.toHoldingIdentity(),
                 keyPairGenerator.genKeyPair().public,
                 KeyAlgorithm.ECDSA,
-                LinkManagerNetworkMap.EndPoint("")
+                LinkManagerNetworkMap.EndPoint(""),
             )
         )
         assertNull(MessageConverter.linkOutFromUnauthenticatedMessage(unauthenticatedMsg, networkMap))

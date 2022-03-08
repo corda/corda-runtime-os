@@ -1,15 +1,14 @@
 package net.corda.membership.impl.read.reader
 
-import net.corda.membership.GroupPolicy
-import net.corda.membership.identity.MemberInfoExtension.Companion.IDENTITY_KEY_HASHES
+import net.corda.membership.impl.MemberInfoExtension.Companion.IDENTITY_KEY_HASHES
 import net.corda.membership.impl.read.TestProperties
 import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_1
 import net.corda.membership.impl.read.cache.MemberListCache
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.crypto.sha256Bytes
-import net.corda.v5.membership.identity.MemberContext
-import net.corda.v5.membership.identity.MemberInfo
+import net.corda.v5.membership.MemberContext
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -26,7 +25,6 @@ class MembershipGroupReaderImplTest {
 
     private val aliceName = TestProperties.aliceName
     private val aliceIdGroup1 = HoldingIdentity(aliceName.toString(), GROUP_ID_1)
-    private val groupPolicy: GroupPolicy = mock()
     private val memberCache: MemberListCache = mock()
     private val membershipGroupCache: MembershipGroupReadCache = mock<MembershipGroupReadCache>().apply {
         whenever(this.memberListCache).thenReturn(memberCache)
@@ -38,7 +36,7 @@ class MembershipGroupReaderImplTest {
         on { name } doReturn aliceName
         on { identityKeys } doReturn listOf(knownKey)
         val mockedMemberProvidedContext = mock<MemberContext> {
-            on { parseList(eq(IDENTITY_KEY_HASHES), eq(PublicKeyHash::class.java)) } doReturn listOf(knownKeyHash)
+            on { parseSet(eq(IDENTITY_KEY_HASHES), eq(PublicKeyHash::class.java)) } doReturn setOf(knownKeyHash)
         }
         on { memberProvidedContext } doReturn mockedMemberProvidedContext
 
@@ -48,7 +46,6 @@ class MembershipGroupReaderImplTest {
     fun setUp() {
         membershipGroupReaderImpl = MembershipGroupReaderImpl(
             aliceIdGroup1,
-            groupPolicy,
             membershipGroupCache
         )
     }

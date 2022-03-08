@@ -34,16 +34,21 @@ import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
 import net.corda.p2p.linkmanager.LinkManager
-import net.corda.p2p.linkmanager.LinkManagerCryptoService
+import net.corda.p2p.linkmanager.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionsNeeded
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
+import net.corda.p2p.linkmanager.utilities.MockTimeFacilitiesProvider
+import net.corda.p2p.test.stub.crypto.processor.CouldNotFindPrivateKey
+import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
+import net.corda.p2p.test.stub.crypto.processor.UnsupportedAlgorithm
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.toBase64
+import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
@@ -163,8 +168,11 @@ class SessionManagerTest {
         on { getMemberInfo(PEER_PARTY) } doReturn PEER_MEMBER_INFO
         on { getMemberInfo(messageDigest.hash(PEER_KEY.public.encoded), GROUP_ID) } doReturn PEER_MEMBER_INFO
     }
-    private val cryptoService = mock<LinkManagerCryptoService> {
-        on { signData(eq(OUR_KEY.public), any()) } doReturn "signature-from-A".toByteArray()
+    private val linkManagerHostingMap = mock<LinkManagerHostingMap> {
+        on { getTenantId(any()) } doReturn "id"
+    }
+    private val cryptoService = mock<StubCryptoProcessor> {
+        on { sign(any(), eq(OUR_KEY.public), any(), any()) } doReturn "signature-from-A".toByteArray()
     }
     private val pendingSessionMessageQueues = Mockito.mock(LinkManager.PendingSessionMessageQueues::class.java)
     private val sessionReplayer = Mockito.mock(InMemorySessionReplayer::class.java)
@@ -175,6 +183,9 @@ class SessionManagerTest {
         on { createResponder(any(), any(), any()) } doReturn protocolResponder
     }
     val resources = ResourcesHolder()
+
+    private val mockTimeFacilitiesProvider = MockTimeFacilitiesProvider()
+
     private val sessionManager = SessionManagerImpl(
         networkMap,
         cryptoService,
@@ -184,11 +195,11 @@ class SessionManagerTest {
         mock(),
         mock(),
         mock(),
+        mock(),
         protocolFactory,
         sessionReplayer,
         mock(),
-        mock()
-    ).apply {
+    ){ mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
         setRunning()
         configHandler.applyNewConfiguration(
             SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY),
@@ -197,7 +208,7 @@ class SessionManagerTest {
             mock(),
         )
         heartbeatConfigHandler.applyNewConfiguration(configNoHeartbeat, null, mock())
-      //  createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]!!(resources)
+        createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]!!(resources)
     }
 
     private fun MessageDigest.hash(data: ByteArray): ByteArray {
@@ -656,29 +667,6 @@ class SessionManagerTest {
 //        loggingInterceptor.assertErrorContains("The message was discarded.")
 //    }
 //
-    @Test
-    fun `when initiator handshake is received, but validation of the message fails due to invalid handshake, the message is dropped`() {
-        val sessionId = "some-session-id"
-        val initiatorPublicKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
-        whenever(protocolResponder.generateResponderHello()).thenReturn(mock())
-
-        val initiatorHelloHeader = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
-        val initiatorHelloMessage = InitiatorHelloMessage(initiatorHelloHeader, ByteBuffer.wrap(PEER_KEY.public.encoded),
-            PROTOCOL_MODES, InitiatorHandshakeIdentity(ByteBuffer.wrap(messageDigest.hash(PEER_KEY.public.encoded)), GROUP_ID)
-        )
-        sessionManager.processSessionMessage(LinkInMessage(initiatorHelloMessage))
-
-        val initiatorHandshakeHeader = CommonHeader(MessageType.INITIATOR_HANDSHAKE, 1, sessionId, 3, Instant.now().toEpochMilli())
-        val initiatorHandshake = InitiatorHandshakeMessage(initiatorHandshakeHeader, RANDOM_BYTES, RANDOM_BYTES)
-        whenever(protocolResponder.getInitiatorIdentity())
-            .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
-        whenever(protocolResponder.validatePeerHandshakeMessage(initiatorHandshake, PEER_KEY.public, KeyAlgorithm.ECDSA))
-            .thenThrow(InvalidHandshakeMessageException())
-        val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
-
-        assertThat(responseMessage).isNull()
-        loggingInterceptor.assertSingleWarningContains("The message was discarded.")
-    }
 //
 //    @Test
 //    fun `when initiator handshake is received, but our member info is missing from the network map, the message is dropped`() {

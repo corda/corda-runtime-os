@@ -4,18 +4,19 @@ import net.corda.chunking.datamodel.ChunkingEntities
 import net.corda.chunking.read.ChunkReadService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.write.ConfigWriteService
+import net.corda.cpk.write.CpkWriteService
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.ClassloaderChangeLog.ChangeLogResourceFiles
 import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.db.connection.manager.DbConnectionsRepository
 import net.corda.db.connection.manager.dbFallbackConfig
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
+import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntities
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
@@ -68,21 +69,24 @@ class DBProcessorImpl @Activate constructor(
     @Reference(service = VirtualNodeWriteService::class)
     private val virtualNodeWriteService: VirtualNodeWriteService,
     // TODO - remove this when DB migration is not needed anymore in this processor.
-    @Reference(service = DbConnectionsRepository::class)
-    private val dbConnectionsRepository: DbConnectionsRepository,
     @Reference(service = LiquibaseSchemaMigrator::class)
     private val schemaMigrator: LiquibaseSchemaMigrator,
     @Reference(service = DbAdmin::class)
     private val dbAdmin: DbAdmin,
     @Reference(service = ChunkReadService::class)
     private val chunkReadService: ChunkReadService,
+    @Reference(service = CpkWriteService::class)
+    private val cpkWriteService: CpkWriteService
 ) : DBProcessor {
     init {
         // define the different DB Entity Sets
         //  entities can be in different packages, but all JPA classes must be passed in.
         entitiesRegistry.register(
             CordaDb.CordaCluster.persistenceUnitName,
-            ConfigurationEntities.classes + VirtualNodeEntities.classes + ChunkingEntities.classes
+            ConfigurationEntities.classes
+                    + VirtualNodeEntities.classes
+                    + ChunkingEntities.classes
+                    + CpiEntities.classes
         )
         entitiesRegistry.register(CordaDb.RBAC.persistenceUnitName, RbacEntities.classes)
     }
@@ -99,7 +103,8 @@ class DBProcessorImpl @Activate constructor(
         ::permissionStorageReaderService,
         ::permissionStorageWriterService,
         ::virtualNodeWriteService,
-        ::chunkReadService
+        ::chunkReadService,
+        ::cpkWriteService
     )
     // keeping track of the DB Managers registration handler specifically because the bootstrap process needs to be split
     //  into 2 parts.
@@ -139,7 +144,7 @@ class DBProcessorImpl @Activate constructor(
                     configWriteService.startProcessing(
                         bootstrapConfig!!,
                         bootstrapConfig!!.getInt(CONFIG_INSTANCE_ID),
-                        dbConnectionManager.clusterDbEntityManagerFactory)
+                        dbConnectionManager.getClusterEntityManagerFactory())
 
                     configurationReadService.bootstrapConfig(bootstrapConfig!!)
                 } else {
@@ -167,14 +172,14 @@ class DBProcessorImpl @Activate constructor(
 
     private fun tempDbInitProcess(config: SmartConfig) {
         log.info("Running Cluster DB Migration")
-        migrateDatabase(dbConnectionsRepository.clusterDataSource, listOf(
+        migrateDatabase(dbConnectionManager.getClusterDataSource(), listOf(
             "net/corda/db/schema/config/db.changelog-master.xml"
         ))
 
         val dbConfig = config.getConfig(DB_CONFIG).withFallback(dbFallbackConfig)
 
         // Creating RBAC DB configurations
-        if(null == dbConnectionsRepository.get(CordaDb.RBAC.persistenceUnitName, DbPrivilege.DDL)) {
+        if(null == dbConnectionManager.getDataSource(CordaDb.RBAC.persistenceUnitName, DbPrivilege.DDL)) {
             val ddlRbacUser = "rbac_ddl"
             val ddlRbacPassword = UUID.randomUUID().toString()
             dbAdmin.createDbAndUser(
@@ -188,7 +193,7 @@ class DBProcessorImpl @Activate constructor(
             )
         }
 
-        if(null == dbConnectionsRepository.get(CordaDb.RBAC.persistenceUnitName, DbPrivilege.DML)) {
+        if(null == dbConnectionManager.getDataSource(CordaDb.RBAC.persistenceUnitName, DbPrivilege.DML)) {
             val dmlRbacUser = "rbac_dml"
             val dmlRbacPassword = UUID.randomUUID().toString()
             dbAdmin.createDbAndUser(
@@ -218,7 +223,7 @@ class DBProcessorImpl @Activate constructor(
          *   Until then, just use the cluster DB.
          */
         migrateDatabase(
-            dbConnectionsRepository.clusterDataSource,
+            dbConnectionManager.getClusterDataSource(),
             listOf("net/corda/db/schema/rbac/db.changelog-master.xml"),
             DbSchema.RPC_RBAC)
     }

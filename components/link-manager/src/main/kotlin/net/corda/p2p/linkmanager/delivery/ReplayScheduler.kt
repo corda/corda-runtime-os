@@ -29,6 +29,7 @@ internal class ReplayScheduler<M>(
     private val limitTotalReplays: Boolean,
     private val replaySchedulerConfigKey: String,
     private val replayMessage: (message: M) -> Unit,
+    private val executorServiceFactory: () -> ScheduledExecutorService = { Executors.newSingleThreadScheduledExecutor() },
     private val currentTimestamp: () -> Long = { Instant.now().toEpochMilli() },
     ) : LifecycleWithDominoTile {
 
@@ -138,7 +139,7 @@ internal class ReplayScheduler<M>(
     }
 
     private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-        executorService = Executors.newSingleThreadScheduledExecutor()
+        executorService = executorServiceFactory()
         resources.keep(AutoClosableScheduledExecutorService(executorService))
         val future = CompletableFuture<Unit>()
         future.complete(Unit)

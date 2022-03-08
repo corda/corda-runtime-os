@@ -9,10 +9,10 @@ import net.corda.data.membership.rpc.request.RegistrationStatusRequest
 import net.corda.data.membership.rpc.response.RegistrationResponse
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
-import net.corda.membership.httprpc.MemberOpsClient
-import net.corda.membership.httprpc.types.MemberInfoSubmitted
-import net.corda.membership.httprpc.types.MemberRegistrationRequest
-import net.corda.membership.httprpc.types.RegistrationRequestProgress
+import net.corda.membership.client.MemberOpsClient
+import net.corda.membership.client.dto.MemberInfoSubmittedDto
+import net.corda.membership.client.dto.MemberRegistrationRequestDto
+import net.corda.membership.client.dto.RegistrationRequestProgressDto
 import net.corda.membership.impl.client.lifecycle.MemberOpsClientLifecycleHandler
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.v5.base.concurrent.getOrThrow
@@ -57,7 +57,7 @@ class MemberOpsClientImpl @Activate constructor(
         coordinator.stop()
     }
 
-    override fun startRegistration(memberRegistrationRequest: MemberRegistrationRequest): RegistrationRequestProgress {
+    override fun startRegistration(memberRegistrationRequest: MemberRegistrationRequestDto): RegistrationRequestProgressDto {
         serviceIsRunning()
         val request = MembershipRpcRequest(
             MembershipRpcRequestContext(
@@ -65,7 +65,7 @@ class MemberOpsClientImpl @Activate constructor(
                 Instant.now()
             ),
             RegistrationRequest(
-                memberRegistrationRequest.virtualNodeId,
+                memberRegistrationRequest.holdingIdentityId,
                 RegistrationAction.valueOf(memberRegistrationRequest.action.name)
             )
         )
@@ -73,25 +73,25 @@ class MemberOpsClientImpl @Activate constructor(
         return registrationResponse(request.sendRequest())
     }
 
-    override fun checkRegistrationProgress(virtualNodeId: String): RegistrationRequestProgress {
+    override fun checkRegistrationProgress(holdingIdentityId: String): RegistrationRequestProgressDto {
         serviceIsRunning()
         val request = MembershipRpcRequest(
             MembershipRpcRequestContext(
                 UUID.randomUUID().toString(),
                 Instant.now()
             ),
-            RegistrationStatusRequest(virtualNodeId)
+            RegistrationStatusRequest(holdingIdentityId)
         )
 
         return registrationResponse(request.sendRequest())
     }
 
     @Suppress("SpreadOperator")
-    private fun registrationResponse(response: RegistrationResponse): RegistrationRequestProgress =
-        RegistrationRequestProgress(
+    private fun registrationResponse(response: RegistrationResponse): RegistrationRequestProgressDto =
+        RegistrationRequestProgressDto(
             response.registrationSent,
             response.registrationStatus.toString(),
-            MemberInfoSubmitted(
+            MemberInfoSubmittedDto(
                 mapOf(
                     "registrationProtocolVersion" to response.registrationProtocolVersion.toString(),
                     *response.memberProvidedContext.items.map { it.key to it.value }.toTypedArray(),
