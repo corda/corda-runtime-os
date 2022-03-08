@@ -47,7 +47,6 @@ class CpkReadServiceImpl @Activate constructor(
         val logger: Logger = contextLogger()
 
         const val CPK_READ_GROUP = "cpk.reader"
-        const val CPK_READ_CLIENT = "$CPK_READ_GROUP.client"
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<CpkReadService>(this)
