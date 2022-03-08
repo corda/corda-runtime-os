@@ -6,12 +6,19 @@ import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.CpkChunkId
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.packaging.CPK
+import net.corda.utilities.inputStream
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import java.nio.ByteBuffer
+import java.nio.file.Path
 
 // TODO should be enough for now to keep it simple and not replace/ delete CPK chunks?
-class CpkChunksKafkaReader(private val cpkChunksFileManager: CpkChunksFileManager) : CompactedProcessor<CpkChunkId, Chunk> {
+class CpkChunksKafkaReader(
+    private val tempCpkCacheDir: Path,
+    private val cpkChunksFileManager: CpkChunksFileManager,
+    private val onCpkAssembled: (CPK.Identifier, CPK) -> Unit
+) : CompactedProcessor<CpkChunkId, Chunk> {
     companion object {
         val logger = contextLogger()
     }
@@ -65,9 +72,19 @@ class CpkChunksKafkaReader(private val cpkChunksFileManager: CpkChunksFileManage
         }
 
         if (chunksReceived.allReceived()) {
-            cpkChunksFileManager.assembleCpk(cpkChecksum, chunksReceived.chunks)
+            val cpkPath = cpkChunksFileManager.assembleCpk(cpkChecksum, chunksReceived.chunks)
+            cpkPath?.let {
+                onCpkAssembled(it)
+            } ?: logger.warn("CPK assemble has failed for: $cpkChecksum")
             chunksReceivedPerCpk.remove(cpkChecksum)
         }
+    }
+
+    private fun onCpkAssembled(cpkPath: Path) {
+        val cpk = cpkPath.inputStream().use {
+            CPK.from(it, tempCpkCacheDir)
+        }
+        onCpkAssembled(cpk.metadata.id, cpk)
     }
 
     private class ChunksReceived {

@@ -16,7 +16,7 @@ import java.util.TreeSet
 /**
  * Creates resources on disk, that something needs to clear them on shutdown.
  */
-class CpkChunksFileManagerImpl(private val commonCpkCacheDir: Path) : CpkChunksFileManager {
+class CpkChunksFileManagerImpl(private val cpksAssembleCacheDir: Path) : CpkChunksFileManager {
     companion object {
         val logger = contextLogger()
 
@@ -34,14 +34,14 @@ class CpkChunksFileManagerImpl(private val commonCpkCacheDir: Path) : CpkChunksF
     }
 
     override fun chunkFileExists(chunkId: CpkChunkId): CpkChunkFileLookUp {
-        val cpkXDir = commonCpkCacheDir.resolve(chunkId.cpkChecksum.toCorda().toCpkDirName())
+        val cpkXDir = cpksAssembleCacheDir.resolve(chunkId.cpkChecksum.toCorda().toCpkDirName())
         val filePath = cpkXDir.resolve(chunkId.toFileName())
         return CpkChunkFileLookUp(Files.exists(filePath), filePath)
     }
 
     override fun writeChunkFile(chunkId: CpkChunkId, chunk: Chunk) {
         logger.debug { "Writing CPK chunk file ${chunkId.toFileName()}" }
-        val cpkXDir = commonCpkCacheDir.resolve(chunkId.cpkChecksum.toCorda().toCpkDirName())
+        val cpkXDir = cpksAssembleCacheDir.resolve(chunkId.cpkChecksum.toCorda().toCpkDirName())
         if (!Files.exists(cpkXDir)) {
             logger.debug { "Creating CPK directory: $cpkXDir" }
             Files.createDirectory(cpkXDir)
@@ -55,7 +55,7 @@ class CpkChunksFileManagerImpl(private val commonCpkCacheDir: Path) : CpkChunksF
 
     // TODO need to take care of incomplete CPK assemble as per https://r3-cev.atlassian.net/browse/CORE-4155
     override fun assembleCpk(cpkChecksum: SecureHash, chunkParts: TreeSet<CpkChunkId>): Path? {
-        val cpkXDir = commonCpkCacheDir.resolve(cpkChecksum.toCpkDirName())
+        val cpkXDir = cpksAssembleCacheDir.resolve(cpkChecksum.toCpkDirName())
         logger.info("Assembling CPK on disk: $cpkXDir")
         if (!Files.exists(cpkXDir)) {
             logger.warn("CPK directory should exist but it does not: $cpkXDir")

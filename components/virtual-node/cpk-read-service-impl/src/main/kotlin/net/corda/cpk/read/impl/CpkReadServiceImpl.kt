@@ -20,6 +20,7 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.packaging.CPK
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.annotations.VisibleForTesting
@@ -31,6 +32,7 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [CpkReadService::class])
 class CpkReadServiceImpl @Activate constructor(
@@ -56,6 +58,8 @@ class CpkReadServiceImpl @Activate constructor(
     internal var configSubscription: AutoCloseable? = null
     @VisibleForTesting
     internal var cpkChunksKafkaReaderSubscription: AutoCloseable? = null
+
+    private val cpksById = ConcurrentHashMap<CPK.Identifier, CPK>()
 
     /**
      * Event loop
@@ -114,21 +118,21 @@ class CpkReadServiceImpl @Activate constructor(
         closeResources()
     }
 
-//    override fun get(cpkMetadata: CPK.Metadata): CPK? {
-//        if (reader == null) {
-//            throw CordaRuntimeException("CpkReadServiceImpl has not been initialised yet")
-//        }
-//        return reader!!.get(cpkMetadata)
-//    }
+    override fun get(cpkId: CPK.Identifier): CPK? =
+        cpksById[cpkId]
 
     private fun createCpkChunksKafkaReader(config: SmartConfig) {
         // TODO cpks disk cache location should be made configurable as per https://r3-cev.atlassian.net/browse/CORE-4130
+        val cpksAssembleCacheDir = Paths.get(System.getProperty("java.io.tmpdir"), "cpks-assemble")
+        val cpksCacheDir = Paths.get(System.getProperty("java.io.tmpdir"), "cpks")
         val cpkChunksFileManager = CpkChunksFileManagerImpl(
-            Paths.get(System.getProperty("java.io.tmpdir"), "cpks").apply { Files.createDirectories(this) })
+            cpksAssembleCacheDir.apply { Files.createDirectories(this) })
         cpkChunksKafkaReaderSubscription?.close()
         cpkChunksKafkaReaderSubscription = subscriptionFactory.createCompactedSubscription(
             SubscriptionConfig(CPK_READ_GROUP, Schemas.VirtualNode.CPK_FILE_TOPIC),
-            CpkChunksKafkaReader(cpkChunksFileManager),
+            CpkChunksKafkaReader(cpksCacheDir, cpkChunksFileManager) { cpkId, cpk ->
+                cpksById[cpkId] = cpk
+            },
             config
         ).also { it.start() }
     }
