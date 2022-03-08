@@ -13,7 +13,7 @@ Alternatively, the following command line arguments can be used to define the st
 |---------------------|----------------------------------------------------------------------|
 | --file, -f          | Path to a JSON or YAML file that contains static network information |
 | --name              | Member's X.500 name                                                  |
-| --endpoint-url      | Endpoint base URL                                                    |
+| --endpoint          | Endpoint base URL                                                    |
 | --endpoint-protocol | Version of end-to-end authentication protocol                        |
 
 To generate GroupPolicy using file input:
@@ -29,7 +29,7 @@ Note:
 
 To generate GroupPolicy using string parameters:
 ```shell
-java -Dpf4j.pluginsDir=build/plugins -jar app/build/libs/corda-cli-0.0.1-beta.jar mgm groupPolicy --name="C=GB, L=London, O=Member1" --name="C=GB, L=London, O=Member2" --endpoint-protocol=5 --endpoint-url="http://dummy-url"
+java -Dpf4j.pluginsDir=build/plugins -jar app/build/libs/corda-cli-0.0.1-beta.jar mgm groupPolicy --name="C=GB, L=London, O=Member1" --name="C=GB, L=London, O=Member2" --endpoint-protocol=5 --endpoint="http://dummy-url"
 ```
 Note:
 1. Passing one or more `--name` without specifying endpoint information will throw an error.
@@ -41,7 +41,7 @@ Note:
 1. Sample JSON with `memberNames`
 ```json
 {
-  "endpointUrl": "http://dummy-url",
+  "endpoint": "http://dummy-url",
   "endpointProtocol": 5,
   "memberNames": ["C=GB, L=London, O=Member1", "C=GB, L=London, O=Member2"]
 }
@@ -54,12 +54,12 @@ Note:
     {
       "name": "C=GB, L=London, O=Member1",
       "status": "PENDING",
-      "endpointUrl": "http://dummy-url",
+      "endpoint": "http://dummy-url",
       "endpointProtocol": 5
     },
     {
       "name": "C=GB, L=London, O=Member2",
-      "endpointUrl": "http://dummy-url2",
+      "endpoint": "http://dummy-url2",
       "endpointProtocol": 5
     }
   ]
@@ -68,14 +68,14 @@ Note:
 
 3. Sample YAML with `memberNames`
 ```yaml
-endpointUrl: "http://dummy-url"
+endpoint: "http://dummy-url"
 endpointProtocol: 5
 memberNames: ["C=GB, L=London, O=Member1", "C=GB, L=London, O=Member2"]
 ```
 
-4. Sample YAML with `members` which all use a common endpoint URL and Member1 overrides the protocol version
+4. Sample YAML with `members` which all use a common endpoint, and Member1 overrides the protocol version
 ```yaml
-endpointUrl: "http://dummy-url"
+endpoint: "http://dummy-url"
 endpointProtocol: 5
 members:
     - name: "C=GB, L=London, O=Member1"
