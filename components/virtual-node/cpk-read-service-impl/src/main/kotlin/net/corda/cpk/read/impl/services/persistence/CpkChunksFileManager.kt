@@ -6,7 +6,7 @@ import net.corda.v5.crypto.SecureHash
 import java.nio.file.Path
 import java.util.TreeSet
 
-interface CpkChunksFileManager : AutoCloseable {
+interface CpkChunksFileManager {
     fun chunkFileExists(chunkId: CpkChunkId): CpkChunkFileLookUp
 
     fun writeChunkFile(chunkId: CpkChunkId, chunk: Chunk)

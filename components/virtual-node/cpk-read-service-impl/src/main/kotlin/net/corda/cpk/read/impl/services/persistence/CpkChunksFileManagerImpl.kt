@@ -77,9 +77,4 @@ class CpkChunksFileManagerImpl(private val commonCpkCacheDir: Path) : CpkChunksF
         }
         return cpkFilePath
     }
-
-    override fun close() {
-        // As Barry pointed out we need to make sure commonCpkCacheDir and contents get cleaned on shutdown.
-        // However which component should do that is not clear to me at the moment.
-    }
 }
