@@ -12,6 +12,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import java.nio.ByteBuffer
 import java.nio.file.Path
+import java.util.TreeSet
 
 // TODO should be enough for now to keep it simple and not replace/ delete CPK chunks?
 class CpkChunksKafkaReader(
@@ -72,15 +73,19 @@ class CpkChunksKafkaReader(
         }
 
         if (chunksReceived.allReceived()) {
-            val cpkPath = cpkChunksFileManager.assembleCpk(cpkChecksum, chunksReceived.chunks)
-            cpkPath?.let {
-                val cpk = it.inputStream().use { inStream ->
-                    CPK.from(inStream, tempCpkCacheDir)
-                }
-                onCpkAssembled(cpk.metadata.id, cpk)
-            } ?: logger.warn("CPK assemble has failed for: $cpkChecksum")
-            chunksReceivedPerCpk.remove(cpkChecksum)
+            onAllChunksReceived(cpkChecksum, chunksReceived.chunks)
         }
+    }
+
+    private fun onAllChunksReceived(cpkChecksum: SecureHash, chunks: TreeSet<CpkChunkId>) {
+        val cpkPath = cpkChunksFileManager.assembleCpk(cpkChecksum, chunks)
+        cpkPath?.let {
+            val cpk = it.inputStream().use { inStream ->
+                CPK.from(inStream, tempCpkCacheDir)
+            }
+            onCpkAssembled(cpk.metadata.id, cpk)
+        } ?: logger.warn("CPK assemble has failed for: $cpkChecksum")
+        chunksReceivedPerCpk.remove(cpkChecksum)
     }
 
     private class ChunksReceived {
