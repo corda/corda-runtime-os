@@ -56,8 +56,6 @@ class CpkReadServiceImpl @Activate constructor(
     @VisibleForTesting
     internal var cpkChunksKafkaReaderSubscription: AutoCloseable? = null
 
-//    private var reader: CpkFileReader? = null // not used yet
-
     /**
      * Event loop
      */
