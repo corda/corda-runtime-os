@@ -78,9 +78,16 @@ keytool -genkeypair -alias ec -keyalg EC -storetype JKS -keystore ec_key.jks -st
 
 trust store files are expected to be `.pem` files.
 
-### Populating a custom topics
+### Populating custom topics
 
-The key entries can also be written to a custom topic using the `--network-map-topic` and/or `--locally-hosted-topic` parameter:
+There are two different topics that the entries are written to:
+* The network map records includes all the details on any identity that the link manager should know about.
+* The locally hosted records includes additional data on identities that are locally hosted.
+One can change the topic to which the entries are written to by using the `--network-map-topic` and/or `--locally-hosted-topic` parameters:
 ```
-java -jar applications/tools/p2p-test/network-map-creator/build/bin/corda-network-map-creator-5.0.0.0-SNAPSHOT.jar --netmap-file ~/Desktop/keys-config.json --kafka ~/Desktop/kafka.properties --topic test.topic
+java -jar applications/tools/p2p-test/network-map-creator/build/bin/corda-network-map-creator-5.0.0.0-SNAPSHOT.jar \
+  --netmap-file ~/Desktop/keys-config.json \
+  --kafka ~/Desktop/kafka.properties \
+  --network-map-topic test.1.topic \
+  --locally-hosted-topic test.2.topic \
 ```

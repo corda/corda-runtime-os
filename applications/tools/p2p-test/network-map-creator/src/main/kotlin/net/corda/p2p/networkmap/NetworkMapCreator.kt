@@ -136,7 +136,7 @@ class NetworkMapCreator @Activate constructor(
                     Record(hostingMapTopic, "$x500Name-$groupId", null),
                 )
             }
-            val totalRecords = recordsWithAdditions + recordsWithRemovals
+            val allRecords = recordsWithAdditions + recordsWithRemovals
 
             // TODO - pick up secrets params from startup
             val secretsConfig = ConfigFactory.empty()
@@ -147,9 +147,9 @@ class NetworkMapCreator @Activate constructor(
             val publisher = publisherFactory.createPublisher(PublisherConfig("network-map-creator"), publisherConfig)
 
             publisher.start()
-            publisher.publish(totalRecords).forEach { it.get() }
+            publisher.publish(allRecords).forEach { it.get() }
 
-            consoleLogger.info("Produced ${totalRecords.size} entries on.")
+            consoleLogger.info("Produced ${allRecords.size} entries.")
             shutdown()
         }
     }
