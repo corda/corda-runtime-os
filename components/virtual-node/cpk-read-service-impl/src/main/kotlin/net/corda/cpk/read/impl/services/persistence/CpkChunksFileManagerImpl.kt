@@ -56,6 +56,7 @@ class CpkChunksFileManagerImpl(private val commonCpkCacheDir: Path) : CpkChunksF
         }
     }
 
+    // TODO need to take care of incomplete CPK assemble as per https://r3-cev.atlassian.net/browse/CORE-4155
     override fun assembleCpk(cpkChecksum: SecureHash, chunkParts: TreeSet<CpkChunkId>): Path? {
         val cpkXDir = commonCpkCacheDir.resolve(cpkChecksum.toCpkDirName())
         logger.info("Assembling CPK on disk: $cpkXDir")
