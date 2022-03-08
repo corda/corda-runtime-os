@@ -1,231 +1,235 @@
 package net.corda.p2p.linkmanager.sessions
 
-//import net.corda.lifecycle.domino.logic.DominoTile
-//import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
-//import net.corda.lifecycle.domino.logic.util.ResourcesHolder
-//import net.corda.messaging.api.publisher.config.PublisherConfig
-//import net.corda.messaging.api.records.Record
-//import net.corda.p2p.AuthenticatedMessageAndKey
-//import net.corda.p2p.DataMessagePayload
-//import net.corda.p2p.HeartbeatMessage
-//import net.corda.p2p.LinkInMessage
-//import net.corda.p2p.LinkOutMessage
-//import net.corda.p2p.app.AuthenticatedMessage
-//import net.corda.p2p.app.AuthenticatedMessageHeader
-//import net.corda.p2p.crypto.AuthenticatedDataMessage
-//import net.corda.p2p.crypto.CommonHeader
-//import net.corda.p2p.crypto.InitiatorHandshakeMessage
-//import net.corda.p2p.crypto.InitiatorHelloMessage
-//import net.corda.p2p.crypto.MessageType
-//import net.corda.p2p.crypto.ProtocolMode
-//import net.corda.p2p.crypto.ResponderHandshakeMessage
-//import net.corda.p2p.crypto.ResponderHelloMessage
-//import net.corda.p2p.crypto.internal.InitiatorHandshakeIdentity
-//import net.corda.p2p.crypto.protocol.ProtocolConstants
-//import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
-//import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
-//import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
-//import net.corda.p2p.crypto.protocol.api.AuthenticationResult
-//import net.corda.p2p.crypto.protocol.api.HandshakeIdentityData
-//import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
-//import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
-//import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
-//import net.corda.p2p.crypto.protocol.api.Session
-//import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
-//import net.corda.p2p.linkmanager.LinkManager
-//import net.corda.p2p.linkmanager.LinkManagerCryptoService
-//import net.corda.p2p.linkmanager.LinkManagerNetworkMap
-//import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
-//import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionsNeeded
-//import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
-//import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
-//import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
-//import net.corda.test.util.eventually
-//import net.corda.v5.base.util.millis
-//import net.corda.v5.base.util.toBase64
-//import org.assertj.core.api.Assertions.assertThat
-//import org.bouncycastle.jce.provider.BouncyCastleProvider
-//import org.junit.jupiter.api.AfterEach
-//import org.junit.jupiter.api.Assertions.assertEquals
-//import org.junit.jupiter.api.Assertions.assertTrue
-//import org.junit.jupiter.api.BeforeAll
-//import org.junit.jupiter.api.BeforeEach
-//import org.junit.jupiter.api.Test
-//import org.junit.jupiter.api.fail
-//import org.mockito.Mockito
-//import org.mockito.kotlin.any
-//import org.mockito.kotlin.argumentCaptor
-//import org.mockito.kotlin.doAnswer
-//import org.mockito.kotlin.doReturn
-//import org.mockito.kotlin.eq
-//import org.mockito.kotlin.mock
-//import org.mockito.kotlin.never
-//import org.mockito.kotlin.times
-//import org.mockito.kotlin.verify
-//import org.mockito.kotlin.whenever
-//import java.nio.ByteBuffer
-//import java.security.KeyPairGenerator
-//import java.security.MessageDigest
-//import java.time.Duration
-//import java.time.Instant
-//import java.util.Collections
-//import java.util.concurrent.CompletableFuture
-//import java.util.concurrent.CountDownLatch
-//import java.util.concurrent.TimeUnit
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
+import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
+import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.messaging.api.records.Record
+import net.corda.p2p.AuthenticatedMessageAndKey
+import net.corda.p2p.DataMessagePayload
+import net.corda.p2p.HeartbeatMessage
+import net.corda.p2p.LinkInMessage
+import net.corda.p2p.LinkOutMessage
+import net.corda.p2p.app.AuthenticatedMessage
+import net.corda.p2p.app.AuthenticatedMessageHeader
+import net.corda.p2p.crypto.AuthenticatedDataMessage
+import net.corda.p2p.crypto.CommonHeader
+import net.corda.p2p.crypto.InitiatorHandshakeMessage
+import net.corda.p2p.crypto.InitiatorHelloMessage
+import net.corda.p2p.crypto.MessageType
+import net.corda.p2p.crypto.ProtocolMode
+import net.corda.p2p.crypto.ResponderHandshakeMessage
+import net.corda.p2p.crypto.ResponderHelloMessage
+import net.corda.p2p.crypto.internal.InitiatorHandshakeIdentity
+import net.corda.p2p.crypto.protocol.ProtocolConstants
+import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
+import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
+import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
+import net.corda.p2p.crypto.protocol.api.AuthenticationResult
+import net.corda.p2p.crypto.protocol.api.HandshakeIdentityData
+import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
+import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
+import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
+import net.corda.p2p.crypto.protocol.api.Session
+import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
+import net.corda.p2p.linkmanager.LinkManager
+import net.corda.p2p.linkmanager.LinkManagerCryptoService
+import net.corda.p2p.linkmanager.LinkManagerNetworkMap
+import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
+import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionsNeeded
+import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
+import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
+import net.corda.test.util.eventually
+import net.corda.v5.base.util.millis
+import net.corda.v5.base.util.toBase64
+import org.assertj.core.api.Assertions.assertThat
+import org.bouncycastle.jce.provider.BouncyCastleProvider
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.fail
+import org.mockito.Mockito
+import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
+import java.security.KeyPairGenerator
+import java.security.MessageDigest
+import java.time.Duration
+import java.time.Instant
+import java.util.Collections
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 class SessionManagerTest {
 
-//    companion object {
-//        const val KEY = "KEY"
-//        const val GROUP_ID = "myGroup"
-//        const val MAX_MESSAGE_SIZE = 1024 * 1024
-//        const val SESSIONS_PER_COUNTERPARTIES = 4
-//        val PROTOCOL_MODES = listOf(ProtocolMode.AUTHENTICATED_ENCRYPTION, ProtocolMode.AUTHENTICATION_ONLY)
-//        val RANDOM_BYTES = ByteBuffer.wrap("some-random-data".toByteArray())
-//
-//        private const val longPeriodMilliSec = 10000000L
-//        private val configWithHeartbeat = SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfig(
-//            Duration.ofMillis(100),
-//            Duration.ofMillis(500)
-//        )
-//        private val configNoHeartbeat = SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfig(
-//            Duration.ofMillis(longPeriodMilliSec),
-//            Duration.ofMillis(longPeriodMilliSec)
-//        )
-//
-//        val keyGenerator = KeyPairGenerator.getInstance("EC", BouncyCastleProvider())
-//        val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, BouncyCastleProvider())
-//
-//        val OUR_PARTY = LinkManagerNetworkMap.HoldingIdentity("Alice", GROUP_ID)
-//        val OUR_KEY = keyGenerator.genKeyPair()
-//        val OUR_MEMBER_INFO = LinkManagerNetworkMap.MemberInfo(OUR_PARTY, OUR_KEY.public, KeyAlgorithm.ECDSA,
-//            LinkManagerNetworkMap.EndPoint("http://alice.com"))
-//        val PEER_PARTY = LinkManagerNetworkMap.HoldingIdentity("Bob", GROUP_ID)
-//        val PEER_KEY = keyGenerator.genKeyPair()
-//        val PEER_MEMBER_INFO = LinkManagerNetworkMap.MemberInfo(PEER_PARTY, PEER_KEY.public, KeyAlgorithm.ECDSA,
-//            LinkManagerNetworkMap.EndPoint("http://bob.com"))
-//
-//        lateinit var loggingInterceptor: LoggingInterceptor
-//
-//        @BeforeAll
-//        @JvmStatic
-//        fun setup() {
-//            loggingInterceptor = LoggingInterceptor.setupLogging()
-//        }
-//    }
-//
-//    @BeforeEach
-//    fun startSessionManager() {
-//        sessionManager.start()
-//    }
-//
-//    @AfterEach
-//    fun cleanUp() {
-//        dominoTile.close()
-//        publisherWithDominoLogic.close()
-//        sessionManager.stop()
-//        loggingInterceptor.reset()
-//        resources.close()
-//    }
-//
-//    private lateinit var configHandler: SessionManagerImpl.SessionManagerConfigChangeHandler
-//    private lateinit var heartbeatConfigHandler: SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler
-//    private var createResourcesCallbacks = mutableMapOf<String, ((resources: ResourcesHolder) -> CompletableFuture<Unit>)>()
-//    private val dominoTile = Mockito.mockConstruction(DominoTile::class.java) { mock, context ->
-//        @Suppress("UNCHECKED_CAST")
-//        whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
-//        @Suppress("UNCHECKED_CAST")
-//        whenever(mock.withLifecycleWriteLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
-//        if (context.arguments()[5] is SessionManagerImpl.SessionManagerConfigChangeHandler) {
-//            configHandler = context.arguments()[5] as SessionManagerImpl.SessionManagerConfigChangeHandler
-//        }
-//        if (context.arguments()[5] is SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler) {
-//            heartbeatConfigHandler = context.arguments()[5] as SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler
-//        }
+    companion object {
+        const val KEY = "KEY"
+        const val GROUP_ID = "myGroup"
+        const val MAX_MESSAGE_SIZE = 1024 * 1024
+        const val SESSIONS_PER_COUNTERPARTIES = 4
+        val PROTOCOL_MODES = listOf(ProtocolMode.AUTHENTICATED_ENCRYPTION, ProtocolMode.AUTHENTICATION_ONLY)
+        val RANDOM_BYTES = ByteBuffer.wrap("some-random-data".toByteArray())
+
+        private const val longPeriodMilliSec = 10000000L
+        private val configWithHeartbeat = SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfig(
+            Duration.ofMillis(100),
+            Duration.ofMillis(500)
+        )
+        private val configNoHeartbeat = SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfig(
+            Duration.ofMillis(longPeriodMilliSec),
+            Duration.ofMillis(longPeriodMilliSec)
+        )
+
+        val keyGenerator = KeyPairGenerator.getInstance("EC", BouncyCastleProvider())
+        val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, BouncyCastleProvider())
+
+        val OUR_PARTY = LinkManagerNetworkMap.HoldingIdentity("Alice", GROUP_ID)
+        val OUR_KEY = keyGenerator.genKeyPair()
+        val OUR_MEMBER_INFO = LinkManagerNetworkMap.MemberInfo(OUR_PARTY, OUR_KEY.public, KeyAlgorithm.ECDSA,
+            LinkManagerNetworkMap.EndPoint("http://alice.com"))
+        val PEER_PARTY = LinkManagerNetworkMap.HoldingIdentity("Bob", GROUP_ID)
+        val PEER_KEY = keyGenerator.genKeyPair()
+        val PEER_MEMBER_INFO = LinkManagerNetworkMap.MemberInfo(PEER_PARTY, PEER_KEY.public, KeyAlgorithm.ECDSA,
+            LinkManagerNetworkMap.EndPoint("http://bob.com"))
+
+        lateinit var loggingInterceptor: LoggingInterceptor
+
+        @BeforeAll
+        @JvmStatic
+        fun setup() {
+            loggingInterceptor = LoggingInterceptor.setupLogging()
+        }
+    }
+
+    @BeforeEach
+    fun startSessionManager() {
+        sessionManager.start()
+    }
+
+    @AfterEach
+    fun cleanUp() {
+        dominoTile.close()
+        publisherWithDominoLogic.close()
+        sessionManager.stop()
+        loggingInterceptor.reset()
+        resources.close()
+    }
+
+    private lateinit var configHandler: SessionManagerImpl.SessionManagerConfigChangeHandler
+    private lateinit var heartbeatConfigHandler: SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler
+    private var createResourcesCallbacks = mutableMapOf<String, ((resources: ResourcesHolder) -> CompletableFuture<Unit>)>()
+    private val dominoTile = Mockito.mockConstruction(ComplexDominoTile::class.java) { mock, context ->
+        @Suppress("UNCHECKED_CAST")
+        whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
+        @Suppress("UNCHECKED_CAST")
+        whenever(mock.withLifecycleWriteLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
+        if (context.arguments()[5] is SessionManagerImpl.SessionManagerConfigChangeHandler) {
+            configHandler = context.arguments()[5] as SessionManagerImpl.SessionManagerConfigChangeHandler
+        }
+        if (context.arguments()[5] is SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler) {
+            heartbeatConfigHandler = context.arguments()[5] as SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler
+        }
 //        if (context.arguments()[2] != null) {
 //            @Suppress("UNCHECKED_CAST")
 //            createResourcesCallbacks[context.arguments()[0] as String] =
 //                context.arguments()[2] as ((resources: ResourcesHolder) -> CompletableFuture<Unit>)
 //        }
-//    }
-//    private val publisherWithDominoLogicByClientId = mutableMapOf<String, MutableList<PublisherWithDominoLogic>>()
-//    private val publisherWithDominoLogic = Mockito.mockConstruction(PublisherWithDominoLogic::class.java) { mock, context ->
-//        publisherWithDominoLogicByClientId.compute((context.arguments()[2] as PublisherConfig).clientId) { _, map ->
-//            map?.apply { this.add(mock) } ?: mutableListOf(mock)
-//        }
-//    }
-//
-//    private val networkMap = mock<LinkManagerNetworkMap> {
-//        on { getNetworkType(GROUP_ID) } doReturn LinkManagerNetworkMap.NetworkType.CORDA_5
-//        on { getMemberInfo(OUR_PARTY) } doReturn OUR_MEMBER_INFO
-//        on { getMemberInfo(messageDigest.hash(OUR_KEY.public.encoded), GROUP_ID) } doReturn OUR_MEMBER_INFO
-//        on { getMemberInfo(PEER_PARTY) } doReturn PEER_MEMBER_INFO
-//        on { getMemberInfo(messageDigest.hash(PEER_KEY.public.encoded), GROUP_ID) } doReturn PEER_MEMBER_INFO
-//    }
-//    private val cryptoService = mock<LinkManagerCryptoService> {
-//        on { signData(eq(OUR_KEY.public), any()) } doReturn "signature-from-A".toByteArray()
-//    }
-//    private val pendingSessionMessageQueues = Mockito.mock(LinkManager.PendingSessionMessageQueues::class.java)
-//    private val sessionReplayer = Mockito.mock(InMemorySessionReplayer::class.java)
-//    private val protocolInitiator = mock<AuthenticationProtocolInitiator>()
-//    private val protocolResponder = mock<AuthenticationProtocolResponder>()
-//    private val protocolFactory = mock<ProtocolFactory> {
-//        on { createInitiator(any(), any(), any(), any(), any()) } doReturn protocolInitiator
-//        on { createResponder(any(), any(), any()) } doReturn protocolResponder
-//    }
-//    val resources = ResourcesHolder()
-//    private val sessionManager = SessionManagerImpl(
-//        networkMap,
-//        cryptoService,
-//        pendingSessionMessageQueues,
-//        mock(),
-//        mock(),
-//        mock(),
-//        mock(),
-//        protocolFactory,
-//        sessionReplayer
-//    ).apply {
-//        setRunning()
-//        configHandler.applyNewConfiguration(
-//            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY),
-//            SESSIONS_PER_COUNTERPARTIES),
-//            null,
-//            mock(),
-//        )
-//        heartbeatConfigHandler.applyNewConfiguration(configNoHeartbeat, null, mock())
-//        createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]!!(resources)
-//    }
-//
-//    private fun MessageDigest.hash(data: ByteArray): ByteArray {
-//        this.reset()
-//        this.update(data)
-//        return digest()
-//    }
-//
-//    private val payload = ByteBuffer.wrap("Hi inbound it's outbound here".toByteArray())
-//
-//    private val message = AuthenticatedMessageAndKey(
-//        AuthenticatedMessage(
-//            AuthenticatedMessageHeader(
-//                PEER_PARTY.toHoldingIdentity(),
-//                OUR_PARTY.toHoldingIdentity(),
-//                null,
-//                "messageId",
-//                "", "system-1"
-//            ),
-//            payload
-//        ),
-//        KEY
-//    )
-//    private val authenticatedSession = mock<AuthenticatedSession> {
-//        on { createMac(any()) } doReturn AuthenticationResult(Mockito.mock(CommonHeader::class.java), RANDOM_BYTES.array())
-//    }
-//
-//    private fun setRunning() {
-//        for (tile in dominoTile.constructed()) {
-//            whenever(tile.isRunning).doReturn(true)
-//        }
-//    }
+    }
+    private val publisherWithDominoLogicByClientId = mutableMapOf<String, MutableList<PublisherWithDominoLogic>>()
+    private val publisherWithDominoLogic = Mockito.mockConstruction(PublisherWithDominoLogic::class.java) { mock, context ->
+        publisherWithDominoLogicByClientId.compute((context.arguments()[2] as PublisherConfig).clientId) { _, map ->
+            map?.apply { this.add(mock) } ?: mutableListOf(mock)
+        }
+    }
+
+    private val networkMap = mock<LinkManagerNetworkMap> {
+        on { getNetworkType(GROUP_ID) } doReturn LinkManagerNetworkMap.NetworkType.CORDA_5
+        on { getMemberInfo(OUR_PARTY) } doReturn OUR_MEMBER_INFO
+        on { getMemberInfo(messageDigest.hash(OUR_KEY.public.encoded), GROUP_ID) } doReturn OUR_MEMBER_INFO
+        on { getMemberInfo(PEER_PARTY) } doReturn PEER_MEMBER_INFO
+        on { getMemberInfo(messageDigest.hash(PEER_KEY.public.encoded), GROUP_ID) } doReturn PEER_MEMBER_INFO
+    }
+    private val cryptoService = mock<LinkManagerCryptoService> {
+        on { signData(eq(OUR_KEY.public), any()) } doReturn "signature-from-A".toByteArray()
+    }
+    private val pendingSessionMessageQueues = Mockito.mock(LinkManager.PendingSessionMessageQueues::class.java)
+    private val sessionReplayer = Mockito.mock(InMemorySessionReplayer::class.java)
+    private val protocolInitiator = mock<AuthenticationProtocolInitiator>()
+    private val protocolResponder = mock<AuthenticationProtocolResponder>()
+    private val protocolFactory = mock<ProtocolFactory> {
+        on { createInitiator(any(), any(), any(), any(), any()) } doReturn protocolInitiator
+        on { createResponder(any(), any(), any()) } doReturn protocolResponder
+    }
+    val resources = ResourcesHolder()
+    private val sessionManager = SessionManagerImpl(
+        networkMap,
+        cryptoService,
+        pendingSessionMessageQueues,
+        mock(),
+        mock(),
+        mock(),
+        mock(),
+        mock(),
+        protocolFactory,
+        sessionReplayer,
+        mock(),
+        mock()
+    ).apply {
+        setRunning()
+        configHandler.applyNewConfiguration(
+            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY),
+            SESSIONS_PER_COUNTERPARTIES),
+            null,
+            mock(),
+        )
+        heartbeatConfigHandler.applyNewConfiguration(configNoHeartbeat, null, mock())
+      //  createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]!!(resources)
+    }
+
+    private fun MessageDigest.hash(data: ByteArray): ByteArray {
+        this.reset()
+        this.update(data)
+        return digest()
+    }
+
+    private val payload = ByteBuffer.wrap("Hi inbound it's outbound here".toByteArray())
+
+    private val message = AuthenticatedMessageAndKey(
+        AuthenticatedMessage(
+            AuthenticatedMessageHeader(
+                PEER_PARTY.toHoldingIdentity(),
+                OUR_PARTY.toHoldingIdentity(),
+                null,
+                "messageId",
+                "", "system-1"
+            ),
+            payload
+        ),
+        KEY
+    )
+    private val authenticatedSession = mock<AuthenticatedSession> {
+        on { createMac(any()) } doReturn AuthenticationResult(Mockito.mock(CommonHeader::class.java), RANDOM_BYTES.array())
+    }
+
+    private fun setRunning() {
+        for (tile in dominoTile.constructed()) {
+            whenever(tile.isRunning).doReturn(true)
+        }
+    }
 //
 //    @Test
 //    fun `when no session exists, processing outbound message creates a new session`() {
@@ -652,28 +656,29 @@ class SessionManagerTest {
 //        loggingInterceptor.assertErrorContains("The message was discarded.")
 //    }
 //
-//    @Test
-//    fun `when initiator handshake is received, but validation of the message fails due to invalid handshake, the message is dropped`() {
-//        val sessionId = "some-session-id"
-//        val initiatorPublicKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
-//        whenever(protocolResponder.generateResponderHello()).thenReturn(mock())
-//
-//        val initiatorHelloHeader = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
-//        val initiatorHelloMessage = InitiatorHelloMessage(initiatorHelloHeader, ByteBuffer.wrap(PEER_KEY.public.encoded),
-//            PROTOCOL_MODES, InitiatorHandshakeIdentity(ByteBuffer.wrap(messageDigest.hash(PEER_KEY.public.encoded)), GROUP_ID))
-//        sessionManager.processSessionMessage(LinkInMessage(initiatorHelloMessage))
-//
-//        val initiatorHandshakeHeader = CommonHeader(MessageType.INITIATOR_HANDSHAKE, 1, sessionId, 3, Instant.now().toEpochMilli())
-//        val initiatorHandshake = InitiatorHandshakeMessage(initiatorHandshakeHeader, RANDOM_BYTES, RANDOM_BYTES)
-//        whenever(protocolResponder.getInitiatorIdentity())
-//            .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
-//        whenever(protocolResponder.validatePeerHandshakeMessage(initiatorHandshake, PEER_KEY.public, KeyAlgorithm.ECDSA))
-//            .thenThrow(InvalidHandshakeMessageException())
-//        val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
-//
-//        assertThat(responseMessage).isNull()
-//        loggingInterceptor.assertSingleWarningContains("The message was discarded.")
-//    }
+    @Test
+    fun `when initiator handshake is received, but validation of the message fails due to invalid handshake, the message is dropped`() {
+        val sessionId = "some-session-id"
+        val initiatorPublicKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
+        whenever(protocolResponder.generateResponderHello()).thenReturn(mock())
+
+        val initiatorHelloHeader = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
+        val initiatorHelloMessage = InitiatorHelloMessage(initiatorHelloHeader, ByteBuffer.wrap(PEER_KEY.public.encoded),
+            PROTOCOL_MODES, InitiatorHandshakeIdentity(ByteBuffer.wrap(messageDigest.hash(PEER_KEY.public.encoded)), GROUP_ID)
+        )
+        sessionManager.processSessionMessage(LinkInMessage(initiatorHelloMessage))
+
+        val initiatorHandshakeHeader = CommonHeader(MessageType.INITIATOR_HANDSHAKE, 1, sessionId, 3, Instant.now().toEpochMilli())
+        val initiatorHandshake = InitiatorHandshakeMessage(initiatorHandshakeHeader, RANDOM_BYTES, RANDOM_BYTES)
+        whenever(protocolResponder.getInitiatorIdentity())
+            .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
+        whenever(protocolResponder.validatePeerHandshakeMessage(initiatorHandshake, PEER_KEY.public, KeyAlgorithm.ECDSA))
+            .thenThrow(InvalidHandshakeMessageException())
+        val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
+
+        assertThat(responseMessage).isNull()
+        loggingInterceptor.assertSingleWarningContains("The message was discarded.")
+    }
 //
 //    @Test
 //    fun `when initiator handshake is received, but our member info is missing from the network map, the message is dropped`() {

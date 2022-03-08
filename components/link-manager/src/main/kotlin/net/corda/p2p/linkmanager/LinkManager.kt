@@ -210,10 +210,9 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                             " Sessions: $sessionIds will not be initiated.")
                     emptyList()
                 } else {
-                    state.messages.map {
-                        Record(LINK_OUT_TOPIC, generateKey(), it.second)
-                    } + state.messages.map {
-                        Record(SESSION_OUT_PARTITIONS, it.first, SessionPartitions(partitions))
+                    state.messages.flatMap {
+                        listOf(Record(LINK_OUT_TOPIC, generateKey(), it.second),
+                            Record(SESSION_OUT_PARTITIONS, it.first, SessionPartitions(partitions)))
                     }
                 }
             }

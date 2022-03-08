@@ -116,7 +116,7 @@ open class SessionManagerImpl(
         clock,
         executorService
     )
-    private val outboundSessionPool = AtomicReference<OutboundSessionPool>()
+    private val outboundSessionPool = OutboundSessionPool(heartbeatManager::calculateWeightForSession)
 
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,
@@ -159,9 +159,9 @@ open class SessionManagerImpl(
                 if (oldConfiguration != null) {
                     sessionReplayer.removeAllMessagesFromReplay()
                     heartbeatManager.stopTrackingAllSessions()
-                    val tombstoneRecords = (outboundSessionPool.get().getAllSessionIds() + activeInboundSessions.keys
+                    val tombstoneRecords = (outboundSessionPool.getAllSessionIds() + activeInboundSessions.keys
                             + pendingInboundSessions.keys).map { Record(SESSION_OUT_PARTITIONS, it, null) }
-                    outboundSessionPool.get().clearPool()
+                    outboundSessionPool.clearPool()
 
                     activeInboundSessions.clear()
                     pendingInboundSessions.clear()
@@ -171,9 +171,6 @@ open class SessionManagerImpl(
                         publisher.publish(tombstoneRecords)
                     }
                 }
-                outboundSessionPool.set(
-                    OutboundSessionPool(newConfiguration.sessionsPerCounterparties, heartbeatManager::calculateWeightForSession)
-                )
             }
             configUpdateResult.complete(Unit)
             return configUpdateResult
@@ -193,15 +190,15 @@ open class SessionManagerImpl(
             sessionNegotiationLock.read {
                 val counterparties = getSessionCounterpartiesFromMessage(message.message)
 
-                return@read when (val status = outboundSessionPool.get().getNextSession(counterparties)) {
+                return@read when (val status = outboundSessionPool.getNextSession(counterparties)) {
                     is OutboundSessionPool.SessionPoolStatus.SessionActive -> SessionState.SessionEstablished(status.session)
                     is OutboundSessionPool.SessionPoolStatus.SessionPending -> {
                         pendingOutboundSessionMessageQueues.queueMessage(message, counterparties)
                         SessionState.SessionAlreadyPending
                     }
                     is OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded -> {
-                        val initMessages = genSessionInitMessages(counterparties, status.number)
-                        outboundSessionPool.get().addPendingSessions(counterparties, initMessages.map { it.first })
+                        val initMessages = genSessionInitMessages(counterparties, config.get().sessionsPerCounterparties)
+                        outboundSessionPool.addPendingSessions(counterparties, initMessages.map { it.first })
                         val messages = linkOutMessagesFromSessionInitMessages(counterparties, initMessages)
                             ?: return@read SessionState.CannotEstablishSession
                         SessionState.NewSessionsNeeded(messages)
@@ -217,7 +214,7 @@ open class SessionManagerImpl(
             if (inboundSession != null) {
                 return@withLifecycleLock SessionManager.SessionDirection.Inbound(inboundSession.first, inboundSession.second)
             }
-            val outboundSession = outboundSessionPool.get().getSession(uuid)
+            val outboundSession = outboundSessionPool.getSession(uuid)
             return@withLifecycleLock if (outboundSession is OutboundSessionPool.SessionType.ActiveSession) {
                 SessionManager.SessionDirection.Outbound(outboundSession.sessionCounterparties, outboundSession.session)
             } else {
@@ -262,7 +259,7 @@ open class SessionManagerImpl(
             sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId(sessionId), counterparties)
             sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId(sessionId), counterparties)
             val sessionInitMessage = genSessionInitMessages(counterparties, 1)
-            val timedOut = outboundSessionPool.get().timeoutSession(sessionId, sessionInitMessage.single().first)
+            val timedOut = outboundSessionPool.replaceSession(sessionId, sessionInitMessage.single().first)
             if (!timedOut) {
                 logger.warn("Session with id $sessionId which is not in the pool timed out.")
                 return
@@ -371,7 +368,7 @@ open class SessionManagerImpl(
     }
 
     private fun processResponderHello(message: ResponderHelloMessage): LinkOutMessage? {
-        val sessionType = outboundSessionPool.get()?.getSession(message.header.sessionId) ?: run {
+        val sessionType = outboundSessionPool.getSession(message.header.sessionId) ?: run {
             logger.noSessionWarning(message::class.java.simpleName, message.header.sessionId)
             return null
         }
@@ -446,7 +443,7 @@ open class SessionManagerImpl(
     }
 
     private fun processResponderHandshake(message: ResponderHandshakeMessage): LinkOutMessage? {
-        val sessionType = outboundSessionPool.get().getSession(message.header.sessionId) ?: run {
+        val sessionType = outboundSessionPool.getSession(message.header.sessionId) ?: run {
             logger.noSessionWarning(message::class.java.simpleName, message.header.sessionId)
             return null
         }
@@ -486,7 +483,7 @@ open class SessionManagerImpl(
         sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId(message.header.sessionId), sessionCounterparties)
         heartbeatManager.messageAcknowledged(message.header.sessionId)
         sessionNegotiationLock.write {
-            outboundSessionPool.get().addSession(authenticatedSession)
+            outboundSessionPool.updateAfterSessionEstablished(authenticatedSession)
             pendingOutboundSessionMessageQueues.sessionNegotiatedCallback(
                 this,
                 sessionCounterparties,
