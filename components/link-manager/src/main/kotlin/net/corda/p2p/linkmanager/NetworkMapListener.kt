@@ -7,7 +7,7 @@ interface NetworkMapListener {
     data class GroupInfo(
         val groupId: String,
         val networkType: NetworkType,
-        val protocolMods: Set<ProtocolMode>,
+        val protocolModes: Set<ProtocolMode>,
         val trustedCertificates: List<PemCertificates>,
     )
     fun groupAdded(groupInfo: GroupInfo)
