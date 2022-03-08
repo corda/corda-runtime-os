@@ -84,7 +84,7 @@ class CpkWriteServiceImplTest {
 
     @Test
     fun `on onRegistrationStatusChangeEvent registers to configuration read service for updates`() {
-        whenever(configReadService.registerComponentForUpdates(any(), any())).thenReturn(cpkWriteServiceImpl)
+        whenever(configReadService.registerComponentForUpdates(any(), any())).thenReturn(mock())
 
         cpkWriteServiceImpl.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
         assertNotNull(cpkWriteServiceImpl.configSubscription)
