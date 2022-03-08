@@ -12,7 +12,7 @@
     {
       "name": "membersHash",
       "doc": "Hash value to help validate the member requesting for sync.",
-      "type": "string"
+      "type": "net.corda.data.crypto.SecureHash"
     },
     {
       "name": "bloomFilter",
@@ -22,12 +22,12 @@
     {
       "name": "groupParametersHash",
       "doc": "The hash value of the latest GroupParameters the member can see.",
-      "type": "string"
+      "type": "net.corda.data.crypto.SecureHash"
     },
     {
       "name": "cpiWhitelistHash",
       "doc": "The hash representation of the CpiVersions which are whitelisted on the member side.",
-      "type": "string"
+      "type": "net.corda.data.crypto.SecureHash"
     }
   ]
 }

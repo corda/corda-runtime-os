@@ -7,7 +7,7 @@
     {
       "name": "hashCheck",
       "doc": "Hash value to help identify out-of-sync members.",
-      "type": "string"
+      "type": "net.corda.data.crypto.SecureHash"
     },
     {
       "name": "memberships",
