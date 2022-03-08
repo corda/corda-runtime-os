@@ -125,11 +125,12 @@ class CpkReadServiceImpl @Activate constructor(
         val cpkChunksFileManager =
             CpkChunksFileManagerImpl(cpksAssembleCacheDir.apply { Files.createDirectories(this) })
         cpkChunksKafkaReaderSubscription?.close()
-        cpkChunksKafkaReaderSubscription = subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig(CPK_READ_GROUP, Schemas.VirtualNode.CPK_FILE_TOPIC),
-            CpkChunksKafkaReader(cpksCacheDir, cpkChunksFileManager, this::onCpkAssembled),
-            config
-        ).also { it.start() }
+        cpkChunksKafkaReaderSubscription =
+            subscriptionFactory.createCompactedSubscription(
+                SubscriptionConfig(CPK_READ_GROUP, Schemas.VirtualNode.CPK_FILE_TOPIC),
+                CpkChunksKafkaReader(cpksCacheDir, cpkChunksFileManager, this::onCpkAssembled),
+                config
+            ).also { it.start() }
     }
 
     private fun onCpkAssembled(cpkId: CPK.Identifier, cpk: CPK) {
