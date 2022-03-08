@@ -1,0 +1,29 @@
+# Default values for corda.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+fullnameOverride: ""
+imageTag: "unstable"
+
+db:
+  cluster:
+    url: postgresql://prereqs-postgresql:5432/cordacluster
+    user: user
+    secret: 4LNuCvt+NhGIBwL7gRRhvAZh3k6JRN9NHv0aG3pi1xM=
+
+debug:
+  suspend: "n"
+  server: "y"
+
+kafka:
+  url: prereqs-kafka:9092
+
+workers:
+  crypto:
+    replicas: 1
+  db:
+    replicas: 1
+  flow:
+    replicas: 1
+  rpc:
+    replicas: 1

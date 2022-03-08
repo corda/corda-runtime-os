@@ -6,7 +6,6 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.identity.HoldingIdentity
-import net.corda.flow.manager.fiber.FlowContinuation
 import net.corda.flow.manager.impl.FlowEventContext
 import net.corda.flow.manager.impl.handlers.FlowProcessingException
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -38,17 +37,5 @@ class StartFlowEventHandlerTest {
         assertThrows<FlowProcessingException> {
             handler.preProcess(inputContext)
         }
-    }
-
-    @Test
-    fun `runOrContinue returns FlowContinuation#Run`() {
-        val inputContext = FlowEventContext(Checkpoint(), flowEvent, startFlow, emptyList())
-        assertEquals(FlowContinuation.Run(Unit), handler.runOrContinue(inputContext))
-    }
-
-    @Test
-    fun `postProcess does not modify the context`() {
-        val inputContext = FlowEventContext(Checkpoint(), flowEvent, startFlow, emptyList())
-        assertEquals(inputContext, handler.postProcess(inputContext))
     }
 }

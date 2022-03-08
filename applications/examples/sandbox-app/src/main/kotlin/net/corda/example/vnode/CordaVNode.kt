@@ -124,7 +124,9 @@ class CordaVNode @Activate constructor(
                 FlowStatusKey(clientId, virtualNodeInfo.holdingIdentity),
                 FlowInitiatorType.RPC,
                 clientId,
-                virtualNodeInfo,
+                virtualNodeInfo.holdingIdentity,
+                virtualNodeInfo.cpiIdentifier.name,
+                virtualNodeInfo.holdingIdentity,
                 "com.example.cpk.ExampleFlow",
                 Instant.now(),
             ),  "{\"message\":\"Bongo!\"}"

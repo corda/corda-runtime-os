@@ -6,9 +6,7 @@ import net.corda.flow.manager.FlowStackService
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatingFlow
 
-class FlowStackServiceImpl(
-    checkpoint: Checkpoint
-) : FlowStackService {
+class FlowStackServiceImpl(checkpoint: Checkpoint) : FlowStackService {
 
     private val flowStackItems: MutableList<FlowStackItem>
 
@@ -29,6 +27,8 @@ class FlowStackServiceImpl(
             }
         }
     }
+
+    override val size: Int get() = flowStackItems.size
 
     override fun push(flow: Flow<*>): FlowStackItem {
         val stackItem = FlowStackItem(flow.javaClass.name, flow.getIsInitiatingFlow(), mutableListOf())

@@ -10,7 +10,9 @@ import net.corda.flow.manager.impl.FlowEventContext
 import net.corda.flow.manager.impl.handlers.FlowProcessingException
 import net.corda.flow.manager.impl.handlers.events.FlowEventHandler
 import net.corda.flow.manager.impl.handlers.requests.FlowRequestHandler
+import net.corda.flow.manager.impl.handlers.status.FlowWaitingForHandler
 import net.corda.flow.manager.impl.pipeline.FlowEventPipelineImpl
+import net.corda.flow.manager.impl.pipeline.FlowGlobalPostProcessor
 import net.corda.flow.manager.impl.runner.FlowRunner
 import net.corda.v5.base.util.uncheckedCast
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -27,23 +29,37 @@ class FlowEventPipelineFactoryImplTest {
 
     private val flowRunner = mock<FlowRunner>()
 
+    private val flowGlobalPostProcessor = mock<FlowGlobalPostProcessor>()
+
     private val flowEventHandler = mock<FlowEventHandler<Any>>().apply {
         val casted: FlowEventHandler<Wakeup> = uncheckedCast(this)
         whenever(casted.type).thenReturn(Wakeup::class.java)
+    }
+    private val flowWaitingForHandler = mock<FlowWaitingForHandler<Any>>().apply {
+        val casted: FlowWaitingForHandler<net.corda.data.flow.state.waiting.Wakeup> = uncheckedCast(this)
+        whenever(casted.type).thenReturn(net.corda.data.flow.state.waiting.Wakeup::class.java)
     }
     private val flowRequestHandler = mock<FlowRequestHandler<FlowIORequest.ForceCheckpoint>>().apply {
         whenever(type).thenReturn(FlowIORequest.ForceCheckpoint::class.java)
     }
 
-    private val factory = FlowEventPipelineFactoryImpl(flowRunner, listOf(flowEventHandler), listOf(flowRequestHandler))
+    private val factory = FlowEventPipelineFactoryImpl(
+        flowRunner,
+        flowGlobalPostProcessor,
+        listOf(flowEventHandler),
+        listOf(flowWaitingForHandler),
+        listOf(flowRequestHandler)
+    )
 
     @Test
     fun `Creates a FlowEventPipeline instance`() {
         val checkpoint = Checkpoint()
         val expected = FlowEventPipelineImpl(
             flowEventHandler,
+            mapOf(net.corda.data.flow.state.waiting.Wakeup::class.java to flowWaitingForHandler),
             mapOf(FlowIORequest.ForceCheckpoint::class.java to flowRequestHandler),
             flowRunner,
+            flowGlobalPostProcessor,
             FlowEventContext(
                 checkpoint,
                 flowEvent,
@@ -56,7 +72,13 @@ class FlowEventPipelineFactoryImplTest {
 
     @Test
     fun `Throws a FlowProcessingException if there is no matching event handler`() {
-        val factory = FlowEventPipelineFactoryImpl(flowRunner, emptyList(), listOf(flowRequestHandler))
+        val factory = FlowEventPipelineFactoryImpl(
+            flowRunner,
+            flowGlobalPostProcessor,
+            emptyList(),
+            listOf(flowWaitingForHandler),
+            listOf(flowRequestHandler)
+        )
         assertThrows<FlowProcessingException> {
             factory.create(Checkpoint(), flowEvent)
         }

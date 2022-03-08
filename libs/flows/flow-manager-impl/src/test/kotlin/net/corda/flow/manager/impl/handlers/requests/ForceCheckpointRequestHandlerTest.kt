@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import net.corda.data.flow.state.waiting.Wakeup as WaitingForWakeup
 
 class ForceCheckpointRequestHandlerTest {
 
@@ -26,14 +25,14 @@ class ForceCheckpointRequestHandlerTest {
     private val handler = ForceCheckpointRequestHandler()
 
     @Test
-    fun `Sets the waiting for property to Wakeup`() {
+    fun `Updates the waiting for to Wakeup`() {
         val checkpoint = Checkpoint().apply {
             flowState = StateMachineState()
             flowKey = this@ForceCheckpointRequestHandlerTest.flowKey
         }
         val inputContext = FlowEventContext<Any>(checkpoint, flowEvent, "doesn't matter", emptyList())
-        val outputContext = handler.postProcess(inputContext, FlowIORequest.ForceCheckpoint)
-        assertTrue(outputContext.checkpoint!!.flowState.waitingFor.value is WaitingForWakeup)
+        val waitingFor = handler.getUpdatedWaitingFor(inputContext, FlowIORequest.ForceCheckpoint)
+        assertTrue(waitingFor.value is net.corda.data.flow.state.waiting.Wakeup)
     }
 
     @Test

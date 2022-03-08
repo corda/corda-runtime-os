@@ -1,5 +1,6 @@
 package net.corda.flow.manager.impl.handlers.requests
 
+import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.manager.FlowProcessingExceptionTypes.FLOW_FAILED
 import net.corda.flow.manager.factory.FlowMessageFactory
 import net.corda.flow.manager.fiber.FlowIORequest
@@ -24,9 +25,13 @@ class FlowFailedRequestHandler @Activate constructor(
 
     override val type = FlowIORequest.FlowFailed::class.java
 
+    override fun getUpdatedWaitingFor(context: FlowEventContext<Any>, request: FlowIORequest.FlowFailed): WaitingFor {
+        return WaitingFor(null)
+    }
+
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.FlowFailed): FlowEventContext<Any> {
         val checkpoint = requireCheckpoint(context)
-        checkpoint.setWaitingFor(null)
+
         log.info("Flow [${checkpoint.flowKey.flowId}] failed", request.exception)
 
         val status = flowMessageFactory.createFlowFailedStatusMessage(

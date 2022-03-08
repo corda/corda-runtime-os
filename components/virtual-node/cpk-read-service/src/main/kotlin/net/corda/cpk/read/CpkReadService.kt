@@ -4,5 +4,5 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.packaging.CPK
 
 interface CpkReadService : Lifecycle {
-    fun get(cpkMetadata: CPK.Metadata): CPK?
+    fun get(cpkId: CPK.Identifier): CPK?
 }
