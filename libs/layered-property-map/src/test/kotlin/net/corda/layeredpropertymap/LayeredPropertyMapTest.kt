@@ -7,6 +7,7 @@ import net.corda.v5.base.types.toHexString
 import net.corda.v5.base.util.parse
 import net.corda.v5.base.util.parseList
 import net.corda.v5.base.util.parseOrNull
+import net.corda.v5.base.util.parseSet
 import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.crypto.sha256Bytes
 import org.junit.jupiter.api.Test
@@ -39,9 +40,15 @@ class LayeredPropertyMapTest {
         private const val DUMMY_LIST_PREFIX = "dummyList"
         private const val DUMMY_LIST = "dummyList.%s"
         private val dummyList = listOf(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18)
+        private const val DUMMY_SET_PREFIX = "dummySet"
+        private const val DUMMY_SET = "dummySet.%s"
+        private val dummySet = setOf(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18)
 
-        private fun convertDummyValues(): List<Pair<String, String>> =
+        private fun convertDummyListValues(): List<Pair<String, String>> =
             dummyList.mapIndexed { i, value -> String.format(DUMMY_LIST, i) to value.toString() }
+
+        private fun convertDummySetValues(): List<Pair<String, String>> =
+            dummySet.mapIndexed { i, value -> String.format(DUMMY_SET, i) to value.toString() }
 
         @Suppress("SpreadOperator")
         private fun createLayeredPropertyMapImpl() = LayeredPropertyMapImpl(
@@ -52,7 +59,8 @@ class LayeredPropertyMapTest {
                 DUMMY_OBJECT_TEXT to text,
                 MODIFIED_TIME to initialTime.toString(),
                 NULL to null,
-                *convertDummyValues().toTypedArray(),
+                *convertDummyListValues().toTypedArray(),
+                *convertDummySetValues().toTypedArray(),
                 FAILING_DUMMY_OBJECT_NUMBER to number.toString(),
                 FAILING_LIST_STRUCTURE to number.toString(),
                 "corda.endpoints.2.url" to "localhost3",
@@ -64,9 +72,9 @@ class LayeredPropertyMapTest {
                 "listWithNull.0" to "42",
                 "listWithNull.1" to null,
                 "singlePublicKeyHash" to "single".toByteArray().sha256Bytes().toHexString(),
-                "listPublicKeyHash.0" to "list0".toByteArray().sha256Bytes().toHexString(),
-                "listPublicKeyHash.1" to "list1".toByteArray().sha256Bytes().toHexString(),
-                "listPublicKeyHash.2" to "list2".toByteArray().sha256Bytes().toHexString(),
+                "setPublicKeyHash.0" to "set0".toByteArray().sha256Bytes().toHexString(),
+                "setPublicKeyHash.1" to "set1".toByteArray().sha256Bytes().toHexString(),
+                "setPublicKeyHash.2" to "set2".toByteArray().sha256Bytes().toHexString(),
             ),
             PropertyConverter(
                 mapOf(
@@ -85,17 +93,18 @@ class LayeredPropertyMapTest {
         val single2 = propertyMap.parseOrNull<PublicKeyHash>("singlePublicKeyHash")
         assertEquals(single1, single2)
         assertEquals("single".toByteArray().sha256Bytes().toHexString(), single1.value)
-        val list = propertyMap.parseList<PublicKeyHash>("listPublicKeyHash")
-        assertEquals(3, list.size)
-        assertEquals("list0".toByteArray().sha256Bytes().toHexString(), list[0].value)
-        assertEquals("list1".toByteArray().sha256Bytes().toHexString(), list[1].value)
-        assertEquals("list2".toByteArray().sha256Bytes().toHexString(), list[2].value)
+        val set = propertyMap.parseSet<PublicKeyHash>("setPublicKeyHash")
+        assertEquals(3, set.size)
+        val setContents = set.map { it.value }
+        assertTrue(setContents.contains("set0".toByteArray().sha256Bytes().toHexString()))
+        assertTrue(setContents.contains("set1".toByteArray().sha256Bytes().toHexString()))
+        assertTrue(setContents.contains("set2".toByteArray().sha256Bytes().toHexString()))
     }
 
     @Test
     fun `converter functions should work`() {
         val propertyMap = createLayeredPropertyMapImpl()
-        assertEquals(38, propertyMap.entries.size)
+        assertEquals(56, propertyMap.entries.size)
         assertEquals(number, propertyMap.parse(NUMBER))
         assertEquals(text, propertyMap.parse(TEXT))
         assertEquals(initialTime, propertyMap.parse(MODIFIED_TIME))
@@ -106,7 +115,7 @@ class LayeredPropertyMapTest {
     @Test
     fun `converter functions should work second time around by fetching from cache`() {
         val propertyMap = createLayeredPropertyMapImpl()
-        assertEquals(38, propertyMap.entries.size)
+        assertEquals(56, propertyMap.entries.size)
         assertEquals(number, propertyMap.parse(NUMBER))
         assertEquals(number, propertyMap.parse(NUMBER))
         assertEquals(text, propertyMap.parse(TEXT))
@@ -122,7 +131,7 @@ class LayeredPropertyMapTest {
     @Test
     fun `converter parseOrNull should work second time around by fetching from cache`() {
         val propertyMap = createLayeredPropertyMapImpl()
-        assertEquals(38, propertyMap.entries.size)
+        assertEquals(56, propertyMap.entries.size)
         assertEquals(number, propertyMap.parseOrNull(NUMBER))
         assertEquals(number, propertyMap.parseOrNull(NUMBER))
         assertEquals(text, propertyMap.parseOrNull(TEXT))
@@ -139,11 +148,26 @@ class LayeredPropertyMapTest {
     }
 
     @Test
+    fun `parseSet should be able to parse use prefix without trailing dot`() {
+        val propertyMap = createLayeredPropertyMapImpl()
+        val parsedDummySet = propertyMap.parseSet<Int>(DUMMY_SET_PREFIX)
+        assertEquals(dummySet, parsedDummySet)
+    }
+
+    @Test
     fun `parseList should be able to parse use prefix with trailing dot`() {
         val propertyMap = createLayeredPropertyMapImpl()
         val parsedDummyList = propertyMap.parseList<Int>("$DUMMY_LIST_PREFIX.")
         assertEquals(dummyList, parsedDummyList)
     }
+
+    @Test
+    fun `parseSet should be able to parse use prefix with trailing dot`() {
+        val propertyMap = createLayeredPropertyMapImpl()
+        val parsedDummySet = propertyMap.parseSet<Int>("$DUMMY_SET_PREFIX.")
+        assertEquals(dummySet, parsedDummySet)
+    }
+
 
     @Test
     fun `parseList should be able to parse second time around by fetching from cache`() {
@@ -152,6 +176,15 @@ class LayeredPropertyMapTest {
         assertEquals(dummyList, parsedDummyList1)
         val parsedDummyList2 = propertyMap.parseList<Int>(DUMMY_LIST_PREFIX)
         assertSame(parsedDummyList1, parsedDummyList2)
+    }
+
+    @Test
+    fun `parseSet should be able to parse second time around by fetching from cache`() {
+        val propertyMap = createLayeredPropertyMapImpl()
+        val parsedDummySet1 = propertyMap.parseSet<Int>(DUMMY_SET_PREFIX)
+        assertEquals(dummySet, parsedDummySet1)
+        val parsedDummySet2 = propertyMap.parseSet<Int>(DUMMY_SET_PREFIX)
+        assertSame(parsedDummySet1, parsedDummySet2)
     }
 
     @Test
@@ -166,9 +199,27 @@ class LayeredPropertyMapTest {
     }
 
     @Test
+    fun `parseSet should be able to parse complex objects`() {
+        val propertyMap = createLayeredPropertyMapImpl()
+        val parsedSet = propertyMap.parseSet<DummyEndpointInfo>("corda.endpoints")
+        assertEquals(3, parsedSet.size)
+        val parsedSetContents = parsedSet.toList()
+        for( i in 0 until  3) {
+            assertEquals("localhost${i+1}", parsedSetContents[i].url)
+            assertEquals(i+1, parsedSetContents[i].protocolVersion)
+        }
+    }
+
+    @Test
     fun `parseList should throw ValueNotFoundException when one of the items is null`() {
         val propertyMap = createLayeredPropertyMapImpl()
         assertFailsWith<ValueNotFoundException> { propertyMap.parseList<Int>("listWithNull") }
+    }
+
+    @Test
+    fun `parseSet should throw ValueNotFoundException when one of the items is null`() {
+        val propertyMap = createLayeredPropertyMapImpl()
+        assertFailsWith<ValueNotFoundException> { propertyMap.parseSet<Int>("listWithNull") }
     }
 
     @Test
@@ -241,10 +292,26 @@ class LayeredPropertyMapTest {
     }
 
     @Test
+    fun `parseSet fails when invalid casting occurs`() {
+        val propertyMap = createLayeredPropertyMapImpl()
+        val parsedDummySet = propertyMap.parseSet<Int>(DUMMY_SET_PREFIX)
+        assertEquals(dummySet, parsedDummySet)
+
+        assertFailsWith<ClassCastException> { propertyMap.parseSet<Instant>(DUMMY_SET_PREFIX) }
+    }
+
+    @Test
     fun `parseList returns empty list when no value was found for key prefix`() {
         val propertyMap = createLayeredPropertyMapImpl()
         val nonExistentKeyPrefix = "nonExistentKeyPrefix"
         assertTrue(propertyMap.parseList<String>(nonExistentKeyPrefix).isEmpty())
+    }
+
+    @Test
+    fun `parseSet returns empty list when no value was found for key prefix`() {
+        val propertyMap = createLayeredPropertyMapImpl()
+        val nonExistentKeyPrefix = "nonExistentKeyPrefix"
+        assertTrue(propertyMap.parseSet<String>(nonExistentKeyPrefix).isEmpty())
     }
 
     @Test
@@ -382,5 +449,11 @@ class LayeredPropertyMapTest {
     fun `parseList should throw IllegalArgumentException when the itemKeyPrefix is blank`() {
         val propertyMap = createLayeredPropertyMapImpl()
         assertFailsWith<IllegalArgumentException> { propertyMap.parseList<String>("") }
+    }
+
+    @Test
+    fun `parseSet should throw IllegalArgumentException when the itemKeyPrefix is blank`() {
+        val propertyMap = createLayeredPropertyMapImpl()
+        assertFailsWith<IllegalArgumentException> { propertyMap.parseSet<String>("") }
     }
 }
