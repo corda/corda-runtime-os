@@ -14,6 +14,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
+import java.util.UUID
 
 @Suppress("unused")
 @Component(service = [ VirtualNodeLoader::class, VirtualNodeInfoReadService::class ])
@@ -37,11 +38,14 @@ class VirtualNodeLoaderImpl @Activate constructor(
                 resourcesLookup[CpiIdentifier.fromLegacy(cpi.metadata.id)] = key
             }
         }
-        return VirtualNodeInfo(holdingIdentity, CpiIdentifier(
-            cpi.metadata.id.name,
-            cpi.metadata.id.version,
-            cpi.metadata.id.signerSummaryHash
-        )).also(::put)
+        return VirtualNodeInfo(
+            holdingIdentity,
+            CpiIdentifier(
+                cpi.metadata.id.name,
+                cpi.metadata.id.version,
+                cpi.metadata.id.signerSummaryHash),
+            null, UUID.randomUUID(), null, UUID.randomUUID(), null
+        ).also(::put)
     }
 
     override fun unloadVirtualNode(virtualNodeInfo: VirtualNodeInfo) {
