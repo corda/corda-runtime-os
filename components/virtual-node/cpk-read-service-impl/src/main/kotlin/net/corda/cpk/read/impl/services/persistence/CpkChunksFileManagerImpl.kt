@@ -6,7 +6,8 @@ import net.corda.data.chunking.CpkChunkId
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
-import java.nio.ByteBuffer
+import net.corda.utilities.inputStream
+import net.corda.utilities.outputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
@@ -66,15 +67,12 @@ class CpkChunksFileManagerImpl(private val commonCpkCacheDir: Path) : CpkChunksF
         }
 
         val cpkFilePath = cpkXDir.resolve(cpkChecksum.toCpkFileName())
-        Files.newByteChannel(cpkFilePath, StandardOpenOption.WRITE, StandardOpenOption.CREATE).use { sinkChannel ->
-            var offset = 0L
+        cpkFilePath.outputStream(StandardOpenOption.WRITE, StandardOpenOption.CREATE).use { outStream ->
             chunkParts.forEach {
                 val cpkChunkPath = cpkXDir.resolve(it.toFileName())
-                // TODO is there a better way here to avoid loading all bytes to memory first?
-                val bytes = Files.readAllBytes(cpkChunkPath)
-                sinkChannel.position(offset)
-                sinkChannel.write(ByteBuffer.wrap(bytes))
-                offset += bytes.size
+                cpkChunkPath.inputStream(StandardOpenOption.READ).use { inStream ->
+                    inStream.copyTo(outStream)
+                }
             }
         }
         return cpkFilePath
