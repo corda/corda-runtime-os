@@ -1,6 +1,7 @@
 package net.corda.cpi.upload.endpoints.v1
 
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.libs.cpiupload.CpiUploadManager
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.io.ByteArrayInputStream
 import java.util.UUID
@@ -25,6 +27,7 @@ class CpiUploadRPCOpsImplTest {
     }
 
     private val cpiUploadRPCOpsService = mock<CpiUploadRPCOpsService>()
+    private var cpiInfoReadService = mock<CpiInfoReadService>()
 
     @BeforeEach
     fun setUp() {
@@ -34,7 +37,7 @@ class CpiUploadRPCOpsImplTest {
         coordinatorFactory = mock<LifecycleCoordinatorFactory>().also {
             whenever(it.createCoordinator(any(), any())).thenReturn(coordinator)
         }
-        cpiUploadRPCOpsImpl = CpiUploadRPCOpsImpl(coordinatorFactory, cpiUploadRPCOpsService)
+        cpiUploadRPCOpsImpl = CpiUploadRPCOpsImpl(coordinatorFactory, cpiUploadRPCOpsService, cpiInfoReadService)
         cpiUploadManager = mock()
         whenever(cpiUploadRPCOpsService.cpiUploadManager).thenReturn(cpiUploadManager)
     }
@@ -50,4 +53,13 @@ class CpiUploadRPCOpsImplTest {
         assertNotNull(httpResponse)
         assertEquals(cpiUploadRequestId, httpResponse.id)
     }
+
+    @Test
+    fun `getAllCpis calls InfoReadService to retrieve all virtual nodes`() {
+        val vnodeInfoReadService = mock<CpiInfoReadService>()
+        val rpcOps = CpiUploadRPCOpsImpl(mock(), mock(), vnodeInfoReadService)
+        rpcOps.getAllCpis()
+        verify(vnodeInfoReadService).getAll()
+    }
+
 }
