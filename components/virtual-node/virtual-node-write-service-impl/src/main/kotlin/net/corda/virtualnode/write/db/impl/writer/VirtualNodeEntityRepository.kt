@@ -1,13 +1,16 @@
 package net.corda.virtualnode.write.db.impl.writer
 
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.virtualnode.datamodel.HoldingIdentityEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntityKey
 import net.corda.orm.utils.transaction
 import net.corda.packaging.CPI
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
+import java.security.MessageDigest
 import javax.persistence.EntityManager
 
 /** Reads and writes CPIs, holding identities and virtual nodes to and from the cluster database. */
@@ -15,13 +18,35 @@ internal class VirtualNodeEntityRepository(dbConnectionManager: DbConnectionMana
 
     private val entityManagerFactory = dbConnectionManager.getClusterEntityManagerFactory()
 
+    // temp
+    private fun hashId(name: String, version: String, signerSummaryHash: SecureHash): String {
+        val s = (name + version + (signerSummaryHash?.toHexString() ?: ""))
+        val digest: MessageDigest = MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name)
+        val hash: ByteArray = digest.digest(s.toByteArray())
+        return SecureHash(DigestAlgorithmName.SHA2_256.name, hash)
+            .toHexString()
+    }
+
     /** Stub for reading CPI metadata from the database that returns a dummy value. */
     @Suppress("Unused_parameter", "RedundantNullableReturnType")
     internal fun getCPIMetadata(cpiIdShortHash: String): CPIMetadata? {
-        // TODO - Use `dbConnectionManager` to read from DB.
-        val summaryHash = SecureHash.create("SHA-256:0000000000000000")
-        val cpiId = CPI.Identifier.newInstance("dummy_name", "dummy_version", summaryHash)
-        return CPIMetadata(cpiId, "dummy_cpi_id_short_hash", "dummy_mgm_group_id")
+        // HACK: Brute force finding CPIs for matching short hash until fields are added to the DB
+        entityManagerFactory.transaction { em ->
+            em.createQuery(
+                "SELECT cpi FROM CpiMetadataEntity cpi",
+                CpiMetadataEntity::class.java)
+                .resultList
+                .forEach {
+                    val signerSummaryHash = SecureHash.create(it.signerSummaryHash)
+                    val shortHash = hashId(it.name, it.version, signerSummaryHash)
+                    if (cpiIdShortHash == shortHash) {
+                        val cpiId = CPI.Identifier.newInstance(it.name, it.version, signerSummaryHash)
+                        return CPIMetadata(cpiId, shortHash, it.groupId)
+                    }
+                }
+        }
+
+        return null
     }
 
     /**
