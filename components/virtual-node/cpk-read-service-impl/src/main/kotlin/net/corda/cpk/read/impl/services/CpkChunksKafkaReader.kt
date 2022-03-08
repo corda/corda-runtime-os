@@ -13,7 +13,7 @@ import java.nio.ByteBuffer
 class CpkChunksKafkaReader(private val cpkChunksFileManager: CpkChunksFileManager) : CompactedProcessor<CpkChunkId, Chunk> {
     // Assuming [CompactedProcessor.onSnapshot] and [CompactedProcessor.onNext] are not called concurrently.
     // This is not intended to be used as a cache, as it will not work among workers in different processes.
-    // It is just used to save a disk search to check if all chunks are received.
+    // It is just used to save extra disk searches to check if all chunks are received.
     private val chunksReceivedPerCpk = mutableMapOf<SecureHash, ChunksReceived>()
 
     override val keyClass: Class<CpkChunkId>
