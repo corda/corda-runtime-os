@@ -101,8 +101,6 @@ class CpkReadServiceImpl @Activate constructor(
     private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         logger.info("Configuring CPK Read Service")
         val config = event.config.toMessagingConfig()
-        // TODO fix configuration below
-
         createCpkChunksKafkaReader(config)
         coordinator.updateStatus(LifecycleStatus.UP)
     }
