@@ -33,7 +33,7 @@ Note the absolute path. Update it to reflect your own as relative causes NPE
 
 ### Run Test App
 There are two options for passing the CPK Cache directory to the worker, either it can be published on the configuration kafka topic
-by the setup app (see the application/tools/flow-worker-setpup/config.conf as an example)
+by the setup app (see the application/tools/flow-worker-setup/config.conf as an example)
 or it can be specified as an optional param on the command line (see example below)
 
 ```shell
