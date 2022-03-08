@@ -448,7 +448,7 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(10)
+    @Timeout(5)
     fun `Should generate ECDSA key pair with secp256k1 curve`() {
         val alias = newAlias()
         val scheme = schemeMetadata.findSignatureScheme(ECDSA_SECP256K1_CODE_NAME)
@@ -462,7 +462,7 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(10)
+    @Timeout(5)
     fun `Should generate ECDSA key pair with secp256r1 curve`() {
         val alias = newAlias()
         val scheme = schemeMetadata.findSignatureScheme(ECDSA_SECP256R1_CODE_NAME)
@@ -476,7 +476,7 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(10)
+    @Timeout(5)
     fun `Should generate EdDSA key pair with ED25519 curve`() {
         val alias = newAlias()
         val scheme = schemeMetadata.findSignatureScheme(EDDSA_ED25519_CODE_NAME)
@@ -488,7 +488,7 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(10)
+    @Timeout(5)
     fun `Should generate SPHINCS-256 key pair`() {
         val alias = newAlias()
         val scheme = schemeMetadata.findSignatureScheme(SPHINCS256_CODE_NAME)
@@ -500,7 +500,7 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(10)
+    @Timeout(5)
     fun `Should generate SM2 key pair`() {
         val alias = newAlias()
         val scheme = schemeMetadata.findSignatureScheme(SM2_CODE_NAME)
@@ -514,7 +514,7 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(10)
+    @Timeout(5)
     fun `Should generate GOST3410_GOST3411 key pair`() {
         val alias = newAlias()
         val scheme = schemeMetadata.findSignatureScheme(GOST3410_GOST3411_CODE_NAME)
@@ -535,7 +535,7 @@ class CryptoOperationsTests {
     }
     @ParameterizedTest
     @MethodSource("supportedSchemes")
-    @Timeout(45)
+    @Timeout(30)
     fun `Should find generated public key for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -548,7 +548,7 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedSchemes")
-    @Timeout(45)
+    @Timeout(30)
     fun `Should not find public key when key pair hasn't been generated yet for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -560,7 +560,7 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedSchemes")
-    @Timeout(45)
+    @Timeout(30)
     fun `Should fail signing with unknown alias for all supported schemes`(signatureScheme: SignatureScheme) {
         val alias = newAlias()
         val data = UUID.randomUUID().toString().toByteArray()
@@ -577,7 +577,7 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedSchemes")
-    @Timeout(45)
+    @Timeout(30)
     fun `Should generate keys and then sign and verify for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -620,7 +620,7 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedSchemes")
-    @Timeout(45)
+    @Timeout(30)
     @Suppress("MaxLineLength")
     fun `Signing service should use first known key from CompositeKey when signing using public key overload for all supported schemes`(
         signatureScheme: SignatureScheme
@@ -648,7 +648,7 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedSchemes")
-    @Timeout(45)
+    @Timeout(30)
     fun `SoftCryptoService should fail to use key generated for another member for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -681,7 +681,7 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedWrappingSchemes")
-    @Timeout(45)
+    @Timeout(30)
     fun `Should create fresh key without external id and then sign and verify for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -703,7 +703,7 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedWrappingSchemes")
-    @Timeout(45)
+    @Timeout(30)
     fun `Should create fresh key with external id and then sign and verify for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -726,7 +726,7 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedWrappingSchemes")
-    @Timeout(45)
+    @Timeout(30)
     @Suppress("MaxLineLength")
     fun `Should still be able to use fresh key without external id generated and with previous master wrapping key for all supported schemes`(
         signatureScheme: SignatureScheme
@@ -767,7 +767,7 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedWrappingSchemes")
-    @Timeout(45)
+    @Timeout(30)
     @Suppress("MaxLineLength")
     fun `Should still be able to use fresh key with external id generated and with previous master wrapping key for all supported schemes`(
         signatureScheme: SignatureScheme
@@ -810,7 +810,7 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedWrappingSchemes")
-    @Timeout(45)
+    @Timeout(30)
     @Suppress("MaxLineLength")
     fun `Fresh key service should use first known key from CompositeKey when signing using public key overload for all supported schemes`(
         signatureScheme: SignatureScheme
@@ -837,7 +837,7 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedWrappingSchemes")
-    @Timeout(45)
+    @Timeout(30)
     fun `Should fail to use fresh key to sign generated for different member for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -863,7 +863,7 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedWrappingSchemes")
-    @Timeout(45)
+    @Timeout(30)
     fun `Should fail generating fresh key with unknown wrapping key for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -881,7 +881,7 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedWrappingSchemes")
-    @Timeout(45)
+    @Timeout(30)
     fun `Should fail filtering my keys as it's not implemented yet for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -896,7 +896,7 @@ class CryptoOperationsTests {
     /*
     @ParameterizedTest
     @MethodSource("supportedWrappingSchemes")
-    @Timeout(45)
+    @Timeout(30)
     fun `Should fail filtering my keys as it's not implemented yet for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -910,7 +910,7 @@ class CryptoOperationsTests {
     }
 
      @Test
-    @Timeout(45)
+    @Timeout(30)
     fun `Keys are correctly filtered - none keys belong to us`() {
         val freshKey1 = mockSigningService.generateKeyPair(UUID.randomUUID().toString(), defaultScheme)
         val freshKey2 = keyManagementBackend1.freshKey()
@@ -920,7 +920,7 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(45)
+    @Timeout(30)
     fun `Keys are correctly filtered - some of the keys belong to us`() {
         val freshKey1 = mockSigningService.generateKeyPair(UUID.randomUUID().toString(), defaultScheme)
         val freshKey2 = mockSigningService.generateKeyPair(UUID.randomUUID().toString(), defaultScheme)
