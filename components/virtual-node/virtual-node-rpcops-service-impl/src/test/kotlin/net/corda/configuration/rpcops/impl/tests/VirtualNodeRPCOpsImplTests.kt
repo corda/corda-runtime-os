@@ -77,7 +77,7 @@ class VirtualNodeRPCOpsImplTests {
         hsmConnectionId
     )
 
-    private val rpcRequestTimeoutDuration = 5000
+    private val rpcRequestTimeoutDuration = 1000
 
     @Test
     fun `createAndStartRPCSender starts new RPC sender`() {
