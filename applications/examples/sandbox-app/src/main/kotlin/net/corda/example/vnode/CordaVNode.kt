@@ -10,7 +10,7 @@ import net.corda.data.flow.FlowStatusKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.virtualnode.VirtualNodeInfo
-import net.corda.flow.manager.factory.FlowEventProcessorFactory
+import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.messaging.api.records.Record
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown

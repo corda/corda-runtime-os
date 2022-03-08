@@ -3,7 +3,7 @@ package net.corda.flow.service
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.flow.manager.factory.FlowEventProcessorFactory
+import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
