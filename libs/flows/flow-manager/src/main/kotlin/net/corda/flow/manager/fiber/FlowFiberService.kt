@@ -1,9 +1,11 @@
 package net.corda.flow.manager.fiber
 
+import net.corda.v5.serialization.SingletonSerializeAsToken
+
 /**
  The FlowFiberService provides access to the currently executing [FlowFiber]
  */
-interface FlowFiberService {
+interface FlowFiberService : SingletonSerializeAsToken {
 
     /**
      * @return The executing [FlowFiber]

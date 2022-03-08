@@ -1,7 +1,6 @@
 package net.corda.flow.manager.impl.handlers.requests
 
 import net.corda.data.flow.state.Checkpoint
-import net.corda.data.flow.state.StateMachineState
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.manager.fiber.FlowIORequest
 import net.corda.flow.manager.impl.FlowEventContext
@@ -32,15 +31,8 @@ interface FlowRequestHandler<T : FlowIORequest<*>> {
      * @return The modified [FlowEventContext].
      */
     fun postProcess(context: FlowEventContext<Any>, request: T): FlowEventContext<Any>
-}
 
-/**
- * Sets [StateMachineState.waitingFor].
- *
- * @param value The [WaitingFor.value] to set.
- */
-fun Checkpoint.setWaitingFor(value: Any?) {
-    flowState.waitingFor = WaitingFor(value)
+    fun getUpdatedWaitingFor(context: FlowEventContext<Any>, request: T): WaitingFor
 }
 
 /**

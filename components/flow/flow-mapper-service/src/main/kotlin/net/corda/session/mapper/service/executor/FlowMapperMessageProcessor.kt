@@ -10,7 +10,7 @@ import net.corda.v5.base.util.trace
 
 class FlowMapperMessageProcessor(
     private val flowMapperEventExecutorFactory: FlowMapperEventExecutorFactory
-    ) : StateAndEventProcessor<String, FlowMapperState, FlowMapperEvent> {
+) : StateAndEventProcessor<String, FlowMapperState, FlowMapperEvent> {
 
     companion object {
         private val logger = contextLogger()

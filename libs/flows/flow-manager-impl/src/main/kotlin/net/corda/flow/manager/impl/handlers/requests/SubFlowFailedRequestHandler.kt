@@ -1,5 +1,6 @@
 package net.corda.flow.manager.impl.handlers.requests
 
+import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.manager.fiber.FlowIORequest
 import net.corda.flow.manager.impl.FlowEventContext
 import net.corda.v5.base.util.contextLogger
@@ -14,12 +15,15 @@ class SubFlowFailedRequestHandler : FlowRequestHandler<FlowIORequest.SubFlowFail
 
     override val type = FlowIORequest.SubFlowFailed::class.java
 
+    override fun getUpdatedWaitingFor(context: FlowEventContext<Any>, request: FlowIORequest.SubFlowFailed): WaitingFor {
+        return WaitingFor(null)
+    }
+
     override fun postProcess(
         context: FlowEventContext<Any>,
         request: FlowIORequest.SubFlowFailed
     ): FlowEventContext<Any> {
         val checkpoint = requireCheckpoint(context)
-        checkpoint.setWaitingFor(null)
 
         log.info("Sub-flow [${checkpoint.flowKey.flowId}] failed", request.exception)
         /*

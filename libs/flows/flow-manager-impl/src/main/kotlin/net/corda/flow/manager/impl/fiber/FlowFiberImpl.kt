@@ -3,6 +3,7 @@ package net.corda.flow.manager.impl.fiber
 import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.fibers.FiberScheduler
 import net.corda.data.flow.FlowKey
+import net.corda.data.flow.FlowStackItem
 import net.corda.flow.manager.fiber.FlowContinuation
 import net.corda.flow.manager.fiber.FlowFiber
 import net.corda.flow.manager.fiber.FlowFiberExecutionContext
@@ -10,6 +11,7 @@ import net.corda.flow.manager.fiber.FlowIORequest
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowId
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.Logger
@@ -31,7 +33,7 @@ class FlowFiberImpl<R>(
     }
 
     @Transient
-    private var flowFiberExecutionContext: FlowFiberExecutionContext?=null
+    private var flowFiberExecutionContext: FlowFiberExecutionContext? = null
 
     @Transient
     private var flowCompletion = CompletableFuture<FlowIORequest<*>>()
@@ -57,16 +59,16 @@ class FlowFiberImpl<R>(
         setLoggingContext()
         log.info("Flow starting.")
 
-        try {
+        val result = try {
             suspend(FlowIORequest.InitialCheckpoint)
 
             /**
              * TODOs: Need to review/discuss how/where to ensure the user code can only return
              * a string
              */
-            when (val result = flowLogic.call()){
-                is String -> flowCompletion.complete(FlowIORequest.FlowFinished(result))
-                else ->  throw IllegalStateException("The flow result has to be a string.")
+            when (val result = flowLogic.call()) {
+                is String -> FlowIORequest.FlowFinished(result)
+                else -> throw IllegalStateException("The flow result has to be a string.")
             }
         } catch (t: Throwable) {
             log.error("Flow failed", t)
@@ -78,7 +80,14 @@ class FlowFiberImpl<R>(
                 )
             }
 
-            flowCompletion.complete(FlowIORequest.FlowFailed(t))
+            FlowIORequest.FlowFailed(t)
+        }
+
+        try {
+            closeSessions()
+            flowCompletion.complete(result)
+        } catch (e: CordaRuntimeException) {
+            flowCompletion.complete(FlowIORequest.FlowFailed(e))
         }
     }
 
@@ -104,7 +113,7 @@ class FlowFiberImpl<R>(
                 flowCompletion.complete(FlowIORequest.FlowSuspended(ByteBuffer.wrap(fiberState), request))
                 log.info("Parked.")
             }
-        }catch (e:Throwable){
+        } catch (e: Throwable) {
             throw e
         }
 
@@ -118,13 +127,55 @@ class FlowFiberImpl<R>(
         }
     }
 
+    @Suspendable
+    private fun closeSessions() {
+        val flowStackItem = getRemainingFlowStackItem()
+        if (flowStackItem.sessionIds.isNotEmpty()) {
+            suspend(FlowIORequest.CloseSessions(flowStackItem.sessionIds.toSet()))
+        }
+    }
+
+    @Suppress("ThrowsCount")
+    private fun getRemainingFlowStackItem(): FlowStackItem {
+        val flowStackService = flowFiberExecutionContext?.flowStackService
+        return when {
+            flowStackService == null -> {
+                log.info("Flow [$flowId] should have a single flow stack item when finishing but the stack was null")
+                throw CordaRuntimeException("Flow [$flowId] should have a single flow stack item when finishing but the stack was null")
+            }
+            flowStackService.size > 1 -> {
+                log.info(
+                    "Flow [$flowId] should have a single flow stack item when finishing but contained the following elements instead: " +
+                            "${flowFiberExecutionContext?.flowStackService}"
+                )
+                throw CordaRuntimeException(
+                    "Flow [$flowId] should have a single flow stack item when finishing but contained " +
+                            "${flowFiberExecutionContext?.flowStackService?.size} elements"
+                )
+            }
+            flowStackService.size == 0 -> {
+                log.info("Flow [$flowId] should have a single flow stack item when finishing but was empty")
+                throw CordaRuntimeException("Flow [$flowId] should have a single flow stack item when finishing but was empty")
+            }
+            else -> {
+                when (val item = flowStackService.peek()) {
+                    null -> {
+                        log.info("Flow [$flowId] should have a single flow stack item when finishing but was empty")
+                        throw CordaRuntimeException("Flow [$flowId] should have a single flow stack item when finishing but was empty")
+                    }
+                    else -> item
+                }
+            }
+        }
+    }
+
     private fun Throwable.isUnrecoverable(): Boolean = this is VirtualMachineError && this !is StackOverflowError
 
     private fun initialiseThreadContext() {
         Thread.currentThread().contextClassLoader = flowLogic.javaClass.classLoader
     }
 
-    private fun setLoggingContext(){
+    private fun setLoggingContext() {
         MDC.put("flow-id", flowKey.toString())
         MDC.put("fiber-id", this.getId().toString())
         MDC.put("thread-id", Thread.currentThread().id.toString())
