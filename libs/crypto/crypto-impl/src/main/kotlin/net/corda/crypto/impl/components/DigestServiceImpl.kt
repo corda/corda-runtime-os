@@ -1,6 +1,6 @@
 package net.corda.crypto.impl.components
 
-import net.corda.crypto.DigestAlgorithmFactoryProvider
+import net.corda.crypto.core.DigestAlgorithmFactoryProvider
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestAlgorithm
 import net.corda.v5.cipher.suite.DigestAlgorithmFactory
@@ -83,7 +83,7 @@ class DigestServiceImpl @Activate constructor(
                 val messageDigest = MessageDigest.getInstance(algorithm, provider)
                 return MessageDigestWrapper(messageDigest, algorithm)
             } catch (e: NoSuchAlgorithmException) {
-                throw IllegalArgumentException("Unknown hash algorithm $algorithm")
+                throw IllegalArgumentException("Unknown hash algorithm $algorithm for provider ${provider.name}")
             }
         }
 

@@ -2,18 +2,22 @@ package net.corda.flow.manager.impl.acceptance.dsl
 
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.event.StartRPCFlow
+import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.identity.HoldingIdentity
+import net.corda.flow.manager.FlowSandboxService
 import net.corda.flow.manager.fiber.FlowIORequest
 import net.corda.flow.manager.impl.FlowEventProcessorImpl
-import net.corda.flow.manager.impl.handlers.events.StartRPCFlowEventHandler
+import net.corda.flow.manager.impl.acceptance.getBasicFlowStartContext
+import net.corda.flow.manager.impl.handlers.events.SessionEventHandler
+import net.corda.flow.manager.impl.handlers.events.StartFlowEventHandler
 import net.corda.flow.manager.impl.handlers.events.WakeUpEventHandler
 import net.corda.flow.manager.impl.handlers.requests.CloseSessionsRequestHandler
 import net.corda.flow.manager.impl.handlers.requests.FlowFailedRequestHandler
 import net.corda.flow.manager.impl.handlers.requests.FlowFinishedRequestHandler
 import net.corda.flow.manager.impl.handlers.requests.ForceCheckpointRequestHandler
 import net.corda.flow.manager.impl.handlers.requests.GetFlowInfoRequestHandler
+import net.corda.flow.manager.impl.handlers.requests.InitiateFlowRequestHandler
 import net.corda.flow.manager.impl.handlers.requests.ReceiveRequestHandler
 import net.corda.flow.manager.impl.handlers.requests.SendAndReceiveRequestHandler
 import net.corda.flow.manager.impl.handlers.requests.SendRequestHandler
@@ -21,11 +25,21 @@ import net.corda.flow.manager.impl.handlers.requests.SleepRequestHandler
 import net.corda.flow.manager.impl.handlers.requests.SubFlowFailedRequestHandler
 import net.corda.flow.manager.impl.handlers.requests.SubFlowFinishedRequestHandler
 import net.corda.flow.manager.impl.handlers.requests.WaitForSessionConfirmationsRequestHandler
+import net.corda.flow.manager.impl.handlers.status.StartRPCFlowWaitingForHandler
+import net.corda.flow.manager.impl.handlers.status.WakeUpWaitingForHandler
+import net.corda.flow.manager.impl.handlers.status.sessions.SessionConfirmationWaitingForHandler
+import net.corda.flow.manager.impl.handlers.status.sessions.SessionDataWaitingForHandler
+import net.corda.flow.manager.impl.handlers.status.sessions.SessionInitWaitingForHandler
+import net.corda.flow.manager.impl.pipeline.FlowGlobalPostProcessorImpl
 import net.corda.flow.manager.impl.pipeline.factory.FlowEventPipelineFactoryImpl
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.schema.Schemas
-import java.time.Instant
+import net.corda.session.manager.impl.SessionManagerImpl
+import org.mockito.kotlin.any
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.util.UUID
 
 fun flowEventDSL(dsl: FlowEventDSL.() -> Unit) {
@@ -35,7 +49,16 @@ fun flowEventDSL(dsl: FlowEventDSL.() -> Unit) {
 class FlowEventDSL {
 
     private val flowRunner = MockFlowRunner()
-    private val processor = FlowEventProcessorImpl(FlowEventPipelineFactoryImpl(flowRunner, flowEventHandlers, flowRequestHandlers))
+    private val processor =
+        FlowEventProcessorImpl(
+            FlowEventPipelineFactoryImpl(
+                flowRunner,
+                flowGlobalPostProcessor,
+                flowEventHandlers,
+                flowWaitingForHandlers,
+                flowRequestHandlers
+            )
+        )
 
     private val inputFlowEvents = mutableListOf<Any>()
 
@@ -95,13 +118,9 @@ class FlowEventDSL {
     }
 
     private fun startFlow(flowId: String): Pair<MockFlowFiber, StateAndEventProcessor.Response<Checkpoint>> {
-        val startRPCFlowPayload = StartRPCFlow.newBuilder()
-            .setClientId("client id")
-            .setCpiId("cpi id")
-            .setFlowClassName("flow class name")
-            .setRpcUsername(HoldingIdentity("x500 name", "group id"))
-            .setTimestamp(Instant.now())
-            .setJsonArgs(" { \"json\": \"args\" }")
+        val startRPCFlowPayload = StartFlow.newBuilder()
+            .setStartContext(getBasicFlowStartContext())
+            .setFlowStartArgs(" { \"json\": \"args\" }")
             .build()
 
         val key = FlowKey(flowId, HoldingIdentity("x500 name", "group id"))
@@ -123,22 +142,42 @@ class FlowEventDSL {
     private object ProcessLastOutputFlowEvent
 }
 
+private val sessionManager = SessionManagerImpl()
+
+private val flowGlobalPostProcessor = FlowGlobalPostProcessorImpl(sessionManager)
+
+private val sandboxGroupContext = mock<SandboxGroupContext>()
+
+private val flowSandboxService = mock<FlowSandboxService>().apply {
+    whenever(get(any())).thenReturn(sandboxGroupContext)
+}
+
 // Must be updated when new flow event handlers are added
 private val flowEventHandlers = listOf(
-    StartRPCFlowEventHandler(),
-    WakeUpEventHandler()
+    SessionEventHandler(flowSandboxService, sessionManager),
+    StartFlowEventHandler(),
+    WakeUpEventHandler(),
+)
+
+private val flowWaitingForHandlers = listOf(
+    StartRPCFlowWaitingForHandler(),
+    WakeUpWaitingForHandler(),
+    SessionConfirmationWaitingForHandler(sessionManager),
+    SessionDataWaitingForHandler(flowSandboxService, sessionManager),
+    SessionInitWaitingForHandler(sessionManager)
 )
 
 // Must be updated when new flow request handlers are added
 private val flowRequestHandlers = listOf(
-    CloseSessionsRequestHandler(),
-    FlowFailedRequestHandler(),
-    FlowFinishedRequestHandler(),
+    CloseSessionsRequestHandler(sessionManager),
+    FlowFailedRequestHandler(mock()),
+    FlowFinishedRequestHandler(mock()),
     ForceCheckpointRequestHandler(),
     GetFlowInfoRequestHandler(),
+    InitiateFlowRequestHandler(sessionManager),
     ReceiveRequestHandler(),
-    SendAndReceiveRequestHandler(),
-    SendRequestHandler(),
+    SendAndReceiveRequestHandler(flowSandboxService, sessionManager),
+    SendRequestHandler(flowSandboxService, sessionManager),
     SleepRequestHandler(),
     SubFlowFailedRequestHandler(),
     SubFlowFinishedRequestHandler(),

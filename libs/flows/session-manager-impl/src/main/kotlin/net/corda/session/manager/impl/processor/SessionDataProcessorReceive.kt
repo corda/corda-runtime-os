@@ -1,6 +1,8 @@
 package net.corda.session.manager.impl.processor
 
 import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.session.SessionClose
+import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.impl.SessionEventProcessor
@@ -52,7 +54,7 @@ class SessionDataProcessorReceive(
         val expectedNextSeqNum = receivedEventState.lastProcessedSequenceNum + 1
 
         return if (seqNum >= expectedNextSeqNum) {
-            getSessionStateForDataEvent(sessionState, sessionId, seqNum)
+            getSessionStateForDataEvent(sessionState, sessionId, seqNum, expectedNextSeqNum)
         } else {
             logger.debug {
                 "Duplicate message received on key $key with sessionId $sessionId with sequence number of $seqNum when next" +
@@ -68,7 +70,8 @@ class SessionDataProcessorReceive(
     private fun getSessionStateForDataEvent(
         sessionState: SessionState,
         sessionId: String,
-        seqNum: Int
+        seqNum: Int,
+        expectedNextSeqNum: Int
     ): SessionState {
         val receivedEventState = sessionState.receivedEventsState
         val currentStatus = sessionState.status
@@ -76,10 +79,8 @@ class SessionDataProcessorReceive(
         //store data event received regardless of current state status
         receivedEventState.undeliveredMessages = receivedEventState.undeliveredMessages.plus(sessionEvent)
 
-        //If in state of WAIT_FOR_FINAL_ACK/CLOSED we should not be receiving data messages with a valid seqNum
-        return if (currentStatus == SessionStateType.WAIT_FOR_FINAL_ACK || currentStatus == SessionStateType.ERROR
-            || currentStatus == SessionStateType.CLOSED
-        ) {
+        //
+        return if (isSessionMismatch(receivedEventState, expectedNextSeqNum, currentStatus)) {
             val errorMessage = "Received data message on key $key with sessionId $sessionId with sequence number of $seqNum when status" +
                     " is $currentStatus. Session mismatch error. SessionState: $sessionState"
             logger.error(errorMessage)
@@ -97,5 +98,25 @@ class SessionDataProcessorReceive(
                 )
             }
         }
+    }
+
+    /**
+     * If the session is the wrong state or a new data message is received after close was already received then there has been a session
+     * mismatch error.
+     * If in state of WAIT_FOR_FINAL_ACK/ERROR/CLOSED we should not be receiving data messages with a valid seqNum or if its a new
+     * data message when the session is closing. Out of order data messages are allowed if they have seqNum lower than the close received.
+     * @param receivedEventState Received events state.
+     * @param expectedNextSeqNum the next sequence number this party is expecting to receive
+     * @param currentStatus To validate the state is valid to receive new messages
+     * @return True if there is a mismatch of messages between parties, false otherwise.
+     */
+    private fun isSessionMismatch(receivedEventState: SessionProcessState, expectedNextSeqNum: Int, currentStatus: SessionStateType) :
+            Boolean {
+        val receivedCloseSeqNum = receivedEventState.undeliveredMessages.find { it.payload is SessionClose }?.sequenceNum
+        val otherPartyClosingMismatch = receivedCloseSeqNum != null && receivedCloseSeqNum <= expectedNextSeqNum
+        val thisPartyClosingMismatch = receivedCloseSeqNum == null && currentStatus == SessionStateType.CLOSING
+        val statusMismatch = currentStatus == SessionStateType.WAIT_FOR_FINAL_ACK || currentStatus == SessionStateType.ERROR
+                || currentStatus == SessionStateType.CLOSED
+        return otherPartyClosingMismatch || thisPartyClosingMismatch || statusMismatch
     }
 }

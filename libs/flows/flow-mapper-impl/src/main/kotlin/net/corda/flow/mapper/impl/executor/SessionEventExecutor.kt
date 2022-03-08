@@ -41,7 +41,7 @@ class SessionEventExecutor(
         val counterpartySessionId = toggleSessionId(sessionEvent.sessionId)
         val record = Record(
             Schemas.P2P.P2P_OUT_TOPIC, counterpartySessionId, FlowMapperEvent(
-                SessionEvent(MessageDirection.OUTBOUND, instant.toEpochMilli(), counterpartySessionId, null,
+                SessionEvent(MessageDirection.OUTBOUND, instant, counterpartySessionId, null,
                     SessionError(ExceptionEnvelope(
                             "FlowMapper-SessionExpired",
                             "Tried to process session event for expired session with sessionId $counterpartySessionId"
@@ -57,10 +57,9 @@ class SessionEventExecutor(
      * Toggles the sessionId for the event and output the session event to the correct topic and key
      */
     private fun processOtherSessionEvents(flowMapperState: FlowMapperState): FlowMapperResult {
-        val sessionId = toggleSessionId(eventKey)
-        sessionEvent.sessionId = sessionId
-
         val outputRecord = if (messageDirection == MessageDirection.OUTBOUND) {
+            val sessionId = toggleSessionId(eventKey)
+            sessionEvent.sessionId = sessionId
             Record(outputTopic, sessionId, FlowMapperEvent(sessionEvent))
         } else {
             Record(outputTopic, flowMapperState.flowKey, FlowEvent(flowMapperState.flowKey, sessionEvent))

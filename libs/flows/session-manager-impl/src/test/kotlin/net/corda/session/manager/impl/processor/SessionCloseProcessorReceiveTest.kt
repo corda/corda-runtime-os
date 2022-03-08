@@ -15,7 +15,7 @@ class SessionCloseProcessorReceiveTest {
 
     @Test
     fun testNullState() {
-        val sessionEvent = SessionEvent(MessageDirection.INBOUND, 1, "sessionId", 3, SessionClose())
+        val sessionEvent = SessionEvent(MessageDirection.INBOUND, Instant.now(), "sessionId", 3, SessionClose())
         val result = SessionCloseProcessorReceive("key", null, sessionEvent, Instant.now()).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.ERROR)
@@ -25,7 +25,7 @@ class SessionCloseProcessorReceiveTest {
 
     @Test
     fun `Receive a duplicate close when status is CLOSING`() {
-        val sessionEvent = SessionEvent(MessageDirection.INBOUND, 1, "sessionId", 1, SessionClose())
+        val sessionEvent = SessionEvent(MessageDirection.INBOUND, Instant.now(), "sessionId", 1, SessionClose())
         val inputState = buildSessionState(
             SessionStateType.CLOSING, 2, mutableListOf(sessionEvent), 0, mutableListOf()
         )
@@ -39,7 +39,7 @@ class SessionCloseProcessorReceiveTest {
 
     @Test
     fun `Receive a close when status is ERROR`() {
-        val sessionEvent = SessionEvent(MessageDirection.INBOUND, 1, "sessionId", 1, SessionClose())
+        val sessionEvent = SessionEvent(MessageDirection.INBOUND, Instant.now(), "sessionId", 1, SessionClose())
         val inputState = buildSessionState(
             SessionStateType.ERROR, 0, mutableListOf(), 0, mutableListOf()
         )
@@ -53,7 +53,7 @@ class SessionCloseProcessorReceiveTest {
 
     @Test
     fun `Receive a close when status is CONFIRMED`() {
-        val sessionEvent = SessionEvent(MessageDirection.INBOUND, 1, "sessionId", 1, SessionClose())
+        val sessionEvent = SessionEvent(MessageDirection.INBOUND, Instant.now(), "sessionId", 1, SessionClose())
         val inputState = buildSessionState(
             SessionStateType.CONFIRMED, 0, mutableListOf(), 0, mutableListOf()
         )
@@ -67,7 +67,7 @@ class SessionCloseProcessorReceiveTest {
 
     @Test
     fun `Receive a close when status is CREATED`() {
-        val sessionEvent = SessionEvent(MessageDirection.INBOUND, 1, "sessionId", 1, SessionClose())
+        val sessionEvent = SessionEvent(MessageDirection.INBOUND, Instant.now(), "sessionId", 1, SessionClose())
         val inputState = buildSessionState(
             SessionStateType.CREATED, 0, mutableListOf(), 0, mutableListOf()
         )
@@ -81,7 +81,7 @@ class SessionCloseProcessorReceiveTest {
 
     @Test
     fun `Receive a close when status is CLOSING`() {
-        val sessionEvent = SessionEvent(MessageDirection.INBOUND, 1, "sessionId", 1, SessionClose())
+        val sessionEvent = SessionEvent(MessageDirection.INBOUND, Instant.now(), "sessionId", 1, SessionClose())
         val inputState = buildSessionState(
             SessionStateType.CLOSING, 0, mutableListOf(), 0, mutableListOf()
         )
@@ -95,7 +95,7 @@ class SessionCloseProcessorReceiveTest {
 
     @Test
     fun `Receive a close when status is CLOSING but some sent messages not acked`() {
-        val sessionEvent = SessionEvent(MessageDirection.INBOUND, 1, "sessionId", 1, SessionClose())
+        val sessionEvent = SessionEvent(MessageDirection.INBOUND, Instant.now(), "sessionId", 1, SessionClose())
         val inputState = buildSessionState(
             SessionStateType.CLOSING, 0, mutableListOf(), 0, mutableListOf(SessionEvent())
         )

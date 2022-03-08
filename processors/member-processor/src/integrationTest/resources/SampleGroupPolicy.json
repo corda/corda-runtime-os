@@ -1,7 +1,7 @@
 {
   "fileFormatVersion": 1,
   "groupId": "ABC123",
-  "registrationProtocol": "net.corda.membership.staticnetwork.StaticMemberRegistrationService",
+  "registrationProtocol": "net.corda.membership.impl.registration.staticnetwork.StaticMemberRegistrationService",
   "synchronisationProtocolFactory": "net.corda.v5.mgm.MGMSynchronisationProtocolFactory",
   "protocolParameters": {
     "identityTrustStore": [
@@ -13,6 +13,8 @@
       "-----BEGIN CERTIFICATE-----\nMIIDdTCCKSZp4A==\n-----END CERTIFICATE-----",
       "-----BEGIN CERTIFICATE-----\nMIIFPDCCIlifT20M\n-----END CERTIFICATE-----"
     ],
+    "tlsPki": "C5",
+    "p2pProtocolMode": "AUTHENTICATED_ENCRYPTION",
     "mgmInfo": {
       "name": "C=GB, L=London, O=Corda Network, OU=MGM, CN=Corda Network MGM",
       "sessionKey": "-----BEGIN PUBLIC KEY-----\nMFkwEwYHK+B3YGgcIALw==\n-----END PUBLIC KEY-----\n",
@@ -66,39 +68,39 @@
         "optionalMemberInfo" : [
         ]
       }
-    }
-  },
-  "staticNetwork": {
-    "mgm": {
-      "keyAlias": "mgm-alias"
     },
-    "members": [
-      {
-        "name": "C=GB, L=London, O=Alice",
-        "keyAlias": "alice-alias",
-        "rotatedKeyAlias-1": "alice-historic-alias-1",
-        "memberStatus": "ACTIVE",
-        "endpointUrl-1": "https://alice.corda5.r3.com:10000",
-        "endpointProtocol-1": 1
+    "staticNetwork": {
+      "mgm": {
+        "keyAlias": "mgm-alias"
       },
-      {
-        "name": "C=GB, L=London, O=Bob",
-        "keyAlias": "bob-alias",
-        "rotatedKeyAlias-1": "bob-historic-alias-1",
-        "rotatedKeyAlias-2": "bob-historic-alias-2",
-        "memberStatus": "ACTIVE",
-        "endpointUrl-1": "https://bob.corda5.r3.com:10000",
-        "endpointProtocol-1": 1
-      },
-      {
-        "name": "C=GB, L=London, O=Charlie",
-        "keyAlias": "charlie-alias",
-        "memberStatus": "SUSPENDED",
-        "endpointUrl-1": "https://charlie.corda5.r3.com:10000",
-        "endpointProtocol-1": 1,
-        "endpointUrl-2": "https://charlie-dr.corda5.r3.com:10001",
-        "endpointProtocol-2": 1
-      }
-    ]
+      "members": [
+        {
+          "name": "C=GB, L=London, O=Alice",
+          "keyAlias": "alice-alias",
+          "rotatedKeyAlias-1": "alice-historic-alias-1",
+          "memberStatus": "ACTIVE",
+          "endpointUrl-1": "https://alice.corda5.r3.com:10000",
+          "endpointProtocol-1": 1
+        },
+        {
+          "name": "C=GB, L=London, O=Bob",
+          "keyAlias": "bob-alias",
+          "rotatedKeyAlias-1": "bob-historic-alias-1",
+          "rotatedKeyAlias-2": "bob-historic-alias-2",
+          "memberStatus": "ACTIVE",
+          "endpointUrl-1": "https://bob.corda5.r3.com:10000",
+          "endpointProtocol-1": 1
+        },
+        {
+          "name": "C=GB, L=London, O=Charlie",
+          "keyAlias": "charlie-alias",
+          "memberStatus": "SUSPENDED",
+          "endpointUrl-1": "https://charlie.corda5.r3.com:10000",
+          "endpointProtocol-1": 1,
+          "endpointUrl-2": "https://charlie-dr.corda5.r3.com:10001",
+          "endpointProtocol-2": 1
+        }
+      ]
+    }
   }
 }

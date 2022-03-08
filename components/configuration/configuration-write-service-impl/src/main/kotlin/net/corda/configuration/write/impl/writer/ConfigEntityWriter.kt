@@ -9,7 +9,9 @@ import net.corda.orm.utils.transaction
 import java.time.Clock
 
 /** A gateway for writing configuration entities to the cluster database. */
-internal class ConfigEntityWriter(private val dbConnectionManager: DbConnectionManager) {
+internal class ConfigEntityWriter(dbConnectionManager: DbConnectionManager) {
+    private val entityManagerFactory = dbConnectionManager.getClusterEntityManagerFactory()
+
     /**
      * Creates the [ConfigEntity] and [ConfigAuditEntity] represented by [req], using [clock] to generate the current
      * time.
@@ -27,8 +29,7 @@ internal class ConfigEntityWriter(private val dbConnectionManager: DbConnectionM
     fun writeEntities(req: ConfigurationManagementRequest, clock: Clock): ConfigEntity {
         val newConfig = ConfigEntity(req.section, req.config, req.schemaVersion, clock.instant(), req.updateActor)
         val newConfigAudit = ConfigAuditEntity(newConfig)
-
-        return dbConnectionManager.clusterDbEntityManagerFactory.createEntityManager().transaction { entityManager ->
+        return entityManagerFactory.transaction { entityManager ->
             val existingConfig = entityManager.find(ConfigEntity::class.java, newConfig.section)
             val updatedConfig = existingConfig?.apply { update(newConfig) } ?: newConfig
 

@@ -31,11 +31,8 @@ dependencies {
     implementation "com.esotericsoftware:kryo:$kryoVersion"
     implementation project(path: ':libs:serialization:kryo-serializers', configuration: 'bundle')
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
-    implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
-    implementation "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion"
     implementation "org.slf4j:slf4j-api"
-
-    implementation project(":libs:crypto:crypto-client")
+    
     implementation project(":libs:sandbox")
     implementation project(":libs:serialization:serialization-checkpoint-api")
     implementation project(path: ':libs:serialization:serialization-encoding', configuration: 'bundle')
@@ -49,7 +46,6 @@ dependencies {
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "net.i2p.crypto:eddsa:$eddsaVersion"
     testRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
     testRuntimeOnly "co.paralleluniverse:quasar-core-osgi:$quasarVersion:agent"
 
@@ -59,7 +55,7 @@ dependencies {
     integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
     integrationTestRuntimeOnly "co.paralleluniverse:quasar-core-osgi:$quasarVersion:agent"
 
-    integrationTestRuntimeOnly project(':libs:crypto:crypto-client')
+    integrationTestRuntimeOnly project(':libs:crypto:crypto-core')
     integrationTestRuntimeOnly project(':libs:crypto:crypto-impl')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:inmemory-messaging-impl')

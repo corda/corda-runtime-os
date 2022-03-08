@@ -5,11 +5,10 @@ import net.corda.httprpc.exception.ServiceUnavailableException
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.lifecycle.createCoordinator
-import net.corda.membership.httprpc.MemberRegistrationRpcOps
-import net.corda.membership.httprpc.MembershipRpcOpsClient
-import net.corda.membership.httprpc.types.MemberRegistrationRequest
-import net.corda.membership.httprpc.types.RegistrationRequestProgress
+import net.corda.membership.client.MemberOpsClient
+import net.corda.membership.httprpc.v1.MemberRegistrationRpcOps
+import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
+import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgress
 import net.corda.membership.impl.httprpc.v1.lifecycle.RegistrationRpcOpsLifecycleHandler
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
@@ -21,8 +20,8 @@ import org.slf4j.Logger
 class MemberRegistrationRpcOpsImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = MembershipRpcOpsClient::class)
-    private val membershipRpcOpsClient: MembershipRpcOpsClient
+    @Reference(service = MemberOpsClient::class)
+    private val memberOpsClient: MemberOpsClient
 ) : MemberRegistrationRpcOps, PluggableRPCOps<MemberRegistrationRpcOps>, Lifecycle {
     companion object {
         private val logger: Logger = contextLogger()
@@ -58,12 +57,12 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
 
     override fun startRegistration(memberRegistrationRequest: MemberRegistrationRequest): RegistrationRequestProgress {
         serviceIsRunning()
-        return membershipRpcOpsClient.startRegistration(memberRegistrationRequest)
+        return memberOpsClient.startRegistration(memberRegistrationRequest.toDto()).fromDto()
     }
 
-    override fun checkRegistrationProgress(virtualNodeId: String): RegistrationRequestProgress {
+    override fun checkRegistrationProgress(holdingIdentityId: String): RegistrationRequestProgress {
         serviceIsRunning()
-        return membershipRpcOpsClient.checkRegistrationProgress(virtualNodeId)
+        return memberOpsClient.checkRegistrationProgress(holdingIdentityId).fromDto()
     }
 
     private fun serviceIsRunning() {

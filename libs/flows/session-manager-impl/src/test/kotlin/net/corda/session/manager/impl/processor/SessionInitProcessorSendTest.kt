@@ -4,9 +4,9 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionInit
-import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
+import net.corda.session.manager.impl.buildSessionState
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.time.Instant
@@ -14,23 +14,26 @@ import java.time.Instant
 class SessionInitProcessorSendTest {
 
     @Test
-    fun testNonNullState() {
+    fun `Send init when state is not null`() {
         val initiatingIdentity = HoldingIdentity("ALice", "group1")
         val initiatedIdentity = HoldingIdentity("Bob", "group1")
-        val sessionInitProcessor = SessionInitProcessorSend("key", SessionState(), SessionEvent(MessageDirection.OUTBOUND, System
-            .currentTimeMillis(),
-            "sessionId",1, SessionInit("flow", "cpiId", FlowKey(), initiatedIdentity, initiatingIdentity, null)), Instant.now())
+        val sessionInit = SessionEvent(MessageDirection.OUTBOUND, Instant.now(), "sessionId",1, SessionInit("flow", "cpiId", FlowKey(),
+            initiatedIdentity, initiatingIdentity, null))
 
-        val sessionState = sessionInitProcessor.execute()
+        val sessionState = buildSessionState(SessionStateType.CREATED, 0, listOf(), 1, listOf(sessionInit))
+        val sessionInitProcessor = SessionInitProcessorSend("key", sessionState, sessionInit, Instant.now())
 
-        assertThat(sessionState).isNotNull
+        val updatedState = sessionInitProcessor.execute()
+
+        assertThat(updatedState).isNotNull
+        assertThat(updatedState.status).isEqualTo(SessionStateType.ERROR)
     }
 
     @Test
-    fun testSessionInitToSend() {
+    fun `Send session Init`() {
         val initiatingIdentity = HoldingIdentity("ALice", "group1")
         val initiatedIdentity = HoldingIdentity("Bob", "group1")
-        val sessionInitEvent = SessionEvent(MessageDirection.OUTBOUND, System.currentTimeMillis(),
+        val sessionInitEvent = SessionEvent(MessageDirection.OUTBOUND, Instant.now(),
             "sessionId",1, SessionInit("flow", "cpiId", FlowKey(), initiatedIdentity, initiatingIdentity, null))
         val sessionInitProcessor = SessionInitProcessorSend("key", null, sessionInitEvent, Instant.now())
 

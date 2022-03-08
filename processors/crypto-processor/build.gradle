@@ -17,18 +17,15 @@ dependencies {
     implementation 'net.corda:corda-base'
     implementation "net.corda:corda-cipher-suite"
     implementation "net.corda:corda-config-schema"
-    implementation "net.corda:corda-crypto"
     implementation "net.corda:corda-topic-schema"
-    implementation "net.i2p.crypto:eddsa:$eddsaVersion"
-    implementation "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion"
-    implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
 
     implementation project(':components:configuration:configuration-read-service')
+    implementation project(':components:crypto:crypto-client')
     implementation project(':components:crypto:crypto-persistence')
     implementation project(':components:crypto:crypto-service')
     implementation project(':libs:configuration:configuration-core')
+    implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:crypto:crypto-impl')
-    implementation project(':libs:crypto:crypto-client')
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(":libs:messaging:messaging")
 

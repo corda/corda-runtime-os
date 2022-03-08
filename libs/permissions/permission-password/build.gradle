@@ -13,7 +13,7 @@ dependencies {
 
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
-    implementation project(":libs:crypto:crypto-client")
+    implementation project(":libs:crypto:crypto-core")
     implementation "org.apache.commons:commons-text:$commonsTextVersion"
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"

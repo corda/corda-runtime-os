@@ -2,11 +2,12 @@ package net.corda.p2p.gateway
 
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.handler.codec.http.HttpResponseStatus
+import net.corda.data.identity.HoldingIdentity
 import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.domino.logic.DependenciesVerifier
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.DominoTileState
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.messaging.api.processor.EventLogProcessor
@@ -18,6 +19,7 @@ import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
 import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
+import net.corda.p2p.GatewayTruststore
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutHeader
 import net.corda.p2p.LinkOutMessage
@@ -26,20 +28,31 @@ import net.corda.p2p.SessionPartitions
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.CommonHeader
 import net.corda.p2p.crypto.MessageType
+import net.corda.p2p.gateway.messaging.ConnectionConfiguration
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
+import net.corda.p2p.gateway.messaging.RevocationConfig
+import net.corda.p2p.gateway.messaging.RevocationConfigMode
+import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.p2p.gateway.messaging.http.HttpConnectionEvent
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.p2p.gateway.messaging.http.ListenerWithServer
+import net.corda.p2p.gateway.messaging.http.StubCertificatesAuthority
+import net.corda.p2p.test.KeyAlgorithm
+import net.corda.schema.Schemas
+import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_TRUSTSTORES
 import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
+import net.corda.schema.TestSchema
 import net.corda.test.util.eventually
+import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
+import org.bouncycastle.jce.PrincipalUtil
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -52,8 +65,11 @@ import java.net.InetSocketAddress
 import java.net.Socket
 import java.net.URI
 import java.nio.ByteBuffer
+import java.security.KeyStore
+import java.security.cert.X509Certificate
 import java.time.Duration
 import java.time.Instant
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
@@ -65,6 +81,7 @@ import kotlin.concurrent.thread
 class GatewayIntegrationTest : TestBase() {
     companion object {
         private val logger = contextLogger()
+        const val GROUP_ID = "Group - 1"
     }
 
     private val sessionId = "session-1"
@@ -72,16 +89,22 @@ class GatewayIntegrationTest : TestBase() {
 
     private val nodeConfig = SmartConfigImpl.empty()
 
-    private class Node(private val name: String) {
+    private inner class Node(private val name: String) {
         private val topicService = TopicServiceImpl()
         private val rpcTopicService = RPCTopicServiceImpl()
-        private val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
+        val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
         val subscriptionFactory = InMemSubscriptionFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
         val publisherFactory = CordaPublisherFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
         val publisher = publisherFactory.createPublisher(PublisherConfig("$name.id"))
 
         fun stop() {
             publisher.close()
+        }
+
+        fun publishTrustStore() {
+            publish(
+                Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, GatewayTruststore(listOf(truststoreCertificatePem)))
+            )
         }
 
         fun publish(vararg records: Record<Any, Any>): List<CompletableFuture<Unit>> {
@@ -131,7 +154,8 @@ class GatewayIntegrationTest : TestBase() {
         @Timeout(30)
         fun `http client to gateway`() {
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
-            val serverAddress = URI.create("http://www.alice.net:10000")
+            val port = getOpenPort()
+            val serverAddress = URI.create("http://www.alice.net:$port")
             val linkInMessage = LinkInMessage(authenticatedP2PMessage(""))
             val gatewayMessage = GatewayMessage("msg-id", linkInMessage.payload)
             Gateway(
@@ -144,18 +168,19 @@ class GatewayIntegrationTest : TestBase() {
                 ),
                 alice.subscriptionFactory,
                 alice.publisherFactory,
-                lifecycleCoordinatorFactory,
+                alice.lifecycleCoordinatorFactory,
                 nodeConfig,
                 instanceId.incrementAndGet(),
             ).use {
+                publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
                 it.startAndWaitForStarted()
-                val serverInfo = DestinationInfo(serverAddress, aliceSNI[0], null)
+                val serverInfo = DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore)
                 HttpClient(
                     serverInfo,
                     bobSslConfig,
                     NioEventLoopGroup(1),
                     NioEventLoopGroup(1),
-                    2.seconds
+                    ConnectionConfiguration(),
                 ).use { client ->
                     client.start()
                     val httpResponse = client.write(gatewayMessage.toByteBuffer().array()).get()
@@ -186,11 +211,16 @@ class GatewayIntegrationTest : TestBase() {
         fun `gateway reconfiguration`() {
             val configurationCount = 3
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
-            val recipientServerUrl = URI.create("http://www.alice.net:10001")
+            alice.publishTrustStore()
+            val recipientServerUrl = URI.create("http://www.alice.net:${getOpenPort()}")
 
             val linkInMessage = LinkInMessage(authenticatedP2PMessage(""))
             val linkOutMessage = LinkOutMessage.newBuilder().apply {
-                header = LinkOutHeader("", NetworkType.CORDA_5, recipientServerUrl.toString())
+                header = LinkOutHeader(
+                    HoldingIdentity("", GROUP_ID),
+                    NetworkType.CORDA_5,
+                    recipientServerUrl.toString(),
+                )
                 payload = authenticatedP2PMessage("link out")
             }.build()
             val gatewayMessage = GatewayMessage("msg-id", linkInMessage.payload)
@@ -221,22 +251,24 @@ class GatewayIntegrationTest : TestBase() {
                     recipientServerUrl.host,
                     recipientServerUrl.port,
                     aliceSslConfig,
-                )
+                ),
+                aliceKeyStore,
             ).use { recipientServer ->
+                publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
                 listenToOutboundMessages.server = recipientServer
                 recipientServer.startAndWaitForStarted()
                 Gateway(
                     configPublisher.readerService,
                     alice.subscriptionFactory,
                     alice.publisherFactory,
-                    lifecycleCoordinatorFactory,
+                    alice.lifecycleCoordinatorFactory,
                     nodeConfig,
                     instanceId.incrementAndGet(),
                 ).use { gateway ->
                     gateway.start()
 
                     (1..configurationCount).map {
-                        it + 20000
+                        getOpenPort()
                     }.map {
                         URI.create("http://www.alice.net:$it")
                     }.forEach { url ->
@@ -258,12 +290,13 @@ class GatewayIntegrationTest : TestBase() {
                             DestinationInfo(
                                 url,
                                 aliceSNI[0],
-                                null
+                                null,
+                                truststoreKeyStore
                             ),
                             aliceSslConfig,
                             NioEventLoopGroup(1),
                             NioEventLoopGroup(1),
-                            2.seconds
+                            ConnectionConfiguration(),
                         ).use { secondInboundClient ->
                             secondInboundClient.start()
 
@@ -291,8 +324,9 @@ class GatewayIntegrationTest : TestBase() {
             val msgNumber = AtomicInteger(1)
             val clientNumber = 4
             val threadPool = NioEventLoopGroup(clientNumber)
-            val serverAddress = URI.create("http://www.alice.net:10002")
+            val serverAddress = URI.create("http://www.alice.net:${getOpenPort()}")
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
+            publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
             Gateway(
                 createConfigurationServiceFor(
                     GatewayConfiguration(
@@ -303,14 +337,14 @@ class GatewayIntegrationTest : TestBase() {
                 ),
                 alice.subscriptionFactory,
                 alice.publisherFactory,
-                lifecycleCoordinatorFactory,
+                alice.lifecycleCoordinatorFactory,
                 nodeConfig,
                 instanceId.incrementAndGet(),
             ).use {
                 it.startAndWaitForStarted()
                 (1..clientNumber).map { index ->
-                    val serverInfo = DestinationInfo(serverAddress, aliceSNI[1], null)
-                    val client = HttpClient(serverInfo, bobSslConfig, threadPool, threadPool, 2.seconds)
+                    val serverInfo = DestinationInfo(serverAddress, aliceSNI[1], null, truststoreKeyStore)
+                    val client = HttpClient(serverInfo, bobSslConfig, threadPool, threadPool, ConnectionConfiguration())
                     client.start()
                     val p2pOutMessage = LinkInMessage(authenticatedP2PMessage("Client-$index"))
                     val gatewayMessage = GatewayMessage("msg-${msgNumber.getAndIncrement()}", p2pOutMessage.payload)
@@ -349,17 +383,22 @@ class GatewayIntegrationTest : TestBase() {
         fun `gateway to multiple servers`() {
             val messageCount = 100
             val serversCount = 4
+            alice.publishTrustStore()
 
             // We first produce some messages which will be consumed by the Gateway.
             val deliveryLatch = CountDownLatch(serversCount * messageCount)
             val servers = (1..serversCount).map {
-                it + 20000
+                getOpenPort()
             }.map {
                 "http://www.chip.net:$it"
             }.onEach { serverUrl ->
                 repeat(messageCount) {
                     val msg = LinkOutMessage.newBuilder().apply {
-                        header = LinkOutHeader("", NetworkType.CORDA_5, serverUrl)
+                        header = LinkOutHeader(
+                            HoldingIdentity("", GROUP_ID),
+                            NetworkType.CORDA_5,
+                            serverUrl,
+                        )
                         payload = authenticatedP2PMessage("Target-$serverUrl")
                     }.build()
                     alice.publish(Record(LINK_OUT_TOPIC, "key", msg))
@@ -382,7 +421,8 @@ class GatewayIntegrationTest : TestBase() {
                 }
                 HttpServer(
                     serverListener,
-                    GatewayConfiguration(serverUri.host, serverUri.port, chipSslConfig)
+                    GatewayConfiguration(serverUri.host, serverUri.port, chipSslConfig),
+                    chipKeyStore,
                 ).also {
                     serverListener.server = it
                 }
@@ -392,7 +432,7 @@ class GatewayIntegrationTest : TestBase() {
 
             var startTime: Long
             var endTime: Long
-            val gatewayAddress = Pair("localhost", 20000)
+            val gatewayAddress = Pair("localhost", getOpenPort())
             Gateway(
                 createConfigurationServiceFor(
                     GatewayConfiguration(
@@ -403,10 +443,11 @@ class GatewayIntegrationTest : TestBase() {
                 ),
                 alice.subscriptionFactory,
                 alice.publisherFactory,
-                lifecycleCoordinatorFactory,
+                alice.lifecycleCoordinatorFactory,
                 nodeConfig,
                 instanceId.incrementAndGet(),
             ).use {
+                publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
                 startTime = Instant.now().toEpochMilli()
                 it.startAndWaitForStarted()
                 // Wait until all messages have been delivered
@@ -424,11 +465,15 @@ class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(60)
         fun `gateway to gateway - dual stream`() {
-            val aliceGatewayAddress = URI.create("http://www.chip.net:11003")
-            val bobGatewayAddress = URI.create("http://www.dale.net:11004")
+            val aliceGatewayAddress = URI.create("http://www.chip.net:${getOpenPort()}")
+            val bobGatewayAddress = URI.create("http://www.dale.net:${getOpenPort()}")
             val messageCount = 100
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
             bob.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
+            alice.publishTrustStore()
+            bob.publishTrustStore()
+            publishKeyStoreCertificatesAndKeys(alice.publisher, chipKeyStore)
+            publishKeyStoreCertificatesAndKeys(bob.publisher, daleKeyStore)
 
             val receivedLatch = CountDownLatch(messageCount * 2)
             var bobReceivedMessages = 0
@@ -474,8 +519,6 @@ class GatewayIntegrationTest : TestBase() {
 
             val startTime = Instant.now().toEpochMilli()
             // Start the gateways and let them run until all messages have been processed
-            val lcf1 = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
-            val lcf2 = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
             val gateways = listOf(
                 Gateway(
                     createConfigurationServiceFor(
@@ -483,11 +526,12 @@ class GatewayIntegrationTest : TestBase() {
                             aliceGatewayAddress.host,
                             aliceGatewayAddress.port,
                             chipSslConfig
-                        ), lcf1
+                        ),
+                        alice.lifecycleCoordinatorFactory
                     ),
                     alice.subscriptionFactory,
                     alice.publisherFactory,
-                    lcf1,
+                    alice.lifecycleCoordinatorFactory,
                     nodeConfig,
                     instanceId.incrementAndGet(),
                 ),
@@ -497,11 +541,12 @@ class GatewayIntegrationTest : TestBase() {
                             bobGatewayAddress.host,
                             bobGatewayAddress.port,
                             daleSslConfig
-                        ), lcf2
+                        ),
+                        bob.lifecycleCoordinatorFactory
                     ),
                     bob.subscriptionFactory,
                     bob.publisherFactory,
-                    lcf2,
+                    bob.lifecycleCoordinatorFactory,
                     nodeConfig,
                     instanceId.incrementAndGet(),
                 )
@@ -517,7 +562,11 @@ class GatewayIntegrationTest : TestBase() {
                 )
             }.flatMap { (address, node) ->
                 val msg = LinkOutMessage.newBuilder().apply {
-                    header = LinkOutHeader("", NetworkType.CORDA_5, address)
+                    header = LinkOutHeader(
+                        HoldingIdentity("", GROUP_ID),
+                        NetworkType.CORDA_5,
+                        address
+                    )
                     payload = authenticatedP2PMessage("Target-$address")
                 }.build()
                 node.publish(Record(LINK_OUT_TOPIC, "key", msg))
@@ -529,7 +578,7 @@ class GatewayIntegrationTest : TestBase() {
             if (!allMessagesDelivered) {
                 fail(
                     "Not all messages were delivered successfully. Bob received $bobReceivedMessages messages (expected $messageCount), " +
-                            "Alice received $aliceReceivedMessages (expected $messageCount)"
+                        "Alice received $aliceReceivedMessages (expected $messageCount)"
                 )
             }
 
@@ -545,7 +594,6 @@ class GatewayIntegrationTest : TestBase() {
             }
         }
     }
-
 
     private fun authenticatedP2PMessage(content: String) = AuthenticatedDataMessage.newBuilder().apply {
         header = CommonHeader(MessageType.DATA, 0, sessionId, 1L, Instant.now().toEpochMilli())
@@ -564,20 +612,21 @@ class GatewayIntegrationTest : TestBase() {
                 configPublisher.readerService,
                 alice.subscriptionFactory,
                 alice.publisherFactory,
-                lifecycleCoordinatorFactory,
+                alice.lifecycleCoordinatorFactory,
                 nodeConfig,
                 instanceId.incrementAndGet(),
             ).use { gateway ->
+                val port = getOpenPort()
                 logger.info("Publishing good config")
                 configPublisher.publishConfig(
                     GatewayConfiguration(
                         host,
-                        10005,
+                        port,
                         aliceSslConfig
                     )
                 )
                 gateway.startAndWaitForStarted()
-                assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.Started)
+                assertThat(gateway.dominoTile.state).isEqualTo(DominoTileState.Started)
 
                 logger.info("Publishing bad config")
                 // -20 is invalid port, serer should fail
@@ -589,36 +638,196 @@ class GatewayIntegrationTest : TestBase() {
                     )
                 )
                 eventually(duration = 20.seconds) {
-                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.StoppedDueToChildStopped)
+                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTileState.StoppedDueToChildStopped)
                 }
                 assertThrows<ConnectException> {
-                    Socket(host, 10005).close()
+                    Socket(host, port).close()
                 }
 
                 logger.info("Publishing good config again")
+                val anotherPort = getOpenPort()
                 configPublisher.publishConfig(
                     GatewayConfiguration(
                         host,
-                        10006,
+                        anotherPort,
                         aliceSslConfig
                     )
                 )
                 eventually(duration = 20.seconds) {
-                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.Started)
+                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTileState.Started)
                 }
                 assertDoesNotThrow {
-                    Socket(host, 10006).close()
+                    Socket(host, anotherPort).close()
                 }
 
                 logger.info("Publishing bad config again")
                 configPublisher.publishBadConfig()
                 eventually(duration = 20.seconds) {
-                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.StoppedDueToChildStopped)
+                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTileState.StoppedDueToChildStopped)
                 }
                 assertThrows<ConnectException> {
-                    Socket(host, 10006).close()
+                    Socket(host, anotherPort).close()
+                }
+            }
+        }
+    }
+
+    @Nested
+    inner class DynamicKeyStore {
+        private fun testClientWith(
+            server: URI,
+            trustStore: KeyStore,
+        ) {
+            val serverInfo = DestinationInfo(
+                server, server.host, null,
+                trustStore
+            )
+            val linkInMessage = LinkInMessage(authenticatedP2PMessage(""))
+            val gatewayMessage = GatewayMessage(UUID.randomUUID().toString(), linkInMessage.payload)
+            HttpClient(
+                serverInfo,
+                SslConfiguration(RevocationConfig(RevocationConfigMode.OFF)),
+                NioEventLoopGroup(1),
+                NioEventLoopGroup(1),
+                ConnectionConfiguration(),
+            ).use { client ->
+                client.start()
+                val httpResponse = client.write(gatewayMessage.toByteBuffer().array()).getOrThrow()
+                assertThat(httpResponse.statusCode).isEqualTo(HttpResponseStatus.OK)
+                assertThat(httpResponse.payload).isNotNull
+                val gatewayResponse = GatewayResponse.fromByteBuffer(ByteBuffer.wrap(httpResponse.payload))
+                assertThat(gatewayResponse.id).isEqualTo(gatewayMessage.id)
+            }
+        }
+
+        @Test
+        @Timeout(120)
+        fun `key store can change dynamically`() {
+            val aliceAddress = URI.create("http://www.alice.net:${getOpenPort()}")
+            val bobAddress = URI.create("http://www.bob.net:${getOpenPort()}")
+            val server = Node("server")
+            val configPublisher = ConfigPublisher()
+            configPublisher.publishConfig(
+                GatewayConfiguration(
+                    aliceAddress.host,
+                    aliceAddress.port,
+                    aliceSslConfig
+                ),
+            )
+            server.publish(
+                Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))
+            )
+            Gateway(
+                configPublisher.readerService,
+                server.subscriptionFactory,
+                server.publisherFactory,
+                server.lifecycleCoordinatorFactory,
+                nodeConfig,
+                instanceId.incrementAndGet(),
+            ).use { gateway ->
+                gateway.startAndWaitForStarted()
+                val firstCertificatesAuthority = StubCertificatesAuthority("password", KeyAlgorithm.RSA)
+                // Client should fail without trust store certificates
+                assertThrows<RuntimeException> {
+                    testClientWith(aliceAddress, firstCertificatesAuthority.trustStoreKeyStore)
                 }
 
+                // Publish the trust store
+                server.publish(
+                    Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, firstCertificatesAuthority.gatewayTrustStore),
+                )
+
+                // Client should fail without any keys
+                assertThrows<RuntimeException> {
+                    testClientWith(aliceAddress, firstCertificatesAuthority.trustStoreKeyStore)
+                }
+
+                // Publish the first key pair
+                val keyStore = firstCertificatesAuthority.createKeyStore(aliceAddress.host)
+                publishKeyStoreCertificatesAndKeys(server.publisher, keyStore)
+
+                // Client should now pass
+                testClientWith(aliceAddress, firstCertificatesAuthority.trustStoreKeyStore)
+
+                // Delete the first pair
+                server.publish(
+                    Record(
+                        TestSchema.CRYPTO_KEYS_TOPIC,
+                        keyStore.keyStore.aliases().nextElement(),
+                        null
+                    )
+                )
+
+                // Client should fail again...
+                eventually {
+                    assertThrows<RuntimeException> {
+                        testClientWith(aliceAddress, firstCertificatesAuthority.trustStoreKeyStore)
+                    }
+                }
+
+                // publish the same pair again
+                publishKeyStoreCertificatesAndKeys(server.publisher, keyStore)
+
+                // Client should now pass
+                testClientWith(aliceAddress, firstCertificatesAuthority.trustStoreKeyStore)
+
+                // Delete the certificates
+                val subject = PrincipalUtil.getSubjectX509Principal(
+                    keyStore.keyStore.getCertificate(keyStore.keyStore.aliases().nextElement()) as X509Certificate
+                ).name
+                server.publish(
+                    Record(
+                        Schemas.P2P.GATEWAY_TLS_CERTIFICATES,
+                        subject,
+                        null
+                    )
+                )
+                eventually {
+                    assertThrows<RuntimeException> {
+                        testClientWith(aliceAddress, firstCertificatesAuthority.trustStoreKeyStore)
+                    }
+                }
+
+                // publish it again
+                publishKeyStoreCertificatesAndKeys(server.publisher, keyStore)
+                testClientWith(aliceAddress, firstCertificatesAuthority.trustStoreKeyStore)
+
+                // Change the host
+                configPublisher.publishConfig(GatewayConfiguration(bobAddress.host, bobAddress.port, aliceSslConfig))
+                val bobKeyStore = firstCertificatesAuthority.createKeyStore(bobAddress.host)
+                publishKeyStoreCertificatesAndKeys(server.publisher, bobKeyStore)
+
+                // Client should pass with new host
+                testClientWith(bobAddress, firstCertificatesAuthority.trustStoreKeyStore)
+
+                // new trust store...
+                val secondCertificatesAuthority = StubCertificatesAuthority("password", KeyAlgorithm.ECDSA)
+                server.publish(
+                    Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, secondCertificatesAuthority.gatewayTrustStore),
+                )
+
+                // replace the first pair
+                val newKeyStore = secondCertificatesAuthority.createKeyStore(bobAddress.host)
+                publishKeyStoreCertificatesAndKeys(server.publisher, newKeyStore)
+                testClientWith(bobAddress, secondCertificatesAuthority.trustStoreKeyStore)
+
+                // verify that the old trust store will fail
+                eventually {
+                    assertThrows<RuntimeException> {
+                        testClientWith(bobAddress, firstCertificatesAuthority.trustStoreKeyStore)
+                    }
+                }
+
+                // new trust store and pair...
+                val thirdCertificatesAuthority = StubCertificatesAuthority("password", KeyAlgorithm.ECDSA)
+                server.publish(
+                    Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, thirdCertificatesAuthority.gatewayTrustStore),
+                )
+
+                // publish new pair with new alias
+                val newerKeyStore = thirdCertificatesAuthority.createKeyStore(bobAddress.host)
+                publishKeyStoreCertificatesAndKeys(server.publisher, newerKeyStore)
+                testClientWith(bobAddress, thirdCertificatesAuthority.trustStoreKeyStore)
             }
         }
     }
@@ -632,7 +841,7 @@ class GatewayIntegrationTest : TestBase() {
                 configPublisher.readerService,
                 alice.subscriptionFactory,
                 alice.publisherFactory,
-                lifecycleCoordinatorFactory,
+                alice.lifecycleCoordinatorFactory,
                 nodeConfig,
                 instanceId.incrementAndGet(),
             )
@@ -642,6 +851,4 @@ class GatewayIntegrationTest : TestBase() {
             }
         }
     }
-
-
 }

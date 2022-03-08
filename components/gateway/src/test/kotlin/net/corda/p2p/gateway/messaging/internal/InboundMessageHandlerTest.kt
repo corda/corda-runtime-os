@@ -10,7 +10,7 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -66,7 +66,7 @@ class InboundMessageHandlerTest {
     private val sessionPartitionMapper = mockConstruction(SessionPartitionMapperImpl::class.java)
     private val p2pInPublisher = mockConstruction(PublisherWithDominoLogic::class.java)
 
-    private val dominoTile = mockConstruction(DominoTile::class.java) { mock, _ ->
+    private val dominoTile = mockConstruction(ComplexDominoTile::class.java) { mock, _ ->
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
     }
@@ -79,7 +79,6 @@ class InboundMessageHandlerTest {
         SmartConfigImpl.empty(),
         1
     )
-
 
     @AfterEach
     fun cleanUp() {
@@ -249,7 +248,7 @@ class InboundMessageHandlerTest {
 
         assertThat(published.firstValue).hasSize(1)
             .anyMatch { record ->
-                (record.topic == LINK_IN_TOPIC) && (record.value == linkInMessage)
+                (record.topic == LINK_IN_TOPIC) && (record.value == linkInMessage) && (record.key == sessionId)
             }
     }
 

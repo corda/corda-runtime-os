@@ -5,6 +5,7 @@ import net.corda.data.permissions.Group
 import net.corda.data.permissions.Permission
 import net.corda.data.permissions.Role
 import net.corda.data.permissions.User
+import net.corda.data.permissions.summary.UserPermissionSummary
 import net.corda.libs.permissions.cache.PermissionCache
 import net.corda.libs.permissions.cache.factory.PermissionCacheFactory
 import net.corda.libs.permissions.cache.impl.PermissionCacheImpl
@@ -16,8 +17,9 @@ class PermissionCacheFactoryImpl : PermissionCacheFactory {
         userData: ConcurrentHashMap<String, User>,
         groupData: ConcurrentHashMap<String, Group>,
         roleData: ConcurrentHashMap<String, Role>,
-        permissionData: ConcurrentHashMap<String, Permission>
+        permissionData: ConcurrentHashMap<String, Permission>,
+        permissionSummaryData: ConcurrentHashMap<String, UserPermissionSummary>
     ): PermissionCache {
-        return PermissionCacheImpl(userData, groupData, roleData, permissionData)
+        return PermissionCacheImpl(userData, groupData, roleData, permissionData, permissionSummaryData)
     }
 }

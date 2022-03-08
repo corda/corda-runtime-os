@@ -3,19 +3,19 @@ package net.corda.processor.member
 import com.typesafe.config.ConfigFactory
 import net.corda.data.config.Configuration
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.packaging.CpiIdentifier
+import net.corda.libs.packaging.CpiMetadata
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.GroupPolicy
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
-import net.corda.packaging.CPI
-import net.corda.packaging.converters.toAvro
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.membership.identity.MemberX500Name
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -23,6 +23,7 @@ import net.corda.virtualnode.toAvro
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.assertThrows
+import java.util.UUID
 
 class MemberProcessorTestUtils {
     companion object {
@@ -70,7 +71,8 @@ class MemberProcessorTestUtils {
                 groupPolicy = groupPolicy,
                 cpiVersion = cpiVersion
             )
-            val virtualNodeInfo = VirtualNodeInfo(holdingIdentity, cpiMetadata.id)
+            val virtualNodeInfo = VirtualNodeInfo(holdingIdentity, cpiMetadata.id,
+                null, UUID.randomUUID(), null, UUID.randomUUID())
 
             // Publish test data
             publishCpiMetadata(cpiMetadata)
@@ -137,13 +139,13 @@ class MemberProcessorTestUtils {
         fun getCpiIdentifier(
             name: String = "INTEGRATION_TEST",
             version: String
-        ) = CPI.Identifier.newInstance(name, version)
+        ) = CpiIdentifier(name, version, SecureHash.create("SHA-256:0000000000000000"))
 
         fun getCpiMetadata(
             cpiVersion: String,
             groupPolicy: String,
-            cpiIdentifier: CPI.Identifier = getCpiIdentifier(version = cpiVersion)
-        ) = CPI.Metadata.newInstance(
+            cpiIdentifier: CpiIdentifier = getCpiIdentifier(version = cpiVersion)
+        ) = CpiMetadata(
             cpiIdentifier,
             SecureHash.create("SHA-256:0000000000000000"),
             emptyList(),
@@ -165,7 +167,7 @@ class MemberProcessorTestUtils {
             )
         }
 
-        fun Publisher.publishCpiMetadata(cpiMetadata: CPI.Metadata) =
+        fun Publisher.publishCpiMetadata(cpiMetadata: CpiMetadata) =
             publishRecord(Schemas.VirtualNode.CPI_INFO_TOPIC, cpiMetadata.id.toAvro(), cpiMetadata.toAvro())
 
         fun Publisher.publishMessagingConf() =

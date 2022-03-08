@@ -7,7 +7,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
@@ -31,7 +31,7 @@ import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
 import net.corda.p2p.linkmanager.LinkManager
-import net.corda.p2p.linkmanager.LinkManagerCryptoService
+import net.corda.p2p.linkmanager.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
@@ -41,20 +41,23 @@ import net.corda.p2p.linkmanager.sessions.SessionManager.SessionCounterparties
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.couldNotFindNetworkType
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.noSessionWarning
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.noTenantId
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourHashNotInNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourIdNotInNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerHashNotInNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerNotInTheNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.validationFailedWarning
 import net.corda.p2p.linkmanager.utilities.AutoClosableScheduledExecutorService
+import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
+import net.corda.p2p.test.stub.crypto.processor.CryptoProcessorException
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import org.slf4j.LoggerFactory
+import java.time.Clock
 import java.time.Duration
-import java.time.Instant
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
@@ -69,12 +72,13 @@ import kotlin.concurrent.write
 @Suppress("LongParameterList", "TooManyFunctions")
 open class SessionManagerImpl(
     private val networkMap: LinkManagerNetworkMap,
-    private val cryptoService: LinkManagerCryptoService,
+    private val cryptoProcessor: CryptoProcessor,
     private val pendingOutboundSessionMessageQueues: LinkManager.PendingSessionMessageQueues,
     publisherFactory: PublisherFactory,
     private val configurationReaderService: ConfigurationReadService,
     coordinatorFactory: LifecycleCoordinatorFactory,
     configuration: SmartConfig,
+    private val linkManagerHostingMap: LinkManagerHostingMap,
     private val protocolFactory: ProtocolFactory = CryptoProtocolFactory(),
     private val sessionReplayer: InMemorySessionReplayer = InMemorySessionReplayer(
         publisherFactory,
@@ -82,7 +86,9 @@ open class SessionManagerImpl(
         coordinatorFactory,
         configuration,
         networkMap
-    )
+    ),
+    clock: Clock = Clock.systemUTC(),
+    executorServiceFactory: () -> ScheduledExecutorService = {Executors.newSingleThreadScheduledExecutor()},
 ) : SessionManager {
 
     companion object {
@@ -114,7 +120,9 @@ open class SessionManagerImpl(
         coordinatorFactory,
         configuration,
         networkMap,
-        ::destroyOutboundSession
+        ::destroyOutboundSession,
+        clock,
+        executorServiceFactory
     )
 
     private val publisher = PublisherWithDominoLogic(
@@ -124,12 +132,12 @@ open class SessionManagerImpl(
         configuration
     )
 
-    override val dominoTile = DominoTile(
+    override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
         dependentChildren = setOf(
-            heartbeatManager.dominoTile, sessionReplayer.dominoTile, networkMap.dominoTile, cryptoService.dominoTile,
-            pendingOutboundSessionMessageQueues.dominoTile, publisher.dominoTile
+            heartbeatManager.dominoTile, sessionReplayer.dominoTile, networkMap.dominoTile, cryptoProcessor.dominoTile,
+            pendingOutboundSessionMessageQueues.dominoTile, publisher.dominoTile, linkManagerHostingMap.dominoTile
         ),
         managedChildren = setOf(heartbeatManager.dominoTile, sessionReplayer.dominoTile, publisher.dominoTile),
         configurationChangeHandler = SessionManagerConfigChangeHandler()
@@ -360,13 +368,26 @@ open class SessionManagerImpl(
             return null
         }
 
-        val signWithOurGroupId = { data: ByteArray -> cryptoService.signData(ourMemberInfo.publicKey, data) }
+        val tenantId = linkManagerHostingMap.getTenantId(ourMemberInfo.holdingIdentity)
+        if(tenantId == null) {
+            logger.noTenantId(message::class.java.simpleName, message.header.sessionId, ourMemberInfo.holdingIdentity)
+            return null
+        }
+
+        val signWithOurGroupId = { data: ByteArray ->
+            cryptoProcessor.sign(
+                tenantId,
+                ourMemberInfo.publicKey,
+                ourMemberInfo.getSignatureSpec(),
+                data
+            )
+        }
         val payload = try {
             session.generateOurHandshakeMessage(
                 responderMemberInfo.publicKey,
                 signWithOurGroupId
             )
-        } catch (exception: LinkManagerCryptoService.NoPrivateKeyForGroupException) {
+        } catch (exception: CryptoProcessorException) {
             logger.warn(
                 "${exception.message}. The ${message::class.java.simpleName} with sessionId ${message.header.sessionId}" +
                         " was discarded."
@@ -419,7 +440,7 @@ open class SessionManagerImpl(
         }
 
         try {
-            session.validatePeerHandshakeMessage(message, memberInfo.publicKey, memberInfo.publicKeyAlgorithm)
+            session.validatePeerHandshakeMessage(message, memberInfo.publicKey, memberInfo.getSignatureSpec())
         } catch (exception: InvalidHandshakeResponderKeyHash) {
             logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
             return null
@@ -499,7 +520,7 @@ open class SessionManagerImpl(
 
         session.generateHandshakeSecrets()
         val ourIdentityData = try {
-            session.validatePeerHandshakeMessage(message, peer.publicKey, peer.publicKeyAlgorithm)
+            session.validatePeerHandshakeMessage(message, peer.publicKey, peer.getSignatureSpec())
         } catch (exception: WrongPublicKeyHashException) {
             logger.error("The message was discarded. ${exception.message}")
             return null
@@ -528,11 +549,24 @@ open class SessionManagerImpl(
             return null
         }
 
+        val tenantId = linkManagerHostingMap.getTenantId(ourMemberInfo.holdingIdentity)
+        if(tenantId == null) {
+            logger.noTenantId(message::class.java.simpleName, message.header.sessionId, ourMemberInfo.holdingIdentity)
+            return null
+        }
+
         val response = try {
             val ourPublicKey = ourMemberInfo.publicKey
-            val signData = { data: ByteArray -> cryptoService.signData(ourMemberInfo.publicKey, data) }
+            val signData = { data: ByteArray ->
+                cryptoProcessor.sign(
+                    tenantId,
+                    ourMemberInfo.publicKey,
+                    ourMemberInfo.getSignatureSpec(),
+                    data
+                )
+            }
             session.generateOurHandshakeMessage(ourPublicKey, signData)
-        } catch (exception: LinkManagerCryptoService.NoPrivateKeyForGroupException) {
+        } catch (exception: CryptoProcessorException) {
             logger.warn(
                 "Received ${message::class.java.simpleName} with sessionId ${message.header.sessionId}. ${exception.message}." +
                         " The message was discarded."
@@ -559,7 +593,9 @@ open class SessionManagerImpl(
         coordinatorFactory: LifecycleCoordinatorFactory,
         configuration: SmartConfig,
         private val networkMap: LinkManagerNetworkMap,
-        private val destroySession: (counterparties: SessionCounterparties, sessionId: String) -> Any
+        private val destroySession: (counterparties: SessionCounterparties, sessionId: String) -> Any,
+        private val clock: Clock,
+        private val executorServiceFactory: () -> ScheduledExecutorService
     ) : LifecycleWithDominoTile {
 
         companion object {
@@ -593,14 +629,9 @@ open class SessionManagerImpl(
             }
         }
 
-        private fun fromConfig(config: Config): HeartbeatManagerConfig {
-            return HeartbeatManagerConfig(Duration.ofMillis(config.getLong(LinkManagerConfiguration.HEARTBEAT_MESSAGE_PERIOD_KEY)),
-            Duration.ofMillis(config.getLong(LinkManagerConfiguration.SESSION_TIMEOUT_KEY)))
-        }
-
         private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
             val future = CompletableFuture<Unit>()
-            executorService = Executors.newSingleThreadScheduledExecutor()
+            executorService = executorServiceFactory()
             resources.keep(AutoClosableScheduledExecutorService(executorService))
             future.complete(Unit)
             return future
@@ -608,6 +639,11 @@ open class SessionManagerImpl(
 
         @Volatile
         private lateinit var executorService: ScheduledExecutorService
+
+        private fun fromConfig(config: Config): HeartbeatManagerConfig {
+            return HeartbeatManagerConfig(Duration.ofMillis(config.getLong(LinkManagerConfiguration.HEARTBEAT_MESSAGE_PERIOD_KEY)),
+            Duration.ofMillis(config.getLong(LinkManagerConfiguration.SESSION_TIMEOUT_KEY)))
+        }
 
         private val trackedSessions = ConcurrentHashMap<String, TrackedSession>()
 
@@ -618,13 +654,13 @@ open class SessionManagerImpl(
             configuration
         )
 
-        override val dominoTile = DominoTile(
+        override val dominoTile = ComplexDominoTile(
             this::class.java.simpleName,
             coordinatorFactory,
             ::createResources,
             dependentChildren = setOf(networkMap.dominoTile, publisher.dominoTile),
             managedChildren = setOf(publisher.dominoTile),
-            HeartbeatManagerConfigChangeHandler(),
+            configurationChangeHandler = HeartbeatManagerConfigChangeHandler(),
         )
 
         /**
@@ -770,7 +806,7 @@ open class SessionManagerImpl(
         }
 
         private fun timeStamp(): Long {
-            return Instant.now().toEpochMilli()
+            return clock.instant().toEpochMilli()
         }
     }
 }

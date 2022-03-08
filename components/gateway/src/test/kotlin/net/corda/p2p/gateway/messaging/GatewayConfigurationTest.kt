@@ -2,9 +2,9 @@ package net.corda.p2p.gateway.messaging
 
 import com.typesafe.config.Config
 import net.corda.v5.base.util.hours
+import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.minutes
 import net.corda.v5.base.util.seconds
-import net.corda.v5.base.util.toBase64
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doReturn
@@ -15,10 +15,6 @@ class GatewayConfigurationTest {
     fun `toGatewayConfiguration return correct configuration with default connectionConfig`() {
         val sslConfig = mock<Config> {
             on { getEnum(RevocationConfigMode::class.java, "revocationCheck.mode") } doReturn RevocationConfigMode.HARD_FAIL
-            on { getString("keyStore") } doReturn byteArrayOf(1, 2, 3).toBase64()
-            on { getString("keyStorePassword") } doReturn "pass1"
-            on { getString("trustStore") } doReturn byteArrayOf(4, 5).toBase64()
-            on { getString("trustStorePassword") } doReturn "pass2"
         }
         val config = mock<Config> {
             on { hasPath("connectionConfig") } doReturn false
@@ -36,12 +32,8 @@ class GatewayConfigurationTest {
                 hostAddress = "address",
                 connectionConfig = ConnectionConfiguration(),
                 sslConfig = SslConfiguration(
-                    rawTrustStore = byteArrayOf(4, 5),
-                    rawKeyStore = byteArrayOf(1, 2, 3),
-                    keyStorePassword = "pass1",
-                    trustStorePassword = "pass2",
                     revocationCheck =
-                    RevocationConfig(RevocationConfigMode.HARD_FAIL)
+                    RevocationConfig(RevocationConfigMode.HARD_FAIL),
                 )
             )
         )
@@ -55,13 +47,11 @@ class GatewayConfigurationTest {
             on { getDuration("connectionIdleTimeout") } doReturn 10.hours
             on { getDuration("responseTimeout") } doReturn 20.seconds
             on { getDuration("retryDelay") } doReturn 21.minutes
+            on { getDuration("maximalReconnectionDelay") } doReturn 15.minutes
+            on { getDuration("initialReconnectionDelay") } doReturn 11.millis
         }
         val sslConfig = mock<Config> {
             on { getEnum(RevocationConfigMode::class.java, "revocationCheck.mode") } doReturn RevocationConfigMode.HARD_FAIL
-            on { getString("keyStore") } doReturn byteArrayOf(1, 2, 3).toBase64()
-            on { getString("keyStorePassword") } doReturn "pass1"
-            on { getString("trustStore") } doReturn byteArrayOf(4, 5).toBase64()
-            on { getString("trustStorePassword") } doReturn "pass2"
         }
         val config = mock<Config> {
             on { hasPath("connectionConfig") } doReturn true
@@ -83,13 +73,11 @@ class GatewayConfigurationTest {
                     acquireTimeout = 5.minutes,
                     connectionIdleTimeout = 10.hours,
                     responseTimeout = 20.seconds,
-                    retryDelay = 21.minutes
+                    retryDelay = 21.minutes,
+                    initialReconnectionDelay = 11.millis,
+                    maximalReconnectionDelay = 15.minutes,
                 ),
                 sslConfig = SslConfiguration(
-                    rawTrustStore = byteArrayOf(4, 5),
-                    rawKeyStore = byteArrayOf(1, 2, 3),
-                    keyStorePassword = "pass1",
-                    trustStorePassword = "pass2",
                     revocationCheck =
                     RevocationConfig(RevocationConfigMode.HARD_FAIL)
                 )

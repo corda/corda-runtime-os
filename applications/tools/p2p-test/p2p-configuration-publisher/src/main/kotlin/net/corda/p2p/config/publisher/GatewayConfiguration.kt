@@ -5,10 +5,8 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.publish.CordaConfigurationKey
 import net.corda.libs.configuration.publish.CordaConfigurationVersion
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
-import net.corda.v5.base.util.toBase64
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
-import java.io.File
 import java.time.Duration
 
 @Command(
@@ -30,34 +28,6 @@ class GatewayConfiguration : ConfigProducer() {
         required = true
     )
     var port: Int = 0
-
-    @Option(
-        names = ["--keyStore"],
-        description = ["The path to the key store file"],
-        required = true
-    )
-    lateinit var keyStoreFile: File
-
-    @Option(
-        names = ["--keyStorePassword"],
-        description = ["The key store password"],
-        required = true
-    )
-    lateinit var keyStorePassword: String
-
-    @Option(
-        names = ["--trustStore"],
-        description = ["The path to the trust store file"],
-        required = true
-    )
-    lateinit var trustStoreFile: File
-
-    @Option(
-        names = ["--trustStorePassword"],
-        description = ["The trust store password"],
-        required = true
-    )
-    lateinit var trustStorePassword: String
 
     @Option(
         names = ["--revocationCheck"],
@@ -84,6 +54,18 @@ class GatewayConfiguration : ConfigProducer() {
     var connectionIdleTimeoutSec = 60L
 
     @Option(
+        names = ["--connectionInitialReconnectionDelaySec"],
+        description = ["The initial duration (in seconds) to wait before trying to reconnect"]
+    )
+    var connectionInitialReconnectionDelaySec = 1L
+
+    @Option(
+        names = ["--connectionMaximalReconnectionDelaySec"],
+        description = ["The maximal duration (in seconds) to delay before trying to reconnect"]
+    )
+    var connectionMaximalReconnectionDelaySec = 16L
+
+    @Option(
         names = ["--responseTimeoutMilliSecs"],
         description = ["Time after which a message delivery is considered failed in milliseconds"]
     )
@@ -104,26 +86,6 @@ class GatewayConfiguration : ConfigProducer() {
             .withValue(
                 "hostPort",
                 ConfigValueFactory.fromAnyRef(port)
-            )
-            .withValue(
-                "sslConfig.keyStorePassword",
-                ConfigValueFactory.fromAnyRef(keyStorePassword)
-            )
-            .withValue(
-                "sslConfig.keyStore",
-                ConfigValueFactory.fromAnyRef(
-                    keyStoreFile.readBytes().toBase64()
-                )
-            )
-            .withValue(
-                "sslConfig.trustStorePassword",
-                ConfigValueFactory.fromAnyRef(trustStorePassword)
-            )
-            .withValue(
-                "sslConfig.trustStore",
-                ConfigValueFactory.fromAnyRef(
-                    trustStoreFile.readBytes().toBase64()
-                )
             )
             .withValue(
                 "sslConfig.revocationCheck.mode",
@@ -148,6 +110,14 @@ class GatewayConfiguration : ConfigProducer() {
             .withValue(
                 "connectionConfig.retryDelay",
                 ConfigValueFactory.fromAnyRef(Duration.ofMillis(retryDelayMilliSecs))
+            )
+            .withValue(
+                "connectionConfig.initialReconnectionDelay",
+                ConfigValueFactory.fromAnyRef(Duration.ofSeconds(connectionInitialReconnectionDelaySec))
+            )
+            .withValue(
+                "connectionConfig.maximalReconnectionDelay",
+                ConfigValueFactory.fromAnyRef(Duration.ofSeconds(connectionMaximalReconnectionDelaySec))
             )
     }
 

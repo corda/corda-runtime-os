@@ -1,5 +1,6 @@
 package net.corda.chunking
 
+import net.corda.v5.crypto.SecureHash
 import java.nio.file.Path
 
 fun interface ChunksCombined {
@@ -11,5 +12,5 @@ fun interface ChunksCombined {
      *
      *     Files.move(tempPathOfBinary, destPath.resolve(originalFileName) /*, opts */)
      */
-    fun onChunksCombined(originalFileName: Path, tempPathOfBinary: Path)
+    fun onChunksCombined(originalFileName: String, tempPathOfBinary: Path, checksum: SecureHash)
 }

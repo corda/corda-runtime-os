@@ -4,10 +4,7 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.state.session.SessionState
 import net.corda.libs.configuration.SmartConfig
 import net.corda.session.manager.impl.SessionManagerImpl
-import net.corda.session.manager.integration.helper.generateClose
-import net.corda.session.manager.integration.helper.generateData
-import net.corda.session.manager.integration.helper.generateError
-import net.corda.session.manager.integration.helper.generateInit
+import net.corda.session.manager.integration.helper.generateMessage
 import java.time.Instant
 
 /**
@@ -23,11 +20,11 @@ class SessionParty (
     private val sessionManager = SessionManagerImpl()
 
     override fun processNewOutgoingMessage(messageType: SessionMessageType, sendMessages: Boolean, instant: Instant) {
-        val sessionEvent = generateMessage(messageType)
+        val sessionEvent = generateMessage(messageType, instant)
         sessionState = sessionManager.processMessageToSend("key", sessionState, sessionEvent, instant)
 
         if (sendMessages) {
-            sendMessages()
+            sendMessages(instant)
         }
     }
 
@@ -37,24 +34,15 @@ class SessionParty (
         outboundMessages.addMessages(outputMessages)
     }
 
-    private fun generateMessage(messageType: SessionMessageType) : SessionEvent {
-        return when(messageType) {
-            SessionMessageType.INIT -> generateInit()
-            SessionMessageType.DATA -> generateData()
-            SessionMessageType.ERROR -> generateError()
-            SessionMessageType.CLOSE -> generateClose()
-        }
-    }
-
-    override fun processNextReceivedMessage(sendMessages: Boolean) {
+    override fun processNextReceivedMessage(sendMessages: Boolean, instant: Instant) {
         processAndAcknowledgeEventsInSequence(getNextInboundMessage())
 
         if (sendMessages) {
-            sendMessages()
+            sendMessages(instant)
         }
     }
 
-    override fun processAllReceivedMessages(sendMessages: Boolean) {
+    override fun processAllReceivedMessages(sendMessages: Boolean, instant: Instant) {
         var nextMessage = getNextInboundMessage()
         while (nextMessage != null) {
             processAndAcknowledgeEventsInSequence(nextMessage)
@@ -62,7 +50,7 @@ class SessionParty (
         }
 
         if (sendMessages) {
-            sendMessages()
+            sendMessages(instant)
         }
     }
 

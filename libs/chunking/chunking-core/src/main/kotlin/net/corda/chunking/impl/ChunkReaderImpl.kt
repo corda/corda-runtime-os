@@ -3,6 +3,7 @@ package net.corda.chunking.impl
 import net.corda.chunking.ChunkReader
 import net.corda.chunking.ChunksCombined
 import net.corda.chunking.Checksum
+import net.corda.chunking.RequestId
 import net.corda.chunking.toCorda
 import net.corda.data.chunking.Chunk
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -10,7 +11,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
 
 /**
@@ -30,7 +30,7 @@ internal class ChunkReaderImpl(private val destDir: Path) : ChunkReader {
         var expectedChecksum: SecureHash
     )
 
-    private val chunksSoFar = mutableMapOf<String, ChunksReceived>()
+    private val chunksSoFar = mutableMapOf<RequestId, ChunksReceived>()
     private var chunksCombinedCallback: ChunksCombined? = null
 
     override fun read(chunk: Chunk) {
@@ -70,7 +70,7 @@ internal class ChunkReaderImpl(private val destDir: Path) : ChunkReader {
                 throw IllegalArgumentException("Checksums do not match, one or more of the chunks may be corrupt")
             }
 
-            chunksCombinedCallback!!.onChunksCombined(Paths.get(chunk.fileName), path)
+            chunksCombinedCallback!!.onChunksCombined(chunk.fileName, path, actualChecksum)
         }
     }
 

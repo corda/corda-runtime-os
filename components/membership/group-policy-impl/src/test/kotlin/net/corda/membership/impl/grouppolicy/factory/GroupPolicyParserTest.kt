@@ -1,6 +1,5 @@
 package net.corda.membership.impl.grouppolicy.factory
 
-import net.corda.membership.staticnetwork.StaticMemberTemplateExtension.Companion.mgmKeyAlias
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.uncheckedCast
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -37,6 +36,8 @@ class GroupPolicyParserTest {
         const val IDENTITY_KEY_POLICY = "identityKeyPolicy"
         const val IDENTITY_TRUST_STORE = "identityTrustStore"
         const val TLS_TRUST_STORE = "tlsTrustStore"
+        const val TLS_PKI = "tlsPki"
+        const val P2P_PROTOCOL_MODE = "p2pProtocolMode"
         const val MGM_INFO = "mgmInfo"
         const val CIPHER_SUITE = "cipherSuite"
         const val ROLES = "roles"
@@ -44,7 +45,6 @@ class GroupPolicyParserTest {
 
     private lateinit var groupPolicyParser: GroupPolicyParser
     private val testGroupId = "ABC123"
-    private val testMgmKeyAlias = "mgm-alias"
 
     @BeforeEach
     fun setUp() {
@@ -79,14 +79,13 @@ class GroupPolicyParserTest {
         // Top level properties
         assertEquals(1, result[FILE_FORMAT_VERSION])
         assertEquals(testGroupId, result.groupId)
-        assertEquals("net.corda.membership.staticnetwork.StaticMemberRegistrationService", result.registrationProtocol)
+        assertEquals("net.corda.membership.impl.registration.staticnetwork.StaticMemberRegistrationService", result.registrationProtocol)
         assertEquals("net.corda.v5.mgm.MGMSynchronisationProtocolFactory", result[SYNC_PROTOCOL_FACTORY])
         assertTrue(result[PROTOCOL_PARAMETERS] is Map<*, *>)
-        assertTrue(result[STATIC_NETWORK] is Map<*, *>)
 
         // Protocol parameters
         val protocolParameters = result[PROTOCOL_PARAMETERS] as Map<*, *>
-        assertEquals(7, protocolParameters.size)
+        assertEquals(10, protocolParameters.size)
         assertEquals("Standard", protocolParameters[IDENTITY_PKI])
         assertEquals("Combined", protocolParameters[IDENTITY_KEY_POLICY])
 
@@ -95,6 +94,10 @@ class GroupPolicyParserTest {
 
         assertTrue(protocolParameters[TLS_TRUST_STORE] is List<*>)
         assertEquals(3, (protocolParameters[TLS_TRUST_STORE] as List<*>).size)
+
+        assertEquals("C5", protocolParameters[TLS_PKI])
+
+        assertEquals("AUTHENTICATED_ENCRYPTION", protocolParameters[P2P_PROTOCOL_MODE])
 
         assertTrue(protocolParameters[MGM_INFO] is Map<*, *>)
         assertEquals(9, (protocolParameters[MGM_INFO] as Map<*, *>).size)
@@ -106,7 +109,8 @@ class GroupPolicyParserTest {
         assertEquals(2, (protocolParameters[ROLES] as Map<*, *>).size)
 
         // Static network
-        val staticNetwork = result[STATIC_NETWORK] as Map<*, *>
+        assertTrue(protocolParameters[STATIC_NETWORK] is Map<*, *>)
+        val staticNetwork = protocolParameters[STATIC_NETWORK] as Map<*, *>
         assertEquals(2, staticNetwork.size)
 
         val staticMembers = staticNetwork[STATIC_MEMBERS] as List<*>
@@ -139,12 +143,6 @@ class GroupPolicyParserTest {
         assertEquals(charlie[ENDPOINT_PROTOCOL_1], 1)
         assertEquals(charlie[ENDPOINT_URL_2], "https://charlie-dr.corda5.r3.com:10001")
         assertEquals(charlie[ENDPOINT_PROTOCOL_2], 1)
-    }
-
-    @Test
-    fun `Parse group policy - verify MGM private key alias`() {
-        val result = groupPolicyParser.parse(getSampleGroupPolicy())
-        assertEquals(testMgmKeyAlias, result.mgmKeyAlias)
     }
 
     private fun getSampleGroupPolicy(): String {

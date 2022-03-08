@@ -1,0 +1,135 @@
+pipeline {
+    agent {
+        docker {
+            image 'build-zulu-openjdk:11'
+            label 'docker'
+            registryUrl 'https://engineering-docker.software.r3.com/'
+            registryCredentialsId 'artifactory-credentials'
+            // Used to mount storage from the host as a volume to persist the cache between builds
+            args '-v /tmp:/host_tmp'
+            // make sure build image is always fresh
+            alwaysPull true
+        }
+    }
+
+    parameters {
+        string(name: 'BUILD_REV', defaultValue: '', description: 'Short git hash of the build revision to test - leave blank to test unstable')
+    }
+
+    environment {
+        ARTIFACTORY_CREDENTIALS = credentials('artifactory-credentials')
+        CORDA_ARTIFACTORY_USERNAME = "${env.ARTIFACTORY_CREDENTIALS_USR}"
+        CORDA_ARTIFACTORY_PASSWORD = "${env.ARTIFACTORY_CREDENTIALS_PSW}"
+        CORDA_USE_CACHE = "corda-remotes"
+        KUBECONFIG = credentials("e2e-tests-credentials")
+        CORDA_CLI_USER_HOME = "/tmp/corda-cli-home"
+        GRADLE_USER_HOME = "/host_tmp/gradle"
+        CORDA_REVISION = "${env.GIT_COMMIT}"
+        NAMESPACE = "run-${UUID.randomUUID().toString()}"
+        CLUSTER_NAME = "eks-e2e.e2e.awsdev.r3.com"
+        HELM_CONFIG_HOME = "/tmp/helm"
+        HELM_REPOSITORY_CACHE = "/host_tmp/helm/repository"
+    }
+
+    options {
+        buildDiscarder(logRotator(daysToKeepStr: '14', artifactDaysToKeepStr: '14'))
+        timeout(time: 30, unit: 'MINUTES')
+        timestamps()
+    }
+
+    stages {
+        stage('Install CLI') {
+            steps {
+                sh 'mkdir -p "${GRADLE_USER_HOME}"'
+                //download and set up CLI
+                sh "curl -u '${CORDA_ARTIFACTORY_USERNAME}:${CORDA_ARTIFACTORY_PASSWORD}' https://software.r3.com/artifactory/engineering-tools-maven-unstable/net/corda/cli/corda-cli-developer/[RELEASE]/corda-cli-developer-[RELEASE].tar\\;source.branch+=main --output ./corda-cli.tar"
+                sh "rm -rf ./corda-cli && mkdir ./corda-cli"
+                sh "tar -C ./corda-cli --strip 1 -xf ./corda-cli.tar"
+                sh "./corda-cli/bin/corda-cli -v"
+            }
+        }
+        stage ('Create namespace') {
+            steps {
+                sh '''
+                    kubectl create ns $NAMESPACE
+                    kubectl label ns $NAMESPACE namespace-type=corda-e2e --overwrite=true
+                '''
+            }
+        }
+        stage('Install prereqs') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'artifactory-credentials', passwordVariable: 'PASSWORD', usernameVariable: 'USER')]) {
+                    sh '''
+                        echo $PASSWORD | helm registry login corda-os-docker.software.r3.com -u $USER --password-stdin
+                        helm install prereqs oci://corda-os-docker.software.r3.com/helm-charts/corda-prereqs \
+                            -f .ci/e2eTests/prereqs.yaml -n $NAMESPACE --wait
+                    '''
+                }
+            }
+            post {
+                unsuccessful {
+                    sh '''
+                        kubectl logs -lapp.kubernetes.io/instance=prereqs -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
+                        kubectl describe all -n ${NAMESPACE} > describe.txt
+                    '''
+                    archiveArtifacts artifacts: 'logs.txt, describe.txt', allowEmptyArchive: true
+                    sh 'rm -f logs.txt describe.txt'
+                }
+            }
+        }
+        stage('Deploy cluster') {
+            steps {
+               script {
+                  env.BASE_IMAGE = params.BUILD_REV ? "preTest-${params.BUILD_REV}" : "unstable"
+               }
+               sh 'helm install corda ./charts/corda --set imageTag=$BASE_IMAGE -n $NAMESPACE --wait --timeout 600s'
+            }
+            post {
+                unsuccessful {
+                    sh '''
+                        kubectl logs -lfamily=e2e -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
+                        kubectl describe all -n ${NAMESPACE} > describe.txt
+                    '''
+                    archiveArtifacts artifacts: 'logs.txt, describe.txt', allowEmptyArchive: true
+                    sh 'rm -f logs.txt describe.txt'
+                }
+            }
+        }
+        stage('Forward port and run tests') {
+            steps {
+
+                //for details see
+                // https://github.com/corda/corda-runtime-os/blob/release/ent/5.0/applications/http-rpc-gateway/src/e2e-test/README.md
+
+
+                sh '''
+                    # Forward RPC worker port
+                    nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-rpc 8888 > forward.txt 2>&1 &
+                    procno=$! #remember process number started in background
+                    trap "kill -9 ${procno}" EXIT
+
+                    ./gradlew cleanE2eTest :applications:workers:release:rpc-worker:e2eTest
+                '''
+            }
+            post {
+                always {
+                    junit allowEmptyResults: true, testResults: '**/test-results/e2eTest/TEST-*.xml'
+                }
+                unsuccessful {
+                    sh '''
+                        kubectl logs -lfamily=e2e -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
+                        kubectl describe all -n ${NAMESPACE} > describe.txt
+                    '''
+                    archiveArtifacts artifacts: 'forward.txt, logs.txt, describe.txt', allowEmptyArchive: true
+                    sh 'rm -f forward.txt logs.txt describe.txt'
+                }
+            }
+        }
+    }
+    post {
+        success {
+            // Only delete namespace if we're successful (though it'll get pruned in 3 hours anyway)
+            sh 'kubectl delete ns "${NAMESPACE}"'
+        }
+    }
+}

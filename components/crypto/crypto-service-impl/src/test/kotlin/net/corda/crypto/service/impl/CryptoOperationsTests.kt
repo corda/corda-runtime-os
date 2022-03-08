@@ -1,6 +1,6 @@
 package net.corda.crypto.service.impl
 
-import net.corda.crypto.CryptoConsts
+import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.service.impl.signing.CryptoServicesTestFactory
 import net.corda.test.util.createTestCase
 import net.corda.v5.base.types.OpaqueBytes
@@ -21,8 +21,6 @@ import net.corda.v5.crypto.OID_COMPOSITE_KEY_IDENTIFIER
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.exceptions.CryptoServiceException
-import net.i2p.crypto.eddsa.EdDSAKey
-import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.interfaces.ECKey
@@ -485,10 +483,8 @@ class CryptoOperationsTests {
         services.cryptoService.generateKeyPair(alias, scheme, EMPTY_CONTEXT)
         val keyPair = services.getKeyPair(alias)
         assertNotNull(keyPair)
-        assertEquals(keyPair.private.algorithm, "EdDSA")
-        assertEquals((keyPair.private as EdDSAKey).params, EdDSANamedCurveTable.getByName("ED25519"))
-        assertEquals(keyPair.public.algorithm, "EdDSA")
-        assertEquals((keyPair.public as EdDSAKey).params, EdDSANamedCurveTable.getByName("ED25519"))
+        assertEquals("Ed25519", keyPair.private.algorithm)
+        assertEquals("Ed25519", keyPair.public.algorithm)
     }
 
     @Test

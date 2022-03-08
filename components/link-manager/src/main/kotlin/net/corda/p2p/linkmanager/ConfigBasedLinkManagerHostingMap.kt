@@ -2,14 +2,19 @@ package net.corda.p2p.linkmanager
 
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.CONFIG_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITIES_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_GPOUP_ID
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_IDENTITY_TENANT_ID
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_TLS_TENANT_ID
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_X500_NAME
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_TLS_CERTIFICATES
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
-import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
@@ -18,54 +23,74 @@ import java.util.concurrent.ConcurrentHashMap
  */
 class ConfigBasedLinkManagerHostingMap(
     val configReadService: ConfigurationReadService,
-    coordinatorFactory: LifecycleCoordinatorFactory
-): LinkManagerHostingMap {
+    coordinatorFactory: LifecycleCoordinatorFactory,
+) : LinkManagerHostingMap {
 
-    override val dominoTile = DominoTile(
+    private val listeners = ConcurrentHashMap.newKeySet<HostingMapListener>()
+
+    override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
         configurationChangeHandler = HostingMapConfigurationChangeHandler()
     )
 
-    private val locallyHostedIdentities = ConcurrentHashMap.newKeySet<LinkManagerNetworkMap.HoldingIdentity>()
+    private val locallyHostedIdentityToTenantId = ConcurrentHashMap<LinkManagerNetworkMap.HoldingIdentity, String>()
 
     override fun isHostedLocally(identity: LinkManagerNetworkMap.HoldingIdentity): Boolean {
-        return locallyHostedIdentities.contains(identity)
+        return locallyHostedIdentityToTenantId.containsKey(identity)
     }
 
-    inner class HostingMapConfigurationChangeHandler: ConfigurationChangeHandler<Set<LinkManagerNetworkMap.HoldingIdentity>>(
-        configReadService,
-        CONFIG_KEY,
-        ::fromConfig,
-    ) {
+    override fun getTenantId(identity: LinkManagerNetworkMap.HoldingIdentity) = locallyHostedIdentityToTenantId[identity]
+
+    override fun registerListener(listener: HostingMapListener) {
+        listeners += listener
+    }
+
+    inner class HostingMapConfigurationChangeHandler :
+        ConfigurationChangeHandler<Collection<HostingMapListener.IdentityInfo>>(
+            configReadService,
+            CONFIG_KEY,
+            ::fromConfig,
+        ) {
         override fun applyNewConfiguration(
-            newConfiguration: Set<LinkManagerNetworkMap.HoldingIdentity>,
-            oldConfiguration: Set<LinkManagerNetworkMap.HoldingIdentity>?,
+            newConfiguration: Collection<HostingMapListener.IdentityInfo>,
+            oldConfiguration: Collection<HostingMapListener.IdentityInfo>?,
             resources: ResourcesHolder,
         ): CompletableFuture<Unit> {
-            val oldIdentities = (oldConfiguration ?: emptySet())
-            val identitiesToAdd = newConfiguration - oldIdentities
-            val identitiesToRemove = oldIdentities - newConfiguration
-            locallyHostedIdentities.removeAll(identitiesToRemove)
-            locallyHostedIdentities.addAll(identitiesToAdd)
-            val configUpdateResult = CompletableFuture<Unit>()
-            configUpdateResult.complete(Unit)
-            return configUpdateResult
+            val identitiesToKeep = newConfiguration.map { identity ->
+                locallyHostedIdentityToTenantId[identity.holdingIdentity.toHoldingIdentity()] = identity.identityTenantId
+                listeners.forEach { listener ->
+                    listener.identityAdded(identity)
+                }
+                identity.holdingIdentity.toHoldingIdentity()
+            }.toSet()
+
+            (locallyHostedIdentityToTenantId.keys().toList() - identitiesToKeep).forEach {
+                locallyHostedIdentityToTenantId.remove(it)
+            }
+            return CompletableFuture.completedFuture(Unit)
         }
     }
 
-    private fun fromConfig(config: Config): Set<LinkManagerNetworkMap.HoldingIdentity> {
+    private fun fromConfig(config: Config): Collection<HostingMapListener.IdentityInfo> {
         val holdingIdentitiesConfig = config.getConfigList(LOCALLY_HOSTED_IDENTITIES_KEY)
             ?: throw InvalidLinkManagerConfigException(
                 "Invalid LinkManager config. getConfigList with key = $LOCALLY_HOSTED_IDENTITIES_KEY returned null."
             )
-        val holdingIdentities = holdingIdentitiesConfig.map { identityConfig ->
+        return holdingIdentitiesConfig.map { identityConfig ->
             val x500name = identityConfig.getString(LOCALLY_HOSTED_IDENTITY_X500_NAME)
             val groupId = identityConfig.getString(LOCALLY_HOSTED_IDENTITY_GPOUP_ID)
-            LinkManagerNetworkMap.HoldingIdentity(x500name, groupId)
+            val certificates = identityConfig.getStringList(LOCALLY_HOSTED_TLS_CERTIFICATES)
+            val tlsTenantId = identityConfig.getString(LOCALLY_HOSTED_IDENTITY_TLS_TENANT_ID)
+            val identityTenantId = identityConfig.getString(LOCALLY_HOSTED_IDENTITY_IDENTITY_TENANT_ID)
+            HostingMapListener.IdentityInfo(
+                holdingIdentity = HoldingIdentity(x500name, groupId),
+                tlsCertificates = certificates,
+                tlsTenantId = tlsTenantId,
+                identityTenantId = identityTenantId,
+            )
         }
-        return holdingIdentities.toSet()
     }
 
-    class InvalidLinkManagerConfigException(override val message: String): RuntimeException(message)
+    class InvalidLinkManagerConfigException(override val message: String) : RuntimeException(message)
 }

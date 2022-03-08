@@ -3,34 +3,36 @@ package net.corda.membership.impl.read.subscription
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.SignedMemberInfo
-import net.corda.membership.conversion.PropertyConverterImpl
-import net.corda.membership.conversion.toWire
-import net.corda.membership.identity.EndpointInfoImpl
-import net.corda.membership.identity.MGMContextImpl
-import net.corda.membership.identity.MemberContextImpl
-import net.corda.membership.identity.MemberInfoExtension.Companion.GROUP_ID
-import net.corda.membership.identity.MemberInfoExtension.Companion.IDENTITY_KEYS_KEY
-import net.corda.membership.identity.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
-import net.corda.membership.identity.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
-import net.corda.membership.identity.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
-import net.corda.membership.identity.MemberInfoExtension.Companion.MODIFIED_TIME
-import net.corda.membership.identity.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.identity.MemberInfoExtension.Companion.PARTY_OWNING_KEY
-import net.corda.membership.identity.MemberInfoExtension.Companion.PLATFORM_VERSION
-import net.corda.membership.identity.MemberInfoExtension.Companion.PROTOCOL_VERSION
-import net.corda.membership.identity.MemberInfoExtension.Companion.SERIAL
-import net.corda.membership.identity.MemberInfoExtension.Companion.SOFTWARE_VERSION
-import net.corda.membership.identity.MemberInfoExtension.Companion.STATUS
-import net.corda.membership.identity.MemberInfoExtension.Companion.URL_KEY
-import net.corda.membership.identity.MemberInfoExtension.Companion.groupId
-import net.corda.membership.identity.MemberInfoImpl
-import net.corda.membership.identity.converter.EndpointInfoConverter
-import net.corda.membership.identity.converter.PublicKeyConverter
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
+import net.corda.layeredpropertymap.create
+import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
+import net.corda.layeredpropertymap.toWire
+import net.corda.membership.impl.EndpointInfoImpl
+import net.corda.membership.impl.MGMContextImpl
+import net.corda.membership.impl.MemberContextImpl
+import net.corda.membership.impl.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.impl.MemberInfoExtension.Companion.IDENTITY_KEYS_KEY
+import net.corda.membership.impl.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.impl.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
+import net.corda.membership.impl.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
+import net.corda.membership.impl.MemberInfoExtension.Companion.MODIFIED_TIME
+import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_NAME
+import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_OWNING_KEY
+import net.corda.membership.impl.MemberInfoExtension.Companion.PLATFORM_VERSION
+import net.corda.membership.impl.MemberInfoExtension.Companion.PROTOCOL_VERSION
+import net.corda.membership.impl.MemberInfoExtension.Companion.SERIAL
+import net.corda.membership.impl.MemberInfoExtension.Companion.SOFTWARE_VERSION
+import net.corda.membership.impl.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.impl.MemberInfoExtension.Companion.URL_KEY
+import net.corda.membership.impl.MemberInfoExtension.Companion.groupId
+import net.corda.membership.impl.MemberInfoImpl
+import net.corda.membership.impl.converter.EndpointInfoConverter
+import net.corda.membership.impl.converter.PublicKeyConverter
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.messaging.api.records.Record
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.membership.identity.EndpointInfo
-import net.corda.v5.membership.identity.MemberInfo
+import net.corda.v5.membership.EndpointInfo
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -53,12 +55,12 @@ class MemberListProcessorTest {
             EndpointInfoImpl("https://corda5.r3.com:10001", 10)
         )
         private val identityKeys = listOf(knownKey, knownKey)
-        private val converter = PropertyConverterImpl(
-            listOf(
-                EndpointInfoConverter(),
-                PublicKeyConverter(keyEncodingService),
-            )
+        private lateinit var layeredPropertyMapFactory: LayeredPropertyMapFactory
+        private val converters = listOf(
+            EndpointInfoConverter(),
+            PublicKeyConverter(keyEncodingService),
         )
+
         private val signature = CryptoSignatureWithKey(
             ByteBuffer.wrap(byteArrayOf()),
             ByteBuffer.wrap(byteArrayOf()),
@@ -77,7 +79,7 @@ class MemberListProcessorTest {
 
         @Suppress("SpreadOperator")
         private fun createTestMemberInfo(x500Name: String, status: String): MemberInfo = MemberInfoImpl(
-            memberProvidedContext = MemberContextImpl(
+            memberProvidedContext = layeredPropertyMapFactory.create<MemberContextImpl>(
                 sortedMapOf(
                     PARTY_NAME to x500Name,
                     PARTY_OWNING_KEY to knownKeyAsString,
@@ -87,15 +89,13 @@ class MemberListProcessorTest {
                     SOFTWARE_VERSION to "5.0.0",
                     PLATFORM_VERSION to "10",
                     SERIAL to "1",
-                ),
-                converter
+                )
             ),
-            mgmProvidedContext = MGMContextImpl(
+            mgmProvidedContext = layeredPropertyMapFactory.create<MGMContextImpl>(
                 sortedMapOf(
                     STATUS to status,
                     MODIFIED_TIME to modifiedTime.toString(),
-                ),
-                converter
+                )
             )
         )
 
@@ -150,7 +150,8 @@ class MemberListProcessorTest {
         @JvmStatic
         @BeforeAll
         fun setUp() {
-            memberListProcessor = MemberListProcessor(membershipGroupReadCache, converter)
+            layeredPropertyMapFactory = LayeredPropertyMapMocks.createFactory(converters)
+            memberListProcessor = MemberListProcessor(membershipGroupReadCache, layeredPropertyMapFactory)
             whenever(keyEncodingService.decodePublicKey(knownKeyAsString)).thenReturn(knownKey)
             whenever(keyEncodingService.encodeAsString(knownKey)).thenReturn(knownKeyAsString)
             alice = createTestMemberInfo("O=Alice,L=London,C=GB", MEMBER_STATUS_PENDING)

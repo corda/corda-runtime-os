@@ -9,17 +9,23 @@ import net.corda.session.manager.integration.SessionPartyFactory
 fun initiateNewSession(config: SmartConfig): Pair<SessionParty, SessionParty> {
     val (initiator, initiated) = SessionPartyFactory().createSessionParties(config)
 
+    initiator.assertStatus(null)
+    initiated.assertStatus(null)
+
     //send init
     initiator.processNewOutgoingMessage(SessionMessageType.INIT, sendMessages = true)
     initiator.assertStatus(SessionStateType.CREATED)
+    initiated.assertStatus(null)
 
     //receive init and send ack
     initiated.processNextReceivedMessage(sendMessages = true)
     initiated.assertStatus(SessionStateType.CONFIRMED)
+    initiator.assertStatus(SessionStateType.CREATED)
 
     //process ack
     initiator.processNextReceivedMessage()
     initiator.assertStatus(SessionStateType.CONFIRMED)
+    initiated.assertStatus(SessionStateType.CONFIRMED)
 
     initiator.assertIsInitiator(true)
     initiated.assertIsInitiator(false)

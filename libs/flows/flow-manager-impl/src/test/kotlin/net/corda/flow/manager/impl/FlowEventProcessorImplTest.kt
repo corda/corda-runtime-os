@@ -25,9 +25,7 @@ class FlowEventProcessorImplTest {
 
     private val wakeupPayload = Wakeup()
     private val flowKey = FlowKey("flow id", HoldingIdentity("x500 name", "group id"))
-    private val updatedCheckpoint = Checkpoint().apply {
-        cpiId = "cpi id set"
-    }
+    private val updatedCheckpoint = Checkpoint()
     private val outputRecords = listOf(Record(FLOW_EVENT_TOPIC, "key", "value"))
     private val updatedContext = FlowEventContext<Any>(updatedCheckpoint, FlowEvent(flowKey, wakeupPayload), wakeupPayload, outputRecords)
 
@@ -35,8 +33,9 @@ class FlowEventProcessorImplTest {
         whenever(eventPreProcessing()).thenReturn(this)
         whenever(runOrContinue()).thenReturn(this)
         whenever(setCheckpointSuspendedOn()).thenReturn(this)
+        whenever(setWaitingFor()).thenReturn(this)
         whenever(requestPostProcessing()).thenReturn(this)
-        whenever(eventPostProcessing()).thenReturn(this)
+        whenever(globalPostProcessing()).thenReturn(this)
         whenever(toStateAndEventResponse()).thenReturn(StateAndEventProcessor.Response(updatedCheckpoint, outputRecords))
     }
     private val flowEventPipelineFactory = mock<FlowEventPipelineFactory>().apply {
@@ -54,7 +53,16 @@ class FlowEventProcessorImplTest {
 
     @Test
     fun `Returns a checkpoint and events to send`() {
-        whenever(flowEventPipeline.eventPostProcessing()).thenReturn(FlowEventPipelineImpl(mock(), mock(), mock(), updatedContext))
+        whenever(flowEventPipeline.globalPostProcessing()).thenReturn(
+            FlowEventPipelineImpl(
+                mock(),
+                mock(),
+                mock(),
+                mock(),
+                mock(),
+                updatedContext
+            )
+        )
         val response = processor.onNext(Checkpoint(), Record(FLOW_EVENT_TOPIC, flowKey, FlowEvent(flowKey, wakeupPayload)))
         assertEquals(updatedCheckpoint, response.updatedState)
         assertEquals(outputRecords, response.responseEvents)
@@ -67,8 +75,9 @@ class FlowEventProcessorImplTest {
             verify(flowEventPipeline).eventPreProcessing()
             verify(flowEventPipeline).runOrContinue()
             verify(flowEventPipeline).setCheckpointSuspendedOn()
+            verify(flowEventPipeline).setWaitingFor()
             verify(flowEventPipeline).requestPostProcessing()
-            verify(flowEventPipeline).eventPostProcessing()
+            verify(flowEventPipeline).globalPostProcessing()
             verify(flowEventPipeline).toStateAndEventResponse()
         }
     }

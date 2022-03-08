@@ -1,6 +1,7 @@
 package net.corda.membership.impl.read.subscription
 
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.lifecycle.Lifecycle
@@ -10,7 +11,6 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.membership.conversion.PropertyConverter
 
 /**
  * Implementations of this interface manage the subscriptions required for the membership group read service component.
@@ -28,7 +28,7 @@ interface MembershipGroupReadSubscriptions : Lifecycle {
     class Impl(
         private val subscriptionFactory: SubscriptionFactory,
         private val groupReadCache: MembershipGroupReadCache,
-        private val converter: PropertyConverter
+        private val layeredPropertyMapFactory: LayeredPropertyMapFactory
     ) : MembershipGroupReadSubscriptions {
 
         companion object {
@@ -62,8 +62,13 @@ interface MembershipGroupReadSubscriptions : Lifecycle {
          */
         private fun startMemberListSubscription(config: SmartConfig) {
             val instanceId = when {
-                config.getIsNull(INSTANCE_ID) -> null
-                else -> config.getInt(INSTANCE_ID)
+                config.hasPathOrNull(INSTANCE_ID) -> {
+                    when {
+                        config.getIsNull(INSTANCE_ID) -> null
+                        else -> config.getInt(INSTANCE_ID)
+                    }
+                }
+                else -> null
             }
 
             val subscriptionConfig = SubscriptionConfig(
@@ -72,7 +77,7 @@ interface MembershipGroupReadSubscriptions : Lifecycle {
                 instanceId
             )
 
-            val processor = MemberListProcessor(groupReadCache, converter)
+            val processor = MemberListProcessor(groupReadCache, layeredPropertyMapFactory)
 
             memberListSubscription = subscriptionFactory.createCompactedSubscription(
                 subscriptionConfig,

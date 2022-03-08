@@ -2,14 +2,15 @@ package net.corda.membership.impl.read.subscription
 
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.membership.identity.MGMContextImpl
-import net.corda.membership.identity.MemberContextImpl
-import net.corda.membership.identity.toMemberInfo
-import net.corda.membership.identity.toSortedMap
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
+import net.corda.layeredpropertymap.create
+import net.corda.membership.impl.MGMContextImpl
+import net.corda.membership.impl.MemberContextImpl
+import net.corda.membership.impl.toMemberInfo
+import net.corda.membership.impl.toSortedMap
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.v5.membership.conversion.PropertyConverter
 import net.corda.virtualnode.toCorda
 import java.nio.ByteBuffer
 
@@ -19,7 +20,7 @@ import java.nio.ByteBuffer
  */
 class MemberListProcessor(
     private val membershipGroupReadCache: MembershipGroupReadCache,
-    private val converter: PropertyConverter
+    private val layeredPropertyMapFactory: LayeredPropertyMapFactory
 ) : CompactedProcessor<String, PersistentMemberInfo> {
     override val keyClass: Class<String>
         get() = String::class.java
@@ -36,13 +37,11 @@ class MemberListProcessor(
             { it.value.viewOwningMember },
             {
                 toMemberInfo(
-                    MemberContextImpl(
-                        getContextMap(it.value.signedMemberInfo.memberContext),
-                        converter
+                    layeredPropertyMapFactory.create<MemberContextImpl>(
+                        getContextMap(it.value.signedMemberInfo.memberContext)
                     ),
-                    MGMContextImpl(
-                        getContextMap(it.value.signedMemberInfo.mgmContext),
-                        converter
+                    layeredPropertyMapFactory.create<MGMContextImpl>(
+                        getContextMap(it.value.signedMemberInfo.mgmContext)
                     )
                 )
             }
@@ -60,13 +59,11 @@ class MemberListProcessor(
         currentData: Map<String, PersistentMemberInfo>
     ) {
         toMemberInfo(
-            MemberContextImpl(
-                getContextMap(newRecord.value!!.signedMemberInfo.memberContext),
-                converter
+            layeredPropertyMapFactory.create<MemberContextImpl>(
+                getContextMap(newRecord.value!!.signedMemberInfo.memberContext)
             ),
-            MGMContextImpl(
-                getContextMap(newRecord.value!!.signedMemberInfo.mgmContext),
-                converter
+            layeredPropertyMapFactory.create<MGMContextImpl>(
+                getContextMap(newRecord.value!!.signedMemberInfo.mgmContext)
             )
         ).apply {
             membershipGroupReadCache.memberListCache.put(

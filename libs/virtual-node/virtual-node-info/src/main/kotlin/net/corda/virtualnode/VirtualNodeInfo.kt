@@ -1,8 +1,7 @@
 package net.corda.virtualnode
 
-import net.corda.packaging.CPI
-import net.corda.packaging.converters.toAvro
-import net.corda.packaging.converters.toCorda
+import net.corda.libs.packaging.CpiIdentifier
+import java.util.UUID
 
 /**
  * Contains information relevant to a particular virtual node (a CPI and a holding identity).
@@ -15,10 +14,43 @@ import net.corda.packaging.converters.toCorda
  *
  * Also see https://github.com/corda/platform-eng-design/blob/mnesbit-rpc-apis/core/corda-5/corda-5.1/rpc-apis/rpc_api.md#cluster-database
  */
-data class VirtualNodeInfo(val holdingIdentity: HoldingIdentity, val cpiIdentifier: CPI.Identifier)
+data class VirtualNodeInfo(
+    val holdingIdentity: HoldingIdentity,
+    val cpiIdentifier: CpiIdentifier,
+    /** Vault DDL DB connection ID */
+    val vaultDdlConnectionId: UUID? = null,
+    /** Vault DML DB connection ID */
+    val vaultDmlConnectionId: UUID,
+    /** Crypto DDL DB connection ID */
+    val cryptoDdlConnectionId: UUID? = null,
+    /** Crypto DML DB connection ID */
+    val cryptoDmlConnectionId: UUID,
+    /** HSM connection ID */
+    val hsmConnectionId: UUID? = null)
+
 
 fun VirtualNodeInfo.toAvro(): net.corda.data.virtualnode.VirtualNodeInfo =
-    net.corda.data.virtualnode.VirtualNodeInfo(holdingIdentity.toAvro(), cpiIdentifier.toAvro())
+    with (holdingIdentity) {
+        net.corda.data.virtualnode.VirtualNodeInfo(
+            toAvro(),
+            cpiIdentifier.toAvro(),
+            vaultDdlConnectionId?.let{ vaultDdlConnectionId.toString() },
+            vaultDmlConnectionId.toString(),
+            cryptoDdlConnectionId?.let{ cryptoDdlConnectionId.toString() },
+            cryptoDmlConnectionId.toString(),
+            hsmConnectionId?.let { hsmConnectionId.toString() }
+        )
+    }
 
-fun net.corda.data.virtualnode.VirtualNodeInfo.toCorda(): VirtualNodeInfo =
-    VirtualNodeInfo(holdingIdentity.toCorda(), cpiIdentifier.toCorda())
+fun net.corda.data.virtualnode.VirtualNodeInfo.toCorda(): VirtualNodeInfo {
+    val holdingIdentity = holdingIdentity.toCorda()
+    return VirtualNodeInfo(
+        holdingIdentity,
+        CpiIdentifier.fromAvro(cpiIdentifier),
+        vaultDdlConnectionId?.let { UUID.fromString(vaultDdlConnectionId) },
+        UUID.fromString(vaultDmlConnectionId),
+        cryptoDdlConnectionId?.let { UUID.fromString(cryptoDdlConnectionId) },
+        UUID.fromString(cryptoDmlConnectionId),
+        hsmConnectionId?.let { UUID.fromString(hsmConnectionId) },
+    )
+}

@@ -2,14 +2,17 @@ package net.corda.chunking
 
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.io.InputStream
-import java.nio.file.Path
 
 interface ChunkWriter {
     /**
      * Break up an [InputStream] into chunks of some unspecified size (smaller than the default Kafka message size).
      * The given [fileName] will be returned via the [ChunkReader] and the [ChunksCombined] callback.
+     *
+     * @param fileName the filename, if any, of the binary we are chunking
+     * @param inputStream a stream containing the binary - the caller should `close()` the stream
+     * @return the `requestId` for this 'write'
      */
-    fun write(fileName: Path, inputStream: InputStream)
+    fun write(fileName: String, inputStream: InputStream) : RequestId
 
     /**
      * When a chunk is created, it is passed to the [ChunkWriteCallback], it is up to the implementer to write the

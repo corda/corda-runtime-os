@@ -7,8 +7,10 @@ import net.corda.flow.manager.impl.FlowEventContext
 import net.corda.flow.manager.impl.handlers.FlowProcessingException
 import net.corda.flow.manager.impl.handlers.events.FlowEventHandler
 import net.corda.flow.manager.impl.handlers.requests.FlowRequestHandler
+import net.corda.flow.manager.impl.handlers.status.FlowWaitingForHandler
 import net.corda.flow.manager.impl.pipeline.FlowEventPipeline
 import net.corda.flow.manager.impl.pipeline.FlowEventPipelineImpl
+import net.corda.flow.manager.impl.pipeline.FlowGlobalPostProcessor
 import net.corda.flow.manager.impl.runner.FlowRunner
 import net.corda.v5.base.util.uncheckedCast
 import org.osgi.service.component.annotations.Activate
@@ -21,7 +23,9 @@ import org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC
 @Component(service = [FlowEventPipelineFactory::class])
 class FlowEventPipelineFactoryImpl(
     private val flowRunner: FlowRunner,
+    private val flowGlobalPostProcessor: FlowGlobalPostProcessor,
     flowEventHandlers: List<FlowEventHandler<out Any>>,
+    flowWaitingForHandlers: List<FlowWaitingForHandler<out Any>>,
     flowRequestHandlers: List<FlowRequestHandler<out FlowIORequest<*>>>
 ) : FlowEventPipelineFactory {
 
@@ -30,11 +34,19 @@ class FlowEventPipelineFactoryImpl(
     private val flowEventHandlers: List<FlowEventHandler<out Any>> = flowEventHandlers
 
     // We cannot use constructor injection with DYNAMIC policy.
+    @Reference(service = FlowWaitingForHandler::class, cardinality = MULTIPLE, policy = DYNAMIC)
+    private val flowWaitingForHandlers: List<FlowWaitingForHandler<out Any>> = flowWaitingForHandlers
+
+    // We cannot use constructor injection with DYNAMIC policy.
     @Reference(service = FlowRequestHandler::class, cardinality = MULTIPLE, policy = DYNAMIC)
     private val flowRequestHandlers: List<FlowRequestHandler<out FlowIORequest<*>>> = flowRequestHandlers
 
-    private val flowEventHandlerMap: Map<Any, FlowEventHandler<out Any>> by lazy {
+    private val flowEventHandlerMap: Map<Class<*>, FlowEventHandler<out Any>> by lazy {
         flowEventHandlers.associateBy(FlowEventHandler<*>::type)
+    }
+
+    private val flowWaitingForHandlerMap: Map<Class<*>, FlowWaitingForHandler<out Any>> by lazy {
+        flowWaitingForHandlers.associateBy(FlowWaitingForHandler<*>::type)
     }
 
     private val flowRequestHandlerMap: Map<Class<out FlowIORequest<*>>, FlowRequestHandler<out FlowIORequest<*>>> by lazy {
@@ -44,8 +56,10 @@ class FlowEventPipelineFactoryImpl(
     @Activate
     constructor(
         @Reference(service = FlowRunner::class)
-        flowRunner: FlowRunner
-    ) : this(flowRunner, mutableListOf(), mutableListOf())
+        flowRunner: FlowRunner,
+        @Reference(service = FlowGlobalPostProcessor::class)
+        flowGlobalPostProcessor: FlowGlobalPostProcessor
+    ) : this(flowRunner, flowGlobalPostProcessor, mutableListOf(), mutableListOf(), mutableListOf())
 
     override fun create(checkpoint: Checkpoint?, event: FlowEvent): FlowEventPipeline {
         val context = FlowEventContext<Any>(
@@ -54,7 +68,14 @@ class FlowEventPipelineFactoryImpl(
             inputEventPayload = event.payload,
             outputRecords = emptyList()
         )
-        return FlowEventPipelineImpl(getFlowEventHandler(event), flowRequestHandlerMap, flowRunner, context)
+        return FlowEventPipelineImpl(
+            getFlowEventHandler(event),
+            flowWaitingForHandlerMap,
+            flowRequestHandlerMap,
+            flowRunner,
+            flowGlobalPostProcessor,
+            context
+        )
     }
 
     private fun getFlowEventHandler(event: FlowEvent): FlowEventHandler<Any> {

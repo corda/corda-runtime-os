@@ -30,7 +30,7 @@ class ChunkWritingTest {
     }
 
     private fun createFile(fileSize: Long): Path {
-        val path = randomFileName()
+        val path = fs.getPath(randomFileName())
         Files.newByteChannel(path, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW).apply {
             position(fileSize)
             write(ByteBuffer.wrap(ByteArray(0)))
@@ -40,7 +40,7 @@ class ChunkWritingTest {
         return path
     }
 
-    private fun randomFileName(): Path = fs.getPath(UUID.randomUUID().toString())
+    private fun randomFileName(): String = UUID.randomUUID().toString()
 
     @Test
     fun `simple chunking`() {

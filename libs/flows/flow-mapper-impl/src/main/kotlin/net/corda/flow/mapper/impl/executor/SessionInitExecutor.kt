@@ -40,8 +40,6 @@ class SessionInitExecutor(
     }
 
     private fun processSessionInit(sessionEvent: SessionEvent, sessionInit: SessionInit): FlowMapperResult {
-        sessionEvent.sessionId = toggleSessionId(sessionEvent.sessionId)
-
         val (flowKey, outputRecordKey, outputRecordValue) =
             getSessionInitOutputs(
                 messageDirection,
@@ -68,6 +66,7 @@ class SessionInitExecutor(
     ): SessionInitOutputs {
         return if (messageDirection == MessageDirection.INBOUND) {
             val flowKey = generateFlowKey(sessionInit.initiatedIdentity)
+            sessionInit.flowKey = flowKey
             SessionInitOutputs(flowKey, flowKey, FlowEvent(flowKey, sessionEvent))
         } else {
             //reusing SessionInit object for inbound and outbound traffic rather than creating a new object identical to SessionInit
@@ -75,6 +74,7 @@ class SessionInitExecutor(
             val tmpFLowEventKey = sessionInit.flowKey
             sessionInit.flowKey = null
             sessionEvent.payload = sessionInit
+            sessionEvent.sessionId = toggleSessionId(sessionEvent.sessionId)
 
             SessionInitOutputs(
                 tmpFLowEventKey,

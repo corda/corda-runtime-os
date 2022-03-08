@@ -50,7 +50,6 @@ object Helpers {
         val mainBundlesToSandboxGroup = mutableMapOf<String, SandboxGroup>()
         for (cpks in cpksPerCpi) {
             val sandboxGroup: SandboxGroup = mock()
-            doReturn(cpks).whenever(sandboxGroup).cpks
             val mainBundles = cpks.map { it.metadata.mainBundle }.toSortedSet().joinToString()
             mainBundlesToSandboxGroup[mainBundles] = sandboxGroup
         }

@@ -5,6 +5,7 @@ import net.corda.chunking.db.ChunkDbWriterFactory
 import net.corda.chunking.read.ChunkReadService
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -35,6 +36,8 @@ class ChunkReadServiceImpl @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = DbConnectionManager::class)
     private val dbConnectionManager: DbConnectionManager,
+    @Reference(service = CpiInfoWriteService::class)
+    private val cpiInfoWriteService: CpiInfoWriteService
 ) : ChunkReadService, LifecycleEventHandler {
     companion object {
         val log: Logger = contextLogger()
@@ -65,12 +68,15 @@ class ChunkReadServiceImpl @Activate constructor(
         log.debug("onStartEvent")
 
         configurationReadService.start()
+        cpiInfoWriteService.start()
+
         registration?.close()
         registration =
             coordinator.followStatusChangesByName(
                 setOf(
                     LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                    LifecycleCoordinatorName.forComponent<DbConnectionManager>()
+                    LifecycleCoordinatorName.forComponent<DbConnectionManager>(),
+                    LifecycleCoordinatorName.forComponent<CpiInfoWriteService>()
                 )
             )
     }
@@ -80,6 +86,7 @@ class ChunkReadServiceImpl @Activate constructor(
 
         chunkDbWriter?.stop()
         chunkDbWriter = null
+
         coordinator.updateStatus(LifecycleStatus.DOWN)
     }
 
@@ -107,11 +114,9 @@ class ChunkReadServiceImpl @Activate constructor(
         val config = event.config[ConfigKeys.BOOT_CONFIG]!!
         chunkDbWriter?.close()
         chunkDbWriter = chunkDbWriterFactory
-            .create(
-                config,
-                dbConnectionManager.clusterDbEntityManagerFactory
-            )
+            .create(config, dbConnectionManager.getClusterEntityManagerFactory(), cpiInfoWriteService)
             .apply { start() }
+
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 

@@ -1,6 +1,6 @@
 package net.corda.crypto.client.impl
 
-import net.corda.crypto.CryptoConsts
+import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.config.HSMInfo

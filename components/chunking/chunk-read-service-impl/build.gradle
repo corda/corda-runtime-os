@@ -23,6 +23,8 @@ dependencies {
     implementation project(':components:chunking:chunk-read-service')
     implementation project(':components:chunking:chunk-db-write')
     implementation project(":components:db:db-connection-manager")
+    implementation project(':components:virtual-node:cpi-info-write-service')
+
     implementation project(':libs:chunking:chunking-core')
     implementation project(':libs:chunking:chunking-datamodel')
     implementation project(':libs:db:db-orm')

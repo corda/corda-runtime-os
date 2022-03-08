@@ -1,6 +1,6 @@
 package net.corda.crypto.persistence
 
-import net.corda.crypto.Encryptor
+import net.corda.crypto.core.Encryptor
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
@@ -56,6 +56,6 @@ class WrappingKey(
         val keyInfo = PrivateKeyInfo.getInstance(this)
         val scheme = schemeMetadata.findSignatureScheme(keyInfo.privateKeyAlgorithm)
         val keyFactory = schemeMetadata.findKeyFactory(scheme)
-        return schemeMetadata.toSupportedPrivateKey(keyFactory.generatePrivate(PKCS8EncodedKeySpec(this)))
+        return keyFactory.generatePrivate(PKCS8EncodedKeySpec(this))
     }
 }

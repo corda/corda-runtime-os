@@ -6,5 +6,7 @@ cordaPipeline(
     publishRepoPrefix: 'corda-ent-maven',
     createPostgresDb: true,
     publishOSGiImage: true,
-    publishPreTestImage: true
+    publishPreTestImage: true,
+    e2eTestName: 'corda-runtime-os-e2e-tests',
+    runE2eTests: false
     )

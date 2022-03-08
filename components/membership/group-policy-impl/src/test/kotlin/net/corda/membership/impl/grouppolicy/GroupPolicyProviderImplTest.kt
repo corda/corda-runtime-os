@@ -1,6 +1,8 @@
 package net.corda.membership.impl.grouppolicy
 
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.libs.packaging.CpiIdentifier
+import net.corda.libs.packaging.CpiMetadata
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEventHandler
@@ -9,9 +11,8 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.GroupPolicy
-import net.corda.packaging.CPI
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.membership.identity.MemberX500Name
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoListener
@@ -30,6 +31,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import java.util.UUID
 
 /**
  * Unit tests for [GroupPolicyProviderImpl]
@@ -60,7 +62,7 @@ class GroupPolicyProviderImplTest {
     val holdingIdentity3 = HoldingIdentity(alice.toString(), groupId2)
     val holdingIdentity4 = HoldingIdentity(bob.toString(), groupId2)
 
-    fun mockMetadata(resultGroupPolicy: String?) = mock<CPI.Metadata> {
+    fun mockMetadata(resultGroupPolicy: String?) = mock<CpiMetadata> {
         on { groupPolicy } doReturn resultGroupPolicy
     }
 
@@ -69,18 +71,22 @@ class GroupPolicyProviderImplTest {
     val cpiMetadata3 = mockMetadata(groupPolicy3)
     val cpiMetadata4 = mockMetadata(groupPolicy4)
 
-    val cpiIdentifier1: CPI.Identifier = mock()
-    val cpiIdentifier2: CPI.Identifier = mock()
-    val cpiIdentifier3: CPI.Identifier = mock()
-    val cpiIdentifier4: CPI.Identifier = mock()
+    val cpiIdentifier1: CpiIdentifier= mock()
+    val cpiIdentifier2: CpiIdentifier = mock()
+    val cpiIdentifier3: CpiIdentifier = mock()
+    val cpiIdentifier4: CpiIdentifier = mock()
 
     var virtualNodeListener: VirtualNodeInfoListener? = null
 
     val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
-        on { get(eq(holdingIdentity1)) } doReturn VirtualNodeInfo(holdingIdentity1, cpiIdentifier1)
-        on { get(eq(holdingIdentity2)) } doReturn VirtualNodeInfo(holdingIdentity2, cpiIdentifier2)
-        on { get(eq(holdingIdentity3)) } doReturn VirtualNodeInfo(holdingIdentity3, cpiIdentifier3)
-        on { get(eq(holdingIdentity4)) } doReturn VirtualNodeInfo(holdingIdentity4, cpiIdentifier4)
+        on { get(eq(holdingIdentity1)) } doReturn VirtualNodeInfo(
+            holdingIdentity1, cpiIdentifier1, null, UUID.randomUUID(), null, UUID.randomUUID())
+        on { get(eq(holdingIdentity2)) } doReturn VirtualNodeInfo(
+            holdingIdentity2, cpiIdentifier2, null, UUID.randomUUID(), null, UUID.randomUUID())
+        on { get(eq(holdingIdentity3)) } doReturn VirtualNodeInfo(
+            holdingIdentity3, cpiIdentifier3, null, UUID.randomUUID(), null, UUID.randomUUID())
+        on { get(eq(holdingIdentity4)) } doReturn VirtualNodeInfo(
+            holdingIdentity4, cpiIdentifier4, null, UUID.randomUUID(), null, UUID.randomUUID())
         on { registerCallback(any()) } doAnswer {
             virtualNodeListener = it.arguments[0] as VirtualNodeInfoListener
             mock()
@@ -225,7 +231,7 @@ class GroupPolicyProviderImplTest {
 
         virtualNodeListener?.onUpdate(
             setOf(holdingIdentity1),
-            mapOf(holdingIdentity1 to VirtualNodeInfo(holdingIdentity1, cpiIdentifier2))
+            mapOf(holdingIdentity1 to VirtualNodeInfo(holdingIdentity1, cpiIdentifier2, null, UUID.randomUUID(), null, UUID.randomUUID()))
         )
 
         val updated = groupPolicyProvider.getGroupPolicy(holdingIdentity1)
@@ -241,7 +247,7 @@ class GroupPolicyProviderImplTest {
 
         virtualNodeListener?.onUpdate(
             setOf(holdingIdentity1),
-            mapOf(holdingIdentity1 to VirtualNodeInfo(holdingIdentity1, cpiIdentifier2))
+            mapOf(holdingIdentity1 to VirtualNodeInfo(holdingIdentity1, cpiIdentifier2, null, UUID.randomUUID(), null, UUID.randomUUID()))
         )
 
         val updated = groupPolicyProvider.getGroupPolicy(holdingIdentity1)

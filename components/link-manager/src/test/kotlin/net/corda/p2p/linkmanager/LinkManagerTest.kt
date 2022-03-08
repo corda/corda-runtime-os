@@ -1,15 +1,15 @@
 package net.corda.p2p.linkmanager
 
 import net.corda.data.identity.HoldingIdentity
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.lifecycle.domino.logic.DominoTile
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
+import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
+import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.emulation.subscription.eventlog.EventLogSubscription
 import net.corda.p2p.AuthenticatedMessageAck
 import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.DataMessagePayload
@@ -34,7 +34,6 @@ import net.corda.p2p.crypto.MessageType
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.internal.InitiatorHandshakeIdentity
-import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.ECDSA_SIGNATURE_ALGO
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
@@ -58,6 +57,7 @@ import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
+import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
@@ -73,7 +73,6 @@ import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
@@ -83,7 +82,6 @@ import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.Signature
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.atomic.AtomicReference
 
 class LinkManagerTest {
 
@@ -102,7 +100,7 @@ class LinkManagerTest {
             FIRST_DEST.toHoldingIdentity(),
             keyPairGenerator.generateKeyPair().public,
             KeyAlgorithm.ECDSA,
-            FAKE_ENDPOINT
+            FAKE_ENDPOINT,
         )
 
         private val hostingMap = mock<LinkManagerHostingMap>().also {
@@ -139,7 +137,7 @@ class LinkManagerTest {
         fun createSessionPair(mode: ProtocolMode = ProtocolMode.AUTHENTICATION_ONLY): SessionPair {
             val partyAIdentityKey = keyPairGenerator.generateKeyPair()
             val partyBIdentityKey = keyPairGenerator.generateKeyPair()
-            val signature = Signature.getInstance(ECDSA_SIGNATURE_ALGO, provider)
+            val signature = Signature.getInstance(ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC.signatureName, provider)
 
             val initiator = AuthenticationProtocolInitiator(SESSION_ID, setOf(mode), MAX_MESSAGE_SIZE, partyAIdentityKey.public, GROUP_ID)
             val responder = AuthenticationProtocolResponder(SESSION_ID, setOf(mode), MAX_MESSAGE_SIZE)
@@ -163,7 +161,11 @@ class LinkManagerTest {
                 signingCallbackForA
             )
 
-            responder.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyAIdentityKey.public, KeyAlgorithm.ECDSA)
+            responder.validatePeerHandshakeMessage(
+                initiatorHandshakeMessage,
+                partyAIdentityKey.public,
+                ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC,
+            )
 
             val signingCallbackForB = { data: ByteArray ->
                 signature.initSign(partyBIdentityKey.private)
@@ -172,7 +174,11 @@ class LinkManagerTest {
             }
             val responderHandshakeMessage = responder.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForB)
 
-            initiator.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public, KeyAlgorithm.ECDSA)
+            initiator.validatePeerHandshakeMessage(
+                responderHandshakeMessage,
+                partyBIdentityKey.public,
+                ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC,
+            )
             return SessionPair(initiator.getSession(), responder.getSession())
         }
 
@@ -187,21 +193,33 @@ class LinkManagerTest {
         }
     }
 
-    private var createResources: ((resources: ResourcesHolder) -> CompletableFuture<Unit>)? = null
-    private val dominoTile = Mockito.mockConstruction(DominoTile::class.java) { mock, context ->
+    private val dominoTile = Mockito.mockConstruction(ComplexDominoTile::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
         whenever(mock.isRunning).doReturn(true)
         @Suppress("UNCHECKED_CAST")
-        whenever(mock.name).doReturn(LifecycleCoordinatorName(context.arguments()[0] as String, ""))
+        whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName(context.arguments()[0] as String, ""))
+    }
+    private val subscriptionTile = Mockito.mockConstruction(SubscriptionDominoTile::class.java)
+
+    private val testPublisher = TestListBasedPublisher()
+    private val publisherTile = Mockito.mockConstruction(PublisherWithDominoLogic::class.java) { mock, _ ->
+        val dominoTile = mock<ComplexDominoTile> {
+            on { isRunning } doReturn true
+            @Suppress("UNCHECKED_CAST")
+            on { withLifecycleLock(any<() -> Any>()) } doAnswer { (it.arguments.first() as () -> Any).invoke() }
+        }
         @Suppress("UNCHECKED_CAST")
-        createResources = context.arguments()[2] as ((resources: ResourcesHolder) -> CompletableFuture<Unit>)?
+        whenever(mock.publish(any())).doAnswer { testPublisher.publish(it.arguments.first() as List<Record<*, *>>) }
+        whenever(mock.dominoTile).doReturn(dominoTile)
     }
 
     @AfterEach
     fun resetLogging() {
         loggingInterceptor.reset()
         dominoTile.close()
+        subscriptionTile.close()
+        publisherTile.close()
     }
 
     class TestListBasedPublisher : Publisher {
@@ -280,9 +298,7 @@ class LinkManagerTest {
     }
 
     private fun assignedListener(partitions: List<Int>): InboundAssignmentListener {
-        val reference = AtomicReference<CompletableFuture<Unit>>()
-        reference.set(mock())
-        val listener = InboundAssignmentListener(reference)
+        val listener = InboundAssignmentListener(mock<LifecycleCoordinatorFactory>())
         for (partition in partitions) {
             listener.onPartitionsAssigned(listOf(LINK_IN_TOPIC to partition))
         }
@@ -310,9 +326,7 @@ class LinkManagerTest {
         val message5 = authenticatedMessageAndKey(SECOND_SOURCE, SECOND_DEST, payload5, messageIds[4])
         val sessionCounterparties2 = getSessionCounterpartiesFromMessage(message3.message)
 
-        val publisher = TestListBasedPublisher()
         val mockPublisherFactory = Mockito.mock(PublisherFactory::class.java)
-        Mockito.`when`(mockPublisherFactory.createPublisher(any(), any())).thenReturn(publisher)
 
         val mockNetworkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
         Mockito.`when`(mockNetworkMap.getMemberInfo(any())).thenReturn(FIRST_DEST_MEMBER_INFO)
@@ -321,8 +335,6 @@ class LinkManagerTest {
         val sessionManager = Mockito.mock(SessionManager::class.java)
 
         val queue = LinkManager.PendingSessionMessageQueuesImpl(mockPublisherFactory, mock(), mock())
-        queue.start()
-        createResources!!(mock())
 
         queue.queueMessage(message1, sessionCounterparties1)
         queue.queueMessage(message2, sessionCounterparties1)
@@ -334,52 +346,18 @@ class LinkManagerTest {
         // Session is ready for messages 3, 4, 5
         val sessionPair = createSessionPair()
         queue.sessionNegotiatedCallback(sessionManager, sessionCounterparties2, sessionPair.initiatorSession, mockNetworkMap)
-        assertThat(publisher.list.map{ extractPayload(sessionPair.responderSession, it.value as LinkOutMessage) })
+        assertThat(testPublisher.list.map{ extractPayload(sessionPair.responderSession, it.value as LinkOutMessage) })
             .hasSize(3).containsExactlyInAnyOrder(payload3, payload4, payload5)
 
         verify(sessionManager, times(3)).dataMessageSent(sessionPair.initiatorSession)
 
-        publisher.list = mutableListOf()
+        testPublisher.list = mutableListOf()
         // Session is ready for messages 1, 2
         queue.sessionNegotiatedCallback(sessionManager, sessionCounterparties1, sessionPair.initiatorSession, mockNetworkMap)
-        assertThat(publisher.list.map{ extractPayload(sessionPair.responderSession, it.value as LinkOutMessage) })
+        assertThat(testPublisher.list.map{ extractPayload(sessionPair.responderSession, it.value as LinkOutMessage) })
             .hasSize(2).containsExactlyInAnyOrder(payload1, payload2)
 
         verify(sessionManager, times(5)).dataMessageSent(sessionPair.initiatorSession)
-    }
-
-    @Test
-    fun `createInboundResources adds the correct resource to the resourceHolder`() {
-        val subscription = mock<EventLogSubscription<String, LinkInMessage>>()
-        val subscriptionFactory = mock<SubscriptionFactory> {
-            on {createEventLogSubscription<String, LinkInMessage>(any(), any(), any(), any()) } doReturn subscription
-        }
-
-        val linkManager = LinkManager(subscriptionFactory, mock(), mock(), mock(), mock(), 1, mock(), mock(), mock())
-        val resourcesHolder = mock<ResourcesHolder>()
-        linkManager.createInboundResources(resourcesHolder)
-        verify(subscription).start()
-        //TODOs : this will be refactored as part of CORE-3147
-        //verify(resourcesHolder).keep(subscription)
-    }
-
-    @Test
-    fun `createOutboundResources adds the correct resource to the resourceHolder`() {
-        val subscription = mock<EventLogSubscription<String, AppMessage>>()
-        val subscriptionFactory = mock<SubscriptionFactory> {
-            //Used in createOutboundResources
-            on {createEventLogSubscription<String, AppMessage>(any(), any(), any(), eq(null)) } doReturn subscription
-            //Used in createInboundResources
-            on {createEventLogSubscription<String, AppMessage>(any(), any(), any(), any()) } doReturn mock()
-        }
-
-        val linkManager = LinkManager(subscriptionFactory, mock(), mock(), mock(), mock(), 1, mock(), mock(), mock())
-        val resourcesHolder = mock<ResourcesHolder>()
-        linkManager.createInboundResources(mock())
-        linkManager.createOutboundResources(resourcesHolder)
-        verify(subscription).start()
-        //TODOs : this will be refactored as part of CORE-3147
-        //verify(resourcesHolder).keep(subscription)
     }
 
     @Test
@@ -649,7 +627,11 @@ class LinkManagerTest {
     @Test
     fun `InboundMessageProcessor routes session messages to the session manager and sends the response to the gateway`() {
         val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
-        val response = LinkOutMessage(LinkOutHeader("", NetworkType.CORDA_5, FAKE_ADDRESS), initiatorHandshakeMessage())
+        val response = LinkOutMessage(LinkOutHeader(
+            HoldingIdentity("", GROUP_ID),
+            NetworkType.CORDA_5,
+            FAKE_ADDRESS,
+        ), initiatorHandshakeMessage())
         Mockito.`when`(mockSessionManager.processSessionMessage(any())).thenReturn(response)
 
         val mockMessage = Mockito.mock(InitiatorHandshakeMessage::class.java)
@@ -675,7 +657,11 @@ class LinkManagerTest {
     @Test
     fun `InboundMessageProcessor writes the mapping of a new session, when processing an initiator hello message`() {
         val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
-        val response = LinkOutMessage(LinkOutHeader("", NetworkType.CORDA_5, FAKE_ADDRESS), responderHelloMessage())
+        val response = LinkOutMessage(LinkOutHeader(
+            HoldingIdentity("", GROUP_ID),
+            NetworkType.CORDA_5,
+            FAKE_ADDRESS,
+        ), responderHelloMessage())
         Mockito.`when`(mockSessionManager.processSessionMessage(any())).thenReturn(response)
 
         val initiatorHelloMessage = initiatorHelloMessage()
@@ -1064,7 +1050,11 @@ class LinkManagerTest {
     @Test
     fun `InboundMessageProcessor warns if no partitions are assigned and does not map new session`() {
         val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
-        val response = LinkOutMessage(LinkOutHeader("", NetworkType.CORDA_5, FAKE_ADDRESS), responderHelloMessage())
+        val response = LinkOutMessage(LinkOutHeader(
+            HoldingIdentity("", GROUP_ID),
+            NetworkType.CORDA_5,
+            FAKE_ADDRESS,
+        ), responderHelloMessage())
         Mockito.`when`(mockSessionManager.processSessionMessage(any())).thenReturn(response)
 
         val initiatorHelloMessage = initiatorHelloMessage()

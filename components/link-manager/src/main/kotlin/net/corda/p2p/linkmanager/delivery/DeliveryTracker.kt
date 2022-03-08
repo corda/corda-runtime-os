@@ -4,10 +4,10 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MESSAGE_REPLAY_KEY_PREFIX
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.lifecycle.domino.logic.util.StateAndEventSubscriptionDominoTile
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.Response
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -18,18 +18,17 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.AuthenticatedMessageDeliveryState
-import net.corda.p2p.linkmanager.LinkManagerCryptoService
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
+import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("LongParameterList")
@@ -37,12 +36,12 @@ class DeliveryTracker(
     coordinatorFactory: LifecycleCoordinatorFactory,
     configReadService: ConfigurationReadService,
     publisherFactory: PublisherFactory,
-    private val configuration: SmartConfig,
-    private val subscriptionFactory: SubscriptionFactory,
+    configuration: SmartConfig,
+    subscriptionFactory: SubscriptionFactory,
     networkMap: LinkManagerNetworkMap,
-    cryptoService: LinkManagerCryptoService,
+    cryptoProcessor: CryptoProcessor,
     sessionManager: SessionManager,
-    private val instanceId: Int,
+    instanceId: Int,
     processAuthenticatedMessage: (message: AuthenticatedMessageAndKey) -> List<Record<String, *>>,
     ): LifecycleWithDominoTile {
 
@@ -60,17 +59,6 @@ class DeliveryTracker(
         appMessageReplayer::replayMessage,
     )
 
-    override val dominoTile = DominoTile(this::class.java.simpleName, coordinatorFactory, ::createResources,
-        dependentChildren = setOf(
-            replayScheduler.dominoTile,
-            networkMap.dominoTile,
-            cryptoService.dominoTile,
-            sessionManager.dominoTile,
-            appMessageReplayer.dominoTile
-        ),
-        managedChildren = setOf(replayScheduler.dominoTile, appMessageReplayer.dominoTile)
-    )
-
     private val messageTracker = MessageTracker(replayScheduler)
     private val messageTrackerSubscription = subscriptionFactory.createStateAndEventSubscription(
         SubscriptionConfig("message-tracker-group", P2P_OUT_MARKERS, instanceId),
@@ -78,14 +66,23 @@ class DeliveryTracker(
         configuration,
         messageTracker.listener
     )
+    private val messageTrackerSubscriptionTile = StateAndEventSubscriptionDominoTile(
+        coordinatorFactory,
+        messageTrackerSubscription,
+        setOf(
+            replayScheduler.dominoTile,
+            networkMap.dominoTile,
+            cryptoProcessor.dominoTile,
+            sessionManager.dominoTile,
+            appMessageReplayer.dominoTile
+        ),
+        setOf(replayScheduler.dominoTile, appMessageReplayer.dominoTile)
+    )
 
-    private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-        messageTrackerSubscription.start()
-        resources.keep { messageTrackerSubscription.stop() }
-        val future = CompletableFuture<Unit>()
-        future.complete(Unit)
-        return future
-    }
+    override val dominoTile = ComplexDominoTile(this::class.java.simpleName, coordinatorFactory,
+        dependentChildren = setOf(messageTrackerSubscriptionTile),
+        managedChildren = setOf(messageTrackerSubscriptionTile)
+    )
 
     private class AppMessageReplayer(
         coordinatorFactory: LifecycleCoordinatorFactory,

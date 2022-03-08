@@ -2,12 +2,15 @@ package net.corda.p2p.gateway.messaging.http
 
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
-import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.gateway.Gateway
+import net.corda.p2p.gateway.messaging.DynamicKeyStore
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.toGatewayConfiguration
 import net.corda.v5.base.util.contextLogger
@@ -17,20 +20,37 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
+@Suppress("LongParameterList")
 class ReconfigurableHttpServer(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val configurationReaderService: ConfigurationReadService,
     private val listener: HttpServerListener,
+    subscriptionFactory: SubscriptionFactory,
+    nodeConfiguration: SmartConfig,
+    instanceId: Int,
 ) : LifecycleWithDominoTile {
 
     @Volatile
     private var httpServer: HttpServer? = null
     private val serverLock = ReentrantReadWriteLock()
 
-    override val dominoTile = DominoTile(
+    private val dynamicKeyStore = DynamicKeyStore(
+        lifecycleCoordinatorFactory,
+        subscriptionFactory,
+        nodeConfiguration,
+        instanceId,
+    )
+
+    override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        configurationChangeHandler = ReconfigurableHttpServerConfigChangeHandler()
+        configurationChangeHandler = ReconfigurableHttpServerConfigChangeHandler(),
+        dependentChildren = listOf(
+            dynamicKeyStore.dominoTile,
+        ),
+        managedChildren = listOf(
+            dynamicKeyStore.dominoTile,
+        ),
     )
 
     companion object {
@@ -58,20 +78,33 @@ class ReconfigurableHttpServer(
             @Suppress("TooGenericExceptionCaught")
             try {
                 if (newConfiguration.hostPort == oldConfiguration?.hostPort) {
-                    logger.info("New server configuration for ${dominoTile.name} on the same port, HTTP server will have to go down")
+                    logger.info(
+                        "New server configuration for ${dominoTile.coordinatorName} on the same port, " +
+                            "HTTP server will have to go down"
+                    )
                     serverLock.write {
                         val oldServer = httpServer
                         httpServer = null
                         oldServer?.stop()
-                        val newServer = HttpServer(listener, newConfiguration)
+                        val newServer = HttpServer(
+                            listener,
+                            newConfiguration,
+                            dynamicKeyStore.keyStore
+                        )
                         newServer.start()
                         resources.keep(newServer)
                         httpServer = newServer
                     }
                 } else {
-                    logger.info("New server configuration, ${dominoTile.name} will be connected to " +
-                        "${newConfiguration.hostAddress}:${newConfiguration.hostPort}")
-                    val newServer = HttpServer(listener, newConfiguration)
+                    logger.info(
+                        "New server configuration, ${dominoTile.coordinatorName} will be connected to " +
+                            "${newConfiguration.hostAddress}:${newConfiguration.hostPort}"
+                    )
+                    val newServer = HttpServer(
+                        listener,
+                        newConfiguration,
+                        dynamicKeyStore.keyStore
+                    )
                     newServer.start()
                     resources.keep(newServer)
                     serverLock.write {

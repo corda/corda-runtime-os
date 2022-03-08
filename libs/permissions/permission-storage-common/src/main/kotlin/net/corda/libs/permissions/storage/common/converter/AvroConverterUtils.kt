@@ -10,9 +10,11 @@ import net.corda.permissions.model.RolePermissionAssociation
 import net.corda.permissions.model.RoleUserAssociation
 import net.corda.permissions.model.User
 import net.corda.permissions.model.UserProperty
+import net.corda.permissions.query.dto.InternalPermissionQueryDto
 import net.corda.data.permissions.ChangeDetails as AvroChangeDetails
 import net.corda.data.permissions.Permission as AvroPermission
 import net.corda.data.permissions.PermissionAssociation as AvroPermissionAssociation
+import net.corda.data.permissions.summary.PermissionSummary as AvroPermissionSummary
 import net.corda.data.permissions.PermissionType as AvroPermissionType
 import net.corda.data.permissions.Property as AvroProperty
 import net.corda.data.permissions.Role as AvroRole
@@ -161,3 +163,14 @@ fun RoleGroupAssociation.toAvroRoleAssociation(): AvroRoleAssociation {
         role.id
     )
 }
+
+/**
+ * Convert from permission query data transfer object to avro permission summary object.
+ */
+fun InternalPermissionQueryDto.toAvroPermissionSummary() = AvroPermissionSummary(
+    id,
+    groupVisibility,
+    virtualNode,
+    permissionString,
+    permissionType.toAvroPermissionType()
+)

@@ -12,8 +12,6 @@
     sun.security.x509
 -runrequires: \
     bnd.identity;id='net.corda.membership-group-read-impl',\
-    bnd.identity;id='net.corda.group-policy-impl',\
-    bnd.identity;id='net.corda.cpi-info-read-service-impl',\
     bnd.identity;id='net.corda.configuration-read-service-impl',\
     bnd.identity;id='net.corda.lifecycle-impl',\
     bnd.identity;id='${project.archivesBaseName}-tests',\
@@ -46,33 +44,26 @@
 	net.corda.configuration-core;version='[5.0.0,5.0.1)',\
 	net.corda.configuration-read-service;version='[5.0.0,5.0.1)',\
 	net.corda.configuration-read-service-impl;version='[5.0.0,5.0.1)',\
-	net.corda.cpi-info-read-service;version='[5.0.0,5.0.1)',\
-	net.corda.cpi-info-read-service-impl;version='[5.0.0,5.0.1)',\
 	net.corda.crypto;version='[5.0.0,5.0.1)',\
-	net.corda.crypto-client;version='[5.0.0,5.0.1)',\
-	net.corda.group-policy-impl;version='[5.0.0,5.0.1)',\
+	net.corda.crypto-core;version='[5.0.0,5.0.1)',\
 	net.corda.inmemory-messaging-impl;version='[5.0.0,5.0.1)',\
 	net.corda.kotlin-stdlib-jdk7.osgi-bundle;version='[1.4.32,1.4.33)',\
 	net.corda.kotlin-stdlib-jdk8.osgi-bundle;version='[1.4.32,1.4.33)',\
+	net.corda.layered-property-map;version='[5.0.0,5.0.1)',\
 	net.corda.lifecycle;version='[5.0.0,5.0.1)',\
 	net.corda.lifecycle-impl;version='[5.0.0,5.0.1)',\
 	net.corda.membership;version='[5.0.0,5.0.1)',\
-	net.corda.membership-conversion;version='[5.0.0,5.0.1)',\
-	net.corda.membership-conversion-impl;version='[5.0.0,5.0.1)',\
+	net.corda.membership-group-read;version='[5.0.0,5.0.1)',\
 	net.corda.membership-group-read-impl;version='[5.0.0,5.0.1)',\
-	net.corda.membership-identity;version='[5.0.0,5.0.1)',\
-	net.corda.membership-identity-impl;version='[5.0.0,5.0.1)',\
 	net.corda.membership-impl;version='[5.0.0,5.0.1)',\
 	net.corda.membership-internal;version='[5.0.0,5.0.1)',\
 	net.corda.messaging;version='[5.0.0,5.0.1)',\
 	net.corda.packaging;version='[5.0.0,5.0.1)',\
 	net.corda.packaging-avro-converters;version='[5.0.0,5.0.1)',\
+	net.corda.packaging-core;version='[5.0.0,5.0.1)',\
 	net.corda.registry;version='[5.0.0,5.0.1)',\
 	net.corda.test-utilities;version='[5.0.0,5.0.1)',\
-	net.corda.virtual-node-common;version='[5.0.0,5.0.1)',\
 	net.corda.virtual-node-info;version='[5.0.0,5.0.1)',\
-	net.corda.virtual-node-info-read-service;version='[5.0.0,5.0.1)',\
-	net.i2p.crypto.eddsa;version='[0.3.0,0.3.1)',\
 	org.apache.commons.commons-compress;version='[1.21.0,1.21.1)',\
 	org.apache.felix.scr;version='[2.1.28,2.1.29)',\
 	org.jetbrains.kotlin.osgi-bundle;version='[1.4.32,1.4.33)',\

@@ -1,6 +1,6 @@
 package net.corda.sandboxgroupcontext.service.impl
 
-import net.corda.crypto.DigestAlgorithmFactoryProvider
+import net.corda.crypto.core.DigestAlgorithmFactoryProvider
 import net.corda.sandbox.SandboxContextService
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX_FILTER
 import net.corda.v5.cipher.suite.DigestAlgorithmFactory

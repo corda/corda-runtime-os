@@ -49,7 +49,7 @@
 	net.corda.configuration-read-service-impl;version='[5.0.0,5.0.1)',\
 	net.corda.cpi-info-read-service;version='[5.0.0,5.0.1)',\
 	net.corda.crypto;version='[5.0.0,5.0.1)',\
-	net.corda.crypto-client;version='[5.0.0,5.0.1)',\
+	net.corda.crypto-core;version='[5.0.0,5.0.1)',\
 	net.corda.inmemory-messaging-impl;version='[5.0.0,5.0.1)',\
 	net.corda.install-service;version='[5.0.0,5.0.1)',\
 	net.corda.kotlin-reflection;version='[5.0.0,5.0.1)',\
@@ -58,11 +58,10 @@
 	net.corda.lifecycle;version='[5.0.0,5.0.1)',\
 	net.corda.lifecycle-impl;version='[5.0.0,5.0.1)',\
 	net.corda.membership;version='[5.0.0,5.0.1)',\
-	net.corda.membership-conversion;version='[5.0.0,5.0.1)',\
-	net.corda.membership-identity;version='[5.0.0,5.0.1)',\
 	net.corda.messaging;version='[5.0.0,5.0.1)',\
 	net.corda.packaging;version='[5.0.0,5.0.1)',\
 	net.corda.packaging-avro-converters;version='[5.0.0,5.0.1)',\
+	net.corda.packaging-core;version='[5.0.0,5.0.1)',\
 	net.corda.registry;version='[5.0.0,5.0.1)',\
 	net.corda.sandbox;version='[5.0.0,5.0.1)',\
 	net.corda.sandbox-hooks;version='[5.0.0,5.0.1)',\
@@ -76,7 +75,6 @@
 	net.corda.virtual-node-common;version='[5.0.0,5.0.1)',\
 	net.corda.virtual-node-info;version='[5.0.0,5.0.1)',\
 	net.corda.virtual-node-info-read-service;version='[5.0.0,5.0.1)',\
-	net.i2p.crypto.eddsa;version='[0.3.0,0.3.1)',\
 	org.apache.aries.spifly.dynamic.bundle;version='[1.3.2,1.3.3)',\
 	org.apache.commons.commons-compress;version='[1.21.0,1.21.1)',\
 	org.apache.felix.configadmin;version='[1.9.20,1.9.21)',\

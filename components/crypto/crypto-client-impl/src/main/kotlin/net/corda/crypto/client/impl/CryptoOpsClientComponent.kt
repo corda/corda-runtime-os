@@ -2,7 +2,7 @@ package net.corda.crypto.client.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.CryptoOpsClient
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.crypto.config.HSMInfo
 import net.corda.data.crypto.wire.ops.rpc.HSMKeyDetails
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest

@@ -3,28 +3,18 @@ package net.corda.example.vnode
 
 import co.paralleluniverse.fibers.instrument.Retransform
 import com.sun.management.HotSpotDiagnosticMXBean
-import java.io.FilePermission
-import java.lang.management.ManagementFactory
-import java.lang.management.ManagementPermission
-import java.lang.reflect.ReflectPermission
-import java.net.NetPermission
-import java.net.SocketPermission
-import java.nio.file.LinkPermission
-import java.time.Instant
-import java.util.PropertyPermission
-import java.util.UUID
-import java.util.concurrent.TimeoutException
-import java.util.concurrent.atomic.AtomicInteger
+import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
+import net.corda.data.flow.FlowStartContext
+import net.corda.data.flow.FlowStatusKey
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.event.StartRPCFlow
+import net.corda.data.flow.event.StartFlow
+import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.flow.manager.factory.FlowEventProcessorFactory
 import net.corda.messaging.api.records.Record
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
-import net.corda.packaging.CPI
 import net.corda.packaging.CPK
-import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import net.corda.securitymanager.SecurityManagerService
 import net.corda.v5.base.util.loggerFor
@@ -46,6 +36,17 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceCardinality.OPTIONAL
 import org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC
 import org.osgi.service.permissionadmin.PermissionAdmin
+import java.io.FilePermission
+import java.lang.management.ManagementFactory
+import java.lang.management.ManagementPermission
+import java.lang.reflect.ReflectPermission
+import java.net.NetPermission
+import java.net.SocketPermission
+import java.nio.file.LinkPermission
+import java.time.Instant
+import java.util.*
+import java.util.concurrent.TimeoutException
+import java.util.concurrent.atomic.AtomicInteger
 
 val CPK.id: CPK.Identifier get() = metadata.id
 const val VNODE_SERVICE = "vnode"
@@ -117,15 +118,18 @@ class CordaVNode @Activate constructor(
 
     private fun generateRandomId(): String = UUID.randomUUID().toString()
 
-    private fun createRPCStartFlow(clientId: String, cpiId: CPI.Identifier, sandboxContext: SandboxGroupContext): StartRPCFlow {
-        val vnc = sandboxContext.virtualNodeContext
-        return StartRPCFlow(
-            clientId,
-            cpiId.name,
-            "com.example.cpk.ExampleFlow",
-            vnc.holdingIdentity.toAvro(),
-            Instant.now(),
-            "{\"message\":\"Bongo!\"}"
+    private fun createRPCStartFlow(clientId: String, virtualNodeInfo: VirtualNodeInfo): StartFlow {
+        return StartFlow(
+            FlowStartContext(
+                FlowStatusKey(clientId, virtualNodeInfo.holdingIdentity),
+                FlowInitiatorType.RPC,
+                clientId,
+                virtualNodeInfo.holdingIdentity,
+                virtualNodeInfo.cpiIdentifier.name,
+                virtualNodeInfo.holdingIdentity,
+                "com.example.cpk.ExampleFlow",
+                Instant.now(),
+            ),  "{\"message\":\"Bongo!\"}"
         )
     }
 
@@ -141,16 +145,20 @@ class CordaVNode @Activate constructor(
             // Checkpoint: We have created a sandbox for this CPI.
             val sandboxContext = vnode.getOrCreateSandbox(holdingIdentity)
             try {
-                logger.info("Created sandbox: {}", sandboxContext.sandboxGroup.cpks.map(CPK::id))
+                logger.info("Created sandbox: {}", sandboxContext.sandboxGroup.metadata.values.map {it.id})
                 dumpHeap("created")
 
-                val rpcStartFlow = createRPCStartFlow(clientId, vnodeInfo.cpiIdentifier, sandboxContext)
+                val rpcStartFlow = createRPCStartFlow(clientId, vnodeInfo.toAvro())
                 val flowKey = FlowKey(generateRandomId(), holdingIdentity.toAvro())
                 val record = Record(FLOW_EVENT_TOPIC, flowKey, FlowEvent(flowKey, rpcStartFlow))
                 flowEventProcessorFactory.create().apply {
                     val result = onNext(null, record)
-                    @Suppress("unchecked_cast")
-                    onNext(result.updatedState, result.responseEvents.single() as Record<FlowKey, FlowEvent>)
+                    result.responseEvents.singleOrNull { evt ->
+                        evt.topic == FLOW_EVENT_TOPIC
+                    }?.also { evt ->
+                        @Suppress("unchecked_cast")
+                        onNext(result.updatedState, evt as Record<FlowKey, FlowEvent>)
+                    }
                 }
             } finally {
                 (sandboxContext as AutoCloseable).close()

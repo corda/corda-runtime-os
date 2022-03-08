@@ -3,12 +3,15 @@ package net.corda.flow.manager.impl.pipeline
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.flow.state.StateMachineState
+import net.corda.data.flow.state.waiting.WaitingFor
+import net.corda.data.flow.state.waiting.Wakeup
 import net.corda.flow.manager.fiber.FlowContinuation
 import net.corda.flow.manager.fiber.FlowIORequest
 import net.corda.flow.manager.impl.FlowEventContext
 import net.corda.flow.manager.impl.handlers.FlowProcessingException
 import net.corda.flow.manager.impl.handlers.events.FlowEventHandler
 import net.corda.flow.manager.impl.handlers.requests.FlowRequestHandler
+import net.corda.flow.manager.impl.handlers.status.FlowWaitingForHandler
 import net.corda.flow.manager.impl.runner.FlowRunner
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
@@ -20,6 +23,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -30,7 +34,9 @@ import java.util.stream.Stream
 
 class FlowEventPipelineImplTest {
 
-    private val flowState = StateMachineState()
+    private val flowState = StateMachineState().apply {
+        waitingFor = WaitingFor(Wakeup())
+    }
     private val checkpoint = Checkpoint().apply {
         flowState = this@FlowEventPipelineImplTest.flowState
         fiber = ByteBuffer.wrap(byteArrayOf(0, 0, 0, 0))
@@ -41,11 +47,19 @@ class FlowEventPipelineImplTest {
 
     private val flowEventHandler = mock<FlowEventHandler<Any>>().apply {
         whenever(preProcess(inputContext)).thenReturn(outputContext)
-        whenever(postProcess(inputContext)).thenReturn(outputContext)
+    }
+
+    private val flowWaitingForHandler = mock<FlowWaitingForHandler<Any>>().apply {
+        whenever(runOrContinue(eq(inputContext), any())).thenReturn(FlowContinuation.Run(Unit))
     }
 
     private val flowRequestHandler = mock<FlowRequestHandler<FlowIORequest.ForceCheckpoint>>().apply {
+        whenever(getUpdatedWaitingFor(inputContext, FlowIORequest.ForceCheckpoint)).thenReturn(WaitingFor(Wakeup()))
         whenever(postProcess(inputContext, FlowIORequest.ForceCheckpoint)).thenReturn(outputContext)
+    }
+
+    private val flowGlobalPostProcessor = mock<FlowGlobalPostProcessor>().apply {
+        whenever(postProcess(inputContext)).thenReturn(outputContext)
     }
 
     val runFlowCompletion = mock<Future<FlowIORequest<*>>>()
@@ -56,8 +70,10 @@ class FlowEventPipelineImplTest {
 
     private val pipeline = FlowEventPipelineImpl(
         flowEventHandler,
+        mapOf(Wakeup::class.java to flowWaitingForHandler),
         mapOf(FlowIORequest.ForceCheckpoint::class.java to flowRequestHandler),
         flowRunner,
+        flowGlobalPostProcessor,
         inputContext
     )
 
@@ -77,56 +93,57 @@ class FlowEventPipelineImplTest {
         verify(flowEventHandler).preProcess(inputContext)
     }
 
-    @ParameterizedTest(name = "runOrContinue runs a flow when {0} is returned by the FlowEventHandler with suspend result")
+    @ParameterizedTest(name = "runOrContinue runs a flow when {0} is returned by the FlowWaitingForHandler with suspend result")
     @MethodSource("runFlowContinuationConditions")
     fun `runOrContinue runs a flow with suspend result`(outcome: FlowContinuation) {
         val flowResult = FlowIORequest.SubFlowFinished(null)
         val expectedFiber = ByteBuffer.wrap(byteArrayOf(1))
         val suspendRequest = FlowIORequest.FlowSuspended(expectedFiber, flowResult)
 
-        whenever(flowEventHandler.runOrContinue(inputContext)).thenReturn(outcome)
+        whenever(flowWaitingForHandler.runOrContinue(eq(inputContext), any())).thenReturn(outcome)
         whenever(runFlowCompletion.get()).thenReturn(suspendRequest)
 
         val state = pipeline.runOrContinue()
 
         verify(flowRunner).runFlow(pipeline.context, outcome)
-        verify(flowEventHandler).runOrContinue(inputContext)
+        verify(flowWaitingForHandler).runOrContinue(inputContext, Wakeup())
         assertThat(state.context.checkpoint!!.fiber).isEqualByComparingTo(expectedFiber)
         assertThat(state.output).isSameAs(flowResult)
     }
 
-    @ParameterizedTest(name = "runOrContinue runs a flow when {0} is returned by the FlowEventHandler with flow completion result")
+    @ParameterizedTest(name = "runOrContinue runs a flow when {0} is returned by the FlowWaitingForHandler with flow completion result")
     @MethodSource("runFlowContinuationConditions")
     fun `runOrContinue runs a flow when with flow completion result`(outcome: FlowContinuation) {
-        val flowResult = FlowIORequest.FlowFinished(Unit)
+        val flowResult = FlowIORequest.FlowFinished("")
         val expectedFiber = ByteBuffer.wrap(byteArrayOf())
 
-        whenever(flowEventHandler.runOrContinue(inputContext)).thenReturn(outcome)
+        whenever(flowWaitingForHandler.runOrContinue(eq(inputContext), any())).thenReturn(outcome)
         whenever(runFlowCompletion.get()).thenReturn(flowResult)
 
         val state = pipeline.runOrContinue()
 
         verify(flowRunner).runFlow(pipeline.context, outcome)
-        verify(flowEventHandler).runOrContinue(inputContext)
+        verify(flowWaitingForHandler).runOrContinue(inputContext, Wakeup())
         assertThat(state.context.checkpoint!!.fiber).isEqualByComparingTo(expectedFiber)
         assertThat(state.output).isSameAs(flowResult)
     }
 
     @Test
-    fun `runOrContinue runs a flow when FlowContinuation#Error is returned by the FlowEventHandler`() {
-        whenever(flowEventHandler.runOrContinue(inputContext)).thenReturn(FlowContinuation.Error(IllegalStateException("I'm broken")))
-        whenever(runFlowCompletion.get()).thenReturn(FlowIORequest.FlowFinished(Unit))
+    fun `runOrContinue runs a flow when FlowContinuation#Error is returned by the FlowWaitingForHandler`() {
+        whenever(flowWaitingForHandler.runOrContinue(eq(inputContext), any()))
+            .thenReturn(FlowContinuation.Error(IllegalStateException("I'm broken")))
+        whenever(runFlowCompletion.get()).thenReturn(FlowIORequest.FlowFinished(""))
         pipeline.runOrContinue()
         verify(flowRunner).runFlow(any(), any())
-        verify(flowEventHandler).runOrContinue(inputContext)
+        verify(flowWaitingForHandler).runOrContinue(inputContext, Wakeup())
     }
 
     @Test
-    fun `runOrContinue does not run a flow when FlowContinuation#Continue is returned by the FlowEventHandler`() {
-        whenever(flowEventHandler.runOrContinue(inputContext)).thenReturn(FlowContinuation.Continue)
+    fun `runOrContinue does not run a flow when FlowContinuation#Continue is returned by the FlowWaitingForHandler`() {
+        whenever(flowWaitingForHandler.runOrContinue(eq(inputContext), any())).thenReturn(FlowContinuation.Continue)
         assertEquals(pipeline, pipeline.runOrContinue())
         verify(flowRunner, never()).runFlow(any(), any())
-        verify(flowEventHandler).runOrContinue(inputContext)
+        verify(flowWaitingForHandler).runOrContinue(inputContext, Wakeup())
     }
 
     @Test
@@ -136,6 +153,7 @@ class FlowEventPipelineImplTest {
             fiber = ByteBuffer.wrap(byteArrayOf(0, 0, 0, 0))
             flowState = StateMachineState().apply {
                 suspendedOn = FlowIORequest.ForceCheckpoint::class.qualifiedName
+                waitingFor = WaitingFor(Wakeup())
             }
         })
         assertEquals(output, pipeline.setCheckpointSuspendedOn().context)
@@ -176,17 +194,17 @@ class FlowEventPipelineImplTest {
     }
 
     @Test
-    fun `eventPostProcessing calls the FlowEventHandler when output is set`() {
+    fun `globalPostProcessing calls the FlowGlobalPostProcessor when output is set`() {
         val pipeline = this.pipeline.copy(output = FlowIORequest.ForceCheckpoint)
-        assertEquals(outputContext, pipeline.eventPostProcessing().context)
-        verify(flowEventHandler).postProcess(inputContext)
+        assertEquals(outputContext, pipeline.globalPostProcessing().context)
+        verify(flowGlobalPostProcessor).postProcess(inputContext)
     }
 
     @Test
-    fun `eventPostProcessing calls the FlowEventHandler when output is not set`() {
+    fun `globalPostProcessing calls the FlowGlobalPostProcessor when output is not set`() {
         val pipeline = this.pipeline.copy(output = null)
-        assertEquals(outputContext, pipeline.eventPostProcessing().context)
-        verify(flowEventHandler).postProcess(inputContext)
+        assertEquals(outputContext, pipeline.globalPostProcessing().context)
+        verify(flowGlobalPostProcessor).postProcess(inputContext)
     }
 
     @Test

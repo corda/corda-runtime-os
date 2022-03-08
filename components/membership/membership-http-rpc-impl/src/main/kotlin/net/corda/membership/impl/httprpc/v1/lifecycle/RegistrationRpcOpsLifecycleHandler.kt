@@ -8,7 +8,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.membership.httprpc.MembershipRpcOpsClient
+import net.corda.membership.client.MemberOpsClient
 
 class RegistrationRpcOpsLifecycleHandler : LifecycleEventHandler {
     // for checking the components' health
@@ -26,7 +26,7 @@ class RegistrationRpcOpsLifecycleHandler : LifecycleEventHandler {
         componentHandle?.close()
         componentHandle = coordinator.followStatusChangesByName(
             setOf(
-                LifecycleCoordinatorName.forComponent<MembershipRpcOpsClient>()
+                LifecycleCoordinatorName.forComponent<MemberOpsClient>()
             )
         )
     }

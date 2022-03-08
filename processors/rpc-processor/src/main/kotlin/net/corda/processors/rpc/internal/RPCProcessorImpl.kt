@@ -5,6 +5,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.rpcops.ConfigRPCOpsService
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.data.config.Configuration
+import net.corda.flow.rpcops.FlowRPCOpsService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
@@ -14,6 +15,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.client.MemberOpsClient
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -44,8 +46,12 @@ class RPCProcessorImpl @Activate constructor(
     private val publisherFactory: PublisherFactory,
     @Reference(service = VirtualNodeRPCOpsService::class)
     private val virtualNodeRPCOpsService: VirtualNodeRPCOpsService,
+    @Reference(service = FlowRPCOpsService::class)
+    private val flowRPCOpsService: FlowRPCOpsService,
     @Reference(service = CpiUploadRPCOpsService::class)
-    private val cpiUploadRPCOpsService: CpiUploadRPCOpsService
+    private val cpiUploadRPCOpsService: CpiUploadRPCOpsService,
+    @Reference(service = MemberOpsClient::class)
+    private val memberOpsClient: MemberOpsClient
 ) : RPCProcessor {
 
     private companion object {
@@ -56,9 +62,11 @@ class RPCProcessorImpl @Activate constructor(
     private val dependentComponents = DependentComponents.of(
         ::configReadService,
         ::httpRpcGateway,
+        ::flowRPCOpsService,
         ::configRPCOpsService,
         ::virtualNodeRPCOpsService,
-        ::cpiUploadRPCOpsService
+        ::cpiUploadRPCOpsService,
+        ::memberOpsClient
     )
 
     override fun start(bootConfig: SmartConfig) {

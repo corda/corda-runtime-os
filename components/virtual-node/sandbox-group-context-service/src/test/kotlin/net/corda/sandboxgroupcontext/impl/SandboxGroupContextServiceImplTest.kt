@@ -1,15 +1,13 @@
 package net.corda.sandboxgroupcontext.impl
 
 import net.corda.install.InstallService
-import net.corda.install.InstallServiceListener
-import net.corda.packaging.CPI
+import net.corda.libs.packaging.CpkIdentifier
 import net.corda.packaging.CPK
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.getUniqueObject
 import net.corda.sandboxgroupcontext.putUniqueObject
 import net.corda.sandboxgroupcontext.service.impl.SandboxGroupContextServiceImpl
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
@@ -32,32 +30,22 @@ class SandboxGroupContextServiceImplTest {
 
     private lateinit var virtualNodeContext: VirtualNodeContext
 
-    private fun createVirtualNodeContextForFlow(holdingIdentity: HoldingIdentity, cpks: Set<CPK.Identifier>): VirtualNodeContext {
-        return VirtualNodeContext(holdingIdentity, cpks, SandboxGroupType.FLOW, SingletonSerializeAsToken::class.java, null)
+    private fun createVirtualNodeContextForFlow(holdingIdentity: HoldingIdentity, cpks: Set<CpkIdentifier>):
+            VirtualNodeContext {
+        return VirtualNodeContext(
+            holdingIdentity,
+            cpks,
+            SandboxGroupType.FLOW,
+            SingletonSerializeAsToken::class.java,
+            null)
     }
 
-    private class InstallServiceImpl(private val cpks: Map<CPK.Identifier, CPK>) : InstallService {
-        override fun get(id: CPI.Identifier): CompletableFuture<CPI?> {
-            throw NotImplementedError()
-        }
-
-        override fun get(id : CPK.Identifier): CompletableFuture<CPK?> =
-            CompletableFuture.supplyAsync { cpks[id] }
-
-        override fun getCPKByHash(hash: SecureHash): CompletableFuture<CPK?> {
-            throw NotImplementedError()
-        }
-
-        override fun listCPK(): List<CPK.Metadata> {
-            throw NotImplementedError()
-        }
-
-        override fun listCPI(): List<CPI.Metadata> {
-            throw NotImplementedError()
-        }
-
-        override fun registerForUpdates(installServiceListener: InstallServiceListener): AutoCloseable {
-            throw NotImplementedError()
+    private class InstallServiceImpl(private val cpks: Set<CPK>) : InstallService {
+        override fun get(id: CpkIdentifier): CompletableFuture<CPK?> {
+            return CompletableFuture.supplyAsync { cpks.firstOrNull {
+                it.metadata.id.name == id.name &&
+                        it.metadata.id.version == id.version &&
+                        it.metadata.id.signerSummaryHash == id.signerSummaryHash } }
         }
 
         override val isRunning: Boolean
@@ -72,22 +60,19 @@ class SandboxGroupContextServiceImplTest {
         }
     }
 
-    private fun Set<CPK>.toIds() = mapTo(LinkedHashSet()) { it.metadata.id }
-    private fun Set<CPK>.toMap() = associateBy { it.metadata.id }
-
-    private val cpkServiceImpl = InstallServiceImpl(cpks.toMap())
+    private val cpkServiceImpl = InstallServiceImpl(cpks)
 
     @BeforeEach
     private fun beforeEach() {
         service = SandboxGroupContextServiceImpl(Helpers.mockSandboxCreationService(listOf(cpks)), cpkServiceImpl, scr, bundleContext)
-        virtualNodeContext = createVirtualNodeContextForFlow(holdingIdentity, cpks.toIds())
+        virtualNodeContext = createVirtualNodeContextForFlow(
+            holdingIdentity, cpks.map { CpkIdentifier.fromLegacy(it.metadata.id) }.toSet())
     }
 
     @Test
     fun `can create a sandbox group context without initializer`() {
         val ctx = service.getOrCreate(virtualNodeContext) { _, _ -> AutoCloseable { } }
         assertThat(virtualNodeContext).isEqualTo(ctx.virtualNodeContext)
-        assertThat(ctx.sandboxGroup.cpks.size).isEqualTo(1)
     }
 
     @Test
@@ -99,7 +84,6 @@ class SandboxGroupContextServiceImplTest {
         }
 
         assertThat(virtualNodeContext).isEqualTo(ctx.virtualNodeContext)
-        assertThat(ctx.sandboxGroup.cpks.size).isEqualTo(1)
         assertThat(initializerCalled).isTrue
     }
 
@@ -118,7 +102,6 @@ class SandboxGroupContextServiceImplTest {
         }
 
         assertThat(virtualNodeContext).isEqualTo(ctx.virtualNodeContext)
-        assertThat(ctx.sandboxGroup.cpks.size).isEqualTo(1)
         assertThat(initializerCalled).isTrue
 
         val actualCtx = service.getOrCreate(virtualNodeContext) { _, _ -> AutoCloseable { } }
@@ -130,7 +113,6 @@ class SandboxGroupContextServiceImplTest {
 
         assertThat(actualCtx.virtualNodeContext.holdingIdentity).isEqualTo(holdingIdentity)
         assertThat(actualHoldingIdentity).isEqualTo(holdingIdentity)
-        assertThat(actualCtx.sandboxGroup.cpks.first().metadata.mainBundle).isEqualTo(mainBundle)
     }
 
     @Test
@@ -143,13 +125,13 @@ class SandboxGroupContextServiceImplTest {
         val cpks2 = setOf(Helpers.mockTrivialCpk("MAIN2"))
         val cpks3 = setOf(Helpers.mockTrivialCpk("MAIN3"))
 
-        val ctx1 = createVirtualNodeContextForFlow(holdingIdentity1, cpks1.toIds())
-        val ctx2 = createVirtualNodeContextForFlow(holdingIdentity2, cpks2.toIds())
-        val ctx3 = createVirtualNodeContextForFlow(holdingIdentity3, cpks3.toIds())
+        val ctx1 = createVirtualNodeContextForFlow(holdingIdentity1, cpks1.map { CpkIdentifier.fromLegacy(it.metadata.id) }.toSet())
+        val ctx2 = createVirtualNodeContextForFlow(holdingIdentity2, cpks2.map { CpkIdentifier.fromLegacy(it.metadata.id) }.toSet())
+        val ctx3 = createVirtualNodeContextForFlow(holdingIdentity3, cpks3.map { CpkIdentifier.fromLegacy(it.metadata.id) }.toSet())
 
         val sandboxCreationService = Helpers.mockSandboxCreationService(listOf(cpks1, cpks2, cpks3))
 
-        val cpkService = InstallServiceImpl(cpks1.toMap() + cpks2.toMap() + cpks3.toMap())
+        val cpkService = InstallServiceImpl(cpks1 + cpks2 + cpks3)
 
         val service = SandboxGroupContextServiceImpl(sandboxCreationService, cpkService, scr, bundleContext)
 
@@ -201,9 +183,9 @@ class SandboxGroupContextServiceImplTest {
     fun `closeables work as expected`() {
         val holdingIdentity1 = HoldingIdentity("OU=1", "bar")
         val cpks1 = setOf(Helpers.mockTrivialCpk("MAIN1"))
-        val ctx1 = createVirtualNodeContextForFlow(holdingIdentity1, cpks1.toIds())
+        val ctx1 = createVirtualNodeContextForFlow(holdingIdentity1, cpks1.map { CpkIdentifier.fromLegacy(it.metadata.id) }.toSet())
         val sandboxCreationService = Helpers.mockSandboxCreationService(listOf(cpks1))
-        val cpkService = InstallServiceImpl(cpks1.toMap())
+        val cpkService = InstallServiceImpl(cpks1)
         val service = SandboxGroupContextServiceImpl(sandboxCreationService, cpkService, scr, bundleContext)
         val dog1 = Dog("Rover", "Woof!")
 

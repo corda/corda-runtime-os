@@ -12,76 +12,98 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
+import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.messaging.api.records.Record
 import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
 import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
+import net.corda.p2p.GatewayTlsCertificates
 import net.corda.p2p.NetworkType
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
 import net.corda.p2p.gateway.messaging.SslConfiguration
+import net.corda.p2p.gateway.messaging.http.KeyStoreWithPassword
 import net.corda.p2p.gateway.messaging.http.SniCalculator
+import net.corda.p2p.gateway.messaging.http.TrustStoresMap
+import net.corda.p2p.test.KeyAlgorithm
+import net.corda.p2p.test.KeyPairEntry
+import net.corda.p2p.test.TenantKeys
+import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
+import net.corda.schema.TestSchema
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.seconds
-import net.corda.v5.base.util.toBase64
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x500.X500Name
+import org.bouncycastle.jce.PrincipalUtil
+import org.bouncycastle.openssl.jcajce.JcaPEMWriter
+import java.io.StringWriter
+import java.net.ServerSocket
+import java.nio.ByteBuffer
+import java.security.KeyStore
+import java.security.cert.X509Certificate
 import java.util.UUID
 
 open class TestBase {
-    private fun readKeyStore(fileName: String): ByteArray {
-        return javaClass.classLoader.getResource("$fileName.jks").readBytes()
+    private fun readKeyStore(fileName: String, password: String = keystorePass): KeyStoreWithPassword {
+        val keyStore = KeyStore.getInstance("JKS").also { keyStore ->
+            javaClass.classLoader.getResource("$fileName.jks")!!.openStream().use {
+                keyStore.load(it, password.toCharArray())
+            }
+        }
+        return KeyStoreWithPassword(keyStore, password)
+    }
+
+    protected val truststoreCertificatePem by lazy {
+        javaClass.classLoader.getResource("truststore/certificate.pem").readText()
+    }
+    private val c4TruststoreCertificatePem by lazy {
+        javaClass.classLoader.getResource("truststore_c4/cordarootca.pem").readText()
+    }
+    protected val truststoreKeyStore by lazy {
+        TrustStoresMap.TrustedCertificates(listOf(truststoreCertificatePem)).trustStore
+    }
+    protected val c4TruststoreKeyStore by lazy {
+        TrustStoresMap.TrustedCertificates(listOf(c4TruststoreCertificatePem)).trustStore
+    }
+
+    protected fun getOpenPort() : Int {
+        return ServerSocket(0).use {
+            it.localPort
+        }
     }
 
     protected val clientMessageContent = "PING"
     protected val serverResponseContent = "PONG"
-    private val keystorePass = "password"
-    private val truststorePass = "password"
-    private val keystorePass_c4 = "cordacadevpass"
-    private val truststorePass_c4 = "trustpass"
+    protected val keystorePass = "password"
+
+    protected val keystorePass_c4 = "cordacadevpass"
     protected val aliceSNI = listOf("alice.net", "www.alice.net")
     protected val bobSNI = listOf("bob.net", "www.bob.net")
     protected val partyAx500Name = X500Name("O=PartyA, L=London, C=GB")
     protected val partyASNI = SniCalculator.calculateSni("O=PartyA, L=London, C=GB", NetworkType.CORDA_4, "")
+    protected val aliceKeyStore = readKeyStore("sslkeystore_alice")
     protected val aliceSslConfig = SslConfiguration(
-        keyStorePassword = keystorePass,
-        rawKeyStore = readKeyStore("sslkeystore_alice"),
-        trustStorePassword = truststorePass,
-        rawTrustStore = readKeyStore("truststore"),
         revocationCheck = RevocationConfig(RevocationConfigMode.OFF)
     )
+    protected val bobKeyStore = readKeyStore("sslkeystore_bob")
     protected val bobSslConfig = SslConfiguration(
-        keyStorePassword = keystorePass,
-        rawKeyStore = readKeyStore("sslkeystore_bob"),
-        trustStorePassword = truststorePass,
-        rawTrustStore = readKeyStore("truststore"),
         revocationCheck = RevocationConfig(RevocationConfigMode.HARD_FAIL)
-
     )
+    protected val chipKeyStore = readKeyStore("sslkeystore_chip")
     protected val chipSslConfig = SslConfiguration(
-        keyStorePassword = keystorePass,
-        rawKeyStore = readKeyStore("sslkeystore_chip"),
-        trustStorePassword = truststorePass,
-        rawTrustStore = readKeyStore("truststore"),
         revocationCheck = RevocationConfig(RevocationConfigMode.HARD_FAIL)
-
     )
+    protected val daleKeyStore = readKeyStore("sslkeystore_dale")
     protected val daleSslConfig = SslConfiguration(
-        keyStorePassword = keystorePass,
-        rawKeyStore = readKeyStore("sslkeystore_dale"),
-        trustStorePassword = truststorePass,
-        rawTrustStore = readKeyStore("truststore"),
         revocationCheck = RevocationConfig(RevocationConfigMode.SOFT_FAIL)
 
     )
+    protected val c4sslKeyStore = readKeyStore("sslkeystore_c4", keystorePass_c4)
     protected val c4sslConfig = SslConfiguration(
-        keyStorePassword = keystorePass_c4,
-        rawKeyStore = readKeyStore("sslkeystore_c4"),
-        trustStorePassword = truststorePass_c4,
-        rawTrustStore = readKeyStore("truststore_c4"),
         revocationCheck = RevocationConfig(RevocationConfigMode.OFF)
     )
 
@@ -112,16 +134,14 @@ open class TestBase {
             val publishConfig = ConfigFactory.empty()
                 .withValue("hostAddress", ConfigValueFactory.fromAnyRef(configuration.hostAddress))
                 .withValue("hostPort", ConfigValueFactory.fromAnyRef(configuration.hostPort))
-                .withValue("sslConfig.keyStorePassword", ConfigValueFactory.fromAnyRef(configuration.sslConfig.keyStorePassword))
-                .withValue("sslConfig.keyStore", ConfigValueFactory.fromAnyRef(configuration.sslConfig.rawKeyStore.toBase64()))
-                .withValue("sslConfig.trustStorePassword", ConfigValueFactory.fromAnyRef(configuration.sslConfig.trustStorePassword))
-                .withValue("sslConfig.trustStore", ConfigValueFactory.fromAnyRef(configuration.sslConfig.rawTrustStore.toBase64()))
                 .withValue("sslConfig.revocationCheck.mode", ConfigValueFactory.fromAnyRef(configuration.sslConfig.revocationCheck.mode.toString()))
                 .withValue("connectionConfig.connectionIdleTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.connectionIdleTimeout))
                 .withValue("connectionConfig.maxClientConnections", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maxClientConnections))
                 .withValue("connectionConfig.acquireTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.acquireTimeout))
                 .withValue("connectionConfig.responseTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.responseTimeout))
                 .withValue("connectionConfig.retryDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.retryDelay))
+                .withValue("connectionConfig.initialReconnectionDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.initialReconnectionDelay))
+                .withValue("connectionConfig.maximalReconnectionDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maximalReconnectionDelay))
             CordaPublisherFactory(configurationTopicService, rpcTopicService, lifecycleCoordinatorFactory).createPublisher(PublisherConfig((configPublisherClientId))).use { publisher ->
                 val configurationPublisher = ConfigPublisherImpl(CONFIG_TOPIC, publisher)
                 configurationPublisher.updateConfiguration(
@@ -163,6 +183,53 @@ open class TestBase {
         this.start()
         eventually(duration = 20.seconds) {
             assertThat(this.isRunning).isTrue
+        }
+    }
+
+    protected fun publishKeyStoreCertificatesAndKeys(publisher: Publisher, keyStoreWithPassword: KeyStoreWithPassword) {
+        val records = keyStoreWithPassword.keyStore.aliases().toList().flatMap { alias ->
+            val tenantId = "tenantId"
+            val certificateChain = keyStoreWithPassword.keyStore.getCertificateChain(alias)
+            val pems = certificateChain.map { certificate ->
+                StringWriter().use { str ->
+                    JcaPEMWriter(str).use { writer ->
+                        writer.writeObject(certificate)
+                    }
+                    str.toString()
+                }
+            }
+            val name = PrincipalUtil.getSubjectX509Principal(certificateChain.first() as X509Certificate).name
+            val certificateRecord = Record(
+                Schemas.P2P.GATEWAY_TLS_CERTIFICATES,
+                name,
+                GatewayTlsCertificates(tenantId, pems)
+            )
+            val privateKey = keyStoreWithPassword.keyStore.getKey(alias, keyStoreWithPassword.password.toCharArray())
+            val publicKey = keyStoreWithPassword.keyStore.getCertificate(alias).publicKey
+            val keyAlgorithm: KeyAlgorithm = when (publicKey.algorithm) {
+                "RSA" -> KeyAlgorithm.RSA
+                "EC" -> KeyAlgorithm.ECDSA
+                else -> throw RuntimeException("Unsupported algorithm: ${publicKey.algorithm}")
+            }
+
+            val keyPair = KeyPairEntry(
+                keyAlgorithm,
+                ByteBuffer.wrap(publicKey.encoded),
+                ByteBuffer.wrap(privateKey.encoded)
+            )
+            val keysRecord = Record(
+                TestSchema.CRYPTO_KEYS_TOPIC,
+                alias,
+                TenantKeys(
+                    tenantId,
+                    keyPair
+                )
+            )
+            listOf(certificateRecord, keysRecord)
+        }
+
+        publisher.publish(records).forEach {
+            it.join()
         }
     }
 }

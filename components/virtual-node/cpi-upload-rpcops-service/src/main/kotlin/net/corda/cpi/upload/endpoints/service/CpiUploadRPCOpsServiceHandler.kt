@@ -1,12 +1,7 @@
 package net.corda.cpi.upload.endpoints.service
 
-import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.chunking.Chunk
-import net.corda.data.chunking.ChunkAck
-import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.cpiupload.CpiUploadManager
 import net.corda.libs.cpiupload.CpiUploadManagerFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -18,10 +13,8 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.api.subscription.config.RPCConfig
-import net.corda.schema.Schemas.VirtualNode.Companion.CPI_UPLOAD_TOPIC
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
@@ -33,25 +26,19 @@ import net.corda.v5.base.util.contextLogger
 class CpiUploadRPCOpsServiceHandler(
     private val cpiUploadManagerFactory: CpiUploadManagerFactory,
     private val configReadService: ConfigurationReadService,
-    private val publisherFactory: PublisherFactory
+    private val publisherFactory: PublisherFactory,
+    private val subscriptionFactory: SubscriptionFactory,
 ) : LifecycleEventHandler {
 
     companion object {
         val log = contextLogger()
-
-        const val CPI_UPLOAD_GROUP = "cpi.uploader"
-        const val CPI_UPLOAD_CLIENT_NAME = "$CPI_UPLOAD_GROUP.rpc"
     }
 
     @VisibleForTesting
     internal var configReadServiceRegistrationHandle: RegistrationHandle? = null
 
-    @VisibleForTesting
-    internal var rpcSender: RPCSender<Chunk, ChunkAck>? = null
     internal var cpiUploadManager: CpiUploadManager? = null
 
-    private var previousRpcConfig: SmartConfig? =
-        SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
     private var configSubscription: AutoCloseable? = null
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
@@ -111,45 +98,24 @@ class CpiUploadRPCOpsServiceHandler(
     ) {
         log.info("CPI Upload RPCOpsServiceHandler event - config changed")
 
-        // RPC_CONFIG is not currently being used (in `CpiUploadManagerImpl`).
-        val rpcConfig = event.config[ConfigKeys.RPC_CONFIG]?.also { previousRpcConfig = it } ?: previousRpcConfig
-
         // val messagingConfig = event.config.toMessagingConfig()  //  uncomment when MESSAGING key is used
         val messagingConfig = event.config[ConfigKeys.BOOT_CONFIG]!!
-
-        rpcSender?.close()
-        rpcSender = createAndStartRpcSender(messagingConfig)
-        cpiUploadManager = createAndStartCpiUploadManager(rpcConfig!!, rpcSender!!)
+        cpiUploadManager?.close()
+        cpiUploadManager = cpiUploadManagerFactory.create(
+            messagingConfig,
+            publisherFactory,
+            subscriptionFactory
+        )
 
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 
-    private fun createAndStartRpcSender(config: SmartConfig): RPCSender<Chunk, ChunkAck> {
-        val rpcConfig = RPCConfig(
-            CPI_UPLOAD_GROUP,
-            CPI_UPLOAD_CLIENT_NAME,
-            CPI_UPLOAD_TOPIC,
-            Chunk::class.java,
-            ChunkAck::class.java
-        )
-        return publisherFactory.createRPCSender(rpcConfig, config)
-            .also { it.start() }
-    }
-
-    private fun createAndStartCpiUploadManager(
-        smartConfig: SmartConfig,
-        rpcSender: RPCSender<Chunk, ChunkAck>
-    ): CpiUploadManager {
-        return cpiUploadManagerFactory.create(smartConfig, rpcSender)
-    }
-
     private fun closeResources() {
-        rpcSender?.close()
-        rpcSender = null
         configReadServiceRegistrationHandle?.close()
         configReadServiceRegistrationHandle = null
         configSubscription?.close()
         configSubscription = null
+        cpiUploadManager?.close()
         cpiUploadManager = null
     }
 }

@@ -30,9 +30,9 @@ The file provided on the `--netmap-file` CLI parameter should have the following
                "publicKeyStoreFile": "<path_to_the_keystore_file>",
                "publicKeyAlias": "<alias_of_public_key>", 
                "keystorePassword": "keystore-password",
-               "publicKeyAlgo": "RSA",
                "address": "http://alice.com",
-               "networkType": "CORDA_4"       
+               "networkType": "CORDA_4",
+               "trustStoreCertificates": ["<path_to_trust_certificate_files>"]
           }
         },
         {
@@ -42,9 +42,9 @@ The file provided on the `--netmap-file` CLI parameter should have the following
               "publicKeyStoreFile": "<path_to_the_keystore_file>",
               "publicKeyAlias": "<alias_of_public_key>", 
               "keystorePassword": "keystore-password",
-              "publicKeyAlgo": "ECDSA",
               "address": "http://bob.com",
-              "networkType": "CORDA_5"
+              "networkType": "CORDA_5",
+              "trustStoreCertificates": ["<path_to_trust_certificate_files>"]
           }
         }
     ],
@@ -61,6 +61,8 @@ Key store files are expected to be `.jks` files. You can create them using Java'
 ```
 keytool -genkeypair -alias ec -keyalg EC -storetype JKS -keystore ec_key.jks -storepass 123456
 ```
+
+trust store files are expected to be `.pem` files.
 
 ### Populating a custom topic
 

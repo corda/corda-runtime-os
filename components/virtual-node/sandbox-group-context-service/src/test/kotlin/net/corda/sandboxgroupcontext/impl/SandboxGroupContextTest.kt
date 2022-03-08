@@ -1,6 +1,6 @@
 package net.corda.sandboxgroupcontext.impl
 
-import net.corda.packaging.CPK
+import net.corda.libs.packaging.CpkMetadata
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
@@ -33,15 +33,13 @@ class Cat(override val name: String, private val noise: String) : Animal {
 }
 
 class SandboxGroupContextTest {
-    private fun Set<CPK>.toIds() = mapTo(LinkedHashSet()) { it.metadata.id }
-
     private val holdingIdentity = HoldingIdentity("foo", "bar")
-    private val cpk: CPK = Helpers.mockTrivialCpk("MAIN_BUNDLE")
+    private val cpk: CpkMetadata = CpkMetadata.fromLegacyCpk(Helpers.mockTrivialCpk("MAIN_BUNDLE"))
 
     private val cpks = setOf(cpk)
 
     private val virtualNodeContext = VirtualNodeContext(
-        holdingIdentity, cpks.toIds(), SandboxGroupType.FLOW, SingletonSerializeAsToken::class.java, null
+        holdingIdentity, cpks.map { it.id }.toSet(), SandboxGroupType.FLOW, SingletonSerializeAsToken::class.java, null
     )
     private lateinit var sandboxGroupContext: SandboxGroupContextImpl
 

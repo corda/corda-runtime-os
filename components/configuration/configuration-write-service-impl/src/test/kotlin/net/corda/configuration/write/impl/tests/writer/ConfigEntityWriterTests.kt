@@ -45,7 +45,7 @@ class ConfigEntityWriterTests {
         }
 
         return mock<DbConnectionManager>().apply {
-            whenever(clusterDbEntityManagerFactory).thenReturn(entityManagerFactory)
+            whenever(getClusterEntityManagerFactory()).thenReturn(entityManagerFactory)
         }
     }
 

@@ -1,5 +1,6 @@
 package net.corda.permissions.storage.writer.internal
 
+import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
@@ -12,12 +13,14 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_MGMT_REQ_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import javax.persistence.EntityManagerFactory
@@ -55,8 +58,10 @@ class PermissionStorageWriterServiceEventHandler(
                 log.info("Status Change Event received: $event")
                 when (event.status) {
                     LifecycleStatus.UP -> {
-                        crsSub = configurationReadService.registerForUpdates(::onConfigurationUpdated)
-                        coordinator.updateStatus(LifecycleStatus.UP)
+                        crsSub = configurationReadService.registerComponentForUpdates(
+                            coordinator,
+                            setOf(BOOT_CONFIG, MESSAGING_CONFIG)
+                        )
                     }
                     LifecycleStatus.DOWN -> {
                         downTransition(coordinator)
@@ -67,6 +72,10 @@ class PermissionStorageWriterServiceEventHandler(
                     }
                 }
             }
+            is ConfigChangedEvent -> {
+                onConfigurationUpdated(event.config.toMessagingConfig())
+                coordinator.updateStatus(LifecycleStatus.UP)
+            }
             is StopEvent -> {
                 log.info("Stop event received")
                 downTransition(coordinator)
@@ -75,33 +84,24 @@ class PermissionStorageWriterServiceEventHandler(
     }
 
     @VisibleForTesting
-    internal fun onConfigurationUpdated(
-        changedKeys: Set<String>,
-        currentConfigurationSnapshot: Map<String, SmartConfig>
-    ) {
+    internal fun onConfigurationUpdated(messagingConfig: SmartConfig) {
 
-        log.info("Component received configuration update event, changedKeys: $changedKeys")
-
-        if (BOOT_CONFIG in changedKeys) {
-
-            val bootstrapConfig = checkNotNull(currentConfigurationSnapshot[BOOT_CONFIG])
-
-            subscription = subscriptionFactory.createRPCSubscription(
-                rpcConfig = RPCConfig(
-                    groupName = GROUP_NAME,
-                    clientName = CLIENT_NAME,
-                    requestTopic = RPC_PERM_MGMT_REQ_TOPIC,
-                    requestType = PermissionManagementRequest::class.java,
-                    responseType = PermissionManagementResponse::class.java
-                ),
-                nodeConfig = bootstrapConfig,
-                responderProcessor = permissionStorageWriterProcessorFactory.create(
-                    entityManagerFactoryCreator(),
-                    readerService.permissionStorageReader!!
-                )
-            ).also {
-                it.start()
-            }
+        subscription?.stop()
+        subscription = subscriptionFactory.createRPCSubscription(
+            rpcConfig = RPCConfig(
+                groupName = GROUP_NAME,
+                clientName = CLIENT_NAME,
+                requestTopic = RPC_PERM_MGMT_REQ_TOPIC,
+                requestType = PermissionManagementRequest::class.java,
+                responseType = PermissionManagementResponse::class.java
+            ),
+            nodeConfig = messagingConfig,
+            responderProcessor = permissionStorageWriterProcessorFactory.create(
+                entityManagerFactoryCreator(),
+                readerService.permissionStorageReader!!
+            )
+        ).also {
+            it.start()
         }
     }
 

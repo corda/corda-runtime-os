@@ -5,6 +5,7 @@ import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.data.packaging.CPIIdentifier
 import net.corda.data.packaging.CPIMetadata
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.packaging.CpiMetadata
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
@@ -14,7 +15,6 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.packaging.CPI
-import net.corda.packaging.converters.toAvro
 import net.corda.schema.Schemas.VirtualNode.Companion.CPI_INFO_TOPIC
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -48,8 +48,6 @@ class CpiInfoWriterComponentImpl @Activate constructor(
     // This eventually needs to be passed in to here from the parent `main`
     private val instanceId: Int? = null
 
-    private val maxAttempts = 10
-
     private val eventHandler: MessagingConfigEventHandler =
         MessagingConfigEventHandler(configurationReadService, this::onConfigChangeEvent, this::onConfig)
 
@@ -57,11 +55,11 @@ class CpiInfoWriterComponentImpl @Activate constructor(
 
     private var publisher: Publisher? = null
 
-    override fun put(cpiMetadata: CPI.Metadata) {
+    override fun put(cpiMetadata: CpiMetadata) {
         publish(listOf(Record(CPI_INFO_TOPIC, cpiMetadata.id.toAvro(), cpiMetadata.toAvro())))
     }
 
-    override fun remove(cpiMetadata: CPI.Metadata) {
+    override fun remove(cpiMetadata: CpiMetadata) {
         publish(listOf(Record(CPI_INFO_TOPIC, cpiMetadata.id.toAvro(), null)))
     }
 

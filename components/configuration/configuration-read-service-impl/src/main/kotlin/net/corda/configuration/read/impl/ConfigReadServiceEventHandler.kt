@@ -102,7 +102,7 @@ internal class ConfigReadServiceEventHandler(
         // defined. May also be relevant for secret service configuration in the processor.
         val sub = subscriptionFactory.createCompactedSubscription(
             SubscriptionConfig(GROUP, CONFIG_TOPIC),
-            ConfigProcessor(coordinator, config.factory),
+            ConfigProcessor(coordinator, config.factory, config),
             config
         )
         subReg = coordinator.followStatusChangesByName(setOf(sub.subscriptionName))

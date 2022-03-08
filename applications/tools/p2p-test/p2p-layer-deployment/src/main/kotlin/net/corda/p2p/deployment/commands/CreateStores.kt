@@ -55,7 +55,13 @@ class CreateStores : Runnable {
         names = ["-t", "--trust-store"],
         description = ["The trust store file"]
     )
-    var trustStoreFile: File? = File("truststore.jks")
+    var trustStoreFile: File? = File("truststore.pem")
+
+    @Option(
+        names = ["-c", "--certificate-chain-file"],
+        description = ["The TLS certificate chain file"]
+    )
+    var tlsCertificates: File? = null
 
     @Option(
         names = ["-s", "--ssl-store"],
@@ -68,12 +74,6 @@ class CreateStores : Runnable {
         description = ["The key store password"]
     )
     private var keyStorePassword = "password"
-
-    @Option(
-        names = ["--trust-store-password"],
-        description = ["The trust store password"]
-    )
-    private var trustStorePassword = "password"
 
     private val digester by lazy {
         Mac.getInstance("HmacSHA256").also { mac ->
@@ -259,46 +259,7 @@ class CreateStores : Runnable {
     }
 
     private fun createTrustStore(trustStoreFile: File) {
-        runCommand(
-            "keytool",
-            "-genkey",
-            "-keyalg",
-            "RSA",
-            "-alias",
-            "temp",
-            "-keystore",
-            trustStoreFile.absolutePath,
-            "-dname", "CN=r3.com, OU=ID, O=R3, C=GB",
-            "-storepass", trustStorePassword,
-            "-keypass", trustStorePassword,
-        )
-
-        runCommand(
-            "keytool",
-            "-delete",
-            "-alias",
-            "temp",
-            "-keystore",
-            trustStoreFile.absolutePath,
-            "-storepass", trustStorePassword,
-            "-keypass", trustStorePassword,
-        )
-
-        runCommand(
-            "keytool",
-            "-import",
-            "-v",
-            "-trustcacerts",
-            "-alias",
-            "root",
-            "-file",
-            pemFile.absolutePath,
-            "-keystore",
-            trustStoreFile.absolutePath,
-            "-storepass", trustStorePassword,
-            "-keypass", trustStorePassword,
-            "-noprompt"
-        )
+        pemFile.copyTo(trustStoreFile)
     }
 
     private fun createSslStore() {
@@ -374,6 +335,7 @@ class CreateStores : Runnable {
                 createTrustStore(it)
             }
             createSslStore()
+            tlsCertificates?.writeText(chain)
         } finally {
             disconnect()
         }

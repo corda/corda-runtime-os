@@ -56,6 +56,9 @@ internal class VirtualNodeInfoMap {
         }
     }
 
+    /** Get list of [VirtualNodeInfo] for all virtual nodes. Returns an empty list if no virtual nodes are onboarded. */
+    fun getAll(): List<VirtualNodeInfo> = virtualNodeInfoById.values.toList()
+
     /** Get a [VirtualNodeInfo] by [HoldingIdentity], `null` if not found. */
     fun get(holdingIdentity: HoldingIdentity): VirtualNodeInfo? = virtualNodeInfoByHoldingIdentity[holdingIdentity]
 

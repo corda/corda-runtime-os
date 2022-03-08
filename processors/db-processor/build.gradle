@@ -17,6 +17,8 @@ dependencies {
     implementation project(':components:permissions:permission-cache-service')
     implementation project(':components:permissions:permission-storage-reader-service')
     implementation project(':components:permissions:permission-storage-writer-service')
+    implementation project(':components:virtual-node:cpk-read-service')
+    implementation project(':components:virtual-node:cpk-write-service')
     implementation project(':components:virtual-node:virtual-node-write-service')
     implementation project(':libs:chunking:chunking-datamodel')
     implementation project(':libs:configuration:configuration-core')
@@ -27,7 +29,9 @@ dependencies {
     implementation project(':libs:db:db-orm')
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(":libs:permissions:permission-datamodel")
+    implementation project(':libs:virtual-node:cpi-datamodel')
     implementation project(":libs:virtual-node:virtual-node-datamodel")
+    implementation project(":libs:virtual-node:cpi-datamodel")
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'
@@ -37,7 +41,10 @@ dependencies {
     runtimeOnly project(':components:chunking:chunk-db-write-impl')
     runtimeOnly project(':components:configuration:configuration-write-service-impl')
     runtimeOnly project(':components:virtual-node:virtual-node-write-service-impl')
+    runtimeOnly project(':components:virtual-node:cpi-info-write-service-impl')
     runtimeOnly project(':components:db:db-connection-manager-impl')
+    runtimeOnly project(':components:virtual-node:cpk-read-service-impl')
+    runtimeOnly project(':components:virtual-node:cpk-write-service-impl')
     runtimeOnly project(':libs:configuration:configuration-publish-impl')
     runtimeOnly project(':libs:db:db-orm-impl')
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')

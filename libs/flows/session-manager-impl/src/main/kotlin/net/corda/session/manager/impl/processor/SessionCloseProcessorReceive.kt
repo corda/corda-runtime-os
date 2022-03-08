@@ -45,7 +45,8 @@ class SessionCloseProcessorReceive(
             val receivedEventsState = sessionState.receivedEventsState
             val lastProcessedSequenceNum = receivedEventsState.lastProcessedSequenceNum
             val undeliveredReceivedMessages = receivedEventsState.undeliveredMessages
-            if (undeliveredReceivedMessages.find { it.payload is SessionClose } != null) {
+            val sessionCloseOnQueue = undeliveredReceivedMessages.any { it.payload is SessionClose }
+            if (sessionCloseOnQueue || sessionState.status == SessionStateType.CLOSED) {
                 //duplicate
                 logger.debug {
                     "Received duplicate SessionClose on key $key and sessionId $sessionId with seqNum of $seqNum " +
@@ -70,6 +71,7 @@ class SessionCloseProcessorReceive(
     ) = when (sessionState.status) {
         SessionStateType.CONFIRMED, SessionStateType.CREATED -> {
             sessionState.apply {
+                logger.debug { "Updating session state to ${SessionStateType.CLOSING} for session state $sessionState" }
                 status = SessionStateType.CLOSING
                 sendEventsState.undeliveredMessages =
                     sendEventsState.undeliveredMessages.plus(generateAckEvent(seqNum, sessionId, instant))
