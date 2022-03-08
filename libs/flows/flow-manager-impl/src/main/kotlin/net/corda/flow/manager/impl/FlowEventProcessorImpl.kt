@@ -23,14 +23,15 @@ class FlowEventProcessorImpl(private val flowEventPipelineFactory: FlowEventPipe
 
     override fun onNext(state: Checkpoint?, event: Record<FlowKey, FlowEvent>): StateAndEventProcessor.Response<Checkpoint> {
         val flowEvent = event.value ?: throw FlowHospitalException("FlowEvent was null")
-        log.info("Received event: ${flowEvent.payload::class.java} / ${flowEvent.payload}")
+        log.info("Flow [${event.key}] Received event: ${flowEvent.payload::class.java} / ${flowEvent.payload}")
         return try {
             flowEventPipelineFactory.create(state, flowEvent)
                 .eventPreProcessing()
                 .runOrContinue()
                 .setCheckpointSuspendedOn()
+                .setWaitingFor()
                 .requestPostProcessing()
-                .eventPostProcessing()
+                .globalPostProcessing()
                 .toStateAndEventResponse()
         } catch (e: FlowProcessingException) {
             log.error("Error processing flow event $event", e)

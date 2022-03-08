@@ -28,7 +28,9 @@ class MessageFactoryImpl : MessageFactory {
             FlowStatusKey(clientRequestId, virtualNode.holdingIdentity),
             FlowInitiatorType.RPC,
             clientRequestId,
-            virtualNode,
+            virtualNode.holdingIdentity,
+            virtualNode.cpiIdentifier.name,
+            virtualNode.holdingIdentity,
             flowClassName,
             Instant.now()
         )

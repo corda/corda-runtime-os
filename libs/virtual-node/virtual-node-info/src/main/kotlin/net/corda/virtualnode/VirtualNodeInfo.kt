@@ -14,7 +14,20 @@ import java.util.UUID
  *
  * Also see https://github.com/corda/platform-eng-design/blob/mnesbit-rpc-apis/core/corda-5/corda-5.1/rpc-apis/rpc_api.md#cluster-database
  */
-data class VirtualNodeInfo(val holdingIdentity: HoldingIdentity, val cpiIdentifier: CpiIdentifier)
+data class VirtualNodeInfo(
+    val holdingIdentity: HoldingIdentity,
+    val cpiIdentifier: CpiIdentifier,
+    /** Vault DDL DB connection ID */
+    val vaultDdlConnectionId: UUID? = null,
+    /** Vault DML DB connection ID */
+    val vaultDmlConnectionId: UUID,
+    /** Crypto DDL DB connection ID */
+    val cryptoDdlConnectionId: UUID? = null,
+    /** Crypto DML DB connection ID */
+    val cryptoDmlConnectionId: UUID,
+    /** HSM connection ID */
+    val hsmConnectionId: UUID? = null)
+
 
 fun VirtualNodeInfo.toAvro(): net.corda.data.virtualnode.VirtualNodeInfo =
     with (holdingIdentity) {
@@ -22,18 +35,22 @@ fun VirtualNodeInfo.toAvro(): net.corda.data.virtualnode.VirtualNodeInfo =
             toAvro(),
             cpiIdentifier.toAvro(),
             vaultDdlConnectionId?.let{ vaultDdlConnectionId.toString() },
-            vaultDmlConnectionId?.let{ vaultDmlConnectionId.toString() },
+            vaultDmlConnectionId.toString(),
             cryptoDdlConnectionId?.let{ cryptoDdlConnectionId.toString() },
-            cryptoDmlConnectionId?.let{ cryptoDmlConnectionId.toString() },
+            cryptoDmlConnectionId.toString(),
             hsmConnectionId?.let { hsmConnectionId.toString() }
         )
     }
 
 fun net.corda.data.virtualnode.VirtualNodeInfo.toCorda(): VirtualNodeInfo {
     val holdingIdentity = holdingIdentity.toCorda()
-    holdingIdentity.vaultDdlConnectionId = vaultDdlConnectionId?.let { UUID.fromString(vaultDdlConnectionId) }
-    holdingIdentity.vaultDmlConnectionId = vaultDmlConnectionId?.let { UUID.fromString(vaultDmlConnectionId) }
-    holdingIdentity.cryptoDdlConnectionId = cryptoDdlConnectionId?.let { UUID.fromString(cryptoDdlConnectionId) }
-    holdingIdentity.cryptoDmlConnectionId = cryptoDmlConnectionId?.let { UUID.fromString(cryptoDmlConnectionId) }
-    return VirtualNodeInfo(holdingIdentity, CpiIdentifier.fromAvro(cpiIdentifier))
+    return VirtualNodeInfo(
+        holdingIdentity,
+        CpiIdentifier.fromAvro(cpiIdentifier),
+        vaultDdlConnectionId?.let { UUID.fromString(vaultDdlConnectionId) },
+        UUID.fromString(vaultDmlConnectionId),
+        cryptoDdlConnectionId?.let { UUID.fromString(cryptoDdlConnectionId) },
+        UUID.fromString(cryptoDmlConnectionId),
+        hsmConnectionId?.let { UUID.fromString(hsmConnectionId) },
+    )
 }

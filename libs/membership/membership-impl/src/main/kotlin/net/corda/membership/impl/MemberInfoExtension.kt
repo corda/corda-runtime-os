@@ -3,6 +3,7 @@ package net.corda.membership.impl
 import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.v5.base.util.parse
 import net.corda.v5.base.util.parseList
+import net.corda.v5.base.util.parseSet
 import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
@@ -113,9 +114,9 @@ class MemberInfoExtension {
         val MemberInfo.modifiedTime: Instant?
             get() = mgmProvidedContext.parse(MODIFIED_TIME)
 
-        /** List of identity key hashes for member's node. */
+        /** Collection of identity key hashes for member's node. */
         @JvmStatic
-        val MemberInfo.identityKeyHashes: List<PublicKeyHash>
-            get() = memberProvidedContext.parseList(IDENTITY_KEY_HASHES)
+        val MemberInfo.identityKeyHashes: Collection<PublicKeyHash>
+            get() = memberProvidedContext.parseSet(IDENTITY_KEY_HASHES)
     }
 }

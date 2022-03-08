@@ -3,7 +3,6 @@ package net.corda.virtualnode
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import java.security.MessageDigest
-import java.util.*
 
 data class HoldingIdentity(val x500Name: String, val groupId: String) {
     /**
@@ -25,17 +24,6 @@ data class HoldingIdentity(val x500Name: String, val groupId: String) {
         SecureHash(DigestAlgorithmName.SHA2_256.name, hash)
             .toHexString()
     }
-
-    /** Vault DDL DB connection ID */
-    var vaultDdlConnectionId: UUID? = null
-    /** Vault DML DB connection ID */
-    var vaultDmlConnectionId: UUID? = null
-    /** Crypto DDL DB connection ID */
-    var cryptoDdlConnectionId: UUID? = null
-    /** Crypto DML DB connection ID */
-    var cryptoDmlConnectionId: UUID? = null
-    /** HSM connection ID */
-    var hsmConnectionId: UUID? = null
 }
 
 fun HoldingIdentity.toAvro(): net.corda.data.identity.HoldingIdentity =

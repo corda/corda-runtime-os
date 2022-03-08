@@ -31,7 +31,8 @@ class VirtualNodeInfoProcessorTest {
 
     private fun sendOnNextRandomMessage(processor: VirtualNodeInfoProcessor): HoldingIdentity {
         val holdingIdentity = HoldingIdentity("abc", UUID.randomUUID().toString())
-        val newVirtualNodeInfo = VirtualNodeInfo(holdingIdentity, CpiIdentifier("ghi", "hjk", secureHash))
+        val newVirtualNodeInfo = VirtualNodeInfo(holdingIdentity, CpiIdentifier("ghi", "hjk", secureHash),
+            null, UUID.randomUUID(), null, UUID.randomUUID())
         processor.onNext(Record("", holdingIdentity.toAvro(), newVirtualNodeInfo.toAvro()), null, emptyMap())
         return holdingIdentity
     }
@@ -42,7 +43,8 @@ class VirtualNodeInfoProcessorTest {
 
         val holdingIdentity = HoldingIdentity("x500", "groupId")
         val virtualNodeInfo =
-            VirtualNodeInfo(holdingIdentity, CpiIdentifier("name", "version", secureHash))
+            VirtualNodeInfo(holdingIdentity, CpiIdentifier("name", "version", secureHash),
+                null, UUID.randomUUID(), null, UUID.randomUUID())
         processor.onSnapshot(mapOf(holdingIdentity.toAvro() to virtualNodeInfo.toAvro()))
 
         assertTrue(listener.update)
@@ -54,7 +56,8 @@ class VirtualNodeInfoProcessorTest {
     fun `register client listener callback after onSnapshot is called`() {
         val holdingIdentity = HoldingIdentity("x500", "groupId")
         val virtualNodeInfo =
-            VirtualNodeInfo(holdingIdentity, CpiIdentifier("name", "version", secureHash))
+            VirtualNodeInfo(holdingIdentity, CpiIdentifier("name", "version", secureHash),
+                null, UUID.randomUUID(), null, UUID.randomUUID())
         processor.onSnapshot(mapOf(holdingIdentity.toAvro() to virtualNodeInfo.toAvro()))
 
         processor.registerCallback(listener)
@@ -73,7 +76,8 @@ class VirtualNodeInfoProcessorTest {
 
         val holdingIdentity = HoldingIdentity("x500", "groupId")
         val virtualNodeInfo =
-            VirtualNodeInfo(holdingIdentity, CpiIdentifier("name", "version", secureHash))
+            VirtualNodeInfo(holdingIdentity, CpiIdentifier("name", "version", secureHash),
+                null, UUID.randomUUID(), null, UUID.randomUUID())
 
         listener.update = false
         processor.onNext(Record("", holdingIdentity.toAvro(), virtualNodeInfo.toAvro()), null, emptyMap())
@@ -105,7 +109,8 @@ class VirtualNodeInfoProcessorTest {
 
         val holdingIdentity = HoldingIdentity("x500", "groupId")
         val virtualNodeInfo =
-            VirtualNodeInfo(holdingIdentity, CpiIdentifier("name", "version", secureHash))
+            VirtualNodeInfo(holdingIdentity, CpiIdentifier("name", "version", secureHash),
+                null, UUID.randomUUID(), null, UUID.randomUUID())
         processor.onSnapshot(mapOf(holdingIdentity.toAvro() to virtualNodeInfo.toAvro()))
         assertTrue(listener.update)
         assertTrue(listener.lastSnapshot.containsKey(holdingIdentity))
@@ -137,7 +142,8 @@ class VirtualNodeInfoProcessorTest {
 
         val holdingIdentity = HoldingIdentity("x500", "groupId")
         val virtualNodeInfo =
-            VirtualNodeInfo(holdingIdentity, CpiIdentifier("name", "version", secureHash))
+            VirtualNodeInfo(holdingIdentity, CpiIdentifier("name", "version", secureHash),
+                null, UUID.randomUUID(), null, UUID.randomUUID())
 
         listener.update = false
         processor.onNext(Record("", holdingIdentity.toAvro(), virtualNodeInfo.toAvro()), null, emptyMap())
@@ -162,7 +168,8 @@ class VirtualNodeInfoProcessorTest {
         processor.registerCallback(listener)
         val holdingIdentity = HoldingIdentity("x500", "groupId")
         val virtualNodeInfo =
-            VirtualNodeInfo(holdingIdentity, CpiIdentifier("name", "version", secureHash))
+            VirtualNodeInfo(holdingIdentity, CpiIdentifier("name", "version", secureHash),
+                null, UUID.randomUUID(), null, UUID.randomUUID())
         processor.onSnapshot(mapOf(holdingIdentity.toAvro() to virtualNodeInfo.toAvro()))
 
         assertTrue(listener.update)
@@ -196,7 +203,8 @@ class VirtualNodeInfoProcessorTest {
         listener.update = false
         val holdingIdentity = HoldingIdentity("x500", "groupId")
         val virtualNodeInfo =
-            VirtualNodeInfo(holdingIdentity, CpiIdentifier("name", "version", secureHash))
+            VirtualNodeInfo(holdingIdentity, CpiIdentifier("name", "version", secureHash),
+                null, UUID.randomUUID(), null, UUID.randomUUID())
         processor.onNext(Record("", holdingIdentity.toAvro(), virtualNodeInfo.toAvro()), null, emptyMap())
 
         assertTrue(listener.update)
@@ -226,7 +234,8 @@ class VirtualNodeInfoProcessorTest {
 
         val holdingIdentity = HoldingIdentity("x500", "groupId")
         val virtualNodeInfo =
-            VirtualNodeInfo(holdingIdentity, CpiIdentifier("name", "version", secureHash))
+            VirtualNodeInfo(holdingIdentity, CpiIdentifier("name", "version", secureHash),
+                null, UUID.randomUUID(), null, UUID.randomUUID())
         val shortHash = holdingIdentity.id
 
         listener.update = false
@@ -256,7 +265,8 @@ class VirtualNodeInfoProcessorTest {
 
         val holdingIdentity = HoldingIdentity("x500", "groupId")
         val virtualNodeInfo =
-            VirtualNodeInfo(holdingIdentity, CpiIdentifier("name", "version", secureHash))
+            VirtualNodeInfo(holdingIdentity, CpiIdentifier("name", "version", secureHash),
+                null, UUID.randomUUID(), null, UUID.randomUUID())
 
         listener.update = false
         processor.onNext(Record("", holdingIdentity.toAvro(), virtualNodeInfo.toAvro()), null, emptyMap())
@@ -287,7 +297,8 @@ class VirtualNodeInfoProcessorTest {
     fun `clear message processor`() {
         val processor = VirtualNodeInfoProcessor({ /* don't care about callback */ }, { /* don't care about callback */ })
         val holdingIdentity = HoldingIdentity("abc", UUID.randomUUID().toString())
-        val virtualNodeInfo = VirtualNodeInfo(holdingIdentity, CpiIdentifier("ghi", "hjk", secureHash))
+        val virtualNodeInfo = VirtualNodeInfo(holdingIdentity, CpiIdentifier("ghi", "hjk", secureHash),
+            null, UUID.randomUUID(), null, UUID.randomUUID())
         processor.registerCallback(listener)
         processor.onSnapshot(mapOf(holdingIdentity.toAvro() to virtualNodeInfo.toAvro()))
 
@@ -304,7 +315,8 @@ class VirtualNodeInfoProcessorTest {
         var onSnapshot = false
         val processor = VirtualNodeInfoProcessor({ onSnapshot = true }, { /* don't care about callback */ })
         val holdingIdentity = HoldingIdentity("abc", UUID.randomUUID().toString())
-        val virtualNodeInfo = VirtualNodeInfo(holdingIdentity, CpiIdentifier("ghi", "hjk", secureHash))
+        val virtualNodeInfo = VirtualNodeInfo(holdingIdentity, CpiIdentifier("ghi", "hjk", secureHash),
+            null, UUID.randomUUID(), null, UUID.randomUUID())
 
         processor.registerCallback(listener)
 
@@ -319,7 +331,8 @@ class VirtualNodeInfoProcessorTest {
         val processor = VirtualNodeInfoProcessor({ /* don't care */ }, { onError = true })
         val holdingIdentity = HoldingIdentity("abc", UUID.randomUUID().toString())
         val holdingIdentityOther = HoldingIdentity("def", UUID.randomUUID().toString())
-        val virtualNodeInfo = VirtualNodeInfo(holdingIdentity, CpiIdentifier("ghi", "hjk", secureHash))
+        val virtualNodeInfo = VirtualNodeInfo(holdingIdentity, CpiIdentifier("ghi", "hjk", secureHash),
+            null, UUID.randomUUID(), null, UUID.randomUUID())
 
         processor.registerCallback(listener)
 

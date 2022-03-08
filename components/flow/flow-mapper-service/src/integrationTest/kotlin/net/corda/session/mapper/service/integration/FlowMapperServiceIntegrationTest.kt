@@ -139,7 +139,9 @@ class FlowMapperServiceIntegrationTest {
             FlowStatusKey("clientId", identity),
             FlowInitiatorType.RPC,
             "clientId",
-            VirtualNodeInfo(identity, null, null, null, null, null, null),
+            identity,
+            "cpi id",
+            identity,
             "class name",
             Instant.now())
 
