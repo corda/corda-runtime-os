@@ -35,7 +35,7 @@ class CpkChunksFileManagerImplTest {
     @BeforeEach
     fun setUp() {
         fs = Jimfs.newFileSystem(Configuration.unix())
-        commonCpkCacheDir = fs.getPath("/cpks")
+        commonCpkCacheDir = fs.getPath("/cpks").apply { Files.createDirectories(this) }
         cpkChunksFileManagerImpl = CpkChunksFileManagerImpl(commonCpkCacheDir)
     }
 
