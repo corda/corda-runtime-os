@@ -203,9 +203,11 @@ open class SessionManagerImpl(
                     }
                     is OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded -> {
                         val initMessages = genSessionInitMessages(counterparties, config.get().sessionsPerCounterparties)
+                        if (initMessages.isEmpty()) return@read SessionState.CannotEstablishSession
                         outboundSessionPool.addPendingSessions(counterparties, initMessages.map { it.first })
                         val messages = linkOutMessagesFromSessionInitMessages(counterparties, initMessages)
                             ?: return@read SessionState.CannotEstablishSession
+                        pendingOutboundSessionMessageQueues.queueMessage(message, counterparties)
                         SessionState.NewSessionsNeeded(messages)
                     }
                 }
@@ -357,7 +359,7 @@ open class SessionManagerImpl(
                 "Could not find the network type in the NetworkMap for groupId ${counterparties.ourId.groupId}." +
                         " The sessionInit message was not sent."
             )
-            return emptyList()
+            return null
         }
 
         val linkOutMessages = mutableListOf<Pair<String, LinkOutMessage>>()
