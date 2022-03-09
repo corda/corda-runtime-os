@@ -73,8 +73,7 @@ class VirtualNodeEntitiesIntegrationTest {
     @Test
     fun `can persist and read back Virtual Node entity`() {
         val cpiMetadata = CpiMetadataEntity("Test CPI","1.0","CPI summary hash",
-                    "123456789012","123456789012","file","1234567890",
-                    "group policy","group ID", "request ID")
+            "file","1234567890", "group policy","group ID", "request ID")
         val virtualNode = VirtualNodeEntity("0123456789AB", "Test CPI", "1.0",
             "CPI summary hash")
 

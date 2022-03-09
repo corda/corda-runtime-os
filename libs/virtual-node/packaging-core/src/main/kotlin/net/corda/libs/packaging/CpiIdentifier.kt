@@ -1,10 +1,8 @@
 package net.corda.libs.packaging
 
 import net.corda.packaging.CPI
-import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import java.nio.ByteBuffer
-import java.security.MessageDigest
 
 /**
  * Cpi identifier
@@ -45,16 +43,5 @@ data class CpiIdentifier(
                 )
             },
         )
-    }
-
-    val hash: String by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        val s = (name + version + (signerSummaryHash?.toHexString() ?: ""))
-        val digest: MessageDigest = MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name)
-        val hash: ByteArray = digest.digest(s.toByteArray())
-        SecureHash(DigestAlgorithmName.SHA2_256.name, hash).toHexString()
-    }
-
-    val shortHash: String by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        hash.substring(0, 12)
     }
 }

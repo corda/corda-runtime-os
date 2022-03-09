@@ -17,13 +17,13 @@ internal class VirtualNodeEntityRepository(dbConnectionManager: DbConnectionMana
     private val entityManagerFactory = dbConnectionManager.getClusterEntityManagerFactory()
 
     /** Reads CPI metadata from the database. */
-    internal fun getCPIMetadata(cpiIdShortHash: String): CPIMetadata? {
+    internal fun getCPIMetadata(cpiFileChecksum: String): CPIMetadata? {
         val cpiMetadataEntity = entityManagerFactory.transaction {
             it.createQuery(
                 "SELECT cpi FROM CpiMetadataEntity cpi " +
-                        "WHERE cpi.idShortHash = :cpiIdShortHash",
+                        "WHERE cpi.fileChecksum like :cpiFileChecksum",
                 CpiMetadataEntity::class.java)
-                .setParameter("cpiIdShortHash", cpiIdShortHash)
+                .setParameter("cpiFileChecksum", cpiFileChecksum)
                 .singleResult
         } ?: return null
 
@@ -31,7 +31,7 @@ internal class VirtualNodeEntityRepository(dbConnectionManager: DbConnectionMana
             if (it == "") null else SecureHash.create(it)
         }
         val cpiId = CPI.Identifier.newInstance(cpiMetadataEntity.name, cpiMetadataEntity.version, signerSummaryHash)
-        return CPIMetadata(cpiId, cpiMetadataEntity.idShortHash, cpiMetadataEntity.groupId)
+        return CPIMetadata(cpiId, cpiMetadataEntity.fileChecksum, cpiMetadataEntity.groupId)
     }
 
     /**
