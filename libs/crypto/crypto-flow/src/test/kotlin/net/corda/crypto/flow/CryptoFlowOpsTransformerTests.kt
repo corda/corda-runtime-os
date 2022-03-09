@@ -1,6 +1,7 @@
 package net.corda.crypto.flow
 
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
+import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.RESPONSE_TOPIC
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoNoContentValue
@@ -41,6 +42,7 @@ import kotlin.test.assertTrue
 
 class CryptoFlowOpsTransformerTests {
     private lateinit var knownComponentName: String
+    private lateinit var knownResponseTopic: String
     private lateinit var knownTenantId: String
     private lateinit var knownAlias: String
     private lateinit var knownOperationContext: Map<String, String>
@@ -51,6 +53,7 @@ class CryptoFlowOpsTransformerTests {
     @BeforeEach
     fun setup() {
         knownComponentName = UUID.randomUUID().toString()
+        knownResponseTopic = UUID.randomUUID().toString()
         knownTenantId = UUID.randomUUID().toString()
         knownAlias = UUID.randomUUID().toString()
         knownOperationContext = mapOf(
@@ -71,6 +74,7 @@ class CryptoFlowOpsTransformerTests {
         }
         transformer = CryptoFlowOpsTransformer(
             requestingComponent = knownComponentName,
+            responseTopic = knownResponseTopic,
             schemeMetadata = schemeMetadata
         )
     }
@@ -120,9 +124,17 @@ class CryptoFlowOpsTransformerTests {
         assertEquals(knownTenantId, context.tenantId)
         result.assertThatIsBetween(context.requestTimestamp)
         assertEquals(knownComponentName, context.requestingComponent)
-        assertEquals(1, context.other.items.size)
-        assertEquals(REQUEST_OP_KEY, context.other.items[0].key)
-        assertEquals(REQUEST::class.java.simpleName, context.other.items[0].value)
+        assertEquals(2, context.other.items.size)
+        assertTrue {
+            context.other.items.firstOrNull {
+                it.key == REQUEST_OP_KEY && it.value == REQUEST::class.java.simpleName
+            } != null
+        }
+        assertTrue {
+            context.other.items.firstOrNull {
+                it.key == RESPONSE_TOPIC && it.value == knownResponseTopic
+            } != null
+        }
     }
 
     private fun assertOperationContext(expected: Map<String, String>, actual: KeyValuePairList) {
