@@ -64,8 +64,7 @@ class CpiUploadRPCOpsImpl @Activate constructor(
     // We're mostly returning the enumeration to a string in this version
     override fun status(id: String): CpiUploadRPCOps.Status {
         requireRunning()
-        val status = cpiUploadManager.status(id)
-        when (status) {
+        when (val status = cpiUploadManager.status(id)) {
             CpiUploadStatus.NO_SUCH_REQUEST_ID -> throw ResourceNotFoundException("No such request id '$id'")
             else -> return CpiUploadRPCOps.Status(status.toString())
         }
