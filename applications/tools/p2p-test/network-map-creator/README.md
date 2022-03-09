@@ -9,7 +9,7 @@ The ultimate purpose of this tool is to test the p2p layer in an isolated way wi
 ```
 
 ## Running the tool
-To run the pool one will need to create a kafka properties file in the format:
+To run the tool one will need to create a kafka properties file in the format:
 ```
 bootstrap.servers=localhost:9092
 ```
@@ -20,7 +20,7 @@ bootstrap.servers=localhost:9092
 java -jar applications/tools/p2p-test/network-map-creator/build/bin/corda-network-map-creator-5.0.0.0-SNAPSHOT.jar network-map --netmap-file ~/Desktop/netmap.json --kafka ~/Desktop/kafka.properties
 ```
 
-The file specified in the `--kafka` CLI parameter is the kafka properties file
+The file specified in the `--kafka` CLI parameter is the kafka properties file.
 
 The file provided on the `--netmap-file` CLI parameter should have the following structure:
 ```json
@@ -74,7 +74,7 @@ trust store files are expected to be `.pem` files.
 java -jar applications/tools/p2p-test/network-map-creator/build/bin/corda-network-map-creator-5.0.0.0-SNAPSHOT.jar locally-hosted-map --hosting-map-file ~/Desktop/hosting.json --kafka ~/Desktop/kafka.properties
 ```
 
-The file specified in the `--kafka` CLI parameter is the kafka properties file
+The file specified in the `--kafka` CLI parameter is the kafka properties file.
 
 The file provided on the `--hosting-map-file` CLI parameter should have the following structure:
 ```json
