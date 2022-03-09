@@ -162,7 +162,9 @@ class OSGiFrameworkMain {
                 exitCode = -4
             }
 
-            exitProcess(exitCode)
+            if (exitCode != 0) {
+                exitProcess(exitCode)
+            }
         }
     } //~ companion object
 }
