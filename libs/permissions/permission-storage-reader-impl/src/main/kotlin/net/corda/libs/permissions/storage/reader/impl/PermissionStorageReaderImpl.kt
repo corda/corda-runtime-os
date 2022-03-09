@@ -95,12 +95,12 @@ class PermissionStorageReaderImpl(
         )
 
         if (permissionsToReconcile.isNotEmpty()) {
-            log.trace { "Publishing permission summaries for ${permissionsToReconcile.size} user(s) that require reconciliation." }
+            publisher.publish(createPermissionSummaryRecords(permissionsToReconcile))
+            val duration = System.currentTimeMillis() - startTime
+            log.info("Permission summary reconciliation completed and published ${permissionsToReconcile.size} user(s) in ${duration}ms.")
+        } else {
+            log.trace { "Permission summary reconciliation found everything up-to-date." }
         }
-        publisher.publish(createPermissionSummaryRecords(permissionsToReconcile))
-
-        val duration = System.currentTimeMillis() - startTime
-        log.info("Permission summary reconciliation completed and published ${permissionsToReconcile.size} user(s) in ${duration}ms.")
     }
 
     private fun publishOnStartup() {
