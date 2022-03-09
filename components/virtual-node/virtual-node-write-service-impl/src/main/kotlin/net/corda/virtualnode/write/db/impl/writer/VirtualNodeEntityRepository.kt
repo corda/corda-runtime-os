@@ -7,10 +7,8 @@ import net.corda.libs.virtualnode.datamodel.VirtualNodeEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntityKey
 import net.corda.orm.utils.transaction
 import net.corda.packaging.CPI
-import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
-import java.security.MessageDigest
 import javax.persistence.EntityManager
 
 /** Reads and writes CPIs, holding identities and virtual nodes to and from the cluster database. */
@@ -21,9 +19,9 @@ internal class VirtualNodeEntityRepository(dbConnectionManager: DbConnectionMana
     /** Stub for reading CPI metadata from the database that returns a dummy value. */
     @Suppress("Unused_parameter", "RedundantNullableReturnType")
     internal fun getCPIMetadata(cpiIdShortHash: String): CPIMetadata? {
-        // HACK: Brute force finding CPIs for matching short hash until fields are added to the DB
         val cpis = entityManagerFactory.transaction { em ->
             em.createQuery(
+                // match either full hash or partial
                 "SELECT cpi FROM CpiMetadataEntity cpi WHERE fileChecksum LIKE '$cpiIdShortHash%'",
                 CpiMetadataEntity::class.java)
                 .resultList
