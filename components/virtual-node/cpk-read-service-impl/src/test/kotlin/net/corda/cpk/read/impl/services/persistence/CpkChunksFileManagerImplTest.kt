@@ -2,8 +2,8 @@ package net.corda.cpk.read.impl.services.persistence
 
 import com.google.common.jimfs.Configuration
 import com.google.common.jimfs.Jimfs
-import net.corda.chunking.toAvro
 import net.corda.chunking.toCorda
+import net.corda.cpk.read.impl.TestUtils.dummyCpkChunkIdToChunk
 import net.corda.cpk.read.impl.services.persistence.CpkChunksFileManagerImpl.Companion.toCpkDirName
 import net.corda.cpk.read.impl.services.persistence.CpkChunksFileManagerImpl.Companion.toCpkFileName
 import net.corda.data.chunking.CpkChunkId
@@ -12,7 +12,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.nio.file.FileSystem
 import net.corda.cpk.read.impl.services.persistence.CpkChunksFileManagerImpl.Companion.toFileName
-import net.corda.data.chunking.Chunk
 import net.corda.utilities.inputStream
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -28,7 +27,7 @@ class CpkChunksFileManagerImplTest {
 
     private lateinit var fs: FileSystem
 
-    companion object {
+    private companion object {
         const val DUMMY_HASH = "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FA"
     }
 
@@ -76,22 +75,6 @@ class CpkChunksFileManagerImplTest {
         val inStream = filePath.inputStream()
         return inStream.readAllBytes()
     }
-
-    private fun dummyCpkChunkIdToChunk(
-        cpkChecksum: SecureHash,
-        cpkChunkPartNumber: Int,
-        chunkingChecksum: SecureHash,
-        bytes: ByteArray
-    ) =
-        CpkChunkId(cpkChecksum.toAvro(), cpkChunkPartNumber) to
-                Chunk(
-                    "dummyRequestId",
-                    "dummyFileName",
-                    chunkingChecksum.toAvro(),
-                    cpkChunkPartNumber,
-                    0,
-                    ByteBuffer.wrap(bytes)
-                )
 
     @Test
     fun `chunk file exists looks for requested cpk chunk id`() {

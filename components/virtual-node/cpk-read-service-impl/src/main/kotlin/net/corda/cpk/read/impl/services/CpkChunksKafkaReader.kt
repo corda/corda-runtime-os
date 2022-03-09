@@ -8,6 +8,7 @@ import net.corda.libs.packaging.CpkIdentifier
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.packaging.CPK
+import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import java.nio.ByteBuffer
@@ -28,7 +29,8 @@ class CpkChunksKafkaReader(
     // Assuming [CompactedProcessor.onSnapshot] and [CompactedProcessor.onNext] are not called concurrently.
     // This is not intended to be used as a cache, as it will not work among workers in different processes.
     // It is just used to save extra disk searches to check if all chunks are received.
-    private val chunksReceivedPerCpk = mutableMapOf<SecureHash, ChunksReceived>()
+    @VisibleForTesting
+    internal val chunksReceivedPerCpk = mutableMapOf<SecureHash, ChunksReceived>()
 
     override val keyClass: Class<CpkChunkId>
         get() = CpkChunkId::class.java
@@ -49,7 +51,8 @@ class CpkChunksKafkaReader(
         writeChunkFile(chunkId, chunk!!) // assuming not nullable for now
     }
 
-    private fun writeChunkFile(chunkId: CpkChunkId, chunk: Chunk) {
+    @VisibleForTesting
+    internal fun writeChunkFile(chunkId: CpkChunkId, chunk: Chunk) {
         val cpkChunkFileLookUp = cpkChunksFileManager.chunkFileExists(chunkId)
         if (!cpkChunkFileLookUp.exists) {
             cpkChunksFileManager.writeChunkFile(chunkId, chunk)
@@ -89,7 +92,8 @@ class CpkChunksKafkaReader(
         chunksReceivedPerCpk.remove(cpkChecksum)
     }
 
-    private class ChunksReceived {
+    @VisibleForTesting
+    internal class ChunksReceived {
         val chunks = sortedSetOf<CpkChunkId>()
         var expectedCount = -1
             set(value) {
