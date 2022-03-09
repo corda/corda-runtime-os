@@ -16,16 +16,23 @@ dependencies {
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-topic-schema"
     implementation "net.corda:corda-packaging-avro-converters"
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
 
+    implementation project(":libs:chunking:chunking-core")
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
+    implementation project(":libs:utilities")
+    implementation project(":components:virtual-node:cpk-service-common")
+    implementation project(":components:configuration:configuration-read-service")
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
 
     api project(":components:virtual-node:cpk-read-service")
-    implementation project(":components:virtual-node:cpk-service-common")
 
-    implementation project(":libs:configuration:configuration-core")
-    implementation project(":components:configuration:configuration-read-service")
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+
+    testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
 }

@@ -1,0 +1,44 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "corda.fullname" . }}-create-topics
+  labels: &id012
+    app: create-topics
+spec:
+  template:
+    metadata:
+      labels: *id012
+    spec:
+      containers:
+      - name: create-topics
+        image: bitnami/kafka:2.8.1-debian-10-r99
+        imagePullPolicy: Always
+        command:
+        - /bin/sh
+        - -c
+        args:
+        - echo -e 'Creating kafka topics';kafka-topics.sh --bootstrap-server {{ .Values.kafka.url }}
+          --partitions 1 --replication-factor 1 --create --topic config.management.request;kafka-topics.sh
+          --bootstrap-server {{ .Values.kafka.url }} --partitions 1 --replication-factor 1
+          --create --topic config.management.request.resp;kafka-topics.sh --bootstrap-server
+          {{ .Values.kafka.url }} --partitions 1 --replication-factor 1 --create --topic config.topic
+          --config 'cleanup.policy=compact';kafka-topics.sh --bootstrap-server {{ .Values.kafka.url }}
+          --partitions 1 --replication-factor 1 --create --topic virtual.node.creation.request;kafka-topics.sh
+          --bootstrap-server {{ .Values.kafka.url }} --partitions 1 --replication-factor 1
+          --create --topic virtual.node.creation.request.resp;kafka-topics.sh --bootstrap-server
+          {{ .Values.kafka.url }} --partitions 1 --replication-factor 1 --create --topic rpc.permissions.management;kafka-topics.sh
+          --bootstrap-server {{ .Values.kafka.url }} --partitions 1 --replication-factor 1
+          --create --topic rpc.permissions.management.resp;kafka-topics.sh --bootstrap-server
+          {{ .Values.kafka.url }} --partitions 1 --replication-factor 1 --create --topic rpc.permissions.user
+          --config 'cleanup.policy=compact';kafka-topics.sh --bootstrap-server {{ .Values.kafka.url }}
+          --partitions 1 --replication-factor 1 --create --topic rpc.permissions.group
+          --config 'cleanup.policy=compact';kafka-topics.sh --bootstrap-server {{ .Values.kafka.url }}
+          --partitions 1 --replication-factor 1 --create --topic rpc.permissions.role
+          --config 'cleanup.policy=compact';kafka-topics.sh --bootstrap-server {{ .Values.kafka.url }}
+          --partitions 1 --replication-factor 1 --create --topic rpc.permissions.permission
+          --config 'cleanup.policy=compact';kafka-topics.sh --bootstrap-server {{ .Values.kafka.url }}--partitions
+          1 --replication-factor 1 --create --topic permissions.user.summary --config
+          'cleanup.policy=compact';echo -e 'Successfully created the following topics:';kafka-topics.sh
+          --bootstrap-server {{ .Values.kafka.url }} --list;
+      restartPolicy: OnFailure
+  backoffLimit: 10

@@ -22,8 +22,7 @@ class StartFlowExecutor(
 
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
-            val identity = startRPCFlow.startContext.virtualNode.holdingIdentity
-            val flowKey = generateFlowKey(identity)
+            val flowKey = generateFlowKey(startRPCFlow.startContext.identity)
             val newState = FlowMapperState(flowKey, null, FlowMapperStateType.OPEN)
             val flowEvent = FlowEvent(flowKey, startRPCFlow)
             FlowMapperResult(

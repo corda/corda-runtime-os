@@ -35,7 +35,7 @@ class CalculatorFlow(private val jsonArg: String) : Flow<String> {
             var outputFormatter = OutputFormattingFlow(result)
             resultMessage = flowEngine.subFlow(outputFormatter)
             log.info("Calculated response:  ${resultMessage}")
-        } catch (e: Throwable) {
+        } catch (e: Exception) {
             log.warn(":( could not complete calculation of '$jsonArg' because:'${e.message}'")
         }
         log.info("Calculation completed.")

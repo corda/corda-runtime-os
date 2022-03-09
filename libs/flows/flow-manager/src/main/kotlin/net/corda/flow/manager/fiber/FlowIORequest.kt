@@ -3,7 +3,7 @@ package net.corda.flow.manager.fiber
 import net.corda.data.flow.FlowStackItem
 import net.corda.v5.application.flows.FlowInfo
 import net.corda.v5.application.flows.FlowSession
-import net.corda.v5.serialization.SerializedBytes
+import net.corda.v5.base.types.MemberX500Name
 import java.nio.ByteBuffer
 import java.time.Instant
 
@@ -16,7 +16,7 @@ interface FlowIORequest<out R> {
      *
      * @property sessionToMessage a map from session to message-to-be-sent.
      */
-    data class Send(val sessionToMessage: Map<FlowSession, SerializedBytes<Any>>) : FlowIORequest<Unit> {
+    data class Send(val sessionToMessage: Map<String, Any>) : FlowIORequest<Unit> {
         override fun toString() = "Send(sessionToMessage=${sessionToMessage.mapValues { it.value }})"
     }
 
@@ -26,28 +26,26 @@ interface FlowIORequest<out R> {
      * @property sessions the sessions to receive messages from.
      * @return a map from session to received message.
      */
-    data class Receive(val sessions: Set<FlowSession>) : FlowIORequest<Map<FlowSession, SerializedBytes<Any>>>
+    data class Receive(val sessions: Set<String>) : FlowIORequest<Map<String, Any>>
 
     /**
      * Send and receive messages from the specified sessions.
      *
-     * @property sessionToMessage a map from session to message-to-be-sent. The keys also specify which sessions to
-     *     receive from.
+     * @property sessionToMessage a map from session to message-to-be-sent. The keys also specify which sessions to receive from.
      * @return a map from session to received message.
      */
-    //net.corda.core.internal.FlowIORequest.SendAndReceive
-    data class SendAndReceive(
-        val sessionToMessage: Map<FlowSession, SerializedBytes<Any>>
-    ) : FlowIORequest<Map<FlowSession, SerializedBytes<Any>>> {
+    data class SendAndReceive(val sessionToMessage: Map<String, Any>) : FlowIORequest<Map<String, Any>> {
         override fun toString() = "SendAndReceive(${sessionToMessage.mapValues { (key, value) -> "$key=$value" }})"
     }
+
+    data class InitiateFlow(val x500Name: MemberX500Name, val sessionId: String) : FlowIORequest<Unit>
 
     /**
      * Closes the specified sessions.
      *
      * @property sessions the sessions to be closed.
      */
-    data class CloseSessions(val sessions: Set<FlowSession>) : FlowIORequest<Unit>
+    data class CloseSessions(val sessions: Set<String>) : FlowIORequest<Unit>
 
     /**
      * Get the FlowInfo of the specified sessions.

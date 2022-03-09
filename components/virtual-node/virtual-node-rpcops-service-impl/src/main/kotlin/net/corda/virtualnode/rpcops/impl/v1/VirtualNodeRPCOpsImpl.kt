@@ -11,13 +11,15 @@ import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRPCOps
 import net.corda.libs.virtualnode.endpoints.v1.types.CPIIdentifier
 import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeResponse
+import net.corda.libs.virtualnode.endpoints.v1.types.HTTPGetVirtualNodesResponse
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_CREATION_REQUEST_TOPIC
 import net.corda.v5.base.concurrent.getOrThrow
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.base.util.contextLogger
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.rpcops.VirtualNodeRPCOpsServiceException
 import net.corda.virtualnode.rpcops.impl.CLIENT_NAME_HTTP
 import net.corda.virtualnode.rpcops.impl.GROUP_NAME
@@ -31,7 +33,9 @@ import java.time.Duration
 @Component(service = [VirtualNodeRPCOpsInternal::class, PluggableRPCOps::class], immediate = true)
 internal class VirtualNodeRPCOpsImpl @Activate constructor(
     @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory
+    private val publisherFactory: PublisherFactory,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService
 ) : VirtualNodeRPCOpsInternal, PluggableRPCOps<VirtualNodeRPCOps> {
     private companion object {
         // The configuration used for the RPC sender.
@@ -80,7 +84,8 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
         return if (resp.success) {
             val cpiId = CPIIdentifier.fromAvro(resp.cpiIdentifier)
             HTTPCreateVirtualNodeResponse(
-                resp.x500Name, cpiId, resp.cpiIdentifierHash, resp.mgmGroupId, resp.holdingIdentifierHash
+                resp.x500Name, cpiId, resp.cpiIdentifierHash, resp.mgmGroupId, resp.holdingIdentifierHash,
+                resp.vaultDdlConnectionId, resp.vaultDmlConnectionId, resp.cryptoDdlConnectionId, resp.cryptoDmlConnectionId
             )
         } else {
             val exception = resp.exception
@@ -91,6 +96,10 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
             logger.warn("Remote request to create virtual node responded with exception: ${exception.errorType}: ${exception.errorMessage}")
             throw InternalServerException("${exception.errorType}: ${exception.errorMessage}")
         }
+    }
+
+    override fun getAllVirtualNodes(): HTTPGetVirtualNodesResponse {
+        return HTTPGetVirtualNodesResponse(virtualNodeInfoReadService.getAll())
     }
 
     /** Validates the [x500Name]. */

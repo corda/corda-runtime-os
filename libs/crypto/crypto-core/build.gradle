@@ -11,11 +11,7 @@ dependencies {
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
-    implementation "net.corda:corda-cipher-suite"
-    implementation "net.corda:corda-crypto"
-    implementation "net.i2p.crypto:eddsa:$eddsaVersion"
-    implementation "org.bouncycastle:bcprov-jdk15on:${bouncyCastleVersion}"
-    implementation "org.bouncycastle:bcpkix-jdk15on:${bouncyCastleVersion}"
+    api "net.corda:corda-cipher-suite"
 
     testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"

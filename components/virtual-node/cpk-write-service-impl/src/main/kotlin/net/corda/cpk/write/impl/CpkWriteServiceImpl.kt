@@ -47,9 +47,9 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import java.io.ByteArrayInputStream
-import java.nio.file.Paths
 import java.time.Duration
 
+// TODO at some later point consider deleting CPKs blobs in the database by nulling their blob values and pass the null value to Kafka
 @Suppress("TooManyFunctions")
 @Component(service = [CpkWriteService::class])
 class CpkWriteServiceImpl @Activate constructor(
@@ -156,6 +156,7 @@ class CpkWriteServiceImpl @Activate constructor(
         } catch (e: Exception) {
             closeResources()
             coordinator.updateStatus(LifecycleStatus.DOWN)
+            return
         }
         createCpkChecksumsCache(config)
         createCpkStorage()
@@ -190,8 +191,6 @@ class CpkWriteServiceImpl @Activate constructor(
 
     @VisibleForTesting
     internal fun putMissingCpk() {
-        logger.info("Putting missing CPKs from DB to Kafka")
-
         val cachedCpkIds = cpkChecksumsCache?.getCachedCpkIds() ?: run {
             logger.info("CPK Checksums Cache is not set yet, therefore will run a full db to kafka reconciliation")
             emptyList()
@@ -203,10 +202,13 @@ class CpkWriteServiceImpl @Activate constructor(
 
         // Make sure we use the same CPK publisher for all CPK publishing.
         this.cpkChunksPublisher?.let {
-            missingCpkIdsOnKafka.forEach { cpkChecksum ->
-                val cpkChecksumData = cpkStorage.getCpkDataByCpkId(cpkChecksum)
-                it.chunkAndPublishCpk(cpkChecksumData)
-            }
+            missingCpkIdsOnKafka
+                .forEach { cpkChecksum ->
+                    // TODO probably replace the following logging with debug
+                    logger.info("Putting missing CPK to Kafka: $cpkChecksum")
+                    val cpkChecksumData = cpkStorage.getCpkDataByCpkId(cpkChecksum)
+                    it.chunkAndPublishCpk(cpkChecksumData)
+                }
         } ?: throw CordaRuntimeException("CPK Chunks Publisher service is not set")
     }
 
@@ -219,7 +221,7 @@ class CpkWriteServiceImpl @Activate constructor(
             val cpkChunkId = CpkChunkId(cpkChecksum.toAvro(), chunk.partNumber)
             put(cpkChunkId, chunk)
         }
-        chunkWriter.write(Paths.get(cpkChecksum.toFileName()), ByteArrayInputStream(cpkData))
+        chunkWriter.write(cpkChecksum.toFileName(), ByteArrayInputStream(cpkData))
     }
 
     override val isRunning: Boolean

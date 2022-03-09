@@ -58,6 +58,12 @@ class CreateStores : Runnable {
     var trustStoreFile: File? = File("truststore.pem")
 
     @Option(
+        names = ["-c", "--certificate-chain-file"],
+        description = ["The TLS certificate chain file"]
+    )
+    var tlsCertificates: File? = null
+
+    @Option(
         names = ["-s", "--ssl-store"],
         description = ["The SSL store file"]
     )
@@ -329,6 +335,7 @@ class CreateStores : Runnable {
                 createTrustStore(it)
             }
             createSslStore()
+            tlsCertificates?.writeText(chain)
         } finally {
             disconnect()
         }

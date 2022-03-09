@@ -36,7 +36,12 @@ class KeyStoreFactoryTest {
 
     @Test
     fun `createDelegatedKeyStore return the key store`() {
-        assertThat(testObject.createDelegatedKeyStore()).isSameAs(keyStore)
+        assertThat(testObject.createDelegatedKeyStore().keyStore).isSameAs(keyStore)
+    }
+
+    @Test
+    fun `createDelegatedKeyStore return empty password`() {
+        assertThat(testObject.createDelegatedKeyStore().password).isEmpty()
     }
 
     @Test

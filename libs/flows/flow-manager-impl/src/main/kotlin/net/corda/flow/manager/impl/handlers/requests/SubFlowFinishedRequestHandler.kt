@@ -1,6 +1,7 @@
 package net.corda.flow.manager.impl.handlers.requests
 
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.data.flow.state.waiting.Wakeup
 import net.corda.flow.manager.fiber.FlowIORequest
 import net.corda.flow.manager.impl.FlowEventContext
@@ -13,12 +14,15 @@ class SubFlowFinishedRequestHandler : FlowRequestHandler<FlowIORequest.SubFlowFi
 
     override val type = FlowIORequest.SubFlowFinished::class.java
 
+    override fun getUpdatedWaitingFor(context: FlowEventContext<Any>, request: FlowIORequest.SubFlowFinished): WaitingFor {
+        return WaitingFor(Wakeup())
+    }
+
     override fun postProcess(
         context: FlowEventContext<Any>,
         request: FlowIORequest.SubFlowFinished
     ): FlowEventContext<Any> {
         val checkpoint = requireCheckpoint(context)
-        checkpoint.setWaitingFor(Wakeup())
 
         /*
          * TODOs: Once the session management logic is implemented, we need to add logic here

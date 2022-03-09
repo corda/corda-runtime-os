@@ -15,13 +15,14 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
-import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
-import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -83,7 +84,7 @@ class CpkWriteServiceImplTest {
 
     @Test
     fun `on onRegistrationStatusChangeEvent registers to configuration read service for updates`() {
-        whenever(configReadService.registerComponentForUpdates(any(), any())).thenReturn(cpkWriteServiceImpl)
+        whenever(configReadService.registerComponentForUpdates(any(), any())).thenReturn(mock())
 
         cpkWriteServiceImpl.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
         assertNotNull(cpkWriteServiceImpl.configSubscription)
@@ -91,17 +92,19 @@ class CpkWriteServiceImplTest {
 
     @Test
     fun `on onConfigChangedEvent fully sets the component`() {
+        whenever(publisherFactory.createPublisher(any(), any())).thenReturn(mock())
+        whenever(subscriptionFactory.createCompactedSubscription<Any, Any>(any(), any(), any())).thenReturn(mock())
+        whenever(dbConnectionManager.getClusterEntityManagerFactory()).thenReturn(mock())
+
         val keys = mock<Set<String>>()
         whenever(keys.contains(ConfigKeys.BOOT_CONFIG)).thenReturn(true)
         val config = mock<Map<String, SmartConfig>>()
         whenever(config[ConfigKeys.BOOT_CONFIG]).thenReturn(mock())
-        whenever(config[ConfigKeys.MESSAGING_CONFIG]).thenReturn(mock())
-        whenever(config.toMessagingConfig()).thenReturn(mock())
-        whenever(publisherFactory.createPublisher(any(), any())).thenReturn(mock())
-        whenever(dbConnectionManager.getClusterEntityManagerFactory()).thenReturn(mock())
-        whenever(subscriptionFactory.createCompactedSubscription<Any, Any>(any(), any(), any())).thenReturn(mock())
-
+        val messagingSmartConfigMock = mock<SmartConfig>()
+        whenever(messagingSmartConfigMock.withFallback(any())).thenReturn(mock())
+        whenever(config[ConfigKeys.MESSAGING_CONFIG]).thenReturn(messagingSmartConfigMock)
         cpkWriteServiceImpl.processEvent(ConfigChangedEvent(keys, config), coordinator)
+
         assertNotNull(cpkWriteServiceImpl.timeout)
         assertNotNull(cpkWriteServiceImpl.timerEventInterval)
         assertNotNull(cpkWriteServiceImpl.cpkChecksumsCache)
@@ -130,5 +133,23 @@ class CpkWriteServiceImplTest {
         assertTrue(chunks.size == 2)
         assertTrue(chunks[0].data.equals(ByteBuffer.wrap(cpkData)))
         assertEquals("${cpkChecksum.toHexString()}.cpk", chunks[0].fileName)
+    }
+
+    @Test
+    fun `on failing at sub services creation closes the component`() {
+        whenever(publisherFactory.createPublisher(any(), any())).thenThrow(CordaRuntimeException(""))
+
+        val keys = mock<Set<String>>()
+        whenever(keys.contains(ConfigKeys.BOOT_CONFIG)).thenReturn(true)
+        val config = mock<Map<String, SmartConfig>>()
+        whenever(config[ConfigKeys.BOOT_CONFIG]).thenReturn(mock())
+        whenever(config[ConfigKeys.MESSAGING_CONFIG]).thenReturn(mock())
+        cpkWriteServiceImpl.processEvent(ConfigChangedEvent(keys, config), coordinator)
+
+        assertNull(cpkWriteServiceImpl.configReadServiceRegistration)
+        assertNull(cpkWriteServiceImpl.configSubscription)
+        assertNull(cpkWriteServiceImpl.cpkChecksumsCache)
+        assertNull(cpkWriteServiceImpl.cpkChunksPublisher)
+        verify(coordinator).updateStatus(LifecycleStatus.DOWN)
     }
 }

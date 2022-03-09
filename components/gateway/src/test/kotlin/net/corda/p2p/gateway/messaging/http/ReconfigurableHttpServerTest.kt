@@ -8,7 +8,9 @@ import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.p2p.gateway.messaging.DynamicKeyStore
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
+import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
@@ -41,10 +43,7 @@ class ReconfigurableHttpServerTest {
     private val configuration = GatewayConfiguration(
         hostAddress = "www.r3.com",
         hostPort = 33,
-        sslConfig = mock {
-            on { keyStore } doReturn mock()
-            on { keyStorePassword } doReturn "hi"
-        }
+        sslConfig = mock()
     )
     private val badConfigurationException = RuntimeException("Bad Config")
     private val badConfiguration = mock<GatewayConfiguration> {
@@ -57,16 +56,24 @@ class ReconfigurableHttpServerTest {
         configHandler = (context.arguments()[5] as ReconfigurableHttpServer.ReconfigurableHttpServerConfigChangeHandler)
     }
 
+    private val dynamicKeyStore = mockConstruction(DynamicKeyStore::class.java)
+    private val signer = mockConstruction(StubCryptoProcessor::class.java)
+
     private val server = ReconfigurableHttpServer(
         lifecycleCoordinatorFactory,
         configurationReaderService,
-        listener
+        listener,
+        mock(),
+        mock(),
+        1,
     )
 
     @AfterEach
     fun cleanUp() {
         serverMock.close()
         dominoTile.close()
+        signer.close()
+        dynamicKeyStore.close()
     }
 
     @Test
@@ -105,7 +112,7 @@ class ReconfigurableHttpServerTest {
         val future = configHandler.applyNewConfiguration(badConfiguration, null, resourcesHolder)
 
         Assertions.assertThat(future.isDone).isTrue
-        Assertions.assertThat(future.isCompletedExceptionally).isTrue()
+        Assertions.assertThat(future.isCompletedExceptionally).isTrue
     }
 
     @Test
@@ -131,5 +138,12 @@ class ReconfigurableHttpServerTest {
         configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
 
         verify(resourcesHolder).keep(serverMock.constructed().last())
+    }
+
+    @Test
+    fun `applyNewConfiguration creates new key store`() {
+        configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
+
+        verify(dynamicKeyStore.constructed().first()).keyStore
     }
 }

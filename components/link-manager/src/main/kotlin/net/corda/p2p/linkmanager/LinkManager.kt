@@ -48,6 +48,8 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
+import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
+import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
@@ -77,8 +79,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                       = StubNetworkMap(lifecycleCoordinatorFactory, subscriptionFactory, instanceId, configuration),
                   private val linkManagerHostingMap: LinkManagerHostingMap
                       = ConfigBasedLinkManagerHostingMap(configurationReaderService, lifecycleCoordinatorFactory),
-                  private val linkManagerCryptoService: LinkManagerCryptoService
-                      = StubCryptoService(lifecycleCoordinatorFactory, subscriptionFactory, instanceId, configuration)
+                  linkManagerCryptoProcessor: CryptoProcessor
+                      = StubCryptoProcessor(lifecycleCoordinatorFactory, subscriptionFactory, instanceId, configuration)
 ) : LifecycleWithDominoTile {
 
     companion object {
@@ -101,12 +103,13 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
     private val sessionManager = SessionManagerImpl(
         linkManagerNetworkMap,
-        linkManagerCryptoService,
+        linkManagerCryptoProcessor,
         messagesPendingSession,
         publisherFactory,
         configurationReaderService,
         lifecycleCoordinatorFactory,
-        configuration
+        configuration,
+        linkManagerHostingMap,
     )
 
     private val outboundMessageProcessor = OutboundMessageProcessor(
@@ -126,6 +129,16 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         linkManagerNetworkMap.registerListener(it)
     }
 
+    private val tlsCertificatesPublisher = TlsCertificatesPublisher(
+        subscriptionFactory,
+        publisherFactory,
+        lifecycleCoordinatorFactory,
+        configuration,
+        instanceId,
+    ).also {
+        linkManagerHostingMap.registerListener(it)
+    }
+
     private val deliveryTracker = DeliveryTracker(
         lifecycleCoordinatorFactory,
         configurationReaderService,
@@ -133,7 +146,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         configuration,
         subscriptionFactory,
         linkManagerNetworkMap,
-        linkManagerCryptoService,
+        linkManagerCryptoProcessor,
         sessionManager,
         instanceId
     ) { outboundMessageProcessor.processAuthenticatedMessage(it, true) }
@@ -152,7 +165,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         partitionAssignmentListener = null
     )
 
-    private val commonChildren = setOf(linkManagerNetworkMap.dominoTile, linkManagerCryptoService.dominoTile,
+    private val commonChildren = setOf(linkManagerNetworkMap.dominoTile, linkManagerCryptoProcessor.dominoTile,
         linkManagerHostingMap.dominoTile)
     private val inboundSubscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
@@ -181,6 +194,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             deliveryTracker.dominoTile,
             sessionManager.dominoTile,
             trustStoresPublisher.dominoTile,
+            tlsCertificatesPublisher.dominoTile,
         ) + commonChildren
     )
 

@@ -9,8 +9,10 @@ import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.permissions.endpoints.common.withPermissionManager
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
+import net.corda.libs.permissions.endpoints.v1.user.types.UserPermissionSummaryResponseType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
+import net.corda.libs.permissions.manager.request.GetPermissionSummaryRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
 import net.corda.lifecycle.Lifecycle
@@ -81,6 +83,20 @@ class UserEndpointImpl @Activate constructor(
             removeRoleFromUser(RemoveRoleFromUserRequestDto(principal, loginName.toLowerCase(), roleId))
         }
         return result!!.convertToEndpointType()
+    }
+
+    override fun getPermissionSummary(loginName: String): UserPermissionSummaryResponseType {
+        val principal = getRpcThreadLocalContext()
+
+        val result = withPermissionManager(permissionServiceComponent.permissionManager, logger) {
+            getPermissionSummary(GetPermissionSummaryRequestDto(principal, loginName.toLowerCase()))
+        } ?: throw ResourceNotFoundException("User", loginName)
+
+        return UserPermissionSummaryResponseType(
+            result.loginName,
+            result.permissions.map { it.convertToEndpointType() },
+            result.lastUpdateTimestamp
+        )
     }
 
     private fun getRpcThreadLocalContext(): String {

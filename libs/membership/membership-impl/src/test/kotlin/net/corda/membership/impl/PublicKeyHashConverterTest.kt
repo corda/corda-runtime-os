@@ -4,12 +4,13 @@ import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.membership.impl.converter.PublicKeyHashConverter
 import net.corda.v5.base.exceptions.ValueNotFoundException
 import net.corda.v5.base.util.parse
-import net.corda.v5.base.util.parseList
 import net.corda.v5.base.util.parseOrNull
+import net.corda.v5.base.util.parseSet
 import net.corda.v5.crypto.PublicKeyHash
 import org.junit.jupiter.api.Test
 import java.security.PublicKey
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 
@@ -36,9 +37,9 @@ class PublicKeyHashConverterTest {
             sortedMapOf("corda.identityKeyHashes.0" to IDENTITY_KEY_HASH),
             converters
         )
-        val result = memberContext.parseList<PublicKeyHash>("corda.identityKeyHashes")
+        val result = memberContext.parseSet<PublicKeyHash>("corda.identityKeyHashes")
         assertEquals(1, result.size)
-        assertEquals(identityKeyHash, result[0])
+        assertTrue(result.contains(identityKeyHash))
     }
 
     @Test
@@ -57,7 +58,7 @@ class PublicKeyHashConverterTest {
             converters
         )
         assertFailsWith<ValueNotFoundException> {
-            memberContext.parseList<PublicKey>("corda.identityKeyHashes")
+            memberContext.parseSet<PublicKey>("corda.identityKeyHashes")
         }
     }
 

@@ -19,7 +19,6 @@ dependencies {
     implementation project(":libs:virtual-node:virtual-node-info")
 
     implementation project(":components:configuration:configuration-read-service")
-    implementation project(":components:membership:group-policy")
     implementation project(":components:membership:membership-group-read")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
@@ -35,13 +34,9 @@ dependencies {
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "net.corda:corda-packaging-avro-converters"
-    testImplementation project(":components:virtual-node:cpi-info-read-service")
-    testImplementation project(":components:virtual-node:virtual-node-info-read-service")
     testImplementation project(":testing:layered-property-map-testkit")
     testImplementation project(":testing:test-utilities")
 
-    integrationTestRuntimeOnly project(":components:membership:group-policy-impl")
-    integrationTestRuntimeOnly project(":components:virtual-node:cpi-info-read-service-impl")
     integrationTestRuntimeOnly project(":components:configuration:configuration-read-service-impl")
     integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")

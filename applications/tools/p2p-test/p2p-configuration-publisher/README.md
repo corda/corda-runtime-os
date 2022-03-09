@@ -78,7 +78,8 @@ To run the application use:
                            Default: 2000
       --locallyHostedIdentity=<locallyHostedIdentity>
                          Local hosted identity (in the form of <x500Name>:
-                           <groupId>)
+                           <groupId>:<identityTenantId>:<tlsTenantId>:
+                           <pemTlsCertificate1File>:<pemTlsCertificate2File>...)
       --maxMessageSize=<maxMessageSize>
                          The maximal message size in bytes
                            Default: 1000000

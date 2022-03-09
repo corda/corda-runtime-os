@@ -43,8 +43,11 @@ dependencies {
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+
+    runtimeOnly project(':libs:application:application-impl')
     runtimeOnly project(':libs:crypto:crypto-impl')
     runtimeOnly project(':libs:flows:flow-manager-impl')
+    runtimeOnly project(':libs:flows:session-manager-impl')
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')
     runtimeOnly project(':libs:messaging:inmemory-messaging-impl')
     runtimeOnly project(':libs:serialization:serialization-checkpoint-api')

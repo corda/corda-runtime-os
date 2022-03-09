@@ -54,7 +54,7 @@ class StaticMember(private val staticMemberData: Map<String, Any>) : Map<String,
     fun getEndpoint(index: Int): EndpointInfo {
         return EndpointInfoImpl(
             staticMemberData[String.format(ENDPOINT_URL, index)].toString(),
-            staticMemberData[String.format(ENDPOINT_PROTOCOL, index)]!! as Int
+            Integer.parseInt(staticMemberData[String.format(ENDPOINT_PROTOCOL, index)].toString())
         )
     }
 }

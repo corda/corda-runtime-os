@@ -4,6 +4,7 @@ import net.corda.chunking.datamodel.ChunkingEntities
 import net.corda.chunking.read.ChunkReadService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.write.ConfigWriteService
+import net.corda.cpk.read.CpkReadService
 import net.corda.cpk.write.CpkWriteService
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
@@ -76,14 +77,19 @@ class DBProcessorImpl @Activate constructor(
     @Reference(service = ChunkReadService::class)
     private val chunkReadService: ChunkReadService,
     @Reference(service = CpkWriteService::class)
-    private val cpkWriteService: CpkWriteService
+    private val cpkWriteService: CpkWriteService,
+    @Reference(service = CpkReadService::class)
+    private val cpkReadService: CpkReadService,
 ) : DBProcessor {
     init {
         // define the different DB Entity Sets
         //  entities can be in different packages, but all JPA classes must be passed in.
         entitiesRegistry.register(
             CordaDb.CordaCluster.persistenceUnitName,
-            ConfigurationEntities.classes + VirtualNodeEntities.classes + ChunkingEntities.classes + CpiEntities.classes
+            ConfigurationEntities.classes
+                    + VirtualNodeEntities.classes
+                    + ChunkingEntities.classes
+                    + CpiEntities.classes
         )
         entitiesRegistry.register(CordaDb.RBAC.persistenceUnitName, RbacEntities.classes)
     }
@@ -101,7 +107,8 @@ class DBProcessorImpl @Activate constructor(
         ::permissionStorageWriterService,
         ::virtualNodeWriteService,
         ::chunkReadService,
-        ::cpkWriteService
+        ::cpkWriteService,
+        ::cpkReadService
     )
     // keeping track of the DB Managers registration handler specifically because the bootstrap process needs to be split
     //  into 2 parts.

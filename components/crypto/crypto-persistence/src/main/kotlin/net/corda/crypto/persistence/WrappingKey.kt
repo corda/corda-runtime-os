@@ -56,6 +56,6 @@ class WrappingKey(
         val keyInfo = PrivateKeyInfo.getInstance(this)
         val scheme = schemeMetadata.findSignatureScheme(keyInfo.privateKeyAlgorithm)
         val keyFactory = schemeMetadata.findKeyFactory(scheme)
-        return schemeMetadata.toSupportedPrivateKey(keyFactory.generatePrivate(PKCS8EncodedKeySpec(this)))
+        return keyFactory.generatePrivate(PKCS8EncodedKeySpec(this))
     }
 }

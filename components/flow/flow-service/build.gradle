@@ -32,6 +32,8 @@ dependencies {
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:sandbox")
     implementation project(":libs:serialization:serialization-checkpoint-api")
+    implementation project(":libs:serialization:serialization-amqp")
+    implementation project(":libs:serialization:serialization-internal")
     implementation project(":libs:virtual-node:sandbox-group-context")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
@@ -54,10 +56,14 @@ dependencies {
     cpks project(path: ':testing:cpbs:sandbox-cpk-inject', configuration: 'cordaCPB')
 
     integrationTestImplementation project(':testing:sandboxes')
+    integrationTestRuntimeOnly project(':libs:application:application-impl')
     integrationTestRuntimeOnly project(':libs:flows:flow-manager-impl')
+    integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
     integrationTestRuntimeOnly project(':libs:messaging:inmemory-messaging-impl')
     integrationTestRuntimeOnly project(':libs:serialization:serialization-checkpoint-api')
     integrationTestRuntimeOnly project(':libs:serialization:serialization-kryo')
+
+    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
 }
 
 def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {
