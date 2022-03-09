@@ -151,17 +151,53 @@ class ConfigureAll : Runnable {
         }
     }
 
-    private fun publishMySelfToOthers() {
+    private fun publishMySelfToMySelf() {
         val configurationFile = File.createTempFile("network-map.", ".conf").also {
             it.deleteOnExit()
         }
-        val locallyHosted = mapOf(
-            "locallyHosted" to mapOf(
-                "tlsTenantId" to tenantId,
-                "identityTenantId" to tenantId,
-                "tlsCertificates" to listOf(tlsCertificates(host).absolutePath)
+        val entry =
+            mapOf(
+                "x500name" to x500name,
+                "groupId" to groupId,
+                "data" to mapOf(
+                    "publicKeyStoreFile" to keyStoreFile.absolutePath,
+                    "publicKeyAlias" to "ec",
+                    "keystorePassword" to "password",
+                    "address" to "http://$host:${Port.Gateway.port}",
+                    "networkType" to "CORDA_5",
+                    "trustStoreCertificates" to listOf(trustStoreFile.absolutePath),
+                ),
+                "locallyHosted" to mapOf(
+                    "tlsTenantId" to tenantId,
+                    "identityTenantId" to tenantId,
+                    "tlsCertificates" to listOf(tlsCertificates(host).absolutePath)
+                )
             )
+
+        val configurationMap = mapOf(
+            "entriesToAdd" to listOf(entry),
+            "entriesToDelete" to emptyList()
         )
+        jsonWriter.writeValue(configurationFile, configurationMap)
+        RunJar(
+            "network-map-creator",
+            listOf(
+                "--netmap-file", configurationFile.absolutePath, "--kafka",
+                RunJar.kafkaFile(namespaceName).absolutePath
+            )
+        ).run()
+    }
+
+    private fun publishMySelfToOthers() {
+        val otherNamespaces = namespaces.keys.filter {
+            it != namespaceName
+        }
+        if (otherNamespaces.isEmpty()) {
+            return
+        }
+        val configurationFile = File.createTempFile("network-map.", ".conf").also {
+            it.deleteOnExit()
+        }
         val entry =
             mapOf(
                 "x500name" to x500name,
@@ -181,35 +217,18 @@ class ConfigureAll : Runnable {
             "entriesToDelete" to emptyList()
         )
         jsonWriter.writeValue(configurationFile, configurationMap)
-        namespaces.keys.forEach { nameSpace ->
+        otherNamespaces.forEach { nameSpace ->
             println("Publishing $namespaceName to $nameSpace")
-            if (nameSpace == namespaceName) {
-                val myConfigurationFile = File.createTempFile("network-map.", ".conf").also {
-                    it.deleteOnExit()
-                }
-                val myConfigurationMap = mapOf(
-                    "entriesToAdd" to listOf(entry + locallyHosted),
-                    "entriesToDelete" to emptyList()
+            RunJar(
+                "network-map-creator",
+                listOf(
+                    "--netmap-file", configurationFile.absolutePath, "--kafka",
+                    RunJar.kafkaFile(nameSpace).absolutePath
                 )
-                jsonWriter.writeValue(myConfigurationFile, myConfigurationMap)
-                RunJar(
-                    "network-map-creator",
-                    listOf(
-                        "--netmap-file", myConfigurationFile.absolutePath, "--kafka",
-                        RunJar.kafkaFile(nameSpace).absolutePath
-                    )
-                ).run()
-            } else {
-                RunJar(
-                    "network-map-creator",
-                    listOf(
-                        "--netmap-file", configurationFile.absolutePath, "--kafka",
-                        RunJar.kafkaFile(nameSpace).absolutePath
-                    )
-                ).run()
-            }
+            ).run()
         }
     }
+
     private fun publishOthersToMySelf() {
         val configurationFile = File.createTempFile("network-map.", ".conf").also {
             it.deleteOnExit()
@@ -253,6 +272,7 @@ class ConfigureAll : Runnable {
     }
 
     private fun publishNetworkMap() {
+        publishMySelfToMySelf()
         publishMySelfToOthers()
         publishOthersToMySelf()
     }
