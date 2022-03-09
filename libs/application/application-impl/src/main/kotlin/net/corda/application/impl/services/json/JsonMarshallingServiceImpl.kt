@@ -2,9 +2,11 @@ package net.corda.application.impl.services.json
 
 import com.fasterxml.jackson.databind.JavaType
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector
 import com.fasterxml.jackson.databind.type.TypeFactory
 import com.fasterxml.jackson.databind.util.LRUMap
 import com.fasterxml.jackson.databind.util.LookupCache
+import com.fasterxml.jackson.module.kotlin.KotlinModule
 import java.security.AccessController.doPrivileged
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
@@ -29,6 +31,12 @@ class JsonMarshallingServiceImpl : JsonMarshallingService, SingletonSerializeAsT
         // Provide our own TypeFactory instance rather than using shared global one.
         typeFactory = TypeFactory.defaultInstance()
             .withCache(LRUMap<Any, JavaType>(INITIAL_SIZE, MAX_SIZE) as LookupCache<Any, JavaType>)
+
+        // Provide our own AnnotationIntrospector to avoid using a shared global cache.
+        setAnnotationIntrospector(JacksonAnnotationIntrospector())
+
+        // Register Kotlin after resetting the AnnotationIntrospector.
+        registerModule(KotlinModule.Builder().build())
     }
 
     // Truncate the execution stack down to JsonMarshallingServiceImpl
