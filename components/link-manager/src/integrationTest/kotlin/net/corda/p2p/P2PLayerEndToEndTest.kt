@@ -40,7 +40,7 @@ import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.StubLinkManagerHostingMap
 import net.corda.p2p.linkmanager.StubNetworkMap
-import net.corda.p2p.test.HostingIdentityEntry
+import net.corda.p2p.test.HostedIdentityEntry
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
 import net.corda.p2p.test.NetworkMapEntry
@@ -50,7 +50,7 @@ import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.TestSchema.Companion.CRYPTO_KEYS_TOPIC
-import net.corda.schema.TestSchema.Companion.HOSTING_MAP_TOPIC
+import net.corda.schema.TestSchema.Companion.HOSTED_MAP_TOPIC
 import net.corda.schema.TestSchema.Companion.NETWORK_MAP_TOPIC
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
@@ -381,7 +381,7 @@ class P2PLayerEndToEndTest {
                 "${otherHost.x500Name}-$GROUP_ID" to otherHost.networkMapEntry
             )
             val networkMapRecords = networkMapEntries.map { Record(NETWORK_MAP_TOPIC, it.key, it.value) }
-            val hostingIdentityEntry = HostingIdentityEntry(
+            val HostedIdentityEntry = HostedIdentityEntry(
                 HoldingIdentity(x500Name, GROUP_ID),
                 GROUP_ID,
                 x500Name,
@@ -405,9 +405,9 @@ class P2PLayerEndToEndTest {
                             )
                         ),
                         Record(
-                            HOSTING_MAP_TOPIC,
+                            HOSTED_MAP_TOPIC,
                             "hosting-1",
-                            hostingIdentityEntry,
+                            HostedIdentityEntry,
                         )
                     )
                 ).forEach { it.get() }

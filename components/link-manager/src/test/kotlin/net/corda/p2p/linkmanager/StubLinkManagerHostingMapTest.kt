@@ -11,7 +11,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
-import net.corda.p2p.test.HostingIdentityEntry
+import net.corda.p2p.test.HostedIdentityEntry
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.AfterEach
@@ -26,8 +26,8 @@ import java.util.concurrent.CompletableFuture
 
 class StubLinkManagerHostingMapTest {
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>()
-    private val processor = argumentCaptor<CompactedProcessor<String, HostingIdentityEntry>>()
-    private val subscription = mock<CompactedSubscription<String, HostingIdentityEntry>>()
+    private val processor = argumentCaptor<CompactedProcessor<String, HostedIdentityEntry>>()
+    private val subscription = mock<CompactedSubscription<String, HostedIdentityEntry>>()
     private val configuration = mock<SmartConfig>()
     private val subscriptionFactory = mock<SubscriptionFactory> {
         on {
@@ -44,7 +44,7 @@ class StubLinkManagerHostingMapTest {
         @Suppress("UNCHECKED_CAST")
         createResources = context.arguments()[2] as? ((ResourcesHolder) -> CompletableFuture<Unit>)
     }
-    private val entryOne = HostingIdentityEntry(
+    private val entryOne = HostedIdentityEntry(
         HoldingIdentity("x500", "group"),
         "id1",
         "id2",
@@ -172,7 +172,7 @@ class StubLinkManagerHostingMapTest {
     @Test
     fun `onSnapshot send data to listener`() {
         val entries = mutableListOf<HostingMapListener.IdentityInfo>()
-        testObject.registerListener(object :HostingMapListener{
+        testObject.registerListener(object : HostingMapListener {
             override fun identityAdded(identityInfo: HostingMapListener.IdentityInfo) {
                 entries.add(identityInfo)
             }

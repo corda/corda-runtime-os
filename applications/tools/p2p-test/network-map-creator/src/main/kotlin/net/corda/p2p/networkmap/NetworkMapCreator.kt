@@ -10,10 +10,10 @@ import net.corda.messaging.api.records.Record
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.p2p.NetworkType
-import net.corda.p2p.test.HostingIdentityEntry
+import net.corda.p2p.test.HostedIdentityEntry
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.NetworkMapEntry
-import net.corda.schema.TestSchema.Companion.HOSTING_MAP_TOPIC
+import net.corda.schema.TestSchema.Companion.HOSTED_MAP_TOPIC
 import net.corda.schema.TestSchema.Companion.NETWORK_MAP_TOPIC
 import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.FrameworkUtil
@@ -28,7 +28,7 @@ import java.io.FileInputStream
 import java.nio.ByteBuffer
 import java.security.KeyStore
 import java.security.PublicKey
-import java.util.*
+import java.util.Properties
 
 @Suppress("SpreadOperator")
 @Component(immediate = true)
@@ -77,7 +77,7 @@ class NetworkMapCreator @Activate constructor(
             }
 
             val networkMapTopic = parameters.networkMapTopic ?: NETWORK_MAP_TOPIC
-            val hostingMapTopic = parameters.hostingMapTopic ?: HOSTING_MAP_TOPIC
+            val hostingMapTopic = parameters.hostingMapTopic ?: HOSTED_MAP_TOPIC
             val netmapConfig = ConfigFactory.parseFile(parameters.networkMapFile)
             val recordsWithAdditions = netmapConfig.getConfigList("entriesToAdd").flatMap { config ->
                 val x500Name = config.getString("x500name")
@@ -117,11 +117,11 @@ class NetworkMapCreator @Activate constructor(
                         .map {
                             File(it)
                         }.map { it.readText() }
-                    val hostingIdentityEntry = HostingIdentityEntry(
+                    val HostedIdentityEntry = HostedIdentityEntry(
                         holdingIdentity, tlsTenantId, identityTenantId, tlsCertificates
                     )
                     listOf(
-                        Record(hostingMapTopic, "$x500Name-$groupId", hostingIdentityEntry)
+                        Record(hostingMapTopic, "$x500Name-$groupId", HostedIdentityEntry)
                     )
                 } else {
                     emptyList()
@@ -230,7 +230,7 @@ class CliParameters {
         names = ["--locally-hosted-topic"],
         description = [
             "Topic to write the locally hosted records to. " +
-                "Defaults to $HOSTING_MAP_TOPIC, if not specified."
+                "Defaults to $HOSTED_MAP_TOPIC, if not specified."
         ]
     )
     var hostingMapTopic: String? = null
