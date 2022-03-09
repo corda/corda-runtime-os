@@ -15,7 +15,8 @@ fun buildSessionState(
     receivedEvents: List<SessionEvent>,
     lastSentSeqNum: Int,
     eventsToSend: List<SessionEvent>,
-    sessionStartTime: Instant = Instant.now()
+    sessionStartTime: Instant = Instant.now(),
+    sendAck: Boolean = false
 ): SessionState {
     return SessionState.newBuilder()
         .setSessionId("sessionId")
@@ -24,7 +25,7 @@ fun buildSessionState(
         .setLastSentMessageTime(sessionStartTime)
         .setCounterpartyIdentity(HoldingIdentity("Alice", "group1"))
         .setIsInitiator(true)
-        .setSendAck(false)
+        .setSendAck(sendAck)
         .setReceivedEventsState(SessionProcessState(lastReceivedSeqNum, receivedEvents))
         .setSendEventsState(SessionProcessState(lastSentSeqNum, eventsToSend))
         .setStatus(status)

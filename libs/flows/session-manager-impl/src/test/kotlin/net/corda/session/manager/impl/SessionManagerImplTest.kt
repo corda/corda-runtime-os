@@ -144,6 +144,45 @@ class SessionManagerImplTest {
     }
 
     @Test
+    fun `Send Ack when flag is set`() {
+        val instant = Instant.now()
+        val sessionState = buildSessionState(
+            SessionStateType.CONFIRMED,
+            0,
+            listOf(),
+            4,
+            listOf(),
+            instant,
+            true
+        )
+
+        //validate no heartbeat
+        val (_, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig)
+        assertThat(messagesToSend.size).isEqualTo(1)
+        val messageToSend = messagesToSend.first()
+        assertThat(messageToSend.payload::class.java).isEqualTo(SessionAck::class.java)
+        assertThat(messageToSend.receivedSequenceNum).isEqualTo(0)
+    }
+
+    @Test
+    fun `Dont send Ack when flag is not set`() {
+        val instant = Instant.now()
+        val sessionState = buildSessionState(
+            SessionStateType.CONFIRMED,
+            0,
+            listOf(),
+            4,
+            listOf(),
+            instant,
+            false
+        )
+
+        //validate no heartbeat
+        val (_, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig)
+        assertThat(messagesToSend).isEmpty()
+    }
+
+    @Test
     fun `Send error for session timed out`() {
         val instant = Instant.now()
         val sessionState = buildSessionState(
