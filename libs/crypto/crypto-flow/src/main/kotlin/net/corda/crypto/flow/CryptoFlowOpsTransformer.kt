@@ -27,10 +27,12 @@ import java.util.UUID
 class CryptoFlowOpsTransformer(
     private val requestingComponent: String,
     private val responseTopic: String,
-    private val schemeMetadata: CipherSchemeMetadata
+    private val schemeMetadata: CipherSchemeMetadata,
+    private val requestValidityWindowSeconds: Long = 300
 ) {
     companion object {
         const val REQUEST_OP_KEY = "req.op"
+        const val REQUEST_TTL_KEY = "req.ttl"
         const val RESPONSE_TOPIC = "req.resp.topic"
         const val RESPONSE_ERROR_KEY = "res.err"
         val EMPTY_CONTEXT = emptyMap<String, String>()
@@ -191,7 +193,8 @@ class CryptoFlowOpsTransformer(
             KeyValuePairList(
                 listOf(
                     KeyValuePair(REQUEST_OP_KEY, request::class.java.simpleName),
-                    KeyValuePair(RESPONSE_TOPIC, responseTopic)
+                    KeyValuePair(RESPONSE_TOPIC, responseTopic),
+                    KeyValuePair(REQUEST_TTL_KEY, requestValidityWindowSeconds.toString())
                 )
             )
         )

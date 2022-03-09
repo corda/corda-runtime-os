@@ -126,8 +126,7 @@ class CryptoFlowOpsServiceImpl @Activate constructor(
         logger.info("Creating durable subscription for '{}' topic", FLOW_OPS_MESSAGE_TOPIC)
         val messagingConfig = event.config.toMessagingConfig()
         val processor = CryptoFlowOpsProcessor(
-            cryptoOpsClient = cryptoOpsClient,
-            requestValidityWindowSeconds = 300 // TODO: get from the configuration
+            cryptoOpsClient = cryptoOpsClient
         )
         val current = subscription
         subscription = subscriptionFactory.createDurableSubscription(

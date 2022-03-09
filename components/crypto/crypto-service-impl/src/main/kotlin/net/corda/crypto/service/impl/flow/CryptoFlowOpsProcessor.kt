@@ -22,8 +22,7 @@ import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 class CryptoFlowOpsProcessor(
-    private val cryptoOpsClient: CryptoOpsProxyClient,
-    private val requestValidityWindowSeconds: Long
+    private val cryptoOpsClient: CryptoOpsProxyClient
 ) : WireProcessor(handlers), DurableProcessor<String, FlowOpsRequest> {
     companion object {
         private val logger = contextLogger()
@@ -56,7 +55,7 @@ class CryptoFlowOpsProcessor(
             )
             return null // cannot send any error back as have no idea where to send to
         }
-        val expireAt = request.context.requestTimestamp.plus(requestValidityWindowSeconds, ChronoUnit.SECONDS)
+        val expireAt = getRequestExpireAt(request)
         if (Instant.now() >= expireAt) {
             logger.error(
                 "Event {} for tenant {} is no longer valid, expired at {}",
@@ -94,6 +93,15 @@ class CryptoFlowOpsProcessor(
                 createErrorResponse(request, e.message ?: e::class.java.name)
             )
         }
+    }
+
+    private fun getRequestExpireAt(request: FlowOpsRequest): Instant =
+        request.context.requestTimestamp.plus(getRequestValidityWindowSeconds(request), ChronoUnit.SECONDS)
+
+    private fun getRequestValidityWindowSeconds(request: FlowOpsRequest): Long {
+        return request.context.other.items.singleOrNull {
+            it.key == CryptoFlowOpsTransformer.REQUEST_TTL_KEY
+        }?.value?.toLong() ?: 300
     }
 
     private fun getResponseTopic(request: FlowOpsRequest): String? {

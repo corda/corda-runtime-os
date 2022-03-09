@@ -1,6 +1,7 @@
 package net.corda.crypto.flow
 
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
+import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_TTL_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.RESPONSE_TOPIC
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
@@ -75,7 +76,8 @@ class CryptoFlowOpsTransformerTests {
         transformer = CryptoFlowOpsTransformer(
             requestingComponent = knownComponentName,
             responseTopic = knownResponseTopic,
-            schemeMetadata = schemeMetadata
+            schemeMetadata = schemeMetadata,
+            requestValidityWindowSeconds = 123
         )
     }
 
@@ -124,7 +126,7 @@ class CryptoFlowOpsTransformerTests {
         assertEquals(knownTenantId, context.tenantId)
         result.assertThatIsBetween(context.requestTimestamp)
         assertEquals(knownComponentName, context.requestingComponent)
-        assertEquals(2, context.other.items.size)
+        assertEquals(3, context.other.items.size)
         assertTrue {
             context.other.items.firstOrNull {
                 it.key == REQUEST_OP_KEY && it.value == REQUEST::class.java.simpleName
@@ -133,6 +135,11 @@ class CryptoFlowOpsTransformerTests {
         assertTrue {
             context.other.items.firstOrNull {
                 it.key == RESPONSE_TOPIC && it.value == knownResponseTopic
+            } != null
+        }
+        assertTrue {
+            context.other.items.firstOrNull {
+                it.key == REQUEST_TTL_KEY && it.value == "123"
             } != null
         }
     }
