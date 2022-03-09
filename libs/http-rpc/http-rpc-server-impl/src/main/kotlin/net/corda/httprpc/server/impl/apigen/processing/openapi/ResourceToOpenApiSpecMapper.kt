@@ -205,9 +205,10 @@ private fun Class<*>.isNull(): Boolean {
  */
 
 @VisibleForTesting
-internal fun toOpenApiPath(resourcePath: String, endPointPath: String): String {
+internal fun toOpenApiPath(resourcePath: String, endPointPath: String?): String {
     log.trace { "Map resourcePath: \"$resourcePath\" and endPointPath: \"$endPointPath\" to OpenApi path." }
-    return "/$resourcePath/$endPointPath".replace("/+".toRegex(), "/")
+    val endPointPart = if (endPointPath == null) "" else "/$endPointPath"
+    return "/$resourcePath$endPointPart".replace("/+".toRegex(), "/")
         .also { log.trace { "Map resourcePath: \"$resourcePath\" and endPointPath: \"endPointPath\" to OpenApi path: \"$it\" completed." } }
 }
 
