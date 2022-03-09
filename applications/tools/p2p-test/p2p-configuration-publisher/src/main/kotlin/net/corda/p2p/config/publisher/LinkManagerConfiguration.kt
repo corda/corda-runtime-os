@@ -5,7 +5,6 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.publish.CordaConfigurationKey
 import net.corda.libs.configuration.publish.CordaConfigurationVersion
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
-import net.corda.p2p.crypto.ProtocolMode
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 
