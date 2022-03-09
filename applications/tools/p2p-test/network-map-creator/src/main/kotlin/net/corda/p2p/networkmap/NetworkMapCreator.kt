@@ -212,7 +212,7 @@ class NetworkMapCreator @Activate constructor(
     }
 
     @Command(
-        header = ["Publish network map entries and locally hosted identities"],
+        header = ["Publish network map entries or locally hosted identities"],
         name = "network-map-creator",
         mixinStandardHelpOptions = true,
 
