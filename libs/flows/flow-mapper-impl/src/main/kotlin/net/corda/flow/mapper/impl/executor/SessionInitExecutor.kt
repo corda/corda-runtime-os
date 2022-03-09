@@ -66,6 +66,7 @@ class SessionInitExecutor(
     ): SessionInitOutputs {
         return if (messageDirection == MessageDirection.INBOUND) {
             val flowKey = generateFlowKey(sessionInit.initiatedIdentity)
+            sessionInit.flowKey = flowKey
             SessionInitOutputs(flowKey, flowKey, FlowEvent(flowKey, sessionEvent))
         } else {
             //reusing SessionInit object for inbound and outbound traffic rather than creating a new object identical to SessionInit

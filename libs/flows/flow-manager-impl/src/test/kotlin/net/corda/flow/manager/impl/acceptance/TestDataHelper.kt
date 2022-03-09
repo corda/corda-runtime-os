@@ -4,19 +4,17 @@ import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.FlowStatusKey
 import net.corda.data.identity.HoldingIdentity
-import net.corda.data.packaging.CPIIdentifier
-import net.corda.data.virtualnode.VirtualNodeInfo
 import java.time.Instant
 
-fun getBasicFlowStartContext():FlowStartContext{
-    val holdingIdentity = HoldingIdentity("x500 name","group id")
-    val cpi = CPIIdentifier("cpi id","1.0",null)
-    val virtualNode = VirtualNodeInfo(holdingIdentity,cpi,null,null,null,null,null)
-    return  FlowStartContext.newBuilder()
-        .setStatusKey(FlowStatusKey("request id",holdingIdentity))
+fun getBasicFlowStartContext(): FlowStartContext {
+    val holdingIdentity = HoldingIdentity("x500 name", "group id")
+    return FlowStartContext.newBuilder()
+        .setStatusKey(FlowStatusKey("request id", holdingIdentity))
         .setInitiatorType(FlowInitiatorType.RPC)
-        .setClientRequestId("request id")
-        .setVirtualNode(virtualNode)
+        .setRequestId("request id")
+        .setIdentity(holdingIdentity)
+        .setCpiId("cpi id")
+        .setInitiatedBy(holdingIdentity)
         .setFlowClassName("flow class name")
         .setCreatedTimestamp(Instant.MIN)
         .build()

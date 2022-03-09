@@ -4,7 +4,6 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.flow.state.StateMachineState
 import net.corda.data.flow.state.waiting.WaitingFor
-import net.corda.flow.manager.fiber.FlowContinuation
 import net.corda.flow.manager.impl.FlowEventContext
 import net.corda.flow.manager.impl.handlers.FlowProcessingException
 import net.corda.flow.manager.impl.pipeline.FlowEventPipelineImpl
@@ -41,37 +40,6 @@ interface FlowEventHandler<T> {
      * @return The modified [FlowEventContext].
      */
     fun preProcess(context: FlowEventContext<T>): FlowEventContext<T>
-
-    /**
-     * Determines whether a received [FlowEvent] should cause a flow to run (includes starting a new fiber or resuming an existing fiber).
-     *
-     * This method should not modify [FlowEventContext], which should be done in [preProcess] instead.
-     *
-     * The following should be returned:
-     *
-     * - [FlowContinuation.Run] - A new fiber should be started or an existing fiber should be resumed. When resumed
-     * [FlowContinuation.Run.value] is passed to the [FlowFiber].
-     * - [FlowContinuation.Error] - An existing fiber should be resumed and be passed [FlowContinuation.Error.exception].
-     * - [FlowContinuation.Continue] - The flow should not be started or resumed.
-     *
-     * @param context The [FlowEventContext] that should be inspected to determine whether to start or resume a flow's fiber.
-     *
-     * @return A [FlowContinuation] that represents whether to start or resume a flow's fiber.
-     */
-    fun runOrContinue(context: FlowEventContext<T>): FlowContinuation
-
-    /**
-     * Performs post-processing when receiving a [FlowEvent].
-     *
-     * Post-processing is executed as the last step and occurs after a flow has suspended.
-     *
-     * This step will still execute even if [runOrContinue] returned [FlowContinuation.Continue].
-     *
-     * @param context The [FlowEventContext] that should be modified within this processing step.
-     *
-     * @return The modified [FlowEventContext].
-     */
-    fun postProcess(context: FlowEventContext<T>): FlowEventContext<T>
 }
 
 /**

@@ -36,7 +36,7 @@ class MembershipGroupReaderImplTest {
         on { name } doReturn aliceName
         on { identityKeys } doReturn listOf(knownKey)
         val mockedMemberProvidedContext = mock<MemberContext> {
-            on { parseList(eq(IDENTITY_KEY_HASHES), eq(PublicKeyHash::class.java)) } doReturn listOf(knownKeyHash)
+            on { parseSet(eq(IDENTITY_KEY_HASHES), eq(PublicKeyHash::class.java)) } doReturn setOf(knownKeyHash)
         }
         on { memberProvidedContext } doReturn mockedMemberProvidedContext
 

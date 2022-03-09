@@ -16,7 +16,6 @@ import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.data.identity.HoldingIdentity
-import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
@@ -39,7 +38,9 @@ class FlowMapperIntegrationTest {
             FlowStatusKey("a", identity),
             FlowInitiatorType.RPC,
             "clientId",
-            VirtualNodeInfo(identity, null, null, null, null, null, null),
+            identity,
+            "cpi id",
+            identity,
             "className",
             Instant.MIN
         ), null

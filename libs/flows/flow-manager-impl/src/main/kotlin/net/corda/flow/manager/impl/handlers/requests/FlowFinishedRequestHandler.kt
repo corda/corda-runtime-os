@@ -1,5 +1,6 @@
 package net.corda.flow.manager.impl.handlers.requests
 
+import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.manager.factory.FlowMessageFactory
 import net.corda.flow.manager.fiber.FlowIORequest
 import net.corda.flow.manager.impl.FlowEventContext
@@ -23,12 +24,15 @@ class FlowFinishedRequestHandler @Activate constructor(
 
     override val type = FlowIORequest.FlowFinished::class.java
 
+    override fun getUpdatedWaitingFor(context: FlowEventContext<Any>, request: FlowIORequest.FlowFinished): WaitingFor {
+        return WaitingFor(null)
+    }
+
     override fun postProcess(
         context: FlowEventContext<Any>,
         request: FlowIORequest.FlowFinished
     ): FlowEventContext<Any> {
         val checkpoint = requireCheckpoint(context)
-        checkpoint.setWaitingFor(null)
 
         log.info("Flow [${checkpoint.flowKey.flowId}] completed successfully")
 
