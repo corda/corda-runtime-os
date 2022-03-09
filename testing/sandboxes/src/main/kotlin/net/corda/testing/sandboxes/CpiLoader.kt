@@ -9,6 +9,7 @@ interface CpiLoader {
     fun loadCPI(resourceName: String): CPI
     fun unloadCPI(id: CpiIdentifier)
 
+    fun getAll(): CompletableFuture<List<CpiMetadata>>
     fun get(id: CpiIdentifier): CompletableFuture<CpiMetadata?>
     fun remove(id: CpiIdentifier)
 
