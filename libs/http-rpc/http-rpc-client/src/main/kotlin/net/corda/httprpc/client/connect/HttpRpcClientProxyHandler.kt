@@ -103,12 +103,12 @@ internal class HttpRpcClientProxyHandler<I : RpcOps>(
         }.also { log.trace { """Invoke "${method.name}" completed.""" } }
     }
 
-    private val Method.endpointPath: String
+    private val Method.endpointPath: String?
         get() =
             this.annotations.singleOrNull { it is HttpRpcPOST || it is HttpRpcGET }.let {
                 when (it) {
-                    is HttpRpcGET -> it.path(this)
-                    is HttpRpcPOST -> it.path(this)
+                    is HttpRpcGET -> it.path()
+                    is HttpRpcPOST -> it.path()
                     else -> if (staticExposedGetMethods.contains(this.name)) {
                         this.name
                     } else {

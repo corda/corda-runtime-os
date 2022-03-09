@@ -12,7 +12,7 @@ annotation class HttpRpcEndpoint
  * generated web service.
  *
  * @property path The relative path of the endpoint within its resource.
- *           Defaults to `path` of the enclosing [HttpRpcResource].
+ *           Defaults to an empty string, meaning that path of the enclosing [HttpRpcResource] should be used.
  * @property title The title of the endpoint, used for documentation. Defaults to the function name.
  * @property description The description of the endpoint, used for documentation. Defaults to empty string.
  * @property responseDescription The description of the response, used for documentation. Defaults to empty string.
@@ -32,7 +32,7 @@ annotation class HttpRpcPOST(
  * endpoint by the HTTP RPC generated web service.
  *
  * @property path The relative path of the endpoint within its resource.
- *           Defaults to `path` of the enclosing [HttpRpcResource].
+ *           Defaults to an empty string, meaning that path of the enclosing [HttpRpcResource] should be used.
  * @property title The title of the endpoint, used for documentation. Defaults to the function name.
  * @property description The description of the endpoint, used for documentation. Defaults to empty string.
  * @property responseDescription The description of the response, used for documentation. Defaults to empty string.

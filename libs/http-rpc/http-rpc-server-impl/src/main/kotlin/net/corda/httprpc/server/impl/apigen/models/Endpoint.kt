@@ -16,7 +16,7 @@ data class Endpoint(
     /**
      * The path of the endpoint, without containing the base API or the resource path.
      */
-    val path: String,
+    val path: String?,
     /**
      * An ordered list of the invocation method parameters. These will be the endpoint parameters.
      */

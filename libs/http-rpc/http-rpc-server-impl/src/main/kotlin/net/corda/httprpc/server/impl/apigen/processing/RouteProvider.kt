@@ -56,8 +56,8 @@ internal class JavalinRouteProviderImpl(
         }.also { log.trace { "Map resources to routes by http method completed." } }
     }
 
-    private fun replacePathParametersInEndpointPath(path: String): String =
-        path.replace(pathParamRegex) { matchResult -> ":${matchResult.groupValues[1]}" }
+    private fun replacePathParametersInEndpointPath(path: String?): String? =
+        path?.replace(pathParamRegex) { matchResult -> ":${matchResult.groupValues[1]}" }
 }
 
 internal enum class ParameterType {
@@ -111,12 +111,13 @@ internal class RouteInfo(
         }
     }
 
-    private fun generateFullPath(resourcePath: String, endpointPath: String): String {
+    private fun generateFullPath(resourcePath: String, endpointPath: String?): String {
         val resourcePathNoSlash = if (resourcePath.endsWith('/')) {
             resourcePath.substring(0..resourcePath.length - 2)
         } else resourcePath
         log.trace { "Generate full path for resource path: \"$resourcePath\", endpoint path: \"$endpointPath\"." }
-        return "/${basePath}/v${apiVersion}/${resourcePathNoSlash}/${endpointPath}".toLowerCase().also {
+        val endpointPathPart = if (endpointPath == null) "" else "/${endpointPath}"
+        return "/${basePath}/v${apiVersion}/${resourcePathNoSlash}${endpointPathPart}".toLowerCase().also {
             log.trace { "Full path $it generated." }
         }
     }
