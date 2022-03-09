@@ -43,9 +43,7 @@ class CpiUploadRPCOpsImpl @Activate constructor(
 
     override val isRunning get() = coordinator.isRunning
 
-    override fun start() {
-        coordinator.start()
-    }
+    override fun start() = coordinator.start()
 
     override fun stop() = coordinator.close()
 
