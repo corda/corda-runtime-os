@@ -60,16 +60,14 @@ class CpiUploadRPCOpsImpl @Activate constructor(
     }
 
     override fun cpi(cpiFileName: String, cpiContent: InputStream): CpiUploadRPCOps.UploadResponse {
-        if (!isRunning) {
-            throw IllegalStateException("CpiUploadRPCOpsImpl is not running! Its status is ${coordinator.status}")
-        }
-
+        requireRunning()
         val cpiUploadRequestId = cpiUploadManager.uploadCpi(cpiFileName, cpiContent)
         return CpiUploadRPCOps.UploadResponse(cpiUploadRequestId.requestId, toShortHash(cpiUploadRequestId.secureHash))
     }
 
     // We're mostly returning the enumeration to a string in this version
     override fun status(id: String): CpiUploadRPCOps.Status {
+        requireRunning()
         val status = cpiUploadManager.status(id)
         when (status) {
             CpiUploadStatus.NO_SUCH_REQUEST_ID -> throw ResourceNotFoundException("No such request id '$id'")
@@ -78,6 +76,7 @@ class CpiUploadRPCOpsImpl @Activate constructor(
     }
 
     override fun getAllCpis(): HTTPGetCPIsResponse {
+        requireRunning()
         val cpis = cpiInfoReadService.getAll().map{ cpiMetadata ->
             CpiMetadata(
                 createCpiIdentifier(cpiMetadata.id),
@@ -101,5 +100,11 @@ class CpiUploadRPCOpsImpl @Activate constructor(
         return CpkMetadata(
             createCpkIdentifier(cpk.id), cpk.mainBundle, cpk.libraries, cpk.dependencies.map{ createCpkIdentifier(it) },
             cpk.type.toString(), cpk.hash.toString())
+    }
+
+    private fun requireRunning() {
+        if (!isRunning) {
+            throw IllegalStateException("${CpiUploadRPCOps::class.java.simpleName} is not running! Its status is: ${coordinator.status}")
+        }
     }
 }
