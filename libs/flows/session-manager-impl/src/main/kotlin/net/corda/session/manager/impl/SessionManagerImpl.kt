@@ -67,14 +67,10 @@ class SessionManagerImpl : SessionManager {
 
     override fun getMessagesToSend(sessionState: SessionState, instant: Instant, config: SmartConfig): Pair<SessionState,
             List<SessionEvent>> {
-        val messageResendWindow = config.getLong(SESSION_MESSAGE_RESEND_WINDOW)
-        val messagesToReturn = getMessagesToSend(sessionState, instant)
+        var messagesToReturn = getMessagesToSendAndUpdateSendState(sessionState, instant, config)
 
-        //remove SessionAcks/SessionErrors and increase timestamp of messages to be sent that are awaiting acknowledgement
-        clearAcksErrorsAndIncreaseTimestamps(sessionState, instant, messageResendWindow)
-
-        //add heartbeat if no messages to send, error session if no heartbeat received within timeout
-        handleHeartbeat(sessionState, config, instant, messagesToReturn)
+        //add heartbeat if no messages sent recently, add ack if needs to be sent, error session if no heartbeat received within timeout
+        messagesToReturn = handleHeartbeatAndAcknowledgements(sessionState, config, instant, messagesToReturn)
 
         if (messagesToReturn.isNotEmpty()) {
             sessionState.sendAck = false
@@ -88,36 +84,39 @@ class SessionManagerImpl : SessionManager {
      * If no heartbeat received from counterparty after session timeout has been reached, error the session
      * If no messages to send, and current time has surpassed the heartbeat window (message resend window), send a new ack.
      * If no messages to send, and there are messages received to be acked, send an ack.
+     * else return back [messagesToReturn] unedited
      * @param sessionState to update
      * @param config contains message resend window and heartbeat timeout values
      * @param instant for timestamps of new messages
      * @param messagesToReturn add any new messages to send to this list
+     * @return Messages to send to the counterparty
      */
-    private fun handleHeartbeat(
+    private fun handleHeartbeatAndAcknowledgements(
         sessionState: SessionState,
         config: SmartConfig,
         instant: Instant,
-        messagesToReturn: MutableList<SessionEvent>,
-    ) {
+        messagesToReturn: List<SessionEvent>,
+    ): List<SessionEvent> {
         val messageResendWindow = config.getLong(SESSION_MESSAGE_RESEND_WINDOW)
         val lastReceivedMessageTime = sessionState.lastReceivedMessageTime
 
         val sessionTimeoutTimestamp = lastReceivedMessageTime.plusMillis(config.getLong(SESSION_HEARTBEAT_TIMEOUT_WINDOW))
         val scheduledHeartbeatTimestamp = sessionState.lastSentMessageTime.plusMillis(messageResendWindow)
 
-        if (instant > sessionTimeoutTimestamp) {
+        return if (instant > sessionTimeoutTimestamp) {
             //send an error if the session has timed out
             sessionState.status = SessionStateType.ERROR
-            messagesToReturn.add(
-                generateErrorEvent(
-                    sessionState,
-                    "Session has timed out. No messages received since $lastReceivedMessageTime",
-                    "SessionTimeout-Heartbeat",
-                    instant
-                )
-            )
+            listOf(generateErrorEvent(
+                sessionState,
+                "Session has timed out. No messages received since $lastReceivedMessageTime",
+                "SessionTimeout-Heartbeat",
+                instant
+            ))
+
         } else if (messagesToReturn.isEmpty() && (instant > scheduledHeartbeatTimestamp || sessionState.sendAck)) {
-            messagesToReturn.add(generateAck(sessionState, instant))
+            listOf(generateAck(sessionState, instant))
+        } else {
+            messagesToReturn
         }
     }
 
@@ -126,30 +125,31 @@ class SessionManagerImpl : SessionManager {
      * Send any Acks or Errors regardless of timestamps.
      * Send any other messages with a timestamp less than that of [instantInMillis].
      * Don't send a SessionAck if other events present in the send list as ack info is present at SessionEvent level on all events.
+     * Update sendEvents state to remove acks/errors and increase timestamps of messages to send.
      * @param sessionState to examine sendEventsState.undeliveredMessages
      * @param instant to compare against messages to avoid resending messages in quick succession
      * @return Messages to send
      */
-    private fun getMessagesToSend(
+    private fun getMessagesToSendAndUpdateSendState(
         sessionState: SessionState,
-        instant: Instant
-    ) : MutableList<SessionEvent> {
+        instant: Instant,
+        config: SmartConfig
+    ): List<SessionEvent> {
         //get all events with a timestamp in the past, as well as any acks or errors
         val sessionEvents = sessionState.sendEventsState.undeliveredMessages.filter {
             it.timestamp <= instant || it
                 .payload is SessionAck || it.payload is SessionError
-        }.toMutableList()
-
-        //If list contains SessionAcks and non SessionAcks, remove the SessionAcks as ack info is already at SessionEvent level
-        if (sessionEvents.any { it.payload is SessionAck} && sessionEvents.any { it.payload !is SessionAck }) {
-            sessionEvents.removeIf { it.payload is SessionAck }
         }
 
         //update events with the latest ack info from the current state
-        sessionEvents.forEach { sessionEvent ->
-            sessionEvent.receivedSequenceNum = sessionState.receivedEventsState.lastProcessedSequenceNum
-            sessionEvent.outOfOrderSequenceNums = sessionState.receivedEventsState.undeliveredMessages.map { it.sequenceNum }
+        sessionEvents.forEach { eventToSend ->
+            eventToSend.receivedSequenceNum = sessionState.receivedEventsState.lastProcessedSequenceNum
+            eventToSend.outOfOrderSequenceNums = sessionState.receivedEventsState.undeliveredMessages.map { it.sequenceNum }
         }
+
+        //remove SessionAcks/SessionErrors and increase timestamp of messages to be sent that are awaiting acknowledgement
+        val messageResendWindow = config.getLong(SESSION_MESSAGE_RESEND_WINDOW)
+        updateSessionStateSendEvents(sessionState, instant, messageResendWindow)
 
         return sessionEvents
     }
@@ -161,7 +161,7 @@ class SessionManagerImpl : SessionManager {
      * @param sessionState to update the sendEventsState.undeliveredMessages
      * @param instant to update the sendEventsState.undeliveredMessages
      */
-    private fun clearAcksErrorsAndIncreaseTimestamps(
+    private fun updateSessionStateSendEvents(
         sessionState: SessionState,
         instant: Instant,
         messageResendWindow: Long
@@ -202,10 +202,10 @@ class SessionManagerImpl : SessionManager {
         return sessionState.apply {
             sendEventsState.undeliveredMessages = undeliveredMessages
             val nonAckUndeliveredMessages = undeliveredMessages.filter { it.payload !is SessionAck }
-            if (sessionState.status == SessionStateType.WAIT_FOR_FINAL_ACK && nonAckUndeliveredMessages.isEmpty()) {
-                sessionState.status = SessionStateType.CLOSED
-            } else if (sessionState.status == SessionStateType.CREATED && nonAckUndeliveredMessages.isEmpty()) {
-                sessionState.status = SessionStateType.CONFIRMED
+            if (status == SessionStateType.WAIT_FOR_FINAL_ACK && nonAckUndeliveredMessages.isEmpty()) {
+                status = SessionStateType.CLOSED
+            } else if (status == SessionStateType.CREATED && nonAckUndeliveredMessages.isEmpty()) {
+                status = SessionStateType.CONFIRMED
             }
         }
     }
@@ -216,7 +216,7 @@ class SessionManagerImpl : SessionManager {
      * @param instant to set timestamp on SessionAck
      * @return A SessionAck SessionEvent with ack fields set on the SessionEvent based on messages received from a counterparty
      */
-    private fun generateAck(sessionState: SessionState, instant: Instant) : SessionEvent {
+    private fun generateAck(sessionState: SessionState, instant: Instant): SessionEvent {
         val receivedEventsState = sessionState.receivedEventsState
         val outOfOrderSeqNums = receivedEventsState.undeliveredMessages.map { it.sequenceNum }
         return SessionEvent.newBuilder()
