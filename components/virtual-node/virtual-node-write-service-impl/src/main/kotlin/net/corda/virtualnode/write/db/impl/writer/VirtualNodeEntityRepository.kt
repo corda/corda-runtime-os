@@ -18,35 +18,23 @@ internal class VirtualNodeEntityRepository(dbConnectionManager: DbConnectionMana
 
     private val entityManagerFactory = dbConnectionManager.getClusterEntityManagerFactory()
 
-    // temp
-    private fun hashId(name: String, version: String, signerSummaryHash: SecureHash): String {
-        val s = (name + version + (signerSummaryHash?.toHexString() ?: ""))
-        val digest: MessageDigest = MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name)
-        val hash: ByteArray = digest.digest(s.toByteArray())
-        return SecureHash(DigestAlgorithmName.SHA2_256.name, hash)
-            .toHexString()
-    }
-
     /** Stub for reading CPI metadata from the database that returns a dummy value. */
     @Suppress("Unused_parameter", "RedundantNullableReturnType")
     internal fun getCPIMetadata(cpiIdShortHash: String): CPIMetadata? {
         // HACK: Brute force finding CPIs for matching short hash until fields are added to the DB
-        entityManagerFactory.transaction { em ->
+        val cpis = entityManagerFactory.transaction { em ->
             em.createQuery(
-                "SELECT cpi FROM CpiMetadataEntity cpi",
+                "SELECT cpi FROM CpiMetadataEntity cpi WHERE fileChecksum LIKE '$cpiIdShortHash%'",
                 CpiMetadataEntity::class.java)
                 .resultList
-                .forEach {
-                    val signerSummaryHash = SecureHash.create(it.signerSummaryHash)
-                    val shortHash = hashId(it.name, it.version, signerSummaryHash)
-                    if (cpiIdShortHash == shortHash) {
-                        val cpiId = CPI.Identifier.newInstance(it.name, it.version, signerSummaryHash)
-                        return CPIMetadata(cpiId, shortHash, it.groupId)
-                    }
-                }
         }
 
-        return null
+        if(cpis.size != 1)
+            return null
+
+        val signerSummaryHash = SecureHash.create(cpis[0].signerSummaryHash)
+        val cpiId = CPI.Identifier.newInstance(cpis[0].name, cpis[0].version, signerSummaryHash)
+        return CPIMetadata(cpiId, cpiIdShortHash, cpis[0].groupId)
     }
 
     /**

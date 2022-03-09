@@ -132,6 +132,45 @@ class CpiEntitiesIntegrationTest {
     }
 
     @Test
+    fun `can load cpi from partial hash`() {
+        val cpiId = UUID.randomUUID()
+        val cpi = CpiMetadataEntity(
+            "test-cpi-$cpiId",
+            "1.0",
+            "test-cpi-hash",
+            "test-cpi-$cpiId.cpi",
+            "test-cpi.cpi-$cpiId-hash",
+            "{group-policy-json}",
+            "group-id",
+            "file-upload-request-id-$cpiId"
+        )
+
+        EntityManagerFactoryFactoryImpl().create(
+            "test_unit",
+            CpiEntities.classes.toList(),
+            dbConfig
+        ).use { em ->
+            em.transaction {
+                it.persist(cpi)
+                it.flush()
+            }
+        }
+
+        val loadedCpis = EntityManagerFactoryFactoryImpl().create(
+            "test_unit",
+            CpiEntities.classes.toList(),
+            dbConfig
+        ).use {
+            it.createQuery(
+                "SELECT cpi FROM CpiMetadataEntity cpi WHERE fileChecksum LIKE 'test-cpi.cpi-$cpiId%'",
+                CpiMetadataEntity::class.java)
+                .resultList
+        }
+
+        assertThat(loadedCpis.single()).isEqualTo(cpi)
+    }
+
+    @Test
     fun `can add cpk to cpi`() {
         // HSQL doesn't support the blob storage, so skipping from here.
         Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
@@ -329,4 +368,42 @@ class CpiEntitiesIntegrationTest {
         )
         assertEquals(expectedCpkDataEntity, cpkDataEntity)
     }
+
+    @Test
+    fun `can find cpis by hash`() {
+        val cpiId = UUID.randomUUID()
+        val cpi = CpiMetadataEntity(
+            "test-cpi-$cpiId",
+            "1.0",
+            "test-cpi-hash",
+            "test-cpi-$cpiId.cpi",
+            "test-cpi.cpi-$cpiId-hash",
+            "{group-policy-json}",
+            "group-id",
+            "file-upload-request-id-$cpiId"
+        )
+
+        EntityManagerFactoryFactoryImpl().create(
+            "test_unit",
+            CpiEntities.classes.toList(),
+            dbConfig
+        ).use { em ->
+            em.transaction {
+                it.persist(cpi)
+                it.flush()
+            }
+        }
+
+        val loadedCpis = EntityManagerFactoryFactoryImpl().create(
+            "test_unit",
+            CpiEntities.classes.toList(),
+            dbConfig
+        ).use {
+            it.createQuery("SELECT cpi FROM CpiMetadataEntity cpi",
+                CpiMetadataEntity::class.java).resultList
+        }
+
+        assertThat(loadedCpis.single()).isEqualTo(cpi)
+    }
+
 }
