@@ -18,6 +18,7 @@ dependencies {
     integrationTestImplementation project(':libs:db:db-admin-impl')
     integrationTestImplementation project(':libs:db:db-orm')
     integrationTestImplementation project(':libs:db:db-orm-impl')
+    integrationTestImplementation project(':libs:virtual-node:cpi-datamodel')
     integrationTestImplementation project(':testing:db-testkit')
 
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"

@@ -37,6 +37,10 @@ data class CpiMetadataEntity(
     @Id
     @Column(name = "signer_summary_hash", nullable = false)
     val signerSummaryHash: String,
+    @Column(name = "id_full_hash", nullable = false)
+    val idFullHash: String,
+    @Column(name = "id_short_hash", nullable = false)
+    val idShortHash: String,
     @Column(name = "file_name", nullable = false)
     val fileName: String,
     @Column(name = "file_checksum", nullable = false)
@@ -50,7 +54,7 @@ data class CpiMetadataEntity(
 ) {
     companion object {
         fun empty(): CpiMetadataEntity = CpiMetadataEntity(
-            "", "", "", "", "", "", "", "")
+            "", "", "", "", "", "", "", "", "", "")
     }
 
     @OneToMany(fetch = FetchType.EAGER, mappedBy="cpi")

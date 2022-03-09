@@ -170,10 +170,13 @@ internal class ChunkDbQueriesTest {
 
     private fun createCpiMetadataEntity(checksum:SecureHash): CpiMetadataEntity {
         val groupId = UUID.randomUUID().toString()
+        val idFullHash = "1234567890abcdef"
         val cpiMetadataEntity = CpiMetadataEntity(
             "test",
             "1.0",
             checksum.toString(),
+            idFullHash,
+            idFullHash.substring(0, 12),
             "test.cpi",
             checksum.toString(),
             "{ groupId: '$groupId' }",

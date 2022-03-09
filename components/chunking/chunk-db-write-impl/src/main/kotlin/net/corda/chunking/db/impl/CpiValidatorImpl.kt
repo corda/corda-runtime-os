@@ -5,6 +5,7 @@ import net.corda.chunking.RequestId
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.data.chunking.UploadFileStatus
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
+import net.corda.libs.packaging.CpiIdentifier
 import net.corda.libs.packaging.CpiMetadata
 import net.corda.packaging.CPI
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -125,11 +126,14 @@ class CpiValidatorImpl(
         val groupId = getGroupId(cpi)
 
         val cpiMetadata = cpi.metadata
+        val cpiIdentifier = CpiIdentifier.fromLegacy(cpiMetadata.id)
 
         return CpiMetadataEntity(
             cpiMetadata.id.name,
             cpiMetadata.id.version,
             cpiMetadata.id.signerSummaryHash?.toString() ?: "",
+            cpiIdentifier.hash,
+            cpiIdentifier.shortHash,
             cpiFileName,
             checksum.toString(),
             cpi.metadata.groupPolicy!!,

@@ -258,7 +258,7 @@ internal class VirtualNodeWriterProcessor(
 
     /** Converts a [CPI.Identifier] to its Avro representation. */
     private fun CPI.Identifier.toAvro(): CPIIdentifier {
-        val secureHashAvro = SecureHash(signerSummaryHash?.algorithm, ByteBuffer.wrap(signerSummaryHash?.bytes))
+        val secureHashAvro = signerSummaryHash?.let { SecureHash(it.algorithm, ByteBuffer.wrap(it.bytes)) }
         return CPIIdentifier(name, version, secureHashAvro)
     }
 }
