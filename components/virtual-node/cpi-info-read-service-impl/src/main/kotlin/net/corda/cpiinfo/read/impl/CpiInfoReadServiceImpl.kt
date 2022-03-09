@@ -86,6 +86,8 @@ class CpiInfoReadServiceImpl @Activate constructor(
         cpiInfoProcessor.close()
     }
 
+    override fun getAll(): List<CpiMetadata> = cpiInfoProcessor.getAll()
+
     override fun get(identifier: CpiIdentifier): CpiMetadata? = cpiInfoProcessor.get(identifier)
 
     override fun registerCallback(listener: CpiInfoListener): AutoCloseable =

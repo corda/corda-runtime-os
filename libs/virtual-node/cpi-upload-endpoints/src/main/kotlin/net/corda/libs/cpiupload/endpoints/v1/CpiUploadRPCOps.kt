@@ -43,4 +43,18 @@ interface CpiUploadRPCOps : RpcOps {
         @HttpRpcPathParameter(description = "The requestId")
         id: String,
     ): Status
+
+    /**
+     * Lists all CPIs uploaded to the cluster.
+     *
+     * @throws `HttpApiException` If the request returns an exceptional response.
+     */
+    // TODO use proper/consistent resource naming (e.g. this should be mapped under /cpis)
+    @HttpRpcGET(
+        path = "list",
+        title = "List all CPIs uploaded to the cluster",
+        description = "List all CPIs uploaded to the cluster.",
+        responseDescription = "List details of the all CPIs uploaded to the cluster."
+    )
+    fun getAllCpis(): HTTPGetCPIsResponse
 }

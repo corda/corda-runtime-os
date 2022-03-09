@@ -32,14 +32,24 @@ class MembershipGroupReaderImplTest {
     private val knownKey: PublicKey = mock()
     private val knownKeyAsByteArray = "1234".toByteArray()
     private val knownKeyHash = PublicKeyHash.parse(knownKeyAsByteArray.sha256Bytes())
-    private val memberInfo: MemberInfo = mock {
+    private val suspendedMemberInfo: MemberInfo = mock {
         on { name } doReturn aliceName
         on { identityKeys } doReturn listOf(knownKey)
         val mockedMemberProvidedContext = mock<MemberContext> {
             on { parseSet(eq(IDENTITY_KEY_HASHES), eq(PublicKeyHash::class.java)) } doReturn setOf(knownKeyHash)
         }
         on { memberProvidedContext } doReturn mockedMemberProvidedContext
+        on { isActive } doReturn false
+    }
 
+    private val activeMemberInfo: MemberInfo = mock {
+        on { name } doReturn aliceName
+        on { identityKeys } doReturn listOf(knownKey)
+        val mockedMemberProvidedContext = mock<MemberContext> {
+            on { parseSet(eq(IDENTITY_KEY_HASHES), eq(PublicKeyHash::class.java)) } doReturn setOf(knownKeyHash)
+        }
+        on { memberProvidedContext } doReturn mockedMemberProvidedContext
+        on { isActive } doReturn true
     }
 
     @BeforeEach
@@ -55,9 +65,15 @@ class MembershipGroupReaderImplTest {
     }
 
     @Test
-    fun `lookup known member based on name`() {
-        mockMemberList(listOf(memberInfo))
-        assertEquals(memberInfo, membershipGroupReaderImpl.lookup(aliceName))
+    fun `lookup known member with active status based on name`() {
+        mockMemberList(listOf(activeMemberInfo))
+        assertEquals(activeMemberInfo, membershipGroupReaderImpl.lookup(aliceName))
+    }
+
+    @Test
+    fun `lookup known member with non active status based on name`() {
+        mockMemberList(listOf(suspendedMemberInfo))
+        assertNull(membershipGroupReaderImpl.lookup(aliceName))
     }
 
     @Test
@@ -67,14 +83,26 @@ class MembershipGroupReaderImplTest {
     }
 
     @Test
-    fun `lookup known member based on public key hash`() {
-        mockMemberList(listOf(memberInfo))
-        assertEquals(memberInfo, membershipGroupReaderImpl.lookup(knownKeyHash))
+    fun `lookup known member with active status based on public key hash`() {
+        mockMemberList(listOf(activeMemberInfo))
+        assertEquals(activeMemberInfo, membershipGroupReaderImpl.lookup(knownKeyHash))
+    }
+
+    @Test
+    fun `lookup known member with non active status based on public key hash`() {
+        mockMemberList(listOf(suspendedMemberInfo))
+        assertNull(membershipGroupReaderImpl.lookup(knownKeyHash))
     }
 
     @Test
     fun `lookup non-existing member based on public key hash`() {
         mockMemberList(emptyList())
         assertNull(membershipGroupReaderImpl.lookup(knownKeyHash))
+    }
+
+    @Test
+    fun `lookup returns active members only`() {
+        mockMemberList(listOf(suspendedMemberInfo, activeMemberInfo))
+        assertEquals(listOf(activeMemberInfo), membershipGroupReaderImpl.lookup())
     }
 }
