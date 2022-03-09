@@ -8,6 +8,14 @@ import net.corda.libs.cpiupload.endpoints.v1.CpkMetadata
 internal fun net.corda.libs.packaging.CpiIdentifier.toEndpointType() =
     CpiIdentifier(this.name, this.version, this.signerSummaryHash.toString())
 
+internal fun net.corda.libs.packaging.CpiMetadata.toEndpointType() =
+    CpiMetadata(
+        this.id.toEndpointType(),
+        this.fileChecksum.toHexString(),
+        this.cpks.map { it.toEndpointType() },
+        this.groupPolicy
+    )
+
 internal fun net.corda.libs.packaging.CpkIdentifier.toEndpointType() =
     CpkIdentifier(this.name, this.version, this.signerSummaryHash.toString())
 
@@ -19,12 +27,4 @@ internal fun net.corda.libs.packaging.CpkMetadata.toEndpointType() =
         this.dependencies.map { it.toEndpointType() },
         this.type.toString(),
         this.hash.toString()
-    )
-
-internal fun net.corda.libs.packaging.CpiMetadata.toEndpointType() =
-    CpiMetadata(
-        this.id.toEndpointType(),
-        this.fileChecksum.toHexString(),
-        this.cpks.map { it.toEndpointType() },
-        this.groupPolicy
     )
