@@ -25,10 +25,10 @@ class MembershipGroupReaderImpl(
     override val cpiWhiteList: CPIWhiteList
         get() = TODO("Not yet implemented")
 
-    override fun lookup(): Collection<MemberInfo> = memberList
+    override fun lookup(): Collection<MemberInfo> = memberList.filter { it.isActive }
 
     override fun lookup(publicKeyHash: PublicKeyHash): MemberInfo? =
-        memberList.singleOrNull { publicKeyHash in it.identityKeyHashes }
+        memberList.singleOrNull { it.isActive && publicKeyHash in it.identityKeyHashes }
 
-    override fun lookup(name: MemberX500Name) = memberList.singleOrNull { it.name == name }
+    override fun lookup(name: MemberX500Name) = memberList.singleOrNull { it.isActive && it.name == name }
 }
