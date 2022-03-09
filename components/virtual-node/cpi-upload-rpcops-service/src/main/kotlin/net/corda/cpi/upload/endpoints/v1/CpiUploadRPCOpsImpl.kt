@@ -75,7 +75,7 @@ class CpiUploadRPCOpsImpl @Activate constructor(
         val cpis = cpiInfoReadService.getAll().map{ cpiMetadata ->
             CpiMetadata(
                 createCpiIdentifier(cpiMetadata.id),
-                cpiMetadata.hash.toString(),
+                cpiMetadata.fileChecksum.toHexString(),
                 cpiMetadata.cpks.map{ createCpkMetadata(it) },
                 cpiMetadata.groupPolicy)
         }
