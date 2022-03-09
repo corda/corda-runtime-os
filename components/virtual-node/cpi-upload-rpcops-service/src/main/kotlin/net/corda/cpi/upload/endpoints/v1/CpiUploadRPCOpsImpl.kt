@@ -49,7 +49,6 @@ class CpiUploadRPCOpsImpl @Activate constructor(
 
     override fun start() {
         coordinator.start()
-        cpiInfoReadService.start()
     }
 
     override fun stop() = coordinator.close()

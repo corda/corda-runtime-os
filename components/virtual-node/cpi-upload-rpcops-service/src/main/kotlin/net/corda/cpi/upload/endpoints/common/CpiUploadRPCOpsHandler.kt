@@ -1,6 +1,7 @@
 package net.corda.cpi.upload.endpoints.common
 
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
@@ -37,7 +38,8 @@ class CpiUploadRPCOpsHandler : LifecycleEventHandler {
         log.info("CPI Upload RPCOpsHandler event - start")
         cpiUploadRPCOpsServiceRegistrationHandle = coordinator.followStatusChangesByName(
             setOf(
-                LifecycleCoordinatorName.forComponent<CpiUploadRPCOpsService>()
+                LifecycleCoordinatorName.forComponent<CpiUploadRPCOpsService>(),
+                LifecycleCoordinatorName.forComponent<CpiInfoReadService>()
             )
         )
     }
