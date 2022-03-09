@@ -6,6 +6,7 @@ import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.httprpc.tools.annotations.validation.utils.EndpointType
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
@@ -79,16 +80,16 @@ class EndpointNameConflictValidatorTest {
             override val protocolVersion: Int
                 get() = 1
 
-            @HttpRpcGET
+            @HttpRpcGET(path = "test")
             fun test() {
             }
 
-            @HttpRpcGET
+            @HttpRpcGET(path = "test")
             fun test(@HttpRpcQueryParameter foo: String) {
                 foo.toLowerCase()
             }
 
-            @HttpRpcGET
+            @HttpRpcGET(path = "test")
             fun test(@HttpRpcQueryParameter foo: Int, @HttpRpcQueryParameter bar: String = "") {
                 foo + 1
                 bar.toLowerCase()
@@ -98,6 +99,7 @@ class EndpointNameConflictValidatorTest {
         val result = EndpointNameConflictValidator(TestInterface::class.java).validate()
 
         assertEquals(2, result.errors.size)
+        assertThat(result.errors).allMatch { it.equals("Duplicate endpoint path 'test' for GET method.") }
     }
 
     @Test

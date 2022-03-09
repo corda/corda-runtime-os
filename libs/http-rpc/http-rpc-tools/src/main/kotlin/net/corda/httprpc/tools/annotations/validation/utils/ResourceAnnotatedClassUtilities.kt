@@ -10,7 +10,7 @@ import java.lang.reflect.Method
 import java.lang.reflect.Parameter
 import kotlin.reflect.full.createInstance
 
-internal val Class<out RpcOps>.endpoints
+internal val Class<out RpcOps>.endpoints: List<Method>
     get() = this.methods.filter { method ->
         method.annotations.any { annotation ->
             annotation is HttpRpcPOST || annotation is HttpRpcGET
@@ -22,8 +22,8 @@ internal val List<Parameter>.pathParameters
 
 internal fun Method.endpointPath(type: EndpointType): String? =
     when (type) {
-        EndpointType.GET -> (this.annotations.singleOrNull { it is HttpRpcGET } as? HttpRpcGET)?.path()
-            ?: HttpRpcGET::class.createInstance().path()
+        EndpointType.GET -> (this.annotations.singleOrNull { it is HttpRpcGET } as? HttpRpcGET)?.path(this)
+            ?: HttpRpcGET::class.createInstance().path(this)
         EndpointType.POST -> (this.annotations.singleOrNull { it is HttpRpcPOST } as? HttpRpcPOST)?.path()
             ?: HttpRpcPOST::class.createInstance().path()
     }

@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import kotlin.reflect.full.findAnnotation
+import kotlin.reflect.jvm.javaMethod
 
 class HttpRpcEndpointTest {
 
@@ -17,7 +18,7 @@ class HttpRpcEndpointTest {
             abstract fun sampleGetMethod(): String
         }
 
-        val endpointPath = TestClass::sampleGetMethod.let { it.findAnnotation<HttpRpcGET>()!!.path() }
+        val endpointPath = TestClass::sampleGetMethod.let { it.findAnnotation<HttpRpcGET>()!!.path(it.javaMethod!!) }
 
         assertNull(endpointPath)
     }
@@ -32,7 +33,7 @@ class HttpRpcEndpointTest {
             abstract fun sampleGetMethod(): String
         }
 
-        val endpointPath = TestClass::sampleGetMethod.let { it.findAnnotation<HttpRpcGET>()!!.path() }
+        val endpointPath = TestClass::sampleGetMethod.let { it.findAnnotation<HttpRpcGET>()!!.path(it.javaMethod!!) }
 
         assertEquals("samplegetmethodpath", endpointPath)
     }

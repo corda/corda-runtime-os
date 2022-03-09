@@ -107,7 +107,7 @@ internal class HttpRpcClientProxyHandler<I : RpcOps>(
         get() =
             this.annotations.singleOrNull { it is HttpRpcPOST || it is HttpRpcGET }.let {
                 when (it) {
-                    is HttpRpcGET -> it.path()
+                    is HttpRpcGET -> it.path(this)
                     is HttpRpcPOST -> it.path()
                     else -> if (staticExposedGetMethods.contains(this.name)) {
                         this.name
