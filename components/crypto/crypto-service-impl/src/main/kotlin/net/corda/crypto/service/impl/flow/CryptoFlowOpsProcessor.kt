@@ -18,7 +18,6 @@ import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.contextLogger
 import java.time.Instant
-import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 class CryptoFlowOpsProcessor(
@@ -73,6 +72,19 @@ class CryptoFlowOpsProcessor(
             logger.info("Handling {} for tenant {}", request.request::class.java.name, request.context.tenantId)
             val response = getHandler(request.request::class.java, cryptoOpsClient)
                 .handle(request.context, request.request)
+            if (Instant.now() >= expireAt) {
+                logger.error(
+                    "Event {} for tenant {} is no longer valid, expired at {}",
+                    request.request::class.java,
+                    request.context.tenantId,
+                    expireAt
+                )
+                return Record(
+                    responseTopic,
+                    event.key,
+                    createErrorResponse(request, "Expired at $expireAt")
+                )
+            }
             val result = Record(
                 responseTopic,
                 event.key,
@@ -96,7 +108,7 @@ class CryptoFlowOpsProcessor(
     }
 
     private fun getRequestExpireAt(request: FlowOpsRequest): Instant =
-        request.context.requestTimestamp.plus(getRequestValidityWindowSeconds(request), ChronoUnit.SECONDS)
+        request.context.requestTimestamp.plusSeconds(getRequestValidityWindowSeconds(request))
 
     private fun getRequestValidityWindowSeconds(request: FlowOpsRequest): Long {
         return request.context.other.items.singleOrNull {

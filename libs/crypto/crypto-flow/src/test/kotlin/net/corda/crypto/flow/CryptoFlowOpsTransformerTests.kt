@@ -16,7 +16,7 @@ import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.crypto.wire.ops.flow.GenerateFreshKeyFlowCommand
 import net.corda.data.crypto.wire.ops.flow.SignFlowCommand
 import net.corda.data.crypto.wire.ops.flow.SignWithSpecFlowCommand
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigitalSignature
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.containsString
@@ -48,8 +48,15 @@ class CryptoFlowOpsTransformerTests {
     private lateinit var knownAlias: String
     private lateinit var knownOperationContext: Map<String, String>
     private lateinit var knownExternalId: UUID
-    private lateinit var schemeMetadata: CipherSchemeMetadata
-    private lateinit var transformer: CryptoFlowOpsTransformer
+    private lateinit var keyEncodingService: KeyEncodingService
+
+    private fun buildTransformer(ttl: Long = 123): CryptoFlowOpsTransformer =
+        CryptoFlowOpsTransformer(
+            requestingComponent = knownComponentName,
+            responseTopic = knownResponseTopic,
+            keyEncodingService = keyEncodingService,
+            requestValidityWindowSeconds = ttl
+        )
 
     @BeforeEach
     fun setup() {
@@ -61,7 +68,7 @@ class CryptoFlowOpsTransformerTests {
             UUID.randomUUID().toString() to UUID.randomUUID().toString()
         )
         knownExternalId = UUID.randomUUID()
-        schemeMetadata = mock {
+        keyEncodingService = mock {
             on { encodeAsByteArray(any()) } doAnswer {
                 (it.getArgument(0) as PublicKey).encoded
             }
@@ -73,12 +80,6 @@ class CryptoFlowOpsTransformerTests {
                 }
             }
         }
-        transformer = CryptoFlowOpsTransformer(
-            requestingComponent = knownComponentName,
-            responseTopic = knownResponseTopic,
-            schemeMetadata = schemeMetadata,
-            requestValidityWindowSeconds = 123
-        )
     }
 
     private fun mockPublicKey(): PublicKey {
@@ -91,16 +92,18 @@ class CryptoFlowOpsTransformerTests {
     private fun createResponse(
         response: Any,
         requestType: Class<*>,
-        error: String? = null
+        error: String? = null,
+        ttl: Long = 300
     ): FlowOpsResponse =
         FlowOpsResponse(
-            createWireResponseContext(requestType, error),
+            createWireResponseContext(requestType, error, ttl),
             response,
         )
 
     private fun createWireResponseContext(
         requestType: Class<*>,
-        error: String?
+        error: String?,
+        ttl: Long = 300
     ): CryptoResponseContext {
         return CryptoResponseContext(
             knownComponentName,
@@ -112,10 +115,14 @@ class CryptoFlowOpsTransformerTests {
                 if(error != null) {
                     listOf(
                         KeyValuePair(REQUEST_OP_KEY, requestType.simpleName),
-                        KeyValuePair(CryptoFlowOpsTransformer.RESPONSE_ERROR_KEY, error)
+                        KeyValuePair(CryptoFlowOpsTransformer.RESPONSE_ERROR_KEY, error),
+                        KeyValuePair(REQUEST_TTL_KEY, ttl.toString()),
                     )
                 } else {
-                    listOf(KeyValuePair(REQUEST_OP_KEY, requestType.simpleName))
+                    listOf(
+                        KeyValuePair(REQUEST_OP_KEY, requestType.simpleName),
+                        KeyValuePair(REQUEST_TTL_KEY, ttl.toString())
+                    )
                 }
             )
         )
@@ -160,23 +167,23 @@ class CryptoFlowOpsTransformerTests {
         )
         val notMyKey = mockPublicKey()
         val result = act {
-            transformer.createFilterMyKeys(knownTenantId, listOf(myPublicKeys[0], myPublicKeys[1], notMyKey))
+            buildTransformer().createFilterMyKeys(knownTenantId, listOf(myPublicKeys[0], myPublicKeys[1], notMyKey))
         }
         assertNotNull(result.value)
         assertEquals(knownTenantId, result.value.context.tenantId)
         assertInstanceOf(FilterMyKeysFlowQuery::class.java, result.value.request)
         val query = result.value.request as FilterMyKeysFlowQuery
         assertEquals(3, query.keys.size)
-        assertTrue(query.keys.any { it.array().contentEquals(schemeMetadata.encodeAsByteArray(myPublicKeys[0])) })
-        assertTrue(query.keys.any { it.array().contentEquals(schemeMetadata.encodeAsByteArray(myPublicKeys[1])) })
-        assertTrue(query.keys.any { it.array().contentEquals(schemeMetadata.encodeAsByteArray(notMyKey)) })
+        assertTrue(query.keys.any { it.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0])) })
+        assertTrue(query.keys.any { it.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1])) })
+        assertTrue(query.keys.any { it.array().contentEquals(keyEncodingService.encodeAsByteArray(notMyKey)) })
         assertRequestContext<FilterMyKeysFlowQuery>(result)
     }
 
     @Test
     fun `Should create empty query to filter my keys`() {
         val result = act {
-            transformer.createFilterMyKeys(knownTenantId, listOf())
+            buildTransformer().createFilterMyKeys(knownTenantId, listOf())
         }
         assertNotNull(result.value)
         assertEquals(knownTenantId, result.value.context.tenantId)
@@ -189,7 +196,7 @@ class CryptoFlowOpsTransformerTests {
     @Test
     fun `Should create command to generate new fresh key without external id`() {
         val result = act {
-            transformer.createFreshKey(knownTenantId, knownOperationContext)
+            buildTransformer().createFreshKey(knownTenantId, knownOperationContext)
         }
         assertNotNull(result.value)
         assertEquals(knownTenantId, result.value.context.tenantId)
@@ -203,7 +210,7 @@ class CryptoFlowOpsTransformerTests {
     @Test
     fun `Should create command to generate new fresh key without external id and with empty operation context`() {
         val result = act {
-            transformer.createFreshKey(knownTenantId)
+            buildTransformer().createFreshKey(knownTenantId)
         }
         assertNotNull(result.value)
         assertEquals(knownTenantId, result.value.context.tenantId)
@@ -217,7 +224,7 @@ class CryptoFlowOpsTransformerTests {
     @Test
     fun `Should create command to generate new fresh key with external id`() {
         val result = act {
-            transformer.createFreshKey(knownTenantId, knownExternalId, knownOperationContext)
+            buildTransformer().createFreshKey(knownTenantId, knownExternalId, knownOperationContext)
         }
         assertNotNull(result.value)
         assertEquals(knownTenantId, result.value.context.tenantId)
@@ -231,7 +238,7 @@ class CryptoFlowOpsTransformerTests {
     @Test
     fun `Should create command to generate new fresh key with external id and with empty operation context`() {
         val result = act {
-            transformer.createFreshKey(knownTenantId, knownExternalId)
+            buildTransformer().createFreshKey(knownTenantId, knownExternalId)
         }
         assertNotNull(result.value)
         assertEquals(knownTenantId, result.value.context.tenantId)
@@ -247,13 +254,13 @@ class CryptoFlowOpsTransformerTests {
         val publicKey = mockPublicKey()
         val data = "Hello World!".toByteArray()
         val result = act {
-            transformer.createSign(knownTenantId, publicKey, data, knownOperationContext)
+            buildTransformer().createSign(knownTenantId, publicKey, data, knownOperationContext)
         }
         assertNotNull(result.value)
         assertEquals(knownTenantId, result.value.context.tenantId)
         assertInstanceOf(SignFlowCommand::class.java, result.value.request)
         val command = result.value.request as SignFlowCommand
-        assertArrayEquals(schemeMetadata.encodeAsByteArray(publicKey), command.publicKey.array())
+        assertArrayEquals(keyEncodingService.encodeAsByteArray(publicKey), command.publicKey.array())
         assertArrayEquals(data, command.bytes.array())
         assertRequestContext<SignFlowCommand>(result)
         assertOperationContext(knownOperationContext, command.context)
@@ -264,13 +271,13 @@ class CryptoFlowOpsTransformerTests {
         val publicKey = mockPublicKey()
         val data = "Hello World!".toByteArray()
         val result = act {
-            transformer.createSign(knownTenantId, publicKey, data)
+            buildTransformer().createSign(knownTenantId, publicKey, data)
         }
         assertNotNull(result.value)
         assertEquals(knownTenantId, result.value.context.tenantId)
         assertInstanceOf(SignFlowCommand::class.java, result.value.request)
         val command = result.value.request as SignFlowCommand
-        assertArrayEquals(schemeMetadata.encodeAsByteArray(publicKey), command.publicKey.array())
+        assertArrayEquals(keyEncodingService.encodeAsByteArray(publicKey), command.publicKey.array())
         assertArrayEquals(data, command.bytes.array())
         assertRequestContext<SignFlowCommand>(result)
         assertOperationContext(emptyMap(), command.context)
@@ -279,70 +286,70 @@ class CryptoFlowOpsTransformerTests {
     @Test
     fun `Should infer filter my keys query from response`() {
         val response = createResponse(CryptoPublicKeys(), FilterMyKeysFlowQuery::class.java)
-        val result = transformer.inferRequestType(response)
+        val result = buildTransformer().inferRequestType(response)
         assertEquals(result, FilterMyKeysFlowQuery::class.java)
     }
 
     @Test
     fun `Should infer filter my keys query from response containing error`() {
         val response = createResponse(CryptoNoContentValue(), FilterMyKeysFlowQuery::class.java, "failed")
-        val result = transformer.inferRequestType(response)
+        val result = buildTransformer().inferRequestType(response)
         assertEquals(result, FilterMyKeysFlowQuery::class.java)
     }
 
     @Test
     fun `Should infer generate fresh key command from response`() {
         val response = createResponse(CryptoPublicKey(), GenerateFreshKeyFlowCommand::class.java)
-        val result = transformer.inferRequestType(response)
+        val result = buildTransformer().inferRequestType(response)
         assertEquals(result, GenerateFreshKeyFlowCommand::class.java)
     }
 
     @Test
     fun `Should infer generate fresh key command from response containing error`() {
         val response = createResponse(CryptoNoContentValue(), GenerateFreshKeyFlowCommand::class.java, "failed")
-        val result = transformer.inferRequestType(response)
+        val result = buildTransformer().inferRequestType(response)
         assertEquals(result, GenerateFreshKeyFlowCommand::class.java)
     }
 
     @Test
     fun `Should infer sign command from response`() {
         val response = createResponse(CryptoSignatureWithKey(), SignFlowCommand::class.java)
-        val result = transformer.inferRequestType(response)
+        val result = buildTransformer().inferRequestType(response)
         assertEquals(result, SignFlowCommand::class.java)
     }
 
     @Test
     fun `Should infer sign command from response containing error`() {
         val response = createResponse(CryptoNoContentValue(), SignFlowCommand::class.java, "failed")
-        val result = transformer.inferRequestType(response)
+        val result = buildTransformer().inferRequestType(response)
         assertEquals(result, SignFlowCommand::class.java)
     }
 
     @Test
     fun `Should infer sign command with explicit signature spec from response`() {
         val response = createResponse(CryptoSignatureWithKey(), SignWithSpecFlowCommand::class.java)
-        val result = transformer.inferRequestType(response)
+        val result = buildTransformer().inferRequestType(response)
         assertEquals(result, SignWithSpecFlowCommand::class.java)
     }
 
     @Test
     fun `Should infer sign command with explicit signature spec from response containing error`() {
         val response = createResponse(CryptoNoContentValue(), SignWithSpecFlowCommand::class.java, "failed")
-        val result = transformer.inferRequestType(response)
+        val result = buildTransformer().inferRequestType(response)
         assertEquals(result, SignWithSpecFlowCommand::class.java)
     }
 
     @Test
     fun `Should not infer request from unknown response`() {
         val response = createResponse(CryptoSignatureWithKey(), String::class.java)
-        val result = transformer.inferRequestType(response)
+        val result = buildTransformer().inferRequestType(response)
         assertNull(result)
     }
 
     @Test
     fun `Should not infer request from unknown response containing error`() {
         val response = createResponse(CryptoNoContentValue(), String::class.java, "failed")
-        val result = transformer.inferRequestType(response)
+        val result = buildTransformer().inferRequestType(response)
         assertNull(result)
     }
 
@@ -350,7 +357,7 @@ class CryptoFlowOpsTransformerTests {
     fun `Should throw IllegalArgumentException when transforming from response with unknown request`() {
         val response = createResponse(CryptoSignatureWithKey(), String::class.java)
         assertThrows<IllegalArgumentException> {
-            transformer.transform(response)
+            buildTransformer().transform(response)
         }
     }
 
@@ -364,18 +371,40 @@ class CryptoFlowOpsTransformerTests {
         val response = createResponse(
             CryptoPublicKeys(
                 listOf(
-                    ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKeys[0])),
-                    ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKeys[1]))
+                    ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(publicKeys[0])),
+                    ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(publicKeys[1]))
                 )
             ),
             FilterMyKeysFlowQuery::class.java
         )
-        val result = transformer.transform(response)
+        val result = buildTransformer().transform(response)
         assertThat(result, instanceOf(List::class.java))
         val resultKeys = result as List<PublicKey>
         assertEquals(2, resultKeys.size)
         assertTrue(resultKeys.any { it.encoded.contentEquals(publicKeys[0].encoded) })
         assertTrue(resultKeys.any { it.encoded.contentEquals(publicKeys[1].encoded) })
+    }
+
+    @Test
+    fun `Should throw IllegalStateException when transforming stale response to filter my keys query`() {
+        val publicKeys = listOf(
+            mockPublicKey(),
+            mockPublicKey()
+        )
+        val response = createResponse(
+            response = CryptoPublicKeys(
+                listOf(
+                    ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(publicKeys[0])),
+                    ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(publicKeys[1]))
+                )
+            ),
+            requestType = FilterMyKeysFlowQuery::class.java,
+            error = null,
+            ttl = -1
+        )
+        assertThrows<IllegalStateException> {
+            buildTransformer(-1).transform(response)
+        }
     }
 
     @Test
@@ -386,7 +415,7 @@ class CryptoFlowOpsTransformerTests {
             "--failed--"
         )
         val result = assertThrows<IllegalStateException> {
-            transformer.transform(response)
+            buildTransformer().transform(response)
         }
         assertThat(result.message, containsString("--failed--"))
     }
@@ -399,7 +428,7 @@ class CryptoFlowOpsTransformerTests {
             ""
         )
         assertThrows<IllegalStateException> {
-            transformer.transform(response)
+            buildTransformer().transform(response)
         }
     }
 
@@ -410,7 +439,7 @@ class CryptoFlowOpsTransformerTests {
             FilterMyKeysFlowQuery::class.java
         )
         val result = assertThrows<IllegalStateException> {
-            transformer.transform(response)
+            buildTransformer().transform(response)
         }
         assertThat(result.message, containsString(CryptoSignatureWithKey::class.java.name))
         assertThat(result.message, containsString(CryptoPublicKeys::class.java.name))
@@ -421,13 +450,27 @@ class CryptoFlowOpsTransformerTests {
     fun `Should transform response to generate fresh key command`() {
         val publicKey = mockPublicKey()
         val response = createResponse(
-            CryptoPublicKey(ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey))),
+            CryptoPublicKey(ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(publicKey))),
             GenerateFreshKeyFlowCommand::class.java
         )
-        val result = transformer.transform(response)
+        val result = buildTransformer().transform(response)
         assertThat(result, instanceOf(PublicKey::class.java))
         val resultKey = result as PublicKey
         assertArrayEquals(publicKey.encoded, resultKey.encoded)
+    }
+
+    @Test
+    fun `Should throw IllegalStateException when transforming stale response to generate fresh key command`() {
+        val publicKey = mockPublicKey()
+        val response = createResponse(
+            response = CryptoPublicKey(ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(publicKey))),
+            requestType = GenerateFreshKeyFlowCommand::class.java,
+            error = null,
+            ttl = -1
+        )
+        assertThrows<IllegalStateException> {
+            buildTransformer(-1).transform(response)
+        }
     }
 
     @Test
@@ -438,7 +481,7 @@ class CryptoFlowOpsTransformerTests {
             "--failed--"
         )
         val result = assertThrows<IllegalStateException> {
-            transformer.transform(response)
+            buildTransformer().transform(response)
         }
         assertThat(result.message, containsString("--failed--"))
     }
@@ -451,7 +494,7 @@ class CryptoFlowOpsTransformerTests {
             ""
         )
         assertThrows<IllegalStateException> {
-            transformer.transform(response)
+            buildTransformer().transform(response)
         }
     }
 
@@ -462,7 +505,7 @@ class CryptoFlowOpsTransformerTests {
             GenerateFreshKeyFlowCommand::class.java
         )
         val result = assertThrows<IllegalStateException> {
-            transformer.transform(response)
+            buildTransformer().transform(response)
         }
         assertThat(result.message, containsString(CryptoSignatureWithKey::class.java.name))
         assertThat(result.message, containsString(CryptoPublicKey::class.java.name))
@@ -475,16 +518,34 @@ class CryptoFlowOpsTransformerTests {
         val signature = "Hello World!".toByteArray()
         val response = createResponse(
             CryptoSignatureWithKey(
-                ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
+                ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(publicKey)),
                 ByteBuffer.wrap(signature)
             ),
             SignFlowCommand::class.java
         )
-        val result = transformer.transform(response)
+        val result = buildTransformer().transform(response)
         assertThat(result, instanceOf(DigitalSignature.WithKey::class.java))
         val resultSignature = result as DigitalSignature.WithKey
         assertArrayEquals(publicKey.encoded, resultSignature.by.encoded)
         assertArrayEquals(signature, resultSignature.bytes)
+    }
+
+    @Test
+    fun `Should throw IllegalStateException when transforming stale response to sign command`() {
+        val publicKey = mockPublicKey()
+        val signature = "Hello World!".toByteArray()
+        val response = createResponse(
+            response = CryptoSignatureWithKey(
+                ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(publicKey)),
+                ByteBuffer.wrap(signature)
+            ),
+            requestType = SignFlowCommand::class.java,
+            error = null,
+            ttl = -1
+        )
+        assertThrows<IllegalStateException> {
+            buildTransformer(-1).transform(response)
+        }
     }
 
     @Test
@@ -495,7 +556,7 @@ class CryptoFlowOpsTransformerTests {
             "--failed--"
         )
         val result = assertThrows<IllegalStateException> {
-            transformer.transform(response)
+            buildTransformer().transform(response)
         }
         assertThat(result.message, containsString("--failed--"))
     }
@@ -508,7 +569,7 @@ class CryptoFlowOpsTransformerTests {
             ""
         )
         assertThrows<IllegalStateException> {
-            transformer.transform(response)
+            buildTransformer().transform(response)
         }
     }
 
@@ -519,7 +580,7 @@ class CryptoFlowOpsTransformerTests {
             SignFlowCommand::class.java
         )
         val result = assertThrows<IllegalStateException> {
-            transformer.transform(response)
+            buildTransformer().transform(response)
         }
         assertThat(result.message, containsString(CryptoSignatureWithKey::class.java.name))
         assertThat(result.message, containsString(CryptoPublicKeys::class.java.name))
@@ -532,12 +593,12 @@ class CryptoFlowOpsTransformerTests {
         val signature = "Hello World!".toByteArray()
         val response = createResponse(
             CryptoSignatureWithKey(
-                ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
+                ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(publicKey)),
                 ByteBuffer.wrap(signature)
             ),
             SignWithSpecFlowCommand::class.java
         )
-        val result = transformer.transform(response)
+        val result = buildTransformer().transform(response)
         assertThat(result, instanceOf(DigitalSignature.WithKey::class.java))
         val resultSignature = result as DigitalSignature.WithKey
         assertArrayEquals(publicKey.encoded, resultSignature.by.encoded)
@@ -552,7 +613,7 @@ class CryptoFlowOpsTransformerTests {
             "--failed--"
         )
         val result = assertThrows<IllegalStateException> {
-            transformer.transform(response)
+            buildTransformer().transform(response)
         }
         assertThat(result.message, containsString("--failed--"))
     }
@@ -565,18 +626,18 @@ class CryptoFlowOpsTransformerTests {
             ""
         )
         assertThrows<IllegalStateException> {
-            transformer.transform(response)
+            buildTransformer().transform(response)
         }
     }
 
     @Test
-    fun `Should throw IllegalStateException when transforming unexpected response to sign command with signtaure spec`() {
+    fun `Should throw IllegalStateException when transforming unexpected response to sign command with signature spec`() {
         val response = createResponse(
             CryptoPublicKeys(),
             SignWithSpecFlowCommand::class.java
         )
         val result = assertThrows<IllegalStateException> {
-            transformer.transform(response)
+            buildTransformer().transform(response)
         }
         assertThat(result.message, containsString(CryptoSignatureWithKey::class.java.name))
         assertThat(result.message, containsString(CryptoPublicKeys::class.java.name))
