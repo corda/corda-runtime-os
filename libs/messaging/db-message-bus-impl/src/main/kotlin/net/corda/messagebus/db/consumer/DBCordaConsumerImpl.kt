@@ -1,7 +1,7 @@
 package net.corda.messagebus.db.consumer
 
-import com.typesafe.config.Config
 import net.corda.data.CordaAvroDeserializer
+import net.corda.libs.configuration.SmartConfig
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.configuration.ConfigProperties
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CLIENT_ID
@@ -20,7 +20,7 @@ import java.time.Duration
 
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
-    private val consumerConfig: Config,
+    private val consumerConfig: SmartConfig,
     private val dbAccess: DBAccess,
     private val consumerGroup: ConsumerGroup?,
     private val keyDeserializer: CordaAvroDeserializer<K>,
@@ -173,6 +173,11 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
 
     override fun close() {
         close(Duration.ZERO)
+    }
+
+    private fun close(timeout: Duration) {
+        // Nothing to do here
+        log.info("Closing logger for ${consumerConfig.getString(CLIENT_ID)}. Timeout $timeout")
     }
 
     override fun setDefaultRebalanceListener(defaultListener: CordaConsumerRebalanceListener) {

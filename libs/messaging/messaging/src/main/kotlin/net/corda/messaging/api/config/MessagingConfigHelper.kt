@@ -14,6 +14,7 @@ fun Map<String, SmartConfig>.toMessagingConfig(): SmartConfig {
     val bootConfig = this[BOOT_CONFIG]
         ?: throw CordaMessageAPIConfigException("Could not generate a messaging patterns configuration due to missing key: $BOOT_CONFIG")
     val messagingConfig = this[MESSAGING_CONFIG]
-        ?: throw CordaMessageAPIConfigException("Could not generate a messaging patterns configuration due to missing key: $MESSAGING_CONFIG")
+        ?: throw CordaMessageAPIConfigException("Could not generate a messaging patterns" +
+                " configuration due to missing key: $MESSAGING_CONFIG")
     return messagingConfig.withFallback(bootConfig)
 }

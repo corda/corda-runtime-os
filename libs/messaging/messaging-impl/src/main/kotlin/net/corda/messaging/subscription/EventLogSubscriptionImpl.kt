@@ -26,7 +26,7 @@ import net.corda.messaging.utils.toEventLogRecord
 import net.corda.schema.Schemas.Companion.getStateAndEventDLQTopic
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
@@ -57,7 +57,7 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : Subscription<K, V> {
 
-    // TODO: The logger name may not be unique with current config.
+    // TODO - The logger name may not be unique with current config.
     private val log = LoggerFactory.getLogger(config.loggerName)
 
     @Volatile

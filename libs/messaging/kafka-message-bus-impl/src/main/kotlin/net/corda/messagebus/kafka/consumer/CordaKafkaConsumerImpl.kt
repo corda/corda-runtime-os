@@ -43,7 +43,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         private val log: Logger = contextLogger()
     }
 
-    // TODO: These should really be handled at the patterns level.
+    // TODO - These should really be handled at the patterns level.
     private val consumerSubscribeMaxRetries = 3L //config.getLong(SUBSCRIBE_MAX_RETRIES)
     private val consumerCommitOffsetMaxRetries = 3L //config.getLong(COMMIT_OFFSET_MAX_RETRIES)
 

@@ -115,7 +115,7 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
                 ).use {
                     val partitions = it.getPartitions(
                         config.topic,
-                        // TODO: This looks like the wrong timeout to me.
+                        // TODO - This looks like the wrong timeout to me.
                         config.threadStopTimeout
                     )
                     it.assign(partitions)

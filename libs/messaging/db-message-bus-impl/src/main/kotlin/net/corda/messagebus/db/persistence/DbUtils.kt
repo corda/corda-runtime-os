@@ -1,14 +1,14 @@
 package net.corda.messagebus.db.persistence
 
-import com.typesafe.config.Config
 import net.corda.db.core.PostgresDataSourceFactory
+import net.corda.libs.configuration.SmartConfig
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import javax.persistence.EntityManagerFactory
 
 
 fun EntityManagerFactoryFactory.create(
-    dbConfig: Config,
+    dbConfig: SmartConfig,
     persistenceName: String,
     entities: List<Class<out Any>>,
 ): EntityManagerFactory {

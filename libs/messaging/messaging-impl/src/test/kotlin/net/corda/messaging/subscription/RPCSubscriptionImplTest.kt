@@ -28,6 +28,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Captor
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -182,7 +183,7 @@ class RPCSubscriptionImplTest {
         val kafkaConsumer: CordaConsumer<String, RPCRequest> = mock()
         val cordaConsumerBuilder: MessageBusConsumerBuilder = mock()
         doReturn(kafkaConsumer).whenever(cordaConsumerBuilder)
-            .createConsumer<String, RPCRequest>(any(), any(), any(), any(), any())
+            .createConsumer<String, RPCRequest>(any(), any(), any(), any(), any(), anyOrNull())
         doReturn(
             mutableMapOf(
                 CordaTopicPartition(config.topic, 0) to 0L,

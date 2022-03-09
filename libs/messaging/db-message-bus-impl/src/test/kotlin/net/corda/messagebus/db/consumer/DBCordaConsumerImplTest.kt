@@ -1,9 +1,10 @@
 package net.corda.messagebus.db.consumer
 
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.CordaAvroDeserializer
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
@@ -23,13 +24,14 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.time.Duration
 import java.time.Instant
 
 internal class DBCordaConsumerImplTest {
 
     companion object {
         private const val topic = "topic"
-        private val defaultConfig = ConfigFactory.parseString(
+        private val defaultConfig = SmartConfigImpl(ConfigFactory.parseString(
             """
         max.poll.records = 10
         max.poll.interval.ms = 100000
@@ -37,7 +39,7 @@ internal class DBCordaConsumerImplTest {
         client.id = client
         auto.offset.reset = earliest
         """
-        )
+        ), mock(), mock())
 
         private val serializedKey = "key".toByteArray()
         private val serializedValue = "value".toByteArray()
@@ -53,7 +55,7 @@ internal class DBCordaConsumerImplTest {
     @Mock
     val dbAccess = mock<DBAccess>()
 
-    private fun makeConsumer(config: Config = defaultConfig): DBCordaConsumerImpl<String, String> {
+    private fun makeConsumer(config: SmartConfig = defaultConfig): DBCordaConsumerImpl<String, String> {
         val keyDeserializer = mock<CordaAvroDeserializer<String>>()
         val valueDeserializer = mock<CordaAvroDeserializer<String>>()
         whenever(keyDeserializer.deserialize(eq(serializedKey))).thenAnswer { "key" }
@@ -130,8 +132,8 @@ internal class DBCordaConsumerImplTest {
         whenever(consumerGroup.getTopicPartitionsFor(any())).thenAnswer { setOf(partition0) }
 
         val consumer = makeConsumer()
-        val test = consumer.poll()
-        consumer.poll()
+        val test = consumer.poll(Duration.ZERO)
+        consumer.poll(Duration.ZERO)
         assertThat(test.size).isEqualTo(1)
         assertThat(test.single()).isEqualToComparingFieldByField(expectedRecord)
     }
@@ -154,7 +156,7 @@ internal class DBCordaConsumerImplTest {
         whenever(consumerGroup.getTopicPartitionsFor(any())).thenAnswer { setOf(partition0) }
 
         val consumer = makeConsumer()
-        consumer.poll()
+        consumer.poll(Duration.ZERO)
         assertThat(consumer.position(partition0)).isEqualTo(8)
     }
 
@@ -198,17 +200,17 @@ internal class DBCordaConsumerImplTest {
         }
 
         val consumer = makeConsumer()
-        consumer.poll()
-        consumer.poll()
-        consumer.poll()
+        consumer.poll(Duration.ZERO)
+        consumer.poll(Duration.ZERO)
+        consumer.poll(Duration.ZERO)
 
         assertThat(consumer.position(partition0)).isEqualTo(1)
         assertThat(consumer.position(partition1)).isEqualTo(6)
         assertThat(consumer.position(partition2)).isEqualTo(11)
 
-        consumer.poll()
-        consumer.poll()
-        consumer.poll()
+        consumer.poll(Duration.ZERO)
+        consumer.poll(Duration.ZERO)
+        consumer.poll(Duration.ZERO)
 
         assertThat(consumer.position(partition0)).isEqualTo(2)
         assertThat(consumer.position(partition1)).isEqualTo(7)
@@ -239,7 +241,7 @@ internal class DBCordaConsumerImplTest {
         whenever(consumerGroup.getTopicPartitionsFor(any())).thenAnswer { setOf(partition0) }
 
         val consumer = makeConsumer()
-        val test = consumer.poll()
+        val test = consumer.poll(Duration.ZERO)
         assertThat(test.size).isEqualTo(2)
         assertThat(test).isEqualTo(expectedRecords)
     }

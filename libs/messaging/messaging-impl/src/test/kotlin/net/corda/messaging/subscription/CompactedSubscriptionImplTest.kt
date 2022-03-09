@@ -281,7 +281,10 @@ class CompactedSubscriptionImplTest {
 //        verify(consumerBuilder, times(4)).createConsumer<String, String>(any(), any(), any(), any(), any(), any())
     }
 
-    private fun setupStandardMocks(numberOfRecords: Long, onPoll: (InvocationOnMock) -> List<CordaConsumerRecord<*, *>>): MessageBusConsumerBuilder {
+    private fun setupStandardMocks(
+        numberOfRecords: Long,
+        onPoll: (InvocationOnMock) -> List<CordaConsumerRecord<*, *>>
+    ): MessageBusConsumerBuilder {
         val cordaConsumerBuilder = object : MessageBusConsumerBuilder {
             override fun <K : Any, V : Any> createConsumer(
                 consumerConfig: ConsumerConfig,
@@ -301,7 +304,8 @@ class CompactedSubscriptionImplTest {
                     )
                 ).whenever(consumerMock).endOffsets(any())
                 doReturn(numberOfRecords + 1).whenever(consumerMock).position(any())
-                doReturn(setOf(CordaTopicPartition(config.topic, 0), CordaTopicPartition(config.topic, 1))).whenever(consumerMock).assignment()
+                doReturn(setOf(CordaTopicPartition(config.topic, 0), CordaTopicPartition(config.topic, 1))).whenever(consumerMock)
+                    .assignment()
                 doAnswer(onPoll).whenever(consumerMock).poll(any())
                 doAnswer {
                     listOf(CordaTopicPartition(config.topic, 0))

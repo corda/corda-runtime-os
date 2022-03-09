@@ -19,6 +19,7 @@ interface MessageBusConsumerBuilder {
      * @return CordaConsumer
      * @throws CordaMessageAPIFatalException if fatal error occurs during construction of the consumer
      */
+    @Suppress("LongParameterList")
     fun <K : Any, V : Any> createConsumer(
         consumerConfig: ConsumerConfig,
         busConfig: SmartConfig,

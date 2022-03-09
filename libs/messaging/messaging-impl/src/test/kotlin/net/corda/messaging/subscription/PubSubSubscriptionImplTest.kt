@@ -72,7 +72,8 @@ class PubSubSubscriptionImplTest {
             any(),
             any(),
             any(),
-            any()
+            any(),
+            anyOrNull()
         )
         doReturn(lifecycleCoordinator).`when`(lifecycleCoordinatorFactory).createCoordinator(any(), any())
     }
@@ -101,7 +102,8 @@ class PubSubSubscriptionImplTest {
             any(),
             any(),
             any(),
-            any()
+            any(),
+            anyOrNull()
         )
     }
 
@@ -130,7 +132,8 @@ class PubSubSubscriptionImplTest {
             any(),
             any(),
             any(),
-            any()
+            any(),
+            anyOrNull()
         )
     }
 
@@ -147,7 +150,7 @@ class PubSubSubscriptionImplTest {
             } else {
                 CordaMessageAPIFatalException("Consumer Create Fatal Error", Exception())
             }
-        }.whenever(cordaConsumerBuilder).createConsumer<String, ByteBuffer>(any(), any(), any(), any(), any())
+        }.whenever(cordaConsumerBuilder).createConsumer<String, ByteBuffer>(any(), any(), any(), any(), any(), anyOrNull())
         doReturn(mockConsumerRecords).whenever(mockCordaConsumer).poll(config.pollTimeout)
 
         doThrow(CordaMessageAPIFatalException::class).whenever(mockCordaConsumer).commitSyncOffsets(any(), anyOrNull())
@@ -173,7 +176,8 @@ class PubSubSubscriptionImplTest {
             any(),
             any(),
             any(),
-            any()
+            any(),
+            anyOrNull()
         )
     }
 
@@ -187,7 +191,8 @@ class PubSubSubscriptionImplTest {
             any(),
             any(),
             any(),
-            any()
+            any(),
+            anyOrNull()
         )).thenThrow(
             CordaMessageAPIFatalException(
                 "Fatal Error",
@@ -215,7 +220,8 @@ class PubSubSubscriptionImplTest {
             any(),
             any(),
             any(),
-            any()
+            any(),
+            anyOrNull()
         )
         assertThat(latch.count).isEqualTo(mockRecordCount)
     }
@@ -232,7 +238,7 @@ class PubSubSubscriptionImplTest {
             } else {
                 CordaMessageAPIFatalException("Consumer Create Fatal Error", Exception())
             }
-        }.whenever(cordaConsumerBuilder).createConsumer<String, ByteBuffer>(any(), any(), any(), any(), any())
+        }.whenever(cordaConsumerBuilder).createConsumer<String, ByteBuffer>(any(), any(), any(), any(),any(), anyOrNull())
         whenever(mockCordaConsumer.poll(config.pollTimeout)).thenThrow(CordaMessageAPIFatalException("Fatal Error", Exception()))
 
         kafkaPubSubSubscription =
@@ -255,7 +261,8 @@ class PubSubSubscriptionImplTest {
             any(),
             any(),
             any(),
-            any()
+            any(),
+            anyOrNull()
         )
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount)).resetToLastCommittedPositions(any())
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount + 1)).poll(config.pollTimeout)
@@ -274,7 +281,7 @@ class PubSubSubscriptionImplTest {
             } else {
                 CordaMessageAPIFatalException("Consumer Create Fatal Error", Exception())
             }
-        }.whenever(cordaConsumerBuilder).createConsumer<String, ByteBuffer>(any(), any(), any(), any(), any())
+        }.whenever(cordaConsumerBuilder).createConsumer<String, ByteBuffer>(any(), any(), any(), any(), any(), anyOrNull())
 
         latch = CountDownLatch(consumerPollAndProcessRetriesCount)
         processor = StubPubSubProcessor(latch, CordaMessageAPIFatalException("", Exception()))
@@ -304,7 +311,7 @@ class PubSubSubscriptionImplTest {
             } else {
                 CordaMessageAPIFatalException("Consumer Create Fatal Error", Exception())
             }
-        }.whenever(cordaConsumerBuilder).createConsumer<String, ByteBuffer>(any(), any(), any(), any(), any())
+        }.whenever(cordaConsumerBuilder).createConsumer<String, ByteBuffer>(any(), any(), any(), any(), any(), anyOrNull())
 
         latch = CountDownLatch(consumerPollAndProcessRetriesCount)
         processor = StubPubSubProcessor(latch, IOException())

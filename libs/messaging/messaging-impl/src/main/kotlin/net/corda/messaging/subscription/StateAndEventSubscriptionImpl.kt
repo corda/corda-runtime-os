@@ -203,7 +203,8 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     }
                     else -> {
                         throw CordaMessageAPIFatalException(
-                            "Failed to process records from topic $eventTopic, group ${config.group}, producerClientId ${config.clientId}. " +
+                            "Failed to process records from topic $eventTopic, group ${config.group}, " +
+                                    "producerClientId ${config.clientId}. " +
                                     "Fatal error occurred.", ex
                         )
                     }
@@ -224,8 +225,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
         producer.beginTransaction()
         producer.sendRecords(outputRecords.toCordaProducerRecords())
-        if(deadLetterRecords.isNotEmpty())
-        {
+        if (deadLetterRecords.isNotEmpty()) {
             producer.sendRecords(deadLetterRecords.map {
                 CordaProducerRecord(
                     getStateAndEventDLQTopic(eventTopic),
