@@ -5,7 +5,6 @@ import net.corda.libs.cpiupload.endpoints.v1.CpiMetadata
 import net.corda.libs.cpiupload.endpoints.v1.CpkIdentifier
 import net.corda.libs.cpiupload.endpoints.v1.CpkMetadata
 
-
 internal fun net.corda.libs.packaging.CpiIdentifier.toEndpointType() =
     CpiIdentifier(this.name, this.version, this.signerSummaryHash.toString())
 
