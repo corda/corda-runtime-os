@@ -11,7 +11,7 @@ import org.osgi.service.component.annotations.Component
 @HttpRpcResource(name = "Hello RPC Ops", description = "Hello RPC Ops endpoints", path = "hello")
 interface HelloRpcOps : RpcOps {
 
-    @HttpRpcPOST
+    @HttpRpcPOST(path = "greet")
     fun greet(addressee: String): String
 }
 
