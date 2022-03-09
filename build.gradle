@@ -93,11 +93,8 @@ allprojects {
 
         retry {
             if (System.getenv().containsKey("JENKINS_URL")) {
-                println "this is a CI server"
                 maxRetries = 2
                 maxFailures = 10
-            }else{
-             println "this is NOT a CI server"
             }
         }
     }
