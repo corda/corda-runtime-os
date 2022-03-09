@@ -21,9 +21,9 @@ internal class VirtualNodeEntityRepository(dbConnectionManager: DbConnectionMana
         val cpiMetadataEntity = entityManagerFactory.transaction {
             it.createQuery(
                 "SELECT cpi FROM CpiMetadataEntity cpi " +
-                        "WHERE cpi.fileChecksum like :cpiFileChecksum",
+                        "WHERE upper(cpi.fileChecksum) like :cpiFileChecksum",
                 CpiMetadataEntity::class.java)
-                .setParameter("cpiFileChecksum", cpiFileChecksum)
+                .setParameter("cpiFileChecksum", "%${cpiFileChecksum.toUpperCase()}%")
                 .singleResult
         } ?: return null
 
@@ -31,7 +31,8 @@ internal class VirtualNodeEntityRepository(dbConnectionManager: DbConnectionMana
             if (it == "") null else SecureHash.create(it)
         }
         val cpiId = CPI.Identifier.newInstance(cpiMetadataEntity.name, cpiMetadataEntity.version, signerSummaryHash)
-        return CPIMetadata(cpiId, cpiMetadataEntity.fileChecksum, cpiMetadataEntity.groupId)
+        val fileChecksum = SecureHash.create(cpiMetadataEntity.fileChecksum).toHexString()
+        return CPIMetadata(cpiId, fileChecksum, cpiMetadataEntity.groupId)
     }
 
     /**
