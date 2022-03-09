@@ -153,6 +153,7 @@ class OutboundSessionPool(
      * Remove all sessions in the pool.
      */
     fun clearPool() {
+        counterpartiesForSessionId.clear()
         outboundSessions.clear()
     }
 }
