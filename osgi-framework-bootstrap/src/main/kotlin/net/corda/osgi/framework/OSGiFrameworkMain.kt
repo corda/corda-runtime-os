@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory
 import org.slf4j.bridge.SLF4JBridgeHandler
 import java.nio.file.Files
 import java.security.Policy
+import kotlin.system.exitProcess
 
 /**
  * This class provided the main entry point for the applications built with the `corda.common-app` plugin.
@@ -140,6 +141,7 @@ class OSGiFrameworkMain {
                         .waitForStop(NO_TIMEOUT)
                 } catch (e: Exception) {
                     logger.error("Error: ${e.message}!", e)
+                    exitProcess(-1)
                 } finally {
                     // If osgiFrameworkWrap stopped because SIGINT/CTRL+C,
                     // this avoids to call stop twice and log warning.
@@ -149,10 +151,13 @@ class OSGiFrameworkMain {
                 }
             } catch (e: IllegalArgumentException) {
                 logger.error("Error: ${e.message}!", e)
+                exitProcess(-1)
             } catch (e: UnsupportedOperationException) {
                 logger.error("Error: ${e.message}!", e)
+                exitProcess(-1)
             } catch (e: SecurityException) {
                 logger.error("Error: ${e.message}!", e)
+                exitProcess(-1)
             }
         }
     } //~ companion object
