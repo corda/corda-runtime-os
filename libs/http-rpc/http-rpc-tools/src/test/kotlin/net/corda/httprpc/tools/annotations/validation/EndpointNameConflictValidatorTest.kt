@@ -113,7 +113,7 @@ class EndpointNameConflictValidatorTest {
             fun test() {
             }
 
-            @HttpRpcGET("test")
+            @HttpRpcGET("")
             fun test2() {
             }
         }
@@ -121,6 +121,7 @@ class EndpointNameConflictValidatorTest {
         val result = HttpRpcInterfaceValidator.validate(TestInterface::class.java)
 
         assertEquals(1, result.errors.size)
+        assertThat(result.errors).allMatch { it == "Duplicate endpoint path 'null' for GET method." }
     }
 
     @Test
@@ -130,7 +131,7 @@ class EndpointNameConflictValidatorTest {
             override val protocolVersion: Int
                 get() = 1
             
-            @HttpRpcGET
+            @HttpRpcGET("teSt")
             fun teSt() {
             }
 
@@ -150,6 +151,7 @@ class EndpointNameConflictValidatorTest {
         val result = HttpRpcInterfaceValidator.validate(TestInterface::class.java)
 
         assertEquals(3, result.errors.size)
+        assertThat(result.errors).allMatch { it == "Duplicate endpoint path 'test' for GET method." }
     }
 
     @Test
