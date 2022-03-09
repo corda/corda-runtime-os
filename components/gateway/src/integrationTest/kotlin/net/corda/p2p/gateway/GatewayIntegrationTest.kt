@@ -604,7 +604,7 @@ class GatewayIntegrationTest : TestBase() {
     @Nested
     inner class BadConfigurationTests {
         @Test
-        @Timeout(120)
+        @Timeout(200    )
         fun `Gateway can recover from bad configuration`() {
             val configPublisher = ConfigPublisher()
             val host = "www.alice.net"

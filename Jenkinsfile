@@ -1,8 +1,8 @@
-@Library('corda-shared-build-pipeline-steps@5.0') _
+@Library('corda-shared-build-pipeline-steps@ronanb/NOTICK/add-parallell-buid') _
 
 cordaPipeline(
     nexusAppId: 'flow-worker-5.0',
-    runIntegrationTests: false,
+    runIntegrationTests: true,
     publishRepoPrefix: 'corda-ent-maven',
     createPostgresDb: false,
     publishOSGiImage: true,
