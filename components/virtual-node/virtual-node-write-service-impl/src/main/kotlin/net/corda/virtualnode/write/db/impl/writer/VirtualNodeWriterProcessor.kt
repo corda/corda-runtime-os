@@ -62,9 +62,9 @@ internal class VirtualNodeWriterProcessor(
                 return
             }
 
-            cpiMetadata = virtualNodeEntityRepository.getCPIMetadata(request.cpiIdHash)
+            cpiMetadata = virtualNodeEntityRepository.getCPIMetadata(request.cpiFileChecksum)
             if (cpiMetadata == null) {
-                handleException(respFuture, "CPI with hash ${request.cpiIdHash} was not found.", request)
+                handleException(respFuture, "CPI with file checksum ${request.cpiFileChecksum} was not found.", request)
                 return
             }
 
@@ -72,7 +72,7 @@ internal class VirtualNodeWriterProcessor(
             if (virtualNodeEntityRepository.virtualNodeExists(holdingId, cpiMetadata.id)) {
                 handleException(
                     respFuture,
-                    "Virtual node for CPI with hash ${request.cpiIdHash} and x500Name ${request.x500Name} already exists.",
+                    "Virtual node for CPI with hash ${request.cpiFileChecksum} and x500Name ${request.x500Name} already exists.",
                     request)
                 return
             }
@@ -218,7 +218,7 @@ internal class VirtualNodeWriterProcessor(
         dbConnections: VirtualNodeDbConnections
     ) {
         val response =  VirtualNodeCreationResponse(
-            true, null, request.x500Name, cpiMetadata.id.toAvro(), cpiMetadata.idShortHash,
+            true, null, request.x500Name, cpiMetadata.id.toAvro(), cpiMetadata.fileChecksum,
             holdingIdentity.groupId, holdingIdentity.toAvro(), holdingIdentity.id,
             dbConnections.vaultDdlConnectionId?.toString(),
             dbConnections.vaultDmlConnectionId.toString(),
@@ -239,7 +239,7 @@ internal class VirtualNodeWriterProcessor(
     ): Boolean {
         val exception = ExceptionEnvelope(VirtualNodeWriteServiceException::class.java.name, errMsg)
         val response = VirtualNodeCreationResponse(
-            false, exception, request.x500Name, cpiMetadata?.id?.toAvro(), cpiMetadata?.idShortHash,
+            false, exception, request.x500Name, cpiMetadata?.id?.toAvro(), cpiMetadata?.fileChecksum,
             holdingId?.groupId, holdingId?.toAvro(), holdingId?.id,
             null, null, null, null, null)
         return respFuture.complete(response)
@@ -258,7 +258,7 @@ internal class VirtualNodeWriterProcessor(
 
     /** Converts a [CPI.Identifier] to its Avro representation. */
     private fun CPI.Identifier.toAvro(): CPIIdentifier {
-        val secureHashAvro = SecureHash(signerSummaryHash?.algorithm, ByteBuffer.wrap(signerSummaryHash?.bytes))
+        val secureHashAvro = signerSummaryHash?.let { SecureHash(it.algorithm, ByteBuffer.wrap(it.bytes)) }
         return CPIIdentifier(name, version, secureHashAvro)
     }
 }

@@ -5,6 +5,8 @@ import net.corda.db.admin.impl.ClassloaderChangeLog.ChangeLogResourceFiles
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
+import net.corda.libs.cpi.datamodel.CpiEntities
+import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.virtualnode.datamodel.HoldingIdentityEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntities
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntity
@@ -47,7 +49,7 @@ class VirtualNodeEntitiesIntegrationTest {
             }
             entityManagerFactory = EntityManagerFactoryFactoryImpl().create(
                 "test_unit",
-                VirtualNodeEntities.classes.toList(),
+                VirtualNodeEntities.classes.toList() + CpiEntities.classes.toList(),
                 dbConfig
             )
         }
@@ -70,10 +72,13 @@ class VirtualNodeEntitiesIntegrationTest {
 
     @Test
     fun `can persist and read back Virtual Node entity`() {
+        val cpiMetadata = CpiMetadataEntity("Test CPI","1.0","CPI summary hash",
+            "file","1234567890", "group policy","group ID", "request ID")
         val virtualNode = VirtualNodeEntity("0123456789AB", "Test CPI", "1.0",
             "CPI summary hash")
 
         entityManagerFactory.createEntityManager().transaction { em ->
+            em.persist(cpiMetadata)
             em.persist(virtualNode)
         }
 

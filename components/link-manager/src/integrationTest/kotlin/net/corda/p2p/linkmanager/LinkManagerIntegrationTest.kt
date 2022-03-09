@@ -12,7 +12,6 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.BASE_REPLAY_PERIOD_KEY_POSTFIX
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.CUTOFF_REPLAY_KEY_POSTFIX
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.HEARTBEAT_MESSAGE_PERIOD_KEY
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITIES_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_MESSAGE_SIZE_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_REPLAYING_MESSAGES_PER_PEER_POSTFIX
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MESSAGE_REPLAY_KEY_PREFIX
@@ -45,7 +44,6 @@ class LinkManagerIntegrationTest {
     private val replayPeriod = 2000
     private fun createLinkManagerConfiguration(replayPeriod: Int): Config {
         return ConfigFactory.empty()
-            .withValue(LOCALLY_HOSTED_IDENTITIES_KEY, ConfigValueFactory.fromAnyRef(emptyList<Any>()))
             .withValue(MAX_MESSAGE_SIZE_KEY, ConfigValueFactory.fromAnyRef(1000000))
             .withValue(
                 PROTOCOL_MODE_KEY,
@@ -96,9 +94,11 @@ class LinkManagerIntegrationTest {
                 1,
                 bootstrapConfig
             ),
-            ConfigBasedLinkManagerHostingMap(
-                configReadService,
-                lifecycleCoordinatorFactory
+            StubLinkManagerHostingMap(
+                lifecycleCoordinatorFactory,
+                subscriptionFactory,
+                1,
+                bootstrapConfig
             ),
             StubCryptoProcessor(
                 lifecycleCoordinatorFactory,
@@ -169,9 +169,11 @@ class LinkManagerIntegrationTest {
                 1,
                 bootstrapConfig
             ),
-            ConfigBasedLinkManagerHostingMap(
-                configReadService,
-                lifecycleCoordinatorFactory
+            StubLinkManagerHostingMap(
+                lifecycleCoordinatorFactory,
+                subscriptionFactory,
+                1,
+                bootstrapConfig
             ),
             StubCryptoProcessor(
                 lifecycleCoordinatorFactory,

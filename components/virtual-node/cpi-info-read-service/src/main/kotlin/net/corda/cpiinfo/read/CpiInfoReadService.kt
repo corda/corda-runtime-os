@@ -6,6 +6,11 @@ import net.corda.lifecycle.Lifecycle
 
 interface CpiInfoReadService : Lifecycle {
     /**
+     * Returns a list of all CPI metadata, or empty list if no CPI metadata found.
+     */
+    fun getAll(): List<CpiMetadata>
+
+    /**
      * Returns a CPI metadata for a given identifier, or `null` if not found.
      */
     fun get(identifier: CpiIdentifier): CpiMetadata?
