@@ -46,6 +46,11 @@ internal class CpiInfoMap {
     }
 
     /**
+     * Get all [CPI.Metadata]
+     */
+    fun getAll(): List<CPIMetadata> = metadataById.values.toList()
+
+    /**
      * Get a [CPI.Metadata] by [CPI.Identifier]
      */
     fun get(id: CPIIdentifier): CPIMetadata? = metadataById[id]
