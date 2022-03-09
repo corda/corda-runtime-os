@@ -28,7 +28,7 @@ class CpiUploadRPCOpsImpl @Activate constructor(
     private val cpiInfoReadService: CpiInfoReadService
 ) : CpiUploadRPCOps, PluggableRPCOps<CpiUploadRPCOps>, Lifecycle {
     companion object {
-        val log = contextLogger()
+        val logger = contextLogger()
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<CpiUploadRPCOps>(
@@ -56,6 +56,7 @@ class CpiUploadRPCOpsImpl @Activate constructor(
     }
 
     override fun cpi(cpiFileName: String, cpiContent: InputStream): CpiUploadRPCOps.UploadResponse {
+        logger.info("Uploading CPI: $cpiFileName")
         requireRunning()
         val cpiUploadRequestId = cpiUploadManager.uploadCpi(cpiFileName, cpiContent)
         return CpiUploadRPCOps.UploadResponse(cpiUploadRequestId.requestId, toShortHash(cpiUploadRequestId.secureHash))
@@ -63,6 +64,7 @@ class CpiUploadRPCOpsImpl @Activate constructor(
 
     // We're mostly returning the enumeration to a string in this version
     override fun status(id: String): CpiUploadRPCOps.Status {
+        logger.info("Upload status request for CPI id: $id")
         requireRunning()
         when (val status = cpiUploadManager.status(id)) {
             CpiUploadStatus.NO_SUCH_REQUEST_ID -> throw ResourceNotFoundException("No such request id '$id'")
@@ -71,6 +73,7 @@ class CpiUploadRPCOpsImpl @Activate constructor(
     }
 
     override fun getAllCpis(): HTTPGetCPIsResponse {
+        logger.info("Get all CPIs request")
         requireRunning()
         val cpis = cpiInfoReadService.getAll().map { it.toEndpointType() }
         return HTTPGetCPIsResponse(cpis)
