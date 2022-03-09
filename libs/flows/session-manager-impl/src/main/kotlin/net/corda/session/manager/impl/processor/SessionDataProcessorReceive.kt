@@ -6,7 +6,6 @@ import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.impl.SessionEventProcessor
-import net.corda.session.manager.impl.processor.helper.addAckToSendEvents
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
 import net.corda.session.manager.impl.processor.helper.recalcReceivedProcessState
@@ -61,7 +60,7 @@ class SessionDataProcessorReceive(
                         " expected seqNum is $expectedNextSeqNum"
             }
             sessionState.apply {
-                sendEventsState.undeliveredMessages = addAckToSendEvents(sessionState, instant)
+                sendAck = true
             }
         }
     }
@@ -91,7 +90,7 @@ class SessionDataProcessorReceive(
         } else {
             sessionState.apply {
                 receivedEventsState = recalcReceivedProcessState(receivedEventsState)
-                sendEventsState.undeliveredMessages = addAckToSendEvents(sessionState, instant)
+                sendAck = true
             }
         }
     }

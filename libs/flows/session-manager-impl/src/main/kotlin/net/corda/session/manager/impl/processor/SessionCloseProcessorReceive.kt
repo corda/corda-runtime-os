@@ -5,7 +5,6 @@ import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.impl.SessionEventProcessor
-import net.corda.session.manager.impl.processor.helper.addAckToSendEvents
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
 import net.corda.session.manager.impl.processor.helper.recalcReceivedProcessState
@@ -53,7 +52,7 @@ class SessionCloseProcessorReceive(
                             "when last processed seqNum was $lastProcessedSequenceNum. Current SessionState: $sessionState"
                 }
                 sessionState.apply {
-                    sendEventsState.undeliveredMessages = addAckToSendEvents(sessionState, instant)
+                    sendAck = true
                 }
             } else {
                 sessionState.receivedEventsState.undeliveredMessages = undeliveredReceivedMessages.plus(sessionEvent)
@@ -70,7 +69,7 @@ class SessionCloseProcessorReceive(
             sessionState.apply {
                 logger.debug { "Updating session state to ${SessionStateType.CLOSING} for session state $sessionState" }
                 status = SessionStateType.CLOSING
-                sendEventsState.undeliveredMessages = addAckToSendEvents(sessionState, instant)
+                sendAck = true
             }
         }
         SessionStateType.CLOSING -> {
@@ -82,7 +81,7 @@ class SessionCloseProcessorReceive(
                     logger.debug { "Updating session state to ${SessionStateType.WAIT_FOR_FINAL_ACK} for session state $sessionState" }
                     SessionStateType.WAIT_FOR_FINAL_ACK
                 }
-                sendEventsState.undeliveredMessages = addAckToSendEvents(sessionState, instant)
+                sendAck = true
             }
         }
         else -> {

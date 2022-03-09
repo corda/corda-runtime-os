@@ -1,7 +1,6 @@
 package net.corda.session.manager.impl.processor
 
 import net.corda.data.flow.event.MessageDirection
-import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.session.SessionStateType
@@ -33,8 +32,8 @@ class SessionCloseProcessorReceiveTest {
         val result = SessionCloseProcessorReceive("key", inputState, sessionEvent, Instant.now()).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.CLOSING)
-        assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
-        assertThat(result.sendEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionAck::class.java)
+        assertThat(result.sendEventsState.undeliveredMessages).isEmpty()
+        assertThat(result.sendAck).isTrue
     }
 
     @Test
@@ -61,8 +60,8 @@ class SessionCloseProcessorReceiveTest {
         val result = SessionCloseProcessorReceive("key", inputState, sessionEvent, Instant.now()).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.CLOSING)
-        assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
-        assertThat(result.sendEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionAck::class.java)
+        assertThat(result.sendEventsState.undeliveredMessages).isEmpty()
+        assertThat(result.sendAck).isTrue
     }
 
     @Test
@@ -75,8 +74,8 @@ class SessionCloseProcessorReceiveTest {
         val result = SessionCloseProcessorReceive("key", inputState, sessionEvent, Instant.now()).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.CLOSING)
-        assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
-        assertThat(result.sendEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionAck::class.java)
+        assertThat(result.sendEventsState.undeliveredMessages).isEmpty()
+        assertThat(result.sendAck).isTrue
     }
 
     @Test
@@ -89,8 +88,8 @@ class SessionCloseProcessorReceiveTest {
         val result = SessionCloseProcessorReceive("key", inputState, sessionEvent, Instant.now()).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.CLOSED)
-        assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
-        assertThat(result.sendEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionAck::class.java)
+        assertThat(result.sendEventsState.undeliveredMessages).isEmpty()
+        assertThat(result.sendAck).isTrue
     }
 
     @Test
@@ -105,8 +104,8 @@ class SessionCloseProcessorReceiveTest {
         val result = SessionCloseProcessorReceive("key", inputState, sessionEvent, Instant.now()).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.WAIT_FOR_FINAL_ACK)
-        assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(2)
+        assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
         assertThat(result.sendEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionClose::class.java)
-        assertThat(result.sendEventsState.undeliveredMessages.last().payload::class.java).isEqualTo(SessionAck::class.java)
+        assertThat(result.sendAck).isTrue
     }
 }

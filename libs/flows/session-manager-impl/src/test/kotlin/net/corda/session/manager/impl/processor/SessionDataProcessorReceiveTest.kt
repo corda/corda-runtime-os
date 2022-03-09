@@ -1,7 +1,6 @@
 package net.corda.session.manager.impl.processor
 
 import net.corda.data.flow.event.MessageDirection
-import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
@@ -51,9 +50,8 @@ class SessionDataProcessorReceiveTest {
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.CONFIRMED)
 
-        assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
-        val outputEvent = result.sendEventsState.undeliveredMessages.first()
-        assertThat(outputEvent.payload::class.java).isEqualTo(SessionAck::class.java)
+        assertThat(result.sendEventsState.undeliveredMessages).isEmpty()
+        assertThat(result.sendAck).isTrue
     }
 
     @Test
@@ -67,9 +65,8 @@ class SessionDataProcessorReceiveTest {
         val result = SessionDataProcessorReceive("key", inputState, sessionEvent, Instant.now()).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.CONFIRMED)
-        assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
-        val outputEvent = result.sendEventsState.undeliveredMessages.first()
-        assertThat(outputEvent.payload::class.java).isEqualTo(SessionAck::class.java)
+        assertThat(result.sendEventsState.undeliveredMessages).isEmpty()
+        assertThat(result.sendAck).isTrue
     }
 
     @Test
@@ -84,9 +81,8 @@ class SessionDataProcessorReceiveTest {
         val result = SessionDataProcessorReceive("key", inputState, dataEvent, Instant.now()).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.CLOSING)
-        assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
-        val outputEvent = result.sendEventsState.undeliveredMessages.first()
-        assertThat(outputEvent.payload::class.java).isEqualTo(SessionAck::class.java)
+        assertThat(result.sendEventsState.undeliveredMessages).isEmpty()
+        assertThat(result.sendAck).isTrue
     }
 
     @Test

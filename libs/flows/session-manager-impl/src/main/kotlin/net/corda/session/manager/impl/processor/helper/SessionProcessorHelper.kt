@@ -3,44 +3,12 @@ package net.corda.session.manager.impl.processor.helper
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
 import java.time.Instant
-
-/**
- * Generate an SessionAck containing the latest info regarding messages received.
- * @param sessionState to examine which messages have been received
- * @param instant to set timestamp on SessionAck
- * @return A SessionAck SessionEvent with ack fields set on the SessionEvent based on messages received from a counterparty
- */
-fun generateAck(sessionState: SessionState, instant: Instant) : SessionEvent {
-    val receivedEventsState = sessionState.receivedEventsState
-    val outOfOrderSeqNums = receivedEventsState.undeliveredMessages.map { it.sequenceNum }
-    return SessionEvent.newBuilder()
-        .setMessageDirection(MessageDirection.OUTBOUND)
-        .setTimestamp(instant)
-        .setSequenceNum(null)
-        .setSessionId(sessionState.sessionId)
-        .setReceivedSequenceNum(receivedEventsState.lastProcessedSequenceNum)
-        .setOutOfOrderSequenceNums(outOfOrderSeqNums)
-        .setPayload(SessionAck())
-        .build()
-}
-
-/**
- * Generate an ack and add it to the sendEventsState. If there already is an Ack on the send queue, replace it.
- * @param sessionState to get the sendEventsState
- * @param instant to set a timestamp
- * @return A new list containing the sendEventsState undeliveredMessages with a new ack SessionEvent added to it.
- */
-fun addAckToSendEvents(sessionState: SessionState, instant: Instant): List<SessionEvent> {
-    return sessionState.sendEventsState.undeliveredMessages.filter { it.payload !is SessionAck }.plus(generateAck(sessionState,
-        instant))
-}
 
 /**
  * Generate an error SessionEvent.
@@ -81,6 +49,7 @@ fun generateErrorSessionStateFromSessionEvent(sessionId: String, errorMessage: S
         .setLastReceivedMessageTime(instant)
         .setLastSentMessageTime(instant)
         .setIsInitiator(false)
+        .setSendAck(false)
         .setCounterpartyIdentity(counterparty)
         .setReceivedEventsState(SessionProcessState(0, listOf()))
         .setSendEventsState(SessionProcessState(0, listOf()))

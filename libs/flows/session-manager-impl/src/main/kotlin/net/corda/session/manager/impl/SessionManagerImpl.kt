@@ -1,5 +1,6 @@
 package net.corda.session.manager.impl
 
+import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
@@ -11,7 +12,6 @@ import net.corda.schema.configuration.FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDO
 import net.corda.schema.configuration.FlowConfig.SESSION_MESSAGE_RESEND_WINDOW
 import net.corda.session.manager.SessionManager
 import net.corda.session.manager.impl.factory.SessionEventProcessorFactory
-import net.corda.session.manager.impl.processor.helper.generateAck
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import org.osgi.service.component.annotations.Component
 import java.time.Instant
@@ -77,6 +77,7 @@ class SessionManagerImpl : SessionManager {
         handleHeartbeat(sessionState, config, instant, messagesToReturn)
 
         if (messagesToReturn.isNotEmpty()) {
+            sessionState.sendAck = false
             sessionState.lastSentMessageTime = instant
         }
 
@@ -85,7 +86,8 @@ class SessionManagerImpl : SessionManager {
 
     /**
      * If no heartbeat received from counterparty after session timeout has been reached, error the session
-     * If no messages to send, and current time has surpassed the heartbeat window (message resend window), send a new heartbeat.
+     * If no messages to send, and current time has surpassed the heartbeat window (message resend window), send a new ack.
+     * If no messages to send, and there are messages received to be acked, send an ack.
      * @param sessionState to update
      * @param config contains message resend window and heartbeat timeout values
      * @param instant for timestamps of new messages
@@ -114,7 +116,7 @@ class SessionManagerImpl : SessionManager {
                     instant
                 )
             )
-        } else if (messagesToReturn.isEmpty() && instant > scheduledHeartbeatTimestamp) {
+        } else if (messagesToReturn.isEmpty() && (instant > scheduledHeartbeatTimestamp || sessionState.sendAck)) {
             messagesToReturn.add(generateAck(sessionState, instant))
         }
     }
@@ -176,7 +178,8 @@ class SessionManagerImpl : SessionManager {
 
     /**
      * Remove any messages from the send events state that have been acknowledged by the counterparty.
-     * Examine the [sessionEvent] to get the highest contiguous sequence number received by the other side as well as any out of order messages
+     * Examine the [sessionEvent] to get the highest contiguous sequence number received by the other side
+     * as well as any out of order messages
      * they have also received. Remove these events if present from the sendEvents undelivered messages.
      * If the current session state has a status of WAIT_FOR_FINAL_ACK and the ack info contains the sequence number of the session close
      * message then the session can be set to CLOSED.
@@ -205,5 +208,25 @@ class SessionManagerImpl : SessionManager {
                 sessionState.status = SessionStateType.CONFIRMED
             }
         }
+    }
+
+    /**
+     * Generate an SessionAck containing the latest info regarding messages received.
+     * @param sessionState to examine which messages have been received
+     * @param instant to set timestamp on SessionAck
+     * @return A SessionAck SessionEvent with ack fields set on the SessionEvent based on messages received from a counterparty
+     */
+    private fun generateAck(sessionState: SessionState, instant: Instant) : SessionEvent {
+        val receivedEventsState = sessionState.receivedEventsState
+        val outOfOrderSeqNums = receivedEventsState.undeliveredMessages.map { it.sequenceNum }
+        return SessionEvent.newBuilder()
+            .setMessageDirection(MessageDirection.OUTBOUND)
+            .setTimestamp(instant)
+            .setSequenceNum(null)
+            .setSessionId(sessionState.sessionId)
+            .setReceivedSequenceNum(receivedEventsState.lastProcessedSequenceNum)
+            .setOutOfOrderSequenceNums(outOfOrderSeqNums)
+            .setPayload(SessionAck())
+            .build()
     }
 }

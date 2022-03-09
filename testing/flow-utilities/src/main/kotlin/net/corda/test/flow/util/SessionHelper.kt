@@ -24,6 +24,7 @@ fun buildSessionState(
         .setLastSentMessageTime(sessionStartTime)
         .setCounterpartyIdentity(HoldingIdentity("Alice", "group1"))
         .setIsInitiator(true)
+        .setSendAck(false)
         .setReceivedEventsState(SessionProcessState(lastReceivedSeqNum, receivedEvents))
         .setSendEventsState(SessionProcessState(lastSentSeqNum, eventsToSend))
         .setStatus(status)

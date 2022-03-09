@@ -6,7 +6,6 @@ import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.impl.SessionEventProcessor
-import net.corda.session.manager.impl.processor.helper.addAckToSendEvents
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -48,7 +47,7 @@ class SessionInitProcessorReceive(
             } else {
                 logger.debug { "Received duplicate SessionInit on key $key for session which was not null: $sessionState" }
                 sessionState.apply {
-                    sendEventsState.undeliveredMessages = addAckToSendEvents(sessionState, instant)
+                    sendAck = true
                 }
             }
         } else {
@@ -61,6 +60,7 @@ class SessionInitProcessorReceive(
                 .setLastReceivedMessageTime(instant)
                 .setLastSentMessageTime(instant)
                 .setIsInitiator(false)
+                .setSendAck(true)
                 .setCounterpartyIdentity(sessionInit.initiatingIdentity)
                 .setReceivedEventsState(SessionProcessState(seqNum, mutableListOf(sessionEvent)))
                 .setSendEventsState(SessionProcessState(0, mutableListOf()))
@@ -68,9 +68,7 @@ class SessionInitProcessorReceive(
                 .build()
 
             logger.debug { "Created new session with id $sessionId for SessionInit received on key $key. sessionState $newSessionState" }
-            newSessionState.apply {
-                sendEventsState.undeliveredMessages = addAckToSendEvents(newSessionState, instant)
-            }
+            return newSessionState
         }
     }
 }

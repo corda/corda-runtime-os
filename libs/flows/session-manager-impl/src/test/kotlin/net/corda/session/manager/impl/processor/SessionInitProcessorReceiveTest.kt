@@ -2,7 +2,6 @@ package net.corda.session.manager.impl.processor
 
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.MessageDirection
-import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionStateType
@@ -35,8 +34,8 @@ class SessionInitProcessorReceiveTest {
         val sessionState = sessionInitProcessor.execute()
 
         assertThat(sessionState).isNotNull
-        assertThat(sessionState.sendEventsState.undeliveredMessages.size).isEqualTo(1)
-        assertThat(sessionState.sendEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionAck::class.java)
+        assertThat(sessionState.sendEventsState.undeliveredMessages).isEmpty()
+        assertThat(sessionState.sendAck).isTrue
     }
 
     @Test
@@ -86,9 +85,7 @@ class SessionInitProcessorReceiveTest {
         assertThat(receivedEvents.undeliveredMessages.size).isEqualTo(1)
         assertThat(receivedEvents.undeliveredMessages.first()).isEqualTo(sessionInitEvent)
 
-        val messagesToSend = sessionState.sendEventsState.undeliveredMessages
-        assertThat(messagesToSend.size).isEqualTo(1)
-        val sessionAck = messagesToSend.first().payload!!
-        assertThat(sessionAck::class.java).isEqualTo(SessionAck::class.java)
+        assertThat(sessionState.sendEventsState.undeliveredMessages).isEmpty()
+        assertThat(sessionState.sendAck).isTrue
     }
 }
