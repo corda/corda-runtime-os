@@ -10,8 +10,8 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
-import net.corda.p2p.test.HostingIdentityEntry
-import net.corda.schema.TestSchema.Companion.HOSTING_MAP_TOPIC
+import net.corda.p2p.test.HostedIdentityEntry
+import net.corda.schema.TestSchema.Companion.HOSTED_MAP_TOPIC
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
@@ -31,7 +31,7 @@ class StubLinkManagerHostingMap(
     private val subscription = subscriptionFactory.createCompactedSubscription(
         SubscriptionConfig(
             GROUP_NAME,
-            HOSTING_MAP_TOPIC,
+            HOSTED_MAP_TOPIC,
             instanceId
         ),
         Processor(),
@@ -70,10 +70,10 @@ class StubLinkManagerHostingMap(
         listeners.add(listener)
     }
 
-    private inner class Processor : CompactedProcessor<String, HostingIdentityEntry> {
+    private inner class Processor : CompactedProcessor<String, HostedIdentityEntry> {
         override val keyClass = String::class.java
-        override val valueClass = HostingIdentityEntry::class.java
-        override fun onSnapshot(currentData: Map<String, HostingIdentityEntry>) {
+        override val valueClass = HostedIdentityEntry::class.java
+        override fun onSnapshot(currentData: Map<String, HostedIdentityEntry>) {
             locallyHostedIdentityToTenantId.clear()
             currentData.values.forEach {
                 addEntry(it)
@@ -82,9 +82,9 @@ class StubLinkManagerHostingMap(
         }
 
         override fun onNext(
-            newRecord: Record<String, HostingIdentityEntry>,
-            oldValue: HostingIdentityEntry?,
-            currentData: Map<String, HostingIdentityEntry>,
+            newRecord: Record<String, HostedIdentityEntry>,
+            oldValue: HostedIdentityEntry?,
+            currentData: Map<String, HostedIdentityEntry>,
         ) {
             if (oldValue != null) {
                 locallyHostedIdentityToTenantId.remove(oldValue.holdingIdentity.toHoldingIdentity())
@@ -96,7 +96,7 @@ class StubLinkManagerHostingMap(
         }
     }
 
-    private fun addEntry(entry: HostingIdentityEntry) {
+    private fun addEntry(entry: HostedIdentityEntry) {
         locallyHostedIdentityToTenantId[entry.holdingIdentity.toHoldingIdentity()] = entry.identityTenantId
         val info = HostingMapListener.IdentityInfo(
             holdingIdentity = entry.holdingIdentity,

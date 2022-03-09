@@ -10,10 +10,10 @@ import net.corda.messaging.api.records.Record
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.p2p.NetworkType
-import net.corda.p2p.test.HostingIdentityEntry
+import net.corda.p2p.test.HostedIdentityEntry
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.NetworkMapEntry
-import net.corda.schema.TestSchema.Companion.HOSTING_MAP_TOPIC
+import net.corda.schema.TestSchema.Companion.HOSTED_MAP_TOPIC
 import net.corda.schema.TestSchema.Companion.NETWORK_MAP_TOPIC
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
@@ -91,7 +91,7 @@ class NetworkMapCreator @Activate constructor(
                 "Topic to write the records to."
             ]
         )
-        var topic: String = HOSTING_MAP_TOPIC
+        var topic: String = HOSTED_MAP_TOPIC
 
         @Option(names = ["--hosting-map-file"], description = ["File containing hosting map data used to populate Kafka."])
         lateinit var hostingMapFile: File
@@ -110,7 +110,7 @@ class NetworkMapCreator @Activate constructor(
                 }
                 Record(
                     topic, "$x500Name-$groupId",
-                    HostingIdentityEntry(
+                    HostedIdentityEntry(
                         HoldingIdentity(x500Name, groupId),
                         tlsTenantId,
                         identityTenantId,
@@ -235,7 +235,7 @@ class NetworkMapCreator @Activate constructor(
         }
     }
 
-    private class MappingException(msg: String): Exception(msg)
+    private class MappingException(msg: String) : Exception(msg)
 
     override fun shutdown() {
         shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
