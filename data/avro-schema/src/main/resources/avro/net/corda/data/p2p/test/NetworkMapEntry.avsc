@@ -24,6 +24,14 @@
       "type": "net.corda.p2p.NetworkType"
     },
     {
+      "doc": "The group protocol modes",
+      "name": "protocolModes",
+      "type": {
+        "type": "array",
+        "items": "net.corda.p2p.crypto.ProtocolMode"
+      }
+    },
+    {
       "doc": "The root trusted certificates of the group (in PEM format)",
       "name": "trustedCertificates",
       "type": {
