@@ -187,7 +187,7 @@ class ConfigureAll : Runnable {
         }
     }
 
-    private fun publishMyselfToMyself() {
+    private fun publishLocallyHostedIdentities() {
         val configurationFile = File.createTempFile("hosting-map.", ".conf").also {
             it.deleteOnExit()
         }
@@ -264,7 +264,6 @@ class ConfigureAll : Runnable {
     private fun publishNetworkMap() {
         publishMySelfToOthers()
         publishOthersToMySelf()
-        publishMyselfToMyself()
     }
 
     private fun publishKeys() {
@@ -326,6 +325,7 @@ class ConfigureAll : Runnable {
 
     override fun run() {
         RunJar.startTelepresence()
+        publishLocallyHostedIdentities()
         publishNetworkMap()
         publishKeys()
         configureLinkManager()
