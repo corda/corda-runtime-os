@@ -45,6 +45,9 @@
         <addPrimaryKey tableName="cpi" columnNames="name, version, signer_summary_hash" constraintName="cpi_pk"
                        schemaName="${schema.name}"/>
 
+        <addUniqueConstraint tableName="cpi" columnNames="file_checksum" constraintName="db_cpi_uc1"
+                             schemaName="${schema.name}"/>
+
         <createTable tableName="cpk" schemaName="${schema.name}">
             <column name="file_checksum" type="VARCHAR(255)">
                 <constraints nullable="false"/>

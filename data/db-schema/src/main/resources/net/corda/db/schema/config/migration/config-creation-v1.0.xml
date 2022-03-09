@@ -155,11 +155,16 @@
             <column name="cpi_version" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
-            <column name="cpi_signer_summary_hash" type="VARCHAR(64)">
+            <column name="cpi_signer_summary_hash" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
         </createTable>
         <addPrimaryKey columnNames="holding_identity_id, cpi_name, cpi_version, cpi_signer_summary_hash"
                        constraintName="vnode_instance_pk" tableName="vnode_instance" schemaName="${schema.name}"/>
+        <addForeignKeyConstraint baseTableName="vnode_instance" baseColumnNames="cpi_name, cpi_version, cpi_signer_summary_hash"
+                                 referencedTableName="cpi" referencedColumnNames="name, version, signer_summary_hash"
+                                 constraintName="FK_vnode_instance_cpi"
+                                 baseTableSchemaName="${schema.name}"
+                                 referencedTableSchemaName="${schema.name}"/>
     </changeSet>
 </databaseChangeLog>

@@ -8,9 +8,9 @@
       "type": "string"
     },
     {
-      "name": "cpiIdHash",
+      "name": "cpiFileChecksum",
       "type": "string",
-      "doc": "The short 12-character hash of the CPI."
+      "doc": "The checksum of the CPI file."
     },
     {
       "name": "vaultDdlConnection",
