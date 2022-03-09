@@ -81,7 +81,7 @@ class NetworkMapCreator @Activate constructor(
     @Command(
         name = "locally-hosted-map",
         showDefaultValues = true,
-        description = ["Publish locally hosted entries"],
+        description = ["Publish locally hosted identities"],
         mixinStandardHelpOptions = true,
     )
     private inner class HostingMap : PublisherToTopic() {
