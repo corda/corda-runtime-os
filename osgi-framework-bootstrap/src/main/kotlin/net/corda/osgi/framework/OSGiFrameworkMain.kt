@@ -114,6 +114,8 @@ class OSGiFrameworkMain {
             SLF4JBridgeHandler.removeHandlersForRootLogger()
             SLF4JBridgeHandler.install()
 
+            var hadError = false
+
             val logger = LoggerFactory.getLogger(OSGiFrameworkMain::class.java)
             try {
                 val frameworkStorageDir = Files.createTempDirectory(FRAMEWORK_STORAGE_PREFIX)
@@ -141,7 +143,7 @@ class OSGiFrameworkMain {
                         .waitForStop(NO_TIMEOUT)
                 } catch (e: Exception) {
                     logger.error("Error: ${e.message}!", e)
-                    exitProcess(-1)
+                    hadError = true
                 } finally {
                     // If osgiFrameworkWrap stopped because SIGINT/CTRL+C,
                     // this avoids to call stop twice and log warning.
@@ -151,12 +153,16 @@ class OSGiFrameworkMain {
                 }
             } catch (e: IllegalArgumentException) {
                 logger.error("Error: ${e.message}!", e)
-                exitProcess(-1)
+                hadError = true
             } catch (e: UnsupportedOperationException) {
                 logger.error("Error: ${e.message}!", e)
-                exitProcess(-1)
+                hadError = true
             } catch (e: SecurityException) {
                 logger.error("Error: ${e.message}!", e)
+                hadError = true
+            }
+
+            if (hadError) {
                 exitProcess(-1)
             }
         }
