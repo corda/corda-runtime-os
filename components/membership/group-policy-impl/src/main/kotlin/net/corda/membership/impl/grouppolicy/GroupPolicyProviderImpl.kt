@@ -13,7 +13,6 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.membership.GroupPolicy
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.grouppolicy.factory.GroupPolicyParser
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
@@ -50,17 +49,18 @@ class GroupPolicyProviderImpl @Activate constructor(
 
     override fun getGroupPolicy(
         holdingIdentity: HoldingIdentity
-    ): GroupPolicy {
-        if (isRunning && isUp) {
-            return groupPolicies.computeIfAbsent(holdingIdentity) { parseGroupPolicy(holdingIdentity) }
+    ): GroupPolicy? {
+        return if (isRunning && isUp) {
+            groupPolicies[holdingIdentity] ?: parseGroupPolicy(holdingIdentity)?.also {
+                groupPolicies[holdingIdentity] = it
+            }
         } else {
             logger.error(
                 "Service is in incorrect state for accessing group policies. " +
-                        "Running: [$isRunning], Lifecycle status: [${coordinator.status}]"
+                        "Running: [$isRunning], Lifecycle status: [${coordinator.status}]. " +
+                        "Returning null."
             )
-            throw CordaRuntimeException(
-                "Tried to access group policy information while the provider service is not running or is not UP."
-            )
+            null
         }
     }
 
@@ -90,10 +90,15 @@ class GroupPolicyProviderImpl @Activate constructor(
     private fun parseGroupPolicy(
         holdingIdentity: HoldingIdentity,
         virtualNodeInfo: VirtualNodeInfo? = null,
-    ): GroupPolicy {
+    ): GroupPolicy? {
         val vNodeInfo = virtualNodeInfo ?: virtualNodeInfoReadService.get(holdingIdentity)
         val metadata = vNodeInfo?.cpiIdentifier?.let { cpiInfoReader.get(it) }
-        return groupPolicyParser.parse(metadata?.groupPolicy)
+        return try {
+            groupPolicyParser.parse(metadata?.groupPolicy)
+        } catch (ex : Exception) {
+            logger.error("Could not parse group policy file for holding identity with ID: ${holdingIdentity.id}")
+            null
+        }
     }
 
     /**
@@ -167,10 +172,11 @@ class GroupPolicyProviderImpl @Activate constructor(
     private fun startVirtualNodeHandle() {
         virtualNodeInfoCallbackHandle?.close()
         virtualNodeInfoCallbackHandle = virtualNodeInfoReadService.registerCallback { changed, snapshot ->
-            if (isRunning && isUp) {
+            if (isRunning) {
+                logger.info("Processing new snapshot after change in virtual node information.")
                 changed.filter { snapshot[it] != null }.forEach {
                     parseGroupPolicy(it, virtualNodeInfo = snapshot[it])
-                        .apply { groupPolicies[it] = this }
+                        ?.apply { groupPolicies[it] = this }
                 }
             }
         }

@@ -17,5 +17,5 @@ interface RegistrationProvider : Lifecycle {
      *
      * @return An instance of [MemberRegistrationService] for the given tenant.
      */
-    fun get(holdingIdentity: HoldingIdentity): MemberRegistrationService
+    fun get(holdingIdentity: HoldingIdentity): MemberRegistrationService?
 }

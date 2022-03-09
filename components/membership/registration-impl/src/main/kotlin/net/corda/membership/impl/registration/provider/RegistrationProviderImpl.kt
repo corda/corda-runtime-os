@@ -60,11 +60,11 @@ class RegistrationProviderImpl @Activate constructor(
         coordinator.stop()
     }
 
-    override fun get(holdingIdentity: HoldingIdentity): MemberRegistrationService {
+    override fun get(holdingIdentity: HoldingIdentity): MemberRegistrationService? {
         serviceIsAvailable()
-        return getRegistrationService(
-            groupPolicyProvider.getGroupPolicy(holdingIdentity).registrationProtocol
-        )
+        return groupPolicyProvider.getGroupPolicy(holdingIdentity)?.let {
+            getRegistrationService(it.registrationProtocol)
+        }
     }
 
     private fun getRegistrationService(protocol: String): MemberRegistrationService {

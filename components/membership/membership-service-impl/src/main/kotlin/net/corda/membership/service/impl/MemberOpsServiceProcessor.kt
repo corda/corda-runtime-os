@@ -102,10 +102,13 @@ class MemberOpsServiceProcessor(
         override fun handle(context: MembershipRpcRequestContext, request: RegistrationRequest): Any {
             val holdingIdentity = virtualNodeInfoReadService.getById(request.holdingIdentityId)?.holdingIdentity
                 ?: throw MembershipRegistrationException("Could not find holding identity associated with ${request.holdingIdentityId}")
-            val result = registrationProvider.get(holdingIdentity).register(holdingIdentity)
+            val result = registrationProvider.get(holdingIdentity)?.register(holdingIdentity)
+            val registrationStatus = result?.outcome?.let {
+                RegistrationStatus.valueOf(it.toString())
+            } ?: RegistrationStatus.NOT_SUBMITTED
             return RegistrationResponse(
                 context.requestTimestamp,
-                RegistrationStatus.valueOf(result.outcome.toString()),
+                registrationStatus,
                 REGISTRATION_PROTOCOL_VERSION,
                 KeyValuePairList(emptyList()),
                 KeyValuePairList(emptyList())

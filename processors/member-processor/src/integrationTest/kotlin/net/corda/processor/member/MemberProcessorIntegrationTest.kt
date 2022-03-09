@@ -167,6 +167,7 @@ class MemberProcessorIntegrationTest {
     fun `Group policy cannot be retrieved if CPI info reader dependency component goes down`() {
         val groupPolicy1 = getGroupPolicy(groupPolicyProvider)
         cpiInfoReader.stopAndWait()
+        groupPolicyProvider.getGroupPolicy(aliceHoldingIdentity)
         getGroupPolicyFails(groupPolicyProvider)
 
         cpiInfoReader.startAndWait()
@@ -198,8 +199,8 @@ class MemberProcessorIntegrationTest {
      */
     fun `Register and view static member list`() {
         val registrationService = registrationProvider.get(aliceHoldingIdentity)
-        val result = registrationService.register(aliceHoldingIdentity)
-        assertEquals(MembershipRequestRegistrationOutcome.SUBMITTED, result.outcome)
+        val result = registrationService?.register(aliceHoldingIdentity)
+        assertEquals(MembershipRequestRegistrationOutcome.SUBMITTED, result?.outcome)
 
         val groupReader = membershipGroupReaderProvider.getGroupReader(aliceHoldingIdentity)
         assertEquals(aliceX500Name, groupReader.owningMember)
@@ -247,8 +248,8 @@ class MemberProcessorIntegrationTest {
         groupPolicyProvider.stopAndWait()
 
         val registrationOutcome = registrationService
-            .register(aliceHoldingIdentity)
-            .outcome
+            ?.register(aliceHoldingIdentity)
+            ?.outcome
 
         assertEquals(MembershipRequestRegistrationOutcome.NOT_SUBMITTED, registrationOutcome)
 

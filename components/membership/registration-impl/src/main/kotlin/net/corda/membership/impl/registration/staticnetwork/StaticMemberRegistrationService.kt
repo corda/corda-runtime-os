@@ -139,6 +139,10 @@ class StaticMemberRegistrationService @Activate constructor(
         val members = mutableListOf<Record<String, PersistentMemberInfo>>()
 
         val policy = groupPolicyProvider.getGroupPolicy(member)
+        if (policy == null) {
+            logger.error("Creating empty member list since group policy file could not be found for holding identity.")
+            return emptyList()
+        }
         val groupId = policy.groupId
 
         val staticMemberList = policy.staticMembers

@@ -13,7 +13,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
@@ -23,9 +22,9 @@ import net.corda.virtualnode.toAvro
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.assertDoesNotThrow
-import org.junit.jupiter.api.assertThrows
 import java.util.UUID
 
 class MemberProcessorTestUtils {
@@ -106,31 +105,34 @@ class MemberProcessorTestUtils {
             groupPolicyProvider: GroupPolicyProvider,
             holdingIdentity: HoldingIdentity = aliceHoldingIdentity
         ) = eventually {
-            assertThrows<CordaRuntimeException> {
-                groupPolicyProvider.getGroupPolicy(holdingIdentity)
-            }
+            val policy = groupPolicyProvider.getGroupPolicy(holdingIdentity)
+            assertNull(policy)
+            policy
         }
 
         fun getGroupPolicy(
             groupPolicyProvider: GroupPolicyProvider,
             holdingIdentity: HoldingIdentity = aliceHoldingIdentity
         ) = eventually {
-            assertDoesNotThrow {
-                groupPolicyProvider.getGroupPolicy(holdingIdentity)
-            }
+            val policy = groupPolicyProvider.getGroupPolicy(holdingIdentity)
+            assertNotNull(policy)
+            policy
         }
 
-        fun assertGroupPolicy(new: GroupPolicy, old: GroupPolicy? = null) {
+        fun assertGroupPolicy(new: GroupPolicy?, old: GroupPolicy? = null) {
+            assertNotNull(new)
             old?.let {
                 assertNotEquals(new, it)
             }
-            assertEquals(groupId, new.groupId)
+            assertEquals(groupId, new!!.groupId)
             assertEquals(5, new.keys.size)
         }
 
-        fun assertSecondGroupPolicy(new: GroupPolicy, old: GroupPolicy) {
+        fun assertSecondGroupPolicy(new: GroupPolicy?, old: GroupPolicy?) {
+            assertNotNull(new)
+            assertNotNull(old)
             assertNotEquals(new, old)
-            assertEquals("DEF456", new.groupId)
+            assertEquals("DEF456", new!!.groupId)
             assertEquals(2, new.size)
         }
 

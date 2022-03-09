@@ -11,7 +11,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.GroupPolicy
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -25,7 +24,6 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -71,7 +69,7 @@ class GroupPolicyProviderImplTest {
     val cpiMetadata3 = mockMetadata(groupPolicy3)
     val cpiMetadata4 = mockMetadata(groupPolicy4)
 
-    val cpiIdentifier1: CpiIdentifier= mock()
+    val cpiIdentifier1: CpiIdentifier = mock()
     val cpiIdentifier2: CpiIdentifier = mock()
     val cpiIdentifier3: CpiIdentifier = mock()
     val cpiIdentifier4: CpiIdentifier = mock()
@@ -143,12 +141,13 @@ class GroupPolicyProviderImplTest {
     }
 
     fun assertExpectedGroupPolicy(
-        groupPolicy: GroupPolicy,
+        groupPolicy: GroupPolicy?,
         groupId: String?,
         testAttr: String?,
         expectedSize: Int = 2
     ) {
-        assertEquals(expectedSize, groupPolicy.size)
+        assertNotNull(groupPolicy)
+        assertEquals(expectedSize, groupPolicy!!.size)
         assertEquals(groupId, groupPolicy[groupIdKey])
         assertEquals(testAttr, groupPolicy[testAttrKey])
     }
@@ -171,22 +170,18 @@ class GroupPolicyProviderImplTest {
             groupId2,
             testAttr3
         )
-        assertThrows<CordaRuntimeException> { groupPolicyProvider.getGroupPolicy(holdingIdentity4) }
+        assertNull(groupPolicyProvider.getGroupPolicy(holdingIdentity4))
     }
 
     @Test
     fun `Group policy read fails if service hasn't started`() {
-        assertThrows<CordaRuntimeException> {
-            groupPolicyProvider.getGroupPolicy(holdingIdentity1)
-        }
+        assertNull(groupPolicyProvider.getGroupPolicy(holdingIdentity1))
     }
 
     @Test
     fun `Group policy read fails if service isn't up`() {
         groupPolicyProvider.start()
-        assertThrows<CordaRuntimeException> {
-            groupPolicyProvider.getGroupPolicy(holdingIdentity1)
-        }
+        assertNull(groupPolicyProvider.getGroupPolicy(holdingIdentity1))
     }
 
     @Test
@@ -262,9 +257,7 @@ class GroupPolicyProviderImplTest {
 
         registrationChange(LifecycleStatus.DOWN)
 
-        assertThrows<CordaRuntimeException> {
-            groupPolicyProvider.getGroupPolicy(holdingIdentity1)
-        }
+        assertNull(groupPolicyProvider.getGroupPolicy(holdingIdentity1))
     }
 
     @Test
