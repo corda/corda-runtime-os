@@ -24,6 +24,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
+import net.corda.p2p.markers.TtlExpiredMarker
 import net.corda.p2p.schema.Schema
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -104,15 +105,22 @@ class DeliveryTracker(
 
         override val dominoTile = publisher.dominoTile
 
+        //TODO check if timestamp is >= Instant.now -> discard and not add to delivery tracker. also when reply check again and discard.
+
         fun replayMessage(message: AuthenticatedMessageAndKey) {
             dominoTile.withLifecycleLock {
                 if (!isRunning) {
                     throw IllegalStateException("A message was added for replay before the DeliveryTracker was started.")
                 }
 
-                val records = processAuthenticatedMessage(message)
-                logger.debug { "Replaying data message ${message.message.header.messageId}." }
-                publisher.publish(records)
+                if(message.message.header.ttl == null) {
+                    logger.error("Message ttl has expired. The message was discarded. ${message.message.header.messageId}.")
+                } else {
+                    val records = processAuthenticatedMessage(message)
+                    logger.debug { "Replaying data message ${message.message.header.messageId}." }
+                    publisher.publish(records)
+                }
+
             }
         }
     }
@@ -138,6 +146,7 @@ class DeliveryTracker(
                 return when (markerType) {
                     is LinkManagerSentMarker -> Response(AuthenticatedMessageDeliveryState(markerType.message, timestamp), emptyList())
                     is LinkManagerReceivedMarker -> Response(null, emptyList())
+                    is TtlExpiredMarker -> Response(null, emptyList())
                     else -> respond(state)
                 }
             }

@@ -42,10 +42,10 @@ import net.corda.p2p.gateway.Gateway
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
 import net.corda.p2p.gateway.messaging.SslConfiguration
-import net.corda.p2p.linkmanager.ConfigBasedLinkManagerHostingMap
-import net.corda.p2p.linkmanager.LinkManager
-import net.corda.p2p.linkmanager.StubCryptoService
-import net.corda.p2p.linkmanager.StubNetworkMap
+import net.corda.p2p.linkmanager.*
+import net.corda.p2p.markers.AppMessageMarker
+import net.corda.p2p.markers.LinkManagerSentMarker
+import net.corda.p2p.markers.TtlExpiredMarker
 import net.corda.p2p.schema.Schema
 import net.corda.p2p.schema.TestSchema
 import net.corda.p2p.test.KeyAlgorithm
@@ -56,6 +56,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
 import net.corda.v5.base.util.toBase64
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -145,6 +146,78 @@ class P2PLayerEndToEndTest {
             (1..10).forEach { messageNo ->
                 assertTrue(hostAReceivedMessages.contains("pong ($messageNo)"), "No reply received for message $messageNo")
             }
+        }
+
+        hostAApplicationReader.stop()
+        hostBApplicationReaderWriter.stop()
+
+        hostALinkManager.close()
+        hostAGateway.close()
+        hostBLinkManager.close()
+        hostBGateway.close()
+    }
+
+    @Test
+    @Timeout(60)
+    fun `DRAFT two hosts can exchange data messages over the p2p layer successfully`() {
+        val hostALinkManager = createLinkManager(hostA.subscriptionFactory, hostA.publisherFactory, hostA.lifecycleCoordinatorFactory, hostA.configReadService)
+        val hostAGateway = Gateway(hostA.configReadService, hostA.subscriptionFactory, hostA.publisherFactory, hostA.lifecycleCoordinatorFactory, SmartConfigImpl.empty(), 1)
+        val hostBLinkManager = createLinkManager(hostB.subscriptionFactory, hostB.publisherFactory, hostB.lifecycleCoordinatorFactory, hostB.configReadService)
+        val hostBGateway = Gateway(hostB.configReadService, hostB.subscriptionFactory, hostB.publisherFactory, hostB.lifecycleCoordinatorFactory, SmartConfigImpl.empty(), 1)
+
+        hostALinkManager.start()
+        hostAGateway.start()
+        hostBLinkManager.start()
+        hostBGateway.start()
+
+        publishConfig()
+        publishNetworkMapAndKeys()
+
+        eventually(30.seconds) {
+            assertThat(hostALinkManager.isRunning).isTrue
+            assertThat(hostAGateway.isRunning).isTrue
+            assertThat(hostBLinkManager.isRunning).isTrue
+            assertThat(hostBGateway.isRunning).isTrue
+        }
+
+        val hostAReceivedMessages = ConcurrentHashMap.newKeySet<String>()
+        val hostAApplicationReader = hostA.subscriptionFactory.createDurableSubscription(
+            SubscriptionConfig("app-layer", Schema.P2P_IN_TOPIC, 1), InitiatorProcessor(hostAReceivedMessages),
+            bootstrapConfig,
+            null
+        )
+        val hostBApplicationReaderWriter = hostB.subscriptionFactory.createDurableSubscription(
+            SubscriptionConfig("app-layer", Schema.P2P_IN_TOPIC, 1), ResponderProcessor(),
+            bootstrapConfig,
+            null
+        )
+        val hostAExpiryMarkers =  mutableListOf<Record<*, *>>()
+        val subForP2POutMarkers = hostA.subscriptionFactory.createDurableSubscription(
+            SubscriptionConfig("app-layer", Schema.P2P_OUT_MARKERS, 1), MarkerStorageProcessor(hostAExpiryMarkers),
+            bootstrapConfig,
+            null
+        )
+        hostAApplicationReader.start()
+        hostBApplicationReaderWriter.start()
+        subForP2POutMarkers.start()
+
+        val hostAApplicationWriter = hostA.publisherFactory.createPublisher(PublisherConfig("app-layer", 1), bootstrapConfig)
+        val initialMessages = (1..2).map {
+            val id = "1"
+            val messageHeader = AuthenticatedMessageHeader(HoldingIdentity(hostB.x500Name, GROUP_ID), HoldingIdentity(hostA.x500Name, GROUP_ID), TTL, id, id, SUBSYSTEM)
+            val message = AuthenticatedMessage(messageHeader, ByteBuffer.wrap("msg)".toByteArray()))
+            Record(Schema.P2P_OUT_TOPIC, id, AppMessage(message))
+        }
+        hostAApplicationWriter.use {
+            hostAApplicationWriter.start()
+            val futures = hostAApplicationWriter.publish(initialMessages)
+            futures.forEach { it.get() }
+        }
+        eventually(10.seconds) {
+            assertThat(hostAExpiryMarkers).filteredOn { it.topic == Schema.P2P_OUT_MARKERS }.hasSize(2)
+                .allSatisfy { assertThat(it.key).isEqualTo("1") }
+                .extracting<AppMessageMarker> { it.value as AppMessageMarker }
+                .allSatisfy { assertThat(it.marker).isInstanceOf(TtlExpiredMarker::class.java) }
         }
 
         hostAApplicationReader.stop()
@@ -254,6 +327,20 @@ class P2PLayerEndToEndTest {
             }
         }
 
+    }
+
+    private class MarkerStorageProcessor (val expiryMarkers: MutableList<Record<*, *>>): DurableProcessor<String, AppMessageMarker> {
+        override val keyClass: Class<String>
+            get() = String::class.java
+        override val valueClass: Class<AppMessageMarker>
+            get() = AppMessageMarker::class.java
+
+        override fun onNext(events: List<Record<String, AppMessageMarker>>): List<Record<*, *>> {
+            events.forEach {
+                expiryMarkers.add(it)
+            }
+            return emptyList()
+        }
     }
 
     private class Host(val p2pAddress: String, val p2pPort: Int, val x500Name: String, keyStoreFileName: String, trustStoreFileName: String) {
