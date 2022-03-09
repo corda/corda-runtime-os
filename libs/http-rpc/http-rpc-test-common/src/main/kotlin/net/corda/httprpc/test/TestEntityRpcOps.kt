@@ -8,7 +8,7 @@ import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 
-@HttpRpcResource(name = "TestEntityRpcOps", description = "RESTful operations on Test Entity", path = "testEntity/")
+@HttpRpcResource(name = "TestEntity", description = "RESTful operations on Test Entity", path = "testEntity/")
 interface TestEntityRpcOps : RpcOps {
 
     data class CreationParams(val name: String, val amount: Int)
