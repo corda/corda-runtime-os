@@ -71,6 +71,7 @@ class SessionCloseProcessorReceive(
     ) = when (sessionState.status) {
         SessionStateType.CONFIRMED, SessionStateType.CREATED -> {
             sessionState.apply {
+                logger.debug { "Updating session state to ${SessionStateType.CLOSING} for session state $sessionState" }
                 status = SessionStateType.CLOSING
                 sendEventsState.undeliveredMessages =
                     sendEventsState.undeliveredMessages.plus(generateAckEvent(seqNum, sessionId, instant))

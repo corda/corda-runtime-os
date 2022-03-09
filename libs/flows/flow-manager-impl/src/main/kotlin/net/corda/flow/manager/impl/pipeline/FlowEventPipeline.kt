@@ -33,6 +33,13 @@ interface FlowEventPipeline {
     fun setCheckpointSuspendedOn(): FlowEventPipeline
 
     /**
+     * Sets the pipeline's [Checkpoint]'s [StateMachineState.waitingFor] property.
+     *
+     * @return The updated pipeline instance.
+     */
+    fun setWaitingFor(): FlowEventPipeline
+
+    /**
      * Performs [FlowIORequest] post-processing on the pipeline.
      *
      * @return The updated pipeline instance.
@@ -40,11 +47,11 @@ interface FlowEventPipeline {
     fun requestPostProcessing(): FlowEventPipeline
 
     /**
-     * Performs flow event post-processing on the pipeline.
+     * Performs flow event and request independent post-processing on the pipeline.
      *
      * @return The updated pipeline instance.
      */
-    fun eventPostProcessing(): FlowEventPipeline
+    fun globalPostProcessing(): FlowEventPipeline
 
     /**
      * Extracts the pipelines [Checkpoint] and output events and returns them.

@@ -1,6 +1,7 @@
 package net.corda.flow.manager.impl.handlers.requests
 
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.data.flow.state.waiting.Wakeup
 import net.corda.flow.manager.factory.FlowMessageFactory
 import net.corda.flow.manager.fiber.FlowIORequest
@@ -19,12 +20,15 @@ class InitialCheckpointRequestHandler @Activate constructor(
 
     override val type = FlowIORequest.InitialCheckpoint::class.java
 
+    override fun getUpdatedWaitingFor(context: FlowEventContext<Any>, request: FlowIORequest.InitialCheckpoint): WaitingFor {
+        return WaitingFor(Wakeup())
+    }
+
     override fun postProcess(
         context: FlowEventContext<Any>,
         request: FlowIORequest.InitialCheckpoint
     ): FlowEventContext<Any> {
         val checkpoint = requireCheckpoint(context)
-        checkpoint.setWaitingFor(Wakeup())
 
         val status = flowMessageFactory.createFlowStartedStatusMessage(checkpoint)
 
