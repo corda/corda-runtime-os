@@ -96,11 +96,11 @@ class FlowSandboxServiceImpl(
 
         val cpiMetadata = cpiInfoReadService.get(vNodeInfo.cpiIdentifier)
         checkNotNull(cpiMetadata) { "Failed to find the CPI meta data for '${vNodeInfo.cpiIdentifier}}'" }
-        check(cpiMetadata.cpks.isNotEmpty()) { "No CPKs defined for CPI Meta data id='${cpiMetadata.id}}'" }
+        check(cpiMetadata.cpksMetadata.isNotEmpty()) { "No CPKs defined for CPI Meta data id='${cpiMetadata.id}}'" }
 
         val vNodeContext = VirtualNodeContext(
             holdingIdentity,
-            cpiMetadata.cpks.mapTo(LinkedHashSet(), CpkMetadata::id),
+            cpiMetadata.cpksMetadata.mapTo(LinkedHashSet(), CpkMetadata::id),
             SandboxGroupType.FLOW,
             SingletonSerializeAsToken::class.java,
             null
@@ -181,7 +181,7 @@ class FlowSandboxServiceImpl(
         // Current implementation has unique serializers per CPI
         val cordappCustomSerializers = buildCorDappSerializers(
             sandboxGroup,
-            serializerClassNames = cpiMetadata.cpks.flatMap { it.cordappManifest.serializers }.toSet()
+            serializerClassNames = cpiMetadata.cpksMetadata.flatMap { it.cordappManifest.serializers }.toSet()
         )
         // Register CorDapp serializers
         for (customSerializer in cordappCustomSerializers) {
@@ -217,8 +217,8 @@ class FlowSandboxServiceImpl(
         val initiatingToInitiatedFlows = mutableMapOf<Pair<String, String>, String>()
 
         // Current implementation is each flow to initiated flow pair is unique per CPI
-        for (cpk in cpiMetadata.cpks) {
-            for (flow in cpk.cordappManifest.flows) {
+        for (cpkMetadata in cpiMetadata.cpksMetadata) {
+            for (flow in cpkMetadata.cordappManifest.flows) {
                 val flowClass = sandboxGroup.loadClassFromMainBundles(flow, Flow::class.java)
                 if (flowClass.isAnnotationPresent(InitiatedBy::class.java)) {
                     val initiatingFlow = flowClass.getAnnotation(InitiatedBy::class.java).value.java.name
