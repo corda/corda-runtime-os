@@ -1,6 +1,7 @@
 package net.corda.p2p.linkmanager
 
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC
 import net.corda.v5.cipher.suite.schemes.RSA_SHA256_SIGNATURE_SPEC
@@ -41,6 +42,11 @@ interface LinkManagerNetworkMap: LifecycleWithDominoTile {
      * Returns the [NetworkType] for group identifier [groupId].
      */
     fun getNetworkType(groupId: String): NetworkType?
+
+    /**
+     * Returns the protocol modes for group identifier [groupId].
+     */
+    fun getProtocolModes(groupId: String): Set<ProtocolMode>?
 
     /**
      * Register a listener to changes in the network map

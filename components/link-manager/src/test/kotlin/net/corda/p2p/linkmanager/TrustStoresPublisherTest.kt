@@ -13,6 +13,7 @@ import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.GatewayTruststore
 import net.corda.p2p.NetworkType
+import net.corda.p2p.crypto.ProtocolMode
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_TRUSTSTORES
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -62,6 +63,7 @@ class TrustStoresPublisherTest {
     private val groupInfo = NetworkMapListener.GroupInfo(
         "groupOne",
         NetworkType.CORDA_5,
+        setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION),
         certificates,
     )
 

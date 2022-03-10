@@ -1,3 +1,5 @@
+@Library('corda-shared-build-pipeline-steps@5.0') _
+
 pipeline {
     agent {
         docker {
@@ -127,6 +129,9 @@ pipeline {
         }
     }
     post {
+        always {
+            splunkLogGenerator()
+        }        
         success {
             // Only delete namespace if we're successful (though it'll get pruned in 3 hours anyway)
             sh 'kubectl delete ns "${NAMESPACE}"'

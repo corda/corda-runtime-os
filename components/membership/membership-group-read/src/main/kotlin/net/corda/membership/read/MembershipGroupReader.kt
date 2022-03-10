@@ -33,13 +33,13 @@ interface MembershipGroupReader {
 
     /**
      * Returns a list of all visible [MemberInfo]s for the member represented by [owningMember]
-     * within the group represented by [groupId].
+     * having active membership status within the group represented by [groupId].
      */
     fun lookup(): Collection<MemberInfo>
 
     /**
      * Looks up a group member matching the public key SHA-256 hash as visible by the member represented
-     * by [owningMember] within the group represented by [groupId].
+     * by [owningMember] having active membership status within the group represented by [groupId].
      *
      * If the member is not found then the null value is returned.
      *
@@ -49,7 +49,7 @@ interface MembershipGroupReader {
 
     /**
      * Looks up a group member matching the [MemberX500Name] as visible by the member represented
-     * by [owningMember] within the group represented by [groupId].
+     * by [owningMember] having active membership status within the group represented by [groupId].
      *
      * If the member is not found then the null value is returned.
      *
