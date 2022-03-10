@@ -10,7 +10,7 @@ import net.corda.data.flow.event.mapper.ExecuteCleanup
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.identity.HoldingIdentity
-import net.corda.flow.session.filter.FlowSessionFilterService
+import net.corda.flow.p2p.filter.FlowP2PFilterService
 import net.corda.flow.p2p.filter.integration.processor.TestFlowSessionFilterProcessor
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
@@ -65,7 +65,7 @@ class FlowFilterServiceIntegrationTest {
     lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
 
     @InjectService(timeout = 4000)
-    lateinit var flowSessionFilterService: FlowSessionFilterService
+    lateinit var flowSessionFilterService: FlowP2PFilterService
 
     @BeforeEach
     fun setup() {
