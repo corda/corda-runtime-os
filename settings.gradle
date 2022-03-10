@@ -322,10 +322,10 @@ include 'testing:cpbs:split-packages:split-packages-one:library-one'
 include 'testing:cpbs:split-packages:split-packages-two'
 include 'testing:cpbs:split-packages:split-packages-two:library-two'
 include 'testing:cpbs:tic-tac-toe'
+include 'testing:flow-utilities'
 include 'testing:layered-property-map-testkit'
 include 'testing:message-patterns'
 include 'testing:sandboxes'
-include 'testing:flow-utilities'
 include 'testing:test-utilities'
 
 // The following logic dictates if we use the composite build gradle functionality,

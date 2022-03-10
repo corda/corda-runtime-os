@@ -137,8 +137,7 @@ class SessionManagerImpl : SessionManager {
     ): List<SessionEvent> {
         //get all events with a timestamp in the past, as well as any acks or errors
         val sessionEvents = sessionState.sendEventsState.undeliveredMessages.filter {
-            it.timestamp <= instant || it
-                .payload is SessionAck || it.payload is SessionError
+            it.timestamp <= instant || it.payload is SessionError
         }
 
         //update events with the latest ack info from the current state
@@ -167,7 +166,7 @@ class SessionManagerImpl : SessionManager {
         messageResendWindow: Long
     ) {
         sessionState.sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.filter {
-            it.payload !is SessionAck && it.payload !is SessionError
+            it.payload !is SessionError
         }.map {
             if (it.timestamp <= instant) {
                 it.timestamp = instant.plusMillis(messageResendWindow)
