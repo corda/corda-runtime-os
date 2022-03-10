@@ -15,15 +15,13 @@ import org.mockito.kotlin.whenever
 import java.util.TreeSet
 
 object Helpers {
-    fun mockCpkMetadata(mainBundle: String): CPK.Metadata = mockCpkMetadata(mainBundle, emptyList())
+    fun mockCpkMetadata(mainBundle: String, name: String, version: String): CPK.Metadata
+    = mockCpkMetadata(mainBundle, emptyList(), name, version)
 
-    fun mockCpkMetadata(mainBundle: String, dependencies: List<CPK.Identifier>): CPK.Metadata {
+    fun mockCpkMetadata(mainBundle: String, dependencies: List<CPK.Identifier>, name:String, version:String): CPK.Metadata {
         val contractInfo = ManifestCordappInfo("", "", 1, "")
         val workflowInfo = ManifestCordappInfo("", "", 1, "")
-        val cordappManifest = CordappManifest(
-            "bundleSymbolicName", "bundleVersion",
-            1, 1, contractInfo, workflowInfo, mock()
-        )
+        val cordappManifest = CordappManifest(name, version, 1, 1, contractInfo, workflowInfo, mock())
         val hash = SecureHash("ALGO", "1234567890ABCDEF".toByteArray())
         return CPK.Metadata.newInstance(
             mock(),
@@ -37,7 +35,7 @@ object Helpers {
         )
     }
 
-    fun mockTrivialCpk(mainBundle: String) = mockCpk(mockCpkMetadata(mainBundle))
+    fun mockTrivialCpk(mainBundle: String, name: String, version: String) = mockCpk(mockCpkMetadata(mainBundle, name, version))
 
     fun mockCpk(metadata: CPK.Metadata) = mock<CPK>().also { doReturn(metadata).whenever(it).metadata }
 

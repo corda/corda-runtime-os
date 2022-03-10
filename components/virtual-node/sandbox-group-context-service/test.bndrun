@@ -57,11 +57,11 @@
 	net.corda.configuration-read-service;version='[5.0.0,5.0.1)',\
 	net.corda.configuration-read-service-impl;version='[5.0.0,5.0.1)',\
 	net.corda.cpi-info-read-service;version='[5.0.0,5.0.1)',\
+	net.corda.cpk-read-service;version='[5.0.0,5.0.1)',\
 	net.corda.crypto;version='[5.0.0,5.0.1)',\
 	net.corda.crypto-core;version='[5.0.0,5.0.1)',\
 	net.corda.crypto-impl;version='[5.0.0,5.0.1)',\
 	net.corda.inmemory-messaging-impl;version='[5.0.0,5.0.1)',\
-	net.corda.install-service;version='[5.0.0,5.0.1)',\
 	net.corda.kotlin-stdlib-jdk7.osgi-bundle;version='[1.4.32,1.4.33)',\
 	net.corda.kotlin-stdlib-jdk8.osgi-bundle;version='[1.4.32,1.4.33)',\
 	net.corda.lifecycle;version='[5.0.0,5.0.1)',\

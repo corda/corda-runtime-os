@@ -16,6 +16,7 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -53,13 +54,19 @@ class CpiUploadRPCOpsImpl @Activate constructor(
 
     override fun stop() = coordinator.close()
 
-    override fun cpi(cpiFileName: String, cpiContent: InputStream): CpiUploadRPCOps.RequestId {
+    /** @return first 12 characters of the hex string */
+    private fun toShortHash(secureHash: SecureHash) : String {
+        // see [HoldingIdentity]
+        return secureHash.toHexString().substring(0, 12)
+    }
+
+    override fun cpi(cpiFileName: String, cpiContent: InputStream): CpiUploadRPCOps.UploadResponse {
         if (!isRunning) {
             throw IllegalStateException("CpiUploadRPCOpsImpl is not running! Its status is ${coordinator.status}")
         }
 
         val cpiUploadRequestId = cpiUploadManager.uploadCpi(cpiFileName, cpiContent)
-        return CpiUploadRPCOps.RequestId(cpiUploadRequestId)
+        return CpiUploadRPCOps.UploadResponse(cpiUploadRequestId.requestId, toShortHash(cpiUploadRequestId.secureHash))
     }
 
     // We're mostly returning the enumeration to a string in this version

@@ -56,7 +56,7 @@ class CpiUploadManagerImplTest {
         }
 
         val cpiBytes = "dummyCPI".toByteArray()
-        val requestId = cpiUploadManagerImpl.uploadCpi(DUMMY_FILE_NAME, ByteArrayInputStream(cpiBytes))
-        assertDoesNotThrow { UUID.fromString(requestId) }
+        val request = cpiUploadManagerImpl.uploadCpi(DUMMY_FILE_NAME, ByteArrayInputStream(cpiBytes))
+        assertDoesNotThrow { UUID.fromString(request.requestId) }
     }
 }

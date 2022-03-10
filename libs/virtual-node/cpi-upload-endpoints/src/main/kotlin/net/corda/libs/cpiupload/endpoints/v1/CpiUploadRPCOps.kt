@@ -13,8 +13,8 @@ import java.io.InputStream
     path = "cpi"
 )
 interface CpiUploadRPCOps : RpcOps {
-    /** Simple class to return the id of the upload request */
-    data class RequestId(val id: String)
+    /** Simple class to return some information back to the caller regarding the upload request */
+    data class UploadResponse(val id: String, val cpiFileChecksum: String)
 
     /**
      * HTTP POST resource to upload a CPI to Kafka.
@@ -27,7 +27,7 @@ interface CpiUploadRPCOps : RpcOps {
         description = "Uploads a CPI",
         responseDescription = "The request Id calculated for a CPI upload request"
     )
-    fun cpi(cpiFileName: String, cpiContent: InputStream): RequestId
+    fun cpi(cpiFileName: String, cpiContent: InputStream): UploadResponse
 
     /** Simple class to return the status of the upload request */
     data class Status(val status: String)

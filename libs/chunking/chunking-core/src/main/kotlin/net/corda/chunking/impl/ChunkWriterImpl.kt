@@ -3,7 +3,6 @@ package net.corda.chunking.impl
 import net.corda.chunking.Checksum
 import net.corda.chunking.ChunkWriteCallback
 import net.corda.chunking.ChunkWriter
-import net.corda.chunking.RequestId
 import net.corda.chunking.toAvro
 import net.corda.data.chunking.Chunk
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -26,7 +25,7 @@ internal class ChunkWriterImpl(val chunkSize: Int) : ChunkWriter {
 
     var chunkWriteCallback: ChunkWriteCallback? = null
 
-    override fun write(fileName: String, inputStream: InputStream) : RequestId {
+    override fun write(fileName: String, inputStream: InputStream) : ChunkWriter.Request {
         if (chunkWriteCallback == null) {
             throw CordaRuntimeException("Chunk write callback not set")
         }
@@ -71,7 +70,7 @@ internal class ChunkWriterImpl(val chunkSize: Int) : ChunkWriter {
         // is also the length of the bytes read from the stream.
         writeZeroChunk(identifier, fileName, chunkNumber, finalChecksum, offset)
 
-        return identifier
+        return ChunkWriter.Request(identifier, finalChecksum)
     }
 
     private fun writeZeroChunk(
