@@ -276,7 +276,7 @@ open class SessionManagerImpl(
                     SessionState.NewSessionsNeeded(it),
                     inboundAssignmentListener,
                     logger
-                )
+                ) + listOf(Record(SESSION_OUT_PARTITIONS, sessionId, null))
             }
             records?.let {publisher.publish(records)}
         }
