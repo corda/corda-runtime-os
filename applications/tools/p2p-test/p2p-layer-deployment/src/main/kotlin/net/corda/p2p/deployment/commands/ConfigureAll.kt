@@ -3,6 +3,9 @@ package net.corda.p2p.deployment.commands
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.p2p.deployment.DeploymentException
 import net.corda.p2p.deployment.pods.Port
+import net.corda.p2p.test.KeyAlgorithm
+import net.corda.p2p.test.stub.certificates.StubCertificatesAuthority
+import net.corda.p2p.test.stub.certificates.StubCertificatesAuthority.Companion.PASSWORD
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
@@ -32,6 +35,18 @@ class ConfigureAll : Runnable {
         description = ["Gateway extra configuration arguments (for example --responseTimeoutMilliSecs=1800000)"]
     )
     var gatewayArguments = emptyList<String>()
+
+    @Option(
+        names = ["-a", "--key-algorithm"],
+        description = ["The keys algorithm"]
+    )
+    var algo = KeyAlgorithm.RSA
+
+    @Option(
+        names = ["--trust-store"],
+        description = ["The trust store name (leave empty to use TinyCert)"]
+    )
+    var trustStoreName: String? = null
 
     private val jsonReader = ObjectMapper()
     private val jsonWriter = jsonReader.writer()
@@ -74,26 +89,10 @@ class ConfigureAll : Runnable {
         return File(keyStoreDir.absolutePath, "$name.keystore.jks").also { keyStoreFile ->
             if (!keyStoreFile.exists()) {
                 keyStoreDir.mkdirs()
-                val success = ProcessRunner.follow(
-                    "keytool",
-                    "-genkeypair",
-                    "-alias",
-                    "ec",
-                    "-keyalg",
-                    "EC",
-                    "-storetype",
-                    "JKS",
-                    "-keystore",
-                    keyStoreFile.absolutePath,
-                    "-storepass",
-                    "password",
-                    "-dname",
-                    "CN=GB",
-                    "-keypass",
-                    "password"
-                )
-                if (!success) {
-                    throw DeploymentException("Could not create key store for $name")
+                val authority = StubCertificatesAuthority.createLocalAuthority(algo)
+                val keyStore = authority.createAuthorityKeyStore("ec")
+                keyStoreFile.outputStream().use {
+                    keyStore.store(it, PASSWORD.toCharArray())
                 }
             }
         }
@@ -124,6 +123,8 @@ class ConfigureAll : Runnable {
             creator.sslStoreFile = keyStoreFile
             creator.tlsCertificates = tlsCertificates
             creator.hosts = listOf(host)
+            creator.algo = algo
+            creator.trustStoreLocation = trustStoreName?.let { File(keyStoreDir, it) }
             creator.trustStoreFile = trustStoreFile.let {
                 if (it.exists()) {
                     null
@@ -162,7 +163,7 @@ class ConfigureAll : Runnable {
                 "data" to mapOf(
                     "publicKeyStoreFile" to keyStoreFile.absolutePath,
                     "publicKeyAlias" to "ec",
-                    "keystorePassword" to "password",
+                    "keystorePassword" to PASSWORD,
                     "address" to "http://$host:${Port.Gateway.port}",
                     "networkType" to "CORDA_5",
                     "protocolModes" to listOf("AUTHENTICATED_ENCRYPTION"),
@@ -321,7 +322,11 @@ class ConfigureAll : Runnable {
                 "gateway",
                 "--hostAddress=0.0.0.0",
                 "--port=${Port.Gateway.port}",
-            ) + gatewayArguments
+            ) + gatewayArguments + if (trustStoreName == null) {
+                listOf("--revocationCheck=HARD_FAIL")
+            } else {
+                emptyList()
+            }
         ).run()
     }
 

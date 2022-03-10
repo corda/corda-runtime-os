@@ -8,10 +8,14 @@ description "P2P Testing tools - P2P layer deployment"
 
 dependencies {
     implementation platform('org.jetbrains.kotlin:kotlin-bom')
+    implementation project(':libs:p2p-test:stub-certificates-authority')
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
     implementation "info.picocli:picocli:$picocliVersion"
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
     implementation "com.konghq:unirest-java:$unirestVersion"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda:corda-avro-schema'
+    runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 }
 application {
     mainClass = 'net.corda.p2p.deployment.GoKt'

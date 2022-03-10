@@ -40,6 +40,7 @@ dependencies {
     // For async logging
     integrationTestRuntimeOnly "com.lmax:disruptor:$disruptorVersion"
 
+    integrationTestImplementation project(':libs:p2p-test:stub-certificates-authority')
     integrationTestImplementation project(":libs:messaging:inmemory-messaging-impl")
     integrationTestImplementation project(":libs:lifecycle:lifecycle-impl")
     integrationTestImplementation project(":libs:lifecycle:registry")

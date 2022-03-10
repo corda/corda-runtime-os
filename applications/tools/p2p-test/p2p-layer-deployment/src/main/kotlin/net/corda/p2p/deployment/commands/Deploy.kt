@@ -8,6 +8,7 @@ import net.corda.p2p.deployment.pods.Namespace
 import net.corda.p2p.deployment.pods.NamespaceIdentifier
 import net.corda.p2p.deployment.pods.P2PDeploymentDetails
 import net.corda.p2p.deployment.pods.ResourceRequest
+import net.corda.p2p.test.KeyAlgorithm
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 
@@ -96,6 +97,18 @@ class Deploy : Runnable {
         description = ["The docker name of the tag to pull"]
     )
     private var tag = "5.0.0.0-beta-1642413090363"
+
+    @Option(
+        names = ["-a", "--key-algorithm"],
+        description = ["The keys algorithm"]
+    )
+    private var algo = KeyAlgorithm.RSA
+
+    @Option(
+        names = ["--trust-store"],
+        description = ["The trust store name (leave empty to use TinyCert)"]
+    )
+    private var trustStoreName: String? = null
 
     @Option(
         names = ["--lm-conf", "--link-manager-config"],
@@ -227,6 +240,8 @@ class Deploy : Runnable {
         config.namespaceName = namespaceName
         config.linkManagerExtraArguments = linkManagerExtraArguments
         config.gatewayArguments = gatewayArguments
+        config.algo = algo
+        config.trustStoreName = trustStoreName
         config.run()
     }
 }
