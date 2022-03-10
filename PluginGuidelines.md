@@ -51,13 +51,6 @@ Always include command descriptions via PicoCli:
 @Command(name = "checksum", description = "Prints the checksum (MD5 by default) of a file to STDOUT.")
 ```
 
-For production environments...
-
-```sh
-npm install --production
-NODE_ENV=production node app
-```
-
 ## Plugin Development
 
 ### Branching
