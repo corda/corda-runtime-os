@@ -63,7 +63,7 @@ class ExamplePluginWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
 
     @Extension
     @CommandLine.Command(name = "example")
-    class ExamplePlugin : CordaCliPlugin 
+    class ExamplePlugin : CordaCliPlugin
 }
 ```
 
@@ -134,16 +134,23 @@ This will also work for any plugin that requires its own class path be used as t
 
 ### Plugin not showing up
 
-There are a few things that can cause this silent error. The main reason for this is a missing `@Extension` annotation on
-the plugin's entry point class.
+There are a few things that can cause this silent error. The main reason for this is a missing `@Extension` annotation
+on the plugin's entry point class.
 
-Another is forgetting to add the `CordaCliPlugin` interface to the entry point. 
+Another is forgetting to add the `CordaCliPlugin` interface to the entry point.
+
+Another is mismatched plugin metadata. The pluginClass set in the properties file must match the pf4j wrapper class that loads the plugin.
 
 ### Running a remote debugger
-Start by creating a standard remote debug config via intellij's run/debug configuration manager. 
 
-Now run the debug version of the CLI with your command, either:
+In order to debug the plug-in host, you need to use Java remote debugging. Start by creating a standard remote debug
+config via intellij's run/debug configuration manager. This will provide you with an agent setting that needs to be
+added to the process's command line. 
+
+In order to simplify this, a debug version of the CLI start script is provided that
+uses the standard IntelliJ remote debugging settings:
+
 * script/corda-cli-debug.cmd
 * script/corda-cli-debug.sh
 
-Now start the remote debugger and it will connect. 
+* After invoking this script, start the remote debugger and it will connect. 
