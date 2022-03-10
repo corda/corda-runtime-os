@@ -13,7 +13,6 @@ import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.crypto.wire.ops.flow.GenerateFreshKeyFlowCommand
 import net.corda.data.crypto.wire.ops.flow.SignFlowCommand
-import net.corda.data.crypto.wire.ops.rpc.FilterMyKeysRpcQuery
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.contextLogger
@@ -46,7 +45,7 @@ class CryptoFlowOpsProcessor(
             return null // cannot send any error back as have no idea where to send to
         }
         val responseTopic = getResponseTopic(request)
-        if (responseTopic == null) {
+        if (responseTopic.isNullOrBlank()) {
             logger.error(
                 "Unexpected null value for response topic in event with the key={} in topic={}",
                 event.key,
@@ -118,7 +117,7 @@ class CryptoFlowOpsProcessor(
 
     private fun getResponseTopic(request: FlowOpsRequest): String? {
         return request.context.other.items.singleOrNull {
-            it.key == CryptoFlowOpsTransformer.REQUEST_OP_KEY
+            it.key == CryptoFlowOpsTransformer.RESPONSE_TOPIC
         }?.value
     }
 
@@ -140,8 +139,8 @@ class CryptoFlowOpsProcessor(
 
     private class FilterMyKeysFlowQueryHandler(
         private val client: CryptoOpsProxyClient
-    ) : Handler<FilterMyKeysRpcQuery> {
-        override fun handle(context: CryptoRequestContext, request: FilterMyKeysRpcQuery): Any =
+    ) : Handler<FilterMyKeysFlowQuery> {
+        override fun handle(context: CryptoRequestContext, request: FilterMyKeysFlowQuery): Any =
             client.filterMyKeysProxy(
                 tenantId = context.tenantId,
                 candidateKeys = request.keys

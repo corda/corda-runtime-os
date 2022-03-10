@@ -60,7 +60,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-class SigningServiceRpcProcessorTests {
+class CryptoOpsRpcProcessorTests {
     private class SigningServiceWrapper(private val impl: SigningService) : SigningService by impl {
         companion object {
             val recordedContexts = ConcurrentHashMap<String, Map<String, String>>()
@@ -175,7 +175,7 @@ class SigningServiceRpcProcessorTests {
     private lateinit var verifier: SignatureVerificationService
     private lateinit var processor: CryptoOpsRpcProcessor
 
-    fun setup(category: String, schemeCode: String = ECDSA_SECP256R1_CODE_NAME) {
+    private fun setup(category: String, schemeCode: String = ECDSA_SECP256R1_CODE_NAME) {
         factory = CryptoServicesTestFactory()
         services = factory.createCryptoServices(
             category = category
