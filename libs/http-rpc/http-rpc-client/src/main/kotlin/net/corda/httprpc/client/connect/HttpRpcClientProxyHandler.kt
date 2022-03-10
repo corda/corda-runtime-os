@@ -12,6 +12,7 @@ import net.corda.httprpc.client.connect.stream.HttpRpcFiniteDurableCursorClientB
 import net.corda.httprpc.client.processing.endpointHttpVerb
 import net.corda.httprpc.client.processing.parametersFrom
 import net.corda.httprpc.client.processing.toWebRequest
+import net.corda.httprpc.tools.HttpPathUtils.joinResourceAndEndpointPaths
 import net.corda.httprpc.tools.annotations.extensions.path
 import net.corda.httprpc.tools.staticExposedGetMethods
 import net.corda.v5.base.stream.returnsDurableCursorBuilder
@@ -78,13 +79,12 @@ internal class HttpRpcClientProxyHandler<I : RpcOps>(
             checkServerProtocolVersion(method)
         }
 
-        val resourceName = rpcOpsClass.getAnnotation(HttpRpcResource::class.java)?.path(rpcOpsClass)?.toLowerCase()
+        val resourcePath = rpcOpsClass.getAnnotation(HttpRpcResource::class.java)?.path(rpcOpsClass)?.toLowerCase()
             ?: throw UnsupportedOperationException(
                 "Http RPC proxy can not make remote calls for interfaces not annotated with HttpRpcResource."
             )
-        val endpointName = method.endpointPath
-        val endpointPart = if(endpointName == null) "" else "/$endpointName"
-        val rawPath = "$resourceName$endpointPart".toLowerCase().replace("/+".toRegex(), "/")
+
+        val rawPath = joinResourceAndEndpointPaths(resourcePath, method.endpointPath)
 
         if (method.returnsDurableCursorBuilder()) {
             return HttpRpcFiniteDurableCursorClientBuilderImpl(

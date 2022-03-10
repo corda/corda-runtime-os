@@ -15,13 +15,13 @@ import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.Data
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.SchemaCollectionModel
 import net.corda.httprpc.server.impl.apigen.processing.openapi.toOpenAPI
 import net.corda.httprpc.server.impl.apigen.processing.openapi.toOpenApiParameter
-import net.corda.httprpc.server.impl.apigen.processing.openapi.toOpenApiPath
 import net.corda.httprpc.server.impl.apigen.processing.openapi.toOperation
 import net.corda.httprpc.server.impl.apigen.processing.openapi.toRequestBody
 import net.corda.httprpc.server.impl.apigen.processing.openapi.toValidMethodName
 import net.corda.httprpc.server.impl.utils.getHealthCheckApiTestResource
 import net.corda.httprpc.test.TestHealthCheckAPI
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
+import net.corda.httprpc.tools.HttpPathUtils.joinResourceAndEndpointPaths
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -151,7 +151,7 @@ class ResourceToOpenApiSpecMapperTest {
             assertEquals("Health Check", tag.description)
 
             resource.endpoints.forEach {
-                val openApiPath = toOpenApiPath(resource.path, it.path)
+                val openApiPath = joinResourceAndEndpointPaths(resource.path, it.path)
                 assertTrue(paths.containsKey(openApiPath))
             }
 
@@ -264,7 +264,7 @@ class ResourceToOpenApiSpecMapperTest {
         )
 
         val schemaModelProvider = DefaultSchemaModelProvider(SchemaModelContextHolder())
-        val operation = endpoint.toOperation(toOpenApiPath("HealthCheckAPI", endpoint.path), schemaModelProvider)
+        val operation = endpoint.toOperation(joinResourceAndEndpointPaths("HealthCheckAPI", endpoint.path), schemaModelProvider)
         assertEquals("post_healthcheckapi_plusone", operation.operationId)
     }
 
