@@ -183,6 +183,11 @@ class MemberProcessorIntegrationTest {
         val groupPolicy2 = getGroupPolicy(groupPolicyProvider)
         assertSecondGroupPolicy(groupPolicy2, groupPolicy1)
         publisher.publishRawGroupPolicyData(virtualNodeInfoReader, cpiVersion = "1.2")
+
+        // Wait for the group policy change to be visible (so following tests don't fail as a result)
+        eventually {
+            assertEquals(groupPolicy1!!.groupId, getGroupPolicy(groupPolicyProvider)!!.groupId)
+        }
     }
 
     /**
