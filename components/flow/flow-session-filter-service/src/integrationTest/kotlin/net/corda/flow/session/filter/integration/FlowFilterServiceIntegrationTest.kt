@@ -11,7 +11,7 @@ import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.session.filter.FlowSessionFilterService
-import net.corda.flow.session.filter.integration.processor.TestFlowMapperEventProcessor
+import net.corda.flow.session.filter.integration.processor.TestFlowSessionFilterProcessor
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.publisher.Publisher
@@ -112,7 +112,7 @@ class FlowFilterServiceIntegrationTest {
         val mapperLatch = CountDownLatch(2)
         val p2pOutSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$testId-flow-mapper", FLOW_MAPPER_EVENT_TOPIC),
-            TestFlowMapperEventProcessor("$testId-INITIATED", mapperLatch, 2), SmartConfigImpl.empty(), null
+            TestFlowSessionFilterProcessor("$testId-INITIATED", mapperLatch, 2), SmartConfigImpl.empty(), null
         )
         p2pOutSub.start()
         assertTrue(mapperLatch.await(30, TimeUnit.SECONDS))
