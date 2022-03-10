@@ -42,15 +42,17 @@ import net.corda.p2p.linkmanager.StubNetworkMap
 import net.corda.p2p.test.HostedIdentityEntry
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
-import net.corda.p2p.test.NetworkMapEntry
+import net.corda.p2p.test.GroupNetworkMapEntry
+import net.corda.p2p.test.IdentityNetworkMapEntry
 import net.corda.p2p.test.TenantKeys
 import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.TestSchema.Companion.CRYPTO_KEYS_TOPIC
+import net.corda.schema.TestSchema.Companion.GROUP_NETWORK_MAP_TOPIC
+import net.corda.schema.TestSchema.Companion.IDENTITY_NETWORK_MAP_TOPIC
 import net.corda.schema.TestSchema.Companion.HOSTED_MAP_TOPIC
-import net.corda.schema.TestSchema.Companion.NETWORK_MAP_TOPIC
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
@@ -353,28 +355,31 @@ class P2PLayerEndToEndTest {
                     }
                 }
             }
+        private val groupNetworkMapEntry = GroupNetworkMapEntry(
+            GROUP_ID,
+            NetworkType.CORDA_5,
+            listOf(
+                ProtocolMode.AUTHENTICATION_ONLY,
+                ProtocolMode.AUTHENTICATED_ENCRYPTION,
+            ),
+            listOf(String(readKeyStore("$trustStoreFileName.pem"))),
+        )
 
-        private val networkMapEntry =
-            NetworkMapEntry(
+        private val identityNetworkMapEntry =
+            IdentityNetworkMapEntry(
                 HoldingIdentity(x500Name, GROUP_ID),
                 ByteBuffer.wrap(keyPair.public.encoded),
                 identitiesKeyAlgorithm,
                 "http://$p2pAddress:$p2pPort",
-                NetworkType.CORDA_5,
-                listOf(
-                    ProtocolMode.AUTHENTICATION_ONLY,
-                    ProtocolMode.AUTHENTICATED_ENCRYPTION,
-                ),
-                listOf(String(readKeyStore("$trustStoreFileName.pem"))),
             )
 
         private fun publishNetworkMapAndIdentityKeys(otherHost: Host) {
             val publisherForHost = publisherFactory.createPublisher(PublisherConfig("test-runner-publisher", 1), bootstrapConfig)
             val networkMapEntries = mapOf(
-                "$x500Name-$GROUP_ID" to networkMapEntry,
-                "${otherHost.x500Name}-$GROUP_ID" to otherHost.networkMapEntry
+                "$x500Name-$GROUP_ID" to identityNetworkMapEntry,
+                "${otherHost.x500Name}-$GROUP_ID" to otherHost.identityNetworkMapEntry,
             )
-            val networkMapRecords = networkMapEntries.map { Record(NETWORK_MAP_TOPIC, it.key, it.value) }
+            val networkMapRecords = networkMapEntries.map { Record(IDENTITY_NETWORK_MAP_TOPIC, it.key, it.value) }
             val HostedIdentityEntry = HostedIdentityEntry(
                 HoldingIdentity(x500Name, GROUP_ID),
                 GROUP_ID,
@@ -397,6 +402,11 @@ class P2PLayerEndToEndTest {
                                     ByteBuffer.wrap(keyPair.private.encoded)
                                 )
                             )
+                        ),
+                        Record(
+                            GROUP_NETWORK_MAP_TOPIC,
+                            GROUP_ID,
+                            groupNetworkMapEntry,
                         ),
                         Record(
                             HOSTED_MAP_TOPIC,

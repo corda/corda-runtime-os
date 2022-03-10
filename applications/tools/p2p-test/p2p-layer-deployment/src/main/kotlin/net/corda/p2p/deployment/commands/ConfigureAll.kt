@@ -171,8 +171,10 @@ class ConfigureAll : Runnable {
             )
 
         val configurationMap = mapOf(
-            "entriesToAdd" to listOf(entry),
-            "entriesToDelete" to emptyList()
+            "identitiesToAdd" to listOf(entry),
+            "identitiesToDelete" to emptyList(),
+            "groupsToAdd" to emptyList(),
+            "groupsToDelete" to emptyList(),
         )
         jsonWriter.writeValue(configurationFile, configurationMap)
         namespaces.keys.forEach { nameSpace ->
@@ -186,6 +188,36 @@ class ConfigureAll : Runnable {
                 )
             ).run()
         }
+    }
+
+    private fun publishGroup() {
+        val configurationFile = File.createTempFile("network-map.", ".conf").also {
+            it.deleteOnExit()
+        }
+        val entriesToAdd = mapOf(
+            "groupId" to annotations["group-id"],
+            "data" to mapOf(
+                "networkType" to "CORDA_5",
+                "protocolModes" to listOf("AUTHENTICATED_ENCRYPTION"),
+                "trustStoreCertificates" to listOf(trustStoreFile.absolutePath),
+            )
+        )
+        val configurationMap = mapOf(
+            "identitiesToAdd" to emptyList(),
+            "identitiesToDelete" to emptyList(),
+            "groupsToAdd" to listOf(entriesToAdd),
+            "groupsToDelete" to emptyList(),
+        )
+        jsonWriter.writeValue(configurationFile, configurationMap)
+        println("Publishing groups to $namespaceName")
+        RunJar(
+            "network-map-creator",
+            listOf(
+                "network-map",
+                "--netmap-file", configurationFile.absolutePath,
+                "--kafka", RunJar.kafkaFile(namespaceName).absolutePath
+            )
+        ).run()
     }
 
     private fun publishLocallyHostedIdentities() {
@@ -248,8 +280,10 @@ class ConfigureAll : Runnable {
                 )
             }
         val configurationMap = mapOf(
-            "entriesToAdd" to otherEntriesToAdd,
-            "entriesToDelete" to emptyList()
+            "identitiesToAdd" to otherEntriesToAdd,
+            "identitiesToDelete" to emptyList(),
+            "groupsToAdd" to emptyList(),
+            "groupsToDelete" to emptyList(),
         )
         jsonWriter.writeValue(configurationFile, configurationMap)
         println("Publishing ${otherNamespaces.keys} to $namespaceName")
@@ -266,6 +300,7 @@ class ConfigureAll : Runnable {
     private fun publishNetworkMap() {
         publishMySelfToOthers()
         publishOthersToMySelf()
+        publishGroup()
     }
 
     private fun publishKeys() {
