@@ -26,6 +26,7 @@ import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.SchemaMode
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.DataType
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.SchemaRefObjectModel
 import net.corda.httprpc.tools.HttpPathUtils.joinResourceAndEndpointPaths
+import net.corda.httprpc.tools.HttpPathUtils.toOpenApiPath
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.trace
 import org.eclipse.jetty.http.HttpStatus
@@ -211,7 +212,7 @@ private fun Resource.toTag(): Tag {
 
 private fun Resource.getPathToPathItems(schemaModelProvider: SchemaModelProvider): Map<String, PathItem> {
     log.trace { "Map resource: \"${this.name}\" to Map of Path to PathItem." }
-    return this.endpoints.groupBy { joinResourceAndEndpointPaths(path, it.path) }.map {
+    return this.endpoints.groupBy { joinResourceAndEndpointPaths(path, it.path).toOpenApiPath() }.map {
         val getEndpoint = it.value.singleOrNull { endpoint -> EndpointMethod.GET == endpoint.method }
         val postEndpoint = it.value.singleOrNull { endpoint -> EndpointMethod.POST == endpoint.method }
         val fullPath = it.key

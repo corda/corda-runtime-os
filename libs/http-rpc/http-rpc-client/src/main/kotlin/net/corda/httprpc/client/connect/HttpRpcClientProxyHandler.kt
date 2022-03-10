@@ -79,12 +79,12 @@ internal class HttpRpcClientProxyHandler<I : RpcOps>(
             checkServerProtocolVersion(method)
         }
 
-        val resourcePath = rpcOpsClass.getAnnotation(HttpRpcResource::class.java)?.path(rpcOpsClass)?.toLowerCase()
+        val resourcePath = rpcOpsClass.getAnnotation(HttpRpcResource::class.java)?.path(rpcOpsClass)
             ?: throw UnsupportedOperationException(
                 "Http RPC proxy can not make remote calls for interfaces not annotated with HttpRpcResource."
             )
 
-        val rawPath = joinResourceAndEndpointPaths(resourcePath, method.endpointPath)
+        val rawPath = joinResourceAndEndpointPaths(resourcePath, method.endpointPath).toLowerCase()
 
         if (method.returnsDurableCursorBuilder()) {
             return HttpRpcFiniteDurableCursorClientBuilderImpl(
