@@ -10,8 +10,8 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.test.GroupNetworkMapEntry
-import net.corda.schema.TestSchema.Companion.GROUP_NETWORK_MAP_TOPIC
+import net.corda.p2p.test.GroupPolicyEntry
+import net.corda.schema.TestSchema.Companion.GROUP_POLICIES_TOPIC
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
@@ -22,18 +22,18 @@ internal class StubGroupsNetworkMap(
     configuration: SmartConfig,
 ) : LifecycleWithDominoTile {
 
-    private val groupsSubscriptionConfig = SubscriptionConfig("network-map", GROUP_NETWORK_MAP_TOPIC, instanceId)
+    private val groupsSubscriptionConfig = SubscriptionConfig("network-map", GROUP_POLICIES_TOPIC, instanceId)
     private val groupsSubscription = subscriptionFactory.createCompactedSubscription(
         groupsSubscriptionConfig,
         GroupProcessor(),
         configuration
     )
 
-    private inner class GroupProcessor : CompactedProcessor<String, GroupNetworkMapEntry> {
+    private inner class GroupProcessor : CompactedProcessor<String, GroupPolicyEntry> {
         override val keyClass = String::class.java
-        override val valueClass = GroupNetworkMapEntry::class.java
+        override val valueClass = GroupPolicyEntry::class.java
 
-        override fun onSnapshot(currentData: Map<String, GroupNetworkMapEntry>) {
+        override fun onSnapshot(currentData: Map<String, GroupPolicyEntry>) {
             groups.clear()
             currentData.values.forEach {
                 addGroup(it)
@@ -42,9 +42,9 @@ internal class StubGroupsNetworkMap(
         }
 
         override fun onNext(
-            newRecord: Record<String, GroupNetworkMapEntry>,
-            oldValue: GroupNetworkMapEntry?,
-            currentData: Map<String, GroupNetworkMapEntry>,
+            newRecord: Record<String, GroupPolicyEntry>,
+            oldValue: GroupPolicyEntry?,
+            currentData: Map<String, GroupPolicyEntry>,
         ) {
             val newValue = newRecord.value
             if (newValue == null) {
@@ -54,7 +54,7 @@ internal class StubGroupsNetworkMap(
             }
         }
 
-        private fun addGroup(group: GroupNetworkMapEntry) {
+        private fun addGroup(group: GroupPolicyEntry) {
             val info = group.toGroupInfo()
             groups[group.groupId] = info
             listeners.forEach {
@@ -94,7 +94,7 @@ internal class StubGroupsNetworkMap(
         listeners += networkMapListener
     }
 
-    private fun GroupNetworkMapEntry.toGroupInfo(): NetworkMapListener.GroupInfo {
+    private fun GroupPolicyEntry.toGroupInfo(): NetworkMapListener.GroupInfo {
         return NetworkMapListener.GroupInfo(
             this.groupId,
             this.networkType,

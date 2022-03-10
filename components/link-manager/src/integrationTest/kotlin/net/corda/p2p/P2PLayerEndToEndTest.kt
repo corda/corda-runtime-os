@@ -42,16 +42,16 @@ import net.corda.p2p.linkmanager.StubNetworkMap
 import net.corda.p2p.test.HostedIdentityEntry
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
-import net.corda.p2p.test.GroupNetworkMapEntry
-import net.corda.p2p.test.IdentityNetworkMapEntry
+import net.corda.p2p.test.GroupPolicyEntry
+import net.corda.p2p.test.MemberInfoEntry
 import net.corda.p2p.test.TenantKeys
 import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.TestSchema.Companion.CRYPTO_KEYS_TOPIC
-import net.corda.schema.TestSchema.Companion.GROUP_NETWORK_MAP_TOPIC
-import net.corda.schema.TestSchema.Companion.IDENTITY_NETWORK_MAP_TOPIC
+import net.corda.schema.TestSchema.Companion.GROUP_POLICIES_TOPIC
+import net.corda.schema.TestSchema.Companion.MEMBER_INFO_TOPIC
 import net.corda.schema.TestSchema.Companion.HOSTED_MAP_TOPIC
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
@@ -355,7 +355,7 @@ class P2PLayerEndToEndTest {
                     }
                 }
             }
-        private val groupNetworkMapEntry = GroupNetworkMapEntry(
+        private val groupNetworkMapEntry = GroupPolicyEntry(
             GROUP_ID,
             NetworkType.CORDA_5,
             listOf(
@@ -366,7 +366,7 @@ class P2PLayerEndToEndTest {
         )
 
         private val identityNetworkMapEntry =
-            IdentityNetworkMapEntry(
+            MemberInfoEntry(
                 HoldingIdentity(x500Name, GROUP_ID),
                 ByteBuffer.wrap(keyPair.public.encoded),
                 identitiesKeyAlgorithm,
@@ -379,7 +379,7 @@ class P2PLayerEndToEndTest {
                 "$x500Name-$GROUP_ID" to identityNetworkMapEntry,
                 "${otherHost.x500Name}-$GROUP_ID" to otherHost.identityNetworkMapEntry,
             )
-            val networkMapRecords = networkMapEntries.map { Record(IDENTITY_NETWORK_MAP_TOPIC, it.key, it.value) }
+            val networkMapRecords = networkMapEntries.map { Record(MEMBER_INFO_TOPIC, it.key, it.value) }
             val HostedIdentityEntry = HostedIdentityEntry(
                 HoldingIdentity(x500Name, GROUP_ID),
                 GROUP_ID,
@@ -404,7 +404,7 @@ class P2PLayerEndToEndTest {
                             )
                         ),
                         Record(
-                            GROUP_NETWORK_MAP_TOPIC,
+                            GROUP_POLICIES_TOPIC,
                             GROUP_ID,
                             groupNetworkMapEntry,
                         ),

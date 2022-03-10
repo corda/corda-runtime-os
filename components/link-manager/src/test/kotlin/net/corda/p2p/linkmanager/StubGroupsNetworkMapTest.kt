@@ -10,7 +10,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
-import net.corda.p2p.test.GroupNetworkMapEntry
+import net.corda.p2p.test.GroupPolicyEntry
 import net.corda.schema.TestSchema
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
@@ -27,7 +27,7 @@ import org.mockito.kotlin.whenever
 import java.util.concurrent.CompletableFuture
 
 class StubGroupsNetworkMapTest {
-    private val processor = argumentCaptor<CompactedProcessor<String, GroupNetworkMapEntry>>()
+    private val processor = argumentCaptor<CompactedProcessor<String, GroupPolicyEntry>>()
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>()
     private val configuration = mock<SmartConfig>()
     private val subscriptionFactory = mock<SubscriptionFactory> {
@@ -42,19 +42,19 @@ class StubGroupsNetworkMapTest {
         whenever(mock.isRunning).doReturn(true)
     }
     private val subscriptionDominoTile = mockConstruction(SubscriptionDominoTile::class.java)
-    private val groupOne = GroupNetworkMapEntry(
+    private val groupOne = GroupPolicyEntry(
         "Group-1",
         NetworkType.CORDA_5,
         listOf(ProtocolMode.AUTHENTICATED_ENCRYPTION),
         listOf("cert1.1", "cert1.2")
     )
-    private val groupTwo = GroupNetworkMapEntry(
+    private val groupTwo = GroupPolicyEntry(
         "Group-2",
         NetworkType.CORDA_4,
         listOf(ProtocolMode.AUTHENTICATED_ENCRYPTION, ProtocolMode.AUTHENTICATION_ONLY),
         listOf("cert2")
     )
-    private val groupThree = GroupNetworkMapEntry(
+    private val groupThree = GroupPolicyEntry(
         "Group-3",
         NetworkType.CORDA_5,
         listOf(ProtocolMode.AUTHENTICATION_ONLY),
@@ -150,7 +150,7 @@ class StubGroupsNetworkMapTest {
 
         processor.firstValue.onNext(
             Record(
-                TestSchema.GROUP_NETWORK_MAP_TOPIC,
+                TestSchema.GROUP_POLICIES_TOPIC,
                 "group1",
                 null
             ),
@@ -182,7 +182,7 @@ class StubGroupsNetworkMapTest {
 
         processor.firstValue.onNext(
             Record(
-                TestSchema.GROUP_NETWORK_MAP_TOPIC,
+                TestSchema.GROUP_POLICIES_TOPIC,
                 "g",
                 groupThree
             ),
@@ -226,7 +226,7 @@ class StubGroupsNetworkMapTest {
 
         processor.firstValue.onNext(
             Record(
-                TestSchema.GROUP_NETWORK_MAP_TOPIC,
+                TestSchema.GROUP_POLICIES_TOPIC,
                 "g",
                 groupThree,
             ),

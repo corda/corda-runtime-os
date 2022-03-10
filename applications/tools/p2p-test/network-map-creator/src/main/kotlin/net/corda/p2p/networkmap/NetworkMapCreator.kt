@@ -13,11 +13,11 @@ import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.test.HostedIdentityEntry
 import net.corda.p2p.test.KeyAlgorithm
-import net.corda.p2p.test.GroupNetworkMapEntry
-import net.corda.p2p.test.IdentityNetworkMapEntry
+import net.corda.p2p.test.GroupPolicyEntry
+import net.corda.p2p.test.MemberInfoEntry
 import net.corda.schema.TestSchema.Companion.HOSTED_MAP_TOPIC
-import net.corda.schema.TestSchema.Companion.GROUP_NETWORK_MAP_TOPIC
-import net.corda.schema.TestSchema.Companion.IDENTITY_NETWORK_MAP_TOPIC
+import net.corda.schema.TestSchema.Companion.GROUP_POLICIES_TOPIC
+import net.corda.schema.TestSchema.Companion.MEMBER_INFO_TOPIC
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -143,7 +143,7 @@ class NetworkMapCreator @Activate constructor(
                 "Topic to write the groups records to."
             ]
         )
-        var groupTopic: String = GROUP_NETWORK_MAP_TOPIC
+        var groupTopic: String = GROUP_POLICIES_TOPIC
 
         @Option(
             names = ["--identity-topic"],
@@ -151,7 +151,7 @@ class NetworkMapCreator @Activate constructor(
                 "Topic to write the identities records to."
             ]
         )
-        var identityTopic: String = IDENTITY_NETWORK_MAP_TOPIC
+        var identityTopic: String = MEMBER_INFO_TOPIC
 
         @Option(names = ["--netmap-file"], description = ["File containing network map data used to populate Kafka."])
         lateinit var networkMapFile: File
@@ -171,7 +171,7 @@ class NetworkMapCreator @Activate constructor(
                 val protocolMode = dataConfig.getStringList("protocolModes").map { mode ->
                     ProtocolMode.values().single { it.name.equals(mode, ignoreCase = true) }
                 }
-                val networkMapEntry = GroupNetworkMapEntry(
+                val networkMapEntry = GroupPolicyEntry(
                     groupId,
                     networkType,
                     protocolMode,
@@ -190,7 +190,7 @@ class NetworkMapCreator @Activate constructor(
                 val address = dataConfig.getString("address")
 
                 val (keyAlgo, publicKey) = readKey(publicKeyStoreFile, publicKeyAlias, keystorePassword)
-                val networkMapEntry = IdentityNetworkMapEntry(
+                val networkMapEntry = MemberInfoEntry(
                     HoldingIdentity(x500Name, groupId),
                     ByteBuffer.wrap(publicKey.encoded),
                     keyAlgo,

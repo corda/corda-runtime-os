@@ -12,10 +12,10 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
-import net.corda.p2p.test.IdentityNetworkMapEntry
+import net.corda.p2p.test.MemberInfoEntry
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.stub.crypto.processor.KeyDeserialiser
-import net.corda.schema.TestSchema.Companion.IDENTITY_NETWORK_MAP_TOPIC
+import net.corda.schema.TestSchema.Companion.MEMBER_INFO_TOPIC
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.nio.ByteBuffer
 import java.security.MessageDigest
@@ -29,7 +29,7 @@ internal class StubIdentitiesNetworkMap(
     configuration: SmartConfig,
 ) : LifecycleWithDominoTile {
 
-    private val identitiesSubscriptionConfig = SubscriptionConfig("network-map", IDENTITY_NETWORK_MAP_TOPIC, instanceId)
+    private val identitiesSubscriptionConfig = SubscriptionConfig("network-map", MEMBER_INFO_TOPIC, instanceId)
     private val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, BouncyCastleProvider())
 
     private val identitiesSubscription = subscriptionFactory.createCompactedSubscription(
@@ -38,11 +38,11 @@ internal class StubIdentitiesNetworkMap(
         configuration
     )
 
-    private inner class IdentityProcessor : CompactedProcessor<String, IdentityNetworkMapEntry> {
+    private inner class IdentityProcessor : CompactedProcessor<String, MemberInfoEntry> {
         override val keyClass = String::class.java
-        override val valueClass = IdentityNetworkMapEntry::class.java
+        override val valueClass = MemberInfoEntry::class.java
 
-        override fun onSnapshot(currentData: Map<String, IdentityNetworkMapEntry>) {
+        override fun onSnapshot(currentData: Map<String, MemberInfoEntry>) {
             publicHashToIdentity.clear()
             identities.clear()
             currentData.values.forEach {
@@ -53,9 +53,9 @@ internal class StubIdentitiesNetworkMap(
         }
 
         override fun onNext(
-            newRecord: Record<String, IdentityNetworkMapEntry>,
-            oldValue: IdentityNetworkMapEntry?,
-            currentData: Map<String, IdentityNetworkMapEntry>,
+            newRecord: Record<String, MemberInfoEntry>,
+            oldValue: MemberInfoEntry?,
+            currentData: Map<String, MemberInfoEntry>,
         ) {
             val newValue = newRecord.value
             if (newValue == null) {
@@ -66,7 +66,7 @@ internal class StubIdentitiesNetworkMap(
             }
         }
 
-        private fun addIdentity(identity: IdentityNetworkMapEntry) {
+        private fun addIdentity(identity: MemberInfoEntry) {
             identities[identity.holdingIdentity.toHoldingIdentity()] = identity.toMemberInfo()
             publicHashToIdentity[identity.toGroupIdWithPublicKeyHash()] = identity.toMemberInfo()
         }
@@ -114,7 +114,7 @@ internal class StubIdentitiesNetworkMap(
         ]
     }
 
-    private fun IdentityNetworkMapEntry.toMemberInfo(): LinkManagerNetworkMap.MemberInfo {
+    private fun MemberInfoEntry.toMemberInfo(): LinkManagerNetworkMap.MemberInfo {
         return LinkManagerNetworkMap.MemberInfo(
             LinkManagerNetworkMap.HoldingIdentity(this.holdingIdentity.x500Name, this.holdingIdentity.groupId),
             keyDeserialiser.toPublicKey(this.publicKey.array(), this.publicKeyAlgorithm),
@@ -134,7 +134,7 @@ internal class StubIdentitiesNetworkMap(
         messageDigest.update(publicKey)
         return messageDigest.digest()
     }
-    private fun IdentityNetworkMapEntry.toGroupIdWithPublicKeyHash(): GroupIdWithPublicKeyHash {
+    private fun MemberInfoEntry.toGroupIdWithPublicKeyHash(): GroupIdWithPublicKeyHash {
         return GroupIdWithPublicKeyHash(
             this.holdingIdentity.groupId,
             ByteBuffer.wrap(

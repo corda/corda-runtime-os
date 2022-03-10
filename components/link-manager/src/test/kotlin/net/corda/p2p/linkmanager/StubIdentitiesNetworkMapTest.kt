@@ -11,7 +11,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
-import net.corda.p2p.test.IdentityNetworkMapEntry
+import net.corda.p2p.test.MemberInfoEntry
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.stub.crypto.processor.KeyDeserialiser
 import net.corda.schema.TestSchema
@@ -33,7 +33,7 @@ import java.security.PublicKey
 import java.util.concurrent.CompletableFuture
 
 class StubIdentitiesNetworkMapTest {
-    private val processor = argumentCaptor<CompactedProcessor<String, IdentityNetworkMapEntry>>()
+    private val processor = argumentCaptor<CompactedProcessor<String, MemberInfoEntry>>()
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>()
     private val configuration = mock<SmartConfig>()
     private val subscriptionFactory = mock<SubscriptionFactory> {
@@ -48,7 +48,7 @@ class StubIdentitiesNetworkMapTest {
         whenever(mock.isRunning).doReturn(true)
     }
     private val subscriptionDominoTile = mockConstruction(SubscriptionDominoTile::class.java)
-    private val alice = IdentityNetworkMapEntry(
+    private val alice = MemberInfoEntry(
         HoldingIdentity(
             "Alice",
             "GROUP-1"
@@ -57,7 +57,7 @@ class StubIdentitiesNetworkMapTest {
         KeyAlgorithm.ECDSA,
         "alice.com"
     )
-    private val bob = IdentityNetworkMapEntry(
+    private val bob = MemberInfoEntry(
         HoldingIdentity(
             "Bob",
             "GROUP-2"
@@ -66,7 +66,7 @@ class StubIdentitiesNetworkMapTest {
         KeyAlgorithm.RSA,
         "bob.net"
     )
-    private val carol = IdentityNetworkMapEntry(
+    private val carol = MemberInfoEntry(
         HoldingIdentity(
             "Carol",
             "GROUP-3"
@@ -216,7 +216,7 @@ class StubIdentitiesNetworkMapTest {
 
         processor.firstValue.onNext(
             Record(
-                TestSchema.IDENTITY_NETWORK_MAP_TOPIC,
+                TestSchema.MEMBER_INFO_TOPIC,
                 alice.holdingIdentity.x500Name,
                 null
             ),
@@ -257,7 +257,7 @@ class StubIdentitiesNetworkMapTest {
 
         processor.firstValue.onNext(
             Record(
-                TestSchema.IDENTITY_NETWORK_MAP_TOPIC,
+                TestSchema.MEMBER_INFO_TOPIC,
                 alice.holdingIdentity.x500Name,
                 carol
             ),
