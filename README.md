@@ -34,6 +34,7 @@ Sub Commands included:
 1. `subCommand` - Prints a welcome message.
 
 ## Writing Your Own Plugin
+
 ### Plugin Location
 
 Before you begin please see the [plugin guidelines doc](PluginGuidelines.md)
@@ -43,6 +44,7 @@ you will have to ensure that you have gradle tasks that bundle the plugin for pf
 info [here](https://pf4j.org/doc/packaging.html)
 
 ### Basics
+
 To Write your own plugin for the CLI you must depend on this project's 'api' module.
 
 The API module contains the `CordaCliPlugin` Interface which must be used when constructing your plugin. For examples of
@@ -61,7 +63,7 @@ class ExamplePluginWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
 
     @Extension
     @CommandLine.Command(name = "example")
-    class ExamplePlugin : CordaCliPlugin {}
+    class ExamplePlugin : CordaCliPlugin 
 }
 ```
 
@@ -87,22 +89,61 @@ If you wish to use a service supplied by the plugin host (currently only HttpRpc
 a `ServiceUser` interface for each service you will use. This interface looks similar to the following:
 
 ```kotlin
-interface HttpServiceUser: ServiceUser {
+interface HttpServiceUser : ServiceUser {
     var service: HttpService
 }
 ```
 
-And its implementation requires a `lateinit` keyword like below: 
+And its implementation requires a `lateinit` keyword like below:
 
 ```kotlin
 @Extension
 @CommandLine.Command(name = "plugin", description = ["Example Plugin using services"])
 class ExamplePlugin : CordaCliPlugin, HttpServiceUser {
     override lateinit var service: HttpService
-    
-    @CommandLine.Command(name = "serviceExample", description = ["A subcommand that uses a service supplied by the host."])
+
+    @CommandLine.Command(
+        name = "serviceExample",
+        description = ["A subcommand that uses a service supplied by the host."]
+    )
     fun exampleServiceSubCommand() {
         println(service.get())
     }
 }
 ```
+
+## Things to look out for / Debugging
+
+### Multiple class bindings found
+
+Please ensure that the plugins are using `compileOnly` for any dependency that is already set as implementation on the
+host.
+
+### Liquibase & other libraries that use context class paths
+
+If you are creating a plugin using liquibase, you will have to manually set the context class path in the plugin to use
+its own class path, and not the hosts. This can be done by setting it in the plugins start method like this:
+
+```kotlin
+override fun start() {
+    Thread.currentThread().contextClassLoader = this::class.java.classLoader
+}
+```
+
+This will also work for any plugin that requires its own class path be used as the context, instead of the hosts.
+
+### Plugin not showing up
+
+There are a few things that can cause this silent error. The main reason for this is a missing `@Extension` annotation on
+the plugin's entry point class.
+
+Another is forgetting to add the `CordaCliPlugin` interface to the entry point. 
+
+### Running a remote debugger
+Start by creating a standard remote debug config via intellij's run/debug configuration manager. 
+
+Now run the debug version of the CLI with your command, either:
+* script/corda-cli-debug.cmd
+* script/corda-cli-debug.sh
+
+Now start the remote debugger and it will connect. 
