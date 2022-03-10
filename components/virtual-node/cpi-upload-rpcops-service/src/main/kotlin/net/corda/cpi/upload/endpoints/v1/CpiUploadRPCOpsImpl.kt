@@ -47,12 +47,6 @@ class CpiUploadRPCOpsImpl @Activate constructor(
 
     override fun stop() = coordinator.close()
 
-    /** @return first 12 characters of the hex string */
-    private fun toShortHash(secureHash: SecureHash) : String {
-        // see [HoldingIdentity]
-        return secureHash.toHexString().substring(0, 12)
-    }
-
     override fun cpi(cpiFileName: String, cpiContent: InputStream): CpiUploadRPCOps.UploadResponse {
         logger.info("Uploading CPI: $cpiFileName")
         requireRunning()
@@ -75,6 +69,12 @@ class CpiUploadRPCOpsImpl @Activate constructor(
         requireRunning()
         val cpis = cpiInfoReadService.getAll().map { it.toEndpointType() }
         return HTTPGetCPIsResponse(cpis)
+    }
+
+    /** @return first 12 characters of the hex string */
+    private fun toShortHash(secureHash: SecureHash) : String {
+        // see [HoldingIdentity]
+        return secureHash.toHexString().substring(0, 12)
     }
 
     private fun requireRunning() {
