@@ -59,12 +59,12 @@ class VirtualNodeWriterProcessorTests {
     private val cpiId = CPI.Identifier.newInstance("dummy_name", "dummy_version", summaryHash)
     private val cpiMetaData = CPIMetadata(cpiId, "dummy_cpi_id_short_hash", groupId)
 
-    private val connectionId = UUID.randomUUID()
+    private val connectionId = UUID.randomUUID().toString()
     private val vnodeInfo =
         VirtualNodeInfo(
             holdingIdentity.toAvro(),
             cpiIdentifier,
-            connectionId.toString(), connectionId.toString(), connectionId.toString(), connectionId.toString(),
+            connectionId, connectionId, connectionId, connectionId,
             null)
 
     private val vnodeCreationReq =
@@ -87,7 +87,7 @@ class VirtualNodeWriterProcessorTests {
     private val connectionManager = mock<DbConnectionManager>() {
         on { getDataSource(any()) }.doReturn(dataSource)
         on { getClusterEntityManagerFactory() }.doReturn(emf)
-        on { putConnection(any(), any(), any(), any(), any(), any()) }.doReturn(connectionId)
+        on { putConnection(any(), any(), any(), any(), any(), any()) }.doReturn(UUID.fromString(connectionId))
     }
 
     private val dbConnection = mock<DbConnection>() {
@@ -163,10 +163,15 @@ class VirtualNodeWriterProcessorTests {
             null,
             vnodeCreationReq.x500Name,
             vnodeInfo.cpiIdentifier,
-            vnodeCreationReq.cpiIdHash,
+            vnodeCreationReq.cpiFileChecksum,
             vnodeInfo.holdingIdentity.groupId,
             vnodeInfo.holdingIdentity,
-            holdingIdentity.id
+            holdingIdentity.id,
+            connectionId,
+            connectionId,
+            connectionId,
+            connectionId,
+            null
         )
 
         val processor = VirtualNodeWriterProcessor(getPublisher(), connectionManager, vNodeRepo, vNodeFactory)
@@ -186,10 +191,15 @@ class VirtualNodeWriterProcessorTests {
             expectedEnvelope,
             vnodeCreationReq.x500Name,
             vnodeInfo.cpiIdentifier,
-            vnodeCreationReq.cpiIdHash,
+            vnodeCreationReq.cpiFileChecksum,
             vnodeInfo.holdingIdentity.groupId,
             vnodeInfo.holdingIdentity,
-            holdingIdentity.id
+            holdingIdentity.id,
+            null,
+            null,
+            null,
+            null,
+            null
         )
 
         val processor = VirtualNodeWriterProcessor(getErroringPublisher(), connectionManager, vNodeRepo, vNodeFactory)
@@ -198,7 +208,7 @@ class VirtualNodeWriterProcessorTests {
         assertEquals(expectedResp.success, resp.success)
         assertEquals(expectedResp.x500Name, resp.x500Name)
         assertEquals(expectedResp.cpiIdentifier, resp.cpiIdentifier)
-        assertEquals(expectedResp.cpiIdentifierHash, resp.cpiIdentifierHash)
+        assertEquals(expectedResp.cpiFileChecksum, resp.cpiFileChecksum)
         assertEquals(expectedResp.mgmGroupId, resp.mgmGroupId)
         assertEquals(expectedResp.holdingIdentity, resp.holdingIdentity)
         assertEquals(expectedResp.holdingIdentifierHash, resp.holdingIdentifierHash)
@@ -210,9 +220,11 @@ class VirtualNodeWriterProcessorTests {
     fun `sends RPC failure response if the CPI with the given ID is not stored on the node`() {
         val expectedEnvelope = ExceptionEnvelope(
             VirtualNodeWriteServiceException::class.java.name,
-            "CPI with hash ${vnodeCreationReq.cpiIdHash} was not found."
+            "CPI with file checksum ${vnodeCreationReq.cpiFileChecksum} was not found."
         )
-        val expectedResp = VirtualNodeCreationResponse(false, expectedEnvelope, x500Name , null, null, null, null, null)
+        val expectedResp = VirtualNodeCreationResponse(
+            false, expectedEnvelope, x500Name , null, null, null, null, null,
+            null, null, null, null, null)
 
         val entityRepository = mock<VirtualNodeEntityRepository>().apply {
             whenever(getCPIMetadata(any())).thenReturn(null)
@@ -235,10 +247,15 @@ class VirtualNodeWriterProcessorTests {
             expectedEnvelope,
             vnodeCreationReq.x500Name,
             vnodeInfo.cpiIdentifier,
-            vnodeCreationReq.cpiIdHash,
+            vnodeCreationReq.cpiFileChecksum,
             vnodeInfo.holdingIdentity.groupId,
             vnodeInfo.holdingIdentity,
-            holdingIdentity.id
+            holdingIdentity.id,
+            null,
+            null,
+            null,
+            null,
+            null
         )
 
         val collisionHoldingIdentity = mock<HoldingIdentity>() {
@@ -259,7 +276,7 @@ class VirtualNodeWriterProcessorTests {
         assertEquals(expectedResp.success, resp.success)
         assertEquals(expectedResp.x500Name, resp.x500Name)
         assertEquals(expectedResp.cpiIdentifier, resp.cpiIdentifier)
-        assertEquals(expectedResp.cpiIdentifierHash, resp.cpiIdentifierHash)
+        assertEquals(expectedResp.cpiFileChecksum, resp.cpiFileChecksum)
         assertEquals(expectedResp.mgmGroupId, resp.mgmGroupId)
         assertEquals(expectedResp.holdingIdentity, resp.holdingIdentity)
         assertEquals(expectedResp.holdingIdentifierHash, resp.holdingIdentifierHash)

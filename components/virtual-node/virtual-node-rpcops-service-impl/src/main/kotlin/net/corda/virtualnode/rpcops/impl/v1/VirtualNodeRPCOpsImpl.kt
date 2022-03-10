@@ -77,14 +77,15 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
         val actor = CURRENT_RPC_CONTEXT.get().principal
         val rpcRequest = with (request) {
             VirtualNodeCreationRequest(
-                x500Name, cpiIdHash, vaultDdlConnection, vaultDmlConnection, cryptoDdlConnection, cryptoDmlConnection, actor)
+                x500Name, cpiFileChecksum, vaultDdlConnection, vaultDmlConnection, cryptoDdlConnection, cryptoDmlConnection, actor)
         }
         val resp = sendRequest(rpcRequest)
 
         return if (resp.success) {
             val cpiId = CPIIdentifier.fromAvro(resp.cpiIdentifier)
             HTTPCreateVirtualNodeResponse(
-                resp.x500Name, cpiId, resp.cpiIdentifierHash, resp.mgmGroupId, resp.holdingIdentifierHash
+                resp.x500Name, cpiId, resp.cpiFileChecksum, resp.mgmGroupId, resp.holdingIdentifierHash,
+                resp.vaultDdlConnectionId, resp.vaultDmlConnectionId, resp.cryptoDdlConnectionId, resp.cryptoDmlConnectionId
             )
         } else {
             val exception = resp.exception

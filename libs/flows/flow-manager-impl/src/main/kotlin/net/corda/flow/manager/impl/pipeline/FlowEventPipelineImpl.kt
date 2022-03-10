@@ -2,13 +2,14 @@ package net.corda.flow.manager.impl.pipeline
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.Checkpoint
-import net.corda.flow.manager.fiber.FlowContinuation
 import net.corda.flow.manager.FlowEventProcessor
+import net.corda.flow.manager.fiber.FlowContinuation
 import net.corda.flow.manager.fiber.FlowIORequest
 import net.corda.flow.manager.impl.FlowEventContext
 import net.corda.flow.manager.impl.handlers.FlowProcessingException
 import net.corda.flow.manager.impl.handlers.events.FlowEventHandler
 import net.corda.flow.manager.impl.handlers.requests.FlowRequestHandler
+import net.corda.flow.manager.impl.handlers.status.FlowWaitingForHandler
 import net.corda.flow.manager.impl.runner.FlowRunner
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.v5.base.util.contextLogger
@@ -26,11 +27,14 @@ import java.nio.ByteBuffer
  */
 data class FlowEventPipelineImpl(
     val flowEventHandler: FlowEventHandler<Any>,
+    val flowWaitingForHandlers: Map<Class<*>, FlowWaitingForHandler<out Any>>,
     val flowRequestHandlers: Map<Class<out FlowIORequest<*>>, FlowRequestHandler<out FlowIORequest<*>>>,
     val flowRunner: FlowRunner,
+    val flowGlobalPostProcessor: FlowGlobalPostProcessor,
     val context: FlowEventContext<Any>,
     val output: FlowIORequest<*>? = null
 ) : FlowEventPipeline {
+
     private companion object {
         val log = contextLogger()
     }
@@ -41,12 +45,12 @@ data class FlowEventPipelineImpl(
     }
 
     override fun runOrContinue(): FlowEventPipelineImpl {
-        log.info(
-            "Run or continue after receiving ${context.inputEventPayload::class.java.name} using" +
-                    " ${flowEventHandler::class.java.name}"
-        )
+        log.info("Run or continue after receiving ${context.inputEventPayload::class.java.name} using ${flowEventHandler::class.java.name}")
 
-        return when (val outcome = flowEventHandler.runOrContinue(context)) {
+        val status = context.checkpoint?.flowState?.waitingFor?.value
+            ?: throw FlowProcessingException("Flow [${context.checkpoint?.flowKey?.flowId}] status is null")
+
+        return when (val outcome = getFlowWaitingForHandler(status).runOrContinue(context, status)) {
             is FlowContinuation.Run, is FlowContinuation.Error -> {
                 updateContextFromFlowExecution(outcome)
             }
@@ -64,22 +68,36 @@ data class FlowEventPipelineImpl(
         return this
     }
 
+    override fun setWaitingFor(): FlowEventPipelineImpl {
+        output?.let {
+            val waitingFor = getFlowRequestHandler(it).getUpdatedWaitingFor(context, it)
+            requireCheckpoint(context) { "The flow must have a checkpoint after suspending" }
+                .flowState
+                .waitingFor = waitingFor
+        }
+        return this
+    }
+
     override fun requestPostProcessing(): FlowEventPipelineImpl {
-        // If the flow fiber did not run or resume then there is no request post processing to execute.
         return output?.let {
             log.info("Postprocessing of $output")
             copy(context = getFlowRequestHandler(it).postProcess(context, it))
         } ?: this
     }
 
-    override fun eventPostProcessing(): FlowEventPipelineImpl {
-        log.info("Postprocessing of ${context.inputEventPayload::class.qualifiedName} using ${flowEventHandler::class.qualifiedName}")
-        return copy(context = flowEventHandler.postProcess(context))
+    override fun globalPostProcessing(): FlowEventPipelineImpl {
+        return copy(context = flowGlobalPostProcessor.postProcess(context))
     }
 
     override fun toStateAndEventResponse(): StateAndEventProcessor.Response<Checkpoint> {
         log.info("Sending output records to message bus: ${context.outputRecords}")
         return StateAndEventProcessor.Response(context.checkpoint, context.outputRecords)
+    }
+
+    private fun getFlowWaitingForHandler(status: Any): FlowWaitingForHandler<Any> {
+        // This [uncheckedCast] is required to pass the [status] into the returned [FlowWaitingForHandler] further in the pipeline.
+        return uncheckedCast(flowWaitingForHandlers[status::class.java])
+            ?: throw FlowProcessingException("${status::class.qualifiedName} does not have an associated flow status handler")
     }
 
     private fun getFlowRequestHandler(request: FlowIORequest<*>): FlowRequestHandler<FlowIORequest<*>> {

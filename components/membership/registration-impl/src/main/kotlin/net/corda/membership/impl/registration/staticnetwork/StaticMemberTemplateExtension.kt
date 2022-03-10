@@ -4,6 +4,9 @@ import net.corda.membership.GroupPolicy
 
 class StaticMemberTemplateExtension {
     companion object {
+        /** Key name for protocol parameters property. */
+        const val PROTOCOL_PARAMS = "protocolParameters"
+
         /** Key name for static member template property. */
         const val STATIC_NETWORK_TEMPLATE = "staticNetwork"
 
@@ -46,12 +49,23 @@ class StaticMemberTemplateExtension {
         /** Key name for modified time. */
         const val STATIC_MODIFIED_TIME = "modifiedTime"
 
+        /** Protocol parameters. */
+        @JvmStatic
+        @Suppress("UNCHECKED_CAST")
+        val GroupPolicy.protocolParams: Map<String, Any>
+            get() = if (containsKey(PROTOCOL_PARAMS)) {
+                get(PROTOCOL_PARAMS) as? Map<String, Any>
+                    ?: throw ClassCastException("Casting failed for protocol parameters from group policy JSON.")
+            } else {
+                emptyMap()
+            }
+
         /** Static network template. */
         @JvmStatic
         @Suppress("UNCHECKED_CAST")
         val GroupPolicy.staticNetwork: Map<String, Any>
-            get() = if (containsKey(STATIC_NETWORK_TEMPLATE)) {
-                get(STATIC_NETWORK_TEMPLATE) as? Map<String, Any>
+            get() = if (protocolParams.containsKey(STATIC_NETWORK_TEMPLATE)) {
+                protocolParams[STATIC_NETWORK_TEMPLATE] as? Map<String, Any>
                     ?: throw ClassCastException("Casting failed for static network from group policy JSON.")
             } else {
                 emptyMap()

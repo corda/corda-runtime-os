@@ -30,6 +30,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import net.corda.data.packaging.CPIIdentifier as CPIIdAvro
 
@@ -53,6 +54,11 @@ class VirtualNodeRPCOpsImplTests {
     private val cpiIdAvro = CPIIdAvro("cpiName", "1.0.0", SecureHash("SHA-256", ByteBuffer.wrap("a".toByteArray())))
     private val cpiId = CPIIdentifier(cpiIdAvro.name, cpiIdAvro.version, cpiIdAvro.signerSummaryHash.toString())
     private val holdingId = HoldingIdentity("o=test,l=test,c=GB", "mgmGroupId")
+    private val vaultDdlConnectionId = null
+    private val vaultDmlConnectionId = UUID.randomUUID().toString()
+    private val cryptoDdlConnectionId = null
+    private val cryptoDmlConnectionId = UUID.randomUUID().toString()
+    private val hsmConnectionId = null
 
     private val httpCreateVNRequest = HTTPCreateVirtualNodeRequest(holdingId.x500Name, "hash", null, null, null, null)
     private val vnCreateSuccessfulResponse = VirtualNodeCreationResponse(
@@ -60,10 +66,15 @@ class VirtualNodeRPCOpsImplTests {
         null,
         httpCreateVNRequest.x500Name,
         cpiIdAvro,
-        httpCreateVNRequest.cpiIdHash,
+        httpCreateVNRequest.cpiFileChecksum,
         holdingId.groupId,
         holdingId,
-        holdingIdHash
+        holdingIdHash,
+        vaultDdlConnectionId,
+        vaultDmlConnectionId,
+        cryptoDdlConnectionId,
+        cryptoDmlConnectionId,
+        hsmConnectionId
     )
 
     private val rpcRequestTimeoutDuration = 1000
@@ -100,7 +111,7 @@ class VirtualNodeRPCOpsImplTests {
     @Test
     fun `createVirtualNode sends the correct request to the RPC sender`() {
         val rpcRequest = httpCreateVNRequest.run {
-            VirtualNodeCreationRequest(x500Name, cpiIdHash, null, null, null, null, "test_principal")
+            VirtualNodeCreationRequest(x500Name, cpiFileChecksum, null, null, null, null, "test_principal")
         }
 
         val (rpcSender, vnodeRPCOps) = getVirtualNodeRPCOps()
@@ -115,7 +126,9 @@ class VirtualNodeRPCOpsImplTests {
     @Test
     fun `createVirtualNode returns VirtualNodeCreationResponse if response is success`() {
         val successResponse =
-            HTTPCreateVirtualNodeResponse(holdingId.x500Name, cpiId, httpCreateVNRequest.cpiIdHash, holdingId.groupId, holdingIdHash)
+            HTTPCreateVirtualNodeResponse(
+                holdingId.x500Name, cpiId, httpCreateVNRequest.cpiFileChecksum, holdingId.groupId, holdingIdHash,
+                vaultDdlConnectionId, vaultDmlConnectionId, cryptoDdlConnectionId, cryptoDmlConnectionId)
         val (_, vnodeRPCOps) = getVirtualNodeRPCOps()
 
         vnodeRPCOps.createAndStartRpcSender(mock())
@@ -148,7 +161,8 @@ class VirtualNodeRPCOpsImplTests {
     fun `createVirtualNode throws HttpApiException if response is failure`() {
         val exception = ExceptionEnvelope("ErrorType", "errorMessage")
         val (_, vnodeRPCOps) = getVirtualNodeRPCOps{
-            VirtualNodeCreationResponse(false, exception, "", mock(), "", "", mock(), "")
+            VirtualNodeCreationResponse(false, exception, "", mock(), "", "", mock(),
+                "", null, null, null, null, null)
         }
 
         vnodeRPCOps.createAndStartRpcSender(mock())
@@ -166,7 +180,8 @@ class VirtualNodeRPCOpsImplTests {
     @Test
     fun `createVirtualNode throws HttpApiException if request fails but no exception is provided`() {
         val (_, vnodeRPCOps) = getVirtualNodeRPCOps {
-            VirtualNodeCreationResponse(false, null, "", mock(), "", "", mock(), "")
+            VirtualNodeCreationResponse(false, null, "", mock(), "", "", mock(),
+                "", null, null, null, null, null)
         }
 
         vnodeRPCOps.createAndStartRpcSender(mock())

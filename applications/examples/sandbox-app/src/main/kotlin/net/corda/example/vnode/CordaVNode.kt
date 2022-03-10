@@ -124,7 +124,9 @@ class CordaVNode @Activate constructor(
                 FlowStatusKey(clientId, virtualNodeInfo.holdingIdentity),
                 FlowInitiatorType.RPC,
                 clientId,
-                virtualNodeInfo,
+                virtualNodeInfo.holdingIdentity,
+                virtualNodeInfo.cpiIdentifier.name,
+                virtualNodeInfo.holdingIdentity,
                 "com.example.cpk.ExampleFlow",
                 Instant.now(),
             ),  "{\"message\":\"Bongo!\"}"
@@ -229,7 +231,7 @@ class CordaVNode @Activate constructor(
                     val bundle = classLoader.bundle
                     if (bundle == null) {
                         logger.info("CLASSLOADER>> {} is DEAD", classLoader)
-                    } else if (bundle.symbolicName.startsWith("com.example.")) {
+                    } else if (bundle.location.startsWith("FLOW/")) {
                         logger.info("BUNDLE>> {} is-in-use={} (classloader={})",
                             bundle, bundle.adapt(BundleWiring::class.java)?.isInUse, classLoader::class.java)
                     }

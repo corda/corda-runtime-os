@@ -1,5 +1,7 @@
 package net.corda.internal.serialization
 
+import net.corda.internal.serialization.amqp.DeserializationInput
+import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.serialization.SerializationContext
 import net.corda.serialization.serialize
 import net.corda.v5.application.services.serialization.SerializationService
@@ -7,32 +9,22 @@ import net.corda.v5.base.types.sequence
 import net.corda.v5.serialization.SerializedBytes
 import net.corda.v5.serialization.SingletonSerializeAsToken
 
-internal class SerializationServiceImpl(
-    private val serializationEnvironment: SerializationEnvironment,
+class SerializationServiceImpl(
+    private val serializationOutput: SerializationOutput,
+    private val deserializationInput: DeserializationInput,
     private val context: SerializationContext
 ) : SerializationService {
 
     override fun <T : Any> serialize(obj: T): SerializedBytes<T> {
-        return obj.serialize(
-            serializationEnvironment.serializationFactory,
-            context
-        )
+        return serializationOutput.serialize(obj, context)
     }
 
     override fun <T : Any> deserialize(serializedBytes: SerializedBytes<T>, clazz: Class<T>): T {
-        return serializationEnvironment.serializationFactory.deserialize(
-            serializedBytes,
-            clazz,
-            context
-        )
+        return deserializationInput.deserialize(serializedBytes, clazz, context)
     }
 
     override fun <T : Any> deserialize(bytes: ByteArray, clazz: Class<T>): T {
-        return serializationEnvironment.serializationFactory.deserialize(
-            bytes.sequence(),
-            clazz,
-            context
-        )
+        return deserializationInput.deserialize(bytes.sequence(), clazz, context)
     }
 }
 
