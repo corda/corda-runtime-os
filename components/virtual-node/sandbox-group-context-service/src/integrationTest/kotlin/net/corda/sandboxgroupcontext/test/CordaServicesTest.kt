@@ -1,5 +1,6 @@
 package net.corda.sandboxgroupcontext.test
 
+import net.corda.cpk.read.CpkReadService
 import java.nio.file.Path
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX_FILTER
 import net.corda.sandboxgroupcontext.SandboxGroupContext

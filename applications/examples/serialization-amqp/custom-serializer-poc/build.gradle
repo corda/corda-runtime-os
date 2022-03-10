@@ -26,11 +26,12 @@ dependencies {
     implementation "net.corda:corda-packaging"
     implementation "net.corda:corda-serialization"
     implementation project(':libs:serialization:serialization-internal')
-    implementation project(":components:install:install-legacy")
     implementation project(path: ':libs:kotlin-reflection', configuration: 'bundle')
     implementation project(":libs:sandbox")
     implementation project(path: ':libs:serialization:serialization-encoding', configuration: 'bundle')
     implementation project(":libs:utilities")
+    implementation project(':libs:virtual-node:packaging-core')
+    implementation project(':components:virtual-node:cpk-read-service')
 
     // Transitive dependency bump to eliminate critical violation in NexusIQ report - see nexus iq report.
     // Constraints block can be removed when Avro is upgraded to the next version

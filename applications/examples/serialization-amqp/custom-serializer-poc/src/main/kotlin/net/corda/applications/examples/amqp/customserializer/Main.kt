@@ -1,6 +1,5 @@
 package net.corda.applications.examples.amqp.customserializer
 
-import net.corda.install.InstallService
 import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.SerializationOutput
@@ -48,7 +47,7 @@ class Main @Activate constructor(
     @Reference
     private val configurationAdmin: ConfigurationAdmin,
     @Reference
-    private val installService: InstallService,
+    private val cpkReadServiceLoader: CpkReadServiceLoader,
     @Reference(cardinality = MULTIPLE, policyOption = GREEDY)
     private val internalCustomSerializers: List<InternalCustomSerializer<out Any>>
 ) : Application {
@@ -88,7 +87,10 @@ class Main @Activate constructor(
     private fun prepareSandbox(cpkFiles: List<Path>): SandboxAndSerializers {
         val outputStream = ByteArrayOutputStream()
         CPI.assemble(outputStream, "cpi", "1.0", cpkFiles)
-        val loadCpb: CPI = installService.loadCpb(ByteArrayInputStream(outputStream.toByteArray()))
+
+        // NOTE - re-enable with a custom implementation of CpkReadService
+        val loadCpb: CPI = cpkReadServiceLoader.load(ByteArrayInputStream(outputStream.toByteArray()))
+
         val serializers: List<String> = loadCpb.metadata.cpks.flatMap { it.cordappManifest.serializers }
         return SandboxAndSerializers(sandboxCreationService.createSandboxGroup(loadCpb.cpks), serializers)
     }
@@ -158,7 +160,9 @@ class Main @Activate constructor(
         val inputB = DeserializationInput(serializationB)
 
         consoleLogger.info("Check custom serialisers work in environment A")
-        val objA = sandboxA.sandboxGroup.loadClassFromMainBundles("net.corda.applications.examples.amqp.customserializer.examplea.NeedsCustomSerializerExampleA").getConstructor(Integer.TYPE).newInstance(1)
+        val objA =
+            sandboxA.sandboxGroup.loadClassFromMainBundles("net.corda.applications.examples.amqp.customserializer.examplea.NeedsCustomSerializerExampleA")
+                .getConstructor(Integer.TYPE).newInstance(1)
         val contextA = AMQP_STORAGE_CONTEXT.withSandboxGroup(sandboxA.sandboxGroup)
         val serializedBytesA = outputA.serialize(objA, contextA)
         consoleLogger.info("SUCCESS - Serialise successful in environment A")
@@ -169,7 +173,9 @@ class Main @Activate constructor(
 
 
         consoleLogger.info("Check custom serialisers work in environment B")
-        val objB = sandboxB.sandboxGroup.loadClassFromMainBundles("net.corda.applications.examples.amqp.customserializer.exampleb.NeedsCustomSerializerExampleB").getConstructor(Int::class.java).newInstance(2)
+        val objB =
+            sandboxB.sandboxGroup.loadClassFromMainBundles("net.corda.applications.examples.amqp.customserializer.exampleb.NeedsCustomSerializerExampleB")
+                .getConstructor(Int::class.java).newInstance(2)
         val contextB = AMQP_STORAGE_CONTEXT.withSandboxGroup(sandboxB.sandboxGroup)
         val serializedBytesB = outputB.serialize(objB, contextB)
         consoleLogger.info("SUCCESS - Serialise successful in environment B")

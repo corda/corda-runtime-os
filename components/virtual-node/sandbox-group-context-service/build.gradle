@@ -35,17 +35,15 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
-
+    implementation project(':libs:virtual-node:packaging-core')
     implementation project(':libs:virtual-node:sandbox-group-context')
     implementation project(':libs:sandbox')
-    runtimeOnly project(':libs:sandbox-hooks')
 
     implementation project(":components:virtual-node:virtual-node-common")
-    implementation project(":components:install:install-service")
-
-    implementation project(":libs:configuration:configuration-core")
+    implementation project(":components:virtual-node:cpk-read-service")
     implementation project(":components:configuration:configuration-read-service")
+
+    runtimeOnly project(':libs:sandbox-hooks')
 
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:registry")
