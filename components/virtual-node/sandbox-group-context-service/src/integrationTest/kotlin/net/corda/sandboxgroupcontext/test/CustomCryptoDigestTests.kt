@@ -27,8 +27,10 @@ import org.osgi.test.junit5.service.ServiceExtension
 class CustomCryptoDigestTests {
     companion object {
         private const val PLATFORM_DIGEST_ONE_CLASSNAME = "com.example.PlatformCryptoConsumer"
-        private const val DIGEST_ONE_CLASSNAME = "com.example.CryptoConsumer"
-        private const val DIGEST_TWO_CLASSNAME = "org.example.CryptoConsumer"
+        private const val PACKAGE_NAME_ONE="com.example"
+        private const val PACKAGE_NAME_TWO="org.example"
+        private const val DIGEST_ONE_CLASSNAME = "$PACKAGE_NAME_ONE.CryptoConsumer"
+        private const val DIGEST_TWO_CLASSNAME = "$PACKAGE_NAME_TWO.CryptoConsumer"
         private const val ALGORITHM_PROPERTY_NAME = "algorithm"
 
         private const val DIGEST_CPB_ONE = "META-INF/crypto-custom-digest-one-consumer.cpb"
@@ -66,7 +68,7 @@ class CustomCryptoDigestTests {
     fun `first consumer cannot use other CPI digest`() {
         val sandboxGroupContext = virtualNode.loadSandbox(DIGEST_CPB_ONE)
         assertThrows<IllegalArgumentException> {
-            virtualNode.runFlow<SecureHash>("com.example.CryptoConsumerTryAndUseOtherDigest", sandboxGroupContext)
+            virtualNode.runFlow<SecureHash>("$PACKAGE_NAME_ONE.CryptoConsumerTryAndUseOtherDigest", sandboxGroupContext)
         }
     }
 
@@ -81,8 +83,8 @@ class CustomCryptoDigestTests {
     fun `second consumer cannot use other CPI digest`() {
         val sandboxGroupContext = virtualNode.loadSandbox(DIGEST_CPB_TWO)
         assertThrows<IllegalArgumentException> {
-            // NOTE the 'package' is >> org << not com for 'TWO'.
-            virtualNode.runFlow<SecureHash>("org.example.CryptoConsumerTryAndUseOtherDigest", sandboxGroupContext)
+            // NOTE the 'package' is 'TWO'.
+            virtualNode.runFlow<SecureHash>("$PACKAGE_NAME_TWO.CryptoConsumerTryAndUseOtherDigest", sandboxGroupContext)
         }
     }
 
@@ -111,12 +113,12 @@ class CustomCryptoDigestTests {
         virtualNode.runFlow<SecureHash>(DIGEST_TWO_CLASSNAME, sandboxGroupContextTwo)
 
         assertThrows<IllegalArgumentException> {
-            virtualNode.runFlow<SecureHash>("com.example.CryptoConsumerTryAndUseOtherDigest", sandboxGroupContextOne)
+            virtualNode.runFlow<SecureHash>("$PACKAGE_NAME_ONE.CryptoConsumerTryAndUseOtherDigest", sandboxGroupContextOne)
         }
 
         assertThrows<IllegalArgumentException> {
-            // NOTE the 'package' is >> org << not com in 'TWO'
-            virtualNode.runFlow<SecureHash>("org.example.CryptoConsumerTryAndUseOtherDigest", sandboxGroupContextTwo)
+            // NOTE the 'package' 'TWO'
+            virtualNode.runFlow<SecureHash>("$PACKAGE_NAME_TWO.CryptoConsumerTryAndUseOtherDigest", sandboxGroupContextTwo)
         }
     }
 

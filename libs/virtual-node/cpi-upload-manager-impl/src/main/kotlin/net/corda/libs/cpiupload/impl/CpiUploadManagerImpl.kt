@@ -1,5 +1,6 @@
 package net.corda.libs.cpiupload.impl
 
+import net.corda.chunking.ChunkWriter.Request
 import net.corda.chunking.ChunkWriterFactory
 import net.corda.chunking.RequestId
 import net.corda.data.chunking.UploadStatus
@@ -27,7 +28,7 @@ class CpiUploadManagerImpl(
     private val statusProcessor: UploadStatusProcessor
 ) : CpiUploadManager {
 
-    override fun uploadCpi(cpiFileName: String, cpiContent: InputStream): RequestId {
+    override fun uploadCpi(cpiFileName: String, cpiContent: InputStream): Request {
         val chunkWriter = ChunkWriterFactory.create(ChunkWriterFactory.SUGGESTED_CHUNK_SIZE).apply {
             onChunk {
                 val futures = publisher.publish(listOf(Record(uploadTopic, it.requestId, it)))

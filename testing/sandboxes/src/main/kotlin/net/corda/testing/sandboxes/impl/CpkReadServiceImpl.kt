@@ -1,6 +1,6 @@
 package net.corda.testing.sandboxes.impl
 
-import net.corda.install.InstallService
+import net.corda.cpk.read.CpkReadService
 import net.corda.libs.packaging.CpiIdentifier
 import net.corda.libs.packaging.CpiMetadata
 import net.corda.libs.packaging.CpkIdentifier
@@ -23,20 +23,20 @@ import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("unused")
 @Component(
-    service = [ InstallService::class, CpiLoader::class ],
+    service = [ CpkReadService::class, CpiLoader::class ],
     configurationPolicy = REQUIRE
 )
 @ServiceRanking(Int.MAX_VALUE)
-class InstallServiceImpl @Activate constructor(
+class CpkReadServiceImpl @Activate constructor(
     bundleContext: BundleContext,
     properties: Map<String, Any?>
-) : InstallService, CpiLoader {
+) : CpkReadService, CpiLoader {
     companion object {
         const val BASE_DIRECTORY_KEY = "baseDirectory"
         const val TEST_BUNDLE_KEY = "testBundle"
     }
 
-    private val logger = loggerFor<InstallService>()
+    private val logger = loggerFor<CpkReadService>()
 
     private val cpkDir = (properties[BASE_DIRECTORY_KEY] as? String)?.let { Paths.get(it) }
         ?: throw IllegalStateException("Base directory not configured")
@@ -92,12 +92,13 @@ class InstallServiceImpl @Activate constructor(
         return CompletableFuture.completedFuture(cpi)
     }
 
-    override fun get(id: CpkIdentifier): CompletableFuture<CPK?> {
+    override fun get(cpkId: CpkIdentifier): CPK? {
         val cpk = cpks.firstOrNull {
-            it.metadata.id.name == id.name &&
-                    it.metadata.id.version == id.version &&
-                    it.metadata.id.signerSummaryHash == id.signerSummaryHash }
-        return CompletableFuture.completedFuture(cpk)
+            it.metadata.id.name == cpkId.name &&
+                    it.metadata.id.version == cpkId.version &&
+                    it.metadata.id.signerSummaryHash == cpkId.signerSummaryHash }
+
+        return cpk
     }
 
     override fun start() {
