@@ -15,7 +15,7 @@ internal val Class<out RpcOps>.endpoints: List<Method>
         method.annotations.any { annotation ->
             annotation is HttpRpcPOST || annotation is HttpRpcGET
         } || staticExposedGetMethods.any { it.equals(method.name, true) }
-    }
+    }.sortedBy { it.name }
 
 internal val List<Parameter>.pathParameters
     get() = this.filter { it.annotations.any { annotation -> annotation is HttpRpcPathParameter } }

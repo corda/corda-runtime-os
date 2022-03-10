@@ -5,10 +5,12 @@ import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.tools.annotations.validation.EndpointNameConflictValidator.Companion.error
 import net.corda.httprpc.tools.annotations.validation.utils.EndpointType
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import kotlin.reflect.jvm.javaMethod
 
 class EndpointNameConflictValidatorTest {
 
@@ -84,8 +86,8 @@ class EndpointNameConflictValidatorTest {
 
         val result = EndpointNameConflictValidator(TestInterface::class.java).validate()
 
-        assertEquals(2, result.errors.size)
-        assertThat(result.errors).allMatch { it.equals("Duplicate endpoint path 'test' for GET method.") }
+        assertThat(result.errors).hasSize(2).allMatch { error ->
+            error == error("test", EndpointType.GET, TestInterface::class.java.methods.first { it.name == "test" }) }
     }
 
     @Test
@@ -97,14 +99,12 @@ class EndpointNameConflictValidatorTest {
             abstract fun test()
 
             @HttpRpcGET("")
-            @Suppress("unused")
             abstract fun test2()
         }
 
         val result = HttpRpcInterfaceValidator.validate(TestInterface::class.java)
 
-        assertEquals(1, result.errors.size)
-        assertThat(result.errors).allMatch { it == "Duplicate endpoint path 'null' for GET method." }
+        assertThat(result.errors).hasSize(1).contains(error("null", EndpointType.GET, TestInterface::test2.javaMethod!!))
     }
 
     @Test
@@ -130,8 +130,11 @@ class EndpointNameConflictValidatorTest {
 
         val result = HttpRpcInterfaceValidator.validate(TestInterface::class.java)
 
-        assertEquals(3, result.errors.size)
-        assertThat(result.errors).allMatch { it == "Duplicate endpoint path 'test' for GET method." }
+        assertThat(result.errors).hasSize(3).contains(
+            error("test", EndpointType.GET, TestInterface::test2.javaMethod!!),
+            error("test", EndpointType.GET, TestInterface::test3.javaMethod!!),
+            error("test", EndpointType.GET, TestInterface::test4.javaMethod!!)
+        )
     }
 
     @Test
@@ -149,7 +152,36 @@ class EndpointNameConflictValidatorTest {
 
         val result = HttpRpcInterfaceValidator.validate(TestInterface::class.java)
 
-        assertEquals(1, result.errors.size)
-        assert(result.errors.single().contains(EndpointNameConflictValidator.error("getprotocolversion", EndpointType.GET)))
+        assertThat(result.errors).hasSize(1).contains(error("getprotocolversion", EndpointType.GET,
+            TestInterface::test.javaMethod!!))
+    }
+
+    @Test
+    fun `validate double GET and POST with default path`() {
+        @HttpRpcResource
+        abstract class TestInterface : RpcOps {
+            @HttpRpcGET
+            @Suppress("unused")
+            abstract fun test()
+
+            @HttpRpcGET
+            @Suppress("unused")
+            abstract fun test2()
+
+            @HttpRpcPOST
+            @Suppress("unused")
+            abstract fun test3()
+
+            @HttpRpcPOST
+            @Suppress("unused")
+            abstract fun test4()
+        }
+
+        val result = HttpRpcInterfaceValidator.validate(TestInterface::class.java)
+
+        assertThat(result.errors).hasSize(2).
+            contains(
+                error("null", EndpointType.GET, TestInterface::test2.javaMethod!!),
+                error("null", EndpointType.POST, TestInterface::test4.javaMethod!!))
     }
 }

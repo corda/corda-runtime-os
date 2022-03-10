@@ -14,7 +14,8 @@ import java.lang.reflect.Method
 internal class EndpointNameConflictValidator(private val clazz: Class<out RpcOps>) : HttpRpcValidator {
 
     companion object {
-        fun error(path: String?, type: EndpointType) = "Duplicate endpoint path '$path' for $type method."
+        fun error(path: String?, type: EndpointType, method: Method): String =
+            "Duplicate endpoint path '$path' for $type HTTP method in '${method.declaringClass.simpleName}.${method.name}'."
     }
 
     override fun validate(): HttpRpcValidationResult = validateSameTypeEndpoints(clazz.endpoints)
@@ -33,7 +34,7 @@ internal class EndpointNameConflictValidator(private val clazz: Class<out RpcOps
     ): HttpRpcValidationResult {
         val path = method.endpointPath(type)?.toLowerCase()
         return if (this.contains(path to type)) {
-            HttpRpcValidationResult(listOf(error(path, type)))
+            HttpRpcValidationResult(listOf(error(path, type, method)))
         } else {
             this.add(path to type)
             HttpRpcValidationResult()
