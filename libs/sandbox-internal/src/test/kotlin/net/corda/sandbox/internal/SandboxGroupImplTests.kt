@@ -215,12 +215,12 @@ private class EvolvableTagImpl(
 }
 
 /** A dummy [ClassTagFactory] implementation that returns pre-defined tags. */
-private class DummyClassTagFactory(cpk: CpkMetadata) : ClassTagFactory {
+private class DummyClassTagFactory(cpkMetadata: CpkMetadata) : ClassTagFactory {
     // Used for public classes, where the main bundle name, CPK file hash and CPK signer summary hash are ignored.
     val staticIdentifier = STATIC_IDENTIFIER
     val evolvableIdentifier = EVOLVABLE_IDENTIFIER
 
-    private val cpkStaticTag = StaticTagImpl(ClassType.CpkSandboxClass, CPK_LIBRARY_BUNDLE_NAME, cpk.fileChecksum)
+    private val cpkStaticTag = StaticTagImpl(ClassType.CpkSandboxClass, CPK_LIBRARY_BUNDLE_NAME, cpkMetadata.fileChecksum)
 
     private val publicStaticTag = StaticTagImpl(ClassType.PublicSandboxClass, PUBLIC_BUNDLE_NAME, PLACEHOLDER_HASH)
 
@@ -232,7 +232,7 @@ private class DummyClassTagFactory(cpk: CpkMetadata) : ClassTagFactory {
             ClassType.CpkSandboxClass,
             CPK_LIBRARY_BUNDLE_NAME,
             CPK_MAIN_BUNDLE_NAME,
-            cpk.id.signerSummaryHash
+            cpkMetadata.cpkId.signerSummaryHash
         )
 
     private val publicEvolvableTag =
@@ -243,7 +243,7 @@ private class DummyClassTagFactory(cpk: CpkMetadata) : ClassTagFactory {
             ClassType.CpkSandboxClass,
             CPK_LIBRARY_BUNDLE_NAME,
             "invalid_main_bundle_name",
-            cpk.id.signerSummaryHash
+            cpkMetadata.cpkId.signerSummaryHash
         )
 
     private val invalidSignersEvolvableTag =

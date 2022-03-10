@@ -93,7 +93,7 @@ class GroupPolicyUploader @Activate constructor(
         val vnodeInfos = memberX500Names.map {
             VirtualNodeInfo(
                 HoldingIdentity(it.toString(), groupId),
-                cpiMetadata.id,
+                cpiMetadata.cpiId,
                 vaultDmlConnectionId = UUID.randomUUID(),
                 cryptoDmlConnectionId = UUID.randomUUID()
             )
@@ -168,7 +168,7 @@ class GroupPolicyUploader @Activate constructor(
         listOf(
             Record(
                 Schemas.VirtualNode.CPI_INFO_TOPIC,
-                id.toAvro(),
+                cpiId.toAvro(),
                 toAvro()
             )
         )

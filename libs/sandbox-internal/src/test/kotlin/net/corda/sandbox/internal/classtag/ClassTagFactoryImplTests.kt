@@ -29,8 +29,8 @@ class ClassTagFactoryImplTests {
 
     private val mockBundle = mockBundle(MOCK_BUNDLE_NAME)
     private val mockCpkMainBundle = mockBundle(CPK_MAIN_BUNDLE_NAME)
-    private val mockCpk = mockCpkMeta()
-    private val mockSandbox = CpkSandboxImpl(randomUUID(), mockCpk, mockCpkMainBundle, emptySet())
+    private val mockCpkMetadata = mockCpkMeta()
+    private val mockSandbox = CpkSandboxImpl(randomUUID(), mockCpkMetadata, mockCpkMainBundle, emptySet())
 
     /**
      * Returns a serialised class tag.
@@ -79,7 +79,7 @@ class ClassTagFactoryImplTests {
         val classTag = classTagFactory.deserialise(serialisedTag)
 
         val expectedClassTag =
-            StaticTagImplV1(ClassType.CpkSandboxClass, mockBundle.symbolicName, mockCpk.fileChecksum)
+            StaticTagImplV1(ClassType.CpkSandboxClass, mockBundle.symbolicName, mockCpkMetadata.fileChecksum)
         assertEquals(expectedClassTag, classTag)
     }
 
@@ -112,7 +112,7 @@ class ClassTagFactoryImplTests {
             ClassType.CpkSandboxClass,
             mockBundle.symbolicName,
             mockSandbox.mainBundle.symbolicName,
-            mockCpk.id.signerSummaryHash
+            mockCpkMetadata.cpkId.signerSummaryHash
         )
         assertEquals(expectedClassTag, classTag)
     }

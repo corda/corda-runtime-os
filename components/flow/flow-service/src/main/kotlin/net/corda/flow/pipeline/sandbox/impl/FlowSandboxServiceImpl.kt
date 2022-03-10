@@ -96,18 +96,18 @@ class FlowSandboxServiceImpl(
 
         val cpiMetadata = cpiInfoReadService.get(vNodeInfo.cpiIdentifier)
         checkNotNull(cpiMetadata) { "Failed to find the CPI meta data for '${vNodeInfo.cpiIdentifier}}'" }
-        check(cpiMetadata.cpksMetadata.isNotEmpty()) { "No CPKs defined for CPI Meta data id='${cpiMetadata.id}}'" }
+        check(cpiMetadata.cpksMetadata.isNotEmpty()) { "No CPKs defined for CPI Meta data id='${cpiMetadata.cpiId}}'" }
 
         val vNodeContext = VirtualNodeContext(
             holdingIdentity,
-            cpiMetadata.cpksMetadata.mapTo(LinkedHashSet(), CpkMetadata::id),
+            cpiMetadata.cpksMetadata.mapTo(LinkedHashSet(), CpkMetadata::cpkId),
             SandboxGroupType.FLOW,
             SingletonSerializeAsToken::class.java,
             null
         )
 
         if (!sandboxGroupContextComponent.hasCpks(vNodeContext.cpkIdentifiers)) {
-            throw IllegalStateException("The sandbox can't find one or more of the CPKs for CPI '${cpiMetadata.id}'")
+            throw IllegalStateException("The sandbox can't find one or more of the CPKs for CPI '${cpiMetadata.cpiId}'")
         }
 
         return sandboxGroupContextComponent.getOrCreate(vNodeContext) { _, sandboxGroupContext ->
@@ -222,7 +222,7 @@ class FlowSandboxServiceImpl(
                 val flowClass = sandboxGroup.loadClassFromMainBundles(flow, Flow::class.java)
                 if (flowClass.isAnnotationPresent(InitiatedBy::class.java)) {
                     val initiatingFlow = flowClass.getAnnotation(InitiatedBy::class.java).value.java.name
-                    val key = cpiMetadata.id.name to initiatingFlow
+                    val key = cpiMetadata.cpiId.name to initiatingFlow
                     check(key !in initiatingToInitiatedFlows) { "Flow $flow has been found in multiple CPKs but should be unique" }
                     initiatingToInitiatedFlows[key] = flow
                 }

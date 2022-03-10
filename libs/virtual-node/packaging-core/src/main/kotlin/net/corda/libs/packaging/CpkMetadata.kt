@@ -16,7 +16,7 @@ import java.util.stream.Collectors
 /**
  * Represents a CPK file in the cluster
  *
- * @property id
+ * @property cpkId
  * @property manifest The file name of the main bundle inside the [CPK]
  * @property mainBundle
  * @property libraries
@@ -28,7 +28,7 @@ import java.util.stream.Collectors
  * @constructor Create empty Cpk metadata
  */
 data class CpkMetadata(
-    val id : CpkIdentifier,
+    val cpkId : CpkIdentifier,
     val manifest : CPK.Manifest,
     val mainBundle : String,
     val libraries : List<String>,
@@ -81,7 +81,7 @@ data class CpkMetadata(
 
     fun toAvro(): net.corda.data.packaging.CPKMetadata {
         return net.corda.data.packaging.CPKMetadata(
-            id.toAvro(),
+            cpkId.toAvro(),
             manifest.toAvro(),
             mainBundle,
             libraries,
