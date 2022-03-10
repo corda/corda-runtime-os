@@ -36,8 +36,6 @@ dependencies {
     runtimeOnly project(":libs:application:application-impl")
     runtimeOnly project(":libs:configuration:configuration-publish-impl")
     runtimeOnly project(":libs:crypto:crypto-impl")
-    runtimeOnly project(":libs:flows:flow-manager-impl")
-    runtimeOnly project(":libs:flows:flow-manager-impl")
     runtimeOnly project(":libs:flows:flow-mapper-impl")
     runtimeOnly project(":libs:flows:session-manager-impl")
     runtimeOnly project(":libs:messaging:kafka-message-bus-impl")

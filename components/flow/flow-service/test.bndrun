@@ -66,8 +66,6 @@
 	net.corda.crypto;version='[5.0.0,5.0.1)',\
 	net.corda.crypto-core;version='[5.0.0,5.0.1)',\
 	net.corda.crypto-impl;version='[5.0.0,5.0.1)',\
-	net.corda.flow-manager;version='[5.0.0,5.0.1)',\
-	net.corda.flow-manager-impl;version='[5.0.0,5.0.1)',\
 	net.corda.flow-service;version='[5.0.0,5.0.1)',\
 	net.corda.inmemory-messaging-impl;version='[5.0.0,5.0.1)',\
 	net.corda.install-service;version='[5.0.0,5.0.1)',\
