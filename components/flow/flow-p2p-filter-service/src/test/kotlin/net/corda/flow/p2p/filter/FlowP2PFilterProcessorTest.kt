@@ -24,7 +24,7 @@ import java.time.Instant
 
 class FlowP2PFilterProcessorTest {
 
-    private lateinit var processor: FlowFilterMessageProcessor
+    private lateinit var processor: FlowP2PFilterProcessor
     private lateinit var factory: CordaAvroSerializationFactory
     private lateinit var deserializer: CordaAvroDeserializer<FlowMapperEvent>
 
@@ -59,7 +59,7 @@ class FlowP2PFilterProcessorTest {
         )
 
         val events = listOf(flowRecord, otherRecord)
-        processor = FlowFilterMessageProcessor(factory)
+        processor = FlowP2PFilterProcessor(factory)
         val output = processor.onNext(events)
 
         assertThat(output.size).isEqualTo(1)
