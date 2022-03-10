@@ -28,16 +28,16 @@ import java.util.stream.Collectors
  * @constructor Create empty Cpk metadata
  */
 data class CpkMetadata(
-    val cpkId : CpkIdentifier,
-    val manifest : CPK.Manifest,
-    val mainBundle : String,
-    val libraries : List<String>,
-    val dependencies : List<CpkIdentifier>,
-    val cordappManifest : CordappManifest,
-    val type : CPK.Type,
+    val cpkId: CpkIdentifier,
+    val manifest: CPK.Manifest,
+    val mainBundle: String,
+    val libraries: List<String>,
+    val dependencies: List<CpkIdentifier>,
+    val cordappManifest: CordappManifest,
+    val type: CPK.Type,
     val fileChecksum: SecureHash,
     // TODO - is this needed here?
-    val cordappCertificates : Set<Certificate>
+    val cordappCertificates: Set<Certificate>
 ) {
     companion object {
         fun fromAvro(other: net.corda.data.packaging.CPKMetadata): CpkMetadata {

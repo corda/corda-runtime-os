@@ -5,10 +5,10 @@ import net.corda.v5.crypto.SecureHash
 import java.nio.ByteBuffer
 
 data class CpiMetadata(
-    val cpiId : CpiIdentifier,
-    val fileChecksum : SecureHash,
-    val cpksMetadata : Collection<CpkMetadata>,
-    val groupPolicy : String?) {
+    val cpiId: CpiIdentifier,
+    val fileChecksum: SecureHash,
+    val cpksMetadata: Collection<CpkMetadata>,
+    val groupPolicy: String?) {
     companion object {
         fun fromAvro(other: net.corda.data.packaging.CPIMetadata) = CpiMetadata(
             CpiIdentifier.fromAvro(other.id),
