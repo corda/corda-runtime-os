@@ -7,8 +7,6 @@ import org.osgi.framework.Bundle
 import org.osgi.framework.BundleException
 import org.osgi.framework.Constants
 import org.osgi.framework.FrameworkEvent
-import org.osgi.framework.FrameworkUtil
-import org.osgi.framework.ServiceReference
 import org.osgi.framework.launch.Framework
 import org.osgi.framework.launch.FrameworkFactory
 import org.osgi.framework.wiring.FrameworkWiring
@@ -17,7 +15,7 @@ import java.io.IOException
 import java.nio.file.Path
 import java.util.Properties
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeUnit.MILLISECONDS
 
 /**
  * `OSGiFrameworkWrap` provides an API to bootstrap an OSGI framework and OSGi bundles in the classpath.
@@ -341,7 +339,7 @@ class OSGiFrameworkWrap(
      * Install the bundle of the `.jar` file represented in the [resource].
      *
      * @param resource representing the bundle `.jar` file in the classpath.
-     *                 The [resource] is read through [ClassLoader.getResourceAsStream].
+     *                 The [resource] is read through [ClassLoader.getResource].
      * @param classLoader used to read the [resource].
      *
      * @throws BundleException If the bundle represented in the [resource] fails to install.
@@ -360,16 +358,14 @@ class OSGiFrameworkWrap(
     )
     private fun installBundleJar(resource: String, classLoader: ClassLoader) {
         logger.debug("OSGi bundle $resource installing...")
-        classLoader.getResourceAsStream(resource).use { inputStream ->
-            if (inputStream != null) {
-                val bundleContext = framework.bundleContext
-                    ?: throw IllegalStateException("OSGi framework not active yet.")
-                val bundle = bundleContext.installBundle(resource, inputStream)
-                bundleDescriptorMap[bundle.bundleId] = OSGiBundleDescriptor(bundle)
-                logger.debug("OSGi bundle $resource installed.")
-            } else {
-                throw IOException("OSGi bundle at $resource not found")
-            }
+        val resourceUrl = classLoader.getResource(resource)
+            ?: throw IOException("OSGi bundle at $resource not found")
+        resourceUrl.openStream().use { inputStream ->
+            val bundleContext = framework.bundleContext
+                ?: throw IllegalStateException("OSGi framework not active yet.")
+            val bundle = bundleContext.installBundle(resource, inputStream)
+            bundleDescriptorMap[bundle.bundleId] = OSGiBundleDescriptor(bundle)
+            logger.debug("OSGi bundle $resource installed.")
         }
     }
 
@@ -377,10 +373,10 @@ class OSGiFrameworkWrap(
      * Install the bundles listed in the [resource] file.
      * Each line represents the path to the resource representing one bundle.
      * Line text after the `#` char is ignored.
-     * The resources are read through [ClassLoader.getResourceAsStream].
+     * The resources are read through [ClassLoader.getResource].
      *
      * @param resource representing the file list of the path to the resources representing the bundles to install.
-     *                 The [resource] is read through [ClassLoader.getResourceAsStream].
+     *                 The [resource] is read through [ClassLoader.getResource].
      * @param classLoader used to read the [resource].
      *
      * @throws BundleException If the bundle represented in the [resource] fails to install.
@@ -398,7 +394,9 @@ class OSGiFrameworkWrap(
         SecurityException::class
     )
     private fun installBundleList(resource: String, classLoader: ClassLoader) {
-        classLoader.getResourceAsStream(resource)?.use { inputStream ->
+        val resourceUrl = classLoader.getResource(resource)
+            ?: throw IOException("OSGi bundle list at $resource not found")
+        resourceUrl.openStream().use { inputStream ->
             logger.info("OSGi bundle list at $resource loading...")
             inputStream.bufferedReader().useLines { lines ->
                 lines.map { line -> line.substringBefore('#') }
@@ -408,7 +406,7 @@ class OSGiFrameworkWrap(
                     .forEach(::install)
             }
             logger.info("OSGi bundle list at $resource loaded.")
-        } ?: throw IOException("OSGi bundle list at $resource not found")
+        }
     }
 
     /**
@@ -418,7 +416,7 @@ class OSGiFrameworkWrap(
      *
      * This method registers the [Shutdown] used by applications to ask to quit.
      * The [Shutdown.shutdown] implementation calls [stop]: both this method and [stop] are synchronized,
-     * but there is no risk of deadlock because applications start-up from synchronized [startApplications],
+     * but there is no risk of deadlock because applications start-up from synchronized [startApplication],
      * it runs only after this method returned and the service is registered.
      * The [Shutdown.shutdown] runs [stop] in a separate thread.
      *
@@ -458,10 +456,10 @@ class OSGiFrameworkWrap(
                 Shutdown::class.java.name,
                 object : Shutdown {
                     // Called by applications using the [ShutdownBootstrapper].
-                    // No risk of deadlock because applications are registered by [startApplications]
+                    // No risk of deadlock because applications are registered by [startApplication]
                     // after this method returned and [stop] runs in separate thread.
                     override fun shutdown(bundle: Bundle) {
-                        Thread(::stop).start()
+                        Thread(::stop, "framework-stop").start()
                     }
                 },
                 null
@@ -513,8 +511,8 @@ class OSGiFrameworkWrap(
         timeout: Long,
         args: Array<String>,
     ): OSGiFrameworkWrap {
-        bundleDescriptorMap.values.forEach { bundleDescriptor: OSGiBundleDescriptor ->
-            if (!bundleDescriptor.active.await(timeout, TimeUnit.MILLISECONDS)) {
+        bundleDescriptorMap.values.forEach { bundleDescriptor ->
+            if (!bundleDescriptor.active.await(timeout, MILLISECONDS)) {
                 logger.warn(
                     "OSGi bundle ${bundleDescriptor.bundle.location}" +
                             " ID = ${bundleDescriptor.bundle.bundleId} ${bundleDescriptor.bundle.symbolicName ?: "\b"}" +
@@ -523,10 +521,10 @@ class OSGiFrameworkWrap(
                 )
             }
         }
-        val applicationServiceReference: ServiceReference<Application>? =
-            framework.bundleContext.getServiceReference(Application::class.java)
+        val frameworkContext = framework.bundleContext
+        val applicationServiceReference = frameworkContext.getServiceReference(Application::class.java)
         if (applicationServiceReference != null) {
-            val application = framework.bundleContext.getService(applicationServiceReference)
+            val application = frameworkContext.getService(applicationServiceReference)
             if (application != null) {
                 application.startup(args)
             } else {
@@ -575,28 +573,35 @@ class OSGiFrameworkWrap(
     fun stop(): OSGiFrameworkWrap {
         if (isStoppable(framework.state)) {
             logger.debug("OSGi framework stop...")
-            val applicationServiceReference: ServiceReference<Application>? =
-                framework.bundleContext.getServiceReference(Application::class.java)
+            val frameworkContext = framework.bundleContext
+            val applicationServiceReference = frameworkContext.getServiceReference(Application::class.java)
             if (applicationServiceReference != null) {
-                val applicationService: Application? = framework.bundleContext.getService(applicationServiceReference)
-                if (applicationService != null) {
-                    val bundle = FrameworkUtil.getBundle(applicationService::class.java)
-                    val bundleDescriptor = bundleDescriptorMap[bundle.bundleId]
-                    if (bundleDescriptor!!.shutdown.count > 0L) {
-                        bundleDescriptor.shutdown.countDown()
-                        applicationService.shutdown()
+                try {
+                    frameworkContext.getService(applicationServiceReference)?.shutdown()
+                } finally {
+                    // Service objects are reference counted.
+                    // Release the reference we took here, and also
+                    // the one we took when starting the application.
+                    // The framework will deactivate the [Application]
+                    // service once its reference count reaches zero.
+                    with(frameworkContext) {
+                        if (ungetService(applicationServiceReference)) {
+                            ungetService(applicationServiceReference)
+                        }
                     }
                 }
             } else {
-                logger.warn("${Application::class.java} service unregistered before to shutdown the application.")
+                logger.warn("{} service unregistered while application is still running.", Application::class.java.name)
             }
             framework.stop()
         } else {
             logger.warn(
-                "OSGi framework ${framework::class.java.canonicalName} stop attempted: state is " +
-                        "${bundleStateMap[framework.state]}!"
+                "OSGi framework {} stop attempted: state is {}!",
+                framework::class.java.name,
+                bundleStateMap[framework.state]
             )
         }
+        logger.debug("OSGi framework stopped")
         return this
     }
 

@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory
 import org.slf4j.bridge.SLF4JBridgeHandler
 import java.nio.file.Files
 import java.security.Policy
+import kotlin.concurrent.thread
 import kotlin.system.exitProcess
 
 /**
@@ -32,10 +33,6 @@ import kotlin.system.exitProcess
 class OSGiFrameworkMain {
 
     companion object {
-        /** The names of the console and app log appenders. */
-        private const val CONSOLE_APPENDER = "Console"
-        private const val APP_APPENDER = "App"
-
         /**
          * Full qualified name of the OSGi framework factory should be part of the class path.
          */
@@ -91,11 +88,12 @@ class OSGiFrameworkMain {
          *
          * @param args passed by the OS when invoking JVM to run this bootable JAR.
          */
+        @Suppress("MaxLineLength")
         @JvmStatic
         fun main(args: Array<String>) {
             /**
              * Set the Java security policy programmatically, as required by OSGi Security.
-             * @See https://felix.apache.org/documentation/subprojects/apache-felix-framework-security.html
+             * @see <a href="https://felix.apache.org/documentation/subprojects/apache-felix-framework-security.html">Felix Framework Security</a>
              */
             Policy.setPolicy(AllPermissionsPolicy())
 
@@ -114,12 +112,15 @@ class OSGiFrameworkMain {
             SLF4JBridgeHandler.removeHandlersForRootLogger()
             SLF4JBridgeHandler.install()
 
+            /**
+             * Standard exit codes are documented here:
+             * @see <a href="https://tldp.org/LDP/abs/html/exitcodes.html">Exit Codes</a>
+             */
             var exitCode = 0
 
             val logger = LoggerFactory.getLogger(OSGiFrameworkMain::class.java)
             try {
                 val frameworkStorageDir = Files.createTempDirectory(FRAMEWORK_STORAGE_PREFIX)
-                frameworkStorageDir.toFile().deleteOnExit()
                 val osgiFrameworkWrap = OSGiFrameworkWrap(
                     OSGiFrameworkWrap.getFrameworkFrom(
                         FRAMEWORK_FACTORY_FQN,
@@ -128,11 +129,9 @@ class OSGiFrameworkMain {
                     )
                 )
                 try {
-                    Runtime.getRuntime().addShutdownHook(object : Thread() {
-                        override fun run() {
-                            if (OSGiFrameworkWrap.isStoppable(osgiFrameworkWrap.getState())) {
-                                osgiFrameworkWrap.stop()
-                            }
+                    Runtime.getRuntime().addShutdownHook(thread(name = "shutdown", start = false) {
+                        if (OSGiFrameworkWrap.isStoppable(osgiFrameworkWrap.getState())) {
+                            osgiFrameworkWrap.stop()
                         }
                     })
                     osgiFrameworkWrap
@@ -141,9 +140,6 @@ class OSGiFrameworkMain {
                         .activate()
                         .startApplication(NO_TIMEOUT, args)
                         .waitForStop(NO_TIMEOUT)
-                } catch (e: Exception) {
-                    logger.error("Error: ${e.message}!", e)
-                    exitCode = -1
                 } finally {
                     // If osgiFrameworkWrap stopped because SIGINT/CTRL+C,
                     // this avoids to call stop twice and log warning.
@@ -151,15 +147,9 @@ class OSGiFrameworkMain {
                         osgiFrameworkWrap.stop()
                     }
                 }
-            } catch (e: IllegalArgumentException) {
+            } catch (e: Exception) {
                 logger.error("Error: ${e.message}!", e)
-                exitCode = -2
-            } catch (e: UnsupportedOperationException) {
-                logger.error("Error: ${e.message}!", e)
-                exitCode = -3
-            } catch (e: SecurityException) {
-                logger.error("Error: ${e.message}!", e)
-                exitCode = -4
+                exitCode = 1
             }
 
             if (exitCode != 0) {
