@@ -5,7 +5,6 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.publish.CordaConfigurationKey
 import net.corda.libs.configuration.publish.CordaConfigurationVersion
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
-import net.corda.p2p.crypto.ProtocolMode
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 
@@ -22,12 +21,6 @@ class LinkManagerConfiguration : ConfigProducer() {
         description = ["The maximal message size in bytes"]
     )
     var maxMessageSize = 1_000_000
-
-    @Option(
-        names = ["--protocolMode"],
-        description = ["Supported protocol mode (out of: \${COMPLETION-CANDIDATES})"]
-    )
-    var protocolModes: List<ProtocolMode> = listOf(ProtocolMode.AUTHENTICATED_ENCRYPTION)
 
     @Option(
         names = ["--messageReplayPeriodBaseMilliSecs"],
@@ -64,10 +57,6 @@ class LinkManagerConfiguration : ConfigProducer() {
             .withValue(
                 LinkManagerConfiguration.MAX_MESSAGE_SIZE_KEY,
                 ConfigValueFactory.fromAnyRef(maxMessageSize)
-            )
-            .withValue(
-                LinkManagerConfiguration.PROTOCOL_MODE_KEY,
-                ConfigValueFactory.fromAnyRef(protocolModes.map { it.toString() })
             )
             .withValue(
                 LinkManagerConfiguration.MESSAGE_REPLAY_KEY_PREFIX + LinkManagerConfiguration.BASE_REPLAY_PERIOD_KEY_POSTFIX,

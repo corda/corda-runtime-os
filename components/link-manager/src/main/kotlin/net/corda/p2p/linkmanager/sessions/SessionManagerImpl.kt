@@ -21,7 +21,6 @@ import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.p2p.crypto.InitiatorHelloMessage
-import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
@@ -40,6 +39,7 @@ import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.createLink
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionCounterparties
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.couldNotFindNetworkType
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.couldNotFindProtocolModes
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.noSessionWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.noTenantId
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourHashNotInNetworkMapWarning
@@ -146,7 +146,6 @@ open class SessionManagerImpl(
     @VisibleForTesting
     internal data class SessionManagerConfig(
         val maxMessageSize: Int,
-        val protocolModes: Set<ProtocolMode>,
     )
 
     internal inner class SessionManagerConfigChangeHandler: ConfigurationChangeHandler<SessionManagerConfig>(
@@ -170,8 +169,9 @@ open class SessionManagerImpl(
     }
 
     private fun fromConfig(config: Config): SessionManagerConfig {
-        return SessionManagerConfig(config.getInt(LinkManagerConfiguration.MAX_MESSAGE_SIZE_KEY),
-        config.getEnumList(ProtocolMode::class.java, LinkManagerConfiguration.PROTOCOL_MODE_KEY).toSet())
+        return SessionManagerConfig(
+            config.getInt(LinkManagerConfiguration.MAX_MESSAGE_SIZE_KEY)
+        )
     }
 
     override fun processOutboundMessage(message: AuthenticatedMessageAndKey): SessionState {
@@ -301,10 +301,19 @@ open class SessionManagerImpl(
             return null
         }
 
+        val protocolModes = networkMap.getProtocolModes(counterparties.ourId.groupId)
+        if (protocolModes == null) {
+            logger.warn(
+                "Could not find the protocol modes in the NetworkMap for groupId ${counterparties.ourId.groupId}." +
+                        " The sessionInit message was not sent."
+            )
+            return null
+        }
+
         val sessionManagerConfig = config.get()
         val session = protocolFactory.createInitiator(
             sessionId,
-            sessionManagerConfig.protocolModes,
+            protocolModes,
             sessionManagerConfig.maxMessageSize,
             ourMemberInfo.publicKey,
             ourMemberInfo.holdingIdentity.groupId
@@ -470,17 +479,6 @@ open class SessionManagerImpl(
 
     private fun processInitiatorHello(message: InitiatorHelloMessage): LinkOutMessage? {
         val sessionManagerConfig = config.get()
-        val session = pendingInboundSessions.computeIfAbsent(message.header.sessionId) { sessionId ->
-            val session = protocolFactory.createResponder(
-                sessionId,
-                sessionManagerConfig.protocolModes,
-                sessionManagerConfig.maxMessageSize
-            )
-            session.receiveInitiatorHello(message)
-            session
-        }
-        val responderHello = session.generateResponderHello()
-
         val peer = networkMap.getMemberInfo(message.source.initiatorPublicKeyHash.array(), message.source.groupId)
         if (peer == null) {
             logger.peerHashNotInNetworkMapWarning(
@@ -490,6 +488,23 @@ open class SessionManagerImpl(
             )
             return null
         }
+        val protocolModes = networkMap.getProtocolModes(peer.holdingIdentity.groupId)
+        if (protocolModes == null) {
+            logger.couldNotFindProtocolModes(message::class.java.simpleName, message.header.sessionId, peer.holdingIdentity.groupId)
+            return null
+        }
+
+        val session = pendingInboundSessions.computeIfAbsent(message.header.sessionId) { sessionId ->
+            val session = protocolFactory.createResponder(
+                sessionId,
+                protocolModes,
+                sessionManagerConfig.maxMessageSize
+            )
+            session.receiveInitiatorHello(message)
+            session
+        }
+        val responderHello = session.generateResponderHello()
+
         val networkType = networkMap.getNetworkType(peer.holdingIdentity.groupId)
         if (networkType == null) {
             logger.couldNotFindNetworkType(message::class.java.simpleName, message.header.sessionId, peer.holdingIdentity.groupId)

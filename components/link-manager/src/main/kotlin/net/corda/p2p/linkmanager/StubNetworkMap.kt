@@ -11,6 +11,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.NetworkType
+import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.NetworkMapEntry
@@ -87,6 +88,18 @@ class StubNetworkMap(
         }
     }
 
+    override fun getProtocolModes(groupId: String): Set<ProtocolMode>? {
+        return dominoTile.withLifecycleLock {
+            if (!isRunning) {
+                throw IllegalStateException("getNetworkType operation invoked while component was stopped.")
+            }
+
+            processor.netMapEntriesByGroupIdPublicKeyHash[groupId]
+                ?.values
+                ?.first()?.protocolModes?.toSet()
+        }
+    }
+
     override fun registerListener(networkMapListener: NetworkMapListener) {
         listeners += networkMapListener
     }
@@ -160,7 +173,8 @@ class StubNetworkMap(
             val groupInfo = NetworkMapListener.GroupInfo(
                 networkMapEntry.holdingIdentity.groupId,
                 networkMapEntry.networkType,
-                networkMapEntry.trustedCertificates
+                networkMapEntry.protocolModes.toSet(),
+                networkMapEntry.trustedCertificates,
             )
             listeners.forEach { listener ->
                 listener.groupAdded(groupInfo)

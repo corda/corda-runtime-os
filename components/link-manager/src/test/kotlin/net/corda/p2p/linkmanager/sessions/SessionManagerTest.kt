@@ -195,7 +195,7 @@ class SessionManagerTest {
     ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
         setRunning()
         configHandler.applyNewConfiguration(
-            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
+            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE),
             null,
             mock(),
         )
@@ -267,6 +267,17 @@ class SessionManagerTest {
     }
 
     @Test
+    fun `when no session exists, if protocol mode is missing from network map no message is sent`() {
+        whenever(networkMap.getProtocolModes(GROUP_ID)).thenReturn(null)
+
+        val sessionState = sessionManager.processOutboundMessage(message)
+        assertThat(sessionState).isInstanceOf(SessionManager.SessionState.CannotEstablishSession::class.java)
+        verify(sessionReplayer, never()).addMessageForReplay(any(), any(), any())
+        loggingInterceptor.assertSingleWarning("Could not find the protocol modes in the NetworkMap for groupId $GROUP_ID." +
+                " The sessionInit message was not sent.")
+    }
+
+    @Test
     fun `when no session exists, if source member info is missing from network map no message is sent`() {
         whenever(networkMap.getMemberInfo(OUR_PARTY)).thenReturn(null)
 
@@ -320,7 +331,7 @@ class SessionManagerTest {
         val sessionState = sessionManager.processOutboundMessage(message)
         assertThat(sessionState).isInstanceOf(SessionManager.SessionState.SessionAlreadyPending::class.java)
         configHandler.applyNewConfiguration(
-            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
+            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE),
             null,
             mock(),
         )
@@ -405,6 +416,24 @@ class SessionManagerTest {
 
         assertThat(responseMessage).isNull()
         loggingInterceptor.assertSingleWarning("Could not find the network type in the NetworkMap for groupId $GROUP_ID." +
+                " The ${InitiatorHelloMessage::class.java.simpleName} for sessionId $sessionId was discarded.")
+    }
+
+    @Test
+    fun `when an initiator hello is received, but protocol modes is missing from network map, then message is dropped`() {
+        val initiatorKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
+        val sessionId = "some-session-id"
+        val responderHello = mock<ResponderHelloMessage>()
+        whenever(protocolResponder.generateResponderHello()).thenReturn(responderHello)
+        whenever(networkMap.getProtocolModes(GROUP_ID)).thenReturn(null)
+
+        val header = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
+        val initiatorHelloMsg = InitiatorHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded),
+            PROTOCOL_MODES, InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorKeyHash), GROUP_ID))
+        val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHelloMsg))
+
+        assertThat(responseMessage).isNull()
+        loggingInterceptor.assertSingleWarning("Could not find the protocol modes in the NetworkMap for groupId $GROUP_ID." +
                 " The ${InitiatorHelloMessage::class.java.simpleName} for sessionId $sessionId was discarded.")
     }
 
@@ -610,7 +639,7 @@ class SessionManagerTest {
         }
 
         configHandler.applyNewConfiguration(
-            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
+            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE),
             null,
             mock(),
         )
@@ -856,7 +885,7 @@ class SessionManagerTest {
             .sessionNegotiatedCallback(sessionManager, SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY), session, networkMap)
 
         configHandler.applyNewConfiguration(
-            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
+            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE),
             null,
             mock(),
         )
@@ -953,7 +982,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE),
                 null,
                 mock(),
             )
@@ -996,7 +1025,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE),
                 null,
                 mock(),
             )
@@ -1054,7 +1083,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE),
                 null,
                 mock(),
             )
@@ -1124,7 +1153,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE),
                 null,
                 mock(),
             )
@@ -1200,7 +1229,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE),
                 null,
                 mock(),
             )
@@ -1240,7 +1269,7 @@ class SessionManagerTest {
         assertThat(linkOutMessages).isEqualTo(2)
 
         configHandler.applyNewConfiguration(
-            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
+            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE),
             null,
             resourcesHolder,
         )
@@ -1281,7 +1310,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE),
                 null,
                 mock(),
             )
@@ -1365,7 +1394,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE),
                 null,
                 mock(),
             )
