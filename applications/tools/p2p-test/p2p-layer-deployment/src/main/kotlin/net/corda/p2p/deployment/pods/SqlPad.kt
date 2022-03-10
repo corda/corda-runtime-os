@@ -33,22 +33,25 @@ class SqlPad(
             "to_char(sent.count-receive.count, 'FM9,999,999') as missing \n" +
             " from (select count(*) as count from sent_messages) sent,  \n" +
             "(select count(*) as count from received_messages) receive",
-        "Verify reliable delivery" to "select sm.sender_id, sm.message_id\n" +
-            "from sent_messages sm \n" +
-            "left join received_messages rm \n" +
-            "on sm.sender_id = rm.sender_id and sm.message_id = rm.message_id \n" +
-            "where rm.message_id is null\n",
-        "Latency" to "select \n" +
-            "\tto_timestamp(floor((extract('epoch' from rm.sent_timestamp) / 30 )) * 30)" +
-            " at time zone 'utc' as time_window,\n" +
-            "\tcount(rm.delivery_latency_ms) as total_messages,\n" +
-            "\tmax(rm.delivery_latency_ms) as max_latency,\n" +
-            "\tmin(rm.delivery_latency_ms) as min_latency,\n" +
-            "\tavg(rm.delivery_latency_ms) as average_latency,\n" +
-            "\tpercentile_disc(0.99) within group (order by rm.delivery_latency_ms) as p99_latency\n" +
-            "from received_messages rm \n" +
-            "group by time_window\n" +
-            "order by time_window asc"
+        "Verify reliable delivery" to """
+            select sm.sender_id, sm.message_id
+            from sent_messages sm
+            left join received_messages rm
+            on sm.sender_id = rm.sender_id and sm.message_id = rm.message_id
+            where rm.message_id is null
+        """.trimIndent(),
+        "Latency" to """
+            select
+                to_timestamp(floor((extract('epoch' from rm.sent_timestamp) / 30 )) * 30) at time zone 'utc' as time_window,
+                count(rm.delivery_latency_ms) as total_messages,
+                max(rm.delivery_latency_ms) as max_latency,
+                min(rm.delivery_latency_ms) as min_latency,
+                avg(rm.delivery_latency_ms) as average_latency,
+                percentile_disc(0.99) within group (order by rm.delivery_latency_ms) as p99_latency
+            from received_messages rm
+            group by time_window
+            order by time_window asc
+        """.trimIndent()
     )
 
     override val rawData by lazy {
