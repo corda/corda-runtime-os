@@ -6,7 +6,7 @@ import net.corda.messaging.api.records.Record
 import org.junit.jupiter.api.fail
 import java.util.concurrent.CountDownLatch
 
-class TestFlowMapperEventProcessor(
+class TestFlowSessionFilterProcessor(
     private val key: String,
     private val latch: CountDownLatch,
     private val expectedRecordCount: Int
