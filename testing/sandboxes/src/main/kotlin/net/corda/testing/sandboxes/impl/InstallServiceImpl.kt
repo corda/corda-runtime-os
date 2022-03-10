@@ -81,6 +81,11 @@ class InstallServiceImpl @Activate constructor(
         cpis.remove(id)?.close()
     }
 
+    override fun getAll(): CompletableFuture<List<CpiMetadata>> {
+        val cpiList = cpis.values.map { CpiMetadata.fromLegacy(it) }.toList()
+        return CompletableFuture.completedFuture(cpiList)
+    }
+
     override fun get(id: CpiIdentifier): CompletableFuture<CpiMetadata?> {
         val legacyCpi: CPI? = cpis[id]
         val cpi: CpiMetadata? = if(legacyCpi == null) { null } else { CpiMetadata.fromLegacy(legacyCpi) }

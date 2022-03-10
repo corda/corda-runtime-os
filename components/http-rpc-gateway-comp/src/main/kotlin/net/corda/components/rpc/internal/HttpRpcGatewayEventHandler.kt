@@ -67,8 +67,7 @@ internal class HttpRpcGatewayEventHandler(
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> {
-                log.info("Received start event, following ConfigurationReadService, PermissionServiceComponent and " +
-                        "RBACSecurityManagerService and  for status updates.")
+                log.info("Received start event, following dependencies for status updates.")
 
                 registration?.close()
                 registration = coordinator.followStatusChangesByName(
