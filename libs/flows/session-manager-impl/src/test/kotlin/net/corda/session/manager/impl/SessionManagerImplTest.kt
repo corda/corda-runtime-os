@@ -2,6 +2,7 @@ package net.corda.session.manager.impl
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import jdk.nashorn.internal.objects.NativeRegExp.test
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
@@ -91,8 +92,6 @@ class SessionManagerImplTest {
             listOf(
                 buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 2, SessionData(), 0, emptyList(), instant.minusMillis(50)),
                 buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 3, SessionData(), 0, emptyList(), instant),
-                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", null, SessionAck(), 1, emptyList(), instant),
-                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", null, SessionAck(), 2, emptyList(), instant.plusMillis(100)),
                 buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 4, SessionData(), 0, emptyList(), instant.plusMillis(100)),
             ),
         )
