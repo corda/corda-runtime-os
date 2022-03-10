@@ -1,0 +1,21 @@
+plugins {
+    id 'org.jetbrains.kotlin.kapt'
+}
+
+dependencies {
+    compileOnly project(":api")
+
+    compileOnly "org.pf4j:pf4j:${pf4jVersion}"
+    kapt "org.pf4j:pf4j:${pf4jVersion}"
+
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    testImplementation "org.junit.jupiter:junit-jupiter:$junit5Version"
+    testImplementation "com.github.stefanbirkner:system-lambda:1.2.1"
+    testImplementation project(":api")
+    testImplementation "org.pf4j:pf4j:${pf4jVersion}"
+    testApi "info.picocli:picocli:${picoCliVersion}"
+}
+
+test {
+    useJUnitPlatform()
+}
