@@ -52,6 +52,6 @@ fun mockCpkMeta(): CpkMetadata {
     val hash = randomSecureHash()
     return mock<CpkMetadata>().apply {
         whenever(this.id).thenReturn(id)
-        whenever(this.hash).thenReturn(hash)
+        whenever(this.fileChecksum).thenReturn(hash)
     }
 }

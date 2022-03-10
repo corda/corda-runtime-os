@@ -220,7 +220,7 @@ private class DummyClassTagFactory(cpk: CpkMetadata) : ClassTagFactory {
     val staticIdentifier = STATIC_IDENTIFIER
     val evolvableIdentifier = EVOLVABLE_IDENTIFIER
 
-    private val cpkStaticTag = StaticTagImpl(ClassType.CpkSandboxClass, CPK_LIBRARY_BUNDLE_NAME, cpk.hash)
+    private val cpkStaticTag = StaticTagImpl(ClassType.CpkSandboxClass, CPK_LIBRARY_BUNDLE_NAME, cpk.fileChecksum)
 
     private val publicStaticTag = StaticTagImpl(ClassType.PublicSandboxClass, PUBLIC_BUNDLE_NAME, PLACEHOLDER_HASH)
 

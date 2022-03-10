@@ -23,7 +23,7 @@ import java.util.stream.Collectors
  * @property dependencies
  * @property cordappManifest
  * @property type
- * @property hash
+ * @property fileChecksum
  * @property checksum The CPK file's checksum.
  * @constructor Create empty Cpk metadata
  */
@@ -35,7 +35,7 @@ data class CpkMetadata(
     val dependencies : List<CpkIdentifier>,
     val cordappManifest : CordappManifest,
     val type : CPK.Type,
-    val hash: SecureHash,
+    val fileChecksum: SecureHash,
     // TODO - is this needed here?
     val cordappCertificates : Set<Certificate>
 ) {
@@ -88,7 +88,7 @@ data class CpkMetadata(
             dependencies.map { it.toAvro() },
             cordappManifest.toAvro(),
             type.toAvro(),
-            net.corda.data.crypto.SecureHash(hash.algorithm, ByteBuffer.wrap(hash.bytes)),
+            net.corda.data.crypto.SecureHash(fileChecksum.algorithm, ByteBuffer.wrap(fileChecksum.bytes)),
             cordappCertificates.stream()
                 .map(Certificate::getEncoded)
                 .map(ByteBuffer::wrap)

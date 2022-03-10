@@ -79,7 +79,7 @@ class ClassTagFactoryImplTests {
         val classTag = classTagFactory.deserialise(serialisedTag)
 
         val expectedClassTag =
-            StaticTagImplV1(ClassType.CpkSandboxClass, mockBundle.symbolicName, mockCpk.hash)
+            StaticTagImplV1(ClassType.CpkSandboxClass, mockBundle.symbolicName, mockCpk.fileChecksum)
         assertEquals(expectedClassTag, classTag)
     }
 
