@@ -5,11 +5,11 @@
 run `./gradlew build`
 
 * This will produce:
-    * one jar, named corda-cli.jar, located in the `app/build/libs/` directory
-    * two plugins zips located in `build/plugins` directory.
+  * one jar, named corda-cli.jar, located in the `app/build/libs/` directory
+  * two plugins zips located in `build/plugins` directory.
 * The plugins are:
-    * `plugin-example-plugin-one-0.0.1.zip`
-    * `plugin-example-plugin-two-0.0.1.zip`
+  * `plugin-example-plugin-one-0.0.1.zip`
+  * `plugin-example-plugin-two-0.0.1.zip`
 
 ## Running The CLI Script
 
@@ -43,15 +43,17 @@ you will have to ensure that you have gradle tasks that bundle the plugin for pf
 info [here](https://pf4j.org/doc/packaging.html)
 
 ### Basics
-To Write your own plugin for the CLI you must depend on this project's 'api' module.
+To Write your own plugin for the CLI you must depend on this project's 'api' module: `compileOnly "net.corda.cli.host:api:${cliHostApiVersion}"`
 
 The API module contains the `CordaCliPlugin` Interface which must be used when constructing your plugin. For examples of
 use please see the 'plugins' module where you will find two example plugins.
 
+> **NOTE:** _**When importing the CordaCliPlugin API module in the `build.gradle` you must use `compileOnly` to avoid classpath clashes.**_
+
 To construct a plugin you will have to follow the pf4j pattern below:
 
 ```kotlin
-class ExamplePluginWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
+class ExamplePlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
 
     override fun start() {
     }
@@ -61,7 +63,7 @@ class ExamplePluginWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
 
     @Extension
     @CommandLine.Command(name = "example")
-    class ExamplePlugin : CordaCliPlugin {}
+    class ExamplePluginCommand : CordaCliPlugin {}
 }
 ```
 
@@ -92,17 +94,17 @@ interface HttpServiceUser: ServiceUser {
 }
 ```
 
-And its implementation requires a `lateinit` keyword like below: 
+And its implementation requires a `lateinit` keyword like below:
 
 ```kotlin
 @Extension
 @CommandLine.Command(name = "plugin", description = ["Example Plugin using services"])
-class ExamplePlugin : CordaCliPlugin, HttpServiceUser {
-    override lateinit var service: HttpService
-    
-    @CommandLine.Command(name = "serviceExample", description = ["A subcommand that uses a service supplied by the host."])
-    fun exampleServiceSubCommand() {
-        println(service.get())
-    }
+class ExamplePluginCommand : CordaCliPlugin, HttpServiceUser {
+  override lateinit var service: HttpService
+
+  @CommandLine.Command(name = "serviceExample", description = ["A subcommand that uses a service supplied by the host."])
+  fun exampleServiceSubCommand() {
+    println(service.get())
+  }
 }
 ```
