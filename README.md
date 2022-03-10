@@ -5,11 +5,11 @@
 run `./gradlew build`
 
 * This will produce:
-    * one jar, named corda-cli.jar, located in the `app/build/libs/` directory
-    * two plugins zips located in `build/plugins` directory.
+  * one jar, named corda-cli.jar, located in the `app/build/libs/` directory
+  * two plugins zips located in `build/plugins` directory.
 * The plugins are:
-    * `plugin-example-plugin-one-0.0.1.zip`
-    * `plugin-example-plugin-two-0.0.1.zip`
+  * `plugin-example-plugin-one-0.0.1.zip`
+  * `plugin-example-plugin-two-0.0.1.zip`
 
 ## Running The CLI Script
 
@@ -50,10 +50,12 @@ To Write your own plugin for the CLI you must depend on this project's 'api' mod
 The API module contains the `CordaCliPlugin` Interface which must be used when constructing your plugin. For examples of
 use please see the 'plugins' module where you will find two example plugins.
 
+> **NOTE:** _**When importing the CordaCliPlugin API module in the `build.gradle` you must use `compileOnly` to avoid classpath clashes.**_
+
 To construct a plugin you will have to follow the pf4j pattern below:
 
 ```kotlin
-class ExamplePluginWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
+class ExamplePlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
 
     override fun start() {
     }

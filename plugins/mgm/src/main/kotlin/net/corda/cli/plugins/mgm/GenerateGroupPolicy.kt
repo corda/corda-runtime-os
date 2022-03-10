@@ -66,7 +66,7 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
         val groupPolicy = mutableMapOf<String, Any>()
         groupPolicy["fileFormatVersion"] = 1
         groupPolicy["groupId"] = "ABC123"
-        groupPolicy["registrationProtocol"] = "net.corda.membership.staticnetwork.StaticMemberRegistrationService"
+        groupPolicy["registrationProtocol"] = "net.corda.membership.impl.registration.staticnetwork.StaticMemberRegistrationService"
         groupPolicy["synchronisationProtocolFactory"] = "net.corda.v5.mgm.MGMSynchronisationProtocolFactory"
         groupPolicy["protocolParameters"] = mutableMapOf(
             "identityTrustStore" to listOf(
