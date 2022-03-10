@@ -19,7 +19,6 @@ import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
-import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -76,7 +75,8 @@ class FlowService @Activate constructor(
                 if (event.status == LifecycleStatus.UP) {
                     configHandle = configurationReadService.registerComponentForUpdates(
                         coordinator,
-                        setOf(BOOT_CONFIG, FLOW_CONFIG, MESSAGING_CONFIG)
+                        //Hack: Removed FLOW_CONFIG from the list for now, needs to be reviewed as part of CORE-3780
+                        setOf(BOOT_CONFIG, MESSAGING_CONFIG)
                     )
                 } else {
                     configHandle?.close()

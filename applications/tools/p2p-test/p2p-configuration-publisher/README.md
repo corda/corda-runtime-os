@@ -89,10 +89,6 @@ To run the application use:
       --messageReplayPeriodCutOffMilliSecs=<messageReplayPeriodCutoffMilliSecs>
                          message replay period cut off in milliseconds
                            Default: 10000
-      --protocolMode=<protocolModes>
-                         Supported protocol mode (out of: AUTHENTICATION_ONLY,
-                           AUTHENTICATED_ENCRYPTION)
-                           Default: [AUTHENTICATED_ENCRYPTION]
       --sessionTimeoutMilliSecs=<sessionTimeoutMilliSecs>
                          Session timeout in milliseconds
                            Default: 10000

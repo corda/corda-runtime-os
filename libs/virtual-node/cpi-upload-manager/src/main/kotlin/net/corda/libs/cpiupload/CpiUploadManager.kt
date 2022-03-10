@@ -1,5 +1,6 @@
 package net.corda.libs.cpiupload
 
+import net.corda.chunking.ChunkWriter
 import net.corda.chunking.RequestId
 import java.io.InputStream
 
@@ -12,7 +13,7 @@ interface CpiUploadManager : AutoCloseable {
      *
      * @throws CpiUploadManagerException
      */
-    fun uploadCpi(cpiFileName: String, cpiContent: InputStream): RequestId
+    fun uploadCpi(cpiFileName: String, cpiContent: InputStream): ChunkWriter.Request
 
 
     /**

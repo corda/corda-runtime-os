@@ -10,6 +10,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.p2p.NetworkType
+import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.test.HostedIdentityEntry
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.NetworkMapEntry
@@ -155,6 +156,9 @@ class NetworkMapCreator @Activate constructor(
                 val publicKeyAlias = dataConfig.getString("publicKeyAlias")
                 val keystorePassword = dataConfig.getString("keystorePassword")
                 val address = dataConfig.getString("address")
+                val protocolMode = dataConfig.getStringList("protocolModes").map { mode ->
+                    ProtocolMode.values().single { it.name.equals(mode, ignoreCase = true) }
+                }
                 val networkType = parseNetworkType(dataConfig.getString("networkType"))
                 val trustStoreCertificates = dataConfig.getList("trustStoreCertificates")
                     .unwrapped()
@@ -170,6 +174,7 @@ class NetworkMapCreator @Activate constructor(
                     keyAlgo,
                     address,
                     networkType,
+                    protocolMode,
                     trustStoreCertificates,
                 )
                 Record(topic, "$x500Name-$groupId", networkMapEntry)

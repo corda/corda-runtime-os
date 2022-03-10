@@ -1,7 +1,7 @@
 @file:JvmName("SandboxGroupContextServiceUtils")
 package net.corda.sandboxgroupcontext.service.impl
 
-import net.corda.install.InstallService
+import net.corda.cpk.read.CpkReadService
 import net.corda.libs.packaging.CpkIdentifier
 import net.corda.libs.packaging.CpkMetadata
 import net.corda.sandbox.SandboxCreationService
@@ -14,6 +14,7 @@ import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContextInitializer
 import net.corda.sandboxgroupcontext.SandboxGroupContextService
 import net.corda.sandboxgroupcontext.VirtualNodeContext
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.cipher.suite.DigestAlgorithmFactory
 import org.osgi.framework.Bundle
@@ -44,7 +45,7 @@ private typealias ServiceDefinition = Pair<ServiceObjects<out Any>, List<Class<*
  */
 class SandboxGroupContextServiceImpl(
     private val sandboxCreationService: SandboxCreationService,
-    private val installService: InstallService,
+    private val cpkReadService: CpkReadService,
     private val serviceComponentRuntime: ServiceComponentRuntime,
     private val bundleContext: BundleContext
 ) : SandboxGroupContextService, AutoCloseable {
@@ -81,8 +82,16 @@ class SandboxGroupContextServiceImpl(
         initializer: SandboxGroupContextInitializer
     ): SandboxGroupContext {
         return contexts[virtualNodeContext] ?: run {
-            // returns a nullable from a future...
-            val cpks = virtualNodeContext.cpkIdentifiers.mapNotNull { installService.get(it).get() }
+            val cpks = virtualNodeContext.cpkIdentifiers.mapNotNull(cpkReadService::get)
+            if (cpks.size != virtualNodeContext.cpkIdentifiers.size) {
+                logger.error("Not all CPKs could be retrieved for this virtual node context ($virtualNodeContext)")
+                logger.error("Wanted all of:  ${virtualNodeContext.cpkIdentifiers}")
+                val receivedIdentifiers = cpks.map { it.metadata.id }
+                val missing = setOf(virtualNodeContext.cpkIdentifiers) - setOf(receivedIdentifiers)
+                logger.error("Returned:  $receivedIdentifiers")
+                logger.error("Missing:  $missing")
+                throw CordaRuntimeException("Not all CPKs could be retrieved for this virtual node context ($virtualNodeContext)\"")
+            }
 
             val sandboxGroup = sandboxCreationService.createSandboxGroup(cpks, virtualNodeContext.sandboxGroupType.name)
 
