@@ -37,8 +37,7 @@ data class CpkMetadata(
     val type : CPK.Type,
     val hash: SecureHash,
     // TODO - is this needed here?
-    val cordappCertificates : Set<Certificate>,
-    val checksum: SecureHash,
+    val cordappCertificates : Set<Certificate>
 ) {
     companion object {
         fun fromAvro(other: net.corda.data.packaging.CPKMetadata): CpkMetadata {
@@ -58,9 +57,7 @@ data class CpkMetadata(
                             .use(crtFactory::generateCertificate)
                     }.collect(Collectors.toUnmodifiableSet())
 
-                },
-                // TODO - add checksum to avro schema
-                SecureHash.create("SHA-256:0000000000000000")
+                }
             )
         }
 
@@ -77,9 +74,7 @@ data class CpkMetadata(
                 cpk.metadata.cordappManifest,
                 cpk.metadata.type,
                 cpk.metadata.hash,
-                cpk.metadata.cordappCertificates,
-                // TODO - checksum
-                SecureHash.create("SHA-256:0000000000000000"),
+                cpk.metadata.cordappCertificates
             )
         }
     }
