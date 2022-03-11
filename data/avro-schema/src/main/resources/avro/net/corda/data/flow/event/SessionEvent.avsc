@@ -38,6 +38,19 @@
       "doc": "Unique id for a message sent to a party. sequenceNum is not bidirectional. Each party will track outbound/inbound sequence numbers separately."
     },
     {
+      "name": "receivedSequenceNum",
+      "type": "int",
+      "doc": "Sequence number of the last contiguous message received from a counterparty. 0 if no messages received."
+    },
+    {
+      "name": "outOfOrderSequenceNums",
+      "type": {
+        "type": "array",
+        "items": "int"
+      },
+      "doc": "The sequence numbers of events received with a value greater than the last contiguous event received. i.e out of order messages received with a value greater than the receivedSequenceNum."
+    },
+    {
       "name": "payload",
       "type": [
         "net.corda.data.flow.event.session.SessionInit",

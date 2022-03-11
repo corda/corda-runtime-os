@@ -3,11 +3,5 @@
   "name": "SessionAck",
   "doc" : "Acknowledge to another party that their session message was received.",
   "namespace": "net.corda.data.flow.event.session",
-  "fields": [
-    {
-      "name": "sequenceNum",
-      "type": "int",
-      "doc": "The sequenceNum of the session event that is being acknowledged."
-    }
-  ]
+  "fields": []
 }

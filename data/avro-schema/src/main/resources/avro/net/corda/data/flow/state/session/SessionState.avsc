@@ -43,6 +43,11 @@
       "doc": "True if this party initiated the session, false otherwise"
     },
     {
+      "name": "sendAck",
+      "type": "boolean",
+      "doc": "True if there are messages to ack to a counterparty. False if there are no messages received that have not been acked."
+    },
+    {
       "name": "receivedEventsState",
       "type": "net.corda.data.flow.state.session.SessionProcessState",
       "doc": "Record the highest contiguous sequence number received from the counterparty. Record all events received but not yet processed by this party's client code."
