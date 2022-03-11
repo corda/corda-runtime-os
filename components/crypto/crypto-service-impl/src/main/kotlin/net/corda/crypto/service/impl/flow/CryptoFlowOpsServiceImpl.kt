@@ -128,7 +128,7 @@ class CryptoFlowOpsServiceImpl @Activate constructor(
         val processor = CryptoFlowOpsProcessor(
             cryptoOpsClient = cryptoOpsClient
         )
-        val current = subscription
+        subscription?.close()
         subscription = subscriptionFactory.createDurableSubscription(
             subscriptionConfig = SubscriptionConfig(
                 groupName = GROUP_NAME,
@@ -138,6 +138,5 @@ class CryptoFlowOpsServiceImpl @Activate constructor(
             nodeConfig = messagingConfig,
             partitionAssignmentListener = null
         ).also { it.start() }
-        current?.close()
     }
 }

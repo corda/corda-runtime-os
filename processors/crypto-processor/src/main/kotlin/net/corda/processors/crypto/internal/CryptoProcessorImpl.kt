@@ -3,6 +3,7 @@ package net.corda.processors.crypto.internal
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.persistence.SigningKeysPersistenceProvider
 import net.corda.crypto.persistence.SoftKeysPersistenceProvider
+import net.corda.crypto.service.CryptoFlowOpsService
 import net.corda.crypto.service.CryptoOpsService
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.service.SoftCryptoServiceProvider
@@ -46,7 +47,9 @@ class CryptoProcessorImpl @Activate constructor(
     @Reference(service = CryptoOpsService::class)
     private val cryptoOspService: CryptoOpsService,
     @Reference(service = SoftCryptoServiceProvider::class)
-    private val softCryptoServiceProviders: SoftCryptoServiceProvider
+    private val softCryptoServiceProviders: SoftCryptoServiceProvider,
+    @Reference(service = CryptoFlowOpsService::class)
+    private val cryptoFlowOpsService: CryptoFlowOpsService
 ) : CryptoProcessor {
     private companion object {
         val log = contextLogger()
@@ -62,6 +65,7 @@ class CryptoProcessorImpl @Activate constructor(
         ::signingKeysPersistenceProvider,
         ::signingServiceFactory,
         ::cryptoOspService,
+        ::cryptoFlowOpsService,
         ::softCryptoServiceProviders
     )
 

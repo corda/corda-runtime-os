@@ -1,18 +1,31 @@
 package net.corda.processors.crypto.tests
 
+import com.typesafe.config.ConfigFactory
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.data.config.Configuration
+import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.messaging.api.processor.DurableProcessor
+import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.Subscription
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.processors.crypto.CryptoProcessor
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
+import net.corda.schema.Schemas.Crypto.Companion.FLOW_OPS_MESSAGE_TOPIC
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.SignatureVerificationService
 import org.junit.jupiter.api.AfterEach
@@ -31,14 +44,17 @@ import java.security.spec.MGF1ParameterSpec
 import java.security.spec.PSSParameterSpec
 import java.time.Duration
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KFunction
 
 @ExtendWith(ServiceExtension::class)
-class CryptoOpsTests {
+class IntegrationCryptoOpsTests {
     companion object {
         private val logger = contextLogger()
 
-        private val CLIENT_ID = makeClientId<CryptoOpsTests>()
+        private val CLIENT_ID = makeClientId<IntegrationCryptoOpsTests>()
+
+        private const val RESPONSE_TOPIC = "test.response"
 
         private const val CRYPTO_CONFIGURATION_VALUE: String = "{}"
 
@@ -71,13 +87,25 @@ class CryptoOpsTests {
     lateinit var publisherFactory: PublisherFactory
 
     @InjectService(timeout = 5000L)
+    lateinit var subscriptionFactory: SubscriptionFactory
+
+    @InjectService(timeout = 5000L)
     lateinit var processor: CryptoProcessor
 
     @InjectService(timeout = 5000L)
-    lateinit var client: CryptoOpsClient
+    lateinit var opsClient: CryptoOpsClient
 
     @InjectService(timeout = 5000L)
     lateinit var verifier: SignatureVerificationService
+
+    @InjectService(timeout = 5000L)
+    lateinit var keyEncodingService: KeyEncodingService
+
+    private lateinit var publisher: Publisher
+
+    private lateinit var flowOpsResponses: FlowOpsResponses
+
+    private lateinit var transformer: CryptoFlowOpsTransformer
 
     private lateinit var testDependencies: TestLifecycleDependenciesTrackingCoordinator
 
@@ -87,25 +115,68 @@ class CryptoOpsTests {
 
     private fun <R> run(testCaseArg: Any, testCase: KFunction<R>): R = runTestCase(logger, testCaseArg, testCase)
 
+    class FlowOpsResponses(
+        subscriptionFactory: SubscriptionFactory
+    ) : DurableProcessor<String, FlowOpsResponse>, AutoCloseable {
+
+        private val subscription: Subscription<String, FlowOpsResponse> =
+            subscriptionFactory.createDurableSubscription(
+                subscriptionConfig = SubscriptionConfig(
+                    groupName = "TEST",
+                    eventTopic = RESPONSE_TOPIC
+                ),
+                processor = this,
+                nodeConfig = SmartConfigFactory.create(
+                    ConfigFactory.empty()).create(ConfigFactory.parseString(MESSAGING_CONFIGURATION_VALUE)
+                ),
+                partitionAssignmentListener = null
+            ).also { it.start() }
+
+        private val receivedEvents = ConcurrentHashMap<String, FlowOpsResponse?>()
+
+        override val keyClass: Class<String> = String::class.java
+
+        override val valueClass: Class<FlowOpsResponse> = FlowOpsResponse::class.java
+
+        override fun onNext(events: List<Record<String, FlowOpsResponse>>): List<Record<*, *>> {
+            events.forEach {
+                receivedEvents[it.key] = it.value
+            }
+            return emptyList()
+        }
+
+        fun waitForEvent(key: String): FlowOpsResponse =
+            eventually {
+                val event = receivedEvents[key]
+                assertNotNull(event)
+                event!!
+            }
+
+        override fun close() {
+            subscription.close()
+        }
+    }
+
     @BeforeEach
     fun setup() {
         tenantId = UUID.randomUUID().toString()
 
-        logger.info("Starting ${client::class.java.simpleName}")
-        client.startAndWait()
+        logger.info("Starting ${opsClient::class.java.simpleName}")
+        opsClient.startAndWait()
 
         logger.info("Starting ${processor::class.java.simpleName}")
         processor.startAndWait(makeBootstrapConfig(BOOT_CONFIGURATION))
 
         testDependencies = TestLifecycleDependenciesTrackingCoordinator(
-            LifecycleCoordinatorName.forComponent<CryptoOpsTests>(),
+            LifecycleCoordinatorName.forComponent<IntegrationCryptoOpsTests>(),
             coordinatorFactory,
             CryptoOpsClient::class.java,
             CryptoProcessor::class.java
         ).also { it.startAndWait() }
 
         logger.info("Publishing configs for $CRYPTO_CONFIG and $MESSAGING_CONFIG")
-        with(publisherFactory.createPublisher(PublisherConfig(CLIENT_ID))) {
+        publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID))
+        with(publisher) {
             publish(
                 listOf(
                     Record(
@@ -122,12 +193,21 @@ class CryptoOpsTests {
             )
         }
 
+        flowOpsResponses = FlowOpsResponses(subscriptionFactory)
+
+        transformer = CryptoFlowOpsTransformer(
+            requestingComponent = "test",
+            responseTopic = RESPONSE_TOPIC,
+            keyEncodingService = keyEncodingService
+        )
+
         testDependencies.waitUntilAllUp(Duration.ofSeconds(10))
     }
 
     @AfterEach
     fun cleanup() {
-        client.stopAndWait()
+        flowOpsResponses.close()
+        opsClient.stopAndWait()
         testDependencies.stopAndWait()
     }
 
@@ -157,6 +237,7 @@ class CryptoOpsTests {
         run(tlsPublicKey, ::`Should be able to sign by referencing public key`)
         run(ledgerPublicKey, ::`Should be able to sign using custom signature spec by referencing public key`)
         run(tlsPublicKey, ::`Should be able to sign using custom signature spec by referencing public key`)
+        run(ledgerPublicKey, ::`Should be able to sign using flow ops`)
         // add back when the HSM registration is done
         //val freshPublicKey1 = run(::`Should generate new fresh key pair without external id`)
         //val externalId = UUID.randomUUID()
@@ -176,13 +257,13 @@ class CryptoOpsTests {
         )
         categories.forEach { category ->
             logger.info("category=$category")
-            val supportedSchemes = client.getSupportedSchemes(tenantId, category)
+            val supportedSchemes = opsClient.getSupportedSchemes(tenantId, category)
             assertTrue(supportedSchemes.isNotEmpty())
         }
     }
 
     private fun `Should generate new key pair for LEDGER`(keyAlias: String): PublicKey {
-        return client.generateKeyPair(
+        return opsClient.generateKeyPair(
             tenantId = tenantId,
             category = CryptoConsts.Categories.LEDGER,
             alias = keyAlias
@@ -190,7 +271,7 @@ class CryptoOpsTests {
     }
 
     private fun `Should generate new key pair for TLS`(keyAlias: String): PublicKey {
-        return client.generateKeyPair(
+        return opsClient.generateKeyPair(
             tenantId = tenantId,
             category = CryptoConsts.Categories.LEDGER,
             alias = keyAlias
@@ -198,7 +279,7 @@ class CryptoOpsTests {
     }
 
     private fun `Should find existing public key by its alias`(expected: Pair<String, PublicKey>) {
-        val publicKey = client.findPublicKey(
+        val publicKey = opsClient.findPublicKey(
             tenantId = tenantId,
             alias = expected.first
         )
@@ -207,7 +288,7 @@ class CryptoOpsTests {
     }
 
     private fun `Should not find unknown public key by its alias`() {
-        val publicKey = client.findPublicKey(
+        val publicKey = opsClient.findPublicKey(
             tenantId = tenantId,
             alias = UUID.randomUUID().toString()
         )
@@ -215,16 +296,16 @@ class CryptoOpsTests {
     }
 
     private fun `Should generate new fresh key pair without external id`(): PublicKey {
-        return client.freshKey(tenantId = tenantId)
+        return opsClient.freshKey(tenantId = tenantId)
     }
 
     private fun `Should generate new fresh key pair with external id`(externalId: UUID): PublicKey {
-        return client.freshKey(tenantId = tenantId, externalId = externalId)
+        return opsClient.freshKey(tenantId = tenantId, externalId = externalId)
     }
 
     private fun `Should be able to sign by referencing key alias`(params: Pair<String, PublicKey>) {
         val data = randomDataByteArray()
-        val signature = client.sign(
+        val signature = opsClient.sign(
             tenantId = tenantId,
             alias = params.first,
             data = data
@@ -255,7 +336,7 @@ class CryptoOpsTests {
             )
             else -> throw IllegalArgumentException("Test supports only RSA or ECDSA")
         }
-        val signature = client.sign(
+        val signature = opsClient.sign(
             tenantId = tenantId,
             alias = params.first,
             signatureSpec = signatureSpec,
@@ -272,7 +353,7 @@ class CryptoOpsTests {
 
     private fun `Should be able to sign by referencing public key`(publicKey: PublicKey) {
         val data = randomDataByteArray()
-        val signature = client.sign(
+        val signature = opsClient.sign(
             tenantId = tenantId,
             publicKey = publicKey,
             data = data
@@ -293,7 +374,7 @@ class CryptoOpsTests {
             "RSA" -> SignatureSpec("SHA512withECDSA")
             else -> throw IllegalArgumentException("Test supports only RSA or ECDSA")
         }
-        val signature = client.sign(
+        val signature = opsClient.sign(
             tenantId = tenantId,
             publicKey = publicKey,
             signatureSpec = signatureSpec,
@@ -304,6 +385,32 @@ class CryptoOpsTests {
         verifier.verify(
             publicKey = publicKey,
             signatureSpec = signatureSpec,
+            signatureData = signature.bytes,
+            clearData = data
+        )
+    }
+
+    private fun `Should be able to sign using flow ops`(publicKey: PublicKey) {
+        val data = randomDataByteArray()
+        val key = UUID.randomUUID().toString()
+        val event = transformer.createSign(
+            tenantId = tenantId,
+            publicKey = publicKey,
+            data = data
+        )
+        publisher.publish(listOf(
+            Record(
+                topic = FLOW_OPS_MESSAGE_TOPIC,
+                key = key,
+                value = event
+            )
+        )).forEach { it.get() }
+        val response = flowOpsResponses.waitForEvent(key)
+        val signature = transformer.transform(response) as DigitalSignature.WithKey
+        assertEquals(publicKey, signature.by)
+        assertTrue(signature.bytes.isNotEmpty())
+        verifier.verify(
+            publicKey = publicKey,
             signatureData = signature.bytes,
             clearData = data
         )
