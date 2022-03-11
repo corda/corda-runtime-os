@@ -4,6 +4,7 @@ import net.corda.layeredpropertymap.ConversionContext
 import net.corda.v5.base.exceptions.ValueNotFoundException
 import net.corda.v5.base.types.LayeredPropertyMap
 import java.util.concurrent.ConcurrentHashMap
+import java.util.stream.Collectors
 
 class LayeredPropertyMapImpl(
     private val properties: Map<String, String?>,
@@ -203,12 +204,9 @@ class LayeredPropertyMapImpl(
         return result
     }
 
-    private fun normaliseListSearchKeyPrefix(itemKeyPrefix: String): String {
-        if (itemKeyPrefix.endsWith(".")) {
-            return itemKeyPrefix
-        }
-        return "$itemKeyPrefix."
-    }
+    private fun normaliseListSearchKeyPrefix(itemKeyPrefix: String) =
+        if (itemKeyPrefix.endsWith(".")) itemKeyPrefix else "$itemKeyPrefix."
+
 
     private fun getIndexedPrefix(key: String, normalisedPrefix: String): Pair<Int, String> {
         val dotPos = key.indexOf(".", normalisedPrefix.length)
@@ -219,7 +217,13 @@ class LayeredPropertyMapImpl(
         }
     }
 
-    private fun <K, V> List<Pair<K, V>>.toLinkedHashMap(): LinkedHashMap<K, V> = toLinkedHashMap()
+    private fun <K, V> List<Pair<K, V>>.toLinkedHashMap() =
+        this.stream().collect(
+            Collectors.toMap(
+                Pair<K, V>::first,
+                Pair<K, V>::second,
+                { _, _ -> throw IllegalArgumentException("Duplicate keys not supported")},
+                { LinkedHashMap() }))
 
     private class IndexedPrefixComparator : Comparator<Pair<Int, String>> {
         override fun compare(o1: Pair<Int, String>, o2: Pair<Int, String>): Int {
