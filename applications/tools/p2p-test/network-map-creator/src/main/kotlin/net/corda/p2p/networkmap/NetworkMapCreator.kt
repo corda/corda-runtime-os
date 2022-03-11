@@ -251,16 +251,11 @@ class NetworkMapCreator @Activate constructor(
         consoleLogger.info("Starting network map creation tool")
 
         val commands = Commands()
-        try {
-            CommandLine(commands)
-                .addSubcommand(NetworkMap())
-                .addSubcommand(HostingMap())
-                .execute(*args)
-        } catch (e: Exception) {
-            consoleLogger.warn("Could not run", e)
-        } finally {
-            shutdown()
-        }
+        CommandLine(commands)
+            .addSubcommand(NetworkMap())
+            .addSubcommand(HostingMap())
+            .execute(*args)
+        shutdown()
     }
 
     private class MappingException(msg: String) : Exception(msg)
