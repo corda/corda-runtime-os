@@ -76,7 +76,7 @@ class P2PLayerEndToEndTest {
     }
     private val bootstrapConfig = SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
 
-    private fun testMessagesBetweenTwoHots(hostA: Host, hostB: Host) {
+    private fun testMessagesBetweenTwoHosts(hostA: Host, hostB: Host) {
         hostA.startWith(hostB)
         hostB.startWith(hostA)
 
@@ -147,7 +147,7 @@ class P2PLayerEndToEndTest {
                 true,
                 KeyAlgorithm.RSA,
             ).use { hostB ->
-                testMessagesBetweenTwoHots(hostA, hostB)
+                testMessagesBetweenTwoHosts(hostA, hostB)
             }
         }
     }
@@ -175,7 +175,7 @@ class P2PLayerEndToEndTest {
                 false,
                 KeyAlgorithm.ECDSA,
             ).use { hostB ->
-                testMessagesBetweenTwoHots(hostA, hostB)
+                testMessagesBetweenTwoHosts(hostA, hostB)
             }
         }
     }
