@@ -37,15 +37,12 @@ import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.linkmanager.LinkManager
-import net.corda.p2p.linkmanager.StubLinkManagerHostingMap
-import net.corda.p2p.linkmanager.StubNetworkMap
 import net.corda.p2p.test.HostedIdentityEntry
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
 import net.corda.p2p.test.GroupPolicyEntry
 import net.corda.p2p.test.MemberInfoEntry
 import net.corda.p2p.test.TenantKeys
-import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
@@ -279,24 +276,6 @@ class P2PLayerEndToEndTest {
                 configReadService,
                 bootstrapConfig,
                 1,
-                StubNetworkMap(
-                    lifecycleCoordinatorFactory,
-                    subscriptionFactory,
-                    1,
-                    bootstrapConfig
-                ),
-                StubLinkManagerHostingMap(
-                    lifecycleCoordinatorFactory,
-                    subscriptionFactory,
-                    1,
-                    bootstrapConfig
-                ),
-                StubCryptoProcessor(
-                    lifecycleCoordinatorFactory,
-                    subscriptionFactory,
-                    1,
-                    bootstrapConfig
-                )
             )
 
         val gateway =
