@@ -22,11 +22,12 @@ import net.corda.data.crypto.wire.ops.flow.GenerateFreshKeyFlowCommand
 import net.corda.data.crypto.wire.ops.flow.SignFlowCommand
 import net.corda.messaging.api.records.Record
 import net.corda.v5.cipher.suite.KeyEncodingService
-import org.junit.jupiter.api.Assertions
+import net.corda.v5.crypto.DigitalSignature
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -82,10 +83,11 @@ class CryptoFlowOpsProcessorTests {
     private inline fun <reified REQUEST> assertResponseContext(
         timestamps: ActResultTimestamps,
         context: CryptoResponseContext,
-        ttl: Long
+        ttl: Long,
+        expectedTenantId: String = tenantId
     ) {
         timestamps.assertThatIsBetween(context.requestTimestamp)
-        assertEquals(tenantId, context.tenantId)
+        assertEquals(expectedTenantId, context.tenantId)
         assertEquals(componentName, context.requestingComponent)
         assertTrue(context.other.items.size >= 3)
         assertTrue {
@@ -127,6 +129,7 @@ class CryptoFlowOpsProcessorTests {
         processor = CryptoFlowOpsProcessor(cryptoOpsClient)
     }
 
+    @Suppress("UNCHECKED_CAST")
     @Test
     fun `Should process filter my keys query`() {
         val myPublicKeys = listOf(
@@ -147,13 +150,14 @@ class CryptoFlowOpsProcessorTests {
                 )
             )
         }.whenever(cryptoOpsClient).filterMyKeysProxy(any(), any())
+        val transformer = buildTransformer()
         val result = act {
             processor.onNext(
                 listOf(
                     Record(
                         topic = eventTopic,
                         key = recordKey,
-                        value = buildTransformer().createFilterMyKeys(
+                        value = transformer.createFilterMyKeys(
                             tenantId,
                             listOf(myPublicKeys[0], myPublicKeys[1], notMyKey)
                         )
@@ -176,6 +180,12 @@ class CryptoFlowOpsProcessorTests {
         assertArrayEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0]), passedList[0].array())
         assertArrayEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1]), passedList[1].array())
         assertArrayEquals(keyEncodingService.encodeAsByteArray(notMyKey), passedList[2].array())
+        val transformed = transformer.transform(result.value?.get(0)?.value as FlowOpsResponse)
+        assertInstanceOf(List::class.java, transformed)
+        val keys = transformed as List<PublicKey>
+        assertEquals(2, transformed.size)
+        assertTrue( keys.any { it.encoded.contentEquals(myPublicKeys[0].encoded) } )
+        assertTrue( keys.any { it.encoded.contentEquals(myPublicKeys[1].encoded) } )
     }
 
     @Test
@@ -190,13 +200,14 @@ class CryptoFlowOpsProcessorTests {
         }.whenever(cryptoOpsClient).freshKeyProxy(any(), any())
         val recordKey = UUID.randomUUID().toString()
         val operationContext = mapOf("key1" to "value1")
+        val transformer = buildTransformer()
         val result = act {
             processor.onNext(
                 listOf(
                     Record(
                         topic = eventTopic,
                         key = recordKey,
-                        value = buildTransformer().createFreshKey(tenantId, operationContext)
+                        value = transformer.createFreshKey(tenantId, operationContext)
                     )
                 )
             )
@@ -210,6 +221,10 @@ class CryptoFlowOpsProcessorTests {
         assertTrue {
             passedContext.items[0].key == "key1" && passedContext.items[0].value == "value1"
         }
+        val transformed = transformer.transform(result.value?.get(0)?.value as FlowOpsResponse)
+        assertInstanceOf(PublicKey::class.java, transformed)
+        val key = transformed as PublicKey
+        assertArrayEquals(publicKey.encoded, key.encoded)
     }
 
     @Test
@@ -227,13 +242,14 @@ class CryptoFlowOpsProcessorTests {
         val recordKey = UUID.randomUUID().toString()
         val operationContext = mapOf("key1" to "value1")
         val externalId = UUID.randomUUID()
+        val transformer = buildTransformer()
         val result = act {
             processor.onNext(
                 listOf(
                     Record(
                         topic = eventTopic,
                         key = recordKey,
-                        value = buildTransformer().createFreshKey(tenantId, externalId, operationContext)
+                        value = transformer.createFreshKey(tenantId, externalId, operationContext)
                     )
                 )
             )
@@ -248,6 +264,10 @@ class CryptoFlowOpsProcessorTests {
         assertTrue {
             passedContext.items[0].key == "key1" && passedContext.items[0].value == "value1"
         }
+        val transformed = transformer.transform(result.value?.get(0)?.value as FlowOpsResponse)
+        assertInstanceOf(PublicKey::class.java, transformed)
+        val key = transformed as PublicKey
+        assertArrayEquals(publicKey.encoded, key.encoded)
     }
 
     @Test
@@ -271,13 +291,14 @@ class CryptoFlowOpsProcessorTests {
         val recordKey = UUID.randomUUID().toString()
         val data = UUID.randomUUID().toString().toByteArray()
         val operationContext = mapOf("key1" to "value1")
+        val transformer = buildTransformer()
         val result = act {
             processor.onNext(
                 listOf(
                     Record(
                         topic = eventTopic,
                         key = recordKey,
-                        value = buildTransformer().createSign(
+                        value = transformer.createSign(
                             tenantId,
                             publicKey,
                             data,
@@ -299,10 +320,16 @@ class CryptoFlowOpsProcessorTests {
         assertTrue {
             passedContext.items[0].key == "key1" && passedContext.items[0].value == "value1"
         }
+        val transformed = transformer.transform(result.value?.get(0)?.value as FlowOpsResponse)
+        assertInstanceOf(DigitalSignature.WithKey::class.java, transformed)
+        val transformedSignature = transformed as DigitalSignature.WithKey
+        assertArrayEquals(publicKey.encoded, transformedSignature.by.encoded)
+        assertArrayEquals(signature, transformedSignature.bytes)
     }
 
+    @Suppress("UNCHECKED_CAST")
     @Test
-    fun `Should skip event without value`() {
+    fun `Should process list with valid event and skip event without value`() {
         val myPublicKeys = listOf(
             mockPublicKey(),
             mockPublicKey()
@@ -321,6 +348,7 @@ class CryptoFlowOpsProcessorTests {
                 )
             )
         }.whenever(cryptoOpsClient).filterMyKeysProxy(any(), any())
+        val transformer = buildTransformer()
         val result = act {
             processor.onNext(
                 listOf(
@@ -332,7 +360,7 @@ class CryptoFlowOpsProcessorTests {
                     Record(
                         topic = eventTopic,
                         key = recordKey,
-                        value = buildTransformer().createFilterMyKeys(
+                        value = transformer.createFilterMyKeys(
                             tenantId,
                             listOf(myPublicKeys[0], myPublicKeys[1], notMyKey)
                         )
@@ -355,10 +383,17 @@ class CryptoFlowOpsProcessorTests {
         assertArrayEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0]), passedList[0].array())
         assertArrayEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1]), passedList[1].array())
         assertArrayEquals(keyEncodingService.encodeAsByteArray(notMyKey), passedList[2].array())
+        val transformed = transformer.transform(result.value?.get(0)?.value as FlowOpsResponse)
+        assertInstanceOf(List::class.java, transformed)
+        val keys = transformed as List<PublicKey>
+        assertEquals(2, transformed.size)
+        assertTrue( keys.any { it.encoded.contentEquals(myPublicKeys[0].encoded) } )
+        assertTrue( keys.any { it.encoded.contentEquals(myPublicKeys[1].encoded) } )
     }
 
+    @Suppress("UNCHECKED_CAST")
     @Test
-    fun `Should skip event with null response topic`() {
+    fun `Should process list with valid event and skip event with null response topic`() {
         val myPublicKeys = listOf(
             mockPublicKey(),
             mockPublicKey()
@@ -377,13 +412,14 @@ class CryptoFlowOpsProcessorTests {
                 )
             )
         }.whenever(cryptoOpsClient).filterMyKeysProxy(any(), any())
+        val transformer = buildTransformer()
         val result = act {
             processor.onNext(
                 listOf(
                     Record(
                         topic = eventTopic,
                         key = UUID.randomUUID().toString(),
-                        value = buildTransformer().createFilterMyKeys(
+                        value = transformer.createFilterMyKeys(
                             tenantId,
                             listOf(myPublicKeys[0], myPublicKeys[1], notMyKey)
                         ).apply {
@@ -395,7 +431,7 @@ class CryptoFlowOpsProcessorTests {
                     Record(
                         topic = eventTopic,
                         key = recordKey,
-                        value = buildTransformer().createFilterMyKeys(
+                        value = transformer.createFilterMyKeys(
                             tenantId,
                             listOf(myPublicKeys[0], myPublicKeys[1], notMyKey)
                         )
@@ -418,10 +454,17 @@ class CryptoFlowOpsProcessorTests {
         assertArrayEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0]), passedList[0].array())
         assertArrayEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1]), passedList[1].array())
         assertArrayEquals(keyEncodingService.encodeAsByteArray(notMyKey), passedList[2].array())
+        val transformed = transformer.transform(result.value?.get(0)?.value as FlowOpsResponse)
+        assertInstanceOf(List::class.java, transformed)
+        val keys = transformed as List<PublicKey>
+        assertEquals(2, transformed.size)
+        assertTrue( keys.any { it.encoded.contentEquals(myPublicKeys[0].encoded) } )
+        assertTrue( keys.any { it.encoded.contentEquals(myPublicKeys[1].encoded) } )
     }
 
+    @Suppress("UNCHECKED_CAST")
     @Test
-    fun `Should skip event with blank response topic`() {
+    fun `Should process list with valid event and skip event with blank response topic`() {
         val myPublicKeys = listOf(
             mockPublicKey(),
             mockPublicKey()
@@ -440,13 +483,14 @@ class CryptoFlowOpsProcessorTests {
                 )
             )
         }.whenever(cryptoOpsClient).filterMyKeysProxy(any(), any())
+        val transformer = buildTransformer()
         val result = act {
             processor.onNext(
                 listOf(
                     Record(
                         topic = eventTopic,
                         key = UUID.randomUUID().toString(),
-                        value = buildTransformer().createFilterMyKeys(
+                        value = transformer.createFilterMyKeys(
                             tenantId,
                             listOf(myPublicKeys[0], myPublicKeys[1], notMyKey)
                         ).apply {
@@ -459,7 +503,7 @@ class CryptoFlowOpsProcessorTests {
                     Record(
                         topic = eventTopic,
                         key = recordKey,
-                        value = buildTransformer().createFilterMyKeys(
+                        value = transformer.createFilterMyKeys(
                             tenantId,
                             listOf(myPublicKeys[0], myPublicKeys[1], notMyKey)
                         )
@@ -482,22 +526,29 @@ class CryptoFlowOpsProcessorTests {
         assertArrayEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0]), passedList[0].array())
         assertArrayEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1]), passedList[1].array())
         assertArrayEquals(keyEncodingService.encodeAsByteArray(notMyKey), passedList[2].array())
+        val transformed = transformer.transform(result.value?.get(0)?.value as FlowOpsResponse)
+        assertInstanceOf(List::class.java, transformed)
+        val keys = transformed as List<PublicKey>
+        assertEquals(2, transformed.size)
+        assertTrue( keys.any { it.encoded.contentEquals(myPublicKeys[0].encoded) } )
+        assertTrue( keys.any { it.encoded.contentEquals(myPublicKeys[1].encoded) } )
     }
 
+    @Suppress("UNCHECKED_CAST")
     @Test
-    fun `Should return error for stale event`() {
+    fun `Should process list with valid event and return error for stale event`() {
         val myPublicKeys = listOf(
             mockPublicKey(),
             mockPublicKey()
         )
-        var passedTenantId = UUID.randomUUID().toString()
-        var passedList = listOf<ByteBuffer>()
+        val passedTenantIds = mutableListOf<String>()
+        val passedLists = mutableListOf<List<ByteBuffer>>()
         val notMyKey = mockPublicKey()
         val recordKey0 = UUID.randomUUID().toString()
         val recordKey1 = UUID.randomUUID().toString()
         doAnswer {
-            passedTenantId = it.getArgument(0)
-            passedList = it.getArgument<Iterable<ByteBuffer>>(1).toList()
+            passedTenantIds.add(it.getArgument(0))
+            passedLists.add(it.getArgument<Iterable<ByteBuffer>>(1).toList())
             CryptoPublicKeys(
                 listOf(
                     ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[0])),
@@ -505,13 +556,14 @@ class CryptoFlowOpsProcessorTests {
                 )
             )
         }.whenever(cryptoOpsClient).filterMyKeysProxy(any(), any())
+        val transformer = buildTransformer()
         val result = act {
             processor.onNext(
                 listOf(
                     Record(
                         topic = eventTopic,
                         key = recordKey0,
-                        value = buildTransformer().createFilterMyKeys(
+                        value = transformer.createFilterMyKeys(
                             tenantId,
                             listOf(myPublicKeys[0], myPublicKeys[1], notMyKey)
                         ).apply {
@@ -524,7 +576,7 @@ class CryptoFlowOpsProcessorTests {
                     Record(
                         topic = eventTopic,
                         key = recordKey1,
-                        value = buildTransformer().createFilterMyKeys(
+                        value = transformer.createFilterMyKeys(
                             tenantId,
                             listOf(myPublicKeys[0], myPublicKeys[1], notMyKey)
                         )
@@ -538,28 +590,143 @@ class CryptoFlowOpsProcessorTests {
         assertEquals(2, result.value.size)
         assertInstanceOf(FlowOpsResponse::class.java, result.value[0].value)
         assertInstanceOf(CryptoNoContentValue::class.java, (result.value[0].value as FlowOpsResponse).response)
+        val context0 = (result.value[0].value as FlowOpsResponse).context
+        assertResponseContext<FilterMyKeysFlowQuery>(result, context0, -1)
         assertTrue {
-            (result.value[0].value as FlowOpsResponse).context.other.items.any {
+            context0.other.items.any {
                 it.key == RESPONSE_ERROR_KEY && it.value.isNotBlank()
             }
         }
         assertInstanceOf(FlowOpsResponse::class.java, result.value[1].value)
         assertInstanceOf(CryptoPublicKeys::class.java, (result.value[1].value as FlowOpsResponse).response)
-        val context = (result.value[1].value as FlowOpsResponse).context
-        val response = (result.value[1].value as FlowOpsResponse).response as CryptoPublicKeys
-        assertResponseContext<FilterMyKeysFlowQuery>(result, context, -1)
-        assertNotNull(response.keys)
-        assertEquals(2, response.keys.size)
+        val context1 = (result.value[1].value as FlowOpsResponse).context
+        val response1 = (result.value[1].value as FlowOpsResponse).response as CryptoPublicKeys
+        assertResponseContext<FilterMyKeysFlowQuery>(result, context1, 123)
+        assertNotNull(response1.keys)
+        assertEquals(2, response1.keys.size)
         assertTrue(
-            response.keys.any { it.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0])) }
+            response1.keys.any { it.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0])) }
         )
         assertTrue(
-            response.keys.any { it.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1])) }
+            response1.keys.any { it.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1])) }
         )
-        assertEquals(tenantId, passedTenantId)
+        assertEquals(1, passedTenantIds.size)
+        assertEquals(tenantId, passedTenantIds[0])
+        assertEquals(1, passedLists.size)
+        val passedList = passedLists[0]
         assertEquals(3, passedList.size)
         assertArrayEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0]), passedList[0].array())
         assertArrayEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1]), passedList[1].array())
         assertArrayEquals(keyEncodingService.encodeAsByteArray(notMyKey), passedList[2].array())
+        assertThrows<IllegalStateException> {
+            transformer.transform(result.value[0].value as FlowOpsResponse)
+        }
+        val transformed = transformer.transform(result.value[1].value as FlowOpsResponse)
+        assertInstanceOf(List::class.java, transformed)
+        val keys = transformed as List<PublicKey>
+        assertEquals(2, transformed.size)
+        assertTrue( keys.any { it.encoded.contentEquals(myPublicKeys[0].encoded) } )
+        assertTrue( keys.any { it.encoded.contentEquals(myPublicKeys[1].encoded) } )
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    @Test
+    fun `Should process list with valid event and return error for failed event`() {
+        val myPublicKeys = listOf(
+            mockPublicKey(),
+            mockPublicKey()
+        )
+        val passedTenantIds = mutableListOf<String>()
+        val passedLists = mutableListOf<List<ByteBuffer>>()
+        val notMyKey = mockPublicKey()
+        val recordKey0 = UUID.randomUUID().toString()
+        val recordKey1 = UUID.randomUUID().toString()
+        val failingTenantId = UUID.randomUUID().toString()
+        doAnswer {
+            val tenantId = it.getArgument<String>(0)
+            passedTenantIds.add(tenantId)
+            passedLists.add(it.getArgument<Iterable<ByteBuffer>>(1).toList())
+            if(tenantId == failingTenantId) {
+                throw NotImplementedError()
+            }
+            CryptoPublicKeys(
+                listOf(
+                    ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[0])),
+                    ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[1]))
+                )
+            )
+        }.whenever(cryptoOpsClient).filterMyKeysProxy(any(), any())
+        val transformer = buildTransformer()
+        val result = act {
+            processor.onNext(
+                listOf(
+                    Record(
+                        topic = eventTopic,
+                        key = recordKey0,
+                        value = transformer.createFilterMyKeys(
+                            failingTenantId,
+                            listOf(myPublicKeys[0], myPublicKeys[1], notMyKey)
+                        )
+                    ),
+                    Record(
+                        topic = eventTopic,
+                        key = recordKey1,
+                        value = transformer.createFilterMyKeys(
+                            tenantId,
+                            listOf(myPublicKeys[0], myPublicKeys[1], notMyKey)
+                        )
+                    )
+                )
+            )
+        }
+        assertEquals(recordKey0, result.value?.get(0)?.key)
+        assertEquals(recordKey1, result.value?.get(1)?.key)
+        assertNotNull(result.value)
+        assertEquals(2, result.value.size)
+        assertInstanceOf(FlowOpsResponse::class.java, result.value[0].value)
+        assertInstanceOf(CryptoNoContentValue::class.java, (result.value[0].value as FlowOpsResponse).response)
+        val context0 = (result.value[0].value as FlowOpsResponse).context
+        assertResponseContext<FilterMyKeysFlowQuery>(result, context0, 123, failingTenantId)
+        assertTrue {
+            context0.other.items.any {
+                it.key == RESPONSE_ERROR_KEY && it.value.isNotBlank()
+            }
+        }
+        assertInstanceOf(FlowOpsResponse::class.java, result.value[1].value)
+        assertInstanceOf(CryptoPublicKeys::class.java, (result.value[1].value as FlowOpsResponse).response)
+        val context1 = (result.value[1].value as FlowOpsResponse).context
+        val response1 = (result.value[1].value as FlowOpsResponse).response as CryptoPublicKeys
+        assertResponseContext<FilterMyKeysFlowQuery>(result, context1, 123, tenantId)
+        assertNotNull(response1.keys)
+        assertEquals(2, response1.keys.size)
+        assertTrue(
+            response1.keys.any { it.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0])) }
+        )
+        assertTrue(
+            response1.keys.any { it.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1])) }
+        )
+        assertEquals(2, passedTenantIds.size)
+        assertEquals(failingTenantId, passedTenantIds[0])
+        assertEquals(tenantId, passedTenantIds[1])
+        assertEquals(2, passedLists.size)
+        val passedList0 = passedLists[0]
+        assertEquals(3, passedList0.size)
+        assertArrayEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0]), passedList0[0].array())
+        assertArrayEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1]), passedList0[1].array())
+        assertArrayEquals(keyEncodingService.encodeAsByteArray(notMyKey), passedList0[2].array())
+        val passedList1 = passedLists[0]
+        assertEquals(3, passedList1.size)
+        assertArrayEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0]), passedList1[0].array())
+        assertArrayEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1]), passedList1[1].array())
+        assertArrayEquals(keyEncodingService.encodeAsByteArray(notMyKey), passedList1[2].array())
+        assertThrows<IllegalStateException> {
+            transformer.transform(result.value[0].value as FlowOpsResponse)
+        }
+        val transformed = transformer.transform(result.value[1].value as FlowOpsResponse)
+        assertInstanceOf(List::class.java, transformed)
+        val keys = transformed as List<PublicKey>
+        assertEquals(2, transformed.size)
+        assertTrue( keys.any { it.encoded.contentEquals(myPublicKeys[0].encoded) } )
+        assertTrue( keys.any { it.encoded.contentEquals(myPublicKeys[1].encoded) } )
     }
 }
