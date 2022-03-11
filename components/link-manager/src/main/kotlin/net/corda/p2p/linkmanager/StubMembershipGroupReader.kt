@@ -3,7 +3,6 @@ package net.corda.p2p.linkmanager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
-import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
@@ -11,7 +10,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.crypto.protocol.ProtocolConstants
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
+import net.corda.p2p.linkmanager.LinkManagerInternalTypes.toHoldingIdentity
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.MemberInfoEntry
 import net.corda.p2p.test.stub.crypto.processor.KeyDeserialiser
@@ -27,7 +26,7 @@ internal class StubMembershipGroupReader(
     subscriptionFactory: SubscriptionFactory,
     instanceId: Int,
     configuration: SmartConfig,
-) : LifecycleWithDominoTile {
+) : LinkManagerMembershipGroupReader {
 
     private val subscriptionConfig = SubscriptionConfig("member-info-reader", MEMBER_INFO_TOPIC, instanceId)
     private val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, BouncyCastleProvider())
@@ -93,19 +92,19 @@ internal class StubMembershipGroupReader(
         return readyFuture
     }
 
-    private val membersInformation = ConcurrentHashMap<LinkManagerNetworkMap.HoldingIdentity, LinkManagerNetworkMap.MemberInfo>()
-    private val publicHashToMemberInformation = ConcurrentHashMap<GroupIdWithPublicKeyHash, LinkManagerNetworkMap.MemberInfo>()
+    private val membersInformation = ConcurrentHashMap<LinkManagerInternalTypes.HoldingIdentity, LinkManagerInternalTypes.MemberInfo>()
+    private val publicHashToMemberInformation = ConcurrentHashMap<GroupIdWithPublicKeyHash, LinkManagerInternalTypes.MemberInfo>()
 
     private data class GroupIdWithPublicKeyHash(
         val groupId: String,
         val hash: ByteBuffer
     )
 
-    fun getMemberInfo(holdingIdentity: LinkManagerNetworkMap.HoldingIdentity): LinkManagerNetworkMap.MemberInfo? {
+    override fun getMemberInfo(holdingIdentity: LinkManagerInternalTypes.HoldingIdentity): LinkManagerInternalTypes.MemberInfo? {
         return membersInformation[holdingIdentity]
     }
 
-    fun getMemberInfo(hash: ByteArray, groupId: String): LinkManagerNetworkMap.MemberInfo? {
+    override fun getMemberInfo(hash: ByteArray, groupId: String): LinkManagerInternalTypes.MemberInfo? {
         return publicHashToMemberInformation[
             GroupIdWithPublicKeyHash(
                 groupId,
@@ -114,12 +113,12 @@ internal class StubMembershipGroupReader(
         ]
     }
 
-    private fun MemberInfoEntry.toMemberInfo(): LinkManagerNetworkMap.MemberInfo {
-        return LinkManagerNetworkMap.MemberInfo(
-            LinkManagerNetworkMap.HoldingIdentity(this.holdingIdentity.x500Name, this.holdingIdentity.groupId),
+    private fun MemberInfoEntry.toMemberInfo(): LinkManagerInternalTypes.MemberInfo {
+        return LinkManagerInternalTypes.MemberInfo(
+            LinkManagerInternalTypes.HoldingIdentity(this.holdingIdentity.x500Name, this.holdingIdentity.groupId),
             keyDeserialiser.toPublicKey(this.publicKey.array(), this.publicKeyAlgorithm),
             this.publicKeyAlgorithm.toKeyAlgorithm(),
-            LinkManagerNetworkMap.EndPoint(this.address),
+            LinkManagerInternalTypes.EndPoint(this.address),
         )
     }
 

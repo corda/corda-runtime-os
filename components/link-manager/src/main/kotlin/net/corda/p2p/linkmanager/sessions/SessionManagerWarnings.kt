@@ -1,6 +1,6 @@
 package net.corda.p2p.linkmanager.sessions
 
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap.HoldingIdentity
+import net.corda.p2p.linkmanager.LinkManagerInternalTypes.HoldingIdentity
 import org.slf4j.Logger
 
 class SessionManagerWarnings {
@@ -37,13 +37,8 @@ class SessionManagerWarnings {
             )
         }
 
-        internal fun Logger.couldNotFindNetworkType(messageName: String, sessionId: String, groupId: String) {
-            this.warn("Could not find the network type in the NetworkMap for groupId $groupId." +
-                    " The $messageName for sessionId $sessionId was discarded.")
-        }
-
-        internal fun Logger.couldNotFindProtocolModes(messageName: String, sessionId: String, groupId: String) {
-            this.warn("Could not find the protocol modes in the NetworkMap for groupId $groupId." +
+        internal fun Logger.couldNotFindGroupInfo(messageName: String, sessionId: String, groupId: String) {
+            this.warn("Could not find the group information in the NetworkMap for groupId $groupId." +
                     " The $messageName for sessionId $sessionId was discarded.")
         }
 

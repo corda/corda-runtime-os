@@ -16,11 +16,13 @@ import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.DecryptionFailedError
 import net.corda.p2p.crypto.protocol.api.InvalidMac
 import net.corda.p2p.crypto.protocol.api.Session
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toNetworkType
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap.MemberInfo
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap.NetworkType
+import net.corda.p2p.linkmanager.LinkManagerGroupPolicyProvider
+import net.corda.p2p.linkmanager.LinkManagerInternalTypes.MemberInfo
+import net.corda.p2p.linkmanager.LinkManagerInternalTypes.NetworkType
+import net.corda.p2p.linkmanager.LinkManagerInternalTypes.toHoldingIdentity
+import net.corda.p2p.linkmanager.LinkManagerInternalTypes.toLMNetworkType
+import net.corda.p2p.linkmanager.LinkManagerInternalTypes.toNetworkType
+import net.corda.p2p.linkmanager.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.DataMessage
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.SessionAndMessage
 import org.apache.avro.AvroRuntimeException
@@ -64,12 +66,14 @@ class MessageConverter {
             }
         }
 
+        @Suppress("LongParameterList")
         fun linkOutMessageFromAck(
             message: MessageAck,
             source: HoldingIdentity,
             destination: HoldingIdentity,
             session: Session,
-            networkMap: LinkManagerNetworkMap
+            groups: LinkManagerGroupPolicyProvider,
+            members: LinkManagerMembershipGroupReader,
         ): LinkOutMessage? {
             val serializedMessage = try {
                 message.toByteBuffer()
@@ -77,13 +81,14 @@ class MessageConverter {
                 logger.error("Could not serialize message type ${message::class.java.simpleName}. The message was discarded.")
                 return null
             }
-            return createLinkOutMessageFromPayload(serializedMessage, source, destination, session, networkMap)
+            return createLinkOutMessageFromPayload(serializedMessage, source, destination, session, groups, members)
         }
 
         fun linkOutMessageFromAuthenticatedMessageAndKey(
             message: AuthenticatedMessageAndKey,
             session: Session,
-            networkMap: LinkManagerNetworkMap
+            groups : LinkManagerGroupPolicyProvider,
+            members : LinkManagerMembershipGroupReader,
         ): LinkOutMessage? {
             val serializedMessage = try {
                 DataMessagePayload(message).toByteBuffer()
@@ -96,16 +101,19 @@ class MessageConverter {
                 message.message.header.source,
                 message.message.header.destination,
                 session,
-                networkMap
+                groups,
+                members,
             )
         }
 
+        @Suppress("LongParameterList")
         fun linkOutMessageFromHeartbeat(
             source: HoldingIdentity,
             destination: HoldingIdentity,
             message: HeartbeatMessage,
             session: Session,
-            networkMap: LinkManagerNetworkMap
+            groups : LinkManagerGroupPolicyProvider,
+            members : LinkManagerMembershipGroupReader,
         ): LinkOutMessage? {
             val serializedMessage = try {
                 DataMessagePayload(message).toByteBuffer()
@@ -118,36 +126,41 @@ class MessageConverter {
                 source,
                 destination,
                 session,
-                networkMap
+                groups,
+                members,
             )
         }
 
         fun linkOutFromUnauthenticatedMessage(
             message: UnauthenticatedMessage,
-            networkMap: LinkManagerNetworkMap
+            groups: LinkManagerGroupPolicyProvider,
+            members: LinkManagerMembershipGroupReader,
         ): LinkOutMessage? {
             val destination = message.header.destination
-            val destMemberInfo = networkMap.getMemberInfo(destination.toHoldingIdentity())
+            val destMemberInfo = members.getMemberInfo(destination.toHoldingIdentity())
             if (destMemberInfo == null) {
                 logger.warn("Attempted to send message to peer $destination which is not in the network map. The message was discarded.")
                 return null
             }
 
-            val networkType = networkMap.getNetworkType(destination.toHoldingIdentity().groupId)
-            if (networkType == null) {
-                logger.warn("Could not find the network type in the NetworkMap for ${destination}. The message was discarded.")
+            val groupInfo = groups.getGroupInfo(destination.toHoldingIdentity().groupId)
+            if (groupInfo == null) {
+                logger.warn("Could not find the group information in the" +
+                        " GroupPolicyProvider for ${destination}. The message was discarded.")
                 return null
             }
 
-            return createLinkOutMessage(message, destMemberInfo, networkType)
+            return createLinkOutMessage(message, destMemberInfo, groupInfo.networkType.toLMNetworkType())
         }
 
+        @Suppress("LongParameterList")
         private fun createLinkOutMessageFromPayload(
             serializedPayload: ByteBuffer,
             source: HoldingIdentity,
             destination: HoldingIdentity,
             session: Session,
-            networkMap: LinkManagerNetworkMap
+            groups : LinkManagerGroupPolicyProvider,
+            members : LinkManagerMembershipGroupReader,
         ): LinkOutMessage? {
             val result = when (session) {
                 is AuthenticatedSession -> {
@@ -170,18 +183,19 @@ class MessageConverter {
                 }
             }
 
-            val destMemberInfo = networkMap.getMemberInfo(destination.toHoldingIdentity())
+            val destMemberInfo = members.getMemberInfo(destination.toHoldingIdentity())
             if (destMemberInfo == null) {
                 logger.warn("Attempted to send message to peer $destination which is not in the network map. The message was discarded.")
                 return null
             }
-            val networkType = networkMap.getNetworkType(source.groupId)
-            if (networkType == null) {
-                logger.warn("Could not find the network type in the NetworkMap for our identity = ${source}. The message was discarded.")
+            val groupInfo = groups.getGroupInfo(source.groupId)
+            if (groupInfo == null) {
+                logger.warn("Could not find the group info in the " +
+                        "GroupPolicyProvider for our identity = ${source}. The message was discarded.")
                 return null
             }
 
-            return createLinkOutMessage(result, destMemberInfo, networkType)
+            return createLinkOutMessage(result, destMemberInfo, groupInfo.networkType.toLMNetworkType())
         }
 
         fun <T> extractPayload(session: Session, sessionId: String, message: DataMessage, deserialize: (ByteBuffer) -> T): T? {

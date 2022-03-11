@@ -3,7 +3,6 @@ package net.corda.p2p.linkmanager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
-import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
@@ -20,7 +19,7 @@ internal class StubGroupPolicyProvider(
     subscriptionFactory: SubscriptionFactory,
     instanceId: Int,
     configuration: SmartConfig,
-) : LifecycleWithDominoTile {
+) : LinkManagerGroupPolicyProvider {
     companion object {
         fun GroupPolicyEntry.toGroupInfo(): GroupPolicyListener.GroupInfo {
             return GroupPolicyListener.GroupInfo(
@@ -96,11 +95,11 @@ internal class StubGroupPolicyProvider(
 
     private val groups = ConcurrentHashMap<String, GroupPolicyListener.GroupInfo>()
 
-    fun getGroupInfo(groupId: String): GroupPolicyListener.GroupInfo? {
+    override fun getGroupInfo(groupId: String): GroupPolicyListener.GroupInfo? {
         return groups[groupId]
     }
 
-    fun registerListener(groupPolicyListener: GroupPolicyListener) {
+    override fun registerListener(groupPolicyListener: GroupPolicyListener) {
         listeners += groupPolicyListener
     }
 }
