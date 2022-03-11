@@ -3,7 +3,6 @@ package net.corda.flow.mapper.impl.executor
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
-import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
@@ -11,9 +10,9 @@ import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.data.identity.HoldingIdentity
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
+import net.corda.test.flow.util.buildSessionEvent
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import java.time.Instant
 
 class SessionInitExecutorTest {
 
@@ -22,8 +21,7 @@ class SessionInitExecutorTest {
         val holdingIdentity = HoldingIdentity()
         val flowKey = FlowKey("", holdingIdentity)
         val sessionInit = SessionInit("", "", flowKey, holdingIdentity, holdingIdentity, null)
-        val payload = SessionEvent(MessageDirection.OUTBOUND, Instant.now(), "sessionId", 1, sessionInit)
-
+        val payload = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, sessionInit)
         val result = SessionInitExecutor("sessionId",  payload, sessionInit, null).execute()
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents
@@ -45,7 +43,7 @@ class SessionInitExecutorTest {
     fun `Inbound session init creates new state and forwards to flow event`() {
         val holdingIdentity = HoldingIdentity()
         val sessionInit = SessionInit("", "", null, holdingIdentity, holdingIdentity, null)
-        val payload = SessionEvent(MessageDirection.INBOUND, Instant.now(), "sessionId-INITIATED", 1, sessionInit)
+        val payload = buildSessionEvent(MessageDirection.INBOUND, "sessionId-INITIATED", 1, sessionInit)
         val result = SessionInitExecutor("sessionId-INITIATED", payload, sessionInit, null).execute()
 
         val state = result.flowMapperState
@@ -68,7 +66,7 @@ class SessionInitExecutorTest {
     fun `Session init with non null state ignored`() {
         val holdingIdentity = HoldingIdentity()
         val sessionInit = SessionInit("", "", null, holdingIdentity, holdingIdentity, null)
-        val payload = SessionEvent(MessageDirection.INBOUND, Instant.now(), "", 1, sessionInit)
+        val payload = buildSessionEvent(MessageDirection.INBOUND, "", 1, sessionInit)
         val result = SessionInitExecutor("sessionId-INITIATED", payload, sessionInit, FlowMapperState()).execute()
 
         val state = result.flowMapperState

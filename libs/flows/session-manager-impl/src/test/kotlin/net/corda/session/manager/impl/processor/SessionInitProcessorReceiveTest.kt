@@ -2,13 +2,12 @@ package net.corda.session.manager.impl.processor
 
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.MessageDirection
-import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
-import net.corda.session.manager.impl.buildSessionState
+import net.corda.test.flow.util.buildSessionEvent
+import net.corda.test.flow.util.buildSessionState
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.time.Instant
@@ -19,11 +18,10 @@ class SessionInitProcessorReceiveTest {
     fun `Receive duplicate init when state is not null`() {
         val initiatingIdentity = HoldingIdentity("ALice", "group1")
         val initiatedIdentity = HoldingIdentity("Bob", "group1")
-        val sessionInitEvent = SessionEvent(
-            MessageDirection.OUTBOUND, Instant.now(), "sessionId", 1, SessionInit(
-                "flow", "cpiId", FlowKey(), initiatedIdentity, initiatingIdentity, null
-            )
-        )
+        val sessionInitEvent = buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionInit(
+            "flow", "cpiId", FlowKey(), initiatedIdentity, initiatingIdentity, null
+        ))
+
         val sessionInitProcessor = SessionInitProcessorReceive(
             "key", buildSessionState(
                 SessionStateType.CONFIRMED, 1, emptyList(), 0,
@@ -36,19 +34,18 @@ class SessionInitProcessorReceiveTest {
         val sessionState = sessionInitProcessor.execute()
 
         assertThat(sessionState).isNotNull
-        assertThat(sessionState.sendEventsState.undeliveredMessages.size).isEqualTo(1)
-        assertThat(sessionState.sendEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionAck::class.java)
+        assertThat(sessionState.sendEventsState.undeliveredMessages).isEmpty()
+        assertThat(sessionState.sendAck).isTrue
     }
 
     @Test
     fun `Receive init in reply to an init`() {
         val initiatingIdentity = HoldingIdentity("ALice", "group1")
         val initiatedIdentity = HoldingIdentity("Bob", "group1")
-        val sessionInitEvent = SessionEvent(
-            MessageDirection.OUTBOUND, Instant.now(), "sessionId", 1, SessionInit(
-                "flow", "cpiId", FlowKey(), initiatedIdentity, initiatingIdentity, null
-            )
-        )
+        val sessionInitEvent = buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionInit(
+            "flow", "cpiId", FlowKey(), initiatedIdentity, initiatingIdentity, null
+        ))
+
         val sessionInitProcessor = SessionInitProcessorReceive(
             "key", buildSessionState(
                 SessionStateType.CREATED,
@@ -72,11 +69,10 @@ class SessionInitProcessorReceiveTest {
     fun `Receive init when state is null`() {
         val initiatingIdentity = HoldingIdentity("ALice", "group1")
         val initiatedIdentity = HoldingIdentity("Bob", "group1")
-        val sessionInitEvent = SessionEvent(
-            MessageDirection.OUTBOUND, Instant.now(), "sessionId", 1, SessionInit(
-                "flow", "cpiId", FlowKey(), initiatedIdentity, initiatingIdentity, null
-            )
-        )
+        val sessionInitEvent = buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionInit(
+            "flow", "cpiId", FlowKey(), initiatedIdentity, initiatingIdentity, null
+        ))
+
         val sessionInitProcessor = SessionInitProcessorReceive("key", null, sessionInitEvent, Instant.now())
 
         val sessionState = sessionInitProcessor.execute()
@@ -89,9 +85,7 @@ class SessionInitProcessorReceiveTest {
         assertThat(receivedEvents.undeliveredMessages.size).isEqualTo(1)
         assertThat(receivedEvents.undeliveredMessages.first()).isEqualTo(sessionInitEvent)
 
-        val messagesToSend = sessionState.sendEventsState.undeliveredMessages
-        assertThat(messagesToSend.size).isEqualTo(1)
-        val sessionAck = messagesToSend.first().payload!!
-        assertThat(sessionAck::class.java).isEqualTo(SessionAck::class.java)
+        assertThat(sessionState.sendEventsState.undeliveredMessages).isEmpty()
+        assertThat(sessionState.sendAck).isTrue
     }
 }

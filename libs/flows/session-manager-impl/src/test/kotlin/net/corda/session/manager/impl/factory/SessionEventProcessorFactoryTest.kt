@@ -2,13 +2,13 @@ package net.corda.session.manager.impl.factory
 
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.MessageDirection
-import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.session.manager.SessionManagerException
+import net.corda.test.flow.util.buildSessionEvent
 import net.corda.session.manager.impl.processor.SessionAckProcessorReceive
 import net.corda.session.manager.impl.processor.SessionCloseProcessorReceive
 import net.corda.session.manager.impl.processor.SessionCloseProcessorSend
@@ -31,7 +31,7 @@ class SessionEventProcessorFactoryTest {
     fun testCreateEventReceivedProcessorOutboundMessage() {
         assertThrows<SessionManagerException> {
             sessionEventProcessorFactory.createEventReceivedProcessor(
-                "key", SessionEvent(MessageDirection.OUTBOUND, Instant.now(), "1", 1, null),
+                "key", buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionData()),
                 null, Instant.now()
             )
         }
@@ -41,8 +41,7 @@ class SessionEventProcessorFactoryTest {
     fun testCreateEventToSendProcessorInboundMessage() {
         assertThrows<SessionManagerException> {
             sessionEventProcessorFactory.createEventToSendProcessor(
-                "key", SessionEvent(MessageDirection.INBOUND, Instant.now(), "1", null, null), null,
-                Instant.now()
+                "key", buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionData()), null, Instant.now()
             )
         }
     }
@@ -50,10 +49,7 @@ class SessionEventProcessorFactoryTest {
     @Test
     fun testOutboundDataMessage() {
         val processor = sessionEventProcessorFactory.createEventToSendProcessor(
-            "key", SessionEvent(
-                MessageDirection.OUTBOUND, Instant.now(), "1", null,
-                SessionData()
-            ), null, Instant.now()
+            "key", buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionData()), null, Instant.now()
         )
 
         assertThat(processor::class.java).isEqualTo(SessionDataProcessorSend::class.java)
@@ -62,10 +58,7 @@ class SessionEventProcessorFactoryTest {
     @Test
     fun testInboundDataMessage() {
         val processor = sessionEventProcessorFactory.createEventReceivedProcessor(
-            "key", SessionEvent(
-                MessageDirection.INBOUND, Instant.now(), "1", 2,
-                SessionData()
-            ), null, Instant.now()
+            "key", buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionData()), null, Instant.now()
         )
 
         assertThat(processor::class.java).isEqualTo(SessionDataProcessorReceive::class.java)
@@ -74,9 +67,8 @@ class SessionEventProcessorFactoryTest {
     @Test
     fun testInboundErrorMessage() {
         val processor = sessionEventProcessorFactory.createEventReceivedProcessor(
-            "key", SessionEvent(
-                MessageDirection.INBOUND, Instant.now(), "1", 2,
-                SessionError(ExceptionEnvelope())
+            "key", buildSessionEvent(
+                MessageDirection.INBOUND, "sessionId", 1, SessionError(ExceptionEnvelope())
             ), null, Instant.now()
         )
 
@@ -86,10 +78,10 @@ class SessionEventProcessorFactoryTest {
     @Test
     fun testOutboundErrorMessage() {
         val processor = sessionEventProcessorFactory.createEventToSendProcessor(
-            "key", SessionEvent(
-                MessageDirection.OUTBOUND, Instant.now(), "1", 2,
-                SessionError(ExceptionEnvelope())
-            ), null, Instant.now()
+            "key",
+            buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionError(ExceptionEnvelope())),
+            null,
+            Instant.now()
         )
 
         assertThat(processor::class.java).isEqualTo(SessionErrorProcessorSend::class.java)
@@ -98,10 +90,7 @@ class SessionEventProcessorFactoryTest {
     @Test
     fun testInboundInitMessage() {
         val processor = sessionEventProcessorFactory.createEventReceivedProcessor(
-            "key", SessionEvent(
-                MessageDirection.INBOUND, Instant.now(), "1", 2,
-                SessionInit()
-            ), null, Instant.now()
+            "key", buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionInit()), null, Instant.now()
         )
 
         assertThat(processor::class.java).isEqualTo(SessionInitProcessorReceive::class.java)
@@ -110,10 +99,7 @@ class SessionEventProcessorFactoryTest {
     @Test
     fun testOutboundInitMessage() {
         val processor = sessionEventProcessorFactory.createEventToSendProcessor(
-            "key", SessionEvent(
-                MessageDirection.OUTBOUND, Instant.now(), "1", 2,
-                SessionInit()
-            ), null, Instant.now()
+            "key", buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionInit()), null, Instant.now()
         )
 
         assertThat(processor::class.java).isEqualTo(SessionInitProcessorSend::class.java)
@@ -122,10 +108,7 @@ class SessionEventProcessorFactoryTest {
     @Test
     fun testInboundAckMessage() {
         val processor = sessionEventProcessorFactory.createEventReceivedProcessor(
-            "key", SessionEvent(
-                MessageDirection.INBOUND, Instant.now(), "1", 2,
-                SessionAck()
-            ), null, Instant.now()
+            "key", buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionAck()), null, Instant.now()
         )
 
         assertThat(processor::class.java).isEqualTo(SessionAckProcessorReceive::class.java)
@@ -135,10 +118,7 @@ class SessionEventProcessorFactoryTest {
     fun testOutboundAckMessage() {
         assertThrows<NotImplementedError> {
             sessionEventProcessorFactory.createEventToSendProcessor(
-                "key", SessionEvent(
-                    MessageDirection.OUTBOUND, Instant.now(), "1", 1,
-                    SessionAck()
-                ), null, Instant.now()
+                "key", buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionAck()), null, Instant.now()
             )
         }
     }
@@ -146,10 +126,7 @@ class SessionEventProcessorFactoryTest {
     @Test
     fun testInboundCloseMessage() {
         val processor = sessionEventProcessorFactory.createEventReceivedProcessor(
-            "key", SessionEvent(
-                MessageDirection.INBOUND, Instant.now(), "1", 2,
-                SessionClose()
-            ), null, Instant.now()
+            "key", buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionClose()), null, Instant.now()
         )
 
         assertThat(processor::class.java).isEqualTo(SessionCloseProcessorReceive::class.java)
@@ -158,13 +135,9 @@ class SessionEventProcessorFactoryTest {
     @Test
     fun testOutboundCloseMessage() {
         val processor = sessionEventProcessorFactory.createEventToSendProcessor(
-            "key", SessionEvent(
-                MessageDirection.OUTBOUND, Instant.now(), "1", 2,
-                SessionClose()
-            ), null, Instant.now()
+            "key", buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionClose()), null, Instant.now()
         )
 
         assertThat(processor::class.java).isEqualTo(SessionCloseProcessorSend::class.java)
     }
-
 }
