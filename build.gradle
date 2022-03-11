@@ -80,8 +80,6 @@ allprojects {
         }
     }
 
-
-
     tasks.withType(Test).configureEach {
         useJUnitPlatform(){
             excludeTags project.hasProperty('runUnstableTests') ? 'runAllTestsNoExclusions' : 'Unstable'
@@ -98,8 +96,6 @@ allprojects {
             }
         }
     }
-
-  
 
     pluginManager.withPlugin('biz.aQute.bnd.builder') {
         tasks.withType(aQute.bnd.gradle.Bndrun).configureEach {
