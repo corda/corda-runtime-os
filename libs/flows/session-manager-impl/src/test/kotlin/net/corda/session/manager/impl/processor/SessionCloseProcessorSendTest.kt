@@ -5,7 +5,8 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.session.SessionStateType
-import net.corda.session.manager.impl.buildSessionState
+import net.corda.test.flow.util.buildSessionEvent
+import net.corda.test.flow.util.buildSessionState
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.time.Instant
@@ -14,7 +15,8 @@ class SessionCloseProcessorSendTest {
 
     @Test
     fun `send close when state is null`() {
-        val sessionEvent = SessionEvent(MessageDirection.OUTBOUND, Instant.now(), "sessionId", null, SessionClose())
+        val sessionEvent = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionClose())
+
         val result = SessionCloseProcessorSend("key", null, sessionEvent, Instant.now()).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.ERROR)
@@ -24,7 +26,8 @@ class SessionCloseProcessorSendTest {
 
     @Test
     fun `Send close when status is ERROR`() {
-        val sessionEvent = SessionEvent(MessageDirection.OUTBOUND, Instant.now(), "sessionId", null, SessionClose())
+        val sessionEvent = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionClose())
+
         val inputState = buildSessionState(
             SessionStateType.ERROR, 0, emptyList(), 0, mutableListOf()
         )
@@ -38,7 +41,8 @@ class SessionCloseProcessorSendTest {
 
     @Test
     fun `Send close when some received events have not been processed by the client`() {
-        val sessionEvent = SessionEvent(MessageDirection.OUTBOUND, Instant.now(), "sessionId", null, SessionClose())
+        val sessionEvent = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionClose())
+
         val inputState = buildSessionState(
             SessionStateType.CONFIRMED, 0, mutableListOf(SessionEvent()), 0, mutableListOf()
         )
@@ -52,7 +56,8 @@ class SessionCloseProcessorSendTest {
 
     @Test
     fun `Send close when status is CONFIRMED`() {
-        val sessionEvent = SessionEvent(MessageDirection.OUTBOUND, Instant.now(), "sessionId", null, SessionClose())
+        val sessionEvent = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionClose())
+
         val inputState = buildSessionState(
             SessionStateType.CONFIRMED, 0, mutableListOf(), 0, mutableListOf()
         )
@@ -68,7 +73,8 @@ class SessionCloseProcessorSendTest {
 
     @Test
     fun `Send close when status is CREATED`() {
-        val sessionEvent = SessionEvent(MessageDirection.OUTBOUND, Instant.now(), "sessionId", null, SessionClose())
+        val sessionEvent = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionClose())
+
         val inputState = buildSessionState(
             SessionStateType.CREATED, 0, mutableListOf(), 0, mutableListOf()
         )
@@ -83,7 +89,8 @@ class SessionCloseProcessorSendTest {
 
     @Test
     fun `Send close when status is CLOSED`() {
-        val sessionEvent = SessionEvent(MessageDirection.OUTBOUND, Instant.now(), "sessionId", null, SessionClose())
+        val sessionEvent = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionClose())
+
         val inputState = buildSessionState(
             SessionStateType.CLOSED, 0, mutableListOf(), 0, mutableListOf()
         )
@@ -97,7 +104,8 @@ class SessionCloseProcessorSendTest {
 
     @Test
     fun `Send close when status is already CLOSING due to close received`() {
-        val sessionEvent = SessionEvent(MessageDirection.OUTBOUND, Instant.now(), "sessionId", null, SessionClose())
+        val sessionEvent = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionClose())
+
         val inputState = buildSessionState(
             SessionStateType.CLOSING, 0, mutableListOf(sessionEvent), 0, mutableListOf()
         )
@@ -114,7 +122,8 @@ class SessionCloseProcessorSendTest {
 
     @Test
     fun `Send close when status is already CLOSING due to close sent`() {
-        val sessionEvent = SessionEvent(MessageDirection.OUTBOUND, Instant.now(), "sessionId", null, SessionClose())
+        val sessionEvent = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionClose())
+
         val inputState = buildSessionState(
             SessionStateType.CLOSING, 0, mutableListOf(), 0, mutableListOf(sessionEvent)
         )

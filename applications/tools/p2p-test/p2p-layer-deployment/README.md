@@ -139,6 +139,13 @@ To view the database status use:
 p2p-layer-deployment simulator db status [-n <db-namespace>] 
 ```
 
+#### UI access to the database
+To access a [SQLPad](https://getsqlpad.com/) ui of the database use:
+```bash
+p2p-layer-deployment simulator db ui [-n <db-namespace>]
+```
+This should give some useful queries to be run on the database.
+
 #### Kill running database
 To stop a running database use:
 ```bash

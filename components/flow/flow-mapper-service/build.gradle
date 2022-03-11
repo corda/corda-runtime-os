@@ -28,6 +28,7 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testImplementation project(":testing:test-utilities")
+    testImplementation project(":testing:flow-utilities")
 
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
     integrationTestRuntimeOnly project(":components:configuration:configuration-read-service-impl")

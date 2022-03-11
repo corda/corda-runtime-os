@@ -14,9 +14,6 @@ dependencies {
     implementation 'net.corda:corda-base'
     implementation "net.corda:corda-application"
 
-    implementation project(":libs:application:application-internal")
-    implementation project(":libs:flows:flow-manager")
-    implementation project(":libs:serialization:serialization-amqp")
     implementation project(":libs:virtual-node:sandbox-group-context")
 
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'

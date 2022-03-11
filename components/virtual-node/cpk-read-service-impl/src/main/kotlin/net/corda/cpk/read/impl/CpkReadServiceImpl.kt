@@ -6,6 +6,7 @@ import net.corda.cpk.read.CpkReadService
 import net.corda.cpk.read.impl.services.CpkChunksKafkaReader
 import net.corda.cpk.read.impl.services.persistence.CpkChunksFileManagerImpl
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.packaging.CpkIdentifier
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -58,7 +59,7 @@ class CpkReadServiceImpl @Activate constructor(
     @VisibleForTesting
     internal var cpkChunksKafkaReaderSubscription: AutoCloseable? = null
 
-    private val cpksById = ConcurrentHashMap<CPK.Identifier, CPK>()
+    private val cpksById = ConcurrentHashMap<CpkIdentifier, CPK>()
 
     /**
      * Event loop
@@ -115,7 +116,7 @@ class CpkReadServiceImpl @Activate constructor(
         closeResources()
     }
 
-    override fun get(cpkId: CPK.Identifier): CPK? =
+    override fun get(cpkId: CpkIdentifier): CPK? =
         cpksById[cpkId]
 
     private fun createCpkChunksKafkaReader(config: SmartConfig) {
@@ -133,7 +134,8 @@ class CpkReadServiceImpl @Activate constructor(
             ).also { it.start() }
     }
 
-    private fun onCpkAssembled(cpkId: CPK.Identifier, cpk: CPK) {
+    private fun onCpkAssembled(cpkId: CpkIdentifier, cpk: CPK) {
+        logger.info("${this::class.java.simpleName} storing:  $cpkId")
         cpksById[cpkId] = cpk
     }
 

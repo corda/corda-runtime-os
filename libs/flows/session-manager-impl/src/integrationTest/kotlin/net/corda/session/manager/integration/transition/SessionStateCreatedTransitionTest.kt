@@ -1,13 +1,12 @@
 package net.corda.session.manager.integration.transition
 
 import net.corda.data.flow.event.MessageDirection
-import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.impl.SessionManagerImpl
-import net.corda.session.manager.impl.buildSessionState
 import net.corda.session.manager.integration.SessionMessageType
 import net.corda.session.manager.integration.helper.generateMessage
+import net.corda.test.flow.util.buildSessionState
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import java.time.Instant
@@ -78,7 +77,7 @@ class SessionStateCreatedTransitionTest {
     fun `Session Initiator receives ack back`() {
         val sessionState = buildCreatedState()
         val sessionEvent = generateMessage(SessionMessageType.ACK, instant, MessageDirection.INBOUND)
-        (sessionEvent.payload as SessionAck).sequenceNum = 1
+        sessionEvent.receivedSequenceNum = 1
 
         val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant)
         Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CONFIRMED)

@@ -10,11 +10,10 @@ import net.corda.data.flow.FlowStatusKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.virtualnode.VirtualNodeInfo
-import net.corda.flow.manager.factory.FlowEventProcessorFactory
+import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.messaging.api.records.Record
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
-import net.corda.packaging.CPK
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import net.corda.securitymanager.SecurityManagerService
 import net.corda.v5.base.util.loggerFor
@@ -44,11 +43,11 @@ import java.net.NetPermission
 import java.net.SocketPermission
 import java.nio.file.LinkPermission
 import java.time.Instant
-import java.util.*
+import java.util.PropertyPermission
+import java.util.UUID
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
 
-val CPK.id: CPK.Identifier get() = metadata.id
 const val VNODE_SERVICE = "vnode"
 
 @Suppress("unused", "LongParameterList")
