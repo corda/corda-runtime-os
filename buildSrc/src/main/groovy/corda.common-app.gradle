@@ -223,7 +223,7 @@ def createApplicationBundlesFile = tasks.register('createApplicationBundlesFile'
 }
 
 def cordaAssembleSystemPackagesExtraTask = tasks.register("createSystemPackagesExtraFile") {
-    dependsOn configurations.bootstrapClassapath.buildDependencies
+    dependsOn configurations.bootstrapClasspath.buildDependencies
     File systemPackagesExtraFile = new File(temporaryDir, "system_packages_extra")
     outputs.file(systemPackagesExtraFile)
     doLast {
