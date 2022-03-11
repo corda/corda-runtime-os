@@ -171,8 +171,8 @@ class ConfigureAll : Runnable {
             )
 
         val configurationMap = mapOf(
-            "identitiesToAdd" to listOf(entry),
-            "identitiesToDelete" to emptyList(),
+            "membersToAdd" to listOf(entry),
+            "membersToRemove" to emptyList(),
             "groupsToAdd" to emptyList(),
             "groupsToDelete" to emptyList(),
         )
@@ -203,8 +203,8 @@ class ConfigureAll : Runnable {
             )
         )
         val configurationMap = mapOf(
-            "identitiesToAdd" to emptyList(),
-            "identitiesToDelete" to emptyList(),
+            "membersToAdd" to emptyList(),
+            "membersToRemove" to emptyList(),
             "groupsToAdd" to listOf(entriesToAdd),
             "groupsToDelete" to emptyList(),
         )
@@ -280,8 +280,8 @@ class ConfigureAll : Runnable {
                 )
             }
         val configurationMap = mapOf(
-            "identitiesToAdd" to otherEntriesToAdd,
-            "identitiesToDelete" to emptyList(),
+            "membersToAdd" to otherEntriesToAdd,
+            "membersToRemove" to emptyList(),
             "groupsToAdd" to emptyList(),
             "groupsToDelete" to emptyList(),
         )

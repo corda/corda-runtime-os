@@ -15,14 +15,24 @@ import net.corda.schema.TestSchema.Companion.GROUP_POLICIES_TOPIC
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
-internal class StubGroupsNetworkMap(
+internal class StubGroupPolicyProvider(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     subscriptionFactory: SubscriptionFactory,
     instanceId: Int,
     configuration: SmartConfig,
 ) : LifecycleWithDominoTile {
+    companion object {
+        fun GroupPolicyEntry.toGroupInfo(): GroupPolicyListener.GroupInfo {
+            return GroupPolicyListener.GroupInfo(
+                this.groupId,
+                this.networkType,
+                this.protocolModes.toSet(),
+                this.trustedCertificates
+            )
+        }
+    }
 
-    private val groupsSubscriptionConfig = SubscriptionConfig("network-map", GROUP_POLICIES_TOPIC, instanceId)
+    private val groupsSubscriptionConfig = SubscriptionConfig("group-policies-reader", GROUP_POLICIES_TOPIC, instanceId)
     private val groupsSubscription = subscriptionFactory.createCompactedSubscription(
         groupsSubscriptionConfig,
         GroupProcessor(),
@@ -69,7 +79,7 @@ internal class StubGroupsNetworkMap(
         emptySet(),
         emptySet()
     )
-    private val listeners = ConcurrentHashMap.newKeySet<NetworkMapListener>()
+    private val listeners = ConcurrentHashMap.newKeySet<GroupPolicyListener>()
 
     private val readyFuture = CompletableFuture<Unit>()
     override val dominoTile = ComplexDominoTile(
@@ -84,22 +94,13 @@ internal class StubGroupsNetworkMap(
         return readyFuture
     }
 
-    private val groups = ConcurrentHashMap<String, NetworkMapListener.GroupInfo>()
+    private val groups = ConcurrentHashMap<String, GroupPolicyListener.GroupInfo>()
 
-    fun getGroupInfo(groupId: String): NetworkMapListener.GroupInfo? {
+    fun getGroupInfo(groupId: String): GroupPolicyListener.GroupInfo? {
         return groups[groupId]
     }
 
-    fun registerListener(networkMapListener: NetworkMapListener) {
-        listeners += networkMapListener
-    }
-
-    private fun GroupPolicyEntry.toGroupInfo(): NetworkMapListener.GroupInfo {
-        return NetworkMapListener.GroupInfo(
-            this.groupId,
-            this.networkType,
-            this.protocolModes.toSet(),
-            this.trustedCertificates
-        )
+    fun registerListener(groupPolicyListener: GroupPolicyListener) {
+        listeners += groupPolicyListener
     }
 }

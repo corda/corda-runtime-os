@@ -11,8 +11,8 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
-import net.corda.p2p.test.MemberInfoEntry
 import net.corda.p2p.test.KeyAlgorithm
+import net.corda.p2p.test.MemberInfoEntry
 import net.corda.p2p.test.stub.crypto.processor.KeyDeserialiser
 import net.corda.schema.TestSchema
 import org.assertj.core.api.Assertions.assertThat
@@ -32,7 +32,7 @@ import java.security.MessageDigest
 import java.security.PublicKey
 import java.util.concurrent.CompletableFuture
 
-class StubIdentitiesNetworkMapTest {
+class StubMembershipGroupReaderTest {
     private val processor = argumentCaptor<CompactedProcessor<String, MemberInfoEntry>>()
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>()
     private val configuration = mock<SmartConfig>()
@@ -99,7 +99,7 @@ class StubIdentitiesNetworkMapTest {
         whenever(mock.toPublicKey("carol".toByteArray(), KeyAlgorithm.RSA)).doReturn(carolPublicKey)
     }
 
-    private val identities = StubIdentitiesNetworkMap(
+    private val members = StubMembershipGroupReader(
         lifecycleCoordinatorFactory, subscriptionFactory, instanceId, configuration
     )
 
@@ -123,15 +123,15 @@ class StubIdentitiesNetworkMapTest {
     }
 
     @Test
-    fun `onSnapshots keeps identities`() {
-        val identitiesToPublish = listOf(alice, bob)
+    fun `onSnapshots keeps members`() {
+        val membersToPublish = listOf(alice, bob)
             .associateBy {
                 it.holdingIdentity.x500Name
             }
-        processor.firstValue.onSnapshot(identitiesToPublish)
+        processor.firstValue.onSnapshot(membersToPublish)
 
         assertSoftly {
-            it.assertThat(identities.getMemberInfo(alice.holdingIdentity.toHoldingIdentity())).isEqualTo(
+            it.assertThat(members.getMemberInfo(alice.holdingIdentity.toHoldingIdentity())).isEqualTo(
                 LinkManagerNetworkMap.MemberInfo(
                     alice.holdingIdentity.toHoldingIdentity(),
                     alicePublicKey,
@@ -139,7 +139,7 @@ class StubIdentitiesNetworkMapTest {
                     LinkManagerNetworkMap.EndPoint(alice.address),
                 )
             )
-            it.assertThat(identities.getMemberInfo(bob.holdingIdentity.toHoldingIdentity())).isEqualTo(
+            it.assertThat(members.getMemberInfo(bob.holdingIdentity.toHoldingIdentity())).isEqualTo(
                 LinkManagerNetworkMap.MemberInfo(
                     bob.holdingIdentity.toHoldingIdentity(),
                     bobPublicKey,
@@ -147,8 +147,8 @@ class StubIdentitiesNetworkMapTest {
                     LinkManagerNetworkMap.EndPoint(bob.address),
                 )
             )
-            it.assertThat(identities.getMemberInfo(carol.holdingIdentity.toHoldingIdentity())).isNull()
-            it.assertThat(identities.getMemberInfo(aliceHash, alice.holdingIdentity.groupId)).isEqualTo(
+            it.assertThat(members.getMemberInfo(carol.holdingIdentity.toHoldingIdentity())).isNull()
+            it.assertThat(members.getMemberInfo(aliceHash, alice.holdingIdentity.groupId)).isEqualTo(
                 LinkManagerNetworkMap.MemberInfo(
                     alice.holdingIdentity.toHoldingIdentity(),
                     alicePublicKey,
@@ -156,7 +156,7 @@ class StubIdentitiesNetworkMapTest {
                     LinkManagerNetworkMap.EndPoint(alice.address),
                 )
             )
-            it.assertThat(identities.getMemberInfo(bobHash, bob.holdingIdentity.groupId)).isEqualTo(
+            it.assertThat(members.getMemberInfo(bobHash, bob.holdingIdentity.groupId)).isEqualTo(
                 LinkManagerNetworkMap.MemberInfo(
                     bob.holdingIdentity.toHoldingIdentity(),
                     bobPublicKey,
@@ -164,17 +164,17 @@ class StubIdentitiesNetworkMapTest {
                     LinkManagerNetworkMap.EndPoint(bob.address),
                 )
             )
-            it.assertThat(identities.getMemberInfo(carolHash, carol.holdingIdentity.groupId)).isNull()
+            it.assertThat(members.getMemberInfo(carolHash, carol.holdingIdentity.groupId)).isNull()
         }
     }
 
     @Test
     fun `onSnapshots remove old identities`() {
-        val identitiesToPublish = listOf(alice, bob)
+        val membersToPublish = listOf(alice, bob)
             .associateBy {
                 it.holdingIdentity.x500Name
             }
-        processor.firstValue.onSnapshot(identitiesToPublish)
+        processor.firstValue.onSnapshot(membersToPublish)
 
         processor.firstValue.onSnapshot(
             mapOf(
@@ -183,8 +183,8 @@ class StubIdentitiesNetworkMapTest {
         )
 
         assertSoftly {
-            it.assertThat(identities.getMemberInfo(alice.holdingIdentity.toHoldingIdentity())).isNull()
-            it.assertThat(identities.getMemberInfo(bob.holdingIdentity.toHoldingIdentity())).isEqualTo(
+            it.assertThat(members.getMemberInfo(alice.holdingIdentity.toHoldingIdentity())).isNull()
+            it.assertThat(members.getMemberInfo(bob.holdingIdentity.toHoldingIdentity())).isEqualTo(
                 LinkManagerNetworkMap.MemberInfo(
                     bob.holdingIdentity.toHoldingIdentity(),
                     bobPublicKey,
@@ -192,9 +192,9 @@ class StubIdentitiesNetworkMapTest {
                     LinkManagerNetworkMap.EndPoint(bob.address),
                 )
             )
-            it.assertThat(identities.getMemberInfo(carol.holdingIdentity.toHoldingIdentity())).isNull()
-            it.assertThat(identities.getMemberInfo(aliceHash, alice.holdingIdentity.groupId)).isNull()
-            it.assertThat(identities.getMemberInfo(bobHash, bob.holdingIdentity.groupId)).isEqualTo(
+            it.assertThat(members.getMemberInfo(carol.holdingIdentity.toHoldingIdentity())).isNull()
+            it.assertThat(members.getMemberInfo(aliceHash, alice.holdingIdentity.groupId)).isNull()
+            it.assertThat(members.getMemberInfo(bobHash, bob.holdingIdentity.groupId)).isEqualTo(
                 LinkManagerNetworkMap.MemberInfo(
                     bob.holdingIdentity.toHoldingIdentity(),
                     bobPublicKey,
@@ -202,17 +202,17 @@ class StubIdentitiesNetworkMapTest {
                     LinkManagerNetworkMap.EndPoint(bob.address),
                 )
             )
-            it.assertThat(identities.getMemberInfo(carolHash, carol.holdingIdentity.groupId)).isNull()
+            it.assertThat(members.getMemberInfo(carolHash, carol.holdingIdentity.groupId)).isNull()
         }
     }
 
     @Test
-    fun `onNext remove old identity`() {
-        val identitiesToPublish = listOf(alice, bob)
+    fun `onNext remove old member`() {
+        val membersToPublish = listOf(alice, bob)
             .associateBy {
                 it.holdingIdentity.x500Name
             }
-        processor.firstValue.onSnapshot(identitiesToPublish)
+        processor.firstValue.onSnapshot(membersToPublish)
 
         processor.firstValue.onNext(
             Record(
@@ -225,8 +225,8 @@ class StubIdentitiesNetworkMapTest {
         )
 
         assertSoftly {
-            it.assertThat(identities.getMemberInfo(alice.holdingIdentity.toHoldingIdentity())).isNull()
-            it.assertThat(identities.getMemberInfo(bob.holdingIdentity.toHoldingIdentity())).isEqualTo(
+            it.assertThat(members.getMemberInfo(alice.holdingIdentity.toHoldingIdentity())).isNull()
+            it.assertThat(members.getMemberInfo(bob.holdingIdentity.toHoldingIdentity())).isEqualTo(
                 LinkManagerNetworkMap.MemberInfo(
                     bob.holdingIdentity.toHoldingIdentity(),
                     bobPublicKey,
@@ -234,9 +234,9 @@ class StubIdentitiesNetworkMapTest {
                     LinkManagerNetworkMap.EndPoint(bob.address),
                 )
             )
-            it.assertThat(identities.getMemberInfo(carol.holdingIdentity.toHoldingIdentity())).isNull()
-            it.assertThat(identities.getMemberInfo(aliceHash, alice.holdingIdentity.groupId)).isNull()
-            it.assertThat(identities.getMemberInfo(bobHash, bob.holdingIdentity.groupId)).isEqualTo(
+            it.assertThat(members.getMemberInfo(carol.holdingIdentity.toHoldingIdentity())).isNull()
+            it.assertThat(members.getMemberInfo(aliceHash, alice.holdingIdentity.groupId)).isNull()
+            it.assertThat(members.getMemberInfo(bobHash, bob.holdingIdentity.groupId)).isEqualTo(
                 LinkManagerNetworkMap.MemberInfo(
                     bob.holdingIdentity.toHoldingIdentity(),
                     bobPublicKey,
@@ -244,16 +244,16 @@ class StubIdentitiesNetworkMapTest {
                     LinkManagerNetworkMap.EndPoint(bob.address),
                 )
             )
-            it.assertThat(identities.getMemberInfo(carolHash, carol.holdingIdentity.groupId)).isNull()
+            it.assertThat(members.getMemberInfo(carolHash, carol.holdingIdentity.groupId)).isNull()
         }
     }
     @Test
-    fun `onNext adds new identity`() {
-        val identitiesToPublish = listOf(alice, bob)
+    fun `onNext adds new member`() {
+        val membersToPublish = listOf(alice, bob)
             .associateBy {
                 it.holdingIdentity.x500Name
             }
-        processor.firstValue.onSnapshot(identitiesToPublish)
+        processor.firstValue.onSnapshot(membersToPublish)
 
         processor.firstValue.onNext(
             Record(
@@ -266,7 +266,7 @@ class StubIdentitiesNetworkMapTest {
         )
 
         assertSoftly {
-            it.assertThat(identities.getMemberInfo(alice.holdingIdentity.toHoldingIdentity())).isEqualTo(
+            it.assertThat(members.getMemberInfo(alice.holdingIdentity.toHoldingIdentity())).isEqualTo(
                 LinkManagerNetworkMap.MemberInfo(
                     alice.holdingIdentity.toHoldingIdentity(),
                     alicePublicKey,
@@ -274,7 +274,7 @@ class StubIdentitiesNetworkMapTest {
                     LinkManagerNetworkMap.EndPoint(alice.address),
                 )
             )
-            it.assertThat(identities.getMemberInfo(bob.holdingIdentity.toHoldingIdentity())).isEqualTo(
+            it.assertThat(members.getMemberInfo(bob.holdingIdentity.toHoldingIdentity())).isEqualTo(
                 LinkManagerNetworkMap.MemberInfo(
                     bob.holdingIdentity.toHoldingIdentity(),
                     bobPublicKey,
@@ -282,7 +282,7 @@ class StubIdentitiesNetworkMapTest {
                     LinkManagerNetworkMap.EndPoint(bob.address),
                 )
             )
-            it.assertThat(identities.getMemberInfo(carol.holdingIdentity.toHoldingIdentity())).isEqualTo(
+            it.assertThat(members.getMemberInfo(carol.holdingIdentity.toHoldingIdentity())).isEqualTo(
                 LinkManagerNetworkMap.MemberInfo(
                     carol.holdingIdentity.toHoldingIdentity(),
                     carolPublicKey,
@@ -290,7 +290,7 @@ class StubIdentitiesNetworkMapTest {
                     LinkManagerNetworkMap.EndPoint(carol.address),
                 )
             )
-            it.assertThat(identities.getMemberInfo(aliceHash, alice.holdingIdentity.groupId)).isEqualTo(
+            it.assertThat(members.getMemberInfo(aliceHash, alice.holdingIdentity.groupId)).isEqualTo(
                 LinkManagerNetworkMap.MemberInfo(
                     alice.holdingIdentity.toHoldingIdentity(),
                     alicePublicKey,
@@ -298,7 +298,7 @@ class StubIdentitiesNetworkMapTest {
                     LinkManagerNetworkMap.EndPoint(alice.address),
                 )
             )
-            it.assertThat(identities.getMemberInfo(bobHash, bob.holdingIdentity.groupId)).isEqualTo(
+            it.assertThat(members.getMemberInfo(bobHash, bob.holdingIdentity.groupId)).isEqualTo(
                 LinkManagerNetworkMap.MemberInfo(
                     bob.holdingIdentity.toHoldingIdentity(),
                     bobPublicKey,
@@ -306,7 +306,7 @@ class StubIdentitiesNetworkMapTest {
                     LinkManagerNetworkMap.EndPoint(bob.address),
                 )
             )
-            it.assertThat(identities.getMemberInfo(carolHash, carol.holdingIdentity.groupId)).isEqualTo(
+            it.assertThat(members.getMemberInfo(carolHash, carol.holdingIdentity.groupId)).isEqualTo(
                 LinkManagerNetworkMap.MemberInfo(
                     carol.holdingIdentity.toHoldingIdentity(),
                     carolPublicKey,

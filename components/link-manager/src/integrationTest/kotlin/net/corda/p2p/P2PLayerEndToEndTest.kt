@@ -355,7 +355,7 @@ class P2PLayerEndToEndTest {
                     }
                 }
             }
-        private val groupNetworkMapEntry = GroupPolicyEntry(
+        private val groupPolicyEntry = GroupPolicyEntry(
             GROUP_ID,
             NetworkType.CORDA_5,
             listOf(
@@ -365,7 +365,7 @@ class P2PLayerEndToEndTest {
             listOf(String(readKeyStore("$trustStoreFileName.pem"))),
         )
 
-        private val identityNetworkMapEntry =
+        private val memberInfoEntry =
             MemberInfoEntry(
                 HoldingIdentity(x500Name, GROUP_ID),
                 ByteBuffer.wrap(keyPair.public.encoded),
@@ -376,8 +376,8 @@ class P2PLayerEndToEndTest {
         private fun publishNetworkMapAndIdentityKeys(otherHost: Host) {
             val publisherForHost = publisherFactory.createPublisher(PublisherConfig("test-runner-publisher", 1), bootstrapConfig)
             val networkMapEntries = mapOf(
-                "$x500Name-$GROUP_ID" to identityNetworkMapEntry,
-                "${otherHost.x500Name}-$GROUP_ID" to otherHost.identityNetworkMapEntry,
+                "$x500Name-$GROUP_ID" to memberInfoEntry,
+                "${otherHost.x500Name}-$GROUP_ID" to otherHost.memberInfoEntry,
             )
             val networkMapRecords = networkMapEntries.map { Record(MEMBER_INFO_TOPIC, it.key, it.value) }
             val HostedIdentityEntry = HostedIdentityEntry(
@@ -406,7 +406,7 @@ class P2PLayerEndToEndTest {
                         Record(
                             GROUP_POLICIES_TOPIC,
                             GROUP_ID,
-                            groupNetworkMapEntry,
+                            groupPolicyEntry,
                         ),
                         Record(
                             HOSTED_MAP_TOPIC,

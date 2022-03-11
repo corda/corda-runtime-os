@@ -22,8 +22,8 @@ class StubNetworkMapTest {
     private val subscriptionFactory = mock<SubscriptionFactory>()
     private val instanceId = 321
     private val configuration = mock<SmartConfig>()
-    private val identities = mockConstruction(StubIdentitiesNetworkMap::class.java)
-    private val groups = mockConstruction(StubGroupsNetworkMap::class.java)
+    private val identities = mockConstruction(StubMembershipGroupReader::class.java)
+    private val groups = mockConstruction(StubGroupPolicyProvider::class.java)
     private val dominoTile = mockConstruction(ComplexDominoTile::class.java) { mock, _ ->
         whenever(mock.isRunning).doReturn(true)
     }
@@ -98,7 +98,7 @@ class StubNetworkMapTest {
     @Test
     fun `getNetworkType returns CORDA-5 when needed`() {
         whenever(groups.constructed().first().getGroupInfo("group")).doReturn(
-            NetworkMapListener.GroupInfo(
+            GroupPolicyListener.GroupInfo(
                 "group",
                 NetworkType.CORDA_5,
                 emptySet(),
@@ -112,7 +112,7 @@ class StubNetworkMapTest {
     @Test
     fun `getNetworkType returns CORDA-4 when needed`() {
         whenever(groups.constructed().first().getGroupInfo("group")).doReturn(
-            NetworkMapListener.GroupInfo(
+            GroupPolicyListener.GroupInfo(
                 "group",
                 NetworkType.CORDA_4,
                 emptySet(),
@@ -142,7 +142,7 @@ class StubNetworkMapTest {
     @Test
     fun `getProtocolModes returns correct modes`() {
         whenever(groups.constructed().first().getGroupInfo("group")).doReturn(
-            NetworkMapListener.GroupInfo(
+            GroupPolicyListener.GroupInfo(
                 "group",
                 NetworkType.CORDA_5,
                 setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION),
@@ -162,7 +162,7 @@ class StubNetworkMapTest {
 
     @Test
     fun `registerListener register to group listener`() {
-        val listener = mock<NetworkMapListener>()
+        val listener = mock<GroupPolicyListener>()
 
         networkMap.registerListener(listener)
 

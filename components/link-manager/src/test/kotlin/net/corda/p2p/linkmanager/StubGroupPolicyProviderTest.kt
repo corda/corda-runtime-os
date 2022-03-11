@@ -10,6 +10,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
+import net.corda.p2p.linkmanager.StubGroupPolicyProvider.Companion.toGroupInfo
 import net.corda.p2p.test.GroupPolicyEntry
 import net.corda.schema.TestSchema
 import org.assertj.core.api.Assertions.assertThat
@@ -26,7 +27,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.util.concurrent.CompletableFuture
 
-class StubGroupsNetworkMapTest {
+class StubGroupPolicyProviderTest {
     private val processor = argumentCaptor<CompactedProcessor<String, GroupPolicyEntry>>()
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>()
     private val configuration = mock<SmartConfig>()
@@ -61,7 +62,7 @@ class StubGroupsNetworkMapTest {
         listOf("cert3")
     )
 
-    private val groups = StubGroupsNetworkMap(
+    private val groups = StubGroupPolicyProvider(
         lifecycleCoordinatorFactory, subscriptionFactory, instanceId, configuration
     )
 
@@ -85,28 +86,18 @@ class StubGroupsNetworkMapTest {
 
     @Test
     fun `onSnapshots keeps groups`() {
-        val identitiesToPublish = listOf(groupOne, groupTwo)
+        val groupsToPublish = listOf(groupOne, groupTwo)
             .associateBy {
                 it.groupId
             }
-        processor.firstValue.onSnapshot(identitiesToPublish)
+        processor.firstValue.onSnapshot(groupsToPublish)
 
         assertSoftly {
             it.assertThat(groups.getGroupInfo(groupOne.groupId)).isEqualTo(
-                NetworkMapListener.GroupInfo(
-                    groupOne.groupId,
-                    groupOne.networkType,
-                    groupOne.protocolModes.toSet(),
-                    groupOne.trustedCertificates,
-                )
+                groupOne.toGroupInfo()
             )
             it.assertThat(groups.getGroupInfo(groupTwo.groupId)).isEqualTo(
-                NetworkMapListener.GroupInfo(
-                    groupTwo.groupId,
-                    groupTwo.networkType,
-                    groupTwo.protocolModes.toSet(),
-                    groupTwo.trustedCertificates,
-                )
+                groupTwo.toGroupInfo()
             )
             it.assertThat(groups.getGroupInfo(groupThree.groupId)).isNull()
         }
@@ -114,11 +105,11 @@ class StubGroupsNetworkMapTest {
 
     @Test
     fun `onSnapshots remove old groups`() {
-        val identitiesToPublish = listOf(groupOne, groupTwo)
+        val groupsToPublish = listOf(groupOne, groupTwo)
             .associateBy {
                 it.groupId
             }
-        processor.firstValue.onSnapshot(identitiesToPublish)
+        processor.firstValue.onSnapshot(groupsToPublish)
 
         processor.firstValue.onSnapshot(
             mapOf(
@@ -129,12 +120,7 @@ class StubGroupsNetworkMapTest {
         assertSoftly {
             it.assertThat(groups.getGroupInfo(groupOne.groupId)).isNull()
             it.assertThat(groups.getGroupInfo(groupTwo.groupId)).isEqualTo(
-                NetworkMapListener.GroupInfo(
-                    groupTwo.groupId,
-                    groupTwo.networkType,
-                    groupTwo.protocolModes.toSet(),
-                    groupTwo.trustedCertificates,
-                )
+                groupTwo.toGroupInfo()
             )
             it.assertThat(groups.getGroupInfo(groupThree.groupId)).isNull()
         }
@@ -142,11 +128,11 @@ class StubGroupsNetworkMapTest {
 
     @Test
     fun `onNext remove old group`() {
-        val identitiesToPublish = listOf(groupOne, groupTwo)
+        val groupsToPublish = listOf(groupOne, groupTwo)
             .associateBy {
                 it.groupId
             }
-        processor.firstValue.onSnapshot(identitiesToPublish)
+        processor.firstValue.onSnapshot(groupsToPublish)
 
         processor.firstValue.onNext(
             Record(
@@ -161,24 +147,19 @@ class StubGroupsNetworkMapTest {
         assertSoftly {
             it.assertThat(groups.getGroupInfo(groupOne.groupId)).isNull()
             it.assertThat(groups.getGroupInfo(groupTwo.groupId)).isEqualTo(
-                NetworkMapListener.GroupInfo(
-                    groupTwo.groupId,
-                    groupTwo.networkType,
-                    groupTwo.protocolModes.toSet(),
-                    groupTwo.trustedCertificates,
-                )
+                groupTwo.toGroupInfo()
             )
             it.assertThat(groups.getGroupInfo(groupThree.groupId)).isNull()
         }
     }
 
     @Test
-    fun `onNext adds new identity`() {
-        val identitiesToPublish = listOf(groupOne, groupTwo)
+    fun `onNext adds new group`() {
+        val groupsToPublish = listOf(groupOne, groupTwo)
             .associateBy {
                 it.groupId
             }
-        processor.firstValue.onSnapshot(identitiesToPublish)
+        processor.firstValue.onSnapshot(groupsToPublish)
 
         processor.firstValue.onNext(
             Record(
@@ -192,35 +173,20 @@ class StubGroupsNetworkMapTest {
 
         assertSoftly {
             it.assertThat(groups.getGroupInfo(groupOne.groupId)).isEqualTo(
-                NetworkMapListener.GroupInfo(
-                    groupOne.groupId,
-                    groupOne.networkType,
-                    groupOne.protocolModes.toSet(),
-                    groupOne.trustedCertificates,
-                )
+                groupOne.toGroupInfo()
             )
             it.assertThat(groups.getGroupInfo(groupTwo.groupId)).isEqualTo(
-                NetworkMapListener.GroupInfo(
-                    groupTwo.groupId,
-                    groupTwo.networkType,
-                    groupTwo.protocolModes.toSet(),
-                    groupTwo.trustedCertificates,
-                )
+                groupTwo.toGroupInfo()
             )
             it.assertThat(groups.getGroupInfo(groupThree.groupId)).isEqualTo(
-                NetworkMapListener.GroupInfo(
-                    groupThree.groupId,
-                    groupThree.networkType,
-                    groupThree.protocolModes.toSet(),
-                    groupThree.trustedCertificates,
-                )
+                groupThree.toGroupInfo()
             )
         }
     }
 
     @Test
     fun `register listener will notify on new group`() {
-        val listener = mock<NetworkMapListener>()
+        val listener = mock<GroupPolicyListener>()
 
         groups.registerListener(listener)
 
@@ -234,13 +200,6 @@ class StubGroupsNetworkMapTest {
             emptyMap()
         )
 
-        verify(listener).groupAdded(
-            NetworkMapListener.GroupInfo(
-                groupThree.groupId,
-                groupThree.networkType,
-                groupThree.protocolModes.toSet(),
-                groupThree.trustedCertificates,
-            )
-        )
+        verify(listener).groupAdded(groupThree.toGroupInfo())
     }
 }

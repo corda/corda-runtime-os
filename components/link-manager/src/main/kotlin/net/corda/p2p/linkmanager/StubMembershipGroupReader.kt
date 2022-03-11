@@ -12,8 +12,8 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
-import net.corda.p2p.test.MemberInfoEntry
 import net.corda.p2p.test.KeyAlgorithm
+import net.corda.p2p.test.MemberInfoEntry
 import net.corda.p2p.test.stub.crypto.processor.KeyDeserialiser
 import net.corda.schema.TestSchema.Companion.MEMBER_INFO_TOPIC
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -22,31 +22,31 @@ import java.security.MessageDigest
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
-internal class StubIdentitiesNetworkMap(
+internal class StubMembershipGroupReader(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     subscriptionFactory: SubscriptionFactory,
     instanceId: Int,
     configuration: SmartConfig,
 ) : LifecycleWithDominoTile {
 
-    private val identitiesSubscriptionConfig = SubscriptionConfig("network-map", MEMBER_INFO_TOPIC, instanceId)
+    private val subscriptionConfig = SubscriptionConfig("member-info-reader", MEMBER_INFO_TOPIC, instanceId)
     private val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, BouncyCastleProvider())
 
-    private val identitiesSubscription = subscriptionFactory.createCompactedSubscription(
-        identitiesSubscriptionConfig,
-        IdentityProcessor(),
+    private val subscription = subscriptionFactory.createCompactedSubscription(
+        subscriptionConfig,
+        MembersProcessor(),
         configuration
     )
 
-    private inner class IdentityProcessor : CompactedProcessor<String, MemberInfoEntry> {
+    private inner class MembersProcessor : CompactedProcessor<String, MemberInfoEntry> {
         override val keyClass = String::class.java
         override val valueClass = MemberInfoEntry::class.java
 
         override fun onSnapshot(currentData: Map<String, MemberInfoEntry>) {
-            publicHashToIdentity.clear()
-            identities.clear()
+            publicHashToMemberInformation.clear()
+            membersInformation.clear()
             currentData.values.forEach {
-                addIdentity(it)
+                addMember(it)
             }
 
             readyFuture.complete(Unit)
@@ -59,21 +59,21 @@ internal class StubIdentitiesNetworkMap(
         ) {
             val newValue = newRecord.value
             if (newValue == null) {
-                identities.remove(oldValue?.holdingIdentity?.toHoldingIdentity())
-                publicHashToIdentity.remove(oldValue?.toGroupIdWithPublicKeyHash())
+                membersInformation.remove(oldValue?.holdingIdentity?.toHoldingIdentity())
+                publicHashToMemberInformation.remove(oldValue?.toGroupIdWithPublicKeyHash())
             } else {
-                addIdentity(newValue)
+                addMember(newValue)
             }
         }
 
-        private fun addIdentity(identity: MemberInfoEntry) {
-            identities[identity.holdingIdentity.toHoldingIdentity()] = identity.toMemberInfo()
-            publicHashToIdentity[identity.toGroupIdWithPublicKeyHash()] = identity.toMemberInfo()
+        private fun addMember(member: MemberInfoEntry) {
+            membersInformation[member.holdingIdentity.toHoldingIdentity()] = member.toMemberInfo()
+            publicHashToMemberInformation[member.toGroupIdWithPublicKeyHash()] = member.toMemberInfo()
         }
     }
-    private val identitySubscriptionTile = SubscriptionDominoTile(
+    private val subscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
-        identitiesSubscription,
+        subscription,
         emptySet(),
         emptySet()
     )
@@ -85,16 +85,16 @@ internal class StubIdentitiesNetworkMap(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         ::createResources,
-        setOf(identitySubscriptionTile),
-        setOf(identitySubscriptionTile)
+        setOf(subscriptionTile),
+        setOf(subscriptionTile)
     )
 
     private fun createResources(@Suppress("UNUSED_PARAMETER") resources: ResourcesHolder): CompletableFuture<Unit> {
         return readyFuture
     }
 
-    private val identities = ConcurrentHashMap<LinkManagerNetworkMap.HoldingIdentity, LinkManagerNetworkMap.MemberInfo>()
-    private val publicHashToIdentity = ConcurrentHashMap<GroupIdWithPublicKeyHash, LinkManagerNetworkMap.MemberInfo>()
+    private val membersInformation = ConcurrentHashMap<LinkManagerNetworkMap.HoldingIdentity, LinkManagerNetworkMap.MemberInfo>()
+    private val publicHashToMemberInformation = ConcurrentHashMap<GroupIdWithPublicKeyHash, LinkManagerNetworkMap.MemberInfo>()
 
     private data class GroupIdWithPublicKeyHash(
         val groupId: String,
@@ -102,11 +102,11 @@ internal class StubIdentitiesNetworkMap(
     )
 
     fun getMemberInfo(holdingIdentity: LinkManagerNetworkMap.HoldingIdentity): LinkManagerNetworkMap.MemberInfo? {
-        return identities[holdingIdentity]
+        return membersInformation[holdingIdentity]
     }
 
     fun getMemberInfo(hash: ByteArray, groupId: String): LinkManagerNetworkMap.MemberInfo? {
-        return publicHashToIdentity[
+        return publicHashToMemberInformation[
             GroupIdWithPublicKeyHash(
                 groupId,
                 ByteBuffer.wrap(hash)

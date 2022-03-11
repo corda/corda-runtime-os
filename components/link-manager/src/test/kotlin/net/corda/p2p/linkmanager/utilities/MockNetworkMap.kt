@@ -5,7 +5,7 @@ import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
-import net.corda.p2p.linkmanager.NetworkMapListener
+import net.corda.p2p.linkmanager.GroupPolicyListener
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Assertions
 import org.mockito.kotlin.mock
@@ -83,7 +83,7 @@ class MockNetworkMap(nodes: List<LinkManagerNetworkMap.HoldingIdentity>) {
                 return setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION)
             }
 
-            override fun registerListener(networkMapListener: NetworkMapListener) {
+            override fun registerListener(groupPolicyListener: GroupPolicyListener) {
                 // Do nothing
             }
             override val dominoTile = mock<ComplexDominoTile>()

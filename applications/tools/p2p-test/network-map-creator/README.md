@@ -34,7 +34,7 @@ The file provided on the `--netmap-file` CLI parameter should have the following
         "trustStoreCertificates": ["<path_to_trust_certificate_files>"]
       }
     }],
-    "identitiesToAdd": [
+    "membersToAdd": [
         {
           "x500name": "O=Alice, L=London, C=GB",
           "groupId": "group-1",
@@ -56,7 +56,7 @@ The file provided on the `--netmap-file` CLI parameter should have the following
           }
         }
     ],
-  "identitiesToDelete": [
+  "membersToDelete": [
     {
       "x500name": "O=Charlie, L=London, C=GB",
       "groupId": "group-1"
@@ -118,7 +118,7 @@ tls certificates files are expected to be `.pem` files.
 
 ### Populating a custom topic
 
-The key entries can also be written to custom topics using the `--topic`, `--identity-topic` or `--group-topic` parameters:
+The key entries can also be written to custom topics using the `--topic`, `--member-info-topic` or `--group-policies-topic` parameters:
 ```
-java -jar applications/tools/p2p-test/network-map-creator/build/bin/corda-network-map-creator-5.0.0.0-SNAPSHOT.jar network-map --netmap-file ~/Desktop/keys-config.json --kafka ~/Desktop/kafka.properties --group-topic test.topic
+java -jar applications/tools/p2p-test/network-map-creator/build/bin/corda-network-map-creator-5.0.0.0-SNAPSHOT.jar network-map --netmap-file ~/Desktop/keys-config.json --kafka ~/Desktop/kafka.properties --group-policies-topic test.topic
 ```

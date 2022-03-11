@@ -14,14 +14,14 @@ internal class StubNetworkMap(
     configuration: SmartConfig,
 ) : LinkManagerNetworkMap {
 
-    private val identities = StubIdentitiesNetworkMap(
+    private val membersInformation = StubMembershipGroupReader(
         lifecycleCoordinatorFactory,
         subscriptionFactory,
         instanceId,
         configuration
     )
 
-    private val groups = StubGroupsNetworkMap(
+    private val groups = StubGroupPolicyProvider(
         lifecycleCoordinatorFactory,
         subscriptionFactory,
         instanceId,
@@ -31,8 +31,8 @@ internal class StubNetworkMap(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        managedChildren = setOf(groups.dominoTile, identities.dominoTile),
-        dependentChildren = setOf(groups.dominoTile, identities.dominoTile),
+        managedChildren = setOf(groups.dominoTile, membersInformation.dominoTile),
+        dependentChildren = setOf(groups.dominoTile, membersInformation.dominoTile),
     )
 
     override fun getMemberInfo(holdingIdentity: LinkManagerNetworkMap.HoldingIdentity): LinkManagerNetworkMap.MemberInfo? {
@@ -40,14 +40,14 @@ internal class StubNetworkMap(
             throw IllegalStateException("getMemberInfo operation invoked while component was stopped.")
         }
 
-        return identities.getMemberInfo(holdingIdentity)
+        return membersInformation.getMemberInfo(holdingIdentity)
     }
 
     override fun getMemberInfo(hash: ByteArray, groupId: String): LinkManagerNetworkMap.MemberInfo? {
         if (!isRunning) {
             throw IllegalStateException("getMemberInfo operation invoked while component was stopped.")
         }
-        return identities.getMemberInfo(hash, groupId)
+        return membersInformation.getMemberInfo(hash, groupId)
     }
 
     override fun getNetworkType(groupId: String): LinkManagerNetworkMap.NetworkType? {
@@ -66,8 +66,8 @@ internal class StubNetworkMap(
         return groups.getGroupInfo(groupId)?.protocolModes
     }
 
-    override fun registerListener(networkMapListener: NetworkMapListener) {
-        groups.registerListener(networkMapListener)
+    override fun registerListener(groupPolicyListener: GroupPolicyListener) {
+        groups.registerListener(groupPolicyListener)
     }
 
     private fun NetworkType.toLMNetworkType(): LinkManagerNetworkMap.NetworkType {

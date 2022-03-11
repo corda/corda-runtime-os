@@ -51,7 +51,7 @@ interface LinkManagerNetworkMap: LifecycleWithDominoTile {
     /**
      * Register a listener to changes in the network map
      */
-    fun registerListener(networkMapListener: NetworkMapListener)
+    fun registerListener(groupPolicyListener: GroupPolicyListener)
 
     data class MemberInfo(val holdingIdentity: HoldingIdentity,
                           val publicKey: PublicKey,

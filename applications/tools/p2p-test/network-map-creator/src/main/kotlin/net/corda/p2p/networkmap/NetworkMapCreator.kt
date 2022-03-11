@@ -11,12 +11,12 @@ import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
+import net.corda.p2p.test.GroupPolicyEntry
 import net.corda.p2p.test.HostedIdentityEntry
 import net.corda.p2p.test.KeyAlgorithm
-import net.corda.p2p.test.GroupPolicyEntry
 import net.corda.p2p.test.MemberInfoEntry
-import net.corda.schema.TestSchema.Companion.HOSTED_MAP_TOPIC
 import net.corda.schema.TestSchema.Companion.GROUP_POLICIES_TOPIC
+import net.corda.schema.TestSchema.Companion.HOSTED_MAP_TOPIC
 import net.corda.schema.TestSchema.Companion.MEMBER_INFO_TOPIC
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
@@ -138,20 +138,20 @@ class NetworkMapCreator @Activate constructor(
     )
     private inner class NetworkMap : PublisherToTopic() {
         @Option(
-            names = ["--group-topic"],
+            names = ["--group-policies-topic"],
             description = [
-                "Topic to write the groups records to."
+                "Topic to write the group policy records to."
             ]
         )
-        var groupTopic: String = GROUP_POLICIES_TOPIC
+        var groupPolicyTopic: String = GROUP_POLICIES_TOPIC
 
         @Option(
-            names = ["--identity-topic"],
+            names = ["--member-info-topic"],
             description = [
-                "Topic to write the identities records to."
+                "Topic to write the member information records to."
             ]
         )
-        var identityTopic: String = MEMBER_INFO_TOPIC
+        var memberInfoTopic: String = MEMBER_INFO_TOPIC
 
         @Option(names = ["--netmap-file"], description = ["File containing network map data used to populate Kafka."])
         lateinit var networkMapFile: File
@@ -177,10 +177,10 @@ class NetworkMapCreator @Activate constructor(
                     protocolMode,
                     trustStoreCertificates,
                 )
-                Record(groupTopic, groupId, networkMapEntry)
+                Record(groupPolicyTopic, groupId, networkMapEntry)
             }
 
-            val identitiesRecordsWithAdditions = netmapConfig.getConfigList("identitiesToAdd").map { config ->
+            val membersRecordsWithAdditions = netmapConfig.getConfigList("membersToAdd").map { config ->
                 val x500Name = config.getString("x500name")
                 val groupId = config.getString("groupId")
                 val dataConfig = config.getConfig("data")
@@ -196,19 +196,19 @@ class NetworkMapCreator @Activate constructor(
                     keyAlgo,
                     address,
                 )
-                Record(identityTopic, "$x500Name-$groupId", networkMapEntry)
+                Record(memberInfoTopic, "$x500Name-$groupId", networkMapEntry)
             }
 
             val groupRecordsWithRemovals = netmapConfig.getStringList("groupsToDelete").map { groupId ->
-                Record(groupTopic, groupId, null)
+                Record(groupPolicyTopic, groupId, null)
             }
-            val identitiesRecordsWithRemovals = netmapConfig.getConfigList("identitiesToDelete").map { config ->
+            val membersRecordsWithRemovals = netmapConfig.getConfigList("membersToDelete").map { config ->
                 val x500Name = config.getString("x500name")
                 val groupId = config.getString("groupId")
 
-                Record(identityTopic, "$x500Name-$groupId", null)
+                Record(memberInfoTopic, "$x500Name-$groupId", null)
             }
-            return identitiesRecordsWithAdditions + identitiesRecordsWithRemovals + groupsRecordsWithAdditions + groupRecordsWithRemovals
+            return membersRecordsWithAdditions + membersRecordsWithRemovals + groupsRecordsWithAdditions + groupRecordsWithRemovals
         }
 
         private fun parseNetworkType(networkType: String): NetworkType {
