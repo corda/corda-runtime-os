@@ -61,6 +61,7 @@ pluginManagement {
         id 'com.r3.internal.gradle.plugins.r3Publish' version internalPublishVersion
         id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
         id 'com.github.ben-manes.versions' version gradleVersions
+        id "org.gradle.test-retry" version gradleTestRetryPluginVersion
     }
 }
 
