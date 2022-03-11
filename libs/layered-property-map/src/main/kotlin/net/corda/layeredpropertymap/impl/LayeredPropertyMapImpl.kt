@@ -219,13 +219,7 @@ class LayeredPropertyMapImpl(
         }
     }
 
-    private fun <K, V> List<Pair<K, V>>.toLinkedHashMap(): LinkedHashMap<K, V> {
-        val map = LinkedHashMap<K, V>()
-        forEach {
-            map[it.first] = it.second
-        }
-        return map
-    }
+    private fun <K, V> List<Pair<K, V>>.toLinkedHashMap(): LinkedHashMap<K, V> = toLinkedHashMap()
 
     private class IndexedPrefixComparator : Comparator<Pair<Int, String>> {
         override fun compare(o1: Pair<Int, String>, o2: Pair<Int, String>): Int {
