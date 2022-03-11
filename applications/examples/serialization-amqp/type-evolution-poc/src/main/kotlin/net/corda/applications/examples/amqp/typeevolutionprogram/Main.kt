@@ -1,14 +1,14 @@
 package net.corda.applications.examples.amqp.typeevolutionprogram
 
-import net.corda.install.InstallService
+import net.corda.cpk.read.CpkReadService
 import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
-import net.corda.serialization.SerializationContext
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.packaging.CPI
 import net.corda.sandbox.SandboxCreationService
+import net.corda.serialization.SerializationContext
 import net.corda.v5.base.types.ByteSequence
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.cm.ConfigurationAdmin
@@ -32,7 +32,9 @@ class Main @Activate constructor(
     @Reference
     private val configurationAdmin: ConfigurationAdmin,
     @Reference
-    private val installService: InstallService,
+    private val cpkReadService: CpkReadService,
+    @Reference
+    private val cpkReadServiceLoader: CpkReadServiceLoader,
 ) : Application {
     private companion object {
         private val consoleLogger: Logger = LoggerFactory.getLogger("Console")
@@ -50,13 +52,20 @@ class Main @Activate constructor(
         val tmpDir = args[0]
         val cpk = Path.of(args[1])
 
-        conf?.update(Hashtable(mapOf("baseDirectory" to tmpDir,
-            "platformVersion" to 999,
-            "blacklistedKeys" to emptyList<Any>())))
+        conf?.update(
+            Hashtable(
+                mapOf(
+                    "baseDirectory" to tmpDir,
+                    "platformVersion" to 999,
+                    "blacklistedKeys" to emptyList<Any>()
+                )
+            )
+        )
 
         val outputStream = ByteArrayOutputStream()
         CPI.assemble(outputStream, "cpi", "1.0", listOf(cpk))
-        val loadCpb: CPI = installService.loadCpb(ByteArrayInputStream(outputStream.toByteArray()))
+
+        val loadCpb: CPI = cpkReadServiceLoader.load(ByteArrayInputStream(outputStream.toByteArray()))
         val sandboxGroup = sandboxCreationService.createSandboxGroup(loadCpb.cpks)
 
         val factory = SerializerFactoryBuilder.build(sandboxGroup)
@@ -73,7 +82,6 @@ class Main @Activate constructor(
 //        }
 
 
-        // Test
         val input = DeserializationInput(factory)
         runExample(input, AMQP_STORAGE_CONTEXT.withSandboxGroup(sandboxGroup))
 
@@ -85,15 +93,67 @@ class Main @Activate constructor(
     }
 
     @Suppress("MaxLineLength")
-    private fun runExample(input: DeserializationInput, serializationContext: SerializationContext){
-        consoleLogger.info("AddNullableProperty = " + (input.deserialize(ByteSequence.of(this::class.java.getResource("addNullableProperty.bin")!!.readBytes()), Any::class.java, serializationContext)))
-        consoleLogger.info("AddNonNullableProperty = " + (input.deserialize(ByteSequence.of(this::class.java.getResource("addNonNullableProperty.bin")!!.readBytes()), Any::class.java, serializationContext)))
-        consoleLogger.info("MultipleEvolutions = " + (input.deserialize(ByteSequence.of(this::class.java.getResource("multipleEvolutions.bin")!!.readBytes()), Any::class.java, serializationContext)))
-        consoleLogger.info("MultipleEvolutions = " + (input.deserialize(ByteSequence.of(this::class.java.getResource("multipleEvolutions-2.bin")!!.readBytes()), Any::class.java, serializationContext)))
-        consoleLogger.info("RemovingProperties = " + (input.deserialize(ByteSequence.of(this::class.java.getResource("removingProperties.bin")!!.readBytes()), Any::class.java, serializationContext)))
-        consoleLogger.info("ReorderConstructorParameters = " + (input.deserialize(ByteSequence.of(this::class.java.getResource("reorderConstructorParameters.bin")!!.readBytes()), Any::class.java, serializationContext)))
-        consoleLogger.info("RenameEnum = " + (input.deserialize(ByteSequence.of(this::class.java.getResource("renameEnum.bin")!!.readBytes()), Any::class.java, serializationContext)))
-        consoleLogger.info("AddEnumValue = " + (input.deserialize(ByteSequence.of(this::class.java.getResource("addEnumValue.bin")!!.readBytes()), Any::class.java, serializationContext)))
+    private fun runExample(input: DeserializationInput, serializationContext: SerializationContext) {
+        consoleLogger.info(
+            "AddNullableProperty = " + (input.deserialize(
+                ByteSequence.of(
+                    this::class.java.getResource("addNullableProperty.bin")!!.readBytes()
+                ), Any::class.java, serializationContext
+            ))
+        )
+        consoleLogger.info(
+            "AddNonNullableProperty = " + (input.deserialize(
+                ByteSequence.of(
+                    this::class.java.getResource(
+                        "addNonNullableProperty.bin"
+                    )!!.readBytes()
+                ), Any::class.java, serializationContext
+            ))
+        )
+        consoleLogger.info(
+            "MultipleEvolutions = " + (input.deserialize(
+                ByteSequence.of(
+                    this::class.java.getResource("multipleEvolutions.bin")!!.readBytes()
+                ), Any::class.java, serializationContext
+            ))
+        )
+        consoleLogger.info(
+            "MultipleEvolutions = " + (input.deserialize(
+                ByteSequence.of(
+                    this::class.java.getResource("multipleEvolutions-2.bin")!!.readBytes()
+                ), Any::class.java, serializationContext
+            ))
+        )
+        consoleLogger.info(
+            "RemovingProperties = " + (input.deserialize(
+                ByteSequence.of(
+                    this::class.java.getResource("removingProperties.bin")!!.readBytes()
+                ), Any::class.java, serializationContext
+            ))
+        )
+        consoleLogger.info(
+            "ReorderConstructorParameters = " + (input.deserialize(
+                ByteSequence.of(
+                    this::class.java.getResource(
+                        "reorderConstructorParameters.bin"
+                    )!!.readBytes()
+                ), Any::class.java, serializationContext
+            ))
+        )
+        consoleLogger.info(
+            "RenameEnum = " + (input.deserialize(
+                ByteSequence.of(
+                    this::class.java.getResource("renameEnum.bin")!!.readBytes()
+                ), Any::class.java, serializationContext
+            ))
+        )
+        consoleLogger.info(
+            "AddEnumValue = " + (input.deserialize(
+                ByteSequence.of(
+                    this::class.java.getResource("addEnumValue.bin")!!.readBytes()
+                ), Any::class.java, serializationContext
+            ))
+        )
     }
 
 }

@@ -2,11 +2,10 @@ package net.corda.session.manager.integration.transition
 
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.impl.SessionManagerImpl
-import net.corda.session.manager.impl.buildSessionState
+import net.corda.test.flow.util.buildSessionState
 import net.corda.session.manager.integration.SessionMessageType
 import net.corda.session.manager.integration.helper.generateMessage
 import org.assertj.core.api.Assertions
@@ -98,7 +97,7 @@ class SessionStateClosingTransitionTest {
         val sessionState = buildClosingState(true)
 
         val sessionEvent = generateMessage(SessionMessageType.ACK, instant, MessageDirection.INBOUND)
-        (sessionEvent.payload as SessionAck).sequenceNum = 2
+        sessionEvent.receivedSequenceNum = 2
 
         val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant)
         Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CLOSING)

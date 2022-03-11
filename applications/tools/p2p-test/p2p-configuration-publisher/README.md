@@ -76,10 +76,6 @@ To run the application use:
       --heartbeatMessagePeriodMilliSecs=<heartbeatMessagePeriodMilliSecs>
                          Heartbeat message period in milli seconds
                            Default: 2000
-      --locallyHostedIdentity=<locallyHostedIdentity>
-                         Local hosted identity (in the form of <x500Name>:
-                           <groupId>:<identityTenantId>:<tlsTenantId>:
-                           <pemTlsCertificate1File>:<pemTlsCertificate2File>...)
       --maxMessageSize=<maxMessageSize>
                          The maximal message size in bytes
                            Default: 1000000
@@ -93,10 +89,6 @@ To run the application use:
       --messageReplayPeriodCutOffMilliSecs=<messageReplayPeriodCutoffMilliSecs>
                          message replay period cut off in milliseconds
                            Default: 10000
-      --protocolMode=<protocolModes>
-                         Supported protocol mode (out of: AUTHENTICATION_ONLY,
-                           AUTHENTICATED_ENCRYPTION)
-                           Default: [AUTHENTICATED_ENCRYPTION]
       --sessionTimeoutMilliSecs=<sessionTimeoutMilliSecs>
                          Session timeout in milliseconds
                            Default: 10000

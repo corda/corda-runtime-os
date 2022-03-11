@@ -34,7 +34,7 @@ class Cat(override val name: String, private val noise: String) : Animal {
 
 class SandboxGroupContextTest {
     private val holdingIdentity = HoldingIdentity("foo", "bar")
-    private val cpk: CpkMetadata = CpkMetadata.fromLegacyCpk(Helpers.mockTrivialCpk("MAIN_BUNDLE"))
+    private val cpk: CpkMetadata = CpkMetadata.fromLegacyCpk(Helpers.mockTrivialCpk("MAIN_BUNDLE", "example", "1.0.0"))
 
     private val cpks = setOf(cpk)
 

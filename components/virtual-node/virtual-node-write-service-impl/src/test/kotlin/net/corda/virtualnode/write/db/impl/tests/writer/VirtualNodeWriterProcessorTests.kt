@@ -163,7 +163,7 @@ class VirtualNodeWriterProcessorTests {
             null,
             vnodeCreationReq.x500Name,
             vnodeInfo.cpiIdentifier,
-            vnodeCreationReq.cpiIdHash,
+            vnodeCreationReq.cpiFileChecksum,
             vnodeInfo.holdingIdentity.groupId,
             vnodeInfo.holdingIdentity,
             holdingIdentity.id,
@@ -191,7 +191,7 @@ class VirtualNodeWriterProcessorTests {
             expectedEnvelope,
             vnodeCreationReq.x500Name,
             vnodeInfo.cpiIdentifier,
-            vnodeCreationReq.cpiIdHash,
+            vnodeCreationReq.cpiFileChecksum,
             vnodeInfo.holdingIdentity.groupId,
             vnodeInfo.holdingIdentity,
             holdingIdentity.id,
@@ -208,7 +208,7 @@ class VirtualNodeWriterProcessorTests {
         assertEquals(expectedResp.success, resp.success)
         assertEquals(expectedResp.x500Name, resp.x500Name)
         assertEquals(expectedResp.cpiIdentifier, resp.cpiIdentifier)
-        assertEquals(expectedResp.cpiIdentifierHash, resp.cpiIdentifierHash)
+        assertEquals(expectedResp.cpiFileChecksum, resp.cpiFileChecksum)
         assertEquals(expectedResp.mgmGroupId, resp.mgmGroupId)
         assertEquals(expectedResp.holdingIdentity, resp.holdingIdentity)
         assertEquals(expectedResp.holdingIdentifierHash, resp.holdingIdentifierHash)
@@ -220,7 +220,7 @@ class VirtualNodeWriterProcessorTests {
     fun `sends RPC failure response if the CPI with the given ID is not stored on the node`() {
         val expectedEnvelope = ExceptionEnvelope(
             VirtualNodeWriteServiceException::class.java.name,
-            "CPI with hash ${vnodeCreationReq.cpiIdHash} was not found."
+            "CPI with file checksum ${vnodeCreationReq.cpiFileChecksum} was not found."
         )
         val expectedResp = VirtualNodeCreationResponse(
             false, expectedEnvelope, x500Name , null, null, null, null, null,
@@ -247,7 +247,7 @@ class VirtualNodeWriterProcessorTests {
             expectedEnvelope,
             vnodeCreationReq.x500Name,
             vnodeInfo.cpiIdentifier,
-            vnodeCreationReq.cpiIdHash,
+            vnodeCreationReq.cpiFileChecksum,
             vnodeInfo.holdingIdentity.groupId,
             vnodeInfo.holdingIdentity,
             holdingIdentity.id,
@@ -276,7 +276,7 @@ class VirtualNodeWriterProcessorTests {
         assertEquals(expectedResp.success, resp.success)
         assertEquals(expectedResp.x500Name, resp.x500Name)
         assertEquals(expectedResp.cpiIdentifier, resp.cpiIdentifier)
-        assertEquals(expectedResp.cpiIdentifierHash, resp.cpiIdentifierHash)
+        assertEquals(expectedResp.cpiFileChecksum, resp.cpiFileChecksum)
         assertEquals(expectedResp.mgmGroupId, resp.mgmGroupId)
         assertEquals(expectedResp.holdingIdentity, resp.holdingIdentity)
         assertEquals(expectedResp.holdingIdentifierHash, resp.holdingIdentifierHash)

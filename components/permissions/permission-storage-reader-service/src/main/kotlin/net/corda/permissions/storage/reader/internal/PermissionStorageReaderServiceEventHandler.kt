@@ -1,5 +1,7 @@
 package net.corda.permissions.storage.reader.internal
 
+import java.lang.Exception
+import java.time.Duration
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
@@ -24,6 +26,8 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import javax.persistence.EntityManagerFactory
+import net.corda.lifecycle.TimerEvent
+import net.corda.v5.base.util.trace
 
 @Suppress("LongParameterList")
 class PermissionStorageReaderServiceEventHandler(
@@ -54,61 +58,87 @@ class PermissionStorageReaderServiceEventHandler(
     @VisibleForTesting
     internal var crsSub: AutoCloseable? = null
 
+    @VisibleForTesting
+    internal var reconciliationTaskInterval: Duration? = null
+
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
-            is StartEvent -> {
-                log.info("Start Event received")
-                registrationHandle?.close()
-                registrationHandle = coordinator.followStatusChangesByName(
-                    setOf(
-                        LifecycleCoordinatorName.forComponent<PermissionCacheService>(),
-                        LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
-                    )
+            is StartEvent -> onStartEvent(coordinator)
+            is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event, coordinator)
+            is ConfigChangedEvent -> onConfigChangedEvent(event, coordinator)
+            is ReconcilePermissionSummaryEvent -> onReconcilePermissionSummaryEvent(coordinator)
+            is StopEvent -> onStopEvent(coordinator)
+        }
+    }
+
+    private fun onStartEvent(coordinator: LifecycleCoordinator) {
+        log.info("Start event received, following dependencies for status updates.")
+        registrationHandle?.close()
+        registrationHandle = coordinator.followStatusChangesByName(
+            setOf(
+                LifecycleCoordinatorName.forComponent<PermissionCacheService>(),
+                LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+            )
+        )
+    }
+
+    private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator) {
+        log.info("Registration status change event received: ${event.status}.")
+        when (event.status) {
+            LifecycleStatus.UP -> {
+                crsSub = configurationReadService.registerComponentForUpdates(
+                    coordinator,
+                    setOf(BOOT_CONFIG, MESSAGING_CONFIG)
                 )
             }
-            is RegistrationStatusChangeEvent -> {
-                log.info("Status Change Event received: $event")
-                when (event.status) {
-                    LifecycleStatus.UP -> {
-                        crsSub = configurationReadService.registerComponentForUpdates(
-                            coordinator,
-                            setOf(BOOT_CONFIG, MESSAGING_CONFIG)
-                        )
-                    }
-                    LifecycleStatus.DOWN -> {
-                        permissionStorageReader?.stop()
-                        permissionStorageReader = null
-                        coordinator.updateStatus(LifecycleStatus.DOWN)
-                        crsSub?.close()
-                        crsSub = null
-                    }
-                    LifecycleStatus.ERROR -> {
-                        coordinator.updateStatus(LifecycleStatus.ERROR)
-                        coordinator.stop()
-                        crsSub?.close()
-                        crsSub = null
-                    }
-                }
-            }
-            is ConfigChangedEvent -> {
-                onConfigurationUpdated(event.config.toMessagingConfig())
-                coordinator.updateStatus(LifecycleStatus.UP)
-            }
-            is StopEvent -> {
-                log.info("Stop Event received")
-                publisher?.close()
-                publisher = null
+            LifecycleStatus.DOWN -> {
                 permissionStorageReader?.stop()
                 permissionStorageReader = null
-                registrationHandle?.close()
-                registrationHandle = null
-                coordinator.updateStatus(LifecycleStatus.DOWN)
+                crsSub?.close()
+                crsSub = null
+            }
+            LifecycleStatus.ERROR -> {
+                coordinator.stop()
+                crsSub?.close()
+                crsSub = null
             }
         }
     }
 
+    private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
+        log.info("Configuration change event received for keys ${event.config.keys.joinToString()}")
+        onConfigurationUpdated(event.config.toMessagingConfig())
+        scheduleNextReconciliationTask(coordinator)
+        coordinator.updateStatus(LifecycleStatus.UP)
+    }
+
+    private fun onReconcilePermissionSummaryEvent(coordinator: LifecycleCoordinator) {
+        permissionStorageReader?.let {
+            try {
+                it.reconcilePermissionSummaries()
+            } catch (e: Exception) {
+                log.warn("Exception during permission summary reconciliation task.", e)
+            }
+        } ?: log.trace { "Skipping Permission Summary Reconciliation Task because PermissionStorageReader is null." }
+        scheduleNextReconciliationTask(coordinator)
+    }
+
+    private fun onStopEvent(coordinator: LifecycleCoordinator) {
+        log.info("Stop Event received")
+        publisher?.close()
+        publisher = null
+        permissionStorageReader?.stop()
+        permissionStorageReader = null
+        registrationHandle?.close()
+        registrationHandle = null
+        coordinator.cancelTimer(PermissionStorageReaderServiceEventHandler::class.simpleName!!)
+    }
+
     @VisibleForTesting
     internal fun onConfigurationUpdated(messagingConfig: SmartConfig) {
+
+        reconciliationTaskInterval = Duration.ofSeconds(60)
+        log.trace { "Permission summary reconciliation interval set to ${reconciliationTaskInterval!!.toMillis()} ms." }
 
         publisher?.close()
         publisher = publisherFactory.createPublisher(
@@ -129,4 +159,16 @@ class PermissionStorageReaderServiceEventHandler(
             it.start()
         }
     }
+
+    private fun scheduleNextReconciliationTask(coordinator: LifecycleCoordinator) {
+        coordinator.setTimer(
+            PermissionStorageReaderServiceEventHandler::class.simpleName!!,
+            reconciliationTaskInterval!!.toMillis()
+        ) { key ->
+            ReconcilePermissionSummaryEvent(key)
+        }
+    }
+
 }
+
+internal data class ReconcilePermissionSummaryEvent(override val key: String) : TimerEvent

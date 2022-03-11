@@ -11,18 +11,21 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':components:configuration:configuration-read-service')
+    implementation project(':components:virtual-node:cpi-info-read-service-impl')
     implementation project(':libs:http-rpc:http-rpc')
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:messaging:messaging')
     implementation project(':libs:virtual-node:cpi-upload-endpoints')
     implementation project(':libs:virtual-node:cpi-upload-manager')
     implementation project(':libs:virtual-node:virtual-node-endpoints')
+    implementation project(':libs:virtual-node:packaging-core')
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-crypto'
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "net.corda:corda-avro-schema"
     implementation 'net.corda:corda-topic-schema'
+    implementation "net.corda:corda-packaging"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation project(':libs:virtual-node:cpi-upload-manager-impl')

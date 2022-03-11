@@ -14,16 +14,9 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.BASE_REPLAY_PERIOD_KEY_POSTFIX
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.CUTOFF_REPLAY_KEY_POSTFIX
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.HEARTBEAT_MESSAGE_PERIOD_KEY
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITIES_KEY
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_GPOUP_ID
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_IDENTITY_TENANT_ID
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_TLS_TENANT_ID
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_X500_NAME
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_TLS_CERTIFICATES
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_MESSAGE_SIZE_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_REPLAYING_MESSAGES_PER_PEER_POSTFIX
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MESSAGE_REPLAY_KEY_PREFIX
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.PROTOCOL_MODE_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
@@ -43,9 +36,10 @@ import net.corda.p2p.gateway.Gateway
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
 import net.corda.p2p.gateway.messaging.SslConfiguration
-import net.corda.p2p.linkmanager.ConfigBasedLinkManagerHostingMap
 import net.corda.p2p.linkmanager.LinkManager
+import net.corda.p2p.linkmanager.StubLinkManagerHostingMap
 import net.corda.p2p.linkmanager.StubNetworkMap
+import net.corda.p2p.test.HostedIdentityEntry
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
 import net.corda.p2p.test.NetworkMapEntry
@@ -55,6 +49,7 @@ import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.TestSchema.Companion.CRYPTO_KEYS_TOPIC
+import net.corda.schema.TestSchema.Companion.HOSTED_MAP_TOPIC
 import net.corda.schema.TestSchema.Companion.NETWORK_MAP_TOPIC
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
@@ -254,29 +249,8 @@ class P2PLayerEndToEndTest {
             x500Name
         }
         val linkManagerConfig by lazy {
-            val locallyHostedIdentities = ConfigValueFactory.fromAnyRef(
-                listOf(
-                    mapOf(
-                        LOCALLY_HOSTED_IDENTITY_X500_NAME to x500Name,
-                        LOCALLY_HOSTED_IDENTITY_GPOUP_ID to GROUP_ID,
-                        LOCALLY_HOSTED_TLS_CERTIFICATES to tlsCertificatesPem,
-                        LOCALLY_HOSTED_IDENTITY_TLS_TENANT_ID to tlsTenantId,
-                        LOCALLY_HOSTED_IDENTITY_IDENTITY_TENANT_ID to identityTenantId,
-                    )
-                )
-            )
             ConfigFactory.empty()
-                .withValue(LOCALLY_HOSTED_IDENTITIES_KEY, locallyHostedIdentities)
                 .withValue(MAX_MESSAGE_SIZE_KEY, ConfigValueFactory.fromAnyRef(1000000))
-                .withValue(
-                    PROTOCOL_MODE_KEY,
-                    ConfigValueFactory.fromAnyRef(
-                        listOf(
-                            ProtocolMode.AUTHENTICATION_ONLY,
-                            ProtocolMode.AUTHENTICATED_ENCRYPTION
-                        ).map { it.name }
-                    )
-                )
                 .withValue("$MESSAGE_REPLAY_KEY_PREFIX$BASE_REPLAY_PERIOD_KEY_POSTFIX", ConfigValueFactory.fromAnyRef(2000))
                 .withValue("$MESSAGE_REPLAY_KEY_PREFIX$CUTOFF_REPLAY_KEY_POSTFIX", ConfigValueFactory.fromAnyRef(10000))
                 .withValue("$MESSAGE_REPLAY_KEY_PREFIX$MAX_REPLAYING_MESSAGES_PER_PEER_POSTFIX", ConfigValueFactory.fromAnyRef(100))
@@ -309,9 +283,11 @@ class P2PLayerEndToEndTest {
                     1,
                     bootstrapConfig
                 ),
-                ConfigBasedLinkManagerHostingMap(
-                    configReadService,
-                    lifecycleCoordinatorFactory
+                StubLinkManagerHostingMap(
+                    lifecycleCoordinatorFactory,
+                    subscriptionFactory,
+                    1,
+                    bootstrapConfig
                 ),
                 StubCryptoProcessor(
                     lifecycleCoordinatorFactory,
@@ -385,6 +361,10 @@ class P2PLayerEndToEndTest {
                 identitiesKeyAlgorithm,
                 "http://$p2pAddress:$p2pPort",
                 NetworkType.CORDA_5,
+                listOf(
+                    ProtocolMode.AUTHENTICATION_ONLY,
+                    ProtocolMode.AUTHENTICATED_ENCRYPTION,
+                ),
                 listOf(String(readKeyStore("$trustStoreFileName.pem"))),
             )
 
@@ -395,6 +375,12 @@ class P2PLayerEndToEndTest {
                 "${otherHost.x500Name}-$GROUP_ID" to otherHost.networkMapEntry
             )
             val networkMapRecords = networkMapEntries.map { Record(NETWORK_MAP_TOPIC, it.key, it.value) }
+            val HostedIdentityEntry = HostedIdentityEntry(
+                HoldingIdentity(x500Name, GROUP_ID),
+                GROUP_ID,
+                x500Name,
+                tlsCertificatesPem
+            )
             publisherForHost.use { publisher ->
                 publisher.start()
                 publisher.publish(networkMapRecords).forEach { it.get() }
@@ -411,6 +397,11 @@ class P2PLayerEndToEndTest {
                                     ByteBuffer.wrap(keyPair.private.encoded)
                                 )
                             )
+                        ),
+                        Record(
+                            HOSTED_MAP_TOPIC,
+                            "hosting-1",
+                            HostedIdentityEntry,
                         )
                     )
                 ).forEach { it.get() }

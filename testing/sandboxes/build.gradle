@@ -19,9 +19,9 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
-    implementation project(':components:install:install-service')
     implementation project(':components:virtual-node:cpi-info-read-service')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
+    implementation project(':components:virtual-node:cpk-read-service')
 
     implementation project(':libs:virtual-node:packaging-core')
 

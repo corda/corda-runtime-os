@@ -2,6 +2,7 @@ package net.corda.permissions.storage.reader.internal
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import java.time.Duration
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.permissions.cache.PermissionCache
@@ -32,6 +33,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import javax.persistence.EntityManagerFactory
+import org.mockito.kotlin.eq
 
 class PermissionStorageReaderServiceEventHandlerTest {
 
@@ -125,7 +127,6 @@ class PermissionStorageReaderServiceEventHandlerTest {
         handler.processEvent(StartEvent(), coordinator)
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.DOWN), coordinator)
-        verify(coordinator).updateStatus(LifecycleStatus.DOWN)
     }
 
     @Test
@@ -153,6 +154,32 @@ class PermissionStorageReaderServiceEventHandlerTest {
     fun `processing a stop event updates the service's status to DOWN`() {
         handler.processEvent(StartEvent(), coordinator)
         handler.processEvent(StopEvent(), coordinator)
-        verify(coordinator).updateStatus(LifecycleStatus.DOWN)
     }
+
+    @Test
+    fun `processing an onConfigurationUpdated event creates publisher and permission storage reader`() {
+        whenever(publisherFactory.createPublisher(any(), any())).thenReturn(publisher)
+        whenever(permissionStorageReaderFactory.create(eq(permissionCache), eq(publisher), any())).thenReturn(permissionStorageReader)
+
+        handler.processEvent(
+            ConfigChangedEvent(setOf(BOOT_CONFIG, MESSAGING_CONFIG), bootstrapConfig),
+            coordinator
+        )
+
+        verify(publisher).start()
+        verify(permissionStorageReader).start()
+        assertNotNull(handler.reconciliationTaskInterval)
+    }
+
+    @Test
+    fun `processing a ReconcilePermissionSummaryEvent executes reconciliation task and schedules next run`() {
+        handler.reconciliationTaskInterval = Duration.ofSeconds(20)
+        handler.permissionStorageReader = permissionStorageReader
+
+        handler.processEvent(ReconcilePermissionSummaryEvent("PermissionStorageReaderServiceEventHandler"), coordinator)
+
+        verify(permissionStorageReader).reconcilePermissionSummaries()
+        verify(coordinator).setTimer(eq("PermissionStorageReaderServiceEventHandler"), eq(20000L), any())
+    }
+
 }

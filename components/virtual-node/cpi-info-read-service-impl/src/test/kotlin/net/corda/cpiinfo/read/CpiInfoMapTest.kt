@@ -78,6 +78,28 @@ class CpiInfoMapTest {
     }
 
     @Test
+    fun `test get all CpiInfo`() {
+        val identifier = CPI.Identifier.newInstance("ghi", "hjk", secureHash)
+        val metadata = CPI.Metadata.newInstance(identifier, secureHash, emptyList(), "")
+        map.put(identifier.toAvro(), metadata.toAvro())
+
+        var all = map.getAll()
+        assertThat(all).isNotNull
+        assertThat(all.size).isEqualTo(1)
+        assertThat(map.getAll()[0]).isEqualTo(metadata.toAvro())
+
+        val otherIdentifier = CPI.Identifier.newInstance("abc", "def", secureHash)
+        val otherMetadata = CPI.Metadata.newInstance(otherIdentifier, secureHash, emptyList(), "")
+        map.put(otherIdentifier.toAvro(), otherMetadata.toAvro())
+
+        all = map.getAll()
+        assertThat(all).isNotNull
+        assertThat(all.size).isEqualTo(2)
+        assertThat(map.getAll()).contains(metadata.toAvro())
+        assertThat(map.getAll()).contains(otherMetadata.toAvro())
+    }
+
+    @Test
     fun `test returning map as corda types`() {
         val keys = mutableListOf<CPIIdentifier>()
         val count = 100

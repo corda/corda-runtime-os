@@ -16,7 +16,6 @@ import java.time.Instant
  * If the state is null, ERROR or CLOSED send an error response to the counterparty as this indicates a bug in client code or  a
  * session mismatch has occurred.
  * If the client has not consumed all received events and it tries to send a close then trigger an error as this is a bug/session mismatch.
- * If the client has already sent an close trigger an error as this is a bug/session mismatch.
  * If the state is CONFIRMED then set the status to CLOSING
  * If the state is CLOSING and set the status to WAIT_FOR_FINAL_ACK. The session cannot be closed until all acks are received by the
  * counterparty.
@@ -71,7 +70,7 @@ class SessionCloseProcessorSend(
         val errorMessage = "Tried to send SessionClose on key $key and sessionId $sessionId, session status is " +
                 "${sessionState.status}, however SessionClose has already been sent. " +
                 "Current SessionState: $sessionState."
-        return logAndGenerateErrorResult(errorMessage, sessionState, sessionId, "SessionClose-SessionMismatch")
+        return logAndGenerateErrorResult(errorMessage, sessionState, "SessionClose-SessionMismatch")
     }
 
     private fun handleUnprocessedReceivedDataEvents(
@@ -81,7 +80,7 @@ class SessionCloseProcessorSend(
         val errorMessage = "Tried to send SessionClose on key $key and sessionId $sessionId, session status is " +
                 "${sessionState.status}, however there are still received events that have not been processed. " +
                 "Current SessionState: $sessionState."
-        return logAndGenerateErrorResult(errorMessage, sessionState, sessionId, "SessionClose-SessionMismatch")
+        return logAndGenerateErrorResult(errorMessage, sessionState, "SessionClose-SessionMismatch")
     }
 
     private fun handleInvalidStatus(
@@ -93,7 +92,7 @@ class SessionCloseProcessorSend(
         return sessionState.apply {
             status = SessionStateType.ERROR
             sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.plus(
-                generateErrorEvent(sessionId, errorMessage, "SessionClose-InvalidStatus", instant)
+                generateErrorEvent(sessionState, errorMessage, "SessionClose-InvalidStatus", instant)
             )
         }
     }
@@ -121,18 +120,17 @@ class SessionCloseProcessorSend(
         else -> {
             val errorMessage = "Tried to send SessionClose on key $key and sessionId $sessionId, session status is " +
                     "$currentState. Current SessionState: $sessionState."
-            logAndGenerateErrorResult(errorMessage, sessionState, sessionId, "SessionClose-InvalidStatus")
+            logAndGenerateErrorResult(errorMessage, sessionState, "SessionClose-InvalidStatus")
         }
     }
 
     private fun logAndGenerateErrorResult(
         errorMessage: String,
         sessionState: SessionState,
-        sessionId: String,
         errorType: String
     ): SessionState {
         logger.error(errorMessage)
         sessionState.status = SessionStateType.ERROR
-        return generateErrorSessionStateFromSessionEvent(sessionId, errorMessage, errorType, instant)
+        return generateErrorSessionStateFromSessionEvent(sessionState.sessionId, errorMessage, errorType, instant)
     }
 }
