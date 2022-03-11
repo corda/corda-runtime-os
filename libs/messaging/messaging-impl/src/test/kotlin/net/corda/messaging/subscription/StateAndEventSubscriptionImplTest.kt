@@ -126,9 +126,9 @@ class StateAndEventSubscriptionImplTest {
                 exceptionThrown = true
                 throw CordaMessageAPIIntermittentException("test")
             } else {
-                CompletableFuture.completedFuture(null)
+                producer
             }
-        }.whenever(stateAndEventConsumer).waitForFunctionToFinish(any(), any(), any())
+        }.whenever(builder).createProducer(any())
 
         val subscription = StateAndEventSubscriptionImpl<String, String, String>(
             stateAndEventConfig,
@@ -153,12 +153,12 @@ class StateAndEventSubscriptionImplTest {
             anyOrNull(),
             anyOrNull()
         )
-        verify(builder, times(1)).createProducer(any())
+        verify(builder, times(2)).createProducer(any())
         verify(eventConsumer, times(6)).poll(any())
-        verify(producer, times(4)).beginTransaction()
-        verify(producer, times(4)).sendRecords(any())
-        verify(producer, times(4)).sendRecordOffsetsToTransaction(any(), any())
-        verify(producer, times(4)).commitTransaction()
+        verify(producer, times(5)).beginTransaction()
+        verify(producer, times(5)).sendRecords(any())
+        verify(producer, times(5)).sendRecordOffsetsToTransaction(any(), any())
+        verify(producer, times(5)).commitTransaction()
     }
 
     @Test
