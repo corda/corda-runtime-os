@@ -90,7 +90,7 @@ class FlowFilterServiceIntegrationTest {
         val flowHeader = AuthenticatedMessageHeader(identity, identity, 1, "", "", "flowSession")
         val flowEvent = FlowMapperEvent(
             SessionEvent(
-                MessageDirection.OUTBOUND, Instant.now(), testId, 1, SessionInit(
+                MessageDirection.OUTBOUND, Instant.now(), testId, 1, 0, listOf(), SessionInit(
                     testId, testId, null, identity,
                     identity, ByteBuffer.wrap("".toByteArray())
                 )
