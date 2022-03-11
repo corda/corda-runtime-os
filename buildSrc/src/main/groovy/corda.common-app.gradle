@@ -401,6 +401,8 @@ TaskProvider<JavaAgentFile> javaAgentFileTask =  tasks.register("javaAgentFile",
 
 def appJar = tasks.register('appJar', Jar) {
     inputs.files(configurations.bootstrapClasspath)
+     outputs.cacheIf { true }
+
     finalizedBy verifyApp
 
     archiveBaseName = appJarBaseName

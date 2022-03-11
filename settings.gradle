@@ -361,3 +361,12 @@ gradleEnterprise {
         }
     }
 }
+
+
+buildCache {
+    if (System.getenv().containsKey("JENKINS_URL")) {
+        local { enabled = true 
+    }
+                }
+remote(HttpBuildCache) { enabled = false }
+}
