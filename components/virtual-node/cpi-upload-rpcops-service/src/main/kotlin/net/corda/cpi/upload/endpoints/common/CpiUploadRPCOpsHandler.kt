@@ -1,6 +1,8 @@
 package net.corda.cpi.upload.endpoints.common
 
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
+import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
@@ -22,7 +24,7 @@ class CpiUploadRPCOpsHandler : LifecycleEventHandler {
     internal var cpiUploadRPCOpsServiceRegistrationHandle: RegistrationHandle? = null
 
     companion object {
-        val log = contextLogger()
+        val logger = contextLogger()
     }
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
@@ -34,29 +36,28 @@ class CpiUploadRPCOpsHandler : LifecycleEventHandler {
     }
 
     private fun onStartEvent(coordinator: LifecycleCoordinator) {
-        log.info("CPI Upload RPCOpsHandler event - start")
         cpiUploadRPCOpsServiceRegistrationHandle = coordinator.followStatusChangesByName(
             setOf(
-                LifecycleCoordinatorName.forComponent<CpiUploadRPCOpsService>()
+                LifecycleCoordinatorName.forComponent<CpiUploadRPCOpsService>(),
+                LifecycleCoordinatorName.forComponent<CpiInfoReadService>()
             )
         )
-    }
-
-    private fun onStopEvent(coordinator: LifecycleCoordinator) {
-        log.info("CPI Upload RPCOpsHandler event - stop")
-        closeResources()
-        coordinator.updateStatus(LifecycleStatus.DOWN)
     }
 
     private fun onRegistrationStatusChangeEvent(
         event: RegistrationStatusChangeEvent,
         coordinator: LifecycleCoordinator
     ) {
-        log.info("CPI Upload RPCOpsHandler event - registration status changed")
+        logger.info("Changing ${CpiUploadRPCOps::class.java.simpleName} state to: ${event.status}")
         if (event.status == LifecycleStatus.ERROR) {
             closeResources()
         }
         coordinator.updateStatus(event.status)
+    }
+
+    private fun onStopEvent(coordinator: LifecycleCoordinator) {
+        closeResources()
+        coordinator.updateStatus(LifecycleStatus.DOWN)
     }
 
     private fun closeResources() {
