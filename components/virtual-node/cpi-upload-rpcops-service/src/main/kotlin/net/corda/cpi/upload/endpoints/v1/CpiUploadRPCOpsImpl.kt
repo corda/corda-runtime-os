@@ -71,7 +71,10 @@ class CpiUploadRPCOpsImpl @Activate constructor(
         return HTTPGetCPIsResponse(cpis)
     }
 
-    /** @return first 12 characters of the hex string */
+    /**
+     * @return first 12 characters of the hex string
+     * TODO Needs to be ported to corda-api repo as per https://r3-cev.atlassian.net/browse/CORE-4298
+     * */
     private fun toShortHash(secureHash: SecureHash) : String {
         // see [HoldingIdentity]
         return secureHash.toHexString().substring(0, 12)
