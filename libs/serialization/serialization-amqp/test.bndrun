@@ -27,7 +27,7 @@
     begin=-1
 -runbundles: \
 	avro;version='[1.11.0,1.11.1)',\
-	bcprov;version='[1.69.0,1.69.1)',\
+	bcprov;version='[1.70.0,1.70.1)',\
 	com.fasterxml.jackson.core.jackson-annotations;version='[2.13.1,2.13.2)',\
 	com.fasterxml.jackson.core.jackson-core;version='[2.13.1,2.13.2)',\
 	com.fasterxml.jackson.core.jackson-databind;version='[2.13.1,2.13.2)',\
@@ -48,10 +48,10 @@
 	net.corda.configuration-read-service;version='[5.0.0,5.0.1)',\
 	net.corda.configuration-read-service-impl;version='[5.0.0,5.0.1)',\
 	net.corda.cpi-info-read-service;version='[5.0.0,5.0.1)',\
+	net.corda.cpk-read-service;version='[5.0.0,5.0.1)',\
 	net.corda.crypto;version='[5.0.0,5.0.1)',\
 	net.corda.crypto-core;version='[5.0.0,5.0.1)',\
 	net.corda.inmemory-messaging-impl;version='[5.0.0,5.0.1)',\
-	net.corda.install-service;version='[5.0.0,5.0.1)',\
 	net.corda.kotlin-reflection;version='[5.0.0,5.0.1)',\
 	net.corda.kotlin-stdlib-jdk7.osgi-bundle;version='[1.4.32,1.4.33)',\
 	net.corda.kotlin-stdlib-jdk8.osgi-bundle;version='[1.4.32,1.4.33)',\
