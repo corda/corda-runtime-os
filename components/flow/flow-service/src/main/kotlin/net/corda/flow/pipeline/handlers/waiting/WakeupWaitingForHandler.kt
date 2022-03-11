@@ -7,7 +7,7 @@ import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Component
 
 @Component(service = [FlowWaitingForHandler::class])
-class WakeUpWaitingForHandler : FlowWaitingForHandler<Wakeup> {
+class WakeupWaitingForHandler : FlowWaitingForHandler<Wakeup> {
 
     private companion object {
         val log = contextLogger()

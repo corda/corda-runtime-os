@@ -94,6 +94,9 @@ class FlowSessionImpl(
         else if (state == State.CLOSED) throw CordaRuntimeException("Session: $sourceSessionId is closed")
     }
 
+    /**
+     * Required to prevent class cast exceptions during AMQP serialization of primitive types.
+     */
     private fun enforceNotPrimitive(type: Class<*>) {
         require(!type.isPrimitive) { "Cannot receive primitive type $type" }
     }

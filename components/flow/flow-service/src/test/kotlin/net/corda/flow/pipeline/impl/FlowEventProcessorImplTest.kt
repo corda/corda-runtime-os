@@ -1,13 +1,15 @@
-package net.corda.flow.pipeline
+package net.corda.flow.pipeline.impl
 
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.identity.HoldingIdentity
+import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.FlowEventPipeline
+import net.corda.flow.pipeline.FlowHospitalException
+import net.corda.flow.pipeline.FlowProcessingException
 import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
-import net.corda.flow.pipeline.impl.FlowEventPipelineImpl
-import net.corda.flow.pipeline.impl.FlowEventProcessorImpl
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC

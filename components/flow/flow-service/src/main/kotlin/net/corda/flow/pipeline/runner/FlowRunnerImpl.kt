@@ -122,7 +122,7 @@ class FlowRunnerImpl @Activate constructor(
             initiated = true
         )
 
-        val flow = flowFactory.createInitiatedFlow(sandbox, initiatedFlowClassName, flowSession)
+        val flow = flowFactory.createInitiatedFlow(initiatedFlowClassName, flowSession, sandbox)
 
         val flowFiber = flowFiberFactory.createFlowFiber(checkpoint.flowKey, flow, scheduler)
 
