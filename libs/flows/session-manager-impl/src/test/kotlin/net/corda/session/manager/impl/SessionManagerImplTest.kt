@@ -2,7 +2,6 @@ package net.corda.session.manager.impl
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import jdk.nashorn.internal.objects.NativeRegExp.test
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
