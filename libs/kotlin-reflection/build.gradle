@@ -67,9 +67,12 @@ def resolve = tasks.register('resolve', Resolve) {
         configurations.archives.artifacts.files,
         testingBundle
     )
-    bndrun = file('tests.bndrun')
-    //  bnd attempts to use ~/ for caching if this is unavailable the build will fail.
-    System.setProperty('bnd.home.dir', "$rootDir/bnd")
+    bndrun = file('test.bndrun')
+    outputBndrun = layout.buildDirectory.file('resolved-test.bndrun')
+    doFirst {
+        //  bnd attempts to use ~/ for caching if this is unavailable the build will fail.
+        System.setProperty('bnd.home.dir', "$rootDir/bnd")
+    }
 }
 
 def testOSGi = tasks.register('testOSGi', TestOSGi) {
