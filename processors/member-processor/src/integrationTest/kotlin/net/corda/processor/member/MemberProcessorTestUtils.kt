@@ -8,13 +8,19 @@ import net.corda.libs.packaging.CpiMetadata
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.GroupPolicy
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.read.MembershipGroupReader
+import net.corda.membership.registration.MemberRegistrationService
+import net.corda.membership.registration.provider.RegistrationProvider
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -25,6 +31,8 @@ import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertThrows
 import java.util.UUID
 
 class MemberProcessorTestUtils {
@@ -53,7 +61,12 @@ class MemberProcessorTestUtils {
       """
 
         val aliceName = "C=GB, L=London, O=Alice"
+        val bobName = "C=GB, L=London, O=Bob"
+        val charlieName = "C=GB, L=London, O=Charlie"
+
         val aliceX500Name = MemberX500Name.parse(aliceName)
+        val bobX500Name = MemberX500Name.parse(bobName)
+        val charlieX500Name = MemberX500Name.parse(charlieName)
         val groupId = "ABC123"
         val aliceHoldingIdentity = HoldingIdentity(aliceName, groupId)
 
@@ -100,6 +113,37 @@ class MemberProcessorTestUtils {
 
         val sampleGroupPolicy1 get() = getSampleGroupPolicy("/SampleGroupPolicy.json")
         val sampleGroupPolicy2 get() = getSampleGroupPolicy("/SampleGroupPolicy2.json")
+
+        fun getRegistrationService(registrationProvider: RegistrationProvider): MemberRegistrationService = eventually {
+            assertDoesNotThrow {
+                registrationProvider.get(aliceHoldingIdentity)
+            }.also {
+                assertNotNull(it)
+            }!!
+        }
+
+        fun getRegistrationServiceFails(registrationProvider: RegistrationProvider) = eventually {
+            assertThrows<CordaRuntimeException> {
+                registrationProvider.get(aliceHoldingIdentity)
+            }
+        }
+
+        fun lookup(groupReader: MembershipGroupReader, holdingIdentity: MemberX500Name) = eventually {
+            val lookupResult = groupReader.lookup(holdingIdentity)
+            assertNotNull(lookupResult)
+            lookupResult!!
+        }
+
+        fun lookupFails(groupReader: MembershipGroupReader, holdingIdentity: MemberX500Name) = eventually {
+            val lookupResult = groupReader.lookup(holdingIdentity)
+            assertNull(lookupResult)
+        }
+
+        fun lookUpFromPublicKey(groupReader: MembershipGroupReader, member: MemberInfo?) = eventually {
+            val result = groupReader.lookup(PublicKeyHash.calculate(member!!.owningKey))
+            assertNotNull(result)
+            result!!
+        }
 
         fun getGroupPolicyFails(
             groupPolicyProvider: GroupPolicyProvider,
