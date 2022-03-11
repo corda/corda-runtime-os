@@ -224,7 +224,7 @@ def createApplicationBundlesFile = tasks.register('createApplicationBundlesFile'
 
 def cordaAssembleSystemPackagesExtraTask = tasks.register("createSystemPackagesExtraFile") {
     File systemPackagesExtraFile = new File(temporaryDir, "system_packages_extra")
-    inputs.files(configurations.systemPackages)
+    dependsOn ':osgi-framework-api:jar'
     outputs.file(systemPackagesExtraFile)
     doLast {
         final Set<String> systemBundleExtraSet = new TreeSet<>()
