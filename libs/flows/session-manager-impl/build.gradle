@@ -20,6 +20,7 @@ dependencies {
     implementation "net.corda:corda-topic-schema"
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation project(":testing:flow-utilities")
 }
 
 description 'Session Manager Impl lib'

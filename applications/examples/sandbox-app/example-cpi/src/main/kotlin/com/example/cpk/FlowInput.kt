@@ -1,5 +1,9 @@
 package com.example.cpk
 
-class FlowInput {
-    var message: String? = null
-}
+import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.JsonProperty
+
+class FlowInput @JsonCreator constructor(
+    @JsonProperty("message")
+    val message: String?
+)

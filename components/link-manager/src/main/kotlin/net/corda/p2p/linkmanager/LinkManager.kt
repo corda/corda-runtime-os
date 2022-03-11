@@ -78,8 +78,13 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                   private val instanceId: Int,
                   val linkManagerNetworkMap: LinkManagerNetworkMap
                       = StubNetworkMap(lifecycleCoordinatorFactory, subscriptionFactory, instanceId, configuration),
-                  private val linkManagerHostingMap: LinkManagerHostingMap
-                      = ConfigBasedLinkManagerHostingMap(configurationReaderService, lifecycleCoordinatorFactory),
+                  linkManagerHostingMap: LinkManagerHostingMap =
+                      StubLinkManagerHostingMap(
+                          lifecycleCoordinatorFactory,
+                          subscriptionFactory,
+                          instanceId,
+                          configuration,
+                      ),
                   linkManagerCryptoProcessor: CryptoProcessor
                       = StubCryptoProcessor(lifecycleCoordinatorFactory, subscriptionFactory, instanceId, configuration)
 ) : LifecycleWithDominoTile {

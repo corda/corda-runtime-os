@@ -106,6 +106,10 @@ class CpiInfoReaderProcessor(private val onStatusUpCallback: () -> Unit, private
         listeners.forEach { it.value.onUpdate(setOf(newRecord.key.toCorda()), currentSnapshot) }
     }
 
+    fun getAll(): List<CpiMetadata> {
+        return cpiInfoMap.getAll().map(CpiMetadata::fromAvro)
+    }
+
     fun get(identifier: CpiIdentifier): CpiMetadata? {
         val avroMsg = cpiInfoMap.get(identifier.toAvro()) ?: return null
         return CpiMetadata.fromAvro(avroMsg)

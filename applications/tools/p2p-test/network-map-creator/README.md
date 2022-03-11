@@ -9,15 +9,18 @@ The ultimate purpose of this tool is to test the p2p layer in an isolated way wi
 ```
 
 ## Running the tool
-
-```
-java -jar applications/tools/p2p-test/network-map-creator/build/bin/corda-network-map-creator-5.0.0.0-SNAPSHOT.jar --netmap-file ~/Desktop/netmap.json --kafka ~/Desktop/kafka.properties
-```
-
-The file specified in the `--kafka` CLI parameter should have the following structure:
+To run the tool one will need to create a kafka properties file in the format:
 ```
 bootstrap.servers=localhost:9092
 ```
+
+### Publishing network map entries
+
+```
+java -jar applications/tools/p2p-test/network-map-creator/build/bin/corda-network-map-creator-5.0.0.0-SNAPSHOT.jar network-map --netmap-file ~/Desktop/netmap.json --kafka ~/Desktop/kafka.properties
+```
+
+The file specified in the `--kafka` CLI parameter is the kafka properties file.
 
 The file provided on the `--netmap-file` CLI parameter should have the following structure:
 ```json
@@ -32,6 +35,7 @@ The file provided on the `--netmap-file` CLI parameter should have the following
                "keystorePassword": "keystore-password",
                "address": "http://alice.com",
                "networkType": "CORDA_4",
+               "protocolModes": ["AUTHENTICATION_ONLY", "AUTHENTICATED_ENCRYPTION"],
                "trustStoreCertificates": ["<path_to_trust_certificate_files>"]
           }
         },
@@ -44,6 +48,7 @@ The file provided on the `--netmap-file` CLI parameter should have the following
               "keystorePassword": "keystore-password",
               "address": "http://bob.com",
               "networkType": "CORDA_5",
+              "protocolModes": ["AUTHENTICATION_ONLY", "AUTHENTICATED_ENCRYPTION"],
               "trustStoreCertificates": ["<path_to_trust_certificate_files>"]
           }
         }
@@ -64,9 +69,53 @@ keytool -genkeypair -alias ec -keyalg EC -storetype JKS -keystore ec_key.jks -st
 
 trust store files are expected to be `.pem` files.
 
+
+### Publishing locally hosted map entries
+
+```
+java -jar applications/tools/p2p-test/network-map-creator/build/bin/corda-network-map-creator-5.0.0.0-SNAPSHOT.jar locally-hosted-map --hosting-map-file ~/Desktop/hosting.json --kafka ~/Desktop/kafka.properties
+```
+
+The file specified in the `--kafka` CLI parameter is the kafka properties file.
+
+The file provided on the `--hosting-map-file` CLI parameter should have the following structure:
+```json
+{
+    "entriesToAdd": [
+        {
+          "x500name": "O=Alice, L=London, C=GB",
+          "groupId": "group-1",
+          "data": {
+               "tlsTenantId": "cluster",
+               "identityTenantId": "alice", 
+               "tlsCertificates": ["<path_to_tls_certificate_files>"]
+          }
+        },
+        {
+          "x500name": "O=Bob, L=London, C=GB",
+          "groupId": "group-2",
+          "data": {
+            "tlsTenantId": "cluster",
+            "identityTenantId": "bob",
+            "tlsCertificates": ["<path_to_tls_certificate_files>"]
+          }
+        }
+    ],
+    "entriesToDelete": [
+        {
+          "x500name": "O=Charlie, L=London, C=GB",
+          "groupId": "group-1"
+        }
+    ]
+}
+```
+
+
+tls certificates files are expected to be `.pem` files.
+
 ### Populating a custom topic
 
 The key entries can also be written to a custom topic using the `--topic` parameter:
 ```
-java -jar applications/tools/p2p-test/network-map-creator/build/bin/corda-network-map-creator-5.0.0.0-SNAPSHOT.jar --netmap-file ~/Desktop/keys-config.json --kafka ~/Desktop/kafka.properties --topic test.topic
+java -jar applications/tools/p2p-test/network-map-creator/build/bin/corda-network-map-creator-5.0.0.0-SNAPSHOT.jar network-map --netmap-file ~/Desktop/keys-config.json --kafka ~/Desktop/kafka.properties --topic test.topic
 ```

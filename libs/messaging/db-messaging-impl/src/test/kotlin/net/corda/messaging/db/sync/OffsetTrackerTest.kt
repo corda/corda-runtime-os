@@ -100,7 +100,7 @@ class OffsetTrackerTest {
             executorService.submit { offsetTracker.offsetReleased(offset) }
         }
 
-        assertTrue(offsetTracker.waitForOffset(maxOffset, 150.millis))
+        assertTrue(offsetTracker.waitForOffset(maxOffset, 250.millis))
         assertThat(offsetTracker.maxVisibleOffset()).isEqualTo(maxOffset)
     }
 

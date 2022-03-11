@@ -165,6 +165,7 @@ class ConfigureAll : Runnable {
                     "keystorePassword" to "password",
                     "address" to "http://$host:${Port.Gateway.port}",
                     "networkType" to "CORDA_5",
+                    "protocolModes" to listOf("AUTHENTICATED_ENCRYPTION"),
                     "trustStoreCertificates" to listOf(trustStoreFile.absolutePath),
                 )
             )
@@ -179,12 +180,45 @@ class ConfigureAll : Runnable {
             RunJar(
                 "network-map-creator",
                 listOf(
+                    "network-map",
                     "--netmap-file", configurationFile.absolutePath, "--kafka",
                     RunJar.kafkaFile(nameSpace).absolutePath
                 )
             ).run()
         }
     }
+
+    private fun publishLocallyHostedIdentities() {
+        val configurationFile = File.createTempFile("hosting-map.", ".conf").also {
+            it.deleteOnExit()
+        }
+        val entry =
+            mapOf(
+                "x500name" to x500name,
+                "groupId" to groupId,
+                "data" to mapOf(
+                    "tlsTenantId" to tenantId,
+                    "identityTenantId" to tenantId,
+                    "tlsCertificates" to listOf(tlsCertificates(host).absolutePath),
+                )
+            )
+
+        val configurationMap = mapOf(
+            "entriesToAdd" to listOf(entry),
+            "entriesToDelete" to emptyList()
+        )
+        jsonWriter.writeValue(configurationFile, configurationMap)
+        println("Publishing locally hosted map")
+        RunJar(
+            "network-map-creator",
+            listOf(
+                "locally-hosted-map",
+                "--hosting-map-file", configurationFile.absolutePath, "--kafka",
+                RunJar.kafkaFile(namespaceName).absolutePath
+            )
+        ).run()
+    }
+
     private fun publishOthersToMySelf() {
         val configurationFile = File.createTempFile("network-map.", ".conf").also {
             it.deleteOnExit()
@@ -208,6 +242,7 @@ class ConfigureAll : Runnable {
                         "keystorePassword" to "password",
                         "address" to "http://$host:${Port.Gateway.port}",
                         "networkType" to "CORDA_5",
+                        "protocolModes" to listOf("AUTHENTICATED_ENCRYPTION"),
                         "trustStoreCertificates" to listOf(trustStoreFile.absolutePath),
                     )
                 )
@@ -221,6 +256,7 @@ class ConfigureAll : Runnable {
         RunJar(
             "network-map-creator",
             listOf(
+                "network-map",
                 "--netmap-file", configurationFile.absolutePath, "--kafka",
                 RunJar.kafkaFile(namespaceName).absolutePath
             )
@@ -271,7 +307,6 @@ class ConfigureAll : Runnable {
                 "-k",
                 RunJar.kafkaServers(namespaceName),
                 "link-manager",
-                "--locallyHostedIdentity=$x500name:$groupId:$tenantId:$tenantId:${tlsCertificates(host).absolutePath}",
             ) + linkManagerExtraArguments
         ).run()
     }
@@ -292,6 +327,7 @@ class ConfigureAll : Runnable {
 
     override fun run() {
         RunJar.startTelepresence()
+        publishLocallyHostedIdentities()
         publishNetworkMap()
         publishKeys()
         configureLinkManager()

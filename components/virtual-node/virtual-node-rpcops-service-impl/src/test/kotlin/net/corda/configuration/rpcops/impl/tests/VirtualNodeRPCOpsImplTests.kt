@@ -66,7 +66,7 @@ class VirtualNodeRPCOpsImplTests {
         null,
         httpCreateVNRequest.x500Name,
         cpiIdAvro,
-        httpCreateVNRequest.cpiIdHash,
+        httpCreateVNRequest.cpiFileChecksum,
         holdingId.groupId,
         holdingId,
         holdingIdHash,
@@ -77,7 +77,7 @@ class VirtualNodeRPCOpsImplTests {
         hsmConnectionId
     )
 
-    private val rpcRequestTimeoutDuration = 1000
+    private val rpcRequestTimeoutDuration = 3000
 
     @Test
     fun `createAndStartRPCSender starts new RPC sender`() {
@@ -111,7 +111,7 @@ class VirtualNodeRPCOpsImplTests {
     @Test
     fun `createVirtualNode sends the correct request to the RPC sender`() {
         val rpcRequest = httpCreateVNRequest.run {
-            VirtualNodeCreationRequest(x500Name, cpiIdHash, null, null, null, null, "test_principal")
+            VirtualNodeCreationRequest(x500Name, cpiFileChecksum, null, null, null, null, "test_principal")
         }
 
         val (rpcSender, vnodeRPCOps) = getVirtualNodeRPCOps()
@@ -127,7 +127,7 @@ class VirtualNodeRPCOpsImplTests {
     fun `createVirtualNode returns VirtualNodeCreationResponse if response is success`() {
         val successResponse =
             HTTPCreateVirtualNodeResponse(
-                holdingId.x500Name, cpiId, httpCreateVNRequest.cpiIdHash, holdingId.groupId, holdingIdHash,
+                holdingId.x500Name, cpiId, httpCreateVNRequest.cpiFileChecksum, holdingId.groupId, holdingIdHash,
                 vaultDdlConnectionId, vaultDmlConnectionId, cryptoDdlConnectionId, cryptoDmlConnectionId)
         val (_, vnodeRPCOps) = getVirtualNodeRPCOps()
 

@@ -1,10 +1,12 @@
 package net.corda.cpk.read.impl
 
-import net.corda.configuration.read.ConfigurationHandler
+import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpk.read.CpkReadService
-import net.corda.cpk.readwrite.CpkServiceConfigKeys
+import net.corda.cpk.read.impl.services.CpkChunksKafkaReader
+import net.corda.cpk.read.impl.services.persistence.CpkChunksFileManagerImpl
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.packaging.CpkIdentifier
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -16,46 +18,48 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.config.toMessagingConfig
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.packaging.CPK
+import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.util.concurrent.ConcurrentHashMap
 
-@Suppress("Unused")
 @Component(service = [CpkReadService::class])
 class CpkReadServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
-    private val coordinatorFactory: LifecycleCoordinatorFactory,
+    coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
-    private val configurationReadService: ConfigurationReadService,
-) : CpkReadService, LifecycleEventHandler, ConfigurationHandler {
+    private val configReadService: ConfigurationReadService,
+    @Reference(service = SubscriptionFactory::class)
+    private val subscriptionFactory: SubscriptionFactory
+) : CpkReadService, LifecycleEventHandler {
     companion object {
-        val log: Logger = contextLogger()
+        val logger: Logger = contextLogger()
+
+        const val CPK_READ_GROUP = "cpk.reader"
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<CpkReadService>(this)
-    private var registration: RegistrationHandle? = null
-    private var configSubscription: AutoCloseable? = null
 
-    private var reader: CpkFileReader? = null
+    @VisibleForTesting
+    internal var configReadServiceRegistration: RegistrationHandle? = null
+    @VisibleForTesting
+    internal var configSubscription: AutoCloseable? = null
+    @VisibleForTesting
+    internal var cpkChunksKafkaReaderSubscription: AutoCloseable? = null
 
-    override val isRunning: Boolean
-        get() = coordinator.isRunning
-
-    override fun start() {
-        log.debug { "Cpk Read Service starting" }
-        coordinator.start()
-    }
-
-    override fun stop() {
-        log.debug { "Cpk Read Service stopping" }
-        coordinator.stop()
-    }
+    private val cpksById = ConcurrentHashMap<CpkIdentifier, CPK>()
 
     /**
      * Event loop
@@ -63,77 +67,97 @@ class CpkReadServiceImpl @Activate constructor(
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> onStartEvent(coordinator)
-            is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event)
-            is BootstrapConfigChangedEvent -> onBootstrapConfigChangedEvent(coordinator, event)
+            is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event, coordinator)
+            is ConfigChangedEvent -> onConfigChangedEvent(event, coordinator)
             is StopEvent -> onStopEvent()
         }
     }
 
-    /**
-     * If the thing(s) we depend on are up (only the [ConfigurationReadService]),
-     * then register `this` for config updates
-     */
-    private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent) {
+    private fun onStartEvent(coordinator: LifecycleCoordinator) {
+        configReadServiceRegistration?.close()
+        configReadServiceRegistration =
+            coordinator.followStatusChangesByName(setOf(LifecycleCoordinatorName.forComponent<ConfigurationReadService>()))
+    }
+
+    private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator) {
         if (event.status == LifecycleStatus.UP) {
-            configSubscription = configurationReadService.registerForUpdates(this)
-        } else {
             configSubscription?.close()
+            configSubscription = configReadService.registerComponentForUpdates(
+                coordinator,
+                setOf(
+                    ConfigKeys.BOOT_CONFIG,
+                    ConfigKeys.MESSAGING_CONFIG
+                )
+            )
+        } else {
+            logger.warn(
+                "Received a ${RegistrationStatusChangeEvent::class.java.simpleName} with status ${event.status}." +
+                        " Component ${this::class.java.simpleName} is not started"
+            )
+            closeResources()
         }
     }
 
-    /**
-     * We've received a config event that we care about, we can now write cpks
-     */
-    private fun onBootstrapConfigChangedEvent(coordinator: LifecycleCoordinator, event: BootstrapConfigChangedEvent) {
-        val bootstrapConfig = event.config.toSafeConfig()
-        if (bootstrapConfig.hasPath(CpkServiceConfigKeys.CPK_CACHE_DIR)) {
-            reader?.close()
-            reader = CpkFileReader.fromConfig(bootstrapConfig)
-            coordinator.updateStatus(LifecycleStatus.UP)
-        } else {
-            log.error("Need ${CpkServiceConfigKeys.CPK_CACHE_DIR} to be specified in the boot config")
-        }
+    private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
+        logger.info("Configuring CPK Read Service")
+        val config = event.config.toMessagingConfig()
+        createCpkChunksKafkaReader(config)
+        coordinator.updateStatus(LifecycleStatus.UP)
     }
 
     /**
      * Close the registration.
      */
     private fun onStopEvent() {
-        registration?.close()
-        registration = null
-    }
-
-    /**
-     * We depend on the [ConfigurationReadService] so we 'listen' to [RegistrationStatusChangeEvent]
-     * to tell us when it is ready so we can register ourselves to handle config updates.
-     */
-    private fun onStartEvent(coordinator: LifecycleCoordinator) {
-        configurationReadService.start()
-        registration?.close()
-        registration =
-            coordinator.followStatusChangesByName(setOf(LifecycleCoordinatorName.forComponent<ConfigurationReadService>()))
-    }
-
-    /** received a new configuration from the configuration service (not the event loop) */
-    override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
-        // In this implementation we're only checking what comes in on the boot config.
-        if (ConfigKeys.BOOT_CONFIG in changedKeys) {
-            coordinator.postEvent(BootstrapConfigChangedEvent(config[ConfigKeys.BOOT_CONFIG]!!))
-        }
+        closeResources()
     }
 
     override fun close() {
-        configSubscription?.close()
-        registration?.close()
-        reader?.close()
+        closeResources()
     }
 
-    class BootstrapConfigChangedEvent(val config: SmartConfig) : LifecycleEvent
+    override fun get(cpkId: CpkIdentifier): CPK? =
+        cpksById[cpkId]
 
-    override fun get(cpkMetadata: CPK.Metadata): CPK? {
-        if (reader == null) {
-            throw CordaRuntimeException("CpkReadServiceImpl has not been initialised yet")
-        }
-        return reader!!.get(cpkMetadata)
+    private fun createCpkChunksKafkaReader(config: SmartConfig) {
+        // TODO the below cpks disk caches locations should be made configurable as per https://r3-cev.atlassian.net/browse/CORE-4130
+        val cpksAssembleCacheDir = Paths.get(System.getProperty("java.io.tmpdir"), "cpks-assemble")
+        val cpksCacheDir = Paths.get(System.getProperty("java.io.tmpdir"), "cpks")
+        val cpkChunksFileManager =
+            CpkChunksFileManagerImpl(cpksAssembleCacheDir.apply { Files.createDirectories(this) })
+        cpkChunksKafkaReaderSubscription?.close()
+        cpkChunksKafkaReaderSubscription =
+            subscriptionFactory.createCompactedSubscription(
+                SubscriptionConfig(CPK_READ_GROUP, Schemas.VirtualNode.CPK_FILE_TOPIC),
+                CpkChunksKafkaReader(cpksCacheDir, cpkChunksFileManager, this::onCpkAssembled),
+                config
+            ).also { it.start() }
+    }
+
+    private fun onCpkAssembled(cpkId: CpkIdentifier, cpk: CPK) {
+        logger.info("${this::class.java.simpleName} storing:  $cpkId")
+        cpksById[cpkId] = cpk
+    }
+
+    override val isRunning: Boolean
+        get() = coordinator.isRunning
+
+    override fun start() {
+        logger.debug { "CPK Read Service starting" }
+        coordinator.start()
+    }
+
+    override fun stop() {
+        logger.debug { "CPK Read Service stopping" }
+        coordinator.stop()
+    }
+
+    private fun closeResources() {
+        configReadServiceRegistration?.close()
+        configReadServiceRegistration = null
+        configSubscription?.close()
+        configSubscription = null
+        cpkChunksKafkaReaderSubscription?.close()
+        cpkChunksKafkaReaderSubscription = null
     }
 }

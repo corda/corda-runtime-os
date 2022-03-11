@@ -33,7 +33,6 @@ dependencies {
     implementation 'org.slf4j:slf4j-api'
 
     implementation project(':testing:sandboxes')
-    implementation project(':libs:flows:flow-manager')
     implementation project(':libs:messaging:messaging')
     implementation project(':libs:virtual-node:sandbox-group-context')
     implementation project(':components:flow:flow-service')
@@ -43,8 +42,10 @@ dependencies {
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+
+    runtimeOnly project(':libs:application:application-impl')
     runtimeOnly project(':libs:crypto:crypto-impl')
-    runtimeOnly project(':libs:flows:flow-manager-impl')
+    runtimeOnly project(':libs:flows:session-manager-impl')
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')
     runtimeOnly project(':libs:messaging:inmemory-messaging-impl')
     runtimeOnly project(':libs:serialization:serialization-checkpoint-api')

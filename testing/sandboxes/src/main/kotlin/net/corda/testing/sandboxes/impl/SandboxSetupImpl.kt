@@ -1,14 +1,14 @@
 package net.corda.testing.sandboxes.impl
 
+import net.corda.cpk.read.CpkReadService
 import java.nio.file.Path
 import java.util.Hashtable
 import java.util.Collections.unmodifiableSet
 import java.util.concurrent.TimeoutException
-import net.corda.install.InstallService
 import net.corda.sandbox.SandboxCreationService
 import net.corda.testing.sandboxes.SandboxSetup
-import net.corda.testing.sandboxes.impl.InstallServiceImpl.Companion.BASE_DIRECTORY_KEY
-import net.corda.testing.sandboxes.impl.InstallServiceImpl.Companion.TEST_BUNDLE_KEY
+import net.corda.testing.sandboxes.impl.CpkReadServiceImpl.Companion.BASE_DIRECTORY_KEY
+import net.corda.testing.sandboxes.impl.CpkReadServiceImpl.Companion.TEST_BUNDLE_KEY
 import net.corda.testing.sandboxes.impl.SandboxSetupImpl.Companion.INSTALLER_NAME
 import net.corda.v5.base.util.loggerFor
 import org.osgi.framework.BundleContext
@@ -25,7 +25,7 @@ import org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC
 @Component(
     reference = [ Reference(
         name = INSTALLER_NAME,
-        service = InstallService::class,
+        service = CpkReadService::class,
         cardinality = OPTIONAL,
         policy = DYNAMIC
     )]
@@ -73,7 +73,7 @@ class SandboxSetupImpl @Activate constructor(
         val testBundle = bundleContext.bundle
         logger.info("Configuring sandboxes for [{}]", testBundle.symbolicName)
 
-        configAdmin.getConfiguration(InstallServiceImpl::class.java.name)?.also { config ->
+        configAdmin.getConfiguration(CpkReadServiceImpl::class.java.name)?.also { config ->
             val properties = Hashtable<String, Any?>()
             properties[BASE_DIRECTORY_KEY] = baseDirectory.toString()
             properties[TEST_BUNDLE_KEY] = testBundle.location
@@ -91,7 +91,7 @@ class SandboxSetupImpl @Activate constructor(
      * the framework to create new instances of it.
      */
     override fun start() {
-        componentContext.enableComponent(InstallServiceImpl::class.java.name)
+        componentContext.enableComponent(CpkReadServiceImpl::class.java.name)
     }
 
     /**
@@ -111,8 +111,8 @@ class SandboxSetupImpl @Activate constructor(
          * for the framework to unregister it.
          */
         with(componentContext) {
-            disableComponent(InstallServiceImpl::class.java.name)
-            while (locateService<InstallService>(INSTALLER_NAME) != null) {
+            disableComponent(CpkReadServiceImpl::class.java.name)
+            while (locateService<CpkReadService>(INSTALLER_NAME) != null) {
                 Thread.sleep(WAIT_MILLIS)
             }
         }

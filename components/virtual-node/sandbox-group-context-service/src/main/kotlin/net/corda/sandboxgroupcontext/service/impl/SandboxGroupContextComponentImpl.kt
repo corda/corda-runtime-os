@@ -1,6 +1,6 @@
 package net.corda.sandboxgroupcontext.service.impl
 
-import net.corda.install.InstallService
+import net.corda.cpk.read.CpkReadService
 import net.corda.libs.packaging.CpkIdentifier
 import net.corda.libs.packaging.CpkMetadata
 import net.corda.lifecycle.LifecycleCoordinator
@@ -37,8 +37,8 @@ import java.util.Collections.unmodifiableList
 @Component(service = [SandboxGroupContextComponent::class])
 @RequireSandboxHooks
 class SandboxGroupContextComponentImpl @Activate constructor(
-    @Reference(service = InstallService::class)
-    private val installService: InstallService,
+    @Reference(service = CpkReadService::class)
+    private val cpkReadService: CpkReadService,
     @Reference(service = SandboxCreationService::class)
     private val sandboxCreationService: SandboxCreationService,
     @Reference(service = LifecycleCoordinatorFactory::class)
@@ -50,29 +50,31 @@ class SandboxGroupContextComponentImpl @Activate constructor(
     companion object {
         private val logger = contextLogger()
 
-        private val PLATFORM_PUBLIC_BUNDLE_NAMES: List<String> = unmodifiableList(listOf(
-            "javax.persistence-api",
-            "jcl.over.slf4j",
-            "net.corda.application",
-            "net.corda.base",
-            "net.corda.cipher-suite",
-            "net.corda.crypto",
-            "net.corda.kotlin-stdlib-jdk7.osgi-bundle",
-            "net.corda.kotlin-stdlib-jdk8.osgi-bundle",
-            "net.corda.persistence",
-            "net.corda.serialization",
-            "org.apache.aries.spifly.dynamic.bundle",
-            "org.apache.felix.framework",
-            "org.apache.felix.scr",
-            "org.hibernate.orm.core",
-            "org.jetbrains.kotlin.osgi-bundle",
-            "slf4j.api"
-        ))
+        private val PLATFORM_PUBLIC_BUNDLE_NAMES: List<String> = unmodifiableList(
+            listOf(
+                "javax.persistence-api",
+                "jcl.over.slf4j",
+                "net.corda.application",
+                "net.corda.base",
+                "net.corda.cipher-suite",
+                "net.corda.crypto",
+                "net.corda.kotlin-stdlib-jdk7.osgi-bundle",
+                "net.corda.kotlin-stdlib-jdk8.osgi-bundle",
+                "net.corda.persistence",
+                "net.corda.serialization",
+                "org.apache.aries.spifly.dynamic.bundle",
+                "org.apache.felix.framework",
+                "org.apache.felix.scr",
+                "org.hibernate.orm.core",
+                "org.jetbrains.kotlin.osgi-bundle",
+                "slf4j.api"
+            )
+        )
     }
 
     private val sandboxGroupContextServiceImpl = SandboxGroupContextServiceImpl(
         sandboxCreationService,
-        installService,
+        cpkReadService,
         serviceComponentRuntime,
         bundleContext
     )
@@ -103,7 +105,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
         get() = coordinator.isRunning
 
     override fun start() {
-        installService.start()
+        cpkReadService.start()
         coordinator.start()
     }
 
@@ -113,6 +115,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
         stop()
         coordinator.close()
         sandboxGroupContextServiceImpl.close()
+        cpkReadService.stop()
     }
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
@@ -137,7 +140,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
         registrationHandle?.close()
         registrationHandle = coordinator.followStatusChangesByName(
             setOf(
-                LifecycleCoordinatorName.forComponent<InstallService>()
+                LifecycleCoordinatorName.forComponent<CpkReadService>()
             )
         )
     }
@@ -149,7 +152,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
         coordinator.updateStatus(LifecycleStatus.DOWN)
     }
 
-    private fun initialiseSandboxContext(allBundles: Array<Bundle>){
+    private fun initialiseSandboxContext(allBundles: Array<Bundle>) {
         val (publicBundles, privateBundles) = allBundles.partition { bundle ->
             bundle.symbolicName in PLATFORM_PUBLIC_BUNDLE_NAMES
         }
