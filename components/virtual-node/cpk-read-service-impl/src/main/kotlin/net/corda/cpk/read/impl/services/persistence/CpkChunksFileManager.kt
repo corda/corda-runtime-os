@@ -4,7 +4,7 @@ import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.CpkChunkId
 import net.corda.v5.crypto.SecureHash
 import java.nio.file.Path
-import java.util.*
+import java.util.SortedSet
 
 interface CpkChunksFileManager {
     fun chunkFileExists(chunkId: CpkChunkId): CpkChunkFileLookUp

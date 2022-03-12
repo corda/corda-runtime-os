@@ -4,7 +4,9 @@ import net.corda.cpk.read.impl.TestUtils.dummyCpkChunkIdToChunk
 import net.corda.cpk.read.impl.services.persistence.CpkChunkFileLookUp
 import net.corda.cpk.read.impl.services.persistence.CpkChunksFileManager
 import net.corda.v5.crypto.SecureHash
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -43,7 +45,6 @@ class CpkChunksKafkaReaderTest {
         cpkChunksKafkaReader.writeChunkFile(cpkChunkId1, chunk1)
         verify(cpkChunksFileManager).writeChunkFile(cpkChunkId1, chunk1)
         assertTrue(cpkChunksKafkaReader.receivedCpkChunksCache.getChunkIds(checksum)!!.size == 2)
-
         assertFalse(cpkChunksKafkaReader.receivedCpkChunksCache.allChunksReceived(checksum)!!)
     }
 
