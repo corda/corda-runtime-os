@@ -1,6 +1,7 @@
 package net.corda.cpk.read.impl.services
 
 import net.corda.chunking.toCorda
+import net.corda.cpk.read.impl.services.cache.CpkChunkIdsCache
 import net.corda.cpk.read.impl.services.persistence.CpkChunksFileManager
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.CpkChunkId
@@ -14,7 +15,7 @@ import net.corda.v5.crypto.SecureHash
 import java.nio.ByteBuffer
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.TreeSet
+import java.util.SortedSet
 
 // TODO should be enough for now to keep it simple and not replace/ delete CPK chunks?
 class CpkChunksKafkaReader(
@@ -30,7 +31,7 @@ class CpkChunksKafkaReader(
     // This is not intended to be used as a cache, as it will not work among workers in different processes.
     // It is just used to save extra disk searches to check if all chunks are received.
     @VisibleForTesting
-    internal val chunksReceivedPerCpk = mutableMapOf<SecureHash, ChunksReceived>()
+    internal val receivedCpkChunksCache: CpkChunkIdsCache = CpkChunkIdsCache.Impl()
 
     override val keyClass: Class<CpkChunkId>
         get() = CpkChunkId::class.java
@@ -67,21 +68,15 @@ class CpkChunksKafkaReader(
         // can have a correct picture of received CPK chunks. A CPK chunk file could already exist in a scenario where
         // for e.g. multiple DB workers would share the same filesystem.
         val cpkChecksum = chunkId.cpkChecksum.toCorda()
-        val chunksReceived = chunksReceivedPerCpk[cpkChecksum]
-            ?: ChunksReceived().also { chunksReceivedPerCpk[cpkChecksum] = it }
+        receivedCpkChunksCache.addOrSetExpected(cpkChecksum, chunkId, chunk.isZeroChunk())
 
-        if (chunk.data.isZeroChunk()) {
-            chunksReceived.expectedCount = chunkId.cpkChunkPartNumber
-        } else {
-            chunksReceived.chunks.add(chunkId)
-        }
-
-        if (chunksReceived.allReceived()) {
-            onAllChunksReceived(cpkChecksum, chunksReceived.chunks)
+        if (receivedCpkChunksCache.allChunksReceived(cpkChecksum)!!) {
+            val chunkIds = receivedCpkChunksCache.getChunkIds(cpkChecksum)!!
+            onAllChunksReceived(cpkChecksum, chunkIds)
         }
     }
 
-    private fun onAllChunksReceived(cpkChecksum: SecureHash, chunks: TreeSet<CpkChunkId>) {
+    private fun onAllChunksReceived(cpkChecksum: SecureHash, chunks: SortedSet<CpkChunkId>) {
         val cpkPath = cpkChunksFileManager.assembleCpk(cpkChecksum, chunks)
         cpkPath?.let {
             val cpk = Files.newInputStream(it).use { inStream ->
@@ -89,22 +84,8 @@ class CpkChunksKafkaReader(
             }
             onCpkAssembled(CpkIdentifier.fromLegacy(cpk.metadata.id), cpk)
         } ?: logger.warn("CPK assemble has failed for: $cpkChecksum")
-        chunksReceivedPerCpk.remove(cpkChecksum)
-    }
-
-    @VisibleForTesting
-    internal class ChunksReceived {
-        val chunks = sortedSetOf<CpkChunkId>()
-        var expectedCount = -1
-            set(value) {
-                if (field == -1) {
-                    field = value
-                }
-            }
-
-        fun allReceived() =
-            chunks.size == expectedCount
+        receivedCpkChunksCache.remove(cpkChecksum)
     }
 }
 
-private fun ByteBuffer.isZeroChunk() = this.limit() == 0
+private fun Chunk.isZeroChunk() = this.data.limit() == 0

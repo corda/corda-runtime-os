@@ -11,7 +11,7 @@ import net.corda.utilities.outputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
-import java.util.TreeSet
+import java.util.SortedSet
 
 /**
  * Creates resources on disk, that something needs to clear them on shutdown.
@@ -54,7 +54,7 @@ class CpkChunksFileManagerImpl(private val cpksAssembleCacheDir: Path) : CpkChun
     }
 
     // TODO need to take care of incomplete CPK assemble as per https://r3-cev.atlassian.net/browse/CORE-4155
-    override fun assembleCpk(cpkChecksum: SecureHash, chunkParts: TreeSet<CpkChunkId>): Path? {
+    override fun assembleCpk(cpkChecksum: SecureHash, chunkParts: SortedSet<CpkChunkId>): Path? {
         val cpkXDir = cpksAssembleCacheDir.resolve(cpkChecksum.toCpkDirName())
         logger.info("Assembling CPK on disk: $cpkXDir")
         if (!Files.exists(cpkXDir)) {
