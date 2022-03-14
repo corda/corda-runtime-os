@@ -51,8 +51,7 @@ class CpkChunksKafkaReader(
         chunk?.let {
             writeChunkFile(chunkId, it)
         } ?: logger.warn(
-            "Skipping writing to disk cache for null CPK chunk: " +
-                    "${chunkId.cpkChecksum} : ${chunkId.cpkChunkPartNumber}"
+            "Ignoring null CPK chunk: ${chunkId.cpkChecksum} : ${chunkId.cpkChunkPartNumber}"
         )
     }
 
