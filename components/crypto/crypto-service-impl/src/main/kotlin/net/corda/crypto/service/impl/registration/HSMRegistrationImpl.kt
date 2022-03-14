@@ -49,7 +49,7 @@ class HSMRegistrationImpl : HSMRegistration {
                     CryptoConsts.Categories.AUTHENTICATION
                 ),
                 0,
-                1000,
+                5000,
                 listOf(
                     RSA_CODE_NAME,
                     ECDSA_SECP256K1_CODE_NAME,
