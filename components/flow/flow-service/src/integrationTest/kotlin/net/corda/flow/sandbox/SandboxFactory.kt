@@ -1,6 +1,6 @@
 package net.corda.flow.sandbox
 
-import net.corda.flow.manager.FlowSandboxService
+import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.testing.sandboxes.VirtualNodeLoader
 import net.corda.virtualnode.HoldingIdentity

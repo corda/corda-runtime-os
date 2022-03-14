@@ -27,7 +27,6 @@ dependencies {
 
     implementation project(":libs:configuration:configuration-core")
     implementation project(':libs:configuration:configuration-schema:messaging-configuration')
-    implementation project(":libs:flows:flow-manager")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:sandbox")
@@ -48,16 +47,25 @@ dependencies {
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
+
+    implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
+    implementation "com.esotericsoftware:kryo:$kryoVersion"
+
+    implementation project(':libs:flows:session-manager')
+    implementation project(':libs:virtual-node:virtual-node-info')
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:registry")
+    testImplementation project(":libs:flows:session-manager-impl")
 
     cpks project(path: ':testing:cpbs:sandbox-cpk-inject', configuration: 'cordaCPB')
 
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestRuntimeOnly project(':libs:application:application-impl')
-    integrationTestRuntimeOnly project(':libs:flows:flow-manager-impl')
     integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
     integrationTestRuntimeOnly project(':libs:messaging:inmemory-messaging-impl')
     integrationTestRuntimeOnly project(':libs:serialization:serialization-checkpoint-api')
@@ -74,4 +82,16 @@ def integrationTestResources = tasks.named('processIntegrationTestResources', Pr
 
 tasks.named('testingBundle', Bundle) {
     dependsOn integrationTestResources
+}
+
+def jar = tasks.named('jar', Jar) {
+    archiveBaseName = 'corda-flow-service'
+
+    bundle {
+        bnd """\
+Import-Package:\
+    org.apache.avro.specific,\
+    *
+"""
+    }
 }

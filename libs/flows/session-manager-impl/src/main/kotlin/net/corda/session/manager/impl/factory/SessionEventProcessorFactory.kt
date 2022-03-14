@@ -48,7 +48,7 @@ class SessionEventProcessorFactory {
             is SessionData -> SessionDataProcessorReceive(key, sessionState, sessionEvent, instant)
             is SessionClose -> SessionCloseProcessorReceive(key, sessionState, sessionEvent, instant)
             is SessionError -> SessionErrorProcessorReceive(key, sessionState, sessionEvent, payload.errorMessage, instant)
-            is SessionAck -> SessionAckProcessorReceive(key, sessionState, sessionEvent.sessionId, payload.sequenceNum, instant)
+            is SessionAck -> SessionAckProcessorReceive(key, sessionState, sessionEvent, instant)
             else -> throw NotImplementedError(
                 "The session event type '${payload.javaClass.name}' is not supported."
             )

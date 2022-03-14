@@ -60,7 +60,7 @@ class SessionDataProcessorSend(
                     sendEventsState.undeliveredMessages =
                         sendEventsState.undeliveredMessages.plus(
                             generateErrorEvent(
-                                sessionId,
+                                sessionState,
                                 errorMessage,
                                 "SessionData-InvalidStatus",
                                 instant

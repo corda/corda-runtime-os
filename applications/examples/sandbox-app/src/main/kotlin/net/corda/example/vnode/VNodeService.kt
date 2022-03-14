@@ -1,6 +1,6 @@
 package net.corda.example.vnode
 
-import net.corda.flow.manager.FlowSandboxService
+import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.VirtualNodeLoader
@@ -36,11 +36,11 @@ class VNodeServiceImpl @Activate constructor(
     }
 
     override fun unloadVirtualNode(virtualNodeInfo: VirtualNodeInfo) {
-        val cpi = cpiLoader.get(virtualNodeInfo.cpiIdentifier).get()
+        val cpi = cpiLoader.getCpiMetadata(virtualNodeInfo.cpiIdentifier).get()
             ?: throw IllegalStateException("No such CPI ${virtualNodeInfo.cpiIdentifier}")
         virtualNodeLoader.unloadVirtualNode(virtualNodeInfo)
         virtualNodeLoader.forgetCPI(cpi.id)
-        cpiLoader.unloadCPI(cpi.id)
+        cpiLoader.removeCpiMetadata(cpi.id)
     }
 
     override fun getOrCreateSandbox(holdingIdentity: HoldingIdentity): SandboxGroupContext {

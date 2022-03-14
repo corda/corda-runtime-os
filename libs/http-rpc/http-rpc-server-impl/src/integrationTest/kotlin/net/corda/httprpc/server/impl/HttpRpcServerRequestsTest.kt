@@ -69,6 +69,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
     fun reset() {
         CustomUnsafeString.flag = false
         CustomNonSerializableString.flag = false
+        securityManager.forgetChecks()
     }
 
     @Test
@@ -154,9 +155,13 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
     @Test
     fun `GET hello2 name returns string greeting name`() {
 
-        val helloResponse = client.call(GET, WebRequest<Any>("health/hello2/pathString?id=id"), userName, password)
+        val fullUrl = "health/hello2/pathString?id=id"
+        val helloResponse = client.call(GET, WebRequest<Any>(fullUrl), userName, password)
         assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
         assertEquals(""""Hello queryParam: id, pathParam : pathString"""", helloResponse.body)
+
+        // Check full URL received by the Security Manager
+        assertThat(securityManager.checksExecuted.map { it.action }).hasSize(1).allMatch { it.contains(fullUrl) }
     }
 
     @Test

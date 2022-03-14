@@ -51,14 +51,9 @@ dependencies {
     integrationTestRuntimeOnly "com.lmax:disruptor:$disruptorVersion"
 }
 
-sourceSets {
-    integrationTest {
-        compileClasspath += main.output + test.output
-        runtimeClasspath += main.output + test.output
+tasks.named('integrationTest', Test) {
+    doFirst {
+        def hostsFilePath = file("${sourceSets.integrationTest.output.resourcesDir}/hosts").absolutePath
+        systemProperty 'jdk.net.hosts.file', hostsFilePath
     }
-}
-
-tasks.named('integrationTest') {
-    final String hostsFilePath = new File(project.sourceSets["integrationTest"].output.resourcesDir.absolutePath, "hosts").absolutePath
-    jvmArgs "-Djdk.net.hosts.file=$hostsFilePath"
 }

@@ -16,6 +16,7 @@ plugins {
     id 'org.jetbrains.kotlin.plugin.jpa' apply false
     id 'io.gitlab.arturbosch.detekt' apply false
     id 'biz.aQute.bnd.builder' apply false
+    id "org.gradle.test-retry" apply false
     id 'idea'
     id 'application'
     id 'net.corda.cordapp.cordapp-configuration'
@@ -50,6 +51,7 @@ allprojects {
     }
 
     apply plugin: 'org.jetbrains.kotlin.jvm'
+    apply plugin: "org.gradle.test-retry" 
 
     tasks.withType(JavaCompile).configureEach {
         options.encoding = 'UTF-8'
@@ -85,6 +87,13 @@ allprojects {
 
         doFirst {
             systemProperty 'java.io.tmpdir', buildDir.absolutePath
+        }
+
+        retry {
+            if (System.getenv().containsKey("JENKINS_URL")) {
+                maxRetries = 2
+                maxFailures = 10
+            }
         }
     }
 
