@@ -50,7 +50,7 @@ class CpkChunksKafkaReader(
         val chunk = newRecord.value
         chunk?.let {
             writeChunkFile(chunkId, it)
-        } ?: logger.warn("Skipping writing for null CPK chunk: ${chunkId.cpkChecksum} : ${chunkId.cpkChunkPartNumber}")
+        } ?: logger.warn("Skipping writing to disk cache for null CPK chunk: ${chunkId.cpkChecksum} : ${chunkId.cpkChunkPartNumber}")
     }
 
     @VisibleForTesting
@@ -60,7 +60,7 @@ class CpkChunksKafkaReader(
             cpkChunksFileManager.writeChunkFile(chunkId, chunk)
         } else {
             logger.info(
-                "Skipped writing CPK chunk to disk as it already exists: " +
+                "Skipped writing CPK chunk to disk cache as it already exists: " +
                         "${cpkChunkFileLookUp.path}"
             )
         }
