@@ -5,6 +5,7 @@ import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.httprpc.annotations.RPCSinceVersion
+import net.corda.httprpc.annotations.isRpcEndpointAnnotation
 import net.corda.httprpc.client.auth.RequestContext
 import net.corda.httprpc.client.config.AuthenticationConfig
 import net.corda.httprpc.client.connect.remote.RemoteClient
@@ -69,10 +70,9 @@ internal class HttpRpcClientProxyHandler<I : RpcOps>(
         log.trace { """Invoke "${method.name}".""" }
         val isExemptFromChecks = staticExposedGetMethods.any { it.equals(method.name, true) }
         if (!isExemptFromChecks) {
-            if (method.annotations.none { it is HttpRpcGET || it is HttpRpcPOST }) {
+            if (method.annotations.none { it.isRpcEndpointAnnotation() }) {
                 throw UnsupportedOperationException(
-                    "Http RPC proxy can not make remote calls for functions not annotated with HttpRpcGET," +
-                            " HttpRpcPOST or known as implicitly exposed."
+                    "Http RPC proxy can not make remote calls for functions not annotated or known as implicitly exposed."
                 )
             }
 
@@ -106,14 +106,14 @@ internal class HttpRpcClientProxyHandler<I : RpcOps>(
 
     private val Method.endpointPath: String?
         get() =
-            this.annotations.singleOrNull { it is HttpRpcPOST || it is HttpRpcGET }.let {
+            this.annotations.singleOrNull { it.isRpcEndpointAnnotation() }.let {
                 when (it) {
                     is HttpRpcGET -> it.path(this)
                     is HttpRpcPOST -> it.path()
                     else -> if (staticExposedGetMethods.contains(this.name)) {
                         this.name
                     } else {
-                        throw IllegalArgumentException("Unknown endpoint path")
+                        throw IllegalArgumentException("Unknown endpoint path for: '$name'")
                     }
                 }
             }

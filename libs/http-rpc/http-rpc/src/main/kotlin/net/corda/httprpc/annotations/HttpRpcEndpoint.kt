@@ -46,3 +46,7 @@ annotation class HttpRpcGET(
     val description: String = "",
     val responseDescription: String = ""
 )
+
+fun Annotation.isRpcEndpointAnnotation(): Boolean {
+    return this.annotationClass.annotations.any { it is HttpRpcEndpoint }
+}
