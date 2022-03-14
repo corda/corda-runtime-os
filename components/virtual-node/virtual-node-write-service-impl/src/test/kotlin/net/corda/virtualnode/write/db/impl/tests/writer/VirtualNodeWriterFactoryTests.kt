@@ -23,6 +23,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import javax.persistence.EntityManagerFactory
 
 /** Tests of [VirtualNodeWriterFactory]. */
 class VirtualNodeWriterFactoryTests {
@@ -41,6 +42,7 @@ class VirtualNodeWriterFactoryTests {
     /** Returns a mock [DbConnectionManager]. */
     private fun getDbConnectionManager() = mock<DbConnectionManager>().apply {
         whenever(clusterConfig).thenReturn(mock<SmartConfig>())
+        whenever(getClusterEntityManagerFactory()).thenReturn(mock<EntityManagerFactory>())
     }
 
     @Test

@@ -36,5 +36,11 @@ dependencies {
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation 'org.slf4j:slf4j-api'
 
+    testImplementation project(':libs:db:db-orm-impl')
+    testImplementation project(':testing:db-testkit')
+
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    testRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+    testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 }
