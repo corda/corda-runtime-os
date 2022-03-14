@@ -3,7 +3,12 @@ package net.corda.crypto.client.impl
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.client.CryptoOpsProxyClient
+import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.config.HSMInfo
+import net.corda.data.crypto.wire.CryptoPublicKey
+import net.corda.data.crypto.wire.CryptoPublicKeys
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.ops.rpc.HSMKeyDetails
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
@@ -20,11 +25,12 @@ import net.corda.v5.crypto.SignatureSpec
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.util.UUID
 
 @Suppress("TooManyFunctions")
-@Component(service = [CryptoOpsClient::class])
+@Component(service = [CryptoOpsClient::class, CryptoOpsProxyClient::class])
 class CryptoOpsClientComponent @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
@@ -38,7 +44,7 @@ class CryptoOpsClientComponent @Activate constructor(
     coordinatorFactory,
     LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
     configurationReadService,
-), CryptoOpsClient {
+), CryptoOpsClient, CryptoOpsProxyClient {
     companion object {
         const val CLIENT_ID = "crypto.ops.rpc"
         const val GROUP_NAME = "crypto.ops.rpc"
@@ -107,6 +113,23 @@ class CryptoOpsClientComponent @Activate constructor(
 
     override fun findHSM(tenantId: String, category: String): HSMInfo? =
         resources.instance.findHSM(tenantId, category)
+
+    override fun filterMyKeysProxy(tenantId: String, candidateKeys: Iterable<ByteBuffer>): CryptoPublicKeys =
+        resources.instance.filterMyKeysProxy(tenantId, candidateKeys)
+
+    override fun freshKeyProxy(tenantId: String, context: KeyValuePairList): CryptoPublicKey =
+        resources.instance.freshKeyProxy(tenantId, context)
+
+    override fun freshKeyProxy(tenantId: String, externalId: UUID, context: KeyValuePairList): CryptoPublicKey =
+        resources.instance.freshKeyProxy(tenantId, externalId, context)
+
+    override fun signProxy(
+        tenantId: String,
+        publicKey: ByteBuffer,
+        data: ByteBuffer,
+        context: KeyValuePairList
+    ): CryptoSignatureWithKey =
+        resources.instance.signProxy(tenantId, publicKey, data, context)
 
     override fun allocateResources(event: ConfigChangedEvent): Resources {
         logger.info("Creating ${Resources::class.java.name}")

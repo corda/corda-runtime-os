@@ -13,7 +13,7 @@ import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.crypto.wire.ops.flow.GenerateFreshKeyFlowCommand
 import net.corda.data.crypto.wire.ops.flow.SignFlowCommand
 import net.corda.data.crypto.wire.ops.flow.SignWithSpecFlowCommand
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigitalSignature
 import java.nio.ByteBuffer
 import java.security.PublicKey
@@ -22,14 +22,28 @@ import java.util.UUID
 
 /**
  * The crypto operations client to generate messages for flows.
+ *
+ * @property requestingComponent Name of the component which request the operation,
+ * mostly used for logging and monitoring.
+ *
+ * @property responseTopic - name of the topic where to send the replies to.
+ *
+ * @property keyEncodingService - service which is used to encode/decode public keys.
+ *
+ * @property requestValidityWindowSeconds - TTL for the message processing in seconds,
+ * the default value is equal to 5 minutes.
  */
 @Suppress("TooManyFunctions")
 class CryptoFlowOpsTransformer(
     private val requestingComponent: String,
-    private val schemeMetadata: CipherSchemeMetadata
+    private val responseTopic: String,
+    private val keyEncodingService: KeyEncodingService,
+    private val requestValidityWindowSeconds: Long = 300
 ) {
     companion object {
         const val REQUEST_OP_KEY = "req.op"
+        const val REQUEST_TTL_KEY = "req.ttl"
+        const val RESPONSE_TOPIC = "req.resp.topic"
         const val RESPONSE_ERROR_KEY = "res.err"
         val EMPTY_CONTEXT = emptyMap<String, String>()
     }
@@ -42,7 +56,7 @@ class CryptoFlowOpsTransformer(
             tenantId = tenantId,
             request = FilterMyKeysFlowQuery(
                 candidateKeys.map {
-                    ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(it))
+                    ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(it))
                 }
             )
         )
@@ -87,7 +101,7 @@ class CryptoFlowOpsTransformer(
         return createRequest(
             tenantId,
             SignFlowCommand(
-                ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
+                ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(publicKey)),
                 ByteBuffer.wrap(data),
                 context.toWire()
             )
@@ -123,9 +137,15 @@ class CryptoFlowOpsTransformer(
      * or the response is not one of
      * [CryptoPublicKey], [CryptoPublicKeys], [CryptoSignatureWithKey]
      *
-     * @throws [IllegalStateException]  if the response contains error.
+     * @throws [IllegalStateException]  if the response contains error or its TTL is greater than expected.
      */
     fun transform(response: FlowOpsResponse): Any {
+        val ttl = response.getContextValue(REQUEST_TTL_KEY)?.toLong() ?: 300
+        val expireAt = response.context.requestTimestamp.plusSeconds(ttl)
+        val now = Instant.now()
+        if (now >= expireAt) {
+            throw IllegalStateException("Response is no longer valid, expired at $expireAt")
+        }
         return when (inferRequestType(response)) {
             SignWithSpecFlowCommand::class.java -> transformCryptoSignatureWithKey(response)
             SignFlowCommand::class.java -> transformCryptoSignatureWithKey(response)
@@ -141,7 +161,7 @@ class CryptoFlowOpsTransformer(
      */
     private fun transformCryptoPublicKey(response: FlowOpsResponse): PublicKey {
         val resp = response.validateAndGet<CryptoPublicKey>()
-        return schemeMetadata.decodePublicKey(resp.key.array())
+        return keyEncodingService.decodePublicKey(resp.key.array())
     }
 
     /**
@@ -150,7 +170,7 @@ class CryptoFlowOpsTransformer(
     private fun transformCryptoPublicKeys(response: FlowOpsResponse): List<PublicKey> {
         val resp = response.validateAndGet<CryptoPublicKeys>()
         return resp.keys.map {
-            schemeMetadata.decodePublicKey(it.array())
+            keyEncodingService.decodePublicKey(it.array())
         }
     }
 
@@ -160,7 +180,7 @@ class CryptoFlowOpsTransformer(
     private fun transformCryptoSignatureWithKey(response: FlowOpsResponse): DigitalSignature.WithKey {
         val resp = response.validateAndGet<CryptoSignatureWithKey>()
         return DigitalSignature.WithKey(
-            by = schemeMetadata.decodePublicKey(resp.publicKey.array()),
+            by = keyEncodingService.decodePublicKey(resp.publicKey.array()),
             bytes = resp.bytes.array()
         )
     }
@@ -187,7 +207,11 @@ class CryptoFlowOpsTransformer(
             UUID.randomUUID().toString(),
             tenantId,
             KeyValuePairList(
-                listOf(KeyValuePair(REQUEST_OP_KEY, request::class.java.simpleName))
+                listOf(
+                    KeyValuePair(REQUEST_OP_KEY, request::class.java.simpleName),
+                    KeyValuePair(RESPONSE_TOPIC, responseTopic),
+                    KeyValuePair(REQUEST_TTL_KEY, requestValidityWindowSeconds.toString())
+                )
             )
         )
     }

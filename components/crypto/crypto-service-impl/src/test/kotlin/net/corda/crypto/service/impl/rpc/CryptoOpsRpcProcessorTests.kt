@@ -44,7 +44,6 @@ import org.hamcrest.Matchers.allOf
 import org.hamcrest.Matchers.greaterThanOrEqualTo
 import org.hamcrest.Matchers.lessThanOrEqualTo
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import java.nio.ByteBuffer
@@ -61,7 +60,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-class SigningServiceRpcProcessorTests {
+class CryptoOpsRpcProcessorTests {
     private class SigningServiceWrapper(private val impl: SigningService) : SigningService by impl {
         companion object {
             val recordedContexts = ConcurrentHashMap<String, Map<String, String>>()
@@ -176,7 +175,7 @@ class SigningServiceRpcProcessorTests {
     private lateinit var verifier: SignatureVerificationService
     private lateinit var processor: CryptoOpsRpcProcessor
 
-    fun setup(category: String, schemeCode: String = ECDSA_SECP256R1_CODE_NAME) {
+    private fun setup(category: String, schemeCode: String = ECDSA_SECP256R1_CODE_NAME) {
         factory = CryptoServicesTestFactory()
         services = factory.createCryptoServices(
             category = category
@@ -228,7 +227,6 @@ class SigningServiceRpcProcessorTests {
     }
 
     @Test
-    @Timeout(10)
     fun `Should return CryptoNoContentValue for unknown key alias`() {
         setup(category = CryptoConsts.Categories.LEDGER)
         val alias = newAlias()
@@ -248,7 +246,6 @@ class SigningServiceRpcProcessorTests {
     }
 
     @Test
-    @Timeout(10)
     fun `Should filer my keys`() {
         setup(category = CryptoConsts.Categories.LEDGER)
         val context = createRequestContext()
@@ -276,7 +273,6 @@ class SigningServiceRpcProcessorTests {
     }
 
     @Test
-    @Timeout(10)
     fun `Should generate key pair and be able to find and then sign using default and custom schemes`() {
         setup(category = CryptoConsts.Categories.LEDGER)
         val data = UUID.randomUUID().toString().toByteArray()
@@ -332,7 +328,6 @@ class SigningServiceRpcProcessorTests {
     }
 
     @Test
-    @Timeout(10)
     fun `Should generate key pair and be able to find and then sign custom signature params`() {
         setup(category = CryptoConsts.Categories.TLS, schemeCode = RSA_CODE_NAME)
         val data = UUID.randomUUID().toString().toByteArray()
@@ -446,7 +441,6 @@ class SigningServiceRpcProcessorTests {
     }
 
     @Test
-    @Timeout(10)
     fun `Should generate fresh key pair without external id and be able to sign using default and custom schemes`() {
         setup(category = CryptoConsts.Categories.LEDGER)
         val data = UUID.randomUUID().toString().toByteArray()
@@ -485,7 +479,6 @@ class SigningServiceRpcProcessorTests {
     }
 
     @Test
-    @Timeout(10)
     fun `Should generate fresh key pair with external id and be able to sign using default and custom schemes`() {
         setup(category = CryptoConsts.Categories.LEDGER)
         val data = UUID.randomUUID().toString().toByteArray()
@@ -525,7 +518,6 @@ class SigningServiceRpcProcessorTests {
     }
 
     @Test
-    @Timeout(10)
     fun `Should complete future exceptionally in case of service failure`() {
         setup(category = CryptoConsts.Categories.LEDGER)
         val data = UUID.randomUUID().toString().toByteArray()
@@ -587,7 +579,6 @@ class SigningServiceRpcProcessorTests {
     }
 
     @Test
-    @Timeout(10)
     fun `Should complete future exceptionally in case of unknown request`() {
         setup(category = CryptoConsts.Categories.LEDGER)
         val context = createRequestContext()
@@ -613,7 +604,6 @@ class SigningServiceRpcProcessorTests {
     }
 
     @Test
-    @Timeout(10)
     fun `Should return all supported scheme codes`() {
         setup(category = CryptoConsts.Categories.LEDGER)
         val context = createRequestContext()
@@ -641,7 +631,6 @@ class SigningServiceRpcProcessorTests {
     }
 
     @Test
-    @Timeout(10)
     fun `Should return all supported scheme codes for fresh keys`() {
         setup(category = CryptoConsts.Categories.FRESH_KEYS)
         val context = createRequestContext()

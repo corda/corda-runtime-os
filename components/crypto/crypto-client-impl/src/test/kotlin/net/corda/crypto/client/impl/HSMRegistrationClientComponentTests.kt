@@ -22,7 +22,6 @@ import org.hamcrest.core.IsInstanceOf
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Timeout
 import org.mockito.kotlin.any
 import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.doReturn
@@ -77,7 +76,6 @@ class HSMRegistrationClientComponentTests : ComponentTestsBase<HSMRegistrationCl
     }
 
     @Test
-    @Timeout(5)
     fun `Should publish command to add HSM configuration`() {
         val config = HSMConfig(
             HSMInfo(
@@ -114,7 +112,6 @@ class HSMRegistrationClientComponentTests : ComponentTestsBase<HSMRegistrationCl
     }
 
     @Test
-    @Timeout(5)
     fun `Should publish command to assign HSM`() {
         val result = publisher.act {
             component.assignHSM(
@@ -140,7 +137,6 @@ class HSMRegistrationClientComponentTests : ComponentTestsBase<HSMRegistrationCl
     }
 
     @Test
-    @Timeout(5)
     fun `Should publish command to assign Soft HSM`() {
         val result = publisher.act {
             component.assignSoftHSM(
@@ -168,7 +164,6 @@ class HSMRegistrationClientComponentTests : ComponentTestsBase<HSMRegistrationCl
     }
 
     @Test
-    @Timeout(5)
     fun `Should cleanup created resources when component is stopped`() {
         component.stop()
         Assertions.assertFalse(component.isRunning)
