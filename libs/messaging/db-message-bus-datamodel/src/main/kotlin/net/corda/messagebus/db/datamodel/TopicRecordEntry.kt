@@ -52,3 +52,5 @@ data class TopicRecordEntryKey(
     val partition: Int,
     val recordOffset: Long,
 ): Serializable
+
+data class TopicRecordResult(val topic: String, val partition: Int, val offset: Long)

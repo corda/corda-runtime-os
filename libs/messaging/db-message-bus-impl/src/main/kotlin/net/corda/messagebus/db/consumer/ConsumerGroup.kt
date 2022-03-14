@@ -1,6 +1,7 @@
 package net.corda.messagebus.db.consumer
 
 import net.corda.messagebus.api.CordaTopicPartition
+import net.corda.messagebus.api.configuration.ConfigProperties
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
@@ -11,12 +12,18 @@ class ConsumerGroup(
     private val groupId: String,
     private val dbAccess: DBAccess,
 ) {
+
+    companion object {
+        const val NULL_GROUP_ID = "NULL"
+    }
+
     private val lock: ReentrantReadWriteLock = ReentrantReadWriteLock()
     private val topicPartitions: MutableMap<String, MutableSet<CordaTopicPartition>> = mutableMapOf()
     private val consumerMap: MutableMap<String, MutableSet<CordaConsumer<*, *>>> = mutableMapOf()
     private val partitionsPerConsumer: MutableMap<Int, MutableSet<CordaTopicPartition>> = mutableMapOf()
 
     fun getTopicPartitionsFor(consumer: CordaConsumer<*, *>): Set<CordaTopicPartition> {
+        verifyValid()
         return partitionsPerConsumer[consumer.hashCode()]
             ?: throw CordaMessageAPIFatalException("Consumer not part of consumer group $groupId")
     }
@@ -29,6 +36,7 @@ class ConsumerGroup(
         consumer: CordaConsumer<*, *>,
         topics: Collection<String>,
     ) {
+        verifyValid()
         topics.forEach { topic ->
             buildTopicPartitionsFor(topic)
             getConsumersFor(topic).add(consumer)
@@ -64,6 +72,12 @@ class ConsumerGroup(
             repeat(numPartitions) { partition ->
                 topicPartitions.computeIfAbsent(this.topic) { mutableSetOf() }.add(CordaTopicPartition(topic, partition))
             }
+        }
+    }
+
+    private fun verifyValid() {
+        if (groupId == NULL_GROUP_ID) {
+            throw CordaMessageAPIFatalException("Cannot subscribe when '${ConfigProperties.GROUP_ID}' is not configured.")
         }
     }
 }

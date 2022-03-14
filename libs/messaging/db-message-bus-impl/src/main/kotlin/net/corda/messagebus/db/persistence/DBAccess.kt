@@ -4,6 +4,7 @@ import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.db.datamodel.CommittedPositionEntry
 import net.corda.messagebus.db.datamodel.TopicEntry
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
+import net.corda.messagebus.db.datamodel.TopicRecordResult
 import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.orm.utils.transaction
@@ -61,10 +62,8 @@ class DBAccess(
         val maxOffsetsPerTopic = mutableMapOf<CordaTopicPartition, Long>()
 
         executeWithErrorHandling("retrieve max offsets per topic") { entityManager ->
-            data class Result(val topic: String, val partition: Int, val offset: Long)
-
             val builder = entityManager.criteriaBuilder
-            val select = builder.createQuery(Result::class.java)
+            val select = builder.createQuery(TopicRecordResult::class.java)
             val root = select.from(TopicRecordEntry::class.java)
             select.multiselect(
                 root.get<String>(TopicRecordEntry::topic.name),
@@ -167,8 +166,20 @@ class DBAccess(
         }
     }
 
+    /**
+     * Special case for writing Atomic Txn Record. We check first if it's in the database as this isn't
+     * an error for this one txn record
+     */
+    fun writeAtomicTransactionRecord(entry: TransactionRecordEntry) {
+        executeWithErrorHandling("write transaction record $entry") { entityManager ->
+            if (entityManager.find(TransactionRecordEntry::class.java, entry.transactionId) == null) {
+                entityManager.persist(entry)
+            }
+        }
+    }
+
     fun writeTransactionRecord(entry: TransactionRecordEntry) {
-        executeWithErrorHandling("write transaction records") { entityManager ->
+        executeWithErrorHandling("write transaction record $entry") { entityManager ->
             entityManager.persist(entry)
         }
     }
@@ -208,7 +219,7 @@ class DBAccess(
                     FROM topic_record 
                     WHERE ${TopicRecordEntry::topic.name} = '${topicPartition.topic}'
                     AND ${TopicRecordEntry::partition.name} = ${topicPartition.partition}
-                    AND ${TopicRecordEntry::recordOffset.name} > $fromOffset
+                    AND ${TopicRecordEntry::recordOffset.name} >= $fromOffset
                     ORDER BY ${TopicRecordEntry::recordOffset.name}
                     """,
                 TopicRecordEntry::class.java

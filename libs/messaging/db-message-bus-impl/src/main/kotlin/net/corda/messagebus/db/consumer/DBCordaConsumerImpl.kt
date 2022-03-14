@@ -14,15 +14,18 @@ import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.producer.CordaAtomicDBProducerImpl.Companion.ATOMIC_TRANSACTION
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.v5.base.types.toHexString
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.write
 
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
     private val consumerConfig: Config,
     private val dbAccess: DBAccess,
-    private val consumerGroup: ConsumerGroup?,
+    private val consumerGroup: ConsumerGroup,
     private val keyDeserializer: CordaAvroDeserializer<K>,
     private val valueDeserializer: CordaAvroDeserializer<V>,
     private var defaultListener: CordaConsumerRebalanceListener?,
@@ -51,11 +54,10 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
     private val partitionListeners = mutableMapOf<String, CordaConsumerRebalanceListener?>()
     private val lastReadOffset = mutableMapOf<CordaTopicPartition, Long>()
 
+    private val lock: ReentrantReadWriteLock = ReentrantReadWriteLock()
+
     override fun subscribe(topics: Collection<String>, listener: CordaConsumerRebalanceListener?) {
         checkNotAssigned()
-        if (consumerGroup == null) {
-            throw CordaMessageAPIFatalException("Cannot subscribe when '${ConfigProperties.GROUP_ID}' is not configured.")
-        }
         consumerGroup.subscribe(this, topics)
         topics.forEach { partitionListeners[it] = listener }
         subscriptionType = SubscriptionType.SUBSCRIBED
@@ -68,6 +70,9 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
     override fun assign(partitions: Collection<CordaTopicPartition>) {
         checkNotSubscribed()
         topicPartitions = partitions.toSet()
+        dbAccess.getMaxCommittedPositions(groupId, topicPartitions).forEach { (topicPartition, offset) ->
+            lastReadOffset[topicPartition] = offset ?: getAutoResetOffset(topicPartition)
+        }
         subscriptionType = SubscriptionType.ASSIGNED
     }
 
@@ -75,7 +80,7 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
         return topicPartitions
     }
 
-    private fun getAutoResetOffset(partition:CordaTopicPartition): Long {
+    private fun getAutoResetOffset(partition: CordaTopicPartition): Long {
         return when (autoResetStrategy) {
             CordaOffsetResetStrategy.EARLIEST -> beginningOffsets(setOf(partition)).values.single()
             CordaOffsetResetStrategy.LATEST -> endOffsets(setOf(partition)).values.single()
@@ -135,7 +140,8 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
 
         val result = dbRecords.takeWhile {
             it.transactionId.state == TransactionState.COMMITTED
-        }.map { dbRecord ->
+        }.also { if (it.isNotEmpty()) println("There are ${it.size} records")  }.map { dbRecord ->
+            println(dbRecord.value?.toHexString())
             CordaConsumerRecord(
                 dbRecord.topic,
                 dbRecord.partition,
@@ -145,7 +151,9 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
                 dbRecord.timestamp.toEpochMilli()
             )
         }
-        seek(topicPartition, result.last().offset + 1)
+        if (result.isNotEmpty()) {
+            seek(topicPartition, result.last().offset + 1)
+        }
         return result
     }
 
@@ -172,7 +180,10 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
     }
 
     override fun getPartitions(topic: String, timeout: Duration): List<CordaTopicPartition> {
-        return topicPartitions.filter { it.topic == topic }
+        val topicEntry = dbAccess.getTopicPartitionMapFor(topic)
+        return (0..topicEntry.numPartitions).map {
+            CordaTopicPartition(topic, it)
+        }
     }
 
     override fun close(timeout: Duration) {
@@ -191,8 +202,7 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
     internal fun getConsumerGroup(): String = groupId
 
     private fun updateTopicPartitions() {
-        if (consumerGroup == null) {
-            // No consumer group means no rebalancing
+        if (subscriptionType == SubscriptionType.ASSIGNED) {
             return
         }
 
@@ -238,11 +248,15 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
     internal fun getNextTopicPartition(): CordaTopicPartition? {
         updateTopicPartitions()
 
-        fun nextPartition() = if (!currentTopicPartition.hasNext()) {
-            currentTopicPartition = topicPartitions.iterator()
-            currentTopicPartition.next()
-        } else {
-            currentTopicPartition.next()
+        fun nextPartition(): CordaTopicPartition {
+            lock.write {
+                return if (!currentTopicPartition.hasNext()) {
+                    currentTopicPartition = topicPartitions.iterator()
+                    currentTopicPartition.next()
+                } else {
+                    currentTopicPartition.next()
+                }
+            }
         }
 
         val first = nextPartition()
@@ -263,7 +277,11 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
     }
 
     private fun deserializeValue(bytes: ByteArray?): V? {
-        return if (bytes != null) { valueDeserializer.deserialize(bytes) } else { null }
+        return if (bytes != null) {
+            valueDeserializer.deserialize(bytes)
+        } else {
+            null
+        }
     }
 
     private fun checkNotSubscribed() {

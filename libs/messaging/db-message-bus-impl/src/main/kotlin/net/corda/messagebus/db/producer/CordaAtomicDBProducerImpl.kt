@@ -33,7 +33,7 @@ class CordaAtomicDBProducerImpl(
     private fun initialiseWithAtomicTransaction() {
         try {
             // Write the transaction record for all atomic transactions
-            dbAccess.writeTransactionRecord(ATOMIC_TRANSACTION)
+            dbAccess.writeAtomicTransactionRecord(ATOMIC_TRANSACTION)
         } catch (e: RollbackException) {
             log.debug { "ATOMIC_TRANSACTION already recorded in DB." }
             // It's already been written so do nothing
