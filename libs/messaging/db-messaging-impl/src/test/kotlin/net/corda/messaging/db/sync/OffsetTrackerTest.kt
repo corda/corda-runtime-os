@@ -8,12 +8,25 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.mock
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ScheduledFuture
 
 class OffsetTrackerTest {
 
-    private val offsetTracker = OffsetTracker("test.topic", 3, 1, Executors.newSingleThreadScheduledExecutor(), 10.millis)
+    private var backgroundTask: Runnable? = null
+    private val offsetTrackerBackgroundExecutor = mock<ScheduledExecutorService>{
+        on { scheduleWithFixedDelay(any(), any(), any(), any()) }  doAnswer {
+            backgroundTask = it.arguments[0] as Runnable
+            mock()
+        }
+    }
+
+    private val offsetTracker = OffsetTracker("test.topic", 3, 1, offsetTrackerBackgroundExecutor, 10.millis)
 
     private val executorService = Executors.newFixedThreadPool(10)
 
@@ -96,9 +109,11 @@ class OffsetTrackerTest {
         val offsets = (1..1_000).map { offsetTracker.getNextOffset() }.shuffled()
         val maxOffset = offsets.maxOrNull()!!
 
-        for (offset in offsets) {
+        offsets.map { offset ->
             executorService.submit { offsetTracker.offsetReleased(offset) }
-        }
+        }.map { it.get() }
+        // simulate execution of the background task
+        backgroundTask!!.run()
 
         assertTrue(offsetTracker.waitForOffset(maxOffset, 250.millis))
         assertThat(offsetTracker.maxVisibleOffset()).isEqualTo(maxOffset)
