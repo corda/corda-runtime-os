@@ -23,7 +23,6 @@ import net.corda.p2p.crypto.util.hash
 import net.corda.p2p.crypto.util.perform
 import net.corda.p2p.crypto.util.verify
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SignatureSpec
 import java.nio.ByteBuffer
 import java.security.PublicKey
@@ -54,10 +53,6 @@ import kotlin.math.min
 class AuthenticationProtocolResponder(val sessionId: String,
                                       private val supportedModes: Set<ProtocolMode>,
                                       private val ourMaxMessageSize: Int): AuthenticationProtocol() {
-
-    companion object {
-        val logger = contextLogger()
-    }
 
     init {
         require(supportedModes.isNotEmpty()) { "At least one supported mode must be provided." }
@@ -155,7 +150,6 @@ class AuthenticationProtocolResponder(val sessionId: String,
                     initiatorHandshakeMessage.encryptedData.array(),
                     sharedHandshakeSecrets!!.initiatorEncryptionKey)
             } catch (e: AEADBadTagException) {
-                logger.error("Exception in Crypto Library:", e)
                 throw InvalidHandshakeMessageException()
             }
 

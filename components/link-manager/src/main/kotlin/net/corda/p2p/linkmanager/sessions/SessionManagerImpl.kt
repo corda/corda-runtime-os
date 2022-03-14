@@ -162,6 +162,7 @@ open class SessionManagerImpl(
             dominoTile.withLifecycleWriteLock {
                 config.set(newConfiguration)
                 if (oldConfiguration != null) {
+                    logger.info("The Session Manager got new config. All sessions will be cleaned up.")
                     sessionReplayer.removeAllMessagesFromReplay()
                     heartbeatManager.stopTrackingAllSessions()
                     val tombstoneRecords = (outboundSessionPool.getAllSessionIds() + activeInboundSessions.keys
@@ -265,9 +266,8 @@ open class SessionManagerImpl(
             sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId(sessionId), counterparties)
             sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId(sessionId), counterparties)
             val sessionInitMessage = genSessionInitMessages(counterparties, 1)
-            val timedOut = outboundSessionPool.replaceSession(sessionId, sessionInitMessage.single().first)
-            if (!timedOut) {
-                logger.warn("Session with id $sessionId which is not in the pool timed out.")
+            if (!outboundSessionPool.replaceSession(sessionId, sessionInitMessage.single().first)) {
+                //If the session was not replaced do not send a initiatorHello
                 return
             }
             val records = linkOutMessagesFromSessionInitMessages(counterparties, sessionInitMessage) ?.let {
@@ -311,7 +311,7 @@ open class SessionManagerImpl(
 
         val sessionManagerConfig = config.get()
         val messagesAndProtocol = mutableListOf<Pair<AuthenticationProtocolInitiator, InitiatorHelloMessage>>()
-        for (i in 0 until multiplicity) {
+        (1..multiplicity).map {
             val sessionId = UUID.randomUUID().toString()
             val session = protocolFactory.createInitiator(
                 sessionId,
@@ -319,9 +319,6 @@ open class SessionManagerImpl(
                 sessionManagerConfig.maxMessageSize,
                 ourMemberInfo.publicKey,
                 ourMemberInfo.holdingIdentity.groupId
-            )
-            logger.info("Local identity (${counterparties.ourId}) initiating new session $sessionId with remote identity " +
-                "${counterparties.counterpartyId}"
             )
             messagesAndProtocol.add(Pair(session, session.generateInitiatorHello()))
         }
@@ -333,7 +330,7 @@ open class SessionManagerImpl(
         messages: List<Pair<AuthenticationProtocolInitiator, InitiatorHelloMessage>>
     ): List<Pair<String, LinkOutMessage>>? {
         val sessionIds = messages.map { it.first.sessionId }
-        logger.info("Local identity (${counterparties.ourId}) initiating new sessions with Id's $sessionIds with remote identity " +
+        logger.info("Local identity (${counterparties.ourId}) initiating new sessions with Ids $sessionIds with remote identity " +
             "${counterparties.counterpartyId}"
         )
 
