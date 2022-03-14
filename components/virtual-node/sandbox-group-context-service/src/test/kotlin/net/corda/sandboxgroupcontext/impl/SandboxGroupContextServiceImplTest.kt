@@ -216,7 +216,7 @@ class SandboxGroupContextServiceImplTest {
     }
 
     @Test
-    fun `assert hasCpks works`() {
+    fun `assert hasCpks`() {
         val existingCpks = setOf(
             Helpers.mockTrivialCpk("MAIN1", "apple", "1.0.0"),
             Helpers.mockTrivialCpk("MAIN2", "banana", "2.0.0"),
