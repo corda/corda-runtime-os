@@ -12,6 +12,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.GroupPolicy
 import net.corda.layeredpropertymap.toWire
+import net.corda.membership.exceptions.BadGroupPolicyException
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.MGMContextImpl
 import net.corda.membership.impl.MemberContextImpl
@@ -138,8 +139,9 @@ class StaticMemberRegistrationService @Activate constructor(
     private fun parseMemberTemplate(member: HoldingIdentity): List<Record<String, PersistentMemberInfo>> {
         val members = mutableListOf<Record<String, PersistentMemberInfo>>()
 
-        val policy = groupPolicyProvider.getGroupPolicy(member)
-        if (policy == null) {
+        val policy = try {
+            groupPolicyProvider.getGroupPolicy(member)
+        } catch (e: BadGroupPolicyException) {
             logger.error("Creating empty member list since group policy file could not be found for holding identity.")
             return emptyList()
         }

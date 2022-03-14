@@ -2,6 +2,7 @@ package net.corda.membership.registration.provider
 
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.registration.MemberRegistrationService
+import net.corda.membership.exceptions.RegistrationProtocolSelectionException
 import net.corda.virtualnode.HoldingIdentity
 
 /**
@@ -16,6 +17,8 @@ interface RegistrationProvider : Lifecycle {
      * @param holdingIdentity [HoldingIdentity] of the tenant.
      *
      * @return An instance of [MemberRegistrationService] for the given tenant.
+     *
+     * @throws [RegistrationProtocolSelectionException] when the registration protocol could not be selected.
      */
-    fun get(holdingIdentity: HoldingIdentity): MemberRegistrationService?
+    fun get(holdingIdentity: HoldingIdentity): MemberRegistrationService
 }

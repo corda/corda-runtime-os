@@ -33,6 +33,9 @@ class GroupPolicyProviderImpl @Activate constructor(
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : GroupPolicyProvider {
 
+    /**
+     * Private interface used for implementation swapping in response to lifecycle events.
+     */
     private interface InnerGroupPolicyProvider : AutoCloseable {
         fun getGroupPolicy(holdingIdentity: HoldingIdentity): GroupPolicy
     }
@@ -48,8 +51,7 @@ class GroupPolicyProviderImpl @Activate constructor(
 
     private var impl: InnerGroupPolicyProvider = InactiveImpl()
 
-    override fun getGroupPolicy(holdingIdentity: HoldingIdentity): GroupPolicy =
-        impl.getGroupPolicy(holdingIdentity)
+    override fun getGroupPolicy(holdingIdentity: HoldingIdentity) = impl.getGroupPolicy(holdingIdentity)
 
     override fun start() = coordinator.start()
 
@@ -60,70 +62,50 @@ class GroupPolicyProviderImpl @Activate constructor(
     /**
      * Handle lifecycle events.
      */
-    @Suppress("UNUSED_PARAMETER")
     private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        logger.debug { "Group policy provider received event $event." }
+        logger.info("Group policy provider received event $event.")
         when (event) {
-            is StartEvent -> handleStartEvent(coordinator)
-            is StopEvent -> handleStopEvent(coordinator)
-            is RegistrationStatusChangeEvent -> handleRegistrationChangeEvent(event, coordinator)
-        }
-    }
-
-    /**
-     * Start the component. This includes creating a registration following the component this component needs to
-     * function and setting up the cache map.
-     */
-    private fun handleStartEvent(coordinator: LifecycleCoordinator) {
-        logger.debug { "Group policy provider starting." }
-        startDependencyRegistrationHandle(coordinator)
-    }
-
-    /**
-     * Handle stopping the component. This should set the status to DOWN, clear the cache, and close the open
-     * registration handles.
-     */
-    private fun handleStopEvent(coordinator: LifecycleCoordinator) {
-        logger.debug { "Group policy provider stopping." }
-        inactivateImpl()
-        registrationHandle?.close()
-    }
-
-    /**
-     * If any services we are following change status, this function reacts to that change.
-     * If all of the followed services are UP then this service can start.
-     * If any of the followed services are DOWN then this service should stop.
-     */
-    private fun handleRegistrationChangeEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator) {
-        logger.debug { "Group policy provider handling registration change. Event status: ${event.status}" }
-        when (event.status) {
-            LifecycleStatus.UP -> {
-                val current = impl
-                impl = ActiveImpl(virtualNodeInfoReadService, cpiInfoReader)
-                current.close()
-                coordinator.updateStatus(LifecycleStatus.UP)
+            is StartEvent -> {
+                logger.info("Group policy provider starting.")
+                registrationHandle?.close()
+                registrationHandle = coordinator.followStatusChangesByName(
+                    setOf(
+                        LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
+                        LifecycleCoordinatorName.forComponent<CpiInfoReadService>()
+                    )
+                )
             }
-            else -> {
-                inactivateImpl()
+            is StopEvent -> {
+                logger.info("Group policy provider stopping.")
+                deactivateInnerImpl(coordinator)
+                registrationHandle?.close()
+            }
+            is RegistrationStatusChangeEvent -> {
+                logger.info("Group policy provider handling registration change. Event status: ${event.status}")
+                when (event.status) {
+                    LifecycleStatus.UP -> {
+                        activateInnerImpl(coordinator)
+                    }
+                    else -> {
+                        deactivateInnerImpl(coordinator)
+                    }
+                }
             }
         }
     }
 
-    private fun inactivateImpl() {
+    private fun deactivateInnerImpl(coordinator: LifecycleCoordinator) {
         coordinator.updateStatus(LifecycleStatus.DOWN)
         val current = impl
         impl = InactiveImpl()
         current.close()
     }
 
-    private fun startDependencyRegistrationHandle(coordinator: LifecycleCoordinator) {
-        registrationHandle?.close()
-        registrationHandle = coordinator.followStatusChangesByName(
-            setOf(
-                LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
-                LifecycleCoordinatorName.forComponent<CpiInfoReadService>()
-            )
-        )
+    private fun activateInnerImpl(coordinator: LifecycleCoordinator) {
+        val current = impl
+        impl = ActiveImpl(virtualNodeInfoReadService, cpiInfoReader)
+        current.close()
+        coordinator.updateStatus(LifecycleStatus.UP)
     }
 
     private class InactiveImpl : InnerGroupPolicyProvider {
@@ -145,11 +127,7 @@ class GroupPolicyProviderImpl @Activate constructor(
 
         override fun getGroupPolicy(
             holdingIdentity: HoldingIdentity
-        ): GroupPolicy {
-            return groupPolicies[holdingIdentity] ?: parseGroupPolicy(holdingIdentity).also {
-                groupPolicies[holdingIdentity] = it
-            }
-        }
+        ) = groupPolicies.computeIfAbsent(holdingIdentity) { parseGroupPolicy(it) }
 
         override fun close() {
             virtualNodeInfoCallbackHandle.close()
@@ -190,10 +168,10 @@ class GroupPolicyProviderImpl @Activate constructor(
                 logger.info("Processing new snapshot after change in virtual node information.")
                 changed.filter { snapshot[it] != null }.forEach {
                     try {
-                        parseGroupPolicy(it, virtualNodeInfo = snapshot[it])
-                            .apply { groupPolicies[it] = this }
+                        groupPolicies[it] = parseGroupPolicy(it, virtualNodeInfo = snapshot[it])
                     } catch (e: Exception) {
-                        logger.error("Failure to parse group policy.")
+                        logger.error("Failure to parse group policy after change in virtual node info. " +
+                                "Check the format of the group policy in use for virtual node with ID [${it.id}]", e)
                     }
                 }
             }
