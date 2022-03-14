@@ -423,12 +423,12 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                     extractPayload(sessionDirection.session, sessionId, message, MessageAck::fromByteBuffer)?.let {
                         when (val ack = it.ack) {
                             is AuthenticatedMessageAck -> {
-                                logger.info ( "Processing ack for message ${ack.messageId} from session $sessionId." )
+                                logger.debug { "Processing ack for message ${ack.messageId} from session $sessionId." }
                                 sessionManager.messageAcknowledged(sessionId)
                                 messages.add(makeMarkerForAckMessage(ack))
                             }
                             is HeartbeatMessageAck -> {
-                                logger.info ( "Processing heartbeat ack from session $sessionId." )
+                                logger.debug { "Processing heartbeat ack from session $sessionId." }
                                 sessionManager.messageAcknowledged(sessionId)
                             }
                             else -> logger.warn("Received an inbound message with unexpected type for SessionId = $sessionId.")

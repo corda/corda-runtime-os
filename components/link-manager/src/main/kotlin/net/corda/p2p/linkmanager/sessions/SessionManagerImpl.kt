@@ -56,6 +56,7 @@ import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.trace
 import org.slf4j.LoggerFactory
 import java.time.Clock
 import java.time.Duration
@@ -840,25 +841,22 @@ open class SessionManagerImpl(
 
             val timeSinceLastSend = timeStamp() - sessionInfo.lastSendTimestamp
             if (timeSinceLastSend >= config.heartbeatPeriod.toMillis()) {
-                logger.info ( "Sending heartbeat message between ${counterparties.ourId} (our Identity) and " +
-                    "${counterparties.counterpartyId} for ${session.sessionId}." )
+                logger.trace { "Sending heartbeat message between ${counterparties.ourId} (our Identity) and " +
+                    "${counterparties.counterpartyId}." }
                 sendHeartbeatMessage(
                     counterparties.ourId.toHoldingIdentity(),
                     counterparties.counterpartyId.toHoldingIdentity(),
                     session,
                 )
-                logger.info ( "Finished Sending heartbeat message for ${session.sessionId}." )
                 executorService.schedule(
                     { sendHeartbeat(counterparties, session) },
                     config.heartbeatPeriod.toMillis(),
                     TimeUnit.MILLISECONDS
                 )
             } else {
-                val delay = config.heartbeatPeriod.toMillis() - timeSinceLastSend
-                logger.info ( "Woke up to soon: sending heartbeat for ${session.sessionId} in $delay ms." )
                 executorService.schedule(
                     { sendHeartbeat(counterparties, session) },
-                    delay,
+                    config.heartbeatPeriod.toMillis() - timeSinceLastSend,
                     TimeUnit.MILLISECONDS
                 )
             }

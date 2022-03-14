@@ -197,7 +197,6 @@ internal class ReplayScheduler<M>(
             if (removed) {
                 queuedMessagesPerSessionCounterparties[counterparties]?.poll()?.let {
                     addForReplay(it.originalAttemptTimestamp, it.uniqueId, it.message, counterparties)
-                    logger.info("Removed replaying message with Id $messageId")
                 }
             } else {
                 queuedMessagesPerSessionCounterparties[counterparties]?.removeMessage(messageId)
