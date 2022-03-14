@@ -49,7 +49,7 @@ class CpkChunksKafkaReader(
         val chunkId = newRecord.key
         val chunk = newRecord.value
         chunk?.let {
-            writeChunkFile(chunkId, it) // assuming not nullable for now
+            writeChunkFile(chunkId, it)
         } ?: logger.warn("Skipping writing for null CPK chunk: ${chunkId.cpkChecksum} : ${chunkId.cpkChunkPartNumber}")
     }
 
