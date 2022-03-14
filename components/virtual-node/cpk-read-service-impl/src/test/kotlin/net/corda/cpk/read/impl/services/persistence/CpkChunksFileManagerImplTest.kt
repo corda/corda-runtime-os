@@ -3,7 +3,7 @@ package net.corda.cpk.read.impl.services.persistence
 import com.google.common.jimfs.Configuration
 import com.google.common.jimfs.Jimfs
 import net.corda.chunking.toCorda
-import net.corda.cpk.read.impl.TestUtils.dummyCpkChunkIdToChunk
+import net.corda.cpk.read.impl.Helpers
 import net.corda.cpk.read.impl.services.persistence.CpkChunksFileManagerImpl.Companion.toCpkDirName
 import net.corda.cpk.read.impl.services.persistence.CpkChunksFileManagerImpl.Companion.toCpkFileName
 import net.corda.data.chunking.CpkChunkId
@@ -79,19 +79,19 @@ class CpkChunksFileManagerImplTest {
     @Test
     fun `chunk file exists looks for requested cpk chunk id`() {
         val (cpkChunkId0, _) =
-            dummyCpkChunkIdToChunk(SecureHash.create(DUMMY_HASH), 0, SecureHash.create(DUMMY_HASH), byteArrayOf())
+            Helpers.dummyCpkChunkIdToChunk(SecureHash.create(DUMMY_HASH), 0, SecureHash.create(DUMMY_HASH), byteArrayOf())
         cpkChunkId0.toDummyFile()
         assertTrue(cpkChunksFileManagerImpl.chunkFileExists(cpkChunkId0).exists)
 
         val (cpkChunkId1, _) =
-            dummyCpkChunkIdToChunk(SecureHash.create(DUMMY_HASH), 1, SecureHash.create(DUMMY_HASH), byteArrayOf())
+            Helpers.dummyCpkChunkIdToChunk(SecureHash.create(DUMMY_HASH), 1, SecureHash.create(DUMMY_HASH), byteArrayOf())
         assertFalse(cpkChunksFileManagerImpl.chunkFileExists(cpkChunkId1).exists)
     }
 
     @Test
     fun `on write chunk file writes chunk file creates corresponding CPK directory`() {
         val (cpkChunkId, _) =
-            dummyCpkChunkIdToChunk(SecureHash.create(DUMMY_HASH), 0, SecureHash.create(DUMMY_HASH), byteArrayOf())
+            Helpers.dummyCpkChunkIdToChunk(SecureHash.create(DUMMY_HASH), 0, SecureHash.create(DUMMY_HASH), byteArrayOf())
         val filePath = cpkChunkId.toDummyFile()
         assertTrue(filePath.contains(fs.getPath(SecureHash.create(DUMMY_HASH).toHexString())))
     }
@@ -100,7 +100,7 @@ class CpkChunksFileManagerImplTest {
     fun `on write chunk file writes chunk file`() {
         val bytes = byteArrayOf(0x01, 0x02)
         val (cpkChunkId, chunk) =
-            dummyCpkChunkIdToChunk(SecureHash.create(DUMMY_HASH), 0, SecureHash.create(DUMMY_HASH), bytes)
+            Helpers.dummyCpkChunkIdToChunk(SecureHash.create(DUMMY_HASH), 0, SecureHash.create(DUMMY_HASH), bytes)
         cpkChunksFileManagerImpl.writeChunkFile(cpkChunkId, chunk)
         assertTrue(cpkChunkFileExists(cpkChunkId))
 
@@ -114,9 +114,9 @@ class CpkChunksFileManagerImplTest {
         val bytes0 = byteArrayOf(0x01, 0x02)
         val bytes1 = byteArrayOf(0x03, 0x04)
         val (cpkChunkId0, chunk0) =
-            dummyCpkChunkIdToChunk(cpkChecksum, 0, SecureHash.create(DUMMY_HASH), bytes0)
+            Helpers.dummyCpkChunkIdToChunk(cpkChecksum, 0, SecureHash.create(DUMMY_HASH), bytes0)
         val (cpkChunkId1, chunk1) =
-            dummyCpkChunkIdToChunk(cpkChecksum, 1, SecureHash.create(DUMMY_HASH), bytes1)
+            Helpers.dummyCpkChunkIdToChunk(cpkChecksum, 1, SecureHash.create(DUMMY_HASH), bytes1)
 
         cpkChunksFileManagerImpl.writeChunkFile(cpkChunkId0, chunk0)
         cpkChunksFileManagerImpl.writeChunkFile(cpkChunkId1, chunk1)

@@ -6,7 +6,7 @@ import net.corda.data.chunking.CpkChunkId
 import net.corda.v5.crypto.SecureHash
 import java.nio.ByteBuffer
 
-object TestUtils {
+object Helpers {
 
     fun dummyCpkChunkIdToChunk(
         cpkChecksum: SecureHash,

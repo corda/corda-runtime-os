@@ -1,6 +1,6 @@
 package net.corda.cpk.read.impl.services.cache
 
-import net.corda.cpk.read.impl.TestUtils
+import net.corda.cpk.read.impl.Helpers
 import net.corda.data.chunking.Chunk
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -28,12 +28,12 @@ class CpkChunkIdsCacheTest {
         val checksum = SecureHash.create(DUMMY_HASH)
 
         val (cpkChunkId0, chunk0) =
-            TestUtils.dummyCpkChunkIdToChunk(checksum, 0, checksum, byteArrayOf(0x01, 0x02))
+            Helpers.dummyCpkChunkIdToChunk(checksum, 0, checksum, byteArrayOf(0x01, 0x02))
         cpkChunkIdsCache.addOrSetExpected(checksum, cpkChunkId0, isZeroChunk(chunk0))
         assertTrue(cpkChunkIdsCache.getChunkIds(checksum)!!.size == 1)
 
         val (cpkChunkId1, chunk1) =
-            TestUtils.dummyCpkChunkIdToChunk(checksum, 1, checksum, byteArrayOf(0x03, 0x04))
+            Helpers.dummyCpkChunkIdToChunk(checksum, 1, checksum, byteArrayOf(0x03, 0x04))
         cpkChunkIdsCache.addOrSetExpected(checksum, cpkChunkId1, isZeroChunk(chunk1))
         assertTrue(cpkChunkIdsCache.getChunkIds(checksum)!!.size == 2)
         assertFalse(cpkChunkIdsCache.allChunksReceived(checksum))
@@ -44,17 +44,17 @@ class CpkChunkIdsCacheTest {
         val checksum = SecureHash.create(DUMMY_HASH)
 
         val (cpkChunkId0, chunk0) =
-            TestUtils.dummyCpkChunkIdToChunk(checksum, 0, checksum, byteArrayOf(0x01, 0x02))
+            Helpers.dummyCpkChunkIdToChunk(checksum, 0, checksum, byteArrayOf(0x01, 0x02))
         cpkChunkIdsCache.addOrSetExpected(checksum, cpkChunkId0, isZeroChunk(chunk0))
         assertTrue(cpkChunkIdsCache.getChunkIds(checksum)!!.size == 1)
 
         val (cpkChunkId1, chunk1) =
-            TestUtils.dummyCpkChunkIdToChunk(checksum, 1, checksum, byteArrayOf(0x03, 0x04))
+            Helpers.dummyCpkChunkIdToChunk(checksum, 1, checksum, byteArrayOf(0x03, 0x04))
         cpkChunkIdsCache.addOrSetExpected(checksum, cpkChunkId1, isZeroChunk(chunk1))
         assertTrue(cpkChunkIdsCache.getChunkIds(checksum)!!.size == 2)
 
         val (cpkChunkId2, chunk2) =
-            TestUtils.dummyCpkChunkIdToChunk(checksum, 2, checksum, byteArrayOf())
+            Helpers.dummyCpkChunkIdToChunk(checksum, 2, checksum, byteArrayOf())
         cpkChunkIdsCache.addOrSetExpected(checksum, cpkChunkId2, isZeroChunk(chunk2))
         assertTrue(cpkChunkIdsCache.getChunkIds(checksum)!!.size == 2)
         assertTrue(cpkChunkIdsCache.allChunksReceived(checksum))
