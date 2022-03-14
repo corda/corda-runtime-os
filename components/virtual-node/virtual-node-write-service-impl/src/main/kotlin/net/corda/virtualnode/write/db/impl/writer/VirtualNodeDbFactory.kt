@@ -26,6 +26,8 @@ class VirtualNodeDbFactory(
     private val adminJdbcUrl = dbConnectionManager.clusterConfig.getString(ConfigKeys.JDBC_URL)
 
     companion object {
+        private const val ddlMaxPoolSize = 1
+        private const val dmlMaxPoolSize = 1
         private const val passwordLength = 64
         private val passwordSource = (('0'..'9') + ('A'..'Z') + ('a'..'z')).toCharArray()
         private val random = SecureRandom()
@@ -107,10 +109,15 @@ class VirtualNodeDbFactory(
         with (dbType) {
             val user = getUserName(dbPrivilege, holdingIdentityId)
             val password = generatePassword()
+            val maxPoolSize = when(dbPrivilege) {
+                DDL -> ddlMaxPoolSize
+                DML -> dmlMaxPoolSize
+            }
             // TODO support for CharArray passwords in SmartConfig
             val config = createDbConfig(
                 smartConfigFactory, user, password.concatToString(),
-                jdbcUrl = dbAdmin.createJdbcUrl(adminJdbcUrl, getSchemaName(holdingIdentityId)))
+                jdbcUrl = dbAdmin.createJdbcUrl(adminJdbcUrl, getSchemaName(holdingIdentityId)),
+                maxPoolSize = maxPoolSize)
             return DbConnection(
                 getConnectionName(holdingIdentityId),
                 dbPrivilege,
