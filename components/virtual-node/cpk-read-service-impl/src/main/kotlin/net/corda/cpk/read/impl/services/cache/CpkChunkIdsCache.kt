@@ -13,7 +13,7 @@ internal interface CpkChunkIdsCache {
     /**
      * Checks if all chunks are received for a CPK.
      */
-    fun allChunksReceived(cpkChecksum: SecureHash): Boolean?
+    fun allChunksReceived(cpkChecksum: SecureHash): Boolean
 
     /**
      * Adds a new CPK chunk to cached CPK chunks or if the new CPK chunk [isZeroChunk] sets CPK chunks
@@ -24,7 +24,7 @@ internal interface CpkChunkIdsCache {
     /**
      * Removes chunks of the same CPK.
      */
-    fun remove(cpkChecksum: SecureHash)
+    fun remove(cpkChecksum: SecureHash): Set<CpkChunkId>?
 
     /**
      * Default implementation.
@@ -35,8 +35,8 @@ internal interface CpkChunkIdsCache {
         override fun getChunkIds(cpkChecksum: SecureHash): SortedSet<CpkChunkId>? =
             chunkIdsPerCpk[cpkChecksum]?.chunks
 
-        override fun allChunksReceived(cpkChecksum: SecureHash): Boolean? =
-            chunkIdsPerCpk[cpkChecksum]?.allReceived()
+        override fun allChunksReceived(cpkChecksum: SecureHash): Boolean =
+            chunkIdsPerCpk[cpkChecksum]?.allReceived() ?: false
 
         override fun addOrSetExpected(cpkChecksum: SecureHash, chunkId: CpkChunkId, isZeroChunk: Boolean) {
             val chunksReceived = chunkIdsPerCpk[cpkChecksum]
@@ -49,9 +49,8 @@ internal interface CpkChunkIdsCache {
             }
         }
 
-        override fun remove(cpkChecksum: SecureHash) {
-            chunkIdsPerCpk.remove(cpkChecksum)
-        }
+        override fun remove(cpkChecksum: SecureHash) =
+            chunkIdsPerCpk.remove(cpkChecksum)?.chunks
 
         private class ChunksReceived {
             val chunks = sortedSetOf<CpkChunkId>()
