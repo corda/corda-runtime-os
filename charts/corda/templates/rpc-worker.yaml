@@ -6,18 +6,12 @@ metadata:
     app: {{ include "corda.fullname" . }}-rpc-node
     type: rpc-worker
 spec:
-  type: NodePort
+  type: ClusterIP
   selector: *id004
   ports:
   - name: node-rpc
     port: 443
     targetPort: 8888
-  - name: worker-debug
-    port: 5005
-    targetPort: 5005
-  - name: worker-health
-    port: 7000
-    targetPort: 7000
 ---
 apiVersion: apps/v1
 kind: Deployment
