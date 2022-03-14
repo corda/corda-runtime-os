@@ -45,7 +45,7 @@ class CpkChunksKafkaReaderTest {
         cpkChunksKafkaReader.writeChunkFile(cpkChunkId1, chunk1)
         verify(cpkChunksFileManager).writeChunkFile(cpkChunkId1, chunk1)
         assertTrue(cpkChunksKafkaReader.receivedCpkChunksCache.getChunkIds(checksum)!!.size == 2)
-        assertFalse(cpkChunksKafkaReader.receivedCpkChunksCache.allChunksReceived(checksum)!!)
+        assertFalse(cpkChunksKafkaReader.receivedCpkChunksCache.allChunksReceived(checksum))
     }
 
     @Test

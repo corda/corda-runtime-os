@@ -36,7 +36,7 @@ class CpkChunkIdsCacheTest {
             TestUtils.dummyCpkChunkIdToChunk(checksum, 1, checksum, byteArrayOf(0x03, 0x04))
         cpkChunkIdsCache.addOrSetExpected(checksum, cpkChunkId1, isZeroChunk(chunk1))
         assertTrue(cpkChunkIdsCache.getChunkIds(checksum)!!.size == 2)
-        assertFalse(cpkChunkIdsCache.allChunksReceived(checksum)!!)
+        assertFalse(cpkChunkIdsCache.allChunksReceived(checksum))
     }
 
     @Test
@@ -57,6 +57,6 @@ class CpkChunkIdsCacheTest {
             TestUtils.dummyCpkChunkIdToChunk(checksum, 2, checksum, byteArrayOf())
         cpkChunkIdsCache.addOrSetExpected(checksum, cpkChunkId2, isZeroChunk(chunk2))
         assertTrue(cpkChunkIdsCache.getChunkIds(checksum)!!.size == 2)
-        assertTrue(cpkChunkIdsCache.allChunksReceived(checksum)!!)
+        assertTrue(cpkChunkIdsCache.allChunksReceived(checksum))
     }
 }
