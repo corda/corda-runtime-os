@@ -48,7 +48,9 @@ class CpkChunksKafkaReader(
     override fun onNext(newRecord: Record<CpkChunkId, Chunk>, oldValue: Chunk?, currentData: Map<CpkChunkId, Chunk>) {
         val chunkId = newRecord.key
         val chunk = newRecord.value
-        writeChunkFile(chunkId, chunk!!) // assuming not nullable for now
+        chunk?.let {
+            writeChunkFile(chunkId, it) // assuming not nullable for now
+        } ?: logger.warn("Skipping writing for null CPK chunk: ${chunkId.cpkChecksum} : ${chunkId.cpkChunkPartNumber}")
     }
 
     @VisibleForTesting
@@ -69,7 +71,7 @@ class CpkChunksKafkaReader(
         val cpkChecksum = chunkId.cpkChecksum.toCorda()
         receivedCpkChunksCache.addOrSetExpected(cpkChecksum, chunkId, chunk.isZeroChunk())
 
-        if (receivedCpkChunksCache.allChunksReceived(cpkChecksum)!!) {
+        if (receivedCpkChunksCache.allChunksReceived(cpkChecksum)) {
             val chunkIds = receivedCpkChunksCache.getChunkIds(cpkChecksum)!!
             onAllChunksReceived(cpkChecksum, chunkIds)
         }
