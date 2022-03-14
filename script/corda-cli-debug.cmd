@@ -11,4 +11,4 @@ for %%i in ("%APP_HOME%") do set APP_HOME=%%~fi
 SET binDir="%APP_HOME%\app\build\libs"
 SET pluginsDir="%APP_HOME%\build\plugins"
 
-java -Dpf4j.pluginsDir=%pluginsDir% -jar %binDir%\corda-cli-0.0.1-beta.jar %*
+java -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005 -Dpf4j.pluginsDir=%pluginsDir% -jar %binDir%\corda-cli-0.0.1-beta.jar %*

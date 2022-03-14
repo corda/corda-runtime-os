@@ -3,12 +3,17 @@ plugins {
 }
 
 dependencies {
-    compileOnly project(":api")
 
+    compileOnly project(":api")
     compileOnly "org.pf4j:pf4j:${pf4jVersion}"
     kapt "org.pf4j:pf4j:${pf4jVersion}"
-    implementation "org.apache.commons:commons-lang3:${commonsLangVersion}" // this is an examples for an external library included
+
+    testImplementation project(":api")
+    testImplementation "org.pf4j:pf4j:${pf4jVersion}"
+    testImplementation "org.junit.jupiter:junit-jupiter:5.8.2"
+    testImplementation "com.github.stefanbirkner:system-lambda:1.2.1"
 }
 
-
-
+test {
+    useJUnitPlatform()
+}

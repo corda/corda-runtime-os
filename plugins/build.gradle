@@ -41,7 +41,6 @@ subprojects { subProject ->
         into pluginsDir
     }
 
-
     artifacts {
         archives plugin
     }

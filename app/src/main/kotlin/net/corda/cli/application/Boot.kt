@@ -34,6 +34,9 @@ object Boot {
         }
     }
 
+    @CommandLine.Spec
+    lateinit var spec: CommandLine.Model.CommandSpec
+
     fun run(vararg args: String) {
 
         //create storage dir if it doesn't exist
