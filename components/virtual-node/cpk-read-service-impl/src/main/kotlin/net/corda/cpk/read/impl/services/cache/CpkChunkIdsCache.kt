@@ -23,6 +23,7 @@ internal interface CpkChunkIdsCache {
 
     /**
      * Removes chunks of the same CPK.
+     * @return The removed cached [CpkChunkId]s of a CPK.
      */
     fun remove(cpkChecksum: SecureHash): Set<CpkChunkId>?
 
