@@ -288,13 +288,10 @@ class SandboxGroupContextServiceImpl(
         )
     }
 
-    override fun hasCpks(cpkIdentifiers: Set<CpkIdentifier>): Boolean {
-        cpkIdentifiers.forEach {
-            if (cpkReadService.get(it) == null)
-                return false
+    override fun hasCpks(cpkIdentifiers: Set<CpkIdentifier>) =
+        cpkIdentifiers.all {
+            cpkReadService.get(it) != null
         }
-        return true
-    }
 
     /**
      * [MutableSandboxGroupContext] / [SandboxGroupContext] wrapped so that we set [close] now that the user has

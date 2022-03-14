@@ -224,9 +224,11 @@ class SandboxGroupContextServiceImplTest {
         )
         val nonExistingCpk = setOf(Helpers.mockTrivialCpk("MAIN4", "orange", "4.0.0"))
 
-        val sandboxCreationService = Helpers.mockSandboxCreationService(listOf(existingCpks))
-        val cpkService = CpkReadServiceFake(existingCpks)
-        val service = SandboxGroupContextServiceImpl(sandboxCreationService, cpkService, scr, bundleContext)
+        val service = existingCpks.let {
+            val sandboxCreationService = Helpers.mockSandboxCreationService(listOf(it))
+            val cpkService = CpkReadServiceFake(it)
+            SandboxGroupContextServiceImpl(sandboxCreationService, cpkService, scr, bundleContext)
+        }
 
         val existingCpkIds = existingCpks.map {
             CpkIdentifier.fromLegacy(it.metadata.id)
@@ -234,7 +236,10 @@ class SandboxGroupContextServiceImplTest {
 
         val nonExistingCpkId = nonExistingCpk.map { CpkIdentifier.fromLegacy(it.metadata.id) }.toSet()
 
+        val noCpks = emptySet<CpkIdentifier>()
+
         assertTrue(service.hasCpks(existingCpkIds))
         assertFalse(service.hasCpks(nonExistingCpkId))
+        assertTrue(service.hasCpks(noCpks))
     }
 }
