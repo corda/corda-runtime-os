@@ -208,8 +208,8 @@ class MemberProcessorIntegrationTest {
         // Wait for the group policy change to be visible (so following tests don't fail as a result)
         eventually {
             assertEquals(
-                groupPolicy1!!.groupId,
-                getGroupPolicy(groupPolicyProvider)!!.groupId
+                groupPolicy1.groupId,
+                getGroupPolicy(groupPolicyProvider).groupId
             )
         }
     }

@@ -119,7 +119,7 @@ class MemberProcessorTestUtils {
                 registrationProvider.get(aliceHoldingIdentity)
             }.also {
                 assertNotNull(it)
-            }!!
+            }
         }
 
         fun getRegistrationServiceFails(registrationProvider: RegistrationProvider) = eventually {
