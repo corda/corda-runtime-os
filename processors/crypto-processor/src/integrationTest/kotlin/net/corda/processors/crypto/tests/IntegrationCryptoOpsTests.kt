@@ -145,7 +145,7 @@ class IntegrationCryptoOpsTests {
             return emptyList()
         }
 
-        fun waitForEvent(key: String): FlowOpsResponse =
+        fun waitForResponse(key: String): FlowOpsResponse =
             eventually {
                 val event = receivedEvents[key]
                 assertNotNull(event)
@@ -237,15 +237,23 @@ class IntegrationCryptoOpsTests {
         run(tlsPublicKey, ::`Should be able to sign by referencing public key`)
         run(ledgerPublicKey, ::`Should be able to sign using custom signature spec by referencing public key`)
         run(tlsPublicKey, ::`Should be able to sign using custom signature spec by referencing public key`)
-        run(ledgerPublicKey, ::`Should be able to sign using flow ops`)
-        // add back when the HSM registration is done
+        run(ledgerPublicKey, ::`Should be able to sign by flow ops`)
+
+        // add back when the HSM registration is done, due that the wrapping key is created at the point
+        // when the HSM is allocated to a tenant
+
         //val freshPublicKey1 = run(::`Should generate new fresh key pair without external id`)
-        //val externalId = UUID.randomUUID()
-        //val freshPublicKey2 = run(externalId, ::`Should generate new fresh key pair with external id`)
+        //val externalId2 = UUID.randomUUID()
+        //val freshPublicKey2 = run(externalId2, ::`Should generate new fresh key pair with external id`)
         //run(freshPublicKey1, ::`Should be able to sign by referencing public key`)
         //run(freshPublicKey1, ::`Should be able to sign using custom signature spec by referencing public key`)
         //run(freshPublicKey2, ::`Should be able to sign by referencing public key`)
         //run(freshPublicKey2, ::`Should be able to sign using custom signature spec by referencing public key`)
+        //val freshPublicKey3 = run(::`Should be able to generate fresh key without external id by flow ops`)
+        //val externalId4 = UUID.randomUUID()
+        //val freshPublicKey4 = run(externalId4, ::`Should generate new fresh key pair with external id`)
+        //run(freshPublicKey3, ::`Should be able to sign by flow ops`)
+        //run(freshPublicKey4, ::`Should be able to sign by flow ops`)
     }
 
     private fun `Should be able to get supported schemes for all categories`() {
@@ -301,6 +309,39 @@ class IntegrationCryptoOpsTests {
 
     private fun `Should generate new fresh key pair with external id`(externalId: UUID): PublicKey {
         return opsClient.freshKey(tenantId = tenantId, externalId = externalId)
+    }
+
+    private fun `Should be able to generate fresh key without external id by flow ops`(): PublicKey {
+        val key = UUID.randomUUID().toString()
+        val event = transformer.createFreshKey(
+            tenantId = tenantId
+        )
+        publisher.publish(listOf(
+            Record(
+                topic = FLOW_OPS_MESSAGE_TOPIC,
+                key = key,
+                value = event
+            )
+        )).forEach { it.get() }
+        val response = flowOpsResponses.waitForResponse(key)
+        return transformer.transform(response) as PublicKey
+    }
+
+    private fun `Should be able to generate fresh key with external id by flow ops`(externalId: UUID): PublicKey {
+        val key = UUID.randomUUID().toString()
+        val event = transformer.createFreshKey(
+            tenantId = tenantId,
+            externalId = externalId
+        )
+        publisher.publish(listOf(
+            Record(
+                topic = FLOW_OPS_MESSAGE_TOPIC,
+                key = key,
+                value = event
+            )
+        )).forEach { it.get() }
+        val response = flowOpsResponses.waitForResponse(key)
+        return transformer.transform(response) as PublicKey
     }
 
     private fun `Should be able to sign by referencing key alias`(params: Pair<String, PublicKey>) {
@@ -390,7 +431,7 @@ class IntegrationCryptoOpsTests {
         )
     }
 
-    private fun `Should be able to sign using flow ops`(publicKey: PublicKey) {
+    private fun `Should be able to sign by flow ops`(publicKey: PublicKey) {
         val data = randomDataByteArray()
         val key = UUID.randomUUID().toString()
         val event = transformer.createSign(
@@ -405,7 +446,7 @@ class IntegrationCryptoOpsTests {
                 value = event
             )
         )).forEach { it.get() }
-        val response = flowOpsResponses.waitForEvent(key)
+        val response = flowOpsResponses.waitForResponse(key)
         val signature = transformer.transform(response) as DigitalSignature.WithKey
         assertEquals(publicKey, signature.by)
         assertTrue(signature.bytes.isNotEmpty())
