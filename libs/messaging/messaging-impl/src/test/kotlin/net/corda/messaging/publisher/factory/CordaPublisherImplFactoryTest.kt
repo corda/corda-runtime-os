@@ -27,9 +27,9 @@ class CordaPublisherImplFactoryTest {
 
     @Test
     fun testCreatePublisher() {
-        val nodeConfig = SmartConfigImpl.empty()
+        val messagingConfig = SmartConfigImpl.empty()
             .withValue("messaging.topic.prefix", ConfigValueFactory.fromAnyRef("demo"))
-        val publisher = cordaPublisherFactory.createPublisher(publisherConfig, nodeConfig)
+        val publisher = cordaPublisherFactory.createPublisher(publisherConfig, messagingConfig)
         assertNotNull(publisher)
     }
 }

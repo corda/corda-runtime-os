@@ -25,7 +25,7 @@ class TrustStoresMapIntegrationTests : TestBase() {
     private val topicService = TopicServiceImpl()
     private val rpcTopicService = RPCTopicServiceImpl()
     private val subscriptionFactory = InMemSubscriptionFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
-    private val nodeConfig = SmartConfigImpl.empty()
+    private val messagingConfig = SmartConfigImpl.empty()
     private val publisherFactory = CordaPublisherFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
     private val expectedCertificatePem = truststoreCertificatePem
 
@@ -34,7 +34,7 @@ class TrustStoresMapIntegrationTests : TestBase() {
         val map = TrustStoresMap(
             lifecycleCoordinatorFactory,
             subscriptionFactory,
-            nodeConfig,
+            messagingConfig,
             instanceId,
         )
         publisherFactory.createPublisher(PublisherConfig("client.ID")).use {

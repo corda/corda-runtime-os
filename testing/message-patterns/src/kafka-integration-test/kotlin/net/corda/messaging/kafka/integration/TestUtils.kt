@@ -28,6 +28,6 @@ fun getStringRecords(topic: String, recordCount: Int, keyCount: Int): List<Recor
 
 fun getKafkaProperties(): Properties {
     val kafkaProperties = Properties()
-    kafkaProperties[IntegrationTestProperties.BOOTSTRAP_SERVERS] = IntegrationTestProperties.BOOTSTRAP_SERVERS_VALUE
+    kafkaProperties["bootstrap.servers"] = IntegrationTestProperties.BOOTSTRAP_SERVERS_VALUE
     return kafkaProperties
 }

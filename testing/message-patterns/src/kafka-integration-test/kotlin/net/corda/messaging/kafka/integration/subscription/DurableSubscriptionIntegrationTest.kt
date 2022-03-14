@@ -2,8 +2,6 @@ package net.corda.messaging.kafka.integration.subscription
 
 import com.typesafe.config.ConfigValueFactory
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
-import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -15,25 +13,23 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.BOOTSTRAP_SERVERS_VALUE
-import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.KAFKA_COMMON_BOOTSTRAP_SERVER
-import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.TOPIC_PREFIX
+import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.TEST_CONFIG
 import net.corda.messaging.kafka.integration.TopicTemplates
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.DURABLE_TOPIC1
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.DURABLE_TOPIC3_DLQ
-import net.corda.messaging.kafka.integration.TopicTemplates.Companion.TEST_TOPIC_PREFIX
 import net.corda.messaging.kafka.integration.getDemoRecords
 import net.corda.messaging.kafka.integration.getKafkaProperties
 import net.corda.messaging.kafka.integration.getStringRecords
 import net.corda.messaging.kafka.integration.processors.TestDurableProcessor
 import net.corda.messaging.kafka.integration.processors.TestDurableStringProcessor
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
+import net.corda.schema.configuration.MessagingConfig.Bus.CONSUMER_MAX_POLL_INTERVAL
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtendWith
@@ -47,7 +43,6 @@ class DurableSubscriptionIntegrationTest {
 
     private lateinit var publisherConfig: PublisherConfig
     private lateinit var publisher: Publisher
-    private lateinit var kafkaConfig: SmartConfig
     private val kafkaProperties = getKafkaProperties()
 
     private companion object {
@@ -70,20 +65,13 @@ class DurableSubscriptionIntegrationTest {
     @InjectService(timeout = 4000)
     lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 
-    @BeforeEach
-    fun beforeEach() {
-        kafkaConfig = SmartConfigImpl.empty()
-            .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(BOOTSTRAP_SERVERS_VALUE))
-            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(TEST_TOPIC_PREFIX))
-    }
-
     @Test
-    @Timeout(value = 30, unit = TimeUnit.SECONDS)
+    @Timeout(value = 60, unit = TimeUnit.SECONDS)
     fun `asynch publish records and then start 2 durable subscriptions, delay 1 sub, trigger rebalance`() {
         topicAdmin.createTopics(kafkaProperties, TopicTemplates.DURABLE_TOPIC1_TEMPLATE)
 
         publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC1)
-        publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
+        publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
         val futures = publisher.publish(getDemoRecords(DURABLE_TOPIC1, 5, 3))
         assertThat(futures.size).isEqualTo(15)
         publisher.close()
@@ -92,15 +80,18 @@ class DurableSubscriptionIntegrationTest {
         val durableSub1 = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$DURABLE_TOPIC1-group", DURABLE_TOPIC1, 1),
             TestDurableProcessor(latch),
-            kafkaConfig,
+            TEST_CONFIG,
             null
         )
 
-        val CONSUMER_MAX_POLL_INTERVAL = "consumer.max.poll.interval.ms"
-        val triggerRebalanceQuicklyConfig = kafkaConfig
+        val triggerRebalanceQuicklyConfig = TEST_CONFIG
             .withValue(
                 CONSUMER_MAX_POLL_INTERVAL,
                 ConfigValueFactory.fromAnyRef(1000)
+            )
+            .withValue(
+                INSTANCE_ID,
+                ConfigValueFactory.fromAnyRef(2)
             )
         //long delay to not allow sub to to try rejoin group after rebalance
         val durableSub2 = subscriptionFactory.createDurableSubscription(
@@ -123,7 +114,7 @@ class DurableSubscriptionIntegrationTest {
         topicAdmin.createTopics(kafkaProperties, TopicTemplates.DURABLE_TOPIC2_TEMPLATE)
 
         publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC2)
-        publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
+        publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
         val futures = publisher.publish(getDemoRecords(DURABLE_TOPIC2, 5, 2))
         assertThat(futures.size).isEqualTo(10)
         futures.forEach { it.get(10, TimeUnit.SECONDS) }
@@ -148,7 +139,7 @@ class DurableSubscriptionIntegrationTest {
         val durableSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$DURABLE_TOPIC2-group", DURABLE_TOPIC2, 1),
             TestDurableProcessor(latch),
-            kafkaConfig,
+            TEST_CONFIG,
             null
         )
         coordinator.followStatusChangesByName(setOf(durableSub.subscriptionName))
@@ -172,7 +163,7 @@ class DurableSubscriptionIntegrationTest {
         topicAdmin.createTopics(kafkaProperties, TopicTemplates.DURABLE_TOPIC3_TEMPLATE)
 
         publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC3)
-        publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
+        publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
         val futures = publisher.publish(getStringRecords(DURABLE_TOPIC3, 5, 2))
         assertThat(futures.size).isEqualTo(10)
         futures.forEach { it.get(10, TimeUnit.SECONDS) }
@@ -186,13 +177,13 @@ class DurableSubscriptionIntegrationTest {
         val durableSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$DURABLE_TOPIC3-group", DURABLE_TOPIC3, 1),
             TestDurableProcessor(latch),
-            kafkaConfig,
+            TEST_CONFIG,
             null
         )
         val dlqDurableSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$DURABLE_TOPIC3-group-dlq", DURABLE_TOPIC3_DLQ, 2),
             TestDurableStringProcessor(dlqLatch),
-            kafkaConfig,
+            TEST_CONFIG,
             null
         )
         durableSub.start()
@@ -209,7 +200,7 @@ class DurableSubscriptionIntegrationTest {
     @Timeout(value = 60, unit = TimeUnit.SECONDS)
     fun `transactional publish records, start two durable subscription, stop subs, publish again and start subs`() {
         publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC4, 1)
-        publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
+        publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
         val futures = publisher.publish(getDemoRecords(DURABLE_TOPIC4, 5, 2))
         assertThat(futures.size).isEqualTo(1)
         futures[0].get()
@@ -218,13 +209,13 @@ class DurableSubscriptionIntegrationTest {
         val durableSub1 = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$DURABLE_TOPIC4-group", DURABLE_TOPIC4, 1),
             TestDurableProcessor(latch),
-            kafkaConfig,
+            TEST_CONFIG,
             null
         )
         val durableSub2 = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$DURABLE_TOPIC4-group", DURABLE_TOPIC4, 2),
             TestDurableProcessor(latch),
-            kafkaConfig,
+            TEST_CONFIG,
             null
         )
 

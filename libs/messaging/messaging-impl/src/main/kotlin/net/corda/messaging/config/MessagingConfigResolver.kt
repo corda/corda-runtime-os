@@ -11,7 +11,7 @@ import net.corda.messaging.constants.SubscriptionType
 import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.FrameworkUtil
 
-internal class ConfigResolver(private val smartConfigFactory: SmartConfigFactory) {
+internal class MessagingConfigResolver(private val smartConfigFactory: SmartConfigFactory) {
 
     private companion object {
         private val logger = contextLogger()

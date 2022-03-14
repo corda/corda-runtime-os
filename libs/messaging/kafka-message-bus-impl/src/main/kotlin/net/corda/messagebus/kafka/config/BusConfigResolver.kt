@@ -12,12 +12,12 @@ import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PROPERTIES
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.osgi.framework.FrameworkUtil
-import java.util.Properties
+import java.util.*
 
 /**
  * Resolve a Kafka bus configuration against the enforced and default configurations provided by the library.
  */
-internal class ConfigResolver(private val smartConfigFactory: SmartConfigFactory) {
+internal class BusConfigResolver(private val smartConfigFactory: SmartConfigFactory) {
 
     private companion object {
         private val logger = contextLogger()
@@ -140,6 +140,7 @@ internal class ConfigResolver(private val smartConfigFactory: SmartConfigFactory
                 mapOf(
                     CLIENT_ID_PATH to clientId,
                     INSTANCE_ID_PATH to instanceId,
+                    //TODO - why is this here?
                     GROUP_PATH to "<undefined>",
                     TRANSACTIONAL_ID_PATH to transactionalId
                 )

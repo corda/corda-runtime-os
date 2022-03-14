@@ -16,7 +16,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 
 class CordaPublisherFactoryTest {
-    private val nodeConfig = mock<SmartConfig> {
+    private val messagingConfig = mock<SmartConfig> {
         on { withFallback(any()) } doReturn this.mock
         on { withValue(any(), any()) } doReturn this.mock
     }
@@ -31,16 +31,16 @@ class CordaPublisherFactoryTest {
 
     @Test
     fun `createPublisher add instance ID to configuration`() {
-        factory.createPublisher(PublisherConfig("client", instanceId = 12), nodeConfig)
+        factory.createPublisher(PublisherConfig("client", instanceId = 12), messagingConfig)
 
-        verify(nodeConfig).withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(12))
+        verify(messagingConfig).withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(12))
     }
 
     @Test
     fun `createPublisher will not add instance ID if null`() {
-        factory.createPublisher(PublisherConfig("client"), nodeConfig)
+        factory.createPublisher(PublisherConfig("client"), messagingConfig)
 
-        verify(nodeConfig, never()).withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(12))
+        verify(messagingConfig, never()).withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(12))
     }
 
     @Test

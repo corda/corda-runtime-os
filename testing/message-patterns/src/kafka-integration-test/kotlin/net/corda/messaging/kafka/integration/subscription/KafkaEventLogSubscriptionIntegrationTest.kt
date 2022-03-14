@@ -1,9 +1,6 @@
 package net.corda.messaging.kafka.integration.subscription
 
-import com.typesafe.config.ConfigValueFactory
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
-import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -15,9 +12,8 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.kafka.integration.IntegrationTestProperties
+import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.TEST_CONFIG
 import net.corda.messaging.kafka.integration.TopicTemplates
-import net.corda.messaging.kafka.integration.TopicTemplates.Companion.TEST_TOPIC_PREFIX
 import net.corda.messaging.kafka.integration.getDemoRecords
 import net.corda.messaging.kafka.integration.getKafkaProperties
 import net.corda.messaging.kafka.integration.processors.TestEventLogProcessor
@@ -27,7 +23,6 @@ import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtendWith
@@ -41,7 +36,6 @@ class KafkaEventLogSubscriptionIntegrationTest {
 
     private lateinit var publisherConfig: PublisherConfig
     private lateinit var publisher: Publisher
-    private lateinit var kafkaConfig: SmartConfig
     private val kafkaProperties = getKafkaProperties()
 
     private companion object {
@@ -64,23 +58,13 @@ class KafkaEventLogSubscriptionIntegrationTest {
     @InjectService(timeout = 4000)
     lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 
-    @BeforeEach
-    fun beforeEach() {
-        kafkaConfig = SmartConfigImpl.empty()
-            .withValue(
-                IntegrationTestProperties.KAFKA_COMMON_BOOTSTRAP_SERVER,
-                ConfigValueFactory.fromAnyRef(IntegrationTestProperties.BOOTSTRAP_SERVERS_VALUE)
-            )
-            .withValue(IntegrationTestProperties.TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(TEST_TOPIC_PREFIX))
-    }
-
     @Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `asynch publish records and then start durable subscription`() {
         topicAdmin.createTopics(kafkaProperties, TopicTemplates.EVENT_LOG_TOPIC1_TEMPLATE)
 
         publisherConfig = PublisherConfig(CLIENT_ID + TOPIC1)
-        publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
+        publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
         val futures = publisher.publish(getDemoRecords(TOPIC1, 5, 2))
         Assertions.assertThat(futures.size).isEqualTo(10)
         futures.forEach { it.get(10, TimeUnit.SECONDS) }
@@ -105,7 +89,7 @@ class KafkaEventLogSubscriptionIntegrationTest {
         val eventLogSub = subscriptionFactory.createEventLogSubscription(
             SubscriptionConfig("$TOPIC1-group", TOPIC1, 1),
             TestEventLogProcessor(latch),
-            kafkaConfig,
+            TEST_CONFIG,
             null
         )
 
@@ -131,7 +115,7 @@ class KafkaEventLogSubscriptionIntegrationTest {
         topicAdmin.createTopics(kafkaProperties, TopicTemplates.EVENT_LOG_TOPIC2_TEMPLATE)
 
         publisherConfig = PublisherConfig(CLIENT_ID + TOPIC2, 1)
-        publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
+        publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
         val futures = publisher.publish(getDemoRecords(TOPIC2, 5, 2))
         Assertions.assertThat(futures.size).isEqualTo(1)
         futures[0].get()
@@ -140,13 +124,13 @@ class KafkaEventLogSubscriptionIntegrationTest {
         val eventLogSub1 = subscriptionFactory.createEventLogSubscription(
             SubscriptionConfig("$TOPIC2-group", TOPIC2, 1),
             TestEventLogProcessor(latch),
-            kafkaConfig,
+            TEST_CONFIG,
             null
         )
         val eventLogSub2 = subscriptionFactory.createEventLogSubscription(
             SubscriptionConfig("$TOPIC2-group", TOPIC2, 2),
             TestEventLogProcessor(latch),
-            kafkaConfig,
+            TEST_CONFIG,
             null
         )
 

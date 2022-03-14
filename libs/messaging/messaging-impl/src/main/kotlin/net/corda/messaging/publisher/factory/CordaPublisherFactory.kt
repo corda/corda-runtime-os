@@ -13,7 +13,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
-import net.corda.messaging.config.ConfigResolver
+import net.corda.messaging.config.MessagingConfigResolver
 import net.corda.messaging.constants.SubscriptionType
 import net.corda.messaging.publisher.CordaPublisherImpl
 import net.corda.messaging.publisher.CordaRPCSenderImpl
@@ -44,7 +44,7 @@ class CordaPublisherFactory @Activate constructor(
         publisherConfig: PublisherConfig,
         kafkaConfig: SmartConfig
     ): Publisher {
-        val configBuilder = ConfigResolver(kafkaConfig.factory)
+        val configBuilder = MessagingConfigResolver(kafkaConfig.factory)
         val config = configBuilder.buildPublisherConfig(publisherConfig, kafkaConfig)
         // TODO 3781 - topic prefix
         val producerConfig = ProducerConfig(config.clientId, config.instanceId, ProducerRoles.PUBLISHER)
@@ -57,7 +57,7 @@ class CordaPublisherFactory @Activate constructor(
         kafkaConfig: SmartConfig
     ): RPCSender<REQUEST, RESPONSE> {
 
-        val configResolver = ConfigResolver(kafkaConfig.factory)
+        val configResolver = MessagingConfigResolver(kafkaConfig.factory)
         val subscriptionConfig = SubscriptionConfig(rpcConfig.groupName, rpcConfig.requestTopic)
         val config = configResolver.buildSubscriptionConfig(
             SubscriptionType.RPC_SENDER,

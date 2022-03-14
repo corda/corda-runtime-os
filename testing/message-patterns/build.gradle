@@ -46,6 +46,7 @@ dependencies {
     kafkaIntegrationTestImplementation "net.corda:corda-avro-schema"
     kafkaIntegrationTestImplementation "net.corda:corda-base"
     kafkaIntegrationTestImplementation 'net.corda:corda-topic-schema'
+    kafkaIntegrationTestImplementation 'net.corda:corda-config-schema'
     kafkaIntegrationTestImplementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
     kafkaIntegrationTestImplementation "com.typesafe:config:$typeSafeConfigVersion"

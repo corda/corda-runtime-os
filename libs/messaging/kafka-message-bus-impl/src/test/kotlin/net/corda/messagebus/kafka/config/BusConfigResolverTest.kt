@@ -7,7 +7,7 @@ import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.constants.ConsumerRoles
 import net.corda.messagebus.api.constants.ProducerRoles
-import net.corda.messagebus.kafka.config.ConfigResolver
+import net.corda.messagebus.kafka.config.BusConfigResolver
 import net.corda.messaging.api.exception.CordaMessageAPIConfigException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -18,7 +18,7 @@ import org.junit.jupiter.params.provider.MethodSource
 import java.util.Properties
 import java.util.stream.Stream
 
-class ConfigResolverTest {
+class BusConfigResolverTest {
 
     companion object {
         private const val TEST_CONFIG = "test.conf"
@@ -190,7 +190,7 @@ class ConfigResolverTest {
     @MethodSource("consumerConfigSource")
     fun `config resolution for consumers`(role: ConsumerRoles, expectedProperties: Properties) {
         val busConfig = loadTestConfig(TEST_CONFIG)
-        val resolver = ConfigResolver(smartConfigFactory)
+        val resolver = BusConfigResolver(smartConfigFactory)
         val (_, properties) = resolver.resolve(
             busConfig,
             ConsumerConfig(GROUP_NAME, CLIENT_ID, role)
@@ -201,7 +201,7 @@ class ConfigResolverTest {
     @Test
     fun `an empty config can be resolved correctly for consumers`() {
         val busConfig = loadTestConfig(EMPTY_CONFIG)
-        val resolver = ConfigResolver(smartConfigFactory)
+        val resolver = BusConfigResolver(smartConfigFactory)
         val (_, properties) = resolver.resolve(
             busConfig,
             ConsumerConfig(GROUP_NAME, CLIENT_ID, ConsumerRoles.COMPACTED)
@@ -215,7 +215,7 @@ class ConfigResolverTest {
     @MethodSource("producerConfigSource")
     fun `config resolution for producers`(role: ProducerRoles, expectedProperties: Properties) {
         val busConfig = loadTestConfig(TEST_CONFIG)
-        val resolver = ConfigResolver(smartConfigFactory)
+        val resolver = BusConfigResolver(smartConfigFactory)
         val (_, properties) =
             resolver.resolve(busConfig, ProducerConfig(CLIENT_ID, INSTANCE_ID, role))
         assertProducerProperties(expectedProperties, properties)
@@ -224,7 +224,7 @@ class ConfigResolverTest {
     @Test
     fun `an empty config can be resolved for producers`() {
         val busConfig = loadTestConfig(EMPTY_CONFIG)
-        val resolver = ConfigResolver(smartConfigFactory)
+        val resolver = BusConfigResolver(smartConfigFactory)
         val (_, properties) =
             resolver.resolve(
                 busConfig,
@@ -238,7 +238,7 @@ class ConfigResolverTest {
     @Test
     fun `no transactional id is present if the instance id is not set`() {
         val busConfig = loadTestConfig(TEST_CONFIG)
-        val resolver = ConfigResolver(smartConfigFactory)
+        val resolver = BusConfigResolver(smartConfigFactory)
         val (_, properties) =
             resolver.resolve(busConfig, ProducerConfig(CLIENT_ID, null, ProducerRoles.PUBLISHER))
         val expectedProperties = getExpectedProducerProperties(
@@ -254,7 +254,7 @@ class ConfigResolverTest {
     @Test
     fun `configuration resolution fails if the bus is the incorrect type`() {
         val busConfig = loadTestConfig(INCORRECT_BUS_CONFIG)
-        val resolver = ConfigResolver(smartConfigFactory)
+        val resolver = BusConfigResolver(smartConfigFactory)
         assertThrows<CordaMessageAPIConfigException> {
             resolver.resolve(busConfig, ConsumerConfig(GROUP_NAME, CLIENT_ID, ConsumerRoles.DURABLE))
         }

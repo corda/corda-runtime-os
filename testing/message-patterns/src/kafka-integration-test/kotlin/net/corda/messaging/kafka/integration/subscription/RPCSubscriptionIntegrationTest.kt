@@ -1,12 +1,9 @@
 package net.corda.messaging.kafka.integration.subscription
 
-import com.typesafe.config.ConfigValueFactory
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse
 import net.corda.data.messaging.ResponseStatus
-import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -18,7 +15,7 @@ import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.kafka.integration.IntegrationTestProperties
+import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.TEST_CONFIG
 import net.corda.messaging.kafka.integration.TopicTemplates
 import net.corda.messaging.kafka.integration.getKafkaProperties
 import net.corda.messaging.kafka.integration.processors.TestRPCAvroResponderProcessor
@@ -32,7 +29,6 @@ import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
@@ -49,7 +45,6 @@ import java.util.concurrent.TimeUnit
 class RPCSubscriptionIntegrationTest {
 
     private lateinit var rpcConfig: RPCConfig<String, String>
-    private lateinit var kafkaConfig: SmartConfig
     private val kafkaProperties = getKafkaProperties()
 
     private companion object {
@@ -68,20 +63,6 @@ class RPCSubscriptionIntegrationTest {
     @InjectService(timeout = 4000)
     lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 
-    @BeforeEach
-    fun beforeEach() {
-        kafkaConfig = SmartConfigImpl.empty()
-            .withValue(
-                IntegrationTestProperties.KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(
-                    IntegrationTestProperties.BOOTSTRAP_SERVERS_VALUE
-                )
-            )
-            .withValue(
-                IntegrationTestProperties.TOPIC_PREFIX,
-                ConfigValueFactory.fromAnyRef(TopicTemplates.TEST_TOPIC_PREFIX)
-            )
-    }
-
     @Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `start rpc sender and responder, send message, complete correctly`() {
@@ -95,10 +76,10 @@ class RPCSubscriptionIntegrationTest {
             String::class.java,
             String::class.java
         )
-        val rpcSender = publisherFactory.createRPCSender(rpcConfig, kafkaConfig)
+        val rpcSender = publisherFactory.createRPCSender(rpcConfig, TEST_CONFIG)
 
         val rpcSub = subscriptionFactory.createRPCSubscription(
-            rpcConfig, kafkaConfig, TestRPCResponderProcessor()
+            rpcConfig, TEST_CONFIG, TestRPCResponderProcessor()
         )
 
         val coordinator1 =
@@ -179,10 +160,10 @@ class RPCSubscriptionIntegrationTest {
             RPCRequest::class.java,
             RPCResponse::class.java
         )
-        val rpcSender = publisherFactory.createRPCSender(rpcConfig, kafkaConfig)
+        val rpcSender = publisherFactory.createRPCSender(rpcConfig, TEST_CONFIG)
 
         val rpcSub = subscriptionFactory.createRPCSubscription(
-            rpcConfig, kafkaConfig, TestRPCAvroResponderProcessor()
+            rpcConfig, TEST_CONFIG, TestRPCAvroResponderProcessor()
         )
 
         rpcSender.start()
@@ -235,10 +216,10 @@ class RPCSubscriptionIntegrationTest {
             String::class.java,
             String::class.java
         )
-        val rpcSender = publisherFactory.createRPCSender(rpcConfig, kafkaConfig)
+        val rpcSender = publisherFactory.createRPCSender(rpcConfig, TEST_CONFIG)
 
         val rpcSub = subscriptionFactory.createRPCSubscription(
-            rpcConfig, kafkaConfig, TestRPCErrorResponderProcessor()
+            rpcConfig, TEST_CONFIG, TestRPCErrorResponderProcessor()
         )
 
         rpcSender.start()
@@ -277,10 +258,10 @@ class RPCSubscriptionIntegrationTest {
             String::class.java,
             String::class.java
         )
-        val rpcSender = publisherFactory.createRPCSender(rpcConfig, kafkaConfig)
+        val rpcSender = publisherFactory.createRPCSender(rpcConfig, TEST_CONFIG)
 
         val rpcSub = subscriptionFactory.createRPCSubscription(
-            rpcConfig, kafkaConfig, TestRPCCancelResponderProcessor()
+            rpcConfig, TEST_CONFIG, TestRPCCancelResponderProcessor()
         )
 
         rpcSender.start()
@@ -319,10 +300,10 @@ class RPCSubscriptionIntegrationTest {
             String::class.java,
             String::class.java
         )
-        val rpcSender = publisherFactory.createRPCSender(rpcConfig, kafkaConfig)
+        val rpcSender = publisherFactory.createRPCSender(rpcConfig, TEST_CONFIG)
 
         val rpcSub = subscriptionFactory.createRPCSubscription(
-            rpcConfig, kafkaConfig, TestRPCUnresponsiveResponderProcessor()
+            rpcConfig, TEST_CONFIG, TestRPCUnresponsiveResponderProcessor()
         )
 
         rpcSender.start()

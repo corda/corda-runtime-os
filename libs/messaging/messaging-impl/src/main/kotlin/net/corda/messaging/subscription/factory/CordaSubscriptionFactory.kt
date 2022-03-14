@@ -21,7 +21,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
-import net.corda.messaging.config.ConfigResolver
+import net.corda.messaging.config.MessagingConfigResolver
 import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.constants.SubscriptionType
 import net.corda.messaging.subscription.CompactedSubscriptionImpl
@@ -64,9 +64,9 @@ internal class CordaSubscriptionFactory @Activate constructor(
         subscriptionConfig: SubscriptionConfig,
         processor: PubSubProcessor<K, V>,
         executor: ExecutorService?,
-        nodeConfig: SmartConfig
+        messagingConfig: SmartConfig
     ): Subscription<K, V> {
-        val config = getConfig(SubscriptionType.PUB_SUB, subscriptionConfig, nodeConfig)
+        val config = getConfig(SubscriptionType.PUB_SUB, subscriptionConfig, messagingConfig)
         return PubSubSubscriptionImpl(
             config,
             cordaConsumerBuilder,
@@ -79,7 +79,7 @@ internal class CordaSubscriptionFactory @Activate constructor(
     override fun <K : Any, V : Any> createDurableSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: DurableProcessor<K, V>,
-        nodeConfig: SmartConfig,
+        messagingConfig: SmartConfig,
         partitionAssignmentListener: PartitionAssignmentListener?
     ): Subscription<K, V> {
         if (subscriptionConfig.instanceId == null) {
@@ -87,7 +87,7 @@ internal class CordaSubscriptionFactory @Activate constructor(
                 "Cannot create durable subscription producer for $subscriptionConfig. No instanceId configured"
             )
         }
-        val config = getConfig(SubscriptionType.DURABLE, subscriptionConfig, nodeConfig)
+        val config = getConfig(SubscriptionType.DURABLE, subscriptionConfig, messagingConfig)
         return DurableSubscriptionImpl(
             config,
             cordaConsumerBuilder,
@@ -101,9 +101,9 @@ internal class CordaSubscriptionFactory @Activate constructor(
     override fun <K : Any, V : Any> createCompactedSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: CompactedProcessor<K, V>,
-        nodeConfig: SmartConfig
+        messagingConfig: SmartConfig
     ): CompactedSubscription<K, V> {
-        val config = getConfig(SubscriptionType.COMPACTED, subscriptionConfig, nodeConfig)
+        val config = getConfig(SubscriptionType.COMPACTED, subscriptionConfig, messagingConfig)
         val mapFactory = object : MapFactory<K, V> {
             override fun createMap(): MutableMap<K, V> = ConcurrentHashMap<K, V>()
             override fun destroyMap(map: MutableMap<K, V>) {
@@ -123,10 +123,10 @@ internal class CordaSubscriptionFactory @Activate constructor(
     override fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: StateAndEventProcessor<K, S, E>,
-        nodeConfig: SmartConfig,
+        messagingConfig: SmartConfig,
         stateAndEventListener: StateAndEventListener<K, S>?
     ): StateAndEventSubscription<K, S, E> {
-        val config = getConfig(SubscriptionType.STATE_AND_EVENT, subscriptionConfig, nodeConfig)
+        val config = getConfig(SubscriptionType.STATE_AND_EVENT, subscriptionConfig, messagingConfig)
         val serializer = cordaAvroSerializationFactory.createAvroSerializer<Any> { }
         return StateAndEventSubscriptionImpl(
             config,
@@ -141,7 +141,7 @@ internal class CordaSubscriptionFactory @Activate constructor(
     override fun <K : Any, V : Any> createEventLogSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: EventLogProcessor<K, V>,
-        nodeConfig: SmartConfig,
+        messagingConfig: SmartConfig,
         partitionAssignmentListener: PartitionAssignmentListener?
     ): Subscription<K, V> {
         if (subscriptionConfig.instanceId == null) {
@@ -149,7 +149,7 @@ internal class CordaSubscriptionFactory @Activate constructor(
                 "Cannot create durable subscription producer for $subscriptionConfig. No instanceId configured"
             )
         }
-        val config = getConfig(SubscriptionType.EVENT_LOG, subscriptionConfig, nodeConfig)
+        val config = getConfig(SubscriptionType.EVENT_LOG, subscriptionConfig, messagingConfig)
         return EventLogSubscriptionImpl(
             config,
             cordaConsumerBuilder,
@@ -162,10 +162,10 @@ internal class CordaSubscriptionFactory @Activate constructor(
 
     override fun <REQUEST : Any, RESPONSE : Any> createRPCSubscription(
         rpcConfig: RPCConfig<REQUEST, RESPONSE>,
-        nodeConfig: SmartConfig,
+        messagingConfig: SmartConfig,
         responderProcessor: RPCResponderProcessor<REQUEST, RESPONSE>
     ): RPCSubscription<REQUEST, RESPONSE> {
-        val config = getConfig(SubscriptionType.RPC_RESPONDER, rpcConfig, nodeConfig)
+        val config = getConfig(SubscriptionType.RPC_RESPONDER, rpcConfig, messagingConfig)
         val cordaAvroSerializer = cordaAvroSerializationFactory.createAvroSerializer<RESPONSE> { }
         val cordaAvroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({ }, rpcConfig.requestType)
 
@@ -185,7 +185,7 @@ internal class CordaSubscriptionFactory @Activate constructor(
         subscriptionConfig: SubscriptionConfig,
         messagingConfig: SmartConfig
     ): ResolvedSubscriptionConfig {
-        val configBuilder = ConfigResolver(messagingConfig.factory)
+        val configBuilder = MessagingConfigResolver(messagingConfig.factory)
         return configBuilder.buildSubscriptionConfig(
             subscriptionType,
             subscriptionConfig,

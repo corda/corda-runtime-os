@@ -41,14 +41,14 @@ interface SubscriptionFactory {
      * @param processor This provides the callback mechanism for feed updates (see [PubSubProcessor])
      * @param executor This will allow for the threading model to be controlled by the subscriber. If null processor will
      * execute on the same thread as the consumer.
-     * @param nodeConfig Configuration to override the default settings for the subscription
+     * @param messagingConfig Configuration to override the default settings for the subscription
      * @return A [Subscription] with key (of type [K]) and value (of type [V]) to manage lifecycle.
      */
     fun <K : Any, V : Any> createPubSubSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: PubSubProcessor<K, V>,
         executor: ExecutorService?,
-        nodeConfig: SmartConfig = SmartConfigImpl.empty()
+        messagingConfig: SmartConfig = SmartConfigImpl.empty()
     ): Subscription<K, V>
 
     /**
@@ -63,14 +63,14 @@ interface SubscriptionFactory {
      *
      * @param subscriptionConfig Define the mandatory params for creating a subscription.
      * @param processor This provides the callback mechanism for feed updates (see [CompactedProcessor])
-     * @param nodeConfig Configuration to override the default settings for the subscription
+     * @param messagingConfig Configuration to override the default settings for the subscription
      * @param partitionAssignmentListener a listener that reacts to partition assignment and revocations.
      * @return A [Subscription] with key (of type [K]) and value (of type [V]) to manage lifecycle.
      */
     fun <K : Any, V : Any> createDurableSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: DurableProcessor<K, V>,
-        nodeConfig: SmartConfig = SmartConfigImpl.empty(),
+        messagingConfig: SmartConfig = SmartConfigImpl.empty(),
         partitionAssignmentListener: PartitionAssignmentListener?
     ): Subscription<K, V>
 
@@ -83,13 +83,13 @@ interface SubscriptionFactory {
      *
      * @param subscriptionConfig Define the mandatory params for creating a subscription.
      * @param processor This provides the callback mechanism for feed updates (see [CompactedProcessor])
-     * @param nodeConfig Configuration to override the default settings for the subscription
+     * @param messagingConfig Configuration to override the default settings for the subscription
      * @return A subscription to manage lifecycle.
      */
     fun <K : Any, V : Any> createCompactedSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: CompactedProcessor<K, V>,
-        nodeConfig: SmartConfig = SmartConfigImpl.empty(),
+        messagingConfig: SmartConfig = SmartConfigImpl.empty(),
     ): CompactedSubscription<K, V>
 
     /**
@@ -108,14 +108,14 @@ interface SubscriptionFactory {
      *
      * @param subscriptionConfig Define the mandatory params for creating a subscription.
      * @param processor This provides the callback mechanism for feed updates (see [StateAndEventProcessor])
-     * @param nodeConfig Configuration to override the default settings for the subscription
+     * @param messagingConfig Configuration to override the default settings for the subscription
      * @param stateAndEventListener listener to give client access to the in-memory map of states
      * @return A [StateAndEventSubscription] to manage lifecycle.
      */
     fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: StateAndEventProcessor<K, S, E>,
-        nodeConfig: SmartConfig = SmartConfigImpl.empty(),
+        messagingConfig: SmartConfig = SmartConfigImpl.empty(),
         stateAndEventListener: StateAndEventListener<K, S>? = null
     ): StateAndEventSubscription<K, S, E>
 
@@ -123,13 +123,13 @@ interface SubscriptionFactory {
      * Creates an event log subscription.
      * @param processor the processor that will be wired up with the created subscription.
      * @param subscriptionConfig Define the mandatory params for creating a subscription.
-     * @param nodeConfig Map of properties to override the default settings for the connection to the source of events
+     * @param messagingConfig Map of properties to override the default settings for the connection to the source of events
      * @param partitionAssignmentListener a listener that reacts to partition assignment and revocations.
      */
     fun <K : Any, V : Any> createEventLogSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: EventLogProcessor<K, V>,
-        nodeConfig: SmartConfig = SmartConfigImpl.empty(),
+        messagingConfig: SmartConfig = SmartConfigImpl.empty(),
         partitionAssignmentListener: PartitionAssignmentListener?
     ): Subscription<K, V>
 
@@ -147,12 +147,12 @@ interface SubscriptionFactory {
      * (similar to the pub/sub pattern)
      *
      * @param rpcConfig Define the mandatory params for creating a subscription.
-     * @param nodeConfig Map of properties to override the default settings for the connection to the source of events
+     * @param messagingConfig Map of properties to override the default settings for the connection to the source of events
      * @param responderProcessor processor in charge of handling incoming requests
      */
     fun <REQUEST : Any, RESPONSE : Any> createRPCSubscription(
         rpcConfig: RPCConfig<REQUEST, RESPONSE>,
-        nodeConfig: SmartConfig = SmartConfigImpl.empty(),
+        messagingConfig: SmartConfig = SmartConfigImpl.empty(),
         responderProcessor: RPCResponderProcessor<REQUEST, RESPONSE>
     ): RPCSubscription<REQUEST, RESPONSE>
 }

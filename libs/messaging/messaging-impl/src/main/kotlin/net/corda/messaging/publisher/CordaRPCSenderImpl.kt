@@ -34,8 +34,7 @@ import net.corda.v5.base.util.debug
 import org.slf4j.Logger
 import java.nio.ByteBuffer
 import java.time.Instant
-import java.util.Date
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
@@ -136,7 +135,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             attempts++
             try {
                 log.debug { "Creating rpc response consumer.  Attempt: $attempts" }
-                val producerConfig = ProducerConfig(config.clientId, config.instanceId, ProducerRoles.RPC_SENDER)
+                val producerConfig = ProducerConfig(config.clientId, null, ProducerRoles.RPC_SENDER)
                 producer = cordaProducerBuilder.createProducer(producerConfig, config.busConfig)
                 val consumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.RPC_SENDER)
                 cordaConsumerBuilder.createConsumer(

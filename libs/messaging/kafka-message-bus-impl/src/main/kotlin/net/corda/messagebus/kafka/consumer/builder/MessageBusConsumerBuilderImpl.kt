@@ -5,7 +5,7 @@ import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.builder.MessageBusConsumerBuilder
-import net.corda.messagebus.kafka.config.ConfigResolver
+import net.corda.messagebus.kafka.config.BusConfigResolver
 import net.corda.messagebus.kafka.consumer.CordaKafkaConsumerImpl
 import net.corda.messagebus.kafka.serialization.CordaAvroDeserializerImpl
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
@@ -17,7 +17,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.util.Properties
+import java.util.*
 
 /**
  * Generate a Kafka Consumer.
@@ -40,7 +40,7 @@ class MessageBusConsumerBuilderImpl @Activate constructor(
         onSerializationError: (ByteArray) -> Unit,
         listener: CordaConsumerRebalanceListener?
     ): CordaConsumer<K, V> {
-        val resolver = ConfigResolver(busConfig.factory)
+        val resolver = BusConfigResolver(busConfig.factory)
         val (resolvedConfig, kafkaProperties) = resolver.resolve(busConfig, consumerConfig)
         return try {
             val consumer = createKafkaConsumer(kafkaProperties, kClazz, vClazz, onSerializationError)
