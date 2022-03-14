@@ -6,6 +6,8 @@ pluginManagement {
 
     plugins {
         id 'org.jetbrains.kotlin.jvm' version kotlinVersion
+        id 'com.gradle.enterprise' version gradleEnterpriseVersion
+        id 'com.gradle.common-custom-user-data-gradle-plugin' version gradleDataPlugin
     }
 }
 
@@ -14,6 +16,12 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
+
+plugins {
+    id 'com.gradle.common-custom-user-data-gradle-plugin'
+    id 'com.gradle.enterprise'
+}
+
 
 rootProject.name = "corda-cli-plugin-host"
 
@@ -25,3 +33,19 @@ include 'plugins:plugin1'
 include 'plugins:plugin2'
 include 'plugins:template'
 
+
+gradleEnterprise {
+    server = gradleEnterpriseUrl
+    allowUntrustedServer = false
+    buildScan {
+        def apiKey = settings.ext.find('CORDA_GRADLE_SCAN_KEY') ?: System.getenv('CORDA_GRADLE_SCAN_KEY')
+        if (apiKey?.trim()) {
+            publishAlways()
+            capture {
+                taskInputFiles = true
+            }
+            uploadInBackground = false
+            accessKey = apiKey
+        }
+    }
+}
