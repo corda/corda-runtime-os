@@ -36,7 +36,7 @@ class ConfigurationReadServiceImplTest {
             {}
         """
 
-        private const val TIMEOUT = 5000L
+        private const val TIMEOUT = 10000L
     }
 
     @InjectService(timeout = 4000)
@@ -77,7 +77,7 @@ class ConfigurationReadServiceImplTest {
         val confString = flowConfig.root().render()
         publisher.publish(listOf(Record(CONFIG_TOPIC, FLOW_CONFIG, Configuration(confString, "1"))))
         latch.await(TIMEOUT, TimeUnit.MILLISECONDS)
-        assertTrue(receivedKeys.contains(FLOW_CONFIG))
+        assertTrue(receivedKeys.contains(FLOW_CONFIG), "$FLOW_CONFIG key was missing from received keys")
         assertEquals(flowConfig, receivedConfig[FLOW_CONFIG], "Incorrect config")
         assertEquals(
             LifecycleStatus.UP,
