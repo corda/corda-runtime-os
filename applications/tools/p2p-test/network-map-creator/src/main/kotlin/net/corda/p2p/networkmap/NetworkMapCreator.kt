@@ -89,7 +89,7 @@ class NetworkMapCreator @Activate constructor(
     )
     private inner class HostingMap : PublisherToTopic() {
         @Option(
-            names = ["--topic"],
+            names = ["--hosting-map-topic"],
             description = [
                 "Topic to write the records to."
             ]
