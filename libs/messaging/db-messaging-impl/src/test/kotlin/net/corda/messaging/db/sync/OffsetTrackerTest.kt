@@ -14,7 +14,6 @@ import org.mockito.kotlin.mock
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.ScheduledFuture
 
 class OffsetTrackerTest {
 
