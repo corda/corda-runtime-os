@@ -1,99 +1,46 @@
 package net.corda.p2p.deployment.commands
 
 import net.corda.p2p.deployment.getAndCheckEnv
-import net.corda.p2p.test.KeyAlgorithm
-import net.corda.p2p.test.stub.certificates.StubCertificatesAuthority
-import net.corda.p2p.test.stub.certificates.StubCertificatesAuthority.Companion.toPem
-import picocli.CommandLine.Command
-import picocli.CommandLine.Option
+import net.corda.crypto.test.certificates.generation.StubCertificatesAuthority
+import net.corda.crypto.test.certificates.generation.StubCertificatesAuthority.Companion.PASSWORD
+import net.corda.crypto.test.certificates.generation.StubCertificatesAuthority.Companion.toPem
+import net.corda.v5.cipher.suite.schemes.SignatureSchemeTemplate
 import java.io.File
 
-@Command(
-    name = "create-stores",
-    showDefaultValues = true,
-    description = ["Create key and trust stores"],
-    mixinStandardHelpOptions = true,
-)
-class CreateStores : Runnable {
+internal class CreateStores(
+    val trustStoreFile: File,
+    val tlsCertificates: File,
+    val sslStoreFile: File,
+    val trustStoreLocation: File?,
+) {
     companion object {
         const val authorityName = "R3P2pAuthority"
     }
 
-    @Option(
-        names = ["-k", "--tinycert-api-key"],
-        description = ["The TinyCert API Key"]
-    )
-    private var apiKey = getAndCheckEnv("TINYCERT_API_KEY")
+    private val apiKey = getAndCheckEnv("TINYCERT_API_KEY")
 
-    @Option(
-        names = ["-p", "--tinycert-passphrase"],
-        description = ["The TinyCert Pass phrase"]
-    )
-    private var passPhrase = getAndCheckEnv("TINYCERT_PASS_PHRASE")
+    private val passPhrase = getAndCheckEnv("TINYCERT_PASS_PHRASE")
 
-    @Option(
-        names = ["-e", "--tinycert-email"],
-        description = ["The TinyCert email"]
-    )
-    private var email = getAndCheckEnv("TINYCERT_EMAIL")
+    private val email = getAndCheckEnv("TINYCERT_EMAIL")
 
-    @Option(
-        names = ["--hosts"],
-        description = ["The host names"]
-    )
-    var hosts = listOf("corda.net", "www.corda.net", "dev.corda.net")
-
-    @Option(
-        names = ["-t", "--trust-store"],
-        description = ["The trust store file"]
-    )
-    var trustStoreFile: File? = File("truststore.pem")
-
-    @Option(
-        names = ["-c", "--certificate-chain-file"],
-        description = ["The TLS certificate chain file"]
-    )
-    var tlsCertificates: File? = null
-
-    @Option(
-        names = ["-s", "--ssl-store"],
-        description = ["The SSL store file"]
-    )
-    var sslStoreFile = File("keystore.jks")
-
-    @Option(
-        names = ["-a", "--key-algorithm"],
-        description = ["The keys algorithm"]
-    )
-    var algo = KeyAlgorithm.RSA
-
-    @Option(
-        names = ["--local-trust-store-location"],
-        description = ["The trust store location (if omitted, will use tiny cert)"]
-    )
-    var trustStoreLocation: File? = null
-
-    @Option(
-        names = ["--key-store-password"],
-        description = ["The key store password"]
-    )
-    private var keyStorePassword = "password"
-
-    override fun run() {
+    fun create(
+        hosts: Collection<String>,
+        signatureSchemeTemplate: SignatureSchemeTemplate,
+    ) {
         val authority = if (trustStoreLocation != null) {
-            StubCertificatesAuthority.createLocalAuthority(algo, trustStoreLocation)
+            StubCertificatesAuthority.createLocalAuthority(signatureSchemeTemplate, trustStoreLocation)
         } else {
-            StubCertificatesAuthority.createRemoteAuthority(
+            StubCertificatesAuthority.createTinyCertAuthority(
                 apiKey, passPhrase, email, authorityName
             )
         }
         authority.use { certificatesAuthority ->
-            trustStoreFile?.writeText(certificatesAuthority.caCertificate.toPem())
-            val keyStore = certificatesAuthority.prepareKeyStore(hosts)
+            trustStoreFile.writeText(certificatesAuthority.caCertificate.toPem())
+            val keyStore = certificatesAuthority.generateKeyAndCertificate(hosts)
             sslStoreFile.outputStream().use {
-                keyStore.toKeyStore().store(it, keyStorePassword.toCharArray())
+                keyStore.toKeyStore().store(it, PASSWORD.toCharArray())
             }
-            tlsCertificates?.writeText(keyStore.certificatePem())
+            tlsCertificates.writeText(keyStore.certificatePem())
         }
     }
 }

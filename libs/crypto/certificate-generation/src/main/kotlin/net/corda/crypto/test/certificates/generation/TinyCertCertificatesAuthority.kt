@@ -1,4 +1,4 @@
-package net.corda.p2p.test.stub.certificates
+package net.corda.crypto.test.certificates.generation
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.bouncycastle.util.io.pem.PemReader
@@ -173,7 +173,7 @@ internal class TinyCertCertificatesAuthority(
         }
     }
 
-    override fun prepareKeyStore(hosts: Collection<String>): PrivateKeyWithCertificate {
+    override fun generateKeyAndCertificate(hosts: Collection<String>): PrivateKeyWithCertificate {
         val certificateId = getCertificateForHosts(hosts)
         val certificatePem = callApiMap(
             "cert/get",

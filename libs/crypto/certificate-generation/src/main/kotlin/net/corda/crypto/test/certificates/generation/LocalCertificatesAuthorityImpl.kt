@@ -1,7 +1,8 @@
-package net.corda.p2p.test.stub.certificates
+package net.corda.crypto.test.certificates.generation
 
-import net.corda.p2p.test.KeyAlgorithm
-import net.corda.v5.base.util.days
+import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC
+import net.corda.v5.cipher.suite.schemes.RSA_SHA256_SIGNATURE_SPEC
+import net.corda.v5.cipher.suite.schemes.SignatureSchemeTemplate
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.BasicConstraints
 import org.bouncycastle.asn1.x509.Extension
@@ -22,13 +23,14 @@ import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.PublicKey
-import java.util.Calendar
+import java.time.Duration
 import java.util.Date
 import java.util.concurrent.atomic.AtomicLong
 
 internal class LocalCertificatesAuthorityImpl(
-    private val keyAlgorithm: KeyAlgorithm,
-    private val directory: File?
+    private val signatureSchemeTemplate: SignatureSchemeTemplate,
+    private val directory: File?,
+    private val validDuration: Duration,
 ) : LocalCertificatesAuthority() {
     private val now = System.currentTimeMillis()
     private val serialNumberFile by lazy {
@@ -50,14 +52,9 @@ internal class LocalCertificatesAuthorityImpl(
             AtomicLong(now)
         }
     }
-    private val providerName by lazy {
-        when (keyAlgorithm) {
-            KeyAlgorithm.RSA -> "RSA"
-            KeyAlgorithm.ECDSA -> "EC"
-        }
-    }
+
     private fun generateKeyPair(): KeyPair {
-        val keysFactory = KeyPairGenerator.getInstance(providerName)
+        val keysFactory = KeyPairGenerator.getInstance(signatureSchemeTemplate.algorithmName)
         return keysFactory.generateKeyPair()
     }
 
@@ -82,11 +79,7 @@ internal class LocalCertificatesAuthorityImpl(
                 true,
                 basicConstraints
             )
-            val signatureAlgorithm =
-                when (keyAlgorithm) {
-                    KeyAlgorithm.RSA -> "SHA256WithRSA"
-                    KeyAlgorithm.ECDSA -> "SHA256withECDSA"
-                }
+            val signatureAlgorithm = signatureSchemeTemplate.signatureSpec.signatureName
             val signer = JcaContentSignerBuilder(signatureAlgorithm).build(caKeyPair.private)
 
             JcaX509CertificateConverter().getCertificate(
@@ -102,17 +95,18 @@ internal class LocalCertificatesAuthorityImpl(
         val startDate = Date(now)
         val dnName = X500Name(name)
         val certSerialNumber = nextSerialNumber()
-        val calendar = Calendar.getInstance()
-        calendar.time = startDate
-        calendar.add(Calendar.YEAR, 1)
-        val endDate = Date(now + 30.days.toMillis())
+        val endDate = Date(now + validDuration.toMillis())
         return JcaX509v3CertificateBuilder(dnName, certSerialNumber, startDate, endDate, dnName, key)
     }
 
     override fun createAuthorityKeyStore(alias: String): KeyStore {
         return KeyStore.getInstance("JKS").also {
             it.load(null)
-            it.setKeyEntry(alias, certificateAndPrivateKey.second, PASSWORD.toCharArray(), arrayOf(certificateAndPrivateKey.first),)
+            it.setKeyEntry(
+                alias,
+                certificateAndPrivateKey.second, PASSWORD.toCharArray(),
+                arrayOf(certificateAndPrivateKey.first),
+            )
         }
     }
 
@@ -120,11 +114,11 @@ internal class LocalCertificatesAuthorityImpl(
         certificateAndPrivateKey.first
     }
 
-    override fun prepareKeyStore(hosts: Collection<String>): PrivateKeyWithCertificate {
+    override fun generateKeyAndCertificate(hosts: Collection<String>): PrivateKeyWithCertificate {
         val signatureAlgorithm =
             when (certificateAndPrivateKey.second.algorithm) {
-                "RSA" -> "SHA256WithRSA"
-                "EC" -> "SHA256withECDSA"
+                "RSA" -> RSA_SHA256_SIGNATURE_SPEC.signatureName
+                "EC" -> ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC.signatureName
                 else -> throw InvalidParameterException("Unsupported Algorithm")
             }
         val sigAlgId = DefaultSignatureAlgorithmIdentifierFinder().find(signatureAlgorithm)

@@ -7,8 +7,9 @@ description 'P2P Test Stub Certificates Authority'
 
 dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "net.corda:corda-base"
-    implementation "net.corda:corda-avro-schema"
-    implementation "net.corda:corda-crypto"
+    implementation 'net.corda:corda-base'
+    implementation 'net.corda:corda-avro-schema'
+    implementation 'net.corda:corda-crypto'
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'net.corda:corda-cipher-suite'
 }

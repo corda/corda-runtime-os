@@ -4,8 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.p2p.deployment.DeploymentException
 import net.corda.p2p.deployment.pods.Port
 import net.corda.p2p.test.KeyAlgorithm
-import net.corda.p2p.test.stub.certificates.StubCertificatesAuthority
-import net.corda.p2p.test.stub.certificates.StubCertificatesAuthority.Companion.PASSWORD
+import net.corda.crypto.test.certificates.generation.StubCertificatesAuthority
+import net.corda.crypto.test.certificates.generation.StubCertificatesAuthority.Companion.PASSWORD
+import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_SHA256_TEMPLATE
+import net.corda.v5.cipher.suite.schemes.RSA_SHA256_TEMPLATE
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
@@ -85,12 +87,18 @@ class ConfigureAll : Runnable {
         annotations["group-id"] as? String ?: throw DeploymentException("Missing group ID for $namespaceName")
     }
     private val keyStoreDir = File("p2p-deployment/keystores/")
+
+    private val signatureScheme = when (algo) {
+        KeyAlgorithm.RSA -> RSA_SHA256_TEMPLATE
+        KeyAlgorithm.ECDSA -> ECDSA_SECP256K1_SHA256_TEMPLATE
+    }
+
     private fun keyStoreFile(name: String): File {
-        return File(keyStoreDir.absolutePath, "$name.keystore.jks").also { keyStoreFile ->
+        return File(keyStoreDir.absolutePath, "$name.identity.keystore.jks").also { keyStoreFile ->
             if (!keyStoreFile.exists()) {
                 keyStoreDir.mkdirs()
-                val authority = StubCertificatesAuthority.createLocalAuthority(algo)
-                val keyStore = authority.createAuthorityKeyStore("ec")
+                val authority = StubCertificatesAuthority.createLocalAuthority(signatureScheme)
+                val keyStore = authority.createAuthorityKeyStore("identity")
                 keyStoreFile.outputStream().use {
                     keyStore.store(it, PASSWORD.toCharArray())
                 }
@@ -119,20 +127,13 @@ class ConfigureAll : Runnable {
         val tlsCertificates = File(keyStoreDir.absolutePath, "$host.tlsCertificates.pem")
         if ((!keyStoreFile.exists()) || (!trustStoreFile.exists())) {
             keyStoreDir.mkdirs()
-            val creator = CreateStores()
-            creator.sslStoreFile = keyStoreFile
-            creator.tlsCertificates = tlsCertificates
-            creator.hosts = listOf(host)
-            creator.algo = algo
-            creator.trustStoreLocation = trustStoreName?.let { File(keyStoreDir, it) }
-            creator.trustStoreFile = trustStoreFile.let {
-                if (it.exists()) {
-                    null
-                } else {
-                    it
-                }
-            }
-            creator.run()
+            val creator = CreateStores(
+                sslStoreFile = keyStoreFile,
+                trustStoreFile = trustStoreFile,
+                tlsCertificates = tlsCertificates,
+                trustStoreLocation = trustStoreName?.let { File(keyStoreDir, it) }
+            )
+            creator.create(hosts = listOf(host), signatureScheme)
         }
     }
 
@@ -162,7 +163,7 @@ class ConfigureAll : Runnable {
                 "groupId" to groupId,
                 "data" to mapOf(
                     "publicKeyStoreFile" to keyStoreFile.absolutePath,
-                    "publicKeyAlias" to "ec",
+                    "publicKeyAlias" to "identity",
                     "keystorePassword" to PASSWORD,
                     "address" to "http://$host:${Port.Gateway.port}",
                     "networkType" to "CORDA_5",
@@ -239,7 +240,7 @@ class ConfigureAll : Runnable {
                     "groupId" to annotations["group-id"],
                     "data" to mapOf(
                         "publicKeyStoreFile" to keyStoreFile(host).absolutePath,
-                        "publicKeyAlias" to "ec",
+                        "publicKeyAlias" to "identity",
                         "keystorePassword" to "password",
                         "address" to "http://$host:${Port.Gateway.port}",
                         "networkType" to "CORDA_5",
@@ -314,6 +315,12 @@ class ConfigureAll : Runnable {
 
     private fun configureGateway() {
         println("Configure gateway of $namespaceName")
+        val gatewayArguments = if (trustStoreName == null) {
+            gatewayArguments
+        } else {
+            // Adding revocationCheck when using TinyCert to allow CRL usage
+            gatewayArguments + "--revocationCheck=HARD_FAIL"
+        }
         RunJar(
             "p2p-configuration-publisher",
             listOf(
@@ -322,11 +329,7 @@ class ConfigureAll : Runnable {
                 "gateway",
                 "--hostAddress=0.0.0.0",
                 "--port=${Port.Gateway.port}",
-            ) + gatewayArguments + if (trustStoreName == null) {
-                listOf("--revocationCheck=HARD_FAIL")
-            } else {
-                emptyList()
-            }
+            ) + gatewayArguments
         ).run()
     }
 
