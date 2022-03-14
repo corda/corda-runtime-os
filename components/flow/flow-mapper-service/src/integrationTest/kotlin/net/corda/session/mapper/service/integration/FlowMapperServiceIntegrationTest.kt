@@ -8,7 +8,6 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.FlowStatusKey
 import net.corda.data.flow.event.MessageDirection
-import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
@@ -30,6 +29,7 @@ import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.test.flow.util.buildSessionEvent
 import net.corda.session.mapper.service.FlowMapperService
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -89,21 +89,20 @@ class FlowMapperServiceIntegrationTest {
         val flowKey = FlowKey(testId, HoldingIdentity(testId, testId))
         val sessionInitEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
-                SessionEvent(
-                    MessageDirection.OUTBOUND, Instant.now(), testId, 1, SessionInit(
-                        testId, testId, flowKey, identity,
-                        identity, null
-                    )
-                )
+                buildSessionEvent(MessageDirection.OUTBOUND, testId, 1, SessionInit(
+                    testId, testId, flowKey, identity,
+                    identity, null
+                ))
             )
         )
+
         publisher.publish(listOf(sessionInitEvent, sessionInitEvent))
 
         //validate p2p out only receives 1 init
         val p2pLatch = CountDownLatch(1)
         val p2pOutSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$testId-p2p-out", P2P_OUT_TOPIC),
-            TestP2POutProcessor("$testId-INITIATED", p2pLatch, 1), SmartConfigImpl.empty(), null
+            TestP2POutProcessor(testId, p2pLatch, 1), SmartConfigImpl.empty(), null
         )
         p2pOutSub.start()
         assertTrue(p2pLatch.await(3, TimeUnit.SECONDS))
@@ -112,7 +111,7 @@ class FlowMapperServiceIntegrationTest {
         //send data back
         val sessionDataEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
-                SessionEvent(MessageDirection.INBOUND, Instant.now(), testId, 2, SessionData())
+                buildSessionEvent(MessageDirection.INBOUND, testId, 2, SessionData())
             )
         )
         publisher.publish(listOf(sessionDataEvent))
@@ -191,7 +190,7 @@ class FlowMapperServiceIntegrationTest {
         //send data, no state
         val sessionDataEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
-                SessionEvent(MessageDirection.OUTBOUND, Instant.now(), testId, 1, SessionData())
+                buildSessionEvent(MessageDirection.OUTBOUND, testId, 1, SessionData())
             )
         )
         publisher.publish(listOf(sessionDataEvent))
@@ -200,7 +199,7 @@ class FlowMapperServiceIntegrationTest {
         val p2pLatch = CountDownLatch(1)
         val p2pOutSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$testId-p2p-out", P2P_OUT_TOPIC),
-            TestP2POutProcessor("$testId-INITIATED", p2pLatch, 0), SmartConfigImpl.empty(), null
+            TestP2POutProcessor(testId, p2pLatch, 0), SmartConfigImpl.empty(), null
         )
         p2pOutSub.start()
         assertFalse(p2pLatch.await(3, TimeUnit.SECONDS))

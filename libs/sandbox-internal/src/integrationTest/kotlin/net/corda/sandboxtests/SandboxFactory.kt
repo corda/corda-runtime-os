@@ -35,6 +35,5 @@ class SandboxFactory @Activate constructor(
     fun done() {
         destroySandboxGroup(group1)
         destroySandboxGroup(group2)
-        cpiLoader.stop()
     }
 }

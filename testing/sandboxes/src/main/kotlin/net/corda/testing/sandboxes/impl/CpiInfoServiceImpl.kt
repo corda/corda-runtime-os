@@ -22,12 +22,12 @@ class CpiInfoServiceImpl @Activate constructor(
         get() = true
 
     override fun getAll(): List<CpiMetadata> {
-        val cpiList = loader.getAll()
+        val cpiList = loader.getAllCpiMetadata()
         return cpiList.get()
     }
 
     override fun get(identifier: CpiIdentifier): CpiMetadata? {
-        val cpiFile = loader.get(identifier)
+        val cpiFile = loader.getCpiMetadata(identifier)
         return cpiFile.get()
     }
 

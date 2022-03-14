@@ -211,7 +211,7 @@ internal class HttpRpcServerInternal(
             resourceProvider.httpGetRoutes.map { routeInfo ->
 
                 before(routeInfo.fullPath) {
-                    authorize(authenticate(it), routeInfo.fullPath)
+                    authorize(authenticate(it), it.fullUrl())
                 }
                 registerHandlerForRoute(routeInfo, HandlerType.GET)
             }
@@ -225,7 +225,7 @@ internal class HttpRpcServerInternal(
                             )
                         )
                     }
-                    authorize(authenticate(it), routeInfo.fullPath)
+                    authorize(authenticate(it), it.fullUrl())
                 }
                 registerHandlerForRoute(routeInfo, HandlerType.POST)
             }

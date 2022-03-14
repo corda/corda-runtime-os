@@ -34,7 +34,7 @@ class SessionInitProcessorSend(
             return sessionState.apply {
                 status = SessionStateType.ERROR
                 sendEventsState.undeliveredMessages = sendEventsState.undeliveredMessages.plus(
-                    generateErrorEvent(sessionId,
+                    generateErrorEvent(sessionState,
                         "Tried to send SessionInit for session which is not null",
                         "SessionInit-SessionMismatch", instant
                     )
@@ -57,6 +57,7 @@ class SessionInitProcessorSend(
             .setLastReceivedMessageTime(instant)
             .setLastSentMessageTime(instant)
             .setIsInitiator(true)
+            .setSendAck(false)
             .setCounterpartyIdentity(sessionInit.initiatedIdentity)
             .setReceivedEventsState(SessionProcessState(0, mutableListOf()))
             .setSendEventsState(SessionProcessState(seqNum, mutableListOf(sessionEvent)))

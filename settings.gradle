@@ -61,6 +61,7 @@ pluginManagement {
         id 'com.r3.internal.gradle.plugins.r3Publish' version internalPublishVersion
         id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
         id 'com.github.ben-manes.versions' version gradleVersions
+        id "org.gradle.test-retry" version gradleTestRetryPluginVersion
     }
 }
 
@@ -123,7 +124,9 @@ include 'components:crypto:crypto-service-impl'
 include 'components:db:db-connection-manager'
 include 'components:db:db-connection-manager-impl'
 include 'components:domino-logic'
+include 'components:flow:dummy-link-manager'
 include 'components:flow:flow-mapper-service'
+include 'components:flow:flow-p2p-filter-service'
 include 'components:flow:flow-rpcops-service'
 include 'components:flow:flow-rpcops-service-impl'
 include 'components:flow:flow-service'
@@ -170,7 +173,6 @@ include 'components:virtual-node:virtual-node-rpcops-service-impl'
 include 'components:virtual-node:virtual-node-write-service'
 include 'components:virtual-node:virtual-node-write-service-impl'
 include 'libs:application:application-impl'
-include 'libs:application:application-internal'
 include 'libs:chunking:chunking-core'
 include 'libs:chunking:chunking-datamodel'
 include 'libs:configuration:configuration-core'
@@ -193,8 +195,6 @@ include 'libs:db:db-core'
 include 'libs:db:db-orm'
 include 'libs:db:db-orm-impl'
 include 'libs:db:osgi-integration-tests'
-include 'libs:flows:flow-manager'
-include 'libs:flows:flow-manager-impl'
 include 'libs:flows:flow-mapper'
 include 'libs:flows:flow-mapper-impl'
 include 'libs:flows:session-manager'
@@ -316,6 +316,7 @@ include 'testing:cpbs:split-packages:split-packages-one:library-one'
 include 'testing:cpbs:split-packages:split-packages-two'
 include 'testing:cpbs:split-packages:split-packages-two:library-two'
 include 'testing:cpbs:tic-tac-toe'
+include 'testing:flow-utilities'
 include 'testing:layered-property-map-testkit'
 include 'testing:message-patterns'
 include 'testing:sandboxes'

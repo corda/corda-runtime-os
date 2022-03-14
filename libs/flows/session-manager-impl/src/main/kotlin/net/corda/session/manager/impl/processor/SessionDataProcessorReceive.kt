@@ -6,7 +6,6 @@ import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.impl.SessionEventProcessor
-import net.corda.session.manager.impl.processor.helper.generateAckEvent
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
 import net.corda.session.manager.impl.processor.helper.recalcReceivedProcessState
@@ -61,8 +60,7 @@ class SessionDataProcessorReceive(
                         " expected seqNum is $expectedNextSeqNum"
             }
             sessionState.apply {
-                sendEventsState.undeliveredMessages =
-                    sessionState.sendEventsState.undeliveredMessages.plus(generateAckEvent(seqNum, sessionId, instant))
+                sendAck = true
             }
         }
     }
@@ -79,7 +77,6 @@ class SessionDataProcessorReceive(
         //store data event received regardless of current state status
         receivedEventState.undeliveredMessages = receivedEventState.undeliveredMessages.plus(sessionEvent)
 
-        //
         return if (isSessionMismatch(receivedEventState, expectedNextSeqNum, currentStatus)) {
             val errorMessage = "Received data message on key $key with sessionId $sessionId with sequence number of $seqNum when status" +
                     " is $currentStatus. Session mismatch error. SessionState: $sessionState"
@@ -87,15 +84,13 @@ class SessionDataProcessorReceive(
             sessionState.apply {
                 status = SessionStateType.ERROR
                 sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.plus(
-                    generateErrorEvent(sessionId, errorMessage, "SessionData-SessionMismatch", instant)
+                    generateErrorEvent(sessionState, errorMessage, "SessionData-SessionMismatch", instant)
                 )
             }
         } else {
             sessionState.apply {
                 receivedEventsState = recalcReceivedProcessState(receivedEventsState)
-                sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.plus(
-                    generateAckEvent(seqNum, sessionId, instant)
-                )
+                sendAck = true
             }
         }
     }

@@ -4,6 +4,7 @@ import net.corda.components.rpc.HttpRpcGateway
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.rpcops.ConfigRPCOpsService
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.config.Configuration
 import net.corda.flow.rpcops.FlowRPCOpsService
 import net.corda.libs.configuration.SmartConfig
@@ -50,6 +51,8 @@ class RPCProcessorImpl @Activate constructor(
     private val flowRPCOpsService: FlowRPCOpsService,
     @Reference(service = CpiUploadRPCOpsService::class)
     private val cpiUploadRPCOpsService: CpiUploadRPCOpsService,
+    @Reference(service = CpiInfoReadService::class)
+    private val cpiInfoReadService: CpiInfoReadService,
     @Reference(service = MemberOpsClient::class)
     private val memberOpsClient: MemberOpsClient
 ) : RPCProcessor {
@@ -66,6 +69,7 @@ class RPCProcessorImpl @Activate constructor(
         ::configRPCOpsService,
         ::virtualNodeRPCOpsService,
         ::cpiUploadRPCOpsService,
+        ::cpiInfoReadService,
         ::memberOpsClient
     )
 

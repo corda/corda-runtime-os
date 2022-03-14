@@ -53,9 +53,25 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
     private val log = LoggerFactory.getLogger(config.loggerName)
 
-    private lateinit var producer: CordaProducer
-    private lateinit var stateAndEventConsumer: StateAndEventConsumer<K, S, E>
-    private lateinit var eventConsumer: CordaConsumer<K, E>
+    private var nullableProducer: CordaProducer? = null
+    private var nullableStateAndEventConsumer: StateAndEventConsumer<K, S, E>? = null
+    private var nullableEventConsumer: CordaConsumer<K, E>? = null
+
+    private val producer: CordaProducer
+        get() {
+            return nullableProducer ?: throw IllegalStateException("Unexpected access to null producer.")
+        }
+
+    private val stateAndEventConsumer: StateAndEventConsumer<K, S, E>
+        get() {
+            return nullableStateAndEventConsumer
+                ?: throw IllegalStateException("Unexpected access to null stateAndEventConsumer.")
+        }
+
+    private val eventConsumer: CordaConsumer<K, E>
+        get() {
+            return nullableEventConsumer ?: throw IllegalStateException("Unexpected access to null eventConsumer.")
+        }
 
     @Volatile
     private var stopped = false
@@ -135,7 +151,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             attempts++
             try {
                 deadLetterRecords = mutableListOf()
-                producer = builder.createProducer(config)
+                nullableProducer = builder.createProducer(config)
                 val (stateAndEventConsumerTmp, rebalanceListener) = builder.createStateEventConsumerAndRebalanceListener(
                     config,
                     processor.keyClass,
@@ -151,13 +167,14 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                         deadLetterRecords.add(data)
                     }
                 )
-                stateAndEventConsumer = stateAndEventConsumerTmp
-                eventConsumer = stateAndEventConsumer.eventConsumer
-                eventConsumer.subscribe(eventTopic, rebalanceListener)
+                val eventConsumerTmp = stateAndEventConsumerTmp.eventConsumer
+                nullableStateAndEventConsumer = stateAndEventConsumerTmp
+                nullableEventConsumer = eventConsumerTmp
+                eventConsumerTmp.subscribe(eventTopic, rebalanceListener)
                 lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
 
                 while (!stopped) {
-                    stateAndEventConsumer.pollAndUpdateStates(true)
+                    stateAndEventConsumerTmp.pollAndUpdateStates(true)
                     processEvents()
                 }
             } catch (ex: Exception) {
@@ -177,13 +194,18 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     }
                 }
             } finally {
-                producer.close()
-                stateAndEventConsumer.close()
+                closeStateAndEventProducerConsumer()
             }
         }
         lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
-        producer.close()
-        stateAndEventConsumer.close()
+        closeStateAndEventProducerConsumer()
+    }
+
+    private fun closeStateAndEventProducerConsumer(){
+        nullableProducer?.close()
+        nullableStateAndEventConsumer?.close()
+        nullableProducer = null
+        nullableStateAndEventConsumer = null
     }
 
     private fun processEvents() {
@@ -289,7 +311,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
     /**
      * Handle retries for event processing.
-     * Reset [eventConsumer] position and retry poll and process of eventRecords
+     * Reset [nullableEventConsumer] position and retry poll and process of eventRecords
      * Retry a max of [consumerPollAndProcessMaxRetries] times.
      * If [consumerPollAndProcessMaxRetries] is exceeded then throw a [CordaMessageAPIIntermittentException]
      */

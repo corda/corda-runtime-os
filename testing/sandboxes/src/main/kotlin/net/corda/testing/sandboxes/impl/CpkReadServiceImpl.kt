@@ -66,29 +66,30 @@ class CpkReadServiceImpl @Activate constructor(
         return getInputStream(resourceName).buffered().use { input ->
             CPI.from(input, expansionLocation = cpkDir, verifySignature = true)
         }.let { newCpi ->
-            val cpiId = newCpi.metadata.id
-            cpis.putIfAbsent(CpiIdentifier.fromLegacy(cpiId), newCpi)?.also {
-                newCpi.close() } ?: newCpi
+            val cpiId = CpiIdentifier.fromLegacy(newCpi.metadata.id)
+            cpis.putIfAbsent(cpiId, newCpi)?.also {
+                newCpi.close()
+            } ?: newCpi
         }
     }
 
-    override fun unloadCPI(id: CpiIdentifier) {
-        remove(id)
+    override fun unloadCPI(cpi: CPI) {
+        removeCpiMetadata(CpiIdentifier.fromLegacy(cpi.metadata.id))
     }
 
-    override fun remove(id: CpiIdentifier) {
+    override fun removeCpiMetadata(id: CpiIdentifier) {
         logger.info("Removing CPI {}", id)
         cpis.remove(id)?.close()
     }
 
-    override fun getAll(): CompletableFuture<List<CpiMetadata>> {
-        val cpiList = cpis.values.map { CpiMetadata.fromLegacy(it) }.toList()
+    override fun getAllCpiMetadata(): CompletableFuture<List<CpiMetadata>> {
+        val cpiList = cpis.values.map(CpiMetadata::fromLegacy)
         return CompletableFuture.completedFuture(cpiList)
     }
 
-    override fun get(id: CpiIdentifier): CompletableFuture<CpiMetadata?> {
+    override fun getCpiMetadata(id: CpiIdentifier): CompletableFuture<CpiMetadata?> {
         val legacyCpi: CPI? = cpis[id]
-        val cpi: CpiMetadata? = if(legacyCpi == null) { null } else { CpiMetadata.fromLegacy(legacyCpi) }
+        val cpi: CpiMetadata? = legacyCpi?.let(CpiMetadata::fromLegacy)
         return CompletableFuture.completedFuture(cpi)
     }
 
@@ -107,7 +108,7 @@ class CpkReadServiceImpl @Activate constructor(
 
     @Deactivate
     override fun stop() {
-        ArrayList(cpis.keys).forEach(::unloadCPI)
+        ArrayList(cpis.keys).forEach(::removeCpiMetadata)
         logger.info("Stopped")
     }
 }

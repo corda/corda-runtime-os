@@ -11,6 +11,7 @@ import picocli.CommandLine.Command
         StartDb::class,
         DbStatus::class,
         Psql::class,
+        Ui::class,
         Jdbc::class,
         StopDb::class,
     ],
