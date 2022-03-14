@@ -11,17 +11,16 @@ pluginManagement {
     }
 }
 
-dependencyResolutionManagement {
-    repositories {
-        mavenCentral()
-    }
-}
-
 plugins {
     id 'com.gradle.common-custom-user-data-gradle-plugin'
     id 'com.gradle.enterprise'
 }
 
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+    }
+}
 
 rootProject.name = "corda-cli-plugin-host"
 
