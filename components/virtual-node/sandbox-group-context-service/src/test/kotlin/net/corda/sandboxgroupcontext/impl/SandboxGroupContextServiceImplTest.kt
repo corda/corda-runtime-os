@@ -11,6 +11,8 @@ import net.corda.sandboxgroupcontext.service.impl.SandboxGroupContextServiceImpl
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
@@ -211,5 +213,28 @@ class SandboxGroupContextServiceImplTest {
 
         service.remove(ctx1)
         assertThat(isClosed).isTrue
+    }
+
+    @Test
+    fun `assert hasCpks works`() {
+        val existingCpks = setOf(
+            Helpers.mockTrivialCpk("MAIN1", "apple", "1.0.0"),
+            Helpers.mockTrivialCpk("MAIN2", "banana", "2.0.0"),
+            Helpers.mockTrivialCpk("MAIN3", "cranberry", "3.0.0")
+        )
+        val nonExistingCpk = setOf(Helpers.mockTrivialCpk("MAIN4", "orange", "4.0.0"))
+
+        val sandboxCreationService = Helpers.mockSandboxCreationService(listOf(existingCpks))
+        val cpkService = CpkReadServiceFake(existingCpks)
+        val service = SandboxGroupContextServiceImpl(sandboxCreationService, cpkService, scr, bundleContext)
+
+        val existingCpkIds = existingCpks.map {
+            CpkIdentifier.fromLegacy(it.metadata.id)
+        }.toSet()
+
+        val nonExistingCpkId = nonExistingCpk.map { CpkIdentifier.fromLegacy(it.metadata.id) }.toSet()
+
+        assertTrue(service.hasCpks(existingCpkIds))
+        assertFalse(service.hasCpks(nonExistingCpkId))
     }
 }
