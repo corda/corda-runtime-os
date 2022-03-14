@@ -14,7 +14,27 @@ class LayeredPropertyMapImpl(
         private val indexedPrefixComparator = IndexedPrefixComparator()
     }
 
-    private class CachedValue(val value: Any?)
+    private class CachedValue(val value: Any?) {
+        fun validateIsAssignableFrom(key: String, clazz: Class<*>) {
+            if (value != null) {
+                // needed because the simple approach using as? T does not do the actual casting without value assignment,
+                // hence it won't throw the exception here
+                if (!clazz.isAssignableFrom(value::class.java)) {
+                    throw ClassCastException("Casting failed for $key.")
+                }
+            }
+        }
+
+        fun validateCollectionIsAssignableFrom(normalisedPrefix: String, clazz: Class<*>) {
+            // needed because the simple approach using as? T does not do the actual casting without value assignment,
+            // hence it won't throw the exception here
+            (value as? Collection<*>)?.firstOrNull()?.let {
+                if (!clazz.isAssignableFrom(it::class.java)) {
+                    throw ClassCastException("Casting failed for $normalisedPrefix prefix.")
+                }
+            }
+        }
+    }
 
     private val cache = ConcurrentHashMap<String, CachedValue>()
 
@@ -30,25 +50,14 @@ class LayeredPropertyMapImpl(
         require(key.isNotBlank()) {
             "The key cannot be blank string."
         }
-        // 1. Check if value already is in our cache, if yes, return that value
-        val cached = cache[key]
-        if (cached?.value != null) {
-            // needed because the simple approach using as? T does not do the actual casting without value assignment,
-            // hence it won't throw the exception here
-            if (!clazz.isAssignableFrom(cached.value::class.java)) {
-                throw ClassCastException("Casting failed for $key.")
-            }
-            return cached.value as T
+        val result = cache.computeIfAbsent(key) {
+            CachedValue(
+                converter.convert(ConversionContext(this, key), clazz)
+                    ?: throw ValueNotFoundException("There is no value for '$key' key or it's null.")
+            )
         }
-
-        // 2. Convert the string value using the provided or built-in converter or our built-in primitive converter
-        // if not provided
-        val convertedValue = converter.convert(ConversionContext(this, key), clazz)
-            ?: throw ValueNotFoundException("There is no value for '$key' key or it's null.")
-
-        // 3. Assign the converted value in the cache and return it
-        cache[key] = CachedValue(convertedValue)
-        return convertedValue
+        result.validateIsAssignableFrom(key, clazz)
+        return result.value as T
     }
 
     /**
@@ -59,22 +68,13 @@ class LayeredPropertyMapImpl(
         require(key.isNotBlank()) {
             "The key cannot be blank string."
         }
-        // 1. Check if value already in cache, if yes, return that value (caching unfortunately won't work for nulls)
-        val cached = cache[key]
-        if (cached?.value != null) {
-            if (!clazz.isAssignableFrom(cached.value::class.java)) {
-                throw ClassCastException("Casting failed for $key.")
-            }
-            return cached.value as T
+        val result = cache.computeIfAbsent(key) {
+            CachedValue(
+                converter.convert(ConversionContext(this, key), clazz)
+            )
         }
-
-        // 2. Convert the value with the converter (provided or builtin), if no converter is found, use our
-        // default primitive converter
-        val convertedValue = converter.convert(ConversionContext(this, key), clazz)
-
-        // 3. Assign converted value and return it
-        cache[key] = CachedValue(convertedValue)
-        return convertedValue
+        result.validateIsAssignableFrom(key, clazz)
+        return result.value as T
     }
 
     /**
@@ -89,68 +89,38 @@ class LayeredPropertyMapImpl(
      *  corda.endpoints.3.protocolVersion = 1
      */
     @Suppress("UNCHECKED_CAST")
-    override fun <T> parseList(
-        itemKeyPrefix: String,
-        clazz: Class<out T>
-    ): List<T> {
+    override fun <T> parseList(itemKeyPrefix: String, clazz: Class<out T>): List<T> {
         require(itemKeyPrefix.isNotBlank()) {
             "The itemKeyPrefix cannot be blank string."
         }
         // normalise prefix, add "." at the end to make processing easier and make usage foolproof
         val normalisedPrefix = normaliseListSearchKeyPrefix(itemKeyPrefix)
-        // Check if list already in cache, if yes, return that list
-        val cached = cache[normalisedPrefix]
-        if (cached?.value != null) {
-            // needed because the simple approach using as? T does not do the actual casting without value assignment,
-            // hence it won't throw the exception here
-            val converted = cached.value as List<T>
-            converted.firstOrNull()?.let {
-                if (!clazz.isAssignableFrom(it::class.java)) {
-                    throw ClassCastException("Casting failed for $normalisedPrefix prefix.")
-                }
-            }
-            return converted
+        val result = cache.computeIfAbsent(normalisedPrefix) {
+            CachedValue(
+                parseCollectionTo(mutableListOf(), normalisedPrefix, itemKeyPrefix, clazz)
+            )
         }
-
-        val result = parseCollectionTo(mutableListOf(), normalisedPrefix, itemKeyPrefix, clazz) as List<T>
-
-        // Put result into cache
-        cache[normalisedPrefix] = CachedValue(result)
-        return result
+        result.validateCollectionIsAssignableFrom(normalisedPrefix, clazz)
+        return result.value as List<T>
     }
 
     /**
      * Function for reading and parsing a set of String values to a set of actual objects.
      */
     @Suppress("UNCHECKED_CAST")
-    override fun <T> parseSet(
-        itemKeyPrefix: String,
-        clazz: Class<out T>
-    ): Set<T> {
+    override fun <T> parseSet(itemKeyPrefix: String, clazz: Class<out T>): Set<T> {
         require(itemKeyPrefix.isNotBlank()) {
             "The itemKeyPrefix cannot be blank string."
         }
         // normalise prefix, add "." at the end to make processing easier and make usage foolproof
         val normalisedPrefix = normaliseListSearchKeyPrefix(itemKeyPrefix)
-        // Check if set already in cache, if yes, return that set
-        val cached = cache[normalisedPrefix]
-        if (cached?.value != null) {
-            // needed because the simple approach using as? T does not do the actual casting without value assignment,
-            // hence it won't throw the exception here
-            val converted = cached.value as HashSet<T>
-            converted.firstOrNull()?.let {
-                if (!clazz.isAssignableFrom(it::class.java)) {
-                    throw ClassCastException("Casting failed for $normalisedPrefix prefix.")
-                }
-            }
-            return converted
+        val result = cache.computeIfAbsent(normalisedPrefix) {
+            CachedValue(
+                parseCollectionTo(mutableSetOf(), normalisedPrefix, itemKeyPrefix, clazz)
+            )
         }
-
-        val result = parseCollectionTo(mutableSetOf(), normalisedPrefix, itemKeyPrefix, clazz) as HashSet<T>
-
-        // Put result into cache
-        cache[normalisedPrefix] = CachedValue(result)
-        return result
+        result.validateCollectionIsAssignableFrom(normalisedPrefix, clazz)
+        return result.value as HashSet<T>
     }
 
     override fun equals(other: Any?): Boolean {
@@ -196,7 +166,7 @@ class LayeredPropertyMapImpl(
             val map = it.second.map { item ->
                 item.key.removePrefix(it.first.second) to item.value
             }.toLinkedHashMap()
-            val itemContext =  ConversionContext(LayeredPropertyMapImpl(map, converter), "")
+            val itemContext = ConversionContext(LayeredPropertyMapImpl(map, converter), "")
             converter.convert(itemContext, clazz)
                 ?: throw ValueNotFoundException("Error while converting $itemKeyPrefix prefix.")
         }
@@ -212,7 +182,7 @@ class LayeredPropertyMapImpl(
 
     private fun getIndexedPrefix(key: String, normalisedPrefix: String): Pair<Int, String> {
         val dotPos = key.indexOf(".", normalisedPrefix.length)
-        return if(dotPos < 0) {
+        return if (dotPos < 0) {
             key.substring(normalisedPrefix.length).toInt() to key
         } else {
             key.substring(normalisedPrefix.length, dotPos).toInt() to key.substring(0, dotPos + 1)
