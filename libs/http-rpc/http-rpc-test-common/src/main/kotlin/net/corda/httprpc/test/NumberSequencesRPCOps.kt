@@ -15,6 +15,6 @@ enum class NumberTypeEnum {
     path = "numberseq"
 )
 interface NumberSequencesRPCOps : RpcOps {
-    @HttpRpcPOST
+    @HttpRpcPOST(path = "retrieve")
     fun retrieve(type: NumberTypeEnum): DurableCursorBuilder<Long>
 }

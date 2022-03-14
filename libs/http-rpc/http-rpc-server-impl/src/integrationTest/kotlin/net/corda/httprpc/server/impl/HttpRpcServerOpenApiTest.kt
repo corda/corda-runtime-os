@@ -10,6 +10,7 @@ import net.corda.httprpc.server.impl.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.server.impl.utils.WebRequest
 import net.corda.httprpc.server.impl.utils.compact
 import net.corda.httprpc.test.CalendarRPCOpsImpl
+import net.corda.httprpc.test.TestEntityRpcOpsImpl
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.tools.HttpVerb.GET
 
@@ -32,7 +33,7 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
         @JvmStatic
         fun setUpBeforeClass() {
             server = HttpRpcServerImpl(
-                listOf(CalendarRPCOpsImpl(), TestHealthCheckAPIImpl()),
+                listOf(CalendarRPCOpsImpl(), TestHealthCheckAPIImpl(), TestEntityRpcOpsImpl()),
                 securityManager,
                 httpRpcSettings,
                 true
@@ -94,11 +95,25 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
         assertDoesNotThrow { ZonedDateTime.parse(timeProperty.example.toString()) }
 
         // Check that generic type parameter for `plusOne` is correctly represented
-        val plusOnePath = openAPI.paths["/health/plusone"]
-        assertNotNull(plusOnePath)
-        val parameters = plusOnePath.get.parameters
-        val schema = parameters[0].schema as ArraySchema
-        assertThat(schema.items.type).isEqualTo("string")
+        with(openAPI.paths["/health/plusone"]) {
+            assertNotNull(this)
+            val parameters = get.parameters
+            val schema = parameters[0].schema as ArraySchema
+            assertThat(schema.items.type).isEqualTo("string")
+        }
+
+        // Check OpenAPI for TestEntity
+        with(openAPI.paths["/testentity"]) {
+            assertNotNull(this)
+            val getParams = get.parameters
+            assertEquals("query", getParams[0].name)
+            val postParams = post.parameters
+            assertTrue(postParams.isEmpty())
+            assertEquals(
+                "#/components/schemas/CreateRequest",
+                post.requestBody.content["application/json"]?.schema?.`$ref`
+            )
+        }
     }
 
     @Test

@@ -264,7 +264,7 @@ class APIStructureRetriever(private val opsImplList: List<PluggableRPCOps<*>>) {
             EndpointMethod.POST,
             annotation.title(this),
             annotation.description,
-            annotation.path(this),
+            annotation.path(),
             retrieveParameters(true),
             responseBody,
             this.getInvocationMethod()

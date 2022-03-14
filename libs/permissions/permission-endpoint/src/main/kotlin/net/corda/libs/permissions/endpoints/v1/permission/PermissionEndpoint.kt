@@ -22,7 +22,7 @@ interface PermissionEndpoint : RpcOps {
     /**
      * Create a permission entity in the RBAC permission system.
      */
-    @HttpRpcPOST(description = "Create a Permission")
+    @HttpRpcPOST(path = "createPermission", description = "Create a Permission")
     fun createPermission(
         @HttpRpcRequestBodyParameter(description = "Details of the permission to be created")
         createPermissionType: CreatePermissionType
@@ -31,7 +31,7 @@ interface PermissionEndpoint : RpcOps {
     /**
      * Get a permission by its identifier in the RBAC permission system.
      */
-    @HttpRpcGET(description = "Get a Permission by its ID", path = "")
+    @HttpRpcGET(path = "getPermission", description = "Get a Permission by its ID")
     fun getPermission(
         @HttpRpcQueryParameter(description = "ID of the permission to be returned.")
         id: String

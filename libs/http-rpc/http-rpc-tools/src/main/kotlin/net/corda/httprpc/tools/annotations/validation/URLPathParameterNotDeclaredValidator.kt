@@ -21,14 +21,15 @@ internal class URLPathParameterNotDeclaredValidator(private val clazz: Class<out
         }
 
     private fun validatePath(method: Method, params: List<Parameter>): HttpRpcValidationResult {
-        return method.endpointPath(method.endpointType).let { path ->
+        val endpointPath = method.endpointPath(method.endpointType)
+        return endpointPath?.let { path ->
             pathParamRegex.findAll(path).fold(HttpRpcValidationResult()) { total, next ->
                 val pathParamNameInURL = next.groupValues[1]
                 val existsInFunction = params.pathParameters.any { getParameterName(it).equals(pathParamNameInURL, ignoreCase = true) }
                 total + if (existsInFunction) HttpRpcValidationResult()
                 else HttpRpcValidationResult(listOf("Path parameter $pathParamNameInURL does not exist in function signature"))
             }
-        }
+        } ?: HttpRpcValidationResult()
     }
 
     @Suppress("ComplexMethod")
