@@ -90,14 +90,14 @@ class InMemorySessionReplayer(
         val memberInfo = members.getMemberInfo(messageReplay.dest)
         if (memberInfo == null) {
             logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName})" +
-                " with peer ${messageReplay.dest} which is not in the network map. The message was not replayed.")
+                " with peer ${messageReplay.dest} which is not in the members map. The message was not replayed.")
             return
         }
 
         val networkType = groups.getGroupInfo(memberInfo.holdingIdentity.groupId)?.networkType
         if (networkType == null) {
             logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName}) but" +
-                " could not find the network type in the NetworkMap for group ${memberInfo.holdingIdentity.groupId}." +
+                " could not find the network type in the GroupPolicyProvider for group ${memberInfo.holdingIdentity.groupId}." +
                 " The message was not replayed.")
             return
         }

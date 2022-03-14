@@ -10,23 +10,23 @@ class SessionManagerWarnings {
                 " The message was discarded.")
         }
 
-        internal fun Logger.ourIdNotInNetworkMapWarning(messageName: String, sessionId: String, ourId: HoldingIdentity) {
+        internal fun Logger.ourIdNotInMembersMapWarning(messageName: String, sessionId: String, ourId: HoldingIdentity) {
             this.warn("Received $messageName with sessionId $sessionId but cannot find public key for our identity" +
                 " $ourId. The message was discarded.")
         }
 
-        internal fun Logger.ourHashNotInNetworkMapWarning(messageName: String, sessionId: String, hash: String) {
+        internal fun Logger.ourHashNotInMembersMapWarning(messageName: String, sessionId: String, hash: String) {
             this.warn("Received $messageName with sessionId ${sessionId}. The received public key hash ($hash) corresponding" +
-                    " to one of our holding identities is not in the network map. The message was discarded.")
+                    " to one of our holding identities is not in the members map. The message was discarded.")
         }
 
-        internal fun Logger.peerHashNotInNetworkMapWarning(messageName: String, sessionId: String, hash: String) {
+        internal fun Logger.peerHashNotInMembersMapWarning(messageName: String, sessionId: String, hash: String) {
             this.warn("Received $messageName with sessionId ${sessionId}. The received public key hash ($hash) corresponding" +
-                    " to one of the sender's holding identities is not in the network map. The message was discarded.")
+                    " to one of the sender's holding identities is not in the members map. The message was discarded.")
         }
 
-        internal fun Logger.peerNotInTheNetworkMapWarning(messageName: String, sessionId: String, responderId: HoldingIdentity) {
-            this.warn("Received $messageName with sessionId $sessionId from peer $responderId which is not in the network map." +
+        internal fun Logger.peerNotInTheMembersMapWarning(messageName: String, sessionId: String, responderId: HoldingIdentity) {
+            this.warn("Received $messageName with sessionId $sessionId from peer $responderId which is not in the members map." +
                 " The message was discarded.")
         }
 
@@ -38,7 +38,7 @@ class SessionManagerWarnings {
         }
 
         internal fun Logger.couldNotFindGroupInfo(messageName: String, sessionId: String, groupId: String) {
-            this.warn("Could not find the group information in the NetworkMap for groupId $groupId." +
+            this.warn("Could not find the group information in the GroupPolicyProvider for groupId $groupId." +
                     " The $messageName for sessionId $sessionId was discarded.")
         }
 

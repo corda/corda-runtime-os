@@ -175,7 +175,7 @@ class InMemorySessionReplayerTest {
         replayCallback(messageReplay)
 
         loggingInterceptor.assertSingleWarning("Attempted to replay a session negotiation message (type " +
-            "${InitiatorHelloMessage::class.java.simpleName}) but could not find the network type in the NetworkMap for group" +
+            "${InitiatorHelloMessage::class.java.simpleName}) but could not find the network type in the GroupPolicyProvider for group" +
             " $GROUP_ID. The message was not replayed.")
     }
 
@@ -199,7 +199,7 @@ class InMemorySessionReplayerTest {
         replayCallback(messageReplay)
 
         loggingInterceptor.assertSingleWarning("Attempted to replay a session negotiation message (type " +
-            "${InitiatorHelloMessage::class.java.simpleName}) with peer $COUNTER_PARTY which is not in the network" +
+            "${InitiatorHelloMessage::class.java.simpleName}) with peer $COUNTER_PARTY which is not in the members" +
             " map. The message was not replayed.")
     }
 

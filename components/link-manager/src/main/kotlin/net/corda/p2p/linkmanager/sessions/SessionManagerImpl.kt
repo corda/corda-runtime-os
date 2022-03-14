@@ -43,10 +43,10 @@ import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.couldNotFindGroupInfo
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.noSessionWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.noTenantId
-import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourHashNotInNetworkMapWarning
-import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourIdNotInNetworkMapWarning
-import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerHashNotInNetworkMapWarning
-import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerNotInTheNetworkMapWarning
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourHashNotInMembersMapWarning
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourIdNotInMembersMapWarning
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerHashNotInMembersMapWarning
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerNotInTheMembersMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.validationFailedWarning
 import net.corda.p2p.linkmanager.utilities.AutoClosableScheduledExecutorService
 import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
@@ -290,7 +290,7 @@ open class SessionManagerImpl(
         val groupInfo = groups.getGroupInfo(counterparties.ourId.groupId)
         if (groupInfo == null) {
             logger.warn(
-                "Could not find the group information in the NetworkMap for groupId ${counterparties.ourId.groupId}." +
+                "Could not find the group information in the GroupPolicyProvider for groupId ${counterparties.ourId.groupId}." +
                         " The sessionInit message was not sent."
             )
             return null
@@ -300,7 +300,7 @@ open class SessionManagerImpl(
         if (ourMemberInfo == null) {
             logger.warn(
                 "Attempted to start session negotiation with peer ${counterparties.counterpartyId} but our identity " +
-                        "${counterparties.ourId} is not in the network map. The sessionInit message was not sent."
+                        "${counterparties.ourId} is not in the members map. The sessionInit message was not sent."
             )
             return null
         }
@@ -337,7 +337,7 @@ open class SessionManagerImpl(
         val responderMemberInfo = members.getMemberInfo(counterparties.counterpartyId)
         if (responderMemberInfo == null) {
             logger.warn(
-                "Attempted to start session negotiation with peer ${counterparties.counterpartyId} which is not in the network map. " +
+                "Attempted to start session negotiation with peer ${counterparties.counterpartyId} which is not in the members map. " +
                         "The sessionInit message was not sent."
             )
             return null
@@ -363,13 +363,13 @@ open class SessionManagerImpl(
 
         val ourMemberInfo = members.getMemberInfo(sessionInfo.ourId)
         if (ourMemberInfo == null) {
-            logger.ourIdNotInNetworkMapWarning(message::class.java.simpleName, message.header.sessionId, sessionInfo.ourId)
+            logger.ourIdNotInMembersMapWarning(message::class.java.simpleName, message.header.sessionId, sessionInfo.ourId)
             return null
         }
 
         val responderMemberInfo = members.getMemberInfo(sessionInfo.counterpartyId)
         if (responderMemberInfo == null) {
-            logger.peerNotInTheNetworkMapWarning(message::class.java.simpleName, message.header.sessionId, sessionInfo.counterpartyId)
+            logger.peerNotInTheMembersMapWarning(message::class.java.simpleName, message.header.sessionId, sessionInfo.counterpartyId)
             return null
         }
 
@@ -436,7 +436,7 @@ open class SessionManagerImpl(
 
         val memberInfo = members.getMemberInfo(sessionCounterparties.counterpartyId)
         if (memberInfo == null) {
-            logger.peerNotInTheNetworkMapWarning(
+            logger.peerNotInTheMembersMapWarning(
                 message::class.java.simpleName,
                 message.header.sessionId,
                 sessionCounterparties.counterpartyId
@@ -478,7 +478,7 @@ open class SessionManagerImpl(
         val sessionManagerConfig = config.get()
         val peer = members.getMemberInfo(message.source.initiatorPublicKeyHash.array(), message.source.groupId)
         if (peer == null) {
-            logger.peerHashNotInNetworkMapWarning(
+            logger.peerHashNotInMembersMapWarning(
                 message::class.java.simpleName,
                 message.header.sessionId,
                 message.source.initiatorPublicKeyHash.array().toBase64()
@@ -517,7 +517,7 @@ open class SessionManagerImpl(
         val initiatorIdentityData = session.getInitiatorIdentity()
         val peer = members.getMemberInfo(initiatorIdentityData.initiatorPublicKeyHash.array(), initiatorIdentityData.groupId)
         if (peer == null) {
-            logger.peerHashNotInNetworkMapWarning(
+            logger.peerHashNotInMembersMapWarning(
                 message::class.java.simpleName,
                 message.header.sessionId,
                 initiatorIdentityData.initiatorPublicKeyHash.array().toBase64()
@@ -542,7 +542,7 @@ open class SessionManagerImpl(
         //Find the correct Holding Identity to use (using the public key hash).
         val ourMemberInfo = members.getMemberInfo(ourIdentityData.responderPublicKeyHash, ourIdentityData.groupId)
         if (ourMemberInfo == null) {
-            logger.ourHashNotInNetworkMapWarning(
+            logger.ourHashNotInMembersMapWarning(
                 message::class.java.simpleName,
                 message.header.sessionId,
                 ourIdentityData.responderPublicKeyHash.toBase64()

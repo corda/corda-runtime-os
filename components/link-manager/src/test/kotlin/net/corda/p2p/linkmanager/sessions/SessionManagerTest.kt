@@ -272,7 +272,7 @@ class SessionManagerTest {
         val sessionState = sessionManager.processOutboundMessage(message)
         assertThat(sessionState).isInstanceOf(SessionManager.SessionState.CannotEstablishSession::class.java)
         verify(sessionReplayer, never()).addMessageForReplay(any(), any(), any())
-        loggingInterceptor.assertSingleWarning("Could not find the group information in the NetworkMap for groupId $GROUP_ID." +
+        loggingInterceptor.assertSingleWarning("Could not find the group information in the GroupPolicyProvider for groupId $GROUP_ID." +
                 " The sessionInit message was not sent.")
     }
 
@@ -283,7 +283,7 @@ class SessionManagerTest {
         val sessionState = sessionManager.processOutboundMessage(message)
         assertThat(sessionState).isInstanceOf(SessionManager.SessionState.CannotEstablishSession::class.java)
         verify(sessionReplayer, never()).addMessageForReplay(any(), any(), any())
-        loggingInterceptor.assertSingleWarning("Could not find the group information in the NetworkMap for groupId $GROUP_ID." +
+        loggingInterceptor.assertSingleWarning("Could not find the group information in the GroupPolicyProvider for groupId $GROUP_ID." +
                 " The sessionInit message was not sent.")
     }
 
@@ -295,7 +295,7 @@ class SessionManagerTest {
         assertThat(sessionState).isInstanceOf(SessionManager.SessionState.CannotEstablishSession::class.java)
         verify(sessionReplayer, never()).addMessageForReplay(any(), any(), any())
         loggingInterceptor.assertSingleWarning("Attempted to start session negotiation with peer $PEER_PARTY " +
-                "but our identity $OUR_PARTY is not in the network map. The sessionInit message was not sent.")
+                "but our identity $OUR_PARTY is not in the members map. The sessionInit message was not sent.")
     }
 
     @Test
@@ -320,7 +320,7 @@ class SessionManagerTest {
         }
 
         loggingInterceptor.assertSingleWarning("Attempted to start session negotiation with peer $PEER_PARTY " +
-                "which is not in the network map. The sessionInit message was not sent.")
+                "which is not in the members map. The sessionInit message was not sent.")
     }
 
     @Test
@@ -408,7 +408,7 @@ class SessionManagerTest {
         assertThat(responseMessage).isNull()
         loggingInterceptor.assertSingleWarning("Received ${InitiatorHelloMessage::class.java.simpleName} with sessionId ${sessionId}. " +
                 "The received public key hash (${initiatorKeyHash.toBase64()}) corresponding " +
-                "to one of the sender's holding identities is not in the network map. The message was discarded.")
+                "to one of the sender's holding identities is not in the members map. The message was discarded.")
     }
 
     @Test
@@ -425,7 +425,7 @@ class SessionManagerTest {
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHelloMsg))
 
         assertThat(responseMessage).isNull()
-        loggingInterceptor.assertSingleWarning("Could not find the group information in the NetworkMap for groupId $GROUP_ID." +
+        loggingInterceptor.assertSingleWarning("Could not find the group information in the GroupPolicyProvider for groupId $GROUP_ID." +
                 " The ${InitiatorHelloMessage::class.java.simpleName} for sessionId $sessionId was discarded.")
     }
 
@@ -443,7 +443,7 @@ class SessionManagerTest {
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHelloMsg))
 
         assertThat(responseMessage).isNull()
-        loggingInterceptor.assertSingleWarning("Could not find the group information in the NetworkMap for groupId $GROUP_ID." +
+        loggingInterceptor.assertSingleWarning("Could not find the group information in the GroupPolicyProvider for groupId $GROUP_ID." +
                 " The ${InitiatorHelloMessage::class.java.simpleName} for sessionId $sessionId was discarded.")
     }
 
@@ -519,7 +519,7 @@ class SessionManagerTest {
 
         assertThat(responseMessage).isNull()
         loggingInterceptor.assertSingleWarning("Received ${ResponderHelloMessage::class.java.simpleName} with sessionId " +
-                "${sessionState.sessionId} from peer $PEER_PARTY which is not in the network map. The message was discarded.")
+                "${sessionState.sessionId} from peer $PEER_PARTY which is not in the members map. The message was discarded.")
     }
 
     @Test
@@ -569,7 +569,7 @@ class SessionManagerTest {
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(responderHello))
 
         assertThat(responseMessage).isNull()
-        loggingInterceptor.assertSingleWarningContains("Could not find the group information in the NetworkMap for groupId $GROUP_ID." +
+        loggingInterceptor.assertSingleWarningContains("Could not find the group information in the GroupPolicyProvider for groupId $GROUP_ID." +
                 " The ${ResponderHelloMessage::class.java.simpleName} for sessionId ${sessionState.sessionId} was discarded.")
     }
 
@@ -692,7 +692,7 @@ class SessionManagerTest {
         assertThat(responseMessage).isNull()
         loggingInterceptor.assertSingleWarning("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId " +
                 "${sessionId}. The received public key hash (${initiatorPublicKeyHash.toBase64()}) corresponding " +
-                "to one of the sender's holding identities is not in the network map. The message was discarded.")
+                "to one of the sender's holding identities is not in the members map. The message was discarded.")
     }
 
     @Test
@@ -765,7 +765,7 @@ class SessionManagerTest {
         assertThat(responseMessage).isNull()
         loggingInterceptor.assertSingleWarningContains("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId " +
                 "${sessionId}. The received public key hash (${responderPublicKeyHash.toBase64()}) corresponding " +
-                "to one of our holding identities is not in the network map. The message was discarded.")
+                "to one of our holding identities is not in the members map. The message was discarded.")
     }
 
     @Test
@@ -790,7 +790,7 @@ class SessionManagerTest {
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
 
         assertThat(responseMessage).isNull()
-        loggingInterceptor.assertSingleWarningContains("Could not find the group information in the NetworkMap for groupId $GROUP_ID." +
+        loggingInterceptor.assertSingleWarningContains("Could not find the group information in the GroupPolicyProvider for groupId $GROUP_ID." +
                 " The ${InitiatorHandshakeMessage::class.java.simpleName} for sessionId $sessionId was discarded.")
     }
 
@@ -938,7 +938,7 @@ class SessionManagerTest {
         assertThat(sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))).isNull()
 
         loggingInterceptor.assertSingleWarning("Received ${ResponderHandshakeMessage::class.java.simpleName} with sessionId " +
-                "${sessionState.sessionId} from peer $PEER_PARTY which is not in the network map. The message was discarded.")
+                "${sessionState.sessionId} from peer $PEER_PARTY which is not in the members map. The message was discarded.")
     }
 
     @Test
