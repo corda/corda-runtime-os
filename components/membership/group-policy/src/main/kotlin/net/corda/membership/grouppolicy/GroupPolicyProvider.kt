@@ -18,5 +18,5 @@ interface GroupPolicyProvider : Lifecycle {
      * @return The current [GroupPolicy] file that was bundled with the CPI which was installed for the given holding
      *  identity.
      */
-    fun getGroupPolicy(holdingIdentity: HoldingIdentity): GroupPolicy?
+    fun getGroupPolicy(holdingIdentity: HoldingIdentity): GroupPolicy
 }

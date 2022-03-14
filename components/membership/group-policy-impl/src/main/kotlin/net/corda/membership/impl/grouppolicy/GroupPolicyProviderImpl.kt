@@ -33,73 +33,29 @@ class GroupPolicyProviderImpl @Activate constructor(
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : GroupPolicyProvider {
 
+    private interface InnerGroupPolicyProvider : AutoCloseable {
+        fun getGroupPolicy(holdingIdentity: HoldingIdentity): GroupPolicy
+    }
+
     companion object {
         val logger = contextLogger()
     }
 
-    private var virtualNodeInfoCallbackHandle: AutoCloseable? = null
     private var registrationHandle: AutoCloseable? = null
-
-    private val groupPolicyParser = GroupPolicyParser()
-
-    private val groupPolicies: MutableMap<HoldingIdentity, GroupPolicy> = ConcurrentHashMap()
 
     private val coordinator = lifecycleCoordinatorFactory
         .createCoordinator<GroupPolicyProvider>(::handleEvent)
 
-    override fun getGroupPolicy(
-        holdingIdentity: HoldingIdentity
-    ): GroupPolicy? {
-        return if (isRunning && isUp) {
-            groupPolicies[holdingIdentity] ?: parseGroupPolicy(holdingIdentity)?.also {
-                groupPolicies[holdingIdentity] = it
-            }
-        } else {
-            logger.error(
-                "Service is in incorrect state for accessing group policies. " +
-                        "Running: [$isRunning], Lifecycle status: [${coordinator.status}]. " +
-                        "Returning null."
-            )
-            null
-        }
-    }
+    private var impl: InnerGroupPolicyProvider = InactiveImpl()
+
+    override fun getGroupPolicy(holdingIdentity: HoldingIdentity): GroupPolicy =
+        impl.getGroupPolicy(holdingIdentity)
 
     override fun start() = coordinator.start()
 
     override fun stop() = coordinator.stop()
 
     override val isRunning get() = coordinator.isRunning
-
-    private val isUp get() = coordinator.status == LifecycleStatus.UP
-
-    /**
-     * Parse the group policy string to a [GroupPolicy] object.
-     *
-     * [VirtualNodeInfoReadService] is used to get the [VirtualNodeInfo], unless provided as a parameter. It may be
-     * the case in a virtual node info callback where we are given the changed virtual node info.
-     *
-     * [CpiInfoReadService] is used to get the CPI metadata containing the group policy for the CPI installed on
-     * the virtual node.
-     *
-     * The group policy is cached to simplify lookups later.
-     *
-     * @param holdingIdentity The holding identity of the member retrieving the group policy.
-     * @param virtualNodeInfo if the VirtualNodeInfo is known, it can be passed in instead of getting this from the
-     *  virtual node info reader.
-     */
-    private fun parseGroupPolicy(
-        holdingIdentity: HoldingIdentity,
-        virtualNodeInfo: VirtualNodeInfo? = null,
-    ): GroupPolicy? {
-        val vNodeInfo = virtualNodeInfo ?: virtualNodeInfoReadService.get(holdingIdentity)
-        val metadata = vNodeInfo?.cpiIdentifier?.let { cpiInfoReader.get(it) }
-        return try {
-            groupPolicyParser.parse(metadata?.groupPolicy)
-        } catch (ex : Exception) {
-            logger.error("Could not parse group policy file for holding identity with ID: ${holdingIdentity.id}")
-            null
-        }
-    }
 
     /**
      * Handle lifecycle events.
@@ -129,8 +85,7 @@ class GroupPolicyProviderImpl @Activate constructor(
      */
     private fun handleStopEvent(coordinator: LifecycleCoordinator) {
         logger.debug { "Group policy provider stopping." }
-        coordinator.updateStatus(LifecycleStatus.DOWN)
-        virtualNodeInfoCallbackHandle?.close()
+        inactivateImpl()
         registrationHandle?.close()
     }
 
@@ -143,15 +98,22 @@ class GroupPolicyProviderImpl @Activate constructor(
         logger.debug { "Group policy provider handling registration change. Event status: ${event.status}" }
         when (event.status) {
             LifecycleStatus.UP -> {
-                groupPolicies.clear()
-                startVirtualNodeHandle()
+                val current = impl
+                impl = ActiveImpl(virtualNodeInfoReadService, cpiInfoReader)
+                current.close()
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
             else -> {
-                coordinator.updateStatus(LifecycleStatus.DOWN)
-                virtualNodeInfoCallbackHandle?.close()
+                inactivateImpl()
             }
         }
+    }
+
+    private fun inactivateImpl() {
+        coordinator.updateStatus(LifecycleStatus.DOWN)
+        val current = impl
+        impl = InactiveImpl()
+        current.close()
     }
 
     private fun startDependencyRegistrationHandle(coordinator: LifecycleCoordinator) {
@@ -164,21 +126,76 @@ class GroupPolicyProviderImpl @Activate constructor(
         )
     }
 
-    /**
-     * Register callback so that if a holding identity modifies their virtual node information, the
-     * group policy for that holding identity will be parsed in case the virtual node change affected the
-     * group policy file.
-     */
-    private fun startVirtualNodeHandle() {
-        virtualNodeInfoCallbackHandle?.close()
-        virtualNodeInfoCallbackHandle = virtualNodeInfoReadService.registerCallback { changed, snapshot ->
-            if (isRunning) {
-                logger.info("Processing new snapshot after change in virtual node information.")
-                changed.filter { snapshot[it] != null }.forEach {
-                    parseGroupPolicy(it, virtualNodeInfo = snapshot[it])
-                        ?.apply { groupPolicies[it] = this }
-                }
+    private class InactiveImpl : InnerGroupPolicyProvider {
+        override fun getGroupPolicy(holdingIdentity: HoldingIdentity): GroupPolicy =
+            throw IllegalStateException("Service is in incorrect state for accessing group policies.")
+
+        override fun close() = Unit
+    }
+
+    private class ActiveImpl(
+        private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+        private val cpiInfoReader: CpiInfoReadService
+    ) : InnerGroupPolicyProvider {
+        private val groupPolicyParser = GroupPolicyParser()
+
+        private val groupPolicies: MutableMap<HoldingIdentity, GroupPolicy> = ConcurrentHashMap()
+
+        private var virtualNodeInfoCallbackHandle: AutoCloseable = startVirtualNodeHandle()
+
+        override fun getGroupPolicy(
+            holdingIdentity: HoldingIdentity
+        ): GroupPolicy {
+            return groupPolicies[holdingIdentity] ?: parseGroupPolicy(holdingIdentity).also {
+                groupPolicies[holdingIdentity] = it
             }
         }
+
+        override fun close() {
+            virtualNodeInfoCallbackHandle.close()
+            groupPolicies.clear()
+        }
+
+        /**
+         * Parse the group policy string to a [GroupPolicy] object.
+         *
+         * [VirtualNodeInfoReadService] is used to get the [VirtualNodeInfo], unless provided as a parameter. It may be
+         * the case in a virtual node info callback where we are given the changed virtual node info.
+         *
+         * [CpiInfoReadService] is used to get the CPI metadata containing the group policy for the CPI installed on
+         * the virtual node.
+         *
+         * The group policy is cached to simplify lookups later.
+         *
+         * @param holdingIdentity The holding identity of the member retrieving the group policy.
+         * @param virtualNodeInfo if the VirtualNodeInfo is known, it can be passed in instead of getting this from the
+         *  virtual node info reader.
+         */
+        private fun parseGroupPolicy(
+            holdingIdentity: HoldingIdentity,
+            virtualNodeInfo: VirtualNodeInfo? = null,
+        ): GroupPolicy {
+            val vNodeInfo = virtualNodeInfo ?: virtualNodeInfoReadService.get(holdingIdentity)
+            val metadata = vNodeInfo?.cpiIdentifier?.let { cpiInfoReader.get(it) }
+            return groupPolicyParser.parse(metadata?.groupPolicy)
+        }
+
+        /**
+         * Register callback so that if a holding identity modifies their virtual node information, the
+         * group policy for that holding identity will be parsed in case the virtual node change affected the
+         * group policy file.
+         */
+        private fun startVirtualNodeHandle(): AutoCloseable =
+            virtualNodeInfoReadService.registerCallback { changed, snapshot ->
+                logger.info("Processing new snapshot after change in virtual node information.")
+                changed.filter { snapshot[it] != null }.forEach {
+                    try {
+                        parseGroupPolicy(it, virtualNodeInfo = snapshot[it])
+                            .apply { groupPolicies[it] = this }
+                    } catch (e: Exception) {
+                        logger.error("Failure to parse group policy.")
+                    }
+                }
+            }
     }
 }

@@ -7,6 +7,8 @@ import net.corda.membership.impl.GroupPolicyImpl
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 
+class BadGroupPolicyException(message: String, cause: Throwable? = null) : CordaRuntimeException(message, cause)
+
 class GroupPolicyParser {
     companion object {
         private val logger = contextLogger()
@@ -19,7 +21,7 @@ class GroupPolicyParser {
             try {
                 if (groupPolicyJson.isNullOrBlank()) {
                     logger.error(EMPTY_GROUP_POLICY)
-                    throw CordaRuntimeException(EMPTY_GROUP_POLICY)
+                    throw BadGroupPolicyException(EMPTY_GROUP_POLICY)
                 } else {
                     ConfigFactory
                         .parseString(groupPolicyJson)
@@ -28,7 +30,7 @@ class GroupPolicyParser {
                 }
             } catch (e: ConfigException.Parse) {
                 logger.error(FAILED_PARSING)
-                throw CordaRuntimeException(FAILED_PARSING, e)
+                throw BadGroupPolicyException(FAILED_PARSING, e)
             }
         )
     }
