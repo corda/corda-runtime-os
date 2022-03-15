@@ -10,22 +10,20 @@ import net.corda.p2p.crypto.CommonHeader
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
-import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
+import net.corda.p2p.linkmanager.LinkManagerInternalTypes.toHoldingIdentity
 import net.corda.p2p.linkmanager.LinkManagerTest.Companion.authenticatedMessageAndKey
 import net.corda.p2p.linkmanager.LinkManagerTest.Companion.createSessionPair
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.SessionAndMessage
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
-import org.bouncycastle.jce.provider.BouncyCastleProvider
+import net.corda.p2p.linkmanager.utilities.mockGroups
+import net.corda.p2p.linkmanager.utilities.mockMembers
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
-import org.mockito.kotlin.any
+import org.mockito.kotlin.mock
 import java.nio.ByteBuffer
-import java.security.KeyPairGenerator
 
 class MessageConverterTest {
 
@@ -33,7 +31,6 @@ class MessageConverterTest {
 
         lateinit var loggingInterceptor: LoggingInterceptor
         private val mockHeader = Mockito.mock(CommonHeader::class.java)
-        private val keyPairGenerator = KeyPairGenerator.getInstance("EC", BouncyCastleProvider())
 
         @BeforeAll
         @JvmStatic
@@ -90,10 +87,9 @@ class MessageConverterTest {
     fun `createLinkOutMessageFromFlowMessage returns null (with appropriate logging) if the destination is not in the network map`() {
         val session = createSessionPair().responderSession
         val peer = HoldingIdentity("Imposter", "")
-        val networkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
-        Mockito.`when`(networkMap.getMemberInfo(any())).thenReturn(null)
+        val members = mockMembers(emptyList())
         val flowMessage = authenticatedMessageAndKey(HoldingIdentity("", ""), peer, ByteBuffer.wrap("DATA".toByteArray()))
-        assertNull(MessageConverter.linkOutMessageFromAuthenticatedMessageAndKey(flowMessage, session, networkMap))
+        assertNull(MessageConverter.linkOutMessageFromAuthenticatedMessageAndKey(flowMessage, session, mock(), members))
         loggingInterceptor.assertSingleWarning(
             "Attempted to send message to peer $peer which is not in the network map." +
                 " The message was discarded."
@@ -105,19 +101,12 @@ class MessageConverterTest {
         val session = createSessionPair().responderSession
         val peer = HoldingIdentity("Imposter", "")
         val us = HoldingIdentity("", "")
-        val networkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
-        Mockito.`when`(networkMap.getMemberInfo(any())).thenReturn(
-            LinkManagerNetworkMap.MemberInfo(
-                us.toHoldingIdentity(),
-                keyPairGenerator.genKeyPair().public,
-                KeyAlgorithm.ECDSA,
-                LinkManagerNetworkMap.EndPoint(""),
-            )
-        )
+        val members = mockMembers(listOf(us.toHoldingIdentity(), peer.toHoldingIdentity()))
+        val groups = mockGroups(emptyList())
         val flowMessage = authenticatedMessageAndKey(us, peer, ByteBuffer.wrap("DATA".toByteArray()))
-        assertNull(MessageConverter.linkOutMessageFromAuthenticatedMessageAndKey(flowMessage, session, networkMap))
+        assertNull(MessageConverter.linkOutMessageFromAuthenticatedMessageAndKey(flowMessage, session, groups, members))
         loggingInterceptor.assertSingleWarning(
-            "Could not find the network type in the NetworkMap for our identity = $us." +
+            "Could not find the group info in the GroupPolicyProvider for our identity = $us." +
                 " The message was discarded."
         )
     }
@@ -129,9 +118,9 @@ class MessageConverterTest {
         val peer = HoldingIdentity("Imposter", "")
         val unauthenticatedMsg = UnauthenticatedMessage(UnauthenticatedMessageHeader(peer, us), ByteBuffer.wrap(payload.toByteArray()))
 
-        val networkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
-        Mockito.`when`(networkMap.getMemberInfo(any())).thenReturn(null)
-        assertNull(MessageConverter.linkOutFromUnauthenticatedMessage(unauthenticatedMsg, networkMap))
+        val members = mockMembers(emptyList())
+
+        assertNull(MessageConverter.linkOutFromUnauthenticatedMessage(unauthenticatedMsg, mock(), members))
         loggingInterceptor.assertSingleWarning(
             "Attempted to send message to peer $peer which is not in the network map." +
                 " The message was discarded."
@@ -145,18 +134,11 @@ class MessageConverterTest {
         val peer = HoldingIdentity("Imposter", "")
         val unauthenticatedMsg = UnauthenticatedMessage(UnauthenticatedMessageHeader(peer, us), ByteBuffer.wrap(payload.toByteArray()))
 
-        val networkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
-        Mockito.`when`(networkMap.getMemberInfo(any())).thenReturn(
-            LinkManagerNetworkMap.MemberInfo(
-                peer.toHoldingIdentity(),
-                keyPairGenerator.genKeyPair().public,
-                KeyAlgorithm.ECDSA,
-                LinkManagerNetworkMap.EndPoint(""),
-            )
-        )
-        assertNull(MessageConverter.linkOutFromUnauthenticatedMessage(unauthenticatedMsg, networkMap))
+        val members = mockMembers(listOf(us.toHoldingIdentity(), peer.toHoldingIdentity()))
+        val groups = mockGroups(emptyList())
+        assertNull(MessageConverter.linkOutFromUnauthenticatedMessage(unauthenticatedMsg, groups, members))
         loggingInterceptor.assertSingleWarning(
-            "Could not find the network type in the NetworkMap for $peer." +
+            "Could not find the group information in the GroupPolicyProvider for $peer." +
                 " The message was discarded."
         )
     }

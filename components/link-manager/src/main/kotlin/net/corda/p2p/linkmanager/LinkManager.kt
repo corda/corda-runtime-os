@@ -33,7 +33,7 @@ import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.protocol.api.Session
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
+import net.corda.p2p.linkmanager.LinkManagerInternalTypes.toHoldingIdentity
 import net.corda.p2p.linkmanager.delivery.DeliveryTracker
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.DataMessage
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.extractPayload
@@ -73,10 +73,14 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                   val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
                   @Reference(service = ConfigurationReadService::class)
                   val configurationReaderService: ConfigurationReadService,
-                  private val configuration: SmartConfig,
-                  private val instanceId: Int,
-                  val linkManagerNetworkMap: LinkManagerNetworkMap
-                      = StubNetworkMap(lifecycleCoordinatorFactory, subscriptionFactory, instanceId, configuration),
+                  configuration: SmartConfig,
+                  instanceId: Int,
+                  groups : LinkManagerGroupPolicyProvider = StubGroupPolicyProvider(
+                      lifecycleCoordinatorFactory, subscriptionFactory, instanceId, configuration
+                  ),
+                  members : LinkManagerMembershipGroupReader = StubMembershipGroupReader(
+                      lifecycleCoordinatorFactory, subscriptionFactory, instanceId, configuration
+                  ),
                   linkManagerHostingMap: LinkManagerHostingMap =
                       StubLinkManagerHostingMap(
                           lifecycleCoordinatorFactory,
@@ -107,7 +111,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     )
 
     private val sessionManager = SessionManagerImpl(
-        linkManagerNetworkMap,
+        groups,
+        members,
         linkManagerCryptoProcessor,
         messagesPendingSession,
         publisherFactory,
@@ -120,7 +125,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     private val outboundMessageProcessor = OutboundMessageProcessor(
         sessionManager,
         linkManagerHostingMap,
-        linkManagerNetworkMap,
+        groups,
+        members,
         inboundAssignmentListener,
     )
 
@@ -131,7 +137,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         configuration,
         instanceId,
     ).also {
-        linkManagerNetworkMap.registerListener(it)
+        groups.registerListener(it)
     }
 
     private val tlsCertificatesPublisher = TlsCertificatesPublisher(
@@ -150,7 +156,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         publisherFactory,
         configuration,
         subscriptionFactory,
-        linkManagerNetworkMap,
+        groups,
+        members,
         linkManagerCryptoProcessor,
         sessionManager,
         instanceId
@@ -158,7 +165,12 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
     private val inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
         SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, LINK_IN_TOPIC, instanceId),
-        InboundMessageProcessor(sessionManager, linkManagerNetworkMap, inboundAssignmentListener),
+        InboundMessageProcessor(
+            sessionManager,
+            groups,
+            members,
+            inboundAssignmentListener
+        ),
         configuration,
         partitionAssignmentListener = inboundAssignmentListener
     )
@@ -170,8 +182,12 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         partitionAssignmentListener = null
     )
 
-    private val commonChildren = setOf(linkManagerNetworkMap.dominoTile, linkManagerCryptoProcessor.dominoTile,
-        linkManagerHostingMap.dominoTile)
+    private val commonChildren = setOf(
+        groups.dominoTile,
+        members.dominoTile,
+        linkManagerCryptoProcessor.dominoTile,
+        linkManagerHostingMap.dominoTile
+    )
     private val inboundSubscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
         inboundMessageSubscription,
@@ -206,7 +222,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     class OutboundMessageProcessor(
         private val sessionManager: SessionManager,
         private val linkManagerHostingMap: LinkManagerHostingMap,
-        private val networkMap: LinkManagerNetworkMap,
+        private val groups : LinkManagerGroupPolicyProvider,
+        private val members : LinkManagerMembershipGroupReader,
         private val inboundAssignmentListener: InboundAssignmentListener,
     ) : EventLogProcessor<String, AppMessage> {
 
@@ -249,7 +266,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             return if (linkManagerHostingMap.isHostedLocally(message.header.destination.toHoldingIdentity())) {
                 listOf(Record(P2P_IN_TOPIC, generateKey(), AppMessage(message)))
             } else {
-                val linkOutMessage = linkOutFromUnauthenticatedMessage(message, networkMap)
+                val linkOutMessage = linkOutFromUnauthenticatedMessage(message, groups, members)
                 listOf(Record(LINK_OUT_TOPIC, generateKey(), linkOutMessage))
             }
         }
@@ -308,7 +325,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             state: SessionState.SessionEstablished,
             messageAndKey: AuthenticatedMessageAndKey
         ): List<Record<String, *>> {
-            return recordsForSessionEstablished(sessionManager, networkMap, state.session, messageAndKey)
+            return recordsForSessionEstablished(sessionManager, groups, members, state.session, messageAndKey)
         }
 
         private fun recordsForMarkers(messageAndKey: AuthenticatedMessageAndKey, isHostedLocally: Boolean): List<Record<String, *>> {
@@ -330,7 +347,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
     class InboundMessageProcessor(
         private val sessionManager: SessionManager,
-        private val networkMap: LinkManagerNetworkMap,
+        private val groups: LinkManagerGroupPolicyProvider,
+        private val members: LinkManagerMembershipGroupReader,
         private val inboundAssignmentListener: InboundAssignmentListener
     ) :
         EventLogProcessor<String, LinkInMessage> {
@@ -383,7 +401,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                             )
                         } else {
                             logger.warn(
-                                "No partitions from topic ${LINK_IN_TOPIC} are currently assigned to the inbound message processor." +
+                                "No partitions from topic $LINK_IN_TOPIC are currently assigned to the inbound message processor." +
                                         " Not going to reply to session initiation for session ${payload.header.sessionId}."
                             )
                             emptyList()
@@ -495,7 +513,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                 ackSource,
                 ackDest,
                 session,
-                networkMap
+                groups,
+                members,
             ) ?: return null
             return Record(
                 LINK_OUT_TOPIC,
@@ -513,7 +532,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                 ackSource,
                 ackDest,
                 session,
-                networkMap
+                groups,
+                members
             ) ?: return null
             return Record(
                 LINK_OUT_TOPIC,
@@ -540,7 +560,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             sessionManager: SessionManager,
             counterparties: SessionCounterparties,
             session: Session,
-            networkMap: LinkManagerNetworkMap,
+            groups : LinkManagerGroupPolicyProvider,
+            members : LinkManagerMembershipGroupReader,
         )
         fun destroyQueue(counterparties: SessionCounterparties)
         fun destroyAllQueues()
@@ -585,7 +606,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             sessionManager: SessionManager,
             counterparties: SessionCounterparties,
             session: Session,
-            networkMap: LinkManagerNetworkMap,
+            groups: LinkManagerGroupPolicyProvider,
+            members: LinkManagerMembershipGroupReader,
         ) {
             publisher.dominoTile.withLifecycleLock {
                 if (!isRunning) {
@@ -597,7 +619,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                     val message = queuedMessages.poll()
                     logger.debug { "Sending queued message ${message.message.header.messageId} " +
                             "to newly established session ${session.sessionId} with ${counterparties.counterpartyId}" }
-                    records.addAll(recordsForSessionEstablished(sessionManager, networkMap, session, message))
+                    records.addAll(recordsForSessionEstablished(sessionManager, groups, members, session, message))
                 }
                 publisher.publish(records)
             }
@@ -616,14 +638,15 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
 fun recordsForSessionEstablished(
     sessionManager: SessionManager,
-    networkMap: LinkManagerNetworkMap,
+    groups : LinkManagerGroupPolicyProvider,
+    members : LinkManagerMembershipGroupReader,
     session: Session,
     messageAndKey: AuthenticatedMessageAndKey
 ): List<Record<String, *>> {
     val records = mutableListOf<Record<String, *>>()
     val key = LinkManager.generateKey()
     sessionManager.dataMessageSent(session)
-    linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, session, networkMap)?. let {
+    linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, session, groups, members)?. let {
         records.add(Record(LINK_OUT_TOPIC, key, it))
     }
     return records

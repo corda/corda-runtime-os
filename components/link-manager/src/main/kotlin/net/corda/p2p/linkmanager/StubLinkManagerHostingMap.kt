@@ -9,7 +9,7 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
+import net.corda.p2p.linkmanager.LinkManagerInternalTypes.toHoldingIdentity
 import net.corda.p2p.test.HostedIdentityEntry
 import net.corda.schema.TestSchema.Companion.HOSTED_MAP_TOPIC
 import java.util.concurrent.CompletableFuture
@@ -25,7 +25,7 @@ class StubLinkManagerHostingMap(
         private const val GROUP_NAME = "linkmanager_stub_hosting_map"
     }
 
-    private val locallyHostedIdentityToTenantId = ConcurrentHashMap<LinkManagerNetworkMap.HoldingIdentity, String>()
+    private val locallyHostedIdentityToTenantId = ConcurrentHashMap<LinkManagerInternalTypes.HoldingIdentity, String>()
     private val listeners = ConcurrentHashMap.newKeySet<HostingMapListener>()
     private val ready = CompletableFuture<Unit>()
     private val subscription = subscriptionFactory.createCompactedSubscription(
@@ -60,10 +60,10 @@ class StubLinkManagerHostingMap(
         return ready
     }
 
-    override fun isHostedLocally(identity: LinkManagerNetworkMap.HoldingIdentity) =
+    override fun isHostedLocally(identity: LinkManagerInternalTypes.HoldingIdentity) =
         locallyHostedIdentityToTenantId.containsKey(identity)
 
-    override fun getTenantId(identity: LinkManagerNetworkMap.HoldingIdentity) =
+    override fun getTenantId(identity: LinkManagerInternalTypes.HoldingIdentity) =
         locallyHostedIdentityToTenantId[identity]
 
     override fun registerListener(listener: HostingMapListener) {
