@@ -6,7 +6,12 @@ import java.io.File
 
 enum class LbType {
     K8S,
-    NGINX;
+    NGINX,
+    KS,
+    RS,
+    KA,
+    RA
+    ;
 }
 data class NamespaceIdentifier(
     val namespaceName: String,

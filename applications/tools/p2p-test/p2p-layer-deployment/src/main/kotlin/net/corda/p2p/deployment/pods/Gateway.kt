@@ -21,6 +21,10 @@ class Gateway(
                 LbType.NGINX -> NginxLoadBalancer(
                     gateways.map { it.app },
                 )
+                else -> TestingOneLoadBalance(
+                    details.lbType,
+                    gateways.map { it.app },
+                )
             }
             return gateways + balancer
         }
