@@ -260,7 +260,7 @@ class P2PLayerEndToEndTest {
                 val messageHeader = AuthenticatedMessageHeader(
                     HoldingIdentity(hostB.x500Name, GROUP_ID),
                     HoldingIdentity(hostA.x500Name, GROUP_ID),
-                    TTL,
+                    expiredTTL,
                     randomId,
                     randomId,
                     SUBSYSTEM
@@ -347,6 +347,27 @@ class P2PLayerEndToEndTest {
             }
         }
     }
+
+/*    private class ResponderProcessorExpiredTTL : DurableProcessor<String, AppMessage> {
+
+        override val keyClass: Class<String>
+            get() = String::class.java
+        override val valueClass: Class<AppMessage>
+            get() = AppMessage::class.java
+
+        override fun onNext(events: List<Record<String, AppMessage>>): List<Record<*, *>> {
+            return events.map {
+                val message = it.value!!.message as AuthenticatedMessage
+                val randomId = UUID.randomUUID().toString()
+                logger.info("Received message: ${message.payload.array().toString(Charsets.UTF_8)} and responding")
+                val responseMessage = AuthenticatedMessage(
+                    AuthenticatedMessageHeader(message.header.source, message.header.destination, expiredTTL, randomId, randomId, SUBSYSTEM),
+                    ByteBuffer.wrap(message.payload.array().toString(Charsets.UTF_8).replace("ping", "pong").toByteArray())
+                )
+                Record(P2P_OUT_TOPIC, randomId, AppMessage(responseMessage))
+            }
+        }
+    }*/
 
     class Host(
         p2pAddress: String,
