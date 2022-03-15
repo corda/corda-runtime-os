@@ -69,60 +69,65 @@ import java.util.concurrent.ConcurrentHashMap
 class P2PLayerEndToEndTest {
 
     companion object {
-        private var TTL: Long? = null
+        private var TTL = 999999999999999999
+        //private var TTL:Long? = null
         private const val SUBSYSTEM = "e2e.test.app"
         private val logger = contextLogger()
         private const val GROUP_ID = "group-1"
     }
     private val bootstrapConfig = SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
 
-    val hostAReceivedMessages = ConcurrentHashMap.newKeySet<String>()
-
-    fun testMessagesBetweenTwoHosts(hostA: Host, hostB: Host) {
-        hostA.startWith(hostB)
-        hostB.startWith(hostA)
-
-
-        val hostAApplicationReader = hostA.subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("app-layer", P2P_IN_TOPIC, 1), InitiatorProcessor(hostAReceivedMessages),
-            bootstrapConfig,
-            null
-        )
-        val hostBApplicationReaderWriter = hostB.subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("app-layer", P2P_IN_TOPIC, 1), ResponderProcessor(),
-            bootstrapConfig,
-            null
-        )
-        hostAApplicationReader.start()
-        hostBApplicationReaderWriter.start()
-
-        val hostAApplicationWriter = hostA.publisherFactory.createPublisher(PublisherConfig("app-layer", 1), bootstrapConfig)
-        val initialMessages = (1..10).map { index ->
-            val randomId = UUID.randomUUID().toString()
-            val messageHeader = AuthenticatedMessageHeader(
-                HoldingIdentity(hostB.x500Name, GROUP_ID),
-                HoldingIdentity(hostA.x500Name, GROUP_ID),
-                TTL,
-                randomId,
-                randomId,
-                SUBSYSTEM
-            )
-            val message = AuthenticatedMessage(messageHeader, ByteBuffer.wrap("ping ($index)".toByteArray()))
-            Record(P2P_OUT_TOPIC, randomId, AppMessage(message))
-        }
-        hostAApplicationWriter.use {
-            hostAApplicationWriter.start()
-            val futures = hostAApplicationWriter.publish(initialMessages)
-            futures.forEach { it.get() }
-        }
-
-        hostAApplicationReader.stop()
-        hostBApplicationReaderWriter.stop()
-    }
-
     @Test
     @Timeout(60)
     fun `two hosts can exchange data messages over p2p using RSA keys`() {
+
+        fun testMessagesBetweenTwoHosts(hostA: Host, hostB: Host) {
+            hostA.startWith(hostB)
+            hostB.startWith(hostA)
+
+            val hostAReceivedMessages = ConcurrentHashMap.newKeySet<String>()
+            val hostAApplicationReader = hostA.subscriptionFactory.createDurableSubscription(
+                SubscriptionConfig("app-layer", P2P_IN_TOPIC, 1), InitiatorProcessor(hostAReceivedMessages),
+                bootstrapConfig,
+                null
+            )
+            val hostBApplicationReaderWriter = hostB.subscriptionFactory.createDurableSubscription(
+                SubscriptionConfig("app-layer", P2P_IN_TOPIC, 1), ResponderProcessor(),
+                bootstrapConfig,
+                null
+            )
+            hostAApplicationReader.start()
+            hostBApplicationReaderWriter.start()
+
+            val hostAApplicationWriter = hostA.publisherFactory.createPublisher(PublisherConfig("app-layer", 1), bootstrapConfig)
+            val initialMessages = (1..10).map { index ->
+                val randomId = UUID.randomUUID().toString()
+                val messageHeader = AuthenticatedMessageHeader(
+                    HoldingIdentity(hostB.x500Name, GROUP_ID),
+                    HoldingIdentity(hostA.x500Name, GROUP_ID),
+                    TTL,
+                    randomId,
+                    randomId,
+                    SUBSYSTEM
+                )
+                val message = AuthenticatedMessage(messageHeader, ByteBuffer.wrap("ping ($index)".toByteArray()))
+                Record(P2P_OUT_TOPIC, randomId, AppMessage(message))
+            }
+            hostAApplicationWriter.use {
+                hostAApplicationWriter.start()
+                val futures = hostAApplicationWriter.publish(initialMessages)
+                futures.forEach { it.get() }
+            }
+
+            eventually(10.seconds) {
+                (1..10).forEach { messageNo ->
+                    assertTrue(hostAReceivedMessages.contains("pong ($messageNo)"), "No reply received for message $messageNo")
+                }
+            }
+
+            hostAApplicationReader.stop()
+            hostBApplicationReaderWriter.stop()
+        }
 
         Host(
             "www.alice.net",
@@ -147,18 +152,59 @@ class P2PLayerEndToEndTest {
                 testMessagesBetweenTwoHosts(hostA, hostB)
             }
         }
-        eventually(10.seconds) {
-            (1..10).forEach { messageNo ->
-                assertTrue(hostAReceivedMessages.contains("pong ($messageNo)"), "No reply received for message $messageNo")
-            }
-        }
-
-        hostAReceivedMessages.clear()
     }
 
     @Test
     @Timeout(60)
     fun `two hosts can exchange data messages over p2p with ECDSA keys`() {
+
+        fun testMessagesBetweenTwoHosts(hostA: Host, hostB: Host) {
+            hostA.startWith(hostB)
+            hostB.startWith(hostA)
+
+            val hostAReceivedMessages = ConcurrentHashMap.newKeySet<String>()
+            val hostAApplicationReader = hostA.subscriptionFactory.createDurableSubscription(
+                SubscriptionConfig("app-layer", P2P_IN_TOPIC, 1), InitiatorProcessor(hostAReceivedMessages),
+                bootstrapConfig,
+                null
+            )
+            val hostBApplicationReaderWriter = hostB.subscriptionFactory.createDurableSubscription(
+                SubscriptionConfig("app-layer", P2P_IN_TOPIC, 1), ResponderProcessor(),
+                bootstrapConfig,
+                null
+            )
+            hostAApplicationReader.start()
+            hostBApplicationReaderWriter.start()
+
+            val hostAApplicationWriter = hostA.publisherFactory.createPublisher(PublisherConfig("app-layer", 1), bootstrapConfig)
+            val initialMessages = (1..10).map { index ->
+                val randomId = UUID.randomUUID().toString()
+                val messageHeader = AuthenticatedMessageHeader(
+                    HoldingIdentity(hostB.x500Name, GROUP_ID),
+                    HoldingIdentity(hostA.x500Name, GROUP_ID),
+                    TTL,
+                    randomId,
+                    randomId,
+                    SUBSYSTEM
+                )
+                val message = AuthenticatedMessage(messageHeader, ByteBuffer.wrap("ping ($index)".toByteArray()))
+                Record(P2P_OUT_TOPIC, randomId, AppMessage(message))
+            }
+            hostAApplicationWriter.use {
+                hostAApplicationWriter.start()
+                val futures = hostAApplicationWriter.publish(initialMessages)
+                futures.forEach { it.get() }
+            }
+
+            eventually(10.seconds) {
+                (1..10).forEach { messageNo ->
+                    assertTrue(hostAReceivedMessages.contains("pong ($messageNo)"), "No reply received for message $messageNo")
+                }
+            }
+
+            hostAApplicationReader.stop()
+            hostBApplicationReaderWriter.stop()
+        }
 
         Host(
             "www.receiver.net",
@@ -183,19 +229,60 @@ class P2PLayerEndToEndTest {
                 testMessagesBetweenTwoHosts(hostA, hostB)
             }
         }
-
-        eventually(10.seconds) {
-            (1..10).forEach { messageNo ->
-                assertTrue(hostAReceivedMessages.contains("pong ($messageNo)"), "No reply received for message $messageNo")
-            }
-        }
-        hostAReceivedMessages.clear()
     }
 
     @Test
     @Timeout(60)
     fun `messages with expired ttl have sent marker and ttl expired marker and no received marker`() {
-        TTL = 1000000L
+        TTL = 1L
+
+        fun testMessagesBetweenTwoHosts(hostA: Host, hostB: Host) {
+            hostA.startWith(hostB)
+            hostB.startWith(hostA)
+
+            val hostAReceivedMessages = ConcurrentHashMap.newKeySet<String>()
+            val hostAApplicationReader = hostA.subscriptionFactory.createDurableSubscription(
+                SubscriptionConfig("app-layer", P2P_IN_TOPIC, 1), InitiatorProcessor(hostAReceivedMessages),
+                bootstrapConfig,
+                null
+            )
+            val hostBApplicationReaderWriter = hostB.subscriptionFactory.createDurableSubscription(
+                SubscriptionConfig("app-layer", P2P_IN_TOPIC, 1), ResponderProcessor(),
+                bootstrapConfig,
+                null
+            )
+            hostAApplicationReader.start()
+            hostBApplicationReaderWriter.start()
+
+            val hostAApplicationWriter = hostA.publisherFactory.createPublisher(PublisherConfig("app-layer", 1), bootstrapConfig)
+            val initialMessages = (1..10).map { index ->
+                val randomId = UUID.randomUUID().toString()
+                val messageHeader = AuthenticatedMessageHeader(
+                    HoldingIdentity(hostB.x500Name, GROUP_ID),
+                    HoldingIdentity(hostA.x500Name, GROUP_ID),
+                    TTL,
+                    randomId,
+                    randomId,
+                    SUBSYSTEM
+                )
+                val message = AuthenticatedMessage(messageHeader, ByteBuffer.wrap("ping ($index)".toByteArray()))
+                Record(P2P_OUT_TOPIC, randomId, AppMessage(message))
+            }
+            hostAApplicationWriter.use {
+                hostAApplicationWriter.start()
+                val futures = hostAApplicationWriter.publish(initialMessages)
+                futures.forEach { it.get() }
+            }
+
+            eventually(10.seconds) {
+                (1..10).forEach { messageNo ->
+                    assertTrue(hostAReceivedMessages.contains("pong ($messageNo)"), "No reply received for message $messageNo")
+                }
+            }
+
+            hostAApplicationReader.stop()
+            hostBApplicationReaderWriter.stop()
+        }
 
         Host(
             "www.alice.net",
@@ -220,13 +307,6 @@ class P2PLayerEndToEndTest {
                 testMessagesBetweenTwoHosts(hostA, hostB)
             }
         }
-
-        eventually(10.seconds) {
-            (1..10).forEach { messageNo ->
-                assertTrue(hostAReceivedMessages.contains("pong ($messageNo)"), "No reply received for message $messageNo")
-            }
-        }
-        hostAReceivedMessages.clear()
     }
 
 
