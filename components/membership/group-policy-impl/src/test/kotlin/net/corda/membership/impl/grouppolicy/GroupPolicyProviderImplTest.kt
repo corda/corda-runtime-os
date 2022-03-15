@@ -1,6 +1,5 @@
 package net.corda.membership.impl.grouppolicy
 
-import net.bytebuddy.pool.TypePool
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.libs.packaging.CpiIdentifier
 import net.corda.libs.packaging.CpiMetadata
@@ -23,7 +22,6 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -33,7 +31,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import java.util.UUID
+import java.util.*
 
 /**
  * Unit tests for [GroupPolicyProviderImpl]
@@ -82,13 +80,17 @@ class GroupPolicyProviderImplTest {
 
     val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { get(eq(holdingIdentity1)) } doReturn VirtualNodeInfo(
-            holdingIdentity1, cpiIdentifier1, null, UUID.randomUUID(), null, UUID.randomUUID())
+            holdingIdentity1, cpiIdentifier1, null, UUID.randomUUID(), null, UUID.randomUUID()
+        )
         on { get(eq(holdingIdentity2)) } doReturn VirtualNodeInfo(
-            holdingIdentity2, cpiIdentifier2, null, UUID.randomUUID(), null, UUID.randomUUID())
+            holdingIdentity2, cpiIdentifier2, null, UUID.randomUUID(), null, UUID.randomUUID()
+        )
         on { get(eq(holdingIdentity3)) } doReturn VirtualNodeInfo(
-            holdingIdentity3, cpiIdentifier3, null, UUID.randomUUID(), null, UUID.randomUUID())
+            holdingIdentity3, cpiIdentifier3, null, UUID.randomUUID(), null, UUID.randomUUID()
+        )
         on { get(eq(holdingIdentity4)) } doReturn VirtualNodeInfo(
-            holdingIdentity4, cpiIdentifier4, null, UUID.randomUUID(), null, UUID.randomUUID())
+            holdingIdentity4, cpiIdentifier4, null, UUID.randomUUID(), null, UUID.randomUUID()
+        )
         on { registerCallback(any()) } doAnswer {
             virtualNodeListener = it.arguments[0] as VirtualNodeInfoListener
             mock()
@@ -230,7 +232,16 @@ class GroupPolicyProviderImplTest {
 
         virtualNodeListener?.onUpdate(
             setOf(holdingIdentity1),
-            mapOf(holdingIdentity1 to VirtualNodeInfo(holdingIdentity1, cpiIdentifier2, null, UUID.randomUUID(), null, UUID.randomUUID()))
+            mapOf(
+                holdingIdentity1 to VirtualNodeInfo(
+                    holdingIdentity1,
+                    cpiIdentifier2,
+                    null,
+                    UUID.randomUUID(),
+                    null,
+                    UUID.randomUUID()
+                )
+            )
         )
 
         val updated = groupPolicyProvider.getGroupPolicy(holdingIdentity1)
@@ -246,7 +257,16 @@ class GroupPolicyProviderImplTest {
 
         virtualNodeListener?.onUpdate(
             setOf(holdingIdentity1),
-            mapOf(holdingIdentity1 to VirtualNodeInfo(holdingIdentity1, cpiIdentifier2, null, UUID.randomUUID(), null, UUID.randomUUID()))
+            mapOf(
+                holdingIdentity1 to VirtualNodeInfo(
+                    holdingIdentity1,
+                    cpiIdentifier2,
+                    null,
+                    UUID.randomUUID(),
+                    null,
+                    UUID.randomUUID()
+                )
+            )
         )
 
         val updated = groupPolicyProvider.getGroupPolicy(holdingIdentity1)
