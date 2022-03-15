@@ -266,6 +266,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
          * [isReplay] - If the message is being replayed we don't persist a [LinkManagerSentMarker] as there is already
          * a marker for this message. If the process is restarted we reread the original marker.
          */
+
         fun processAuthenticatedMessage(
             messageAndKey: AuthenticatedMessageAndKey,
             isReplay: Boolean = false
@@ -288,32 +289,32 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             } else {
                 return if (isHostedLocally) {
                     mutableListOf(Record(P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)))
-                }
-            } else {
-                return when (val state = sessionManager.processOutboundMessage(messageAndKey)) {
-                    is SessionState.NewSessionNeeded -> {
-                        logger.trace {
-                            "No existing session with ${messageAndKey.message.header.destination.toHoldingIdentity()}. " +
-                                    "Initiating a new one.."
+                } else {
+                    return when (val state = sessionManager.processOutboundMessage(messageAndKey)) {
+                        is SessionState.NewSessionNeeded -> {
+                            logger.trace {
+                                "No existing session with ${messageAndKey.message.header.destination.toHoldingIdentity()}. " +
+                                        "Initiating a new one.."
+                            }
+                            recordsForNewSession(state)
                         }
-                        recordsForNewSession(state)
-                    }
-                    is SessionState.SessionEstablished -> {
-                        logger.trace {
-                            "Session already established with ${messageAndKey.message.header.destination.toHoldingIdentity()}." +
-                                    " Using this to send outbound message."
+                        is SessionState.SessionEstablished -> {
+                            logger.trace {
+                                "Session already established with ${messageAndKey.message.header.destination.toHoldingIdentity()}." +
+                                        " Using this to send outbound message."
+                            }
+                            recordsForSessionEstablished(state, messageAndKey)
                         }
-                        recordsForSessionEstablished(state, messageAndKey)
-                    }
-                    is SessionState.SessionAlreadyPending, SessionState.CannotEstablishSession -> {
-                        logger.trace {
-                            "Session already pending with ${messageAndKey.message.header.destination.toHoldingIdentity()}. " +
-                                    "Message queued until session is established."
+                        is SessionState.SessionAlreadyPending, SessionState.CannotEstablishSession -> {
+                            logger.trace {
+                                "Session already pending with ${messageAndKey.message.header.destination.toHoldingIdentity()}. " +
+                                        "Message queued until session is established."
+                            }
+                            emptyList()
                         }
-                        emptyList()
                     }
-                }
-            } + if (!isReplay) recordsForMarkers(messageAndKey, isHostedLocally) else emptyList()
+                } + if (!isReplay) recordsForMarkers(messageAndKey, isHostedLocally) else emptyList()
+            }
         }
 
 
