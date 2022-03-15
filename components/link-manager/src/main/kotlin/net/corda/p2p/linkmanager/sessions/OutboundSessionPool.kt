@@ -9,8 +9,8 @@ import kotlin.random.Random
 /**
  * Stores outbound [AuthenticationProtocolInitiator] during session negotiation and [Session] once negotiation is
  * complete.
- * [calculateWeightForSession] - Used to calculate a weight per session between 0 and 1. Sessions with a large weight
- * are favoured over sessions with a small weight.
+ * [calculateWeightForSession] - Used to calculate a weight per session. Sessions with a small weight
+ * are favoured over sessions with a larger weight.
  */
 class OutboundSessionPool(
     private val calculateWeightForSession: (sessionId: String) -> Double?,
@@ -65,10 +65,14 @@ class OutboundSessionPool(
            }
         }
 
+        if (weights.size == 1) {
+            return SessionPoolStatus.SessionActive(weights[0].first.session)
+        }
+
         var totalProb = 0.0
         val randomNumber = genRandomNumber()
         val selectedSession = weights.find {
-            totalProb += it.second / totalWeight
+            totalProb += (1.0 - it.second / totalWeight) / (weights.size - 1.0)
             randomNumber <= totalProb
         }?.first
 
@@ -104,7 +108,7 @@ class OutboundSessionPool(
     ) {
         outboundSessions.compute(sessionCounterparties) { _, _ ->
             val sessionsMap = ConcurrentHashMap<String, SessionType>()
-            authenticationProtocols.mapNotNull { sessionsMap[it.sessionId] = SessionType.PendingSession(sessionCounterparties, it) }
+            authenticationProtocols.forEach { sessionsMap[it.sessionId] = SessionType.PendingSession(sessionCounterparties, it) }
             sessionsMap
         }
         authenticationProtocols.forEach{ counterpartiesForSessionId[it.sessionId] = sessionCounterparties }
