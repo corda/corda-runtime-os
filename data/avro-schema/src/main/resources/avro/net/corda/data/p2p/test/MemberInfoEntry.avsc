@@ -1,0 +1,27 @@
+{
+  "type": "record",
+  "name": "MemberInfoEntry",
+  "namespace": "net.corda.p2p.test",
+  "fields": [
+    {
+      "doc": "The holding identity",
+      "name": "holdingIdentity",
+      "type": "net.corda.data.identity.HoldingIdentity"
+    },
+    {
+      "doc": "The encoded public key",
+      "name": "publicKey",
+      "type": "bytes"
+    },
+    {
+      "doc": "The public key algorithm",
+      "name": "publicKeyAlgorithm",
+      "type": "net.corda.p2p.test.KeyAlgorithm"
+    },
+    {
+      "doc": "The identity address",
+      "name": "address",
+      "type": "string"
+    }
+  ]
+}

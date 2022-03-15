@@ -1,25 +1,15 @@
 {
   "type": "record",
-  "name": "NetworkMapEntry",
+  "name": "GroupPolicyEntry",
   "namespace": "net.corda.p2p.test",
   "fields": [
     {
-      "name": "holdingIdentity",
-      "type": "net.corda.data.identity.HoldingIdentity"
-    },
-    {
-      "name": "publicKey",
-      "type": "bytes"
-    },
-    {
-      "name": "publicKeyAlgorithm",
-      "type": "net.corda.p2p.test.KeyAlgorithm"
-    },
-    {
-      "name": "address",
+      "doc": "The group ID",
+      "name": "groupId",
       "type": "string"
     },
     {
+      "doc": "The group network type",
       "name": "networkType",
       "type": "net.corda.p2p.NetworkType"
     },
