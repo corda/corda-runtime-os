@@ -88,6 +88,8 @@ allprojects {
         doFirst {
             systemProperty 'java.io.tmpdir', buildDir.absolutePath
         }
+        
+        maxParallelForks = 2       
 
         retry {
             if (System.getenv().containsKey("JENKINS_URL")) {
