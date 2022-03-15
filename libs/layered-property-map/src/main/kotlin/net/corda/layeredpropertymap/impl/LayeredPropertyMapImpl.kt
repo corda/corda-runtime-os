@@ -74,7 +74,7 @@ class LayeredPropertyMapImpl(
             )
         }
         result.validateIsAssignableFrom(key, clazz)
-        return result.value as T
+        return result.value as T?
     }
 
     /**
