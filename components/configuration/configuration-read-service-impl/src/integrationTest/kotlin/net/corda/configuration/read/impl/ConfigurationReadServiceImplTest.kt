@@ -28,7 +28,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class)
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@TestInstance(TestInstance.Lifecycle.PER_METHOD)
 class ConfigurationReadServiceImplTest {
 
     companion object {
