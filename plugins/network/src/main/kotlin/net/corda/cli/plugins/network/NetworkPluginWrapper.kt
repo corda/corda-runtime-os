@@ -28,7 +28,7 @@ class NetworkPluginWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
     @CommandLine.Command(
         name = "network",
         mixinStandardHelpOptions = true,
-        description = ["Plugin for deploying and managing a network."]
+        description = ["Plugin for interacting with a network."]
     )
     class NetworkPlugin : CordaCliPlugin, HttpServiceUser {
         @Mixin

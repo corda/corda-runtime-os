@@ -11,7 +11,7 @@ class MockHttpService : HttpService {
     @CommandLine.Option(names = ["-p", "--password"], description = ["Password"], required = true)
     override var password: String? = null
 
-    @CommandLine.Option(names = ["-t", "--target-url"], description = ["The Swagger Url of the target."])
+    @CommandLine.Option(names = ["-t", "--target-url"], description = ["Url of the target."])
     override var url: String? = null
 
     override fun get(endpoint: String) { println("$url$endpoint") }

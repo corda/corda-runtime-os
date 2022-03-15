@@ -19,7 +19,6 @@ class MembersListTest {
         tapSystemErrAndOutNormalized {
             CommandLine(app).execute("--user=test", "--password=test", "-t=$url", "members-list", "-v=$DUMMY_VNODE_ID")
         }.apply {
-            println(this)
             assertTrue(contains("$url/members?vnode-id=$DUMMY_VNODE_ID"))
         }
     }
