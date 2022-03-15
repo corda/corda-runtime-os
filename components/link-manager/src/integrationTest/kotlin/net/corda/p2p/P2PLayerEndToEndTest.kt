@@ -63,14 +63,15 @@ import java.io.StringWriter
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.KeyStore
+import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 class P2PLayerEndToEndTest {
 
     companion object {
-        private var TTL = 999999999999999999
-        //private var TTL:Long? = null
+        private var TTL = Instant.now().toEpochMilli() + 9999999999
+        private var expiredTTL = 1L
         private const val SUBSYSTEM = "e2e.test.app"
         private val logger = contextLogger()
         private const val GROUP_ID = "group-1"
@@ -234,7 +235,6 @@ class P2PLayerEndToEndTest {
     @Test
     @Timeout(60)
     fun `messages with expired ttl have sent marker and ttl expired marker and no received marker`() {
-        TTL = 1L
 
         fun testMessagesBetweenTwoHosts(hostA: Host, hostB: Host) {
             hostA.startWith(hostB)
