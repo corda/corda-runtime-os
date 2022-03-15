@@ -1,9 +1,11 @@
 package net.corda.messaging.integration.subscription
 
+import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.messaging.topic.utils.TopicUtils
+import net.corda.libs.messaging.topic.utils.factory.TopicUtilsFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -22,22 +24,29 @@ import net.corda.messaging.integration.TopicTemplates
 import net.corda.messaging.integration.TopicTemplates.Companion.TEST_TOPIC_PREFIX
 import net.corda.messaging.integration.getDemoRecords
 import net.corda.messaging.integration.getKafkaProperties
+import net.corda.messaging.integration.isDBBundle
 import net.corda.messaging.integration.processors.TestPubsubProcessor
+import net.corda.messaging.integration.util.DBSetup
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtendWith
+import org.osgi.framework.BundleContext
+import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
+import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-@ExtendWith(ServiceExtension::class)
-class PubsubSubscriptionIntegrationTest {
+@ExtendWith(ServiceExtension::class, BundleContextExtension::class)
+class PubSubSubscriptionIntegrationTest {
 
     private lateinit var publisherConfig: PublisherConfig
     private lateinit var publisher: Publisher
@@ -47,6 +56,30 @@ class PubsubSubscriptionIntegrationTest {
     private companion object {
         const val CLIENT_ID = "integrationTestPubSubPublisher"
         const val PUBSUB_TOPIC1 = "PubSubTopic1"
+
+        private var pubSubTopic1Config = ConfigFactory.parseString(TopicTemplates.PUBSUB_TOPIC1_TEMPLATE)
+
+        @Suppress("unused")
+        @JvmStatic
+        @BeforeAll
+        fun setup(
+            @InjectBundleContext bundleContext: BundleContext
+        ) {
+            if (bundleContext.isDBBundle()) {
+                DBSetup.setupEntities(CLIENT_ID)
+                // Dodgy remove prefix for DB code
+                pubSubTopic1Config = ConfigFactory.parseString(
+                    TopicTemplates.PUBSUB_TOPIC1_TEMPLATE.replace(TEST_TOPIC_PREFIX, "")
+                )
+            }
+        }
+
+        @Suppress("unused")
+        @AfterAll
+        @JvmStatic
+        fun done() {
+            DBSetup.close()
+        }
     }
 
     @InjectService(timeout = 4000)
@@ -56,13 +89,16 @@ class PubsubSubscriptionIntegrationTest {
     lateinit var subscriptionFactory: SubscriptionFactory
 
     @InjectService(timeout = 4000)
-    lateinit var topicAdmin: KafkaTopicAdmin
+    lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 
     @InjectService(timeout = 4000)
-    lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+    lateinit var topicUtilFactory: TopicUtilsFactory
+
+    private lateinit var topicUtils: TopicUtils
 
     @BeforeEach
     fun beforeEach() {
+        topicUtils = topicUtilFactory.createTopicUtils(getKafkaProperties())
         kafkaConfig = SmartConfigImpl.empty()
             .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(BOOTSTRAP_SERVERS_VALUE))
             .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(TEST_TOPIC_PREFIX))
@@ -71,7 +107,7 @@ class PubsubSubscriptionIntegrationTest {
     @Test
     @Timeout(value = 10, unit = TimeUnit.SECONDS)
     fun `start pubsub subscription and publish records`() {
-        topicAdmin.createTopics(kafkaProperties, TopicTemplates.PUBSUB_TOPIC1_TEMPLATE)
+        topicUtils.createTopics(pubSubTopic1Config)
 
         val latch = CountDownLatch(1)
         val coordinator =

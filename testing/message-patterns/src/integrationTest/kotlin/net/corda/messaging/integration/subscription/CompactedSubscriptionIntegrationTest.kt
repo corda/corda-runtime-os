@@ -28,8 +28,8 @@ import net.corda.messaging.integration.TopicTemplates.Companion.TEST_TOPIC_PREFI
 import net.corda.messaging.integration.getDemoRecords
 import net.corda.messaging.integration.getKafkaProperties
 import net.corda.messaging.integration.getStringRecords
+import net.corda.messaging.integration.isDBBundle
 import net.corda.messaging.integration.processors.TestCompactedProcessor
-import net.corda.messaging.integration.publisher.PublisherIntegrationTest
 import net.corda.messaging.integration.util.DBSetup
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.millis
@@ -44,13 +44,15 @@ import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtendWith
-import org.osgi.framework.FrameworkUtil
+import org.osgi.framework.BundleContext
+import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
+import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-@ExtendWith(ServiceExtension::class)
+@ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 class CompactedSubscriptionIntegrationTest {
 
     private lateinit var publisherConfig: PublisherConfig
@@ -65,13 +67,11 @@ class CompactedSubscriptionIntegrationTest {
         @Suppress("unused")
         @JvmStatic
         @BeforeAll
-        fun setup() {
-            val bundle = FrameworkUtil.getBundle(PublisherIntegrationTest::class.java)
-            val isDBTest =
-                bundle.bundleContext.bundles.find { it.symbolicName.contains("db-message-bus-impl") } != null
-
-            if (isDBTest) {
-                DBSetup.setupEntities("DB Consumer for ${CLIENT_ID}-consumer-0")
+        fun setup(
+            @InjectBundleContext bundleContext: BundleContext
+        ) {
+            if (bundleContext.isDBBundle()) {
+                DBSetup.setupEntities(CLIENT_ID)
                 // Dodgy remove prefix for DB code
                 compactedTopic1Config = ConfigFactory.parseString(
                     COMPACTED_TOPIC1_TEMPLATE.replace(TEST_TOPIC_PREFIX,"")

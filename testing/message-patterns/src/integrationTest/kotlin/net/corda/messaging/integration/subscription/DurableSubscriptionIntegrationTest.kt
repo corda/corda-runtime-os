@@ -27,9 +27,9 @@ import net.corda.messaging.integration.TopicTemplates.Companion.TEST_TOPIC_PREFI
 import net.corda.messaging.integration.getDemoRecords
 import net.corda.messaging.integration.getKafkaProperties
 import net.corda.messaging.integration.getStringRecords
+import net.corda.messaging.integration.isDBBundle
 import net.corda.messaging.integration.processors.TestDurableProcessor
 import net.corda.messaging.integration.processors.TestDurableStringProcessor
-import net.corda.messaging.integration.publisher.PublisherIntegrationTest
 import net.corda.messaging.integration.util.DBSetup
 import net.corda.messaging.properties.ConfigProperties.Companion.MESSAGING_KAFKA
 import net.corda.test.util.eventually
@@ -44,13 +44,15 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtendWith
-import org.osgi.framework.FrameworkUtil
+import org.osgi.framework.BundleContext
+import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
+import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-@ExtendWith(ServiceExtension::class)
+@ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 class DurableSubscriptionIntegrationTest {
 
     private lateinit var publisherConfig: PublisherConfig
@@ -71,13 +73,11 @@ class DurableSubscriptionIntegrationTest {
         @Suppress("unused")
         @JvmStatic
         @BeforeAll
-        fun setup() {
-            val bundle = FrameworkUtil.getBundle(PublisherIntegrationTest::class.java)
-            val isDBTest =
-                bundle.bundleContext.bundles.find { it.symbolicName.contains("db-message-bus-impl") } != null
-
-            if (isDBTest) {
-                DBSetup.setupEntities("DB Consumer for ${CLIENT_ID}-consumer-0")
+        fun setup(
+            @InjectBundleContext bundleContext: BundleContext
+        ) {
+            if (bundleContext.isDBBundle()) {
+                DBSetup.setupEntities(CLIENT_ID)
                 // Dodgy remove prefix for DB code
                 durableTopic1Config = ConfigFactory.parseString(
                     TopicTemplates.DURABLE_TOPIC1_TEMPLATE.replace(TEST_TOPIC_PREFIX,"")
@@ -111,10 +111,11 @@ class DurableSubscriptionIntegrationTest {
     @InjectService(timeout = 4000)
     lateinit var topicUtilFactory: TopicUtilsFactory
 
-    var topicUtils: TopicUtils = topicUtilFactory.createTopicUtils(getKafkaProperties())
+    private lateinit var topicUtils: TopicUtils
 
     @BeforeEach
     fun beforeEach() {
+        topicUtils = topicUtilFactory.createTopicUtils(getKafkaProperties())
         kafkaConfig = SmartConfigImpl.empty()
             .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(BOOTSTRAP_SERVERS_VALUE))
             .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(TEST_TOPIC_PREFIX))
@@ -124,7 +125,6 @@ class DurableSubscriptionIntegrationTest {
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `asynch publish records and then start 2 durable subscriptions, delay 1 sub, trigger rebalance`() {
         topicUtils.createTopics(durableTopic1Config)
-//        topicAdmin.createTopics(kafkaProperties, TopicTemplates.DURABLE_TOPIC1_TEMPLATE)
 
         publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC1)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
@@ -165,7 +165,6 @@ class DurableSubscriptionIntegrationTest {
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `asynch publish records and then start durable subscription`() {
         topicUtils.createTopics(durableTopic2Config)
-//        topicAdmin.createTopics(kafkaProperties, TopicTemplates.DURABLE_TOPIC2_TEMPLATE)
 
         publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC2)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
@@ -215,7 +214,6 @@ class DurableSubscriptionIntegrationTest {
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `asynch publish the wrong records and then start durable subscription`() {
         topicUtils.createTopics(durableTopic3Config)
-//        topicAdmin.createTopics(kafkaProperties, TopicTemplates.DURABLE_TOPIC3_TEMPLATE)
 
         publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC3)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)

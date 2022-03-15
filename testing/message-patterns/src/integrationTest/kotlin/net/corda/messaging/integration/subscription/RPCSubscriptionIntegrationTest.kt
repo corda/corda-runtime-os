@@ -1,12 +1,14 @@
 package net.corda.messaging.integration.subscription
 
+import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse
 import net.corda.data.messaging.ResponseStatus
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.messaging.topic.utils.TopicUtils
+import net.corda.libs.messaging.topic.utils.factory.TopicUtilsFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -20,24 +22,31 @@ import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.integration.TopicTemplates
 import net.corda.messaging.integration.getKafkaProperties
+import net.corda.messaging.integration.isDBBundle
 import net.corda.messaging.integration.processors.TestRPCAvroResponderProcessor
 import net.corda.messaging.integration.processors.TestRPCCancelResponderProcessor
 import net.corda.messaging.integration.processors.TestRPCErrorResponderProcessor
 import net.corda.messaging.integration.processors.TestRPCResponderProcessor
 import net.corda.messaging.integration.processors.TestRPCUnresponsiveResponderProcessor
+import net.corda.messaging.integration.util.DBSetup
 import net.corda.test.util.eventually
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.fail
+import org.osgi.framework.BundleContext
+import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
+import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.ByteBuffer
 import java.time.Instant
@@ -45,15 +54,59 @@ import java.util.concurrent.CancellationException
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
-@ExtendWith(ServiceExtension::class)
+@ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 class RPCSubscriptionIntegrationTest {
 
     private lateinit var rpcConfig: RPCConfig<String, String>
     private lateinit var kafkaConfig: SmartConfig
-    private val kafkaProperties = getKafkaProperties()
 
     private companion object {
         const val CLIENT_ID = "integrationTestRPCSender"
+
+        private var rpcTopic1Config = ConfigFactory.parseString(TopicTemplates.RPC_TOPIC1_TEMPLATE)
+        private var rpcTopic2Config = ConfigFactory.parseString(TopicTemplates.RPC_TOPIC2_TEMPLATE)
+        private var rpcTopic3Config = ConfigFactory.parseString(TopicTemplates.RPC_TOPIC3_TEMPLATE)
+        private var rpcTopic4Config = ConfigFactory.parseString(TopicTemplates.RPC_TOPIC4_TEMPLATE)
+        private var rpcTopic5Config = ConfigFactory.parseString(TopicTemplates.RPC_TOPIC5_TEMPLATE)
+        private var rpcResponseTopic1Config = ConfigFactory.parseString(TopicTemplates.RPC_RESPONSE_TOPIC1_TEMPLATE)
+        private var rpcResponseTopic2Config = ConfigFactory.parseString(TopicTemplates.RPC_RESPONSE_TOPIC2_TEMPLATE)
+        private var rpcResponseTopic3Config = ConfigFactory.parseString(TopicTemplates.RPC_RESPONSE_TOPIC3_TEMPLATE)
+        private var rpcResponseTopic4Config = ConfigFactory.parseString(TopicTemplates.RPC_RESPONSE_TOPIC4_TEMPLATE)
+        private var rpcResponseTopic5Config = ConfigFactory.parseString(TopicTemplates.RPC_RESPONSE_TOPIC5_TEMPLATE)
+
+        @Suppress("unused")
+        @JvmStatic
+        @BeforeAll
+        fun setup(
+            @InjectBundleContext bundleContext: BundleContext
+        ) {
+            if (bundleContext.isDBBundle()) {
+                DBSetup.setupEntities(CLIENT_ID)
+                // Dodgy remove prefix for DB code
+                rpcTopic1Config = ConfigFactory.parseString(
+                    TopicTemplates.RPC_TOPIC1_TEMPLATE.replace(TopicTemplates.TEST_TOPIC_PREFIX, "")
+                )
+                rpcResponseTopic1Config = ConfigFactory.parseString(
+                    TopicTemplates.RPC_TOPIC1_TEMPLATE.replace(TopicTemplates.TEST_TOPIC_PREFIX, "")
+                )
+                rpcResponseTopic2Config = ConfigFactory.parseString(
+                    TopicTemplates.RPC_TOPIC2_TEMPLATE.replace(TopicTemplates.TEST_TOPIC_PREFIX, "")
+                )
+                rpcResponseTopic3Config = ConfigFactory.parseString(
+                    TopicTemplates.RPC_TOPIC3_TEMPLATE.replace(TopicTemplates.TEST_TOPIC_PREFIX, "")
+                )
+                rpcResponseTopic4Config = ConfigFactory.parseString(
+                    TopicTemplates.RPC_TOPIC4_TEMPLATE.replace(TopicTemplates.TEST_TOPIC_PREFIX, "")
+                )
+            }
+        }
+
+        @Suppress("unused")
+        @AfterAll
+        @JvmStatic
+        fun done() {
+            DBSetup.close()
+        }
     }
 
     @InjectService(timeout = 4000)
@@ -63,13 +116,16 @@ class RPCSubscriptionIntegrationTest {
     lateinit var subscriptionFactory: SubscriptionFactory
 
     @InjectService(timeout = 4000)
-    lateinit var topicAdmin: KafkaTopicAdmin
+    lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 
     @InjectService(timeout = 4000)
-    lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+    lateinit var topicUtilFactory: TopicUtilsFactory
+
+    private lateinit var topicUtils: TopicUtils
 
     @BeforeEach
     fun beforeEach() {
+        topicUtils = topicUtilFactory.createTopicUtils(getKafkaProperties())
         kafkaConfig = SmartConfigImpl.empty()
             .withValue(
                 net.corda.messaging.integration.IntegrationTestProperties.KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(
@@ -85,8 +141,8 @@ class RPCSubscriptionIntegrationTest {
     @Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `start rpc sender and responder, send message, complete correctly`() {
-        topicAdmin.createTopics(kafkaProperties, TopicTemplates.RPC_TOPIC1_TEMPLATE)
-        topicAdmin.createTopics(kafkaProperties, TopicTemplates.RPC_RESPONSE_TOPIC1_TEMPLATE)
+        topicUtils.createTopics(rpcTopic1Config)
+        topicUtils.createTopics(rpcResponseTopic1Config)
 
         rpcConfig = RPCConfig(
             CLIENT_ID + 1,
@@ -169,8 +225,8 @@ class RPCSubscriptionIntegrationTest {
     @Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `start rpc sender and responder, send avro message, complete correctly`() {
-        topicAdmin.createTopics(kafkaProperties, TopicTemplates.RPC_TOPIC2_TEMPLATE)
-        topicAdmin.createTopics(kafkaProperties, TopicTemplates.RPC_RESPONSE_TOPIC2_TEMPLATE)
+        topicUtils.createTopics(rpcTopic2Config)
+        topicUtils.createTopics(rpcResponseTopic2Config)
 
         val rpcConfig = RPCConfig(
             CLIENT_ID + 2,
@@ -225,8 +281,8 @@ class RPCSubscriptionIntegrationTest {
     @Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `start rpc sender and responder, send message, complete exceptionally`() {
-        topicAdmin.createTopics(kafkaProperties, TopicTemplates.RPC_TOPIC3_TEMPLATE)
-        topicAdmin.createTopics(kafkaProperties, TopicTemplates.RPC_RESPONSE_TOPIC3_TEMPLATE)
+        topicUtils.createTopics(rpcTopic3Config)
+        topicUtils.createTopics(rpcResponseTopic3Config)
 
         rpcConfig = RPCConfig(
             CLIENT_ID + 3,
@@ -268,8 +324,8 @@ class RPCSubscriptionIntegrationTest {
     @Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `start rpc sender and responder, send message, complete with cancellation`() {
-        topicAdmin.createTopics(kafkaProperties, TopicTemplates.RPC_TOPIC4_TEMPLATE)
-        topicAdmin.createTopics(kafkaProperties, TopicTemplates.RPC_RESPONSE_TOPIC4_TEMPLATE)
+        topicUtils.createTopics(rpcTopic4Config)
+        topicUtils.createTopics(rpcResponseTopic4Config)
         rpcConfig = RPCConfig(
             CLIENT_ID + 4,
             CLIENT_ID,
@@ -310,8 +366,8 @@ class RPCSubscriptionIntegrationTest {
     @Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `start rpc sender and responder, send message, complete exceptionally due to repartition`() {
-        topicAdmin.createTopics(kafkaProperties, TopicTemplates.RPC_TOPIC5_TEMPLATE)
-        topicAdmin.createTopics(kafkaProperties, TopicTemplates.RPC_RESPONSE_TOPIC5_TEMPLATE)
+        topicUtils.createTopics(rpcTopic5Config)
+        topicUtils.createTopics(rpcResponseTopic5Config)
         rpcConfig = RPCConfig(
             CLIENT_ID + 5,
             CLIENT_ID,

@@ -3,7 +3,10 @@ package net.corda.messaging.integration
 import net.corda.data.demo.DemoRecord
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.integration.IntegrationTestProperties.Companion.CLIENT_ID
+import org.osgi.framework.BundleContext
 import java.util.*
+
+fun BundleContext.isDBBundle() = bundles.find { it.symbolicName.contains("db-message-bus-impl") } != null
 
 fun getDemoRecords(topic: String, recordCount: Int, keyCount: Int): List<Record<*, *>> {
     val records = mutableListOf<Record<*, *>>()

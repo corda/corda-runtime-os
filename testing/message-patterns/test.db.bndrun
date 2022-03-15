@@ -5,7 +5,7 @@
 -resolve.effective: resolve, active
 
 #uncomment to remote debug
--runjdb: 5005
+#-runjdb: 5005
 
 -runsystempackages: \
     javax.xml.stream;version=1.0.0,\

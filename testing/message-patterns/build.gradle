@@ -54,7 +54,6 @@ dependencies {
     integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 
     integrationTestImplementation project(":components:kafka-topic-admin")
-//    kafkaIntegrationTestImplementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
 
     integrationTestImplementation 'net.corda:corda-db-schema'
     integrationTestImplementation project(":libs:db:db-core")
@@ -84,7 +83,7 @@ def testingBundle = tasks.register('testingBundle', Bundle) {
 
     bnd """\
 Bundle-SymbolicName: \${task.archiveBaseName}-\${task.archiveClassifier}
-    Test-Cases: net.corda.messaging.integration.subscription.CompactedSubscriptionIntegrationTest 
+    Test-Cases: net.corda.messaging.integration.subscription.DurableSubscriptionIntegrationTest
 """
 //    Test-Cases: \${classes;HIERARCHY_INDIRECTLY_ANNOTATED;org.junit.platform.commons.annotation.Testable;CONCRETE}
 }

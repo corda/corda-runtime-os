@@ -14,7 +14,6 @@ import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.producer.CordaAtomicDBProducerImpl.Companion.ATOMIC_TRANSACTION
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
-import net.corda.v5.base.types.toHexString
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
@@ -140,8 +139,7 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
 
         val result = dbRecords.takeWhile {
             it.transactionId.state == TransactionState.COMMITTED
-        }.also { if (it.isNotEmpty()) println("There are ${it.size} records")  }.map { dbRecord ->
-            println(dbRecord.value?.toHexString())
+        }.map { dbRecord ->
             CordaConsumerRecord(
                 dbRecord.topic,
                 dbRecord.partition,

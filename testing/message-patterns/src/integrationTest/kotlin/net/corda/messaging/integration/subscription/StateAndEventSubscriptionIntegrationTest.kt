@@ -1,9 +1,11 @@
 package net.corda.messaging.integration.subscription
 
+import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.messaging.topic.utils.TopicUtils
+import net.corda.libs.messaging.topic.utils.factory.TopicUtilsFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -38,35 +40,41 @@ import net.corda.messaging.integration.TopicTemplates.Companion.TEST_TOPIC_PREFI
 import net.corda.messaging.integration.getDemoRecords
 import net.corda.messaging.integration.getKafkaProperties
 import net.corda.messaging.integration.getStringRecords
+import net.corda.messaging.integration.isDBBundle
 import net.corda.messaging.integration.listener.TestStateAndEventListenerStrings
 import net.corda.messaging.integration.processors.TestDurableProcessor
 import net.corda.messaging.integration.processors.TestDurableProcessorStrings
 import net.corda.messaging.integration.processors.TestDurableStringProcessor
 import net.corda.messaging.integration.processors.TestStateEventProcessor
 import net.corda.messaging.integration.processors.TestStateEventProcessorStrings
+import net.corda.messaging.integration.util.DBSetup
 import net.corda.messaging.properties.ConfigProperties.Companion.MESSAGING_KAFKA
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtendWith
+import org.osgi.framework.BundleContext
+import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
+import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-@ExtendWith(ServiceExtension::class)
+@ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 class StateAndEventSubscriptionIntegrationTest {
 
     private lateinit var publisherConfig: PublisherConfig
     private lateinit var publisher: Publisher
     private lateinit var kafkaConfig: SmartConfig
-    private val kafkaProperties = getKafkaProperties()
 
     private companion object {
         const val CLIENT_ID = "integrationTestEventPublisher"
@@ -79,6 +87,54 @@ class StateAndEventSubscriptionIntegrationTest {
         const val CONSUMER_PROCESSOR_TIMEOUT = "consumer.processor.timeout"
         const val CONSUMER_MAX_POLL_INTERVAL = "consumer.max.poll.interval.ms"
         const val TWENTY_FIVE_SECONDS = 25 * 1_000L
+
+        private var eventTopic1Config = ConfigFactory.parseString(EVENT_TOPIC1_TEMPLATE)
+        private var eventTopic2Config = ConfigFactory.parseString(EVENT_TOPIC2_TEMPLATE)
+        private var eventTopic3Config = ConfigFactory.parseString(EVENT_TOPIC3_TEMPLATE)
+        private var eventTopic4Config = ConfigFactory.parseString(EVENT_TOPIC4_TEMPLATE)
+        private var eventTopic5Config = ConfigFactory.parseString(EVENT_TOPIC5_TEMPLATE)
+        private var eventTopic6Config = ConfigFactory.parseString(EVENT_TOPIC6_TEMPLATE)
+        private var eventTopic7Config = ConfigFactory.parseString(EVENT_TOPIC7_TEMPLATE)
+
+        @Suppress("unused")
+        @JvmStatic
+        @BeforeAll
+        fun setup(
+            @InjectBundleContext bundleContext: BundleContext
+        ) {
+            if (bundleContext.isDBBundle()) {
+                DBSetup.setupEntities(CLIENT_ID)
+                // Dodgy remove prefix for DB code
+                eventTopic1Config = ConfigFactory.parseString(
+                    EVENT_TOPIC1_TEMPLATE.replace(TEST_TOPIC_PREFIX, "")
+                )
+                eventTopic2Config = ConfigFactory.parseString(
+                    EVENT_TOPIC2_TEMPLATE.replace(TEST_TOPIC_PREFIX, "")
+                )
+                eventTopic3Config = ConfigFactory.parseString(
+                    EVENT_TOPIC3_TEMPLATE.replace(TEST_TOPIC_PREFIX, "")
+                )
+                eventTopic4Config = ConfigFactory.parseString(
+                    EVENT_TOPIC4_TEMPLATE.replace(TEST_TOPIC_PREFIX, "")
+                )
+                eventTopic5Config = ConfigFactory.parseString(
+                    EVENT_TOPIC5_TEMPLATE.replace(TEST_TOPIC_PREFIX, "")
+                )
+                eventTopic6Config = ConfigFactory.parseString(
+                    EVENT_TOPIC6_TEMPLATE.replace(TEST_TOPIC_PREFIX, "")
+                )
+                eventTopic7Config = ConfigFactory.parseString(
+                    EVENT_TOPIC7_TEMPLATE.replace(TEST_TOPIC_PREFIX, "")
+                )
+            }
+        }
+
+        @Suppress("unused")
+        @AfterAll
+        @JvmStatic
+        fun done() {
+            DBSetup.close()
+        }
     }
 
     @InjectService(timeout = 4000)
@@ -87,16 +143,17 @@ class StateAndEventSubscriptionIntegrationTest {
     @InjectService(timeout = 4000)
     lateinit var subscriptionFactory: SubscriptionFactory
 
-
-    @InjectService(timeout = 4000)
-    lateinit var topicAdmin: KafkaTopicAdmin
-
     @InjectService(timeout = 4000)
     lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 
+    @InjectService(timeout = 4000)
+    lateinit var topicUtilFactory: TopicUtilsFactory
+
+    private lateinit var topicUtils: TopicUtils
 
     @BeforeEach
     fun beforeEach() {
+        topicUtils = topicUtilFactory.createTopicUtils(getKafkaProperties())
         kafkaConfig = SmartConfigImpl.empty()
             .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(BOOTSTRAP_SERVERS_VALUE))
             .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(TEST_TOPIC_PREFIX))
@@ -105,7 +162,7 @@ class StateAndEventSubscriptionIntegrationTest {
     @Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `create topic with two partitions, start two statevent sub, publish records with two keys, no outputs`() {
-        topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC1_TEMPLATE)
+        topicUtils.createTopics(eventTopic1Config)
 
         val stateAndEventLatch = CountDownLatch(10)
         val stateEventSub1 = subscriptionFactory.createStateAndEventSubscription(
@@ -178,7 +235,7 @@ class StateAndEventSubscriptionIntegrationTest {
     @Test
     @Timeout(value = 60, unit = TimeUnit.SECONDS)
     fun `create topics, start one statevent sub, publish records with two keys, update state and output records and verify`() {
-        topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC2_TEMPLATE)
+        topicUtils.createTopics(eventTopic2Config)
 
         val onNextLatch1 = CountDownLatch(10)
         val stateEventSub1 = subscriptionFactory.createStateAndEventSubscription(
@@ -211,7 +268,7 @@ class StateAndEventSubscriptionIntegrationTest {
     @Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `create topics, start statevent sub, fail processor on first attempt, publish 2 records, verify listener and outputs`() {
-        topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC3_TEMPLATE)
+        topicUtils.createTopics(eventTopic3Config)
 
         publisherConfig = PublisherConfig(CLIENT_ID + EVENT_TOPIC3, 1)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
@@ -267,7 +324,7 @@ class StateAndEventSubscriptionIntegrationTest {
     @Test
     @Timeout(180)
     fun `create topics, start 2 statevent sub, trigger rebalance and verify completion of all records`() {
-        topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC4_TEMPLATE)
+        topicUtils.createTopics(eventTopic4Config)
 
         val onNextLatch1 = CountDownLatch(30)
         val stateEventSub1 = subscriptionFactory.createStateAndEventSubscription(
@@ -324,7 +381,7 @@ class StateAndEventSubscriptionIntegrationTest {
     @Test
     @Timeout(value = 120, unit = TimeUnit.SECONDS)
     fun `create topics, start one statevent sub, publish records, slow processor for first record, 1 record sent DLQ and verify`() {
-        topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC5_TEMPLATE)
+        topicUtils.createTopics(eventTopic5Config)
 
         val shortIntervalTimeoutConfig = kafkaConfig
             .withValue("$MESSAGING_KAFKA.$CONSUMER_MAX_POLL_INTERVAL", ConfigValueFactory.fromAnyRef(15000))
@@ -374,7 +431,7 @@ class StateAndEventSubscriptionIntegrationTest {
     @Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `create topics, start one statevent sub, publish records, slow processor and listener, all records successful`() {
-        topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC6_TEMPLATE)
+        topicUtils.createTopics(eventTopic6Config)
 
         publisherConfig = PublisherConfig(CLIENT_ID + EVENT_TOPIC6)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
@@ -414,7 +471,7 @@ class StateAndEventSubscriptionIntegrationTest {
     @Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `create topics, start one statevent sub, publish incorrect records with two keys, update state and output records and verify`() {
-        topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC7_TEMPLATE)
+        topicUtils.createTopics(eventTopic7Config)
 
         val onNextLatch1 = CountDownLatch(10)
         val stateEventSub1 = subscriptionFactory.createStateAndEventSubscription(
