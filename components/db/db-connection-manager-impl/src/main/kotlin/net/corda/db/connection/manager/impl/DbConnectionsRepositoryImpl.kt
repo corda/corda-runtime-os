@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import net.corda.db.connection.manager.DbConnectionsRepository
 import net.corda.db.connection.manager.createFromConfig
+import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DataSourceFactory
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
@@ -15,10 +16,9 @@ import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.v5.base.util.contextLogger
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
-import javax.sql.DataSource
 
 /**
  * Repository for DB connections fetched from the Connections DB.
@@ -26,7 +26,7 @@ import javax.sql.DataSource
  * Throws exception when trying to fetch a connection before the Cluster connection has been initialised.
  */
 class DbConnectionsRepositoryImpl(
-    private val clusterDataSource: DataSource,
+    private val clusterDataSource: CloseableDataSource,
     private val dataSourceFactory: DataSourceFactory,
     private val entityManagerFactory: EntityManagerFactory,
     private val dbConfigFactory: SmartConfigFactory
@@ -73,7 +73,7 @@ class DbConnectionsRepositoryImpl(
         return existingConfig.id
     }
 
-    override fun get(name: String, privilege: DbPrivilege): DataSource? {
+    override fun get(name: String, privilege: DbPrivilege): CloseableDataSource? {
         if (name == CordaDb.CordaCluster.name) {
             return clusterDataSource
         }
@@ -89,10 +89,10 @@ class DbConnectionsRepositoryImpl(
         }
     }
 
-    override fun get(config: SmartConfig): DataSource {
+    override fun get(config: SmartConfig): CloseableDataSource {
         return dataSourceFactory.createFromConfig(dbConfigFactory.create(config))
     }
 
-    override fun getClusterDataSource(): DataSource = clusterDataSource
+    override fun getClusterDataSource(): CloseableDataSource = clusterDataSource
 }
 

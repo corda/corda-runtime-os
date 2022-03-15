@@ -1,8 +1,9 @@
 package net.corda.db.connection.manager.impl
 
 import net.corda.db.connection.manager.DBConfigurationException
-import net.corda.db.connection.manager.DbConnectionsRepository
 import net.corda.db.connection.manager.DbConnectionOps
+import net.corda.db.connection.manager.DbConnectionsRepository
+import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
@@ -34,7 +35,7 @@ class DbConnectionOpsImpl(
     override fun getDataSource(name: String, privilege: DbPrivilege): DataSource? =
         dbConnectionsRepository.get(name, privilege)
 
-    override fun getDataSource(config: SmartConfig): DataSource =
+    override fun getDataSource(config: SmartConfig): CloseableDataSource =
         dbConnectionsRepository.get(config)
 
     override fun putConnection(name: String, privilege: DbPrivilege, config: SmartConfig,
