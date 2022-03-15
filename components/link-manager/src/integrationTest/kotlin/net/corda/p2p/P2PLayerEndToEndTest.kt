@@ -69,18 +69,20 @@ import java.util.concurrent.ConcurrentHashMap
 class P2PLayerEndToEndTest {
 
     companion object {
-        private const val TTL = 1_000_000L
+        private var TTL: Long? = null
         private const val SUBSYSTEM = "e2e.test.app"
         private val logger = contextLogger()
         private const val GROUP_ID = "group-1"
     }
     private val bootstrapConfig = SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
 
-    private fun testMessagesBetweenTwoHosts(hostA: Host, hostB: Host) {
+    val hostAReceivedMessages = ConcurrentHashMap.newKeySet<String>()
+
+    fun testMessagesBetweenTwoHosts(hostA: Host, hostB: Host) {
         hostA.startWith(hostB)
         hostB.startWith(hostA)
 
-        val hostAReceivedMessages = ConcurrentHashMap.newKeySet<String>()
+
         val hostAApplicationReader = hostA.subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("app-layer", P2P_IN_TOPIC, 1), InitiatorProcessor(hostAReceivedMessages),
             bootstrapConfig,
@@ -114,12 +116,6 @@ class P2PLayerEndToEndTest {
             futures.forEach { it.get() }
         }
 
-        eventually(10.seconds) {
-            (1..10).forEach { messageNo ->
-                assertTrue(hostAReceivedMessages.contains("pong ($messageNo)"), "No reply received for message $messageNo")
-            }
-        }
-
         hostAApplicationReader.stop()
         hostBApplicationReaderWriter.stop()
     }
@@ -127,6 +123,7 @@ class P2PLayerEndToEndTest {
     @Test
     @Timeout(60)
     fun `two hosts can exchange data messages over p2p using RSA keys`() {
+
         Host(
             "www.alice.net",
             10500,
@@ -150,11 +147,19 @@ class P2PLayerEndToEndTest {
                 testMessagesBetweenTwoHosts(hostA, hostB)
             }
         }
+        eventually(10.seconds) {
+            (1..10).forEach { messageNo ->
+                assertTrue(hostAReceivedMessages.contains("pong ($messageNo)"), "No reply received for message $messageNo")
+            }
+        }
+
+        hostAReceivedMessages.clear()
     }
 
     @Test
     @Timeout(60)
     fun `two hosts can exchange data messages over p2p with ECDSA keys`() {
+
         Host(
             "www.receiver.net",
             10502,
@@ -178,7 +183,52 @@ class P2PLayerEndToEndTest {
                 testMessagesBetweenTwoHosts(hostA, hostB)
             }
         }
+
+        eventually(10.seconds) {
+            (1..10).forEach { messageNo ->
+                assertTrue(hostAReceivedMessages.contains("pong ($messageNo)"), "No reply received for message $messageNo")
+            }
+        }
+        hostAReceivedMessages.clear()
     }
+
+    @Test
+    @Timeout(60)
+    fun `messages with expired ttl have sent marker and ttl expired marker and no received marker`() {
+        TTL = 1000000L
+
+        Host(
+            "www.alice.net",
+            10500,
+            "O=Alice, L=London, C=GB",
+            "sslkeystore_alice",
+            "truststore",
+            bootstrapConfig,
+            true,
+            KeyAlgorithm.RSA,
+        ).use { hostA ->
+            Host(
+                "chip.net",
+                10501,
+                "O=Chip, L=London, C=GB",
+                "sslkeystore_chip",
+                "truststore",
+                bootstrapConfig,
+                true,
+                KeyAlgorithm.RSA,
+            ).use { hostB ->
+                testMessagesBetweenTwoHosts(hostA, hostB)
+            }
+        }
+
+        eventually(10.seconds) {
+            (1..10).forEach { messageNo ->
+                assertTrue(hostAReceivedMessages.contains("pong ($messageNo)"), "No reply received for message $messageNo")
+            }
+        }
+        hostAReceivedMessages.clear()
+    }
+
 
     private class InitiatorProcessor(val receivedMessages: ConcurrentHashMap.KeySetView<String, Boolean>) : DurableProcessor<String, AppMessage> {
 
@@ -218,7 +268,7 @@ class P2PLayerEndToEndTest {
         }
     }
 
-    private class Host(
+    class Host(
         p2pAddress: String,
         p2pPort: Int,
         val x500Name: String,

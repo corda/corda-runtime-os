@@ -48,6 +48,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
+import net.corda.p2p.markers.TtlExpiredMarker
 import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
 import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
@@ -222,6 +223,11 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             return records
         }
 
+        private fun ttlExpired(ttl: Long): Boolean {
+            val currentTimeInTimeMillis = Instant.now().toEpochMilli()
+            return currentTimeInTimeMillis >= ttl
+        }
+
         private fun processEvent(event: EventLogRecord<String, AppMessage>): List<Record<String, *>> {
 
             val message = event.value?.message
@@ -264,31 +270,52 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             messageAndKey: AuthenticatedMessageAndKey,
             isReplay: Boolean = false
         ): List<Record<String, *>> {
-            logger.trace{ "Processing outbound ${messageAndKey.message.javaClass} with ID ${messageAndKey.message.header.messageId} " +
-                    "to ${messageAndKey.message.header.destination.toHoldingIdentity()}." }
-            val isHostedLocally = linkManagerHostingMap.isHostedLocally(messageAndKey.message.header.destination.toHoldingIdentity())
-            return if (isHostedLocally) {
-                mutableListOf(Record(P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)))
+            logger.trace {
+                "Processing outbound ${messageAndKey.message.javaClass} with ID ${messageAndKey.message.header.messageId} " +
+                        "to ${messageAndKey.message.header.destination.toHoldingIdentity()}."
+            }
+            val isHostedLocally =
+                linkManagerHostingMap.isHostedLocally(messageAndKey.message.header.destination.toHoldingIdentity())
+            if (ttlExpired(messageAndKey.message.header.ttl)) {
+                return if (!isReplay) {
+                    mutableListOf(
+                        recordForLMSentMarker(messageAndKey, messageAndKey.message.header.messageId),
+                        recordForTTLExpiredMarker(messageAndKey.message.header.messageId)
+                    )
+                } else {
+                    mutableListOf(recordForTTLExpiredMarker(messageAndKey.message.header.messageId))
+                }
             } else {
-                when (val state = sessionManager.processOutboundMessage(messageAndKey)) {
+                return if (isHostedLocally) {
+                    mutableListOf(Record(P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)))
+                }
+            } else {
+                return when (val state = sessionManager.processOutboundMessage(messageAndKey)) {
                     is SessionState.NewSessionNeeded -> {
-                        logger.trace { "No existing session with ${messageAndKey.message.header.destination.toHoldingIdentity()}. " +
-                                "Initiating a new one.." }
+                        logger.trace {
+                            "No existing session with ${messageAndKey.message.header.destination.toHoldingIdentity()}. " +
+                                    "Initiating a new one.."
+                        }
                         recordsForNewSession(state)
                     }
                     is SessionState.SessionEstablished -> {
-                        logger.trace { "Session already established with ${messageAndKey.message.header.destination.toHoldingIdentity()}." +
-                                " Using this to send outbound message." }
+                        logger.trace {
+                            "Session already established with ${messageAndKey.message.header.destination.toHoldingIdentity()}." +
+                                    " Using this to send outbound message."
+                        }
                         recordsForSessionEstablished(state, messageAndKey)
                     }
                     is SessionState.SessionAlreadyPending, SessionState.CannotEstablishSession -> {
-                        logger.trace { "Session already pending with ${messageAndKey.message.header.destination.toHoldingIdentity()}. " +
-                                "Message queued until session is established." }
+                        logger.trace {
+                            "Session already pending with ${messageAndKey.message.header.destination.toHoldingIdentity()}. " +
+                                    "Message queued until session is established."
+                        }
                         emptyList()
                     }
                 }
             } + if (!isReplay) recordsForMarkers(messageAndKey, isHostedLocally) else emptyList()
         }
+
 
         private fun recordsForNewSession(state: SessionState.NewSessionNeeded): List<Record<String, *>> {
             val partitions = inboundAssignmentListener.getCurrentlyAssignedPartitions(LINK_IN_TOPIC).toList()
@@ -324,6 +351,11 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
         private fun recordForLMReceivedMarker(messageId: String): Record<String, AppMessageMarker> {
             val marker = AppMessageMarker(LinkManagerReceivedMarker(), Instant.now().toEpochMilli())
+            return Record(P2P_OUT_MARKERS, messageId, marker)
+        }
+
+        private fun recordForTTLExpiredMarker(messageId: String): Record<String, AppMessageMarker> {
+            val marker = AppMessageMarker(TtlExpiredMarker(), Instant.now().toEpochMilli())
             return Record(P2P_OUT_MARKERS, messageId, marker)
         }
     }
