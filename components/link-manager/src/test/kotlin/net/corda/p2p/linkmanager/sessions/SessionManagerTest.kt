@@ -569,7 +569,8 @@ class SessionManagerTest {
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(responderHello))
 
         assertThat(responseMessage).isNull()
-        loggingInterceptor.assertSingleWarningContains("Could not find the group information in the GroupPolicyProvider for groupId $GROUP_ID." +
+        loggingInterceptor.assertSingleWarningContains("Could not find the group information in the " +
+                "GroupPolicyProvider for groupId $GROUP_ID." +
                 " The ${ResponderHelloMessage::class.java.simpleName} for sessionId ${sessionState.sessionId} was discarded.")
     }
 
@@ -790,7 +791,8 @@ class SessionManagerTest {
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
 
         assertThat(responseMessage).isNull()
-        loggingInterceptor.assertSingleWarningContains("Could not find the group information in the GroupPolicyProvider for groupId $GROUP_ID." +
+        loggingInterceptor.assertSingleWarningContains("Could not find the group information in the " +
+                "GroupPolicyProvider for groupId $GROUP_ID." +
                 " The ${InitiatorHandshakeMessage::class.java.simpleName} for sessionId $sessionId was discarded.")
     }
 
