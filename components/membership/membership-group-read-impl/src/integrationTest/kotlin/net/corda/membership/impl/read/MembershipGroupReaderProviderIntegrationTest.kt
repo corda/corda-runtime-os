@@ -204,7 +204,7 @@ class MembershipGroupReaderProviderIntegrationTest {
     private fun MembershipGroupReaderProvider.failGetAliceGroupReader() {
         logger.info("Running test expecting exception to be thrown.")
         eventually {
-            assertThrows<CordaRuntimeException> { getGroupReader(aliceHoldingIdentity) }
+            assertThrows<IllegalStateException> { getGroupReader(aliceHoldingIdentity) }
         }
     }
 
