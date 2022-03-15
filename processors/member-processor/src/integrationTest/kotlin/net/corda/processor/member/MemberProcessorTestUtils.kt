@@ -7,6 +7,7 @@ import net.corda.libs.packaging.CpiIdentifier
 import net.corda.libs.packaging.CpiMetadata
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.GroupPolicy
+import net.corda.membership.exceptions.BadGroupPolicyException
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.registration.MemberRegistrationService
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
+import java.lang.IllegalStateException
 import java.util.UUID
 
 class MemberProcessorTestUtils {
@@ -147,11 +149,11 @@ class MemberProcessorTestUtils {
 
         fun getGroupPolicyFails(
             groupPolicyProvider: GroupPolicyProvider,
-            holdingIdentity: HoldingIdentity = aliceHoldingIdentity
+            holdingIdentity: HoldingIdentity = aliceHoldingIdentity,
+            expectedException: Class<out Exception> = IllegalStateException::class.java
         ) = eventually {
-            val policy = groupPolicyProvider.getGroupPolicy(holdingIdentity)
-            assertNull(policy)
-            policy
+            val e = assertThrows<Exception> { groupPolicyProvider.getGroupPolicy(holdingIdentity) }
+            assertTrue(expectedException.isAssignableFrom(e::class.java))
         }
 
         fun getGroupPolicy(

@@ -1,6 +1,7 @@
 package net.corda.processor.member
 
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.membership.exceptions.BadGroupPolicyException
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
@@ -141,7 +142,7 @@ class MemberProcessorIntegrationTest {
     }
 
     fun `Get group policy fails for unknown holding identity`() {
-        getGroupPolicyFails(groupPolicyProvider, invalidHoldingIdentity)
+        getGroupPolicyFails(groupPolicyProvider, invalidHoldingIdentity, BadGroupPolicyException::class.java)
     }
 
     fun `Group policy fails to be read if the component stops`() {
@@ -180,7 +181,6 @@ class MemberProcessorIntegrationTest {
     fun `Group policy cannot be retrieved if CPI info reader dependency component goes down`() {
         val groupPolicy1 = getGroupPolicy(groupPolicyProvider)
         cpiInfoReader.stopAndWait()
-        groupPolicyProvider.getGroupPolicy(aliceHoldingIdentity)
         getGroupPolicyFails(groupPolicyProvider)
 
         cpiInfoReader.startAndWait()

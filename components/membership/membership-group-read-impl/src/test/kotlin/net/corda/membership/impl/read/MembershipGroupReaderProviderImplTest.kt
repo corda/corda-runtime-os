@@ -95,7 +95,7 @@ class MembershipGroupReaderProviderImplTest {
 
     @Test
     fun `Get group reader throws exception if component hasn't started`() {
-        val e = assertThrows<CordaRuntimeException> {
+        val e = assertThrows<IllegalStateException> {
             membershipGroupReaderProvider.getGroupReader(HoldingIdentity(memberName.toString(), GROUP_ID_1))
         }
         assertEquals(MembershipGroupReaderProviderImpl.ILLEGAL_ACCESS, e.message)
