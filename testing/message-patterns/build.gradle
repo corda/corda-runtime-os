@@ -14,7 +14,7 @@ description 'Messaging Patterns Test'
 configurations {
     kafkaIntegrationTestRuntimeOnly.extendsFrom integrationTestRuntimeOnly
 
-    dbIntegrationTestRuntimeOnly.extendsFrom integrationTestRuntimeOnly
+    dbIntegrationTestRuntimeOnly.extendsFrom integrationTestRuntimeClasspath
 }
 
 dependencies {
@@ -64,56 +64,47 @@ dependencies {
     integrationTestImplementation project(":libs:db:db-orm-impl")
     integrationTestImplementation project(":libs:messaging:db-message-bus-datamodel")
     integrationTestImplementation project(":testing:db-testkit")
-    integrationTestRuntimeOnly project(":libs:messaging:topic-admin")
+    integrationTestImplementation project(":libs:messaging:topic-admin")
 
     kafkaIntegrationTestRuntimeOnly project(":libs:messaging:kafka-topic-admin-impl")
     kafkaIntegrationTestRuntimeOnly project(":libs:messaging:kafka-message-bus-impl")
 
     dbIntegrationTestRuntimeOnly project(":libs:messaging:db-topic-admin-impl")
     dbIntegrationTestRuntimeOnly project(":libs:messaging:db-message-bus-impl")
-    dbIntegrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
+    integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
     dbIntegrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     dbIntegrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
 }
 
-def dbTestingBundle = tasks.register('dbTestingBundle', Bundle) {
-    archiveClassifier = 'tests'
-    from sourceSets.dbIntegrationTest.output
-    sourceSet = sourceSets.dbIntegrationTest
-
-    bnd """\
-Bundle-SymbolicName: \${task.archiveBaseName}-\${task.archiveClassifier}
-    Test-Cases: net.corda.messaging.kafka.integration.subscription.CompactedSubscriptionIntegrationTest 
-"""
-//    Test-Cases: \${classes;HIERARCHY_INDIRECTLY_ANNOTATED;org.junit.platform.commons.annotation.Testable;CONCRETE}
-}
-
-def kafkaTestingBundle = tasks.register('kafkaTestingBundle', Bundle) {
+def testingBundle = tasks.register('testingBundle', Bundle) {
     archiveClassifier = 'tests'
     from sourceSets.integrationTest.output
     sourceSet = sourceSets.integrationTest
 
     bnd """\
 Bundle-SymbolicName: \${task.archiveBaseName}-\${task.archiveClassifier}
-    Test-Cases: net.corda.messaging.kafka.integration.subscription.CompactedSubscriptionIntegrationTest 
+    Test-Cases: net.corda.messaging.integration.subscription.CompactedSubscriptionIntegrationTest 
 """
 //    Test-Cases: \${classes;HIERARCHY_INDIRECTLY_ANNOTATED;org.junit.platform.commons.annotation.Testable;CONCRETE}
 }
 
 def dbResolve = tasks.register('dbResolve', Resolve) {
-    dependsOn jar, dbTestingBundle
-    bundles = files(sourceSets.dbIntegrationTest.runtimeClasspath, configurations.archives.artifacts.files)
+    dependsOn jar, testingBundle
+    bundles = files(configurations.integrationTestRuntimeClasspath, configurations.dbIntegrationTestRuntimeOnly, configurations.archives.artifacts.files)
     bndrun = file('test.db.bndrun')
-    //  bnd attempts to use ~/ for caching if this is unavailable the build will fail.
-    System.setProperty("bnd.home.dir", "$rootDir/bnd/")
+    outputBndrun = layout.buildDirectory.file('resolved-test.db.bndrun')
+    doFirst {
+        //  bnd attempts to use ~/ for caching if this is unavailable the build will fail.
+        System.setProperty('bnd.home.dir', "$rootDir/bnd/")
+    }
 }
 
 def kafkaResolve = tasks.register('kafkaResolve', Resolve) {
-    dependsOn jar, kafkaTestingBundle
-    bundles = files(sourceSets.integrationTest.runtimeClasspath, configurations.archives.artifacts.files)
+    dependsOn jar, testingBundle
+    bundles = files(configurations.integrationTestRuntimeClasspath, configurations.kafkaIntegrationTestRuntimeOnly, configurations.archives.artifacts.files)
     bndrun = file('test.kafka.bndrun')
-    outputBndrun = layout.buildDirectory.file('resolved-test.bndrun')
+    outputBndrun = layout.buildDirectory.file('resolved-test.kafka.bndrun')
     doFirst {
         //  bnd attempts to use ~/ for caching if this is unavailable the build will fail.
         System.setProperty('bnd.home.dir', "$rootDir/bnd/")
@@ -127,7 +118,7 @@ tasks.register('kafkaIntegrationTest', TestOSGi) {
         languageVersion = of(11)
     }
     resultsDirectory = file("$testResultsDir/kafkaIntegrationTest")
-    bundles = files(sourceSets.integrationTest.runtimeClasspath, configurations.archives.artifacts.files)
+    bundles = files(configurations.integrationTestRuntimeClasspath, configurations.kafkaIntegrationTestRuntimeOnly, configurations.archives.artifacts.files)
     bndrun = kafkaResolve.flatMap { it.outputBndrun }
 }
 
@@ -138,10 +129,19 @@ tasks.register('dbIntegrationTest', TestOSGi) {
         languageVersion = of(11)
     }
     resultsDirectory = file("$testResultsDir/dbIntegrationTest")
-    bundles = files(sourceSets.dbIntegrationTest.runtimeClasspath, configurations.archives.artifacts.files)
+    bundles = files(configurations.integrationTestRuntimeClasspath, configurations.dbIntegrationTestRuntimeOnly, configurations.archives.artifacts.files)
     bndrun = dbResolve.flatMap { it.outputBndrun }
 }
 
+tasks.named('integrationTest') {
+    dependsOn kafkaIntegrationTest, dbIntegrationTest
+    enabled = false
+}
+
+tasks.named('check') {
+    dependsOn kafkaIntegrationTest, dbIntegrationTest
+}
+
 artifacts {
-    archives kafkaTestingBundle, dbTestingBundle
+    archives testingBundle
 }

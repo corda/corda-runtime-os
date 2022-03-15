@@ -9,7 +9,7 @@ import net.corda.messagebus.db.datamodel.CommittedPositionEntry
 import net.corda.messagebus.db.datamodel.TopicEntry
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionRecordEntry
-import net.corda.messaging.kafka.integration.TopicTemplates
+import net.corda.messaging.integration.TopicTemplates
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
 import java.io.StringWriter

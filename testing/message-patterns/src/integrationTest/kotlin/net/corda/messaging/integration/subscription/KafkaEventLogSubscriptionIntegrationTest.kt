@@ -15,11 +15,11 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.kafka.integration.TopicTemplates
-import net.corda.messaging.kafka.integration.TopicTemplates.Companion.TEST_TOPIC_PREFIX
-import net.corda.messaging.kafka.integration.getDemoRecords
-import net.corda.messaging.kafka.integration.getKafkaProperties
-import net.corda.messaging.kafka.integration.processors.TestEventLogProcessor
+import net.corda.messaging.integration.TopicTemplates
+import net.corda.messaging.integration.TopicTemplates.Companion.TEST_TOPIC_PREFIX
+import net.corda.messaging.integration.getDemoRecords
+import net.corda.messaging.integration.getKafkaProperties
+import net.corda.messaging.integration.processors.TestEventLogProcessor
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
