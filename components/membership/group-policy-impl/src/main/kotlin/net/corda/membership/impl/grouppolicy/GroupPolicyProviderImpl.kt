@@ -14,7 +14,6 @@ import net.corda.membership.GroupPolicy
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.grouppolicy.factory.GroupPolicyParser
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -170,8 +169,10 @@ class GroupPolicyProviderImpl @Activate constructor(
                     try {
                         groupPolicies[it] = parseGroupPolicy(it, virtualNodeInfo = snapshot[it])
                     } catch (e: Exception) {
-                        logger.error("Failure to parse group policy after change in virtual node info. " +
-                                "Check the format of the group policy in use for virtual node with ID [${it.id}]", e)
+                        logger.error(
+                            "Failure to parse group policy after change in virtual node info. " +
+                                    "Check the format of the group policy in use for virtual node with ID [${it.id}]", e
+                        )
                     }
                 }
             }
