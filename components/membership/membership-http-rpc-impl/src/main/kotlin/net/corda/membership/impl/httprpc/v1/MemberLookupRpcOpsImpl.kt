@@ -1,7 +1,6 @@
 package net.corda.membership.impl.httprpc.v1
 
 import net.corda.httprpc.PluggableRPCOps
-import net.corda.httprpc.exception.ServiceUnavailableException
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -23,7 +22,7 @@ class MemberLookupRpcOpsImpl @Activate constructor(
     @Reference(service = MembershipGroupReaderProvider::class)
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     @Reference(service = VirtualNodeInfoReadService::class)
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService
 ) : MemberLookupRpcOps, PluggableRPCOps<MemberLookupRpcOps>, Lifecycle {
     companion object {
         private val logger: Logger = contextLogger()
