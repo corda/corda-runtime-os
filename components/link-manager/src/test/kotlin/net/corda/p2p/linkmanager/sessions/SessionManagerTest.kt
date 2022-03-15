@@ -38,12 +38,12 @@ import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionNeeded
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
-import net.corda.p2p.linkmanager.utilities.MockTimeFacilitiesProvider
 import net.corda.p2p.test.stub.crypto.processor.CouldNotFindPrivateKey
 import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.p2p.test.stub.crypto.processor.UnsupportedAlgorithm
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
+import net.corda.test.util.MockTimeFacilitiesProvider
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.toBase64
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC
@@ -191,7 +191,7 @@ class SessionManagerTest {
         linkManagerHostingMap,
         protocolFactory,
         sessionReplayer,
-        mockTimeFacilitiesProvider.clock
+        mockTimeFacilitiesProvider.mockClock
     ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
         setRunning()
         configHandler.applyNewConfiguration(
@@ -978,7 +978,7 @@ class SessionManagerTest {
             mock(),
             protocolFactory,
             sessionReplayer,
-            mockTimeFacilitiesProvider.clock
+            mockTimeFacilitiesProvider.mockClock
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
@@ -1021,7 +1021,7 @@ class SessionManagerTest {
             mock(),
             protocolFactory,
             sessionReplayer,
-            mockTimeFacilitiesProvider.clock
+            mockTimeFacilitiesProvider.mockClock
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
@@ -1079,7 +1079,7 @@ class SessionManagerTest {
             mock(),
             protocolFactory,
             sessionReplayer,
-            mockTimeFacilitiesProvider.clock
+            mockTimeFacilitiesProvider.mockClock
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
@@ -1149,7 +1149,7 @@ class SessionManagerTest {
             mock(),
             protocolFactory,
             sessionReplayer,
-            mockTimeFacilitiesProvider.clock
+            mockTimeFacilitiesProvider.mockClock
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
@@ -1225,7 +1225,7 @@ class SessionManagerTest {
             mock(),
             protocolFactory,
             sessionReplayer,
-            mockTimeFacilitiesProvider.clock
+            mockTimeFacilitiesProvider.mockClock
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
@@ -1306,7 +1306,7 @@ class SessionManagerTest {
             mock(),
             protocolFactory,
             sessionReplayer,
-            mockTimeFacilitiesProvider.clock
+            mockTimeFacilitiesProvider.mockClock
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
@@ -1390,7 +1390,7 @@ class SessionManagerTest {
             mock(),
             protocolFactory,
             sessionReplayer,
-            mockTimeFacilitiesProvider.clock
+            mockTimeFacilitiesProvider.mockClock
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(

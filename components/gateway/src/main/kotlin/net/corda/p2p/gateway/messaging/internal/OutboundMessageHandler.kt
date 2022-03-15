@@ -29,18 +29,21 @@ import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
 /**
  * This is an implementation of an [EventLogProcessor] used to consume messages from a P2P message subscription. The received
  * events are processed and fed into the HTTP pipeline. No records will be produced by this processor as a result.
  */
+@Suppress("LongParameterList")
 internal class OutboundMessageHandler(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     configurationReaderService: ConfigurationReadService,
     subscriptionFactory: SubscriptionFactory,
     nodeConfiguration: SmartConfig,
     instanceId: Int,
+    private val retryThreadPool: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
 ) : EventLogProcessor<String, LinkOutMessage>, LifecycleWithDominoTile {
     companion object {
         private val logger = LoggerFactory.getLogger(OutboundMessageHandler::class.java)
@@ -80,8 +83,6 @@ internal class OutboundMessageHandler(
         dependentChildren = listOf(outboundSubscriptionTile, trustStoresMap.dominoTile),
         managedChildren = listOf(outboundSubscriptionTile, trustStoresMap.dominoTile)
     )
-
-    private val retryThreadPool = Executors.newSingleThreadScheduledExecutor()
 
     override fun onNext(events: List<EventLogRecord<String, LinkOutMessage>>): List<Record<*, *>> {
         dominoTile.withLifecycleLock {
