@@ -1,8 +1,10 @@
 package net.corda.test.util
 
-import org.mockito.kotlin.any
-import org.mockito.kotlin.doAnswer
-import org.mockito.kotlin.mock
+import org.mockito.Mockito.`when`
+import org.mockito.Mockito.any
+import org.mockito.Mockito.anyBoolean
+import org.mockito.Mockito.anyLong
+import org.mockito.Mockito.mock
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -25,24 +27,24 @@ class MockTimeFacilitiesProvider(initialTime: Instant = Instant.ofEpochSecond(0)
 
     private val scheduledTasks: MutableList<Pair<Instant, Runnable>> = mutableListOf()
     private fun createFuture(timeAndTask: Pair<Instant, Runnable>): ScheduledFuture<*> {
-        return mock {
-            on { cancel(any()) } doAnswer {
-                scheduledTasks.remove(timeAndTask)
-            }
+        val mockFuture = mock(ScheduledFuture::class.java)
+        `when`(mockFuture.cancel(anyBoolean())).thenAnswer {
+            scheduledTasks.remove(timeAndTask)
         }
+        return mockFuture
     }
     private var now = initialTime
 
-    val mockClock = mock<Clock> {
-        on { instant() } doAnswer { now }
+    val mockClock: Clock = mock(Clock::class.java).also {
+        `when`(it.instant()).thenAnswer { now }
     }
 
-    val mockScheduledExecutor = mock<ScheduledExecutorService> {
-        on { schedule(any(), any(), any()) } doAnswer {
+    val mockScheduledExecutor: ScheduledExecutorService = mock(ScheduledExecutorService::class.java).also {
+        `when`(it.schedule(any(), anyLong(), any())).thenAnswer { invocation ->
             @Suppress("UNCHECKED_CAST")
-            val task = it.arguments[0] as Runnable
-            val delay = it.arguments[1] as Long
-            val timeUnit = it.arguments[2] as TimeUnit
+            val task = invocation.arguments[0] as Runnable
+            val delay = invocation.arguments[1] as Long
+            val timeUnit = invocation.arguments[2] as TimeUnit
             val timeToExecute = now.plus(delay, timeUnit.toChronoUnit())
             val timeAndTask = timeToExecute to task
             scheduledTasks.add(timeAndTask)
