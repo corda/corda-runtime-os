@@ -2,66 +2,53 @@ package net.corda.libs.cpiupload.impl
 
 import net.corda.chunking.RequestId
 import net.corda.data.ExceptionEnvelope
-import net.corda.data.chunking.UploadFileStatus
+import net.corda.data.chunking.ChunkKey
+import net.corda.data.chunking.ChunkReceived
 import net.corda.data.chunking.UploadStatus
-import net.corda.libs.cpiupload.CpiUploadStatus
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 
 /**
- * Receives [UploadStatus] messages on a compacted queue from the db-processor / [net.corda.chunking.db.impl.ChunkWriteToDbProcessor]
+ * Receives [ChunkReceived] messages on a compacted queue from the db-processor / [net.corda.chunking.db.impl.ChunkWriteToDbProcessor]
+ *
+ * Key must match [ChunkWriteToDbProcessor], and that's just a string.  It is the request id *and* part number
  */
 @Suppress("UNUSED")
-class UploadStatusProcessor : CompactedProcessor<RequestId, UploadStatus> {
+class UploadStatusProcessor : CompactedProcessor<ChunkKey, ChunkReceived> {
     companion object {
         private val log = contextLogger()
         private val emptyExceptionEnvelope = ExceptionEnvelope("", "")
     }
 
-    private val status = mutableMapOf<RequestId, UploadStatus>()
+    override val keyClass: Class<ChunkKey> = ChunkKey::class.java
 
-    override val keyClass: Class<String> = String::class.java
+    override val valueClass: Class<ChunkReceived> = ChunkReceived::class.java
 
-    override val valueClass: Class<UploadStatus> = UploadStatus::class.java
+    private val tracker = UploadStatusTracker()
 
-    override fun onSnapshot(currentData: Map<RequestId, UploadStatus>) {
-        status.clear()
-
-        currentData.forEach {
-            status.putIfAbsent(it.key, it.value)
-        }
+    override fun onSnapshot(currentData: Map<ChunkKey, ChunkReceived>) {
+        tracker.clear()
+        currentData.forEach { tracker.add(it.value) }
     }
 
     override fun onNext(
-        newRecord: Record<RequestId, UploadStatus>,
-        oldValue: UploadStatus?,
-        currentData: Map<RequestId, UploadStatus>
+        newRecord: Record<ChunkKey, ChunkReceived>,
+        oldValue: ChunkReceived?,
+        currentData: Map<ChunkKey, ChunkReceived>
     ) {
-        // The sender of these messages *should* guarantee that once a non- IN-PROGRESS message is sent, it is never changed
-        // (i.e. it's a final state), but can be resent
         if (newRecord.value != null) {
             val newValue = newRecord.value!!
-
-            // Are we trying to change a non IN-PROGRESS status?  This shouldn't happen because we've guarded against it in
-            // net.corda.chunking.db.impl.ChunkWriteToDbProcessor where we only send in-progress, or "end states"
-            // ok, failed, invalid - this guarantees that the snapshot is always correct.
-            if (oldValue != null
-                && oldValue.uploadFileStatus != UploadFileStatus.UPLOAD_IN_PROGRESS
-                && oldValue.uploadFileStatus != newValue.uploadFileStatus
-            ) {
-                log.error("Unexpected state change for UploadStatus - see logs for more details")
-                // This should not happen - the logic in net.corda.chunking.db.impl.ChunkWriteToDbProcessor should guard for this.
-                throw CordaRuntimeException(
-                    "Unexpected state change for request id '${newValue.requestId}' " +
-                            "from ${oldValue.uploadFileStatus} to ${newValue.uploadFileStatus}"
-                )
+            val newKey = newRecord.key
+            if (newKey.requestId != newValue.requestId || newKey.partNumber != newValue.partNumber) {
+                // This is meant to catch badly written tests.  In 'prod' code we set the key from the value in [ChunkWriteToDbProcessor]
+                throw CordaRuntimeException("Mismatched requestid and partnumber in upload processor onNext:" +
+                        " key(${newKey.requestId}, ${newKey.partNumber}) - value (${newValue.requestId}, ${newValue.partNumber})")
             }
-
-            status[newRecord.key] = newRecord.value!!
+            tracker.add(newValue)
         } else {
-            status.remove(newRecord.key)
+            tracker.remove(newRecord.key.requestId)
         }
     }
 
@@ -71,17 +58,10 @@ class UploadStatusProcessor : CompactedProcessor<RequestId, UploadStatus> {
      * @param requestId request id, partial or complete, if partial, we use the first match
      * @return returns the status of the specified chunk upload request
      */
-    fun status(requestId: RequestId): CpiUploadStatus {
+    fun status(requestId: RequestId): Pair<UploadStatus, ExceptionEnvelope?> {
         log.debug("Getting status for $requestId")
-
-        if (!status.containsKey(requestId)) return CpiUploadStatus.NO_SUCH_REQUEST_ID
-
-        return when (status[requestId]!!.uploadFileStatus) {
-            UploadFileStatus.OK -> CpiUploadStatus.OK
-            UploadFileStatus.UPLOAD_FAILED -> CpiUploadStatus.FAILED
-            UploadFileStatus.UPLOAD_IN_PROGRESS -> CpiUploadStatus.IN_PROGRESS
-            UploadFileStatus.FILE_INVALID -> CpiUploadStatus.FILE_INVALID
-            else -> CpiUploadStatus.NO_SUCH_REQUEST_ID
-        }
+        val status = tracker.status(requestId)
+        val exceptionEnvelope = tracker.exceptionEnvelope(requestId)
+        return Pair(status, exceptionEnvelope)
     }
 }

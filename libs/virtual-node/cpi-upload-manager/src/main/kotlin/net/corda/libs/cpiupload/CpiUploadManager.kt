@@ -2,6 +2,8 @@ package net.corda.libs.cpiupload
 
 import net.corda.chunking.ChunkWriter
 import net.corda.chunking.RequestId
+import net.corda.data.ExceptionEnvelope
+import net.corda.data.chunking.UploadStatus
 import java.io.InputStream
 
 /**
@@ -19,5 +21,5 @@ interface CpiUploadManager : AutoCloseable {
     /**
      * Return the status of a given upload request
      */
-    fun status(requestId: RequestId): CpiUploadStatus
+    fun status(requestId: RequestId): Pair<UploadStatus, ExceptionEnvelope?>
 }

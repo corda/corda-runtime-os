@@ -1,113 +1,72 @@
 package net.corda.chunking.db.impl
 
 import net.corda.chunking.RequestId
+import net.corda.chunking.db.impl.persistence.ChunkPersistence
+import net.corda.chunking.db.impl.validation.CpiValidator
+import net.corda.chunking.db.impl.validation.ValidationException
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.chunking.Chunk
-import net.corda.data.chunking.UploadFileStatus
+import net.corda.data.chunking.ChunkKey
+import net.corda.data.chunking.ChunkReceived
 import net.corda.data.chunking.UploadStatus
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.contextLogger
 
 /**
- * Persist a [Chunk] to the database and send an [UploadStatus] message
+ * Persist a [Chunk] to the database and send an [ChunkReceived] message
  */
 class ChunkWriteToDbProcessor(
     private val statusTopic: String,
-    private val queries: DatabaseQueries,
+    private val persistence: ChunkPersistence,
     private val validator: CpiValidator
 ) : DurableProcessor<RequestId, Chunk> {
     companion object {
         private val log = contextLogger()
-        private val emptyExceptionEnvelope = ExceptionEnvelope("", "")
     }
 
-    /**
-     * We need to "guard" against "mutating" a final state (anything that's not 'in progress').
-     *
-     * This ensures the snapshot of the compacted queue is accurate.
-     */
-    private class InternalStatus {
-        private val statusByRequestId = mutableMapOf<String, UploadFileStatus>()
+    private fun processChunk(request: Chunk): ChunkReceived {
+        log.debug("Processing chunk request id=${request.requestId} part=${request.partNumber}")
 
-        /**
-         * Return the actual status. Prevents us from changing an errored upload to an OK one
-         * and an OK one to an errored one.
-         *
-         * Adds the new status, but only overwrite IN_PROGRESS - if we've errored, or completed
-         * we don't want to change the status.
-         *
-         * @param requestId the request id
-         * @param newStatus the proposed new status
-         * @return the actual status
-         */
-        fun setAndReturnActualStatus(requestId: RequestId, newStatus: UploadFileStatus): UploadFileStatus {
-            val currentStatus = statusByRequestId.putIfAbsent(requestId, newStatus) ?: return newStatus
-
-            // Only in-progress can change state to something else.
-            if (currentStatus != UploadFileStatus.UPLOAD_IN_PROGRESS) return currentStatus
-
-            // change in-progress to [in-progress, ok, failed, invalid]
-            statusByRequestId[requestId] = newStatus
-            return newStatus
-        }
-    }
-
-    private val internalStatus = InternalStatus()
-
-    private fun processChunk(request: Chunk): UploadStatus {
-        log.debug(
-            "Processing chunk id = ${request.requestId} / filename = ${request.fileName} " +
-                    "/ part = ${request.partNumber}"
-        )
-
-        var exceptionEnvelope = emptyExceptionEnvelope
-        var uploadComplete = AllChunksReceived.NO
+        val isLastChunk = (request.data.limit() == 0)
 
         try {
-            uploadComplete = queries.persistChunk(request)
-            internalStatus.setAndReturnActualStatus(request.requestId, UploadFileStatus.UPLOAD_IN_PROGRESS)
-        } catch (e: Exception) {
-            // If we fail to publish one chunk, we cannot easily recover so need to return some error.
-            log.error(
-                "Could not persist chunk id = ${request.requestId} / filename = ${request.fileName} " +
-                        "/ part = ${request.partNumber}",
-                e
-            )
-            exceptionEnvelope = ExceptionEnvelope(e::class.java.name, e.message)
-        }
+            val allChunksReceived = persistence.persistChunk(request)
 
-        val newStatus: UploadFileStatus =
-            if (!exceptionEnvelope.errorMessage.isNullOrEmpty() && !exceptionEnvelope.errorType.isNullOrEmpty()) {
-                UploadFileStatus.UPLOAD_FAILED
-            } else {
-                // either ok, still in-progress, or invalid
-                validateBinary(request.requestId, uploadComplete)
+            if (allChunksReceived == AllChunksReceived.NO) {
+                return ChunkReceived(request.requestId, UploadStatus.IN_PROGRESS, request.partNumber, isLastChunk, null)
             }
 
-        val actualStatus = internalStatus.setAndReturnActualStatus(request.requestId, newStatus)
+            if (!persistence.checksumIsValid(request.requestId)) {
+                throw ValidationException("Checksum of CPI for ${request.requestId} does not match")
+            }
 
-        return UploadStatus(request.requestId, actualStatus, exceptionEnvelope)
-    }
+            // We validate the CPI, persist it to the database, and publish CPI info.
+            // Exceptions are used to communicate failure.
+            // If we fail for any reason, we never send an OK message.
+            validator.validate(request.requestId)
+        } catch (e: Exception) {
+            log.error("Could not persist chunk $request", e)
 
-    /** Checks the checksum and "other things" tbd. */
-    private fun validateBinary(requestId: RequestId, uploadComplete: AllChunksReceived): UploadFileStatus {
-        log.debug("Validating chunks for $requestId")
+            return ChunkReceived(
+                request.requestId,
+                UploadStatus.FAILED,
+                request.partNumber,
+                isLastChunk,
+                ExceptionEnvelope(e::class.java.name, e.message)
+            )
+        }
 
-        // Haven't received all the chunks yet?  That's ok, just return
-        if (uploadComplete == AllChunksReceived.NO) return UploadFileStatus.UPLOAD_IN_PROGRESS
-
-        // Check the checksum of the bytes match.  It should be "impossible" for this to happen.
-        if (!queries.checksumIsValid(requestId)) return UploadFileStatus.UPLOAD_FAILED
-
-        // Once we're here, we have the full set of chunks, so now we validate - it's either ok, or file_invalid
-        return validator.validate(requestId)
+        return ChunkReceived(request.requestId, UploadStatus.OK, request.partNumber, isLastChunk, null)
     }
 
     override fun onNext(events: List<Record<RequestId, Chunk>>): List<Record<*, *>> {
         return events.map {
-            val uploadStatus = processChunk(it.value!!)
-            Record(statusTopic, it.key, uploadStatus)
+            val chunk = it.value!!
+            val chunkReceived = processChunk(chunk)
+            // We need a unique key for each request AND part number.
+            // If we use request id only, we end up overwriting messages.
+            Record(statusTopic, ChunkKey(chunk.requestId, chunk.partNumber), chunkReceived)
         }
     }
 

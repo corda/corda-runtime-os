@@ -2,11 +2,10 @@ package net.corda.chunking.db.impl.tests
 
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.AllChunksReceived
-import net.corda.chunking.db.impl.DatabaseQueries
+import net.corda.chunking.db.impl.persistence.DatabaseChunkPersistence
 import net.corda.chunking.db.impl.ChunkWriteToDbProcessor
 import net.corda.data.chunking.Chunk
-import net.corda.data.chunking.UploadFileStatus
-import net.corda.data.chunking.UploadStatus
+import net.corda.data.chunking.ChunkReceived
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import org.assertj.core.api.Assertions.assertThat
@@ -26,22 +25,22 @@ internal class ChunkWriteToDbProcessorTest {
 
     private lateinit var processor: ChunkWriteToDbProcessor
 
-    private val queries = mock<DatabaseQueries>().apply {
+    private val persistence = mock<DatabaseChunkPersistence>().apply {
         whenever(checksumIsValid(any())).thenReturn(true)
         whenever(persistChunk(any())).thenReturn(AllChunksReceived.YES)
     }
 
-    private fun processRequest(processor: ChunkWriteToDbProcessor, req: Chunk): UploadStatus {
+    private fun processRequest(processor: ChunkWriteToDbProcessor, req: Chunk): ChunkReceived {
         val records = processor.onNext(listOf(Record(topic, req.requestId, req)))
-        return records.first().value as UploadStatus
+        return records.first().value as ChunkReceived
     }
 
     private fun randomString() = UUID.randomUUID().toString()
 
     @BeforeEach
     private fun beforeEach() {
-        val validator = { _ : RequestId ->  UploadFileStatus.OK }
-        processor = ChunkWriteToDbProcessor(topic, queries, validator)
+        val validator = { _ : RequestId ->  Unit }
+        processor = ChunkWriteToDbProcessor(topic, persistence, validator)
     }
 
     @Test
@@ -51,19 +50,19 @@ internal class ChunkWriteToDbProcessorTest {
 
         assertThat(ack.requestId).isEqualTo(chunk.requestId)
 
-        verify(queries).persistChunk(chunk)
+        verify(persistence).persistChunk(chunk)
     }
 
     @Test
     fun `processor calls through to checksum method`() {
-        val validator = { _ : RequestId ->  UploadFileStatus.OK }
-        val processor = ChunkWriteToDbProcessor(topic, queries, validator)
+        val validator = { _ : RequestId ->  Unit }
+        val processor = ChunkWriteToDbProcessor(topic, persistence, validator)
         val chunk = Chunk(randomString(), randomString(), null, 0, 0, ByteBuffer.wrap("1234".toByteArray()))
         val ack = processRequest(processor, chunk)
 
         assertThat(ack.requestId).isEqualTo(chunk.requestId)
 
-        verify(queries).persistChunk(chunk)
-        verify(queries).checksumIsValid(chunk.requestId)
+        verify(persistence).persistChunk(chunk)
+        verify(persistence).checksumIsValid(chunk.requestId)
     }
 }

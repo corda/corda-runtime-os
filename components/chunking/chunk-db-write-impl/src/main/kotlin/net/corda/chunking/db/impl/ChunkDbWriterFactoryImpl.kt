@@ -4,6 +4,8 @@ import net.corda.chunking.RequestId
 import net.corda.chunking.db.ChunkDbWriter
 import net.corda.chunking.db.ChunkDbWriterFactory
 import net.corda.chunking.db.ChunkWriteException
+import net.corda.chunking.db.impl.persistence.DatabaseChunkPersistence
+import net.corda.chunking.db.impl.validation.CpiValidatorImpl
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.data.chunking.Chunk
 import net.corda.libs.configuration.SmartConfig
@@ -62,9 +64,9 @@ class ChunkDbWriterFactoryImpl @Activate constructor(
         statusTopic: String,
         cpiInfoWriteService: CpiInfoWriteService
     ): Subscription<RequestId, Chunk> {
-        val queries = DatabaseQueries(entityManagerFactory)
-        val validator = CpiValidatorImpl(queries, cpiInfoWriteService)
-        val processor = ChunkWriteToDbProcessor(statusTopic, queries, validator)
+        val persistence = DatabaseChunkPersistence(entityManagerFactory)
+        val validator = CpiValidatorImpl(persistence, cpiInfoWriteService)
+        val processor = ChunkWriteToDbProcessor(statusTopic, persistence, validator)
 
         val instanceId = if (config.hasPath("instanceId")) config.getInt("instanceId") else 1
         val subscriptionConfig = SubscriptionConfig(GROUP_NAME, uploadTopic, instanceId)

@@ -1,9 +1,10 @@
 package net.corda.chunking.db.impl
 
 import net.corda.chunking.RequestId
+import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.data.chunking.Chunk
-import net.corda.data.chunking.UploadFileStatus
-import net.corda.data.chunking.UploadStatus
+import net.corda.data.chunking.ChunkKey
+import net.corda.data.chunking.ChunkReceived
 import net.corda.data.crypto.SecureHash
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -20,37 +21,37 @@ class ChunkWriteToDbProcessorSimpleTest {
     companion object {
         private const val topic = "unused"
         private const val fileName = "unused.txt"
-        val validator = { _ : RequestId ->  UploadFileStatus.OK }
+        val validator = { _: RequestId -> }
     }
 
     @Test
-    fun `persist is called onNext`() {
-        val queries = mock<DatabaseQueries>()
+    fun `chunk processor onNext calls persist`() {
+        val persistence = mock<ChunkPersistence>()
 
-        val processor = ChunkWriteToDbProcessor(topic, queries, validator)
+        val processor = ChunkWriteToDbProcessor(topic, persistence, validator)
         val requestId = UUID.randomUUID().toString()
 
         val chunk = Chunk(
             requestId,
             fileName,
-            SecureHash("foo", ByteBuffer.wrap("12345678".toByteArray())),
+            SecureHash("foo", ByteBuffer.wrap(ByteArray(12))),
             0,
             0,
             ByteBuffer.wrap("12345678".toByteArray())
         )
         processor.onNext(listOf(Record(topic, requestId, chunk)))
 
-        verify(queries).persistChunk(chunk)
+        verify(persistence).persistChunk(chunk)
     }
 
     @Test
-    fun `exception is captured in onNext`() {
+    fun `chunk processor onNext captures exception`() {
         val exceptionMessage = "exception message"
 
-        val queries = mock<DatabaseQueries>().apply {
+        val persistence = mock<ChunkPersistence>().apply {
             `when`(persistChunk(any())).thenThrow(CordaRuntimeException(exceptionMessage))
         }
-        val processor = ChunkWriteToDbProcessor(topic, queries, validator)
+        val processor = ChunkWriteToDbProcessor(topic, persistence, validator)
         val requestId = UUID.randomUUID().toString()
 
         val chunk = Chunk(
@@ -63,13 +64,14 @@ class ChunkWriteToDbProcessorSimpleTest {
         )
 
         val records = processor.onNext(listOf(Record(topic, requestId, chunk)))
-        verify(queries).persistChunk(chunk)
+        verify(persistence).persistChunk(chunk)
 
         assertThat(records.isNotEmpty()).isTrue
-        assertThat(requestId).isEqualTo(records.first().key)
+        val key = records.first().key as ChunkKey
+        val chunkReceived = records.first().value as ChunkReceived
 
-        val uploadStatus = records.first().value as UploadStatus
-        assertThat(exceptionMessage).isEqualTo(uploadStatus.exception.errorMessage)
-        assertThat(CordaRuntimeException::class.java.name).isEqualTo(uploadStatus.exception.errorType)
+        assertThat(requestId).isEqualTo(key.requestId)
+        assertThat(exceptionMessage).isEqualTo(chunkReceived.exception.errorMessage)
+        assertThat(CordaRuntimeException::class.java.name).isEqualTo(chunkReceived.exception.errorType)
     }
 }

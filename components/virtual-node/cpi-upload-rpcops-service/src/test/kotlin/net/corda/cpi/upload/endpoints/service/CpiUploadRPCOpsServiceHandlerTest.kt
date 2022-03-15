@@ -1,14 +1,14 @@
 package net.corda.cpi.upload.endpoints.service
 
-import net.corda.chunking.RequestId
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.chunking.UploadStatus
+import net.corda.data.chunking.ChunkKey
+import net.corda.data.chunking.ChunkReceived
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.cpiupload.CpiUploadManager
 import net.corda.libs.cpiupload.CpiUploadManagerFactory
-import net.corda.libs.cpiupload.impl.UploadStatusProcessor
 import net.corda.libs.cpiupload.impl.CpiUploadManagerImpl
+import net.corda.libs.cpiupload.impl.UploadStatusProcessor
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -119,13 +119,15 @@ class CpiUploadRPCOpsServiceHandlerTest {
         whenever(publisherFactory.createPublisher(any(), any())).thenReturn(publisher)
 
         val processor = UploadStatusProcessor()
-        val subscription : Subscription<RequestId, UploadStatus> = mock()
-        whenever(cpiUploadManagerFactory.create(any(), any(), any())).thenReturn(CpiUploadManagerImpl(
-            Schemas.VirtualNode.CPI_UPLOAD_TOPIC,
-            publisher,
-            subscription,
-            processor
-        ))
+        val subscription: Subscription<ChunkKey, ChunkReceived> = mock()
+        whenever(cpiUploadManagerFactory.create(any(), any(), any())).thenReturn(
+            CpiUploadManagerImpl(
+                Schemas.VirtualNode.CPI_UPLOAD_TOPIC,
+                publisher,
+                subscription,
+                processor
+            )
+        )
 
         assertNull(cpiUploadRPCOpsServiceHandler.cpiUploadManager)
         cpiUploadRPCOpsServiceHandler.processEvent(ConfigChangedEvent(mock(), config), coordinator)
@@ -138,8 +140,8 @@ class CpiUploadRPCOpsServiceHandlerTest {
         val event = StopEvent()
         val configReadServiceRegistrationHandle = mock<RegistrationHandle>()
         val ackProcessor = UploadStatusProcessor()
-        val publisher : Publisher = mock()
-        val subscription : Subscription<RequestId, UploadStatus> = mock()
+        val publisher: Publisher = mock()
+        val subscription: Subscription<ChunkKey, ChunkReceived> = mock()
         val cpiUploadManager = CpiUploadManagerImpl("some topic", publisher, subscription, ackProcessor)
 
         cpiUploadRPCOpsServiceHandler.configReadServiceRegistrationHandle = configReadServiceRegistrationHandle

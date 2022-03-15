@@ -3,7 +3,8 @@ package net.corda.libs.cpiupload.impl
 import net.corda.chunking.ChunkWriter.Request
 import net.corda.chunking.ChunkWriterFactory
 import net.corda.chunking.RequestId
-import net.corda.data.chunking.UploadStatus
+import net.corda.data.chunking.ChunkKey
+import net.corda.data.chunking.ChunkReceived
 import net.corda.libs.cpiupload.CpiUploadManager
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -24,7 +25,7 @@ import java.io.InputStream
 class CpiUploadManagerImpl(
     private val uploadTopic: String,
     private val publisher: Publisher,
-    private val subscription: Subscription<RequestId, UploadStatus>,
+    private val subscription: Subscription<ChunkKey, ChunkReceived>,
     private val statusProcessor: UploadStatusProcessor
 ) : CpiUploadManager {
 
