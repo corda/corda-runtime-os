@@ -48,6 +48,20 @@ import java.security.cert.X509Certificate
 import java.util.UUID
 
 open class TestBase {
+    companion object {
+        val usedPorts = mutableSetOf<Int>()
+        fun getOpenPort(): Int {
+            while (true) {
+                ServerSocket(0).use { socket ->
+                    val port = socket.localPort
+                    if (usedPorts.add(port)) {
+                        return port
+                    }
+                }
+            }
+        }
+    }
+
     private fun readKeyStore(fileName: String, password: String = keystorePass): KeyStoreWithPassword {
         val keyStore = KeyStore.getInstance("JKS").also { keyStore ->
             javaClass.classLoader.getResource("$fileName.jks")!!.openStream().use {
@@ -68,12 +82,6 @@ open class TestBase {
     }
     protected val c4TruststoreKeyStore by lazy {
         TrustStoresMap.TrustedCertificates(listOf(c4TruststoreCertificatePem)).trustStore
-    }
-
-    protected fun getOpenPort() : Int {
-        return ServerSocket(0).use {
-            it.localPort
-        }
     }
 
     protected val clientMessageContent = "PING"
