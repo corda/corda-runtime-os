@@ -726,12 +726,12 @@ open class SessionManagerImpl(
         )
 
         /**
-         * Calculates a weight for a Session in the interval [0.0, 1.0].
+         * Calculates a weight for a Session.
          * Sessions for which an acknowledgement was recently received have a large weight.
          */
         fun calculateWeightForSession(sessionId: String): Double? {
             val timeSinceLastAck = trackedSessions[sessionId]?.lastAckTimestamp?.let { timeStamp() - it }
-            var weight = timeSinceLastAck?.let {1.0 - it.toDouble() / config.get().sessionTimeout.toMillis()}
+            var weight = timeSinceLastAck?.let { 1.0 - it.toDouble() }
             if (weight != null) {
                 if (weight < 0.0) weight = 0.0
             }
