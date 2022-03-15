@@ -163,6 +163,7 @@ class HttpClient(
             )
             .channel(NioSocketChannel::class.java)
             .handler(ClientChannelInitializer())
+            .resolver(connectionConfiguration.nameResolverType.toResolver())
         val clientFuture = bootstrap.connect(destinationInfo.uri.host, destinationInfo.uri.port)
         clientFuture.addListener(connectListener)
     }

@@ -21,6 +21,10 @@ class Gateway(
                 LbType.NGINX -> NginxLoadBalancer(
                     gateways.map { it.app },
                 )
+                LbType.HEADLESS -> HeadlessLoadBalancer(
+                    "p2p-gateway",
+                    listOf(Port.Gateway),
+                )
                 else -> TestingOneLoadBalance(
                     details.lbType,
                     gateways.map { it.app },

@@ -77,6 +77,12 @@ class GatewayConfiguration : ConfigProducer() {
     )
     var retryDelayMilliSecs = 1_000L
 
+    @Option(
+        names = ["--nameResolverType"],
+        description = ["Type of name resolver. Either FIRST_IP_ALWAYS or ROUND_ROBIN."]
+    )
+    var nameResolverType = "FIRST_IP_ALWAYS"
+
     override val configuration by lazy {
         ConfigFactory.empty()
             .withValue(
@@ -118,6 +124,10 @@ class GatewayConfiguration : ConfigProducer() {
             .withValue(
                 "connectionConfig.maximalReconnectionDelay",
                 ConfigValueFactory.fromAnyRef(Duration.ofSeconds(connectionMaximalReconnectionDelaySec))
+            )
+            .withValue(
+                "connectionConfig.nameResolverType",
+                ConfigValueFactory.fromAnyRef(nameResolverType)
             )
     }
 

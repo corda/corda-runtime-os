@@ -10,7 +10,12 @@ enum class LbType {
     KS,
     RS,
     KA,
-    RA
+    RA,
+    /* TODO:... */
+    HEADLESS,
+    NO_SERVICE,
+    INGRESS,
+    MEMBERSHIP
     ;
 }
 data class NamespaceIdentifier(

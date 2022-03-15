@@ -226,7 +226,11 @@ class Deploy : Runnable {
         val config = ConfigureAll()
         config.namespaceName = namespaceName
         config.linkManagerExtraArguments = linkManagerExtraArguments
-        config.gatewayArguments = gatewayArguments
+        val lbArguments = when(lbType) {
+            LbType.HEADLESS -> listOf("--nameResolverType=ROUND_ROBIN")
+            else -> emptyList()
+        }
+        config.gatewayArguments = gatewayArguments + lbArguments
         config.run()
     }
 }

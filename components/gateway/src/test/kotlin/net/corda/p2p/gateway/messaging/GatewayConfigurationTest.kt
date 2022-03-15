@@ -49,6 +49,7 @@ class GatewayConfigurationTest {
             on { getDuration("retryDelay") } doReturn 21.minutes
             on { getDuration("maximalReconnectionDelay") } doReturn 15.minutes
             on { getDuration("initialReconnectionDelay") } doReturn 11.millis
+            on { getEnum(NameResolverType::class.java, "nameResolverType") } doReturn NameResolverType.ROUND_ROBIN
         }
         val sslConfig = mock<Config> {
             on { getEnum(RevocationConfigMode::class.java, "revocationCheck.mode") } doReturn RevocationConfigMode.HARD_FAIL
@@ -76,6 +77,7 @@ class GatewayConfigurationTest {
                     retryDelay = 21.minutes,
                     initialReconnectionDelay = 11.millis,
                     maximalReconnectionDelay = 15.minutes,
+                    nameResolverType = NameResolverType.ROUND_ROBIN,
                 ),
                 sslConfig = SslConfiguration(
                     revocationCheck =
