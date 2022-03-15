@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <CurrentIssues>
+    <ID>WildcardImport:UniquenessProcessorImpl.kt$import net.corda.lifecycle.*</ID>
+  </CurrentIssues>
+</SmellBaseline>

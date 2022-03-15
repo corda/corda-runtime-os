@@ -13,6 +13,7 @@ dependencies {
     implementation project(':libs:configuration:configuration-core')
     implementation project(":components:security-manager")
     implementation project(':processors:db-processor')
+    implementation project(':processors:uniqueness-processor')
     implementation "info.picocli:picocli:$picocliVersion"
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'

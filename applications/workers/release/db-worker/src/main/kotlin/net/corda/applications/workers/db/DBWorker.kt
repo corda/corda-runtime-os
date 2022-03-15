@@ -11,6 +11,7 @@ import net.corda.applications.workers.workercommon.JavaSerialisationFilter
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.db.DBProcessor
+import net.corda.processors.uniqueness.UniquenessProcessor
 import net.corda.schema.configuration.ConfigDefaults
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
@@ -28,6 +29,8 @@ import picocli.CommandLine.Option
 class DBWorker @Activate constructor(
     @Reference(service = DBProcessor::class)
     private val processor: DBProcessor,
+    @Reference(service = UniquenessProcessor::class)
+    private val uniquenessProcessor: UniquenessProcessor,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
     @Reference(service = HealthMonitor::class)
@@ -52,6 +55,7 @@ class DBWorker @Activate constructor(
         val config = getBootstrapConfig(params.defaultParams, listOf(databaseConfig, reconciliationTaskConfig))
 
         processor.start(config)
+        uniquenessProcessor.start()
     }
 
     private fun getReconciliationTaskConfigWithDefaults(reconciliationTaskParams: Map<String, String>): PathAndConfig {

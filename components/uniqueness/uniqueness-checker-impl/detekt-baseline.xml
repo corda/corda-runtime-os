@@ -1,0 +1,14 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <CurrentIssues>
+    <ID>ComplexMethod:InMemoryUniquenessCheckerImpl.kt$InMemoryUniquenessCheckerImpl$override fun processRequests( requests: List&lt;UniquenessCheckRequest&gt; ) : List&lt;UniquenessCheckResponse&gt;</ID>
+    <ID>ForbiddenComment:UniquenessCheckerImplTests.kt$UniquenessCheckerImplTests$// TODO: Copied from sandbox internal, should move to common test utils?</ID>
+    <ID>SpreadOperator:UniquenessCheckerImplTests.kt$UniquenessCheckerImplTests$(*expectedConflictingStates.toTypedArray())</ID>
+    <ID>SpreadOperator:UniquenessCheckerImplTests.kt$UniquenessCheckerImplTests.Miscellaneous$( newRequest() .withInputStates(listOf( generateUnspentStates(1).single(), doubleSpendAttemptStates[0], doubleSpendAttemptStates[1], doubleSpendAttemptStates[2] )) .withTimeWindowLowerBound(currentTime), newRequest() .withInputStates(listOf( generateUnspentStates(1).single(), doubleSpendAttemptStates[0], doubleSpendAttemptStates[1] )) .withReferenceStates( listOf(doubleSpendAttemptStates[2])), newRequest() .withReferenceStates( listOf(doubleSpendAttemptStates[2])), newRequest() .withInputStates( generateUnspentStates(10) + priorSpentStates[0] + priorSpentStates[1] ), retryableFailedRequest, retryableSuccessfulRequest, newRequest().withTimeWindowUpperBound(timeWindowUpperBound), *Array(3) { newRequest() .withInputStates(generateUnspentStates(3)) .withReferenceStates(generateUnspentStates(4)) } )</ID>
+    <ID>UnusedImports:UniquenessCheckerImplTests.kt$import net.corda.v5.ledger.contracts.StateRef</ID>
+    <ID>WildcardImport:InMemoryUniquenessCheckerImpl.kt$import net.corda.data.uniqueness.*</ID>
+    <ID>WildcardImport:UniquenessCheckerImplTests.kt$import net.corda.data.uniqueness.*</ID>
+    <ID>WildcardImport:UniquenessCheckerImplTests.kt$import org.junit.jupiter.api.Assertions.*</ID>
+  </CurrentIssues>
+</SmellBaseline>
