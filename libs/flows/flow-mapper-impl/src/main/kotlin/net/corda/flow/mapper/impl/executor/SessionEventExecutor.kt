@@ -38,13 +38,13 @@ class SessionEventExecutor(
 
     private fun handleNullState(): FlowMapperResult {
         log.error("Flow mapper processed session event for expired closed session. Key: $eventKey, Event: $sessionEvent")
-        val counterpartySessionId = toggleSessionId(sessionEvent.sessionId)
+        val sessionId = sessionEvent.sessionId
         val record = Record(
-            Schemas.P2P.P2P_OUT_TOPIC, counterpartySessionId, FlowMapperEvent(
-                SessionEvent(MessageDirection.OUTBOUND, instant, counterpartySessionId, null, 0, emptyList(),
+            Schemas.P2P.P2P_OUT_TOPIC, sessionId, FlowMapperEvent(
+                SessionEvent(MessageDirection.OUTBOUND, instant, sessionEvent.sessionId, null, 0, emptyList(),
                     SessionError(ExceptionEnvelope(
                             "FlowMapper-SessionExpired",
-                            "Tried to process session event for expired session with sessionId $counterpartySessionId"
+                            "Tried to process session event for expired session with sessionId $sessionId"
                         )
                     )
                 )
@@ -54,13 +54,11 @@ class SessionEventExecutor(
     }
 
     /**
-     * Toggles the sessionId for the event and output the session event to the correct topic and key
+     * Output the session event to the correct topic and key
      */
     private fun processOtherSessionEvents(flowMapperState: FlowMapperState): FlowMapperResult {
         val outputRecord = if (messageDirection == MessageDirection.OUTBOUND) {
-            val sessionId = toggleSessionId(eventKey)
-            sessionEvent.sessionId = sessionId
-            Record(outputTopic, sessionId, FlowMapperEvent(sessionEvent))
+            Record(outputTopic, sessionEvent.sessionId, FlowMapperEvent(sessionEvent))
         } else {
             Record(outputTopic, flowMapperState.flowKey, FlowEvent(flowMapperState.flowKey, sessionEvent))
         }

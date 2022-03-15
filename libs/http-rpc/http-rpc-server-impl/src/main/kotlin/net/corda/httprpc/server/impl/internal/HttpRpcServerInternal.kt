@@ -189,8 +189,8 @@ internal class HttpRpcServerInternal(
             try {
                 log.info("Add \"$handlerType\" handler for \"${routeInfo.fullPath}\".")
                 // TODO the following hardcoded handler registration is only meant for Scaffold and needs change
-                //  once "multipart/form-data" support gets implemented correctly.
-                if (routeInfo.fullPath == "//api/v1/cpi//") {
+                //  once "multipart/form-data" support gets implemented correctly as part of CORE-3813.
+                if (routeInfo.fullPath == "/api/v1/cpi") {
                     addHandler(handlerType, routeInfo.fullPath, routeInfo.invokeMultiPartMethod())
                 } else {
                     addHandler(handlerType, routeInfo.fullPath, routeInfo.invokeMethod())
@@ -211,7 +211,7 @@ internal class HttpRpcServerInternal(
             resourceProvider.httpGetRoutes.map { routeInfo ->
 
                 before(routeInfo.fullPath) {
-                    authorize(authenticate(it), routeInfo.fullPath)
+                    authorize(authenticate(it), it.fullUrl())
                 }
                 registerHandlerForRoute(routeInfo, HandlerType.GET)
             }
@@ -225,7 +225,7 @@ internal class HttpRpcServerInternal(
                             )
                         )
                     }
-                    authorize(authenticate(it), routeInfo.fullPath)
+                    authorize(authenticate(it), it.fullUrl())
                 }
                 registerHandlerForRoute(routeInfo, HandlerType.POST)
             }

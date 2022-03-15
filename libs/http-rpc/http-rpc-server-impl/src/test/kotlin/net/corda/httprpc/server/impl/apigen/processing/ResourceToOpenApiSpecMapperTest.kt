@@ -15,13 +15,14 @@ import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.Data
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.SchemaCollectionModel
 import net.corda.httprpc.server.impl.apigen.processing.openapi.toOpenAPI
 import net.corda.httprpc.server.impl.apigen.processing.openapi.toOpenApiParameter
-import net.corda.httprpc.server.impl.apigen.processing.openapi.toOpenApiPath
 import net.corda.httprpc.server.impl.apigen.processing.openapi.toOperation
 import net.corda.httprpc.server.impl.apigen.processing.openapi.toRequestBody
 import net.corda.httprpc.server.impl.apigen.processing.openapi.toValidMethodName
 import net.corda.httprpc.server.impl.utils.getHealthCheckApiTestResource
 import net.corda.httprpc.test.TestHealthCheckAPI
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
+import net.corda.httprpc.tools.HttpPathUtils.joinResourceAndEndpointPaths
+import net.corda.httprpc.tools.HttpPathUtils.toOpenApiPath
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -151,7 +152,7 @@ class ResourceToOpenApiSpecMapperTest {
             assertEquals("Health Check", tag.description)
 
             resource.endpoints.forEach {
-                val openApiPath = toOpenApiPath(resource.path, it.path)
+                val openApiPath = joinResourceAndEndpointPaths(resource.path, it.path).toOpenApiPath()
                 assertTrue(paths.containsKey(openApiPath))
             }
 
@@ -170,7 +171,7 @@ class ResourceToOpenApiSpecMapperTest {
     }
 
     @Test
-    fun `endpointToOperation_withListResponse_OpenApiCorrectResponseWithGenerics`() {
+    fun `endpointToOperation withListResponse OpenApiCorrectResponseWithGenerics`() {
         val endpoint = Endpoint(
             method = EndpointMethod.POST,
             title = "plusOne",
@@ -212,7 +213,7 @@ class ResourceToOpenApiSpecMapperTest {
     }
 
     @Test
-    fun `endpointToOperation_withVoidResponse_OpenApiCorrectResponseWithNoResponseBody`() {
+    fun `endpointToOperation withVoidResponse OpenApiCorrectResponseWithNoResponseBody`() {
         val endpoint = Endpoint(
             method = EndpointMethod.POST,
             title = "plusOne",
@@ -232,7 +233,7 @@ class ResourceToOpenApiSpecMapperTest {
     }
 
     @Test
-    fun `endpointToOperation_withVoidClassResponse_OpenApiCorrectResponseWithNoResponseBody`() {
+    fun `endpointToOperation withVoidClassResponse OpenApiCorrectResponseWithNoResponseBody`() {
         val endpoint = Endpoint(
             method = EndpointMethod.POST,
             title = "plusOne",
@@ -252,7 +253,7 @@ class ResourceToOpenApiSpecMapperTest {
     }
 
     @Test
-    fun `endpointToOperation_generates_proper_OperationID`() {
+    fun `endpointToOperation generates proper OperationID`() {
         val endpoint = Endpoint(
             method = EndpointMethod.POST,
             title = "plusOne",
@@ -264,7 +265,8 @@ class ResourceToOpenApiSpecMapperTest {
         )
 
         val schemaModelProvider = DefaultSchemaModelProvider(SchemaModelContextHolder())
-        val operation = endpoint.toOperation(toOpenApiPath("HealthCheckAPI", endpoint.path), schemaModelProvider)
+        val operation = endpoint.toOperation(
+            joinResourceAndEndpointPaths("HealthCheckAPI", endpoint.path).toOpenApiPath(), schemaModelProvider)
         assertEquals("post_healthcheckapi_plusone", operation.operationId)
     }
 

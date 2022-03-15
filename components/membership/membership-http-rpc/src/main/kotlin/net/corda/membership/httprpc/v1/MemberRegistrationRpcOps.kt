@@ -46,7 +46,7 @@ interface MemberRegistrationRpcOps : RpcOps {
      */
     @HttpRpcGET(
         description = "Checks the status of the registration request.",
-        path = ""
+        path = "checkRegistrationProgress"
     )
     fun checkRegistrationProgress(
         @HttpRpcQueryParameter(description = "ID of the holding identity to be checked.")

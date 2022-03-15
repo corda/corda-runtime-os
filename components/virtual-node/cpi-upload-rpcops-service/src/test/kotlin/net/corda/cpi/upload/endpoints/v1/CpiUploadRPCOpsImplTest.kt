@@ -22,14 +22,13 @@ import java.util.UUID
 class CpiUploadRPCOpsImplTest {
     private lateinit var cpiUploadRPCOpsImpl: CpiUploadRPCOpsImpl
     private lateinit var coordinatorFactory: LifecycleCoordinatorFactory
+    private lateinit var cpiUploadRPCOpsService: CpiUploadRPCOpsService
+    private lateinit var cpiInfoReadService: CpiInfoReadService
     private lateinit var cpiUploadManager: CpiUploadManager
 
     companion object {
         const val DUMMY_FILE_NAME = "dummyFileName"
     }
-
-    private val cpiUploadRPCOpsService = mock<CpiUploadRPCOpsService>()
-    private var cpiInfoReadService = mock<CpiInfoReadService>()
 
     @BeforeEach
     fun setUp() {
@@ -39,6 +38,8 @@ class CpiUploadRPCOpsImplTest {
         coordinatorFactory = mock<LifecycleCoordinatorFactory>().also {
             whenever(it.createCoordinator(any(), any())).thenReturn(coordinator)
         }
+        cpiUploadRPCOpsService = mock()
+        cpiInfoReadService = mock()
         cpiUploadRPCOpsImpl = CpiUploadRPCOpsImpl(coordinatorFactory, cpiUploadRPCOpsService, cpiInfoReadService)
         cpiUploadManager = mock()
         whenever(cpiUploadRPCOpsService.cpiUploadManager).thenReturn(cpiUploadManager)
@@ -60,10 +61,7 @@ class CpiUploadRPCOpsImplTest {
 
     @Test
     fun `getAllCpis calls CpiInfoReadService to retrieve all CPIs`() {
-        val cpiInfoReadService = mock<CpiInfoReadService>()
-        val rpcOps = CpiUploadRPCOpsImpl(mock(), mock(), cpiInfoReadService)
-        rpcOps.getAllCpis()
+        cpiUploadRPCOpsImpl.getAllCpis()
         verify(cpiInfoReadService).getAll()
     }
-
 }
