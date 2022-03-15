@@ -18,7 +18,7 @@ internal class TinyCertCertificatesAuthority(
     private var passPhrase: String,
     private var email: String,
     private val authorityName: String,
-) : StubCertificatesAuthority() {
+) : CloseableCertificateAuthority {
     private val digester by lazy {
         Mac.getInstance("HmacSHA256").also { mac ->
             mac.init(

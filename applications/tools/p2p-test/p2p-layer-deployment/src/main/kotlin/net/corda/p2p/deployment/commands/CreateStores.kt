@@ -1,9 +1,10 @@
 package net.corda.p2p.deployment.commands
 
+import net.corda.crypto.test.certificates.generation.CertificateAuthority.Companion.PASSWORD
+import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
+import net.corda.crypto.test.certificates.generation.FileSystemCertificatesAuthority
+import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.p2p.deployment.getAndCheckEnv
-import net.corda.crypto.test.certificates.generation.StubCertificatesAuthority
-import net.corda.crypto.test.certificates.generation.StubCertificatesAuthority.Companion.PASSWORD
-import net.corda.crypto.test.certificates.generation.StubCertificatesAuthority.Companion.toPem
 import net.corda.v5.cipher.suite.schemes.SignatureSchemeTemplate
 import java.io.File
 
@@ -27,20 +28,27 @@ internal class CreateStores(
         hosts: Collection<String>,
         signatureSchemeTemplate: SignatureSchemeTemplate,
     ) {
-        val authority = if (trustStoreLocation != null) {
-            StubCertificatesAuthority.createLocalAuthority(signatureSchemeTemplate, trustStoreLocation)
+        val certificatesAuthority = if (trustStoreLocation != null) {
+            CertificateAuthorityFactory.createFileSystemLocalAuthority(
+                signatureSchemeTemplate, trustStoreLocation
+            )
         } else {
-            StubCertificatesAuthority.createTinyCertAuthority(
+            CertificateAuthorityFactory.createTinyCertAuthority(
                 apiKey, passPhrase, email, authorityName
             )
         }
-        authority.use { certificatesAuthority ->
-            trustStoreFile.writeText(certificatesAuthority.caCertificate.toPem())
-            val keyStore = certificatesAuthority.generateKeyAndCertificate(hosts)
-            sslStoreFile.outputStream().use {
-                keyStore.toKeyStore().store(it, PASSWORD.toCharArray())
-            }
-            tlsCertificates.writeText(keyStore.certificatePem())
+        trustStoreFile.writeText(certificatesAuthority.caCertificate.toPem())
+        val keyStore = certificatesAuthority.generateKeyAndCertificate(hosts)
+        sslStoreFile.outputStream().use {
+            keyStore.toKeyStore().store(it, PASSWORD.toCharArray())
+        }
+        tlsCertificates.writeText(keyStore.certificatePem())
+
+        if (certificatesAuthority is AutoCloseable) {
+            certificatesAuthority.close()
+        }
+        if (certificatesAuthority is FileSystemCertificatesAuthority) {
+            certificatesAuthority.save()
         }
     }
 }

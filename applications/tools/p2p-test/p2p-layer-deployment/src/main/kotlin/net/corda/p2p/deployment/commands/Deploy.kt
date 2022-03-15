@@ -106,9 +106,9 @@ class Deploy : Runnable {
 
     @Option(
         names = ["--trust-store"],
-        description = ["The trust store name (leave empty to use TinyCert)"]
+        description = ["The trust store type (\${COMPLETION-CANDIDATES})"]
     )
-    private var trustStoreName: String? = null
+    private var trustStoreType: TrustStoreType = TrustStoreType.TINY_CERT
 
     @Option(
         names = ["--lm-conf", "--link-manager-config"],
@@ -234,6 +234,10 @@ class Deploy : Runnable {
         }
     }
 
+    enum class TrustStoreType {
+        TINY_CERT, LOCAL
+    }
+
     private fun configureNamespace() {
         UpdateIps().run()
         val config = ConfigureAll()
@@ -241,7 +245,7 @@ class Deploy : Runnable {
         config.linkManagerExtraArguments = linkManagerExtraArguments
         config.gatewayArguments = gatewayArguments
         config.algo = algo
-        config.trustStoreName = trustStoreName
+        config.trustStoreType = trustStoreType
         config.run()
     }
 }

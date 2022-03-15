@@ -1,11 +1,11 @@
 package net.corda.p2p.deployment.commands
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.crypto.test.certificates.generation.CertificateAuthority.Companion.PASSWORD
+import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
 import net.corda.p2p.deployment.DeploymentException
 import net.corda.p2p.deployment.pods.Port
 import net.corda.p2p.test.KeyAlgorithm
-import net.corda.crypto.test.certificates.generation.StubCertificatesAuthority
-import net.corda.crypto.test.certificates.generation.StubCertificatesAuthority.Companion.PASSWORD
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_SHA256_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.RSA_SHA256_TEMPLATE
 import picocli.CommandLine.Command
@@ -46,9 +46,9 @@ class ConfigureAll : Runnable {
 
     @Option(
         names = ["--trust-store"],
-        description = ["The trust store name (leave empty to use TinyCert)"]
+        description = ["The trust store type (\${COMPLETION-CANDIDATES})"]
     )
-    var trustStoreName: String? = null
+    var trustStoreType: Deploy.TrustStoreType = Deploy.TrustStoreType.TINY_CERT
 
     private val jsonReader = ObjectMapper()
     private val jsonWriter = jsonReader.writer()
@@ -88,7 +88,7 @@ class ConfigureAll : Runnable {
     }
     private val keyStoreDir = File("p2p-deployment/keystores/")
 
-    private val signatureScheme = when (algo) {
+    private fun KeyAlgorithm.signatureScheme() = when (this) {
         KeyAlgorithm.RSA -> RSA_SHA256_TEMPLATE
         KeyAlgorithm.ECDSA -> ECDSA_SECP256K1_SHA256_TEMPLATE
     }
@@ -97,8 +97,8 @@ class ConfigureAll : Runnable {
         return File(keyStoreDir.absolutePath, "$name.identity.keystore.jks").also { keyStoreFile ->
             if (!keyStoreFile.exists()) {
                 keyStoreDir.mkdirs()
-                val authority = StubCertificatesAuthority.createLocalAuthority(signatureScheme)
-                val keyStore = authority.createAuthorityKeyStore("identity")
+                val authority = CertificateAuthorityFactory.createMemoryAuthority(algo.signatureScheme())
+                val keyStore = authority.asKeyStore("identity")
                 keyStoreFile.outputStream().use {
                     keyStore.store(it, PASSWORD.toCharArray())
                 }
@@ -131,9 +131,13 @@ class ConfigureAll : Runnable {
                 sslStoreFile = keyStoreFile,
                 trustStoreFile = trustStoreFile,
                 tlsCertificates = tlsCertificates,
-                trustStoreLocation = trustStoreName?.let { File(keyStoreDir, it) }
+                trustStoreLocation = if(trustStoreType == Deploy.TrustStoreType.TINY_CERT) {
+                    null
+                } else {
+                    File(keyStoreDir, "trust-store")
+                }
             )
-            creator.create(hosts = listOf(host), signatureScheme)
+            creator.create(hosts = listOf(host), algo.signatureScheme())
         }
     }
 
@@ -315,7 +319,7 @@ class ConfigureAll : Runnable {
 
     private fun configureGateway() {
         println("Configure gateway of $namespaceName")
-        val gatewayArguments = if (trustStoreName == null) {
+        val gatewayArguments = if (trustStoreType == Deploy.TrustStoreType.LOCAL) {
             gatewayArguments
         } else {
             // Adding revocationCheck when using TinyCert to allow CRL usage

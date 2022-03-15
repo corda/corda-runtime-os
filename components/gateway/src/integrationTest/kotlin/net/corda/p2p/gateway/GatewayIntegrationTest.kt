@@ -2,6 +2,11 @@ package net.corda.p2p.gateway
 
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.handler.codec.http.HttpResponseStatus
+import net.corda.crypto.test.certificates.generation.CertificateAuthority
+import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
+import net.corda.crypto.test.certificates.generation.PrivateKeyWithCertificate
+import net.corda.crypto.test.certificates.generation.toKeystore
+import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.data.p2p.gateway.GatewayResponse
@@ -40,10 +45,6 @@ import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.p2p.gateway.messaging.http.KeyStoreWithPassword
 import net.corda.p2p.gateway.messaging.http.ListenerWithServer
-import net.corda.p2p.test.KeyAlgorithm
-import net.corda.crypto.test.certificates.generation.StubCertificatesAuthority
-import net.corda.crypto.test.certificates.generation.StubCertificatesAuthority.Companion.toKeystore
-import net.corda.crypto.test.certificates.generation.StubCertificatesAuthority.Companion.toPem
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_TRUSTSTORES
 import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
@@ -705,7 +706,7 @@ class GatewayIntegrationTest : TestBase() {
             }
         }
 
-        fun StubCertificatesAuthority.toGatewayTrustStore(): GatewayTruststore {
+        private fun CertificateAuthority.toGatewayTrustStore(): GatewayTruststore {
             return GatewayTruststore(
                 listOf(
                     this.caCertificate.toPem()
@@ -713,10 +714,10 @@ class GatewayIntegrationTest : TestBase() {
             )
         }
 
-        fun StubCertificatesAuthority.PrivateKeyWithCertificate.toKeyStoreAndPassword(): KeyStoreWithPassword {
+        fun PrivateKeyWithCertificate.toKeyStoreAndPassword(): KeyStoreWithPassword {
             return KeyStoreWithPassword(
                 this.toKeyStore(),
-                StubCertificatesAuthority.PASSWORD
+                CertificateAuthority.PASSWORD
             )
         }
 
@@ -746,7 +747,7 @@ class GatewayIntegrationTest : TestBase() {
                 instanceId.incrementAndGet(),
             ).use { gateway ->
                 gateway.startAndWaitForStarted()
-                val firstCertificatesAuthority = StubCertificatesAuthority.createLocalAuthority(RSA_SHA256_TEMPLATE)
+                val firstCertificatesAuthority = CertificateAuthorityFactory.createMemoryAuthority(RSA_SHA256_TEMPLATE)
                 // Client should fail without trust store certificates
                 assertThrows<RuntimeException> {
                     testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toKeystore())
@@ -821,7 +822,7 @@ class GatewayIntegrationTest : TestBase() {
                 testClientWith(bobAddress, firstCertificatesAuthority.caCertificate.toKeystore())
 
                 // new trust store...
-                val secondCertificatesAuthority = StubCertificatesAuthority.createLocalAuthority(ECDSA_SECP256K1_SHA256_TEMPLATE)
+                val secondCertificatesAuthority = CertificateAuthorityFactory.createMemoryAuthority(ECDSA_SECP256K1_SHA256_TEMPLATE)
                 server.publish(
                     Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, secondCertificatesAuthority.toGatewayTrustStore()),
                 )
@@ -839,7 +840,7 @@ class GatewayIntegrationTest : TestBase() {
                 }
 
                 // new trust store and pair...
-                val thirdCertificatesAuthority = StubCertificatesAuthority.createLocalAuthority(ECDSA_SECP256K1_SHA256_TEMPLATE)
+                val thirdCertificatesAuthority = CertificateAuthorityFactory.createMemoryAuthority(ECDSA_SECP256K1_SHA256_TEMPLATE)
                 server.publish(
                     Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, thirdCertificatesAuthority.toGatewayTrustStore()),
                 )
