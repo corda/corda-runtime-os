@@ -1,5 +1,6 @@
 package net.corda.membership.impl.grouppolicy
 
+import net.bytebuddy.pool.TypePool
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.libs.packaging.CpiIdentifier
 import net.corda.libs.packaging.CpiMetadata
@@ -11,6 +12,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.GroupPolicy
+import net.corda.membership.exceptions.BadGroupPolicyException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -21,9 +23,11 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -170,18 +174,18 @@ class GroupPolicyProviderImplTest {
             groupId2,
             testAttr3
         )
-        assertNull(groupPolicyProvider.getGroupPolicy(holdingIdentity4))
+        assertThrows<BadGroupPolicyException> { groupPolicyProvider.getGroupPolicy(holdingIdentity4) }
     }
 
     @Test
     fun `Group policy read fails if service hasn't started`() {
-        assertNull(groupPolicyProvider.getGroupPolicy(holdingIdentity1))
+        assertThrows<IllegalStateException> { groupPolicyProvider.getGroupPolicy(holdingIdentity1) }
     }
 
     @Test
     fun `Group policy read fails if service isn't up`() {
         groupPolicyProvider.start()
-        assertNull(groupPolicyProvider.getGroupPolicy(holdingIdentity1))
+        assertThrows<IllegalStateException> { groupPolicyProvider.getGroupPolicy(holdingIdentity1) }
     }
 
     @Test
@@ -257,7 +261,7 @@ class GroupPolicyProviderImplTest {
 
         registrationChange(LifecycleStatus.DOWN)
 
-        assertNull(groupPolicyProvider.getGroupPolicy(holdingIdentity1))
+        assertThrows<IllegalStateException> { groupPolicyProvider.getGroupPolicy(holdingIdentity1) }
     }
 
     @Test
