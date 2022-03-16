@@ -39,6 +39,8 @@ import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.StubLinkManagerHostingMap
 import net.corda.p2p.linkmanager.StubNetworkMap
+import net.corda.p2p.markers.AppMessageMarker
+import net.corda.p2p.markers.TtlExpiredMarker
 import net.corda.p2p.test.HostedIdentityEntry
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
@@ -47,6 +49,7 @@ import net.corda.p2p.test.TenantKeys
 import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.TestSchema.Companion.CRYPTO_KEYS_TOPIC
 import net.corda.schema.TestSchema.Companion.HOSTED_MAP_TOPIC
@@ -251,8 +254,16 @@ class P2PLayerEndToEndTest {
                 bootstrapConfig,
                 null
             )
+
+            val hostAExpiryMarkers =  mutableListOf<Record<*, *>>()
+            val subForP2POutMarkers = hostA.subscriptionFactory.createDurableSubscription(
+                SubscriptionConfig("app-layer", P2P_OUT_MARKERS, 1), MarkerStorageProcessor(hostAExpiryMarkers),
+                bootstrapConfig,
+                null
+            )
             hostAApplicationReader.start()
             hostBApplicationReaderWriter.start()
+            subForP2POutMarkers.start()
 
             val hostAApplicationWriter = hostA.publisherFactory.createPublisher(PublisherConfig("app-layer", 1), bootstrapConfig)
             val initialMessages = (1..10).map { index ->
@@ -275,9 +286,10 @@ class P2PLayerEndToEndTest {
             }
 
             eventually(10.seconds) {
-                (1..10).forEach { messageNo ->
-                    assertTrue(hostAReceivedMessages.contains("pong ($messageNo)"), "No reply received for message $messageNo")
-                }
+                assertThat(hostAExpiryMarkers).filteredOn { it.topic == P2P_OUT_MARKERS }.hasSize(2)
+                    .allSatisfy { assertThat(it.key).isEqualTo("1") }
+                    .extracting<AppMessageMarker> { it.value as AppMessageMarker }
+                    .allSatisfy { assertThat(it.marker).isInstanceOf(TtlExpiredMarker::class.java) }
             }
 
             hostAApplicationReader.stop()
@@ -306,6 +318,20 @@ class P2PLayerEndToEndTest {
             ).use { hostB ->
                 testMessagesBetweenTwoHosts(hostA, hostB)
             }
+        }
+    }
+
+    private class MarkerStorageProcessor (val expiryMarkers: MutableList<Record<*, *>>): DurableProcessor<String, AppMessageMarker> {
+        override val keyClass: Class<String>
+            get() = String::class.java
+        override val valueClass: Class<AppMessageMarker>
+            get() = AppMessageMarker::class.java
+
+        override fun onNext(events: List<Record<String, AppMessageMarker>>): List<Record<*, *>> {
+            events.forEach {
+                expiryMarkers.add(it)
+            }
+            return emptyList()
         }
     }
 
