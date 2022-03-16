@@ -14,29 +14,9 @@ class LayeredPropertyMapImpl(
         private val indexedPrefixComparator = IndexedPrefixComparator()
     }
 
-    private class CachedValue(val value: Any?) {
-        fun validateIsAssignableFrom(key: String, clazz: Class<*>) {
-            if (value != null) {
-                // needed because the simple approach using as? T does not do the actual casting without value assignment,
-                // hence it won't throw the exception here
-                if (!clazz.isAssignableFrom(value::class.java)) {
-                    throw ClassCastException("Casting failed for $key.")
-                }
-            }
-        }
+    private class CachedValue(val value: Any?)
 
-        fun validateCollectionIsAssignableFrom(normalisedPrefix: String, clazz: Class<*>) {
-            // needed because the simple approach using as? T does not do the actual casting without value assignment,
-            // hence it won't throw the exception here
-            (value as? Collection<*>)?.firstOrNull()?.let {
-                if (!clazz.isAssignableFrom(it::class.java)) {
-                    throw ClassCastException("Casting failed for $normalisedPrefix prefix.")
-                }
-            }
-        }
-    }
-
-    private val cache = ConcurrentHashMap<String, CachedValue>()
+    private val cache = ConcurrentHashMap<Pair<String, Class<*>>, CachedValue>()
 
     override operator fun get(key: String): String? = properties[key]
 
@@ -50,14 +30,12 @@ class LayeredPropertyMapImpl(
         require(key.isNotBlank()) {
             "The key cannot be blank string."
         }
-        val result = cache.computeIfAbsent(key) {
+        return cache.computeIfAbsent(Pair(key, clazz)) {
             CachedValue(
                 converter.convert(ConversionContext(this, key), clazz)
                     ?: throw ValueNotFoundException("There is no value for '$key' key or it's null.")
             )
-        }
-        result.validateIsAssignableFrom(key, clazz)
-        return result.value as T
+        }.value as T
     }
 
     /**
@@ -68,13 +46,11 @@ class LayeredPropertyMapImpl(
         require(key.isNotBlank()) {
             "The key cannot be blank string."
         }
-        val result = cache.computeIfAbsent(key) {
+        return cache.computeIfAbsent(Pair(key, clazz)) {
             CachedValue(
                 converter.convert(ConversionContext(this, key), clazz)
             )
-        }
-        result.validateIsAssignableFrom(key, clazz)
-        return result.value as T?
+        }.value as T?
     }
 
     /**
@@ -95,13 +71,11 @@ class LayeredPropertyMapImpl(
         }
         // normalise prefix, add "." at the end to make processing easier and make usage foolproof
         val normalisedPrefix = normaliseListSearchKeyPrefix(itemKeyPrefix)
-        val result = cache.computeIfAbsent(normalisedPrefix) {
+        return cache.computeIfAbsent(Pair(normalisedPrefix, clazz)) {
             CachedValue(
                 parseCollectionTo(mutableListOf(), normalisedPrefix, itemKeyPrefix, clazz)
             )
-        }
-        result.validateCollectionIsAssignableFrom(normalisedPrefix, clazz)
-        return result.value as List<T>
+        }.value as List<T>
     }
 
     /**
@@ -114,26 +88,20 @@ class LayeredPropertyMapImpl(
         }
         // normalise prefix, add "." at the end to make processing easier and make usage foolproof
         val normalisedPrefix = normaliseListSearchKeyPrefix(itemKeyPrefix)
-        val result = cache.computeIfAbsent(normalisedPrefix) {
+        return cache.computeIfAbsent(Pair(normalisedPrefix, clazz)) {
             CachedValue(
                 parseCollectionTo(mutableSetOf(), normalisedPrefix, itemKeyPrefix, clazz)
             )
-        }
-        result.validateCollectionIsAssignableFrom(normalisedPrefix, clazz)
-        return result.value as HashSet<T>
+        }.value as HashSet<T>
     }
 
     override fun equals(other: Any?): Boolean {
         if (other == null || other !is LayeredPropertyMapImpl) return false
         if (this === other) return true
-        return properties == other.properties && entries == other.entries
+        return properties == other.properties
     }
 
-    override fun hashCode(): Int {
-        var result = properties.hashCode()
-        result = 31 * result + entries.hashCode()
-        return result
-    }
+    override fun hashCode(): Int = properties.hashCode()
 
     private fun <T> parseCollectionTo(
         destination: MutableCollection<T>,
