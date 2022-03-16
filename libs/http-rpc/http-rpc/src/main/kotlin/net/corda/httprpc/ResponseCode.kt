@@ -46,6 +46,12 @@ enum class ResponseCode constructor(val statusCode: Int) {
     RESOURCE_NOT_FOUND(404),
 
     /**
+     * Request's syntax was correct, but it was unable to process the content.
+     * The client should not repeat this request without modification.
+     */
+    UNPROCESSABLE_ENTITY(422),
+
+    /**
      * An error occurred internally.
      */
     INTERNAL_SERVER_ERROR(500),

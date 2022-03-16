@@ -4,9 +4,9 @@ import net.corda.httprpc.PluggableRPCOps
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.membership.exceptions.MemberNotFoundException
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.httprpc.v1.MemberLookupRpcOps
-import net.corda.membership.httprpc.v1.MemberRegistrationRpcOps
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -30,7 +30,7 @@ class MemberLookupRpcOpsImpl @Activate constructor(
 
     override val protocolVersion = 1
 
-    private val coordinatorName = LifecycleCoordinatorName.forComponent<MemberRegistrationRpcOps>(
+    private val coordinatorName = LifecycleCoordinatorName.forComponent<MemberLookupRpcOps>(
         protocolVersion.toString()
     )
 
@@ -60,13 +60,17 @@ class MemberLookupRpcOpsImpl @Activate constructor(
         coordinator.stop()
     }
 
-    override fun lookup(holdingIdentityId: String): List<List<List<Pair<String, String?>>>> {
-        val reader = virtualNodeInfoReadService.getById(holdingIdentityId)?.holdingIdentity?.let {
-            membershipGroupReaderProvider.getGroupReader(
-                it
+    override fun lookup(holdingIdentityId: String): List<List<Map<String, String?>>> {
+        val holdingIdentity = virtualNodeInfoReadService.getById(holdingIdentityId)?.holdingIdentity
+            ?: throw MemberNotFoundException("Could not find holding identity associated with member.")
+
+        val reader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
+
+        return reader.lookup().map {
+            listOf(
+                it.memberProvidedContext.entries.associate { it.key to it.value },
+                it.mgmProvidedContext.entries.associate { it.key to it.value }
             )
         }
-        return reader!!.lookup().map { listOf(it.memberProvidedContext.entries.map { it.key to it.value },
-            it.mgmProvidedContext.entries.map { it.key to it.value }) }
     }
 }

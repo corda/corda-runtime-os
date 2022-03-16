@@ -22,6 +22,7 @@ dependencies {
     implementation project(":libs:http-rpc:http-rpc")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:membership:membership-impl")
+    implementation project(":libs:membership:membership-internal")
     implementation project(":libs:virtual-node:virtual-node-info")
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

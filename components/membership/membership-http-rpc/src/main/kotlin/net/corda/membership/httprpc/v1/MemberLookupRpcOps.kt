@@ -9,7 +9,7 @@ import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgres
 @HttpRpcResource(
     name = "MemberLookupRpcOps",
     description = "Membership Lookup APIs",
-    path = "membership"
+    path = "members"
 )
 interface MemberLookupRpcOps : RpcOps {
     /**
@@ -19,11 +19,10 @@ interface MemberLookupRpcOps : RpcOps {
      *  local member data.
      */
     @HttpRpcGET(
-        description = "Lists the active members in the membership group.",
-        path = "members"
+        description = "Lists the active members in the membership group."
     )
     fun lookup(
         @HttpRpcQueryParameter(description = "ID of the holding identity to be checked.")
         holdingIdentityId: String
-    ): List<List<List<Pair<String, String?>>>>
+    ): List<List<Map<String, String?>>>
 }

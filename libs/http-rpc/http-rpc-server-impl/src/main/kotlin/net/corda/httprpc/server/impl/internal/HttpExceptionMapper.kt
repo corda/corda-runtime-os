@@ -10,6 +10,7 @@ import javax.security.auth.login.FailedLoginException
 import net.corda.httprpc.ResponseCode
 import net.corda.httprpc.exception.HttpApiException
 import net.corda.httprpc.server.impl.exception.MissingParameterException
+import net.corda.membership.exceptions.MemberNotFoundException
 import net.corda.v5.application.flows.BadRpcStartFlowRequestException
 import net.corda.v5.base.exceptions.CordaRuntimeException
 
@@ -28,7 +29,12 @@ internal object HttpExceptionMapper {
             //  is StartFlowPermissionException -> ForbiddenResponse(loggedMessage)
             //  is FlowNotFoundException -> NotFoundResponse(loggedMessage)
             //  is InvalidMemberX500NameException -> BadRequestResponse(loggedMessage)
-            //  is MemberNotFoundException -> NotFoundResponse(loggedMessage)
+
+            is MemberNotFoundException -> HttpResponseException(
+                ResponseCode.UNPROCESSABLE_ENTITY.statusCode,
+                "Invalid member or holding identity.",
+                buildExceptionCauseDetails(e).addResponseCode(ResponseCode.UNPROCESSABLE_ENTITY)
+            )
 
             // catch-all for failed login attempts
             is FailedLoginException -> UnauthorizedResponse("User authentication failed.")

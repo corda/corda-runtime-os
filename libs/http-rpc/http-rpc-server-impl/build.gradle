@@ -16,6 +16,7 @@ dependencies {
     implementation project(":libs:http-rpc:http-rpc-tools")
     implementation project(':libs:http-rpc:http-rpc-security-read')
     implementation project(':libs:http-rpc:json-serialization')
+    implementation project(":libs:membership:membership-internal")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"

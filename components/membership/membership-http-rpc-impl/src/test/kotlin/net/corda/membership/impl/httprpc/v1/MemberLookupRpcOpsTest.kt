@@ -5,13 +5,13 @@ import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.libs.packaging.CpiIdentifier
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.membership.exceptions.MemberNotFoundException
 import net.corda.membership.impl.EndpointInfoImpl
 import net.corda.membership.impl.MGMContextImpl
 import net.corda.membership.impl.MemberContextImpl
 import net.corda.membership.impl.MemberInfoExtension
 import net.corda.membership.impl.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.impl.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
-import net.corda.membership.impl.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_OWNING_KEY
 import net.corda.membership.impl.MemberInfoExtension.Companion.PLATFORM_VERSION
@@ -40,6 +40,7 @@ import org.mockito.kotlin.mock
 import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
+import kotlin.test.assertFailsWith
 
 class MemberLookupRpcOpsTest {
     companion object {
@@ -81,11 +82,12 @@ class MemberLookupRpcOpsTest {
     private val layeredPropertyMapFactory = LayeredPropertyMapMocks.createFactory(converters)
 
     private val memberInfoList = listOf(
-        createMemberInfo("O=Alice,L=London,C=GB", MEMBER_STATUS_PENDING),
-        createMemberInfo("O=Bob,L=London,C=GB", MEMBER_STATUS_ACTIVE)
+        createMemberInfo("O=Alice,L=London,C=GB"),
+        createMemberInfo("O=Bob,L=London,C=GB")
     )
 
-    private fun createMemberInfo(name: String, status: String): MemberInfo = MemberInfoImpl(
+    @Suppress("SpreadOperator")
+    private fun createMemberInfo(name: String): MemberInfo = MemberInfoImpl(
         memberProvidedContext = layeredPropertyMapFactory.create<MemberContextImpl>(
             sortedMapOf(
                 PARTY_NAME to name,
@@ -100,7 +102,7 @@ class MemberLookupRpcOpsTest {
         ),
         mgmProvidedContext = layeredPropertyMapFactory.create<MGMContextImpl>(
             sortedMapOf(
-                MemberInfoExtension.STATUS to status,
+                MemberInfoExtension.STATUS to MEMBER_STATUS_ACTIVE,
                 MemberInfoExtension.MODIFIED_TIME to Instant.now().toString(),
             )
         )
@@ -164,15 +166,19 @@ class MemberLookupRpcOpsTest {
     }
 
     @Test
-    fun test() {
-        memberLookupRpcOps.start()
-        println(memberLookupRpcOps.lookup("test").toString())
+    fun `lookup returns a list of members and their contexts`() {
         val result = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING)
         assertEquals(2, result.size)
-        assertEquals(memberInfoList.map { listOf(
-            it.memberProvidedContext.entries.map { it.key to it.value },
-            it.mgmProvidedContext.entries.map { it.key to it.value } )
+        assertEquals(memberInfoList.map {
+            listOf(
+                it.memberProvidedContext.entries.associate { it.key to it.value },
+                it.mgmProvidedContext.entries.associate { it.key to it.value }
+            )
         }, result)
-        memberLookupRpcOps.stop()
+    }
+
+    @Test
+    fun `lookup should fail when non-existent holding identity is used`() {
+        assertFailsWith<MemberNotFoundException> { memberLookupRpcOps.lookup("failingTest") }
     }
 }
