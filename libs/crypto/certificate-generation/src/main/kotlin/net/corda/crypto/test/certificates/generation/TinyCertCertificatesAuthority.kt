@@ -19,7 +19,7 @@ internal class TinyCertCertificatesAuthority(
     private var email: String,
     private val authorityName: String,
 ) : CloseableCertificateAuthority {
-    private val digester by lazy {
+    private val digester =
         Mac.getInstance("HmacSHA256").also { mac ->
             mac.init(
                 SecretKeySpec(
@@ -28,7 +28,7 @@ internal class TinyCertCertificatesAuthority(
                 )
             )
         }
-    }
+
     private val client = HttpClient.newHttpClient()
     private val mapper = ObjectMapper()
     private val certificateFactory = CertificateFactory.getInstance("X.509")
@@ -96,17 +96,17 @@ internal class TinyCertCertificatesAuthority(
             )
         )
     }
-    private val certificationAuthorities by lazy {
+
+    private fun certificationAuthorities() =
         callApiList(
             "ca/list",
             mapOf(
                 "token" to token,
             )
         )
-    }
 
     private val authority by lazy {
-        val knownAuthority = certificationAuthorities.firstOrNull {
+        val knownAuthority = certificationAuthorities().firstOrNull {
             it["name"] == authorityName
         }
         if (knownAuthority == null) {
@@ -124,7 +124,7 @@ internal class TinyCertCertificatesAuthority(
         }
     }
 
-    private val certificates by lazy {
+    private fun certificates() =
         callApiList(
             "cert/list",
             mapOf(
@@ -133,7 +133,7 @@ internal class TinyCertCertificatesAuthority(
                 "token" to token,
             )
         )
-    }
+
     override val caCertificate by lazy {
         val pem = callApiMap(
             "ca/get",
@@ -149,7 +149,7 @@ internal class TinyCertCertificatesAuthority(
     }
 
     private fun getCertificateForHosts(hosts: Collection<String>): Number {
-        val knownCertificate = certificates.firstOrNull {
+        val knownCertificate = certificates().firstOrNull {
             it["name"] == hosts.first()
         }
         return if (knownCertificate == null) {
