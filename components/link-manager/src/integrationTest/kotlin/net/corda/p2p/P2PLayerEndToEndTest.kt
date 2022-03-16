@@ -350,6 +350,7 @@ class P2PLayerEndToEndTest {
                 ByteBuffer.wrap(keyPair.public.encoded),
                 identitiesKeyAlgorithm,
                 "http://$p2pAddress:$p2pPort",
+                null,
             )
 
         private fun publishNetworkMapAndIdentityKeys(otherHost: Host) {

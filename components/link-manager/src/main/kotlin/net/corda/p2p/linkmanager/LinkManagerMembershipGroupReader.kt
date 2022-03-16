@@ -7,4 +7,6 @@ interface LinkManagerMembershipGroupReader : LifecycleWithDominoTile {
     fun getMemberInfo(holdingIdentity: LinkManagerInternalTypes.HoldingIdentity): LinkManagerInternalTypes.MemberInfo?
 
     fun getMemberInfo(hash: ByteArray, groupId: String): LinkManagerInternalTypes.MemberInfo?
+
+    fun registerListener(listener: MembershipGroupListener)
 }

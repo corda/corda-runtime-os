@@ -3,7 +3,9 @@ package net.corda.p2p.deployment.commands
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import net.corda.p2p.deployment.DeploymentException
+import net.corda.p2p.deployment.commands.RunJar.Companion.startTelepresence
 import picocli.CommandLine.Command
+import java.net.InetAddress
 
 @Command(
     name = "update-ips",
@@ -21,7 +23,7 @@ class UpdateIps : Runnable {
     ) {
 
         @Suppress("UNCHECKED_CAST")
-        val loadBalancerIp by lazy {
+        val loadBalancerIps by lazy {
             val ip = ProcessRunner.execute(
                 "kubectl",
                 "get",
@@ -34,9 +36,47 @@ class UpdateIps : Runnable {
                 "jsonpath={.items[*].spec.clusterIP}",
             )
             if (ip.isBlank()) {
-                throw DeploymentException("No load balancer service")
+                val servicesIps = ProcessRunner.execute(
+                    "kubectl",
+                    "get",
+                    "service",
+                    "-n",
+                    name,
+                    "-l=type=p2p-gateway",
+                    "--output",
+                    "jsonpath={.items[*].spec.clusterIP}",
+                ).split(" ")
+                    .filter { it.isNotBlank() }
+                if (servicesIps.isEmpty()) {
+                    return@lazy ProcessRunner.execute(
+                        "kubectl",
+                        "get",
+                        "pod",
+                        "-n",
+                        name,
+                        "-l=type=p2p-gateway",
+                        "--output",
+                        "jsonpath={.items[*].status.hostIP}",
+                    ).split(" ")
+                        .filter { it.isNotBlank() }
+                        .also {
+                            if (it.isEmpty()) {
+                                throw DeploymentException("No load balancer service")
+                            }
+                        }
+                } else {
+                    return@lazy servicesIps
+                }
             }
-            ip
+            if (ip == "None") {
+                // We need to read the IPs :(
+                startTelepresence()
+                InetAddress.getAllByName("load-balancer.$name").map {
+                    it.canonicalHostName
+                }.toList()
+            } else {
+                listOf(ip)
+            }
         }
 
         @Suppress("UNCHECKED_CAST")
@@ -82,11 +122,13 @@ class UpdateIps : Runnable {
     override fun run() {
         val namespaces = namespaces()
         namespaces.forEach { namespaceToPatch ->
-            val ipMap = namespaces.map { namespaceToGetIp ->
-                mapOf(
-                    "ip" to namespaceToGetIp.loadBalancerIp,
-                    "hostnames" to listOf(namespaceToGetIp.host)
-                )
+            val ipMap = namespaces.flatMap { namespaceToGetIp ->
+                namespaceToGetIp.loadBalancerIps.map { ip ->
+                    mapOf(
+                        "ip" to ip,
+                        "hostnames" to listOf(namespaceToGetIp.host)
+                    )
+                }
             }
             val conf = mapOf(
                 "spec" to

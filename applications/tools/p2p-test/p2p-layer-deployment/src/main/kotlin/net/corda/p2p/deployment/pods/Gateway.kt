@@ -21,10 +21,15 @@ class Gateway(
                 LbType.NGINX -> NginxLoadBalancer(
                     gateways.map { it.app },
                 )
-                LbType.HEADLESS -> HeadlessLoadBalancer(
+                LbType.HEADLESS, LbType.MEMBERSHIP_HEADLESS -> HeadlessLoadBalancer(
                     "p2p-gateway",
                     listOf(Port.Gateway),
                 )
+                LbType.INGRESS -> IngressLoadBalancer(
+                    "p2p-gateway",
+                    Port.Gateway,
+                )
+                LbType.NO_LB, LbType.MEMBERSHIP -> EmptyYamlable()
                 else -> TestingOneLoadBalance(
                     details.lbType,
                     gateways.map { it.app },
@@ -37,11 +42,11 @@ class Gateway(
 
     override val readyLog = ".*Waiting for gateway to start.*".toRegex()
 
-    // In K8S load balancer the load balancer service will listen to the Gateway port, so no need to create a service.
-    override val otherPorts = if (details.lbType == LbType.K8S) {
-        emptyList()
-    } else {
-        listOf(
+    override val otherPorts = when (details.lbType) {
+        LbType.K8S, LbType.HEADLESS, LbType.INGRESS, LbType.MEMBERSHIP_HEADLESS ->
+            // In K8S load balancer the load balancer service will listen to the Gateway port, so no need to create a service.
+            emptyList()
+        else -> listOf(
             Port.Gateway
         )
     }

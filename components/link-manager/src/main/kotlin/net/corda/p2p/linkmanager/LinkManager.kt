@@ -150,6 +150,16 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         linkManagerHostingMap.registerListener(it)
     }
 
+    private val gatewayHostnamesPublisher = GatewayHostnamesPublisher(
+        subscriptionFactory,
+        publisherFactory,
+        lifecycleCoordinatorFactory,
+        configuration,
+        instanceId,
+    ).also {
+        members.registerListener(it)
+    }
+
     private val deliveryTracker = DeliveryTracker(
         lifecycleCoordinatorFactory,
         configurationReaderService,
@@ -216,6 +226,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             sessionManager.dominoTile,
             trustStoresPublisher.dominoTile,
             tlsCertificatesPublisher.dominoTile,
+            gatewayHostnamesPublisher.dominoTile,
         ) + commonChildren
     )
 

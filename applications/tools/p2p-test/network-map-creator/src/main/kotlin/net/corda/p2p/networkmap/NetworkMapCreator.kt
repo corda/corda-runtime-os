@@ -1,5 +1,6 @@
 package net.corda.p2p.networkmap
 
+import com.typesafe.config.ConfigException.Missing
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.identity.HoldingIdentity
@@ -11,6 +12,7 @@ import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
+import net.corda.p2p.test.GatewayHosts
 import net.corda.p2p.test.GroupPolicyEntry
 import net.corda.p2p.test.HostedIdentityEntry
 import net.corda.p2p.test.KeyAlgorithm
@@ -188,6 +190,11 @@ class NetworkMapCreator @Activate constructor(
                 val publicKeyAlias = dataConfig.getString("publicKeyAlias")
                 val keystorePassword = dataConfig.getString("keystorePassword")
                 val address = dataConfig.getString("address")
+                val gateways = try {
+                    dataConfig.getStringList("gatewayHosts")
+                } catch (e: Missing) {
+                    null
+                }
 
                 val (keyAlgo, publicKey) = readKey(publicKeyStoreFile, publicKeyAlias, keystorePassword)
                 val networkMapEntry = MemberInfoEntry(
@@ -195,6 +202,9 @@ class NetworkMapCreator @Activate constructor(
                     ByteBuffer.wrap(publicKey.encoded),
                     keyAlgo,
                     address,
+                    gateways?.let {
+                        GatewayHosts(gateways)
+                    }
                 )
                 Record(memberInfoTopic, "$x500Name-$groupId", networkMapEntry)
             }

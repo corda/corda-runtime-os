@@ -7,15 +7,16 @@ import java.io.File
 enum class LbType {
     K8S,
     NGINX,
+    HEADLESS /*Need to look for pods ips by name :(*/,
     KS,
     RS,
     KA,
     RA,
     /* YIFT:... */
-    HEADLESS,
-    NO_SERVICE,
-    INGRESS,
-    MEMBERSHIP
+    NO_LB,
+    INGRESS /* LB is more HTTP path oriented! Need to install controller? */,
+    MEMBERSHIP,
+    MEMBERSHIP_HEADLESS,
     ;
 }
 data class NamespaceIdentifier(
@@ -69,6 +70,11 @@ class Namespace(
                         "host" to identifier.hostName,
                         "debug" to p2pDeployment.debug.toString(),
                         "tag" to p2pDeployment.tag,
+                        "gateways" to when (p2pDeployment.lbType) {
+                            LbType.MEMBERSHIP -> (1..p2pDeployment.gatewayCount).map { "p2p-gateway-$it.${identifier.namespaceName}" }.joinToString(";")
+                            LbType.MEMBERSHIP_HEADLESS -> "load-balancer.${identifier.namespaceName}"
+                            else -> null
+                        },
                         "kafkaServers" to kafkaServers
                     )
                 )

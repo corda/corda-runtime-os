@@ -17,6 +17,7 @@ import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.NetworkType
 import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
+import net.corda.p2p.gateway.messaging.http.HostsMap
 import net.corda.p2p.gateway.messaging.http.HttpResponse
 import net.corda.p2p.gateway.messaging.http.SniCalculator
 import net.corda.p2p.gateway.messaging.http.TrustStoresMap
@@ -49,9 +50,14 @@ internal class OutboundMessageHandler(
 
     private val connectionConfigReader = ConnectionConfigReader(lifecycleCoordinatorFactory, configurationReaderService)
 
+    private val hostsMap = HostsMap(
+        lifecycleCoordinatorFactory, subscriptionFactory, nodeConfiguration, instanceId
+    )
+
     private val connectionManager = ReconfigurableConnectionManager(
         lifecycleCoordinatorFactory,
-        configurationReaderService
+        configurationReaderService,
+        hostsMap,
     )
 
     private val trustStoresMap = TrustStoresMap(
@@ -70,8 +76,8 @@ internal class OutboundMessageHandler(
     private val outboundSubscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
         outboundSubscription,
-        setOf(connectionManager.dominoTile, connectionConfigReader.dominoTile),
-        setOf(connectionManager.dominoTile, connectionConfigReader.dominoTile)
+        setOf(connectionManager.dominoTile, connectionConfigReader.dominoTile, hostsMap.dominoTile),
+        setOf(connectionManager.dominoTile, connectionConfigReader.dominoTile, hostsMap.dominoTile)
     )
 
     override val dominoTile = ComplexDominoTile(

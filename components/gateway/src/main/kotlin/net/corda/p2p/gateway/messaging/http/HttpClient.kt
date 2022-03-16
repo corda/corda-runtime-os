@@ -45,13 +45,14 @@ import kotlin.concurrent.withLock
  * @param listener an (optional) listener that can be used to be informed when connection is established/closed.
  */
 @Suppress("LongParameterList")
-class HttpClient(
+internal class HttpClient(
     private val destinationInfo: DestinationInfo,
     private val sslConfiguration: SslConfiguration,
     private val writeGroup: EventLoopGroup,
     private val nettyGroup: EventLoopGroup,
     private val connectionConfiguration: ConnectionConfiguration,
     private val listener: HttpConnectionListener? = null,
+    private val hostsMap: HostsMap? = null,
 ) : Lifecycle, HttpClientListener {
 
     companion object {
@@ -163,7 +164,7 @@ class HttpClient(
             )
             .channel(NioSocketChannel::class.java)
             .handler(ClientChannelInitializer())
-            .resolver(connectionConfiguration.nameResolverType.toResolver())
+            .resolver(connectionConfiguration.nameResolverType.toResolver(hostsMap))
         val clientFuture = bootstrap.connect(destinationInfo.uri.host, destinationInfo.uri.port)
         clientFuture.addListener(connectListener)
     }

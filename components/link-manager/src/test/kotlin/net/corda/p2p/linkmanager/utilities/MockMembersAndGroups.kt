@@ -9,6 +9,7 @@ import net.corda.p2p.linkmanager.GroupPolicyListener
 import net.corda.p2p.linkmanager.LinkManagerGroupPolicyProvider
 import net.corda.p2p.linkmanager.LinkManagerInternalTypes
 import net.corda.p2p.linkmanager.LinkManagerMembershipGroupReader
+import net.corda.p2p.linkmanager.MembershipGroupListener
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.mockito.kotlin.mock
 import java.security.KeyPairGenerator
@@ -47,6 +48,7 @@ fun mockMembers(members: Collection<LinkManagerInternalTypes.HoldingIdentity>): 
         override fun getMemberInfo(holdingIdentity: LinkManagerInternalTypes.HoldingIdentity) = identities[holdingIdentity]
 
         override fun getMemberInfo(hash: ByteArray, groupId: String) = hashToInfo[hash to groupId]
+        override fun registerListener(listener: MembershipGroupListener) {}
 
         override val dominoTile = mock<DominoTile>()
     }

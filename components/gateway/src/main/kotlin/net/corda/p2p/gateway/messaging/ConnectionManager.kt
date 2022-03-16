@@ -4,6 +4,7 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import com.github.benmanes.caffeine.cache.RemovalListener
 import io.netty.channel.nio.NioEventLoopGroup
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
+import net.corda.p2p.gateway.messaging.http.HostsMap
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import java.net.URI
 import java.util.concurrent.TimeUnit
@@ -17,9 +18,10 @@ import java.util.concurrent.TimeUnit
  * or to drop a request for one.
  *
  */
-class ConnectionManager(
+internal class ConnectionManager(
     private val sslConfiguration: SslConfiguration,
     private val connectionConfiguration: ConnectionConfiguration,
+    private val hostMap: HostsMap? = null,
     nioEventLoopGroupFactory: (Int) -> NioEventLoopGroup = { NioEventLoopGroup(it) }
 ) : AutoCloseable {
 
@@ -48,6 +50,7 @@ class ConnectionManager(
                 writeGroup,
                 nettyGroup,
                 connectionConfiguration,
+                hostsMap = hostMap
             )
             client.start()
             client

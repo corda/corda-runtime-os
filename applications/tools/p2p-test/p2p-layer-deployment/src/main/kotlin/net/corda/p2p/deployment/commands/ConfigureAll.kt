@@ -167,6 +167,7 @@ class ConfigureAll : Runnable {
                     "networkType" to "CORDA_5",
                     "protocolModes" to listOf("AUTHENTICATED_ENCRYPTION"),
                     "trustStoreCertificates" to listOf(trustStoreFile.absolutePath),
+                    "gatewayHosts" to getGatewaysHostsConfiguration(annotations)
                 )
             )
 
@@ -251,6 +252,17 @@ class ConfigureAll : Runnable {
         ).run()
     }
 
+    fun getGatewaysHostsConfiguration(annotations: Map<*, *>) : List<String>? {
+        val gatewaysString = annotations["gateways"] as? String ?: return null
+        val gateways = gatewaysString
+            .split(';')
+            .filter { it.isNotBlank() }
+        if(gateways.isEmpty()) {
+            return null
+        }
+        return gateways
+    }
+
     private fun publishOthersToMySelf() {
         val configurationFile = File.createTempFile("network-map.", ".conf").also {
             it.deleteOnExit()
@@ -276,6 +288,7 @@ class ConfigureAll : Runnable {
                         "networkType" to "CORDA_5",
                         "protocolModes" to listOf("AUTHENTICATED_ENCRYPTION"),
                         "trustStoreCertificates" to listOf(trustStoreFile.absolutePath),
+                        "gatewayHosts" to getGatewaysHostsConfiguration(annotations)
                     )
                 )
             }

@@ -75,6 +75,11 @@ enum class NameResolverType {
      * Choose a random IP address.
      */
     ROUND_ROBIN,
+
+    /**
+     * Choose a random IP address from the configuration.
+     */
+    OVERWRITE_RESOLVER,
 }
 
 internal fun Config.toGatewayConfiguration(): GatewayConfiguration {
