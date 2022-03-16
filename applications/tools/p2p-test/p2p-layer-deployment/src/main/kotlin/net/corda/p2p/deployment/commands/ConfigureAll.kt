@@ -252,12 +252,12 @@ class ConfigureAll : Runnable {
         ).run()
     }
 
-    fun getGatewaysHostsConfiguration(annotations: Map<*, *>) : List<String>? {
+    private fun getGatewaysHostsConfiguration(annotations: Map<*, *>): List<String>? {
         val gatewaysString = annotations["gateways"] as? String ?: return null
         val gateways = gatewaysString
             .split(';')
             .filter { it.isNotBlank() }
-        if(gateways.isEmpty()) {
+        if (gateways.isEmpty()) {
             return null
         }
         return gateways

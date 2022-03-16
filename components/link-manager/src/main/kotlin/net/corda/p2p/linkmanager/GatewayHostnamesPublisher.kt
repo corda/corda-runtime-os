@@ -15,6 +15,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.test.GatewayHosts
 import net.corda.schema.TestSchema.Companion.GATEWAY_HOSTS_MAP_TOPIC
+import java.net.URL
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -44,7 +45,8 @@ internal class GatewayHostnamesPublisher(
     )
 
     private fun publishIfNeeded(member: LinkManagerInternalTypes.MemberInfo) {
-        publishedNames.compute(member.endPoint.address) { address, publishedAddresses ->
+        val host = URL(member.endPoint.address).host
+        publishedNames.compute(host) { address, publishedAddresses ->
             val addressList = member.gatewayHosts
             val addressSets = addressList?.toSet()
             if (addressSets != publishedAddresses) {
