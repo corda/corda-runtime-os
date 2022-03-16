@@ -15,8 +15,7 @@ interface MemberLookupRpcOps : RpcOps {
     /**
      * GET endpoint which returns the list of active members in the membership group.
      *
-     * @return [RegistrationRequestProgress] to indicate the last known status of the registration request based on
-     *  local member data.
+     * @return The known information of ACTIVE members.
      */
     @HttpRpcGET(
         description = "Lists the active members in the membership group."
