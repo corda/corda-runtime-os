@@ -41,25 +41,17 @@ import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.jce.PrincipalUtil
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import java.io.StringWriter
+import java.net.BindException
 import java.net.ServerSocket
 import java.nio.ByteBuffer
 import java.security.KeyStore
 import java.security.cert.X509Certificate
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
 
 open class TestBase {
     companion object {
-        val usedPorts = mutableSetOf<Int>()
-        fun getOpenPort(): Int {
-            while (true) {
-                ServerSocket(0).use { socket ->
-                    val port = socket.localPort
-                    if (usedPorts.add(port)) {
-                        return port
-                    }
-                }
-            }
-        }
+        private val lastUsedPort = AtomicInteger(3000)
     }
 
     private fun readKeyStore(fileName: String, password: String = keystorePass): KeyStoreWithPassword {
@@ -82,6 +74,18 @@ open class TestBase {
     }
     protected val c4TruststoreKeyStore by lazy {
         TrustStoresMap.TrustedCertificates(listOf(c4TruststoreCertificatePem)).trustStore
+    }
+
+    protected fun getOpenPort(): Int {
+        while (true) {
+            try {
+                ServerSocket(lastUsedPort.incrementAndGet()).use {
+                    return it.localPort
+                }
+            } catch (e: BindException) {
+                // Go to next port...
+            }
+        }
     }
 
     protected val clientMessageContent = "PING"
