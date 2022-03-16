@@ -10,9 +10,6 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.membership.impl.read.cache.MembershipGroupReadCache
-import net.corda.membership.impl.read.subscription.MembershipGroupReadSubscriptions
-import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.junit.jupiter.api.BeforeEach
@@ -35,20 +32,20 @@ class MembershipGroupReadLifecycleHandlerTest {
     val configurationReadService: ConfigurationReadService = mock {
         on { registerComponentForUpdates(any(), any()) } doReturn configRegistrationHandle
     }
-    private val membershipGroupReadSubscriptions: MembershipGroupReadSubscriptions = mock()
-
-    private val membershipGroupReadCache: MembershipGroupReadCache = mock()
 
     val coordinator: LifecycleCoordinator = mock {
         on { followStatusChangesByName(any()) } doReturn componentRegistrationHandle
     }
 
+    val activateFunction: (Map<String, SmartConfig>, String) -> Unit = mock()
+    val deactivateFunction: (String) -> Unit = mock()
+
     @BeforeEach
     fun setUp() {
         handler = MembershipGroupReadLifecycleHandler.Impl(
             configurationReadService,
-            membershipGroupReadSubscriptions,
-            membershipGroupReadCache
+            activateFunction,
+            deactivateFunction
         )
     }
 
@@ -85,7 +82,7 @@ class MembershipGroupReadLifecycleHandlerTest {
     fun `Stop event`() {
         handler.processEvent(StopEvent(), coordinator)
 
-        verify(membershipGroupReadSubscriptions).stop()
+        verify(deactivateFunction).invoke(any())
 
         //these handles are only set if other lifecycle events happen first. In this case they are null when stopping.
         verify(componentRegistrationHandle, never()).close()
@@ -119,17 +116,17 @@ class MembershipGroupReadLifecycleHandlerTest {
     }
 
     @Test
-    fun `Registration status DOWN sets component status to DOWN`() {
+    fun `Registration status DOWN deactivates component`() {
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.DOWN), coordinator)
 
-        verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
+        verify(deactivateFunction).invoke(any())
     }
 
     @Test
-    fun `Registration status ERROR sets component status to DOWN`() {
+    fun `Registration status ERROR deactivates component`() {
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.ERROR), coordinator)
 
-        verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
+        verify(deactivateFunction).invoke(any())
     }
 
     @Test
@@ -150,9 +147,6 @@ class MembershipGroupReadLifecycleHandlerTest {
         )
         handler.processEvent(ConfigChangedEvent(setOf(BOOT_CONFIG, MESSAGING_CONFIG), configs), coordinator)
 
-        verify(coordinator).updateStatus(eq(LifecycleStatus.UP), any())
-        verify(membershipGroupReadCache).clear()
-        verify(membershipGroupReadSubscriptions, never()).start()
-        verify(membershipGroupReadSubscriptions).start(eq(configs.toMessagingConfig()))
+        verify(activateFunction).invoke(eq(configs), any())
     }
 }
