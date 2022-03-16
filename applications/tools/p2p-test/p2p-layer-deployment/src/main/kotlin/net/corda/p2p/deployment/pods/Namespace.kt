@@ -71,7 +71,10 @@ class Namespace(
                         "debug" to p2pDeployment.debug.toString(),
                         "tag" to p2pDeployment.tag,
                         "gateways" to when (p2pDeployment.lbType) {
-                            LbType.MEMBERSHIP -> (1..p2pDeployment.gatewayCount).map { "p2p-gateway-$it.${identifier.namespaceName}" }.joinToString(";")
+                            LbType.MEMBERSHIP -> (1..p2pDeployment.gatewayCount)
+                                .joinToString(";") {
+                                    "p2p-gateway-$it.${identifier.namespaceName}"
+                                }
                             LbType.MEMBERSHIP_HEADLESS -> "load-balancer.${identifier.namespaceName}"
                             else -> null
                         },
