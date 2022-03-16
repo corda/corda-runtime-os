@@ -1,6 +1,5 @@
 package net.corda.crypto.core.aes
 
-import net.corda.crypto.core.Decryptor
 import net.corda.crypto.core.Encryptor
 import java.util.concurrent.ConcurrentLinkedQueue
 import javax.crypto.Cipher
@@ -11,7 +10,7 @@ import javax.crypto.spec.GCMParameterSpec
  */
 class AesEncryptor(
     private val key: AesKey
-) : Encryptor, Decryptor {
+) : Encryptor {
     companion object {
         private val pool = ConcurrentLinkedQueue<Cipher>()
 

@@ -1,6 +1,5 @@
 package net.corda.crypto.core.aes
 
-import net.corda.crypto.core.Decryptor
 import net.corda.crypto.core.Encryptor
 import net.corda.crypto.core.ManagedSecret
 import javax.crypto.KeyGenerator
@@ -56,19 +55,11 @@ class AesKey(
         }
     }
 
-    private val _encryptor = AesEncryptor(this)
-
     /**
      * Instance of [Encryptor] which supports encryption using this key (AES algorithm with
      * the key length of 256)
      */
-    val encryptor: Encryptor = _encryptor
-
-    /**
-     * Instance of [Decryptor] which supports decryption using this key (AES algorithm with
-     * the key length of 256)
-     */
-    val decryptor: Decryptor = _encryptor
+    val encryptor: Encryptor = AesEncryptor(this)
 
     /**
      * Encrypts (or wraps) the '[other]' [AesKey].
@@ -82,7 +73,7 @@ class AesKey(
     /**
      * Decrypts (or unwraps) the '[other]' to [AesKey].
      */
-    fun unwrapKey(other: ByteArray): AesKey = AesKey(SecretKeySpec(decryptor.decrypt(other), AES_KEY_ALGORITHM))
+    fun unwrapKey(other: ByteArray): AesKey = AesKey(SecretKeySpec(encryptor.decrypt(other), AES_KEY_ALGORITHM))
 
     /**
      * Encrypts (or wraps) the [ManagedSecret].
@@ -96,7 +87,7 @@ class AesKey(
     /**
      * Decrypts (or unwraps) the '[secret]' to  [ManagedSecret].
      */
-    fun unwrapSecret(secret: ByteArray): ManagedSecret = ManagedSecret(decryptor.decrypt(secret))
+    fun unwrapSecret(secret: ByteArray): ManagedSecret = ManagedSecret(encryptor.decrypt(secret))
 
     override fun hashCode(): Int {
         return key.hashCode()

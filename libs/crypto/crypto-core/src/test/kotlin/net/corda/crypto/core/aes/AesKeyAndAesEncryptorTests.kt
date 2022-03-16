@@ -23,7 +23,7 @@ class AesKeyAndAesEncryptorTests {
         val key = AesKey.derive(passphrase, salt)
         (0 until 10).forEach { _ ->
             val encrypted = key.encryptor.encrypt(data)
-            val decrypted = key.decryptor.decrypt(encrypted)
+            val decrypted = key.encryptor.decrypt(encrypted)
             assertFalse(data.contentEquals(encrypted))
             assertArrayEquals(data, decrypted)
         }
@@ -37,7 +37,7 @@ class AesKeyAndAesEncryptorTests {
         val key = AesKey.derive(passphrase, salt)
         (0 until 10).forEach { _ ->
             val encrypted = key.encryptor.encrypt(data)
-            val decrypted = key.decryptor.decrypt(encrypted)
+            val decrypted = key.encryptor.decrypt(encrypted)
             assertFalse(data.contentEquals(encrypted))
             assertArrayEquals(data, decrypted)
         }
@@ -51,7 +51,7 @@ class AesKeyAndAesEncryptorTests {
         val key = AesKey.derive(passphrase, salt)
         (0 until 10).forEach { _ ->
             val encrypted = key.encryptor.encrypt(data)
-            val decrypted = key.decryptor.decrypt(encrypted)
+            val decrypted = key.encryptor.decrypt(encrypted)
             assertFalse(data.contentEquals(encrypted))
             assertArrayEquals(data, decrypted)
         }
@@ -64,7 +64,7 @@ class AesKeyAndAesEncryptorTests {
         (0 until 10).forEach { _ ->
             val data = random.nextBytes(random.nextInt(1, 193))
             val encrypted = key.encryptor.encrypt(data)
-            val decrypted = key.decryptor.decrypt(encrypted)
+            val decrypted = key.encryptor.decrypt(encrypted)
             assertFalse(data.contentEquals(encrypted))
             assertArrayEquals(data, decrypted)
         }
@@ -79,7 +79,7 @@ class AesKeyAndAesEncryptorTests {
             val random = Random(Instant.now().toEpochMilli())
             val data = random.nextBytes(random.nextInt(1, 193))
             val encrypted = key.encryptor.encrypt(data)
-            val decrypted = key.decryptor.decrypt(encrypted)
+            val decrypted = key.encryptor.decrypt(encrypted)
             assertFalse(data.contentEquals(encrypted))
             assertArrayEquals(data, decrypted)
         }.runAndValidate()
@@ -94,7 +94,7 @@ class AesKeyAndAesEncryptorTests {
         (0 until 10).forEach { _ ->
             val data = random.nextBytes(random.nextInt(1, 193))
             val encrypted = key.encryptor.encrypt(data)
-            val decrypted = key.decryptor.decrypt(encrypted)
+            val decrypted = key.encryptor.decrypt(encrypted)
             assertFalse(data.contentEquals(encrypted))
             assertArrayEquals(data, decrypted)
         }
@@ -110,7 +110,7 @@ class AesKeyAndAesEncryptorTests {
         (0 until 10).forEach { _ ->
             val data = random.nextBytes(random.nextInt(1, 193))
             val encrypted = key1.encryptor.encrypt(data)
-            val decrypted = key2.decryptor.decrypt(encrypted)
+            val decrypted = key2.encryptor.decrypt(encrypted)
             assertEquals(key1, key2)
             assertFalse(data.contentEquals(encrypted))
             assertArrayEquals(data, decrypted)
@@ -129,7 +129,7 @@ class AesKeyAndAesEncryptorTests {
             val encrypted = key.encryptor.encrypt(data)
             val wrapped = master.wrapKey(key)
             val unwrapped = master.unwrapKey(wrapped)
-            val decrypted = unwrapped.decryptor.decrypt(encrypted)
+            val decrypted = unwrapped.encryptor.decrypt(encrypted)
             assertFalse(data.contentEquals(encrypted))
             assertArrayEquals(data, decrypted)
         }
