@@ -317,8 +317,11 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                         recordsForNewSessions(state)
                     }
                     is SessionState.SessionEstablished -> {
-                        logger.trace { "Session already established with ${messageAndKey.message.header.destination.toHoldingIdentity()}." +
-                                " Using this to send outbound message." }
+                        if (isReplay) {
+                            logger.info("Replaying message ${messageAndKey.key} using ${state.session.sessionId}")
+                        } else {
+                            logger.info("Sending message ${messageAndKey.key} using ${state.session.sessionId}")
+                        }
                         recordsForSessionEstablished(state, messageAndKey)
                     }
                     is SessionState.SessionAlreadyPending, SessionState.CannotEstablishSession -> {
