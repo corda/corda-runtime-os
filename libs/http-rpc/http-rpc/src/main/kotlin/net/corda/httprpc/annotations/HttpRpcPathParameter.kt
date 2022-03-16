@@ -1,7 +1,7 @@
 package net.corda.httprpc.annotations
 
 /**
- * Marks a function parameter of a function annotated with @[HttpRpcGET] or @[HttpRpcPOST] as a path parameter.
+ * Marks a function parameter of a function annotated with HTTP Endpoint annotation as a path parameter.
 
  * Path parameters need to also be defined in the endpoint's path, in the form of `/{parameter}/`.
  *

@@ -46,7 +46,7 @@ class VirtualNodeService @Activate constructor(
     }
 
     private fun getOrCreateSandbox(virtualNodeInfo: VirtualNodeInfo): SandboxGroupContext {
-        val cpi = cpiLoader.get(virtualNodeInfo.cpiIdentifier).get()
+        val cpi = cpiLoader.getCpiMetadata(virtualNodeInfo.cpiIdentifier).get()
             ?: fail("CPI ${virtualNodeInfo.cpiIdentifier} not found")
         val vNodeContext = VirtualNodeContext(
             virtualNodeInfo.holdingIdentity,

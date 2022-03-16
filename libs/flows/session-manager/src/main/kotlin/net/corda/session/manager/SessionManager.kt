@@ -20,11 +20,12 @@ interface SessionManager {
 
     /**
      * Process a session [event] received from a counterparty, and output the updated session state.
-     * Any output messages to send are added to the undelivered sentEvents queue in the updated [sessionState].
+     * Any output messages to send are added to the undelivered sendEvents queue in the updated [sessionState].
      * These can be retrieved via [getMessagesToSend]
      * Events are deduplicated and reordered based on sequence number and stored within the session state.
      * [sessionState] tracks which events have been delivered to the client library as well as the next expected session event sequence
      * number to be received. [SessionState] should be set to null for [SessionInit] session events.
+     * Any session acknowledgements available on the [SessionEvent] are used to remove messages from the undelivered sendEvents queue
      * @param key The key on which the [sessionState] is stored for logging purposes.
      * @param sessionState The session state. This should be null in the case of [SessionInit]
      * @param event Session event to process.

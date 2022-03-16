@@ -1,6 +1,5 @@
 package net.corda.virtualnode.write.db.impl.writer
 
-import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.virtualnode.datamodel.HoldingIdentityEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntity
@@ -10,21 +9,21 @@ import net.corda.packaging.CPI
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import javax.persistence.EntityManager
+import javax.persistence.EntityManagerFactory
 
 /** Reads and writes CPIs, holding identities and virtual nodes to and from the cluster database. */
-internal class VirtualNodeEntityRepository(dbConnectionManager: DbConnectionManager) {
-
-    private val entityManagerFactory = dbConnectionManager.getClusterEntityManagerFactory()
+internal class VirtualNodeEntityRepository(private val entityManagerFactory: EntityManagerFactory) {
 
     /** Reads CPI metadata from the database. */
     internal fun getCPIMetadata(cpiFileChecksum: String): CPIMetadata? {
         val cpiMetadataEntity = entityManagerFactory.transaction {
-            it.createQuery(
+            val foundCpi = it.createQuery(
                 "SELECT cpi FROM CpiMetadataEntity cpi " +
                         "WHERE upper(cpi.fileChecksum) like :cpiFileChecksum",
                 CpiMetadataEntity::class.java)
                 .setParameter("cpiFileChecksum", "%${cpiFileChecksum.toUpperCase()}%")
-                .singleResult
+                .resultList
+            if (foundCpi.isNotEmpty()) foundCpi[0] else null
         } ?: return null
 
         val signerSummaryHash = cpiMetadataEntity.signerSummaryHash.let {

@@ -5,7 +5,6 @@ import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.impl.SessionEventProcessor
-import net.corda.session.manager.impl.processor.helper.generateAckEvent
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
 import net.corda.session.manager.impl.processor.helper.recalcReceivedProcessState
@@ -29,13 +28,13 @@ class SessionCloseProcessorReceive(
     private val instant: Instant
 ) : SessionEventProcessor {
 
+    private val sessionId = sessionEvent.sessionId
+
     private companion object {
         private val logger = contextLogger()
     }
 
     override fun execute(): SessionState {
-        val sessionId = sessionEvent.sessionId
-
         return if (sessionState == null) {
             val errorMessage = "Received SessionClose on key $key and sessionId $sessionId  with null state"
             logger.error(errorMessage)
@@ -53,29 +52,24 @@ class SessionCloseProcessorReceive(
                             "when last processed seqNum was $lastProcessedSequenceNum. Current SessionState: $sessionState"
                 }
                 sessionState.apply {
-                    sendEventsState.undeliveredMessages =
-                        sessionState.sendEventsState.undeliveredMessages.plus(generateAckEvent(seqNum, sessionId, instant))
+                    sendAck = true
                 }
             } else {
                 sessionState.receivedEventsState.undeliveredMessages = undeliveredReceivedMessages.plus(sessionEvent)
                 sessionState.receivedEventsState = recalcReceivedProcessState(receivedEventsState)
-                processCloseReceivedAndGetState(sessionState, seqNum, sessionId)
+                processCloseReceivedAndGetState(sessionState)
             }
         }
     }
 
     private fun processCloseReceivedAndGetState(
-        sessionState: SessionState,
-        seqNum: Int,
-        sessionId: String
+        sessionState: SessionState
     ) = when (sessionState.status) {
         SessionStateType.CONFIRMED, SessionStateType.CREATED -> {
             sessionState.apply {
                 logger.debug { "Updating session state to ${SessionStateType.CLOSING} for session state $sessionState" }
                 status = SessionStateType.CLOSING
-                sendEventsState.undeliveredMessages =
-                    sendEventsState.undeliveredMessages.plus(generateAckEvent(seqNum, sessionId, instant))
-
+                sendAck = true
             }
         }
         SessionStateType.CLOSING -> {
@@ -87,28 +81,26 @@ class SessionCloseProcessorReceive(
                     logger.debug { "Updating session state to ${SessionStateType.WAIT_FOR_FINAL_ACK} for session state $sessionState" }
                     SessionStateType.WAIT_FOR_FINAL_ACK
                 }
-                sendEventsState.undeliveredMessages =
-                    sendEventsState.undeliveredMessages.plus(generateAckEvent(seqNum, sessionId, instant))
+                sendAck = true
             }
         }
         else -> {
             val errorMessage = "Received SessionClose on key $key and sessionId $sessionId when session status was " +
                     "${sessionState.status}. SessionState: $sessionState"
-            logAndGenerateErrorResult(errorMessage, sessionState, sessionId, "SessionClose-InvalidStatus")
+            logAndGenerateErrorResult(errorMessage, sessionState, "SessionClose-InvalidStatus")
         }
     }
 
     private fun logAndGenerateErrorResult(
         errorMessage: String,
         sessionState: SessionState,
-        sessionId: String,
         errorType: String
     ): SessionState {
         logger.error(errorMessage)
         return sessionState.apply {
             status = SessionStateType.ERROR
             sendEventsState.undeliveredMessages =
-                sendEventsState.undeliveredMessages.plus(generateErrorEvent(sessionId, errorMessage, errorType, instant))
+                sendEventsState.undeliveredMessages.plus(generateErrorEvent(sessionState, errorMessage, errorType, instant))
 
         }
     }

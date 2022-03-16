@@ -11,6 +11,8 @@ import net.corda.httprpc.test.CustomString
 import net.corda.httprpc.test.NumberSequencesRPCOps
 import net.corda.httprpc.test.NumberSequencesRPCOpsImpl
 import net.corda.httprpc.test.NumberTypeEnum
+import net.corda.httprpc.test.TestEntityRpcOps
+import net.corda.httprpc.test.TestEntityRpcOpsImpl
 import net.corda.httprpc.test.TestHealthCheckAPI
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.test.utls.findFreePort
@@ -19,6 +21,7 @@ import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.assertj.core.api.SoftAssertions
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -53,7 +56,8 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
                     TestHealthCheckAPIImpl(),
                     CustomSerializationAPIImpl(),
                     NumberSequencesRPCOpsImpl(),
-                    CalendarRPCOpsImpl()
+                    CalendarRPCOpsImpl(),
+                    TestEntityRpcOpsImpl()
                 ), securityManager, httpRpcSettings, true
             ).apply { start() }
         }
@@ -316,5 +320,35 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
         )
 
         assertThatThrownBy { client.start() }.isInstanceOf(IllegalArgumentException::class.java)
+    }
+
+    @Test
+    @Timeout(100)
+    fun `operations on TestEntity`() {
+        val client = HttpRpcClient(
+            baseAddress = "http://localhost:$port/api/v1/",
+            TestEntityRpcOps::class.java,
+            HttpRpcClientConfig()
+                .enableSSL(false)
+                .minimumServerProtocolVersion(1)
+                .username(userAlice.username)
+                .password(requireNotNull(userAlice.password)),
+        )
+
+        client.use {
+            val connection = client.start()
+
+            with(connection.proxy) {
+
+                SoftAssertions.assertSoftly {
+                    it.assertThat(create(TestEntityRpcOps.CreationParams("TestName", 20)))
+                        .isEqualTo("\"Created using: CreationParams(name=TestName, amount=20)\"")
+
+                    it.assertThat(getUsingPath("MyId")).isEqualTo("\"Retrieved using id: MyId\"")
+
+                    it.assertThat(getUsingQuery("MyQuery")).isEqualTo("\"Retrieved using query: MyQuery\"")
+                }
+            }
+        }
     }
 }

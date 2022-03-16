@@ -22,7 +22,7 @@ interface RoleEndpoint : RpcOps {
     /**
      * Create a role in the RBAC permission system.
      */
-    @HttpRpcPOST(description = "Create a Role")
+    @HttpRpcPOST(path = "createRole", description = "Create a Role")
     fun createRole(
         @HttpRpcRequestBodyParameter(description = "Details of the role to be created")
         createRoleType: CreateRoleType
@@ -31,7 +31,7 @@ interface RoleEndpoint : RpcOps {
     /**
      * Get a role by its identifier in the RBAC permission system.
      */
-    @HttpRpcGET(description = "Get a Role by its ID", path = "")
+    @HttpRpcGET(path = "getRole", description = "Get a Role by its ID")
     fun getRole(
         @HttpRpcQueryParameter(description = "ID of the role to be returned.")
         id: String
@@ -40,7 +40,7 @@ interface RoleEndpoint : RpcOps {
     /**
      * Associates a role with a permission
      */
-    @HttpRpcPOST(description = "Add a permission to a role")
+    @HttpRpcPOST(path = "addPermission", description = "Add a permission to a role")
     fun addPermission(
         @HttpRpcRequestBodyParameter(description = "Identifier for an existing role")
         roleId: String,
@@ -51,7 +51,7 @@ interface RoleEndpoint : RpcOps {
     /**
      * Removes Association between a role and a permission
      */
-    @HttpRpcPOST(description = "Removes a permission from a role")
+    @HttpRpcPOST(path = "removePermission", description = "Removes a permission from a role")
     fun removePermission(
         @HttpRpcRequestBodyParameter(description = "Identifier for an existing role")
         roleId: String,

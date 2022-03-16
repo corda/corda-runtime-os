@@ -11,11 +11,13 @@ import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
+import net.corda.p2p.test.GroupPolicyEntry
 import net.corda.p2p.test.HostedIdentityEntry
 import net.corda.p2p.test.KeyAlgorithm
-import net.corda.p2p.test.NetworkMapEntry
+import net.corda.p2p.test.MemberInfoEntry
+import net.corda.schema.TestSchema.Companion.GROUP_POLICIES_TOPIC
 import net.corda.schema.TestSchema.Companion.HOSTED_MAP_TOPIC
-import net.corda.schema.TestSchema.Companion.NETWORK_MAP_TOPIC
+import net.corda.schema.TestSchema.Companion.MEMBER_INFO_TOPIC
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -87,7 +89,7 @@ class NetworkMapCreator @Activate constructor(
     )
     private inner class HostingMap : PublisherToTopic() {
         @Option(
-            names = ["--topic"],
+            names = ["--hosting-map-topic"],
             description = [
                 "Topic to write the records to."
             ]
@@ -136,29 +138,29 @@ class NetworkMapCreator @Activate constructor(
     )
     private inner class NetworkMap : PublisherToTopic() {
         @Option(
-            names = ["--topic"],
+            names = ["--group-policies-topic"],
             description = [
-                "Topic to write the records to."
+                "Topic to write the group policy records to."
             ]
         )
-        var topic: String = NETWORK_MAP_TOPIC
+        var groupPolicyTopic: String = GROUP_POLICIES_TOPIC
+
+        @Option(
+            names = ["--member-info-topic"],
+            description = [
+                "Topic to write the member information records to."
+            ]
+        )
+        var memberInfoTopic: String = MEMBER_INFO_TOPIC
 
         @Option(names = ["--netmap-file"], description = ["File containing network map data used to populate Kafka."])
         lateinit var networkMapFile: File
 
         override fun getRecords(): List<Record<*, *>> {
             val netmapConfig = ConfigFactory.parseFile(networkMapFile)
-            val recordsWithAdditions = netmapConfig.getConfigList("entriesToAdd").map { config ->
-                val x500Name = config.getString("x500name")
+            val groupsRecordsWithAdditions = netmapConfig.getConfigList("groupsToAdd").map { config ->
                 val groupId = config.getString("groupId")
                 val dataConfig = config.getConfig("data")
-                val publicKeyStoreFile = dataConfig.getString("publicKeyStoreFile")
-                val publicKeyAlias = dataConfig.getString("publicKeyAlias")
-                val keystorePassword = dataConfig.getString("keystorePassword")
-                val address = dataConfig.getString("address")
-                val protocolMode = dataConfig.getStringList("protocolModes").map { mode ->
-                    ProtocolMode.values().single { it.name.equals(mode, ignoreCase = true) }
-                }
                 val networkType = parseNetworkType(dataConfig.getString("networkType"))
                 val trustStoreCertificates = dataConfig.getList("trustStoreCertificates")
                     .unwrapped()
@@ -166,26 +168,47 @@ class NetworkMapCreator @Activate constructor(
                     .map {
                         File(it)
                     }.map { it.readText() }
-
-                val (keyAlgo, publicKey) = readKey(publicKeyStoreFile, publicKeyAlias, keystorePassword)
-                val networkMapEntry = NetworkMapEntry(
-                    HoldingIdentity(x500Name, groupId),
-                    ByteBuffer.wrap(publicKey.encoded),
-                    keyAlgo,
-                    address,
+                val protocolMode = dataConfig.getStringList("protocolModes").map { mode ->
+                    ProtocolMode.values().single { it.name.equals(mode, ignoreCase = true) }
+                }
+                val networkMapEntry = GroupPolicyEntry(
+                    groupId,
                     networkType,
                     protocolMode,
                     trustStoreCertificates,
                 )
-                Record(topic, "$x500Name-$groupId", networkMapEntry)
+                Record(groupPolicyTopic, groupId, networkMapEntry)
             }
-            val recordsWithRemovals = netmapConfig.getConfigList("entriesToDelete").map { config ->
+
+            val membersRecordsWithAdditions = netmapConfig.getConfigList("membersToAdd").map { config ->
+                val x500Name = config.getString("x500name")
+                val groupId = config.getString("groupId")
+                val dataConfig = config.getConfig("data")
+                val publicKeyStoreFile = dataConfig.getString("publicKeyStoreFile")
+                val publicKeyAlias = dataConfig.getString("publicKeyAlias")
+                val keystorePassword = dataConfig.getString("keystorePassword")
+                val address = dataConfig.getString("address")
+
+                val (keyAlgo, publicKey) = readKey(publicKeyStoreFile, publicKeyAlias, keystorePassword)
+                val networkMapEntry = MemberInfoEntry(
+                    HoldingIdentity(x500Name, groupId),
+                    ByteBuffer.wrap(publicKey.encoded),
+                    keyAlgo,
+                    address,
+                )
+                Record(memberInfoTopic, "$x500Name-$groupId", networkMapEntry)
+            }
+
+            val groupRecordsWithRemovals = netmapConfig.getStringList("groupsToDelete").map { groupId ->
+                Record(groupPolicyTopic, groupId, null)
+            }
+            val membersRecordsWithRemovals = netmapConfig.getConfigList("membersToDelete").map { config ->
                 val x500Name = config.getString("x500name")
                 val groupId = config.getString("groupId")
 
-                Record(topic, "$x500Name-$groupId", null)
+                Record(memberInfoTopic, "$x500Name-$groupId", null)
             }
-            return recordsWithAdditions + recordsWithRemovals
+            return membersRecordsWithAdditions + membersRecordsWithRemovals + groupsRecordsWithAdditions + groupRecordsWithRemovals
         }
 
         private fun parseNetworkType(networkType: String): NetworkType {
@@ -228,16 +251,11 @@ class NetworkMapCreator @Activate constructor(
         consoleLogger.info("Starting network map creation tool")
 
         val commands = Commands()
-        try {
-            CommandLine(commands)
-                .addSubcommand(NetworkMap())
-                .addSubcommand(HostingMap())
-                .execute(*args)
-        } catch (e: Exception) {
-            consoleLogger.warn("Could not run", e)
-        } finally {
-            shutdown()
-        }
+        CommandLine(commands)
+            .addSubcommand(NetworkMap())
+            .addSubcommand(HostingMap())
+            .execute(*args)
+        shutdown()
     }
 
     private class MappingException(msg: String) : Exception(msg)

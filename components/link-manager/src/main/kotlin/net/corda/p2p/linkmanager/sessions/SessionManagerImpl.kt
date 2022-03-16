@@ -30,22 +30,23 @@ import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
 import net.corda.p2p.linkmanager.LinkManager
+import net.corda.p2p.linkmanager.LinkManagerGroupPolicyProvider
 import net.corda.p2p.linkmanager.LinkManagerHostingMap
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
+import net.corda.p2p.linkmanager.LinkManagerInternalTypes.toHoldingIdentity
+import net.corda.p2p.linkmanager.LinkManagerInternalTypes.toLMNetworkType
+import net.corda.p2p.linkmanager.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
 import net.corda.p2p.linkmanager.messaging.MessageConverter
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.createLinkOutMessage
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionCounterparties
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
-import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.couldNotFindNetworkType
-import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.couldNotFindProtocolModes
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.couldNotFindGroupInfo
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.noSessionWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.noTenantId
-import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourHashNotInNetworkMapWarning
-import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourIdNotInNetworkMapWarning
-import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerHashNotInNetworkMapWarning
-import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerNotInTheNetworkMapWarning
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourHashNotInMembersMapWarning
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourIdNotInMembersMapWarning
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerHashNotInMembersMapWarning
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerNotInTheMembersMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.validationFailedWarning
 import net.corda.p2p.linkmanager.utilities.AutoClosableScheduledExecutorService
 import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
@@ -71,7 +72,8 @@ import kotlin.concurrent.write
 
 @Suppress("LongParameterList", "TooManyFunctions")
 open class SessionManagerImpl(
-    private val networkMap: LinkManagerNetworkMap,
+    private val groups: LinkManagerGroupPolicyProvider,
+    private val members: LinkManagerMembershipGroupReader,
     private val cryptoProcessor: CryptoProcessor,
     private val pendingOutboundSessionMessageQueues: LinkManager.PendingSessionMessageQueues,
     publisherFactory: PublisherFactory,
@@ -85,7 +87,8 @@ open class SessionManagerImpl(
         configurationReaderService,
         coordinatorFactory,
         configuration,
-        networkMap
+        groups,
+        members,
     ),
     clock: Clock = Clock.systemUTC(),
     executorServiceFactory: () -> ScheduledExecutorService = {Executors.newSingleThreadScheduledExecutor()},
@@ -119,7 +122,8 @@ open class SessionManagerImpl(
         configurationReaderService,
         coordinatorFactory,
         configuration,
-        networkMap,
+        groups,
+        members,
         ::destroyOutboundSession,
         clock,
         executorServiceFactory
@@ -136,7 +140,7 @@ open class SessionManagerImpl(
         this::class.java.simpleName,
         coordinatorFactory,
         dependentChildren = setOf(
-            heartbeatManager.dominoTile, sessionReplayer.dominoTile, networkMap.dominoTile, cryptoProcessor.dominoTile,
+            heartbeatManager.dominoTile, sessionReplayer.dominoTile, groups.dominoTile, members.dominoTile, cryptoProcessor.dominoTile,
             pendingOutboundSessionMessageQueues.dominoTile, publisher.dominoTile, linkManagerHostingMap.dominoTile
         ),
         managedChildren = setOf(heartbeatManager.dominoTile, sessionReplayer.dominoTile, publisher.dominoTile),
@@ -283,37 +287,29 @@ open class SessionManagerImpl(
     private fun getSessionInitMessage(counterparties: SessionCounterparties): Pair<String, LinkOutMessage>? {
         val sessionId = UUID.randomUUID().toString()
 
-        val networkType = networkMap.getNetworkType(counterparties.ourId.groupId)
-        if (networkType == null) {
+        val groupInfo = groups.getGroupInfo(counterparties.ourId.groupId)
+        if (groupInfo == null) {
             logger.warn(
-                "Could not find the network type in the NetworkMap for groupId ${counterparties.ourId.groupId}." +
+                "Could not find the group information in the GroupPolicyProvider for groupId ${counterparties.ourId.groupId}." +
                         " The sessionInit message was not sent."
             )
             return null
         }
 
-        val ourMemberInfo = networkMap.getMemberInfo(counterparties.ourId)
+        val ourMemberInfo = members.getMemberInfo(counterparties.ourId)
         if (ourMemberInfo == null) {
             logger.warn(
                 "Attempted to start session negotiation with peer ${counterparties.counterpartyId} but our identity " +
-                        "${counterparties.ourId} is not in the network map. The sessionInit message was not sent."
+                        "${counterparties.ourId} is not in the members map. The sessionInit message was not sent."
             )
             return null
         }
 
-        val protocolModes = networkMap.getProtocolModes(counterparties.ourId.groupId)
-        if (protocolModes == null) {
-            logger.warn(
-                "Could not find the protocol modes in the NetworkMap for groupId ${counterparties.ourId.groupId}." +
-                        " The sessionInit message was not sent."
-            )
-            return null
-        }
 
         val sessionManagerConfig = config.get()
         val session = protocolFactory.createInitiator(
             sessionId,
-            protocolModes,
+            groupInfo.protocolModes,
             sessionManagerConfig.maxMessageSize,
             ourMemberInfo.publicKey,
             ourMemberInfo.holdingIdentity.groupId
@@ -338,17 +334,17 @@ open class SessionManagerImpl(
             counterparties
         )
 
-        val responderMemberInfo = networkMap.getMemberInfo(counterparties.counterpartyId)
+        val responderMemberInfo = members.getMemberInfo(counterparties.counterpartyId)
         if (responderMemberInfo == null) {
             logger.warn(
-                "Attempted to start session negotiation with peer ${counterparties.counterpartyId} which is not in the network map. " +
+                "Attempted to start session negotiation with peer ${counterparties.counterpartyId} which is not in the members map. " +
                         "The sessionInit message was not sent."
             )
             return null
         }
         heartbeatManager.sessionMessageSent(counterparties, sessionId)
 
-        val message = createLinkOutMessage(sessionInitPayload, responderMemberInfo, networkType)
+        val message = createLinkOutMessage(sessionInitPayload, responderMemberInfo, groupInfo.networkType.toLMNetworkType())
         return sessionId to message
     }
 
@@ -365,15 +361,15 @@ open class SessionManagerImpl(
         session.receiveResponderHello(message)
         session.generateHandshakeSecrets()
 
-        val ourMemberInfo = networkMap.getMemberInfo(sessionInfo.ourId)
+        val ourMemberInfo = members.getMemberInfo(sessionInfo.ourId)
         if (ourMemberInfo == null) {
-            logger.ourIdNotInNetworkMapWarning(message::class.java.simpleName, message.header.sessionId, sessionInfo.ourId)
+            logger.ourIdNotInMembersMapWarning(message::class.java.simpleName, message.header.sessionId, sessionInfo.ourId)
             return null
         }
 
-        val responderMemberInfo = networkMap.getMemberInfo(sessionInfo.counterpartyId)
+        val responderMemberInfo = members.getMemberInfo(sessionInfo.counterpartyId)
         if (responderMemberInfo == null) {
-            logger.peerNotInTheNetworkMapWarning(message::class.java.simpleName, message.header.sessionId, sessionInfo.counterpartyId)
+            logger.peerNotInTheMembersMapWarning(message::class.java.simpleName, message.header.sessionId, sessionInfo.counterpartyId)
             return null
         }
 
@@ -419,9 +415,9 @@ open class SessionManagerImpl(
             sessionInfo
         )
 
-        val networkType = networkMap.getNetworkType(ourMemberInfo.holdingIdentity.groupId)
-        if (networkType == null) {
-            logger.couldNotFindNetworkType(message::class.java.simpleName, message.header.sessionId, ourMemberInfo.holdingIdentity.groupId)
+        val groupInfo = groups.getGroupInfo(ourMemberInfo.holdingIdentity.groupId)
+        if (groupInfo == null) {
+            logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, ourMemberInfo.holdingIdentity.groupId)
             return null
         }
         heartbeatManager.sessionMessageSent(
@@ -429,7 +425,7 @@ open class SessionManagerImpl(
             message.header.sessionId,
         )
 
-        return createLinkOutMessage(payload, responderMemberInfo, networkType)
+        return createLinkOutMessage(payload, responderMemberInfo, groupInfo.networkType.toLMNetworkType())
     }
 
     private fun processResponderHandshake(message: ResponderHandshakeMessage): LinkOutMessage? {
@@ -438,9 +434,9 @@ open class SessionManagerImpl(
             return null
         }
 
-        val memberInfo = networkMap.getMemberInfo(sessionCounterparties.counterpartyId)
+        val memberInfo = members.getMemberInfo(sessionCounterparties.counterpartyId)
         if (memberInfo == null) {
-            logger.peerNotInTheNetworkMapWarning(
+            logger.peerNotInTheMembersMapWarning(
                 message::class.java.simpleName,
                 message.header.sessionId,
                 sessionCounterparties.counterpartyId
@@ -469,7 +465,8 @@ open class SessionManagerImpl(
                 this,
                 sessionCounterparties,
                 authenticatedSession,
-                networkMap
+                groups,
+                members
             )
         }
         logger.info("Outbound session ${authenticatedSession.sessionId} established " +
@@ -479,25 +476,25 @@ open class SessionManagerImpl(
 
     private fun processInitiatorHello(message: InitiatorHelloMessage): LinkOutMessage? {
         val sessionManagerConfig = config.get()
-        val peer = networkMap.getMemberInfo(message.source.initiatorPublicKeyHash.array(), message.source.groupId)
+        val peer = members.getMemberInfo(message.source.initiatorPublicKeyHash.array(), message.source.groupId)
         if (peer == null) {
-            logger.peerHashNotInNetworkMapWarning(
+            logger.peerHashNotInMembersMapWarning(
                 message::class.java.simpleName,
                 message.header.sessionId,
                 message.source.initiatorPublicKeyHash.array().toBase64()
             )
             return null
         }
-        val protocolModes = networkMap.getProtocolModes(peer.holdingIdentity.groupId)
-        if (protocolModes == null) {
-            logger.couldNotFindProtocolModes(message::class.java.simpleName, message.header.sessionId, peer.holdingIdentity.groupId)
+        val groupInfo = groups.getGroupInfo(peer.holdingIdentity.groupId)
+        if (groupInfo == null) {
+            logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, peer.holdingIdentity.groupId)
             return null
         }
 
         val session = pendingInboundSessions.computeIfAbsent(message.header.sessionId) { sessionId ->
             val session = protocolFactory.createResponder(
                 sessionId,
-                protocolModes,
+                groupInfo.protocolModes,
                 sessionManagerConfig.maxMessageSize
             )
             session.receiveInitiatorHello(message)
@@ -505,14 +502,9 @@ open class SessionManagerImpl(
         }
         val responderHello = session.generateResponderHello()
 
-        val networkType = networkMap.getNetworkType(peer.holdingIdentity.groupId)
-        if (networkType == null) {
-            logger.couldNotFindNetworkType(message::class.java.simpleName, message.header.sessionId, peer.holdingIdentity.groupId)
-            return null
-        }
 
         logger.info("Remote identity ${peer.holdingIdentity} initiated new session ${message.header.sessionId}.")
-        return createLinkOutMessage(responderHello, peer, networkType)
+        return createLinkOutMessage(responderHello, peer, groupInfo.networkType.toLMNetworkType())
     }
 
     private fun processInitiatorHandshake(message: InitiatorHandshakeMessage): LinkOutMessage? {
@@ -523,9 +515,9 @@ open class SessionManagerImpl(
         }
 
         val initiatorIdentityData = session.getInitiatorIdentity()
-        val peer = networkMap.getMemberInfo(initiatorIdentityData.initiatorPublicKeyHash.array(), initiatorIdentityData.groupId)
+        val peer = members.getMemberInfo(initiatorIdentityData.initiatorPublicKeyHash.array(), initiatorIdentityData.groupId)
         if (peer == null) {
-            logger.peerHashNotInNetworkMapWarning(
+            logger.peerHashNotInMembersMapWarning(
                 message::class.java.simpleName,
                 message.header.sessionId,
                 initiatorIdentityData.initiatorPublicKeyHash.array().toBase64()
@@ -548,9 +540,9 @@ open class SessionManagerImpl(
             return null
         }
         //Find the correct Holding Identity to use (using the public key hash).
-        val ourMemberInfo = networkMap.getMemberInfo(ourIdentityData.responderPublicKeyHash, ourIdentityData.groupId)
+        val ourMemberInfo = members.getMemberInfo(ourIdentityData.responderPublicKeyHash, ourIdentityData.groupId)
         if (ourMemberInfo == null) {
-            logger.ourHashNotInNetworkMapWarning(
+            logger.ourHashNotInMembersMapWarning(
                 message::class.java.simpleName,
                 message.header.sessionId,
                 ourIdentityData.responderPublicKeyHash.toBase64()
@@ -558,9 +550,9 @@ open class SessionManagerImpl(
             return null
         }
 
-        val networkType = networkMap.getNetworkType(ourMemberInfo.holdingIdentity.groupId)
-        if (networkType == null) {
-            logger.couldNotFindNetworkType(message::class.java.simpleName, message.header.sessionId, ourMemberInfo.holdingIdentity.groupId)
+        val groupInfo = groups.getGroupInfo(ourMemberInfo.holdingIdentity.groupId)
+        if (groupInfo == null) {
+            logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, ourMemberInfo.holdingIdentity.groupId)
             return null
         }
 
@@ -599,7 +591,7 @@ open class SessionManagerImpl(
          * We delay removing the session from pendingInboundSessions until we receive the first data message as before this point
          * the other side (Initiator) might replay [InitiatorHandshakeMessage] in the case where the [ResponderHandshakeMessage] was lost.
          * */
-        return createLinkOutMessage(response, peer, networkType)
+        return createLinkOutMessage(response, peer, groupInfo.networkType.toLMNetworkType())
     }
 
     class HeartbeatManager(
@@ -607,7 +599,8 @@ open class SessionManagerImpl(
         private val configurationReaderService: ConfigurationReadService,
         coordinatorFactory: LifecycleCoordinatorFactory,
         configuration: SmartConfig,
-        private val networkMap: LinkManagerNetworkMap,
+        private val groups : LinkManagerGroupPolicyProvider,
+        private val members : LinkManagerMembershipGroupReader,
         private val destroySession: (counterparties: SessionCounterparties, sessionId: String) -> Any,
         private val clock: Clock,
         private val executorServiceFactory: () -> ScheduledExecutorService
@@ -673,7 +666,7 @@ open class SessionManagerImpl(
             this::class.java.simpleName,
             coordinatorFactory,
             ::createResources,
-            dependentChildren = setOf(networkMap.dominoTile, publisher.dominoTile),
+            dependentChildren = setOf(groups.dominoTile, members.dominoTile, publisher.dominoTile),
             managedChildren = setOf(publisher.dominoTile),
             configurationChangeHandler = HeartbeatManagerConfigChangeHandler(),
         )
@@ -801,7 +794,7 @@ open class SessionManagerImpl(
 
         private fun sendHeartbeatMessage(source: HoldingIdentity, dest: HoldingIdentity, session: Session) {
             val heartbeatMessage = HeartbeatMessage()
-            val message = MessageConverter.linkOutMessageFromHeartbeat(source, dest, heartbeatMessage, session, networkMap)
+            val message = MessageConverter.linkOutMessageFromHeartbeat(source, dest, heartbeatMessage, session, groups, members)
             if (message == null) {
                 logger.warn("Failed to send a Heartbeat between $source and $dest.")
                 return

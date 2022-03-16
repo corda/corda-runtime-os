@@ -2,7 +2,9 @@ package net.corda.layeredpropertymap
 
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapImpl
 import net.corda.layeredpropertymap.impl.PropertyConverter
+import net.corda.test.util.createTestCase
 import net.corda.v5.base.exceptions.ValueNotFoundException
+import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.base.util.parse
 import net.corda.v5.base.util.parseList
@@ -12,6 +14,7 @@ import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.crypto.sha256Bytes
 import org.junit.jupiter.api.Test
 import java.time.Instant
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
@@ -116,12 +119,15 @@ class LayeredPropertyMapTest {
     fun `converter functions should work second time around by fetching from cache`() {
         val propertyMap = createLayeredPropertyMapImpl()
         assertEquals(56, propertyMap.entries.size)
-        assertEquals(number, propertyMap.parse(NUMBER))
-        assertEquals(number, propertyMap.parse(NUMBER))
-        assertEquals(text, propertyMap.parse(TEXT))
-        assertEquals(text, propertyMap.parse(TEXT))
-        assertEquals(initialTime, propertyMap.parse(MODIFIED_TIME))
-        assertEquals(initialTime, propertyMap.parse(MODIFIED_TIME))
+        val number1 = propertyMap.parse<Int>(NUMBER)
+        assertEquals(number, number1)
+        assertSame(number1, propertyMap.parse(NUMBER))
+        val text1 = propertyMap.parse<String>(TEXT)
+        assertEquals(text, text1)
+        assertSame(text1, propertyMap.parse(TEXT))
+        val initialTime1 = propertyMap.parse<Instant>(MODIFIED_TIME)
+        assertEquals(initialTime, initialTime1)
+        assertSame(initialTime1, propertyMap.parse(MODIFIED_TIME))
         assertEquals(null, propertyMap.parseOrNull<String>(NULL))
         assertEquals(null, propertyMap.parseOrNull<String>(NULL))
         assertEquals(null, propertyMap.parseOrNull<String>(KEY_WITHOUT_VALUE))
@@ -132,12 +138,15 @@ class LayeredPropertyMapTest {
     fun `converter parseOrNull should work second time around by fetching from cache`() {
         val propertyMap = createLayeredPropertyMapImpl()
         assertEquals(56, propertyMap.entries.size)
-        assertEquals(number, propertyMap.parseOrNull(NUMBER))
-        assertEquals(number, propertyMap.parseOrNull(NUMBER))
-        assertEquals(text, propertyMap.parseOrNull(TEXT))
-        assertEquals(text, propertyMap.parseOrNull(TEXT))
-        assertEquals(initialTime, propertyMap.parseOrNull(MODIFIED_TIME))
-        assertEquals(initialTime, propertyMap.parseOrNull(MODIFIED_TIME))
+        val number1 = propertyMap.parse<Int>(NUMBER)
+        assertEquals(number, number1)
+        assertSame(number1, propertyMap.parse(NUMBER))
+        val text1 = propertyMap.parse<String>(TEXT)
+        assertEquals(text, text1)
+        assertSame(text1, propertyMap.parse(TEXT))
+        val initialTime1 = propertyMap.parse<Instant>(MODIFIED_TIME)
+        assertEquals(initialTime, initialTime1)
+        assertSame(initialTime1, propertyMap.parse(MODIFIED_TIME))
     }
 
     @Test
@@ -261,43 +270,41 @@ class LayeredPropertyMapTest {
     }
 
     @Test
-    fun `parse and fails when invalid casting occurs for cached value`() {
+    fun `parse should be able return different compatible types for the same key`() {
         val propertyMap = createLayeredPropertyMapImpl()
-        val dummyObject = propertyMap.parse<DummyObjectWithNumberAndText>(DUMMY_OBJECT)
-        assertEquals(number, dummyObject.number)
-        assertEquals(text, dummyObject.text)
-
-        assertFailsWith<ClassCastException> { propertyMap.parse<Instant>(DUMMY_OBJECT) }
-        assertFailsWith<ClassCastException> { propertyMap.parse<Instant>(DUMMY_OBJECT) }
+        val intValue = propertyMap.parse<Int>(NUMBER)
+        assertEquals(number, intValue)
+        val strValue = propertyMap.parse<String>(NUMBER)
+        assertEquals(number, strValue.toInt())
     }
 
     @Test
-    fun `parseOrNull and fails when invalid casting occurs for cached value`() {
+    fun `parseOrNull should be able return different compatible types for the same key`() {
         val propertyMap = createLayeredPropertyMapImpl()
-        val dummyObject = propertyMap.parseOrNull<DummyObjectWithNumberAndText>(DUMMY_OBJECT)
-        assertEquals(number, dummyObject!!.number)
-        assertEquals(text, dummyObject.text)
-
-        assertFailsWith<ClassCastException> { propertyMap.parseOrNull<Instant>(DUMMY_OBJECT) }
-        assertFailsWith<ClassCastException> { propertyMap.parseOrNull<Instant>(DUMMY_OBJECT) }
+        val intValue = propertyMap.parseOrNull<Int>(NUMBER)
+        assertNotNull(intValue)
+        assertEquals(number, intValue)
+        val strValue = propertyMap.parseOrNull<String>(NUMBER)
+        assertNotNull(strValue)
+        assertEquals(number, strValue.toInt())
     }
 
     @Test
-    fun `parseList fails when invalid casting occurs`() {
+    fun `parseList should be able return different compatible types for the same prefix`() {
         val propertyMap = createLayeredPropertyMapImpl()
-        val parsedDummyList = propertyMap.parseList<Int>(DUMMY_LIST_PREFIX)
-        assertEquals(dummyList, parsedDummyList)
-
-        assertFailsWith<ClassCastException> { propertyMap.parseList<Instant>(DUMMY_LIST_PREFIX) }
+        val intDummyList = propertyMap.parseList<Int>(DUMMY_LIST_PREFIX)
+        assertEquals(dummyList, intDummyList)
+        val strDummyList = propertyMap.parseList<String>(DUMMY_LIST_PREFIX)
+        assertEquals(dummyList, strDummyList.map { it.toInt() })
     }
 
     @Test
-    fun `parseSet fails when invalid casting occurs`() {
+    fun `parseSet should be able return different compatible types for the same prefix`() {
         val propertyMap = createLayeredPropertyMapImpl()
-        val parsedDummySet = propertyMap.parseSet<Int>(DUMMY_SET_PREFIX)
-        assertEquals(dummySet, parsedDummySet)
-
-        assertFailsWith<ClassCastException> { propertyMap.parseSet<Instant>(DUMMY_SET_PREFIX) }
+        val intDummySet = propertyMap.parseSet<Int>(DUMMY_SET_PREFIX)
+        assertEquals(dummySet, intDummySet)
+        val strDummySet = propertyMap.parseSet<String>(DUMMY_SET_PREFIX)
+        assertEquals(dummySet, strDummySet.map { it.toInt() }.toSet())
     }
 
     @Test
@@ -455,5 +462,101 @@ class LayeredPropertyMapTest {
     fun `parseSet should throw IllegalArgumentException when the itemKeyPrefix is blank`() {
         val propertyMap = createLayeredPropertyMapImpl()
         assertFailsWith<IllegalArgumentException> { propertyMap.parseSet<String>("") }
+    }
+
+    @Test
+    fun `Should be able to parse sets concurrently by fetching same value from cache`() {
+        val mapCount = 1_000
+        val threadCount = 20
+        val propertyMaps = mutableListOf<LayeredPropertyMap>()
+        val results = ConcurrentHashMap<Pair<Int,LayeredPropertyMap>, Set<Int>>()
+        (0 until mapCount).forEach { _ ->
+            propertyMaps.add(createLayeredPropertyMapImpl())
+        }
+        (0 until threadCount).createTestCase {
+            propertyMaps.forEach { map ->
+                results[it to map] = map.parseSet(DUMMY_SET_PREFIX)
+            }
+        }.runAndValidate()
+        propertyMaps.forEach { map ->
+            val mapsPerThread = results.filter { it.key.second == map }
+            assertEquals(threadCount, mapsPerThread.size)
+            val first = mapsPerThread.values.first()
+            mapsPerThread.values.forEach { value ->
+                assertSame(first, value)
+            }
+        }
+    }
+
+    @Test
+    fun `Should be able to parse lists concurrently by fetching same value from cache`() {
+        val mapCount = 1_000
+        val threadCount = 20
+        val propertyMaps = mutableListOf<LayeredPropertyMap>()
+        val results = ConcurrentHashMap<Pair<Int,LayeredPropertyMap>, List<Int>>()
+        (0 until mapCount).forEach { _ ->
+            propertyMaps.add(createLayeredPropertyMapImpl())
+        }
+        (0 until threadCount).createTestCase {
+            propertyMaps.forEach { map ->
+                results[it to map] = map.parseList(DUMMY_SET_PREFIX)
+            }
+        }.runAndValidate()
+        propertyMaps.forEach { map ->
+            val mapsPerThread = results.filter { it.key.second == map }
+            assertEquals(threadCount, mapsPerThread.size)
+            val first = mapsPerThread.values.first()
+            mapsPerThread.values.forEach { value ->
+                assertSame(first, value)
+            }
+        }
+    }
+
+    @Test
+    fun `Should be able to parse concurrently by fetching same value from cache`() {
+        val mapCount = 1_000
+        val threadCount = 20
+        val propertyMaps = mutableListOf<LayeredPropertyMap>()
+        val results = ConcurrentHashMap<Pair<Int,LayeredPropertyMap>, Instant>()
+        (0 until mapCount).forEach { _ ->
+            propertyMaps.add(createLayeredPropertyMapImpl())
+        }
+        (0 until threadCount).createTestCase {
+            propertyMaps.forEach { map ->
+                results[it to map] = map.parse(MODIFIED_TIME)
+            }
+        }.runAndValidate()
+        propertyMaps.forEach { map ->
+            val mapsPerThread = results.filter { it.key.second == map }
+            assertEquals(threadCount, mapsPerThread.size)
+            val first = mapsPerThread.values.first()
+            mapsPerThread.values.forEach { value ->
+                assertSame(first, value)
+            }
+        }
+    }
+
+    @Test
+    fun `Should be able to parse or null concurrently by fetching same value from cache`() {
+        val mapCount = 1_000
+        val threadCount = 20
+        val propertyMaps = mutableListOf<LayeredPropertyMap>()
+        val results = ConcurrentHashMap<Pair<Int,LayeredPropertyMap>, Instant?>()
+        (0 until mapCount).forEach { _ ->
+            propertyMaps.add(createLayeredPropertyMapImpl())
+        }
+        (0 until threadCount).createTestCase {
+            propertyMaps.forEach { map ->
+                results[it to map] = map.parseOrNull(MODIFIED_TIME)
+            }
+        }.runAndValidate()
+        propertyMaps.forEach { map ->
+            val mapsPerThread = results.filter { it.key.second == map }
+            assertEquals(threadCount, mapsPerThread.size)
+            val first = mapsPerThread.values.first()
+            mapsPerThread.values.forEach { value ->
+                assertSame(first, value)
+            }
+        }
     }
 }

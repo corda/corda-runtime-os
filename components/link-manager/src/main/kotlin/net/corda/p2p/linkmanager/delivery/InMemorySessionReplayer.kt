@@ -11,7 +11,10 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.linkmanager.LinkManager
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap
+import net.corda.p2p.linkmanager.LinkManagerGroupPolicyProvider
+import net.corda.p2p.linkmanager.LinkManagerInternalTypes
+import net.corda.p2p.linkmanager.LinkManagerInternalTypes.toLMNetworkType
+import net.corda.p2p.linkmanager.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.messaging.MessageConverter
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
@@ -25,7 +28,8 @@ class InMemorySessionReplayer(
     configurationReaderService: ConfigurationReadService,
     coordinatorFactory: LifecycleCoordinatorFactory,
     configuration: SmartConfig,
-    private val networkMap: LinkManagerNetworkMap
+    private val groups: LinkManagerGroupPolicyProvider,
+    private val members: LinkManagerMembershipGroupReader,
 ): LifecycleWithDominoTile {
 
     companion object {
@@ -47,15 +51,15 @@ class InMemorySessionReplayer(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
-        dependentChildren = setOf(replayScheduler.dominoTile, publisher.dominoTile, networkMap.dominoTile),
+        dependentChildren = setOf(replayScheduler.dominoTile, publisher.dominoTile, groups.dominoTile, members.dominoTile),
         managedChildren = setOf(replayScheduler.dominoTile, publisher.dominoTile)
     )
 
     data class SessionMessageReplay(
         val message: Any,
         val sessionId: String,
-        val source: LinkManagerNetworkMap.HoldingIdentity,
-        val dest: LinkManagerNetworkMap.HoldingIdentity,
+        val source: LinkManagerInternalTypes.HoldingIdentity,
+        val dest: LinkManagerInternalTypes.HoldingIdentity,
         val sentSessionMessageCallback: (counterparties: SessionManager.SessionCounterparties, sessionId: String) -> Unit
     )
 
@@ -83,22 +87,22 @@ class InMemorySessionReplayer(
     private fun replayMessage(
         messageReplay: SessionMessageReplay,
     ) {
-        val memberInfo = networkMap.getMemberInfo(messageReplay.dest)
+        val memberInfo = members.getMemberInfo(messageReplay.dest)
         if (memberInfo == null) {
             logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName})" +
-                " with peer ${messageReplay.dest} which is not in the network map. The message was not replayed.")
+                " with peer ${messageReplay.dest} which is not in the members map. The message was not replayed.")
             return
         }
 
-        val networkType = networkMap.getNetworkType(memberInfo.holdingIdentity.groupId)
+        val networkType = groups.getGroupInfo(memberInfo.holdingIdentity.groupId)?.networkType
         if (networkType == null) {
             logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName}) but" +
-                " could not find the network type in the NetworkMap for group ${memberInfo.holdingIdentity.groupId}." +
+                " could not find the network type in the GroupPolicyProvider for group ${memberInfo.holdingIdentity.groupId}." +
                 " The message was not replayed.")
             return
         }
 
-        val message = MessageConverter.createLinkOutMessage(messageReplay.message, memberInfo, networkType)
+        val message = MessageConverter.createLinkOutMessage(messageReplay.message, memberInfo, networkType.toLMNetworkType())
         logger.debug { "Replaying session message ${message.payload.javaClass} for session ${messageReplay.sessionId}." }
         publisher.publish(listOf(Record(LINK_OUT_TOPIC, LinkManager.generateKey(), message)))
         messageReplay.sentSessionMessageCallback(

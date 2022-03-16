@@ -6,8 +6,6 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.schema.Schemas
 import java.util.*
 
-const val INITIATED_SESSION_ID_SUFFIX = "-INITIATED"
-
 /**
  * Generate and returns a new [FlowKey] based on the [identity] of the party.
  * FlowKey.flowId will be a random UUID.
@@ -23,20 +21,6 @@ fun generateFlowKey(identity: HoldingIdentity): FlowKey {
  */
 private fun generateFlowId(): String {
     return UUID.randomUUID().toString()
-}
-
-/**
- * Toggle the [sessionId] to that of the other party and return it.
- * Initiating party sessionId will be a random UUID.
- * Initiated party sessionId will be the initiating party session id with a suffix of "-INITIATED" added.
- * @return the toggled session id
- */
-fun toggleSessionId(sessionId: String): String {
-    return if (sessionId.endsWith(INITIATED_SESSION_ID_SUFFIX)) {
-        sessionId.removeSuffix(INITIATED_SESSION_ID_SUFFIX)
-    } else {
-        "$sessionId$INITIATED_SESSION_ID_SUFFIX"
-    }
 }
 
 /**

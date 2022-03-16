@@ -60,7 +60,7 @@ class TrustStoresPublisherTest {
     private val subscriptionDominoTile = mockConstruction(SubscriptionDominoTile::class.java)
 
     private val certificates = listOf("one", "two")
-    private val groupInfo = NetworkMapListener.GroupInfo(
+    private val groupInfo = GroupPolicyListener.GroupInfo(
         "groupOne",
         NetworkType.CORDA_5,
         setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION),

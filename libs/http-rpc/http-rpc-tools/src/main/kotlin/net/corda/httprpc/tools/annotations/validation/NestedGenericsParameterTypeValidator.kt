@@ -1,8 +1,7 @@
 package net.corda.httprpc.tools.annotations.validation
 
 import net.corda.httprpc.RpcOps
-import net.corda.httprpc.annotations.HttpRpcGET
-import net.corda.httprpc.annotations.HttpRpcPOST
+import net.corda.httprpc.annotations.isRpcEndpointAnnotation
 import java.lang.reflect.Method
 import java.lang.reflect.Parameter
 import java.lang.reflect.ParameterizedType
@@ -16,7 +15,7 @@ class NestedGenericsParameterTypeValidator(private val clazz: Class<out RpcOps>)
 
     override fun validate(): HttpRpcValidationResult =
         clazz.methods.fold(HttpRpcValidationResult()) { total, method ->
-            total + if (method.annotations.any { it is HttpRpcPOST || it is HttpRpcGET }) {
+            total + if (method.annotations.any { it.isRpcEndpointAnnotation() }) {
                 validateTypeNotNestedGenerics(method)
             } else HttpRpcValidationResult()
         }

@@ -7,6 +7,7 @@ import net.corda.data.chunking.UploadFileStatus
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.packaging.CpiMetadata
 import net.corda.packaging.CPI
+import net.corda.packaging.PackagingException
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
@@ -58,10 +59,20 @@ class CpiValidatorImpl(
         return Triple(fileName, tempPath, checksum)
     }
 
-    @Suppress("ComplexMethod")
+    // NOTE:  any unhandled exceptions in this method may bring down the
+    // db-processor.
     override fun validate(requestId: RequestId): UploadFileStatus {
         log.debug("Validating $requestId")
+        return try {
+            validateRequest(requestId)
+        } catch (ex: Exception) {
+            log.error("Unexpected exception when unpacking CPI.  ${ex.message}", ex)
+            UploadFileStatus.UPLOAD_FAILED
+        }
+    }
 
+    @Suppress("ComplexMethod")
+    private fun validateRequest(requestId: RequestId): UploadFileStatus {
         val (cpiFileName, tempPath, checksum) = getCpi(requestId)
 
         if ((cpiFileName == null) || (tempPath == null) || (checksum == null)) {
@@ -75,7 +86,21 @@ class CpiValidatorImpl(
         }
 
         // Loads, parses, and expands CPI, into cpks and metadata
-        val cpi = Files.newInputStream(tempPath).use { CPI.from(it, cpiExpansionDir) }
+        val cpi: CPI =
+            try {
+                Files.newInputStream(tempPath).use { CPI.from(it, cpiExpansionDir) }
+            } catch (ex: Exception) {
+                return when (ex) {
+                    is PackagingException -> {
+                        log.error("Invalid CPI.  ${ex.message}", ex)
+                        UploadFileStatus.FILE_INVALID
+                    }
+                    else -> {
+                        log.error("Unexpected exception when unpacking CPI.  ${ex.message}", ex)
+                        UploadFileStatus.UPLOAD_FAILED
+                    }
+                }
+            }
 
         // Can't necessarily compare the CPI.metadata.hash to our checksum above
         // because two different digest algorithms might have been used to create them.
@@ -98,7 +123,10 @@ class CpiValidatorImpl(
                     log.error("Error when trying to persist CPI and CPK to database", ex)
                     UploadFileStatus.UPLOAD_FAILED
                 }
-                else -> throw ex
+                else -> {
+                    log.error("Unexpected error when trying to persist CPI and CPK to database", ex)
+                    UploadFileStatus.UPLOAD_FAILED
+                }
             }
         }
 

@@ -25,7 +25,16 @@ The file specified in the `--kafka` CLI parameter is the kafka properties file.
 The file provided on the `--netmap-file` CLI parameter should have the following structure:
 ```json
 {
-    "entriesToAdd": [
+  "groupsToAdd": [
+    {
+      "groupId": "group-1",
+      "data": {
+        "networkType": "CORDA_4",
+        "protocolModes": ["AUTHENTICATION_ONLY", "AUTHENTICATED_ENCRYPTION"],
+        "trustStoreCertificates": ["<path_to_trust_certificate_files>"]
+      }
+    }],
+    "membersToAdd": [
         {
           "x500name": "O=Alice, L=London, C=GB",
           "groupId": "group-1",
@@ -33,10 +42,7 @@ The file provided on the `--netmap-file` CLI parameter should have the following
                "publicKeyStoreFile": "<path_to_the_keystore_file>",
                "publicKeyAlias": "<alias_of_public_key>", 
                "keystorePassword": "keystore-password",
-               "address": "http://alice.com",
-               "networkType": "CORDA_4",
-               "protocolModes": ["AUTHENTICATION_ONLY", "AUTHENTICATED_ENCRYPTION"],
-               "trustStoreCertificates": ["<path_to_trust_certificate_files>"]
+               "address": "http://alice.com"
           }
         },
         {
@@ -46,19 +52,17 @@ The file provided on the `--netmap-file` CLI parameter should have the following
               "publicKeyStoreFile": "<path_to_the_keystore_file>",
               "publicKeyAlias": "<alias_of_public_key>", 
               "keystorePassword": "keystore-password",
-              "address": "http://bob.com",
-              "networkType": "CORDA_5",
-              "protocolModes": ["AUTHENTICATION_ONLY", "AUTHENTICATED_ENCRYPTION"],
-              "trustStoreCertificates": ["<path_to_trust_certificate_files>"]
+              "address": "http://bob.com"
           }
         }
     ],
-    "entriesToDelete": [
-        {
-          "x500name": "O=Charlie, L=London, C=GB",
-          "groupId": "group-1"
-        }
-    ]
+  "membersToDelete": [
+    {
+      "x500name": "O=Charlie, L=London, C=GB",
+      "groupId": "group-1"
+    }
+  ],
+  "groupsToDelete": ["group-3"]
 }
 ```
 
@@ -68,7 +72,6 @@ keytool -genkeypair -alias ec -keyalg EC -storetype JKS -keystore ec_key.jks -st
 ```
 
 trust store files are expected to be `.pem` files.
-
 
 ### Publishing locally hosted map entries
 
@@ -115,7 +118,7 @@ tls certificates files are expected to be `.pem` files.
 
 ### Populating a custom topic
 
-The key entries can also be written to a custom topic using the `--topic` parameter:
+The key entries can also be written to custom topics using the `--hosting-map-topic`, `--member-info-topic` or `--group-policies-topic` parameters:
 ```
-java -jar applications/tools/p2p-test/network-map-creator/build/bin/corda-network-map-creator-5.0.0.0-SNAPSHOT.jar network-map --netmap-file ~/Desktop/keys-config.json --kafka ~/Desktop/kafka.properties --topic test.topic
+java -jar applications/tools/p2p-test/network-map-creator/build/bin/corda-network-map-creator-5.0.0.0-SNAPSHOT.jar network-map --netmap-file ~/Desktop/keys-config.json --kafka ~/Desktop/kafka.properties --group-policies-topic test.topic
 ```

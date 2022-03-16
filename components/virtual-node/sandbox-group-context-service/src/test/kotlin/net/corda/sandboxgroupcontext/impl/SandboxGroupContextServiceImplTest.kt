@@ -1,6 +1,6 @@
 package net.corda.sandboxgroupcontext.impl
 
-import net.corda.install.InstallService
+import net.corda.cpk.read.CpkReadService
 import net.corda.libs.packaging.CpkIdentifier
 import net.corda.packaging.CPK
 import net.corda.sandboxgroupcontext.SandboxGroupType
@@ -11,12 +11,13 @@ import net.corda.sandboxgroupcontext.service.impl.SandboxGroupContextServiceImpl
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.osgi.framework.BundleContext
 import org.osgi.service.component.runtime.ServiceComponentRuntime
-import java.util.concurrent.CompletableFuture
 
 class SandboxGroupContextServiceImplTest {
 
@@ -26,7 +27,7 @@ class SandboxGroupContextServiceImplTest {
 
     private val scr = mock<ServiceComponentRuntime>()
     private val bundleContext = mock<BundleContext>()
-    private val cpks = setOf(Helpers.mockTrivialCpk(mainBundle))
+    private val cpks = setOf(Helpers.mockTrivialCpk(mainBundle, "example", "1.0.0"))
 
     private lateinit var virtualNodeContext: VirtualNodeContext
 
@@ -37,36 +38,38 @@ class SandboxGroupContextServiceImplTest {
             cpks,
             SandboxGroupType.FLOW,
             SingletonSerializeAsToken::class.java,
-            null)
+            null
+        )
     }
 
-    private class InstallServiceImpl(private val cpks: Set<CPK>) : InstallService {
-        override fun get(id: CpkIdentifier): CompletableFuture<CPK?> {
-            return CompletableFuture.supplyAsync { cpks.firstOrNull {
-                it.metadata.id.name == id.name &&
-                        it.metadata.id.version == id.version &&
-                        it.metadata.id.signerSummaryHash == id.signerSummaryHash } }
+    class CpkReadServiceFake(private val cpks: Set<CPK>) : CpkReadService {
+        override fun get(cpkId: CpkIdentifier): CPK? {
+            return cpks.singleOrNull { (it.metadata.id.name == cpkId.name) && (it.metadata.id.version == cpkId.version) }
         }
 
         override val isRunning: Boolean
-            get() = throw NotImplementedError()
+            get() = true
 
         override fun start() {
-            throw NotImplementedError()
         }
 
         override fun stop() {
-            throw NotImplementedError()
         }
     }
 
-    private val cpkServiceImpl = InstallServiceImpl(cpks)
+    private val cpkServiceImpl = CpkReadServiceFake(cpks)
 
     @BeforeEach
     private fun beforeEach() {
-        service = SandboxGroupContextServiceImpl(Helpers.mockSandboxCreationService(listOf(cpks)), cpkServiceImpl, scr, bundleContext)
+        service = SandboxGroupContextServiceImpl(
+            Helpers.mockSandboxCreationService(listOf(cpks)),
+            cpkServiceImpl,
+            scr,
+            bundleContext
+        )
         virtualNodeContext = createVirtualNodeContextForFlow(
-            holdingIdentity, cpks.map { CpkIdentifier.fromLegacy(it.metadata.id) }.toSet())
+            holdingIdentity, cpks.map { CpkIdentifier.fromLegacy(it.metadata.id) }.toSet()
+        )
     }
 
     @Test
@@ -121,17 +124,26 @@ class SandboxGroupContextServiceImplTest {
         val holdingIdentity2 = HoldingIdentity("OU=2", "bar")
         val holdingIdentity3 = HoldingIdentity("OU=3", "bar")
 
-        val cpks1 = setOf(Helpers.mockTrivialCpk("MAIN1"))
-        val cpks2 = setOf(Helpers.mockTrivialCpk("MAIN2"))
-        val cpks3 = setOf(Helpers.mockTrivialCpk("MAIN3"))
+        val cpks1 = setOf(Helpers.mockTrivialCpk("MAIN1", "apple", "1.0.0"))
+        val cpks2 = setOf(Helpers.mockTrivialCpk("MAIN2", "banana", "2.0.0"))
+        val cpks3 = setOf(Helpers.mockTrivialCpk("MAIN3", "cranberry", "3.0.0"))
 
-        val ctx1 = createVirtualNodeContextForFlow(holdingIdentity1, cpks1.map { CpkIdentifier.fromLegacy(it.metadata.id) }.toSet())
-        val ctx2 = createVirtualNodeContextForFlow(holdingIdentity2, cpks2.map { CpkIdentifier.fromLegacy(it.metadata.id) }.toSet())
-        val ctx3 = createVirtualNodeContextForFlow(holdingIdentity3, cpks3.map { CpkIdentifier.fromLegacy(it.metadata.id) }.toSet())
+        val ctx1 = createVirtualNodeContextForFlow(
+            holdingIdentity1,
+            cpks1.map { CpkIdentifier.fromLegacy(it.metadata.id) }.toSet()
+        )
+        val ctx2 = createVirtualNodeContextForFlow(
+            holdingIdentity2,
+            cpks2.map { CpkIdentifier.fromLegacy(it.metadata.id) }.toSet()
+        )
+        val ctx3 = createVirtualNodeContextForFlow(
+            holdingIdentity3,
+            cpks3.map { CpkIdentifier.fromLegacy(it.metadata.id) }.toSet()
+        )
 
         val sandboxCreationService = Helpers.mockSandboxCreationService(listOf(cpks1, cpks2, cpks3))
 
-        val cpkService = InstallServiceImpl(cpks1 + cpks2 + cpks3)
+        val cpkService = CpkReadServiceFake(cpks1 + cpks2 + cpks3)
 
         val service = SandboxGroupContextServiceImpl(sandboxCreationService, cpkService, scr, bundleContext)
 
@@ -182,10 +194,13 @@ class SandboxGroupContextServiceImplTest {
     @Test
     fun `closeables work as expected`() {
         val holdingIdentity1 = HoldingIdentity("OU=1", "bar")
-        val cpks1 = setOf(Helpers.mockTrivialCpk("MAIN1"))
-        val ctx1 = createVirtualNodeContextForFlow(holdingIdentity1, cpks1.map { CpkIdentifier.fromLegacy(it.metadata.id) }.toSet())
+        val cpks1 = setOf(Helpers.mockTrivialCpk("MAIN1", "example", "1.0.0"))
+        val ctx1 = createVirtualNodeContextForFlow(
+            holdingIdentity1,
+            cpks1.map { CpkIdentifier.fromLegacy(it.metadata.id) }.toSet()
+        )
         val sandboxCreationService = Helpers.mockSandboxCreationService(listOf(cpks1))
-        val cpkService = InstallServiceImpl(cpks1)
+        val cpkService = CpkReadServiceFake(cpks1)
         val service = SandboxGroupContextServiceImpl(sandboxCreationService, cpkService, scr, bundleContext)
         val dog1 = Dog("Rover", "Woof!")
 
@@ -198,5 +213,33 @@ class SandboxGroupContextServiceImplTest {
 
         service.remove(ctx1)
         assertThat(isClosed).isTrue
+    }
+
+    @Test
+    fun `assert hasCpks`() {
+        val existingCpks = setOf(
+            Helpers.mockTrivialCpk("MAIN1", "apple", "1.0.0"),
+            Helpers.mockTrivialCpk("MAIN2", "banana", "2.0.0"),
+            Helpers.mockTrivialCpk("MAIN3", "cranberry", "3.0.0")
+        )
+        val nonExistingCpk = setOf(Helpers.mockTrivialCpk("MAIN4", "orange", "4.0.0"))
+
+        val service = existingCpks.let {
+            val sandboxCreationService = Helpers.mockSandboxCreationService(listOf(it))
+            val cpkService = CpkReadServiceFake(it)
+            SandboxGroupContextServiceImpl(sandboxCreationService, cpkService, scr, bundleContext)
+        }
+
+        val existingCpkIds = existingCpks.map {
+            CpkIdentifier.fromLegacy(it.metadata.id)
+        }.toSet()
+
+        val nonExistingCpkId = nonExistingCpk.map { CpkIdentifier.fromLegacy(it.metadata.id) }.toSet()
+
+        val noCpks = emptySet<CpkIdentifier>()
+
+        assertTrue(service.hasCpks(existingCpkIds))
+        assertFalse(service.hasCpks(nonExistingCpkId))
+        assertTrue(service.hasCpks(noCpks))
     }
 }

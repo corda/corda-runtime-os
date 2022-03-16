@@ -23,7 +23,7 @@ interface UserEndpoint : RpcOps {
     /**
      * Create a user in the RBAC permission system.
      */
-    @HttpRpcPOST(description = "Create a User")
+    @HttpRpcPOST(path = "createUser", description = "Create a User")
     fun createUser(
         @HttpRpcRequestBodyParameter(description = "Details of the user to be created")
         createUserType: CreateUserType
@@ -32,7 +32,7 @@ interface UserEndpoint : RpcOps {
     /**
      * Get a user by loginName in the RBAC permission system.
      */
-    @HttpRpcGET(description = "Get a User by Login Name", path = "")
+    @HttpRpcGET(path = "getUser", description = "Get a User by Login Name")
     fun getUser(
         @HttpRpcQueryParameter(description = "Login Name of the user to be returned.")
         loginName: String
@@ -41,7 +41,7 @@ interface UserEndpoint : RpcOps {
     /**
      * Assign a Role to a User in the RBAC permission system.
      */
-    @HttpRpcPOST(description = "Assign a Role to a User")
+    @HttpRpcPOST(path = "addRole", description = "Assign a Role to a User")
     fun addRole(
         @HttpRpcRequestBodyParameter(description = "User login name to be changed")
         loginName: String,
@@ -52,7 +52,7 @@ interface UserEndpoint : RpcOps {
     /**
      * Un-assign a Role from a User in the RBAC permission system.
      */
-    @HttpRpcPOST(description = "Un-assign a role from a user")
+    @HttpRpcPOST(path = "removeRole", description = "Un-assign a role from a user")
     fun removeRole(
         @HttpRpcRequestBodyParameter(description = "User login name to be changed")
         loginName: String,
@@ -63,7 +63,7 @@ interface UserEndpoint : RpcOps {
     /**
      * Get a summary of a user's permissions.
      */
-    @HttpRpcGET(description = "Get a summary of a User's permissions")
+    @HttpRpcGET(path = "getPermissionSummary", description = "Get a summary of a User's permissions")
     fun getPermissionSummary(
         @HttpRpcQueryParameter(description = "Login Name of the user.")
         loginName: String

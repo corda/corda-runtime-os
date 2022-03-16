@@ -1,7 +1,6 @@
 package net.corda.processors.crypto.tests
 
 import com.typesafe.config.ConfigFactory
-import net.corda.data.config.Configuration
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.Lifecycle
@@ -14,11 +13,7 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.messaging.api.publisher.config.PublisherConfig
-import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.api.records.Record
 import net.corda.processors.crypto.CryptoProcessor
-import net.corda.schema.Schemas
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
 import org.junit.jupiter.api.Assertions
