@@ -7,7 +7,10 @@ import java.security.KeyStore
  */
 interface LocalCertificatesAuthority : CertificateAuthority {
     /**
-     * Convert the CA certificate and private key to a key store (with password: PASSWORD).
+     * Convert the CA certificate and private key to a key store (with password: PASSWORD) with a single
+     * alias entry.
+     *
+     * @param alias The alias of the entry in the key store.
      */
     fun asKeyStore(alias: String): KeyStore
 }

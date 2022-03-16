@@ -97,6 +97,9 @@ class ConfigureAll : Runnable {
         return File(keyStoreDir.absolutePath, "$name.identity.keystore.jks").also { keyStoreFile ->
             if (!keyStoreFile.exists()) {
                 keyStoreDir.mkdirs()
+                // There is no real need for a Certificate Authority. Java KeyStore need to have a certificate
+                // with the public key in order to publish a key pair. So this in memory authority is created just
+                // in order to use its key pair to key store facility.
                 val authority = CertificateAuthorityFactory.createMemoryAuthority(algo.signatureScheme())
                 val keyStore = authority.asKeyStore("identity")
                 keyStoreFile.outputStream().use {
@@ -131,7 +134,7 @@ class ConfigureAll : Runnable {
                 sslStoreFile = keyStoreFile,
                 trustStoreFile = trustStoreFile,
                 tlsCertificates = tlsCertificates,
-                trustStoreLocation = if(trustStoreType == Deploy.TrustStoreType.TINY_CERT) {
+                trustStoreLocation = if (trustStoreType == Deploy.TrustStoreType.TINY_CERT) {
                     null
                 } else {
                     File(keyStoreDir, "trust-store")
@@ -277,7 +280,7 @@ class ConfigureAll : Runnable {
                     "data" to mapOf(
                         "publicKeyStoreFile" to keyStoreFile(host).absolutePath,
                         "publicKeyAlias" to "identity",
-                        "keystorePassword" to "password",
+                        "keystorePassword" to PASSWORD,
                         "address" to "http://$host:${Port.Gateway.port}",
                         "networkType" to "CORDA_5",
                         "protocolModes" to listOf("AUTHENTICATED_ENCRYPTION"),
@@ -317,13 +320,13 @@ class ConfigureAll : Runnable {
             "keys" to listOf(
                 mapOf(
                     "keystoreFile" to keyStoreFile.absolutePath,
-                    "password" to "password",
+                    "password" to PASSWORD,
                     "tenantId" to tenantId,
                     "publishAlias" to "$x500name.$groupId.ec",
                 ),
                 mapOf(
                     "keystoreFile" to sslKeyStore.absolutePath,
-                    "password" to "password",
+                    "password" to PASSWORD,
                     "tenantId" to tenantId,
                     "publishAlias" to "$host.$x500name.rsa"
                 )
