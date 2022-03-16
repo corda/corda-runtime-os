@@ -21,7 +21,7 @@ internal class HostsMap(
     nodeConfiguration: SmartConfig,
     instanceId: Int,
 ) :
-    LifecycleWithDominoTile {
+    LifecycleWithDominoTile, (String) -> Collection<String>? {
 
     companion object {
         private const val CONSUMER_GROUP_ID = "gateway_hosts_reader"
@@ -40,8 +40,6 @@ internal class HostsMap(
         emptyList()
     )
 
-    fun resolve(host: String) = knownAddresses[host]
-
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
@@ -49,6 +47,8 @@ internal class HostsMap(
         managedChildren = listOf(subscriptionTile),
         dependentChildren = listOf(subscriptionTile),
     )
+
+    override fun invoke(host: String) = knownAddresses[host]
 
     private fun createResources(
         @Suppress("UNUSED_PARAMETER") resources: ResourcesHolder

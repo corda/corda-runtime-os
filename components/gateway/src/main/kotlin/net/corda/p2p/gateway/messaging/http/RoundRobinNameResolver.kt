@@ -14,7 +14,7 @@ import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.UnknownHostException
 
-internal fun NameResolverType.toResolver(hostMap: HostsMap?) = when (this) {
+internal fun NameResolverType.toResolver(hostMap: ((String) -> Collection<String>?)?) = when (this) {
     NameResolverType.FIRST_IP_ALWAYS -> {
         DefaultAddressResolverGroup.INSTANCE
     }
@@ -25,12 +25,12 @@ internal fun NameResolverType.toResolver(hostMap: HostsMap?) = when (this) {
 }
 
 internal class OverwriteNameResolver(
-    private val hostMap: HostsMap?,
+    private val hostMap: ((String) -> Collection<String>?)?,
 ) : AddressResolverGroup<InetSocketAddress>() {
     override fun newResolver(executor: EventExecutor): AddressResolver<InetSocketAddress> {
         val nameSpaceMap = object : InetNameResolver(executor) {
             override fun doResolve(inetHost: String, promise: Promise<InetAddress>) {
-                val address = hostMap?.resolve(inetHost)?.firstOrNull() ?: inetHost
+                val address = hostMap?.invoke(inetHost)?.firstOrNull() ?: inetHost
                 try {
                     promise.setSuccess(SocketUtils.addressByName(address))
                 } catch (e: UnknownHostException) {
@@ -39,10 +39,10 @@ internal class OverwriteNameResolver(
             }
 
             override fun doResolveAll(inetHost: String, promise: Promise<MutableList<InetAddress>>) {
-                val addresses = hostMap?.resolve(inetHost) ?: listOf(inetHost)
+                val addresses = hostMap?.invoke(inetHost) ?: listOf(inetHost)
                 try {
                     val resolved = addresses.flatMap {
-                        SocketUtils.allAddressesByName(inetHost).toList()
+                        SocketUtils.allAddressesByName(it).toList()
                     }.toSet()
                     promise.setSuccess(resolved.toMutableList())
                 } catch (e: UnknownHostException) {
