@@ -20,7 +20,7 @@ interface CertificateAuthority {
     val caCertificate: Certificate
 
     /**
-     * Generate a key store with a single host name.
+     * Generate a keypair and a certificate with a single host name.
      *
      * @param host - the name of the host.
      * @return A private key and certificate.
@@ -28,7 +28,7 @@ interface CertificateAuthority {
     fun generateKeyAndCertificate(host: String) = generateKeyAndCertificate(listOf(host))
 
     /**
-     * Generate a key store with a list of hosts names.
+     * Generate a keypair and a certificate with a list of hosts names.
      *
      * @param hosts - the list of hosts.
      * @return A private key and certificate.

@@ -23,13 +23,13 @@ object CertificateAuthorityFactory {
     }
 
     /**
-     * Load any saved authority from the [home] directory, if non exists, generate a new one.
+     * Load any saved authority from the [home] directory, if none exists, generate a new one.
      * Using the [FileSystemCertificatesAuthority.save] will save the authority for future use.
      *
      * @param signatureSchemeTemplate - The signature template (currently, only RSA and EC are supported)
      * @param home - The home directory to save the CA private keys, certificate and serial numbers.
-     *      If null the authority store will not be saved.
-     *      If an authority was saved to the location, it will be reloaded.
+     *      If the specified directory already exists, the factory will attempt to reload the authority from the files in that directory.
+     *      Otherwise, a new certificate authority will be created.
      * @param validDuration - The duration after which the certificate will become invalid
      */
     fun createFileSystemLocalAuthority(

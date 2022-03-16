@@ -6,7 +6,7 @@ package net.corda.crypto.test.certificates.generation
 interface FileSystemCertificatesAuthority : LocalCertificatesAuthority {
 
     /**
-     * Call to save the detailed to the local file system.
+     * Call to save the details to the local file system for later re-use of the same certificate authority.
      */
     fun save()
 }
