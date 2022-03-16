@@ -266,8 +266,8 @@ class P2PLayerEndToEndTest {
             subForP2POutMarkers.start()
 
             val hostAApplicationWriter = hostA.publisherFactory.createPublisher(PublisherConfig("app-layer", 1), bootstrapConfig)
-            val initialMessages = (1..10).map { index ->
-                val randomId = UUID.randomUUID().toString()
+            val initialMessages = (1..2).map { index ->
+                val randomId = "1"
                 val messageHeader = AuthenticatedMessageHeader(
                     HoldingIdentity(hostB.x500Name, GROUP_ID),
                     HoldingIdentity(hostA.x500Name, GROUP_ID),
