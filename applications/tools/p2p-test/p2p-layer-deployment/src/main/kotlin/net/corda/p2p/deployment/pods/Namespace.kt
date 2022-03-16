@@ -11,7 +11,7 @@ enum class LbType {
     RS,
     KA,
     RA,
-    /* TODO:... */
+    /* YIFT:... */
     HEADLESS,
     NO_SERVICE,
     INGRESS,
