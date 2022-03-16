@@ -7,6 +7,7 @@ import net.corda.data.virtualnode.VirtualNodeCreationRequest
 import net.corda.data.virtualnode.VirtualNodeCreationResponse
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
@@ -24,10 +25,8 @@ import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbFactory
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbType
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeEntityRepository
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriterProcessor
-
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
-
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
@@ -36,12 +35,11 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.sql.Connection
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
-import javax.sql.DataSource
 
 /** Tests of [VirtualNodeWriterProcessor]. */
 class VirtualNodeWriterProcessorTests {
@@ -80,7 +78,7 @@ class VirtualNodeWriterProcessorTests {
         on { createEntityManager() }.doReturn(em)
     }
 
-    private val dataSource = mock<DataSource>() {
+    private val dataSource = mock<CloseableDataSource>() {
         on { connection }.doReturn(mock<Connection>())
     }
 

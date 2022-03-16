@@ -1,11 +1,16 @@
 package net.corda.orm.impl
 
+import net.corda.db.core.CloseableDataSource
+import net.corda.db.core.InMemoryDataSourceFactory
 import net.corda.db.testkit.InMemoryEntityManagerConfiguration
+import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.impl.test.entities.Cat
 import net.corda.orm.impl.test.entities.Owner
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import java.util.UUID
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import java.util.*
 
 class EntityManagerFactoryFactoryIntegrationTest {
     @Test
@@ -61,4 +66,27 @@ class EntityManagerFactoryFactoryIntegrationTest {
 
         assertThat(loadedCats.resultList).containsExactlyInAnyOrder("Felix", "Thomas")
     }
+
+    @Test
+    fun `when EntityManagerFactory is closed, CloseableDataSource is closed as well`() {
+        val closeableDataSourceMock = mock<CloseableDataSource>()
+        class WrappedDataSource(delegate: CloseableDataSource): CloseableDataSource by delegate {
+            override fun close() {
+                closeableDataSourceMock.close()
+            }
+        }
+        val closeableDataSource = WrappedDataSource(InMemoryDataSourceFactory().create("cats"))
+        val entityManagerConfiguration = object: EntityManagerConfiguration {
+            override val dataSource: CloseableDataSource
+                get() = closeableDataSource
+        }
+        val emf = EntityManagerFactoryFactoryImpl().create(
+            "test",
+            listOf(Cat::class.java, Owner::class.java),
+            entityManagerConfiguration
+        )
+        emf.close()
+        verify(closeableDataSourceMock).close()
+    }
+
 }

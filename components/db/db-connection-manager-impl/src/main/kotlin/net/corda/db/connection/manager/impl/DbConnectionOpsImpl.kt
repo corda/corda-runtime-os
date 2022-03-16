@@ -29,7 +29,7 @@ class DbConnectionOpsImpl(
         private val logger = contextLogger()
     }
 
-    override fun getClusterDataSource(): DataSource =
+    override fun getClusterDataSource(): CloseableDataSource =
         dbConnectionsRepository.getClusterDataSource()
 
     override fun getDataSource(name: String, privilege: DbPrivilege): DataSource? =
@@ -65,12 +65,16 @@ class DbConnectionOpsImpl(
         entitiesSet: JpaEntitiesSet
     ): EntityManagerFactory {
         logger.info("Loading DB connection details for ${entitiesSet.persistenceUnitName}/$privilege")
-        val ds = dbConnectionsRepository.get(name, privilege) ?:
+        val dataSource = dbConnectionsRepository.get(name, privilege) ?:
         throw DBConfigurationException("Details for $name/$privilege cannot be found")
-        return createManagerFactory(name, ds)
+        return entityManagerFactoryFactory.create(
+            name,
+            entitiesSet.classes.toList(),
+            DbEntityManagerConfiguration(dataSource),
+        )
     }
 
-    private fun createManagerFactory(name: String, dataSource: DataSource): EntityManagerFactory {
+    private fun createManagerFactory(name: String, dataSource: CloseableDataSource): EntityManagerFactory {
         return entityManagerFactoryFactory.create(
             name,
             entitiesRegistry.get(name)?.classes?.toList() ?:

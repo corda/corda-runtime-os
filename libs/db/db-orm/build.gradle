@@ -9,6 +9,8 @@ dependencies {
     api "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
+    implementation project(":libs:db:db-core")
+
     compileOnly "org.osgi:osgi.annotation"
     api "javax.persistence:javax.persistence-api"
 }
