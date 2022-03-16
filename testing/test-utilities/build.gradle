@@ -7,6 +7,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation "org.mockito:mockito-core:$mockitoVersion"
 }
 
 description 'Test Utilities'
