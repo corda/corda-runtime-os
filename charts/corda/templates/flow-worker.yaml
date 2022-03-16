@@ -1,59 +1,52 @@
+{{- $_ := set . "worker" "flow" }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "corda.fullname" . }}-flow
+  name: {{ include "corda.workerName" . }}
   labels:
-    app: {{ include "corda.fullname" . }}-flow-node
-    family: e2e
-    type: flow-worker
+    {{- include "corda.workerLabels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.workers.flow.replicas }}
+  replicas: {{ .Values.workers.flow.replicaCount }}
   selector:
     matchLabels:
-      app: {{ include "corda.fullname" . }}-flow-node
-      family: e2e
-      type: flow-worker
+      {{- include "corda.workerSelectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        app: {{ include "corda.fullname" . }}-flow-node
-        family: e2e
-        type: flow-worker
+        {{- include "corda.workerSelectorLabels" . | nindent 8 }}
     spec:
       securityContext:
         runAsUser: 1000
         runAsGroup: 1000
         fsGroup: 1000
-      imagePullSecrets:
-      - name: docker-registry-cred
+      {{- include "corda.imagePullSecrets" . | nindent 6 }}
       containers:
-      - name: {{ include "corda.fullname" . }}-flow
-        image: corda-os-docker.software.r3.com/corda-os-flow-worker:{{ .Values.imageTag }}
-        imagePullPolicy: Always
+      - name: {{ include "corda.workerName" . }}
+        image: {{ include "corda.workerImage" . }}
+        imagePullPolicy:  {{ .Values.imagePullPolicy }}
         securityContext:
           allowPrivilegeEscalation: false
         env:
-        - name: JAVA_TOOL_OPTIONS
-          value: -agentlib:jdwp=transport=dt_socket,server={{ .Values.debug.server }},suspend={{ .Values.debug.suspend }},address=*:5005
+        {{- include "corda.workerJavaToolOptions" . | nindent 10 }}
         args:
-        - -mkafka.common.bootstrap.servers={{ .Values.kafka.url }}
+        {{- include "corda.workerKafkaArgs" . | nindent 10 }}
         ports:
-        - name: worker-debug
-          containerPort: 5005
-        - name: worker-health
-          containerPort: 7000
+        {{- if .Values.workers.rpc.debug.enabled }}
+          - name: debug
+            containerPort: 5005
+        {{- end }}
+          - name: health
+            containerPort: 7000
         livenessProbe:
           httpGet:
             path: /isHealthy
-            port: 7000
-            scheme: HTTP
+            port: health
           periodSeconds: 10
           failureThreshold: 1
         startupProbe:
           httpGet:
             path: /isHealthy
-            port: 7000
-            scheme: HTTP
+            port: health
           periodSeconds: 10
           failureThreshold: 5
       nodeSelector:
