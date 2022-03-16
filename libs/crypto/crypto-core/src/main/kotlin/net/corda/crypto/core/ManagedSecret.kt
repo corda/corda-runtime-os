@@ -16,7 +16,6 @@ class ManagedSecret(
     companion object {
         const val SECRET_DEFAULT_LENGTH = 32 // in bytes
         const val SECRET_MINIMAL_LENGTH = 32 // in bytes
-        const val HMAC_ALGORITHM = "HmacSHA256"
 
         /**
          * Creates an instance of [ManagedSecret] by generating a new AES key.

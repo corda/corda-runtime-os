@@ -1,6 +1,6 @@
 package net.corda.permissions.password.impl
 
-import net.corda.crypto.core.Encryptor.Companion.encodePassPhrase
+import net.corda.crypto.core.aes.AesKey.Companion.encodePassPhrase
 import net.corda.permissions.password.PasswordHash
 import net.corda.permissions.password.PasswordService
 import org.apache.commons.text.RandomStringGenerator

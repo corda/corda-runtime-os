@@ -77,6 +77,7 @@ class ManagedSecretTests {
     }
 
     @Test
+    @Suppress("ForEachOnRange")
     fun `Should derive for arbitrary size greater than the defined limit`() {
         (33..41).forEach {
             val secret = ManagedSecret.derive(
@@ -112,6 +113,7 @@ class ManagedSecretTests {
     }
 
     @Test
+    @Suppress("ForEachOnRange")
     fun `Should generate for arbitrary size greater than the defined limit`() {
         (33..41).forEach {
             val secret = ManagedSecret.generate(it)
