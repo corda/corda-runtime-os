@@ -14,6 +14,7 @@ enum class LbType {
     RA,
     /* YIFT:... */
     NO_LB,
+    NO_SERVICE,
     INGRESS /* LB is more HTTP path oriented! Need to install controller? */,
     MEMBERSHIP,
     MEMBERSHIP_HEADLESS,

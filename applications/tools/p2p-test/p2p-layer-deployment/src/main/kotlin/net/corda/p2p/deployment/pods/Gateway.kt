@@ -29,7 +29,7 @@ class Gateway(
                     "p2p-gateway",
                     Port.Gateway,
                 )
-                LbType.NO_LB, LbType.MEMBERSHIP -> EmptyYamlable()
+                LbType.NO_LB, LbType.MEMBERSHIP, LbType.NO_SERVICE -> EmptyYamlable()
                 else -> TestingOneLoadBalance(
                     details.lbType,
                     gateways.map { it.app },
@@ -43,7 +43,7 @@ class Gateway(
     override val readyLog = ".*Waiting for gateway to start.*".toRegex()
 
     override val otherPorts = when (details.lbType) {
-        LbType.K8S, LbType.HEADLESS, LbType.INGRESS, LbType.MEMBERSHIP_HEADLESS ->
+        LbType.K8S, LbType.HEADLESS, LbType.INGRESS, LbType.MEMBERSHIP_HEADLESS, LbType.NO_SERVICE ->
             // In K8S load balancer the load balancer service will listen to the Gateway port, so no need to create a service.
             emptyList()
         else -> listOf(

@@ -229,7 +229,7 @@ class Deploy : Runnable {
         config.namespaceName = namespaceName
         config.linkManagerExtraArguments = linkManagerExtraArguments
         val lbArguments = when (lbType) {
-            LbType.HEADLESS -> listOf("--nameResolverType=ROUND_ROBIN")
+            LbType.HEADLESS, LbType.NO_LB, LbType.NO_SERVICE -> listOf("--nameResolverType=ROUND_ROBIN")
             LbType.MEMBERSHIP_HEADLESS, LbType.MEMBERSHIP -> listOf("--nameResolverType=OVERWRITE_RESOLVER")
             else -> emptyList()
         }
