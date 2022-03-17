@@ -17,6 +17,7 @@ debug:
 
 kafka:
   url: prereqs-kafka:9092
+  partitions: 3
 
 workers:
   crypto:
