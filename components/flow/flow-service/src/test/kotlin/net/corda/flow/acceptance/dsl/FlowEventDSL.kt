@@ -163,7 +163,7 @@ private val flowWaitingForHandlers = listOf(
     StartFlowWaitingForHandler(),
     WakeupWaitingForHandler(),
     SessionConfirmationWaitingForHandler(sessionManager),
-    SessionDataWaitingForHandler(flowSandboxService, sessionManager),
+    SessionDataWaitingForHandler(sessionManager),
     SessionInitWaitingForHandler(sessionManager)
 )
 
@@ -176,8 +176,8 @@ private val flowRequestHandlers = listOf(
     GetFlowInfoRequestHandler(),
     InitiateFlowRequestHandler(sessionManager),
     ReceiveRequestHandler(),
-    SendAndReceiveRequestHandler(flowSandboxService, sessionManager),
-    SendRequestHandler(flowSandboxService, sessionManager),
+    SendAndReceiveRequestHandler(sessionManager),
+    SendRequestHandler(sessionManager),
     SleepRequestHandler(),
     SubFlowFailedRequestHandler(),
     SubFlowFinishedRequestHandler(),

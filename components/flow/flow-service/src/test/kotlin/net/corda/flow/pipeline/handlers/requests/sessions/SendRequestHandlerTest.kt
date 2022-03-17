@@ -13,11 +13,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowProcessingException
-import net.corda.flow.pipeline.sandbox.FlowSandboxService
-import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.session.manager.SessionManager
-import net.corda.v5.application.services.serialization.SerializationService
-import net.corda.v5.serialization.SerializedBytes
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -25,7 +21,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -38,21 +33,12 @@ class SendRequestHandlerTest {
         const val FLOW_ID = "flow id"
         const val SESSION_ID = "session id"
         const val ANOTHER_SESSION_ID = "another session id"
-        const val PAYLOAD = "im a paylaod"
+        val PAYLOAD = byteArrayOf(1, 1, 1, 1)
 
         val HOLDING_IDENTITY = HoldingIdentity("x500 name", "group id")
         val FLOW_KEY = FlowKey(FLOW_ID, HOLDING_IDENTITY)
     }
 
-    private val serializationService = mock<SerializationService>().apply {
-        whenever(serialize(any())).thenReturn(SerializedBytes(byteArrayOf(1, 1, 1, 1)))
-    }
-    private val sandboxGroupContext = mock<SandboxGroupContext>().apply {
-        whenever(get(any(), eq(SerializationService::class.java))).thenReturn(serializationService)
-    }
-    private val flowSandboxService = mock<FlowSandboxService>().apply {
-        whenever(get(any())).thenReturn(sandboxGroupContext)
-    }
     private val sessionManager = mock<SessionManager>().apply {
         whenever(processMessageToSend(any(), any(), any(), any())).then {
             val sessionState = it.getArgument(1) as SessionState
@@ -69,7 +55,7 @@ class SendRequestHandlerTest {
 
     private val argumentCaptor = argumentCaptor<SessionEvent>()
 
-    private val sendRequestHandler = SendRequestHandler(flowSandboxService, sessionManager)
+    private val sendRequestHandler = SendRequestHandler(sessionManager)
 
     @Test
     fun `Returns an updated WaitingFor of SessionData`() {

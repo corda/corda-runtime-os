@@ -46,12 +46,14 @@ data class FlowEventPipelineImpl(
     }
 
     override fun runOrContinue(): FlowEventPipelineImpl {
-        log.info("Run or continue after receiving ${context.inputEventPayload::class.java.name} using ${flowEventHandler::class.java.name}")
+        val waitingFor = context.checkpoint?.flowState?.waitingFor?.value
+            ?: throw FlowProcessingException("Flow [${context.checkpoint?.flowKey?.flowId}] waiting for is null")
 
-        val status = context.checkpoint?.flowState?.waitingFor?.value
-            ?: throw FlowProcessingException("Flow [${context.checkpoint?.flowKey?.flowId}] status is null")
+        val handler = getFlowWaitingForHandler(waitingFor)
 
-        return when (val outcome = getFlowWaitingForHandler(status).runOrContinue(context, status)) {
+        log.info("Run or continue using ${handler::class.java.name} when flow is waiting for $waitingFor")
+
+        return when (val outcome = handler.runOrContinue(context, waitingFor)) {
             is FlowContinuation.Run, is FlowContinuation.Error -> {
                 updateContextFromFlowExecution(outcome)
             }
@@ -95,10 +97,10 @@ data class FlowEventPipelineImpl(
         return StateAndEventProcessor.Response(context.checkpoint, context.outputRecords)
     }
 
-    private fun getFlowWaitingForHandler(status: Any): FlowWaitingForHandler<Any> {
-        // This [uncheckedCast] is required to pass the [status] into the returned [FlowWaitingForHandler] further in the pipeline.
-        return uncheckedCast(flowWaitingForHandlers[status::class.java])
-            ?: throw FlowProcessingException("${status::class.qualifiedName} does not have an associated flow status handler")
+    private fun getFlowWaitingForHandler(waitingFor: Any): FlowWaitingForHandler<Any> {
+        // This [uncheckedCast] is required to pass the [waitingFor] into the returned [FlowWaitingForHandler] further in the pipeline.
+        return uncheckedCast(flowWaitingForHandlers[waitingFor::class.java])
+            ?: throw FlowProcessingException("${waitingFor::class.qualifiedName} does not have an associated flow waiting for handler")
     }
 
     private fun getFlowRequestHandler(request: FlowIORequest<*>): FlowRequestHandler<FlowIORequest<*>> {
