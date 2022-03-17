@@ -640,8 +640,10 @@ class GatewayIntegrationTest : TestBase() {
                 eventually(duration = 20.seconds) {
                     assertThat(gateway.dominoTile.state).isEqualTo(DominoTileState.StoppedDueToChildStopped)
                 }
-                assertThrows<ConnectException> {
-                    Socket(host, port).close()
+                eventually(duration = 20.seconds) {
+                    assertThrows<ConnectException> {
+                        Socket(host, port).close()
+                    }
                 }
 
                 logger.info("Publishing good config again")
@@ -665,8 +667,10 @@ class GatewayIntegrationTest : TestBase() {
                 eventually(duration = 20.seconds) {
                     assertThat(gateway.dominoTile.state).isEqualTo(DominoTileState.StoppedDueToChildStopped)
                 }
-                assertThrows<ConnectException> {
-                    Socket(host, anotherPort).close()
+                eventually(duration = 20.seconds) {
+                    assertThrows<ConnectException> {
+                        Socket(host, anotherPort).close()
+                    }
                 }
             }
         }
