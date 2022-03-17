@@ -89,7 +89,7 @@ pipeline {
             post {
                 unsuccessful {
                     sh '''
-                        kubectl logs -lfamily=e2e -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
+                        kubectl logs -lapp.kubernetes.io/instance=corda -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
                         kubectl describe all -n ${NAMESPACE} > describe.txt
                     '''
                     archiveArtifacts artifacts: 'logs.txt, describe.txt', allowEmptyArchive: true
@@ -119,7 +119,7 @@ pipeline {
                 }
                 unsuccessful {
                     sh '''
-                        kubectl logs -lfamily=e2e -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
+                        kubectl logs -lapp.kubernetes.io/instance=corda -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
                         kubectl describe all -n ${NAMESPACE} > describe.txt
                     '''
                     archiveArtifacts artifacts: 'forward.txt, logs.txt, describe.txt', allowEmptyArchive: true
