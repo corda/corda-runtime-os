@@ -8,6 +8,7 @@ import net.corda.p2p.deployment.pods.Namespace
 import net.corda.p2p.deployment.pods.NamespaceIdentifier
 import net.corda.p2p.deployment.pods.P2PDeploymentDetails
 import net.corda.p2p.deployment.pods.ResourceRequest
+import net.corda.p2p.test.KeyAlgorithm
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 
@@ -96,6 +97,18 @@ class Deploy : Runnable {
         description = ["The docker name of the tag to pull"]
     )
     private var tag = "5.0.0.0-beta-1646903521823"
+
+    @Option(
+        names = ["-a", "--key-algorithm"],
+        description = ["The keys algorithm"]
+    )
+    private var algo = KeyAlgorithm.RSA
+
+    @Option(
+        names = ["--trust-store"],
+        description = ["The trust store type (\${COMPLETION-CANDIDATES})"]
+    )
+    private var trustStoreType: TrustStoreType = TrustStoreType.TINY_CERT
 
     @Option(
         names = ["--lm-conf", "--link-manager-config"],
@@ -221,6 +234,10 @@ class Deploy : Runnable {
         }
     }
 
+    enum class TrustStoreType {
+        TINY_CERT, LOCAL
+    }
+
     private fun configureNamespace() {
         if ((lbType != LbType.MEMBERSHIP_HEADLESS) && (lbType != LbType.MEMBERSHIP)) {
             UpdateIps().run()
@@ -234,6 +251,8 @@ class Deploy : Runnable {
             else -> emptyList()
         }
         config.gatewayArguments = gatewayArguments + lbArguments
+        config.algo = algo
+        config.trustStoreType = trustStoreType
         config.run()
     }
 }
