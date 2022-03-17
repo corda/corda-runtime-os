@@ -48,7 +48,7 @@ class AesEncryptor(
             secureRandom.nextBytes(this)
         }
         return withGcmCipherInstance {
-            init(Cipher.ENCRYPT_MODE, key.key, GCMParameterSpec(GCM_TAG_LENGTH * 8, nonce))
+            init(Cipher.ENCRYPT_MODE, key, GCMParameterSpec(GCM_TAG_LENGTH * 8, nonce))
             concatByteArrays(nonce, doFinal(plainText))
         }
     }
@@ -61,7 +61,7 @@ class AesEncryptor(
         val cipherTextAndTag = cipherText.sliceArray(GCM_NONCE_LENGTH until cipherText.size)
         return withGcmCipherInstance {
             val spec = GCMParameterSpec(GCM_TAG_LENGTH * 8, nonce)
-            init(Cipher.DECRYPT_MODE, key.key, spec)
+            init(Cipher.DECRYPT_MODE, key, spec)
             doFinal(cipherTextAndTag)
         }
     }

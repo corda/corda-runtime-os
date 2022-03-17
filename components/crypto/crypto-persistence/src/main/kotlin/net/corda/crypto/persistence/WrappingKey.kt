@@ -1,5 +1,6 @@
 package net.corda.crypto.persistence
 
+import net.corda.crypto.core.ManagedKey
 import net.corda.crypto.core.aes.AES_KEY_ALGORITHM
 import net.corda.crypto.core.aes.AesKey
 import net.corda.v5.base.util.contextLogger
@@ -9,7 +10,7 @@ import java.security.PrivateKey
 import java.security.spec.PKCS8EncodedKeySpec
 
 class WrappingKey(
-    private val master: AesKey,
+    private val master: ManagedKey,
     private val schemeMetadata: CipherSchemeMetadata,
 ) {
     companion object {

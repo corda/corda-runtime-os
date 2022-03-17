@@ -1,6 +1,5 @@
 package net.corda.crypto.core
 
-import net.corda.crypto.core.aes.AES_DERIVE_ALGORITHM
 import net.corda.crypto.core.aes.AES_DERIVE_ITERATION_COUNT
 import net.corda.crypto.core.aes.AES_PROVIDER
 import net.corda.crypto.core.aes.secureRandom
@@ -16,6 +15,7 @@ class ManagedSecret(
     companion object {
         const val SECRET_DEFAULT_LENGTH = 32 // in bytes
         const val SECRET_MINIMAL_LENGTH = 32 // in bytes
+        const val DERIVE_ALGORITHM = "PBKDF2WithHmacSHA256"
 
         /**
          * Creates an instance of [ManagedSecret] by generating a new AES key.
@@ -39,7 +39,7 @@ class ManagedSecret(
                 "The salt must not be blank string."
             }
             val factory = SecretKeyFactory.getInstance(
-                AES_DERIVE_ALGORITHM,
+                DERIVE_ALGORITHM,
                 AES_PROVIDER
             )
             val spec = PBEKeySpec(

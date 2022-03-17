@@ -1,6 +1,7 @@
 package net.corda.crypto.core.aes
 
 import net.corda.crypto.core.Encryptor
+import net.corda.crypto.core.ManagedKey
 import net.corda.crypto.core.ManagedSecret
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
@@ -12,9 +13,11 @@ import javax.crypto.spec.SecretKeySpec
  * AES key wrapper (with the key length of 256) which supports wrapping/unwrapping
  */
 class AesKey(
-    internal val key: SecretKey
-) {
+    private val key: SecretKey
+) : ManagedKey, SecretKey by key {
     companion object {
+        const val DERIVE_ALGORITHM = "PBKDF2WithHmacSHA256"
+
         /**
          * Creates an instance of [AesKey] by generating a new AES key.
          */
@@ -46,7 +49,7 @@ class AesKey(
                 "The salt must not be blank string."
             }
             val factory = SecretKeyFactory.getInstance(
-                AES_DERIVE_ALGORITHM,
+                DERIVE_ALGORITHM,
                 AES_PROVIDER
             )
             val spec = PBEKeySpec(passphrase.toCharArray(), salt.toByteArray(), iterCount, AES_KEY_SIZE)
@@ -55,39 +58,17 @@ class AesKey(
         }
     }
 
-    /**
-     * Instance of [Encryptor] which supports encryption using this key (AES algorithm with
-     * the key length of 256)
-     */
-    val encryptor: Encryptor = AesEncryptor(this)
+    override val encryptor: Encryptor = AesEncryptor(this)
 
-    /**
-     * Encrypts (or wraps) the '[other]' [AesKey].
-     *
-     * @return [ByteArray] which represents `[other]` [AesKey].
-     *
-     * The [AesKey] can be restored from [ByteArray] by using `[unwrapKey]` method.
-     */
-    fun wrapKey(other: AesKey): ByteArray = encryptor.encrypt(other.key.encoded)
+    override fun wrapKey(other: ManagedKey): ByteArray =
+        encryptor.encrypt(other.encoded)
 
-    /**
-     * Decrypts (or unwraps) the '[other]' to [AesKey].
-     */
-    fun unwrapKey(other: ByteArray): AesKey = AesKey(SecretKeySpec(encryptor.decrypt(other), AES_KEY_ALGORITHM))
+    override fun unwrapKey(other: ByteArray): ManagedKey =
+        AesKey(SecretKeySpec(encryptor.decrypt(other), AES_KEY_ALGORITHM))
 
-    /**
-     * Encrypts (or wraps) the [ManagedSecret].
-     *
-     * @return [ByteArray] which represents '[secret]' [ManagedSecret].
-     *
-     * The [ManagedSecret] can be restored from [ByteArray] by using `[unwrapSecret]` method.
-     */
-    fun wrapSecret(secret: ManagedSecret): ByteArray = encryptor.encrypt(secret.secret)
+    override fun wrapSecret(secret: ManagedSecret): ByteArray = encryptor.encrypt(secret.secret)
 
-    /**
-     * Decrypts (or unwraps) the '[secret]' to  [ManagedSecret].
-     */
-    fun unwrapSecret(secret: ByteArray): ManagedSecret = ManagedSecret(encryptor.decrypt(secret))
+    override fun unwrapSecret(secret: ByteArray): ManagedSecret = ManagedSecret(encryptor.decrypt(secret))
 
     override fun hashCode(): Int {
         return key.hashCode()
