@@ -2,8 +2,8 @@ package net.corda.cpi.upload.endpoints.service
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.chunking.ChunkKey
-import net.corda.data.chunking.ChunkReceived
+import net.corda.data.chunking.ChunkAckKey
+import net.corda.data.chunking.ChunkAck
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.cpiupload.CpiUploadManager
 import net.corda.libs.cpiupload.CpiUploadManagerFactory
@@ -119,7 +119,7 @@ class CpiUploadRPCOpsServiceHandlerTest {
         whenever(publisherFactory.createPublisher(any(), any())).thenReturn(publisher)
 
         val processor = UploadStatusProcessor()
-        val subscription: Subscription<ChunkKey, ChunkReceived> = mock()
+        val subscription: Subscription<ChunkAckKey, ChunkAck> = mock()
         whenever(cpiUploadManagerFactory.create(any(), any(), any())).thenReturn(
             CpiUploadManagerImpl(
                 Schemas.VirtualNode.CPI_UPLOAD_TOPIC,
@@ -141,7 +141,7 @@ class CpiUploadRPCOpsServiceHandlerTest {
         val configReadServiceRegistrationHandle = mock<RegistrationHandle>()
         val ackProcessor = UploadStatusProcessor()
         val publisher: Publisher = mock()
-        val subscription: Subscription<ChunkKey, ChunkReceived> = mock()
+        val subscription: Subscription<ChunkAckKey, ChunkAck> = mock()
         val cpiUploadManager = CpiUploadManagerImpl("some topic", publisher, subscription, ackProcessor)
 
         cpiUploadRPCOpsServiceHandler.configReadServiceRegistrationHandle = configReadServiceRegistrationHandle

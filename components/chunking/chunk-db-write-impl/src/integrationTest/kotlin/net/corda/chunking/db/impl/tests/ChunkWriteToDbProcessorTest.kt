@@ -5,7 +5,7 @@ import net.corda.chunking.db.impl.AllChunksReceived
 import net.corda.chunking.db.impl.persistence.DatabaseChunkPersistence
 import net.corda.chunking.db.impl.ChunkWriteToDbProcessor
 import net.corda.data.chunking.Chunk
-import net.corda.data.chunking.ChunkReceived
+import net.corda.data.chunking.ChunkAck
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import org.assertj.core.api.Assertions.assertThat
@@ -30,9 +30,9 @@ internal class ChunkWriteToDbProcessorTest {
         whenever(persistChunk(any())).thenReturn(AllChunksReceived.YES)
     }
 
-    private fun processRequest(processor: ChunkWriteToDbProcessor, req: Chunk): ChunkReceived {
+    private fun processRequest(processor: ChunkWriteToDbProcessor, req: Chunk): ChunkAck {
         val records = processor.onNext(listOf(Record(topic, req.requestId, req)))
-        return records.first().value as ChunkReceived
+        return records.first().value as ChunkAck
     }
 
     private fun randomString() = UUID.randomUUID().toString()

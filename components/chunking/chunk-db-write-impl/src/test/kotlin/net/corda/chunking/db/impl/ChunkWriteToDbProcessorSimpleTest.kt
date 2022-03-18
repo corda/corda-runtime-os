@@ -3,8 +3,8 @@ package net.corda.chunking.db.impl
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.data.chunking.Chunk
-import net.corda.data.chunking.ChunkKey
-import net.corda.data.chunking.ChunkReceived
+import net.corda.data.chunking.ChunkAckKey
+import net.corda.data.chunking.ChunkAck
 import net.corda.data.crypto.SecureHash
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -67,11 +67,11 @@ class ChunkWriteToDbProcessorSimpleTest {
         verify(persistence).persistChunk(chunk)
 
         assertThat(records.isNotEmpty()).isTrue
-        val key = records.first().key as ChunkKey
-        val chunkReceived = records.first().value as ChunkReceived
+        val key = records.first().key as ChunkAckKey
+        val chunkAck = records.first().value as ChunkAck
 
         assertThat(requestId).isEqualTo(key.requestId)
-        assertThat(exceptionMessage).isEqualTo(chunkReceived.exception.errorMessage)
-        assertThat(CordaRuntimeException::class.java.name).isEqualTo(chunkReceived.exception.errorType)
+        assertThat(exceptionMessage).isEqualTo(chunkAck.exception.errorMessage)
+        assertThat(CordaRuntimeException::class.java.name).isEqualTo(chunkAck.exception.errorType)
     }
 }

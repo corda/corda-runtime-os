@@ -2,8 +2,9 @@ package net.corda.libs.cpiupload.impl
 
 import net.corda.chunking.RequestId
 import net.corda.data.ExceptionEnvelope
-import net.corda.data.chunking.UploadStatus
-import net.corda.data.chunking.ChunkReceived
+import net.corda.data.chunking.ChunkAck
+import net.corda.data.chunking.ChunkAckKey
+import net.corda.libs.cpiupload.CpiUploadManager
 import net.corda.v5.base.exceptions.CordaRuntimeException
 
 /**
@@ -18,19 +19,21 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
  * The class is entirely dependent on its inputs, i.e. it only expects an [ExceptionEnvelope] for a [UploadStatus.FAILED]
  */
 class UploadStatusTracker {
-    /** Track the ChunkReceived for this request.
+    inner class Part(val last:Boolean, val exceptionEnvelope: ExceptionEnvelope?)
+
+    /** Track the ChunkAck for this request.
      *
      * "Collapses" the [UploadStatus] on each message to a single value.
      * We need to do this because we're receiving these messages on a Compacted Queue
      * and they may arrive out of order from multiple publishers, to us (multiple subscribers).
      **/
     inner class Request {
-        private val parts = mutableSetOf<ChunkReceived>()
+        private val parts = mutableSetOf<Part>()
         private var expectedParts = -1
 
-        fun add(uploadStatus: ChunkReceived) {
-            parts.add(uploadStatus)
-            if (uploadStatus.last) expectedParts = uploadStatus.partNumber + 1
+        fun add(key: ChunkAckKey, ack: ChunkAck) {
+            parts.add(Part(ack.last, ack.exception))
+            if (ack.last) expectedParts = key.partNumber + 1
         }
 
         private val complete: Boolean get() = parts.size == expectedParts
@@ -41,34 +44,23 @@ class UploadStatusTracker {
          * If there is one or more [UploadStatus.FAILED] the upload has failed.
          * If there is one [UploadStatus.OK] and all messages received, the upload has succeeded.
          */
-        fun status(): UploadStatus {
-            if (parts.any { it.uploadStatus == UploadStatus.OK } && parts.any { it.uploadStatus == UploadStatus.FAILED }) {
-                // This should never happen, and should only be triggered by a careful crafted test case.
-                // In a production setting, this would be because one chunk was 'OK' (i.e. we actually wrote the full
-                // upload to the database) and one FAILED.  Yet we could
-                // never send an OK if we previously had a fail, and if sent a FAILED, we should have halted.
-                throw CordaRuntimeException("At least one part and but the whole request was OK")
-            }
-
-            // One fail is a definite fail.
-            if (parts.any { it.uploadStatus == UploadStatus.FAILED }) {
-                return UploadStatus.FAILED
-            }
-
+        fun status(): CpiUploadManager.UploadStatus {
             if (parts.count { it.last } > 1) {
-                // This exception should only ever happen in testing, otherwise something has really gone wrong.
-                // In a production setting, this would be because two "zero sized chunks" were sent for the
-                // given request, which shouldn't happen.
-                throw CordaRuntimeException("Two or more parts received for uploaded request id=${parts.first().requestId}")
+                // We should never see this in non-test code.  If we're sent two ChunkAcks with
+                // last = true, that means we've sent two zero size Chunks which means a failure
+                // in either the chunking library or the ChunkAck publishing code.
+                throw CordaRuntimeException("Cannot correctly determine number of chunks received")
             }
 
-            // Entirely possible to receive a message with status = 'OK', but not received all messages
-            // due to network issues, ordering etc.  So we must also check if we have also received all chunks.
-            if (parts.any { it.uploadStatus == UploadStatus.OK } && complete) {
-                return UploadStatus.OK
+            if (parts.any { it.exceptionEnvelope != null }) {
+                return CpiUploadManager.UploadStatus.FAILED
             }
 
-            return UploadStatus.IN_PROGRESS
+            if (complete) {
+                return CpiUploadManager.UploadStatus.OK
+            }
+
+            return CpiUploadManager.UploadStatus.IN_PROGRESS
         }
 
         /**
@@ -77,7 +69,7 @@ class UploadStatusTracker {
          * No other chunks ("in progress" or "ok") should contain an exception envelope .
          */
         fun exceptionEnvelope(): ExceptionEnvelope? =
-            parts.firstOrNull{ it.uploadStatus == UploadStatus.FAILED }?.exception
+            parts.firstOrNull { it.exceptionEnvelope != null }?.exceptionEnvelope
     }
 
     private val requestById = mutableMapOf<RequestId, Request>()
@@ -86,11 +78,11 @@ class UploadStatusTracker {
 
     fun remove(requestId: RequestId /* = kotlin.String */) = requestById.remove(requestId)
 
-    fun add(uploadStatus: ChunkReceived) =
-        requestById.computeIfAbsent(uploadStatus.requestId) { Request() }.add(uploadStatus)
+    fun add(key: ChunkAckKey, value: ChunkAck) =
+        requestById.computeIfAbsent(key.requestId) { Request() }.add(key, value)
 
-    fun status(requestId: RequestId): UploadStatus =
-        requestById[requestId]?.status() ?: UploadStatus.FAILED
+    fun status(requestId: RequestId): CpiUploadManager.UploadStatus =
+        requestById[requestId]?.status() ?: CpiUploadManager.UploadStatus.FAILED
 
     fun exceptionEnvelope(requestId: RequestId): ExceptionEnvelope? {
         return if (requestById.containsKey(requestId)) {

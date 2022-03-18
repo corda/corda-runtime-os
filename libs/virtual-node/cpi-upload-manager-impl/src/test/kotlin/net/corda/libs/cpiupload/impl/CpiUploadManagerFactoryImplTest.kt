@@ -1,7 +1,7 @@
 package net.corda.libs.cpiupload.impl
 
 import net.corda.chunking.RequestId
-import net.corda.data.chunking.ChunkReceived
+import net.corda.data.chunking.ChunkAck
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -17,7 +17,7 @@ internal class CpiUploadManagerFactoryImplTest {
     @Test
     fun `upload manager creation starts pub and sub`() {
         val factory = CpiUploadManagerFactoryImpl()
-        val subscription: CompactedSubscription<RequestId, ChunkReceived> = mock()
+        val subscription: CompactedSubscription<RequestId, ChunkAck> = mock()
         val config = mock<SmartConfig>()
         val publisher = mock<Publisher>()
 
@@ -26,7 +26,7 @@ internal class CpiUploadManagerFactoryImplTest {
         }
 
         val subscriptionFactory = mock<SubscriptionFactory>().apply {
-            `when`(createCompactedSubscription<RequestId, ChunkReceived>(any(), any(), any())).thenReturn(subscription)
+            `when`(createCompactedSubscription<RequestId, ChunkAck>(any(), any(), any())).thenReturn(subscription)
         }
 
         factory.create(config, publisherFactory, subscriptionFactory)

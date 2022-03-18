@@ -6,15 +6,14 @@ import net.corda.chunking.db.impl.validation.CpiValidator
 import net.corda.chunking.db.impl.validation.ValidationException
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.chunking.Chunk
-import net.corda.data.chunking.ChunkKey
-import net.corda.data.chunking.ChunkReceived
-import net.corda.data.chunking.UploadStatus
+import net.corda.data.chunking.ChunkAckKey
+import net.corda.data.chunking.ChunkAck
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.contextLogger
 
 /**
- * Persist a [Chunk] to the database and send an [ChunkReceived] message
+ * Persist a [Chunk] to the database and send an [ChunkAck] message
  */
 class ChunkWriteToDbProcessor(
     private val statusTopic: String,
@@ -25,7 +24,7 @@ class ChunkWriteToDbProcessor(
         private val log = contextLogger()
     }
 
-    private fun processChunk(request: Chunk): ChunkReceived {
+    private fun processChunk(request: Chunk): ChunkAck {
         log.debug("Processing chunk request id=${request.requestId} part=${request.partNumber}")
 
         val isLastChunk = (request.data.limit() == 0)
@@ -34,7 +33,7 @@ class ChunkWriteToDbProcessor(
             val allChunksReceived = persistence.persistChunk(request)
 
             if (allChunksReceived == AllChunksReceived.NO) {
-                return ChunkReceived(request.requestId, UploadStatus.IN_PROGRESS, request.partNumber, isLastChunk, null)
+                return ChunkAck(isLastChunk, null)
             }
 
             if (!persistence.checksumIsValid(request.requestId)) {
@@ -48,25 +47,19 @@ class ChunkWriteToDbProcessor(
         } catch (e: Exception) {
             log.error("Could not persist chunk $request", e)
 
-            return ChunkReceived(
-                request.requestId,
-                UploadStatus.FAILED,
-                request.partNumber,
-                isLastChunk,
-                ExceptionEnvelope(e::class.java.name, e.message)
-            )
+            return ChunkAck(isLastChunk, ExceptionEnvelope(e::class.java.name, e.message))
         }
 
-        return ChunkReceived(request.requestId, UploadStatus.OK, request.partNumber, isLastChunk, null)
+        return ChunkAck( isLastChunk, null)
     }
 
     override fun onNext(events: List<Record<RequestId, Chunk>>): List<Record<*, *>> {
         return events.map {
             val chunk = it.value!!
-            val chunkReceived = processChunk(chunk)
+            val chunkAck = processChunk(chunk)
             // We need a unique key for each request AND part number.
             // If we use request id only, we end up overwriting messages.
-            Record(statusTopic, ChunkKey(chunk.requestId, chunk.partNumber), chunkReceived)
+            Record(statusTopic, ChunkAckKey(chunk.requestId, chunk.partNumber), chunkAck)
         }
     }
 

@@ -1,7 +1,7 @@
 package net.corda.libs.cpiupload.impl
 
-import net.corda.data.chunking.ChunkKey
-import net.corda.data.chunking.ChunkReceived
+import net.corda.data.chunking.ChunkAckKey
+import net.corda.data.chunking.ChunkAck
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.cpiupload.CpiUploadManager
 import net.corda.libs.cpiupload.CpiUploadManagerFactory
@@ -33,13 +33,13 @@ class CpiUploadManagerFactoryImpl : CpiUploadManagerFactory {
     /**
      * @param config
      * @param subscriptionFactory used to create subscribers
-     * @param statusTopic we read (subscribe) to this topic to receive [ChunkReceived] messages
+     * @param statusTopic we read (subscribe) to this topic to receive [ChunkAck] messages
      */
     private fun createSubscriber(
         config: SmartConfig,
         subscriptionFactory: SubscriptionFactory,
         statusTopic: String
-    ): CompactedSubscription<ChunkKey, ChunkReceived> {
+    ): CompactedSubscription<ChunkAckKey, ChunkAck> {
         val instanceId = null // explicit rather than the 'hidden' default parameter fn call
         return subscriptionFactory.createCompactedSubscription(
             SubscriptionConfig(CPI_UPLOAD_GROUP, statusTopic, instanceId),

@@ -1,7 +1,9 @@
 package net.corda.libs.cpiupload.impl
 
-import net.corda.data.chunking.ChunkReceived
-import net.corda.data.chunking.UploadStatus
+import net.corda.data.ExceptionEnvelope
+import net.corda.data.chunking.ChunkAck
+import net.corda.data.chunking.ChunkAckKey
+import net.corda.libs.cpiupload.CpiUploadManager
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -14,7 +16,7 @@ internal class UploadStatusTrackerTest {
     fun `upload tracker returns failed for unknown request`() {
         val requestId = UUID.randomUUID().toString()
         val tracker = UploadStatusTracker()
-        assertThat(tracker.status(requestId)).isEqualTo(UploadStatus.FAILED)
+        assertThat(tracker.status(requestId)).isEqualTo(CpiUploadManager.UploadStatus.FAILED)
     }
 
     @Test
@@ -28,15 +30,15 @@ internal class UploadStatusTrackerTest {
     fun `upload tracker returns in progress for in progress request`() {
         val requestId = UUID.randomUUID().toString()
         val tracker = UploadStatusTracker()
-        tracker.add(ChunkReceived(requestId, UploadStatus.IN_PROGRESS, 0, false, null))
-        assertThat(tracker.status(requestId)).isEqualTo(UploadStatus.IN_PROGRESS)
+        tracker.add(ChunkAckKey(requestId, 0), ChunkAck(false, null))
+        assertThat(tracker.status(requestId)).isEqualTo(CpiUploadManager.UploadStatus.IN_PROGRESS)
     }
 
     @Test
     fun `upload tracker does not return exception envelope for in progress request`() {
         val requestId = UUID.randomUUID().toString()
         val tracker = UploadStatusTracker()
-        tracker.add(ChunkReceived(requestId, UploadStatus.IN_PROGRESS, 0, false, null))
+        tracker.add(ChunkAckKey(requestId, 0), ChunkAck(false, null))
         assertThat(tracker.exceptionEnvelope(requestId)).isNull()
     }
 
@@ -44,19 +46,19 @@ internal class UploadStatusTrackerTest {
     fun `upload tracker returns failed for any fail`() {
         val requestId = UUID.randomUUID().toString()
         val tracker = UploadStatusTracker()
-        tracker.add(ChunkReceived(requestId, UploadStatus.IN_PROGRESS, 0, false, null))
-        tracker.add(ChunkReceived(requestId, UploadStatus.FAILED, 1, false, null))
-        tracker.add(ChunkReceived(requestId, UploadStatus.OK, 2, false, null))
-        assertThat(tracker.exceptionEnvelope(requestId)).isNull()
+        tracker.add(ChunkAckKey(requestId, 0), ChunkAck(false, null))
+        tracker.add(ChunkAckKey(requestId, 1), ChunkAck(false, ExceptionEnvelope("error", "")))
+        tracker.add(ChunkAckKey(requestId, 2), ChunkAck(false, null))
+        assertThat(tracker.exceptionEnvelope(requestId)).isNotNull
     }
 
     @Test
     fun `upload tracker is in progress if last part not received`() {
         val requestId = UUID.randomUUID().toString()
         val tracker = UploadStatusTracker()
-        tracker.add(ChunkReceived(requestId, UploadStatus.IN_PROGRESS, 0, false, null))
-        tracker.add(ChunkReceived(requestId, UploadStatus.IN_PROGRESS, 1, false, null))
-        tracker.add(ChunkReceived(requestId, UploadStatus.OK, 2, false, null))
+        tracker.add(ChunkAckKey(requestId, 0), ChunkAck(false, null))
+        tracker.add(ChunkAckKey(requestId, 1), ChunkAck(false, null))
+        tracker.add(ChunkAckKey(requestId, 2), ChunkAck(false, null))
         assertThat(tracker.exceptionEnvelope(requestId)).isNull()
     }
 
@@ -64,22 +66,22 @@ internal class UploadStatusTrackerTest {
     fun `upload tracker is in progress last chunk received but not all chunks`() {
         val requestId = UUID.randomUUID().toString()
         val tracker = UploadStatusTracker()
-        tracker.add(ChunkReceived(requestId, UploadStatus.IN_PROGRESS, 0, false, null))
-        tracker.add(ChunkReceived(requestId, UploadStatus.IN_PROGRESS, 1, false, null))
+        tracker.add(ChunkAckKey(requestId, 0), ChunkAck(false, null))
+        tracker.add(ChunkAckKey(requestId, 1), ChunkAck(false, null))
         // no 2
-        tracker.add(ChunkReceived(requestId, UploadStatus.OK, 3, true, null))
-        assertThat(tracker.status(requestId)).isEqualTo(UploadStatus.IN_PROGRESS)
+        tracker.add(ChunkAckKey(requestId, 3), ChunkAck(true, null))
+        assertThat(tracker.status(requestId)).isEqualTo(CpiUploadManager.UploadStatus.IN_PROGRESS)
     }
 
     @Test
     fun `upload tracker is ok if all chunks received`() {
         val requestId = UUID.randomUUID().toString()
         val tracker = UploadStatusTracker()
-        tracker.add(ChunkReceived(requestId, UploadStatus.IN_PROGRESS, 0, false, null))
-        tracker.add(ChunkReceived(requestId, UploadStatus.IN_PROGRESS, 1, false, null))
-        tracker.add(ChunkReceived(requestId, UploadStatus.IN_PROGRESS, 2, false, null))
-        tracker.add(ChunkReceived(requestId, UploadStatus.OK, 3, true, null))
-        assertThat(tracker.status(requestId)).isEqualTo(UploadStatus.OK)
+        tracker.add(ChunkAckKey(requestId, 0), ChunkAck(false, null))
+        tracker.add(ChunkAckKey(requestId, 1), ChunkAck(false, null))
+        tracker.add(ChunkAckKey(requestId, 2), ChunkAck(false, null))
+        tracker.add(ChunkAckKey(requestId, 3), ChunkAck(true, null))
+        assertThat(tracker.status(requestId)).isEqualTo(CpiUploadManager.UploadStatus.OK)
     }
 
     @Test
@@ -87,32 +89,32 @@ internal class UploadStatusTrackerTest {
         val requestId = UUID.randomUUID().toString()
         val tracker = UploadStatusTracker()
         // first chunk could be received last by one of the db-workers
-        tracker.add(ChunkReceived(requestId, UploadStatus.OK, 0, false, null))
-        tracker.add(ChunkReceived(requestId, UploadStatus.IN_PROGRESS, 1, false, null))
-        tracker.add(ChunkReceived(requestId, UploadStatus.IN_PROGRESS, 2, false, null))
-        tracker.add(ChunkReceived(requestId, UploadStatus.IN_PROGRESS, 3, true, null))
-        assertThat(tracker.status(requestId)).isEqualTo(UploadStatus.OK)
+        tracker.add(ChunkAckKey(requestId, 0), ChunkAck(false, null))
+        tracker.add(ChunkAckKey(requestId, 1), ChunkAck(false, null))
+        tracker.add(ChunkAckKey(requestId, 2), ChunkAck(false, null))
+        tracker.add(ChunkAckKey(requestId, 3), ChunkAck(true, null))
+        assertThat(tracker.status(requestId)).isEqualTo(CpiUploadManager.UploadStatus.OK)
     }
 
     @Test
     fun `upload tracker is ok with random ordering of chunks`() {
         val requestId = UUID.randomUUID().toString()
         val tracker = UploadStatusTracker()
-        tracker.add(ChunkReceived(requestId, UploadStatus.OK, 3, true, null))
-        tracker.add(ChunkReceived(requestId, UploadStatus.IN_PROGRESS, 1, false, null))
-        tracker.add(ChunkReceived(requestId, UploadStatus.IN_PROGRESS, 0, false, null))
-        tracker.add(ChunkReceived(requestId, UploadStatus.IN_PROGRESS, 2, false, null))
-        assertThat(tracker.status(requestId)).isEqualTo(UploadStatus.OK)
+        tracker.add(ChunkAckKey(requestId, 3), ChunkAck(true, null))
+        tracker.add(ChunkAckKey(requestId, 1), ChunkAck(false, null))
+        tracker.add(ChunkAckKey(requestId, 0), ChunkAck(false, null))
+        tracker.add(ChunkAckKey(requestId, 2), ChunkAck(false, null))
+        assertThat(tracker.status(requestId)).isEqualTo(CpiUploadManager.UploadStatus.OK)
     }
 
     @Test
     fun `upload tracker does not return exception envelope for ok request`() {
         val requestId = UUID.randomUUID().toString()
         val tracker = UploadStatusTracker()
-        tracker.add(ChunkReceived(requestId, UploadStatus.OK, 3, true, null))
-        tracker.add(ChunkReceived(requestId, UploadStatus.IN_PROGRESS, 1, false, null))
-        tracker.add(ChunkReceived(requestId, UploadStatus.IN_PROGRESS, 0, false, null))
-        tracker.add(ChunkReceived(requestId, UploadStatus.IN_PROGRESS, 2, false, null))
+        tracker.add(ChunkAckKey(requestId, 3), ChunkAck(true, null))
+        tracker.add(ChunkAckKey(requestId, 1), ChunkAck(false, null))
+        tracker.add(ChunkAckKey(requestId, 0), ChunkAck(false, null))
+        tracker.add(ChunkAckKey(requestId, 2), ChunkAck(false, null))
         assertThat(tracker.exceptionEnvelope(requestId)).isNull()
     }
 
@@ -122,39 +124,26 @@ internal class UploadStatusTrackerTest {
         val otherRequestId = UUID.randomUUID().toString()
 
         val tracker = UploadStatusTracker()
-        tracker.add(ChunkReceived(requestId, UploadStatus.OK, 3, true, null))
-        tracker.add(ChunkReceived(requestId, UploadStatus.IN_PROGRESS, 1, false, null))
+        tracker.add(ChunkAckKey(requestId, 3), ChunkAck(true, null))
+        tracker.add(ChunkAckKey(requestId, 1), ChunkAck(false, null))
 
-        tracker.add(ChunkReceived(otherRequestId, UploadStatus.IN_PROGRESS, 5, false, null))
+        tracker.add(ChunkAckKey(otherRequestId, 5), ChunkAck(false, null))
 
-        tracker.add(ChunkReceived(requestId, UploadStatus.IN_PROGRESS, 0, false, null))
-        tracker.add(ChunkReceived(requestId, UploadStatus.IN_PROGRESS, 2, false, null))
+        tracker.add(ChunkAckKey(requestId, 0), ChunkAck(false, null))
+        tracker.add(ChunkAckKey(requestId, 2), ChunkAck(false, null))
 
-        assertThat(tracker.status(requestId)).isEqualTo(UploadStatus.OK)
-        assertThat(tracker.status(otherRequestId)).isEqualTo(UploadStatus.IN_PROGRESS)
+        assertThat(tracker.status(requestId)).isEqualTo(CpiUploadManager.UploadStatus.OK)
+        assertThat(tracker.status(otherRequestId)).isEqualTo(CpiUploadManager.UploadStatus.IN_PROGRESS)
     }
 
     @Test
     fun `upload tracker throws exception on multiple last chunks`() {
+        // This should never happen in a production environment
         val requestId = UUID.randomUUID().toString()
 
         val tracker = UploadStatusTracker()
-        tracker.add(ChunkReceived(requestId, UploadStatus.OK, 3, true, null))
-        tracker.add(ChunkReceived(requestId, UploadStatus.IN_PROGRESS, 1, true, null))
-
-        assertThrows<CordaRuntimeException> {
-            tracker.status(requestId)
-        }
-    }
-
-    @Test
-    fun `upload tracker throws exception on ok and failed chunks`() {
-        // This should not happen in a production environment
-        val requestId = UUID.randomUUID().toString()
-
-        val tracker = UploadStatusTracker()
-        tracker.add(ChunkReceived(requestId, UploadStatus.OK, 3, true, null))
-        tracker.add(ChunkReceived(requestId, UploadStatus.FAILED, 1, true, null))
+        tracker.add(ChunkAckKey(requestId, 3), ChunkAck(true, null))
+        tracker.add(ChunkAckKey(requestId, 1), ChunkAck(true, null))
 
         assertThrows<CordaRuntimeException> {
             tracker.status(requestId)
