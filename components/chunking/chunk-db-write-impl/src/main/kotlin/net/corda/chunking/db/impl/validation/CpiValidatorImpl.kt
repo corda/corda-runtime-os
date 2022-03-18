@@ -2,12 +2,15 @@ package net.corda.chunking.db.impl.validation
 
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
+import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.libs.packaging.CpiMetadata
 import net.corda.packaging.CPI
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.crypto.SecureHash
 
 class CpiValidatorImpl(
+    private val publisher: StatusPublisher,
     private val persistence: ChunkPersistence,
     private val cpiInfoWriteService: CpiInfoWriteService
 ) : CpiValidator {
@@ -15,21 +18,30 @@ class CpiValidatorImpl(
         private val log = contextLogger()
     }
 
-    override fun validate(requestId: RequestId) {
+    private val validationFunctions = ValidationFunctions(publisher)
+
+    override fun validate(requestId: RequestId): SecureHash {
         //  Each function may throw a [ValidationException]
         log.debug("Validating $requestId")
 
-        val fileInfo = ValidationFunctions.getFileInfo(persistence, requestId)
+        publisher.update(requestId, "Validating upload")
+        val fileInfo = validationFunctions.getFileInfo(persistence, requestId)
 
-        ValidationFunctions.checkSignature(fileInfo)
+        publisher.update(requestId, "Checking signatures")
+        validationFunctions.checkSignature(fileInfo)
 
-        val cpi: CPI = ValidationFunctions.checkCpi(fileInfo)
+        publisher.update(requestId, "Validating CPI")
+        val cpi: CPI = validationFunctions.checkCpi(fileInfo)
 
-        ValidationFunctions.checkGroupIdDoesNotExistForThisCpi(persistence, cpi)
+        publisher.update(requestId, "Validating group id")
+        validationFunctions.checkGroupIdDoesNotExistForThisCpi(persistence, cpi)
 
-        ValidationFunctions.persistToDatabase(persistence, cpi, fileInfo, requestId)
+        publisher.update(requestId, "Persisting CPI")
+        validationFunctions.persistToDatabase(persistence, cpi, fileInfo, requestId)
 
-        // Lastly publish the CPI info to Kafka.
+        publisher.update(requestId, "Notifying flow workers")
         cpiInfoWriteService.put(CpiMetadata.fromLegacy(cpi))
+
+        return fileInfo.checksum
     }
 }

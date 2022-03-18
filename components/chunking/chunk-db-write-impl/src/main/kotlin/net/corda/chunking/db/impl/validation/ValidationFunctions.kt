@@ -3,6 +3,7 @@ package net.corda.chunking.db.impl.validation
 import net.corda.chunking.ChunkReaderFactory
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
+import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.packaging.CPI
 import net.corda.packaging.PackagingException
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -13,7 +14,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import javax.persistence.PersistenceException
 
-object ValidationFunctions {
+class ValidationFunctions(private val publisher: StatusPublisher) {
     private val tmpDir = Paths.get(System.getProperty("java.io.tmpdir"), "unpacking")
         .apply { Files.createDirectories(this) }
 
@@ -71,6 +72,8 @@ object ValidationFunctions {
     }
 
     /**
+     * Persists CPI metadata and CPK content.
+     *
      * @throws ValidationException if there is an error
      */
     @Suppress("ThrowsCount")

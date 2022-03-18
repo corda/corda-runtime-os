@@ -1,9 +1,8 @@
 package net.corda.libs.cpiupload.impl
 
 import net.corda.data.ExceptionEnvelope
-import net.corda.data.chunking.ChunkAck
-import net.corda.data.chunking.ChunkAckKey
-import net.corda.libs.cpiupload.CpiUploadManager
+import net.corda.data.chunking.UploadStatus
+import net.corda.data.chunking.UploadStatusKey
 import net.corda.messaging.api.records.Record
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -21,82 +20,64 @@ internal class UploadStatusProcessorTest {
     }
 
     private fun incrementingChunkKey() = IncrementingChunkKey()
-    private fun status(key: IncrementingChunkKey) = processor.status(key.requestId).first
-    private fun exceptionEnvelope(key: IncrementingChunkKey) = processor.status(key.requestId).second
+    private fun isComplete(key: IncrementingChunkKey) = processor.status(key.requestId)?.complete ?: false
+    private fun exceptionEnvelope(key: IncrementingChunkKey) = processor.status(key.requestId)!!.exception
 
     /** Creates a new key with a request id, and [next()] returns the next key and partnumber, starting at 0 */
     class IncrementingChunkKey {
         val requestId = UUID.randomUUID().toString()
-        private var partNumber = 0
-        fun next(): ChunkAckKey {
-            val key = ChunkAckKey(requestId, partNumber)
-            ++partNumber
+        private var sequenceNumber = 0
+        fun next(): UploadStatusKey {
+            val key = UploadStatusKey(requestId, sequenceNumber)
+            ++sequenceNumber
             return key
         }
     }
 
     @Test
-    fun `processor returns in progress status for in progress request in snapshot`() {
+    fun `processor returns incomplete status for in progress request in snapshot`() {
         val chunkAckKey = incrementingChunkKey()
+        UploadStatus(false, "", null, null)
+        processor.onSnapshot(mapOf(chunkAckKey.next() to UploadStatus(false, "", null, null)))
 
-        processor.onSnapshot(mapOf(chunkAckKey.next() to ChunkAck(false, null)))
-
-        assertThat(status(chunkAckKey)).isEqualTo(CpiUploadManager.UploadStatus.IN_PROGRESS)
+        assertThat(isComplete(chunkAckKey)).isEqualTo(false)
     }
 
     @Test
-    fun `processor returns failed status for unknown request not in snapshot`() {
+    fun `processor returns null for unknown request not in snapshot`() {
         val chunkAckKey = incrementingChunkKey()
         val unexpectedChunkKey = incrementingChunkKey()
 
-        processor.onSnapshot(mapOf(chunkAckKey.next() to ChunkAck(false, null)))
+        processor.onSnapshot(mapOf(chunkAckKey.next() to UploadStatus(false, "", null, null)))
 
-        assertThat(status(unexpectedChunkKey)).isEqualTo(CpiUploadManager.UploadStatus.FAILED)
+        assertThat(isComplete(unexpectedChunkKey)).isEqualTo(false)
+        assertThat(processor.status(unexpectedChunkKey.requestId)).isNull()
     }
 
     @Test
     fun `processor returns status OK on next chunk received in order`() {
         val chunkAckKey = incrementingChunkKey()
-        processor.onSnapshot(mapOf(chunkAckKey.next() to ChunkAck(false, null)))
+        processor.onSnapshot(mapOf(chunkAckKey.next() to UploadStatus(false, "", null, null)))
 
-        val nextChunkReceived = ChunkAck(true, null)
+        val nextChunkReceived = UploadStatus(true, "", null, null)
         processor.onNext(Record(topic, chunkAckKey.next(), nextChunkReceived), nextChunkReceived, emptyMap())
 
-        assertThat(status(chunkAckKey)).isEqualTo(CpiUploadManager.UploadStatus.OK)
-    }
-
-    @Test
-    fun `processor returns status OK on next chunk received out of order`() {
-        val chunkAckKey = incrementingChunkKey()
-        // Out of order - don't inline these.
-        val key0 = chunkAckKey.next()
-        val key1 = chunkAckKey.next()
-        val key2 = chunkAckKey.next()
-
-        processor.onSnapshot(mapOf(key0 to ChunkAck(false, null)))
-
-        val nextChunkReceived = ChunkAck(true, null)
-        processor.onNext(Record(topic, key2, nextChunkReceived), nextChunkReceived, emptyMap())
-        assertThat(status(chunkAckKey)).isEqualTo(CpiUploadManager.UploadStatus.IN_PROGRESS)
-
-        val finalChunkReceived = ChunkAck(false, null)
-        processor.onNext(Record(topic, key1, finalChunkReceived), finalChunkReceived, emptyMap())
-        assertThat(status(chunkAckKey)).isEqualTo(CpiUploadManager.UploadStatus.OK)
+        assertThat(isComplete(chunkAckKey)).isEqualTo(true)
     }
 
     @Test
     fun `processor returns failed status and exception in failed chunk received`() {
         val chunkAckKey = incrementingChunkKey()
-        processor.onSnapshot(mapOf(chunkAckKey.next() to ChunkAck(false, null)))
+        processor.onSnapshot(mapOf(chunkAckKey.next() to UploadStatus(false, "", null, null)))
 
         // Still in progress with missing chunk
-        val statusOfLastChunk = ChunkAck(false, null)
+        val statusOfLastChunk = UploadStatus(false, "", null, null)
         processor.onNext(Record(topic, chunkAckKey.next(), statusOfLastChunk), statusOfLastChunk, emptyMap())
 
-        val statusOfNextChunk = ChunkAck(false, ExceptionEnvelope("SomeException", "some message"))
+        val statusOfNextChunk = UploadStatus(false, "", null, ExceptionEnvelope("SomeException", "some message"))
         processor.onNext(Record(topic, chunkAckKey.next(), statusOfNextChunk), statusOfNextChunk, emptyMap())
 
-        assertThat(status(chunkAckKey)).isEqualTo(CpiUploadManager.UploadStatus.FAILED)
+        assertThat(isComplete(chunkAckKey)).isEqualTo(false)
         assertThat(exceptionEnvelope(chunkAckKey)).isNotNull
     }
 
@@ -107,16 +88,17 @@ internal class UploadStatusProcessorTest {
         val chunkAckKey = incrementingChunkKey()
         processor.onSnapshot(emptyMap())
 
-        val firstChunk = ChunkAck(false, null)
+        val firstChunk = UploadStatus(false, "", null, null)
         processor.onNext(Record(topic, chunkAckKey.next(), firstChunk), firstChunk, emptyMap())
 
-        val nextChunkReceived = ChunkAck(false, null)
+        val nextChunkReceived = UploadStatus(false, "", null, null)
         processor.onNext(Record(topic, chunkAckKey.next(), nextChunkReceived), nextChunkReceived, emptyMap())
 
-        assertThat(status(chunkAckKey)).isEqualTo(CpiUploadManager.UploadStatus.IN_PROGRESS)
+        assertThat(isComplete(chunkAckKey)).isEqualTo(false)
 
         processor.onNext(Record(topic, chunkAckKey.next(), null), nextChunkReceived, emptyMap())
-        assertThat(status(chunkAckKey)).isEqualTo(CpiUploadManager.UploadStatus.FAILED)
+
+        assertThat(processor.status(chunkAckKey.requestId)).isNull()
     }
 
     @Test
@@ -125,16 +107,16 @@ internal class UploadStatusProcessorTest {
         val chunkKeyB = incrementingChunkKey()
         processor.onSnapshot(emptyMap())
 
-        processor.onNext(Record(topic, chunkKeyA.next(), ChunkAck(false, null)), null, emptyMap())
-        processor.onNext(Record(topic, chunkKeyB.next(), ChunkAck(false, null)), null, emptyMap())
+        processor.onNext(Record(topic, chunkKeyA.next(), UploadStatus(false, "", null, null)), null, emptyMap())
+        processor.onNext(Record(topic, chunkKeyB.next(), UploadStatus(false, "", null, null)), null, emptyMap())
 
-        assertThat(status(chunkKeyA)).isEqualTo(CpiUploadManager.UploadStatus.IN_PROGRESS)
-        assertThat(status(chunkKeyB)).isEqualTo(CpiUploadManager.UploadStatus.IN_PROGRESS)
+        assertThat(isComplete(chunkKeyA)).isEqualTo(false)
+        assertThat(isComplete(chunkKeyB)).isEqualTo(false)
 
-        processor.onNext(Record(topic, chunkKeyA.next(), ChunkAck(true, null)), null, emptyMap())
-        processor.onNext(Record(topic, chunkKeyB.next(), ChunkAck(true, null)), null, emptyMap())
+        processor.onNext(Record(topic, chunkKeyA.next(), UploadStatus(true, "", null, null)), null, emptyMap())
+        processor.onNext(Record(topic, chunkKeyB.next(), UploadStatus(true, "", null, null)), null, emptyMap())
 
-        assertThat(status(chunkKeyA)).isEqualTo(CpiUploadManager.UploadStatus.OK)
-        assertThat(status(chunkKeyB)).isEqualTo(CpiUploadManager.UploadStatus.OK)
+        assertThat(isComplete(chunkKeyA)).isEqualTo(true)
+        assertThat(isComplete(chunkKeyB)).isEqualTo(true)
     }
 }
