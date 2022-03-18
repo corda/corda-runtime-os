@@ -40,7 +40,7 @@ class WaitForLogs(
     }
 
     override fun run() {
-        (1..6).forEach { _ ->
+        for (i in 1..6) {
             if (waitOnce()) {
                 return
             }
