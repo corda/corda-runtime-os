@@ -1,7 +1,6 @@
 package net.corda.flow.fiber.factory
 
 import co.paralleluniverse.fibers.FiberScheduler
-import net.corda.data.flow.FlowKey
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberImpl
 import net.corda.v5.application.flows.Flow
@@ -12,12 +11,12 @@ import java.util.UUID
 @Suppress("Unused")
 class FlowFiberFactoryImpl : FlowFiberFactory {
 
-    override fun createFlowFiber(flowKey: FlowKey, logic: Flow<*>, scheduler: FiberScheduler): FlowFiber<Any?> {
+    override fun createFlowFiber(flowId: String, logic: Flow<*>, scheduler: FiberScheduler): FlowFiber<Any?> {
         try {
-            val id = UUID.fromString(flowKey.flowId)
-            return FlowFiberImpl(id, flowKey, logic, scheduler)
+            val id = UUID.fromString(flowId)
+            return FlowFiberImpl(id, logic, scheduler)
         } catch (e: Throwable) {
-            throw IllegalArgumentException("Expected the flow key to have a UUID id found '${flowKey.flowId}' instead.", e)
+            throw IllegalArgumentException("Expected the flow key to have a UUID id found '${flowId}' instead.", e)
         }
     }
 }

@@ -17,7 +17,7 @@ import org.mockito.kotlin.whenever
 
 class FlowEngineImplTest {
     private val flowFiberService = MockFlowFiberService()
-    private val flowStackService = flowFiberService.flowFiberExecutionContext.flowStackService
+    private val flowStack = flowFiberService.flowStack
     private val sandboxDependencyInjector = flowFiberService.flowFiberExecutionContext.sandboxDependencyInjector
     private val flowFiber = flowFiberService.flowFiber
     private val flowStackItem = FlowStackItem()
@@ -27,7 +27,7 @@ class FlowEngineImplTest {
     @BeforeEach
     fun setup() {
         whenever(subFlow.call()).thenReturn(result)
-        whenever(flowStackService.pop()).thenReturn(flowStackItem)
+        whenever(flowStack.pop()).thenReturn(flowStackItem)
     }
 
     @Test
@@ -45,10 +45,10 @@ class FlowEngineImplTest {
 
         // verify unordered calls
         verify(sandboxDependencyInjector).injectServices(subFlow)
-        verify(flowStackService).push(subFlow)
+        verify(flowStack).push(subFlow)
 
         // verify ordered calls
-        inOrder(sandboxDependencyInjector, flowFiber, flowStackService, subFlow) {
+        inOrder(sandboxDependencyInjector, flowFiber, flowStack, subFlow) {
             verify(sandboxDependencyInjector).injectServices(subFlow)
             verify(subFlow).call()
 
@@ -75,10 +75,10 @@ class FlowEngineImplTest {
 
         // verify unordered calls
         verify(sandboxDependencyInjector).injectServices(subFlow)
-        verify(flowStackService).push(subFlow)
+        verify(flowStack).push(subFlow)
 
         // verify ordered calls
-        inOrder(sandboxDependencyInjector, flowFiber, flowStackService, subFlow) {
+        inOrder(sandboxDependencyInjector, flowFiber, flowStack, subFlow) {
             verify(sandboxDependencyInjector).injectServices(subFlow)
             verify(subFlow).call()
 

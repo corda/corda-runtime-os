@@ -1,7 +1,5 @@
 package net.corda.flow.pipeline.handlers.requests.sessions
 
-import net.corda.data.flow.event.MessageDirection
-import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.waiting.SessionConfirmation
 import net.corda.data.flow.state.waiting.SessionConfirmationType
@@ -9,9 +7,8 @@ import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
-import net.corda.flow.pipeline.handlers.addOrReplaceSession
+import net.corda.flow.pipeline.factory.SessionEventFactory
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
-import net.corda.flow.pipeline.handlers.requests.requireCheckpoint
 import net.corda.session.manager.SessionManager
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -22,7 +19,9 @@ import java.time.Instant
 @Component(service = [FlowRequestHandler::class])
 class InitiateFlowRequestHandler @Activate constructor(
     @Reference(service = SessionManager::class)
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    @Reference(service = SessionEventFactory::class)
+    private val sessionEventFactory: SessionEventFactory,
 ) : FlowRequestHandler<FlowIORequest.InitiateFlow> {
 
     override val type = FlowIORequest.InitiateFlow::class.java
@@ -31,19 +30,22 @@ class InitiateFlowRequestHandler @Activate constructor(
         return WaitingFor(SessionConfirmation(listOf(request.sessionId), SessionConfirmationType.INITIATE))
     }
 
-    override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.InitiateFlow): FlowEventContext<Any> {
-        val checkpoint = requireCheckpoint(context)
+    override fun postProcess(
+        context: FlowEventContext<Any>,
+        request: FlowIORequest.InitiateFlow
+    ): FlowEventContext<Any> {
+        val checkpoint = context.checkpoint
 
         val now = Instant.now()
 
-        // throw an error if the session already exists (shouldn't really get here for real, but for this class, it's not valid)
-
-        val flowKey = checkpoint.flowKey
         val payload = SessionInit.newBuilder()
             // Throw an error if a non initiating flow is trying to create this session
-            .setFlowName(checkpoint.flowStackItems.first().flowName)
-            .setFlowKey(flowKey)
+            .setFlowName(checkpoint.flowStack.peekFirst().flowName)
+            .setFlowId(checkpoint.flowId)
             .setCpiId(checkpoint.flowStartContext.cpiId)
+            // TODO Need member lookup service to get the holding identity of the peer
+            .setInitiatedIdentity(HoldingIdentity(request.x500Name.toString(), "flow-worker-dev"))
+            .setInitiatingIdentity(checkpoint.holdingIdentity)
             .setPayload(ByteBuffer.wrap(byteArrayOf()))
             .build()
 
@@ -61,13 +63,13 @@ class InitiateFlowRequestHandler @Activate constructor(
             .build()
 
         val sessionState = sessionManager.processMessageToSend(
-            key = checkpoint.flowKey.flowId,
+            key = checkpoint.flowId,
             sessionState = null,
-            event = event,
+            event = sessionEventFactory.create(request.sessionId, now, payload),
             instant = now
         )
 
-        checkpoint.addOrReplaceSession(sessionState)
+        checkpoint.putSessionState(sessionState)
 
         return context
     }

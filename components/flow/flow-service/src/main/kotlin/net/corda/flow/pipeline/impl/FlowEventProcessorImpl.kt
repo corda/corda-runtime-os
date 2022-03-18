@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.impl
 
-import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.Checkpoint
 import net.corda.flow.pipeline.FlowEventProcessor
@@ -21,11 +20,11 @@ class FlowEventProcessorImpl(
         val log = contextLogger()
     }
 
-    override val keyClass = FlowKey::class.java
+    override val keyClass = String::class.java
     override val stateValueClass = Checkpoint::class.java
     override val eventValueClass = FlowEvent::class.java
 
-    override fun onNext(state: Checkpoint?, event: Record<FlowKey, FlowEvent>): StateAndEventProcessor.Response<Checkpoint> {
+    override fun onNext(state: Checkpoint?, event: Record<String, FlowEvent>): StateAndEventProcessor.Response<Checkpoint> {
         val flowEvent = event.value ?: throw FlowHospitalException("FlowEvent was null")
         log.info("Flow [${event.key}] Received event: ${flowEvent.payload::class.java} / ${flowEvent.payload}")
         return try {

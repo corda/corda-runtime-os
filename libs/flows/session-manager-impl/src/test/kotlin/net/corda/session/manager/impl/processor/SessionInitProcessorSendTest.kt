@@ -1,9 +1,9 @@
 package net.corda.session.manager.impl.processor
 
-import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionStateType
+import net.corda.data.identity.HoldingIdentity
 import net.corda.test.flow.util.buildSessionEvent
 import net.corda.test.flow.util.buildSessionState
 import org.assertj.core.api.Assertions.assertThat
@@ -15,7 +15,7 @@ class SessionInitProcessorSendTest {
     @Test
     fun `Send init when state is not null`() {
         val sessionInit = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionInit(
-            "flow", "cpiId", FlowKey(), null
+            "flow", "cpiId", "flowId1", initiatedIdentity, initiatingIdentity, null
         ))
 
         val sessionState = buildSessionState(SessionStateType.CREATED, 0, listOf(), 1, listOf(sessionInit))
@@ -30,7 +30,7 @@ class SessionInitProcessorSendTest {
     @Test
     fun `Send session Init`() {
         val sessionInitEvent = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionInit(
-            "flow", "cpiId", FlowKey(), null
+            "flow", "cpiId", "flowId1", initiatedIdentity, initiatingIdentity, null
         ))
         val sessionInitProcessor = SessionInitProcessorSend("key", null, sessionInitEvent, Instant.now())
 

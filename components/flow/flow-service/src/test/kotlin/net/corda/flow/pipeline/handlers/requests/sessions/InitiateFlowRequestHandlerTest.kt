@@ -1,122 +1,90 @@
 package net.corda.flow.pipeline.handlers.requests.sessions
 
-import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStackItem
-import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionInit
-import net.corda.data.flow.state.Checkpoint
-import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
-import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.SessionConfirmation
 import net.corda.data.flow.state.waiting.SessionConfirmationType
 import net.corda.data.identity.HoldingIdentity
+import net.corda.flow.ALICE_X500_NAME
+import net.corda.flow.RequestHandlerTestContext
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.pipeline.FlowEventContext
-import net.corda.flow.pipeline.FlowProcessingException
-import net.corda.flow.test.utils.buildFlowEventContext
-import net.corda.session.manager.SessionManager
-import net.corda.v5.base.types.MemberX500Name
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.eq
-import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.nio.ByteBuffer
-import java.time.Instant
 
 class InitiateFlowRequestHandlerTest {
 
-    private companion object {
-        const val FLOW_ID = "flow id"
-        const val SESSION_ID = "session id"
-        const val CPI_ID = "cpi id"
-        const val INITIATING_FLOW_NAME = "Initiating flow"
+    private val sessionId1 = "s1"
+    private val sessionState1 = SessionState().apply { this.sessionId = sessionId1 }
+    private val sessionEvent1 = SessionEvent().apply { this.sessionId = sessionId1 }
+    private val firstFlowStackItem = FlowStackItem().apply { flowName = "flow name" }
+    private val testContext = RequestHandlerTestContext(Any())
+    private val ioRequest = FlowIORequest.InitiateFlow(ALICE_X500_NAME, sessionId1)
+    private val handler = InitiateFlowRequestHandler(testContext.sessionManager, testContext.sessionEventFactory)
 
-        val HOLDING_IDENTITY = HoldingIdentity("x500 name", "group id")
-        val FLOW_KEY = FlowKey(FLOW_ID, HOLDING_IDENTITY)
-        val X500_NAME = MemberX500Name(
-            commonName = "Alice",
-            organisation = "Alice Corp",
-            locality = "LDN",
-            country = "GB"
-        )
-    }
+    @Suppress("Unused")
+    @BeforeEach
+    fun setup() {
+        val sessionEventFactory = testContext.sessionEventFactory
 
-    private val sessionState = SessionState.newBuilder()
-        .setSessionId(SESSION_ID)
-        .setSessionStartTime(Instant.now())
-        .setLastReceivedMessageTime(Instant.now())
-        .setLastSentMessageTime(Instant.now())
-        .setCounterpartyIdentity(HoldingIdentity("Alice", "group1"))
-        .setSendAck(true)
-        .setReceivedEventsState(SessionProcessState(0, emptyList()))
-        .setSendEventsState(SessionProcessState(0, emptyList()))
-        .setStatus(SessionStateType.CONFIRMED)
-        .build()
+        whenever(sessionEventFactory.create(
+            eq(sessionId1),
+            any(),
+            argThat { matchExpectedPayload(this) }
+        )).thenReturn(sessionEvent1)
 
-    private val sessionManager = mock<SessionManager>()
-
-    private val closeSessionsRequestHandler = InitiateFlowRequestHandler(sessionManager)
-
-    @Test
-    fun `Returns an updated WaitingFor of SessionConfirmation (Initiate)`() {
-        val inputContext: FlowEventContext<Any> = buildFlowEventContext(checkpoint = Checkpoint(), inputEventPayload = Unit)
-
-        val result = closeSessionsRequestHandler.getUpdatedWaitingFor(
-            inputContext,
-            FlowIORequest.InitiateFlow(X500_NAME, SESSION_ID)
-        )
-
-        assertEquals(SessionConfirmation(listOf(SESSION_ID), SessionConfirmationType.INITIATE), result.value)
-    }
-
-    @Test
-    fun `Adds a new session to the flow's checkpoint and adds a session init to the session's undelivered messages`() {
-        whenever(sessionManager.processMessageToSend(any(), eq(null), any(), any())).then {
-            SessionState().apply {
-                sendEventsState = SessionProcessState(
-                    1,
-                    sessionState.sendEventsState.undeliveredMessages.plus(it.getArgument(2) as SessionEvent)
-                )
-            }
-        }
-
-        val checkpoint = Checkpoint().apply {
-            flowKey = FLOW_KEY
-            flowStackItems = listOf(
-                FlowStackItem.newBuilder().setFlowName(INITIATING_FLOW_NAME).setIsInitiatingFlow(true).setSessionIds(emptyList()).build()
+        whenever(
+            testContext.sessionManager.processMessageToSend(
+                eq(testContext.flowId),
+                eq(null),
+                eq(sessionEvent1),
+                any()
             )
-            flowStartContext = FlowStartContext().apply {
-                cpiId = CPI_ID
-            }
-            fiber = ByteBuffer.wrap(byteArrayOf(1, 1, 1, 1))
-            sessions = emptyList()
-        }
+        ).thenReturn(sessionState1)
 
-        val inputContext: FlowEventContext<Any> = buildFlowEventContext(checkpoint = checkpoint, inputEventPayload = Unit)
+        whenever(testContext.flowStack.peekFirst()).thenReturn(firstFlowStackItem)
 
-        val outputContext = closeSessionsRequestHandler.postProcess(
-            inputContext,
-            FlowIORequest.InitiateFlow(X500_NAME, SESSION_ID)
-        )
-
-        assertEquals(1, outputContext.checkpoint?.sessions?.size)
-        assertTrue(outputContext.checkpoint?.sessions?.single()?.sendEventsState?.undeliveredMessages?.single()?.payload is SessionInit)
+        testContext.flowStartContext.cpiId = "cpi 1"
     }
 
     @Test
-    fun `Throws an exception if the flow has no checkpoint`() {
-        val inputContext: FlowEventContext<Any> = buildFlowEventContext(checkpoint = null, inputEventPayload = Unit)
-        assertThrows<FlowProcessingException> {
-            closeSessionsRequestHandler.postProcess(
-                inputContext,
-                FlowIORequest.InitiateFlow(X500_NAME, SESSION_ID)
-            )
-        }
+    fun `Returns an updated WaitingFor for init session confirmation`() {
+        val waitingFor = handler.getUpdatedWaitingFor(testContext.flowEventContext, ioRequest)
+
+        val result = waitingFor.value as SessionConfirmation
+        assertThat(result.sessionIds).containsOnly(sessionId1)
+        assertThat(result.type).isEqualTo(SessionConfirmationType.INITIATE)
+    }
+
+    @Test
+    fun `test session init event sent to session manager and checkpoint updated with session state`() {
+        handler.postProcess(testContext.flowEventContext, ioRequest)
+        verify(testContext.flowCheckpoint).putSessionState(sessionState1)
+    }
+
+    @Test
+    fun `test does not add an output record`() {
+        val outputContext = handler.postProcess(testContext.flowEventContext, ioRequest)
+        assertThat(outputContext.outputRecords).hasSize(0)
+    }
+
+    private fun matchExpectedPayload(payload: Any): Boolean {
+        val sessionInitPayload = payload as SessionInit
+
+        val expectedInitiatedIdentity = HoldingIdentity(ioRequest.x500Name.toString(), "flow-worker-dev")
+        assertThat(sessionInitPayload.flowName).isEqualTo(firstFlowStackItem.flowName)
+        assertThat(sessionInitPayload.flowId).isEqualTo(testContext.flowId)
+        assertThat(sessionInitPayload.cpiId).isEqualTo(testContext.flowStartContext.cpiId)
+        assertThat(sessionInitPayload.initiatingIdentity).isEqualTo(testContext.holdingIdentity)
+        assertThat(sessionInitPayload.initiatedIdentity).isEqualTo(expectedInitiatedIdentity)
+
+        return true
     }
 }

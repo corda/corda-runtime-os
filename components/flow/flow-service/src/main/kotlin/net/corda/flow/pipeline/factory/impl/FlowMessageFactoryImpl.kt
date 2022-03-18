@@ -3,8 +3,8 @@ package net.corda.flow.pipeline.factory.impl
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
-import net.corda.data.flow.state.Checkpoint
 import net.corda.flow.pipeline.factory.FlowMessageFactory
+import net.corda.flow.state.FlowCheckpoint
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import java.time.Instant
@@ -16,32 +16,32 @@ class FlowMessageFactoryImpl(private val currentTimeProvider: () -> Instant) : F
     @Activate
     constructor() : this(Instant::now)
 
-    override fun createFlowCompleteStatusMessage(checkpoint: Checkpoint, flowResult: String?): FlowStatus {
+    override fun createFlowCompleteStatusMessage(checkpoint: FlowCheckpoint, flowResult: String?): FlowStatus {
         return getCommonFlowStatus(checkpoint).apply {
             flowStatus = FlowStates.COMPLETED
             result = flowResult
         }
     }
 
-    override fun createFlowStartedStatusMessage(checkpoint: Checkpoint): FlowStatus {
+    override fun createFlowStartedStatusMessage(checkpoint: FlowCheckpoint): FlowStatus {
         return getCommonFlowStatus(checkpoint).apply {
             flowStatus = FlowStates.RUNNING
         }
     }
 
-    override fun createFlowFailedStatusMessage(checkpoint: Checkpoint, errorType: String, message: String): FlowStatus {
+    override fun createFlowFailedStatusMessage(checkpoint: FlowCheckpoint, errorType: String, message: String): FlowStatus {
         return getCommonFlowStatus(checkpoint).apply {
             flowStatus =  FlowStates.COMPLETED
             error =  ExceptionEnvelope(errorType, message)
         }
     }
 
-    private fun getCommonFlowStatus(checkpoint: Checkpoint):FlowStatus{
+    private fun getCommonFlowStatus(checkpoint: FlowCheckpoint):FlowStatus{
         val startContext = checkpoint.flowStartContext
         return FlowStatus().apply {
             key = startContext.statusKey
             initiatorType = startContext.initiatorType
-            flowId =  checkpoint.flowKey.flowId
+            flowId =  checkpoint.flowId
             flowClassName = startContext.flowClassName
             createdTimestamp =  startContext.createdTimestamp
             lastUpdateTimestamp =   currentTimeProvider()

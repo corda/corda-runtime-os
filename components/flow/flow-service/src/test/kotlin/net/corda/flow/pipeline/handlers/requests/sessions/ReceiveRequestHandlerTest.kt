@@ -1,12 +1,13 @@
 package net.corda.flow.pipeline.handlers.requests.sessions
 
-import net.corda.data.flow.state.Checkpoint
+
 import net.corda.data.flow.state.waiting.SessionData
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.test.utils.buildFlowEventContext
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
 
 class ReceiveRequestHandlerTest {
 
@@ -15,7 +16,7 @@ class ReceiveRequestHandlerTest {
         const val ANOTHER_SESSION_ID = "another session id"
     }
 
-    private val inputContext: FlowEventContext<Any> = buildFlowEventContext(checkpoint = Checkpoint(), inputEventPayload = Unit)
+    private val inputContext: FlowEventContext<Any> = buildFlowEventContext(checkpoint = mock(), inputEventPayload = Unit)
 
     private val receiveRequestHandler = ReceiveRequestHandler()
 

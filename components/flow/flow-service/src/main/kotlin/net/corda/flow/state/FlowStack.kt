@@ -1,4 +1,4 @@
-package net.corda.flow.fiber
+package net.corda.flow.state
 
 import net.corda.data.flow.FlowStackItem
 import net.corda.data.flow.state.Checkpoint
@@ -6,9 +6,9 @@ import net.corda.serialization.checkpoint.NonSerializable
 import net.corda.v5.application.flows.Flow
 
 /**
- * The FlowStackService provides an API for managing the flow/sub-flow call stack, stored in the [Checkpoint] state.
+ * The FlowStack provides an API for managing the flow/sub-flow call stack, stored in the [Checkpoint] state.
  */
-interface FlowStackService : NonSerializable {
+interface FlowStack : NonSerializable {
 
     val size: Int
 
@@ -34,6 +34,12 @@ interface FlowStackService : NonSerializable {
      * @return the [FlowStackItem] at the top of the stack of null if the stack is empty
      */
     fun peek(): FlowStackItem?
+
+    /**
+     * @return the first [FlowStackItem] on the stack
+     * @throws [IllegalStateException] if the stack is empty
+     */
+    fun peekFirst(): FlowStackItem
 
     /**
      * Removes and returns the [FlowStackItem] at the top of the stack

@@ -1,14 +1,8 @@
 package net.corda.flow.application.services
 
 import net.corda.data.flow.FlowStackItem
-import net.corda.data.identity.HoldingIdentity
-import net.corda.flow.ALICE_X500
 import net.corda.flow.ALICE_X500_NAME
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
-import net.corda.flow.fiber.FlowFiber
-import net.corda.flow.fiber.FlowFiberExecutionContext
-import net.corda.flow.fiber.FlowFiberService
-import net.corda.flow.fiber.FlowStackService
 import net.corda.v5.application.flows.FlowSession
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -27,32 +21,15 @@ class FlowMessagingImplTest {
         const val FLOW_NAME = "flow name"
     }
 
-    private val flowStackService = mock<FlowStackService>()
-
-    private val flowFiberExecutionContext = FlowFiberExecutionContext(
-        mock(),
-        flowStackService,
-        mock(),
-        mock(),
-        HoldingIdentity(ALICE_X500,"group1"),
-        mock()
-    )
-
-    private val flowFiber = mock<FlowFiber<*>>().apply {
-        whenever(getExecutionContext()).thenReturn(flowFiberExecutionContext)
-    }
-
-    private val flowFiberService = mock<FlowFiberService>().apply {
-        whenever(getExecutingFiber()).thenReturn(flowFiber)
-    }
-
+    private val mockFlowFiberService = MockFlowFiberService()
+    private val flowStackService = mockFlowFiberService.flowStack
     private val flowSession = mock<FlowSession>()
 
     private val flowSessionFactory = mock<FlowSessionFactory>().apply {
         whenever(create(any(), eq(ALICE_X500_NAME), initiated = eq(false))).thenReturn(flowSession)
     }
 
-    private val flowMessaging = FlowMessagingImpl(flowFiberService, flowSessionFactory)
+    private val flowMessaging = FlowMessagingImpl(mockFlowFiberService, flowSessionFactory)
 
     @Test
     fun `initiateFlow creates an uninitiated FlowSession when the current flow stack item represents an initiating flow`() {

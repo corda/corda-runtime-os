@@ -1,14 +1,14 @@
 package net.corda.flow.pipeline.handlers.waiting.sessions
 
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.state.Checkpoint
 import net.corda.data.flow.state.session.SessionState
 import net.corda.flow.pipeline.FlowProcessingException
+import net.corda.flow.state.FlowCheckpoint
 import net.corda.session.manager.SessionManager
 
-fun SessionManager.getReceivedEvents(checkpoint: Checkpoint, sessionIds: List<String>): List<Pair<SessionState, SessionEvent>> {
+fun SessionManager.getReceivedEvents(checkpoint: FlowCheckpoint, sessionIds: List<String>): List<Pair<SessionState, SessionEvent>> {
     return sessionIds.mapNotNull { sessionId ->
-        val sessionState = checkpoint.sessions.singleOrNull { it.sessionId == sessionId }
+        val sessionState = checkpoint.getSessionState(sessionId)
             ?: throw FlowProcessingException("Session doesn't exist")
         getNextReceivedEvent(sessionState)?.let { sessionState to it }
     }

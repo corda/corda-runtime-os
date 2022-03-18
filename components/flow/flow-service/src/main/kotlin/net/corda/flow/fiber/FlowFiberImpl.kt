@@ -2,7 +2,6 @@ package net.corda.flow.fiber
 
 import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.fibers.FiberScheduler
-import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStackItem
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.base.annotations.Suspendable
@@ -19,10 +18,9 @@ import java.util.concurrent.Future
 @Suppress("TooManyFunctions", "ComplexMethod", "LongParameterList")
 class FlowFiberImpl<R>(
     override val flowId: UUID,
-    override val flowKey: FlowKey,
     override val flowLogic: Flow<R>,
     scheduler: FiberScheduler
-) : Fiber<Unit>(flowKey.toString(), scheduler), FlowFiber<R> {
+) : Fiber<Unit>(flowId.toString(), scheduler), FlowFiber<R> {
 
     companion object {
         private val log: Logger = contextLogger()
@@ -172,7 +170,7 @@ class FlowFiberImpl<R>(
     }
 
     private fun setLoggingContext() {
-        MDC.put("flow-id", flowKey.toString())
+        MDC.put("flow-id", flowId.toString())
         MDC.put("fiber-id", this.getId().toString())
         MDC.put("thread-id", Thread.currentThread().id.toString())
     }

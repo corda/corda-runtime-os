@@ -9,7 +9,6 @@ import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowProcessingException
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
-import net.corda.flow.pipeline.handlers.waiting.requireCheckpoint
 import net.corda.session.manager.SessionManager
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.osgi.service.component.annotations.Activate
@@ -25,9 +24,10 @@ class SessionConfirmationWaitingForHandler @Activate constructor(
     override val type = SessionConfirmation::class.java
 
     override fun runOrContinue(context: FlowEventContext<*>, waitingFor: SessionConfirmation): FlowContinuation {
-        val checkpoint = requireCheckpoint(context)
+        val checkpoint = context.checkpoint
         return when (waitingFor.type) {
             SessionConfirmationType.INITIATE -> {
+
                 if (context.inputEventPayload !is SessionEvent || context.inputEventPayload.payload !is SessionAck) {
                     FlowContinuation.Continue
                 } else if (waitingFor.sessionIds == listOf(context.inputEventPayload.sessionId)) {

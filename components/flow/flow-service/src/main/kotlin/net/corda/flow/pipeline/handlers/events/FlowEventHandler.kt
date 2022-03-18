@@ -3,7 +3,6 @@ package net.corda.flow.pipeline.handlers.events
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.Checkpoint
 import net.corda.flow.pipeline.FlowEventContext
-import net.corda.flow.pipeline.FlowProcessingException
 
 /**
  * The [FlowEventHandler] interface is implemented by services that process [FlowEvent]s received from the message bus.
@@ -31,17 +30,4 @@ interface FlowEventHandler<T> {
      * @return The modified [FlowEventContext].
      */
     fun preProcess(context: FlowEventContext<T>): FlowEventContext<T>
-}
-
-/**
- * Throws a [FlowProcessingException] if the passed in [context]'s checkpoint is null.
- *
- * @param context The [FlowEventContext] with a possibly null [Checkpoint].
- *
- * @return A non-null [Checkpoint].
- *
- * @throws FlowProcessingException if the passed in [FlowEventContext.checkpoint] is null.
- */
-fun FlowEventHandler<*>.requireCheckpoint(context: FlowEventContext<*>): Checkpoint {
-    return context.checkpoint ?: throw FlowProcessingException("${this::class.java.name} requires a non-null checkpoint as input")
 }

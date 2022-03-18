@@ -13,7 +13,7 @@ fun Checkpoint.getSession(sessionId: String): SessionState? {
     val sessions = sessions.filter { it.sessionId == sessionId }
     return when {
         sessions.size > 1 -> {
-            val message = "Flow [${flowKey.flowId}] has multiple sessions associated to a single sessionId [$sessionId]"
+            val message = "Flow [${flowId}] has multiple sessions associated to a single sessionId [$sessionId]"
             log.error(message)
             throw FlowProcessingException(message)
         }
@@ -41,11 +41,4 @@ fun getInitiatingAndInitiatedParties(sessionState: SessionState?, checkpointIden
             Pair(checkpointIdentity, sessionState.counterpartyIdentity)
         }
     }
-}
-
-fun Checkpoint.addOrReplaceSession(sessionState: SessionState) {
-    val updated = sessions?.toMutableList()
-    updated?.removeAll { it.sessionId == sessionState.sessionId }
-    updated?.add(sessionState)
-    sessions = updated
 }
