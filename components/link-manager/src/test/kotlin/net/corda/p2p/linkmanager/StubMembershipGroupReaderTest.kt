@@ -55,7 +55,8 @@ class StubMembershipGroupReaderTest {
         ),
         ByteBuffer.wrap("alice".toByteArray()),
         KeyAlgorithm.ECDSA,
-        "alice.com"
+        "alice.com",
+        null,
     )
     private val bob = MemberInfoEntry(
         HoldingIdentity(
@@ -64,7 +65,8 @@ class StubMembershipGroupReaderTest {
         ),
         ByteBuffer.wrap("bob".toByteArray()),
         KeyAlgorithm.RSA,
-        "bob.net"
+        "bob.net",
+        null,
     )
     private val carol = MemberInfoEntry(
         HoldingIdentity(
@@ -73,7 +75,8 @@ class StubMembershipGroupReaderTest {
         ),
         ByteBuffer.wrap("carol".toByteArray()),
         KeyAlgorithm.RSA,
-        "carol.org"
+        "carol.org",
+        null,
     )
     private val aliceHash by lazy {
         val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, BouncyCastleProvider())

@@ -55,7 +55,32 @@ data class ConnectionConfiguration(
      * The maximal duration to wait for reconnection.
      */
     val maximalReconnectionDelay: Duration = Duration.ofSeconds(10),
+
+    /**
+     * The type of name resolution.
+     */
+    val nameResolverType: NameResolverType = NameResolverType.FIRST_IP_ALWAYS,
 )
+
+/**
+ * Types on name resolution (when there is more than one IP address for a given name).
+ */
+enum class NameResolverType {
+    /**
+     * Always use the first IP address
+     */
+    FIRST_IP_ALWAYS,
+
+    /**
+     * Choose a random IP address.
+     */
+    ROUND_ROBIN,
+
+    /**
+     * Choose a random IP address from the configuration.
+     */
+    OVERWRITE_RESOLVER,
+}
 
 internal fun Config.toGatewayConfiguration(): GatewayConfiguration {
     val connectionConfig = if (this.hasPath("connectionConfig")) {
@@ -67,7 +92,7 @@ internal fun Config.toGatewayConfiguration(): GatewayConfiguration {
         hostAddress = this.getString("hostAddress"),
         hostPort = this.getInt("hostPort"),
         sslConfig = this.getConfig("sslConfig").toSslConfiguration(),
-        connectionConfig = connectionConfig
+        connectionConfig = connectionConfig,
     )
 }
 private fun Config.toConnectionConfig(): ConnectionConfiguration {
@@ -79,5 +104,6 @@ private fun Config.toConnectionConfig(): ConnectionConfiguration {
         retryDelay = this.getDuration("retryDelay"),
         initialReconnectionDelay = this.getDuration("initialReconnectionDelay"),
         maximalReconnectionDelay = this.getDuration("maximalReconnectionDelay"),
+        nameResolverType = this.getEnum(NameResolverType::class.java, "nameResolverType")
     )
 }

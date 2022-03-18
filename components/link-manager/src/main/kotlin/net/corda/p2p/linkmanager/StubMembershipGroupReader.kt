@@ -37,6 +37,8 @@ internal class StubMembershipGroupReader(
         configuration
     )
 
+    private val listeners = mutableListOf<MembershipGroupListener>()
+
     private inner class MembersProcessor : CompactedProcessor<String, MemberInfoEntry> {
         override val keyClass = String::class.java
         override val valueClass = MemberInfoEntry::class.java
@@ -68,6 +70,9 @@ internal class StubMembershipGroupReader(
         private fun addMember(member: MemberInfoEntry) {
             membersInformation[member.holdingIdentity.toHoldingIdentity()] = member.toMemberInfo()
             publicHashToMemberInformation[member.toGroupIdWithPublicKeyHash()] = member.toMemberInfo()
+            listeners.forEach {
+                it.memberAdded(member.toMemberInfo())
+            }
         }
     }
     private val subscriptionTile = SubscriptionDominoTile(
@@ -113,12 +118,17 @@ internal class StubMembershipGroupReader(
         ]
     }
 
+    override fun registerListener(listener: MembershipGroupListener) {
+        listeners.add(listener)
+    }
+
     private fun MemberInfoEntry.toMemberInfo(): LinkManagerInternalTypes.MemberInfo {
         return LinkManagerInternalTypes.MemberInfo(
             LinkManagerInternalTypes.HoldingIdentity(this.holdingIdentity.x500Name, this.holdingIdentity.groupId),
             keyDeserialiser.toPublicKey(this.publicKey.array(), this.publicKeyAlgorithm),
             this.publicKeyAlgorithm.toKeyAlgorithm(),
             LinkManagerInternalTypes.EndPoint(this.address),
+            this.gatewayHosts?.gatewayHosts
         )
     }
 

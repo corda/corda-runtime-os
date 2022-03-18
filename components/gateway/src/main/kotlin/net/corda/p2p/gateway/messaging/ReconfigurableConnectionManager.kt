@@ -8,15 +8,17 @@ import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.gateway.Gateway.Companion.CONFIG_KEY
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
+import net.corda.p2p.gateway.messaging.http.HostsMap
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.v5.base.util.contextLogger
 import java.util.concurrent.CompletableFuture
 
-class ReconfigurableConnectionManager(
+internal class ReconfigurableConnectionManager(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     val configurationReaderService: ConfigurationReadService,
+    private val hostsMap: HostsMap? = null,
     private val managerFactory: (sslConfig: SslConfiguration, connectionConfig: ConnectionConfiguration) -> ConnectionManager =
-        { sslConfig, connectionConfig -> ConnectionManager(sslConfig, connectionConfig) }
+        { sslConfig, connectionConfig -> ConnectionManager(sslConfig, connectionConfig, hostsMap) }
 ) : LifecycleWithDominoTile {
 
     override val dominoTile = ComplexDominoTile(

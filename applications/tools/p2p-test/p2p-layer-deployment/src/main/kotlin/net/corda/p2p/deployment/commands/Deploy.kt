@@ -239,11 +239,18 @@ class Deploy : Runnable {
     }
 
     private fun configureNamespace() {
-        UpdateIps().run()
+        if ((lbType != LbType.MEMBERSHIP_HEADLESS) && (lbType != LbType.MEMBERSHIP)) {
+            UpdateIps().run()
+        }
         val config = ConfigureAll()
         config.namespaceName = namespaceName
         config.linkManagerExtraArguments = linkManagerExtraArguments
-        config.gatewayArguments = gatewayArguments
+        val lbArguments = when (lbType) {
+            LbType.HEADLESS, LbType.NO_LB, LbType.NO_SERVICE -> listOf("--nameResolverType=ROUND_ROBIN")
+            LbType.MEMBERSHIP_HEADLESS, LbType.MEMBERSHIP -> listOf("--nameResolverType=OVERWRITE_RESOLVER")
+            else -> emptyList()
+        }
+        config.gatewayArguments = gatewayArguments + lbArguments
         config.algo = algo
         config.trustStoreType = trustStoreType
         config.run()

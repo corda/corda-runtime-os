@@ -167,7 +167,7 @@ class GatewayIntegrationTest : TestBase() {
             Gateway(
                 createConfigurationServiceFor(
                     GatewayConfiguration(
-                        serverAddress.host,
+                        "localhost",
                         serverAddress.port,
                         aliceSslConfig
                     ),

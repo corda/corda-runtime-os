@@ -19,4 +19,14 @@
 81.169.184.163 ocsp.tinycert.org
 255.255.255.255	broadcasthost
 ::1             localhost
+
+1.2.3.1  www.shared_ips.net
+1.2.3.2  www.shared_ips.net
+1.2.3.3  www.shared_ips.net
+1.2.3.4  www.shared_ips.net
+1.2.3.5  www.shared_ips.net
+1.2.3.6  www.shared_ips.net
+1.2.3.7  www.shared_ips.net
+1.2.3.8  www.shared_ips.net
+1.2.3.9  www.shared_ips.net
 # End of section

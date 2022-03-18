@@ -26,6 +26,7 @@ object LinkManagerInternalTypes {
         val publicKey: PublicKey,
         val publicKeyAlgorithm: KeyAlgorithm,
         val endPoint: EndPoint,
+        val gatewayHosts: Collection<String>? = null
     ) {
 
         fun getSignatureSpec(): SignatureSpec {
