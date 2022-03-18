@@ -113,7 +113,7 @@ build
 
 kafka-docker/data/
 applications/flow-worker/extracted/
-p2p-deployment/keystores/
+p2p-deployment/
 
 # Ignore Visual studio directory
 bin/
