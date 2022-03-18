@@ -32,7 +32,7 @@ class SendAndReceiveRequestHandler @Activate constructor(
         val checkpoint = requireCheckpoint(context)
 
         flowSessionManager.sendDataMessages(checkpoint, request.sessionToPayload, Instant.now()).forEach { updatedSessionState ->
-            checkpoint.addOrReplaceSession(updatedSessionState)
+            checkpoint.putSessionState(updatedSessionState)
         }
 
         return if (flowSessionManager.hasReceivedEvents(checkpoint, request.sessionToPayload.keys.toList())) {

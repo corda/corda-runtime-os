@@ -28,15 +28,15 @@ class SessionInitExecutorTest {
         val bytes = "bytes".toByteArray()
         whenever(sessionEventSerializer.serialize(any())).thenReturn(bytes)
         val holdingIdentity = HoldingIdentity()
-        val flowKey = FlowKey("", holdingIdentity)
-        val sessionInit = SessionInit("", "", flowKey, null)
+        val flowId = "id1"
+        val sessionInit = SessionInit("", "", flowId, holdingIdentity, holdingIdentity, null)
         val payload = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, sessionInit)
         val result = SessionInitExecutor("sessionId", payload, sessionInit, null, sessionEventSerializer).execute()
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents
 
         assertThat(state).isNotNull
-        assertThat(state?.flowKey).isEqualTo(flowKey)
+        assertThat(state?.flowId).isEqualTo(flowId)
         assertThat(state?.status).isEqualTo(FlowMapperStateType.OPEN)
         assertThat(state?.expiryTime).isEqualTo(null)
 
@@ -52,20 +52,20 @@ class SessionInitExecutorTest {
     fun `Inbound session init creates new state and forwards to flow event`() {
         val sessionInit = SessionInit("", "", null, null)
         val payload = buildSessionEvent(MessageDirection.INBOUND, "sessionId-INITIATED", 1, sessionInit)
-        val result = SessionInitExecutor("sessionId-INITIATED", payload, sessionInit, null, sessionEventSerializer).execute()
+        val result = SessionInitExecutor("sessionId-INITIATED", payload, sessionInit, null).execute()
 
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents
 
         assertThat(state).isNotNull
-        assertThat(state?.flowKey).isNotNull
+        assertThat(state?.flowId).isNotNull
         assertThat(state?.status).isEqualTo(FlowMapperStateType.OPEN)
         assertThat(state?.expiryTime).isEqualTo(null)
 
         assertThat(outboundEvents.size).isEqualTo(1)
         val outboundEvent = outboundEvents.first()
         assertThat(outboundEvent.topic).isEqualTo(FLOW_EVENT_TOPIC)
-        assertThat(outboundEvent.key::class).isEqualTo(FlowKey::class)
+        assertThat(outboundEvent.key::class).isEqualTo(String::class)
         assertThat(outboundEvent.value!!::class).isEqualTo(FlowEvent::class)
         assertThat(payload.sessionId).isEqualTo("sessionId-INITIATED")
     }

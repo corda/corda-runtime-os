@@ -30,7 +30,7 @@ class SessionConfirmationWaitingForHandler @Activate constructor(
     override val type = SessionConfirmation::class.java
 
     override fun runOrContinue(context: FlowEventContext<*>, waitingFor: SessionConfirmation): FlowContinuation {
-        val checkpoint = requireCheckpoint(context)
+        val checkpoint = context.checkpoint
         return when (waitingFor.type) {
             SessionConfirmationType.INITIATE -> {
                 if (context.inputEventPayload !is SessionEvent || context.inputEventPayload.payload !is SessionAck) {

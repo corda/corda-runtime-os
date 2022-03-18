@@ -27,11 +27,11 @@ class InitiateFlowRequestHandler @Activate constructor(
     }
 
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.InitiateFlow): FlowEventContext<Any> {
-        val checkpoint = requireCheckpoint(context)
+        val checkpoint = context.checkpoint
 
         // throw an error if the session already exists (shouldn't really get here for real, but for this class, it's not valid)
 
-        checkpoint.addOrReplaceSession(
+        checkpoint.putSessionState(
             flowSessionManager.sendInitMessage(
                 checkpoint,
                 request.sessionId,

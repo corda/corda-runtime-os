@@ -10,7 +10,6 @@ class WakeupEventHandler : FlowEventHandler<Wakeup> {
     override val type = Wakeup::class.java
 
     override fun preProcess(context: FlowEventContext<Wakeup>): FlowEventContext<Wakeup> {
-        requireCheckpoint(context)
         return context
     }
 }

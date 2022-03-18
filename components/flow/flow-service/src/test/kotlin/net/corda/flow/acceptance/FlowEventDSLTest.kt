@@ -1,10 +1,8 @@
 package net.corda.flow.acceptance
 
-import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.Wakeup
-import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.acceptance.dsl.filterOutputFlowTopicEventPayloads
 import net.corda.flow.acceptance.dsl.flowEventDSL
 import net.corda.flow.fiber.FlowIORequest
@@ -25,9 +23,7 @@ class FlowEventDSLTest {
         .setFlowStartArgs(" { \"json\": \"args\" }")
         .build()
 
-    private val flowKey = FlowKey(FLOW_ID, HoldingIdentity("x500 name", "group id"))
-
-    private val startFlowEvent = FlowEvent(flowKey, startRPCFlowPayload)
+    private val startFlowEvent = FlowEvent(FLOW_ID, startRPCFlowPayload)
 
     @Test
     fun `process one step after creating a flow fiber, queuing a suspension and inputting an event`() {
@@ -69,7 +65,7 @@ class FlowEventDSLTest {
                 queueSuspension(FlowIORequest.ForceCheckpoint)
             }
 
-            input(FlowEvent(flowKey, Wakeup()))
+            input(FlowEvent(FLOW_ID, Wakeup()))
 
             val (checkpoint, responseEvents) = processOne()
             assertNotNull(checkpoint)
@@ -88,8 +84,8 @@ class FlowEventDSLTest {
             }
 
             input(startFlowEvent)
-            input(FlowEvent(flowKey, Wakeup()))
-            input(FlowEvent(flowKey, Wakeup()))
+            input(FlowEvent(FLOW_ID, Wakeup()))
+            input(FlowEvent(FLOW_ID, Wakeup()))
 
             val responses = processAll()
             assertEquals(3, responses.size)
@@ -131,18 +127,18 @@ class FlowEventDSLTest {
                 queueSuspension(FlowIORequest.ForceCheckpoint)
             }
 
-            input(FlowEvent(FlowKey(FLOW_ID, HoldingIdentity("x500 name", "group id")), Wakeup()))
-            input(FlowEvent(FlowKey(ANOTHER_FLOW_ID, HoldingIdentity("x500 name", "group id")), Wakeup()))
+            input(FlowEvent(FLOW_ID, Wakeup()))
+            input(FlowEvent(ANOTHER_FLOW_ID, Wakeup()))
 
             val output = processAll()
 
             assertEquals(
                 Wakeup(),
-                output.last { it.updatedState?.flowKey?.flowId == FLOW_ID }.filterOutputFlowTopicEventPayloads().single()
+                output.last { it.updatedState?.flowId == FLOW_ID }.filterOutputFlowTopicEventPayloads().single()
             )
             assertEquals(
                 Wakeup(),
-                output.last { it.updatedState?.flowKey?.flowId == ANOTHER_FLOW_ID }.filterOutputFlowTopicEventPayloads().single()
+                output.last { it.updatedState?.flowId == ANOTHER_FLOW_ID }.filterOutputFlowTopicEventPayloads().single()
             )
         }
     }
@@ -166,11 +162,11 @@ class FlowEventDSLTest {
 
             assertEquals(
                 Wakeup(),
-                output.last { it.updatedState?.flowKey?.flowId == FLOW_ID }.filterOutputFlowTopicEventPayloads().single()
+                output.last { it.updatedState?.flowId == FLOW_ID }.filterOutputFlowTopicEventPayloads().single()
             )
             assertEquals(
                 Wakeup(),
-                output.last { it.updatedState?.flowKey?.flowId == ANOTHER_FLOW_ID }.filterOutputFlowTopicEventPayloads().single()
+                output.last { it.updatedState?.flowId == ANOTHER_FLOW_ID }.filterOutputFlowTopicEventPayloads().single()
             )
         }
     }

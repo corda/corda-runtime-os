@@ -22,7 +22,7 @@ class SessionDataWaitingForHandler @Activate constructor(
     override val type = SessionData::class.java
 
     override fun runOrContinue(context: FlowEventContext<*>, waitingFor: SessionData): FlowContinuation {
-        val checkpoint = requireCheckpoint(context)
+        val checkpoint = context.checkpoint
         val receivedEvents = flowSessionManager.getReceivedEvents(checkpoint, waitingFor.sessionIds)
         return if (receivedEvents.size != waitingFor.sessionIds.size) {
             FlowContinuation.Continue
