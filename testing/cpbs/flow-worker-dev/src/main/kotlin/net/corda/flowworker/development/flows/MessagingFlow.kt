@@ -1,4 +1,4 @@
-package net.corda.linearstatesample.flows
+package net.corda.flowworker.development.flows
 
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowSession

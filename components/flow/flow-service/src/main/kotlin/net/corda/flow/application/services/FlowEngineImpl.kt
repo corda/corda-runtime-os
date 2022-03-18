@@ -9,6 +9,7 @@ import net.corda.v5.application.flows.FlowId
 import net.corda.v5.application.flows.flowservices.FlowEngine
 import net.corda.v5.application.injection.CordaFlowInjectable
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -30,8 +31,8 @@ class FlowEngineImpl @Activate constructor(
     override val flowId: FlowId
         get() = flowFiberService.getExecutingFiber().flowId
 
-    override val isKilled: Boolean
-        get() = false
+    override val virtualNodeName: MemberX500Name
+        get() = MemberX500Name.parse(flowFiberService.getExecutingFiber().getExecutionContext().holdingIdentity.x500Name)
 
     @Suspendable
     override fun <R : Any> await(operation: FlowExternalOperation<R>): R {

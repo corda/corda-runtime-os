@@ -9,7 +9,8 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.fiber.FlowStackService
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.v5.application.flows.Flow
-import org.assertj.core.api.Assertions
+import net.corda.v5.base.types.MemberX500Name
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -30,7 +31,7 @@ class FlowEngineImplTest {
         flowStackService,
         mock(),
         mock(),
-        HoldingIdentity()
+        HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group1")
     )
 
     private val flowStackItem = FlowStackItem()
@@ -47,10 +48,17 @@ class FlowEngineImplTest {
     }
 
     @Test
+    fun `get virtual node name returns holders x500 name`(){
+        val flowEngine = FlowEngineImpl(flowFiberService)
+        val expected = MemberX500Name.parse("CN=Bob, O=Bob Corp, L=LDN, C=GB")
+        assertThat(flowEngine.virtualNodeName).isEqualTo(expected)
+    }
+
+    @Test
     fun `sub flow completes successfully`() {
         val flowEngine = FlowEngineImpl(flowFiberService)
 
-        Assertions.assertThat(flowEngine.subFlow(subFlow)).isEqualTo(result)
+        assertThat(flowEngine.subFlow(subFlow)).isEqualTo(result)
 
         // verify unordered calls
         verify(sandboxDependencyInjector).injectServices(subFlow)
@@ -66,7 +74,7 @@ class FlowEngineImplTest {
             argumentCaptor<FlowIORequest.SubFlowFinished>().apply {
                 verify(flowFiber).suspend(capture())
 
-                Assertions.assertThat(firstValue.result).isEqualTo(flowStackItem)
+                assertThat(firstValue.result).isEqualTo(flowStackItem)
             }
         }
     }
@@ -80,7 +88,7 @@ class FlowEngineImplTest {
 
         val thrownError = assertThrows<Exception> { flowEngine.subFlow(subFlow) }
 
-        Assertions.assertThat(thrownError).isEqualTo(error)
+        assertThat(thrownError).isEqualTo(error)
 
         // verify unordered calls
         verify(sandboxDependencyInjector).injectServices(subFlow)
@@ -96,8 +104,8 @@ class FlowEngineImplTest {
             argumentCaptor<FlowIORequest.SubFlowFailed>().apply {
                 verify(flowFiber).suspend(capture())
 
-                Assertions.assertThat(firstValue.exception).isEqualTo(error)
-                Assertions.assertThat(firstValue.result).isEqualTo(flowStackItem)
+                assertThat(firstValue.exception).isEqualTo(error)
+                assertThat(firstValue.result).isEqualTo(flowStackItem)
             }
         }
     }
