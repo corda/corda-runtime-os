@@ -2,10 +2,10 @@ package net.corda.chunking.db.impl.tests
 
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.AllChunksReceived
-import net.corda.chunking.db.impl.persistence.DatabaseChunkPersistence
 import net.corda.chunking.db.impl.ChunkWriteToDbProcessor
+import net.corda.chunking.db.impl.persistence.DatabaseChunkPersistence
 import net.corda.data.chunking.Chunk
-import net.corda.data.chunking.ChunkAck
+import net.corda.data.chunking.ChunkAckKey
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import org.assertj.core.api.Assertions.assertThat
@@ -30,16 +30,16 @@ internal class ChunkWriteToDbProcessorTest {
         whenever(persistChunk(any())).thenReturn(AllChunksReceived.YES)
     }
 
-    private fun processRequest(processor: ChunkWriteToDbProcessor, req: Chunk): ChunkAck {
+    private fun processRequest(processor: ChunkWriteToDbProcessor, req: Chunk): ChunkAckKey {
         val records = processor.onNext(listOf(Record(topic, req.requestId, req)))
-        return records.first().value as ChunkAck
+        return records.first().key as ChunkAckKey
     }
 
     private fun randomString() = UUID.randomUUID().toString()
 
     @BeforeEach
     private fun beforeEach() {
-        val validator = { _ : RequestId ->  Unit }
+        val validator = { _: RequestId -> Unit }
         processor = ChunkWriteToDbProcessor(topic, persistence, validator)
     }
 
@@ -55,7 +55,7 @@ internal class ChunkWriteToDbProcessorTest {
 
     @Test
     fun `processor calls through to checksum method`() {
-        val validator = { _ : RequestId ->  Unit }
+        val validator = { _: RequestId -> Unit }
         val processor = ChunkWriteToDbProcessor(topic, persistence, validator)
         val chunk = Chunk(randomString(), randomString(), null, 0, 0, ByteBuffer.wrap("1234".toByteArray()))
         val ack = processRequest(processor, chunk)
