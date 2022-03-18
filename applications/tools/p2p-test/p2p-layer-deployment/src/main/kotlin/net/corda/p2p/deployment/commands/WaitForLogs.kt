@@ -12,7 +12,7 @@ class WaitForLogs(
     private val runningPods: Collection<String>,
     private val waitTo: Regex,
 ) : Runnable {
-    override fun run() {
+    private fun waitOnce(): Boolean {
         val podName = runningPods.firstOrNull { it.startsWith(pod.app) } ?: throw DeploymentException("Could not find pod ${pod.app}")
         println("Waiting for $podName...")
         val log = ProcessBuilder()
@@ -34,10 +34,17 @@ class WaitForLogs(
                 }
             }
         }
-        val failed = !latch.await(3, TimeUnit.MINUTES)
+        val failed = !latch.await(30, TimeUnit.SECONDS)
         log.destroy()
-        if (failed) {
-            throw DeploymentException("Waiting too long for $podName")
+        return !failed
+    }
+
+    override fun run() {
+        (1..6).forEach { _ ->
+            if (waitOnce()) {
+                return
+            }
         }
+        throw DeploymentException("Waiting too long for $pod")
     }
 }

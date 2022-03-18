@@ -77,7 +77,7 @@ class Namespace(
                                     "p2p-gateway-$it.${identifier.namespaceName}"
                                 }
                             LbType.MEMBERSHIP_HEADLESS -> "load-balancer.${identifier.namespaceName}"
-                            else -> null
+                            else -> ""
                         },
                         "kafkaServers" to kafkaServers
                     )

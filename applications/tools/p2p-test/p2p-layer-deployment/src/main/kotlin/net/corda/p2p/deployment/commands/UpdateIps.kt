@@ -3,9 +3,7 @@ package net.corda.p2p.deployment.commands
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import net.corda.p2p.deployment.DeploymentException
-import net.corda.p2p.deployment.commands.RunJar.Companion.startTelepresence
 import picocli.CommandLine.Command
-import java.net.InetAddress
 
 @Command(
     name = "update-ips",
@@ -70,10 +68,26 @@ class UpdateIps : Runnable {
             }
             if (ip == "None") {
                 // We need to read the IPs :(
-                startTelepresence()
-                InetAddress.getAllByName("load-balancer.$name").map {
-                    it.canonicalHostName
-                }.toList()
+                // kubectl exec -n yift-sender p2p-gateway-1-5768fc74fd-5fxzd -- getent hosts load-balancer.yift-receiver
+                // kubectl describe service  -n yift-receiver load-balancer
+                // Sender: 192.168.145.245:1433,192.168.152.139:1433
+                // Reciever: 192.168.135.255:1433,192.168.138.250:1433
+                // kubectl exec -n yift-receiver svc/load-balancer -- getent hosts load-balancer.yift-sender
+                ProcessRunner.execute(
+                    "kubectl",
+                    "exec",
+                    "-n",
+                    name,
+                    "svc/load-balancer",
+                    "--",
+                    "getent",
+                    "hosts",
+                    "load-balancer.$name",
+                ).lineSequence()
+                    .filter { it.isNotBlank() }
+                    .map {
+                        it.split(' ')[0]
+                    }.toList()
             } else {
                 listOf(ip)
             }

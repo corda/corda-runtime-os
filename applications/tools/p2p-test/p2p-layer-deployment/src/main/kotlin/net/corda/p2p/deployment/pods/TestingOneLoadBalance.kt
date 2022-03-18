@@ -8,10 +8,10 @@ class TestingOneLoadBalance(
     servers: Collection<String>,
 ) : Pod() {
     fun LbType.tag() = when (this) {
-        LbType.KA -> "ka-1647339862"
-        LbType.RA -> "ra-1647339889"
-        LbType.RS -> "rs-1647339895"
-        LbType.KS -> "ks-1647339857"
+        LbType.KA -> "ka-1647527532"
+        LbType.RA -> "ra-1647527559"
+        LbType.RS -> "rs-1647527568"
+        LbType.KS -> "ks-1647527526"
         else -> throw DeploymentException("Unknown LB type $this")
     }
     override val app = "load-balancer"
@@ -20,6 +20,7 @@ class TestingOneLoadBalance(
         Port.Gateway
     )
     override val environmentVariables = mapOf(
+        "DEBUG" to "YES",
         "PORT" to Port.Gateway.port.toString(),
         "ENTRIES" to servers.map { "$it:${Port.Gateway.port}" }.joinToString(",")
     )
