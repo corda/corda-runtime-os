@@ -15,7 +15,7 @@ import net.corda.httprpc.client.processing.parametersFrom
 import net.corda.httprpc.client.processing.toWebRequest
 import net.corda.httprpc.tools.HttpPathUtils.joinResourceAndEndpointPaths
 import net.corda.httprpc.tools.annotations.extensions.path
-import net.corda.httprpc.tools.staticExposedGetMethods
+import net.corda.httprpc.tools.isStaticallyExposedGet
 import net.corda.v5.base.stream.returnsDurableCursorBuilder
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
@@ -68,7 +68,7 @@ internal class HttpRpcClientProxyHandler<I : RpcOps>(
     @Suppress("ComplexMethod")
     override fun invoke(proxy: Any, method: Method, args: Array<out Any?>?): Any? {
         log.trace { """Invoke "${method.name}".""" }
-        val isExemptFromChecks = staticExposedGetMethods.any { it.equals(method.name, true) }
+        val isExemptFromChecks = method.isStaticallyExposedGet()
         if (!isExemptFromChecks) {
             if (method.annotations.none { it.isRpcEndpointAnnotation() }) {
                 throw UnsupportedOperationException(
@@ -110,7 +110,7 @@ internal class HttpRpcClientProxyHandler<I : RpcOps>(
                 when (it) {
                     is HttpRpcGET -> it.path(this)
                     is HttpRpcPOST -> it.path()
-                    else -> if (staticExposedGetMethods.contains(this.name)) {
+                    else -> if (isStaticallyExposedGet()) {
                         this.name
                     } else {
                         throw IllegalArgumentException("Unknown endpoint path for: '$name'")

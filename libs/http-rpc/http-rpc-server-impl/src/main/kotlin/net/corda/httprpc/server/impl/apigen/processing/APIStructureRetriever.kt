@@ -24,7 +24,7 @@ import net.corda.httprpc.annotations.isRpcEndpointAnnotation
 import net.corda.httprpc.tools.annotations.extensions.name
 import net.corda.httprpc.tools.annotations.extensions.path
 import net.corda.httprpc.tools.annotations.extensions.title
-import net.corda.httprpc.tools.staticExposedGetMethods
+import net.corda.httprpc.tools.isStaticallyExposedGet
 import java.lang.reflect.Method
 import kotlin.reflect.KParameter
 import kotlin.reflect.full.createInstance
@@ -166,11 +166,10 @@ class APIStructureRetriever(private val opsImplList: List<PluggableRPCOps<*>>) {
 
     private fun isImplicitlyExposedGETMethod(method: Method): Boolean {
         log.debug { "Is implicitly exposed method check for method \"${method.name} \"." }
-        val matchingMethod = staticExposedGetMethods.firstOrNull { it.equals(method.name, true) }
-        return (matchingMethod != null)
+        return (method.isStaticallyExposedGet())
             .also {
                 log.trace { "Is implicitly exposed method check for method \"${method.name} \", " +
-                        "result \"$it\", matching method name \"$matchingMethod\" completed." }
+                        "result \"$it\" completed." }
             }
     }
 
