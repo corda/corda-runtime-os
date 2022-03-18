@@ -1,35 +1,65 @@
 package net.corda.p2p.linkmanager
 
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
+import net.corda.p2p.SessionPartitions
+import net.corda.schema.Schemas
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
-class InboundAssignmentListener(private val coordinatorFactory: LifecycleCoordinatorFactory):
-    PartitionAssignmentListener, LifecycleWithDominoTile {
+class InboundAssignmentListener(
+    coordinatorFactory: LifecycleCoordinatorFactory,
+    publisherFactory: PublisherFactory,
+    configuration: SmartConfig
+): PartitionAssignmentListener, LifecycleWithDominoTile {
+
+    private val publisher = PublisherWithDominoLogic(
+        publisherFactory,
+        coordinatorFactory,
+        PublisherConfig(CLIENT_ID),
+        configuration,
+    )
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
-        createResources = ::createResources
+        createResources = ::createResources,
+        managedChildren = listOf(publisher.dominoTile),
+        dependentChildren = listOf(publisher.dominoTile)
     )
 
+    companion object {
+        private const val CLIENT_ID = "session_partition_writer"
+    }
+
     private val lock = ReentrantReadWriteLock()
-    private val topicToPartition = mutableMapOf<String, MutableSet<Int>>()
+    private val topicToPartition = mutableSetOf<Int>()
     private var firstAssignment = true
 
     private val future: CompletableFuture<Unit> = CompletableFuture()
+    private val sessionIds = ConcurrentHashMap.newKeySet<String>()
 
     override fun onPartitionsUnassigned(topicPartitions: List<Pair<String, Int>>) {
         lock.write {
-            for ((topic, partition) in topicPartitions) {
-                topicToPartition[topic]?.remove(partition)
-            }
+            val removed = topicPartitions.filter { it.first == Schemas.P2P.LINK_IN_TOPIC }.map { it.second }.toSet()
+            topicToPartition.removeAll(removed)
+        }
+        val records = sessionIds.map { sessionId ->
+            Record(Schemas.P2P.SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(topicToPartition.toList()))
+        }
+        if (records.isNotEmpty() && topicToPartition.isNotEmpty()) {
+            publisher.publish(records)
         }
     }
 
@@ -39,17 +69,35 @@ class InboundAssignmentListener(private val coordinatorFactory: LifecycleCoordin
                 firstAssignment = false
                 future.complete(Unit)
             }
-            for ((topic, partition) in topicPartitions) {
-                val partitionSet = topicToPartition.computeIfAbsent(topic) { mutableSetOf() }
-                partitionSet.add(partition)
+            val assigned = topicPartitions.filter { it.first == Schemas.P2P.LINK_IN_TOPIC }.map { it.second }.toSet()
+            topicToPartition.addAll(assigned)
+        }
+        val records = sessionIds.map { sessionId ->
+            Record(Schemas.P2P.SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(topicToPartition.toList()))
+        }
+        if (records.isNotEmpty() && topicToPartition.isNotEmpty()) {
+            publisher.publish(records)
+        }
+    }
+
+    fun addSessionsAndGetRecords(newSessionIds: Set<String>) : List<Record<String, SessionPartitions>> {
+        return lock.read {
+            sessionIds.addAll(newSessionIds)
+            if (topicToPartition.isEmpty()) {
+                return emptyList()
+            }
+            newSessionIds.map { sessionId ->
+                Record(Schemas.P2P.SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(topicToPartition.toList()))
             }
         }
     }
 
-    fun getCurrentlyAssignedPartitions(topic: String) : Set<Int> {
-        return lock.read {
-            topicToPartition[topic] ?: emptySet()
-        }
+    fun sessionRemoved(sessionId: String) {
+        sessionIds.remove(sessionId)
+    }
+
+    fun removeAllSessions() {
+        sessionIds.clear()
     }
 
     private fun createResources(@Suppress("UNUSED_PARAMETER") resourcesHolder: ResourcesHolder): CompletableFuture<Unit> {

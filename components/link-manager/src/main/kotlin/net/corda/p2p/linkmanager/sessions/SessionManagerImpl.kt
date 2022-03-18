@@ -172,8 +172,8 @@ open class SessionManagerImpl(
                     val tombstoneRecords = (outboundSessionPool.getAllSessionIds() + activeInboundSessions.keys
                             + pendingInboundSessions.keys).map { Record(SESSION_OUT_PARTITIONS, it, null) }
                     outboundSessionPool.clearPool()
-
                     activeInboundSessions.clear()
+                    inboundAssignmentListener.removeAllSessions()
                     pendingInboundSessions.clear()
                     //This is suboptimal we could instead restart session negotiation
                     pendingOutboundSessionMessageQueues.destroyAllQueues()
@@ -269,6 +269,7 @@ open class SessionManagerImpl(
         sessionNegotiationLock.write {
             sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId(sessionId), counterparties)
             sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId(sessionId), counterparties)
+            inboundAssignmentListener.sessionRemoved(sessionId)
             val sessionInitMessage = genSessionInitMessages(counterparties, 1)
             if (!outboundSessionPool.replaceSession(sessionId, sessionInitMessage.single().first)) {
                 //If the session was not replaced do not send a initiatorHello

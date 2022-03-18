@@ -296,7 +296,7 @@ class LinkManagerTest {
     }
 
     private fun assignedListener(partitions: List<Int>): InboundAssignmentListener {
-        val listener = InboundAssignmentListener(mock())
+        val listener = InboundAssignmentListener(mock(), mock(), mock())
         for (partition in partitions) {
             listener.onPartitionsAssigned(listOf(LINK_IN_TOPIC to partition))
         }

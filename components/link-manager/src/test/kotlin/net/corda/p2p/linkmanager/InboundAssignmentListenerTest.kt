@@ -3,26 +3,20 @@ package net.corda.p2p.linkmanager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
+import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.messaging.api.records.Record
+import net.corda.p2p.SessionPartitions
+import net.corda.schema.Schemas
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
-import org.mockito.kotlin.any
-import org.mockito.kotlin.doAnswer
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
+import org.mockito.kotlin.*
 import java.util.concurrent.CompletableFuture
 
 class InboundAssignmentListenerTest {
-
-    companion object {
-        const val TOPIC_1 = "topic"
-        const val TOPIC_2 = "anotherTopic"
-    }
 
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>()
     private var createResources: ((resources: ResourcesHolder) -> CompletableFuture<Unit>)? = null
@@ -35,38 +29,48 @@ class InboundAssignmentListenerTest {
         @Suppress("UNCHECKED_CAST")
         createResources = context.arguments()[2] as ((resources: ResourcesHolder) -> CompletableFuture<Unit>)?
     }
+    private val publisherWithDominoLogic = Mockito.mockConstruction(PublisherWithDominoLogic::class.java) { mock, _ ->
+        whenever(mock.isRunning).doReturn(true)
+    }
 
     @AfterEach
     fun cleanUp() {
         dominoTile.close()
+        publisherWithDominoLogic.close()
     }
 
     @Test
     fun `Partitions can be assigned and reassigned`() {
-        val listener = InboundAssignmentListener(lifecycleCoordinatorFactory)
-        assertEquals(0, listener.getCurrentlyAssignedPartitions(TOPIC_1).size)
+        val listener = InboundAssignmentListener(lifecycleCoordinatorFactory, mock(), mock())
+        assertEquals(0, listener.addSessionsAndGetRecords(emptySet()).size)
         val assign1 = listOf(1, 3, 5)
-        val assign2 = listOf(2, 3, 4)
-        val firstAssignment = assign1.map { TOPIC_1 to it } + assign2.map { TOPIC_2 to it }
+        val firstAssignment = assign1.map { Schemas.P2P.LINK_IN_TOPIC to it }
         listener.onPartitionsAssigned(firstAssignment)
-        assertArrayEquals(assign1.toIntArray(), listener.getCurrentlyAssignedPartitions(TOPIC_1).toIntArray())
-        assertArrayEquals(assign2.toIntArray(), listener.getCurrentlyAssignedPartitions(TOPIC_2).toIntArray())
-        val unAssignTopic = 1
-        listener.onPartitionsUnassigned(listOf(TOPIC_1 to unAssignTopic))
-        assertArrayEquals((assign1 - listOf(unAssignTopic)).toIntArray(), listener.getCurrentlyAssignedPartitions(TOPIC_1).toIntArray())
+        val sessionIds = setOf("firstSession, secondSession")
+        val expectedRecords = sessionIds.map { Record(Schemas.P2P.SESSION_OUT_PARTITIONS, it, SessionPartitions(assign1)) }
+        val records = listener.addSessionsAndGetRecords(sessionIds)
+        assertThat(records).containsExactlyInAnyOrderElementsOf(expectedRecords)
+        verify(publisherWithDominoLogic.constructed().first(), never()).publish(any())
+
+        val unAssignPartition = 1
+        val newSession = "newSession"
+        listener.onPartitionsUnassigned(listOf(Schemas.P2P.LINK_IN_TOPIC to unAssignPartition))
+        val recordsOnUnassignment = sessionIds.map {
+            Record(Schemas.P2P.SESSION_OUT_PARTITIONS, it, SessionPartitions(assign1 - unAssignPartition))
+        }
+        verify(publisherWithDominoLogic.constructed().first()).publish(recordsOnUnassignment)
+        assertThat(listener.addSessionsAndGetRecords(setOf(newSession))).containsExactlyInAnyOrder(
+            Record(Schemas.P2P.SESSION_OUT_PARTITIONS, newSession, SessionPartitions(assign1 - unAssignPartition)))
     }
 
     @Test
     fun `the future completes when partitions are assigned`() {
-        val listener = InboundAssignmentListener(lifecycleCoordinatorFactory)
-        val readyFuture = createResources!!(mock<ResourcesHolder>())
-        assertEquals(0, listener.getCurrentlyAssignedPartitions(TOPIC_1).size)
+        val listener = InboundAssignmentListener(lifecycleCoordinatorFactory, mock(), mock())
+        val readyFuture = createResources!!(mock())
+        assertEquals(0, listener.addSessionsAndGetRecords(emptySet()).size)
         val assign1 = listOf(1, 3, 5)
-        val assign2 = listOf(2, 3, 4)
-        val firstAssignment = assign1.map { TOPIC_1 to it } + assign2.map { TOPIC_2 to it }
+        val firstAssignment = assign1.map { Schemas.P2P.LINK_IN_TOPIC to it }
         listener.onPartitionsAssigned(firstAssignment)
-        val secondAssignment = assign2.map { TOPIC_1 to it } + assign1.map { TOPIC_2 to it }
-        listener.onPartitionsAssigned(secondAssignment)
         assertThat(readyFuture.isDone).isTrue
     }
 }
