@@ -3,6 +3,7 @@ package net.corda.httprpc.tools.annotations.extensions
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.jvm.javaMethod
@@ -19,7 +20,7 @@ class HttpRpcEndpointTest {
 
         val endpointPath = TestClass::sampleGetMethod.let { it.findAnnotation<HttpRpcGET>()!!.path(it.javaMethod!!) }
 
-        assertEquals("samplegetmethod", endpointPath)
+        assertNull(endpointPath)
     }
 
     @Test
@@ -45,9 +46,9 @@ class HttpRpcEndpointTest {
             abstract fun samplePostMethod(): String
         }
 
-        val endpointPath = TestClass::samplePostMethod.let { it.findAnnotation<HttpRpcPOST>()!!.path(it.javaMethod!!) }
+        val endpointPath = TestClass::samplePostMethod.let { it.findAnnotation<HttpRpcPOST>()!!.path() }
 
-        assertEquals("samplepostmethod", endpointPath)
+        assertNull(endpointPath)
     }
 
     @Test
@@ -60,7 +61,7 @@ class HttpRpcEndpointTest {
             abstract fun samplePostMethod(): String
         }
 
-        val endpointPath = TestClass::samplePostMethod.let { it.findAnnotation<HttpRpcPOST>()!!.path(it.javaMethod!!) }
+        val endpointPath = TestClass::samplePostMethod.let { it.findAnnotation<HttpRpcPOST>()!!.path() }
 
         assertEquals("samplepostmethodpath", endpointPath)
     }

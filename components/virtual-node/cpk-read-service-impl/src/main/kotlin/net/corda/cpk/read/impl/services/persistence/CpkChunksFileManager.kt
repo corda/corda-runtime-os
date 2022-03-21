@@ -4,12 +4,12 @@ import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.CpkChunkId
 import net.corda.v5.crypto.SecureHash
 import java.nio.file.Path
-import java.util.TreeSet
+import java.util.SortedSet
 
 interface CpkChunksFileManager {
     fun chunkFileExists(chunkId: CpkChunkId): CpkChunkFileLookUp
 
     fun writeChunkFile(chunkId: CpkChunkId, chunk: Chunk)
 
-    fun assembleCpk(cpkChecksum: SecureHash, chunkParts: TreeSet<CpkChunkId>): Path?
+    fun assembleCpk(cpkChecksum: SecureHash, chunkParts: SortedSet<CpkChunkId>): Path?
 }

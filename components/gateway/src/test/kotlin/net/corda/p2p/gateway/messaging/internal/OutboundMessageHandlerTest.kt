@@ -27,11 +27,11 @@ import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.p2p.gateway.messaging.http.HttpResponse
 import net.corda.p2p.gateway.messaging.http.TrustStoresMap
+import net.corda.test.util.MockTimeFacilitiesProvider
 import net.corda.v5.base.util.millis
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x500.X500Name
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mockConstruction
@@ -48,13 +48,14 @@ import java.net.URI
 import java.nio.ByteBuffer
 import java.security.KeyStore
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 
 class OutboundMessageHandlerTest {
     companion object {
         private const val GROUP_ID = "My group ID"
     }
+
+    private val mockTimeFacilitiesProvider = MockTimeFacilitiesProvider()
+
     private val coordinatorHandler = argumentCaptor<LifecycleEventHandler>()
     private val coordinator = mock<LifecycleCoordinator> {
         on { postEvent(any()) } doAnswer {
@@ -114,6 +115,7 @@ class OutboundMessageHandlerTest {
         subscriptionFactory,
         SmartConfigImpl.empty(),
         2,
+        mockTimeFacilitiesProvider.mockScheduledExecutor
     )
 
     @AfterEach
@@ -318,12 +320,10 @@ class OutboundMessageHandlerTest {
     @Test
     fun `when message times out, it is retried once`() {
         connectionConfig = ConnectionConfiguration().copy(responseTimeout = 10.millis, retryDelay = 10.millis)
-        val messagesLatch = CountDownLatch(2)
         val client = mock<HttpClient> {
             on { write(any()) } doAnswer {
                 val gatewayMessage = GatewayMessage.fromByteBuffer(ByteBuffer.wrap(it.arguments[0] as ByteArray))
                 sentMessages.add(gatewayMessage)
-                messagesLatch.countDown()
                 CompletableFuture<HttpResponse>()
                 // simulate scenario where no response is received.
             }
@@ -350,26 +350,23 @@ class OutboundMessageHandlerTest {
             )
         )
 
-        assertTrue(messagesLatch.await(1, TimeUnit.SECONDS)) { "Not enough attempts to send message." }
+        mockTimeFacilitiesProvider.advanceTime(connectionConfig.retryDelay)
         assertThat(sentMessages).hasSize(2)
         sentMessages.forEach {
             assertThat(it.payload).isEqualTo(msgPayload)
         }
 
-        val waitTime = ((connectionConfig.responseTimeout.toMillis() + connectionConfig.retryDelay.toMillis()) * 4).toInt().millis
-        Thread.sleep(waitTime.toMillis())
+        repeat(2) { mockTimeFacilitiesProvider.advanceTime(connectionConfig.retryDelay.multipliedBy(2)) }
         assertThat(sentMessages).hasSize(2)
     }
 
     @Test
     fun `when message fails, it is retried once`() {
         connectionConfig = ConnectionConfiguration().copy(responseTimeout = 10.millis, retryDelay = 10.millis)
-        val messagesLatch = CountDownLatch(2)
         val client = mock<HttpClient> {
             on { write(any()) } doAnswer {
                 val gatewayMessage = GatewayMessage.fromByteBuffer(ByteBuffer.wrap(it.arguments[0] as ByteArray))
                 sentMessages.add(gatewayMessage)
-                messagesLatch.countDown()
                 CompletableFuture.failedFuture(RuntimeException("some error happened"))
             }
         }
@@ -395,26 +392,23 @@ class OutboundMessageHandlerTest {
             )
         )
 
-        assertTrue(messagesLatch.await(1, TimeUnit.SECONDS)) { "Not enough attempts to send message." }
+        mockTimeFacilitiesProvider.advanceTime(connectionConfig.retryDelay)
         assertThat(sentMessages).hasSize(2)
         sentMessages.forEach {
             assertThat(it.payload).isEqualTo(msgPayload)
         }
 
-        val waitTime = ((connectionConfig.responseTimeout.toMillis() + connectionConfig.retryDelay.toMillis()) * 4).toInt().millis
-        Thread.sleep(waitTime.toMillis())
+        repeat(2) { mockTimeFacilitiesProvider.advanceTime(connectionConfig.retryDelay.multipliedBy(2)) }
         assertThat(sentMessages).hasSize(2)
     }
 
     @Test
     fun `when 5xx error code is received, it is retried once`() {
         connectionConfig = ConnectionConfiguration().copy(retryDelay = 10.millis)
-        val messagesLatch = CountDownLatch(2)
         val client = mock<HttpClient> {
             on { write(any()) } doAnswer {
                 val gatewayMessage = GatewayMessage.fromByteBuffer(ByteBuffer.wrap(it.arguments[0] as ByteArray))
                 sentMessages.add(gatewayMessage)
-                messagesLatch.countDown()
                 val response = mock<HttpResponse> {
                     on { statusCode } doReturn HttpResponseStatus.INTERNAL_SERVER_ERROR
                 }
@@ -443,14 +437,13 @@ class OutboundMessageHandlerTest {
             )
         )
 
-        assertTrue(messagesLatch.await(1, TimeUnit.SECONDS)) { "Not enough attempts to send message." }
+        mockTimeFacilitiesProvider.advanceTime(connectionConfig.retryDelay)
         assertThat(sentMessages).hasSize(2)
         sentMessages.forEach {
             assertThat(it.payload).isEqualTo(msgPayload)
         }
 
-        val waitTime = ((connectionConfig.responseTimeout.toMillis() + connectionConfig.retryDelay.toMillis()) * 4).toInt().millis
-        Thread.sleep(waitTime.toMillis())
+        repeat(2) { mockTimeFacilitiesProvider.advanceTime(connectionConfig.retryDelay.multipliedBy(2)) }
         assertThat(sentMessages).hasSize(2)
     }
 
@@ -490,8 +483,7 @@ class OutboundMessageHandlerTest {
             )
         )
 
-        val waitTime = ((connectionConfig.responseTimeout.toMillis() + connectionConfig.retryDelay.toMillis()) * 4).toInt().millis
-        Thread.sleep(waitTime.toMillis())
+        repeat(2) { mockTimeFacilitiesProvider.advanceTime(connectionConfig.retryDelay.multipliedBy(2)) }
         assertThat(sentMessages).hasSize(1)
         assertThat(sentMessages.first().payload).isEqualTo(msgPayload)
     }

@@ -25,6 +25,8 @@ import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.SchemaMode
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.SchemaModelToOpenApiSchemaConverter
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.DataType
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.SchemaRefObjectModel
+import net.corda.httprpc.tools.HttpPathUtils.joinResourceAndEndpointPaths
+import net.corda.httprpc.tools.HttpPathUtils.toOpenApiPath
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.trace
 import org.eclipse.jetty.http.HttpStatus
@@ -200,17 +202,6 @@ private fun Class<*>.isNull(): Boolean {
         .also { log.trace { "Invoke isNull on class: ${this.name} returned $it." } }
 }
 
-/**
- * Swagger requires that all path names start with `/`.
- */
-
-@VisibleForTesting
-internal fun toOpenApiPath(resourcePath: String, endPointPath: String): String {
-    log.trace { "Map resourcePath: \"$resourcePath\" and endPointPath: \"$endPointPath\" to OpenApi path." }
-    return "/$resourcePath/$endPointPath".replace("/+".toRegex(), "/")
-        .also { log.trace { "Map resourcePath: \"$resourcePath\" and endPointPath: \"endPointPath\" to OpenApi path: \"$it\" completed." } }
-}
-
 private fun Resource.toTag(): Tag {
     log.trace { "Map resource: ${this.name} to OpenApi Tag." }
     return Tag()
@@ -221,7 +212,7 @@ private fun Resource.toTag(): Tag {
 
 private fun Resource.getPathToPathItems(schemaModelProvider: SchemaModelProvider): Map<String, PathItem> {
     log.trace { "Map resource: \"${this.name}\" to Map of Path to PathItem." }
-    return this.endpoints.groupBy { toOpenApiPath(path, it.path) }.map {
+    return this.endpoints.groupBy { joinResourceAndEndpointPaths(path, it.path).toOpenApiPath() }.map {
         val getEndpoint = it.value.singleOrNull { endpoint -> EndpointMethod.GET == endpoint.method }
         val postEndpoint = it.value.singleOrNull { endpoint -> EndpointMethod.POST == endpoint.method }
         val fullPath = it.key

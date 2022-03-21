@@ -25,8 +25,6 @@ import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
 import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
-import net.corda.p2p.crypto.ProtocolMode
-import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.schema.Schemas
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
@@ -78,24 +76,6 @@ class LinkManagerIntegrationTest {
             configReadService,
             bootstrapConfig,
             1,
-            StubNetworkMap(
-                lifecycleCoordinatorFactory,
-                subscriptionFactory,
-                1,
-                bootstrapConfig
-            ),
-            StubLinkManagerHostingMap(
-                lifecycleCoordinatorFactory,
-                subscriptionFactory,
-                1,
-                bootstrapConfig
-            ),
-            StubCryptoProcessor(
-                lifecycleCoordinatorFactory,
-                subscriptionFactory,
-                1,
-                bootstrapConfig
-            )
         )
 
         linkManager.use {
@@ -153,24 +133,6 @@ class LinkManagerIntegrationTest {
             configReadService,
             bootstrapConfig,
             1,
-            StubNetworkMap(
-                lifecycleCoordinatorFactory,
-                subscriptionFactory,
-                1,
-                bootstrapConfig
-            ),
-            StubLinkManagerHostingMap(
-                lifecycleCoordinatorFactory,
-                subscriptionFactory,
-                1,
-                bootstrapConfig
-            ),
-            StubCryptoProcessor(
-                lifecycleCoordinatorFactory,
-                subscriptionFactory,
-                1,
-                bootstrapConfig
-            )
         )
 
         assertDoesNotThrow {

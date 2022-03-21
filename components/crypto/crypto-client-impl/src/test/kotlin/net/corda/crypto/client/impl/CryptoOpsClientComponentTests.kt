@@ -2,6 +2,7 @@ package net.corda.crypto.client.impl
 
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
+import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.config.HSMInfo
 import net.corda.data.crypto.wire.CryptoNoContentValue
@@ -45,7 +46,6 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.atLeast
@@ -65,6 +65,7 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     private lateinit var knownTenantId: String
     private lateinit var knownAlias: String
     private lateinit var knownOperationContext: Map<String, String>
+    private lateinit var knownRawOperationContext: KeyValuePairList
     private lateinit var schemeMetadata: CipherSchemeMetadata
     private lateinit var sender: RPCSender<RpcOpsRequest, RpcOpsResponse>
     private lateinit var publisherFactory: PublisherFactory
@@ -76,6 +77,11 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
             knownAlias = UUID.randomUUID().toString()
             knownOperationContext = mapOf(
                 UUID.randomUUID().toString() to UUID.randomUUID().toString()
+            )
+            knownRawOperationContext = KeyValuePairList(
+                knownOperationContext.map {
+                    KeyValuePair(it.key, it.value)
+                }
             )
             schemeMetadata = CipherSchemeMetadataImpl()
             sender = mock()
@@ -136,7 +142,6 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(10)
     fun `Should return supported scheme codes`() {
         setupCompletedResponse {
             CryptoSignatureSchemes(
@@ -157,7 +162,6 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(10)
     fun `Should find public key`() {
         val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         setupCompletedResponse {
@@ -176,7 +180,6 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(10)
     fun `Should return null when public key is not found`() {
         setupCompletedResponse {
             CryptoNoContentValue()
@@ -191,7 +194,6 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(10)
     fun `Should filter my keys`() {
         val myPublicKeys = listOf(
             generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME).public,
@@ -219,7 +221,37 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(10)
+    fun `Should filter my keys by proxy`() {
+        val myPublicKeys = listOf(
+            ByteBuffer.wrap(
+                schemeMetadata.encodeAsByteArray(generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME).public)
+            ),
+            ByteBuffer.wrap(
+                schemeMetadata.encodeAsByteArray(generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME).public)
+            )
+        )
+        val notMyKey = ByteBuffer.wrap(
+            schemeMetadata.encodeAsByteArray(generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME).public)
+        )
+        setupCompletedResponse {
+            CryptoPublicKeys(myPublicKeys.map { it })
+        }
+        val result = sender.act {
+            component.filterMyKeysProxy(knownTenantId, listOf(myPublicKeys[0], myPublicKeys[1], notMyKey))
+        }
+        assertNotNull(result.value)
+        assertEquals(2, result.value!!.keys.size)
+        assertTrue(result.value.keys.any { it == myPublicKeys[0] })
+        assertTrue(result.value.keys.any { it == myPublicKeys[1] })
+        val query = assertOperationType<FilterMyKeysRpcQuery>(result)
+        assertEquals(3, query.keys.size)
+        assertTrue(query.keys.any { it.array().contentEquals(myPublicKeys[0].array()) })
+        assertTrue(query.keys.any { it.array().contentEquals(myPublicKeys[1].array()) })
+        assertTrue(query.keys.any { it.array().contentEquals(notMyKey.array()) })
+        assertRequestContext(result)
+    }
+
+    @Test
     fun `Should be able to handle empty filter my keys result`() {
         val myPublicKeys = listOf(
             generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME).public,
@@ -243,7 +275,35 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(10)
+    fun `Should be able to handle empty filter my keys result by proxy`() {
+        val myPublicKeys = listOf(
+            ByteBuffer.wrap(
+                schemeMetadata.encodeAsByteArray(generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME).public)
+            ),
+            ByteBuffer.wrap(
+                schemeMetadata.encodeAsByteArray(generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME).public)
+            )
+        )
+        val notMyKey = ByteBuffer.wrap(
+            schemeMetadata.encodeAsByteArray(generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME).public)
+        )
+        setupCompletedResponse {
+            CryptoPublicKeys(emptyList())
+        }
+        val result = sender.act {
+            component.filterMyKeysProxy(knownTenantId, listOf(myPublicKeys[0], myPublicKeys[1], notMyKey))
+        }
+        assertNotNull(result.value)
+        assertEquals(0, result.value!!.keys.size)
+        val query = assertOperationType<FilterMyKeysRpcQuery>(result)
+        assertEquals(3, query.keys.size)
+        assertTrue(query.keys.any { it.array().contentEquals(myPublicKeys[0].array()) })
+        assertTrue(query.keys.any { it.array().contentEquals(myPublicKeys[1].array()) })
+        assertTrue(query.keys.any { it.array().contentEquals(notMyKey.array()) })
+        assertRequestContext(result)
+    }
+
+    @Test
     fun `Should generate key pair`() {
         val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         setupCompletedResponse {
@@ -269,7 +329,6 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(10)
     fun `Should generate fresh key without external id`() {
         val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         setupCompletedResponse {
@@ -289,7 +348,25 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(10)
+    fun `Should generate fresh key without external id by proxy`() {
+        val publicKey = ByteBuffer.wrap(
+            schemeMetadata.encodeAsByteArray(generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME).public)
+        )
+        setupCompletedResponse {
+            CryptoPublicKey(publicKey)
+        }
+        val result = sender.act {
+            component.freshKeyProxy(knownTenantId, knownRawOperationContext)
+        }
+        assertNotNull(result.value)
+        assertArrayEquals(result.value!!.key.array(), publicKey.array())
+        val command = assertOperationType<GenerateFreshKeyRpcCommand>(result)
+        assertNull(command.externalId)
+        assertOperationContext(command.context)
+        assertRequestContext(result)
+    }
+
+    @Test
     fun `Should generate fresh key with external id`() {
         val externalId = UUID.randomUUID()
         val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
@@ -311,7 +388,27 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(10)
+    fun `Should generate fresh key with external id by proxy`() {
+        val externalId = UUID.randomUUID()
+        val publicKey = ByteBuffer.wrap(
+            schemeMetadata.encodeAsByteArray(generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME).public)
+        )
+        setupCompletedResponse {
+            CryptoPublicKey(publicKey)
+        }
+        val result = sender.act {
+            component.freshKeyProxy(knownTenantId, externalId, knownRawOperationContext)
+        }
+        assertNotNull(result.value)
+        assertArrayEquals(result.value!!.key.array(), publicKey.array())
+        val command = assertOperationType<GenerateFreshKeyRpcCommand>(result)
+        assertNotNull(command.externalId)
+        assertEquals(externalId, UUID.fromString(command.externalId))
+        assertOperationContext(command.context)
+        assertRequestContext(result)
+    }
+
+    @Test
     fun `Should sign by referencing public key`() {
         val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         val data = UUID.randomUUID().toString().toByteArray()
@@ -337,7 +434,34 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(10)
+    fun `Should sign by referencing public key by proxy`() {
+        val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
+        val publicKey = ByteBuffer.wrap(
+            schemeMetadata.encodeAsByteArray(keyPair.public)
+        )
+        val data = ByteBuffer.wrap(UUID.randomUUID().toString().toByteArray())
+        val signature = signData(schemeMetadata, keyPair, data.array())
+        setupCompletedResponse {
+            CryptoSignatureWithKey(
+                publicKey,
+                ByteBuffer.wrap(signature)
+            )
+        }
+        val result = sender.act {
+            component.signProxy(knownTenantId, publicKey, data, knownRawOperationContext)
+        }
+        assertNotNull(result.value)
+        assertArrayEquals(publicKey.array(), result.value!!.publicKey.array())
+        assertArrayEquals(signature, result.value.bytes.array())
+        val command = assertOperationType<SignRpcCommand>(result)
+        assertNotNull(command)
+        assertArrayEquals(publicKey.array(), command.publicKey.array())
+        assertArrayEquals(data.array(), command.bytes.array())
+        assertOperationContext(command.context)
+        assertRequestContext(result)
+    }
+
+    @Test
     fun `Should sign by referencing public key and using custom signature spec`() {
         val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         val data = UUID.randomUUID().toString().toByteArray()
@@ -371,7 +495,6 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(10)
     fun `Should sign by referencing public key and using custom signature spec with signature params`() {
         val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         val data = UUID.randomUUID().toString().toByteArray()
@@ -411,7 +534,6 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(10)
     fun `Should sign by referencing key alias`() {
         val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         val data = UUID.randomUUID().toString().toByteArray()
@@ -440,7 +562,6 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(10)
     fun `Should sign by referencing key alias and using custom signature spec`() {
         val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         val data = UUID.randomUUID().toString().toByteArray()
@@ -478,7 +599,6 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(10)
     fun `Should sign by referencing key alias and using custom signature spec with signature params`() {
         val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         val data = UUID.randomUUID().toString().toByteArray()
@@ -522,7 +642,6 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(5)
     fun `Should find key information by referencing public key`() {
         val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         val expectedValue = HSMKeyDetails()
@@ -540,7 +659,6 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(5)
     fun `Should return null for key information when public key is not found`() {
         val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         setupCompletedResponse {
@@ -556,7 +674,6 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(5)
     fun `Should find key information by referencing key alias`() {
         val expectedValue = HSMKeyDetails()
         setupCompletedResponse {
@@ -576,7 +693,6 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(5)
     fun `Should return null for key information when key alias is not found`() {
         setupCompletedResponse {
             CryptoNoContentValue()
@@ -594,7 +710,6 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(5)
     fun `Should find hsm details`() {
         val expectedValue = HSMInfo()
         setupCompletedResponse {
@@ -614,7 +729,6 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(5)
     fun `Should return null for hsm details when it is not found`() {
         setupCompletedResponse {
             CryptoNoContentValue()
@@ -632,7 +746,6 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(5)
     fun `Should cleanup created resources when component is stopped`() {
         component.stop()
         assertFalse(component.isRunning)
@@ -641,7 +754,6 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(5)
     fun `Should fail when response tenant id does not match the request`() {
         whenever(
             sender.sendRequest(any())
@@ -670,7 +782,6 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(5)
     fun `Should fail when requesting component in response does not match the request`() {
         whenever(
             sender.sendRequest(any())
@@ -699,7 +810,6 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(5)
     fun `Should fail when response class is not expected`() {
         whenever(
             sender.sendRequest(any())
@@ -728,7 +838,6 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(5)
     fun `Should fail when sendRequest throws CryptoServiceLibraryException exception`() {
         val error = CryptoServiceLibraryException("Test failure.")
         whenever(sender.sendRequest(any())).thenThrow(error)
@@ -739,7 +848,6 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    @Timeout(5)
     fun `Should fail when sendRequest throws an exception`() {
         val error = RuntimeException("Test failure.")
         whenever(sender.sendRequest(any())).thenThrow(error)

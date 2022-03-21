@@ -69,6 +69,6 @@ internal class HttpRpcInterfaceValidatorTest {
 
         val result = HttpRpcInterfaceValidator.validate(TestInterface::class.java)
 
-        assertEquals(0, result.errors.size)
+        assertEquals(0, result.errors.size) { "Error: ${result.errors}" }
     }
 }

@@ -20,7 +20,6 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Timeout
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -74,7 +73,6 @@ class AbstractComponentTests {
     }
 
     @Test
-    @Timeout(15)
     fun `Should start component and create resources only after the component is up`() {
         assertFalse(testComponent.isRunning)
         assertNull(testComponent.resources)
@@ -99,7 +97,6 @@ class AbstractComponentTests {
     }
 
     @Test
-    @Timeout(15)
     fun `Should cleanup created resources when component is stopped`() {
         testComponent.start()
         coordinator.postEvent(
@@ -126,7 +123,6 @@ class AbstractComponentTests {
     }
 
     @Test
-    @Timeout(15)
     fun `Should not be able to create resources when component is not started`() {
         assertFalse(testComponent.isRunning)
         assertNull(testComponent.resources)

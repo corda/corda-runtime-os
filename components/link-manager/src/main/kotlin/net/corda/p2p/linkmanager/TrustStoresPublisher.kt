@@ -27,7 +27,7 @@ internal class TrustStoresPublisher(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     configuration: SmartConfig,
     instanceId: Int,
-) : LifecycleWithDominoTile, NetworkMapListener {
+) : LifecycleWithDominoTile, GroupPolicyListener {
 
     companion object {
         val logger = contextLogger()
@@ -36,7 +36,7 @@ internal class TrustStoresPublisher(
     }
 
     private val publishedGroups = ConcurrentHashMap<String, Set<PemCertificates>>()
-    private val toPublish = ConcurrentLinkedQueue<NetworkMapListener.GroupInfo>()
+    private val toPublish = ConcurrentLinkedQueue<GroupPolicyListener.GroupInfo>()
     private val ready = CompletableFuture<Unit>()
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,
@@ -56,7 +56,7 @@ internal class TrustStoresPublisher(
         emptyList(),
     )
 
-    override fun groupAdded(groupInfo: NetworkMapListener.GroupInfo) {
+    override fun groupAdded(groupInfo: GroupPolicyListener.GroupInfo) {
         toPublish.offer(groupInfo)
         publishQueueIfPossible()
     }

@@ -16,7 +16,6 @@ dependencies {
     implementation "biz.aQute.bnd:biz.aQute.bndlib:$bndVersion"
 
     implementation "net.corda.plugins:quasar-utils:$cordaGradlePluginsVersion"
-    implementation "net.corda.plugins:flask:$cordaGradlePluginsVersion"
     implementation "com.google.cloud.tools:jib-core:$jibCoreVersion"
 }
 

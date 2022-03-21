@@ -27,9 +27,12 @@ internal class PathParameterInURLPathValidator(private val clazz: Class<out RpcO
         }
     }
 
-    private fun validateParameter(path: String, parameter: Parameter): HttpRpcValidationResult {
-        val parameterName = getParameterName(parameter)
-        val exists = parameterName!!.toLowerCase().existsInPath(path.toLowerCase())
+    private fun validateParameter(path: String?, parameter: Parameter): HttpRpcValidationResult {
+        val parameterName = requireNotNull(getParameterName(parameter))
+        if (path == null) {
+            return HttpRpcValidationResult(listOf("Path parameter '$parameterName' incompatible with the defaulted endpoint path"))
+        }
+        val exists = parameterName.toLowerCase().existsInPath(path.toLowerCase())
         return if (exists) HttpRpcValidationResult()
         else HttpRpcValidationResult(listOf("Path parameter '$parameterName' does not exist in endpoint path '$path'"))
     }
@@ -39,7 +42,7 @@ internal class PathParameterInURLPathValidator(private val clazz: Class<out RpcO
     }
 
     @Suppress("ComplexMethod")
-    private fun getParameterName(parameter: Parameter) =
+    private fun getParameterName(parameter: Parameter): String? =
         parameter.annotations.single { it is HttpRpcPathParameter }?.let { annotation ->
             (annotation as HttpRpcPathParameter).name(parameter)
         }

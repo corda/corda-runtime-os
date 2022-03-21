@@ -41,13 +41,19 @@ import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.jce.PrincipalUtil
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import java.io.StringWriter
+import java.net.BindException
 import java.net.ServerSocket
 import java.nio.ByteBuffer
 import java.security.KeyStore
 import java.security.cert.X509Certificate
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
 
 open class TestBase {
+    companion object {
+        private val lastUsedPort = AtomicInteger(3000)
+    }
+
     private fun readKeyStore(fileName: String, password: String = keystorePass): KeyStoreWithPassword {
         val keyStore = KeyStore.getInstance("JKS").also { keyStore ->
             javaClass.classLoader.getResource("$fileName.jks")!!.openStream().use {
@@ -70,9 +76,15 @@ open class TestBase {
         TrustStoresMap.TrustedCertificates(listOf(c4TruststoreCertificatePem)).trustStore
     }
 
-    protected fun getOpenPort() : Int {
-        return ServerSocket(0).use {
-            it.localPort
+    protected fun getOpenPort(): Int {
+        while (true) {
+            try {
+                ServerSocket(lastUsedPort.incrementAndGet()).use {
+                    return it.localPort
+                }
+            } catch (e: BindException) {
+                // Go to next port...
+            }
         }
     }
 

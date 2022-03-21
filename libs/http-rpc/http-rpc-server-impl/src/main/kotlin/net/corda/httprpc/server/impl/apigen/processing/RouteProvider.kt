@@ -5,11 +5,12 @@ import net.corda.httprpc.server.impl.apigen.models.Endpoint
 import net.corda.httprpc.server.impl.apigen.models.EndpointMethod
 import net.corda.httprpc.server.impl.apigen.models.EndpointParameter
 import net.corda.httprpc.server.impl.apigen.models.Resource
+import net.corda.httprpc.tools.HttpPathUtils.joinResourceAndEndpointPaths
 import net.corda.v5.base.util.trace
 import net.corda.v5.base.stream.isFiniteDurableStreamsMethod
 import net.corda.v5.base.stream.returnsDurableCursorBuilder
 import net.corda.httprpc.tools.annotations.validation.utils.pathParamRegex
-import net.corda.httprpc.tools.staticExposedGetMethods
+import net.corda.httprpc.tools.isStaticallyExposedGet
 import java.lang.reflect.InvocationTargetException
 
 /**
@@ -30,19 +31,15 @@ internal class JavalinRouteProviderImpl(
 
     private companion object {
         private val log = contextLogger()
-
-        private val noAuthRequiredGETEndpoints = staticExposedGetMethods
     }
 
     override val httpNoAuthRequiredGetRoutes = mapResourcesToRoutesByHttpMethod(EndpointMethod.GET)
         .filter { routeInfo ->
-            val methodName = routeInfo.method.method.name
-            noAuthRequiredGETEndpoints.any { methodName.equals(it, true) }
+            routeInfo.method.method.isStaticallyExposedGet()
         }
     override val httpGetRoutes = mapResourcesToRoutesByHttpMethod(EndpointMethod.GET)
-        .filter { routeInfo ->
-            val methodName = routeInfo.method.method.name
-            noAuthRequiredGETEndpoints.none { methodName.equals(it, true) }
+        .filterNot { routeInfo ->
+            routeInfo.method.method.isStaticallyExposedGet()
         }
     override val httpPostRoutes = mapResourcesToRoutesByHttpMethod(EndpointMethod.POST)
 
@@ -56,8 +53,8 @@ internal class JavalinRouteProviderImpl(
         }.also { log.trace { "Map resources to routes by http method completed." } }
     }
 
-    private fun replacePathParametersInEndpointPath(path: String): String =
-        path.replace(pathParamRegex) { matchResult -> ":${matchResult.groupValues[1]}" }
+    private fun replacePathParametersInEndpointPath(path: String?): String? =
+        path?.replace(pathParamRegex) { matchResult -> ":${matchResult.groupValues[1]}" }
 }
 
 internal enum class ParameterType {
@@ -111,12 +108,9 @@ internal class RouteInfo(
         }
     }
 
-    private fun generateFullPath(resourcePath: String, endpointPath: String): String {
-        val resourcePathNoSlash = if (resourcePath.endsWith('/')) {
-            resourcePath.substring(0..resourcePath.length - 2)
-        } else resourcePath
-        log.trace { "Generate full path for resource path: \"$resourcePath\", endpoint path: \"$endpointPath\"." }
-        return "/${basePath}/v${apiVersion}/${resourcePathNoSlash}/${endpointPath}".toLowerCase().also {
+    private fun generateFullPath(resourcePath: String, endpointPath: String?): String {
+        val combinedPath = joinResourceAndEndpointPaths("/${basePath}/v${apiVersion}/${resourcePath}", endpointPath)
+        return combinedPath.toLowerCase().also {
             log.trace { "Full path $it generated." }
         }
     }

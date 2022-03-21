@@ -72,7 +72,7 @@ internal class VirtualNodeWriterProcessor(
             if (virtualNodeEntityRepository.virtualNodeExists(holdingId, cpiMetadata.id)) {
                 handleException(
                     respFuture,
-                    "Virtual node for CPI with hash ${request.cpiFileChecksum} and x500Name ${request.x500Name} already exists.",
+                    "Virtual node for CPI with file checksum ${request.cpiFileChecksum} and x500Name ${request.x500Name} already exists.",
                     request)
                 return
             }

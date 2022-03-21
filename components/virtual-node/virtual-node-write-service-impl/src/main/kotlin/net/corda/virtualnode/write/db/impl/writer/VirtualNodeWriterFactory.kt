@@ -64,7 +64,7 @@ internal class VirtualNodeWriterFactory(
             VirtualNodeCreationRequest::class.java,
             VirtualNodeCreationResponse::class.java,
         )
-        val virtualNodeEntityRepository = VirtualNodeEntityRepository(dbConnectionManager)
+        val virtualNodeEntityRepository = VirtualNodeEntityRepository(dbConnectionManager.getClusterEntityManagerFactory())
         val vnodeDbFactory = VirtualNodeDbFactory(dbConnectionManager, dbAdmin, schemaMigrator)
         val processor = VirtualNodeWriterProcessor(vnodePublisher, dbConnectionManager, virtualNodeEntityRepository, vnodeDbFactory)
 

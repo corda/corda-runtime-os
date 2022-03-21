@@ -18,8 +18,9 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.AuthenticatedMessageDeliveryState
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
+import net.corda.p2p.linkmanager.LinkManagerGroupPolicyProvider
+import net.corda.p2p.linkmanager.LinkManagerInternalTypes.toHoldingIdentity
+import net.corda.p2p.linkmanager.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
@@ -38,7 +39,8 @@ class DeliveryTracker(
     publisherFactory: PublisherFactory,
     configuration: SmartConfig,
     subscriptionFactory: SubscriptionFactory,
-    networkMap: LinkManagerNetworkMap,
+    groups: LinkManagerGroupPolicyProvider,
+    members: LinkManagerMembershipGroupReader,
     cryptoProcessor: CryptoProcessor,
     sessionManager: SessionManager,
     instanceId: Int,
@@ -71,7 +73,8 @@ class DeliveryTracker(
         messageTrackerSubscription,
         setOf(
             replayScheduler.dominoTile,
-            networkMap.dominoTile,
+            groups.dominoTile,
+            members.dominoTile,
             cryptoProcessor.dominoTile,
             sessionManager.dominoTile,
             appMessageReplayer.dominoTile
