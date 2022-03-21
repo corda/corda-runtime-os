@@ -52,6 +52,8 @@ workers:
   crypto:
     # crypto worker image configuration
     image:
+      # -- crypto worker image registry, defaults to image.registry
+      registry: ""
       # -- crypto worker image repository
       repository: "corda-os-crypto-worker"
       # -- crypto worker image tag, defaults to image.tag
@@ -69,6 +71,8 @@ workers:
   db:
     # DB worker image configuration
     image:
+      # -- DB worker image registry, defaults to image.registry
+      registry: ""
       # -- DB worker image repository
       repository: "corda-os-db-worker"
       # -- DB worker image tag, defaults to image.tag
@@ -86,6 +90,8 @@ workers:
   flow:
     # flow worker image configuration
     image:
+      # -- flow worker image registry, defaults to image.registry
+      registry: ""
       # -- flow worker image repository
       repository: "corda-os-flow-worker"
       # -- flow worker image tag, defaults to image.tag
@@ -103,6 +109,8 @@ workers:
   rpc:
     # RPC worker image configuration
     image:
+      # -- RPC worker image registry, defaults to image.registry
+      registry: ""
       # -- RPC worker image repository
       repository: "corda-os-rpc-worker"
       # -- RPC worker image tag, defaults to image.tag
