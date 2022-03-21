@@ -27,7 +27,6 @@ import org.bouncycastle.jce.interfaces.ECKey
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
@@ -225,13 +224,11 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(10)
     fun `SoftCryptoService should require wrapping key`() {
         assertTrue(services.cryptoService.requiresWrappingKey())
     }
 
     @Test
-    @Timeout(10)
     fun `All supported by SoftCryptoService schemes should be defined in cipher suite`() {
         assertTrue(services.cryptoService.supportedSchemes().isNotEmpty())
         services.cryptoService.supportedSchemes().forEach {
@@ -240,7 +237,6 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(10)
     fun `All supported by SoftCryptoService wrapping schemes should be defined in cipher suite`() {
         assertTrue(services.cryptoService.supportedWrappingSchemes().isNotEmpty())
         services.cryptoService.supportedWrappingSchemes().forEach {
@@ -249,7 +245,6 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(10)
     fun `containsKey in SoftCryptoService should return false for unknown alias`() {
         val alias = newAlias()
         assertFalse(services.cryptoService.containsKey(alias))
@@ -257,7 +252,6 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedSchemes")
-    @Timeout(60)
     fun `containsKey in SoftCryptoService should return true for known alias for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -268,7 +262,6 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedWrappingSchemes")
-    @Timeout(60)
     @Suppress("MaxLineLength")
     fun `SoftCryptoService should fail signing using wrapped key pair with unknown wrapping key for all supported schemes`(
         signatureScheme: SignatureScheme
@@ -293,7 +286,6 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(60)
     fun `Should generate deterministic signatures for EdDSA, SPHINCS-256 and RSA`() {
         listOf(
             schemeMetadata.schemes.first { it.codeName == EDDSA_ED25519_CODE_NAME },
@@ -340,7 +332,6 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(10)
     fun `Should generate non deterministic signatures for ECDSA`() {
         listOf(
             schemeMetadata.schemes.first { it.codeName == ECDSA_SECP256K1_CODE_NAME },
@@ -386,7 +377,6 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(20)
     fun `Should generate RSA key pair`() {
         val alias = newAlias()
         val scheme = schemeMetadata.findSignatureScheme(RSA_CODE_NAME)
@@ -398,7 +388,6 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(20)
     fun `Should generate RSA key pair and be able sign and verify using RSASSA-PSS signature`() {
         val data = UUID.randomUUID().toString().toByteArray()
         val alias = newAlias()
@@ -425,7 +414,6 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(20)
     fun `Should generate wrapped RSA key pair and be able sign and verify using RSASSA-PSS signature`() {
         val data = UUID.randomUUID().toString().toByteArray()
         val signatureScheme = schemeMetadata.findSignatureScheme(RSA_CODE_NAME)
@@ -448,7 +436,6 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(10)
     fun `Should generate ECDSA key pair with secp256k1 curve`() {
         val alias = newAlias()
         val scheme = schemeMetadata.findSignatureScheme(ECDSA_SECP256K1_CODE_NAME)
@@ -462,7 +449,6 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(10)
     fun `Should generate ECDSA key pair with secp256r1 curve`() {
         val alias = newAlias()
         val scheme = schemeMetadata.findSignatureScheme(ECDSA_SECP256R1_CODE_NAME)
@@ -476,7 +462,6 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(10)
     fun `Should generate EdDSA key pair with ED25519 curve`() {
         val alias = newAlias()
         val scheme = schemeMetadata.findSignatureScheme(EDDSA_ED25519_CODE_NAME)
@@ -488,7 +473,6 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(10)
     fun `Should generate SPHINCS-256 key pair`() {
         val alias = newAlias()
         val scheme = schemeMetadata.findSignatureScheme(SPHINCS256_CODE_NAME)
@@ -500,7 +484,6 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(10)
     fun `Should generate SM2 key pair`() {
         val alias = newAlias()
         val scheme = schemeMetadata.findSignatureScheme(SM2_CODE_NAME)
@@ -514,7 +497,6 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(10)
     fun `Should generate GOST3410_GOST3411 key pair`() {
         val alias = newAlias()
         val scheme = schemeMetadata.findSignatureScheme(GOST3410_GOST3411_CODE_NAME)
@@ -526,7 +508,6 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(60)
     fun `Should fail when generating key pair with unsupported signature scheme`() {
         val alias = newAlias()
         assertThrows<CryptoServiceBadRequestException> {
@@ -535,7 +516,6 @@ class CryptoOperationsTests {
     }
     @ParameterizedTest
     @MethodSource("supportedSchemes")
-    @Timeout(60)
     fun `Should find generated public key for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -548,7 +528,6 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedSchemes")
-    @Timeout(60)
     fun `Should not find public key when key pair hasn't been generated yet for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -560,7 +539,6 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedSchemes")
-    @Timeout(60)
     fun `Should fail signing with unknown alias for all supported schemes`(signatureScheme: SignatureScheme) {
         val alias = newAlias()
         val data = UUID.randomUUID().toString().toByteArray()
@@ -577,7 +555,6 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedSchemes")
-    @Timeout(60)
     fun `Should generate keys and then sign and verify for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -620,7 +597,6 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedSchemes")
-    @Timeout(60)
     @Suppress("MaxLineLength")
     fun `Signing service should use first known key from CompositeKey when signing using public key overload for all supported schemes`(
         signatureScheme: SignatureScheme
@@ -648,7 +624,6 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedSchemes")
-    @Timeout(60)
     fun `SoftCryptoService should fail to use key generated for another member for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -681,7 +656,6 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedWrappingSchemes")
-    @Timeout(60)
     fun `Should create fresh key without external id and then sign and verify for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -703,7 +677,6 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedWrappingSchemes")
-    @Timeout(60)
     fun `Should create fresh key with external id and then sign and verify for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -726,7 +699,6 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedWrappingSchemes")
-    @Timeout(60)
     @Suppress("MaxLineLength")
     fun `Should still be able to use fresh key without external id generated and with previous master wrapping key for all supported schemes`(
         signatureScheme: SignatureScheme
@@ -767,7 +739,6 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedWrappingSchemes")
-    @Timeout(60)
     @Suppress("MaxLineLength")
     fun `Should still be able to use fresh key with external id generated and with previous master wrapping key for all supported schemes`(
         signatureScheme: SignatureScheme
@@ -810,7 +781,6 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedWrappingSchemes")
-    @Timeout(60)
     @Suppress("MaxLineLength")
     fun `Fresh key service should use first known key from CompositeKey when signing using public key overload for all supported schemes`(
         signatureScheme: SignatureScheme
@@ -837,7 +807,6 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedWrappingSchemes")
-    @Timeout(60)
     fun `Should fail to use fresh key to sign generated for different member for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -863,7 +832,6 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedWrappingSchemes")
-    @Timeout(60)
     fun `Should fail generating fresh key with unknown wrapping key for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -881,7 +849,6 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedWrappingSchemes")
-    @Timeout(60)
     fun `Should fail filtering my keys as it's not implemented yet for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -896,7 +863,6 @@ class CryptoOperationsTests {
     /*
     @ParameterizedTest
     @MethodSource("supportedWrappingSchemes")
-    @Timeout(60)
     fun `Should fail filtering my keys as it's not implemented yet for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -909,8 +875,7 @@ class CryptoOperationsTests {
         assertThat(ourKeys, hasItem(freshKey2))
     }
 
-     @Test
-    @Timeout(60)
+    @Test
     fun `Keys are correctly filtered - none keys belong to us`() {
         val freshKey1 = mockSigningService.generateKeyPair(UUID.randomUUID().toString(), defaultScheme)
         val freshKey2 = keyManagementBackend1.freshKey()
@@ -920,7 +885,6 @@ class CryptoOperationsTests {
     }
 
     @Test
-    @Timeout(60)
     fun `Keys are correctly filtered - some of the keys belong to us`() {
         val freshKey1 = mockSigningService.generateKeyPair(UUID.randomUUID().toString(), defaultScheme)
         val freshKey2 = mockSigningService.generateKeyPair(UUID.randomUUID().toString(), defaultScheme)

@@ -6,6 +6,7 @@ import net.corda.db.connection.manager.impl.BootstrapConfigProvided
 import net.corda.db.connection.manager.impl.DbConnectionManagerImpl
 import net.corda.db.connection.manager.impl.DbConnectionRepositoryFactory
 import net.corda.db.connection.manager.impl.LateInitDbConnectionOps
+import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DataSourceFactory
 import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.SmartConfig
@@ -30,16 +31,13 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-
 import java.sql.Connection
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
-
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.Query
-import javax.sql.DataSource
 
 class DbConnectionManagerImplTest {
     private val lifecycleCoordinator = mock<LifecycleCoordinator>()
@@ -66,10 +64,10 @@ class DbConnectionManagerImplTest {
     }
     private val clusterConnection = mock<Connection>()
     private val otherConnection = mock<Connection>()
-    private val clusterDataSource = mock<DataSource>() {
+    private val clusterDataSource = mock<CloseableDataSource>() {
         on { connection }.doReturn(clusterConnection)
     }
-    private val otherDataSource = mock<DataSource>() {
+    private val otherDataSource = mock<CloseableDataSource>() {
         on { connection }.doReturn(otherConnection)
     }
     private val config = ConfigFactory.parseString("config=123")
