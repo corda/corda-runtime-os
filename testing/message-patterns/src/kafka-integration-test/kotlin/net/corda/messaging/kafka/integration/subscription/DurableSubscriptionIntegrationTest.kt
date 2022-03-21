@@ -212,10 +212,15 @@ class DurableSubscriptionIntegrationTest {
             TEST_CONFIG,
             null
         )
+
+        val secondSubConfig = TEST_CONFIG.withValue(
+            INSTANCE_ID,
+            ConfigValueFactory.fromAnyRef(2)
+        )
         val durableSub2 = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$DURABLE_TOPIC4-group", DURABLE_TOPIC4, 2),
             TestDurableProcessor(latch),
-            TEST_CONFIG,
+            secondSubConfig,
             null
         )
 

@@ -264,6 +264,8 @@ class StateAndEventSubscriptionIntegrationTest {
 
         val longWaitProcessorConfig = TEST_CONFIG
             .withValue(CONSUMER_PROCESSOR_TIMEOUT, ConfigValueFactory.fromAnyRef(30000))
+            .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(2)
+        )
         val onNextLatch2 = CountDownLatch(1)
 
         //fail slowly on first record. allow time for subscription to be stopped to force rebalance

@@ -1,5 +1,6 @@
 package net.corda.messaging.kafka.integration.subscription
 
+import com.typesafe.config.ConfigValueFactory
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -17,6 +18,7 @@ import net.corda.messaging.kafka.integration.TopicTemplates
 import net.corda.messaging.kafka.integration.getDemoRecords
 import net.corda.messaging.kafka.integration.getKafkaProperties
 import net.corda.messaging.kafka.integration.processors.TestEventLogProcessor
+import net.corda.schema.configuration.MessagingConfig
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
@@ -127,10 +129,15 @@ class KafkaEventLogSubscriptionIntegrationTest {
             TEST_CONFIG,
             null
         )
+
+        val secondSubConfig = TEST_CONFIG.withValue(
+            MessagingConfig.Boot.INSTANCE_ID,
+            ConfigValueFactory.fromAnyRef(2)
+        )
         val eventLogSub2 = subscriptionFactory.createEventLogSubscription(
             SubscriptionConfig("$TOPIC2-group", TOPIC2, 2),
             TestEventLogProcessor(latch),
-            TEST_CONFIG,
+            secondSubConfig,
             null
         )
 
