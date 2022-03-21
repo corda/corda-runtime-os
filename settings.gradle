@@ -379,14 +379,6 @@ gradleEnterprise {
                 push = false
                 enabled = false
             }
-//            credentials {
-//                println "*******************************"
-//                println System.getenv('BUILD_CACHE_USERNAME')
-//                println System.getenv('BUILD_CACHE_PASSWORD')
-//
-//                username = "cacheUserCi02"
-//                password = "sBsRJ20G8R!PAjWbZ%Vs"
-//            }
         }
     }
 }
