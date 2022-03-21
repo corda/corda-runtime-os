@@ -41,6 +41,7 @@ import org.junit.jupiter.api.fail
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.ByteBuffer
+import java.time.Instant
 import java.util.concurrent.CancellationException
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
@@ -180,9 +181,9 @@ class RPCSubscriptionIntegrationTest {
             RPCResponse::class.java
         )
         val rpcSender = publisherFactory.createRPCSender(rpcConfig, kafkaConfig)
-
+        val timestamp = Instant.now()
         val rpcSub = subscriptionFactory.createRPCSubscription(
-            rpcConfig, kafkaConfig, TestRPCAvroResponderProcessor()
+            rpcConfig, kafkaConfig, TestRPCAvroResponderProcessor(timestamp)
         )
 
         rpcSender.start()
@@ -191,7 +192,7 @@ class RPCSubscriptionIntegrationTest {
         var attempts = 5
         val response = RPCResponse(
             "test",
-            0L,
+            timestamp,
             ResponseStatus.OK,
             ByteBuffer.wrap("test".encodeToByteArray())
         )
@@ -201,7 +202,7 @@ class RPCSubscriptionIntegrationTest {
                 val future = rpcSender.sendRequest(
                     RPCRequest(
                         "test",
-                        0L,
+                        Instant.now(),
                         "test",
                         0,
                         ByteBuffer.wrap("test".encodeToByteArray())
