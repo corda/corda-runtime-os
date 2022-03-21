@@ -154,4 +154,110 @@ class DbAdminTest {
             }
         }
     }
+
+    @Test
+    fun `DML user can use table created by DDL user`() {
+
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
+
+        val entitiesRegistry = JpaEntitiesRegistryImpl()
+        val dbm = DbConnectionManagerImpl(lifecycleCoordinatorFactory, EntityManagerFactoryFactoryImpl(), entitiesRegistry)
+        val config = configFactory.create(DbUtils.createConfig("configuration_db"))
+        entitiesRegistry.register(
+            CordaDb.CordaCluster.persistenceUnitName,
+            ConfigurationEntities.classes
+        )
+        dbm.initialise(config)
+        val dba = DbAdminImpl(dbm)
+
+        val random = Random.nextLong(Long.MAX_VALUE)
+        val schema = "test_schema_$random"
+        val ddlUser = "user_ddl_$random"
+        val dmlUser = "user_dml_$random"
+        val password = "pwd_$random"
+
+        // DDL
+        dba.createDbAndUser(schema, ddlUser, password, DbPrivilege.DDL)
+        assertThat(dba.userExists(ddlUser)).isTrue
+
+        // DML
+        dba.createDbAndUser(schema, dmlUser, password, DbPrivilege.DML, ddlUser)
+        assertThat(dba.userExists(dmlUser)).isTrue
+
+        // validate the DDL User can create a table
+        val ddlDataSource = DbUtils.createPostgresDataSource(ddlUser, password)
+        ddlDataSource.use { dataSource ->
+            dataSource.connection.use {
+                it.createStatement().execute("CREATE TABLE $schema.test_table (message VARCHAR(64))")
+                it.createStatement().execute("INSERT INTO $schema.test_table VALUES('test')")
+                it.commit()
+            }
+        }
+
+        // validate the DML User can select from table
+        val dmlDataSource = DbUtils.createPostgresDataSource(dmlUser, password)
+        dmlDataSource.use { dataSource ->
+            dataSource.connection.use {
+                it.createStatement().execute("INSERT INTO $schema.test_table VALUES('test2')")
+                it.commit()
+                val rows = it
+                    .createStatement()
+                    .executeQuery("SELECT COUNT(*) as count FROM $schema.test_table")
+                if (rows.next()) {
+                    assertThat(rows.getInt("count")).isEqualTo(2)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `recreated DDL user can create tables`() {
+
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
+
+        fun createTable(schema:String, user: String, password: String) {
+            val ddlDataSource = DbUtils.createPostgresDataSource(user, password)
+            ddlDataSource.use { dataSource ->
+                dataSource.connection.use {
+                    it.createStatement().execute(
+                        "CREATE TABLE $schema.test_table (message VARCHAR(64))")
+                    it.commit()
+                }
+            }
+        }
+
+        val entitiesRegistry = JpaEntitiesRegistryImpl()
+        val dbm = DbConnectionManagerImpl(lifecycleCoordinatorFactory, EntityManagerFactoryFactoryImpl(), entitiesRegistry)
+        val config = configFactory.create(DbUtils.createConfig("configuration_db"))
+        entitiesRegistry.register(
+            CordaDb.CordaCluster.persistenceUnitName,
+            ConfigurationEntities.classes
+        )
+        dbm.initialise(config)
+        val dba = DbAdminImpl(dbm)
+
+        val random = Random.nextLong(Long.MAX_VALUE)
+        val schema = "test_schema_$random"
+        val ddlUser = "user_ddl_$random"
+        val password = "pwd_ddl_$random"
+
+        // DDL
+        dba.createDbAndUser(schema, ddlUser, password, DbPrivilege.DDL)
+        assertThat(dba.userExists(ddlUser)).isTrue
+
+        // validate the DDL User can create a table
+        createTable(schema, ddlUser, password)
+
+        // recreate user
+        dba.deleteSchema(schema)
+        dba.deleteUser(ddlUser)
+        assertThat(dba.userExists(ddlUser)).isFalse
+
+        val newPassword = "new_pwd_ddl_$random"
+        dba.createDbAndUser(schema, ddlUser, newPassword, DbPrivilege.DDL)
+        assertThat(dba.userExists(ddlUser)).isTrue
+
+        // validate the DDL User can create a table
+        createTable(schema, ddlUser, newPassword)
+    }
 }
