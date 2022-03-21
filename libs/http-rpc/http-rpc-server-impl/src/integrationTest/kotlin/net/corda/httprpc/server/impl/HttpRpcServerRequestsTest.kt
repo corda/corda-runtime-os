@@ -165,6 +165,30 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
     }
 
     @Test
+    fun `Verify no permission check on GetProtocolVersion`() {
+
+        val fullUrl = "testEntity/getProtocolVersion"
+        val helloResponse = client.call(GET, WebRequest<Any>(fullUrl), userName, password)
+        assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
+        assertEquals("3", helloResponse.body)
+
+        // Check that security managed has not been called for GetProtocolVersion which is exempt from permissions check
+        assertThat(securityManager.checksExecuted).hasSize(0)
+    }
+
+    @Test
+    fun `Verify permission check is performed on entity retrieval`() {
+
+        val fullUrl = "testentity/1234"
+        val helloResponse = client.call(GET, WebRequest<Any>(fullUrl), userName, password)
+        assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
+        assertEquals("\"Retrieved using id: 1234\"", helloResponse.body)
+
+        // Check full URL received by the Security Manager
+        assertThat(securityManager.checksExecuted.map { it.action }).hasSize(1).allMatch { it.contains(fullUrl) }
+    }
+
+    @Test
     fun `missing not required query parameter should not throw`() {
         val helloResponse = client.call(GET, WebRequest<Any>("health/hello2/pathString"), userName, password)
         assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
