@@ -33,10 +33,10 @@ class DbConnectionOpsImpl(
         dbConnectionsRepository.getClusterDataSource()
 
     override fun getDataSource(name: String, privilege: DbPrivilege): DataSource? =
-        dbConnectionsRepository.get(name, privilege)
+        dbConnectionsRepository.create(name, privilege)
 
     override fun getDataSource(config: SmartConfig): CloseableDataSource =
-        dbConnectionsRepository.get(config)
+        dbConnectionsRepository.create(config)
 
     override fun putConnection(name: String, privilege: DbPrivilege, config: SmartConfig,
                                description: String?, updateActor: String): UUID =
@@ -65,7 +65,7 @@ class DbConnectionOpsImpl(
         entitiesSet: JpaEntitiesSet
     ): EntityManagerFactory {
         logger.info("Loading DB connection details for ${entitiesSet.persistenceUnitName}/$privilege")
-        val dataSource = dbConnectionsRepository.get(name, privilege) ?:
+        val dataSource = dbConnectionsRepository.create(name, privilege) ?:
         throw DBConfigurationException("Details for $name/$privilege cannot be found")
         return entityManagerFactoryFactory.create(
             name,

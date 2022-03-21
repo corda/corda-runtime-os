@@ -44,21 +44,21 @@ interface DbConnectionsRepository {
             updateActor: String): UUID
 
     /**
-     * Get DB connection for given [name].
+     * Creates [CloseableDataSource] for given [name].
      *
      * @param name
      * @param privilege
      * @return The [DataSource] or null if the connection cannot be found.
      * @throws [DBConfigurationException] if the cluster DB cannot be connected to.
      */
-    fun get(name: String, privilege: DbPrivilege): CloseableDataSource?
+    fun create(name: String, privilege: DbPrivilege): CloseableDataSource?
 
     /**
-     * Get DB connection for given configuration.
+     * Creates [CloseableDataSource] for given configuration.
      *
      * @param config DB config
      */
-    fun get(config: SmartConfig): CloseableDataSource
+    fun create(config: SmartConfig): CloseableDataSource
 
     /**
      * Get cluster DB [DataSource]

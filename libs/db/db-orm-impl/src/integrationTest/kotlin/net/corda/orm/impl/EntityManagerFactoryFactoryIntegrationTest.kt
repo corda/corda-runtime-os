@@ -10,7 +10,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
-import java.util.*
+import java.util.UUID
 
 class EntityManagerFactoryFactoryIntegrationTest {
     @Test

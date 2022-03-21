@@ -7,7 +7,6 @@ import net.corda.db.connection.manager.createFromConfig
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DataSourceFactory
 import net.corda.db.core.DbPrivilege
-import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
@@ -16,7 +15,7 @@ import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.v5.base.util.contextLogger
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
@@ -73,11 +72,7 @@ class DbConnectionsRepositoryImpl(
         return existingConfig.id
     }
 
-    override fun get(name: String, privilege: DbPrivilege): CloseableDataSource? {
-        if (name == CordaDb.CordaCluster.name) {
-            return clusterDataSource
-        }
-
+    override fun create(name: String, privilege: DbPrivilege): CloseableDataSource? {
         logger.debug("Fetching DB connection for $name")
         entityManagerFactory.createEntityManager().use {
             val dbConfig = it.findDbConnectionByNameAndPrivilege(name, privilege) ?:
@@ -89,7 +84,8 @@ class DbConnectionsRepositoryImpl(
         }
     }
 
-    override fun get(config: SmartConfig): CloseableDataSource {
+    override fun create(config: SmartConfig): CloseableDataSource {
+        logger.debug("Creating CloseableDataSource from config: $config")
         return dataSourceFactory.createFromConfig(dbConfigFactory.create(config))
     }
 
