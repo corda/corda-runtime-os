@@ -66,22 +66,22 @@ class PermissionValidatorImpl(
 
         return findPermissionMatch(
             permissionSummary,
-            PermissionUrl.fromUrl(permission)
+            permission
         )
     }
 
-    private fun findPermissionMatch(permissionSummary: UserPermissionSummary, permissionUrl: PermissionUrl): Boolean {
+    private fun findPermissionMatch(permissionSummary: UserPermissionSummary, permission: String): Boolean {
 
         val (denies, allows) = permissionSummary.permissions
             .partition { it.permissionType == AvroPermissionType.DENY }
 
-        if (denies.any { wildcardMatch(it.permissionString, permissionUrl.permissionRequested) }) {
-            val msg = "Explicitly denied by: '${denies.first { wildcardMatch(it.permissionString, permissionUrl.permissionRequested) }}'"
+        if (denies.any { wildcardMatch(it.permissionString, permission) }) {
+            val msg = "Explicitly denied by: '${denies.first { wildcardMatch(it.permissionString, permission) }}'"
             logger.debug { msg }
             return false
         }
-        if (allows.any { wildcardMatch(it.permissionString, permissionUrl.permissionRequested) }) {
-            val msg = "Explicitly allowed by: '${allows.first { wildcardMatch(it.permissionString, permissionUrl.permissionRequested) }}'"
+        if (allows.any { wildcardMatch(it.permissionString, permission) }) {
+            val msg = "Explicitly allowed by: '${allows.first { wildcardMatch(it.permissionString, permission) }}'"
             logger.debug { msg }
             return true
         }
