@@ -380,7 +380,7 @@ gradleEnterprise {
                 println System.getenv('BUILD_CACHE_USERNAME')
                 println System.getenv('BUILD_CACHE_PASSWORD')
 
-                username = System.getenv('BUILD_CACHE_USERNAME')
+                username = "cacheUserCi02"
                 password = "sBsRJ20G8R!PAjWbZ%Vs"
             }
             url = "${gradleEnterpriseUrl}/cache/"
