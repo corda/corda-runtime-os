@@ -9,7 +9,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.service.MemberOpsService
-import net.corda.membership.registration.provider.RegistrationProvider
+import net.corda.membership.registration.proxy.RegistrationProxy
 import net.corda.processors.member.MemberProcessor
 import net.corda.processors.member.internal.lifecycle.MemberProcessorLifecycleHandler
 import net.corda.v5.base.util.contextLogger
@@ -25,8 +25,8 @@ class MemberProcessorImpl @Activate constructor(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
-    @Reference(service = RegistrationProvider::class)
-    private val registrationProvider: RegistrationProvider,
+    @Reference(service = RegistrationProxy::class)
+    private val registrationProxy: RegistrationProxy,
     @Reference(service = GroupPolicyProvider::class)
     private val groupPolicyProvider: GroupPolicyProvider,
     @Reference(service = VirtualNodeInfoReadService::class)
@@ -48,7 +48,7 @@ class MemberProcessorImpl @Activate constructor(
         ::virtualNodeInfoReadService,
         ::cpiInfoReader,
         ::groupPolicyProvider,
-        ::registrationProvider,
+        ::registrationProxy,
         ::cryptoOpsClient,
         ::memberOpsService
     )

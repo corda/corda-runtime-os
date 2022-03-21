@@ -14,7 +14,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.membership.registration.provider.RegistrationProvider
+import net.corda.membership.registration.proxy.RegistrationProxy
 import net.corda.membership.service.MemberOpsService
 import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.subscription.RPCSubscription
@@ -37,8 +37,8 @@ class MemberOpsServiceImpl @Activate constructor(
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
-    @Reference(service = RegistrationProvider::class)
-    private val registrationProvider: RegistrationProvider,
+    @Reference(service = RegistrationProxy::class)
+    private val registrationProxy: RegistrationProxy,
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
 ): MemberOpsService {
@@ -81,7 +81,7 @@ class MemberOpsServiceImpl @Activate constructor(
                 registrationHandle = coordinator.followStatusChangesByName(
                     setOf(
                         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                        LifecycleCoordinatorName.forComponent<RegistrationProvider>(),
+                        LifecycleCoordinatorName.forComponent<RegistrationProxy>(),
                         LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>()
                     )
                 )
@@ -128,7 +128,7 @@ class MemberOpsServiceImpl @Activate constructor(
     private fun createResources(event: ConfigChangedEvent) {
         logger.info("Creating RPC subscription for '{}' topic", Schemas.Membership.MEMBERSHIP_RPC_TOPIC)
         val messagingConfig = event.config.toMessagingConfig()
-        val processor = MemberOpsServiceProcessor(registrationProvider, virtualNodeInfoReadService)
+        val processor = MemberOpsServiceProcessor(registrationProxy, virtualNodeInfoReadService)
         val current = subscription
         subscription = subscriptionFactory.createRPCSubscription(
             rpcConfig = RPCConfig(
