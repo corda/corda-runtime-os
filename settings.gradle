@@ -376,6 +376,10 @@ gradleEnterprise {
                 enabled = false
             }
             credentials {
+                println "*******************************"
+                println System.getenv('BUILD_CACHE_USERNAME')
+                println System.getenv('BUILD_CACHE_PASSWORD')
+
                 username = System.getenv('BUILD_CACHE_USERNAME')
                 password = System.getenv('BUILD_CACHE_PASSWORD')
             }
