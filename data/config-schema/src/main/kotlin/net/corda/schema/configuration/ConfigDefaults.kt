@@ -13,4 +13,7 @@ package net.corda.schema.configuration
 object ConfigDefaults {
     const val JDBC_DRIVER = "org.postgresql.Driver"
     const val DB_POOL_MAX_SIZE = 10
+
+    val WORKSPACE_DIR = "${System.getProperty("java.io.tmpdir")}/corda/workspace"
+    val TEMP_DIR = "${System.getProperty("java.io.tmpdir")}/corda/tmp"
 }
