@@ -105,7 +105,7 @@ Worker JAVA_TOOL_OPTIONS
 {{- define "corda.workerJavaToolOptions" -}}
 {{- if ( get .Values.workers .worker ).debug.enabled -}}
 - name: JAVA_TOOL_OPTIONS
-  value: -agentlib:jdwp=transport=dt_socket,server=y,suspend={{ if ( get .Values.workers .worker ).debug.suspend }}y{{ else }}n{{ end }}
+  value: -agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend={{ if ( get .Values.workers .worker ).debug.suspend }}y{{ else }}n{{ end }}
 {{- end }}
 {{- end }}
 
