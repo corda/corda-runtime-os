@@ -6,16 +6,13 @@ import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
-import net.corda.libs.configuration.datamodel.ConfigAuditEntity
-import net.corda.libs.configuration.datamodel.ConfigEntity
-import net.corda.libs.configuration.datamodel.ConfigurationEntities
-import net.corda.libs.configuration.datamodel.DbConnectionConfig
-import net.corda.libs.configuration.datamodel.findDbConnectionByNameAndPrivilege
+import net.corda.libs.configuration.datamodel.*
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.verify
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
@@ -105,6 +102,7 @@ class ConfigEntityManagerIntegrationTest {
 hello=world
             """.trimIndent()
         )
+        val dbConnectionAudit = DbConnectionAudit(dbConnection)
 
         entityManagerFactory.createEntityManager().transaction { em ->
             em.persist(dbConnection)
@@ -114,5 +112,7 @@ hello=world
             dbConnection,
             entityManagerFactory.createEntityManager().findDbConnectionByNameAndPrivilege("batman", DbPrivilege.DDL)
         )
+
+        verify(entityManagerFactory.createEntityManager()).persist(dbConnectionAudit)
     }
 }

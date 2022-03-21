@@ -9,6 +9,7 @@ import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.datamodel.DbConnectionAudit
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.libs.configuration.datamodel.findDbConnectionByNameAndPrivilege
 import net.corda.orm.utils.transaction
@@ -58,6 +59,9 @@ class DbConnectionsRepositoryImpl(
         logger.debug("Saving $privilege DB connection for $name: ${config.root().render()}")
         val configAsString = config.root().render(ConfigRenderOptions.concise())
         val existingConfig = entityManager.findDbConnectionByNameAndPrivilege(name, privilege)?.apply {
+            val newDbConnectionAudit = DbConnectionAudit(this);
+            entityManager.persist(newDbConnectionAudit);
+
             update(configAsString, description, updateActor)
         } ?: DbConnectionConfig(
             UUID.randomUUID(),
