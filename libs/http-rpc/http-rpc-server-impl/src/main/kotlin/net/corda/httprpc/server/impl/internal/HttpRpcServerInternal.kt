@@ -205,13 +205,23 @@ internal class HttpRpcServerInternal(
         }
         try {
             log.trace { "Add GET and POST routes." }
+            // It is important to add no authentication get routes first such that
+            // handler for GET "testEntity/getprotocolversion" will be found before GET "testEntity/:id" handler.
             resourceProvider.httpNoAuthRequiredGetRoutes.map { routeInfo ->
                 registerHandlerForRoute(routeInfo, HandlerType.GET)
             }
-            resourceProvider.httpGetRoutes.map { routeInfo ->
 
+            resourceProvider.httpGetRoutes.map { routeInfo ->
                 before(routeInfo.fullPath) {
-                    authorize(authenticate(it), it.fullUrl())
+                    // Make an additional check that the path is not exempt from permissions check.
+                    // This is necessary due to "before" matching logic cannot tell path "testEntity/:id" from
+                    // "testEntity/getprotocolversion" and mistakenly finds "before" handler where there should be none.
+                    // Javalin provides no way for modifying "before" handler finding logic.
+                    if (resourceProvider.httpNoAuthRequiredGetRoutes.none { routeInfo -> routeInfo.fullPath == it.path() }) {
+                        authorize(authenticate(it), it.fullUrl())
+                    } else {
+                        log.debug { "Call to ${it.path()} identified as an exempt from authorization check." }
+                    }
                 }
                 registerHandlerForRoute(routeInfo, HandlerType.GET)
             }
