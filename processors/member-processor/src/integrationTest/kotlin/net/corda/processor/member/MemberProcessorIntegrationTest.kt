@@ -5,7 +5,7 @@ import net.corda.membership.exceptions.BadGroupPolicyException
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
-import net.corda.membership.registration.provider.RegistrationProvider
+import net.corda.membership.registration.proxy.RegistrationProxy
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -58,7 +58,7 @@ class MemberProcessorIntegrationTest {
     lateinit var groupPolicyProvider: GroupPolicyProvider
 
     @InjectService(timeout = 5000L)
-    lateinit var registrationProvider: RegistrationProvider
+    lateinit var registrationProxy: RegistrationProxy
 
     @InjectService(timeout = 5000L)
     lateinit var virtualNodeInfoReader: VirtualNodeInfoReadService
@@ -111,12 +111,12 @@ class MemberProcessorIntegrationTest {
         for (test in groupPolicyProviderTests) {
             runTest(test)
         }
-        logger.info("Running ${RegistrationProvider::class.simpleName} tests.")
-        for (test in registrationProviderTests) {
+        logger.info("Running ${RegistrationProxy::class.simpleName} tests.")
+        for (test in registrationProxyTests) {
             runTest(test)
         }
         logger.info("Finished test run.")
-        logger.info("Ran ${groupPolicyProviderTests.size + registrationProviderTests.size} tests successfully.")
+        logger.info("Ran ${groupPolicyProviderTests.size + registrationProxyTests.size} tests successfully.")
     }
 
     /**
@@ -217,10 +217,9 @@ class MemberProcessorIntegrationTest {
     /**
      * Registration provider tests.
      */
-    val registrationProviderTests = listOf(
+    val registrationProxyTests = listOf(
         ::`Register and view static member list`,
-        ::`Registration provider fails to get registration service if it is down`,
-        ::`Registration service fails to register if it is down`,
+        ::`Registration proxy fails to register if registration service is down`
     )
 
     /**
@@ -252,7 +251,7 @@ class MemberProcessorIntegrationTest {
 
     }
 
-    fun `Registration provider fails to get registration service if it is down`() {
+    fun `Registration proxy fails to register if registration service is down`() {
         // bringing down the group policy provider brings down the static registration service
         groupPolicyProvider.stopAndWait()
 
