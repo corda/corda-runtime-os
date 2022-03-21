@@ -175,12 +175,12 @@ internal class HttpRpcServerInternal(
         }
     }
 
-    private fun authorize(authorizingSubject: AuthorizingSubject, fullPath: String) {
+    private fun authorize(authorizingSubject: AuthorizingSubject, resourceAccessString: String) {
         val principal = authorizingSubject.principal
-        log.trace { "Authorize \"$principal\" for \"$fullPath\"." }
-        if (!authorizingSubject.isPermitted(fullPath))
+        log.trace { "Authorize \"$principal\" for \"$resourceAccessString\"." }
+        if (!authorizingSubject.isPermitted(resourceAccessString))
             throw ForbiddenResponse("User not authorized.")
-        log.trace { "Authorize \"$principal\" for \"$fullPath\" completed." }
+        log.trace { "Authorize \"$principal\" for \"$resourceAccessString\" completed." }
     }
 
     @SuppressWarnings("ComplexMethod", "ThrowsCount")
@@ -211,7 +211,7 @@ internal class HttpRpcServerInternal(
             resourceProvider.httpGetRoutes.map { routeInfo ->
 
                 before(routeInfo.fullPath) {
-                    authorize(authenticate(it), it.fullUrl())
+                    authorize(authenticate(it), getResourceAccessString(it))
                 }
                 registerHandlerForRoute(routeInfo, HandlerType.GET)
             }
@@ -225,7 +225,7 @@ internal class HttpRpcServerInternal(
                             )
                         )
                     }
-                    authorize(authenticate(it), it.fullUrl())
+                    authorize(authenticate(it), getResourceAccessString(it))
                 }
                 registerHandlerForRoute(routeInfo, HandlerType.POST)
             }
@@ -236,6 +236,11 @@ internal class HttpRpcServerInternal(
                 throw Exception(it, e)
             }
         }
+    }
+
+    private fun getResourceAccessString(context: Context): String {
+        val queryString = context.queryString()
+        return context.method() + " " + context.path() + if (!queryString.isNullOrBlank()) "?$queryString" else ""
     }
 
     private fun Javalin.addOpenApiRoute() {
