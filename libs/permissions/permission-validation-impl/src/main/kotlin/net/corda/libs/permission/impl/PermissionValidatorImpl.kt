@@ -64,10 +64,7 @@ class PermissionValidatorImpl(
 
         logger.debug { "Permission summary found for user $loginName with permissions: ${permissionSummary.permissions.joinToString()}." }
 
-        return findPermissionMatch(
-            permissionSummary,
-            permission
-        )
+        return findPermissionMatch(permissionSummary, permission)
     }
 
     private fun findPermissionMatch(permissionSummary: UserPermissionSummary, permission: String): Boolean {
@@ -75,16 +72,19 @@ class PermissionValidatorImpl(
         val (denies, allows) = permissionSummary.permissions
             .partition { it.permissionType == AvroPermissionType.DENY }
 
-        if (denies.any { wildcardMatch(it.permissionString, permission) }) {
-            val msg = "Explicitly denied by: '${denies.first { wildcardMatch(it.permissionString, permission) }}'"
-            logger.debug { msg }
+        val maybeFirstDeny = denies.firstOrNull { wildcardMatch(it.permissionString, permission) }
+        if (maybeFirstDeny != null) {
+            logger.debug { "Explicitly denied by: '$maybeFirstDeny'" }
             return false
         }
-        if (allows.any { wildcardMatch(it.permissionString, permission) }) {
-            val msg = "Explicitly allowed by: '${allows.first { wildcardMatch(it.permissionString, permission) }}'"
-            logger.debug { msg }
+
+        val maybeFirstAllow = allows.firstOrNull { wildcardMatch(it.permissionString, permission) }
+        if (maybeFirstAllow != null) {
+            logger.debug { "Explicitly allowed by: '$maybeFirstAllow'" }
             return true
         }
+
+        logger.debug { "No deny or allow found - denying" }
         return false
     }
 
