@@ -379,6 +379,7 @@ internal class HttpRpcServerInternal(
             val ssl = SslConnectionFactory(sslContextFactory, http11.protocol)
             addConnector(ServerConnector(this, ssl, http11).apply {
                 port = configurationsProvider.getHostAndPort().port
+                host = configurationsProvider.getHostAndPort().host
             })
         }
 
