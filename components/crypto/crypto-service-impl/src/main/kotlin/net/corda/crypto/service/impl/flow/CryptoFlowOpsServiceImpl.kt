@@ -135,7 +135,7 @@ class CryptoFlowOpsServiceImpl @Activate constructor(
                 eventTopic = FLOW_OPS_MESSAGE_TOPIC
             ),
             processor = processor,
-            nodeConfig = messagingConfig,
+            messagingConfig = messagingConfig,
             partitionAssignmentListener = null
         ).also { it.start() }
     }

@@ -1,8 +1,8 @@
 package net.corda.processors.crypto.tests
 
 import com.typesafe.config.ConfigFactory
-import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.data.config.Configuration
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
@@ -43,7 +43,7 @@ import java.security.PublicKey
 import java.security.spec.MGF1ParameterSpec
 import java.security.spec.PSSParameterSpec
 import java.time.Duration
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KFunction
 
@@ -126,7 +126,7 @@ class IntegrationCryptoOpsTests {
                     eventTopic = RESPONSE_TOPIC
                 ),
                 processor = this,
-                nodeConfig = SmartConfigFactory.create(
+                messagingConfig = SmartConfigFactory.create(
                     ConfigFactory.empty()).create(ConfigFactory.parseString(MESSAGING_CONFIGURATION_VALUE)
                 ),
                 partitionAssignmentListener = null
