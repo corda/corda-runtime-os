@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "UploadStatusKey",
+  "namespace": "net.corda.data.chunking",
+  "doc": "Key object for {@link net.corda.data.chunking.UploadStatus} when sent in response to receipt of {@link net.corda.data.chunking.Chunk}",
+  "fields": [
+    {
+      "name": "requestId",
+      "type": "string",
+      "doc": "unique identifier representing this upload"
+    },
+    {
+      "name": "sequenceNumber",
+      "type": "int",
+      "doc": "Disambiguates the UploadStatus message - the highest sequence number is the current UploadStatus"
+    }
+  ]
+}

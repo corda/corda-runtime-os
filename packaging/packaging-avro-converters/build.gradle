@@ -4,6 +4,7 @@ plugins {
     id 'com.r3.internal.gradle.plugins.r3Publish'
 }
 
+description "Packaging avro converters"
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"

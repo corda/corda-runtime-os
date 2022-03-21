@@ -2,21 +2,25 @@
   "type": "record",
   "name": "UploadStatus",
   "namespace": "net.corda.data.chunking",
-  "doc": "Upload status of a given requestId for a collection of {@link net.corda.data.chunking.Chunk} objects.",
+  "doc": "Upload status of a given requestId for a collection of {@link net.corda.data.chunking.Chunk} objects. There will be one message per chunk. Request id and partnumber are carried by the key {@link net.corda.data.chunking.ChunkAckKey}",
   "fields": [
     {
-      "name": "requestId",
-      "type": "string",
-      "doc": "unique identifier that indicates the group this chunk belongs to"
+      "name": "complete",
+      "type": "boolean",
+      "doc": "Has the upload completed?  If false, it's likely in progress, but you should check the exception field"
     },
     {
-      "name": "uploadFileStatus",
-      "type": {
-        "type": "enum",
-        "name": "UploadFileStatus",
-        "symbols": ["OK", "UPLOAD_FAILED", "UPLOAD_IN_PROGRESS", "FILE_INVALID"]
-      },
-      "doc": "Status enum.  'FILE INVALID' means further validation of a completed upload was unsuccessful"
+      "name": "message",
+      "type": "string",
+      "doc": "A message indicating the current status of the upload."
+    },
+    {
+      "name": "checksum",
+      "type": [
+        "null",
+        "net.corda.data.crypto.SecureHash"
+      ],
+      "doc": "The checksum of the file that was uploaded that can be used to reference it."
     },
     {
       "name": "exception",
