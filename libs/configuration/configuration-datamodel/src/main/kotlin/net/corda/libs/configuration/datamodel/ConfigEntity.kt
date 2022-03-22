@@ -1,7 +1,7 @@
 package net.corda.libs.configuration.datamodel
 
 import net.corda.db.schema.DbSchema.CONFIG
-import net.corda.db.schema.DbSchema.CONFIG_DB_TABLE
+import net.corda.db.schema.DbSchema.CONFIG_TABLE
 import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Entity
@@ -21,7 +21,7 @@ import javax.persistence.Version
  * @property version The version number used for optimistic locking.
  */
 @Entity
-@Table(name = CONFIG_DB_TABLE, schema = CONFIG)
+@Table(name = CONFIG_TABLE, schema = CONFIG)
 data class ConfigEntity(
     @Id
     @Column(name = "section", nullable = false)
