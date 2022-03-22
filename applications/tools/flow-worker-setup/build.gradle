@@ -26,6 +26,7 @@ dependencies {
     implementation project(":libs:configuration:configuration-core")
     implementation project(':components:kafka-topic-admin')
     implementation project(":libs:virtual-node:virtual-node-info")
+    implementation project(":libs:chunking:chunking-core")
 
     runtimeOnly project(':components:configuration:configuration-publish-service-impl')
     runtimeOnly project(":libs:configuration:configuration-publish-impl")
