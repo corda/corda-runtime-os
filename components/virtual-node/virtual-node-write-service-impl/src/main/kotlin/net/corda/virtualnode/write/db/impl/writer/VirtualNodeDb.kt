@@ -7,6 +7,7 @@ import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.DDL
+import net.corda.db.core.DbPrivilege.DML
 import net.corda.db.schema.DbSchema
 import net.corda.v5.base.util.contextLogger
 
@@ -30,8 +31,9 @@ class VirtualNodeDb(
     @Suppress("NestedBlockDepth")
     fun createSchemasAndUsers() {
         if (isClusterDb) {
-            dbConnections.forEach { (privilege, connection) ->
-                connection?.let {
+            // Order is important because DB schema should be deleted first if DDL user already exists
+            for (privilege in listOf(DDL, DML)) {
+                dbConnections[privilege]!!.let { connection ->
                     val user = connection.getUser() ?:
                         throw DBConfigurationException("DB user not known for connection ${connection.description}")
                     val password = connection.getPassword() ?:
@@ -40,10 +42,17 @@ class VirtualNodeDb(
                     // This covers scenario when previous virtual node on-boarding request failed after user was created
                     // Since connections are persisted at later point, user's password is lost, so user is re-created
                     if (dbAdmin.userExists(user)) {
+                        if (privilege == DDL) {
+                            log.info("User for connection ${connection.description} already exists in DB, schema will be deleted")
+                            dbAdmin.deleteSchema(dbSchema)
+                        }
                         log.info("User for connection ${connection.description} already exists in DB, it will be re-created")
-                        dbAdmin.deleteSchemaAndUser(dbSchema, user)
+                        dbAdmin.deleteUser(user)
                     }
-                    dbAdmin.createDbAndUser(dbSchema, user, password, privilege)
+                    // When DML user is created, it is granted with privileges related to DB objects created by DDL user
+                    // (therefore DDL user has to be provided as grantee)
+                    val grantee = if (privilege == DML) dbConnections[DDL]!!.getUser() else null
+                    dbAdmin.createDbAndUser(dbSchema, user, password, privilege, grantee)
                 }
             }
         }
