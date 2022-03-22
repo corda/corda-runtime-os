@@ -84,7 +84,8 @@ workers:
     # -- DB worker salt, defaults to a value randomly-generated on install
 
     salt: ""
-    # -- DB worker passphrase
+    # -- DB worker passphrase, defaults to a value randomly-generated on install
+
     passphrase: ""
 
   # flow worker configuration
