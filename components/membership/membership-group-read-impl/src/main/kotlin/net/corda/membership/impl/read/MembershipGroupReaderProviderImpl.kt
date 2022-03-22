@@ -68,11 +68,11 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
 
     private fun activate(configs: Map<String, SmartConfig>, reason: String) {
         swapImpl(ActiveImpl(subscriptionFactory, layeredPropertyMapFactory, configs))
-        coordinator.updateStatus(LifecycleStatus.UP, reason)
+        updateStatus(LifecycleStatus.UP, reason)
     }
 
     private fun deactivate(reason: String) {
-        coordinator.updateStatus(LifecycleStatus.DOWN, reason)
+        updateStatus(LifecycleStatus.DOWN, reason)
         swapImpl(InactiveImpl())
     }
 
@@ -81,6 +81,13 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
         impl = newImpl
         current.close()
     }
+
+    private fun updateStatus(status: LifecycleStatus, reason: String) {
+        if(coordinator.status != status) {
+            coordinator.updateStatus(status, reason)
+        }
+    }
+
 
     // Component is running when it's coordinator has started.
     override val isRunning

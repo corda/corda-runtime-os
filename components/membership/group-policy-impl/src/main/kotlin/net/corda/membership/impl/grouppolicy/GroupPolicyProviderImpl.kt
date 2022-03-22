@@ -76,35 +76,43 @@ class GroupPolicyProviderImpl @Activate constructor(
             }
             is StopEvent -> {
                 logger.info("Group policy provider stopping.")
-                deactivateInnerImpl(coordinator)
+                deactivate("Stopping component.")
                 registrationHandle?.close()
             }
             is RegistrationStatusChangeEvent -> {
                 logger.info("Group policy provider handling registration change. Event status: ${event.status}")
                 when (event.status) {
                     LifecycleStatus.UP -> {
-                        activateInnerImpl(coordinator)
+                        activate("All dependencies are UP.")
                     }
                     else -> {
-                        deactivateInnerImpl(coordinator)
+                        deactivate("All dependencies are not UP.")
                     }
                 }
             }
         }
     }
 
-    private fun deactivateInnerImpl(coordinator: LifecycleCoordinator) {
-        coordinator.updateStatus(LifecycleStatus.DOWN)
-        val current = impl
-        impl = InactiveImpl()
-        current.close()
+    private fun activate(reason: String) {
+        swapImpl(ActiveImpl(virtualNodeInfoReadService, cpiInfoReader))
+        updateStatus(LifecycleStatus.UP, reason)
     }
 
-    private fun activateInnerImpl(coordinator: LifecycleCoordinator) {
+    private fun deactivate(reason: String) {
+        updateStatus(LifecycleStatus.DOWN, reason)
+        swapImpl(InactiveImpl())
+    }
+
+    private fun updateStatus(status: LifecycleStatus, reason: String) {
+        if(coordinator.status != status) {
+            coordinator.updateStatus(status, reason)
+        }
+    }
+
+    private fun swapImpl(newImpl: InnerGroupPolicyProvider) {
         val current = impl
-        impl = ActiveImpl(virtualNodeInfoReadService, cpiInfoReader)
+        impl = newImpl
         current.close()
-        coordinator.updateStatus(LifecycleStatus.UP)
     }
 
     private class InactiveImpl : InnerGroupPolicyProvider {
