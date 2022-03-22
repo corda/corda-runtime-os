@@ -4,7 +4,6 @@ import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.annotations.HttpRpcResource
-import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgress
 
 @HttpRpcResource(
     name = "MemberLookupRpcOps",
