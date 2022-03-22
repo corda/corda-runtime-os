@@ -20,7 +20,7 @@ class CpiValidatorImpl(
         private val log = contextLogger()
     }
 
-    private val validationFunctions = ValidationFunctions(publisher)
+    private val validationFunctions = ValidationFunctions()
 
     override fun validate(requestId: RequestId): SecureHash {
         //  Each function may throw a [ValidationException]

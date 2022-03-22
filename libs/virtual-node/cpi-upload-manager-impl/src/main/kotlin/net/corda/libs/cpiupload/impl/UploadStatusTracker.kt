@@ -5,7 +5,7 @@ import net.corda.data.chunking.UploadStatus
 import net.corda.data.chunking.UploadStatusKey
 
 /**
- * This tracks the over state of an upload request.
+ * This tracks the latest state of an upload request.
  */
 class UploadStatusTracker {
     /** Track the status for this request.
@@ -22,7 +22,7 @@ class UploadStatusTracker {
      * arrive in order but the db-processor part of the code will send `complete=true` in the (last)
      * *highest sequence number message*.
      **/
-    inner class LatestStatus {
+    class LatestStatus {
         // Can't be a List<Pair<Int,...>> because we might repeatedly overwrite with the same sequence number
         // particularly for '0' where we might receive updates from multiple (chunk) processors.
         private val status = mutableMapOf<Int, UploadStatus>()

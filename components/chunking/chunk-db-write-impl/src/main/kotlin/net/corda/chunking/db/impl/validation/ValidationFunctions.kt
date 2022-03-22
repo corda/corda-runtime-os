@@ -3,7 +3,6 @@ package net.corda.chunking.db.impl.validation
 import net.corda.chunking.ChunkReaderFactory
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
-import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.packaging.CPI
 import net.corda.packaging.PackagingException
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -14,7 +13,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import javax.persistence.PersistenceException
 
-class ValidationFunctions(private val publisher: StatusPublisher) {
+class ValidationFunctions {
     private val tmpDir = Paths.get(System.getProperty("java.io.tmpdir"), "unpacking")
         .apply { Files.createDirectories(this) }
 
@@ -90,7 +89,7 @@ class ValidationFunctions(private val publisher: StatusPublisher) {
         try {
             val groupId = getGroupId(cpi)
 
-            if (!chunkPersistence.containsCpi(
+            if (!chunkPersistence.cpiExists(
                     cpi.metadata.id.name,
                     cpi.metadata.id.version,
                     cpi.metadata.id.signerSummaryHash?.toString() ?: ""
