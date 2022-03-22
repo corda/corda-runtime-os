@@ -35,7 +35,7 @@ class PermissionValidatorImplTest {
         private const val virtualNode = "f39d810f-6ee6-4742-ab7c-d1fe274ab85e"
         private const val permissionString = "flow/start/com.myapp.MyFlow"
 
-        private const val permissionUrlRequest = "POST https://host:1234/node-rpc/5e0a07a6-c25d-413a-be34-647a792f4f58/${permissionString}"
+        private const val permissionUrlRequest = "POST:https://host:1234/node-rpc/5e0a07a6-c25d-413a-be34-647a792f4f58/${permissionString}"
 
         private val permission = Permission(
             "allowPermissionId", 1,
@@ -230,7 +230,7 @@ class PermissionValidatorImplTest {
 
         val userPermissionSummary = UserPermissionSummary(
             user.loginName,
-            listOf(PermissionSummary("id1", null, null, "POST .*$permissionString",
+            listOf(PermissionSummary("id1", null, null, "POST:.*$permissionString",
                 PermissionType.ALLOW)),
             Instant.now()
         )
@@ -250,7 +250,7 @@ class PermissionValidatorImplTest {
 
         val userPermissionSummary = UserPermissionSummary(
             userWithPermDenied.loginName,
-            listOf(PermissionSummary("id2",null, null, "POST .*$permissionString",
+            listOf(PermissionSummary("id2",null, null, "POST:.*$permissionString",
                 PermissionType.DENY)),
             Instant.now()
         )
