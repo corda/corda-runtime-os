@@ -250,6 +250,9 @@ internal class HttpRpcServerInternal(
 
     private fun getResourceAccessString(context: Context): String {
         val queryString = context.queryString()
+        // Examples of strings will look like:
+        // GET /api/v1/permission/getpermission?id=c048679a-9654-4359-befc-9d2d22695a43
+        // POST /api/v1/user/createuser
         return context.method() + " " + context.path() + if (!queryString.isNullOrBlank()) "?$queryString" else ""
     }
 
