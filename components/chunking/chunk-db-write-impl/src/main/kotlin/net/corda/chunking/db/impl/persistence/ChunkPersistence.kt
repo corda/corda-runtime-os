@@ -46,10 +46,13 @@ interface ChunkPersistence {
      *
      * @return true if checksum exists in the persistence layer
      */
-    fun containsCpkByChecksum(checksum: SecureHash): Boolean
+    fun cpkExists(cpkChecksum: SecureHash): Boolean
 
-    /** Checks to see if the CPI exists in the database using the primary key */
-    fun containsCpi(cpiName: String, cpiVersion: String, signerSummaryHash: String): Boolean
+    /** Checks to see if the CPI exists in the database using the primary key
+     *
+     * @return true if CPI exists
+     */
+    fun cpiExists(cpiName: String, cpiVersion: String, signerSummaryHash: String): Boolean
 
     /** Persist the CPI metadata and the CPKs
      *
