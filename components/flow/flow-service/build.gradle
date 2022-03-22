@@ -61,6 +61,9 @@ dependencies {
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:registry")
     testImplementation project(":libs:flows:session-manager-impl")
+    testImplementation project(":testing:flow-utilities")
+
+    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 
     cpks project(path: ':testing:cpbs:sandbox-cpk-inject', configuration: 'cordaCPB')
 

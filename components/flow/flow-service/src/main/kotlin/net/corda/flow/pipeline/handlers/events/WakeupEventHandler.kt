@@ -5,7 +5,7 @@ import net.corda.flow.pipeline.FlowEventContext
 import org.osgi.service.component.annotations.Component
 
 @Component(service = [FlowEventHandler::class])
-class WakeUpEventHandler : FlowEventHandler<Wakeup> {
+class WakeupEventHandler : FlowEventHandler<Wakeup> {
 
     override val type = Wakeup::class.java
 

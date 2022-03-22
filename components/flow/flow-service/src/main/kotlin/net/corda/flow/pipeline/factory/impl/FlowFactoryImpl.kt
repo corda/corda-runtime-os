@@ -26,7 +26,7 @@ class FlowFactoryImpl : FlowFactory {
             .newInstance(startFlowEvent.flowStartArgs)
     }
 
-    override fun createInitiatedFlow(sandboxGroupContext: SandboxGroupContext, flowClassName: String, flowSession: FlowSession): Flow<*> {
+    override fun createInitiatedFlow(flowClassName: String, flowSession: FlowSession, sandboxGroupContext: SandboxGroupContext): Flow<*> {
         val flowClass: Class<Flow<*>> = uncheckedCast(
             sandboxGroupContext.sandboxGroup.loadClassFromMainBundles(
                 flowClassName,

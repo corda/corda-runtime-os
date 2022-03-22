@@ -9,6 +9,7 @@ import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowProcessingException
 import net.corda.flow.pipeline.handlers.getSerializationService
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
+import net.corda.flow.pipeline.handlers.waiting.requireCheckpoint
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.session.manager.SessionManager
 import net.corda.v5.application.services.serialization.deserialize
@@ -28,7 +29,7 @@ class SessionDataWaitingForHandler @Activate constructor(
     override val type = SessionData::class.java
 
     override fun runOrContinue(context: FlowEventContext<*>, waitingFor: SessionData): FlowContinuation {
-        val checkpoint = context.checkpoint!!
+        val checkpoint = requireCheckpoint(context)
         val receivedEvents = sessionManager.getReceivedEvents(checkpoint, waitingFor.sessionIds)
         return if (receivedEvents.size != waitingFor.sessionIds.size) {
             FlowContinuation.Continue
@@ -50,7 +51,7 @@ class SessionDataWaitingForHandler @Activate constructor(
                     serializationService.deserialize(sessionPayload.payload.array())
                 )
                 else -> throw FlowProcessingException(
-                    "Received events should be data messages but got ${sessionPayload::class.java.name} instead"
+                    "Received events should be data messages but got a ${sessionPayload::class.java.name} instead"
                 )
             }
         }

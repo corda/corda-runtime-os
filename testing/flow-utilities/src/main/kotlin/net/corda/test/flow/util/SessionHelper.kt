@@ -16,10 +16,11 @@ fun buildSessionState(
     lastSentSeqNum: Int,
     eventsToSend: List<SessionEvent>,
     sessionStartTime: Instant = Instant.now(),
-    sendAck: Boolean = false
+    sendAck: Boolean = false,
+    sessionId: String = "sessionId"
 ): SessionState {
     return SessionState.newBuilder()
-        .setSessionId("sessionId")
+        .setSessionId(sessionId)
         .setSessionStartTime(sessionStartTime)
         .setLastReceivedMessageTime(sessionStartTime)
         .setLastSentMessageTime(sessionStartTime)
