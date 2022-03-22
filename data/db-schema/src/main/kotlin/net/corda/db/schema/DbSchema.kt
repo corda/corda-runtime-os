@@ -9,11 +9,15 @@ object DbSchema {
     const val RPC_RBAC = "RPC_RBAC"
 
     const val CONFIG = "CONFIG"
-    const val CONFIG_DB_TABLE = "config"
-    const val CONFIG_AUDIT_DB_TABLE = "config_audit"
+    const val CONFIG_TABLE = "config"
+    const val CONFIG_AUDIT_TABLE = "config_audit"
     const val CONFIG_AUDIT_ID_SEQUENCE = "config_audit_id_seq"
     const val CONFIG_AUDIT_ID_SEQUENCE_ALLOC_SIZE = 1
-    const val CONFIG_DB_CONNECTION_TABLE = "db_connection"
+    
+    const val DB_CONNECTION_TABLE = "db_connection"
+    const val DB_CONNECTION_AUDIT_TABLE = "db_connection_audit"
+    const val DB_CONNECTION_AUDIT_ID_SEQUENCE = "db_connection_audit_id_seq"
+    const val DB_CONNECTION_AUDIT_ID_SEQUENCE_ALLOC_SIZE = 1
 
     const val VNODE = "VNODE"
     const val VNODE_INSTANCE_DB_TABLE = "vnode_instance"

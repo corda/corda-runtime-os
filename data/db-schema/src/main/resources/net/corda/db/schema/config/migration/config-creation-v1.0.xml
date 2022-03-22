@@ -54,7 +54,6 @@
                 <constraints nullable="false"/>
             </column>
         </createTable>
-
         <addPrimaryKey columnNames="change_number" constraintName="config_audit_pk" tableName="config_audit"
                        schemaName="${schema.name}"/>
         <createSequence sequenceName="config_audit_id_seq"/>
@@ -91,6 +90,40 @@
                        schemaName="${schema.name}"/>
         <addUniqueConstraint tableName="db_connection" columnNames="connection_name, privilege" constraintName="db_connection_uc1"
                              schemaName="${schema.name}"/>
+
+        <createTable tableName="db_connection_audit" schemaName="${schema.name}">
+            <column name="change_number" type="SERIAL">
+                <constraints nullable="false"/>
+            </column>
+            <column name="connection_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="connection_name" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="privilege" type="VARCHAR(3)">
+                <!-- DDL or DML -->
+                <constraints nullable="false"  />
+            </column>
+            <column name="version" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_ts" type="DATETIME">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_actor" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="VARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="config" type="TEXT">
+                <constraints nullable="false"  />
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="db_connection_audit" columnNames="change_number" constraintName="db_connection_audit_pk"
+                       schemaName="${schema.name}"/>
+        <createSequence sequenceName="db_connection_audit_id_seq"/>
 
         <!-- virtual nodes -->
         <createTable tableName="holding_identity" schemaName="${schema.name}">
