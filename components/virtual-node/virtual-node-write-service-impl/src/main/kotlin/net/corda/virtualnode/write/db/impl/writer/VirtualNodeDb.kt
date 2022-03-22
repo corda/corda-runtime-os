@@ -49,6 +49,8 @@ class VirtualNodeDb(
                         log.info("User for connection ${connection.description} already exists in DB, it will be re-created")
                         dbAdmin.deleteUser(user)
                     }
+                    // When DML user is created, it is granted with privileges related to DB objects created by DDL user
+                    // (therefore DDL user has to be provided as grantee)
                     val grantee = if (privilege == DML) dbConnections[DDL]!!.getUser() else null
                     dbAdmin.createDbAndUser(dbSchema, user, password, privilege, grantee)
                 }
