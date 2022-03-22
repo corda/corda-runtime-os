@@ -11,7 +11,7 @@ import java.net.InetSocketAddress
 class RandomSelectionAddressResolverTest {
     @Test
     @Timeout(30)
-    fun `random selection return different IPs`() {
+    fun `random selection ends up selecting all the resolved IP`() {
         val resolver = RandomSelectionAddressResolver()
         val executor = GlobalEventExecutor.INSTANCE
         val address = InetSocketAddress.createUnresolved("www.shared_ips.net", 1001)
