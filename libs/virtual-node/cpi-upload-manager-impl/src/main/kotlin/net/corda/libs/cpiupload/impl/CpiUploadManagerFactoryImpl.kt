@@ -33,7 +33,7 @@ class CpiUploadManagerFactoryImpl : CpiUploadManagerFactory {
     /**
      * @param config
      * @param subscriptionFactory used to create subscribers
-     * @param statusTopic we read (subscribe) to this topic to receive [ChunkAck] messages
+     * @param statusTopic we read (subscribe) to this topic to receive [UploadStatus] messages
      */
     private fun createSubscriber(
         config: SmartConfig,
