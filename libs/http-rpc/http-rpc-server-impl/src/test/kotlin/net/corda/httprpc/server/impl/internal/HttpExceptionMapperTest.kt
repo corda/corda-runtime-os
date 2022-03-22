@@ -146,16 +146,4 @@ class HttpExceptionMapperTest {
         assertEquals("someinfo", response.details["detail"])
         assertEquals(ResponseCode.INTERNAL_SERVER_ERROR.name, response.details["code"])
     }
-
-    @Test
-    fun `test MemberNotFoundException response`() {
-        val e = MemberNotFoundException("Invalid id.")
-
-        val response = HttpExceptionMapper.mapToResponse(e)
-
-        assertEquals(422, response.status)
-        assertEquals("Invalid member or holding identity.", response.message)
-        assertEquals(ResponseCode.UNPROCESSABLE_ENTITY.name, response.details["code"])
-        assertEquals("Invalid id.", response.details["reason"])
-    }
 }
