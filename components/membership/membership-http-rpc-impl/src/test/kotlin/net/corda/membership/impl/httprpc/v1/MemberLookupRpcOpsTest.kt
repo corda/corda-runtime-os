@@ -1,11 +1,11 @@
 package net.corda.membership.impl.httprpc.v1
 
+import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.layeredpropertymap.create
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.libs.packaging.CpiIdentifier
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.membership.exceptions.MemberNotFoundException
 import net.corda.membership.impl.EndpointInfoImpl
 import net.corda.membership.impl.MGMContextImpl
 import net.corda.membership.impl.MemberContextImpl
@@ -179,6 +179,7 @@ class MemberLookupRpcOpsTest {
 
     @Test
     fun `lookup should fail when non-existent holding identity is used`() {
-        assertFailsWith<MemberNotFoundException> { memberLookupRpcOps.lookup("failingTest") }
+        val ex = assertFailsWith<ResourceNotFoundException> { memberLookupRpcOps.lookup("failingTest") }
+        assertTrue(ex.message.contains("holding identity"))
     }
 }

@@ -7,7 +7,6 @@ import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.NotAuthenticatedException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.exception.UnexpectedErrorException
-import net.corda.membership.exceptions.MemberNotFoundException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 

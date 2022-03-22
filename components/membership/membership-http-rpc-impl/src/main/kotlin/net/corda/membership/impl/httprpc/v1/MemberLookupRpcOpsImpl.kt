@@ -1,10 +1,10 @@
 package net.corda.membership.impl.httprpc.v1
 
 import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.membership.exceptions.MemberNotFoundException
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.httprpc.v1.MemberLookupRpcOps
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
@@ -62,7 +62,7 @@ class MemberLookupRpcOpsImpl @Activate constructor(
 
     override fun lookup(holdingIdentityId: String): List<List<Map<String, String?>>> {
         val holdingIdentity = virtualNodeInfoReadService.getById(holdingIdentityId)?.holdingIdentity
-            ?: throw MemberNotFoundException("Could not find holding identity associated with member.")
+            ?: throw ResourceNotFoundException("Could not find holding identity associated with member.")
 
         val reader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
 
