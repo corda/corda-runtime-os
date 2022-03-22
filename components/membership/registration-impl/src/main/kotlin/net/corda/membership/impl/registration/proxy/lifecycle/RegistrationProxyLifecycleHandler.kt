@@ -13,7 +13,9 @@ import net.corda.membership.registration.MemberRegistrationService
 import net.corda.v5.base.util.contextLogger
 
 class RegistrationProxyLifecycleHandler(
-    private val registrationServices: List<MemberRegistrationService>
+    private val registrationServices: List<MemberRegistrationService>,
+    private val activate: (String) -> Unit,
+    private val deactivate: (String) -> Unit
 ) : LifecycleEventHandler {
     companion object {
         val logger = contextLogger()
@@ -44,23 +46,16 @@ class RegistrationProxyLifecycleHandler(
                 dependencyStatusChangeHandle = coordinator.followStatusChangesByName(dependencies)
             }
             is StopEvent -> {
-                coordinator.down(DOWN_REASON_STOPPED)
+                deactivate.invoke(DOWN_REASON_STOPPED)
                 dependencyStatusChangeHandle?.close()
             }
             is RegistrationStatusChangeEvent -> {
                 when (event.status) {
-                    LifecycleStatus.UP -> coordinator.up(UP_REASON_READY)
-                    else -> coordinator.down(DOWN_REASON_NOT_READY)
+                    LifecycleStatus.UP -> activate.invoke(UP_REASON_READY)
+                    else -> deactivate.invoke(DOWN_REASON_NOT_READY)
                 }
 
             }
         }
-    }
-
-    private fun LifecycleCoordinator.up(reason: String) = changeStatus(LifecycleStatus.UP, reason)
-    private fun LifecycleCoordinator.down(reason: String) = changeStatus(LifecycleStatus.DOWN, reason)
-    private fun LifecycleCoordinator.changeStatus(status: LifecycleStatus, reason: String) {
-        logger.debug(reason)
-        updateStatus(status, reason)
     }
 }

@@ -13,7 +13,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
@@ -33,9 +32,12 @@ class RegistrationProxyLifecycleHandlerTest {
         on { followStatusChangesByName(any()) } doReturn registrationStatusHandle
     }
 
+    private val activate: (String) -> Unit = mock()
+    private val deactivate: (String) -> Unit = mock()
+
     @BeforeEach
     fun setUp() {
-        registrationProxyLifecycleHandler = RegistrationProxyLifecycleHandler(registrationProtocols)
+        registrationProxyLifecycleHandler = RegistrationProxyLifecycleHandler(registrationProtocols, activate, deactivate)
     }
 
     @Test
@@ -79,7 +81,7 @@ class RegistrationProxyLifecycleHandlerTest {
         registrationProxyLifecycleHandler.processEvent(StopEvent(), coordinator)
 
         verify(registrationStatusHandle, never()).close()
-        verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
+        verify(deactivate).invoke(any())
     }
 
     @Test
@@ -88,7 +90,7 @@ class RegistrationProxyLifecycleHandlerTest {
         registrationProxyLifecycleHandler.processEvent(StopEvent(), coordinator)
 
         verify(registrationStatusHandle).close()
-        verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
+        verify(deactivate).invoke(any())
     }
 
     @Test
@@ -98,7 +100,7 @@ class RegistrationProxyLifecycleHandlerTest {
             coordinator
         )
 
-        verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
+        verify(deactivate).invoke(any())
     }
 
     @Test
@@ -108,6 +110,6 @@ class RegistrationProxyLifecycleHandlerTest {
             coordinator
         )
 
-        verify(coordinator).updateStatus(eq(LifecycleStatus.UP), any())
+        verify(activate).invoke(any())
     }
 }

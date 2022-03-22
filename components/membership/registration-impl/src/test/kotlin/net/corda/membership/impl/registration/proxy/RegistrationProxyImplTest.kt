@@ -10,7 +10,6 @@ import net.corda.membership.impl.GroupPolicyImpl
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
 import net.corda.membership.registration.MembershipRequestRegistrationResult
-import net.corda.membership.registration.proxy.RegistrationProxy
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.HoldingIdentity
 import org.junit.jupiter.api.Assertions
@@ -60,7 +59,7 @@ class RegistrationProxyImplTest {
     private fun mockGroupPolicy(groupPolicy: GroupPolicy, holdingIdentity: HoldingIdentity) =
         doReturn(groupPolicy).whenever(groupPolicyProvider).getGroupPolicy(holdingIdentity)
 
-    private lateinit var registrationProxy: RegistrationProxy
+    private lateinit var registrationProxy: RegistrationProxyImpl
 
     @BeforeEach
     fun setUp() {
@@ -72,8 +71,9 @@ class RegistrationProxyImplTest {
     }
 
     private fun setCoordinatorToRunningAndUpStatus() {
-        doReturn(true).whenever(coordinator).isRunning
-        doReturn(LifecycleStatus.UP).whenever(coordinator).status
+        registrationProxy.activate("Starting RegistrationProxy")
+//        doReturn(true).whenever(coordinator).isRunning
+//        doReturn(LifecycleStatus.UP).whenever(coordinator).status
     }
 
     @Test
@@ -115,7 +115,7 @@ class RegistrationProxyImplTest {
         doReturn(false).whenever(coordinator).isRunning
         val identity = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(RegistrationProtocol1::class.java.name), identity)
-        assertThrows<CordaRuntimeException> { registrationProxy.register(identity) }
+        assertThrows<IllegalStateException> { registrationProxy.register(identity) }
     }
 
     @Test
@@ -124,7 +124,7 @@ class RegistrationProxyImplTest {
         doReturn(LifecycleStatus.DOWN).whenever(coordinator).status
         val identity = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(RegistrationProtocol1::class.java.name), identity)
-        assertThrows<CordaRuntimeException> { registrationProxy.register(identity) }
+        assertThrows<IllegalStateException> { registrationProxy.register(identity) }
     }
 
     @Test
@@ -133,7 +133,7 @@ class RegistrationProxyImplTest {
         doReturn(LifecycleStatus.ERROR).whenever(coordinator).status
         val identity = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(RegistrationProtocol1::class.java.name), identity)
-        assertThrows<CordaRuntimeException> { registrationProxy.register(identity) }
+        assertThrows<IllegalStateException> { registrationProxy.register(identity) }
     }
 
     class RegistrationProtocol1 : AbstractRegistrationProtocol() {

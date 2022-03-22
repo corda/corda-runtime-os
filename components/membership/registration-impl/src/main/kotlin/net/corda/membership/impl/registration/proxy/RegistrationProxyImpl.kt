@@ -8,6 +8,7 @@ import net.corda.membership.impl.registration.proxy.lifecycle.RegistrationProxyL
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.membership.registration.proxy.RegistrationProxy
+import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
@@ -30,6 +31,11 @@ class RegistrationProxyImpl @Activate constructor(
     )
     private val registrationServices: List<MemberRegistrationService>
 ) : RegistrationProxy {
+
+    private interface InnerRegistrationProxy {
+        fun register(member: HoldingIdentity): MembershipRequestRegistrationResult
+    }
+
     companion object {
         val logger = contextLogger()
 
@@ -37,17 +43,29 @@ class RegistrationProxyImpl @Activate constructor(
         const val SERVICE_STOPPING_LOG = "Registration proxy stopping."
         const val LOADING_SERVICE_LOG = "Attempting to load registration service: %s"
 
-        const val NOT_RUNNING_ERROR =
-            "Could not use RegistrationProxy because it is not currently running."
-        const val NOT_UP_ERROR =
-            "Could not use RegistrationProxy because it is running but not currently in status UP."
         const val SERVICE_NOT_FOUND_ERROR =
             "Could not load registration service: \"%s\". Service not found."
     }
 
     private val coordinator = lifecycleCoordinatorFactory.createCoordinator<RegistrationProxy>(
-        RegistrationProxyLifecycleHandler(registrationServices)
+        RegistrationProxyLifecycleHandler(registrationServices, ::activate, ::deactivate)
     )
+
+    private var impl: InnerRegistrationProxy = InactiveImpl()
+
+    @VisibleForTesting
+    fun activate(message: String) {
+        logger.debug(message)
+        impl = ActiveImpl(groupPolicyProvider, registrationServices)
+        coordinator.updateStatus(LifecycleStatus.UP, message)
+    }
+
+    @VisibleForTesting
+    fun deactivate(message: String) {
+        logger.debug(message)
+        coordinator.updateStatus(LifecycleStatus.DOWN, message)
+        impl = InactiveImpl()
+    }
 
     override val isRunning get() = coordinator.isRunning
 
@@ -61,37 +79,38 @@ class RegistrationProxyImpl @Activate constructor(
         coordinator.stop()
     }
 
-    override fun register(member: HoldingIdentity): MembershipRequestRegistrationResult {
-        serviceIsAvailable()
-        val service = getRegistrationService(
-            groupPolicyProvider.getGroupPolicy(member).registrationProtocol
-        )
-        return service.register(member)
+    override fun register(member: HoldingIdentity): MembershipRequestRegistrationResult = impl.register(member)
+
+    private class InactiveImpl : InnerRegistrationProxy {
+        override fun register(member: HoldingIdentity): MembershipRequestRegistrationResult =
+            throw IllegalStateException("RegistrationProxy currently inactive.")
+
     }
 
-    private fun getRegistrationService(protocol: String): MemberRegistrationService {
-        logger.debug(String.format(LOADING_SERVICE_LOG, protocol))
-        val service = registrationServices.find { it.javaClass.name == protocol }
-        registrationServiceIsFound(protocol, service)
-        return service!!
-    }
+    private class ActiveImpl(
+        val groupPolicyProvider: GroupPolicyProvider,
+        val registrationServices: List<MemberRegistrationService>
+    ) : InnerRegistrationProxy {
+        override fun register(member: HoldingIdentity): MembershipRequestRegistrationResult {
+            val service = getRegistrationService(
+                groupPolicyProvider.getGroupPolicy(member).registrationProtocol
+            )
+            return service.register(member)
+        }
 
-    private fun registrationServiceIsFound(expected: String, registrationService: MemberRegistrationService?) =
-        logAndThrowError(String.format(SERVICE_NOT_FOUND_ERROR, expected)) { registrationService == null }
+        private fun getRegistrationService(protocol: String): MemberRegistrationService {
+            logger.debug(String.format(LOADING_SERVICE_LOG, protocol))
+            val service = registrationServices.find { it.javaClass.name == protocol }
+            registrationServiceIsFound(protocol, service)
+            return service!!
+        }
 
-    private fun serviceIsAvailable() {
-        serviceIsRunning()
-        serviceIsUp()
-    }
-
-    private fun serviceIsRunning() = logAndThrowError(NOT_RUNNING_ERROR) { !isRunning }
-
-    private fun serviceIsUp() = logAndThrowError(NOT_UP_ERROR) { coordinator.status != LifecycleStatus.UP }
-
-    private fun logAndThrowError(msg: String, predicate: () -> Boolean) {
-        if (predicate.invoke()) {
-            logger.error(msg)
-            throw CordaRuntimeException(msg)
+        private fun registrationServiceIsFound(expected: String, registrationService: MemberRegistrationService?) {
+            if (registrationService == null) {
+                val msg = String.format(SERVICE_NOT_FOUND_ERROR, expected)
+                logger.error(msg)
+                throw CordaRuntimeException(msg)
+            }
         }
     }
 }
