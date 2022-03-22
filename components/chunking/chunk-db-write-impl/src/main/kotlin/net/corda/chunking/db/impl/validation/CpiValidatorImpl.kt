@@ -4,7 +4,9 @@ import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.cpiinfo.write.CpiInfoWriteService
+import net.corda.libs.packaging.CpiIdentifier
 import net.corda.libs.packaging.CpiMetadata
+import net.corda.libs.packaging.CpkMetadata
 import net.corda.packaging.CPI
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
@@ -40,7 +42,13 @@ class CpiValidatorImpl(
         validationFunctions.persistToDatabase(persistence, cpi, fileInfo, requestId)
 
         publisher.update(requestId, "Notifying flow workers")
-        cpiInfoWriteService.put(CpiMetadata.fromLegacy(cpi))
+        val cpiMetadata = CpiMetadata(
+            CpiIdentifier.fromLegacy(cpi.metadata.id),
+            fileInfo.checksum,
+            cpi.cpks.map { CpkMetadata.fromLegacyCpk(it) },
+            cpi.metadata.groupPolicy
+        )
+        cpiInfoWriteService.put(cpiMetadata)
 
         return fileInfo.checksum
     }
