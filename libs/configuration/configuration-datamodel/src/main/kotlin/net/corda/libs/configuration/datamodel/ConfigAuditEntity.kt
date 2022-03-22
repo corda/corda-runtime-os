@@ -1,8 +1,6 @@
 package net.corda.libs.configuration.datamodel
 
 import net.corda.db.schema.DbSchema
-import net.corda.db.schema.DbSchema.CONFIG
-import net.corda.db.schema.DbSchema.CONFIG_AUDIT_TABLE
 import net.corda.db.schema.DbSchema.CONFIG_AUDIT_ID_SEQUENCE
 import net.corda.db.schema.DbSchema.CONFIG_AUDIT_ID_SEQUENCE_ALLOC_SIZE
 import net.corda.libs.configuration.datamodel.internal.CONFIG_AUDIT_GENERATOR

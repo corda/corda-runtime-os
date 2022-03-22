@@ -57,13 +57,9 @@ class DbConnectionsRepositoryImpl(
         description: String?,
         updateActor: String): UUID {
         logger.debug("Saving $privilege DB connection for $name: ${config.root().render()}")
-        val configAsString = config.root().render(ConfigRenderOptions.concise())
-        val existingConfig = entityManager.findDbConnectionByNameAndPrivilege(name, privilege)?.apply {
-            val newDbConnectionAudit = DbConnectionAudit(this);
-            entityManager.persist(newDbConnectionAudit);
 
-            update(configAsString, description, updateActor)
-        } ?: DbConnectionConfig(
+        val configAsString = config.root().render(ConfigRenderOptions.concise())
+        val newDbConnection = DbConnectionConfig(
             UUID.randomUUID(),
             name,
             privilege,
@@ -72,6 +68,12 @@ class DbConnectionsRepositoryImpl(
             description,
             configAsString
         )
+        val newDbConnectionAudit = DbConnectionAudit(newDbConnection)
+        val existingConfig = entityManager.findDbConnectionByNameAndPrivilege(name, privilege)?.apply {
+            update(configAsString, description, updateActor)
+        } ?: newDbConnection
+
+        entityManager.persist(newDbConnectionAudit)
         entityManager.persist(existingConfig)
         entityManager.flush()
         return existingConfig.id

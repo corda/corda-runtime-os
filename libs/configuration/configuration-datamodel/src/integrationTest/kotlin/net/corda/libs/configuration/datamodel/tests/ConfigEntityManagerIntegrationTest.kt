@@ -6,7 +6,12 @@ import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
-import net.corda.libs.configuration.datamodel.*
+import net.corda.libs.configuration.datamodel.DbConnectionAudit
+import net.corda.libs.configuration.datamodel.DbConnectionConfig
+import net.corda.libs.configuration.datamodel.ConfigAuditEntity
+import net.corda.libs.configuration.datamodel.ConfigEntity
+import net.corda.libs.configuration.datamodel.ConfigurationEntities
+import net.corda.libs.configuration.datamodel.findDbConnectionByNameAndPrivilege
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
 import org.junit.jupiter.api.Assertions.assertEquals

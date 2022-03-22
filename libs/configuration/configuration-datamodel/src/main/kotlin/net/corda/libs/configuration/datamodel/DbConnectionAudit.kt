@@ -2,11 +2,18 @@ package net.corda.libs.configuration.datamodel
 
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.DbSchema
-import net.corda.libs.configuration.datamodel.internal.CONFIG_AUDIT_GENERATOR
 import net.corda.libs.configuration.datamodel.internal.DB_CONNECTION_AUDIT_GENERATOR
 import java.time.Instant
 import java.util.UUID
-import javax.persistence.*
+import javax.persistence.Column
+import javax.persistence.Entity
+import javax.persistence.Enumerated
+import javax.persistence.EnumType
+import javax.persistence.GeneratedValue
+import javax.persistence.GenerationType.SEQUENCE
+import javax.persistence.Id
+import javax.persistence.SequenceGenerator
+import javax.persistence.Table
 
 /**
  * Db Connection Audit data class
@@ -29,7 +36,7 @@ data class DbConnectionAudit (
         sequenceName = DbSchema.DB_CONNECTION_AUDIT_ID_SEQUENCE,
         allocationSize = DbSchema.DB_CONNECTION_AUDIT_ID_SEQUENCE_ALLOC_SIZE
     )
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = DB_CONNECTION_AUDIT_GENERATOR)
+    @GeneratedValue(strategy = SEQUENCE, generator = DB_CONNECTION_AUDIT_GENERATOR)
     @Column(name = "change_number", nullable = false)
     val changeNumber: Int,
 
