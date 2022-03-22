@@ -69,16 +69,20 @@ class MemberRegistrationRpcOpsTest {
     @Test
     fun `starting registration calls the client svc`() {
         memberRegistrationRpcOps.start()
+        memberRegistrationRpcOps.activate("")
         memberRegistrationRpcOps.startRegistration(registrationRequest)
         verify(memberOpsClient).startRegistration(eq(registrationRequest.toDto()))
+        memberRegistrationRpcOps.deactivate("")
         memberRegistrationRpcOps.stop()
     }
 
     @Test
     fun `checking registration progress calls the client svc`() {
         memberRegistrationRpcOps.start()
+        memberRegistrationRpcOps.activate("")
         memberRegistrationRpcOps.checkRegistrationProgress(HOLDING_IDENTITY_ID)
         verify(memberOpsClient).checkRegistrationProgress(eq(HOLDING_IDENTITY_ID))
+        memberRegistrationRpcOps.deactivate("")
         memberRegistrationRpcOps.stop()
     }
 
