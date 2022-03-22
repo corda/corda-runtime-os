@@ -96,7 +96,7 @@ app.kubernetes.io/component: {{ .worker }}-worker
 Worker image
 */}}
 {{- define "corda.workerImage" -}}
-"{{ .Values.image.registry }}/{{ ( get .Values.workers .worker ).image.repository }}:{{ ( get .Values.workers .worker ).image.tag | default .Values.image.tag | default .Chart.AppVersion }}"
+"{{ ( get .Values.workers .worker ).image.registry | default .Values.image.registry }}/{{ ( get .Values.workers .worker ).image.repository }}:{{ ( get .Values.workers .worker ).image.tag | default .Values.image.tag | default .Chart.AppVersion }}"
 {{- end }}
 
 {{/*
@@ -105,7 +105,7 @@ Worker JAVA_TOOL_OPTIONS
 {{- define "corda.workerJavaToolOptions" -}}
 {{- if ( get .Values.workers .worker ).debug.enabled -}}
 - name: JAVA_TOOL_OPTIONS
-  value: -agentlib:jdwp=transport=dt_socket,server=y,suspend={{ if ( get .Values.workers .worker ).debug.suspend }}y{{ else }}n{{ end }}
+  value: -agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend={{ if ( get .Values.workers .worker ).debug.suspend }}y{{ else }}n{{ end }}
 {{- end }}
 {{- end }}
 

@@ -10,7 +10,7 @@ import net.corda.v5.base.util.trace
 import net.corda.v5.base.stream.isFiniteDurableStreamsMethod
 import net.corda.v5.base.stream.returnsDurableCursorBuilder
 import net.corda.httprpc.tools.annotations.validation.utils.pathParamRegex
-import net.corda.httprpc.tools.staticExposedGetMethods
+import net.corda.httprpc.tools.isStaticallyExposedGet
 import java.lang.reflect.InvocationTargetException
 
 /**
@@ -31,19 +31,15 @@ internal class JavalinRouteProviderImpl(
 
     private companion object {
         private val log = contextLogger()
-
-        private val noAuthRequiredGETEndpoints = staticExposedGetMethods
     }
 
     override val httpNoAuthRequiredGetRoutes = mapResourcesToRoutesByHttpMethod(EndpointMethod.GET)
         .filter { routeInfo ->
-            val methodName = routeInfo.method.method.name
-            noAuthRequiredGETEndpoints.any { methodName.equals(it, true) }
+            routeInfo.method.method.isStaticallyExposedGet()
         }
     override val httpGetRoutes = mapResourcesToRoutesByHttpMethod(EndpointMethod.GET)
-        .filter { routeInfo ->
-            val methodName = routeInfo.method.method.name
-            noAuthRequiredGETEndpoints.none { methodName.equals(it, true) }
+        .filterNot { routeInfo ->
+            routeInfo.method.method.isStaticallyExposedGet()
         }
     override val httpPostRoutes = mapResourcesToRoutesByHttpMethod(EndpointMethod.POST)
 

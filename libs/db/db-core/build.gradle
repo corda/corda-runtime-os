@@ -15,4 +15,6 @@ dependencies {
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
 }

@@ -52,6 +52,8 @@ class SendAndReceiveRequestHandler @Activate constructor(
                     .setMessageDirection(MessageDirection.OUTBOUND)
                     .setTimestamp(now)
                     .setSequenceNum(null)
+                    .setReceivedSequenceNum(0)
+                    .setOutOfOrderSequenceNums(listOf(0))
                     .setPayload(SessionData(ByteBuffer.wrap(serializedMessage.bytes)))
                     .build(),
                 instant = now

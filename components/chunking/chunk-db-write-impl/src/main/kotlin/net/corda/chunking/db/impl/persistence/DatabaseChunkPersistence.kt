@@ -1,8 +1,9 @@
-package net.corda.chunking.db.impl
+package net.corda.chunking.db.impl.persistence
 
 import net.corda.chunking.Checksum
 import net.corda.chunking.RequestId
 import net.corda.chunking.datamodel.ChunkEntity
+import net.corda.chunking.db.impl.AllChunksReceived
 import net.corda.chunking.toAvro
 import net.corda.chunking.toCorda
 import net.corda.data.chunking.Chunk
@@ -11,17 +12,17 @@ import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
 import net.corda.libs.cpi.datamodel.CpkDataEntity
 import net.corda.libs.cpi.datamodel.CpkMetadataEntity
 import net.corda.orm.utils.transaction
-import net.corda.packaging.CPK
+import net.corda.packaging.CPI
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import java.nio.ByteBuffer
 import java.nio.file.Files
 import javax.persistence.EntityManagerFactory
 
- /**
+/**
  * This class provides some simple APIs to interact with the database.
  */
-class DatabaseQueries(private val entityManagerFactory: EntityManagerFactory) {
+class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFactory) : ChunkPersistence {
 
     /**
      * Persist a chunk to the database and also check whether we have all chunks,
@@ -31,7 +32,7 @@ class DatabaseQueries(private val entityManagerFactory: EntityManagerFactory) {
      * final message to the rest of the system to validate the complete binary.
      */
 
-    fun persistChunk(chunk: Chunk): AllChunksReceived {
+    override fun persistChunk(chunk: Chunk): AllChunksReceived {
         // We put `null` into the data field if the array is empty, i.e. the final chunk
         // so that we can write easier queries for the parts expected and received.
         val data = if (chunk.data.array().isEmpty()) null else chunk.data.array()
@@ -78,7 +79,7 @@ class DatabaseQueries(private val entityManagerFactory: EntityManagerFactory) {
      *
      * Assumes that all chunks have been received for the given [requestId]
      */
-    fun checksumIsValid(requestId: RequestId): Boolean {
+    override fun checksumIsValid(requestId: RequestId): Boolean {
         var expectedChecksum: SecureHash? = null
         var actualChecksum: ByteArray? = null
 
@@ -117,7 +118,7 @@ class DatabaseQueries(private val entityManagerFactory: EntityManagerFactory) {
      * @param requestId the requestId of the chunks
      * @param onChunk lambda method to be called on each chunk
      */
-    fun forEachChunk(requestId: RequestId, onChunk: (chunk: Chunk) -> Unit) {
+    override fun forEachChunk(requestId: RequestId, onChunk: (chunk: Chunk) -> Unit) {
         entityManagerFactory.createEntityManager().transaction {
             val table = ChunkEntity::class.simpleName
             val streamingResults = it.createQuery(
@@ -146,7 +147,7 @@ class DatabaseQueries(private val entityManagerFactory: EntityManagerFactory) {
      *
      * @return true if checksum exists in database
      */
-    fun containsCpkByChecksum(checksum: SecureHash): Boolean {
+    override fun containsCpkByChecksum(checksum: SecureHash): Boolean {
         val entity = entityManagerFactory.createEntityManager().transaction {
             it.find(CpkDataEntity::class.java, checksum.toString())
         }
@@ -154,26 +155,71 @@ class DatabaseQueries(private val entityManagerFactory: EntityManagerFactory) {
         return entity != null
     }
 
-    fun containsCpiByPrimaryKey(cpiMetadataEntity: CpiMetadataEntity): Boolean {
-        val primaryKey = CpiMetadataEntityKey(
-            cpiMetadataEntity.name,
-            cpiMetadataEntity.version,
-            cpiMetadataEntity.signerSummaryHash
-        )
-        val entity = entityManagerFactory.createEntityManager().transaction {
-            it.find(CpiMetadataEntity::class.java, primaryKey)
-        }
-        return entity != null
-    }
+    override fun containsCpi(cpiName: String, cpiVersion: String, signerSummaryHash: String): Boolean =
+        getCpiEntity(cpiName, cpiVersion, signerSummaryHash) != null
 
-    fun persistMetadataAndCpks(cpiMetadataEntity: CpiMetadataEntity, cpkFiles: Collection<CPK>) {
+    override fun persistMetadataAndCpks(
+        cpi: CPI,
+        cpiFileName: String,
+        checksum: SecureHash,
+        requestId: RequestId,
+        groupId: String
+    ) {
+        val cpiMetadataEntity = createCpiMetadataEntity(cpi, cpiFileName, checksum, requestId, groupId)
         entityManagerFactory.createEntityManager().transaction { em ->
             em.persist(cpiMetadataEntity)
-            cpkFiles.forEach {
+            cpi.cpks.forEach {
                 val cpkChecksum = it.metadata.hash.toString()
                 em.persist(CpkDataEntity(cpkChecksum, Files.readAllBytes(it.path!!)))
                 em.merge(CpkMetadataEntity(cpiMetadataEntity, cpkChecksum, it.originalFileName!!))
             }
         }
+    }
+
+    private fun getCpiEntity(name: String, version: String, signerSummaryHash: String): CpiMetadataEntity? {
+        val primaryKey = CpiMetadataEntityKey(
+            name,
+            version,
+            signerSummaryHash
+        )
+        val entity = entityManagerFactory.createEntityManager().transaction {
+            it.find(CpiMetadataEntity::class.java, primaryKey)
+        }
+        return entity
+    }
+
+    override fun getGroupId(cpiName: String, cpiVersion: String, signerSummaryHash: String): String? {
+        return getCpiEntity(cpiName, cpiVersion, signerSummaryHash)?.groupId
+    }
+
+    /**
+     * For a given CPI create the metadata entity required to insert into the database.
+     *
+     * @param cpi CPI object
+     * @param cpiFileName original file name
+     * @param checksum checksum/hash of the CPI
+     * @param requestId the requestId originating from the chunk upload
+     */
+    private fun createCpiMetadataEntity(
+        cpi: CPI,
+        cpiFileName: String,
+        checksum: SecureHash,
+        requestId: RequestId,
+        groupId: String
+    ): CpiMetadataEntity {
+//         val groupId = ValidationFunctions.getGroupId(cpi)
+
+        val cpiMetadata = cpi.metadata
+
+        return CpiMetadataEntity(
+            cpiMetadata.id.name,
+            cpiMetadata.id.version,
+            cpiMetadata.id.signerSummaryHash?.toString() ?: "",
+            cpiFileName,
+            checksum.toString(),
+            cpi.metadata.groupPolicy!!,
+            groupId,
+            requestId
+        )
     }
 }

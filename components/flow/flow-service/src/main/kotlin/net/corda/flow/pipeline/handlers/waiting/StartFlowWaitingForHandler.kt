@@ -7,7 +7,7 @@ import org.osgi.service.component.annotations.Component
 object WaitingForStartFlow
 
 @Component(service = [FlowWaitingForHandler::class])
-class StartRPCFlowWaitingForHandler : FlowWaitingForHandler<WaitingForStartFlow> {
+class StartFlowWaitingForHandler : FlowWaitingForHandler<WaitingForStartFlow> {
 
     override val type = WaitingForStartFlow::class.java
 

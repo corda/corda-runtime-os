@@ -6,7 +6,7 @@ import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.isRpcEndpointAnnotation
 import net.corda.httprpc.tools.annotations.extensions.path
-import net.corda.httprpc.tools.staticExposedGetMethods
+import net.corda.httprpc.tools.isStaticallyExposedGet
 import java.lang.reflect.Method
 import java.lang.reflect.Parameter
 import kotlin.reflect.full.createInstance
@@ -15,7 +15,7 @@ internal val Class<out RpcOps>.endpoints: List<Method>
     get() = this.methods.filter { method ->
         method.annotations.any { annotation ->
             annotation.isRpcEndpointAnnotation()
-        } || staticExposedGetMethods.any { it.equals(method.name, true) }
+        } || method.isStaticallyExposedGet()
     }.sortedBy { it.name }
 
 internal val List<Parameter>.pathParameters
@@ -39,7 +39,7 @@ internal val Method.endpointType: EndpointType
     } ?: this.staticExposedEndpointType
 
 private val Method.staticExposedEndpointType: EndpointType
-    get() = if (staticExposedGetMethods.any { it.equals(this.name, true) }) EndpointType.GET
+    get() = if (isStaticallyExposedGet()) EndpointType.GET
     else throw IllegalArgumentException("Unknown statically exposed endpoint type for: '$name'")
 
 internal enum class EndpointType {
