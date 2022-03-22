@@ -81,7 +81,8 @@ workers:
       enabled: false
       # -- if debug is enabled, suspend the DB worker until the debugger is attached
       suspend: false
-    # -- DB worker salt password
+    # -- DB worker salt, defaults to a value randomly-generated on install
+
     salt: ""
     # -- DB worker passphrase
     passphrase: ""
