@@ -4,9 +4,14 @@ import net.corda.chunking.RequestId
 import net.corda.chunking.db.ChunkDbWriter
 import net.corda.chunking.db.ChunkDbWriterFactory
 import net.corda.chunking.db.ChunkWriteException
+import net.corda.chunking.db.impl.persistence.DatabaseChunkPersistence
+import net.corda.chunking.db.impl.persistence.StatusPublisher
+import net.corda.chunking.db.impl.validation.CpiValidatorImpl
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.data.chunking.Chunk
 import net.corda.libs.configuration.SmartConfig
+import net.corda.messaging.api.publisher.Publisher
+import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -27,6 +32,7 @@ class ChunkDbWriterFactoryImpl @Activate constructor(
 ) : ChunkDbWriterFactory {
     companion object {
         internal const val GROUP_NAME = "cpi.chunk.writer"
+        internal const val CLIENT_NAME = "chunk-writer"
     }
 
     override fun create(
@@ -49,6 +55,11 @@ class ChunkDbWriterFactoryImpl @Activate constructor(
         return ChunkDbWriterImpl(subscription)
     }
 
+    private fun createPublisher(config: SmartConfig): Publisher {
+        val publisherConfig = PublisherConfig(CLIENT_NAME)
+        return publisherFactory.createPublisher(publisherConfig, config)
+    }
+
     /**
      * @param uploadTopic we read (subscribe) chunks from this topic
      * @param config
@@ -62,9 +73,11 @@ class ChunkDbWriterFactoryImpl @Activate constructor(
         statusTopic: String,
         cpiInfoWriteService: CpiInfoWriteService
     ): Subscription<RequestId, Chunk> {
-        val queries = DatabaseQueries(entityManagerFactory)
-        val validator = CpiValidatorImpl(queries, cpiInfoWriteService)
-        val processor = ChunkWriteToDbProcessor(statusTopic, queries, validator)
+        val persistence = DatabaseChunkPersistence(entityManagerFactory)
+        val publisher = createPublisher(config)
+        val statusPublisher = StatusPublisher(statusTopic, publisher)
+        val validator = CpiValidatorImpl(statusPublisher, persistence, cpiInfoWriteService)
+        val processor = ChunkWriteToDbProcessor(statusPublisher, persistence, validator)
 
         val instanceId = if (config.hasPath("instanceId")) config.getInt("instanceId") else 1
         val subscriptionConfig = SubscriptionConfig(GROUP_NAME, uploadTopic, instanceId)

@@ -4,7 +4,7 @@ import com.google.common.jimfs.Jimfs
 import net.corda.chunking.ChunkReaderFactory
 import net.corda.chunking.ChunkWriterFactory
 import net.corda.chunking.datamodel.ChunkingEntities
-import net.corda.chunking.db.impl.DatabaseQueries
+import net.corda.chunking.db.impl.persistence.DatabaseChunkPersistence
 import net.corda.data.chunking.Chunk
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
@@ -29,7 +29,7 @@ class RecreateBinaryTest {
         // N.B.  We're pulling in the config tables as well.
         private const val MIGRATION_FILE_LOCATION = "net/corda/db/schema/config/db.changelog-master.xml"
         private lateinit var entityManagerFactory: EntityManagerFactory
-        private lateinit var queries: DatabaseQueries
+        private lateinit var persistence: DatabaseChunkPersistence
 
         /**
          * Creates an in-memory database, applies the relevant migration scripts, and initialises
@@ -58,7 +58,7 @@ class RecreateBinaryTest {
                 ChunkingEntities.classes.toList(),
                 emConfig
             )
-            queries = DatabaseQueries(entityManagerFactory)
+            persistence = DatabaseChunkPersistence(entityManagerFactory)
         }
 
         val loremIpsum = """
@@ -136,10 +136,10 @@ class RecreateBinaryTest {
 
         // Put chunks
         val requestId = chunks.first().requestId
-        chunks.forEach { queries.persistChunk(it) }
+        chunks.forEach { persistence.persistChunk(it) }
 
         // Get chunks back, and write straight to file.
-        queries.forEachChunk(requestId) { chunkReader.read(it) }
+        persistence.forEachChunk(requestId) { chunkReader.read(it) }
         assertThat(actualFileName).isEqualTo(expectedFileName)
 
         val expectedFileContent = Files.readString(originalFile)
@@ -153,11 +153,11 @@ class RecreateBinaryTest {
 
         // Put chunks
         val requestId = expectedChunks.first().requestId
-        expectedChunks.forEach { queries.persistChunk(it) }
+        expectedChunks.forEach { persistence.persistChunk(it) }
 
         // Get chunks
         val actualChunks = mutableListOf<Chunk>()
-        queries.forEachChunk(requestId) { actualChunks.add(it) }
+        persistence.forEachChunk(requestId) { actualChunks.add(it) }
 
         assertThat(actualChunks.isNotEmpty()).isTrue
         assertThat(actualChunks.size).isEqualTo(expectedChunks.size)
@@ -172,11 +172,11 @@ class RecreateBinaryTest {
         val requestId = expectedChunks.first().requestId
         val droppedChunks = 1
         val missingFirstChunk = expectedChunks.drop(droppedChunks)
-        missingFirstChunk.forEach { queries.persistChunk(it) }
+        missingFirstChunk.forEach { persistence.persistChunk(it) }
 
         // Get chunks
         val actualChunks = mutableListOf<Chunk>()
-        queries.forEachChunk(requestId) { actualChunks.add(it) }
+        persistence.forEachChunk(requestId) { actualChunks.add(it) }
 
         assertThat(actualChunks.isNotEmpty()).isTrue
         assertThat(actualChunks.size).isNotEqualTo(expectedChunks.size)

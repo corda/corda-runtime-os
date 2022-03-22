@@ -67,12 +67,17 @@ class DbAdminImpl @Activate constructor(
         schemaName: String,
         user: String,
         password: String,
-        privilege: DbPrivilege) {
+        privilege: DbPrivilege,
+        grantee: String?) {
         // NOTE - This is currently Postgres specific and we will need to provide alternative implementations
         //  for other DBs. So we may need to wrap this in a factory.
         log.info("Creating $schemaName $privilege User: $user")
         val permissions = if (privilege == DbPrivilege.DML) {
-            "ALTER DEFAULT PRIVILEGES IN SCHEMA $schemaName GRANT SELECT, UPDATE, INSERT, DELETE ON TABLES"
+            if (grantee != null) {
+                "ALTER DEFAULT PRIVILEGES FOR ROLE $grantee IN SCHEMA $schemaName GRANT SELECT, UPDATE, INSERT, DELETE ON TABLES"
+            } else {
+                "ALTER DEFAULT PRIVILEGES IN SCHEMA $schemaName GRANT SELECT, UPDATE, INSERT, DELETE ON TABLES"
+            }
         } else {
             "GRANT ALL ON SCHEMA $schemaName"
         }
@@ -82,6 +87,17 @@ class DbAdminImpl @Activate constructor(
             GRANT USAGE ON SCHEMA $schemaName to $user;
             $permissions TO $user;
             """.trimIndent()
+        dbConnectionManager.getClusterDataSource().connection.use {
+            it.createStatement().execute(sql)
+            it.commit()
+        }
+    }
+
+    override fun deleteSchema(schemaName: String) {
+        // NOTE - This is currently Postgres specific and we will need to provide alternative implementations
+        //  for other DBs. So we may need to wrap this in a factory.
+        log.info("Deleting schema: $schemaName")
+        val sql = "DROP SCHEMA $schemaName CASCADE;"
         dbConnectionManager.getClusterDataSource().connection.use {
             it.createStatement().execute(sql)
             it.commit()
@@ -107,14 +123,11 @@ class DbAdminImpl @Activate constructor(
         }
     }
 
-    override fun deleteSchemaAndUser(schemaName: String, user: String) {
+    override fun deleteUser(user: String) {
         // NOTE - This is currently Postgres specific and we will need to provide alternative implementations
         //  for other DBs. So we may need to wrap this in a factory.
         log.info("Deleting user: $user")
-        val sql = """
-            DROP SCHEMA $schemaName CASCADE;
-            DROP USER $user;
-            """.trimIndent()
+        val sql = "DROP USER $user;"
         dbConnectionManager.getClusterDataSource().connection.use {
             it.createStatement().execute(sql)
             it.commit()
