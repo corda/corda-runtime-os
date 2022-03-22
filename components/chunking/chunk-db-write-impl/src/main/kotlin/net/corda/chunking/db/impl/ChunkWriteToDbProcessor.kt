@@ -12,7 +12,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.contextLogger
 
 /**
- * Persist a [Chunk] to the database and send an [ChunkAck] message
+ * Persist a [Chunk] to the database and send an [UploadStatus] message
  */
 class ChunkWriteToDbProcessor(
     private val publisher: StatusPublisher,
