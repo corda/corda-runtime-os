@@ -56,7 +56,7 @@ class ConfigurationReadServiceImplTest {
         var latch = CountDownLatch(1)
         configurationReadService.start()
         configurationReadService.bootstrapConfig(bootConfig)
-        val publisher = publisherFactory.createPublisher(PublisherConfig("foo"))
+        val publisher = publisherFactory.createPublisher(PublisherConfig("foo"), bootConfig)
         val receivedKeys = mutableSetOf<String>()
         var receivedConfig = mapOf<String, SmartConfig>()
         eventually(duration = 5.seconds) {
@@ -101,7 +101,7 @@ class ConfigurationReadServiceImplTest {
         // Publish flow config and wait until it has been received by the service
         val flowConfig = smartConfigFactory.create(ConfigFactory.parseMap(mapOf("foo" to "baz")))
         val confString = flowConfig.root().render()
-        val publisher = publisherFactory.createPublisher(PublisherConfig("foo"))
+        val publisher = publisherFactory.createPublisher(PublisherConfig("foo"), bootConfig)
         publisher.publish(listOf(Record(CONFIG_TOPIC, FLOW_CONFIG, Configuration(confString, "1"))))
         eventually(duration = 5.seconds) {
             assertTrue(configurationReadService.isRunning)

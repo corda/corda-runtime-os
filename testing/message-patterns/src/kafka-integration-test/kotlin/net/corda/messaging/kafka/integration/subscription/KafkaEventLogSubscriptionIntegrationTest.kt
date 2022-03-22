@@ -13,12 +13,13 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.NON_TRANSACTIONAL_PUBLISHER_CONFIG
 import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.TEST_CONFIG
 import net.corda.messaging.kafka.integration.TopicTemplates
 import net.corda.messaging.kafka.integration.getDemoRecords
 import net.corda.messaging.kafka.integration.getKafkaProperties
 import net.corda.messaging.kafka.integration.processors.TestEventLogProcessor
-import net.corda.schema.configuration.MessagingConfig
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
@@ -66,7 +67,7 @@ class KafkaEventLogSubscriptionIntegrationTest {
         topicAdmin.createTopics(kafkaProperties, TopicTemplates.EVENT_LOG_TOPIC1_TEMPLATE)
 
         publisherConfig = PublisherConfig(CLIENT_ID + TOPIC1)
-        publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
+        publisher = publisherFactory.createPublisher(publisherConfig, NON_TRANSACTIONAL_PUBLISHER_CONFIG)
         val futures = publisher.publish(getDemoRecords(TOPIC1, 5, 2))
         Assertions.assertThat(futures.size).isEqualTo(10)
         futures.forEach { it.get(10, TimeUnit.SECONDS) }
@@ -89,7 +90,7 @@ class KafkaEventLogSubscriptionIntegrationTest {
 
         val latch = CountDownLatch(10)
         val eventLogSub = subscriptionFactory.createEventLogSubscription(
-            SubscriptionConfig("$TOPIC1-group", TOPIC1, 1),
+            SubscriptionConfig("$TOPIC1-group", TOPIC1),
             TestEventLogProcessor(latch),
             TEST_CONFIG,
             null
@@ -116,7 +117,7 @@ class KafkaEventLogSubscriptionIntegrationTest {
     fun `transactional publish records, start two durable subscription, stop subs, publish again and start subs`() {
         topicAdmin.createTopics(kafkaProperties, TopicTemplates.EVENT_LOG_TOPIC2_TEMPLATE)
 
-        publisherConfig = PublisherConfig(CLIENT_ID + TOPIC2, 1)
+        publisherConfig = PublisherConfig(CLIENT_ID + TOPIC2)
         publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
         val futures = publisher.publish(getDemoRecords(TOPIC2, 5, 2))
         Assertions.assertThat(futures.size).isEqualTo(1)
@@ -124,18 +125,18 @@ class KafkaEventLogSubscriptionIntegrationTest {
 
         val latch = CountDownLatch(30)
         val eventLogSub1 = subscriptionFactory.createEventLogSubscription(
-            SubscriptionConfig("$TOPIC2-group", TOPIC2, 1),
+            SubscriptionConfig("$TOPIC2-group", TOPIC2),
             TestEventLogProcessor(latch),
             TEST_CONFIG,
             null
         )
 
         val secondSubConfig = TEST_CONFIG.withValue(
-            MessagingConfig.Boot.INSTANCE_ID,
+            INSTANCE_ID,
             ConfigValueFactory.fromAnyRef(2)
         )
         val eventLogSub2 = subscriptionFactory.createEventLogSubscription(
-            SubscriptionConfig("$TOPIC2-group", TOPIC2, 2),
+            SubscriptionConfig("$TOPIC2-group", TOPIC2),
             TestEventLogProcessor(latch),
             secondSubConfig,
             null

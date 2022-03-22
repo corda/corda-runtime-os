@@ -71,7 +71,6 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
             "${config.group}-RPCSender-${config.topic}",
-            //we use instanceId here as transactionality is a concern in this subscription
             config.clientId
         )
     ) { _, _ -> }

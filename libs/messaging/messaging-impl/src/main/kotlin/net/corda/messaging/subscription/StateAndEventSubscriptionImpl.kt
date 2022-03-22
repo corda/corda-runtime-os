@@ -84,8 +84,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
             "${config.group}-KafkaStateAndEventSubscription-${config.topic}",
-            //we use instanceId here as transactionality is a concern in this subscription
-            config.instanceId.toString()
+            config.clientId
         )
     ) { _, _ -> }
 

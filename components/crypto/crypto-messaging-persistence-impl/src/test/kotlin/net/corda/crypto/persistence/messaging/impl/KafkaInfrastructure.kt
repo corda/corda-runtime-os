@@ -187,7 +187,7 @@ class KafkaInfrastructure {
         key: String,
         record: Any
     ) {
-        val pub = publisherFactory.createPublisher(PublisherConfig(clientId))
+        val pub = publisherFactory.createPublisher(PublisherConfig(clientId), SmartConfigImpl.empty())
         pub.publish(
             listOf(Record(topic, key, record))
         )[0].get()

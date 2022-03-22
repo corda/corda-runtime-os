@@ -190,8 +190,7 @@ class DBEventLogSubscriptionTest {
         on { createCoordinator(any(), any()) } doReturn lifecycleCoordinator
     }
 
-    private val transactionalConfig = SubscriptionConfig("consumer-group-1", topic1, 1)
-    private val nonTransactionalConfig = SubscriptionConfig("consumer-group-1", topic1)
+    private val subscriptionConfig = SubscriptionConfig("consumer-group-1", topic1)
 
     @Test
     fun `non-transactional subscription processes records, commits offsets and writes new records successfully`() {
@@ -202,7 +201,8 @@ class DBEventLogSubscriptionTest {
         dbRecords[topic1]!![1]!!.addAll(topic1Records)
         val processor = InMemoryProcessor(processedRecords, String::class.java, String::class.java, topic2)
         val subscription = DBEventLogSubscription(
-            nonTransactionalConfig,
+            subscriptionConfig,
+            null,
             processor,
             null,
             avroSchemaRegistry,
@@ -240,7 +240,8 @@ class DBEventLogSubscriptionTest {
         val processor = InMemoryProcessor(processedRecords, String::class.java, String::class.java, topic2)
         val subscription =
             DBEventLogSubscription(
-                transactionalConfig,
+                subscriptionConfig,
+                1,
                 processor,
                 null,
                 avroSchemaRegistry,
@@ -277,7 +278,8 @@ class DBEventLogSubscriptionTest {
         dbRecords[topic1]!![1]!!.addAll(topic1Records)
         val processor = InMemoryProcessor(processedRecords, String::class.java, String::class.java, topic2)
         val subscription = DBEventLogSubscription(
-            transactionalConfig,
+            subscriptionConfig,
+            1,
             processor,
             null,
             avroSchemaRegistry,
@@ -317,7 +319,8 @@ class DBEventLogSubscriptionTest {
         dbRecords[topic1]!![1]!!.addAll(topic1Records)
         val processor = InMemoryProcessor(processedRecords, String::class.java, String::class.java, topic2)
         val subscription = DBEventLogSubscription(
-            transactionalConfig,
+            subscriptionConfig,
+            1,
             processor,
             null,
             avroSchemaRegistry,
@@ -357,7 +360,8 @@ class DBEventLogSubscriptionTest {
         dbRecords[topic1]!![1]!!.addAll(topic1Records)
         val processor = InMemoryProcessor(processedRecords, String::class.java, String::class.java, topic2)
         val subscription = DBEventLogSubscription(
-            nonTransactionalConfig,
+            subscriptionConfig,
+            null,
             processor,
             null,
             avroSchemaRegistry,
@@ -397,7 +401,8 @@ class DBEventLogSubscriptionTest {
         dbRecords[topic1]!![1]!!.addAll(topic1Records)
         val processor = InMemoryProcessor(processedRecords, String::class.java, String::class.java, topic2)
         val subscription = DBEventLogSubscription(
-            nonTransactionalConfig,
+            subscriptionConfig,
+            null,
             processor,
             null,
             avroSchemaRegistry,
@@ -436,7 +441,8 @@ class DBEventLogSubscriptionTest {
         val partitionListener = mock(PartitionAssignmentListener::class.java)
         val processor = InMemoryProcessor(processedRecords, String::class.java, String::class.java, topic1)
         val subscription = DBEventLogSubscription(
-            nonTransactionalConfig,
+            subscriptionConfig,
+            null,
             processor,
             partitionListener,
             avroSchemaRegistry,

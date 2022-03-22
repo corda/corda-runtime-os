@@ -57,7 +57,6 @@ class DynamicKeyStoreTest {
         lifecycleCoordinatorFactory,
         subscriptionFactory,
         nodeConfiguration,
-        12,
         certificateFactory,
     )
 

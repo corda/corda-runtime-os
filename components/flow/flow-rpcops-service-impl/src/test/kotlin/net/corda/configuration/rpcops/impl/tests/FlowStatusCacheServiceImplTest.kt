@@ -7,7 +7,6 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.rpcops.impl.CacheLoadCompleteEvent
 import net.corda.flow.rpcops.impl.FlowStatusCacheServiceImpl
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
@@ -19,6 +18,7 @@ import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Flow.Companion.FLOW_STATUS_TOPIC
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -89,8 +89,7 @@ class FlowStatusCacheServiceImplTest {
 
         val expectedSubscriptionCfg = SubscriptionConfig(
             "Flow Status Subscription",
-            FLOW_STATUS_TOPIC,
-            2
+            FLOW_STATUS_TOPIC
         )
 
         verify(subscriptionFactory).createCompactedSubscription(

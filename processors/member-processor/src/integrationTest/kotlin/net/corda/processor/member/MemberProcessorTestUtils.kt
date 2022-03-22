@@ -12,10 +12,11 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import net.corda.test.util.eventually
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -23,11 +24,11 @@ import net.corda.virtualnode.toAvro
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.assertThrows
-import java.util.UUID
+import java.util.*
 
 class MemberProcessorTestUtils {
     companion object {
-        val bootConf = with(ConfigFactory.parseString("instanceId=1")) {
+        val bootConf = with(ConfigFactory.parseString("$INSTANCE_ID=1")) {
             SmartConfigFactory.create(this).create(this)
         }
 

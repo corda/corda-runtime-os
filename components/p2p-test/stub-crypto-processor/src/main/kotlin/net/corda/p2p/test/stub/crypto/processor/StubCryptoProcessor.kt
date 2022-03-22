@@ -21,12 +21,11 @@ import java.util.concurrent.ConcurrentHashMap
 class StubCryptoProcessor(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     subscriptionFactory: SubscriptionFactory,
-    instanceId: Int,
     configuration: SmartConfig
 ) : CryptoProcessor {
 
     private val keyPairEntryProcessor = KeyPairEntryProcessor()
-    private val subscriptionConfig = SubscriptionConfig("crypto-service", CRYPTO_KEYS_TOPIC, instanceId)
+    private val subscriptionConfig = SubscriptionConfig("crypto-service", CRYPTO_KEYS_TOPIC)
     private val subscription =
         subscriptionFactory.createCompactedSubscription(subscriptionConfig, keyPairEntryProcessor, configuration)
     private class TenantKeyMap {

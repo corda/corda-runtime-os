@@ -12,7 +12,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.kafka.integration.IntegrationTestProperties
+import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.NON_TRANSACTIONAL_PUBLISHER_CONFIG
 import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.TEST_CONFIG
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.COMPACTED_TOPIC1
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.COMPACTED_TOPIC1_TEMPLATE
@@ -65,7 +65,7 @@ class CompactedSubscriptionIntegrationTest {
         topicAdmin.createTopics(kafkaProperties, COMPACTED_TOPIC1_TEMPLATE)
 
         publisherConfig = PublisherConfig(CLIENT_ID + COMPACTED_TOPIC1)
-        publisher = publisherFactory.createPublisher(publisherConfig, IntegrationTestProperties.TEST_CONFIG)
+        publisher = publisherFactory.createPublisher(publisherConfig, NON_TRANSACTIONAL_PUBLISHER_CONFIG)
         publisher.publish(getDemoRecords(COMPACTED_TOPIC1, 1, 5)).forEach { it.get() }
 
         val coordinator =
@@ -86,7 +86,7 @@ class CompactedSubscriptionIntegrationTest {
         val onNextLatch = CountDownLatch(5)
         val snapshotLatch = CountDownLatch(1)
         val compactedSub = subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig("$COMPACTED_TOPIC1-group", COMPACTED_TOPIC1, 1),
+            SubscriptionConfig("$COMPACTED_TOPIC1-group", COMPACTED_TOPIC1),
             TestCompactedProcessor(snapshotLatch, onNextLatch),
             TEST_CONFIG
         )
@@ -116,7 +116,7 @@ class CompactedSubscriptionIntegrationTest {
         topicAdmin.createTopics(kafkaProperties, COMPACTED_TOPIC2_TEMPLATE)
 
         publisherConfig = PublisherConfig(CLIENT_ID + COMPACTED_TOPIC2)
-        publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
+        publisher = publisherFactory.createPublisher(publisherConfig, NON_TRANSACTIONAL_PUBLISHER_CONFIG)
         publisher.publish(getStringRecords(COMPACTED_TOPIC2, 1, 5)).forEach { it.get() }
 
         val coordinator =
@@ -137,7 +137,7 @@ class CompactedSubscriptionIntegrationTest {
         val onNextLatch = CountDownLatch(5)
         val snapshotLatch = CountDownLatch(1)
         val compactedSub = subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig("$COMPACTED_TOPIC2-group", COMPACTED_TOPIC2, 1),
+            SubscriptionConfig("$COMPACTED_TOPIC2-group", COMPACTED_TOPIC2),
             TestCompactedProcessor(snapshotLatch, onNextLatch),
             TEST_CONFIG
         )

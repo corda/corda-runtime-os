@@ -5,6 +5,7 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.publish.CordaConfigurationKey
 import net.corda.libs.configuration.publish.CordaConfigurationVersion
 import net.corda.libs.configuration.publish.impl.ConfigPublisherImpl
@@ -62,7 +63,6 @@ open class TestBase {
         }
         return KeyStoreWithPassword(keyStore, password)
     }
-
     protected val truststoreCertificatePem by lazy {
         javaClass.classLoader.getResource("truststore/certificate.pem").readText()
     }
@@ -72,6 +72,7 @@ open class TestBase {
     protected val truststoreKeyStore by lazy {
         TrustStoresMap.TrustedCertificates(listOf(truststoreCertificatePem)).trustStore
     }
+
     protected val c4TruststoreKeyStore by lazy {
         TrustStoresMap.TrustedCertificates(listOf(c4TruststoreCertificatePem)).trustStore
     }
@@ -87,7 +88,6 @@ open class TestBase {
             }
         }
     }
-
     protected val clientMessageContent = "PING"
     protected val serverResponseContent = "PONG"
     protected val keystorePass = "password"
@@ -130,6 +130,7 @@ open class TestBase {
         private val configurationTopicService = TopicServiceImpl()
         private val rpcTopicService = RPCTopicServiceImpl()
         private val configPublisherClientId = "config.${UUID.randomUUID().toString().replace("-", "")}"
+        private val messagingConfig = SmartConfigImpl.empty()
 
         val readerService by lazy {
             ConfigurationReadServiceImpl(
@@ -154,7 +155,8 @@ open class TestBase {
                 .withValue("connectionConfig.retryDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.retryDelay))
                 .withValue("connectionConfig.initialReconnectionDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.initialReconnectionDelay))
                 .withValue("connectionConfig.maximalReconnectionDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maximalReconnectionDelay))
-            CordaPublisherFactory(configurationTopicService, rpcTopicService, lifecycleCoordinatorFactory).createPublisher(PublisherConfig((configPublisherClientId))).use { publisher ->
+            CordaPublisherFactory(configurationTopicService, rpcTopicService, lifecycleCoordinatorFactory)
+                .createPublisher(PublisherConfig(configPublisherClientId), messagingConfig).use { publisher ->
                 val configurationPublisher = ConfigPublisherImpl(CONFIG_TOPIC, publisher)
                 configurationPublisher.updateConfiguration(
                     CordaConfigurationKey(
@@ -170,7 +172,7 @@ open class TestBase {
             val publishConfig = ConfigFactory.empty()
                 .withValue("hello", ConfigValueFactory.fromAnyRef("world"))
             CordaPublisherFactory(configurationTopicService, rpcTopicService, lifecycleCoordinatorFactory)
-                .createPublisher(PublisherConfig((configPublisherClientId)))
+                .createPublisher(PublisherConfig(configPublisherClientId), messagingConfig)
                 .use { publisher ->
                     val configurationPublisher = ConfigPublisherImpl(CONFIG_TOPIC, publisher)
                     configurationPublisher.updateConfiguration(

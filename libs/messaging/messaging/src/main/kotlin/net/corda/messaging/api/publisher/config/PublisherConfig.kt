@@ -7,5 +7,4 @@ package net.corda.messaging.api.publisher.config
  * If it is a transaction the publisher will wait until all records previously sent by this publisher have completed their send.
  * If this is null then transactions are not used. Defaults to null.
  */
-data class PublisherConfig (val clientId: String,
-                            val instanceId: Int? = null)
+data class PublisherConfig (val clientId: String)

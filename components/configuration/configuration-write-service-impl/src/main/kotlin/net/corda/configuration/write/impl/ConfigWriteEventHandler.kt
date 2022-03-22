@@ -32,7 +32,7 @@ internal class ConfigWriteEventHandler(private val configWriterFactory: ConfigWr
                 try {
                     // TODO - CORE-3316 - At worker start-up, read back configuration from database and check it
                     //  against Kafka topic.
-                    configWriter = configWriterFactory.create(event.config, event.instanceId).apply { start() }
+                    configWriter = configWriterFactory.create(event.config).apply { start() }
                 } catch (e: Exception) {
                     coordinator.updateStatus(ERROR)
                     throw ConfigWriteServiceException("Could not subscribe to config management requests.", e)

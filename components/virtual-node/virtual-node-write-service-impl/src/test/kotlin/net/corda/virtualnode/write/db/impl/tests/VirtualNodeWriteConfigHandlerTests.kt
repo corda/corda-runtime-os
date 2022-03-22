@@ -32,13 +32,13 @@ class VirtualNodeWriteConfigHandlerTests {
         val coordinator = mock<LifecycleCoordinator>()
         val vnodeWriter = mock<VirtualNodeWriter>()
         val vnodeWriterFactory = mock<VirtualNodeWriterFactory>().apply {
-            whenever(create(config, 0)).thenReturn(vnodeWriter)
+            whenever(create(config)).thenReturn(vnodeWriter)
         }
         val configHandler = VirtualNodeWriteConfigHandler(mock(), coordinator, vnodeWriterFactory)
 
         configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config))
 
-        verify(vnodeWriterFactory).create(config, 0)
+        verify(vnodeWriterFactory).create(config)
         verify(vnodeWriter).start()
         verify(coordinator).updateStatus(UP)
     }
@@ -67,7 +67,7 @@ class VirtualNodeWriteConfigHandlerTests {
     fun `sets coordinator to down and throws if virtual node writer cannot be created`() {
         val coordinator = mock<LifecycleCoordinator>()
         val vnodeWriterFactory = mock<VirtualNodeWriterFactory>().apply {
-            whenever(create(any(), any())).thenAnswer { throw IllegalStateException() }
+            whenever(create(any())).thenAnswer { throw IllegalStateException() }
         }
         val configHandler = VirtualNodeWriteConfigHandler(mock(), coordinator, vnodeWriterFactory)
         val config = mock<SmartConfig>().apply {
@@ -88,7 +88,7 @@ class VirtualNodeWriteConfigHandlerTests {
     @Test
     fun `does not throw if RPC sender config is not provided under RPC config`() {
         val vnodeWriterFactory = mock<VirtualNodeWriterFactory>().apply {
-            whenever(create(any(), any())).thenAnswer { throw IllegalStateException() }
+            whenever(create(any())).thenAnswer { throw IllegalStateException() }
         }
         val configHandler = VirtualNodeWriteConfigHandler(mock(), mock(), vnodeWriterFactory)
 
@@ -101,7 +101,7 @@ class VirtualNodeWriteConfigHandlerTests {
     fun `sets status to UP if VirtualNodeRPCOps is running`() {
         val coordinator = mock<LifecycleCoordinator>()
         val vnodeWriterFactory = mock<VirtualNodeWriterFactory>().apply {
-            whenever(create(any(), any())).thenReturn(mock())
+            whenever(create(any())).thenReturn(mock())
         }
         val configHandler = VirtualNodeWriteConfigHandler(mock(), coordinator, vnodeWriterFactory)
         val config = mock<SmartConfig>().apply {

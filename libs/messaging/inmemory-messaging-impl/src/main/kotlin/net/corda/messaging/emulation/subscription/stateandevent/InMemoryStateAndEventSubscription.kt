@@ -13,12 +13,14 @@ import net.corda.v5.base.util.debug
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
+@Suppress("LongParameterList")
 class InMemoryStateAndEventSubscription<K : Any, S : Any, E : Any>(
     internal val subscriptionConfig: SubscriptionConfig,
     internal val processor: StateAndEventProcessor<K, S, E>,
     internal val stateAndEventListener: StateAndEventListener<K, S>?,
     internal val topicService: TopicService,
-    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    private val instanceId: Int
 ) :
     StateAndEventSubscription<K, S, E> {
 
@@ -37,7 +39,7 @@ class InMemoryStateAndEventSubscription<K : Any, S : Any, E : Any>(
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
             "${subscriptionConfig.groupName}-StateAndEventSubscription-${subscriptionConfig.eventTopic}",
-            subscriptionConfig.instanceId.toString()
+            instanceId.toString()
         )
     ) { _, _ -> }
 

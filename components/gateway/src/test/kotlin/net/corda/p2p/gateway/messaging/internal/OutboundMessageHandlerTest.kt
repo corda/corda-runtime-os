@@ -114,7 +114,6 @@ class OutboundMessageHandlerTest {
         configurationReaderService,
         subscriptionFactory,
         SmartConfigImpl.empty(),
-        2,
         mockTimeFacilitiesProvider.mockScheduledExecutor
     )
 

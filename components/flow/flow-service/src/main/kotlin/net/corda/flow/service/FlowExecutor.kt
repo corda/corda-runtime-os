@@ -5,7 +5,6 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.Checkpoint
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -40,9 +39,8 @@ class FlowExecutor(
         when (event) {
             is StartEvent -> {
                 logger.debug { "Starting the flow executor" }
-                val instanceId = config.getInt(INSTANCE_ID)
                 messagingSubscription = subscriptionFactory.createStateAndEventSubscription(
-                    SubscriptionConfig(CONSUMER_GROUP, FLOW_EVENT_TOPIC, instanceId),
+                    SubscriptionConfig(CONSUMER_GROUP, FLOW_EVENT_TOPIC),
                     flowEventProcessorFactory.create(),
                     config
                 )

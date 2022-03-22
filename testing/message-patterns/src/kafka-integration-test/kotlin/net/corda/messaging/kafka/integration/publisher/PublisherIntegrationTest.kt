@@ -51,7 +51,7 @@ class PublisherIntegrationTest {
 
         val latch = CountDownLatch(recordsWithPartitions.size)
         val durableSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$PUBLISHER_TEST_DURABLE_TOPIC1-group", PUBLISHER_TEST_DURABLE_TOPIC1, 1),
+            SubscriptionConfig("$PUBLISHER_TEST_DURABLE_TOPIC1-group", PUBLISHER_TEST_DURABLE_TOPIC1),
             TestDurableProcessor(latch),
             TEST_CONFIG,
             null
@@ -75,7 +75,7 @@ class PublisherIntegrationTest {
 
         val latch = CountDownLatch(recordsWithPartitions.size)
         val durableSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$PUBLISHER_TEST_DURABLE_TOPIC2-group", PUBLISHER_TEST_DURABLE_TOPIC2, 1),
+            SubscriptionConfig("$PUBLISHER_TEST_DURABLE_TOPIC2-group", PUBLISHER_TEST_DURABLE_TOPIC2),
             TestDurableProcessor(latch),
             TEST_CONFIG,
             null
@@ -114,7 +114,7 @@ class PublisherIntegrationTest {
 
         val latch = CountDownLatch(recordsWithPartitions.size * 2)
         val durableSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$PUBLISHER_TEST_DURABLE_TOPIC3-group", PUBLISHER_TEST_DURABLE_TOPIC3, 1),
+            SubscriptionConfig("$PUBLISHER_TEST_DURABLE_TOPIC3-group", PUBLISHER_TEST_DURABLE_TOPIC3),
             TestDurableProcessor(latch),
             TEST_CONFIG,
             null

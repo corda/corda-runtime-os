@@ -36,8 +36,7 @@ internal class VirtualNodeWriteConfigHandler(
 
             try {
                 eventHandler.virtualNodeWriter = virtualNodeWriterFactory
-                    // TODO - Set instance ID correctly.
-                    .create(msgConfig, 0)
+                    .create(msgConfig)
                     .apply { start() }
                 coordinator.updateStatus(UP)
             } catch (e: Exception) {

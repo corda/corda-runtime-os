@@ -76,8 +76,7 @@ class InboundMessageHandlerTest {
         configurationReaderService,
         publisherFactory,
         subscriptionFactory,
-        SmartConfigImpl.empty(),
-        1
+        SmartConfigImpl.empty()
     )
 
     @AfterEach

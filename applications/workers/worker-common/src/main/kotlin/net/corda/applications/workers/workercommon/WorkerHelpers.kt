@@ -6,8 +6,8 @@ import net.corda.applications.workers.workercommon.internal.CUSTOM_CONFIG_PATH
 import net.corda.applications.workers.workercommon.internal.MSG_CONFIG_PATH
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
-import net.corda.libs.configuration.schema.messaging.TOPIC_PREFIX
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
+import net.corda.schema.configuration.MessagingConfig.Boot.TOPIC_PREFIX
 import net.corda.osgi.api.Shutdown
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger

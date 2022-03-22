@@ -27,7 +27,6 @@ internal class TlsCertificatesPublisher(
     publisherFactory: PublisherFactory,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     configuration: SmartConfig,
-    instanceId: Int,
 ) : LifecycleWithDominoTile, HostingMapListener {
 
     companion object {
@@ -104,7 +103,7 @@ internal class TlsCertificatesPublisher(
         }
     }
     private val subscription = subscriptionFactory.createCompactedSubscription(
-        SubscriptionConfig(CURRENT_DATA_READER_GROUP_NAME, GATEWAY_TLS_TRUSTSTORES, instanceId),
+        SubscriptionConfig(CURRENT_DATA_READER_GROUP_NAME, GATEWAY_TLS_TRUSTSTORES),
         Processor(),
         configuration,
     )

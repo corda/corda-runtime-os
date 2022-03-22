@@ -1,6 +1,7 @@
 package net.corda.processor.member
 
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
@@ -86,7 +87,7 @@ class MemberProcessorIntegrationTest {
 
         membershipGroupReaderProvider.start()
 
-        publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID))
+        publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), SmartConfigImpl.empty())
         publisher.publishCryptoConf()
         publisher.publishMessagingConf()
         publisher.publishRawGroupPolicyData(virtualNodeInfoReader)

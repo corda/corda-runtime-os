@@ -3,7 +3,6 @@ package net.corda.messaging.emulation.publisher.factory
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
@@ -42,22 +41,18 @@ class CordaPublisherFactory @Activate constructor(
 
     override fun createPublisher(
         publisherConfig: PublisherConfig,
-        kafkaConfig: SmartConfig
+        messagingConfig: SmartConfig
     ): Publisher {
-        var config = kafkaConfig
+        var config = messagingConfig
             .withFallback(ConfigFactory.load("tmpInMemDefaults"))
             .withValue(PUBLISHER_CLIENT_ID, ConfigValueFactory.fromAnyRef(publisherConfig.clientId))
 
-        val instanceId = publisherConfig.instanceId
-        if (instanceId != null) {
-            config = config.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId))
-        }
         return CordaPublisher(config, topicService)
     }
 
     override fun <REQUEST : Any, RESPONSE : Any> createRPCSender(
         rpcConfig: RPCConfig<REQUEST, RESPONSE>,
-        kafkaConfig: SmartConfig
+        messagingConfig: SmartConfig
     ): RPCSender<REQUEST, RESPONSE> {
         return RPCSenderImpl(
             rpcConfig,

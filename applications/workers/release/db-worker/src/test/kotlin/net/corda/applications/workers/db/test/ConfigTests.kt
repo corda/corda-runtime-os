@@ -6,6 +6,8 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.db.DBProcessor
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
+import net.corda.schema.configuration.MessagingConfig.Boot.TOPIC_PREFIX
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.osgi.framework.Bundle
@@ -32,8 +34,8 @@ class ConfigTests {
         val config = processor.config!!
 
         val expectedKeys = setOf(
-            KEY_INSTANCE_ID,
-            KEY_TOPIC_PREFIX,
+            INSTANCE_ID,
+            TOPIC_PREFIX,
             "$CUSTOM_CONFIG_PATH.$CUSTOM_KEY_ONE",
             "$MSG_CONFIG_PATH.$MSG_KEY_ONE",
             "${ConfigKeys.DB_CONFIG}.$DB_KEY_ONE"
@@ -41,8 +43,8 @@ class ConfigTests {
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
         assertEquals(expectedKeys, actualKeys)
 
-        assertEquals(VAL_INSTANCE_ID.toInt(), config.getAnyRef(KEY_INSTANCE_ID))
-        assertEquals(VALUE_TOPIC_PREFIX, config.getAnyRef(KEY_TOPIC_PREFIX))
+        assertEquals(VAL_INSTANCE_ID.toInt(), config.getAnyRef(INSTANCE_ID))
+        assertEquals(VALUE_TOPIC_PREFIX, config.getAnyRef(TOPIC_PREFIX))
         assertEquals(MSG_VAL_ONE, config.getAnyRef("$MSG_CONFIG_PATH.$MSG_KEY_ONE"))
         assertEquals(DB_VAL_ONE, config.getAnyRef("${ConfigKeys.DB_CONFIG}.$DB_KEY_ONE"))
         assertEquals(CUSTOM_VAL_ONE, config.getAnyRef("$CUSTOM_CONFIG_PATH.$CUSTOM_KEY_ONE"))
@@ -60,7 +62,7 @@ class ConfigTests {
         val config = processor.config!!
 
         // Instance ID and topic prefix are always present, with default values if none are provided.
-        val expectedKeys = setOf(KEY_INSTANCE_ID, KEY_TOPIC_PREFIX)
+        val expectedKeys = setOf(INSTANCE_ID, TOPIC_PREFIX)
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
         assertEquals(expectedKeys, actualKeys)
     }
@@ -73,12 +75,12 @@ class ConfigTests {
         dbWorker.startup(args)
         val config = processor.config!!
 
-        val expectedKeys = setOf(KEY_INSTANCE_ID, KEY_TOPIC_PREFIX)
+        val expectedKeys = setOf(INSTANCE_ID, TOPIC_PREFIX)
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
         assertEquals(expectedKeys, actualKeys)
 
         // The default for instance ID is randomly generated, so its value can't be tested for.
-        assertEquals(DEFAULT_TOPIC_PREFIX, config.getAnyRef(KEY_TOPIC_PREFIX))
+        assertEquals(DEFAULT_TOPIC_PREFIX, config.getAnyRef(TOPIC_PREFIX))
     }
 
     @Test

@@ -7,6 +7,7 @@ import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.data.config.Configuration
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.processor.DurableProcessor
@@ -76,7 +77,7 @@ class IntegrationCryptoOpsTests {
       """
 
         private const val BOOT_CONFIGURATION = """
-        instanceId=1
+        instance.id=1
     """
     }
 
@@ -128,6 +129,7 @@ class IntegrationCryptoOpsTests {
                 processor = this,
                 messagingConfig = SmartConfigFactory.create(
                     ConfigFactory.empty()).create(ConfigFactory.parseString(MESSAGING_CONFIGURATION_VALUE)
+                    .withFallback(ConfigFactory.parseString(BOOT_CONFIGURATION))
                 ),
                 partitionAssignmentListener = null
             ).also { it.start() }
@@ -175,7 +177,7 @@ class IntegrationCryptoOpsTests {
         ).also { it.startAndWait() }
 
         logger.info("Publishing configs for $CRYPTO_CONFIG and $MESSAGING_CONFIG")
-        publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID))
+        publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), SmartConfigImpl.empty())
         with(publisher) {
             publish(
                 listOf(

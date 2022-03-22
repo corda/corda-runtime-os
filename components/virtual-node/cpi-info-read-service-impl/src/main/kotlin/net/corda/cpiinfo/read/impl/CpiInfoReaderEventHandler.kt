@@ -56,7 +56,7 @@ class CpiInfoReaderEventHandler(
         cpiInfoProcessor.clear()
         subscription?.close()
         subscription = subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig(GROUP_NAME, CPI_INFO_TOPIC, instanceId),
+            SubscriptionConfig(GROUP_NAME, CPI_INFO_TOPIC),
             cpiInfoProcessor,
             config
         )

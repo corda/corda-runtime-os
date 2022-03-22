@@ -41,8 +41,8 @@ import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutFro
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromAck
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromAuthenticatedMessageAndKey
 import net.corda.p2p.linkmanager.sessions.SessionManager
-import net.corda.p2p.linkmanager.sessions.SessionManager.SessionDirection
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionCounterparties
+import net.corda.p2p.linkmanager.sessions.SessionManager.SessionDirection
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.markers.AppMessageMarker
@@ -74,22 +74,20 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                   @Reference(service = ConfigurationReadService::class)
                   val configurationReaderService: ConfigurationReadService,
                   configuration: SmartConfig,
-                  instanceId: Int,
                   groups : LinkManagerGroupPolicyProvider = StubGroupPolicyProvider(
-                      lifecycleCoordinatorFactory, subscriptionFactory, instanceId, configuration
+                      lifecycleCoordinatorFactory, subscriptionFactory, configuration
                   ),
                   members : LinkManagerMembershipGroupReader = StubMembershipGroupReader(
-                      lifecycleCoordinatorFactory, subscriptionFactory, instanceId, configuration
+                      lifecycleCoordinatorFactory, subscriptionFactory, configuration
                   ),
                   linkManagerHostingMap: LinkManagerHostingMap =
                       StubLinkManagerHostingMap(
                           lifecycleCoordinatorFactory,
                           subscriptionFactory,
-                          instanceId,
                           configuration,
                       ),
                   linkManagerCryptoProcessor: CryptoProcessor
-                      = StubCryptoProcessor(lifecycleCoordinatorFactory, subscriptionFactory, instanceId, configuration)
+                      = StubCryptoProcessor(lifecycleCoordinatorFactory, subscriptionFactory, configuration)
 ) : LifecycleWithDominoTile {
 
     companion object {
@@ -135,7 +133,6 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         publisherFactory,
         lifecycleCoordinatorFactory,
         configuration,
-        instanceId,
     ).also {
         groups.registerListener(it)
     }
@@ -145,7 +142,6 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         publisherFactory,
         lifecycleCoordinatorFactory,
         configuration,
-        instanceId,
     ).also {
         linkManagerHostingMap.registerListener(it)
     }
@@ -160,11 +156,10 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         members,
         linkManagerCryptoProcessor,
         sessionManager,
-        instanceId
     ) { outboundMessageProcessor.processAuthenticatedMessage(it, true) }
 
     private val inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
-        SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, LINK_IN_TOPIC, instanceId),
+        SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, LINK_IN_TOPIC),
         InboundMessageProcessor(
             sessionManager,
             groups,
@@ -176,7 +171,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     )
 
     private val outboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
-        SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, P2P_OUT_TOPIC, instanceId),
+        SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, P2P_OUT_TOPIC),
         outboundMessageProcessor,
         configuration,
         partitionAssignmentListener = null

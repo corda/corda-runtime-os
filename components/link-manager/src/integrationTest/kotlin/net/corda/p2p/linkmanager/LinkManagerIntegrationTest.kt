@@ -26,6 +26,7 @@ import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
 import net.corda.schema.Schemas
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions.assertThat
@@ -49,7 +50,8 @@ class LinkManagerIntegrationTest {
             .withValue(SESSION_TIMEOUT_KEY, ConfigValueFactory.fromAnyRef(10000))
     }
 
-    private val bootstrapConfig = SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
+    private val bootstrapConfig = SmartConfigFactory.create(ConfigFactory.empty())
+        .create(ConfigFactory.empty().withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1)))
 
     private val topicService = TopicServiceImpl()
     private val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
@@ -58,7 +60,7 @@ class LinkManagerIntegrationTest {
     private val configReadService = ConfigurationReadServiceImpl(lifecycleCoordinatorFactory, subscriptionFactory)
     private val configPublisher = ConfigPublisherImpl(
         Schemas.Config.CONFIG_TOPIC,
-        publisherFactory.createPublisher(PublisherConfig("config-writer"))
+        publisherFactory.createPublisher(PublisherConfig("config-writer"), bootstrapConfig)
     )
 
     @Test
@@ -75,7 +77,6 @@ class LinkManagerIntegrationTest {
             lifecycleCoordinatorFactory,
             configReadService,
             bootstrapConfig,
-            1,
         )
 
         linkManager.use {
@@ -132,7 +133,6 @@ class LinkManagerIntegrationTest {
             lifecycleCoordinatorFactory,
             configReadService,
             bootstrapConfig,
-            1,
         )
 
         assertDoesNotThrow {

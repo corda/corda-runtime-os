@@ -97,7 +97,7 @@ class RPCProcessorImpl @Activate constructor(
             is BootConfigEvent -> {
                 configReadService.bootstrapConfig(event.config)
 
-                val publisherConfig = PublisherConfig(CLIENT_ID_RPC_PROCESSOR, 1)
+                val publisherConfig = PublisherConfig(CLIENT_ID_RPC_PROCESSOR)
                 val publisher = publisherFactory.createPublisher(publisherConfig, event.config)
                 publisher.start()
                 publisher.use {

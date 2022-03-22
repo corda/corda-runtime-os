@@ -54,7 +54,6 @@ class StubLinkManagerHostingMapTest {
     private val testObject = StubLinkManagerHostingMap(
         lifecycleCoordinatorFactory,
         subscriptionFactory,
-        100,
         configuration
     )
 

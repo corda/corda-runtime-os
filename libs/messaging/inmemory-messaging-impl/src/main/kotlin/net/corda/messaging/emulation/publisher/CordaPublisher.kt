@@ -1,7 +1,7 @@
 package net.corda.messaging.emulation.publisher
 
 import com.typesafe.config.Config
-import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record

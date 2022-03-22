@@ -31,6 +31,7 @@ import net.corda.messaging.subscription.PubSubSubscriptionImpl
 import net.corda.messaging.subscription.RPCSubscriptionImpl
 import net.corda.messaging.subscription.StateAndEventSubscriptionImpl
 import net.corda.messaging.subscription.consumer.builder.StateAndEventBuilder
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -82,7 +83,7 @@ internal class CordaSubscriptionFactory @Activate constructor(
         messagingConfig: SmartConfig,
         partitionAssignmentListener: PartitionAssignmentListener?
     ): Subscription<K, V> {
-        if (subscriptionConfig.instanceId == null) {
+        if (!messagingConfig.hasPath(INSTANCE_ID)) {
             throw CordaMessageAPIFatalException(
                 "Cannot create durable subscription producer for $subscriptionConfig. No instanceId configured"
             )
@@ -144,7 +145,7 @@ internal class CordaSubscriptionFactory @Activate constructor(
         messagingConfig: SmartConfig,
         partitionAssignmentListener: PartitionAssignmentListener?
     ): Subscription<K, V> {
-        if (subscriptionConfig.instanceId == null) {
+        if (!messagingConfig.hasPath(INSTANCE_ID)) {
             throw CordaMessageAPIFatalException(
                 "Cannot create durable subscription producer for $subscriptionConfig. No instanceId configured"
             )

@@ -25,6 +25,7 @@ import net.corda.messaging.emulation.subscription.pubsub.PubSubSubscription
 import net.corda.messaging.emulation.subscription.rpc.RPCSubscriptionImpl
 import net.corda.messaging.emulation.subscription.stateandevent.InMemoryStateAndEventSubscription
 import net.corda.messaging.emulation.topic.service.TopicService
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -74,7 +75,8 @@ class InMemSubscriptionFactory @Activate constructor(
             processor,
             partitionAssignmentListener,
             topicService,
-            lifecycleCoordinatorFactory
+            lifecycleCoordinatorFactory,
+            messagingConfig.getInt(INSTANCE_ID)
         )
     }
 
@@ -103,7 +105,8 @@ class InMemSubscriptionFactory @Activate constructor(
             processor,
             stateAndEventListener,
             topicService,
-            lifecycleCoordinatorFactory
+            lifecycleCoordinatorFactory,
+            messagingConfig.getInt(INSTANCE_ID)
         )
     }
 
@@ -118,7 +121,8 @@ class InMemSubscriptionFactory @Activate constructor(
             processor,
             partitionAssignmentListener,
             topicService,
-            lifecycleCoordinatorFactory
+            lifecycleCoordinatorFactory,
+            messagingConfig.getInt(INSTANCE_ID)
         )
     }
 

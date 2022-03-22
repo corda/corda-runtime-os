@@ -13,6 +13,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.NON_TRANSACTIONAL_PUBLISHER_CONFIG
 import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.TEST_CONFIG
 import net.corda.messaging.kafka.integration.TopicTemplates
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.DURABLE_TOPIC1
@@ -71,14 +72,14 @@ class DurableSubscriptionIntegrationTest {
         topicAdmin.createTopics(kafkaProperties, TopicTemplates.DURABLE_TOPIC1_TEMPLATE)
 
         publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC1)
-        publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
+        publisher = publisherFactory.createPublisher(publisherConfig, NON_TRANSACTIONAL_PUBLISHER_CONFIG)
         val futures = publisher.publish(getDemoRecords(DURABLE_TOPIC1, 5, 3))
         assertThat(futures.size).isEqualTo(15)
         publisher.close()
 
         val latch = CountDownLatch(15)
         val durableSub1 = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$DURABLE_TOPIC1-group", DURABLE_TOPIC1, 1),
+            SubscriptionConfig("$DURABLE_TOPIC1-group", DURABLE_TOPIC1),
             TestDurableProcessor(latch),
             TEST_CONFIG,
             null
@@ -95,7 +96,7 @@ class DurableSubscriptionIntegrationTest {
             )
         //long delay to not allow sub to to try rejoin group after rebalance
         val durableSub2 = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$DURABLE_TOPIC1-group", DURABLE_TOPIC1, 2),
+            SubscriptionConfig("$DURABLE_TOPIC1-group", DURABLE_TOPIC1),
             TestDurableProcessor(latch, "", 70000),
             triggerRebalanceQuicklyConfig,
             null
@@ -114,7 +115,7 @@ class DurableSubscriptionIntegrationTest {
         topicAdmin.createTopics(kafkaProperties, TopicTemplates.DURABLE_TOPIC2_TEMPLATE)
 
         publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC2)
-        publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
+        publisher = publisherFactory.createPublisher(publisherConfig, NON_TRANSACTIONAL_PUBLISHER_CONFIG)
         val futures = publisher.publish(getDemoRecords(DURABLE_TOPIC2, 5, 2))
         assertThat(futures.size).isEqualTo(10)
         futures.forEach { it.get(10, TimeUnit.SECONDS) }
@@ -137,7 +138,7 @@ class DurableSubscriptionIntegrationTest {
 
         val latch = CountDownLatch(10)
         val durableSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$DURABLE_TOPIC2-group", DURABLE_TOPIC2, 1),
+            SubscriptionConfig("$DURABLE_TOPIC2-group", DURABLE_TOPIC2),
             TestDurableProcessor(latch),
             TEST_CONFIG,
             null
@@ -163,7 +164,7 @@ class DurableSubscriptionIntegrationTest {
         topicAdmin.createTopics(kafkaProperties, TopicTemplates.DURABLE_TOPIC3_TEMPLATE)
 
         publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC3)
-        publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
+        publisher = publisherFactory.createPublisher(publisherConfig, NON_TRANSACTIONAL_PUBLISHER_CONFIG)
         val futures = publisher.publish(getStringRecords(DURABLE_TOPIC3, 5, 2))
         assertThat(futures.size).isEqualTo(10)
         futures.forEach { it.get(10, TimeUnit.SECONDS) }
@@ -175,13 +176,13 @@ class DurableSubscriptionIntegrationTest {
         val latch = CountDownLatch(10)
         val dlqLatch = CountDownLatch(10)
         val durableSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$DURABLE_TOPIC3-group", DURABLE_TOPIC3, 1),
+            SubscriptionConfig("$DURABLE_TOPIC3-group", DURABLE_TOPIC3),
             TestDurableProcessor(latch),
             TEST_CONFIG,
             null
         )
         val dlqDurableSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$DURABLE_TOPIC3-group-dlq", DURABLE_TOPIC3_DLQ, 2),
+            SubscriptionConfig("$DURABLE_TOPIC3-group-dlq", DURABLE_TOPIC3_DLQ),
             TestDurableStringProcessor(dlqLatch),
             TEST_CONFIG,
             null
@@ -199,7 +200,7 @@ class DurableSubscriptionIntegrationTest {
     @Test
     @Timeout(value = 60, unit = TimeUnit.SECONDS)
     fun `transactional publish records, start two durable subscription, stop subs, publish again and start subs`() {
-        publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC4, 1)
+        publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC4)
         publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
         val futures = publisher.publish(getDemoRecords(DURABLE_TOPIC4, 5, 2))
         assertThat(futures.size).isEqualTo(1)
@@ -207,7 +208,7 @@ class DurableSubscriptionIntegrationTest {
 
         val latch = CountDownLatch(30)
         val durableSub1 = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$DURABLE_TOPIC4-group", DURABLE_TOPIC4, 1),
+            SubscriptionConfig("$DURABLE_TOPIC4-group", DURABLE_TOPIC4),
             TestDurableProcessor(latch),
             TEST_CONFIG,
             null
@@ -218,7 +219,7 @@ class DurableSubscriptionIntegrationTest {
             ConfigValueFactory.fromAnyRef(2)
         )
         val durableSub2 = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$DURABLE_TOPIC4-group", DURABLE_TOPIC4, 2),
+            SubscriptionConfig("$DURABLE_TOPIC4-group", DURABLE_TOPIC4),
             TestDurableProcessor(latch),
             secondSubConfig,
             null

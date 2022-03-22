@@ -1,5 +1,6 @@
 package net.corda.libs.cpiupload.impl
 
+import com.typesafe.config.ConfigValueFactory
 import net.corda.chunking.RequestId
 import net.corda.data.chunking.UploadStatus
 import net.corda.libs.configuration.SmartConfig
@@ -12,6 +13,7 @@ import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import org.osgi.service.component.annotations.Component
 
 @Suppress("UNUSED")
@@ -25,8 +27,7 @@ class CpiUploadManagerFactoryImpl : CpiUploadManagerFactory {
     private val ackProcessor = UploadStatusProcessor()
 
     private fun createChunkPublisher(config: SmartConfig, publisherFactory: PublisherFactory): Publisher {
-        val instanceId = null // explicitly state this is null - do we ever need to read this from config?
-        val publisherConfig = PublisherConfig(CPI_UPLOAD_CLIENT_NAME, instanceId)
+        val publisherConfig = PublisherConfig(CPI_UPLOAD_CLIENT_NAME)
         return publisherFactory.createPublisher(publisherConfig, config)
     }
 
@@ -40,11 +41,11 @@ class CpiUploadManagerFactoryImpl : CpiUploadManagerFactory {
         subscriptionFactory: SubscriptionFactory,
         statusTopic: String
     ): CompactedSubscription<RequestId, UploadStatus> {
-        val instanceId = null // explicit rather than the 'hidden' default parameter fn call
         return subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig(CPI_UPLOAD_GROUP, statusTopic, instanceId),
+            SubscriptionConfig(CPI_UPLOAD_GROUP, statusTopic),
             ackProcessor,
-            config
+            // explicit rather than the 'hidden' default parameter fn call
+            config.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(null))
         )
     }
 

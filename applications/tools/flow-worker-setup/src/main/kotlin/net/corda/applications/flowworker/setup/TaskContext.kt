@@ -1,5 +1,6 @@
 package net.corda.applications.flowworker.setup
 
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -20,7 +21,7 @@ class TaskContext(
 
     init {
         kafkaAdminClient = AdminClient.create(getKafkaProperties())
-        publisher = publisherFactory.createPublisher(PublisherConfig("Flow Worker Setup"))
+        publisher = publisherFactory.createPublisher(PublisherConfig("Flow Worker Setup"), SmartConfigImpl.empty())
     }
 
     fun createTopics(topics: List<NewTopic>) {

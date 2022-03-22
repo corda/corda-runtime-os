@@ -68,7 +68,7 @@ class VirtualNodeInfoReaderEventHandler(
         virtualNodeInfoProcessor.clear()
         subscription?.close()
         subscription = subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig(GROUP_NAME, VIRTUAL_NODE_INFO_TOPIC, instanceId),
+            SubscriptionConfig(GROUP_NAME, VIRTUAL_NODE_INFO_TOPIC),
             virtualNodeInfoProcessor,
             config
         )

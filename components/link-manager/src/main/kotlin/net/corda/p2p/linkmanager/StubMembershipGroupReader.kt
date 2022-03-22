@@ -24,11 +24,10 @@ import java.util.concurrent.ConcurrentHashMap
 internal class StubMembershipGroupReader(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     subscriptionFactory: SubscriptionFactory,
-    instanceId: Int,
     configuration: SmartConfig,
 ) : LinkManagerMembershipGroupReader {
 
-    private val subscriptionConfig = SubscriptionConfig("member-info-reader", MEMBER_INFO_TOPIC, instanceId)
+    private val subscriptionConfig = SubscriptionConfig("member-info-reader", MEMBER_INFO_TOPIC)
     private val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, BouncyCastleProvider())
 
     private val subscription = subscriptionFactory.createCompactedSubscription(

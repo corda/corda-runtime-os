@@ -49,8 +49,7 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
             "${config.group}-RPCSubscription-${config.topic}",
-            //we use instanceId here as transactionality is a concern in this subscription
-            config.instanceId.toString()
+            config.clientId
         )
     ) { _, _ -> }
 

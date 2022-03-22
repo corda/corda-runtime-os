@@ -39,7 +39,6 @@ class StubMembershipGroupReaderTest {
     private val subscriptionFactory = mock<SubscriptionFactory> {
         on { createCompactedSubscription(any(), processor.capture(), eq(configuration)) } doReturn mock()
     }
-    private val instanceId = 321
     private lateinit var ready: CompletableFuture<Unit>
     private val dominoTile = mockConstruction(ComplexDominoTile::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
@@ -100,7 +99,7 @@ class StubMembershipGroupReaderTest {
     }
 
     private val members = StubMembershipGroupReader(
-        lifecycleCoordinatorFactory, subscriptionFactory, instanceId, configuration
+        lifecycleCoordinatorFactory, subscriptionFactory, configuration
     )
 
     @AfterEach

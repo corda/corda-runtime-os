@@ -37,10 +37,10 @@ import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.linkmanager.LinkManager
+import net.corda.p2p.test.GroupPolicyEntry
 import net.corda.p2p.test.HostedIdentityEntry
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
-import net.corda.p2p.test.GroupPolicyEntry
 import net.corda.p2p.test.MemberInfoEntry
 import net.corda.p2p.test.TenantKeys
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
@@ -48,8 +48,9 @@ import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.TestSchema.Companion.CRYPTO_KEYS_TOPIC
 import net.corda.schema.TestSchema.Companion.GROUP_POLICIES_TOPIC
-import net.corda.schema.TestSchema.Companion.MEMBER_INFO_TOPIC
 import net.corda.schema.TestSchema.Companion.HOSTED_MAP_TOPIC
+import net.corda.schema.TestSchema.Companion.MEMBER_INFO_TOPIC
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
@@ -62,7 +63,7 @@ import java.io.StringWriter
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.KeyStore
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
 class P2PLayerEndToEndTest {
@@ -73,7 +74,9 @@ class P2PLayerEndToEndTest {
         private val logger = contextLogger()
         private const val GROUP_ID = "group-1"
     }
-    private val bootstrapConfig = SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
+
+    private val messagingConfig = SmartConfigFactory.create(ConfigFactory.empty())
+        .create(ConfigFactory.empty().withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1)))
 
     private fun testMessagesBetweenTwoHots(hostA: Host, hostB: Host) {
         hostA.startWith(hostB)
@@ -81,19 +84,19 @@ class P2PLayerEndToEndTest {
 
         val hostAReceivedMessages = ConcurrentHashMap.newKeySet<String>()
         val hostAApplicationReader = hostA.subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("app-layer", P2P_IN_TOPIC, 1), InitiatorProcessor(hostAReceivedMessages),
-            bootstrapConfig,
+            SubscriptionConfig("app-layer", P2P_IN_TOPIC), InitiatorProcessor(hostAReceivedMessages),
+            messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1)),
             null
         )
         val hostBApplicationReaderWriter = hostB.subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("app-layer", P2P_IN_TOPIC, 1), ResponderProcessor(),
-            bootstrapConfig,
+            SubscriptionConfig("app-layer", P2P_IN_TOPIC), ResponderProcessor(),
+            messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(2)),
             null
         )
         hostAApplicationReader.start()
         hostBApplicationReaderWriter.start()
 
-        val hostAApplicationWriter = hostA.publisherFactory.createPublisher(PublisherConfig("app-layer", 1), bootstrapConfig)
+        val hostAApplicationWriter = hostA.publisherFactory.createPublisher(PublisherConfig("app-layer"), messagingConfig)
         val initialMessages = (1..10).map { index ->
             val randomId = UUID.randomUUID().toString()
             val messageHeader = AuthenticatedMessageHeader(
@@ -132,7 +135,7 @@ class P2PLayerEndToEndTest {
             "O=Alice, L=London, C=GB",
             "sslkeystore_alice",
             "truststore",
-            bootstrapConfig,
+            messagingConfig,
             true,
             KeyAlgorithm.RSA,
         ).use { hostA ->
@@ -142,7 +145,7 @@ class P2PLayerEndToEndTest {
                 "O=Chip, L=London, C=GB",
                 "sslkeystore_chip",
                 "truststore",
-                bootstrapConfig,
+                messagingConfig,
                 true,
                 KeyAlgorithm.RSA,
             ).use { hostB ->
@@ -160,7 +163,7 @@ class P2PLayerEndToEndTest {
             "O=Alice, L=London, C=GB",
             "receiver",
             "ec_truststore",
-            bootstrapConfig,
+            messagingConfig,
             false,
             KeyAlgorithm.ECDSA,
         ).use { hostA ->
@@ -170,7 +173,7 @@ class P2PLayerEndToEndTest {
                 "O=Bob, L=London, C=GB",
                 "sender",
                 "ec_truststore",
-                bootstrapConfig,
+                messagingConfig,
                 false,
                 KeyAlgorithm.ECDSA,
             ).use { hostB ->
@@ -179,7 +182,8 @@ class P2PLayerEndToEndTest {
         }
     }
 
-    private class InitiatorProcessor(val receivedMessages: ConcurrentHashMap.KeySetView<String, Boolean>) : DurableProcessor<String, AppMessage> {
+    private class InitiatorProcessor(val receivedMessages: ConcurrentHashMap.KeySetView<String, Boolean>) :
+        DurableProcessor<String, AppMessage> {
 
         override val keyClass: Class<String>
             get() = String::class.java
@@ -223,7 +227,7 @@ class P2PLayerEndToEndTest {
         val x500Name: String,
         private val keyStoreFileName: String,
         trustStoreFileName: String,
-        private val bootstrapConfig: SmartConfig,
+        private val messagingConfig: SmartConfig,
         checkRevocation: Boolean,
         private val identitiesKeyAlgorithm: KeyAlgorithm,
     ) : AutoCloseable {
@@ -238,7 +242,7 @@ class P2PLayerEndToEndTest {
         val configReadService = ConfigurationReadServiceImpl(lifecycleCoordinatorFactory, subscriptionFactory)
         val configPublisher = ConfigPublisherImpl(
             CONFIG_TOPIC,
-            publisherFactory.createPublisher(PublisherConfig("config-writer"))
+            publisherFactory.createPublisher(PublisherConfig("config-writer"), messagingConfig)
         )
         val gatewayConfig = createGatewayConfig(p2pPort, p2pAddress, sslConfig)
         val tlsTenantId by lazy {
@@ -274,8 +278,7 @@ class P2PLayerEndToEndTest {
                 publisherFactory,
                 lifecycleCoordinatorFactory,
                 configReadService,
-                bootstrapConfig,
-                1,
+                messagingConfig,
             )
 
         val gateway =
@@ -284,8 +287,7 @@ class P2PLayerEndToEndTest {
                 subscriptionFactory,
                 publisherFactory,
                 lifecycleCoordinatorFactory,
-                bootstrapConfig,
-                1,
+                messagingConfig,
             )
 
         private fun publishGatewayConfig() {
@@ -353,7 +355,7 @@ class P2PLayerEndToEndTest {
             )
 
         private fun publishNetworkMapAndIdentityKeys(otherHost: Host) {
-            val publisherForHost = publisherFactory.createPublisher(PublisherConfig("test-runner-publisher", 1), bootstrapConfig)
+            val publisherForHost = publisherFactory.createPublisher(PublisherConfig("test-runner-publisher"), messagingConfig)
             val networkMapEntries = mapOf(
                 "$x500Name-$GROUP_ID" to memberInfoEntry,
                 "${otherHost.x500Name}-$GROUP_ID" to otherHost.memberInfoEntry,
@@ -422,11 +424,8 @@ class P2PLayerEndToEndTest {
                 )
             }
             publisherFactory.createPublisher(
-                PublisherConfig(
-                    "test-runner-publisher",
-                    1
-                ),
-                bootstrapConfig
+                PublisherConfig("test-runner-publisher"),
+                messagingConfig
             ).use { publisher ->
                 publisher.start()
                 publisher.publish(records).forEach { it.get() }
@@ -435,7 +434,7 @@ class P2PLayerEndToEndTest {
 
         fun startWith(otherHost: Host) {
             configReadService.start()
-            configReadService.bootstrapConfig(bootstrapConfig)
+            configReadService.bootstrapConfig(messagingConfig)
             publishTlsKeys()
 
             linkManager.start()
@@ -456,6 +455,7 @@ class P2PLayerEndToEndTest {
         }
     }
 }
+
 val KeyAlgorithm.generatorName
     get() = when (this) {
         KeyAlgorithm.ECDSA -> "EC"
