@@ -181,7 +181,7 @@ class RPCSubscriptionIntegrationTest {
             RPCResponse::class.java
         )
         val rpcSender = publisherFactory.createRPCSender(rpcConfig, kafkaConfig)
-        val timestamp = Instant.now()
+        val timestamp = Instant.ofEpochMilli(0L)
         val rpcSub = subscriptionFactory.createRPCSubscription(
             rpcConfig, kafkaConfig, TestRPCAvroResponderProcessor(timestamp)
         )
@@ -202,7 +202,7 @@ class RPCSubscriptionIntegrationTest {
                 val future = rpcSender.sendRequest(
                     RPCRequest(
                         "test",
-                        Instant.now(),
+                        Instant.ofEpochMilli(0L),
                         "test",
                         0,
                         ByteBuffer.wrap("test".encodeToByteArray())
