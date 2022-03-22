@@ -162,6 +162,7 @@ class HttpClient(
                 connectionConfiguration.acquireTimeout.toMillis().toInt()
             )
             .channel(NioSocketChannel::class.java)
+            .resolver(RoundRobinNameResolver())
             .handler(ClientChannelInitializer())
         val clientFuture = bootstrap.connect(destinationInfo.uri.host, destinationInfo.uri.port)
         clientFuture.addListener(connectListener)
