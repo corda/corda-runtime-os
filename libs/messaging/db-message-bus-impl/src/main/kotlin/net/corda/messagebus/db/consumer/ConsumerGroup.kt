@@ -67,8 +67,7 @@ class ConsumerGroup(
     }
 
     private fun repartition(topic: String) {
-        val consumersToRepartition = topicToConsumersMap[topic]
-            ?: throw CordaMessageAPIFatalException("Internal error.  Topic for consumers should exist.")
+        val consumersToRepartition = getConsumersFor(topic)
         val topicPartitionsToUpdate = topicPartitions[topic]
             ?: throw CordaMessageAPIFatalException("Topic $topic) not available. Has it been added correctly?")
 
@@ -77,7 +76,6 @@ class ConsumerGroup(
         }
 
         consumersToRepartition.forEach { getInternalPartitionListFor(it).clear() }
-
 
         var consumerIterator = consumersToRepartition.iterator()
         topicPartitionsToUpdate.forEach { topicPartition ->

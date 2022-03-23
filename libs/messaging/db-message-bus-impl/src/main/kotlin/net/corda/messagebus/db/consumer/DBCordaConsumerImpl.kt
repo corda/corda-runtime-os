@@ -5,6 +5,7 @@ import net.corda.data.CordaAvroDeserializer
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.configuration.ConfigProperties
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CLIENT_ID
+import net.corda.messagebus.api.configuration.getStringOrNull
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
@@ -12,7 +13,7 @@ import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
 import net.corda.messagebus.db.datamodel.CommittedPositionEntry
 import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messagebus.db.persistence.DBAccess
-import net.corda.messagebus.db.producer.CordaAtomicDBProducerImpl.Companion.ATOMIC_TRANSACTION
+import net.corda.messagebus.db.persistence.DBAccess.Companion.ATOMIC_TRANSACTION
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import org.slf4j.Logger
@@ -43,7 +44,8 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
     internal val clientId = consumerConfig.getString(CLIENT_ID)
 
     private val log: Logger = LoggerFactory.getLogger(clientId)
-    private val groupId = consumerConfig.getString(ConfigProperties.GROUP_ID)
+    private val groupId = consumerConfig.getStringOrNull(ConfigProperties.GROUP_ID)
+        ?: throw CordaMessageAPIFatalException("Group Id must be specified for consumers")
     private val maxPollRecords: Int = consumerConfig.getInt(MAX_POLL_RECORDS)
     private val maxPollInterval: Long = consumerConfig.getLong(MAX_POLL_INTERVAL)
     private val autoResetStrategy =

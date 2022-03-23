@@ -1,6 +1,6 @@
 package net.corda.libs.messaging.topic.factory
 
-import net.corda.libs.kafka.topic.utils.factory.TopicUtilsFactory
+import net.corda.libs.messaging.topic.utils.factory.TopicUtilsFactory
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

@@ -29,6 +29,7 @@ class DBAccess(
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
+        val ATOMIC_TRANSACTION = TransactionRecordEntry("Atomic Transaction", TransactionState.COMMITTED)
     }
 
     fun getMaxCommittedPositions(
@@ -180,10 +181,10 @@ class DBAccess(
      * Special case for writing Atomic Txn Record. We check first if it's in the database as this isn't
      * an error for this one txn record
      */
-    fun writeAtomicTransactionRecord(entry: TransactionRecordEntry) {
-        executeWithErrorHandling("write transaction record $entry") { entityManager ->
-            if (entityManager.find(TransactionRecordEntry::class.java, entry.transactionId) == null) {
-                entityManager.persist(entry)
+    fun writeAtomicTransactionRecord() {
+        executeWithErrorHandling("write atomic transaction record") { entityManager ->
+            if (entityManager.find(TransactionRecordEntry::class.java, ATOMIC_TRANSACTION.transactionId) == null) {
+                entityManager.persist(ATOMIC_TRANSACTION)
             }
         }
     }

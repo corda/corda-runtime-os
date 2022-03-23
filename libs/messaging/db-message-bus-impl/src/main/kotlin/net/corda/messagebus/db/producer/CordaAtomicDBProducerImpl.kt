@@ -7,9 +7,8 @@ import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
-import net.corda.messagebus.db.datamodel.TransactionRecordEntry
-import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messagebus.db.persistence.DBAccess
+import net.corda.messagebus.db.persistence.DBAccess.Companion.ATOMIC_TRANSACTION
 import net.corda.messagebus.db.util.WriteOffsets
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.v5.base.util.contextLogger
@@ -26,14 +25,12 @@ class CordaAtomicDBProducerImpl(
 
     companion object {
         val log = contextLogger()
-
-        val ATOMIC_TRANSACTION = TransactionRecordEntry("Atomic Transaction", TransactionState.COMMITTED)
     }
 
     private fun initialiseWithAtomicTransaction() {
         try {
             // Write the transaction record for all atomic transactions
-            dbAccess.writeAtomicTransactionRecord(ATOMIC_TRANSACTION)
+            dbAccess.writeAtomicTransactionRecord()
         } catch (e: RollbackException) {
             log.debug { "ATOMIC_TRANSACTION already recorded in DB." }
             // It's already been written so do nothing
@@ -45,7 +42,6 @@ class CordaAtomicDBProducerImpl(
     }
 
     private val defaultTimeout: Duration = Duration.ofSeconds(1)
-    private val topicPartitionMap = dbAccess.getTopicPartitionMap()
     private val writeOffsets = WriteOffsets(dbAccess.getMaxOffsetsPerTopicPartition())
 
     override fun send(record: CordaProducerRecord<*, *>, callback: CordaProducer.Callback?) {
