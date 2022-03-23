@@ -215,6 +215,7 @@ private fun Resource.getPathToPathItems(schemaModelProvider: SchemaModelProvider
     return this.endpoints.groupBy { joinResourceAndEndpointPaths(path, it.path).toOpenApiPath() }.map {
         val getEndpoint = it.value.singleOrNull { endpoint -> EndpointMethod.GET == endpoint.method }
         val postEndpoint = it.value.singleOrNull { endpoint -> EndpointMethod.POST == endpoint.method }
+        val putEndpoint = it.value.singleOrNull { endpoint -> EndpointMethod.PUT == endpoint.method }
         val fullPath = it.key
 
         fullPath to PathItem().also { pathItem ->
@@ -224,6 +225,9 @@ private fun Resource.getPathToPathItems(schemaModelProvider: SchemaModelProvider
             }
             postEndpoint?.let {
                 pathItem.post(postEndpoint.toOperation(fullPath, schemaModelProvider).tags(tagName))
+            }
+            putEndpoint?.let {
+                pathItem.put(putEndpoint.toOperation(fullPath, schemaModelProvider).tags(tagName))
             }
         }
     }.toMap()
