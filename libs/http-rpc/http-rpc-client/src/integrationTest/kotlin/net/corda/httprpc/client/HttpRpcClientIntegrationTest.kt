@@ -58,7 +58,11 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
                     NumberSequencesRPCOpsImpl(),
                     CalendarRPCOpsImpl(),
                     TestEntityRpcOpsImpl()
-                ), securityManager, httpRpcSettings, true
+                ),
+                securityManager,
+                httpRpcSettings,
+                multipartDir,
+                true
             ).apply { start() }
         }
 

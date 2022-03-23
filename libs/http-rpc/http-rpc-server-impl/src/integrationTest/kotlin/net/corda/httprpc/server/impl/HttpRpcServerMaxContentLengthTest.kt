@@ -3,15 +3,17 @@ package net.corda.httprpc.server.impl
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.impl.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.server.impl.utils.WebRequest
+import net.corda.httprpc.server.impl.utils.multipartDir
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.apache.http.HttpStatus
 import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Test
+import java.nio.file.Path
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Test
 
 class HttpRpcServerMaxContentLengthTest : HttpRpcServerTestBase() {
     companion object {
@@ -20,7 +22,13 @@ class HttpRpcServerMaxContentLengthTest : HttpRpcServerTestBase() {
         @JvmStatic
         fun setUpBeforeClass() {
             val httpRpcSettings = HttpRpcSettings(NetworkHostAndPort("localhost",  findFreePort()), context, null, null, MAX_CONTENT_LENGTH)
-            server = HttpRpcServerImpl(listOf(TestHealthCheckAPIImpl()), securityManager, httpRpcSettings, true).apply { start() }
+            server = HttpRpcServerImpl(
+                listOf(TestHealthCheckAPIImpl()),
+                securityManager,
+                httpRpcSettings,
+                multipartDir,
+                true
+            ).apply { start() }
             client = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
         }
 

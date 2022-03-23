@@ -3,23 +3,24 @@ package net.corda.httprpc.server.impl
 import io.swagger.v3.core.util.Json
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.media.ArraySchema
-import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.impl.internal.OptionalDependency
 import net.corda.httprpc.server.impl.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.server.impl.utils.WebRequest
 import net.corda.httprpc.server.impl.utils.compact
+import net.corda.httprpc.server.impl.utils.multipartDir
 import net.corda.httprpc.test.CalendarRPCOpsImpl
 import net.corda.httprpc.test.TestEntityRpcOpsImpl
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.tools.HttpVerb.GET
-
+import net.corda.v5.base.util.NetworkHostAndPort
 import org.apache.http.HttpStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
+import java.nio.file.Path
 import java.time.ZonedDateTime
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -36,6 +37,7 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
                 listOf(CalendarRPCOpsImpl(), TestHealthCheckAPIImpl(), TestEntityRpcOpsImpl()),
                 securityManager,
                 httpRpcSettings,
+                multipartDir,
                 true
             ).apply { start() }
             client = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
