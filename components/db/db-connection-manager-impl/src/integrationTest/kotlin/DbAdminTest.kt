@@ -7,6 +7,7 @@ import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
+import net.corda.db.testkit.DbUtils.getPostgresDatabase
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigFactory.Companion.SECRET_PASSPHRASE_KEY
 import net.corda.libs.configuration.SmartConfigFactory.Companion.SECRET_SALT_KEY
@@ -157,12 +158,34 @@ class DbAdminTest {
 
     @Test
     fun `DML user can use table created by DDL user`() {
-
         Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
 
+        testDmlUserCanUseTableCreatedByDdlUser()
+    }
+
+    @Test
+    fun `when DB admin is not superuser, DML user can use table created by DDL user`() {
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
+
+        // Create admin user that is not superuser
+        val random = Random.nextLong(Long.MAX_VALUE)
+        val adminUser = "test_admin_$random"
+        val adminPassword = "test_admin_password_$random"
+        createAdminUser(getPostgresDatabase(), adminUser, adminPassword)
+
+        testDmlUserCanUseTableCreatedByDdlUser(adminUser, adminPassword)
+    }
+
+    /**
+     * Creates DDL and DML users using the admin user. Tests that DML user can use table created by DDL user.
+     * @param adminUser Admin user. If null, default value set in [DbUtils] will be used.
+     * @param adminPassword Admin password. If null, default value set in [DbUtils] will be used.
+     */
+    private fun testDmlUserCanUseTableCreatedByDdlUser(adminUser: String? = null, adminPassword: String? = null) {
+        // Create DbAdmin
         val entitiesRegistry = JpaEntitiesRegistryImpl()
         val dbm = DbConnectionManagerImpl(lifecycleCoordinatorFactory, EntityManagerFactoryFactoryImpl(), entitiesRegistry)
-        val config = configFactory.create(DbUtils.createConfig("configuration_db"))
+        val config = configFactory.create(DbUtils.createConfig("configuration_db", adminUser, adminPassword))
         entitiesRegistry.register(
             CordaDb.CordaCluster.persistenceUnitName,
             ConfigurationEntities.classes
@@ -176,15 +199,15 @@ class DbAdminTest {
         val dmlUser = "user_dml_$random"
         val password = "pwd_$random"
 
-        // DDL
+        // Create DDL user
         dba.createDbAndUser(schema, ddlUser, password, DbPrivilege.DDL)
         assertThat(dba.userExists(ddlUser)).isTrue
 
-        // DML
+        // Create DML user
         dba.createDbAndUser(schema, dmlUser, password, DbPrivilege.DML, ddlUser)
         assertThat(dba.userExists(dmlUser)).isTrue
 
-        // validate the DDL User can create a table
+        // Validate that DDL user can create a table
         val ddlDataSource = DbUtils.createPostgresDataSource(ddlUser, password)
         ddlDataSource.use { dataSource ->
             dataSource.connection.use {
@@ -194,7 +217,7 @@ class DbAdminTest {
             }
         }
 
-        // validate the DML User can select from table
+        // Validate that DML user can select from table
         val dmlDataSource = DbUtils.createPostgresDataSource(dmlUser, password)
         dmlDataSource.use { dataSource ->
             dataSource.connection.use {
@@ -211,24 +234,36 @@ class DbAdminTest {
     }
 
     @Test
-    fun `recreated DDL user can create tables`() {
-
+    fun `recreated DDL user can create table`() {
         Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
 
-        fun createTable(schema:String, user: String, password: String) {
-            val ddlDataSource = DbUtils.createPostgresDataSource(user, password)
-            ddlDataSource.use { dataSource ->
-                dataSource.connection.use {
-                    it.createStatement().execute(
-                        "CREATE TABLE $schema.test_table (message VARCHAR(64))")
-                    it.commit()
-                }
-            }
-        }
+        recreatedDdlUserCanCreateTable()
+    }
 
+    @Test
+    fun `when DB admin is not superuser, recreated DDL user can create table`() {
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
+
+        // Create admin user that is not superuser
+        val random = Random.nextLong(Long.MAX_VALUE)
+        val adminUser = "test_admin_$random"
+        val adminPassword = "test_admin_password_$random"
+        createAdminUser(getPostgresDatabase(), adminUser, adminPassword)
+
+        recreatedDdlUserCanCreateTable(adminUser, adminPassword)
+    }
+
+    /**
+     * Creates DDL user using the admin user. Tests that DDL user can be recreated and can use table created by DDL user.
+     *
+     * @param adminUser Admin user. If null, default value set in [DbUtils] will be used.
+     * @param adminPassword Admin password. If null, default value set in [DbUtils] will be used.
+     */
+    private fun recreatedDdlUserCanCreateTable(adminUser: String? = null, adminPassword: String? = null) {
+        // Create DbAdmin
         val entitiesRegistry = JpaEntitiesRegistryImpl()
         val dbm = DbConnectionManagerImpl(lifecycleCoordinatorFactory, EntityManagerFactoryFactoryImpl(), entitiesRegistry)
-        val config = configFactory.create(DbUtils.createConfig("configuration_db"))
+        val config = configFactory.create(DbUtils.createConfig("configuration_db", adminUser, adminPassword))
         entitiesRegistry.register(
             CordaDb.CordaCluster.persistenceUnitName,
             ConfigurationEntities.classes
@@ -238,17 +273,18 @@ class DbAdminTest {
 
         val random = Random.nextLong(Long.MAX_VALUE)
         val schema = "test_schema_$random"
+        val table = "test_table"
         val ddlUser = "user_ddl_$random"
         val password = "pwd_ddl_$random"
 
-        // DDL
+        // Create DDL user
         dba.createDbAndUser(schema, ddlUser, password, DbPrivilege.DDL)
         assertThat(dba.userExists(ddlUser)).isTrue
 
-        // validate the DDL User can create a table
-        createTable(schema, ddlUser, password)
+        // Validate that DDL user can create a table
+        createTable(schema, table, ddlUser, password)
 
-        // recreate user
+        // Recreate user
         dba.deleteSchema(schema)
         dba.deleteUser(ddlUser)
         assertThat(dba.userExists(ddlUser)).isFalse
@@ -257,7 +293,43 @@ class DbAdminTest {
         dba.createDbAndUser(schema, ddlUser, newPassword, DbPrivilege.DDL)
         assertThat(dba.userExists(ddlUser)).isTrue
 
-        // validate the DDL User can create a table
-        createTable(schema, ddlUser, newPassword)
+        // Validate that DDL user can create a table
+        createTable(schema, table, ddlUser, newPassword)
+    }
+
+    /**
+     * Creates admin DB user that is not a superuser.
+     *
+     * @param database Database name
+     * @param newUser New user's name
+     * @param newPassword New user's password
+     */
+    private fun createAdminUser(database:String, newUser: String, newPassword: String) {
+        DbUtils.createPostgresDataSource().use { dataSource ->
+            dataSource.connection.use {
+                it.createStatement().execute("CREATE USER $newUser WITH PASSWORD '$newPassword'")
+                it.createStatement().execute("ALTER ROLE $newUser NOSUPERUSER CREATEDB CREATEROLE INHERIT LOGIN")
+                it.createStatement().execute("GRANT CREATE ON DATABASE \"$database\" TO $newUser")
+                it.commit()
+            }
+        }
+    }
+
+    /**
+     * Creates table in database.
+     *
+     * @param schema Schema name
+     * @param table Table name
+     * @param user User
+     * @param password Password
+     */
+    private fun createTable(schema:String, table: String, user: String, password: String) {
+        DbUtils.createPostgresDataSource(user, password).use { dataSource ->
+            dataSource.connection.use {
+                it.createStatement().execute(
+                    "CREATE TABLE $schema.$table (message VARCHAR(64))")
+                it.commit()
+            }
+        }
     }
 }
