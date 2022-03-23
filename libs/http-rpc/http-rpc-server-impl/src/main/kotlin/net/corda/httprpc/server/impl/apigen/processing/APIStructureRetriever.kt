@@ -36,7 +36,7 @@ import kotlin.reflect.jvm.kotlinFunction
  * generating a list of [Resource].
  */
 @Suppress("UNCHECKED_CAST", "TooManyFunctions", "TooGenericExceptionThrown")
-class APIStructureRetriever(private val opsImplList: List<PluggableRPCOps<*>>) {
+internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCOps<*>>) {
     private companion object {
         private val log = contextLogger()
     }
