@@ -132,7 +132,8 @@ tasks.register('dbIntegrationTest', TestOSGi) {
 }
 
 tasks.named('integrationTest') {
-    dependsOn kafkaIntegrationTest, dbIntegrationTest
+    dependsOn dbIntegrationTest
+//    dependsOn kafkaIntegrationTest, dbIntegrationTest
     enabled = false
 }
 
