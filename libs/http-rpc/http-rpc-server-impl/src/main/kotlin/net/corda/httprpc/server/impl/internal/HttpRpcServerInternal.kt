@@ -186,26 +186,9 @@ internal class HttpRpcServerInternal(
 
     @SuppressWarnings("ComplexMethod", "ThrowsCount")
     private fun Javalin.addRoutes() {
-        fun registerHandlerForRoute(routeInfo: RouteInfo, handlerType: HandlerType) {
-            try {
-                log.info("Add \"$handlerType\" handler for \"${routeInfo.fullPath}\".")
-                // TODO the following hardcoded handler registration is only meant for Scaffold and needs change
-                //  once "multipart/form-data" support gets implemented correctly as part of CORE-3813.
-                if (routeInfo.fullPath == "/api/v1/cpi") {
-                    addHandler(handlerType, routeInfo.fullPath, routeInfo.invokeMultiPartMethod())
-                } else {
-                    addHandler(handlerType, routeInfo.fullPath, routeInfo.invokeMethod())
-                }
-                log.debug { "Add \"$handlerType\" handler for \"${routeInfo.fullPath}\" completed." }
-            } catch (e: Exception) {
-                "Error during Add GET and POST routes".let {
-                    log.error("$it: ${e.message}")
-                    throw Exception(it, e)
-                }
-            }
-        }
+
         try {
-            log.trace { "Add GET and POST routes." }
+            log.trace { "Add routes by method." }
             // It is important to add no authentication get routes first such that
             // handler for GET "testEntity/getprotocolversion" will be found before GET "testEntity/:id" handler.
             resourceProvider.httpNoAuthRequiredGetRoutes.map { routeInfo ->
@@ -226,26 +209,53 @@ internal class HttpRpcServerInternal(
                 }
                 registerHandlerForRoute(routeInfo, HandlerType.GET)
             }
-            resourceProvider.httpPostRoutes.map { routeInfo ->
-                before(routeInfo.fullPath) {
-                    with(configurationsProvider.maxContentLength()) {
-                        if (it.contentLength() > this) throw BadRequestResponse(
-                            CONTENT_LENGTH_EXCEEDS_LIMIT.format(
-                                it.contentLength(),
-                                this
-                            )
-                        )
-                    }
-                    authorize(authenticate(it), getResourceAccessString(it))
-                }
-                registerHandlerForRoute(routeInfo, HandlerType.POST)
-            }
-            log.trace { "Add GET and POST routes completed." }
+
+            addRouteWithContentLengthRestriction(resourceProvider.httpPostRoutes, HandlerType.POST)
+
+            addRouteWithContentLengthRestriction(resourceProvider.httpPutRoutes, HandlerType.PUT)
+
+            log.trace { "Add routes by method completed." }
         } catch (e: Exception) {
             "Error during Add GET and POST routes".let {
                 log.error("$it: ${e.message}")
                 throw Exception(it, e)
             }
+        }
+    }
+
+    private fun Javalin.registerHandlerForRoute(routeInfo: RouteInfo, handlerType: HandlerType) {
+        try {
+            log.info("Add \"$handlerType\" handler for \"${routeInfo.fullPath}\".")
+            // TODO the following hardcoded handler registration is only meant for Scaffold and needs change
+            //  once "multipart/form-data" support gets implemented correctly as part of CORE-3813.
+            if (routeInfo.fullPath == "/api/v1/cpi") {
+                addHandler(handlerType, routeInfo.fullPath, routeInfo.invokeMultiPartMethod())
+            } else {
+                addHandler(handlerType, routeInfo.fullPath, routeInfo.invokeMethod())
+            }
+            log.debug { "Add \"$handlerType\" handler for \"${routeInfo.fullPath}\" completed." }
+        } catch (e: Exception) {
+            "Error during adding routes".let {
+                log.error("$it: ${e.message}")
+                throw Exception(it, e)
+            }
+        }
+    }
+
+    private fun Javalin.addRouteWithContentLengthRestriction(routes: List<RouteInfo>, handlerType: HandlerType) {
+        routes.map { routeInfo ->
+            before(routeInfo.fullPath) {
+                with(configurationsProvider.maxContentLength()) {
+                    if (it.contentLength() > this) throw BadRequestResponse(
+                        CONTENT_LENGTH_EXCEEDS_LIMIT.format(
+                            it.contentLength(),
+                            this
+                        )
+                    )
+                }
+                authorize(authenticate(it), getResourceAccessString(it))
+            }
+            registerHandlerForRoute(routeInfo, handlerType)
         }
     }
 

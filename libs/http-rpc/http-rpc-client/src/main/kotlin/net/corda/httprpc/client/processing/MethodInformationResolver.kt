@@ -2,6 +2,7 @@ package net.corda.httprpc.client.processing
 
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
+import net.corda.httprpc.annotations.HttpRpcPUT
 import net.corda.httprpc.annotations.isRpcEndpointAnnotation
 import net.corda.httprpc.tools.HttpVerb
 import net.corda.httprpc.tools.isStaticallyExposedGet
@@ -12,6 +13,7 @@ internal val Method.endpointHttpVerb: HttpVerb
         when {
             it is HttpRpcGET -> HttpVerb.GET
             it is HttpRpcPOST -> HttpVerb.POST
+            it is HttpRpcPUT -> HttpVerb.PUT
             isStaticallyExposedGet() -> HttpVerb.GET
             else -> throw IllegalArgumentException("Unknown endpoint type")
         }

@@ -1,6 +1,6 @@
 package net.corda.httprpc.server.impl.apigen.models
 
-data class Endpoint(
+internal data class Endpoint(
     /**
      * The API method (GET, POST).
      */
@@ -31,7 +31,8 @@ data class Endpoint(
     val invocationMethod: InvocationMethod
 )
 
-enum class EndpointMethod {
+internal enum class EndpointMethod {
     POST,
-    GET
+    GET,
+    PUT
 }
