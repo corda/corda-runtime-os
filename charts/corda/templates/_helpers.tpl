@@ -121,6 +121,7 @@ Worker Kafka arguments
 */}}
 {{- define "corda.workerKafkaArgs" -}}
 - -mkafka.common.bootstrap.servers={{ include "corda.kafkaBootstrapServers" . }}
+- --topicPrefix={{ .Values.kafka.topicPrefix }}
 {{- end }}
 
 
