@@ -9,6 +9,36 @@ buildscript {
         }
     }
 }
+public class SystemPropertyCommandLineArgumentProvider implements CommandLineArgumentProvider {
+    private final Map<String, Object> systemProperties = new LinkedHashMap<>();
+
+    public void systemProperty(String key, String value) {
+        systemProperties.put(key, value);
+    }
+
+    public void systemProperty(String key, Object value) {
+        systemProperties.put(key, value);
+    }
+
+    @Override
+    public Iterable<String> asArguments() {
+        return systemProperties.entrySet()
+                .stream()
+                .map(
+                        entry -> "-D"
+                                + entry.getKey()
+                                + "="
+                                + (entry.getValue() instanceof String ? ((String) entry.getValue()).get() : entry.getValue())
+                )
+                .collect(Collectors.toList());
+    }
+
+    // Track system property keys as an input so our build cache key will change if we add properties but values are still ignored
+    @Input
+    public Iterable<String> getPropertyNames() {
+        return systemProperties.keySet();
+    }
+}
 
 plugins {
     id 'org.jetbrains.kotlin.jvm'
@@ -31,26 +61,33 @@ wrapper {
     distributionType = Wrapper.DistributionType.BIN
 }
 
-
-class pathTmpdir implements CommandLineArgumentProvider {
-    @Override
-    Iterable<String> asArguments() {
-        ["""-Djava.io.tmpdir=${project.buildDir.absolutePath}}
-""".toString()]
-    }
-}
-
-class propertyProvider implements CommandLineArgumentProvider {
-    @Override
-    Iterable<String> asArguments() {
-        ["""-DpostgresHost=${project.getProperty("postgresHost")} 
-              -DpostgresDb=${project.getProperty("postgresDb")}
-             -DpostgresPort=${project.getProperty("postgresPort")} 
-              -DpostgresUser=${project.getProperty("postgresUser")}
-              -DpostgresPassword=${project.getProperty("postgresPassword")}
-""".toString()]
-    }
-}
+//
+//class pathTmpdir implements CommandLineArgumentProvider {
+//
+//    pathTmpdir(Project project) {
+//        this.simple = project.objects.property(Boolean)
+//        this.systemWide = project.objects.property(Boolean)
+//        this.icon = project.objects.fileProperty()
+//    }
+//
+//    @Override
+//    Iterable<String> asArguments() {
+//        ["""-Djava.io.tmpdir=${project.buildDir.absolutePath}}
+//""".toString()]
+//    }
+//}
+//
+//class propertyProvider implements CommandLineArgumentProvider {
+//    @Override
+//    Iterable<String> asArguments() {
+//        ["""-DpostgresHost=${project.getProperty("postgresHost")}
+//              -DpostgresDb=${project.getProperty("postgresDb")}
+//             -DpostgresPort=${project.getProperty("postgresPort")}
+//              -DpostgresUser=${project.getProperty("postgresUser")}
+//              -DpostgresPassword=${project.getProperty("postgresPassword")}
+//""".toString()]
+//    }
+//}
 
 
 def javaVersion = VERSION_11
@@ -102,15 +139,16 @@ allprojects {
         }
     }
 
-    tasks.withType(Test).configureEach {
+    tasks.withType(Test).configureEach {testTask ->
         useJUnitPlatform(){
             excludeTags project.hasProperty('runUnstableTests') ? 'runAllTestsNoExclusions' : 'Unstable'
         }
 
         doFirst {
-            jvmArgumentProviders.add(
-                    new pathTmpdir()
-            )
+//            systemProperty 'java.io.tmpdir', buildDir.absolutePath
+            SystemPropertyCommandLineArgumentProvider nonInputPropertiesTmpDir = new SystemPropertyCommandLineArgumentProvider()
+            nonInputPropertiesTmpDir.systemProperty("java.io.tmpdir", "${-> project.buildDir.absolutePath}")
+            testTask.getJvmArgumentProviders().add(nonInputPropertiesTmpDir)
         }
 
         retry {
@@ -244,16 +282,13 @@ allprojects {
         testClassesDirs = project.sourceSets["integrationTest"].output.classesDirs
         classpath = project.sourceSets["integrationTest"].runtimeClasspath
 
-//        systemProperty "postgresHost", project.getProperty("postgresHost")
-//        systemProperty "postgresDb", project.getProperty("postgresDb")
-//        systemProperty "postgresPort", project.getProperty("postgresPort")
-//        systemProperty "postgresUser", project.getProperty("postgresUser")
-//        systemProperty "postgresPassword", project.getProperty("postgresPassword")
-
-
-        jvmArgumentProviders.add(
-                new propertyProvider()
-        )
+        SystemPropertyCommandLineArgumentProvider nonInputProperties = new SystemPropertyCommandLineArgumentProvider()
+        nonInputProperties.systemProperty("postgresHost", "${-> project.getProperty("postgresHost")}")
+        nonInputProperties.systemProperty("postgresDb", "${-> project.getProperty("postgresDb")}")
+        nonInputProperties.systemProperty("postgresPort", "${-> project.getProperty("postgresPort")}")
+        nonInputProperties.systemProperty("postgresUser", "${-> project.getProperty("postgresUser")}")
+        nonInputProperties.systemProperty("postgresPassword", "${-> project.getProperty("postgresPassword")}")
+        task.getJvmArgumentProviders().add(nonInputProperties)
 
         doLast {
             task.systemProperties.forEach { k,v ->
