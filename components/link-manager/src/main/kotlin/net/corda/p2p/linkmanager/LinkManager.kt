@@ -45,10 +45,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManager.SessionDirection
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionCounterparties
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
-import net.corda.p2p.markers.AppMessageMarker
-import net.corda.p2p.markers.LinkManagerReceivedMarker
-import net.corda.p2p.markers.LinkManagerSentMarker
-import net.corda.p2p.markers.TtlExpiredMarker
+import net.corda.p2p.markers.*
 import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
 import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
@@ -341,7 +338,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
         private fun recordsForMarkers(messageAndKey: AuthenticatedMessageAndKey, isHostedLocally: Boolean): List<Record<String, *>> {
             val markers = mutableListOf(recordForLMSentMarker(messageAndKey, messageAndKey.message.header.messageId))
-            if (isHostedLocally) markers += listOf(recordForLMReceivedMarker(messageAndKey.message.header.messageId))
+            if (isHostedLocally) markers.add(recordForLMReceivedMarker(messageAndKey.message.header.messageId))
+            if (ttlExpired(messageAndKey.message.header.ttl)) markers.add(recordForTTLExpiredMarker(messageAndKey.message.header.messageId))
             return markers
         }
 
@@ -356,7 +354,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         }
 
         private fun recordForTTLExpiredMarker(messageId: String): Record<String, AppMessageMarker> {
-            val marker = AppMessageMarker(TtlExpiredMarker(), Instant.now().toEpochMilli())
+            val marker = AppMessageMarker(TtlExpiredMarker(Component.LINK_MANAGER), Instant.now().toEpochMilli())
             return Record(P2P_OUT_MARKERS, messageId, marker)
         }
     }

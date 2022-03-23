@@ -40,6 +40,7 @@ import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.StubLinkManagerHostingMap
 import net.corda.p2p.linkmanager.StubNetworkMap
 import net.corda.p2p.markers.AppMessageMarker
+import net.corda.p2p.markers.LinkManagerSentMarker
 import net.corda.p2p.markers.TtlExpiredMarker
 import net.corda.p2p.test.HostedIdentityEntry
 import net.corda.p2p.test.KeyAlgorithm
@@ -67,7 +68,7 @@ import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
 class P2PLayerEndToEndTest {
@@ -255,7 +256,7 @@ class P2PLayerEndToEndTest {
                 null
             )
 
-            val hostAExpiryMarkers =  mutableListOf<Record<*, *>>()
+            val hostAExpiryMarkers =  Collections.synchronizedList<Record<*, *>>(mutableListOf())
             val subForP2POutMarkers = hostA.subscriptionFactory.createDurableSubscription(
                 SubscriptionConfig("app-layer", P2P_OUT_MARKERS, 1), MarkerStorageProcessor(hostAExpiryMarkers),
                 bootstrapConfig,
@@ -286,10 +287,10 @@ class P2PLayerEndToEndTest {
             }
 
             eventually(10.seconds) {
-                assertThat(hostAExpiryMarkers).filteredOn { it.topic == P2P_OUT_MARKERS }.hasSize(2)
-                    .allSatisfy { assertThat(it.key).isEqualTo("1") }
-                    .extracting<AppMessageMarker> { it.value as AppMessageMarker }
-                    .allSatisfy { assertThat(it.marker).isInstanceOf(TtlExpiredMarker::class.java) }
+                synchronized(hostAExpiryMarkers) {
+                    val markers = hostAExpiryMarkers.filter{it.topic == P2P_OUT_MARKERS}.map { (it.value as AppMessageMarker).marker }
+                    assertThat(markers).containsExactlyInAnyOrder(LinkManagerSentMarker::class.java, TtlExpiredMarker::class.java)
+                }
             }
 
             hostAApplicationReader.stop()
@@ -328,13 +329,10 @@ class P2PLayerEndToEndTest {
             get() = AppMessageMarker::class.java
 
         override fun onNext(events: List<Record<String, AppMessageMarker>>): List<Record<*, *>> {
-            events.forEach {
-                expiryMarkers.add(it)
-            }
+            expiryMarkers.addAll(events)
             return emptyList()
         }
     }
-
 
     private class InitiatorProcessor(val receivedMessages: ConcurrentHashMap.KeySetView<String, Boolean>) : DurableProcessor<String, AppMessage> {
 
