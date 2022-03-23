@@ -26,6 +26,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.permissions.service.PermissionServiceComponent
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_ADDRESS
 import net.corda.schema.configuration.ConfigKeys.RPC_AZUREAD_CLIENT_ID
 import net.corda.schema.configuration.ConfigKeys.RPC_AZUREAD_CLIENT_SECRET
@@ -128,7 +129,11 @@ internal class HttpRpcGatewayEventHandler(
         if (RPC_CONFIG in changedKeys) {
             log.info("RPC config received. Recreating HTTP RPC Server.")
 
-            createAndStartHttpRpcServer(currentConfigurationSnapshot[RPC_CONFIG]!!)
+            val config = currentConfigurationSnapshot[RPC_CONFIG]!!.withFallback(
+                currentConfigurationSnapshot[BOOT_CONFIG]
+            )
+
+            createAndStartHttpRpcServer(config)
         }
     }
 
