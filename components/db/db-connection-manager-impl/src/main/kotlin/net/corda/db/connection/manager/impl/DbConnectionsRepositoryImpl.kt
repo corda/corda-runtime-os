@@ -72,8 +72,8 @@ class DbConnectionsRepositoryImpl(
             update(configAsString, description, updateActor)
         } ?: newDbConnection
 
-        entityManager.persist(newDbConnectionAudit)
         entityManager.persist(existingConfig)
+        entityManager.persist(newDbConnectionAudit)
         entityManager.flush()
         return existingConfig.id
     }
