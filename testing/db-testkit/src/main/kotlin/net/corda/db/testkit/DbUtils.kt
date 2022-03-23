@@ -20,6 +20,21 @@ object DbUtils {
     val isInMemory = System.getProperty("postgresPort").isNullOrBlank()
 
     /**
+     * Returns Postgres DB name
+     */
+    fun getPostgresDatabase() = getPropertyNonBlank("postgresDb", "postgres")
+
+    /**
+     * Returns DB admin user
+     */
+    fun getAdminUser() = if (isInMemory) "sa" else getPropertyNonBlank("postgresUser", "postgres")
+
+    /**
+     * Returns DB admin user's password
+     */
+    fun getAdminPassword() = if (isInMemory) "" else getPropertyNonBlank("postgresPassword", "password")
+
+    /**
      * Get a Postgres EntityManager configuration if system properties set as necessary. Otherwise, falls back on
      * in-memory implementation.
      */
@@ -45,31 +60,33 @@ object DbUtils {
      */
     fun createPostgresDataSource(dbUser:String? = null, dbPassword: String? = null): CloseableDataSource {
         val port = System.getProperty("postgresPort")
-        val postgresDb = getPropertyNonBlank("postgresDb", "postgres")
+        val postgresDb = getPostgresDatabase()
         val host = getPropertyNonBlank("postgresHost", "localhost")
         val jdbcUrl = "jdbc:postgresql://$host:$port/$postgresDb"
-        val user = dbUser ?: getPropertyNonBlank("postgresUser", "postgres")
-        val password = dbPassword ?: getPropertyNonBlank("postgresPassword", "password")
+        val user = dbUser ?: getAdminUser()
+        val password = dbPassword ?: getAdminPassword()
         logger.info("Using Postgres URL $jdbcUrl".emphasise())
         return PostgresDataSourceFactory().create(jdbcUrl, user, password)
     }
 
-    fun createConfig(inMemoryDbName: String): Config {
+    fun createConfig(inMemoryDbName: String, dbUser:String? = null, dbPassword: String? = null): Config {
         val port = System.getProperty("postgresPort")
+        val user = dbUser ?: getAdminUser()
+        val password = dbPassword ?: getAdminPassword()
         if(!port.isNullOrBlank()) {
-            val postgresDb = getPropertyNonBlank("postgresDb", "postgres")
+            val postgresDb = getPostgresDatabase()
             val host = getPropertyNonBlank("postgresHost", "localhost")
             return ConfigFactory.empty()
                 .withValue(ConfigKeys.JDBC_URL, ConfigValueFactory.fromAnyRef("jdbc:postgresql://$host:$port/$postgresDb"))
-                .withValue(ConfigKeys.DB_USER, ConfigValueFactory.fromAnyRef(getPropertyNonBlank("postgresUser", "postgres")))
-                .withValue(ConfigKeys.DB_PASS, ConfigValueFactory.fromAnyRef(getPropertyNonBlank("postgresPassword", "password")))
+                .withValue(ConfigKeys.DB_USER, ConfigValueFactory.fromAnyRef(user))
+                .withValue(ConfigKeys.DB_PASS, ConfigValueFactory.fromAnyRef(password))
         } else {
             // in memory
             return ConfigFactory.empty()
                 .withValue(ConfigKeys.JDBC_DRIVER, ConfigValueFactory.fromAnyRef("org.hsqldb.jdbc.JDBCDriver"))
                 .withValue(ConfigKeys.JDBC_URL, ConfigValueFactory.fromAnyRef("jdbc:hsqldb:mem:$inMemoryDbName"))
-                .withValue(ConfigKeys.DB_USER, ConfigValueFactory.fromAnyRef("sa"))
-                .withValue(ConfigKeys.DB_PASS, ConfigValueFactory.fromAnyRef(""))
+                .withValue(ConfigKeys.DB_USER, ConfigValueFactory.fromAnyRef(user))
+                .withValue(ConfigKeys.DB_PASS, ConfigValueFactory.fromAnyRef(password))
         }
     }
 

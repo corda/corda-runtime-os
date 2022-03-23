@@ -84,6 +84,7 @@ class DbAdminImpl @Activate constructor(
         val sql = """
             CREATE SCHEMA IF NOT EXISTS $schemaName;
             CREATE USER $user WITH PASSWORD '$password';
+            GRANT $user TO current_user;
             GRANT USAGE ON SCHEMA $schemaName to $user;
             $permissions TO $user;
             """.trimIndent()
