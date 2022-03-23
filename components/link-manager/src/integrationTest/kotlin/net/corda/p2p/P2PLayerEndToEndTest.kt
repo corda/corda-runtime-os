@@ -289,15 +289,10 @@ class P2PLayerEndToEndTest {
 
             eventually(10.seconds) {
                 synchronized(hostAExpiryMarkers) {
-                    val sentMarkers = hostAExpiryMarkers.filter{it.topic == P2P_OUT_MARKERS}.map { (it.value as AppMessageMarker).marker }
-                        .filter { it is LinkManagerSentMarker }
-                    assertThat(sentMarkers).hasSize(initialMessages.size)
-                    val expiredMarkers = hostAExpiryMarkers.filter{it.topic == P2P_OUT_MARKERS}.map { (it.value as AppMessageMarker).marker }
-                        .filter { it is TtlExpiredMarker }
-                    assertThat(expiredMarkers).hasSize(initialMessages.size)
-                    val receivedMarkers = hostAExpiryMarkers.filter{it.topic == P2P_OUT_MARKERS}.map { (it.value as AppMessageMarker).marker }
-                        .filter { it is LinkManagerReceivedMarker }
-                    assertThat(receivedMarkers).isEmpty()
+                    val markers = hostAExpiryMarkers.filter{it.topic == P2P_OUT_MARKERS}.map { (it.value as AppMessageMarker).marker }
+                    assertThat(markers.filterIsInstance<LinkManagerSentMarker>()).hasSize(initialMessages.size)
+                    assertThat(markers.filterIsInstance<TtlExpiredMarker>()).hasSize(initialMessages.size)
+                    assertThat(markers.filterIsInstance<LinkManagerReceivedMarker>()).isEmpty()
                 }
             }
 
