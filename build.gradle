@@ -31,6 +31,28 @@ wrapper {
     distributionType = Wrapper.DistributionType.BIN
 }
 
+
+class pathTmpdir implements CommandLineArgumentProvider {
+    @Override
+    Iterable<String> asArguments() {
+        ["""-Djava.io.tmpdir=${project.buildDir.absolutePath}}
+""".toString()]
+    }
+}
+
+class propertyProvider implements CommandLineArgumentProvider {
+    @Override
+    Iterable<String> asArguments() {
+        ["""-DpostgresHost=${project.getProperty("postgresHost")} 
+              -DpostgresDb=${project.getProperty("postgresDb")}
+             -DpostgresPort=${project.getProperty("postgresPort")} 
+              -DpostgresUser=${project.getProperty("postgresUser")}
+              -DpostgresPassword=${project.getProperty("postgresPassword")}
+""".toString()]
+    }
+}
+
+
 def javaVersion = VERSION_11
 
 allprojects {
@@ -86,7 +108,9 @@ allprojects {
         }
 
         doFirst {
-            systemProperty 'java.io.tmpdir', buildDir.absolutePath
+            jvmArgumentProviders.add(
+                    new pathTmpdir()
+            )
         }
 
         retry {
@@ -213,18 +237,29 @@ allprojects {
         }
     }
 
-    tasks.register('integrationTest', Test) {
+    tasks.register('integrationTest', Test) {  task ->
         description = "Runs integration tests."
         group = "verification"
 
         testClassesDirs = project.sourceSets["integrationTest"].output.classesDirs
         classpath = project.sourceSets["integrationTest"].runtimeClasspath
 
-        systemProperty "postgresHost", project.getProperty("postgresHost")
-        systemProperty "postgresDb", project.getProperty("postgresDb")
-        systemProperty "postgresPort", project.getProperty("postgresPort")
-        systemProperty "postgresUser", project.getProperty("postgresUser")
-        systemProperty "postgresPassword", project.getProperty("postgresPassword")
+//        systemProperty "postgresHost", project.getProperty("postgresHost")
+//        systemProperty "postgresDb", project.getProperty("postgresDb")
+//        systemProperty "postgresPort", project.getProperty("postgresPort")
+//        systemProperty "postgresUser", project.getProperty("postgresUser")
+//        systemProperty "postgresPassword", project.getProperty("postgresPassword")
+
+
+        jvmArgumentProviders.add(
+                new pathPropertyProvider()
+        )
+
+        doLast {
+            task.systemProperties.forEach { k,v ->
+                buildScan.value "${task.path}#SystemProperty#" + k.toString(), v.toString()
+            }
+        }
 
         shouldRunAfter tasks.named('test')
     }
