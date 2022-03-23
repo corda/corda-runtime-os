@@ -83,6 +83,7 @@ class UpdateIps : Runnable {
         val namespaces = namespaces()
         namespaces
             .filter { namespaceToPatch ->
+                // we don't need to patch for clusters that use a headless service as IPs will resolved via regular DNS resolution
                 namespaceToPatch.host != "load-balancer.${namespaceToPatch.name}"
             }
             .forEach { namespaceToPatch ->
