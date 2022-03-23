@@ -39,7 +39,7 @@ class Deploy : Runnable {
 
     @Option(
         names = ["-H", "--host"],
-        description = ["The host name"]
+        description = ["The host name. This will be ignored for headless load balancer"]
     )
     var hostName: String? = null
 
@@ -174,9 +174,14 @@ class Deploy : Runnable {
         names = ["--load-balancer-type"],
         description = ["The load balancer type (\${COMPLETION-CANDIDATES})"]
     )
-    private var lbType: LbType = LbType.NGINX
+    private var lbType: LbType = LbType.HEADLESS
 
     override fun run() {
+        if ((lbType == LbType.HEADLESS) && (hostName != "load-balancer.$namespaceName")) {
+            println("For headless LB we must use the host name: load-balancer.$namespaceName")
+            hostName = "load-balancer.$namespaceName"
+        }
+
         val namespace = Namespace(
             NamespaceIdentifier(
                 namespaceName,

@@ -5,6 +5,7 @@ import net.corda.p2p.deployment.commands.MyUserName
 import java.io.File
 
 enum class LbType {
+    HEADLESS,
     K8S,
     NGINX;
 }
