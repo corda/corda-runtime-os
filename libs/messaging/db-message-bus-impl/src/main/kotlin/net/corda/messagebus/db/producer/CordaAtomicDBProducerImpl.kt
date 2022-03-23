@@ -62,8 +62,7 @@ class CordaAtomicDBProducerImpl(
         sendRecordsToPartitions(records.map {
             // Determine the partition
             val topic = it.topic
-            val numberOfPartitions = topicPartitionMap[topic]
-                ?: throw CordaMessageAPIFatalException("Cannot find topic: $topic")
+            val numberOfPartitions = dbAccess.getTopicPartitionMapFor(topic).size
             val partition = getPartition(it.key, numberOfPartitions)
             Pair(partition, it)
         })

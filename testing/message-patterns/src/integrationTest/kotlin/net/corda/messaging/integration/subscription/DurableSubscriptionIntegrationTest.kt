@@ -1,5 +1,6 @@
 package net.corda.messaging.integration.subscription
 
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfig
@@ -20,8 +21,9 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.integration.IntegrationTestProperties.Companion.BOOTSTRAP_SERVERS_VALUE
 import net.corda.messaging.integration.IntegrationTestProperties.Companion.KAFKA_COMMON_BOOTSTRAP_SERVER
 import net.corda.messaging.integration.IntegrationTestProperties.Companion.TOPIC_PREFIX
-import net.corda.messaging.integration.TopicTemplates
+import net.corda.messaging.integration.KafkaOnly
 import net.corda.messaging.integration.TopicTemplates.Companion.DURABLE_TOPIC1
+import net.corda.messaging.integration.TopicTemplates.Companion.DURABLE_TOPIC1_TEMPLATE
 import net.corda.messaging.integration.TopicTemplates.Companion.DURABLE_TOPIC3_DLQ
 import net.corda.messaging.integration.TopicTemplates.Companion.TEST_TOPIC_PREFIX
 import net.corda.messaging.integration.getDemoRecords
@@ -66,9 +68,16 @@ class DurableSubscriptionIntegrationTest {
         const val DURABLE_TOPIC3 = "DurableTopic3"
         const val DURABLE_TOPIC4 = "DurableTopic4"
 
-        private var durableTopic1Config = ConfigFactory.parseString(TopicTemplates.DURABLE_TOPIC1_TEMPLATE)
-        private var durableTopic2Config = ConfigFactory.parseString(TopicTemplates.DURABLE_TOPIC2_TEMPLATE)
-        private var durableTopic3Config = ConfigFactory.parseString(TopicTemplates.DURABLE_TOPIC3_TEMPLATE)
+        private var isDB = false
+
+        fun getTopicConfig(topicTemplate: String): Config {
+            val template = if (isDB) {
+                topicTemplate.replace(TEST_TOPIC_PREFIX,"")
+            } else {
+                topicTemplate
+            }
+            return ConfigFactory.parseString(template)
+        }
 
         @Suppress("unused")
         @JvmStatic
@@ -78,16 +87,7 @@ class DurableSubscriptionIntegrationTest {
         ) {
             if (bundleContext.isDBBundle()) {
                 DBSetup.setupEntities(CLIENT_ID)
-                // Dodgy remove prefix for DB code
-                durableTopic1Config = ConfigFactory.parseString(
-                    TopicTemplates.DURABLE_TOPIC1_TEMPLATE.replace(TEST_TOPIC_PREFIX,"")
-                )
-                durableTopic2Config = ConfigFactory.parseString(
-                    TopicTemplates.DURABLE_TOPIC2_TEMPLATE.replace(TEST_TOPIC_PREFIX,"")
-                )
-                durableTopic3Config = ConfigFactory.parseString(
-                    TopicTemplates.DURABLE_TOPIC3_TEMPLATE.replace(TEST_TOPIC_PREFIX,"")
-                )
+                isDB = true
             }
         }
 
@@ -122,9 +122,14 @@ class DurableSubscriptionIntegrationTest {
     }
 
     @Test
+    @KafkaOnly
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `asynch publish records and then start 2 durable subscriptions, delay 1 sub, trigger rebalance`() {
-        topicUtils.createTopics(durableTopic1Config)
+        if (isDB) {
+            return
+        }
+
+        topicUtils.createTopics(getTopicConfig(DURABLE_TOPIC1_TEMPLATE))
 
         publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC1)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
@@ -164,8 +169,6 @@ class DurableSubscriptionIntegrationTest {
     @Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `asynch publish records and then start durable subscription`() {
-        topicUtils.createTopics(durableTopic2Config)
-
         publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC2)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         val futures = publisher.publish(getDemoRecords(DURABLE_TOPIC2, 5, 2))
@@ -213,8 +216,6 @@ class DurableSubscriptionIntegrationTest {
     @Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `asynch publish the wrong records and then start durable subscription`() {
-        topicUtils.createTopics(durableTopic3Config)
-
         publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC3)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         val futures = publisher.publish(getStringRecords(DURABLE_TOPIC3, 5, 2))

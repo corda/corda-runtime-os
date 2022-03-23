@@ -296,7 +296,7 @@ internal class DBCordaConsumerImplTest {
         val consumer = DBCordaConsumerImpl(
             defaultConfig,
             dbAccess,
-            null,
+            mock(),
             keyDeserializer,
             valueDeserializer,
             null

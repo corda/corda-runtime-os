@@ -24,6 +24,9 @@ class DBAccess(
     private val entityManagerFactory: EntityManagerFactory,
 ) {
 
+    private val defaultNumPartitions: Int = 1
+    private val autoCreate: Boolean = true
+
     companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
     }
@@ -90,14 +93,21 @@ class DBAccess(
         }
     }
 
-    fun getTopicPartitionMapFor(topic: String): TopicEntry {
+    /**
+     * If auto topic creation is enabled then will create the topic
+     */
+    fun getTopicPartitionMapFor(topic: String): Set<CordaTopicPartition> {
         return executeWithErrorHandling("retrieve topic partitions") { entityManager ->
-            val builder = entityManager.criteriaBuilder
-            val query = builder.createQuery(TopicEntry::class.java)
-            val root = query.from(TopicEntry::class.java)
-            query.multiselect(root.get<String>(TopicEntry::topic.name), root.get<Int>(TopicEntry::numPartitions.name))
-            query.where(builder.equal(root.get<String>(TopicEntry::topic.name), topic))
-            entityManager.createQuery(query).singleResult
+            var topicEntry = entityManager.find(TopicEntry::class.java, topic)
+            if (topicEntry == null && autoCreate) {
+                topicEntry = TopicEntry(topic, defaultNumPartitions)
+                entityManager.persist(topicEntry)
+            }
+            val topicPartitions = mutableSetOf<CordaTopicPartition>()
+            repeat(topicEntry.numPartitions) { partition ->
+                topicPartitions.add(CordaTopicPartition(topic, partition))
+            }
+            topicPartitions
         }
     }
 

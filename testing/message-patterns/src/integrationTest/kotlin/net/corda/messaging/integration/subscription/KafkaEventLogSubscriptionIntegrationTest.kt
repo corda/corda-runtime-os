@@ -1,5 +1,6 @@
 package net.corda.messaging.integration.subscription
 
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfig
@@ -17,6 +18,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.messaging.integration.IntegrationTestProperties
 import net.corda.messaging.integration.TopicTemplates
 import net.corda.messaging.integration.TopicTemplates.Companion.TEST_TOPIC_PREFIX
 import net.corda.messaging.integration.getDemoRecords
@@ -27,7 +29,7 @@ import net.corda.messaging.integration.util.DBSetup
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -50,7 +52,6 @@ class KafkaEventLogSubscriptionIntegrationTest {
     private lateinit var publisherConfig: PublisherConfig
     private lateinit var publisher: Publisher
     private lateinit var kafkaConfig: SmartConfig
-    private val kafkaProperties = getKafkaProperties()
 
     private companion object {
         const val CLIENT_ID = "eventLogTestPublisher"
@@ -59,8 +60,16 @@ class KafkaEventLogSubscriptionIntegrationTest {
         const val TOPIC1 = "EventLogTopic1"
         const val TOPIC2 = "EventLogTopic2"
 
-        private var eventLogTopic1Config = ConfigFactory.parseString(TopicTemplates.EVENT_TOPIC1_TEMPLATE)
-        private var eventLogTopic2Config = ConfigFactory.parseString(TopicTemplates.EVENT_TOPIC2_TEMPLATE)
+        private var isDB = false
+
+        fun getTopicConfig(topicTemplate: String): Config {
+            val template = if (isDB) {
+                    topicTemplate.replace(TEST_TOPIC_PREFIX,"")
+            } else {
+                topicTemplate
+            }
+            return ConfigFactory.parseString(template)
+        }
 
         @Suppress("unused")
         @JvmStatic
@@ -70,13 +79,7 @@ class KafkaEventLogSubscriptionIntegrationTest {
         ) {
             if (bundleContext.isDBBundle()) {
                 DBSetup.setupEntities(CLIENT_ID)
-                // Dodgy remove prefix for DB code
-                eventLogTopic1Config = ConfigFactory.parseString(
-                    TopicTemplates.EVENT_TOPIC1_TEMPLATE.replace(TEST_TOPIC_PREFIX,"")
-                )
-                eventLogTopic2Config = ConfigFactory.parseString(
-                    TopicTemplates.EVENT_TOPIC2_TEMPLATE.replace(TEST_TOPIC_PREFIX,"")
-                )
+                isDB = true
             }
         }
 
@@ -107,21 +110,21 @@ class KafkaEventLogSubscriptionIntegrationTest {
         topicUtils = topicUtilFactory.createTopicUtils(getKafkaProperties())
         kafkaConfig = SmartConfigImpl.empty()
             .withValue(
-                net.corda.messaging.integration.IntegrationTestProperties.KAFKA_COMMON_BOOTSTRAP_SERVER,
-                ConfigValueFactory.fromAnyRef(net.corda.messaging.integration.IntegrationTestProperties.BOOTSTRAP_SERVERS_VALUE)
+                IntegrationTestProperties.KAFKA_COMMON_BOOTSTRAP_SERVER,
+                ConfigValueFactory.fromAnyRef(IntegrationTestProperties.BOOTSTRAP_SERVERS_VALUE)
             )
-            .withValue(net.corda.messaging.integration.IntegrationTestProperties.TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(TEST_TOPIC_PREFIX))
+            .withValue(IntegrationTestProperties.TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(TEST_TOPIC_PREFIX))
     }
 
     @Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `asynch publish records and then start durable subscription`() {
-        topicUtils.createTopics(eventLogTopic1Config)
+        topicUtils.createTopics(getTopicConfig(TopicTemplates.EVENT_LOG_TOPIC1_TEMPLATE))
 
         publisherConfig = PublisherConfig(CLIENT_ID + TOPIC1)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         val futures = publisher.publish(getDemoRecords(TOPIC1, 5, 2))
-        Assertions.assertThat(futures.size).isEqualTo(10)
+        assertThat(futures.size).isEqualTo(10)
         futures.forEach { it.get(10, TimeUnit.SECONDS) }
         publisher.close()
 
@@ -167,15 +170,30 @@ class KafkaEventLogSubscriptionIntegrationTest {
     @Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `transactional publish records, start two durable subscription, stop subs, publish again and start subs`() {
-        topicUtils.createTopics(eventLogTopic2Config)
+        topicUtils.createTopics(getTopicConfig(TopicTemplates.EVENT_LOG_TOPIC2_TEMPLATE))
+
+        val coordinator =
+            lifecycleCoordinatorFactory.createCoordinator(LifecycleCoordinatorName("eventLogTest2"))
+            { event: LifecycleEvent, coordinator: LifecycleCoordinator ->
+                when (event) {
+                    is RegistrationStatusChangeEvent -> {
+                        if (event.status == LifecycleStatus.UP) {
+                            coordinator.updateStatus(LifecycleStatus.UP)
+                        } else {
+                            coordinator.updateStatus(LifecycleStatus.DOWN)
+                        }
+                    }
+                }
+            }
+        coordinator.start()
 
         publisherConfig = PublisherConfig(CLIENT_ID + TOPIC2, 1)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         val futures = publisher.publish(getDemoRecords(TOPIC2, 5, 2))
-        Assertions.assertThat(futures.size).isEqualTo(1)
+        assertThat(futures.size).isEqualTo(1)
         futures[0].get()
 
-        val latch = CountDownLatch(30)
+        val latch = CountDownLatch(20)
         val eventLogSub1 = subscriptionFactory.createEventLogSubscription(
             SubscriptionConfig("$TOPIC2-group", TOPIC2, 1),
             TestEventLogProcessor(latch),
@@ -189,8 +207,14 @@ class KafkaEventLogSubscriptionIntegrationTest {
             null
         )
 
+        coordinator.followStatusChangesByName(setOf(eventLogSub1.subscriptionName, eventLogSub2.subscriptionName))
+
         eventLogSub1.start()
         eventLogSub2.start()
+
+        eventually(duration = 5.seconds, waitBetween = 10.millis, waitBefore = 0.millis) {
+            assertThat(coordinator.status).isEqualTo(LifecycleStatus.UP)
+        }
 
         eventLogSub1.stop()
         eventLogSub2.stop()

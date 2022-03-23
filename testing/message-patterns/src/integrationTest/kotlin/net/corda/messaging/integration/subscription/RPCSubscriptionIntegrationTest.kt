@@ -1,5 +1,6 @@
 package net.corda.messaging.integration.subscription
 
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.messaging.RPCRequest
@@ -63,16 +64,16 @@ class RPCSubscriptionIntegrationTest {
     private companion object {
         const val CLIENT_ID = "integrationTestRPCSender"
 
-        private var rpcTopic1Config = ConfigFactory.parseString(TopicTemplates.RPC_TOPIC1_TEMPLATE)
-        private var rpcTopic2Config = ConfigFactory.parseString(TopicTemplates.RPC_TOPIC2_TEMPLATE)
-        private var rpcTopic3Config = ConfigFactory.parseString(TopicTemplates.RPC_TOPIC3_TEMPLATE)
-        private var rpcTopic4Config = ConfigFactory.parseString(TopicTemplates.RPC_TOPIC4_TEMPLATE)
-        private var rpcTopic5Config = ConfigFactory.parseString(TopicTemplates.RPC_TOPIC5_TEMPLATE)
-        private var rpcResponseTopic1Config = ConfigFactory.parseString(TopicTemplates.RPC_RESPONSE_TOPIC1_TEMPLATE)
-        private var rpcResponseTopic2Config = ConfigFactory.parseString(TopicTemplates.RPC_RESPONSE_TOPIC2_TEMPLATE)
-        private var rpcResponseTopic3Config = ConfigFactory.parseString(TopicTemplates.RPC_RESPONSE_TOPIC3_TEMPLATE)
-        private var rpcResponseTopic4Config = ConfigFactory.parseString(TopicTemplates.RPC_RESPONSE_TOPIC4_TEMPLATE)
-        private var rpcResponseTopic5Config = ConfigFactory.parseString(TopicTemplates.RPC_RESPONSE_TOPIC5_TEMPLATE)
+        private var isDB = false
+
+        fun getTopicConfig(topicTemplate: String): Config {
+            val template = if (isDB) {
+                topicTemplate.replace(TopicTemplates.TEST_TOPIC_PREFIX,"")
+            } else {
+                topicTemplate
+            }
+            return ConfigFactory.parseString(template)
+        }
 
         @Suppress("unused")
         @JvmStatic
@@ -82,22 +83,7 @@ class RPCSubscriptionIntegrationTest {
         ) {
             if (bundleContext.isDBBundle()) {
                 DBSetup.setupEntities(CLIENT_ID)
-                // Dodgy remove prefix for DB code
-                rpcTopic1Config = ConfigFactory.parseString(
-                    TopicTemplates.RPC_TOPIC1_TEMPLATE.replace(TopicTemplates.TEST_TOPIC_PREFIX, "")
-                )
-                rpcResponseTopic1Config = ConfigFactory.parseString(
-                    TopicTemplates.RPC_TOPIC1_TEMPLATE.replace(TopicTemplates.TEST_TOPIC_PREFIX, "")
-                )
-                rpcResponseTopic2Config = ConfigFactory.parseString(
-                    TopicTemplates.RPC_TOPIC2_TEMPLATE.replace(TopicTemplates.TEST_TOPIC_PREFIX, "")
-                )
-                rpcResponseTopic3Config = ConfigFactory.parseString(
-                    TopicTemplates.RPC_TOPIC3_TEMPLATE.replace(TopicTemplates.TEST_TOPIC_PREFIX, "")
-                )
-                rpcResponseTopic4Config = ConfigFactory.parseString(
-                    TopicTemplates.RPC_TOPIC4_TEMPLATE.replace(TopicTemplates.TEST_TOPIC_PREFIX, "")
-                )
+                isDB = true
             }
         }
 
@@ -141,8 +127,8 @@ class RPCSubscriptionIntegrationTest {
     @Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `start rpc sender and responder, send message, complete correctly`() {
-        topicUtils.createTopics(rpcTopic1Config)
-        topicUtils.createTopics(rpcResponseTopic1Config)
+        topicUtils.createTopics(getTopicConfig(TopicTemplates.RPC_TOPIC1_TEMPLATE))
+        topicUtils.createTopics(getTopicConfig(TopicTemplates.RPC_RESPONSE_TOPIC1_TEMPLATE))
 
         rpcConfig = RPCConfig(
             CLIENT_ID + 1,
@@ -225,8 +211,8 @@ class RPCSubscriptionIntegrationTest {
     @Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `start rpc sender and responder, send avro message, complete correctly`() {
-        topicUtils.createTopics(rpcTopic2Config)
-        topicUtils.createTopics(rpcResponseTopic2Config)
+        topicUtils.createTopics(getTopicConfig(TopicTemplates.RPC_TOPIC2_TEMPLATE))
+        topicUtils.createTopics(getTopicConfig(TopicTemplates.RPC_RESPONSE_TOPIC2_TEMPLATE))
 
         val rpcConfig = RPCConfig(
             CLIENT_ID + 2,
@@ -281,8 +267,8 @@ class RPCSubscriptionIntegrationTest {
     @Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `start rpc sender and responder, send message, complete exceptionally`() {
-        topicUtils.createTopics(rpcTopic3Config)
-        topicUtils.createTopics(rpcResponseTopic3Config)
+        topicUtils.createTopics(getTopicConfig(TopicTemplates.RPC_TOPIC3_TEMPLATE))
+        topicUtils.createTopics(getTopicConfig(TopicTemplates.RPC_RESPONSE_TOPIC3_TEMPLATE))
 
         rpcConfig = RPCConfig(
             CLIENT_ID + 3,
@@ -324,8 +310,8 @@ class RPCSubscriptionIntegrationTest {
     @Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `start rpc sender and responder, send message, complete with cancellation`() {
-        topicUtils.createTopics(rpcTopic4Config)
-        topicUtils.createTopics(rpcResponseTopic4Config)
+        topicUtils.createTopics(getTopicConfig(TopicTemplates.RPC_TOPIC4_TEMPLATE))
+        topicUtils.createTopics(getTopicConfig(TopicTemplates.RPC_RESPONSE_TOPIC4_TEMPLATE))
         rpcConfig = RPCConfig(
             CLIENT_ID + 4,
             CLIENT_ID,
@@ -366,8 +352,8 @@ class RPCSubscriptionIntegrationTest {
     @Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `start rpc sender and responder, send message, complete exceptionally due to repartition`() {
-        topicUtils.createTopics(rpcTopic5Config)
-        topicUtils.createTopics(rpcResponseTopic5Config)
+        topicUtils.createTopics(getTopicConfig(TopicTemplates.RPC_TOPIC5_TEMPLATE))
+        topicUtils.createTopics(getTopicConfig(TopicTemplates.RPC_RESPONSE_TOPIC5_TEMPLATE))
         rpcConfig = RPCConfig(
             CLIENT_ID + 5,
             CLIENT_ID,

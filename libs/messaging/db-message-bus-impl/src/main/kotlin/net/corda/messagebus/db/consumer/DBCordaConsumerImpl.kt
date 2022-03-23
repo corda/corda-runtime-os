@@ -14,6 +14,7 @@ import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.producer.CordaAtomicDBProducerImpl.Companion.ATOMIC_TRANSACTION
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
@@ -38,8 +39,10 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
         const val AUTO_OFFSET_RESET = "auto.offset.reset"
     }
 
-    private val log: Logger = LoggerFactory.getLogger(consumerConfig.getString(CLIENT_ID))
+    // Also used by the consumer group
+    internal val clientId = consumerConfig.getString(CLIENT_ID)
 
+    private val log: Logger = LoggerFactory.getLogger(clientId)
     private val groupId = consumerConfig.getString(ConfigProperties.GROUP_ID)
     private val maxPollRecords: Int = consumerConfig.getInt(MAX_POLL_RECORDS)
     private val maxPollInterval: Long = consumerConfig.getLong(MAX_POLL_INTERVAL)
@@ -95,7 +98,7 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
         if (lastReadOffset.containsKey(partition)) {
             lastReadOffset[partition] = offset
         } else {
-            throw CordaMessageAPIFatalException("Partition is not currently assigned to this consumer")
+            throw CordaMessageAPIIntermittentException("Partition is not currently assigned to consumer $clientId")
         }
     }
 
@@ -178,17 +181,17 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
     }
 
     override fun getPartitions(topic: String, timeout: Duration): List<CordaTopicPartition> {
-        val topicEntry = dbAccess.getTopicPartitionMapFor(topic)
-        return (0..topicEntry.numPartitions).map {
-            CordaTopicPartition(topic, it)
-        }
+        return dbAccess.getTopicPartitionMapFor(topic).toList()
     }
 
+    @Synchronized
     override fun close(timeout: Duration) {
-        // Nothing to do here
-        log.info("Closing logger for ${consumerConfig.getString(CLIENT_ID)}")
+        log.info("Closing consumer ${consumerConfig.getString(CLIENT_ID)}")
+        consumerGroup.unsubscribe(this)
+        updateTopicPartitions() // Will trigger the callback for removed topic partitions
     }
 
+    @Synchronized
     override fun close() {
         close(Duration.ZERO)
     }
@@ -225,7 +228,6 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
         }
 
         topicPartitions = newTopicPartitions
-        currentTopicPartition = topicPartitions.iterator()
     }
 
     private fun revokePartitions(topic: String, removedPartitions: Collection<CordaTopicPartition>) {

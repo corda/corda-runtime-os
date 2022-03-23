@@ -40,7 +40,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtendWith
@@ -112,12 +111,10 @@ class CompactedSubscriptionIntegrationTest {
             .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(TEST_TOPIC_PREFIX))
     }
 
-    @Disabled
     @Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `create compacted topic, publish records, start compacted sub, publish again`() {
         topicUtils.createTopics(compactedTopic1Config)
-//        topicAdmin.createTopics(kafkaProperties, COMPACTED_TOPIC1_TEMPLATE)
 
         publisherConfig = PublisherConfig(CLIENT_ID + COMPACTED_TOPIC1)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
@@ -169,7 +166,6 @@ class CompactedSubscriptionIntegrationTest {
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `create compacted topic, publish wrong records, start compacted sub`() {
         topicUtils.createTopics(compactedTopic2Config)
-//        topicAdmin.createTopics(kafkaProperties, COMPACTED_TOPIC2_TEMPLATE)
 
         publisherConfig = PublisherConfig(CLIENT_ID + COMPACTED_TOPIC2)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)

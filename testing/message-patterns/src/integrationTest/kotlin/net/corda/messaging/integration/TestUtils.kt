@@ -3,8 +3,14 @@ package net.corda.messaging.integration
 import net.corda.data.demo.DemoRecord
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.integration.IntegrationTestProperties.Companion.CLIENT_ID
+import org.junit.jupiter.api.extension.ConditionEvaluationResult
+import org.junit.jupiter.api.extension.ExecutionCondition
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.ExtensionContext
 import org.osgi.framework.BundleContext
+import org.osgi.framework.FrameworkUtil
 import java.util.*
+
 
 fun BundleContext.isDBBundle() = bundles.find { it.symbolicName.contains("db-message-bus-impl") } != null
 
@@ -32,7 +38,23 @@ fun getStringRecords(topic: String, recordCount: Int, keyCount: Int): List<Recor
 
 fun getKafkaProperties(): Properties {
     val kafkaProperties = Properties()
-    kafkaProperties[net.corda.messaging.integration.IntegrationTestProperties.BOOTSTRAP_SERVERS] = net.corda.messaging.integration.IntegrationTestProperties.BOOTSTRAP_SERVERS_VALUE
+    kafkaProperties[IntegrationTestProperties.BOOTSTRAP_SERVERS] = IntegrationTestProperties.BOOTSTRAP_SERVERS_VALUE
     kafkaProperties[CLIENT_ID] = "test"
     return kafkaProperties
 }
+
+class KafkaOnlyTest: ExecutionCondition {
+    override fun evaluateExecutionCondition(context: ExtensionContext?): ConditionEvaluationResult {
+        val bundleContext = FrameworkUtil.getBundle(this::class.java).bundleContext
+        return if (bundleContext.isDBBundle()) {
+            ConditionEvaluationResult.disabled("Kafka Only tests don't run on DB")
+        } else {
+            ConditionEvaluationResult.enabled("Kafka test can run")
+        }
+    }
+}
+
+@Target(AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.RUNTIME)
+@ExtendWith(KafkaOnlyTest::class)
+annotation class KafkaOnly

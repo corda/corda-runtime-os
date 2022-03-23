@@ -77,10 +77,6 @@ class DBAccessIntegrationTest {
                 dbConfig,
             )
 
-            emf.transaction { entityManager ->
-                entityManager.createNativeQuery("CREATE DATABASE test")
-            }
-
             val topicEntry = TopicEntry(topic, 4)
 
             emf.transaction { em ->
@@ -380,5 +376,30 @@ class DBAccessIntegrationTest {
         )
 
         assertThat(dbAccess.getLatestRecordOffset(partitions)).isEqualTo(expectedLatestResults)
+    }
+
+    @Test
+    fun `DBAccess returns the correct set of topic partitions`() {
+        val dbAccess = DBAccess(emf)
+
+        val expectedResult = setOf(
+            CordaTopicPartition(topic, 0),
+            CordaTopicPartition(topic, 1),
+            CordaTopicPartition(topic, 2),
+            CordaTopicPartition(topic, 3),
+        )
+
+        assertThat(dbAccess.getTopicPartitionMapFor(topic)).isEqualTo(expectedResult)
+    }
+
+    @Test
+    fun `DBAccess auto creates new topic partitions`() {
+        val dbAccess = DBAccess(emf)
+        val topic = randomId()
+        val expectedResult = setOf(
+            CordaTopicPartition(topic, 0),
+        )
+
+        assertThat(dbAccess.getTopicPartitionMapFor(topic)).isEqualTo(expectedResult)
     }
 }

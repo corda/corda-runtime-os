@@ -1,7 +1,7 @@
 package net.corda.messagebus.db.consumer
 
+import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
-import net.corda.messagebus.db.datamodel.TopicEntry
 import net.corda.messagebus.db.persistence.DBAccess
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -19,7 +19,13 @@ internal class ConsumerGroupTest {
         val consumer2 = mock<CordaConsumer<String, String>>()
         val consumer3 = mock<CordaConsumer<String, String>>()
         val dbAccess = mock<DBAccess>()
-        whenever(dbAccess.getTopicPartitionMapFor(eq(topic))).thenAnswer { TopicEntry(topic, 3) }
+        whenever(dbAccess.getTopicPartitionMapFor(eq(topic))).thenAnswer {
+            listOf(
+                CordaTopicPartition(topic, 0),
+                CordaTopicPartition(topic, 1),
+                CordaTopicPartition(topic, 2),
+            )
+        }
         val consumerGroup = ConsumerGroup("group", dbAccess)
 
         consumerGroup.subscribe(consumer1, setOf(topic))

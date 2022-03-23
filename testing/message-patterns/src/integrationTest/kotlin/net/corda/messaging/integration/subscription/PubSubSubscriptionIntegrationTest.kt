@@ -1,5 +1,6 @@
 package net.corda.messaging.integration.subscription
 
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfig
@@ -51,13 +52,21 @@ class PubSubSubscriptionIntegrationTest {
     private lateinit var publisherConfig: PublisherConfig
     private lateinit var publisher: Publisher
     private lateinit var kafkaConfig: SmartConfig
-    private val kafkaProperties = getKafkaProperties()
 
     private companion object {
         const val CLIENT_ID = "integrationTestPubSubPublisher"
         const val PUBSUB_TOPIC1 = "PubSubTopic1"
 
-        private var pubSubTopic1Config = ConfigFactory.parseString(TopicTemplates.PUBSUB_TOPIC1_TEMPLATE)
+        private var isDB = false
+
+        fun getTopicConfig(topicTemplate: String): Config {
+            val template = if (isDB) {
+                topicTemplate.replace(TEST_TOPIC_PREFIX,"")
+            } else {
+                topicTemplate
+            }
+            return ConfigFactory.parseString(template)
+        }
 
         @Suppress("unused")
         @JvmStatic
@@ -67,10 +76,7 @@ class PubSubSubscriptionIntegrationTest {
         ) {
             if (bundleContext.isDBBundle()) {
                 DBSetup.setupEntities(CLIENT_ID)
-                // Dodgy remove prefix for DB code
-                pubSubTopic1Config = ConfigFactory.parseString(
-                    TopicTemplates.PUBSUB_TOPIC1_TEMPLATE.replace(TEST_TOPIC_PREFIX, "")
-                )
+                isDB = true
             }
         }
 
@@ -107,7 +113,7 @@ class PubSubSubscriptionIntegrationTest {
     @Test
     @Timeout(value = 10, unit = TimeUnit.SECONDS)
     fun `start pubsub subscription and publish records`() {
-        topicUtils.createTopics(pubSubTopic1Config)
+        topicUtils.createTopics(getTopicConfig(TopicTemplates.PUBSUB_TOPIC1_TEMPLATE))
 
         val latch = CountDownLatch(1)
         val coordinator =
