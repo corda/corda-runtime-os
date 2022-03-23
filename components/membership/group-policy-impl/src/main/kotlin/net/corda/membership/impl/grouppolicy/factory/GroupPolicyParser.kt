@@ -1,10 +1,9 @@
 package net.corda.membership.impl.grouppolicy.factory
 
-import com.typesafe.config.ConfigException
-import com.typesafe.config.ConfigFactory
+import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.membership.GroupPolicy
+import net.corda.membership.exceptions.BadGroupPolicyException
 import net.corda.membership.impl.GroupPolicyImpl
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 
 class GroupPolicyParser {
@@ -14,21 +13,26 @@ class GroupPolicyParser {
         const val FAILED_PARSING = "GroupPolicy file is incorrectly formatted and parsing failed."
     }
 
+    private val objectMapper = ObjectMapper()
+
+    /**
+     * Parses a GroupPolicy from [String] to [GroupPolicy].
+     *
+     * @throws [BadGroupPolicyException] if the input string is null, blank, or cannot be parsed.
+     */
     fun parse(groupPolicyJson: String?): GroupPolicy {
         return GroupPolicyImpl(
-            try {
-                if (groupPolicyJson.isNullOrBlank()) {
-                    logger.error(EMPTY_GROUP_POLICY)
-                    throw CordaRuntimeException(EMPTY_GROUP_POLICY)
-                } else {
-                    ConfigFactory
-                        .parseString(groupPolicyJson)
-                        .root()
-                        .unwrapped()
+            if (groupPolicyJson.isNullOrBlank()) {
+                logger.error(EMPTY_GROUP_POLICY)
+                throw BadGroupPolicyException(EMPTY_GROUP_POLICY)
+            } else {
+                try {
+                    @Suppress("UNCHECKED_CAST")
+                    objectMapper.readValue(groupPolicyJson, Map::class.java) as Map<String, Any>
+                } catch (e: Exception) {
+                    logger.error("$FAILED_PARSING Caused by: ${e.message}")
+                    throw BadGroupPolicyException(FAILED_PARSING, e)
                 }
-            } catch (e: ConfigException.Parse) {
-                logger.error(FAILED_PARSING)
-                throw CordaRuntimeException(FAILED_PARSING, e)
             }
         )
     }

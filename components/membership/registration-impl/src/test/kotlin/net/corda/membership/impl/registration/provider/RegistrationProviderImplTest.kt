@@ -4,6 +4,7 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.GroupPolicy
+import net.corda.membership.exceptions.RegistrationProtocolSelectionException
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.GroupPolicyExtension.Companion.REGISTRATION_PROTOCOL_KEY
 import net.corda.membership.impl.GroupPolicyImpl
@@ -85,7 +86,7 @@ class RegistrationProviderImplTest {
         setCoordinatorToRunningAndUpStatus()
         val identity = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(String::class.java.name), identity)
-        assertThrows<CordaRuntimeException> {
+        assertThrows<RegistrationProtocolSelectionException> {
             registrationProvider.get(identity)
         }
     }

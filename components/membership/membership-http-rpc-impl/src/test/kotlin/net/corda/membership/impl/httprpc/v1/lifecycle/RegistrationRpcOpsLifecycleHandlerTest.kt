@@ -23,7 +23,9 @@ class RegistrationRpcOpsLifecycleHandlerTest {
         on { followStatusChangesByName(any()) } doReturn componentHandle
     }
 
-    private val registrationRpcOpsLifecycleHandler = RegistrationRpcOpsLifecycleHandler()
+    private val activate: (String) -> Unit = mock()
+    private val deactivate: (String) -> Unit = mock()
+    private val registrationRpcOpsLifecycleHandler = RegistrationRpcOpsLifecycleHandler(activate, deactivate)
 
     private val registrationHandle: RegistrationHandle = mock()
 
@@ -54,7 +56,7 @@ class RegistrationRpcOpsLifecycleHandlerTest {
         registrationRpcOpsLifecycleHandler.processEvent(
             RegistrationStatusChangeEvent(registrationHandle, LifecycleStatus.UP), coordinator
         )
-        verify(coordinator).updateStatus(LifecycleStatus.UP)
+        verify(activate).invoke(any())
     }
 
     @Test
@@ -64,7 +66,7 @@ class RegistrationRpcOpsLifecycleHandlerTest {
             RegistrationStatusChangeEvent(registrationHandle, LifecycleStatus.DOWN), coordinator
         )
 
-        verify(coordinator).updateStatus(LifecycleStatus.DOWN)
+        verify(deactivate).invoke(any())
     }
 
     @Test
@@ -73,6 +75,6 @@ class RegistrationRpcOpsLifecycleHandlerTest {
             RegistrationStatusChangeEvent(mock(), LifecycleStatus.ERROR), coordinator
         )
 
-        verify(coordinator).updateStatus(LifecycleStatus.DOWN)
+        verify(deactivate).invoke(any())
     }
 }

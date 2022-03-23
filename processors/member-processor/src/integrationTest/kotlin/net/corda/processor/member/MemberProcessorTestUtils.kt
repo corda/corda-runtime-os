@@ -7,22 +7,34 @@ import net.corda.libs.packaging.CpiIdentifier
 import net.corda.libs.packaging.CpiMetadata
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.GroupPolicy
+import net.corda.membership.exceptions.BadGroupPolicyException
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.read.MembershipGroupReader
+import net.corda.membership.registration.MemberRegistrationService
+import net.corda.membership.registration.provider.RegistrationProvider
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.PublicKeyHash
+import net.corda.v5.crypto.SecureHash
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
-import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
+import java.lang.IllegalStateException
 import java.util.UUID
 
 class MemberProcessorTestUtils {
@@ -51,10 +63,11 @@ class MemberProcessorTestUtils {
       """
 
         val aliceName = "C=GB, L=London, O=Alice"
-        val aliceX500Name = MemberX500Name.parse(aliceName)
         val bobName = "C=GB, L=London, O=Bob"
-        val bobX500Name = MemberX500Name.parse(bobName)
         val charlieName = "C=GB, L=London, O=Charlie"
+
+        val aliceX500Name = MemberX500Name.parse(aliceName)
+        val bobX500Name = MemberX500Name.parse(bobName)
         val charlieX500Name = MemberX500Name.parse(charlieName)
         val groupId = "ABC123"
         val aliceHoldingIdentity = HoldingIdentity(aliceName, groupId)
@@ -96,37 +109,77 @@ class MemberProcessorTestUtils {
             isStarted()
         }
 
-        fun Lifecycle.isStopped() = eventually { Assertions.assertFalse(isRunning) }
+        fun Lifecycle.isStopped() = eventually { assertFalse(isRunning) }
 
-        fun Lifecycle.isStarted() = eventually { Assertions.assertTrue(isRunning) }
+        fun Lifecycle.isStarted() = eventually { assertTrue(isRunning) }
 
         val sampleGroupPolicy1 get() = getSampleGroupPolicy("/SampleGroupPolicy.json")
         val sampleGroupPolicy2 get() = getSampleGroupPolicy("/SampleGroupPolicy2.json")
 
+        fun getRegistrationService(registrationProvider: RegistrationProvider): MemberRegistrationService = eventually {
+            assertDoesNotThrow {
+                registrationProvider.get(aliceHoldingIdentity)
+            }.also {
+                assertNotNull(it)
+            }
+        }
+
+        fun getRegistrationServiceFails(registrationProvider: RegistrationProvider) = eventually {
+            assertThrows<CordaRuntimeException> {
+                registrationProvider.get(aliceHoldingIdentity)
+            }
+        }
+
+        fun lookup(groupReader: MembershipGroupReader, holdingIdentity: MemberX500Name) = eventually {
+            val lookupResult = groupReader.lookup(holdingIdentity)
+            assertNotNull(lookupResult)
+            lookupResult!!
+        }
+
+        fun lookupFails(groupReader: MembershipGroupReader, holdingIdentity: MemberX500Name) = eventually {
+            val lookupResult = groupReader.lookup(holdingIdentity)
+            assertNull(lookupResult)
+        }
+
+        fun lookUpFromPublicKey(groupReader: MembershipGroupReader, member: MemberInfo?) = eventually {
+            val result = groupReader.lookup(PublicKeyHash.calculate(member!!.owningKey))
+            assertNotNull(result)
+            result!!
+        }
+
         fun getGroupPolicyFails(
             groupPolicyProvider: GroupPolicyProvider,
-            holdingIdentity: HoldingIdentity = aliceHoldingIdentity
-        ) = assertThrows<CordaRuntimeException> {
-            getGroupPolicy(groupPolicyProvider, holdingIdentity)
+            holdingIdentity: HoldingIdentity = aliceHoldingIdentity,
+            expectedException: Class<out Exception> = IllegalStateException::class.java
+        ) = eventually {
+            val e = assertThrows<Exception> { groupPolicyProvider.getGroupPolicy(holdingIdentity) }
+            assertTrue(expectedException.isAssignableFrom(e::class.java))
         }
 
         fun getGroupPolicy(
             groupPolicyProvider: GroupPolicyProvider,
             holdingIdentity: HoldingIdentity = aliceHoldingIdentity
-        ) = groupPolicyProvider.getGroupPolicy(holdingIdentity)
+        ) = eventually {
+            val policy = groupPolicyProvider.getGroupPolicy(holdingIdentity)
+            assertNotNull(policy)
+            policy
+        }
 
-        fun assertGroupPolicy(new: GroupPolicy, old: GroupPolicy? = null) {
+        fun assertGroupPolicy(new: GroupPolicy?, old: GroupPolicy? = null) {
+            assertNotNull(new)
             old?.let {
                 assertNotEquals(new, it)
             }
-            Assertions.assertEquals(groupId, new.groupId)
-            Assertions.assertEquals(6, new.keys.size)
+            assertEquals(groupId, new!!.groupId)
+            assertEquals(5, new.keys.size)
         }
 
-        fun assertSecondGroupPolicy(new: GroupPolicy, old: GroupPolicy) {
+        fun assertSecondGroupPolicy(new: GroupPolicy?, old: GroupPolicy?) {
+            assertNotNull(new)
+            assertNotNull(old)
             assertNotEquals(new, old)
-            Assertions.assertEquals("DEF456", new.groupId)
-            Assertions.assertEquals(2, new.size)
+            assertEquals("DEF456", new!!.groupId)
+            assertEquals(2, new.size)
         }
 
 

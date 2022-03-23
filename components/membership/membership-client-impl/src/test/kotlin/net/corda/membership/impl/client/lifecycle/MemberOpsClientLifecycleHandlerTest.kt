@@ -6,27 +6,23 @@ import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
-import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.membership.impl.client.MemberOpsClientImpl
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.configuration.ConfigKeys
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
-import kotlin.test.assertNotNull
 
 class MemberOpsClientLifecycleHandlerTest {
     private val componentHandle: RegistrationHandle = mock()
@@ -34,10 +30,6 @@ class MemberOpsClientLifecycleHandlerTest {
 
     private val coordinator: LifecycleCoordinator = mock {
         on { followStatusChangesByName(any()) } doReturn componentHandle
-    }
-
-    private val coordinatorFactory: LifecycleCoordinatorFactory = mock {
-        on { createCoordinator(any(), any()) } doReturn coordinator
     }
 
     private val rpcSender: RPCSender<MembershipRpcRequest, MembershipRpcResponse> = mock()
@@ -50,13 +42,15 @@ class MemberOpsClientLifecycleHandlerTest {
         on { registerComponentForUpdates(any(), any()) } doReturn configHandle
     }
 
-    private val memberOpsClient = MemberOpsClientImpl(
-        coordinatorFactory,
-        publisherFactory,
-        configurationReadService
-    )
+    private val mockActivate: (RPCSender<MembershipRpcRequest, MembershipRpcResponse>, String) -> Unit = mock()
+    private val mockDeactivate: (String) -> Unit = mock()
 
-    private val lifecycleHandler = MemberOpsClientLifecycleHandler(memberOpsClient)
+    private val lifecycleHandler = MemberOpsClientLifecycleHandler(
+        publisherFactory,
+        configurationReadService,
+        mockActivate,
+        mockDeactivate
+    )
 
     private val bootConfig: SmartConfig = mock()
     private val messagingConfig: SmartConfig = mock {
@@ -71,7 +65,6 @@ class MemberOpsClientLifecycleHandlerTest {
     @Test
     fun `start event starts following the statuses of the required dependencies`() {
         lifecycleHandler.processEvent(StartEvent(), coordinator)
-        assertThrows<IllegalArgumentException> { lifecycleHandler.rpcSender }
 
         verify(coordinator).followStatusChangesByName(
             eq(setOf(LifecycleCoordinatorName.forComponent<ConfigurationReadService>()))
@@ -79,16 +72,20 @@ class MemberOpsClientLifecycleHandlerTest {
     }
 
     @Test
-    fun `stop event sets the rpc sender to null`() {
-        lifecycleHandler.processEvent(
-            ConfigChangedEvent(setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG), configs),
-            coordinator
-        )
+    fun `start event closes dependency handle if it exists`() {
+        lifecycleHandler.processEvent(StartEvent(), coordinator)
+        lifecycleHandler.processEvent(StartEvent(), coordinator)
+
+        verify(componentHandle).close()
+    }
+
+    @Test
+    fun `stop event calls the deactivate function`() {
         lifecycleHandler.processEvent(StopEvent(), coordinator)
-        assertThrows<IllegalArgumentException> { lifecycleHandler.rpcSender }
 
         verify(componentHandle, never()).close()
         verify(configHandle, never()).close()
+        verify(mockDeactivate).invoke(any())
     }
 
     @Test
@@ -122,21 +119,21 @@ class MemberOpsClientLifecycleHandlerTest {
     }
 
     @Test
-    fun `registration status DOWN sets component status to DOWN`() {
+    fun `registration status DOWN calls the deactivate function`() {
         lifecycleHandler.processEvent(
             RegistrationStatusChangeEvent(mock(), LifecycleStatus.DOWN), coordinator
         )
 
-        verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
+        verify(mockDeactivate).invoke(any())
     }
 
     @Test
-    fun `registration status ERROR sets component status to DOWN`() {
+    fun `registration status ERROR calls the deactivate function`() {
         lifecycleHandler.processEvent(
             RegistrationStatusChangeEvent(mock(), LifecycleStatus.ERROR), coordinator
         )
 
-        verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
+        verify(mockDeactivate).invoke(any())
     }
 
     @Test
@@ -157,12 +154,30 @@ class MemberOpsClientLifecycleHandlerTest {
     }
 
     @Test
+    fun `registration status UP closes config handle if status was previously UP`() {
+        lifecycleHandler.processEvent(
+            RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator
+        )
+
+        verify(configurationReadService).registerComponentForUpdates(
+            any(), any()
+        )
+
+        lifecycleHandler.processEvent(
+            RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator
+        )
+
+        verify(configHandle).close()
+    }
+
+    @Test
     fun `after receiving the messaging configuration the rpc sender is initialized`() {
         lifecycleHandler.processEvent(
             ConfigChangedEvent(setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG), configs),
             coordinator
         )
-        assertNotNull(lifecycleHandler.rpcSender)
-        verify(coordinator).updateStatus(LifecycleStatus.UP)
+        verify(publisherFactory).createRPCSender(any<RPCConfig<MembershipRpcRequest, MembershipRpcResponse>>(), any())
+        verify(rpcSender).start()
+        verify(mockActivate).invoke(eq(rpcSender), any())
     }
 }

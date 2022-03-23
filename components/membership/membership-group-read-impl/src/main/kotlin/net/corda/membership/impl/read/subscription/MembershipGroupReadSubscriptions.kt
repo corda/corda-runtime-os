@@ -46,9 +46,7 @@ interface MembershipGroupReadSubscriptions : Lifecycle {
             get() = subscriptions.all { it?.isRunning ?: false }
 
         override fun start(config: SmartConfig) {
-            if(!isRunning) {
-                startMemberListSubscription(config)
-            }
+            startMemberListSubscription(config)
         }
 
         override fun start() {
@@ -79,12 +77,15 @@ interface MembershipGroupReadSubscriptions : Lifecycle {
 
             val processor = MemberListProcessor(groupReadCache, layeredPropertyMapFactory)
 
-            memberListSubscription = subscriptionFactory.createCompactedSubscription(
+            subscriptionFactory.createCompactedSubscription(
                 subscriptionConfig,
                 processor,
                 config
             ).apply {
                 start()
+                val tempSub = memberListSubscription
+                memberListSubscription = this
+                tempSub?.close()
             }
         }
 

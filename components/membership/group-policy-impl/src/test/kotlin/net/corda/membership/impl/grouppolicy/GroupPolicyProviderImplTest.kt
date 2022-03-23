@@ -11,7 +11,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.GroupPolicy
-import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.membership.exceptions.BadGroupPolicyException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -31,7 +31,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import java.util.UUID
+import java.util.*
 
 /**
  * Unit tests for [GroupPolicyProviderImpl]
@@ -71,7 +71,7 @@ class GroupPolicyProviderImplTest {
     val cpiMetadata3 = mockMetadata(groupPolicy3)
     val cpiMetadata4 = mockMetadata(groupPolicy4)
 
-    val cpiIdentifier1: CpiIdentifier= mock()
+    val cpiIdentifier1: CpiIdentifier = mock()
     val cpiIdentifier2: CpiIdentifier = mock()
     val cpiIdentifier3: CpiIdentifier = mock()
     val cpiIdentifier4: CpiIdentifier = mock()
@@ -80,13 +80,17 @@ class GroupPolicyProviderImplTest {
 
     val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { get(eq(holdingIdentity1)) } doReturn VirtualNodeInfo(
-            holdingIdentity1, cpiIdentifier1, null, UUID.randomUUID(), null, UUID.randomUUID())
+            holdingIdentity1, cpiIdentifier1, null, UUID.randomUUID(), null, UUID.randomUUID()
+        )
         on { get(eq(holdingIdentity2)) } doReturn VirtualNodeInfo(
-            holdingIdentity2, cpiIdentifier2, null, UUID.randomUUID(), null, UUID.randomUUID())
+            holdingIdentity2, cpiIdentifier2, null, UUID.randomUUID(), null, UUID.randomUUID()
+        )
         on { get(eq(holdingIdentity3)) } doReturn VirtualNodeInfo(
-            holdingIdentity3, cpiIdentifier3, null, UUID.randomUUID(), null, UUID.randomUUID())
+            holdingIdentity3, cpiIdentifier3, null, UUID.randomUUID(), null, UUID.randomUUID()
+        )
         on { get(eq(holdingIdentity4)) } doReturn VirtualNodeInfo(
-            holdingIdentity4, cpiIdentifier4, null, UUID.randomUUID(), null, UUID.randomUUID())
+            holdingIdentity4, cpiIdentifier4, null, UUID.randomUUID(), null, UUID.randomUUID()
+        )
         on { registerCallback(any()) } doAnswer {
             virtualNodeListener = it.arguments[0] as VirtualNodeInfoListener
             mock()
@@ -143,12 +147,13 @@ class GroupPolicyProviderImplTest {
     }
 
     fun assertExpectedGroupPolicy(
-        groupPolicy: GroupPolicy,
+        groupPolicy: GroupPolicy?,
         groupId: String?,
         testAttr: String?,
         expectedSize: Int = 2
     ) {
-        assertEquals(expectedSize, groupPolicy.size)
+        assertNotNull(groupPolicy)
+        assertEquals(expectedSize, groupPolicy!!.size)
         assertEquals(groupId, groupPolicy[groupIdKey])
         assertEquals(testAttr, groupPolicy[testAttrKey])
     }
@@ -171,22 +176,18 @@ class GroupPolicyProviderImplTest {
             groupId2,
             testAttr3
         )
-        assertThrows<CordaRuntimeException> { groupPolicyProvider.getGroupPolicy(holdingIdentity4) }
+        assertThrows<BadGroupPolicyException> { groupPolicyProvider.getGroupPolicy(holdingIdentity4) }
     }
 
     @Test
     fun `Group policy read fails if service hasn't started`() {
-        assertThrows<CordaRuntimeException> {
-            groupPolicyProvider.getGroupPolicy(holdingIdentity1)
-        }
+        assertThrows<IllegalStateException> { groupPolicyProvider.getGroupPolicy(holdingIdentity1) }
     }
 
     @Test
     fun `Group policy read fails if service isn't up`() {
         groupPolicyProvider.start()
-        assertThrows<CordaRuntimeException> {
-            groupPolicyProvider.getGroupPolicy(holdingIdentity1)
-        }
+        assertThrows<IllegalStateException> { groupPolicyProvider.getGroupPolicy(holdingIdentity1) }
     }
 
     @Test
@@ -231,7 +232,16 @@ class GroupPolicyProviderImplTest {
 
         virtualNodeListener?.onUpdate(
             setOf(holdingIdentity1),
-            mapOf(holdingIdentity1 to VirtualNodeInfo(holdingIdentity1, cpiIdentifier2, null, UUID.randomUUID(), null, UUID.randomUUID()))
+            mapOf(
+                holdingIdentity1 to VirtualNodeInfo(
+                    holdingIdentity1,
+                    cpiIdentifier2,
+                    null,
+                    UUID.randomUUID(),
+                    null,
+                    UUID.randomUUID()
+                )
+            )
         )
 
         val updated = groupPolicyProvider.getGroupPolicy(holdingIdentity1)
@@ -247,7 +257,16 @@ class GroupPolicyProviderImplTest {
 
         virtualNodeListener?.onUpdate(
             setOf(holdingIdentity1),
-            mapOf(holdingIdentity1 to VirtualNodeInfo(holdingIdentity1, cpiIdentifier2, null, UUID.randomUUID(), null, UUID.randomUUID()))
+            mapOf(
+                holdingIdentity1 to VirtualNodeInfo(
+                    holdingIdentity1,
+                    cpiIdentifier2,
+                    null,
+                    UUID.randomUUID(),
+                    null,
+                    UUID.randomUUID()
+                )
+            )
         )
 
         val updated = groupPolicyProvider.getGroupPolicy(holdingIdentity1)
@@ -262,9 +281,7 @@ class GroupPolicyProviderImplTest {
 
         registrationChange(LifecycleStatus.DOWN)
 
-        assertThrows<CordaRuntimeException> {
-            groupPolicyProvider.getGroupPolicy(holdingIdentity1)
-        }
+        assertThrows<IllegalStateException> { groupPolicyProvider.getGroupPolicy(holdingIdentity1) }
     }
 
     @Test
