@@ -38,7 +38,7 @@ class Gateway(
         LbType.NGINX -> listOf(
             Port.Gateway
         )
-        // In HEADLESS load balancer the load balancer is the service, no need to create a service per gateway.
+        // In HEADLESS load balancer the headless service will act as the load balancer, no need to create an extra service per gateway.
         LbType.HEADLESS -> emptyList()
     }
 }

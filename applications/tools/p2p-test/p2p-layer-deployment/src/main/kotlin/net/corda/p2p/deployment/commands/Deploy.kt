@@ -178,7 +178,7 @@ class Deploy : Runnable {
 
     override fun run() {
         if ((lbType == LbType.HEADLESS) && (hostName != "load-balancer.$namespaceName")) {
-            println("For headless LB we must use the host name: load-balancer.$namespaceName")
+            println("For headless LB we will use the host name: load-balancer.$namespaceName")
             hostName = "load-balancer.$namespaceName"
         }
 
