@@ -175,12 +175,12 @@ internal class HttpRpcServerInternal(
         }
     }
 
-    private fun authorize(authorizingSubject: AuthorizingSubject, fullPath: String) {
+    private fun authorize(authorizingSubject: AuthorizingSubject, resourceAccessString: String) {
         val principal = authorizingSubject.principal
-        log.trace { "Authorize \"$principal\" for \"$fullPath\"." }
-        if (!authorizingSubject.isPermitted(fullPath))
+        log.trace { "Authorize \"$principal\" for \"$resourceAccessString\"." }
+        if (!authorizingSubject.isPermitted(resourceAccessString))
             throw ForbiddenResponse("User not authorized.")
-        log.trace { "Authorize \"$principal\" for \"$fullPath\" completed." }
+        log.trace { "Authorize \"$principal\" for \"$resourceAccessString\" completed." }
     }
 
     @SuppressWarnings("ComplexMethod", "ThrowsCount")
@@ -218,7 +218,7 @@ internal class HttpRpcServerInternal(
                     // "testEntity/getprotocolversion" and mistakenly finds "before" handler where there should be none.
                     // Javalin provides no way for modifying "before" handler finding logic.
                     if (resourceProvider.httpNoAuthRequiredGetRoutes.none { routeInfo -> routeInfo.fullPath == it.path() }) {
-                        authorize(authenticate(it), it.fullUrl())
+                        authorize(authenticate(it), getResourceAccessString(it))
                     } else {
                         log.debug { "Call to ${it.path()} identified as an exempt from authorization check." }
                     }
@@ -235,7 +235,7 @@ internal class HttpRpcServerInternal(
                             )
                         )
                     }
-                    authorize(authenticate(it), it.fullUrl())
+                    authorize(authenticate(it), getResourceAccessString(it))
                 }
                 registerHandlerForRoute(routeInfo, HandlerType.POST)
             }
@@ -246,6 +246,14 @@ internal class HttpRpcServerInternal(
                 throw Exception(it, e)
             }
         }
+    }
+
+    private fun getResourceAccessString(context: Context): String {
+        val queryString = context.queryString()
+        // Examples of strings will look like:
+        // GET:/api/v1/permission/getpermission?id=c048679a-9654-4359-befc-9d2d22695a43
+        // POST:/api/v1/user/createuser
+        return context.method() + ":" + context.path() + if (!queryString.isNullOrBlank()) "?$queryString" else ""
     }
 
     private fun Javalin.addOpenApiRoute() {
