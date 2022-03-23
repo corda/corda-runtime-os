@@ -54,8 +54,13 @@ class WorkerHelpers {
                 .flatMap { map -> map.entries }
                 .associate { (key, value) -> key to value }
 
+            val dirsConfig = mapOf(
+                ConfigKeys.WORKSPACE_DIR to defaultParams.workspaceDir,
+                ConfigKeys.TEMP_DIR to defaultParams.tempDir
+            )
+
             val config = ConfigFactory
-                .parseMap(messagingParamsMap + additionalParamsMap + extraParamsMap)
+                .parseMap(messagingParamsMap + dirsConfig + additionalParamsMap + extraParamsMap)
                 .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(defaultParams.instanceId))
                 .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(defaultParams.topicPrefix))
 

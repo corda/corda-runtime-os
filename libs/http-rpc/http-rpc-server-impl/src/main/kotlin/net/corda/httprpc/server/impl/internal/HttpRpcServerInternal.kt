@@ -41,6 +41,7 @@ import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
 import java.io.OutputStream
 import java.io.PrintStream
+import java.nio.file.Path
 import javax.security.auth.login.FailedLoginException
 import javax.servlet.MultipartConfigElement
 
@@ -50,8 +51,8 @@ internal class HttpRpcServerInternal(
     private val securityManager: HttpRpcSecurityManager,
     private val configurationsProvider: HttpRpcSettingsProvider,
     private val openApiInfoProvider: OpenApiInfoProvider,
-
-    ) {
+    multiPartDir: Path
+) {
 
     internal companion object {
         private val log = contextLogger()
@@ -121,7 +122,7 @@ internal class HttpRpcServerInternal(
         MultipartUtil.preUploadFunction = { req ->
             req.setAttribute("org.eclipse.jetty.multipartConfig",
                 MultipartConfigElement(
-                    System.getProperty("java.io.tmpdir"),
+                    multiPartDir.toString(),
                     configurationsProvider.maxContentLength().toLong(),
                     configurationsProvider.maxContentLength().toLong(),
                     1024))

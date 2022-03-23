@@ -10,16 +10,12 @@ import net.corda.v5.crypto.SecureHash
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.Paths
 import javax.persistence.PersistenceException
 
-class ValidationFunctions {
-    private val tmpDir = Paths.get(System.getProperty("java.io.tmpdir"), "unpacking")
-        .apply { Files.createDirectories(this) }
-
-    private val cpiExpansionDir = Paths.get(System.getProperty("java.io.tmpdir"), "expanded")
-        .apply { Files.createDirectories(this) }
-
+class ValidationFunctions(
+    private val cpiCacheDir: Path,
+    private val cpiPartsDir: Path
+) {
     /**
      * Assembles the CPI from chunks in the database, and returns the temporary path
      * that we've stored the recreated binary, plus any filename associated with it.
@@ -34,7 +30,7 @@ class ValidationFunctions {
         var checksum: SecureHash? = null
 
         // Set up chunk reader.  If onComplete is never called, we've failed.
-        val reader = ChunkReaderFactory.create(tmpDir).apply {
+        val reader = ChunkReaderFactory.create(cpiCacheDir).apply {
             onComplete { originalFileName: String, tempPathOfBinary: Path, fileChecksum: SecureHash ->
                 fileName = originalFileName
                 tempPath = tempPathOfBinary
@@ -56,7 +52,7 @@ class ValidationFunctions {
     fun checkCpi(cpiFile: FileInfo): CPI {
         val cpi: CPI =
             try {
-                Files.newInputStream(cpiFile.path).use { CPI.from(it, cpiExpansionDir) }
+                Files.newInputStream(cpiFile.path).use { CPI.from(it, cpiPartsDir) }
             } catch (ex: Exception) {
                 when (ex) {
                     is PackagingException -> {

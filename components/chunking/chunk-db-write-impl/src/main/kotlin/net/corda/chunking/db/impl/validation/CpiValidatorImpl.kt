@@ -10,17 +10,20 @@ import net.corda.libs.packaging.CpkMetadata
 import net.corda.packaging.CPI
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
+import java.nio.file.Path
 
 class CpiValidatorImpl(
     private val publisher: StatusPublisher,
     private val persistence: ChunkPersistence,
-    private val cpiInfoWriteService: CpiInfoWriteService
+    private val cpiInfoWriteService: CpiInfoWriteService,
+    cpiCacheDir: Path,
+    cpiPartsDir: Path
 ) : CpiValidator {
     companion object {
         private val log = contextLogger()
     }
 
-    private val validationFunctions = ValidationFunctions()
+    private val validationFunctions = ValidationFunctions(cpiCacheDir, cpiPartsDir)
 
     override fun validate(requestId: RequestId): SecureHash {
         //  Each function may throw a [ValidationException]
