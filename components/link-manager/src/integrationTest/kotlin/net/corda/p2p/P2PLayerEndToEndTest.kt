@@ -40,6 +40,7 @@ import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.StubLinkManagerHostingMap
 import net.corda.p2p.linkmanager.StubNetworkMap
 import net.corda.p2p.markers.AppMessageMarker
+import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
 import net.corda.p2p.markers.TtlExpiredMarker
 import net.corda.p2p.test.HostedIdentityEntry
@@ -267,7 +268,7 @@ class P2PLayerEndToEndTest {
             subForP2POutMarkers.start()
 
             val hostAApplicationWriter = hostA.publisherFactory.createPublisher(PublisherConfig("app-layer", 1), bootstrapConfig)
-            val initialMessages = (1..2).map { index ->
+            val initialMessages = (1..10).map { index ->
                 val randomId = "1"
                 val messageHeader = AuthenticatedMessageHeader(
                     HoldingIdentity(hostB.x500Name, GROUP_ID),
@@ -288,8 +289,15 @@ class P2PLayerEndToEndTest {
 
             eventually(10.seconds) {
                 synchronized(hostAExpiryMarkers) {
-                    val markers = hostAExpiryMarkers.filter{it.topic == P2P_OUT_MARKERS}.map { (it.value as AppMessageMarker).marker }
-                    assertThat(markers).containsExactlyInAnyOrder(LinkManagerSentMarker::class.java, TtlExpiredMarker::class.java)
+                    val sentMarkers = hostAExpiryMarkers.filter{it.topic == P2P_OUT_MARKERS}.map { (it.value as AppMessageMarker).marker }
+                        .filter { it is LinkManagerSentMarker }
+                    assertThat(sentMarkers).hasSize(initialMessages.size)
+                    val expiredMarkers = hostAExpiryMarkers.filter{it.topic == P2P_OUT_MARKERS}.map { (it.value as AppMessageMarker).marker }
+                        .filter { it is TtlExpiredMarker }
+                    assertThat(expiredMarkers).hasSize(initialMessages.size)
+                    val receivedMarkers = hostAExpiryMarkers.filter{it.topic == P2P_OUT_MARKERS}.map { (it.value as AppMessageMarker).marker }
+                        .filter { it is LinkManagerReceivedMarker }
+                    assertThat(receivedMarkers).isEmpty()
                 }
             }
 
