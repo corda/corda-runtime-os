@@ -1,6 +1,7 @@
 package net.corda.membership.registration.proxy
 
 import net.corda.lifecycle.Lifecycle
+import net.corda.membership.exceptions.RegistrationProtocolSelectionException
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.virtualnode.HoldingIdentity
@@ -18,6 +19,8 @@ interface RegistrationProxy : Lifecycle {
      *
      * @return The status of the registration request as reported by the [MemberRegistrationService].
      * NOT_SUBMITTED is returned if something goes wrong while creating the request.
+     *
+     * @throws [RegistrationProtocolSelectionException] when the registration protocol could not be selected.
      */
     fun register(member: HoldingIdentity): MembershipRequestRegistrationResult
 }

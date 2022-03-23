@@ -18,8 +18,8 @@ import net.corda.processor.member.MemberProcessorTestUtils.Companion.bootConf
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.charlieX500Name
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.getGroupPolicy
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.getGroupPolicyFails
-import net.corda.processor.member.MemberProcessorTestUtils.Companion.getRegistrationService
-import net.corda.processor.member.MemberProcessorTestUtils.Companion.getRegistrationServiceFails
+import net.corda.processor.member.MemberProcessorTestUtils.Companion.getRegistrationResult
+import net.corda.processor.member.MemberProcessorTestUtils.Companion.getRegistrationResultFails
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.groupId
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.isStarted
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookUpFromPublicKey
@@ -41,6 +41,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
@@ -226,8 +227,7 @@ class MemberProcessorIntegrationTest {
      * Test assumes the group policy file is configured to use the static member registration.
      */
     fun `Register and view static member list`() {
-        val registrationService = getRegistrationService(registrationProvider)
-        val result = registrationService.register(aliceHoldingIdentity)
+        val result = getRegistrationResult(registrationProxy)
         assertEquals(MembershipRequestRegistrationOutcome.SUBMITTED, result.outcome)
 
         val groupReader = eventually {
@@ -255,31 +255,12 @@ class MemberProcessorIntegrationTest {
         // bringing down the group policy provider brings down the static registration service
         groupPolicyProvider.stopAndWait()
 
-        getRegistrationServiceFails(registrationProvider)
+        getRegistrationResultFails(registrationProxy)
 
         // bring back up
         groupPolicyProvider.startAndWait()
 
         // Wait for it to pass again before moving to next test
-        getRegistrationService(registrationProvider)
-    }
-
-    fun `Registration service fails to register if it is down`() {
-        val registrationService = getRegistrationService(registrationProvider)
-
-        // bringing down the group policy provider brings down the static registration service
-        groupPolicyProvider.stopAndWait()
-
-        val registrationOutcome = registrationService
-            .register(aliceHoldingIdentity)
-            .outcome
-
-        assertEquals(MembershipRequestRegistrationOutcome.NOT_SUBMITTED, registrationOutcome)
-
-        // bring back up
-        groupPolicyProvider.startAndWait()
-
-        // Wait for it to pass again before moving to next test
-        getRegistrationService(registrationProvider)
+        getRegistrationResult(registrationProxy)
     }
 }

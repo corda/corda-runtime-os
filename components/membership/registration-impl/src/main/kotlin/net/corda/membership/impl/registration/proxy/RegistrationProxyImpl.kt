@@ -3,13 +3,14 @@ package net.corda.membership.impl.registration.proxy
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.exceptions.BadGroupPolicyException
+import net.corda.membership.exceptions.RegistrationProtocolSelectionException
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.registration.proxy.lifecycle.RegistrationProxyLifecycleHandler
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.membership.registration.proxy.RegistrationProxy
 import net.corda.v5.base.annotations.VisibleForTesting
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
@@ -93,7 +94,14 @@ class RegistrationProxyImpl @Activate constructor(
     ) : InnerRegistrationProxy {
         override fun register(member: HoldingIdentity): MembershipRequestRegistrationResult {
             val service = getRegistrationService(
-                groupPolicyProvider.getGroupPolicy(member).registrationProtocol
+                try {
+                    groupPolicyProvider.getGroupPolicy(member).registrationProtocol
+                } catch (e: BadGroupPolicyException) {
+                    val err =
+                        "Failed to select correct registration protocol due to problems retrieving the group policy."
+                    logger.error(err, e)
+                    throw RegistrationProtocolSelectionException(err, e)
+                }
             )
             return service.register(member)
         }
@@ -101,16 +109,12 @@ class RegistrationProxyImpl @Activate constructor(
         private fun getRegistrationService(protocol: String): MemberRegistrationService {
             logger.debug(String.format(LOADING_SERVICE_LOG, protocol))
             val service = registrationServices.find { it.javaClass.name == protocol }
-            registrationServiceIsFound(protocol, service)
-            return service!!
-        }
-
-        private fun registrationServiceIsFound(expected: String, registrationService: MemberRegistrationService?) {
-            if (registrationService == null) {
-                val msg = String.format(SERVICE_NOT_FOUND_ERROR, expected)
-                logger.error(msg)
-                throw CordaRuntimeException(msg)
+            if (service == null) {
+                val err = String.format(SERVICE_NOT_FOUND_ERROR, protocol)
+                logger.error(err)
+                throw RegistrationProtocolSelectionException(err)
             }
+            return service
         }
     }
 }

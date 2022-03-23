@@ -7,17 +7,15 @@ import net.corda.libs.packaging.CpiIdentifier
 import net.corda.libs.packaging.CpiMetadata
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.GroupPolicy
-import net.corda.membership.exceptions.BadGroupPolicyException
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.read.MembershipGroupReader
-import net.corda.membership.registration.MemberRegistrationService
-import net.corda.membership.registration.provider.RegistrationProvider
+import net.corda.membership.registration.MembershipRequestRegistrationResult
+import net.corda.membership.registration.proxy.RegistrationProxy
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.crypto.SecureHash
@@ -116,17 +114,15 @@ class MemberProcessorTestUtils {
         val sampleGroupPolicy1 get() = getSampleGroupPolicy("/SampleGroupPolicy.json")
         val sampleGroupPolicy2 get() = getSampleGroupPolicy("/SampleGroupPolicy2.json")
 
-        fun getRegistrationService(registrationProvider: RegistrationProvider): MemberRegistrationService = eventually {
+        fun getRegistrationResult(registrationProxy: RegistrationProxy): MembershipRequestRegistrationResult = eventually {
             assertDoesNotThrow {
-                registrationProvider.get(aliceHoldingIdentity)
-            }.also {
-                assertNotNull(it)
+                registrationProxy.register(aliceHoldingIdentity)
             }
         }
 
-        fun getRegistrationServiceFails(registrationProvider: RegistrationProvider) = eventually {
-            assertThrows<CordaRuntimeException> {
-                registrationProvider.get(aliceHoldingIdentity)
+        fun getRegistrationResultFails(registrationProvider: RegistrationProxy) = eventually {
+            assertThrows<IllegalStateException> {
+                registrationProvider.register(aliceHoldingIdentity)
             }
         }
 
