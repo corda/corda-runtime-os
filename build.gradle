@@ -28,7 +28,7 @@ class SystemPropertyCommandLineArgumentProvider implements CommandLineArgumentPr
                         entry -> "-D"
                                 + entry.getKey()
                                 + "="
-                                + (entry.getValue() instanceof String ? ((String) entry.getValue()).get() : entry.getValue())
+                                + (entry.getValue() instanceof String ? ((String) entry.getValue()) : entry.getValue())
                 )
                 .collect(Collectors.toList());
     }
