@@ -351,6 +351,9 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
                     it.assertThat(getUsingPath("MyId")).isEqualTo("\"Retrieved using id: MyId\"")
 
                     it.assertThat(getUsingQuery("MyQuery")).isEqualTo("\"Retrieved using query: MyQuery\"")
+
+                    it.assertThat(update(TestEntityRpcOps.UpdateParams("myId", "TestName", 20)))
+                        .isEqualTo("\"Updated using params: UpdateParams(id=myId, name=TestName, amount=20)\"")
                 }
             }
         }
