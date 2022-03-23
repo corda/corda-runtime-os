@@ -252,7 +252,7 @@ allprojects {
 
 
         jvmArgumentProviders.add(
-                new pathPropertyProvider()
+                new propertyProvider()
         )
 
         doLast {
