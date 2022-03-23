@@ -9,5 +9,5 @@ cordaPipeline(
     publishPreTestImage: true,
     publishHelmChart: true,
     e2eTestName: 'corda-runtime-os-e2e-tests',
-    runE2eTests: false
+    runE2eTests: true
     )
