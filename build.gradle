@@ -1,6 +1,6 @@
 import static org.gradle.api.JavaVersion.VERSION_11
 import static org.gradle.jvm.toolchain.JavaLanguageVersion.of
-
+import java.util.stream.Collectors;
 buildscript {
     configurations.classpath {
         resolutionStrategy {
@@ -9,7 +9,7 @@ buildscript {
         }
     }
 }
-public class SystemPropertyCommandLineArgumentProvider implements CommandLineArgumentProvider {
+class SystemPropertyCommandLineArgumentProvider implements CommandLineArgumentProvider {
     private final Map<String, Object> systemProperties = new LinkedHashMap<>();
 
     public void systemProperty(String key, String value) {
