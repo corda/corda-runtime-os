@@ -18,6 +18,7 @@ import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.HeartbeatMessage
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutMessage
+import net.corda.p2p.SessionPartitions
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.p2p.crypto.InitiatorHelloMessage
@@ -53,6 +54,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.valid
 import net.corda.p2p.linkmanager.utilities.AutoClosableScheduledExecutorService
 import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
 import net.corda.p2p.test.stub.crypto.processor.CryptoProcessorException
+import net.corda.schema.Schemas
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.v5.base.annotations.VisibleForTesting
@@ -138,6 +140,7 @@ open class SessionManagerImpl(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
+        ::createResources,
         dependentChildren = setOf(
             heartbeatManager.dominoTile, sessionReplayer.dominoTile, groups.dominoTile, members.dominoTile, cryptoProcessor.dominoTile,
             pendingOutboundSessionMessageQueues.dominoTile, publisher.dominoTile, linkManagerHostingMap.dominoTile
@@ -173,7 +176,6 @@ open class SessionManagerImpl(
                             + pendingInboundSessions.keys).map { Record(SESSION_OUT_PARTITIONS, it, null) }
                     outboundSessionPool.clearPool()
                     activeInboundSessions.clear()
-                    inboundAssignmentListener.removeAllSessions()
                     pendingInboundSessions.clear()
                     //This is suboptimal we could instead restart session negotiation
                     pendingOutboundSessionMessageQueues.destroyAllQueues()
@@ -265,11 +267,20 @@ open class SessionManagerImpl(
         }
     }
 
+    private fun createResources(@Suppress("UNUSED_PARAMETER") resourcesHolder: ResourcesHolder): CompletableFuture<Unit> {
+        inboundAssignmentListener.registerCallbackForTopic(Schemas.P2P.LINK_IN_TOPIC) { partitions ->
+            val records = outboundSessionPool.getAllSessionIds().map { sessionId ->
+                Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(partitions.toList()))
+            }
+            publisher.publish(records)
+        }
+        return CompletableFuture.completedFuture(Unit)
+    }
+
     private fun destroyOutboundSession(counterparties: SessionCounterparties, sessionId: String) {
         sessionNegotiationLock.write {
             sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId(sessionId), counterparties)
             sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId(sessionId), counterparties)
-            inboundAssignmentListener.sessionRemoved(sessionId)
             val sessionInitMessage = genSessionInitMessages(counterparties, 1)
             if (!outboundSessionPool.replaceSession(sessionId, sessionInitMessage.single().first)) {
                 //If the session was not replaced do not send a initiatorHello

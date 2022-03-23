@@ -22,6 +22,7 @@ import net.corda.p2p.HeartbeatMessageAck
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.MessageAck
+import net.corda.p2p.SessionPartitions
 import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.app.UnauthenticatedMessage
@@ -40,8 +41,8 @@ import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutFro
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromAck
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromAuthenticatedMessageAndKey
 import net.corda.p2p.linkmanager.sessions.SessionManager
-import net.corda.p2p.linkmanager.sessions.SessionManager.SessionDirection
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionCounterparties
+import net.corda.p2p.linkmanager.sessions.SessionManager.SessionDirection
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.markers.AppMessageMarker
@@ -54,6 +55,7 @@ import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
@@ -101,7 +103,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         }
     }
 
-    private var inboundAssignmentListener = InboundAssignmentListener(lifecycleCoordinatorFactory, publisherFactory, configuration)
+    private var inboundAssignmentListener = InboundAssignmentListener(lifecycleCoordinatorFactory)
 
     private val messagesPendingSession = PendingSessionMessageQueuesImpl(
         publisherFactory,
@@ -237,16 +239,17 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                 inboundAssignmentListener: InboundAssignmentListener,
                 logger: Logger
             ): List<Record<String, *>> {
-                val sessionPartitionRecords = inboundAssignmentListener.addSessionsAndGetRecords(state.messages.map { it.first }.toSet())
-                return if (sessionPartitionRecords.isEmpty()) {
+                val partitions = inboundAssignmentListener.getCurrentlyAssignedPartitions(LINK_IN_TOPIC).toList()
+                return if (partitions.isEmpty()) {
                     val sessionIds = state.messages.map { it.first }
                     logger.warn("No partitions from topic $LINK_IN_TOPIC are currently assigned to the inbound message processor." +
                             " Sessions: $sessionIds will not be initiated.")
                     emptyList()
                 } else {
-                    state.messages.map {
-                        Record(LINK_OUT_TOPIC, generateKey(), it.second)
-                    } + sessionPartitionRecords
+                    state.messages.flatMap {
+                        listOf(Record(LINK_OUT_TOPIC, generateKey(), it.second),
+                            Record(SESSION_OUT_PARTITIONS, it.first, SessionPartitions(partitions)))
+                    }
                 }
             }
         }
@@ -401,12 +404,17 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             return if (response != null) {
                 when (val payload = message.payload) {
                     is InitiatorHelloMessage -> {
-                        val sessionRecords = inboundAssignmentListener
-                            .addSessionsAndGetRecords(setOf(payload.header.sessionId))
-                        if (sessionRecords.isNotEmpty()) {
+                        val partitionsAssigned =
+                            inboundAssignmentListener.getCurrentlyAssignedPartitions(LINK_IN_TOPIC).toList()
+                        if (partitionsAssigned.isNotEmpty()) {
                             listOf(
                                 Record(LINK_OUT_TOPIC, generateKey(), response),
-                            ) + sessionRecords
+                                Record(
+                                    SESSION_OUT_PARTITIONS,
+                                    payload.header.sessionId,
+                                    SessionPartitions(partitionsAssigned)
+                                )
+                            )
                         } else {
                             logger.warn(
                                 "No partitions from topic $LINK_IN_TOPIC are currently assigned to the inbound message processor." +
