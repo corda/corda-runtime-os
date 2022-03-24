@@ -10,6 +10,7 @@ class GroupPolicyParser {
     companion object {
         private val logger = contextLogger()
         const val EMPTY_GROUP_POLICY = "GroupPolicy file is empty."
+        const val NULL_GROUP_POLICY = "GroupPolicy file is null."
         const val FAILED_PARSING = "GroupPolicy file is incorrectly formatted and parsing failed."
     }
 
@@ -22,16 +23,23 @@ class GroupPolicyParser {
      */
     fun parse(groupPolicyJson: String?): GroupPolicy {
         return GroupPolicyImpl(
-            if (groupPolicyJson.isNullOrBlank()) {
-                logger.error(EMPTY_GROUP_POLICY)
-                throw BadGroupPolicyException(EMPTY_GROUP_POLICY)
-            } else {
-                try {
-                    @Suppress("UNCHECKED_CAST")
-                    objectMapper.readValue(groupPolicyJson, Map::class.java) as Map<String, Any>
-                } catch (e: Exception) {
-                    logger.error("$FAILED_PARSING Caused by: ${e.message}")
-                    throw BadGroupPolicyException(FAILED_PARSING, e)
+            when {
+                groupPolicyJson == null -> {
+                    logger.error(NULL_GROUP_POLICY)
+                    throw BadGroupPolicyException(NULL_GROUP_POLICY)
+                }
+                groupPolicyJson.isBlank() -> {
+                    logger.error(EMPTY_GROUP_POLICY)
+                    throw BadGroupPolicyException(EMPTY_GROUP_POLICY)
+                }
+                else -> {
+                    try {
+                        @Suppress("UNCHECKED_CAST")
+                        objectMapper.readValue(groupPolicyJson, Map::class.java) as Map<String, Any>
+                    } catch (e: Exception) {
+                        logger.error("$FAILED_PARSING Caused by: ${e.message}")
+                        throw BadGroupPolicyException(FAILED_PARSING, e)
+                    }
                 }
             }
         )

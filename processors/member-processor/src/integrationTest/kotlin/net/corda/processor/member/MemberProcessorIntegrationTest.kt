@@ -28,6 +28,7 @@ import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookupFails
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishCryptoConf
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishMessagingConf
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishRawGroupPolicyData
+import net.corda.processor.member.MemberProcessorTestUtils.Companion.sampleGroupPolicy1
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.sampleGroupPolicy2
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.startAndWait
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.stopAndWait
@@ -208,7 +209,7 @@ class MemberProcessorIntegrationTest {
                 groupPolicy1
             )
         }
-        publisher.publishRawGroupPolicyData(virtualNodeInfoReader, cpiInfoReader)
+        publisher.publishRawGroupPolicyData(virtualNodeInfoReader, cpiInfoReader, groupPolicy = sampleGroupPolicy1)
 
         // Wait for the group policy change to be visible (so following tests don't fail as a result)
         eventually(duration = waitDuration) {
