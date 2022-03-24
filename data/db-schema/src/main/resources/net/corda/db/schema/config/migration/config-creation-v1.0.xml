@@ -105,9 +105,6 @@
                 <!-- DDL or DML -->
                 <constraints nullable="false"  />
             </column>
-            <column name="version" type="INT">
-                <constraints nullable="false"/>
-            </column>
             <column name="update_ts" type="DATETIME">
                 <constraints nullable="false"/>
             </column>
