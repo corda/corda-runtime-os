@@ -36,11 +36,11 @@ class VNodeServiceImpl @Activate constructor(
     }
 
     override fun unloadVirtualNode(virtualNodeInfo: VirtualNodeInfo) {
-        val cpi = cpiLoader.getCpiMetadata(virtualNodeInfo.cpiIdentifier).get()
+        val cpiMetadata = cpiLoader.getCpiMetadata(virtualNodeInfo.cpiIdentifier).get()
             ?: throw IllegalStateException("No such CPI ${virtualNodeInfo.cpiIdentifier}")
         virtualNodeLoader.unloadVirtualNode(virtualNodeInfo)
-        virtualNodeLoader.forgetCPI(cpi.id)
-        cpiLoader.removeCpiMetadata(cpi.id)
+        virtualNodeLoader.forgetCPI(cpiMetadata.cpiId)
+        cpiLoader.removeCpiMetadata(cpiMetadata.cpiId)
     }
 
     override fun getOrCreateSandbox(holdingIdentity: HoldingIdentity): SandboxGroupContext {

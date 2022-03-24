@@ -13,9 +13,9 @@ import java.nio.ByteBuffer
  *              of the CPI, null if the CPI is unsigned
  */
 data class CpiIdentifier(
-    override val name : String,
-    override val version : String,
-    override val signerSummaryHash : SecureHash?,
+    override val name: String,
+    override val version: String,
+    override val signerSummaryHash: SecureHash?,
 ) : Identifier, Comparable<CpiIdentifier> {
     companion object {
         fun fromAvro(other: net.corda.data.packaging.CPIIdentifier) = CpiIdentifier(
