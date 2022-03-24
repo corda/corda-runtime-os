@@ -4,6 +4,7 @@ import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.membership.httprpc.v1.types.response.RpcMemberInfoList
 
 @HttpRpcResource(
     name = "MemberLookupRpcOps",
@@ -22,5 +23,5 @@ interface MemberLookupRpcOps : RpcOps {
     fun lookup(
         @HttpRpcQueryParameter(description = "ID of the holding identity to be checked.")
         holdingIdentityId: String
-    ): List<List<Map<String, String?>>>
+    ): RpcMemberInfoList
 }

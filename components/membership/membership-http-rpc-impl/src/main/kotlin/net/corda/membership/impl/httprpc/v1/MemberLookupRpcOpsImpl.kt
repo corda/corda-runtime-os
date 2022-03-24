@@ -7,6 +7,8 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.httprpc.v1.MemberLookupRpcOps
+import net.corda.membership.httprpc.v1.types.response.RpcMemberInfo
+import net.corda.membership.httprpc.v1.types.response.RpcMemberInfoList
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -60,17 +62,19 @@ class MemberLookupRpcOpsImpl @Activate constructor(
         coordinator.stop()
     }
 
-    override fun lookup(holdingIdentityId: String): List<List<Map<String, String?>>> {
+    override fun lookup(holdingIdentityId: String): RpcMemberInfoList {
         val holdingIdentity = virtualNodeInfoReadService.getById(holdingIdentityId)?.holdingIdentity
             ?: throw ResourceNotFoundException("Could not find holding identity associated with member.")
 
         val reader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
 
-        return reader.lookup().map {
-            listOf(
-                it.memberProvidedContext.entries.associate { it.key to it.value },
-                it.mgmProvidedContext.entries.associate { it.key to it.value }
-            )
-        }
+        return RpcMemberInfoList(
+            reader.lookup().map {
+                RpcMemberInfo(
+                    it.memberProvidedContext.entries.associate { it.key to it.value },
+                    it.mgmProvidedContext.entries.associate { it.key to it.value },
+                )
+            }
+        )
     }
 }

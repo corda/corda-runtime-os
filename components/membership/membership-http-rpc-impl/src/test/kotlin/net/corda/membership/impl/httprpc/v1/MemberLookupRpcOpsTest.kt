@@ -6,6 +6,8 @@ import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.libs.packaging.CpiIdentifier
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.membership.httprpc.v1.types.response.RpcMemberInfo
+import net.corda.membership.httprpc.v1.types.response.RpcMemberInfoList
 import net.corda.membership.impl.EndpointInfoImpl
 import net.corda.membership.impl.MGMContextImpl
 import net.corda.membership.impl.MemberContextImpl
@@ -168,13 +170,18 @@ class MemberLookupRpcOpsTest {
     @Test
     fun `lookup returns a list of members and their contexts`() {
         val result = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING)
-        assertEquals(2, result.size)
-        assertEquals(memberInfoList.map {
-            listOf(
-                it.memberProvidedContext.entries.associate { it.key to it.value },
-                it.mgmProvidedContext.entries.associate { it.key to it.value }
-            )
-        }, result)
+        assertEquals(2, result.members.size)
+        assertEquals(
+            RpcMemberInfoList(
+                memberInfoList.map {
+                    RpcMemberInfo(
+                        it.memberProvidedContext.entries.associate { it.key to it.value },
+                        it.mgmProvidedContext.entries.associate { it.key to it.value },
+                    )
+                }
+            ),
+            result
+        )
     }
 
     @Test
