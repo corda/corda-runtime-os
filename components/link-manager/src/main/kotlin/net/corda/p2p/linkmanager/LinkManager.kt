@@ -334,13 +334,10 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
         private fun recordsForMarkers(messageAndKey: AuthenticatedMessageAndKey, isHostedLocally: Boolean, isReplay: Boolean, isTtlExpired: Boolean): List<Record<String, *>> {
             val markers = mutableListOf(recordForLMSentMarker(messageAndKey, messageAndKey.message.header.messageId))
-            if (isHostedLocally) {
-                markers.add(recordForLMReceivedMarker(messageAndKey.message.header.messageId))
-            } else if (isTtlExpired) {
+            if (isHostedLocally) markers.add(recordForLMReceivedMarker(messageAndKey.message.header.messageId))
+            else if (isTtlExpired) {
                 markers.add(recordForTTLExpiredMarker(messageAndKey.message.header.messageId))
-                if(isReplay) {
-                    markers.remove(recordForLMSentMarker(messageAndKey, messageAndKey.message.header.messageId))
-                }
+                if (isReplay) markers.remove(recordForLMSentMarker(messageAndKey, messageAndKey.message.header.messageId))
             }
             return markers
         }
