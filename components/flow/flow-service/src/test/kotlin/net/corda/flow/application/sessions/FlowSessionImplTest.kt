@@ -1,11 +1,16 @@
 package net.corda.flow.application.sessions
 
 import net.corda.flow.fiber.FlowFiber
+import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes
+import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.application.flows.unwrap
+import net.corda.v5.application.services.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.serialization.SerializedBytes
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -18,16 +23,31 @@ import org.mockito.kotlin.whenever
 class FlowSessionImplTest {
 
     private companion object {
-        private const val SESSION_ID = "session id"
-        private const val HI = "hi"
-        private const val HELLO_THERE = "hello there"
+        const val SESSION_ID = "session id"
+        const val HI = "hi"
+        const val HELLO_THERE = "hello there"
 
-        val received = mapOf(SESSION_ID to HELLO_THERE)
+        val received = mapOf(SESSION_ID to HELLO_THERE.toByteArray())
     }
+
+    private val serializationService = mock<SerializationService>().apply {
+        whenever(serialize(HELLO_THERE)).thenReturn(SerializedBytes(HELLO_THERE.toByteArray()))
+        whenever(serialize(HI)).thenReturn(SerializedBytes(HI.toByteArray()))
+        whenever(deserialize(HELLO_THERE.toByteArray(), String::class.java)).thenReturn(HELLO_THERE)
+        whenever(deserialize(HI.toByteArray(), String::class.java)).thenReturn(HI)
+    }
+
+    private val sandboxGroupContext = mock<SandboxGroupContext>().apply {
+        whenever(get(FlowSandboxContextTypes.AMQP_P2P_SERIALIZATION_SERVICE, SerializationService::class.java))
+            .thenReturn(serializationService)
+    }
+
+    private val flowFiberExecutionContext = FlowFiberExecutionContext(mock(), mock(), mock(), sandboxGroupContext, mock())
 
     private val flowFiber = mock<FlowFiber<*>>().apply {
         whenever(suspend(any<FlowIORequest.SendAndReceive>())).thenReturn(received)
         whenever(suspend(any<FlowIORequest.Receive>())).thenReturn(received)
+        whenever(getExecutionContext()).thenReturn(flowFiberExecutionContext)
     }
 
     private val flowFiberService = mock<FlowFiberService>().apply {

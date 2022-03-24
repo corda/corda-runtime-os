@@ -11,10 +11,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowProcessingException
-import net.corda.flow.pipeline.sandbox.FlowSandboxService
-import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.session.manager.SessionManager
-import net.corda.v5.application.services.serialization.SerializationService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -32,23 +29,15 @@ class SessionDataWaitingForHandlerTest {
         const val FLOW_ID = "flow id"
         const val SESSION_ID = "session id"
         const val ANOTHER_SESSION_ID = "another session id"
-        const val DATA = "data"
-        const val MORE_DATA = "more data"
+        val DATA = byteArrayOf(1, 1, 1, 1)
+        val MORE_DATA = byteArrayOf(2, 2, 2, 2)
         val HOLDING_IDENTITY = HoldingIdentity("x500 name", "group id")
         val FLOW_KEY = FlowKey(FLOW_ID, HOLDING_IDENTITY)
     }
 
-    private val serializationService = mock<SerializationService>()
-    private val sandboxGroupContext = mock<SandboxGroupContext>().apply {
-        whenever(get(any(), eq(SerializationService::class.java))).thenReturn(serializationService)
-    }
-    private val flowSandboxService = mock<FlowSandboxService>().apply {
-        whenever(get(any())).thenReturn(sandboxGroupContext)
-    }
-
     private val sessionManager = mock<SessionManager>()
 
-    private val sessionDataWaitingForHandler = SessionDataWaitingForHandler(flowSandboxService, sessionManager)
+    private val sessionDataWaitingForHandler = SessionDataWaitingForHandler(sessionManager)
 
     @Test
     fun `Receiving all required session data events returns a FlowContinuation#Run`() {
@@ -61,16 +50,14 @@ class SessionDataWaitingForHandlerTest {
 
         whenever(sessionManager.getNextReceivedEvent(sessionState)).thenReturn(SessionEvent().apply {
             sessionId = SESSION_ID
-            payload = SessionData(ByteBuffer.wrap(DATA.toByteArray()))
+            payload = SessionData(ByteBuffer.wrap(DATA))
             sequenceNum = 1
         })
         whenever(sessionManager.getNextReceivedEvent(anotherSessionState)).thenReturn(SessionEvent().apply {
             sessionId = ANOTHER_SESSION_ID
-            payload = SessionData(ByteBuffer.wrap(MORE_DATA.toByteArray()))
+            payload = SessionData(ByteBuffer.wrap(MORE_DATA))
             sequenceNum = 1
         })
-        whenever(serializationService.deserialize(eq(DATA.toByteArray()), any<Class<*>>())).thenReturn(DATA)
-        whenever(serializationService.deserialize(eq(MORE_DATA.toByteArray()), any<Class<*>>())).thenReturn(MORE_DATA)
 
         val inputContext = FlowEventContext(
             checkpoint = Checkpoint().apply {
@@ -92,8 +79,6 @@ class SessionDataWaitingForHandlerTest {
 
     @Test
     fun `Receiving all required session data events acknowledges the received events`() {
-        val data = "data"
-        val moreData = "more data"
         val sessionState = SessionState().apply {
             sessionId = SESSION_ID
         }
@@ -103,16 +88,14 @@ class SessionDataWaitingForHandlerTest {
 
         whenever(sessionManager.getNextReceivedEvent(sessionState)).thenReturn(SessionEvent().apply {
             sessionId = SESSION_ID
-            payload = SessionData(ByteBuffer.wrap(DATA.toByteArray()))
+            payload = SessionData(ByteBuffer.wrap(DATA))
             sequenceNum = 1
         })
         whenever(sessionManager.getNextReceivedEvent(anotherSessionState)).thenReturn(SessionEvent().apply {
             sessionId = ANOTHER_SESSION_ID
-            payload = SessionData(ByteBuffer.wrap(MORE_DATA.toByteArray()))
+            payload = SessionData(ByteBuffer.wrap(MORE_DATA))
             sequenceNum = 1
         })
-        whenever(serializationService.deserialize(eq(DATA.toByteArray()), any<Class<*>>())).thenReturn(data)
-        whenever(serializationService.deserialize(eq(MORE_DATA.toByteArray()), any<Class<*>>())).thenReturn(moreData)
 
         val inputContext = FlowEventContext(
             checkpoint = Checkpoint().apply {
@@ -143,7 +126,7 @@ class SessionDataWaitingForHandlerTest {
 
         whenever(sessionManager.getNextReceivedEvent(sessionState)).thenReturn(SessionEvent().apply {
             sessionId = SESSION_ID
-            payload = SessionData(ByteBuffer.wrap(DATA.toByteArray()))
+            payload = SessionData(ByteBuffer.wrap(DATA))
             sequenceNum = 1
         })
 
@@ -176,7 +159,7 @@ class SessionDataWaitingForHandlerTest {
 
         whenever(sessionManager.getNextReceivedEvent(sessionState)).thenReturn(SessionEvent().apply {
             sessionId = SESSION_ID
-            payload = SessionData(ByteBuffer.wrap(DATA.toByteArray()))
+            payload = SessionData(ByteBuffer.wrap(DATA))
             sequenceNum = 1
         })
         whenever(sessionManager.getNextReceivedEvent(anotherSessionState)).thenReturn(SessionEvent().apply {
