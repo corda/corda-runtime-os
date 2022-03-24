@@ -11,13 +11,13 @@ import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.libs.configuration.datamodel.ConfigAuditEntity
 import net.corda.libs.configuration.datamodel.ConfigEntity
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
+import net.corda.libs.configuration.datamodel.findDbConnectionAuditByNameAndPrivilege
 import net.corda.libs.configuration.datamodel.findDbConnectionByNameAndPrivilege
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.verify
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
@@ -118,6 +118,13 @@ hello=world
             entityManagerFactory.createEntityManager().findDbConnectionByNameAndPrivilege("batman", DbPrivilege.DDL)
         )
 
-        verify(entityManagerFactory.createEntityManager()).persist(dbConnectionAudit)
+        entityManagerFactory.createEntityManager().transaction { em ->
+            em.persist(dbConnectionAudit)
+        }
+
+        assertEquals(
+            dbConnectionAudit,
+            entityManagerFactory.createEntityManager().findDbConnectionAuditByNameAndPrivilege("batman", DbPrivilege.DDL)
+        )
     }
 }
