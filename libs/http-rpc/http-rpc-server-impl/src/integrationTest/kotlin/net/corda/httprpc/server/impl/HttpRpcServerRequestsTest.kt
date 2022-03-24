@@ -12,6 +12,7 @@ import net.corda.httprpc.server.impl.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.server.impl.utils.WebRequest
 import net.corda.httprpc.server.impl.utils.multipartDir
 import net.corda.httprpc.test.*
+import net.corda.httprpc.tools.HttpVerb.DELETE
 import net.corda.httprpc.tools.HttpVerb.GET
 import net.corda.httprpc.tools.HttpVerb.POST
 import net.corda.httprpc.tools.HttpVerb.PUT
@@ -445,5 +446,26 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
             "\"Updated using params: UpdateParams(id=myId, name=TestName, amount=20)\"",
             createEntityResponse.body
         )
+    }
+
+    @Test
+    fun `Call delete using path on test entity`() {
+        val createEntityResponse = client.call(DELETE, WebRequest<Any>("testentity/myId"), userName, password)
+
+        assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
+        assertEquals("\"Deleted using id: myId\"", createEntityResponse.body)
+    }
+
+    @Test
+    fun `Call delete using query on test entity`() {
+        val createEntityResponse = client.call(
+            DELETE,
+            WebRequest<Any>("testentity", queryParameters = mapOf("query" to "MyQuery")),
+            userName,
+            password
+        )
+
+        assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
+        assertEquals("\"Deleted using query: MyQuery\"", createEntityResponse.body)
     }
 }

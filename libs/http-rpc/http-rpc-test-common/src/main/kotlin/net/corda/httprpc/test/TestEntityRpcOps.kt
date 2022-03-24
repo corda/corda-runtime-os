@@ -1,6 +1,7 @@
 package net.corda.httprpc.test
 
 import net.corda.httprpc.RpcOps
+import net.corda.httprpc.annotations.HttpRpcDELETE
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPUT
@@ -28,9 +29,9 @@ interface TestEntityRpcOps : RpcOps {
     @HttpRpcPUT
     fun update(@HttpRpcRequestBodyParameter updateParams: UpdateParams): String
 
-    //@HttpRpcDELETE(path = "{id}")
+    @HttpRpcDELETE(path = "{id}")
     fun deleteUsingPath(@HttpRpcPathParameter id: String): String
 
-    //@HttpRpcDELETE
+    @HttpRpcDELETE
     fun deleteUsingQuery(@HttpRpcQueryParameter query: String): String
 }

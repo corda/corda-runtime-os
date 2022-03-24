@@ -201,10 +201,11 @@ internal class HttpRpcServerInternal(
                     // This is necessary due to "before" matching logic cannot tell path "testEntity/:id" from
                     // "testEntity/getprotocolversion" and mistakenly finds "before" handler where there should be none.
                     // Javalin provides no way for modifying "before" handler finding logic.
-                    if (resourceProvider.httpNoAuthRequiredGetRoutes.none { routeInfo -> routeInfo.fullPath == it.path() }) {
+                    if (resourceProvider.httpNoAuthRequiredGetRoutes.none { routeInfo -> routeInfo.fullPath == it.path() } &&
+                            it.method() == "GET") {
                         authorize(authenticate(it), getResourceAccessString(it))
                     } else {
-                        log.debug { "Call to ${it.path()} identified as an exempt from authorization check." }
+                        log.debug { "Call to ${it.path()} for method ${it.method()} identified as an exempt from authorization check." }
                     }
                 }
                 registerHandlerForRoute(routeInfo, HandlerType.GET)
@@ -247,15 +248,20 @@ internal class HttpRpcServerInternal(
     private fun Javalin.addRouteWithContentLengthRestriction(routes: List<RouteInfo>, handlerType: HandlerType) {
         routes.map { routeInfo ->
             before(routeInfo.fullPath) {
-                with(configurationsProvider.maxContentLength()) {
-                    if (it.contentLength() > this) throw BadRequestResponse(
-                        CONTENT_LENGTH_EXCEEDS_LIMIT.format(
-                            it.contentLength(),
-                            this
+                // For "before" handlers we have a global space of handlers in Javalin regardless of which method was actually
+                // used. In case when two separate handlers created for GET and for DELETE for the same resource, without "if"
+                // condition below both handlers will be used - which will be redundant.
+                if(it.method() == handlerType.name) {
+                    with(configurationsProvider.maxContentLength()) {
+                        if (it.contentLength() > this) throw BadRequestResponse(
+                            CONTENT_LENGTH_EXCEEDS_LIMIT.format(
+                                it.contentLength(),
+                                this
+                            )
                         )
-                    )
+                    }
+                    authorize(authenticate(it), getResourceAccessString(it))
                 }
-                authorize(authenticate(it), getResourceAccessString(it))
             }
             registerHandlerForRoute(routeInfo, handlerType)
         }
