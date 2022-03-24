@@ -160,9 +160,7 @@ class MemberProcessorTestUtils {
             groupPolicyProvider: GroupPolicyProvider,
             holdingIdentity: HoldingIdentity = aliceHoldingIdentity
         ) = eventually {
-            val policy = groupPolicyProvider.getGroupPolicy(holdingIdentity)
-            assertNotNull(policy)
-            policy
+            assertDoesNotThrow { groupPolicyProvider.getGroupPolicy(holdingIdentity) }
         }
 
         fun assertGroupPolicy(new: GroupPolicy?, old: GroupPolicy? = null) {

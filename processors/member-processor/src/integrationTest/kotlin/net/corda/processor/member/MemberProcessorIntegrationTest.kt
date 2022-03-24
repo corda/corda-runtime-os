@@ -35,6 +35,7 @@ import net.corda.processors.crypto.CryptoProcessor
 import net.corda.processors.member.MemberProcessor
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.seconds
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -194,10 +195,14 @@ class MemberProcessorIntegrationTest {
     }
 
     fun `Group policy object is updated when CPI info changes`() {
+        // Increase duration for `eventually` usage since the expected change needs to propagate through
+        // multiple components
+        val waitDuration = 10.seconds
+
         val groupPolicy1 = getGroupPolicy(groupPolicyProvider)
         publisher.publishRawGroupPolicyData(virtualNodeInfoReader, groupPolicy = sampleGroupPolicy2, cpiVersion = "1.1")
 
-        eventually {
+        eventually(duration = waitDuration) {
             assertSecondGroupPolicy(
                 getGroupPolicy(groupPolicyProvider),
                 groupPolicy1
@@ -206,7 +211,7 @@ class MemberProcessorIntegrationTest {
         publisher.publishRawGroupPolicyData(virtualNodeInfoReader, cpiVersion = "1.2")
 
         // Wait for the group policy change to be visible (so following tests don't fail as a result)
-        eventually {
+        eventually(duration = waitDuration) {
             assertEquals(
                 groupPolicy1.groupId,
                 getGroupPolicy(groupPolicyProvider).groupId
