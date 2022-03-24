@@ -84,7 +84,7 @@ class MemberProcessorTestUtils {
                 groupPolicy = groupPolicy,
                 cpiVersion = cpiVersion
             )
-            val virtualNodeInfo = VirtualNodeInfo(holdingIdentity, cpiMetadata.id,
+            val virtualNodeInfo = VirtualNodeInfo(holdingIdentity, cpiMetadata.cpiId,
                 null, UUID.randomUUID(), null, UUID.randomUUID())
 
             // Publish test data
@@ -221,7 +221,7 @@ class MemberProcessorTestUtils {
         }
 
         fun Publisher.publishCpiMetadata(cpiMetadata: CpiMetadata) =
-            publishRecord(Schemas.VirtualNode.CPI_INFO_TOPIC, cpiMetadata.id.toAvro(), cpiMetadata.toAvro())
+            publishRecord(Schemas.VirtualNode.CPI_INFO_TOPIC, cpiMetadata.cpiId.toAvro(), cpiMetadata.toAvro())
 
         fun Publisher.publishMessagingConf() =
             publishConf(ConfigKeys.MESSAGING_CONFIG, messagingConf)
