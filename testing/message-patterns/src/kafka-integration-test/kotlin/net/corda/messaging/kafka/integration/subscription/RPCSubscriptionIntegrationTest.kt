@@ -15,7 +15,6 @@ import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.NON_TRANSACTIONAL_PUBLISHER_CONFIG
 import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.TEST_CONFIG
 import net.corda.messaging.kafka.integration.TopicTemplates
 import net.corda.messaging.kafka.integration.getKafkaProperties
@@ -77,7 +76,7 @@ class RPCSubscriptionIntegrationTest {
             String::class.java,
             String::class.java
         )
-        val rpcSender = publisherFactory.createRPCSender(rpcConfig, NON_TRANSACTIONAL_PUBLISHER_CONFIG)
+        val rpcSender = publisherFactory.createRPCSender(rpcConfig, TEST_CONFIG)
 
         val rpcSub = subscriptionFactory.createRPCSubscription(
             rpcConfig, TEST_CONFIG, TestRPCResponderProcessor()

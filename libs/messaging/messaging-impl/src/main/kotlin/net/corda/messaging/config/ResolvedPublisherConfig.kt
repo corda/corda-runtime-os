@@ -8,7 +8,8 @@ import java.time.Duration
 
 internal data class ResolvedPublisherConfig(
     val clientId: String,
-    val instanceId: Int?,
+    val instanceId: Int,
+    val transactional: Boolean,
     val closeTimeout: Duration,
     val busConfig: SmartConfig
 ) {
@@ -16,7 +17,8 @@ internal data class ResolvedPublisherConfig(
         fun merge(publisherConfig: PublisherConfig, messagingConfig: SmartConfig): ResolvedPublisherConfig {
             return ResolvedPublisherConfig(
                 publisherConfig.clientId,
-                if (messagingConfig.hasPath(INSTANCE_ID)) messagingConfig.getInt(INSTANCE_ID) else null,
+                messagingConfig.getInt(INSTANCE_ID),
+                publisherConfig.transactional,
                 Duration.ofMillis(messagingConfig.getLong(CLOSE_TIMEOUT)),
                 messagingConfig
             )

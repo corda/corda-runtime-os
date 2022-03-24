@@ -2,14 +2,15 @@ package net.corda.tools.kafka
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.configuration.publish.ConfigPublishService
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
+import net.corda.configuration.publish.ConfigPublishService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.configuration.schema.messaging.TOPIC_PREFIX_PATH
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
+import net.corda.schema.configuration.MessagingConfig.Boot.TOPIC_PREFIX
+import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
 import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
@@ -20,7 +21,7 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.File
 import java.io.FileInputStream
-import java.util.Properties
+import java.util.*
 
 @Suppress("SpreadOperator")
 @Component(immediate = true)
@@ -36,9 +37,7 @@ class KafkaConfigUploader @Activate constructor(
     private companion object {
         private val logger: Logger = contextLogger()
         val consoleLogger: Logger = LoggerFactory.getLogger("Console")
-        const val TOPIC_PREFIX = "messaging.${TOPIC_PREFIX_PATH}"
         const val KAFKA_BOOTSTRAP_SERVER = "bootstrap.servers"
-        const val KAFKA_COMMON_BOOTSTRAP_SERVER = "messaging.kafka.common.bootstrap.servers"
     }
 
     override fun startup(args: Array<String>) {
@@ -84,7 +83,7 @@ class KafkaConfigUploader @Activate constructor(
     private fun getBootstrapConfig(kafkaConnectionProperties: Properties?): SmartConfig {
         val allConfig = ConfigFactory.empty()
             .withValue(
-                KAFKA_COMMON_BOOTSTRAP_SERVER,
+                BOOTSTRAP_SERVER,
                 ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, KAFKA_BOOTSTRAP_SERVER))
             )
             .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX)))

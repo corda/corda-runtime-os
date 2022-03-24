@@ -13,7 +13,6 @@ dependencies {
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:lifecycle:registry')
-    implementation project(':libs:configuration:configuration-schema:messaging-configuration')
     implementation project(':osgi-framework-api')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")

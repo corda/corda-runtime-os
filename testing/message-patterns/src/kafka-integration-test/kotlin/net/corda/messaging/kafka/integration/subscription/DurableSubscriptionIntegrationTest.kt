@@ -13,7 +13,6 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.NON_TRANSACTIONAL_PUBLISHER_CONFIG
 import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.TEST_CONFIG
 import net.corda.messaging.kafka.integration.TopicTemplates
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.DURABLE_TOPIC1
@@ -71,8 +70,8 @@ class DurableSubscriptionIntegrationTest {
     fun `asynch publish records and then start 2 durable subscriptions, delay 1 sub, trigger rebalance`() {
         topicAdmin.createTopics(kafkaProperties, TopicTemplates.DURABLE_TOPIC1_TEMPLATE)
 
-        publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC1)
-        publisher = publisherFactory.createPublisher(publisherConfig, NON_TRANSACTIONAL_PUBLISHER_CONFIG)
+        publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC1, false)
+        publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
         val futures = publisher.publish(getDemoRecords(DURABLE_TOPIC1, 5, 3))
         assertThat(futures.size).isEqualTo(15)
         publisher.close()
@@ -114,8 +113,8 @@ class DurableSubscriptionIntegrationTest {
     fun `asynch publish records and then start durable subscription`() {
         topicAdmin.createTopics(kafkaProperties, TopicTemplates.DURABLE_TOPIC2_TEMPLATE)
 
-        publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC2)
-        publisher = publisherFactory.createPublisher(publisherConfig, NON_TRANSACTIONAL_PUBLISHER_CONFIG)
+        publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC2, false)
+        publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
         val futures = publisher.publish(getDemoRecords(DURABLE_TOPIC2, 5, 2))
         assertThat(futures.size).isEqualTo(10)
         futures.forEach { it.get(10, TimeUnit.SECONDS) }
@@ -163,8 +162,8 @@ class DurableSubscriptionIntegrationTest {
     fun `asynch publish the wrong records and then start durable subscription`() {
         topicAdmin.createTopics(kafkaProperties, TopicTemplates.DURABLE_TOPIC3_TEMPLATE)
 
-        publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC3)
-        publisher = publisherFactory.createPublisher(publisherConfig, NON_TRANSACTIONAL_PUBLISHER_CONFIG)
+        publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC3, false)
+        publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
         val futures = publisher.publish(getStringRecords(DURABLE_TOPIC3, 5, 2))
         assertThat(futures.size).isEqualTo(10)
         futures.forEach { it.get(10, TimeUnit.SECONDS) }

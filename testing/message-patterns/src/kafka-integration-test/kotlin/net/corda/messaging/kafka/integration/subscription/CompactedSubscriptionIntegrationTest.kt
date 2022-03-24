@@ -12,7 +12,6 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.NON_TRANSACTIONAL_PUBLISHER_CONFIG
 import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.TEST_CONFIG
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.COMPACTED_TOPIC1
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.COMPACTED_TOPIC1_TEMPLATE
@@ -64,8 +63,8 @@ class CompactedSubscriptionIntegrationTest {
     fun `create compacted topic, publish records, start compacted sub, publish again`() {
         topicAdmin.createTopics(kafkaProperties, COMPACTED_TOPIC1_TEMPLATE)
 
-        publisherConfig = PublisherConfig(CLIENT_ID + COMPACTED_TOPIC1)
-        publisher = publisherFactory.createPublisher(publisherConfig, NON_TRANSACTIONAL_PUBLISHER_CONFIG)
+        publisherConfig = PublisherConfig(CLIENT_ID + COMPACTED_TOPIC1, false)
+        publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
         publisher.publish(getDemoRecords(COMPACTED_TOPIC1, 1, 5)).forEach { it.get() }
 
         val coordinator =
@@ -115,8 +114,8 @@ class CompactedSubscriptionIntegrationTest {
     fun `create compacted topic, publish wrong records, start compacted sub`() {
         topicAdmin.createTopics(kafkaProperties, COMPACTED_TOPIC2_TEMPLATE)
 
-        publisherConfig = PublisherConfig(CLIENT_ID + COMPACTED_TOPIC2)
-        publisher = publisherFactory.createPublisher(publisherConfig, NON_TRANSACTIONAL_PUBLISHER_CONFIG)
+        publisherConfig = PublisherConfig(CLIENT_ID + COMPACTED_TOPIC2, false)
+        publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
         publisher.publish(getStringRecords(COMPACTED_TOPIC2, 1, 5)).forEach { it.get() }
 
         val coordinator =

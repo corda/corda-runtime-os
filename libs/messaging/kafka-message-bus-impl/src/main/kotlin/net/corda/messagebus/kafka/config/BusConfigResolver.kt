@@ -29,7 +29,6 @@ internal class BusConfigResolver(private val smartConfigFactory: SmartConfigFact
 
         private const val GROUP_PATH = "group"
         private const val CLIENT_ID_PATH = "clientId"
-        private const val INSTANCE_ID_PATH = "instanceId"
         private const val TRANSACTIONAL_ID_PATH = "transactionalId"
     }
 
@@ -84,7 +83,7 @@ internal class BusConfigResolver(private val smartConfigFactory: SmartConfigFact
         val kafkaProperties = resolve(busConfig, producerConfig.role.configPath, producerConfig.toSmartConfig())
         val resolvedConfig = ResolvedProducerConfig(
             producerConfig.clientId,
-            producerConfig.instanceId,
+            producerConfig.transactional,
             busConfig.getString(MessagingConfig.Boot.TOPIC_PREFIX)
         )
         return Pair(resolvedConfig, kafkaProperties)
@@ -122,7 +121,6 @@ internal class BusConfigResolver(private val smartConfigFactory: SmartConfigFact
                 mapOf(
                     GROUP_PATH to group,
                     CLIENT_ID_PATH to clientId,
-                    INSTANCE_ID_PATH to "<undefined>",
                     TRANSACTIONAL_ID_PATH to "<undefined>"
                 )
             )
@@ -130,7 +128,7 @@ internal class BusConfigResolver(private val smartConfigFactory: SmartConfigFact
     }
 
     private fun ProducerConfig.toSmartConfig(): SmartConfig {
-        val transactionalId = if (instanceId != null) {
+        val transactionalId = if (transactional) {
             "$clientId-$instanceId"
         } else {
             null
@@ -139,8 +137,6 @@ internal class BusConfigResolver(private val smartConfigFactory: SmartConfigFact
             ConfigFactory.parseMap(
                 mapOf(
                     CLIENT_ID_PATH to clientId,
-                    INSTANCE_ID_PATH to instanceId,
-                    //TODO - why is this here?
                     GROUP_PATH to "<undefined>",
                     TRANSACTIONAL_ID_PATH to transactionalId
                 )

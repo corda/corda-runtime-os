@@ -43,7 +43,7 @@ internal class CordaPublisherImpl(
      */
     override fun publish(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
         val futures = mutableListOf<CompletableFuture<Unit>>()
-        if (config.instanceId != null) {
+        if (config.transactional) {
             futures.add(publishTransaction(records))
         } else {
             publishRecordsAsync(records, futures)
@@ -56,7 +56,7 @@ internal class CordaPublisherImpl(
 
         val cordaRecords = records.map { Pair(it.first, it.second.toCordaProducerRecord()) }
         val futures = mutableListOf<CompletableFuture<Unit>>()
-        if (config.instanceId != null) {
+        if (config.transactional) {
             futures.add(publishTransactionWithPartitions(cordaRecords))
         } else {
             publishRecordsToPartitionsAsync(cordaRecords, futures)
@@ -129,13 +129,13 @@ internal class CordaPublisherImpl(
             when (ex) {
                 is CordaMessageAPIIntermittentException -> {
                     logErrorAndSetFuture(
-                        "Kafka producer clientId ${config.clientId}, instanceId ${config.instanceId}, " +
+                        "Kafka producer clientId ${config.clientId}, transactional ${config.transactional}, " +
                                 "failed to send", ex, future, false
                     )
                 }
                 else -> {
                     logErrorAndSetFuture(
-                        "Kafka producer clientId ${config.clientId}, instanceId ${config.instanceId}, " +
+                        "Kafka producer clientId ${config.clientId}, transactional ${config.transactional}, " +
                                 "failed to send", ex, future, true
                     )
                 }
@@ -149,12 +149,12 @@ internal class CordaPublisherImpl(
      * Helper function to set a [future] result based on the presence of an [exception]
      */
     private fun setFutureFromResponse(exception: Exception?, future: CompletableFuture<Unit>, topic: String) {
-        val message = "Kafka producer clientId ${config.clientId}, instanceId ${config.instanceId}, " +
+        val message = "Kafka producer clientId ${config.clientId}, transactional ${config.transactional}, " +
                 "for topic $topic failed to send"
         when {
             (exception == null) -> {
                 //transaction operation can still fail at commit stage  so do not set to true until it is committed
-                if (config.instanceId == null) {
+                if (!config.transactional) {
                     future.complete(Unit)
                 } else {
                     log.debug { "Asynchronous send completed completed successfully." }

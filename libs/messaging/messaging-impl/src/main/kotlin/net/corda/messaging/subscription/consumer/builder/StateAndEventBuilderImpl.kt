@@ -36,7 +36,7 @@ internal class StateAndEventBuilderImpl @Activate constructor(
     private val log = LoggerFactory.getLogger(this::class.java)
 
     override fun createProducer(config: ResolvedSubscriptionConfig): CordaProducer {
-        val producerConfig = ProducerConfig(config.clientId, config.instanceId, ProducerRoles.SAE_PRODUCER)
+        val producerConfig = ProducerConfig(config.clientId, config.instanceId, true, ProducerRoles.SAE_PRODUCER)
         return cordaProducerBuilder.createProducer(producerConfig, config.busConfig)
     }
 

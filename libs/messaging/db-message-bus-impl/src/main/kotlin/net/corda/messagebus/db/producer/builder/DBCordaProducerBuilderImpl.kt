@@ -30,7 +30,7 @@ class DBCordaProducerBuilderImpl @Activate constructor(
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
 ) : CordaProducerBuilder {
         override fun createProducer(producerConfig: ProducerConfig, busConfig: SmartConfig): CordaProducer {
-            val isTransactional = producerConfig.instanceId == null
+            val isTransactional = producerConfig.transactional
             val dbAccess = DBAccess(
             entityManagerFactoryFactory.create(
                 busConfig,

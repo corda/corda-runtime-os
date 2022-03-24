@@ -16,8 +16,5 @@ class IntegrationTestProperties {
             .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
             .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("KAFKA"))
             .withValue(BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(BOOTSTRAP_SERVERS_VALUE))
-
-        val NON_TRANSACTIONAL_PUBLISHER_CONFIG =TEST_CONFIG
-            .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(null))
     }
 }

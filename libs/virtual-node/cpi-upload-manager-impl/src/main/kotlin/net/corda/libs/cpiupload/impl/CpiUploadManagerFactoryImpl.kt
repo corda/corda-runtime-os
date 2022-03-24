@@ -1,6 +1,5 @@
 package net.corda.libs.cpiupload.impl
 
-import com.typesafe.config.ConfigValueFactory
 import net.corda.chunking.RequestId
 import net.corda.data.chunking.UploadStatus
 import net.corda.libs.configuration.SmartConfig
@@ -13,7 +12,6 @@ import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
-import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import org.osgi.service.component.annotations.Component
 
 @Suppress("UNUSED")
@@ -44,8 +42,7 @@ class CpiUploadManagerFactoryImpl : CpiUploadManagerFactory {
         return subscriptionFactory.createCompactedSubscription(
             SubscriptionConfig(CPI_UPLOAD_GROUP, statusTopic),
             ackProcessor,
-            // explicit rather than the 'hidden' default parameter fn call
-            config.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(null))
+            config
         )
     }
 

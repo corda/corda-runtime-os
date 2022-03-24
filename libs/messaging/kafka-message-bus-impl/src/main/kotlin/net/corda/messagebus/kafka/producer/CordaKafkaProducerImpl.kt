@@ -39,7 +39,7 @@ class CordaKafkaProducerImpl(
     private val producer: Producer<Any, Any>
 ) : CordaProducer {
     private val topicPrefix = config.topicPrefix
-    private val transactional = (config.instanceId != null)
+    private val transactional = config.transactional
 
     init {
         if (transactional) {
@@ -178,7 +178,7 @@ class CordaKafkaProducerImpl(
         try {
             producer.initTransactions()
         } catch (ex: Exception) {
-            val message = "initializing producer with transactionId ${config.instanceId} for transactions"
+            val message = "initializing producer for transactions"
             handleException(ex, message)
         }
     }

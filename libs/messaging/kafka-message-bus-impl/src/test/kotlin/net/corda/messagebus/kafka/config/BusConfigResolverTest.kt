@@ -15,7 +15,7 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
-import java.util.Properties
+import java.util.*
 import java.util.stream.Stream
 
 class BusConfigResolverTest {
@@ -217,7 +217,7 @@ class BusConfigResolverTest {
         val busConfig = loadTestConfig(TEST_CONFIG)
         val resolver = BusConfigResolver(smartConfigFactory)
         val (_, properties) =
-            resolver.resolve(busConfig, ProducerConfig(CLIENT_ID, INSTANCE_ID, role))
+            resolver.resolve(busConfig, ProducerConfig(CLIENT_ID, INSTANCE_ID, true, role))
         assertProducerProperties(expectedProperties, properties)
     }
 
@@ -228,7 +228,7 @@ class BusConfigResolverTest {
         val (_, properties) =
             resolver.resolve(
                 busConfig,
-                ProducerConfig(CLIENT_ID, INSTANCE_ID, ProducerRoles.RPC_RESPONDER)
+                ProducerConfig(CLIENT_ID, INSTANCE_ID, true, ProducerRoles.RPC_RESPONDER)
             )
         val expectedProperties = getExpectedProducerProperties(mapOf())
         // Verify substitutions
@@ -236,11 +236,11 @@ class BusConfigResolverTest {
     }
 
     @Test
-    fun `no transactional id is present if the instance id is not set`() {
+    fun `no transactional id is present if transactional set to false`() {
         val busConfig = loadTestConfig(TEST_CONFIG)
         val resolver = BusConfigResolver(smartConfigFactory)
         val (_, properties) =
-            resolver.resolve(busConfig, ProducerConfig(CLIENT_ID, null, ProducerRoles.PUBLISHER))
+            resolver.resolve(busConfig, ProducerConfig(CLIENT_ID, 1, false, ProducerRoles.PUBLISHER))
         val expectedProperties = getExpectedProducerProperties(
             mapOf(
                 TRANSACTIONAL_ID_PROP to null,
@@ -259,7 +259,7 @@ class BusConfigResolverTest {
             resolver.resolve(busConfig, ConsumerConfig(GROUP_NAME, CLIENT_ID, ConsumerRoles.DURABLE))
         }
         assertThrows<CordaMessageAPIConfigException> {
-            resolver.resolve(busConfig, ProducerConfig(CLIENT_ID, 1, ProducerRoles.DURABLE))
+            resolver.resolve(busConfig, ProducerConfig(CLIENT_ID, 1, true, ProducerRoles.DURABLE))
         }
     }
 

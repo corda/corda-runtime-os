@@ -1,7 +1,5 @@
 package net.corda.messaging.emulation.publisher.factory
 
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.publisher.Publisher
@@ -43,11 +41,7 @@ class CordaPublisherFactory @Activate constructor(
         publisherConfig: PublisherConfig,
         messagingConfig: SmartConfig
     ): Publisher {
-        var config = messagingConfig
-            .withFallback(ConfigFactory.load("tmpInMemDefaults"))
-            .withValue(PUBLISHER_CLIENT_ID, ConfigValueFactory.fromAnyRef(publisherConfig.clientId))
-
-        return CordaPublisher(config, topicService)
+        return CordaPublisher(publisherConfig, topicService)
     }
 
     override fun <REQUEST : Any, RESPONSE : Any> createRPCSender(

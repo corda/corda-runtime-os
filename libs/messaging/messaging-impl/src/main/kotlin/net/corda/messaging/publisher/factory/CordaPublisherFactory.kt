@@ -47,7 +47,7 @@ class CordaPublisherFactory @Activate constructor(
         val configBuilder = MessagingConfigResolver(messagingConfig.factory)
         val config = configBuilder.buildPublisherConfig(publisherConfig, messagingConfig)
         // TODO 3781 - topic prefix
-        val producerConfig = ProducerConfig(config.clientId, config.instanceId, ProducerRoles.PUBLISHER)
+        val producerConfig = ProducerConfig(config.clientId, config.instanceId, config.transactional, ProducerRoles.PUBLISHER)
         val producer = cordaProducerBuilder.createProducer(producerConfig, config.busConfig)
         return CordaPublisherImpl(config, producer)
     }

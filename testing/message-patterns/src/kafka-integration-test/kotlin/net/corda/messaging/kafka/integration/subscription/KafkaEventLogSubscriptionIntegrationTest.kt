@@ -13,7 +13,6 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.NON_TRANSACTIONAL_PUBLISHER_CONFIG
 import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.TEST_CONFIG
 import net.corda.messaging.kafka.integration.TopicTemplates
 import net.corda.messaging.kafka.integration.getDemoRecords
@@ -66,8 +65,8 @@ class KafkaEventLogSubscriptionIntegrationTest {
     fun `asynch publish records and then start durable subscription`() {
         topicAdmin.createTopics(kafkaProperties, TopicTemplates.EVENT_LOG_TOPIC1_TEMPLATE)
 
-        publisherConfig = PublisherConfig(CLIENT_ID + TOPIC1)
-        publisher = publisherFactory.createPublisher(publisherConfig, NON_TRANSACTIONAL_PUBLISHER_CONFIG)
+        publisherConfig = PublisherConfig(CLIENT_ID + TOPIC1, false)
+        publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
         val futures = publisher.publish(getDemoRecords(TOPIC1, 5, 2))
         Assertions.assertThat(futures.size).isEqualTo(10)
         futures.forEach { it.get(10, TimeUnit.SECONDS) }

@@ -134,7 +134,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             attempts++
             try {
                 log.debug { "Creating rpc response consumer.  Attempt: $attempts" }
-                val producerConfig = ProducerConfig(config.clientId, null, ProducerRoles.RPC_SENDER)
+                val producerConfig = ProducerConfig(config.clientId, config.instanceId, false, ProducerRoles.RPC_SENDER)
                 producer = cordaProducerBuilder.createProducer(producerConfig, config.busConfig)
                 val consumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.RPC_SENDER)
                 cordaConsumerBuilder.createConsumer(
