@@ -102,7 +102,7 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
                 val consumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.COMPACTED)
                 cordaConsumerBuilder.createConsumer(
                     consumerConfig,
-                    config.busConfig,
+                    config.messageBusConfig,
                     processor.keyClass,
                     processor.valueClass,
                     ::onError

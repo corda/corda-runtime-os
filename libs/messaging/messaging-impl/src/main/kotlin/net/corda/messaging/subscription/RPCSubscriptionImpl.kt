@@ -129,11 +129,11 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
 
     private fun createProducerConsumerAndStartPolling() {
         val producerConfig = ProducerConfig(config.clientId, null, ProducerRoles.RPC_RESPONDER)
-        producerBuilder.createProducer(producerConfig, config.busConfig).use { producer ->
+        producerBuilder.createProducer(producerConfig, config.messageBusConfig).use { producer ->
             val consumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.RPC_RESPONDER)
             cordaConsumerBuilder.createConsumer(
                 consumerConfig,
-                config.busConfig,
+                config.messageBusConfig,
                 String::class.java,
                 RPCRequest::class.java
             ).use {

@@ -73,7 +73,7 @@ class CordaRPCSenderImplTest {
         )
         cordaSenderImpl.start()
         eventually {
-            verify(cordaProducerBuilder).createProducer(any(), eq(config.busConfig))
+            verify(cordaProducerBuilder).createProducer(any(), eq(config.messageBusConfig))
         }
         cordaSenderImpl.close()
         verify(cordaProducer, times(1)).close()

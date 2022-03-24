@@ -12,7 +12,7 @@ internal data class ResolvedPublisherConfig(
     val clientId: String,
     val instanceId: Int?,
     val closeTimeout: Duration,
-    val busConfig: SmartConfig
+    val messageBusConfig: SmartConfig
 ) {
     companion object {
         /**

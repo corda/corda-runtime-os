@@ -28,7 +28,7 @@ internal data class ResolvedSubscriptionConfig(
     val subscribeRetries: Int,
     val commitRetries: Int,
     val processorTimeout: Duration,
-    val busConfig: SmartConfig
+    val messageBusConfig: SmartConfig
 ) {
     companion object {
 

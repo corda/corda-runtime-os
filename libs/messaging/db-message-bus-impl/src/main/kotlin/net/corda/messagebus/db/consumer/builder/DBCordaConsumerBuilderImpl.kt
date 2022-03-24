@@ -35,7 +35,7 @@ class DBCordaConsumerBuilderImpl @Activate constructor(
 
     override fun <K : Any, V : Any> createConsumer(
         consumerConfig: ConsumerConfig,
-        busConfig: SmartConfig,
+        messageBusConfig: SmartConfig,
         kClazz: Class<K>,
         vClazz: Class<V>,
         onSerializationError: (ByteArray) -> Unit,
@@ -45,7 +45,7 @@ class DBCordaConsumerBuilderImpl @Activate constructor(
 
         val dbAccess = DBAccess(
             entityManagerFactoryFactory.create(
-                busConfig,
+                messageBusConfig,
                 "DB Consumer for ${consumerConfig.clientId}",
                 listOf(
                     TopicRecordEntry::class.java,
@@ -66,7 +66,7 @@ class DBCordaConsumerBuilderImpl @Activate constructor(
         }
 
         return DBCordaConsumerImpl(
-            busConfig,
+            messageBusConfig,
             dbAccess,
             consumerGroup,
             CordaDBAvroDeserializerImpl(avroSchemaRegistry, onSerializationError, kClazz),

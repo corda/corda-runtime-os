@@ -147,7 +147,7 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                 val consumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.EVENT_LOG)
                 consumer = cordaConsumerBuilder.createConsumer(
                     consumerConfig,
-                    config.busConfig,
+                    config.messageBusConfig,
                     processor.keyClass,
                     processor.valueClass,
                     { data ->
@@ -157,7 +157,7 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                     rebalanceListener
                 )
                 val producerConfig = ProducerConfig(config.clientId, config.instanceId, ProducerRoles.EVENT_LOG)
-                producer = cordaProducerBuilder.createProducer(producerConfig, config.busConfig)
+                producer = cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig)
                 consumer.use { cordaConsumer ->
                     cordaConsumer.subscribe(config.topic)
                     producer.use { cordaProducer ->

@@ -135,7 +135,7 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
                 val consumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.PUBSUB)
                 cordaConsumerBuilder.createConsumer(
                     consumerConfig,
-                    config.busConfig,
+                    config.messageBusConfig,
                     processor.keyClass,
                     processor.valueClass,
                     ::logFailedDeserialize

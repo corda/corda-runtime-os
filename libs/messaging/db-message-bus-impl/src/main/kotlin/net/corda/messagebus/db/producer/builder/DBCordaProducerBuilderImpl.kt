@@ -29,11 +29,11 @@ class DBCordaProducerBuilderImpl @Activate constructor(
     @Reference(service = EntityManagerFactoryFactory::class)
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
 ) : CordaProducerBuilder {
-    override fun createProducer(producerConfig: ProducerConfig, busConfig: SmartConfig): CordaProducer {
+    override fun createProducer(producerConfig: ProducerConfig, messageBusConfig: SmartConfig): CordaProducer {
         val isTransactional = producerConfig.instanceId == null
         val dbAccess = DBAccess(
             entityManagerFactoryFactory.create(
-                busConfig,
+                messageBusConfig,
                 "DB Producer for ${producerConfig.clientId}",
                 listOf(
                     TopicRecordEntry::class.java,

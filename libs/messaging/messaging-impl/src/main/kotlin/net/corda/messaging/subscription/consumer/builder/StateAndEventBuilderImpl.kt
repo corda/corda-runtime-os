@@ -37,7 +37,7 @@ internal class StateAndEventBuilderImpl @Activate constructor(
 
     override fun createProducer(config: ResolvedSubscriptionConfig): CordaProducer {
         val producerConfig = ProducerConfig(config.clientId, config.instanceId, ProducerRoles.SAE_PRODUCER)
-        return cordaProducerBuilder.createProducer(producerConfig, config.busConfig)
+        return cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig)
     }
 
     override fun <K : Any, S : Any, E : Any> createStateEventConsumerAndRebalanceListener(
@@ -50,9 +50,9 @@ internal class StateAndEventBuilderImpl @Activate constructor(
         onEventError: (ByteArray) -> Unit,
     ): Pair<StateAndEventConsumer<K, S, E>, CordaConsumerRebalanceListener> {
         val stateConsumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.SAE_STATE)
-        val stateConsumer = cordaConsumerBuilder.createConsumer(stateConsumerConfig, config.busConfig, kClazz, sClazz, onStateError)
+        val stateConsumer = cordaConsumerBuilder.createConsumer(stateConsumerConfig, config.messageBusConfig, kClazz, sClazz, onStateError)
         val eventConsumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.SAE_EVENT)
-        val eventConsumer = cordaConsumerBuilder.createConsumer(eventConsumerConfig, config.busConfig, kClazz, eClazz, onEventError)
+        val eventConsumer = cordaConsumerBuilder.createConsumer(eventConsumerConfig, config.messageBusConfig, kClazz, eClazz, onEventError)
         validateConsumers(config, stateConsumer, eventConsumer)
 
         val partitionState =

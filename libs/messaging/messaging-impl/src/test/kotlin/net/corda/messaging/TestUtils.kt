@@ -15,7 +15,7 @@ const val GROUP = "group"
 internal fun createResolvedSubscriptionConfig(type: SubscriptionType): ResolvedSubscriptionConfig {
     val config = ConfigFactory.empty()
         .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef("test"))
-    val busConfig = SmartConfigFactory.create(ConfigFactory.empty()).create(config)
+    val messageBusConfig = SmartConfigFactory.create(ConfigFactory.empty()).create(config)
     return ResolvedSubscriptionConfig(
         type,
         TOPIC,
@@ -28,7 +28,7 @@ internal fun createResolvedSubscriptionConfig(type: SubscriptionType): ResolvedS
         3,
         3,
         Duration.ofMillis(1000L),
-        busConfig
+        messageBusConfig
     )
 }
 

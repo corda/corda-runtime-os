@@ -4,7 +4,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
-import net.corda.messagebus.kafka.config.BusConfigResolver
+import net.corda.messagebus.kafka.config.MessageBusConfigResolver
 import net.corda.messagebus.kafka.producer.CordaKafkaProducerImpl
 import net.corda.messagebus.kafka.serialization.CordaAvroSerializerImpl
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
@@ -35,9 +35,9 @@ class KafkaCordaProducerBuilderImpl @Activate constructor(
         private val log: Logger = contextLogger()
     }
 
-    override fun createProducer(producerConfig: ProducerConfig, busConfig: SmartConfig): CordaProducer {
-        val configResolver = BusConfigResolver(busConfig.factory)
-        val (resolvedConfig, kafkaProperties) = configResolver.resolve(busConfig, producerConfig)
+    override fun createProducer(producerConfig: ProducerConfig, messageBusConfig: SmartConfig): CordaProducer {
+        val configResolver = MessageBusConfigResolver(messageBusConfig.factory)
+        val (resolvedConfig, kafkaProperties) = configResolver.resolve(messageBusConfig, producerConfig)
         return try {
             val producer = createKafkaProducer(kafkaProperties)
             CordaKafkaProducerImpl(resolvedConfig, producer)

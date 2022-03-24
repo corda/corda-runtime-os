@@ -5,7 +5,7 @@ import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
-import net.corda.messagebus.kafka.config.BusConfigResolver
+import net.corda.messagebus.kafka.config.MessageBusConfigResolver
 import net.corda.messagebus.kafka.consumer.CordaKafkaConsumerImpl
 import net.corda.messagebus.kafka.serialization.CordaAvroDeserializerImpl
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
@@ -34,14 +34,14 @@ class CordaKafkaConsumerBuilderImpl @Activate constructor(
 
     override fun <K : Any, V : Any> createConsumer(
         consumerConfig: ConsumerConfig,
-        busConfig: SmartConfig,
+        messageBusConfig: SmartConfig,
         kClazz: Class<K>,
         vClazz: Class<V>,
         onSerializationError: (ByteArray) -> Unit,
         listener: CordaConsumerRebalanceListener?
     ): CordaConsumer<K, V> {
-        val resolver = BusConfigResolver(busConfig.factory)
-        val (resolvedConfig, kafkaProperties) = resolver.resolve(busConfig, consumerConfig)
+        val resolver = MessageBusConfigResolver(messageBusConfig.factory)
+        val (resolvedConfig, kafkaProperties) = resolver.resolve(messageBusConfig, consumerConfig)
         return try {
             val consumer = createKafkaConsumer(kafkaProperties, kClazz, vClazz, onSerializationError)
             CordaKafkaConsumerImpl(resolvedConfig, consumer, listener)
