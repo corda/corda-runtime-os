@@ -5,7 +5,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.constants.ProducerRoles
-import net.corda.messagebus.api.consumer.builder.MessageBusConsumerBuilder
+import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
@@ -31,8 +31,8 @@ class CordaPublisherFactory @Activate constructor(
     private val avroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = CordaProducerBuilder::class)
     private val cordaProducerBuilder: CordaProducerBuilder,
-    @Reference(service = MessageBusConsumerBuilder::class)
-    private val cordaConsumerBuilder: MessageBusConsumerBuilder,
+    @Reference(service = CordaConsumerBuilder::class)
+    private val cordaConsumerBuilder: CordaConsumerBuilder,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : PublisherFactory {

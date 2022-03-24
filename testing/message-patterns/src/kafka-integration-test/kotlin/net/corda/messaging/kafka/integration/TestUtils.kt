@@ -2,6 +2,7 @@ package net.corda.messaging.kafka.integration
 
 import net.corda.data.demo.DemoRecord
 import net.corda.messaging.api.records.Record
+import org.apache.kafka.clients.CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG
 import java.util.*
 
 fun getDemoRecords(topic: String, recordCount: Int, keyCount: Int): List<Record<*, *>> {
@@ -28,6 +29,6 @@ fun getStringRecords(topic: String, recordCount: Int, keyCount: Int): List<Recor
 
 fun getKafkaProperties(): Properties {
     val kafkaProperties = Properties()
-    kafkaProperties["bootstrap.servers"] = IntegrationTestProperties.BOOTSTRAP_SERVERS_VALUE
+    kafkaProperties[BOOTSTRAP_SERVERS_CONFIG] = IntegrationTestProperties.BOOTSTRAP_SERVERS_VALUE
     return kafkaProperties
 }

@@ -5,7 +5,7 @@ import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 
-interface MessageBusConsumerBuilder {
+interface CordaConsumerBuilder {
     /**
      * Generate a Corda Consumer based on the [consumerConfig].
      * This function will handle all retry logic and error handling

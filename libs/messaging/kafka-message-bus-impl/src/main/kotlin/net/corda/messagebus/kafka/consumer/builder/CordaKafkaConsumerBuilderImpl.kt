@@ -4,7 +4,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
-import net.corda.messagebus.api.consumer.builder.MessageBusConsumerBuilder
+import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.kafka.config.BusConfigResolver
 import net.corda.messagebus.kafka.consumer.CordaKafkaConsumerImpl
 import net.corda.messagebus.kafka.serialization.CordaAvroDeserializerImpl
@@ -22,11 +22,11 @@ import java.util.*
 /**
  * Generate a Kafka Consumer.
  */
-@Component(service = [MessageBusConsumerBuilder::class])
-class MessageBusConsumerBuilderImpl @Activate constructor(
+@Component(service = [CordaConsumerBuilder::class])
+class CordaKafkaConsumerBuilderImpl @Activate constructor(
     @Reference(service = AvroSchemaRegistry::class)
     private val avroSchemaRegistry: AvroSchemaRegistry,
-) : MessageBusConsumerBuilder {
+) : CordaConsumerBuilder {
 
     companion object {
         private val log: Logger = contextLogger()
@@ -51,7 +51,6 @@ class MessageBusConsumerBuilderImpl @Activate constructor(
             throw CordaMessageAPIFatalException(message, ex)
         }
     }
-
 
     private fun <K : Any, V : Any> createKafkaConsumer(
         kafkaProperties: Properties,

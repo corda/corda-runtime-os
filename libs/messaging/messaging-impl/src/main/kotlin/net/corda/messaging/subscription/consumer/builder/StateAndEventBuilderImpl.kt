@@ -6,7 +6,7 @@ import net.corda.messagebus.api.constants.ConsumerRoles
 import net.corda.messagebus.api.constants.ProducerRoles
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
-import net.corda.messagebus.api.consumer.builder.MessageBusConsumerBuilder
+import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
@@ -27,8 +27,8 @@ import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [StateAndEventBuilder::class])
 internal class StateAndEventBuilderImpl @Activate constructor(
-    @Reference(service = MessageBusConsumerBuilder::class)
-    private val cordaConsumerBuilder: MessageBusConsumerBuilder,
+    @Reference(service = CordaConsumerBuilder::class)
+    private val cordaConsumerBuilder: CordaConsumerBuilder,
     @Reference(service = CordaProducerBuilder::class)
     private val cordaProducerBuilder: CordaProducerBuilder,
 ) : StateAndEventBuilder {
@@ -83,11 +83,11 @@ internal class StateAndEventBuilderImpl @Activate constructor(
         stateConsumer: CordaConsumer<K, S>,
         eventConsumer: CordaConsumer<K, E>
     ) {
-        val consumerThreadStopTimeout = config.threadStopTimeout
+        val consumerTimeout = config.pollTimeout
         val statePartitions =
-            stateConsumer.getPartitions(getStateAndEventStateTopic(config.topic), consumerThreadStopTimeout)
+            stateConsumer.getPartitions(getStateAndEventStateTopic(config.topic), consumerTimeout)
         val eventPartitions =
-            eventConsumer.getPartitions(config.topic, consumerThreadStopTimeout)
+            eventConsumer.getPartitions(config.topic, consumerTimeout)
         if (statePartitions.size != eventPartitions.size) {
             val errorMsg = "Mismatch between state and event partitions."
             log.debug {

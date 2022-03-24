@@ -45,6 +45,7 @@ internal class BusConfigResolver(private val smartConfigFactory: SmartConfigFact
      *             layer and a description of which consumer or producer is requested.
      * @param configParams A config object containing parameters to resolve against. Should be obtained from the
      *                     required configuration provided to the builders.
+     * @return Kafka properties to be used for the given role type based on the bus config and config params
      */
     private fun resolve(busConfig: SmartConfig, rolePath: String, configParams: SmartConfig): Properties {
         val busType = busConfig.getString(BUS_TYPE)
@@ -70,6 +71,15 @@ internal class BusConfigResolver(private val smartConfigFactory: SmartConfigFact
         return properties
     }
 
+    /**
+     * Resolve the provided configuration and return a valid set of Kafka properties suitable for the given role
+     * as well as a concrete class containing user configurable consumer values.
+     *
+     * @param busConfig The supplied message bus configuration. Must match the schema used in the defaults and enforced
+     *               config files included with this library.
+     * @param consumerConfig User configurable values as well as the role to extract config for from the [busConfig]
+     * @return Resolved user configurable consumer values and kafka properties to be used for the given role type
+     */
     fun resolve(busConfig: SmartConfig, consumerConfig: ConsumerConfig): Pair<ResolvedConsumerConfig, Properties> {
         val kafkaProperties = resolve(busConfig, consumerConfig.role.configPath, consumerConfig.toSmartConfig())
         val resolvedConfig = ResolvedConsumerConfig(
@@ -80,6 +90,15 @@ internal class BusConfigResolver(private val smartConfigFactory: SmartConfigFact
         return Pair(resolvedConfig, kafkaProperties)
     }
 
+    /**
+     * Resolve the provided configuration and return a valid set of Kafka properties suitable for the given role
+     * as well as a concrete class containing user configurable producer values.
+     *
+     * @param busConfig The supplied message bus configuration. Must match the schema used in the defaults and enforced
+     *               config files included with this library.
+     * @param producerConfig User configurable values as well as the role to extract config for from the [busConfig]
+     * @return Resolved user configurable Kafka values and kafka properties to be used for the given role type
+     */
     fun resolve(busConfig: SmartConfig, producerConfig: ProducerConfig): Pair<ResolvedProducerConfig, Properties> {
         val kafkaProperties = resolve(busConfig, producerConfig.role.configPath, producerConfig.toSmartConfig())
         val resolvedConfig = ResolvedProducerConfig(
@@ -140,7 +159,6 @@ internal class BusConfigResolver(private val smartConfigFactory: SmartConfigFact
                 mapOf(
                     CLIENT_ID_PATH to clientId,
                     INSTANCE_ID_PATH to instanceId,
-                    //TODO - why is this here?
                     GROUP_PATH to "<undefined>",
                     TRANSACTIONAL_ID_PATH to transactionalId
                 )

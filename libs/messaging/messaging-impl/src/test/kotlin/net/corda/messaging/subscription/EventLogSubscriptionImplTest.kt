@@ -3,7 +3,7 @@ package net.corda.messaging.subscription
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messagebus.api.consumer.CordaConsumer
-import net.corda.messagebus.api.consumer.builder.MessageBusConsumerBuilder
+import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
@@ -35,7 +35,7 @@ class EventLogSubscriptionImplTest {
     private var mockRecordCount = 5L
     private val config = createResolvedSubscriptionConfig(SubscriptionType.EVENT_LOG)
     private val consumerPollAndProcessRetriesCount = config.processorRetries
-    private val cordaConsumerBuilder: MessageBusConsumerBuilder = mock()
+    private val cordaConsumerBuilder: CordaConsumerBuilder = mock()
     private val cordaProducerBuilder: CordaProducerBuilder = mock()
     private val mockCordaConsumer: CordaConsumer<String, ByteBuffer> = mock()
     private val mockCordaProducer: CordaProducer = mock()

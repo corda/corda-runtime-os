@@ -15,7 +15,7 @@ import net.corda.messagebus.api.constants.ConsumerRoles
 import net.corda.messagebus.api.constants.ProducerRoles
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
-import net.corda.messagebus.api.consumer.builder.MessageBusConsumerBuilder
+import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
@@ -36,7 +36,7 @@ import kotlin.concurrent.withLock
 @Suppress("LongParameterList")
 internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private val config: ResolvedSubscriptionConfig,
-    private val cordaConsumerBuilder: MessageBusConsumerBuilder,
+    private val cordaConsumerBuilder: CordaConsumerBuilder,
     private val producerBuilder: CordaProducerBuilder,
     private val responderProcessor: RPCResponderProcessor<REQUEST, RESPONSE>,
     private val serializer: CordaAvroSerializer<RESPONSE>,
@@ -46,13 +46,7 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
 
     private val log = LoggerFactory.getLogger(config.loggerName)
 
-    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
-        LifecycleCoordinatorName(
-            "${config.group}-RPCSubscription-${config.topic}",
-            //we use instanceId here as transactionality is a concern in this subscription
-            config.instanceId.toString()
-        )
-    ) { _, _ -> }
+    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(config.lifecycleCoordinatorName) { _, _ -> }
 
     private val errorMsg = "Failed to read records from group ${config.group}, topic ${config.topic}"
 

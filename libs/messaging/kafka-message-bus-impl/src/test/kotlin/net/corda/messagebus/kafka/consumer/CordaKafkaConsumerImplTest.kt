@@ -1,7 +1,6 @@
 package net.corda.messagebus.kafka.consumer
 
 import net.corda.messagebus.api.CordaTopicPartition
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.TOPIC
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
@@ -20,7 +19,6 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.common.errors.FencedInstanceIdException
-import org.apache.kafka.common.errors.TimeoutException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.BeforeEach
@@ -171,23 +169,6 @@ class CordaKafkaConsumerImplTest {
     }
 
     @Test
-    fun testCommitOffsetsRetries() {
-        consumer = mock()
-        val cordaKafkaConsumer = CordaKafkaConsumerImpl<String, String>(
-            consumerConfig,
-            consumer,
-            listener
-        )
-
-        val consumerRecord = CordaConsumerRecord(eventTopic, 1, 5L, "", "value", 0)
-        doThrow(TimeoutException()).whenever(consumer).commitSync(anyMap())
-        assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
-            cordaKafkaConsumer.commitSyncOffsets(consumerRecord, "meta data")
-        }
-        verify(consumer, times(3)).commitSync(anyMap())
-    }
-
-    @Test
     fun testCommitOffsetsFatal() {
         consumer = mock()
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
@@ -230,22 +211,6 @@ class CordaKafkaConsumerImplTest {
     }
 
     @Test
-    fun testSubscribeRetries() {
-        consumer = mock()
-        cordaKafkaConsumer = CordaKafkaConsumerImpl(
-            consumerConfig,
-            consumer,
-            listener
-        )
-        doThrow(KafkaException()).whenever(consumer)
-            .subscribe(Mockito.anyList(), Mockito.any(ConsumerRebalanceListener::class.java))
-        assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
-            cordaKafkaConsumer.subscribe(TOPIC)
-        }
-        verify(consumer, times(3)).subscribe(Mockito.anyList(), Mockito.any(ConsumerRebalanceListener::class.java))
-    }
-
-    @Test
     fun testSubscribeFatal() {
         consumer = mock()
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
@@ -258,7 +223,7 @@ class CordaKafkaConsumerImplTest {
                 Mockito.anyList(), Mockito.any(ConsumerRebalanceListener::class.java)
             )
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
-            cordaKafkaConsumer.subscribe(TOPIC)
+            cordaKafkaConsumer.subscribe(eventTopic)
         }
         verify(consumer, times(1)).subscribe(Mockito.anyList(), Mockito.any(ConsumerRebalanceListener::class.java))
     }
