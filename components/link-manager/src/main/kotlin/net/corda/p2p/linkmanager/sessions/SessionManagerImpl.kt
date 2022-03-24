@@ -124,7 +124,7 @@ open class SessionManagerImpl(
         configuration,
         groups,
         members,
-        ::destroyOutboundSession,
+        ::refreshOutboundSession,
         clock,
         executorServiceFactory
     )
@@ -192,7 +192,7 @@ open class SessionManagerImpl(
     private fun fromConfig(config: Config): SessionManagerConfig {
         return SessionManagerConfig(
             config.getInt(LinkManagerConfiguration.MAX_MESSAGE_SIZE_KEY),
-            config.getInt(LinkManagerConfiguration.SESSIONS_PER_COUNTERPARTIES_KEY)
+            config.getInt(LinkManagerConfiguration.SESSIONS_PER_PEER_KEY)
         )
     }
 
@@ -277,7 +277,7 @@ open class SessionManagerImpl(
         return CompletableFuture.completedFuture(Unit)
     }
 
-    private fun destroyOutboundSession(counterparties: SessionCounterparties, sessionId: String) {
+    private fun refreshOutboundSession(counterparties: SessionCounterparties, sessionId: String) {
         sessionNegotiationLock.write {
             sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId(sessionId), counterparties)
             sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId(sessionId), counterparties)
@@ -348,8 +348,7 @@ open class SessionManagerImpl(
     ): List<Pair<String, LinkOutMessage>>? {
         val sessionIds = messages.map { it.first.sessionId }
         logger.info("Local identity (${counterparties.ourId}) initiating new sessions with Ids $sessionIds with remote identity " +
-            "${counterparties.counterpartyId}"
-        )
+            "${counterparties.counterpartyId}")
 
         for (message in messages) {
             sessionReplayer.addMessageForReplay(
@@ -402,6 +401,8 @@ open class SessionManagerImpl(
 
     @Suppress("ComplexMethod")
     private fun processResponderHello(message: ResponderHelloMessage): LinkOutMessage? {
+        logger.info("Processing ${message::class.java.simpleName} for session ${message.header.sessionId}.")
+
         val sessionType = outboundSessionPool.getSession(message.header.sessionId) ?: run {
             logger.noSessionWarning(message::class.java.simpleName, message.header.sessionId)
             return null
@@ -416,8 +417,6 @@ open class SessionManagerImpl(
                 Pair(sessionType.sessionCounterparties, sessionType.protocol)
             }
         }
-        logger.info("processResponderHello Session ID from message ${message.header.sessionId} Session ID from session" +
-                " ${session.sessionId}.")
 
         session.receiveResponderHello(message)
         session.generateHandshakeSecrets()
@@ -490,6 +489,7 @@ open class SessionManagerImpl(
     }
 
     private fun processResponderHandshake(message: ResponderHandshakeMessage): LinkOutMessage? {
+        logger.info("Processing ${message::class.java.simpleName} for session ${message.header.sessionId}.")
         val sessionType = outboundSessionPool.getSession(message.header.sessionId) ?: run {
             logger.noSessionWarning(message::class.java.simpleName, message.header.sessionId)
             return null
@@ -504,8 +504,6 @@ open class SessionManagerImpl(
                 Pair(sessionType.sessionCounterparties, sessionType.protocol)
             }
         }
-        logger.info("processResponderHandshake Session ID from message ${message.header.sessionId} Session ID from session" +
-                " ${session.sessionId}.")
 
         val memberInfo = members.getMemberInfo(sessionCounterparties.counterpartyId)
         if (memberInfo == null) {
@@ -545,6 +543,7 @@ open class SessionManagerImpl(
     }
 
     private fun processInitiatorHello(message: InitiatorHelloMessage): LinkOutMessage? {
+        logger.info("Processing ${message::class.java.simpleName} for session ${message.header.sessionId}.")
         val sessionManagerConfig = config.get()
         val peer = members.getMemberInfo(message.source.initiatorPublicKeyHash.array(), message.source.groupId)
         if (peer == null) {
@@ -571,8 +570,6 @@ open class SessionManagerImpl(
             session
         }
         val responderHello = session.generateResponderHello()
-        logger.info("processInitiatorHello session with ID: ${message.header.sessionId} Protocol ID: ${session.sessionId}.")
-
 
         logger.info("Remote identity ${peer.holdingIdentity} initiated new session ${message.header.sessionId}.")
         return createLinkOutMessage(responderHello, peer, groupInfo.networkType.toLMNetworkType())
@@ -584,7 +581,7 @@ open class SessionManagerImpl(
             logger.noSessionWarning(message::class.java.simpleName, message.header.sessionId)
             return null
         }
-        logger.info("ProcessInitiatorHandshake session with ID: ${message.header.sessionId} Protocol ID: ${session.sessionId}.")
+        logger.info("Processing ${message::class.java.simpleName} for session ${message.header.sessionId}.")
 
         val initiatorIdentityData = session.getInitiatorIdentity()
         val peer = members.getMemberInfo(initiatorIdentityData.initiatorPublicKeyHash.array(), initiatorIdentityData.groupId)
@@ -607,9 +604,8 @@ open class SessionManagerImpl(
             logger.validationFailedWarning(
                 message::class.java.simpleName,
                 message.header.sessionId,
-                exception.message,
+                exception.message
             )
-            logger.error("Stack trace", exception)
             return null
         }
         //Find the correct Holding Identity to use (using the public key hash).

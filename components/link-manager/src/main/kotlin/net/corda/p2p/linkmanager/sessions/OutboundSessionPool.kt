@@ -54,19 +54,23 @@ class OutboundSessionPool(
         }.associateBy { it.session.sessionId }
         if (activeSessions.isEmpty()) return SessionPoolStatus.SessionPending
 
-        val weights = mutableListOf<Pair<SessionType.ActiveSession, Double>>()
         var totalWeight = 0.0
-        activeSessions.forEach {
-           val weight = calculateWeightForSession(it.key) ?: 0.0
-           //Avoid division by small float problems
-           if (weight > WEIGHT_CUT_OFF) {
-               weights.add(it.value to weight)
-               totalWeight += weight
-           }
+        var weights = activeSessions.mapNotNull {
+            val weight = calculateWeightForSession(it.key) ?: 0.0
+            totalWeight += weight
+            it.value to weight
         }
 
         if (weights.size == 1) {
             return SessionPoolStatus.SessionActive(weights[0].first.session)
+        }
+
+        //To avoid numerical floating point problems dividing by a small number. Weight everything equally if totalWeight is small.
+        if (totalWeight < WEIGHT_CUT_OFF) {
+            totalWeight = 1.0
+            weights = weights.map {
+                it.first to 1.0 / weights.size
+            }
         }
 
         var totalProb = 0.0
