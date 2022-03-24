@@ -34,5 +34,6 @@ internal data class Endpoint(
 internal enum class EndpointMethod {
     POST,
     GET,
-    PUT
+    PUT,
+    DELETE
 }

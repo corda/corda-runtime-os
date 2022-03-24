@@ -83,6 +83,7 @@ internal class RemoteUnirestClient(override val baseAddress: String, private val
             HttpVerb.GET -> Unirest.get(path)
             HttpVerb.POST -> Unirest.post(path)
             HttpVerb.PUT -> Unirest.put(path)
+            HttpVerb.DELETE -> Unirest.delete(path)
         }
 
         request.header("accept", "application/json")

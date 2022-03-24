@@ -214,6 +214,8 @@ internal class HttpRpcServerInternal(
 
             addRouteWithContentLengthRestriction(resourceProvider.httpPutRoutes, HandlerType.PUT)
 
+            addRouteWithContentLengthRestriction(resourceProvider.httpDeleteRoutes, HandlerType.DELETE)
+
             log.trace { "Add routes by method completed." }
         } catch (e: Exception) {
             "Error during Add GET and POST routes".let {
