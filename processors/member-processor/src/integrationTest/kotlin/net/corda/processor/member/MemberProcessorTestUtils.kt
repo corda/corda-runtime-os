@@ -93,9 +93,9 @@ class MemberProcessorTestUtils {
             publishCpiMetadata(cpiMetadata)
 
             eventually {
-                val newCpiInfo = getCpiInfo(cpiInfoReadService, cpiMetadata.id)
+                val newCpiInfo = getCpiInfo(cpiInfoReadService, cpiMetadata.cpiId)
                 assertNotEquals(previousCpiInfo, newCpiInfo!!)
-                assertEquals(cpiVersion, newCpiInfo.id.version)
+                assertEquals(cpiVersion, newCpiInfo.cpiId.version)
             }
 
             publishVirtualNodeInfo(virtualNodeInfo)
