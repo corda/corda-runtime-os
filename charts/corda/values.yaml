@@ -44,6 +44,8 @@ kafka:
   bootstrapServers: ""
   # -- Kafka topic partitions
   partitions: 3
+  # -- prefix to use for Kafka topic names (to support the use of a single Kafka cluster by multiple Corda clusters)
+  topicPrefix: ""
 
 # worker configuration
 workers:
