@@ -20,6 +20,7 @@ import net.corda.v5.base.stream.returnsDurableCursorBuilder
 import net.corda.v5.base.stream.isFiniteDurableStreamsMethod
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.RpcOps
+import net.corda.httprpc.annotations.HttpRpcPUT
 import net.corda.httprpc.annotations.isRpcEndpointAnnotation
 import net.corda.httprpc.tools.annotations.extensions.name
 import net.corda.httprpc.tools.annotations.extensions.path
@@ -35,7 +36,7 @@ import kotlin.reflect.jvm.kotlinFunction
  * generating a list of [Resource].
  */
 @Suppress("UNCHECKED_CAST", "TooManyFunctions", "TooGenericExceptionThrown")
-class APIStructureRetriever(private val opsImplList: List<PluggableRPCOps<*>>) {
+internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCOps<*>>) {
     private companion object {
         private val log = contextLogger()
     }
@@ -180,6 +181,7 @@ class APIStructureRetriever(private val opsImplList: List<PluggableRPCOps<*>>) {
             return when (annotation) {
                 is HttpRpcGET -> this.toGETEndpoint(annotation)
                 is HttpRpcPOST -> this.toPOSTEndpoint(annotation)
+                is HttpRpcPUT -> this.toPUTEndpoint(annotation)
                 else -> throw IllegalArgumentException("Unknown endpoint type for: ${this.name}")
             }.also { log.trace { "Method \"${this.name}\" to endpoint completed." } }
         } catch (e: Exception) {
@@ -242,6 +244,43 @@ class APIStructureRetriever(private val opsImplList: List<PluggableRPCOps<*>>) {
             responseBody,
             this.getInvocationMethod()
         ).also { log.trace { "Method \"${this.name}\" to POST endpoint completed." } }
+    }
+
+    private fun Method.toPUTEndpoint(annotation: HttpRpcPUT): Endpoint {
+        log.trace { "Method \"${this.name}\" to PUT endpoint." }
+        val responseBody = when {
+            this.returnsDurableCursorBuilder() && !this.isFiniteDurableStreamsMethod() -> {
+                ResponseBody(
+                    annotation.responseDescription,
+                    DurableReturnResult::class.java,
+                    this.toClassAndParameterizedTypes().second
+                )
+            }
+            this.isFiniteDurableStreamsMethod() -> {
+                ResponseBody(
+                    annotation.responseDescription,
+                    FiniteDurableReturnResult::class.java,
+                    this.toClassAndParameterizedTypes().second
+                )
+            }
+            else -> {
+                ResponseBody(
+                    annotation.responseDescription,
+                    this.toClassAndParameterizedTypes().first,
+                    this.toClassAndParameterizedTypes().second
+                )
+            }
+        }
+
+        return Endpoint(
+            EndpointMethod.PUT,
+            annotation.title(this),
+            annotation.description,
+            annotation.path(),
+            retrieveParameters(true),
+            responseBody,
+            this.getInvocationMethod()
+        ).also { log.trace { "Method \"${this.name}\" to PUT endpoint completed." } }
     }
 
     private fun Method.getInvocationMethod(clazz: Class<out RpcOps>? = null): InvocationMethod {

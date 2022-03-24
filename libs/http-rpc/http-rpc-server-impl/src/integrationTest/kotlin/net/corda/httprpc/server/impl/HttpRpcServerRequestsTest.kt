@@ -14,6 +14,7 @@ import net.corda.httprpc.server.impl.utils.multipartDir
 import net.corda.httprpc.test.*
 import net.corda.httprpc.tools.HttpVerb.GET
 import net.corda.httprpc.tools.HttpVerb.POST
+import net.corda.httprpc.tools.HttpVerb.PUT
 import net.corda.v5.application.flows.BadRpcStartFlowRequestException
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.apache.http.HttpStatus
@@ -425,5 +426,24 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
 
         assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
         assertEquals("\"Retrieved using query: MyQuery\"", createEntityResponse.body)
+    }
+
+    @Test
+    fun `Call update on test entity`() {
+        val createEntityResponse = client.call(
+            PUT,
+            WebRequest<Any>(
+                "testentity",
+                """{ "updateParams" : { "id": "myId", "name": "TestName", "amount" : 20 } }"""
+            ),
+            userName,
+            password
+        )
+
+        assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
+        assertEquals(
+            "\"Updated using params: UpdateParams(id=myId, name=TestName, amount=20)\"",
+            createEntityResponse.body
+        )
     }
 }

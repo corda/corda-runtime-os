@@ -21,6 +21,7 @@ internal interface RouteProvider {
     val httpNoAuthRequiredGetRoutes: List<RouteInfo>
     val httpGetRoutes: List<RouteInfo>
     val httpPostRoutes: List<RouteInfo>
+    val httpPutRoutes: List<RouteInfo>
 }
 
 internal class JavalinRouteProviderImpl(
@@ -37,11 +38,15 @@ internal class JavalinRouteProviderImpl(
         .filter { routeInfo ->
             routeInfo.method.method.isStaticallyExposedGet()
         }
+
     override val httpGetRoutes = mapResourcesToRoutesByHttpMethod(EndpointMethod.GET)
         .filterNot { routeInfo ->
             routeInfo.method.method.isStaticallyExposedGet()
         }
+
     override val httpPostRoutes = mapResourcesToRoutesByHttpMethod(EndpointMethod.POST)
+
+    override val httpPutRoutes = mapResourcesToRoutesByHttpMethod(EndpointMethod.PUT)
 
     private fun mapResourcesToRoutesByHttpMethod(httpMethod: EndpointMethod): List<RouteInfo> {
         log.trace { "Map resources to routes by http method." }

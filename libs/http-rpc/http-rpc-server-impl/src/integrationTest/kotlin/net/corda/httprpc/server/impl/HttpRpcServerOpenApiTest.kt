@@ -115,6 +115,12 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
                 "#/components/schemas/CreateRequest",
                 post.requestBody.content["application/json"]?.schema?.`$ref`
             )
+            val putParams = put.parameters
+            assertTrue(putParams.isEmpty())
+            assertEquals(
+                "#/components/schemas/UpdateRequest",
+                put.requestBody.content["application/json"]?.schema?.`$ref`
+            )
         }
     }
 

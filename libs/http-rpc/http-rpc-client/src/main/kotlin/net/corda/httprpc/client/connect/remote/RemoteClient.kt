@@ -82,6 +82,7 @@ internal class RemoteUnirestClient(override val baseAddress: String, private val
         var request = when (verb) {
             HttpVerb.GET -> Unirest.get(path)
             HttpVerb.POST -> Unirest.post(path)
+            HttpVerb.PUT -> Unirest.put(path)
         }
 
         request.header("accept", "application/json")
