@@ -21,6 +21,7 @@ class GroupPolicyParser {
      *
      * @throws [BadGroupPolicyException] if the input string is null, blank, or cannot be parsed.
      */
+    @Suppress("ThrowsCount")
     fun parse(groupPolicyJson: String?): GroupPolicy {
         return GroupPolicyImpl(
             when {
