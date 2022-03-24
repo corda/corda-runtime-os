@@ -307,7 +307,6 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                     }
                 }
             }
-            //return recordsForMarkers(messageAndKey, isHostedLocally, isReplay, isTtlExpired)
         }
 
 
