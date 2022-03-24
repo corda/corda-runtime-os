@@ -170,12 +170,7 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
     }
 
     override fun close() {
-        close(Duration.ZERO)
-    }
-
-    private fun close(timeout: Duration) {
-        // Nothing to do here
-        log.info("Closing logger for ${consumerConfig.getString(CLIENT_ID)}. Timeout $timeout")
+        log.info("Closing logger for ${consumerConfig.getString(CLIENT_ID)}")
     }
 
     override fun setDefaultRebalanceListener(defaultListener: CordaConsumerRebalanceListener) {
