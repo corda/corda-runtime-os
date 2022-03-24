@@ -1,7 +1,6 @@
 package net.corda.flow.pipeline.handlers.requests.sessions
 
 import net.corda.data.flow.FlowKey
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.state.Checkpoint
@@ -14,6 +13,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowProcessingException
+import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.session.manager.SessionManager
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
@@ -62,12 +62,7 @@ class CloseSessionsRequestHandlerTest {
 
     @Test
     fun `Returns an updated WaitingFor of SessionConfirmation (Close)`() {
-        val inputContext: FlowEventContext<Any> = FlowEventContext(
-            checkpoint = Checkpoint(),
-            inputEvent = FlowEvent(FLOW_KEY, Unit),
-            inputEventPayload = Unit,
-            outputRecords = emptyList()
-        )
+        val inputContext: FlowEventContext<Any> = buildFlowEventContext(checkpoint = Checkpoint(), inputEventPayload = Unit)
         val sessions = setOf(SESSION_ID, ANOTHER_SESSION_ID)
         val result = closeSessionsRequestHandler.getUpdatedWaitingFor(
             inputContext,
@@ -101,12 +96,9 @@ class CloseSessionsRequestHandlerTest {
             fiber = checkpoint.fiber
             sessions = checkpoint.sessions
         }
-        val inputContext: FlowEventContext<Any> = FlowEventContext(
-            checkpoint = checkpointCopy,
-            inputEvent = FlowEvent(FLOW_KEY, Unit),
-            inputEventPayload = Unit,
-            outputRecords = emptyList()
-        )
+
+        val inputContext: FlowEventContext<Any> = buildFlowEventContext(checkpoint = checkpointCopy, inputEventPayload = Unit)
+
         val outputContext = closeSessionsRequestHandler.postProcess(
             inputContext,
             FlowIORequest.CloseSessions(setOf(SESSION_ID, ANOTHER_SESSION_ID))
@@ -125,12 +117,7 @@ class CloseSessionsRequestHandlerTest {
 
     @Test
     fun `Throws an exception if there is no checkpoint`() {
-        val inputContext: FlowEventContext<Any> = FlowEventContext(
-            checkpoint = null,
-            inputEvent = FlowEvent(FLOW_KEY, Unit),
-            inputEventPayload = Unit,
-            outputRecords = emptyList()
-        )
+        val inputContext: FlowEventContext<Any> = buildFlowEventContext(checkpoint = null, inputEventPayload = Unit)
         assertThrows<FlowProcessingException> {
             closeSessionsRequestHandler.postProcess(inputContext, FlowIORequest.CloseSessions(setOf(SESSION_ID, ANOTHER_SESSION_ID)))
         }

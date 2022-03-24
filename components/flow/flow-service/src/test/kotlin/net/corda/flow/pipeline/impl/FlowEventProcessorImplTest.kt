@@ -5,11 +5,11 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.identity.HoldingIdentity
-import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowEventPipeline
 import net.corda.flow.pipeline.FlowHospitalException
 import net.corda.flow.pipeline.FlowProcessingException
 import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
+import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
@@ -27,7 +27,11 @@ class FlowEventProcessorImplTest {
     private val flowKey = FlowKey("flow id", HoldingIdentity("x500 name", "group id"))
     private val updatedCheckpoint = Checkpoint()
     private val outputRecords = listOf(Record(FLOW_EVENT_TOPIC, "key", "value"))
-    private val updatedContext = FlowEventContext<Any>(updatedCheckpoint, FlowEvent(flowKey, wakeupPayload), wakeupPayload, outputRecords)
+    private val updatedContext = buildFlowEventContext<Any>(
+        updatedCheckpoint,
+        wakeupPayload,
+        outputRecords = outputRecords
+    )
 
     private val flowEventPipeline = mock<FlowEventPipeline>().apply {
         whenever(eventPreProcessing()).thenReturn(this)
@@ -39,10 +43,10 @@ class FlowEventProcessorImplTest {
         whenever(toStateAndEventResponse()).thenReturn(StateAndEventProcessor.Response(updatedCheckpoint, outputRecords))
     }
     private val flowEventPipelineFactory = mock<FlowEventPipelineFactory>().apply {
-        whenever(create(any(), any())).thenReturn(flowEventPipeline)
+        whenever(create(any(), any(), any())).thenReturn(flowEventPipeline)
     }
 
-    private val processor = FlowEventProcessorImpl(flowEventPipelineFactory)
+    private val processor = FlowEventProcessorImpl(flowEventPipelineFactory, mock())
 
     @Test
     fun `Throws FlowHospitalException if there was no flow event`() {

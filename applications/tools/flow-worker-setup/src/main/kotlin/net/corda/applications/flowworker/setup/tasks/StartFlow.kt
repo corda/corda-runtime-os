@@ -42,7 +42,7 @@ class StartFlow(private val context: TaskContext) : Task {
             FlowInitiatorType.RPC,
             clientId,
             identity,
-            "helloworld",
+            "flow-worker-dev",
             identity,
             flowName,
             Instant.now()

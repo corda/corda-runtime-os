@@ -24,6 +24,7 @@ dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-config-schema"
     implementation 'net.corda:corda-topic-schema'
     implementation 'net.corda:corda-serialization'
     implementation 'net.corda:corda-packaging'
@@ -33,6 +34,7 @@ dependencies {
     implementation 'org.slf4j:slf4j-api'
 
     implementation project(':testing:sandboxes')
+    implementation project(":libs:configuration:configuration-core")
     implementation project(':libs:messaging:messaging')
     implementation project(':libs:virtual-node:sandbox-group-context')
     implementation project(':components:flow:flow-service')

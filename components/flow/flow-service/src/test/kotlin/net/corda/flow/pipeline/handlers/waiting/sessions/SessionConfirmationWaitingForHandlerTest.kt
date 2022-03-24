@@ -1,7 +1,6 @@
 package net.corda.flow.pipeline.handlers.waiting.sessions
 
 import net.corda.data.flow.FlowKey
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.session.SessionAck
@@ -13,8 +12,8 @@ import net.corda.data.flow.state.waiting.SessionConfirmation
 import net.corda.data.flow.state.waiting.SessionConfirmationType
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FlowContinuation
-import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowProcessingException
+import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.session.manager.SessionManager
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -45,14 +44,12 @@ class SessionConfirmationWaitingForHandlerTest {
 
     @Test
     fun `Receiving a session ack payload for the session being waited for while waiting for a session confirmation (Initiate) returns a FlowContinuation#Run`() {
-        val inputContext = FlowEventContext(
+        val inputContext = buildFlowEventContext(
             checkpoint = Checkpoint(),
-            inputEvent = FlowEvent(FLOW_KEY, Unit),
             inputEventPayload = SessionEvent().apply {
                 sessionId = SESSION_ID
                 payload = SessionAck()
-            },
-            outputRecords = emptyList()
+            }
         )
         val continuation = sessionConfirmationWaitingForHandler.runOrContinue(
             inputContext,
@@ -64,14 +61,12 @@ class SessionConfirmationWaitingForHandlerTest {
 
     @Test
     fun `Receiving a session ack payload for the wrong session being waited for while waiting for a session confirmation (Initiate) returns a FlowContinuation#Continue`() {
-        val inputContext = FlowEventContext(
+        val inputContext = buildFlowEventContext(
             checkpoint = Checkpoint(),
-            inputEvent = FlowEvent(FLOW_KEY, Unit),
             inputEventPayload = SessionEvent().apply {
                 sessionId = ANOTHER_SESSION_ID
                 payload = SessionAck()
-            },
-            outputRecords = emptyList()
+            }
         )
         val continuation = sessionConfirmationWaitingForHandler.runOrContinue(
             inputContext,
@@ -83,12 +78,7 @@ class SessionConfirmationWaitingForHandlerTest {
 
     @Test
     fun `Receiving a non-session event while waiting for a session confirmation (Initiate) returns a FlowContinuation#Continue`() {
-        val inputContext = FlowEventContext(
-            checkpoint = Checkpoint(),
-            inputEvent = FlowEvent(FLOW_KEY, Unit),
-            inputEventPayload = Wakeup(),
-            outputRecords = emptyList()
-        )
+        val inputContext = buildFlowEventContext(checkpoint = Checkpoint(), inputEventPayload = Wakeup())
         val continuation = sessionConfirmationWaitingForHandler.runOrContinue(
             inputContext,
             SessionConfirmation(listOf(SESSION_ID), SessionConfirmationType.INITIATE)
@@ -99,14 +89,12 @@ class SessionConfirmationWaitingForHandlerTest {
 
     @Test
     fun `Receiving a non-session ack payload while waiting for a session confirmation (Initiate) returns a FlowContinuation#Continue`() {
-        val inputContext = FlowEventContext(
+        val inputContext = buildFlowEventContext(
             checkpoint = Checkpoint(),
-            inputEvent = FlowEvent(FLOW_KEY, Unit),
             inputEventPayload = SessionEvent().apply {
                 sessionId = SESSION_ID
                 payload = SessionData()
-            },
-            outputRecords = emptyList()
+            }
         )
         val continuation = sessionConfirmationWaitingForHandler.runOrContinue(
             inputContext,
@@ -132,13 +120,11 @@ class SessionConfirmationWaitingForHandlerTest {
         whenever(sessionManager.getNextReceivedEvent(sessionState)).thenReturn(sessionEvent)
         whenever(sessionManager.getNextReceivedEvent(anotherSessionState)).thenReturn(sessionEvent)
 
-        val inputContext = FlowEventContext(
+        val inputContext = buildFlowEventContext(
             checkpoint = Checkpoint().apply {
                 this.sessions = listOf(sessionState, anotherSessionState)
             },
-            inputEvent = FlowEvent(FLOW_KEY, Unit),
-            inputEventPayload = Unit,
-            outputRecords = emptyList()
+            inputEventPayload = Unit
         )
 
         val continuation = sessionConfirmationWaitingForHandler.runOrContinue(
@@ -165,13 +151,11 @@ class SessionConfirmationWaitingForHandlerTest {
         whenever(sessionManager.getNextReceivedEvent(sessionState)).thenReturn(sessionEvent)
         whenever(sessionManager.getNextReceivedEvent(anotherSessionState)).thenReturn(sessionEvent)
 
-        val inputContext = FlowEventContext(
+        val inputContext = buildFlowEventContext(
             checkpoint = Checkpoint().apply {
                 this.sessions = listOf(sessionState, anotherSessionState)
             },
-            inputEvent = FlowEvent(FLOW_KEY, Unit),
-            inputEventPayload = Unit,
-            outputRecords = emptyList()
+            inputEventPayload = Unit
         )
 
         sessionConfirmationWaitingForHandler.runOrContinue(inputContext, SessionConfirmation(sessions, SessionConfirmationType.CLOSE))
@@ -197,13 +181,11 @@ class SessionConfirmationWaitingForHandlerTest {
             sequenceNum = 1
         })
 
-        val inputContext = FlowEventContext(
+        val inputContext = buildFlowEventContext(
             checkpoint = Checkpoint().apply {
                 this.sessions = listOf(sessionState, anotherSessionState)
             },
-            inputEvent = FlowEvent(FLOW_KEY, Unit),
-            inputEventPayload = Unit,
-            outputRecords = emptyList()
+            inputEventPayload = Unit
         )
 
         val continuation = sessionConfirmationWaitingForHandler.runOrContinue(
@@ -230,13 +212,11 @@ class SessionConfirmationWaitingForHandlerTest {
         })
         whenever(sessionManager.getNextReceivedEvent(anotherSessionState)).thenReturn(null)
 
-        val inputContext = FlowEventContext(
+        val inputContext = buildFlowEventContext(
             checkpoint = Checkpoint().apply {
                 this.sessions = listOf(sessionState, anotherSessionState)
             },
-            inputEvent = FlowEvent(FLOW_KEY, Unit),
-            inputEventPayload = Unit,
-            outputRecords = emptyList()
+            inputEventPayload = Unit
         )
 
         val continuation = sessionConfirmationWaitingForHandler.runOrContinue(
@@ -249,13 +229,7 @@ class SessionConfirmationWaitingForHandlerTest {
 
     @Test
     fun `Throws an exception if there is no checkpoint`() {
-        val inputContext = FlowEventContext(
-            checkpoint = null,
-            inputEvent = FlowEvent(FLOW_KEY, Unit),
-            inputEventPayload = Unit,
-            outputRecords = emptyList()
-        )
-
+        val inputContext = buildFlowEventContext(checkpoint = null, inputEventPayload = Unit)
         assertThrows<FlowProcessingException> {
             sessionConfirmationWaitingForHandler.runOrContinue(
                 inputContext,
