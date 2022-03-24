@@ -1,6 +1,7 @@
 package net.corda.messagebus.db.producer.builder
 
 import com.typesafe.config.Config
+import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CLIENT_ID
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.TRANSACTIONAL_ID
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
@@ -33,8 +34,7 @@ class DBCordaProducerBuilderImpl @Activate constructor(
         val dbAccess = DBAccess(
             entityManagerFactoryFactory.create(
                 producerConfig,
-                "test",
-//                "DB Producer for ${producerConfig.getString(CLIENT_ID)}",
+                "DB Producer for ${producerConfig.getString(CLIENT_ID)}",
                 listOf(
                     TopicRecordEntry::class.java,
                     CommittedPositionEntry::class.java,

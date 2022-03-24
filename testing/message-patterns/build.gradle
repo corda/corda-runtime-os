@@ -132,14 +132,16 @@ tasks.register('dbIntegrationTest', TestOSGi) {
 }
 
 tasks.named('integrationTest') {
+    // By default this is expected to run against the in-memory db, effectively
+    // running an in-mem version of the message pattern tests
     dependsOn dbIntegrationTest
-//    dependsOn kafkaIntegrationTest, dbIntegrationTest
     enabled = false
 }
 
-tasks.named('check') {
-    dependsOn kafkaIntegrationTest, dbIntegrationTest
-}
+//tasks.named('check') {
+    // This will expect a kafka infrastructure up
+//    dependsOn kafkaIntegrationTest, dbIntegrationTest
+//}
 
 artifacts {
     archives testingBundle

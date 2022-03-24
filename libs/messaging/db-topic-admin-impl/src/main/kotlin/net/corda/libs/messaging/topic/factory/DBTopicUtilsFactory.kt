@@ -1,6 +1,5 @@
 package net.corda.libs.messaging.topic.factory
 
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import net.corda.db.core.InMemoryDataSourceFactory
 import net.corda.db.core.PostgresDataSourceFactory
@@ -33,12 +32,8 @@ class DBTopicUtilsFactory @Activate constructor(
 ) : TopicUtilsFactory {
 
     override fun createTopicUtils(props: Properties): TopicUtils {
-        return createTopicUtils(ConfigFactory.parseProperties(props))
-    }
-
-    override fun createTopicUtils(config: Config): TopicUtils {
+        val config = ConfigFactory.parseProperties(props)
         val jdbcUrl = config.getStringOrNull("jdbc.url")
-
         val dbSource = if (jdbcUrl == null) {
             InMemoryDataSourceFactory().create(DB_MESSAGE_BUS)
         } else {

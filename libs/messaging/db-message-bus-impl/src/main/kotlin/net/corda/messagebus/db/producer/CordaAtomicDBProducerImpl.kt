@@ -11,10 +11,7 @@ import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.persistence.DBAccess.Companion.ATOMIC_TRANSACTION
 import net.corda.messagebus.db.util.WriteOffsets
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
-import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.debug
 import java.time.Duration
-import javax.persistence.RollbackException
 import kotlin.math.abs
 
 @Suppress("TooManyFunctions")
@@ -23,22 +20,8 @@ class CordaAtomicDBProducerImpl(
     private val dbAccess: DBAccess
 ) : CordaProducer {
 
-    companion object {
-        val log = contextLogger()
-    }
-
-    private fun initialiseWithAtomicTransaction() {
-        try {
-            // Write the transaction record for all atomic transactions
-            dbAccess.writeAtomicTransactionRecord()
-        } catch (e: RollbackException) {
-            log.debug { "ATOMIC_TRANSACTION already recorded in DB." }
-            // It's already been written so do nothing
-        }
-    }
-
     init {
-        initialiseWithAtomicTransaction()
+        dbAccess.writeAtomicTransactionRecord()
     }
 
     private val defaultTimeout: Duration = Duration.ofSeconds(1)

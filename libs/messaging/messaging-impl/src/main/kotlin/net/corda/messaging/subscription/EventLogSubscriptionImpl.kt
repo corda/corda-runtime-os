@@ -294,7 +294,6 @@ class EventLogSubscriptionImpl<K : Any, V : Any>(
         }
 
         try {
-            println(" %%% processing ${cordaConsumerRecords.size} records")
             producer.beginTransaction()
             producer.sendRecords(processor.onNext(cordaConsumerRecords.map { it.toEventLogRecord() }).toCordaProducerRecords())
             if(deadLetterRecords.isNotEmpty()) {

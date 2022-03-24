@@ -4,10 +4,11 @@ import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.db.datamodel.CommittedPositionEntry
 import net.corda.messagebus.db.datamodel.TopicEntry
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
-import net.corda.messagebus.db.datamodel.TopicRecordResult
 import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionState
+import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.orm.utils.transaction
+import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Instant
@@ -24,12 +25,12 @@ class DBAccess(
     private val entityManagerFactory: EntityManagerFactory,
 ) {
 
-    private val defaultNumPartitions: Int = 1
-    private val autoCreate: Boolean = true
+    private val defaultNumPartitions = 1
+    private val autoCreate = true
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
-        val ATOMIC_TRANSACTION = TransactionRecordEntry("Atomic Transaction", TransactionState.COMMITTED)
+        internal val ATOMIC_TRANSACTION = TransactionRecordEntry("Atomic Transaction", TransactionState.COMMITTED)
     }
 
     fun getMaxCommittedPositions(
@@ -67,7 +68,7 @@ class DBAccess(
 
         executeWithErrorHandling("retrieve max offsets per topic") { entityManager ->
             val builder = entityManager.criteriaBuilder
-            val select = builder.createQuery(TopicRecordResult::class.java)
+            val select = builder.createTupleQuery()
             val root = select.from(TopicRecordEntry::class.java)
             select.multiselect(
                 root.get<String>(TopicRecordEntry::topic.name),
@@ -80,8 +81,11 @@ class DBAccess(
             )
             val results = entityManager.createQuery(select).resultList
             results.forEach {
-                val topicPartition = CordaTopicPartition(it.topic, it.partition)
-                maxOffsetsPerTopic[topicPartition] = it.offset
+                val topic = it.get(0, String::class.java)
+                val partition: Int = uncheckedCast(it.get(1))
+                val offset: Long = uncheckedCast(it.get(2))
+                val topicPartition = CordaTopicPartition(topic, partition)
+                maxOffsetsPerTopic[topicPartition] = offset
             }
         }
 
@@ -99,11 +103,14 @@ class DBAccess(
      */
     fun getTopicPartitionMapFor(topic: String): Set<CordaTopicPartition> {
         return executeWithErrorHandling("retrieve topic partitions") { entityManager ->
-            var topicEntry = entityManager.find(TopicEntry::class.java, topic)
-            if (topicEntry == null && autoCreate) {
-                topicEntry = TopicEntry(topic, defaultNumPartitions)
-                entityManager.persist(topicEntry)
-            }
+            val topicEntry = entityManager.find(TopicEntry::class.java, topic)
+                ?: if (autoCreate) {
+                    val topicEntry = TopicEntry(topic, defaultNumPartitions)
+                    entityManager.persist(topicEntry)
+                    topicEntry
+                } else {
+                    throw CordaMessageAPIFatalException("Cannot find topic $topic")
+                }
             val topicPartitions = mutableSetOf<CordaTopicPartition>()
             repeat(topicEntry.numPartitions) { partition ->
                 topicPartitions.add(CordaTopicPartition(topic, partition))

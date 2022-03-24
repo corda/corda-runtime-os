@@ -1,6 +1,5 @@
 package net.corda.libs.messaging.topic.factory
 
-import com.typesafe.config.Config
 import net.corda.libs.messaging.topic.KafkaTopicUtils
 import net.corda.libs.messaging.topic.utils.TopicUtils
 import net.corda.libs.messaging.topic.utils.factory.TopicUtilsFactory
@@ -18,11 +17,5 @@ class KafkaTopicUtilsFactory : TopicUtilsFactory {
 
     override fun createTopicUtils(props: Properties): TopicUtils {
         return KafkaTopicUtils(AdminClient.create(props))
-    }
-
-    override fun createTopicUtils(config: Config): TopicUtils {
-        val props = Properties()
-        props.putAll(config.entrySet().associate { (key, value) -> key to value.unwrapped() })
-        return createTopicUtils(props)
     }
 }

@@ -54,7 +54,7 @@ class KafkaOnlyTest: ExecutionCondition {
     }
 }
 
-@Target(AnnotationTarget.FUNCTION)
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
 @ExtendWith(KafkaOnlyTest::class)
 annotation class KafkaOnly

@@ -5,9 +5,14 @@ import net.corda.messagebus.api.configuration.ConfigProperties
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.write
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
+/**
+ * Used to manage partitioning of consumers across a group.
+ *
+ * The API for this class is thread-safe
+ */
 class ConsumerGroup(
     private val groupId: String,
     private val dbAccess: DBAccess,
@@ -17,13 +22,16 @@ class ConsumerGroup(
         const val NULL_GROUP_ID = "NULL"
     }
 
-    private val lock: ReentrantReadWriteLock = ReentrantReadWriteLock()
+    /**
+     * locks all access to this class.  Specifically to protect the three maps below
+     */
+    private val apiLock = ReentrantLock()
     private val topicPartitions: MutableMap<String, Set<CordaTopicPartition>> = ConcurrentHashMap()
     private val topicToConsumersMap: MutableMap<String, MutableSet<DBCordaConsumerImpl<*, *>>> = ConcurrentHashMap()
     private val partitionsPerConsumer: MutableMap<String, MutableSet<CordaTopicPartition>> = ConcurrentHashMap()
 
     internal fun getTopicPartitionsFor(consumer: DBCordaConsumerImpl<*, *>): Set<CordaTopicPartition> {
-        return lock.write {
+        return apiLock.withLock {
             verifyValid()
             partitionsPerConsumer[consumer.clientId]?.toSet()
                 ?: throw CordaMessageAPIFatalException("Consumer not part of consumer group $groupId")
@@ -38,7 +46,7 @@ class ConsumerGroup(
         consumer: DBCordaConsumerImpl<*, *>,
         topics: Collection<String>,
     ) {
-        lock.write {
+        apiLock.withLock {
             verifyValid()
             topics.forEach { topic ->
                 buildTopicPartitionsFor(topic)
@@ -55,7 +63,7 @@ class ConsumerGroup(
     internal fun unsubscribe(
         consumer: DBCordaConsumerImpl<*, *>,
     ) {
-        return lock.write {
+        return apiLock.withLock {
             verifyValid()
             topicToConsumersMap.filter { consumer in it.value }.forEach { (topic, consumers) ->
                 consumers.remove(consumer)

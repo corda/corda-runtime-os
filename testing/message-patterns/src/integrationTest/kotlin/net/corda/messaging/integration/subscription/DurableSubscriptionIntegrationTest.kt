@@ -125,10 +125,6 @@ class DurableSubscriptionIntegrationTest {
     @KafkaOnly
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `asynch publish records and then start 2 durable subscriptions, delay 1 sub, trigger rebalance`() {
-        if (isDB) {
-            return
-        }
-
         topicUtils.createTopics(getTopicConfig(DURABLE_TOPIC1_TEMPLATE))
 
         publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC1)
