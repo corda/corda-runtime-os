@@ -44,7 +44,7 @@ kafka:
   bootstrapServers: ""
   # -- Kafka topic partitions
   partitions: 3
-  # -- Expose the topic prefix on the Helm chart so that multiple Corda installations can share the same Kafka install
+  # -- prefix to use for Kafka topic names (to support the use of a single Kafka cluster by multiple Corda clusters)
   topicPrefix: ""
 
 # worker configuration
