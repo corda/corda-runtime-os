@@ -19,19 +19,20 @@ internal const val QUERY_PARAM_NAME = "name"
 internal const val QUERY_PARAM_PRIVILEGE = "privilege"
 
 /**
- * Db connection config data class
+ * Db Connection Config data class
  *
  * @property id
+ * @property name
+ * @property privilege DB privilege associated with the connection details (DDL/DML)
  * @property updateTimestamp
  * @property updateActor
- * @property privilege DB privilege associated with the connection details (DDL/DML)
  * @property description (optional)
  * @property config DB configuration section that can be parsed as SmartConfig.
  *
  * @property version The version number used for optimistic locking.
  */
 @Entity
-@Table(name = DbSchema.CONFIG_DB_CONNECTION_TABLE, schema = DbSchema.CONFIG)
+@Table(name = DbSchema.DB_CONNECTION_TABLE, schema = DbSchema.CONFIG)
 @NamedQuery(
     name = QUERY_FIND_BY_NAME_AND_PRIVILEGE,
     query = "SELECT c FROM DbConnectionConfig c WHERE c.name=:$QUERY_PARAM_NAME AND c.privilege=:$QUERY_PARAM_PRIVILEGE")
