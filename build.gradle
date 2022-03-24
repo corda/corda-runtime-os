@@ -12,16 +12,12 @@ buildscript {
 class SystemPropertyCommandLineArgumentProvider implements CommandLineArgumentProvider {
     private final Map<String, Object> systemProperties = new LinkedHashMap<>();
 
-    public void systemProperty(String key, String value) {
-        systemProperties.put(key, value);
-    }
-
-    public void systemProperty(String key, Object value) {
+    void systemProperty(String key, String value) {
         systemProperties.put(key, value);
     }
 
     @Override
-    public Iterable<String> asArguments() {
+    Iterable<String> asArguments() {
         return systemProperties.entrySet()
                 .stream()
                 .map(
@@ -35,7 +31,7 @@ class SystemPropertyCommandLineArgumentProvider implements CommandLineArgumentPr
 
     // Track system property keys as an input so our build cache key will change if we add properties but values are still ignored
     @Input
-    public Iterable<String> getPropertyNames() {
+    Iterable<String> getPropertyNames() {
         return systemProperties.keySet();
     }
 }
@@ -60,35 +56,6 @@ wrapper {
     gradleVersion = '7.4.1'
     distributionType = Wrapper.DistributionType.BIN
 }
-
-//
-//class pathTmpdir implements CommandLineArgumentProvider {
-//
-//    pathTmpdir(Project project) {
-//        this.simple = project.objects.property(Boolean)
-//        this.systemWide = project.objects.property(Boolean)
-//        this.icon = project.objects.fileProperty()
-//    }
-//
-//    @Override
-//    Iterable<String> asArguments() {
-//        ["""-Djava.io.tmpdir=${project.buildDir.absolutePath}}
-//""".toString()]
-//    }
-//}
-//
-//class propertyProvider implements CommandLineArgumentProvider {
-//    @Override
-//    Iterable<String> asArguments() {
-//        ["""-DpostgresHost=${project.getProperty("postgresHost")}
-//              -DpostgresDb=${project.getProperty("postgresDb")}
-//             -DpostgresPort=${project.getProperty("postgresPort")}
-//              -DpostgresUser=${project.getProperty("postgresUser")}
-//              -DpostgresPassword=${project.getProperty("postgresPassword")}
-//""".toString()]
-//    }
-//}
-
 
 def javaVersion = VERSION_11
 
@@ -147,7 +114,7 @@ allprojects {
         doFirst {
 //            systemProperty 'java.io.tmpdir', buildDir.absolutePath
             SystemPropertyCommandLineArgumentProvider nonInputPropertiesTmpDir = new SystemPropertyCommandLineArgumentProvider()
-            nonInputPropertiesTmpDir.systemProperty("java.io.tmpdir", "${-> project.buildDir.absolutePath}")
+            nonInputPropertiesTmpDir.systemProperty("java.io.tmpdir", "${project.buildDir.absolutePath}")
             testTask.getJvmArgumentProviders().add(nonInputPropertiesTmpDir)
         }
 
@@ -283,11 +250,11 @@ allprojects {
         classpath = project.sourceSets["integrationTest"].runtimeClasspath
 
         SystemPropertyCommandLineArgumentProvider nonInputProperties = new SystemPropertyCommandLineArgumentProvider()
-        nonInputProperties.systemProperty("postgresHost", "${-> project.getProperty("postgresHost")}")
-        nonInputProperties.systemProperty("postgresDb", "${-> project.getProperty("postgresDb")}")
-        nonInputProperties.systemProperty("postgresPort", "${-> project.getProperty("postgresPort")}")
-        nonInputProperties.systemProperty("postgresUser", "${-> project.getProperty("postgresUser")}")
-        nonInputProperties.systemProperty("postgresPassword", "${-> project.getProperty("postgresPassword")}")
+        nonInputProperties.systemProperty("postgresHost", "${project.getProperty("postgresHost")}")
+        nonInputProperties.systemProperty("postgresDb", "${project.getProperty("postgresDb")}")
+        nonInputProperties.systemProperty("postgresPort", "${project.getProperty("postgresPort")}")
+        nonInputProperties.systemProperty("postgresUser", "${project.getProperty("postgresUser")}")
+        nonInputProperties.systemProperty("postgresPassword", "${project.getProperty("postgresPassword")}")
         task.getJvmArgumentProviders().add(nonInputProperties)
 
         doLast {
