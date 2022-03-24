@@ -121,12 +121,11 @@ hello=world
             em.persist(dbConnectionAudit)
         }
 
-        var results: MutableList<DbConnectionAudit>? = null
-        entityManagerFactory.createEntityManager().transaction {
+        var results = entityManagerFactory.createEntityManager().transaction {
             val table = DbConnectionAudit::class.simpleName
             val query = "SELECT c FROM $table c WHERE c.name=:name AND c.privilege=:privilege"
 
-            results = it.createQuery(query, DbConnectionAudit::class.java)
+            it.createQuery(query, DbConnectionAudit::class.java)
                 .setParameter("name", "batman")
                 .setParameter("privilege", DbPrivilege.DDL)
                 .resultList
