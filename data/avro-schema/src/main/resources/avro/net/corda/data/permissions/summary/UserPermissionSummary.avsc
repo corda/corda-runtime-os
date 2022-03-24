@@ -8,6 +8,10 @@
       "type": "string"
     },
     {
+      "name": "enabled",
+      "type": "boolean"
+    },
+    {
       "name": "permissions",
       "type": {
         "type": "array",
