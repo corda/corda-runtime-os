@@ -109,18 +109,23 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
             assertNotNull(this)
             val getParams = get.parameters
             assertEquals("query", getParams[0].name)
+
             val postParams = post.parameters
             assertTrue(postParams.isEmpty())
             assertEquals(
                 "#/components/schemas/CreateRequest",
                 post.requestBody.content["application/json"]?.schema?.`$ref`
             )
+
             val putParams = put.parameters
             assertTrue(putParams.isEmpty())
             assertEquals(
                 "#/components/schemas/UpdateRequest",
                 put.requestBody.content["application/json"]?.schema?.`$ref`
             )
+
+            val deleteParams = delete.parameters
+            assertEquals("query", deleteParams[0].name)
         }
     }
 
