@@ -35,7 +35,7 @@ internal const val QUERY_AUDIT_FIND_BY_NAME_AND_PRIVILEGE = "DbConnectionAudit.f
 @Table(name = DbSchema.DB_CONNECTION_AUDIT_TABLE, schema = DbSchema.CONFIG)
 @NamedQuery(
     name = QUERY_AUDIT_FIND_BY_NAME_AND_PRIVILEGE,
-    query = "SELECT c FROM DbConnectionConfig c WHERE c.name=:$QUERY_PARAM_NAME AND c.privilege=:$QUERY_PARAM_PRIVILEGE")
+    query = "SELECT c FROM DbConnectionAudit c WHERE c.name=:$QUERY_PARAM_NAME AND c.privilege=:$QUERY_PARAM_PRIVILEGE")
 data class DbConnectionAudit (
     @Id
     @SequenceGenerator(
