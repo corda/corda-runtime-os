@@ -1,13 +1,13 @@
 package net.corda.processor.member
 
 import com.typesafe.config.ConfigFactory
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.config.Configuration
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.packaging.CpiIdentifier
 import net.corda.libs.packaging.CpiMetadata
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.GroupPolicy
-import net.corda.membership.exceptions.BadGroupPolicyException
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.registration.MemberRegistrationService
@@ -74,11 +74,13 @@ class MemberProcessorTestUtils {
 
         fun Publisher.publishRawGroupPolicyData(
             virtualNodeInfoReader: VirtualNodeInfoReadService,
+            cpiInfoReadService: CpiInfoReadService,
             holdingIdentity: HoldingIdentity = aliceHoldingIdentity,
-            groupPolicy: String = sampleGroupPolicy1,
-            cpiVersion: String = "1.0"
+            groupPolicy: String = sampleGroupPolicy1
         ) {
+            val cpiVersion = UUID.randomUUID().toString()
             val previous = getVirtualNodeInfo(virtualNodeInfoReader)
+            val previousCpiInfo = getCpiInfo(cpiInfoReadService, previous?.cpiIdentifier)
             // Create test data
             val cpiMetadata = getCpiMetadata(
                 groupPolicy = groupPolicy,
@@ -92,10 +94,15 @@ class MemberProcessorTestUtils {
             publishVirtualNodeInfo(virtualNodeInfo)
 
             // wait for virtual node info reader to pick up changes
+            val newVNodeInfo = eventually {
+                getVirtualNodeInfo(virtualNodeInfoReader).also {
+                    assertNotEquals(previous, it)
+                }
+            }
             eventually {
-                val newVNodeInfo = getVirtualNodeInfo(virtualNodeInfoReader)
-                assertNotEquals(previous, newVNodeInfo)
-                newVNodeInfo
+                val newCpiInfo = getCpiInfo(cpiInfoReadService, newVNodeInfo!!.cpiIdentifier)
+                assertNotEquals(previousCpiInfo, newCpiInfo!!)
+                assertEquals(cpiVersion, newCpiInfo.id.version)
             }
         }
 
@@ -205,6 +212,12 @@ class MemberProcessorTestUtils {
 
         fun getVirtualNodeInfo(virtualNodeInfoReader: VirtualNodeInfoReadService) =
             virtualNodeInfoReader.get(aliceHoldingIdentity)
+
+        fun getCpiInfo(cpiInfoReadService: CpiInfoReadService, cpiIdentifier: CpiIdentifier?) =
+            when (cpiIdentifier) {
+                null -> { null }
+                else -> { cpiInfoReadService.get(cpiIdentifier) }
+            }
 
         fun Publisher.publishVirtualNodeInfo(virtualNodeInfo: VirtualNodeInfo) {
             publish(

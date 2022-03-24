@@ -94,7 +94,7 @@ class MemberProcessorIntegrationTest {
         publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID))
         publisher.publishCryptoConf()
         publisher.publishMessagingConf()
-        publisher.publishRawGroupPolicyData(virtualNodeInfoReader)
+        publisher.publishRawGroupPolicyData(virtualNodeInfoReader, cpiInfoReader)
 
         // Wait for published content to be picked up by components.
         eventually { assertNotNull(virtualNodeInfoReader.get(aliceHoldingIdentity)) }
@@ -200,7 +200,7 @@ class MemberProcessorIntegrationTest {
         val waitDuration = 10.seconds
 
         val groupPolicy1 = getGroupPolicy(groupPolicyProvider)
-        publisher.publishRawGroupPolicyData(virtualNodeInfoReader, groupPolicy = sampleGroupPolicy2, cpiVersion = "1.1")
+        publisher.publishRawGroupPolicyData(virtualNodeInfoReader, cpiInfoReader, groupPolicy = sampleGroupPolicy2)
 
         eventually(duration = waitDuration) {
             assertSecondGroupPolicy(
@@ -208,7 +208,7 @@ class MemberProcessorIntegrationTest {
                 groupPolicy1
             )
         }
-        publisher.publishRawGroupPolicyData(virtualNodeInfoReader, cpiVersion = "1.2")
+        publisher.publishRawGroupPolicyData(virtualNodeInfoReader, cpiInfoReader)
 
         // Wait for the group policy change to be visible (so following tests don't fail as a result)
         eventually(duration = waitDuration) {
