@@ -211,6 +211,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         override val keyClass = String::class.java
         override val valueClass = AppMessage::class.java
         private var logger = LoggerFactory.getLogger(this::class.java.name)
+        private var isTtlExpired = false
 
         override fun onNext(events: List<EventLogRecord<String, AppMessage>>): List<Record<*, *>> {
             val records = mutableListOf<Record<String, *>>()
@@ -268,21 +269,15 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             messageAndKey: AuthenticatedMessageAndKey,
             isReplay: Boolean = false
         ): List<Record<String, *>> {
+            isTtlExpired = ttlExpired(messageAndKey.message.header.ttl)
             logger.trace {
                 "Processing outbound ${messageAndKey.message.javaClass} with ID ${messageAndKey.message.header.messageId} " +
                         "to ${messageAndKey.message.header.destination.toHoldingIdentity()}."
             }
             val isHostedLocally =
                 linkManagerHostingMap.isHostedLocally(messageAndKey.message.header.destination.toHoldingIdentity())
-            if (ttlExpired(messageAndKey.message.header.ttl)) {
-                return if (!isReplay) {
-                    mutableListOf(
-                        recordForLMSentMarker(messageAndKey, messageAndKey.message.header.messageId),
-                        recordForTTLExpiredMarker(messageAndKey.message.header.messageId)
-                    )
-                } else {
-                    mutableListOf(recordForTTLExpiredMarker(messageAndKey.message.header.messageId))
-                }
+            return if (isTtlExpired) {
+                recordsForMarkers(messageAndKey, isHostedLocally, isReplay, isTtlExpired)
             } else {
                 return if (isHostedLocally) {
                     mutableListOf(Record(P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)))
@@ -310,8 +305,9 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                             emptyList()
                         }
                     }
-                } + if (!isReplay) recordsForMarkers(messageAndKey, isHostedLocally) else emptyList()
+                }
             }
+            //return recordsForMarkers(messageAndKey, isHostedLocally, isReplay, isTtlExpired)
         }
 
 
@@ -336,10 +332,16 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             return recordsForSessionEstablished(sessionManager, networkMap, state.session, messageAndKey)
         }
 
-        private fun recordsForMarkers(messageAndKey: AuthenticatedMessageAndKey, isHostedLocally: Boolean): List<Record<String, *>> {
+        private fun recordsForMarkers(messageAndKey: AuthenticatedMessageAndKey, isHostedLocally: Boolean, isReplay: Boolean, isTtlExpired: Boolean): List<Record<String, *>> {
             val markers = mutableListOf(recordForLMSentMarker(messageAndKey, messageAndKey.message.header.messageId))
-            if (isHostedLocally) markers.add(recordForLMReceivedMarker(messageAndKey.message.header.messageId))
-            if (ttlExpired(messageAndKey.message.header.ttl)) markers.add(recordForTTLExpiredMarker(messageAndKey.message.header.messageId))
+            if (isHostedLocally) {
+                markers.add(recordForLMReceivedMarker(messageAndKey.message.header.messageId))
+            } else if (isTtlExpired) {
+                markers.add(recordForTTLExpiredMarker(messageAndKey.message.header.messageId))
+                if(isReplay) {
+                    markers.remove(recordForLMSentMarker(messageAndKey, messageAndKey.message.header.messageId))
+                }
+            }
             return markers
         }
 
