@@ -7,17 +7,13 @@ import java.time.Instant
 import java.util.UUID
 import javax.persistence.Column
 import javax.persistence.Entity
-import javax.persistence.EntityManager
 import javax.persistence.Enumerated
 import javax.persistence.EnumType
 import javax.persistence.GeneratedValue
 import javax.persistence.GenerationType.SEQUENCE
 import javax.persistence.Id
-import javax.persistence.NamedQuery
 import javax.persistence.SequenceGenerator
 import javax.persistence.Table
-
-internal const val QUERY_AUDIT_FIND_BY_NAME_AND_PRIVILEGE = "DbConnectionAudit.findDbConnectionAuditByNameAndPrivilege"
 
 /**
  * Db Connection Audit data class
@@ -33,9 +29,6 @@ internal const val QUERY_AUDIT_FIND_BY_NAME_AND_PRIVILEGE = "DbConnectionAudit.f
  */
 @Entity
 @Table(name = DbSchema.DB_CONNECTION_AUDIT_TABLE, schema = DbSchema.CONFIG)
-@NamedQuery(
-    name = QUERY_AUDIT_FIND_BY_NAME_AND_PRIVILEGE,
-    query = "SELECT c FROM DbConnectionAudit c WHERE c.name=:$QUERY_PARAM_NAME AND c.privilege=:$QUERY_PARAM_PRIVILEGE")
 data class DbConnectionAudit (
     @Id
     @SequenceGenerator(
@@ -73,16 +66,4 @@ data class DbConnectionAudit (
         dbEntity.description,
         dbEntity.config
     )
-}
-
-fun EntityManager.findDbConnectionAuditByNameAndPrivilege(name: String, privilege: DbPrivilege) : DbConnectionAudit? {
-    val q = this.createNamedQuery(QUERY_AUDIT_FIND_BY_NAME_AND_PRIVILEGE)
-    q.setParameter(QUERY_PARAM_NAME, name)
-    q.setParameter(QUERY_PARAM_PRIVILEGE, privilege)
-    // NOTE: need to use resultList here rather than singleResult as we need to return null when none is found
-    val obj = q.resultList
-    if (obj.isEmpty())
-        return null
-
-    return obj.first() as DbConnectionAudit
 }

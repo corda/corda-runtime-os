@@ -11,7 +11,6 @@ import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.libs.configuration.datamodel.ConfigAuditEntity
 import net.corda.libs.configuration.datamodel.ConfigEntity
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
-import net.corda.libs.configuration.datamodel.findDbConnectionAuditByNameAndPrivilege
 import net.corda.libs.configuration.datamodel.findDbConnectionByNameAndPrivilege
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
@@ -122,9 +121,20 @@ hello=world
             em.persist(dbConnectionAudit)
         }
 
+        var results: MutableList<DbConnectionAudit>? = null
+        entityManagerFactory.createEntityManager().transaction {
+            val table = DbConnectionAudit::class.simpleName
+            val query = "SELECT c FROM $table c WHERE c.name=:name AND c.privilege=:privilege"
+
+            results = it.createQuery(query, DbConnectionAudit::class.java)
+                .setParameter("name", "batman")
+                .setParameter("privilege", DbPrivilege.DDL)
+                .resultList
+        }
+
         assertEquals(
             dbConnectionAudit,
-            entityManagerFactory.createEntityManager().findDbConnectionAuditByNameAndPrivilege("batman", DbPrivilege.DDL)
+            results?.first()
         )
     }
 }
