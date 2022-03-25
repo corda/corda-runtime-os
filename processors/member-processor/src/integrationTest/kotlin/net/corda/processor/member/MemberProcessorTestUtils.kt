@@ -94,6 +94,7 @@ class MemberProcessorTestUtils {
 
             eventually {
                 val newCpiInfo = getCpiInfo(cpiInfoReadService, cpiMetadata.cpiId)
+                assertNotNull(newCpiInfo)
                 assertNotEquals(previousCpiInfo, newCpiInfo!!)
                 assertEquals(cpiVersion, newCpiInfo.cpiId.version)
             }
