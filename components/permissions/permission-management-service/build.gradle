@@ -20,6 +20,7 @@ dependencies {
     implementation project(":libs:configuration:configuration-core")
     implementation project(':libs:messaging:messaging')
     api project(':libs:permissions:permission-manager')
+    api project(':libs:permissions:permission-validation')
     implementation project(':libs:permissions:permission-management-cache')
     implementation project(':components:permissions:permission-management-cache-service')
     implementation project(':components:permissions:permission-validation-service')
@@ -28,6 +29,8 @@ dependencies {
 
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
+
+    runtimeOnly project(':libs:permissions:permission-manager-impl')
 
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

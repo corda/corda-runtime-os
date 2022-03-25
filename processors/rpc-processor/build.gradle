@@ -47,10 +47,6 @@ dependencies {
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')
     runtimeOnly project(':libs:messaging:messaging-impl')
     runtimeOnly project(':libs:messaging:kafka-message-bus-impl')
-    runtimeOnly project(':libs:permissions:permission-validation-cache-impl')
-    runtimeOnly project(':libs:permissions:permission-management-cache-impl')
-    runtimeOnly project(':libs:permissions:permission-manager-impl')
-    runtimeOnly project(':libs:permissions:permission-validation-impl')
     runtimeOnly project(':libs:schema-registry:schema-registry-impl')
 
     runtimeOnly project(':libs:virtual-node:cpi-upload-manager-impl')

@@ -1,6 +1,7 @@
 package net.corda.permissions.management
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.permission.PermissionValidator
 import net.corda.libs.permissions.manager.BasicAuthenticationService
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.factory.PermissionManagerFactory
@@ -53,6 +54,17 @@ class PermissionManagementService @Activate constructor(
                 "Permission Manager is null. Getter should be called only after service is UP."
             }
             return handler.permissionManager!!
+        }
+
+    /**
+     * Validator for performing permission validation operations using the permission system.
+     */
+    val permissionValidator: PermissionValidator
+        get() {
+            checkNotNull(handler.permissionValidator) {
+                "Permission Validator is null. Getter should be called only after service is UP."
+            }
+            return handler.permissionValidator!!
         }
 
     /**

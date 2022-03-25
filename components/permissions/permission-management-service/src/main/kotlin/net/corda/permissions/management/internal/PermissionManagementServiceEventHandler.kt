@@ -5,6 +5,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.permission.PermissionValidator
 import net.corda.libs.permissions.manager.BasicAuthenticationService
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.factory.PermissionManagerFactory
@@ -51,7 +52,9 @@ internal class PermissionManagementServiceEventHandler(
     internal var rpcSender: RPCSender<PermissionManagementRequest, PermissionManagementResponse>? = null
 
     internal var permissionManager: PermissionManager? = null
+    internal var permissionValidator: PermissionValidator? = null
     internal var basicAuthenticationService: BasicAuthenticationService? = null
+
     private var configSubscription: AutoCloseable? = null
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
@@ -79,12 +82,14 @@ internal class PermissionManagementServiceEventHandler(
                             coordinator,
                             setOf(BOOT_CONFIG, MESSAGING_CONFIG, RPC_CONFIG)
                         )
+                        permissionValidator = permissionValidationService.permissionValidator
                     }
                     LifecycleStatus.DOWN -> {
                         permissionManager?.stop()
                         permissionManager = null
                         basicAuthenticationService?.stop()
                         basicAuthenticationService = null
+                        permissionValidator = null
                         coordinator.updateStatus(LifecycleStatus.DOWN)
                     }
                     LifecycleStatus.ERROR -> {
@@ -113,6 +118,7 @@ internal class PermissionManagementServiceEventHandler(
                 permissionManager = null
                 registrationHandle?.close()
                 registrationHandle = null
+                permissionValidator = null
                 coordinator.updateStatus(LifecycleStatus.DOWN)
             }
         }

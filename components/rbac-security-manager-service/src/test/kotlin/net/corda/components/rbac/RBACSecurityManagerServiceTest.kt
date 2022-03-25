@@ -29,14 +29,13 @@ import org.mockito.kotlin.whenever
 class RBACSecurityManagerServiceTest {
 
     private val permissionManagementService = mock<PermissionManagementService>()
-    private val permissionValidationService = mock<PermissionValidationService>()
     private val permissionServiceRegistration = mock<RegistrationHandle>()
     private val coordinatorFactory = mock<LifecycleCoordinatorFactory>()
     private val coordinator = mock<LifecycleCoordinator>()
     private val permissionValidator = mock<PermissionValidator>()
     private val basicAuthenticationService = mock<BasicAuthenticationService>()
 
-    private val service = RBACSecurityManagerService(coordinatorFactory, permissionManagementService, permissionValidationService)
+    private val service = RBACSecurityManagerService(coordinatorFactory, permissionManagementService)
 
     @BeforeEach
     fun setUp() {
@@ -50,7 +49,7 @@ class RBACSecurityManagerServiceTest {
             )
         ).thenReturn(permissionServiceRegistration)
 
-        whenever(permissionValidationService.permissionValidator).thenReturn(permissionValidator)
+        whenever(permissionManagementService.permissionValidator).thenReturn(permissionValidator)
         whenever(permissionManagementService.basicAuthenticationService).thenReturn(basicAuthenticationService)
         whenever(coordinator.isRunning).thenReturn(true)
     }
