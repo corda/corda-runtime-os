@@ -181,17 +181,21 @@ class GroupPolicyProviderImpl @Activate constructor(
             virtualNodeInfoReadService.registerCallback { changed, snapshot ->
                 logger.info("Processing new snapshot after change in virtual node information.")
                 changed.filter { snapshot[it] != null }.forEach {
-                    try {
-                        groupPolicies[it] = parseGroupPolicy(it, virtualNodeInfo = snapshot[it])
-                    } catch (e: Exception) {
-                        logger.warn(
-                            "Failure to parse group policy after change in virtual node info. " +
-                                    "Check the format of the group policy in use for virtual node with ID [${it.id}]. " +
-                                    "Caught exception: ", e
-                        )
-                        groupPolicies.remove(it)
-                        logger.warn("Removed cached group policy due to problem when parsing update so it will be " +
-                                "repopulated on next read.")
+                    groupPolicies.compute(it) { _, _ ->
+                        try {
+                            parseGroupPolicy(it, virtualNodeInfo = snapshot[it])
+                        } catch (e: Exception) {
+                            logger.warn(
+                                "Failure to parse group policy after change in virtual node info. " +
+                                        "Check the format of the group policy in use for virtual node with ID [${it.id}]. " +
+                                        "Caught exception: ", e
+                            )
+                            logger.warn(
+                                "Removing cached group policy due to problem when parsing update so it will be " +
+                                        "repopulated on next read."
+                            )
+                            null
+                        }
                     }
                 }
             }
