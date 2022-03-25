@@ -161,7 +161,14 @@ class GroupPolicyProviderImpl @Activate constructor(
             virtualNodeInfo: VirtualNodeInfo? = null,
         ): GroupPolicy {
             val vNodeInfo = virtualNodeInfo ?: virtualNodeInfoReadService.get(holdingIdentity)
+            if(vNodeInfo == null) {
+                logger.warn("Could not get virtual node info for holding identity [${holdingIdentity}]")
+            }
             val metadata = vNodeInfo?.cpiIdentifier?.let { cpiInfoReader.get(it) }
+            if(metadata == null) {
+                logger.warn("Could not get CPI metadata for holding identity [${holdingIdentity}] and CPI with " +
+                        "identifier [${vNodeInfo?.cpiIdentifier.toString()}]")
+            }
             return groupPolicyParser.parse(metadata?.groupPolicy)
         }
 
@@ -174,13 +181,21 @@ class GroupPolicyProviderImpl @Activate constructor(
             virtualNodeInfoReadService.registerCallback { changed, snapshot ->
                 logger.info("Processing new snapshot after change in virtual node information.")
                 changed.filter { snapshot[it] != null }.forEach {
-                    try {
-                        groupPolicies[it] = parseGroupPolicy(it, virtualNodeInfo = snapshot[it])
-                    } catch (e: Exception) {
-                        logger.error(
-                            "Failure to parse group policy after change in virtual node info. " +
-                                    "Check the format of the group policy in use for virtual node with ID [${it.id}]", e
-                        )
+                    groupPolicies.compute(it) { _, _ ->
+                        try {
+                            parseGroupPolicy(it, virtualNodeInfo = snapshot[it])
+                        } catch (e: Exception) {
+                            logger.warn(
+                                "Failure to parse group policy after change in virtual node info. " +
+                                        "Check the format of the group policy in use for virtual node with ID [${it.id}]. " +
+                                        "Caught exception: ", e
+                            )
+                            logger.warn(
+                                "Removing cached group policy due to problem when parsing update so it will be " +
+                                        "repopulated on next read."
+                            )
+                            null
+                        }
                     }
                 }
             }

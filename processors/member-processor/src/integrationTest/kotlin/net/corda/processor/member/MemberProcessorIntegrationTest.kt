@@ -28,6 +28,7 @@ import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookupFails
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishCryptoConf
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishMessagingConf
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishRawGroupPolicyData
+import net.corda.processor.member.MemberProcessorTestUtils.Companion.sampleGroupPolicy1
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.sampleGroupPolicy2
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.startAndWait
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.stopAndWait
@@ -35,6 +36,7 @@ import net.corda.processors.crypto.CryptoProcessor
 import net.corda.processors.member.MemberProcessor
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.seconds
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -93,7 +95,7 @@ class MemberProcessorIntegrationTest {
         publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID))
         publisher.publishCryptoConf()
         publisher.publishMessagingConf()
-        publisher.publishRawGroupPolicyData(virtualNodeInfoReader)
+        publisher.publishRawGroupPolicyData(virtualNodeInfoReader, cpiInfoReader)
 
         // Wait for published content to be picked up by components.
         eventually { assertNotNull(virtualNodeInfoReader.get(aliceHoldingIdentity)) }
@@ -194,19 +196,23 @@ class MemberProcessorIntegrationTest {
     }
 
     fun `Group policy object is updated when CPI info changes`() {
-        val groupPolicy1 = getGroupPolicy(groupPolicyProvider)
-        publisher.publishRawGroupPolicyData(virtualNodeInfoReader, groupPolicy = sampleGroupPolicy2, cpiVersion = "1.1")
+        // Increase duration for `eventually` usage since the expected change needs to propagate through
+        // multiple components
+        val waitDuration = 10.seconds
 
-        eventually {
+        val groupPolicy1 = getGroupPolicy(groupPolicyProvider)
+        publisher.publishRawGroupPolicyData(virtualNodeInfoReader, cpiInfoReader, groupPolicy = sampleGroupPolicy2)
+
+        eventually(duration = waitDuration) {
             assertSecondGroupPolicy(
                 getGroupPolicy(groupPolicyProvider),
                 groupPolicy1
             )
         }
-        publisher.publishRawGroupPolicyData(virtualNodeInfoReader, cpiVersion = "1.2")
+        publisher.publishRawGroupPolicyData(virtualNodeInfoReader, cpiInfoReader, groupPolicy = sampleGroupPolicy1)
 
         // Wait for the group policy change to be visible (so following tests don't fail as a result)
-        eventually {
+        eventually(duration = waitDuration) {
             assertEquals(
                 groupPolicy1.groupId,
                 getGroupPolicy(groupPolicyProvider).groupId
