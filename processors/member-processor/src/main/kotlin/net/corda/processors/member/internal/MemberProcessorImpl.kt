@@ -9,7 +9,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.service.MemberOpsService
-import net.corda.membership.registration.proxy.RegistrationProxy
+import net.corda.membership.registration.RegistrationProxy
 import net.corda.processors.member.MemberProcessor
 import net.corda.processors.member.internal.lifecycle.MemberProcessorLifecycleHandler
 import net.corda.v5.base.util.contextLogger

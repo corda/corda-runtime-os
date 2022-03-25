@@ -1,4 +1,4 @@
-package net.corda.membership.impl.registration.proxy
+package net.corda.membership.impl.registration
 
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory

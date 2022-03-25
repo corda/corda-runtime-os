@@ -1,9 +1,7 @@
-package net.corda.membership.registration.proxy
+package net.corda.membership.registration
 
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.exceptions.RegistrationProtocolSelectionException
-import net.corda.membership.registration.MemberRegistrationService
-import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.virtualnode.HoldingIdentity
 
 /**

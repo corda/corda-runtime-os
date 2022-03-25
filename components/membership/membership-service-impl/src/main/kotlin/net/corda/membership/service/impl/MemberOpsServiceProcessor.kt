@@ -11,7 +11,7 @@ import net.corda.data.membership.rpc.response.RegistrationResponse
 import net.corda.data.membership.rpc.response.RegistrationStatus
 import net.corda.membership.exceptions.RegistrationProtocolSelectionException
 import net.corda.membership.registration.MembershipRegistrationException
-import net.corda.membership.registration.proxy.RegistrationProxy
+import net.corda.membership.registration.RegistrationProxy
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.read.VirtualNodeInfoReadService

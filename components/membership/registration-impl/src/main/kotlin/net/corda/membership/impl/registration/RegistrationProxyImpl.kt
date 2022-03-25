@@ -1,4 +1,4 @@
-package net.corda.membership.impl.registration.proxy
+package net.corda.membership.impl.registration
 
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -14,7 +14,7 @@ import net.corda.membership.exceptions.RegistrationProtocolSelectionException
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.MembershipRequestRegistrationResult
-import net.corda.membership.registration.proxy.RegistrationProxy
+import net.corda.membership.registration.RegistrationProxy
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate

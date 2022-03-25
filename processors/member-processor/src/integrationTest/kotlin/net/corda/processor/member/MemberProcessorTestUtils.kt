@@ -10,7 +10,7 @@ import net.corda.membership.GroupPolicy
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.registration.MembershipRequestRegistrationResult
-import net.corda.membership.registration.proxy.RegistrationProxy
+import net.corda.membership.registration.RegistrationProxy
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
