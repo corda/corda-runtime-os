@@ -39,7 +39,7 @@ class Deploy : Runnable {
 
     @Option(
         names = ["-H", "--host"],
-        description = ["The host name. This will be ignored for headless load balancer"]
+        description = ["The host name. This will be ignored for headless load balancers"]
     )
     var hostName: String? = null
 
@@ -176,8 +176,14 @@ class Deploy : Runnable {
     )
     private var lbType: LbType = LbType.HEADLESS
 
+    @Option(
+        names = ["--nginx-pods-count"],
+        description = ["Number of Nginx load balancer pods in the deployment (only valid on NGINX_HEADLESS service)"]
+    )
+    private var nginxCount: Int = 2
+
     override fun run() {
-        if ((lbType == LbType.HEADLESS) && (hostName != "load-balancer.$namespaceName")) {
+        if ((!lbType.canHaveCustomDnsName) && (hostName != "load-balancer.$namespaceName")) {
             println("For headless LB we will use the host name: load-balancer.$namespaceName")
             hostName = "load-balancer.$namespaceName"
         }
@@ -199,6 +205,7 @@ class Deploy : Runnable {
                     p2pCpu,
                 ),
                 lbType,
+                nginxCount,
             ),
             InfrastructureDetails(
                 kafkaBrokerCount,
