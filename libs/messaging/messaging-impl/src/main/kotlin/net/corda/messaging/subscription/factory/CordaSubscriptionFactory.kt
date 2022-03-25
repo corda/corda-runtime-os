@@ -3,7 +3,7 @@ package net.corda.messaging.subscription.factory
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.messagebus.api.consumer.builder.MessageBusConsumerBuilder
+import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.processor.CompactedProcessor
@@ -52,8 +52,8 @@ internal class CordaSubscriptionFactory @Activate constructor(
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = CordaProducerBuilder::class)
     private val cordaProducerBuilder: CordaProducerBuilder,
-    @Reference(service = MessageBusConsumerBuilder::class)
-    private val cordaConsumerBuilder: MessageBusConsumerBuilder,
+    @Reference(service = CordaConsumerBuilder::class)
+    private val cordaConsumerBuilder: CordaConsumerBuilder,
     @Reference(service = StateAndEventBuilder::class)
     private val stateAndEventBuilder: StateAndEventBuilder,
 ) : SubscriptionFactory {

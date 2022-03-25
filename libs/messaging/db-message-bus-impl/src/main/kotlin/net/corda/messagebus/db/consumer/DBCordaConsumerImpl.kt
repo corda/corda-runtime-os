@@ -3,8 +3,6 @@ package net.corda.messagebus.db.consumer
 import net.corda.data.CordaAvroDeserializer
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messagebus.api.CordaTopicPartition
-import net.corda.messagebus.api.configuration.ConfigProperties
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CLIENT_ID
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
@@ -32,15 +30,15 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
 
     companion object {
         const val MAX_POLL_RECORDS = "max.poll.records"
-        const val MAX_POLL_INTERVAL = "max.poll.interval.ms"
         const val AUTO_OFFSET_RESET = "auto.offset.reset"
+        const val CLIENT_ID = "client.id"
+        const val GROUP_ID = "group.id"
     }
 
     private val log: Logger = LoggerFactory.getLogger(consumerConfig.getString(CLIENT_ID))
 
-    private val groupId = consumerConfig.getString(ConfigProperties.GROUP_ID)
+    private val groupId = consumerConfig.getString(GROUP_ID)
     private val maxPollRecords: Int = consumerConfig.getInt(MAX_POLL_RECORDS)
-    private val maxPollInterval: Long = consumerConfig.getLong(MAX_POLL_INTERVAL)
     private val autoResetStrategy =
         CordaOffsetResetStrategy.valueOf(consumerConfig.getString(AUTO_OFFSET_RESET).toUpperCase())
     private var subscriptionType = SubscriptionType.NONE
@@ -54,7 +52,7 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
     override fun subscribe(topics: Collection<String>, listener: CordaConsumerRebalanceListener?) {
         checkNotAssigned()
         if (consumerGroup == null) {
-            throw CordaMessageAPIFatalException("Cannot subscribe when '${ConfigProperties.GROUP_ID}' is not configured.")
+            throw CordaMessageAPIFatalException("Cannot subscribe when '${GROUP_ID}' is not configured.")
         }
         consumerGroup.subscribe(this, topics)
         topics.forEach { partitionListeners[it] = listener }
@@ -172,12 +170,7 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
     }
 
     override fun close() {
-        close(Duration.ZERO)
-    }
-
-    private fun close(timeout: Duration) {
-        // Nothing to do here
-        log.info("Closing logger for ${consumerConfig.getString(CLIENT_ID)}. Timeout $timeout")
+        log.info("Closing consumer for ${consumerConfig.getString(CLIENT_ID)}")
     }
 
     override fun setDefaultRebalanceListener(defaultListener: CordaConsumerRebalanceListener) {

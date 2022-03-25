@@ -11,6 +11,9 @@ import net.corda.messaging.constants.SubscriptionType
 import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.FrameworkUtil
 
+/**
+ * Class to resolve configuration for the messaging layer.
+ */
 internal class MessagingConfigResolver(private val smartConfigFactory: SmartConfigFactory) {
 
     private companion object {
@@ -23,6 +26,15 @@ internal class MessagingConfigResolver(private val smartConfigFactory: SmartConf
 
     private val defaults = getResourceConfig(DEFAULT_CONFIG)
 
+    /**
+     * Merge the user configured values in [subscriptionConfig] with the [messagingConfig] and return a concrete class containing all
+     * values used by the subscriptions. Include any defaults defined.
+     * @param subscriptionType Type of subscription.
+     * @param subscriptionConfig User configurable values for a subscription.
+     * @param messagingConfig Messaging smart config.
+     * @param counter Client counter.
+     * @return concrete class containing all config values used by a subscription.
+     */
     fun buildSubscriptionConfig(
         subscriptionType: SubscriptionType,
         subscriptionConfig: SubscriptionConfig,
@@ -41,6 +53,13 @@ internal class MessagingConfigResolver(private val smartConfigFactory: SmartConf
         }
     }
 
+    /**
+     * Merge the user configured values in [publisherConfig] with the [messagingConfig] and return a concrete class containing all
+     * values used by a publisher. Include any defaults defined.
+     * @param publisherConfig User configurable values for a publisher.
+     * @param messagingConfig Messaging smart config.
+     * @return Concrete class containing all config values used by a publisher.
+     */
     fun buildPublisherConfig(
         publisherConfig: PublisherConfig,
         messagingConfig: SmartConfig

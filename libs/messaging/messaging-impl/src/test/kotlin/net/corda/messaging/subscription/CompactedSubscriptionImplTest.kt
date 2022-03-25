@@ -1,14 +1,11 @@
 package net.corda.messaging.subscription
 
-import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messagebus.api.CordaTopicPartition
-import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.consumer.CordaConsumer
-import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
-import net.corda.messagebus.api.consumer.builder.MessageBusConsumerBuilder
+import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messaging.TOPIC_PREFIX
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
@@ -24,9 +21,12 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
@@ -96,7 +96,7 @@ class CompactedSubscriptionImplTest {
     fun `compacted subscription returns correct results`() {
         val latch = CountDownLatch(4)
         val processor = TestProcessor()
-        val consumerBuilder = setupStandardMocks(4) {
+        val (consumer, consumerBuilder)  = setupStandardMocks(4) {
             val iteration = latch.count
             when (iteration) {
                 4L -> {
@@ -132,6 +132,7 @@ class CompactedSubscriptionImplTest {
             Thread.sleep(10)
         }
 
+        verify(consumer, times(1)).assign(listOf(CordaTopicPartition(config.topic, 0)))
         assertThat(processor.snapshotMap.size).isEqualTo(10)
         assertThat(processor.snapshotMap).isEqualTo(initialSnapshotResult.associate { it.key to it.value!! })
 
@@ -146,14 +147,14 @@ class CompactedSubscriptionImplTest {
     fun `compacted subscription removes record on null value`() {
         val latch = CountDownLatch(5)
         val processor = TestProcessor()
-        val consumerBuilder = setupStandardMocks(5) {
+        val (_, consumerBuilder) = setupStandardMocks(5) {
             when (val iteration = latch.count) {
                 5L -> {
                     initialSnapshotResult
                 }
                 2L -> {
                     listOf(
-                        CordaConsumerRecord<String, String>(config.topic, 0, 2, "2", null, 0)
+                        CordaConsumerRecord<Any, Any>(config.topic, 0, 2, "2", null, 0)
                     )
                 }
                 0L -> throw CordaMessageAPIFatalException("Stop here")
@@ -195,7 +196,7 @@ class CompactedSubscriptionImplTest {
     @Timeout(TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
     fun `subscription stops on processor snapshot error`() {
         val processor = TestProcessor()
-        val consumerBuilder = setupStandardMocks(0) { initialSnapshotResult }
+        val (_, consumerBuilder) = setupStandardMocks(0) { initialSnapshotResult }
 
         processor.fatalFailSnapshot = true
         val subscription = CompactedSubscriptionImpl(
@@ -217,13 +218,13 @@ class CompactedSubscriptionImplTest {
     fun `subscription attempts to reconnect after intermittent failure`() {
         val latch = CountDownLatch(7)
         val processor = TestProcessor()
-        val consumerBuilder = setupStandardMocks(7) {
+        val (_, consumerBuilder) = setupStandardMocks(7) {
             latch.countDown()
             when (latch.count) {
                 4L, 2L -> throw CordaMessageAPIIntermittentException("Kaboom!")
                 0L -> throw CordaMessageAPIFatalException("Stop here.")
             }
-            emptyList<CordaConsumerRecord<String, String>>()
+            emptyList<CordaConsumerRecord<Any, Any>>()
         }
 
         val subscription = CompactedSubscriptionImpl(
@@ -239,7 +240,7 @@ class CompactedSubscriptionImplTest {
         }
 
         // Three calls: First time and after each exception thrown
-
+        verify(consumerBuilder, times(3)).createConsumer<Any, Any>(any(), any(), any(), any(), any(), anyOrNull())
     }
 
     @Test
@@ -247,7 +248,7 @@ class CompactedSubscriptionImplTest {
     fun `subscription attempts to reconnect after processor failure`() {
         val latch = CountDownLatch(6)
         val processor = TestProcessor()
-        val consumerBuilder = setupStandardMocks(6) {
+        val (_, consumerBuilder) = setupStandardMocks(6) {
             val iteration = latch.count
             when (iteration) {
                 6L, 4L, 2L -> {
@@ -278,41 +279,32 @@ class CompactedSubscriptionImplTest {
         }
 
         // Four calls: First time and after each exception thrown
-//        verify(consumerBuilder, times(4)).createConsumer<String, String>(any(), any(), any(), any(), any(), any())
+        verify(consumerBuilder, times(4)).createConsumer<Any, Any>(any(), any(), any(), any(), any(), anyOrNull())
     }
 
     private fun setupStandardMocks(
         numberOfRecords: Long,
         onPoll: (InvocationOnMock) -> List<CordaConsumerRecord<*, *>>
-    ): MessageBusConsumerBuilder {
-        val cordaConsumerBuilder = object : MessageBusConsumerBuilder {
-            override fun <K : Any, V : Any> createConsumer(
-                consumerConfig: ConsumerConfig,
-                busConfig: SmartConfig,
-                kClazz: Class<K>,
-                vClazz: Class<V>,
-                onSerializationError: (ByteArray) -> Unit,
-                listener: CordaConsumerRebalanceListener?
-            ): CordaConsumer<K, V> {
-                val consumerMock: CordaConsumer<K, V> = mock()
-                doReturn(mutableMapOf(CordaTopicPartition(config.topic, 0) to 0L, CordaTopicPartition(config.topic, 1) to 0L))
-                    .whenever(consumerMock).beginningOffsets(any())
-                doReturn(
-                    mutableMapOf(
-                        CordaTopicPartition(config.topic, 0) to numberOfRecords + 1,
-                        CordaTopicPartition(config.topic, 1) to 0,
-                    )
-                ).whenever(consumerMock).endOffsets(any())
-                doReturn(numberOfRecords + 1).whenever(consumerMock).position(any())
-                doReturn(setOf(CordaTopicPartition(config.topic, 0), CordaTopicPartition(config.topic, 1))).whenever(consumerMock)
-                    .assignment()
-                doAnswer(onPoll).whenever(consumerMock).poll(any())
-                doAnswer {
-                    listOf(CordaTopicPartition(config.topic, 0))
-                }.whenever(consumerMock).getPartitions(any(), any())
-                return consumerMock
-            }
-        }
-        return cordaConsumerBuilder
+    ):  Pair<CordaConsumer<Any, Any>, CordaConsumerBuilder> {
+        val consumerMock: CordaConsumer<Any, Any> = mock()
+        val cordaConsumerBuilder: CordaConsumerBuilder = mock()
+        doReturn(consumerMock).whenever(cordaConsumerBuilder).createConsumer<Any, Any>(any(), any(), any(), any(), any(), anyOrNull())
+        doReturn(mutableMapOf(CordaTopicPartition(config.topic, 0) to 0L, CordaTopicPartition(config.topic, 1) to 0L))
+            .whenever(consumerMock).beginningOffsets(any())
+        doReturn(
+            mutableMapOf(
+                CordaTopicPartition(config.topic, 0) to numberOfRecords + 1,
+                CordaTopicPartition(config.topic, 1) to 0,
+            )
+        ).whenever(consumerMock).endOffsets(any())
+        doReturn(numberOfRecords + 1).whenever(consumerMock).position(any())
+        doReturn(setOf(CordaTopicPartition(config.topic, 0), CordaTopicPartition(config.topic, 1))).whenever(consumerMock)
+            .assignment()
+        doAnswer(onPoll).whenever(consumerMock).poll(any())
+        doAnswer {
+            listOf(CordaTopicPartition(config.topic, 0))
+        }.whenever(consumerMock).getPartitions(any(), any())
+
+        return Pair(consumerMock, cordaConsumerBuilder)
     }
 }

@@ -15,7 +15,7 @@ import net.corda.messagebus.api.constants.ConsumerRoles
 import net.corda.messagebus.api.constants.ProducerRoles
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
-import net.corda.messagebus.api.consumer.builder.MessageBusConsumerBuilder
+import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
@@ -43,7 +43,7 @@ import kotlin.concurrent.withLock
 @Suppress("LongParameterList")
 internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private val config: ResolvedSubscriptionConfig,
-    private val cordaConsumerBuilder: MessageBusConsumerBuilder,
+    private val cordaConsumerBuilder: CordaConsumerBuilder,
     private val cordaProducerBuilder: CordaProducerBuilder,
     private val serializer: CordaAvroSerializer<REQUEST>,
     private val deserializer: CordaAvroDeserializer<RESPONSE>,
@@ -68,12 +68,8 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
 
     private val futureTracker = FutureTracker<RESPONSE>()
     private var producer: CordaProducer? = null
-    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
-        LifecycleCoordinatorName(
-            "${config.group}-RPCSender-${config.topic}",
-            config.clientId
-        )
-    ) { _, _ -> }
+    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(config.lifecycleCoordinatorName) { _, _ -> }
+
     private val partitionListener = RPCConsumerRebalanceListener(
         getRPCResponseTopic(config.topic),
         "RPC Response listener",
@@ -134,12 +130,12 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             attempts++
             try {
                 log.debug { "Creating rpc response consumer.  Attempt: $attempts" }
-                val producerConfig = ProducerConfig(config.clientId, config.instanceId, false, ProducerRoles.RPC_SENDER)
-                producer = cordaProducerBuilder.createProducer(producerConfig, config.busConfig)
+                val producerConfig = ProducerConfig(config.clientId, config.instanceId,false, ProducerRoles.RPC_SENDER)
+                producer = cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig)
                 val consumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.RPC_SENDER)
                 cordaConsumerBuilder.createConsumer(
                     consumerConfig,
-                    config.busConfig,
+                    config.messageBusConfig,
                     String::class.java,
                     RPCResponse::class.java
                 ).use {

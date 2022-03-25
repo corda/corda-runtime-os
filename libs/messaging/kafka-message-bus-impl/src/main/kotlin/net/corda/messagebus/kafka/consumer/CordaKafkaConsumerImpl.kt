@@ -43,10 +43,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         private val log: Logger = contextLogger()
     }
 
-    // TODO - These should really be handled at the patterns level.
-    private val consumerSubscribeMaxRetries = 3L //config.getLong(SUBSCRIBE_MAX_RETRIES)
-    private val consumerCommitOffsetMaxRetries = 3L //config.getLong(COMMIT_OFFSET_MAX_RETRIES)
-
     override fun close() {
         try {
             consumer.close()
@@ -113,7 +109,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         val offsets = mutableMapOf<TopicPartition, OffsetAndMetadata>()
         val topicPartition = TopicPartition(config.topicPrefix + event.topic, event.partition)
         offsets[topicPartition] = OffsetAndMetadata(event.offset + 1, metaData)
-        var attempts = 0L
         var attemptCommit = true
 
         while (attemptCommit) {
@@ -124,11 +119,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 when (ex) {
                     is InterruptException,
                     is TimeoutException -> {
-                        attempts++
-                        handleErrorRetry(
-                            "Failed to commitSync offsets for record $event.",
-                            attempts, consumerCommitOffsetMaxRetries, ex
-                        )
+                        logWarningAndThrowIntermittentException("Failed to commitSync offsets for record $event.", ex)
                     }
                     is CommitFailedException,
                     is AuthenticationException,
@@ -162,7 +153,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 it
             }
         }
-        var attempts = 0L
         var attemptSubscription = true
         while (attemptSubscription) {
             try {
@@ -179,10 +169,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                     }
                     is IllegalArgumentException -> {
                         logErrorAndThrowFatalException("$message. Illegal args provided. Closing subscription.", ex)
-                    }
-                    is KafkaException -> {
-                        attempts++
-                        handleErrorRetry(message, attempts, consumerSubscribeMaxRetries, ex)
                     }
                     else -> {
                         logErrorAndThrowFatalException("$message. Unexpected error.", ex)
@@ -241,18 +227,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
         return listOfPartitions.map {
             CordaTopicPartition(it.topic().removePrefix(config.topicPrefix), it.partition())
-        }
-    }
-
-    /**
-     * Handle retry logic. If max attempts have not been reached log a warning.
-     * otherwise throw [CordaMessageAPIFatalException]
-     */
-    private fun handleErrorRetry(errorMessage: String, currentAttempt: Long, maxRetries: Long, ex: Exception) {
-        if (currentAttempt < maxRetries) {
-            log.warn("$errorMessage. Retrying.", ex)
-        } else {
-            logErrorAndThrowFatalException("$errorMessage. Max Retries exceeded.", ex)
         }
     }
 

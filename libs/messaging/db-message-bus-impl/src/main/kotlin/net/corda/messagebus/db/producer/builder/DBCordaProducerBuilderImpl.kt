@@ -29,11 +29,11 @@ class DBCordaProducerBuilderImpl @Activate constructor(
     @Reference(service = EntityManagerFactoryFactory::class)
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
 ) : CordaProducerBuilder {
-        override fun createProducer(producerConfig: ProducerConfig, busConfig: SmartConfig): CordaProducer {
-            val isTransactional = producerConfig.transactional
-            val dbAccess = DBAccess(
+    override fun createProducer(producerConfig: ProducerConfig, messageBusConfig: SmartConfig): CordaProducer {
+        val isTransactional = producerConfig.transactional
+        val dbAccess = DBAccess(
             entityManagerFactoryFactory.create(
-                busConfig,
+                messageBusConfig,
                 "DB Producer for ${producerConfig.clientId}",
                 listOf(
                     TopicRecordEntry::class.java,
@@ -43,17 +43,17 @@ class DBCordaProducerBuilderImpl @Activate constructor(
                 )
             )
         )
-            return if (isTransactional) {
-                CordaTransactionalDBProducerImpl(
-                    CordaDBAvroSerializerImpl(avroSchemaRegistry),
-                    dbAccess
-                )
-            } else {
-                CordaAtomicDBProducerImpl(
-                    CordaDBAvroSerializerImpl(avroSchemaRegistry),
-                    dbAccess
-                )
-            }
+        return if (isTransactional) {
+            CordaTransactionalDBProducerImpl(
+                CordaDBAvroSerializerImpl(avroSchemaRegistry),
+                dbAccess
+            )
+        } else {
+            CordaAtomicDBProducerImpl(
+                CordaDBAvroSerializerImpl(avroSchemaRegistry),
+                dbAccess
+            )
+        }
     }
 
 }

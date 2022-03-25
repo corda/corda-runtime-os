@@ -3,7 +3,7 @@ package net.corda.messaging.subscription
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messagebus.api.consumer.CordaConsumer
-import net.corda.messagebus.api.consumer.builder.MessageBusConsumerBuilder
+import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.constants.SubscriptionType
@@ -38,7 +38,7 @@ class PubSubSubscriptionImplTest {
     private var mockRecordCount = 5L
     private val config = createResolvedSubscriptionConfig(SubscriptionType.PUB_SUB)
     private val consumerPollAndProcessRetriesCount = config.processorRetries
-    private val cordaConsumerBuilder: MessageBusConsumerBuilder = mock()
+    private val cordaConsumerBuilder: CordaConsumerBuilder = mock()
     private val mockCordaConsumer: CordaConsumer<String, ByteBuffer> = mock()
     private val mockConsumerRecords = generateMockCordaConsumerRecordList(mockRecordCount, "topic", 1)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()

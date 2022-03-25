@@ -7,7 +7,7 @@ import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.constants.ConsumerRoles
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
-import net.corda.messagebus.api.consumer.builder.MessageBusConsumerBuilder
+import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.CompactedProcessor
@@ -24,7 +24,7 @@ import kotlin.concurrent.withLock
 internal class CompactedSubscriptionImpl<K : Any, V : Any>(
     private val config: ResolvedSubscriptionConfig,
     private val mapFactory: MapFactory<K, V>,
-    private val cordaConsumerBuilder: MessageBusConsumerBuilder,
+    private val cordaConsumerBuilder: CordaConsumerBuilder,
     private val processor: CompactedProcessor<K, V>,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : CompactedSubscription<K, V> {
@@ -37,13 +37,7 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
     private var stopped = false
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
-    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
-        LifecycleCoordinatorName(
-            "${config.topic}-KafkaCompactedSubscription-${config.group}",
-            //we use clientIdCounter here instead of instanceId as this subscription is readOnly
-            config.clientId
-        )
-    ) { _, _ -> }
+    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(config.lifecycleCoordinatorName) { _, _ -> }
 
     private var latestValues: MutableMap<K, V>? = null
 
@@ -108,15 +102,14 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
                 val consumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.COMPACTED)
                 cordaConsumerBuilder.createConsumer(
                     consumerConfig,
-                    config.busConfig,
+                    config.messageBusConfig,
                     processor.keyClass,
                     processor.valueClass,
                     ::onError
                 ).use {
                     val partitions = it.getPartitions(
                         config.topic,
-                        // TODO - This looks like the wrong timeout to me.
-                        config.threadStopTimeout
+                        config.pollTimeout
                     )
                     it.assign(partitions)
                     lifecycleCoordinator.updateStatus(LifecycleStatus.UP)

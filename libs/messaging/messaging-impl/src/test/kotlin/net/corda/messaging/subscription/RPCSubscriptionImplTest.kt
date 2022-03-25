@@ -12,7 +12,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
-import net.corda.messagebus.api.consumer.builder.MessageBusConsumerBuilder
+import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
@@ -73,7 +73,7 @@ class RPCSubscriptionImplTest {
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
     private val lifecycleCoordinator: LifecycleCoordinator = mock()
     private lateinit var kafkaConsumer: CordaConsumer<String, RPCRequest>
-    private lateinit var cordaConsumerBuilder: MessageBusConsumerBuilder
+    private lateinit var cordaConsumerBuilder: CordaConsumerBuilder
     private val kafkaProducer: CordaProducer = mock()
     private val cordaProducerBuilder: CordaProducerBuilder = mock()
 
@@ -179,9 +179,9 @@ class RPCSubscriptionImplTest {
         assertEquals(capturedValue[0].second.value?.responseStatus, ResponseStatus.CANCELLED)
     }
 
-    private fun setupStandardMocks(): Pair<CordaConsumer<String, RPCRequest>, MessageBusConsumerBuilder> {
+    private fun setupStandardMocks(): Pair<CordaConsumer<String, RPCRequest>, CordaConsumerBuilder> {
         val kafkaConsumer: CordaConsumer<String, RPCRequest> = mock()
-        val cordaConsumerBuilder: MessageBusConsumerBuilder = mock()
+        val cordaConsumerBuilder: CordaConsumerBuilder = mock()
         doReturn(kafkaConsumer).whenever(cordaConsumerBuilder)
             .createConsumer<String, RPCRequest>(any(), any(), any(), any(), any(), anyOrNull())
         doReturn(

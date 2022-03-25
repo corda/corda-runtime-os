@@ -81,12 +81,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val eventTopic = config.topic
     private val stateTopic = getStateAndEventStateTopic(config.topic)
     private lateinit var deadLetterRecords: MutableList<ByteArray>
-    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
-        LifecycleCoordinatorName(
-            "${config.group}-KafkaStateAndEventSubscription-${config.topic}",
-            config.clientId
-        )
-    ) { _, _ -> }
+    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(config.lifecycleCoordinatorName) { _, _ -> }
 
     private val errorMsg = "Failed to read and process records from topic $eventTopic, group ${config.group}, " +
             "producerClientId ${config.clientId}."

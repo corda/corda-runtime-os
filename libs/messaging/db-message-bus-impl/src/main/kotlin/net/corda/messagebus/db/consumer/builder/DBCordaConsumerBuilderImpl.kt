@@ -4,7 +4,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
-import net.corda.messagebus.api.consumer.builder.MessageBusConsumerBuilder
+import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.db.consumer.ConsumerGroupFactory
 import net.corda.messagebus.db.consumer.DBCordaConsumerImpl
 import net.corda.messagebus.db.datamodel.CommittedPositionEntry
@@ -23,19 +23,19 @@ import org.osgi.service.component.annotations.Reference
 /**
  * Generate a DB-backed [CordaConsumer].
  */
-@Component(service = [MessageBusConsumerBuilder::class])
+@Component(service = [CordaConsumerBuilder::class])
 class DBCordaConsumerBuilderImpl @Activate constructor(
     @Reference(service = AvroSchemaRegistry::class)
     private val avroSchemaRegistry: AvroSchemaRegistry,
     @Reference(service = EntityManagerFactoryFactory::class)
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
-) : MessageBusConsumerBuilder {
+) : CordaConsumerBuilder {
 
     private val consumerGroupFactory = ConsumerGroupFactory()
 
     override fun <K : Any, V : Any> createConsumer(
         consumerConfig: ConsumerConfig,
-        busConfig: SmartConfig,
+        messageBusConfig: SmartConfig,
         kClazz: Class<K>,
         vClazz: Class<V>,
         onSerializationError: (ByteArray) -> Unit,
@@ -45,7 +45,7 @@ class DBCordaConsumerBuilderImpl @Activate constructor(
 
         val dbAccess = DBAccess(
             entityManagerFactoryFactory.create(
-                busConfig,
+                messageBusConfig,
                 "DB Consumer for ${consumerConfig.clientId}",
                 listOf(
                     TopicRecordEntry::class.java,
@@ -66,7 +66,7 @@ class DBCordaConsumerBuilderImpl @Activate constructor(
         }
 
         return DBCordaConsumerImpl(
-            busConfig,
+            messageBusConfig,
             dbAccess,
             consumerGroup,
             CordaDBAvroDeserializerImpl(avroSchemaRegistry, onSerializationError, kClazz),
