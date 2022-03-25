@@ -48,17 +48,15 @@ class PermissionValidatorImpl(
 
     override fun authorizeUser(loginName: String, permission: String): Boolean {
         logger.debug { "Checking permissions for $permission for user $loginName" }
-        val user = permissionCache.getUser(loginName) ?: return false
-
-        if (!user.enabled) {
-            logger.debug { "User $loginName is disabled" }
-            return false
-        }
-
         val permissionSummary = permissionCache.getPermissionSummary(loginName)
 
         if (permissionSummary == null) {
             logger.debug { "No permission found for user $loginName." }
+            return false
+        }
+
+        if (!permissionSummary.enabled) {
+            logger.debug { "User $loginName is disabled" }
             return false
         }
 
