@@ -113,7 +113,15 @@ class OutboundSessionPoolTest {
     @Test
     fun `getNextSession load balances if all sessions are added`() {
         var invocations = 0L
-        val pool = OutboundSessionPool({1}, {4 * invocations++})
+        fun fakeRand(until: Long): Long {
+            return if (invocations >= until) {
+                invocations = 0
+                0
+            } else {
+                invocations++
+            }
+        }
+        val pool = OutboundSessionPool({1}, ::fakeRand)
         val sessionCounterparties = mock<SessionManager.SessionCounterparties>()
 
         val authenticationProtocols = mutableListOf<AuthenticationProtocolInitiator>()
@@ -135,10 +143,12 @@ class OutboundSessionPoolTest {
         }
 
         val gotSessions = mutableListOf<Session>()
-        for (i in 0 until POOL_SIZE) {
+        // If all sessions have weight 1 then the total weight is POOL_SIZE. The sum of (total weight - weight) for each session is
+        // (POOL_SIZE - 1) * total weight. Which is (POOL_SIZE - 1) * POOL_SIZE.
+        for (i in 0 until (POOL_SIZE - 1) * POOL_SIZE) {
             gotSessions.add((pool.getNextSession(sessionCounterparties) as OutboundSessionPool.SessionPoolStatus.SessionActive).session)
         }
-        assertThat(gotSessions).containsExactlyInAnyOrderElementsOf(mockSessions)
+        assertThat(gotSessions).containsOnlyElementsOf(mockSessions)
     }
 
     @Test
@@ -317,11 +327,13 @@ class OutboundSessionPoolTest {
         }
 
         val gotSessions = mutableListOf<Session>()
-        for (i in 0 until (POOL_SIZE - 1) * POOL_SIZE * (POOL_SIZE - 1) / 2 ) {
+        // If Session 0 has weight 0, Session 1 has weight 1 etc. Then we have total weight is: POOL_SIZE * (POOL_SIZE - 1) / 2.
+        // The sum of (total weight - weight) for each session is (POOL_SIZE - 1) * total weight. Which is
+        // (POOL_SIZE - 1) * POOL_SIZE * (POOL_SIZE - 1) / 2.
+        val numberOfSessionsToGet = (POOL_SIZE - 1) * POOL_SIZE * (POOL_SIZE - 1) / 2
+        for (i in 0 until numberOfSessionsToGet ) {
             gotSessions.add((pool.getNextSession(sessionCounterparties) as OutboundSessionPool.SessionPoolStatus.SessionActive).session)
         }
-
-        gotSessions.map { println(it.sessionId) }
 
         assertThat(gotSessions.filter { it.sessionId == "session0" }).hasSize(10)
         assertThat(gotSessions.filter { it.sessionId == "session1" }).hasSize(9)
