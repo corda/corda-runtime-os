@@ -3,7 +3,7 @@ package net.corda.libs.permissions.storage.reader.impl
 import net.corda.data.permissions.ChangeDetails
 import net.corda.data.permissions.PermissionAssociation
 import net.corda.data.permissions.RoleAssociation
-import net.corda.libs.permissions.cache.PermissionCache
+import net.corda.libs.permissions.cache.PermissionValidationCache
 import net.corda.libs.permissions.storage.reader.repository.PermissionRepository
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -308,19 +308,19 @@ class PermissionStorageReaderImplTest {
         )
     }
 
-    private val permissionCache = mock<PermissionCache>()
+    private val permissionValidationCache = mock<PermissionValidationCache>()
     private val permissionRepository = mock<PermissionRepository>()
     private val publisher = mock<Publisher>()
     private val reconciler = mock<PermissionSummaryReconciler>()
 
-    private val processor = PermissionStorageReaderImpl(permissionCache, permissionRepository, publisher, reconciler)
+    private val processor = PermissionStorageReaderImpl(permissionValidationCache, permissionRepository, publisher, reconciler)
 
     @Test
     fun `starting the reader publishes stored users, groups, roles and permissions`() {
-        whenever(permissionCache.users).thenReturn(emptyMap())
-        whenever(permissionCache.groups).thenReturn(emptyMap())
-        whenever(permissionCache.roles).thenReturn(emptyMap())
-        whenever(permissionCache.permissions).thenReturn(emptyMap())
+        whenever(permissionValidationCache.users).thenReturn(emptyMap())
+        whenever(permissionValidationCache.groups).thenReturn(emptyMap())
+        whenever(permissionValidationCache.roles).thenReturn(emptyMap())
+        whenever(permissionValidationCache.permissions).thenReturn(emptyMap())
         whenever(permissionRepository.findAllUsers()).thenReturn(listOf(user))
         whenever(permissionRepository.findAllGroups()).thenReturn(listOf(group))
         whenever(permissionRepository.findAllRoles()).thenReturn(listOf(role))
@@ -329,7 +329,7 @@ class PermissionStorageReaderImplTest {
         val summariesDb = mapOf(user.loginName to InternalUserPermissionSummary(user.loginName, true, emptyList(), Instant.now()))
         val summariesCached = mapOf(user.loginName to avroSummaryEmptyPermissions)
         whenever(permissionRepository.findAllPermissionSummaries()).thenReturn(summariesDb)
-        whenever(permissionCache.permissionSummaries).thenReturn(summariesCached)
+        whenever(permissionValidationCache.permissionSummaries).thenReturn(summariesCached)
         whenever(reconciler.getSummariesForReconciliation(summariesDb, summariesCached))
             .thenReturn(mapOf(user.loginName to avroSummaryWithPermission))
 
@@ -352,12 +352,12 @@ class PermissionStorageReaderImplTest {
 
     @Test
     fun `starting the reader diffs the permission cache and removes any users, groups, roles and permissions deleted`() {
-        whenever(permissionCache.users).thenReturn(mapOf(user.loginName to avroUser))
-        whenever(permissionCache.groups).thenReturn(mapOf(avroGroup.id to avroGroup))
-        whenever(permissionCache.roles).thenReturn(mapOf(avroRole.id to avroRole))
-        whenever(permissionCache.permissions).thenReturn(mapOf(avroPermission.id to avroPermission))
+        whenever(permissionValidationCache.users).thenReturn(mapOf(user.loginName to avroUser))
+        whenever(permissionValidationCache.groups).thenReturn(mapOf(avroGroup.id to avroGroup))
+        whenever(permissionValidationCache.roles).thenReturn(mapOf(avroRole.id to avroRole))
+        whenever(permissionValidationCache.permissions).thenReturn(mapOf(avroPermission.id to avroPermission))
         val summariesCached = mapOf(user.loginName to avroSummaryWithPermission)
-        whenever(permissionCache.permissionSummaries).thenReturn(summariesCached)
+        whenever(permissionValidationCache.permissionSummaries).thenReturn(summariesCached)
 
         whenever(permissionRepository.findAllUsers()).thenReturn(emptyList())
         whenever(permissionRepository.findAllGroups()).thenReturn(emptyList())
@@ -388,7 +388,7 @@ class PermissionStorageReaderImplTest {
     @Test
     fun `publishUsers finds the specified users and publishes them`() {
 
-        whenever(permissionCache.users).thenReturn(emptyMap())
+        whenever(permissionValidationCache.users).thenReturn(emptyMap())
         whenever(permissionRepository.findAllUsers()).thenReturn(listOf(user))
 
         processor.start()
@@ -402,7 +402,7 @@ class PermissionStorageReaderImplTest {
     fun `publishGroups finds the specified groups and publishes them`() {
         val groupIds = listOf("group id")
 
-        whenever(permissionCache.groups).thenReturn(emptyMap())
+        whenever(permissionValidationCache.groups).thenReturn(emptyMap())
         whenever(permissionRepository.findAllGroups(groupIds)).thenReturn(listOf(group))
 
         processor.publishGroups(groupIds)
@@ -416,7 +416,7 @@ class PermissionStorageReaderImplTest {
     fun `publishRoles finds the specified roles and publishes them`() {
         val roleIds = listOf("role id")
 
-        whenever(permissionCache.roles).thenReturn(emptyMap())
+        whenever(permissionValidationCache.roles).thenReturn(emptyMap())
         whenever(permissionRepository.findAllRoles(roleIds)).thenReturn(listOf(role))
 
         processor.publishRoles(roleIds)
@@ -428,7 +428,7 @@ class PermissionStorageReaderImplTest {
 
     @Test
     fun `publishUsers diffs the permission cache and removes any specified user records that were deleted`() {
-        whenever(permissionCache.users).thenReturn(mapOf(user.loginName to avroUser))
+        whenever(permissionValidationCache.users).thenReturn(mapOf(user.loginName to avroUser))
         whenever(permissionRepository.findAllUsers()).thenReturn(emptyList())
 
         processor.start()
@@ -442,7 +442,7 @@ class PermissionStorageReaderImplTest {
     fun `publishGroups diffs the permission cache and removes any specified groups records that were deleted`() {
         val groupIds = listOf("group id")
 
-        whenever(permissionCache.groups).thenReturn(mapOf(avroGroup.id to avroGroup))
+        whenever(permissionValidationCache.groups).thenReturn(mapOf(avroGroup.id to avroGroup))
         whenever(permissionRepository.findAllGroups(groupIds)).thenReturn(emptyList())
 
         processor.publishGroups(groupIds)
@@ -456,7 +456,7 @@ class PermissionStorageReaderImplTest {
     fun `publishRoles diffs the permission cache and removes any specified roles records that were deleted`() {
         val roleIds = listOf("role id")
 
-        whenever(permissionCache.roles).thenReturn(mapOf(avroRole.id to avroRole))
+        whenever(permissionValidationCache.roles).thenReturn(mapOf(avroRole.id to avroRole))
         whenever(permissionRepository.findAllRoles(roleIds)).thenReturn(emptyList())
 
         processor.publishRoles(roleIds)
@@ -469,7 +469,7 @@ class PermissionStorageReaderImplTest {
     @Test
     fun `publishUsers allows users to be updated and removed at the same time`() {
 
-        whenever(permissionCache.users).thenReturn(mapOf(user.loginName to avroUser, user2.loginName to avroUser2))
+        whenever(permissionValidationCache.users).thenReturn(mapOf(user.loginName to avroUser, user2.loginName to avroUser2))
         whenever(permissionRepository.findAllUsers()).thenReturn(listOf(user))
 
         processor.start()
@@ -486,7 +486,7 @@ class PermissionStorageReaderImplTest {
     fun `publishGroups allows groups to be updated and removed at the same time`() {
         val groupIds = listOf("group id")
 
-        whenever(permissionCache.groups).thenReturn(mapOf(group.id to avroGroup, group2.id to avroGroup2))
+        whenever(permissionValidationCache.groups).thenReturn(mapOf(group.id to avroGroup, group2.id to avroGroup2))
         whenever(permissionRepository.findAllGroups(groupIds)).thenReturn(listOf(group))
 
         processor.publishGroups(groupIds)
@@ -503,7 +503,7 @@ class PermissionStorageReaderImplTest {
     fun `publish allows roles to be updated and removed at the same time`() {
         val roleIds = listOf("role id")
 
-        whenever(permissionCache.roles).thenReturn(mapOf(role.id to avroRole, role2.id to avroRole2))
+        whenever(permissionValidationCache.roles).thenReturn(mapOf(role.id to avroRole, role2.id to avroRole2))
         whenever(permissionRepository.findAllRoles(roleIds)).thenReturn(listOf(role))
 
         processor.publishRoles(roleIds)
@@ -521,7 +521,7 @@ class PermissionStorageReaderImplTest {
         val summariesDb = mapOf(user.loginName to InternalUserPermissionSummary(user.loginName, true, emptyList(), Instant.now()))
         val summariesCached = mapOf(user.loginName to avroSummaryEmptyPermissions)
         whenever(permissionRepository.findAllPermissionSummaries()).thenReturn(summariesDb)
-        whenever(permissionCache.permissionSummaries).thenReturn(summariesCached)
+        whenever(permissionValidationCache.permissionSummaries).thenReturn(summariesCached)
         whenever(reconciler.getSummariesForReconciliation(summariesDb, summariesCached)).thenReturn(emptyMap())
 
         processor.reconcilePermissionSummaries()
@@ -547,7 +547,7 @@ class PermissionStorageReaderImplTest {
         )
 
         whenever(permissionRepository.findAllPermissionSummaries()).thenReturn(summariesDb)
-        whenever(permissionCache.permissionSummaries).thenReturn(summariesCached)
+        whenever(permissionValidationCache.permissionSummaries).thenReturn(summariesCached)
         whenever(reconciler.getSummariesForReconciliation(summariesDb, summariesCached)).thenReturn(forReconciliation)
 
         processor.reconcilePermissionSummaries()

@@ -30,7 +30,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.orm.JpaEntitiesRegistry
-import net.corda.permissions.cache.PermissionCacheService
+import net.corda.permissions.validation.cache.PermissionValidationCacheService
 import net.corda.permissions.model.RbacEntities
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
 import net.corda.permissions.storage.writer.PermissionStorageWriterService
@@ -46,6 +46,7 @@ import org.osgi.service.component.annotations.Reference
 import java.sql.SQLException
 import java.util.UUID
 import javax.sql.DataSource
+import net.corda.permissions.management.cache.PermissionManagementCacheService
 import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 
 @Suppress("Unused", "LongParameterList")
@@ -61,8 +62,10 @@ class DBProcessorImpl @Activate constructor(
     private val configWriteService: ConfigWriteService,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
-    @Reference(service = PermissionCacheService::class)
-    private val permissionCacheService: PermissionCacheService,
+    @Reference(service = PermissionValidationCacheService::class)
+    private val permissionValidationCacheService: PermissionValidationCacheService,
+    @Reference(service = PermissionManagementCacheService::class)
+    private val permissionManagementCacheService: PermissionManagementCacheService,
     @Reference(service = PermissionStorageReaderService::class)
     private val permissionStorageReaderService: PermissionStorageReaderService,
     @Reference(service = PermissionStorageWriterService::class)
@@ -102,7 +105,8 @@ class DBProcessorImpl @Activate constructor(
         ::dbConnectionManager,
         ::configWriteService,
         ::configurationReadService,
-        ::permissionCacheService,
+        ::permissionValidationCacheService,
+        ::permissionManagementCacheService,
         ::permissionStorageReaderService,
         ::permissionStorageWriterService,
         ::virtualNodeWriteService,

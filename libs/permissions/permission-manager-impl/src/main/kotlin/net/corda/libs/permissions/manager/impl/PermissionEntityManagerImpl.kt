@@ -5,7 +5,7 @@ import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.data.permissions.management.permission.CreatePermissionRequest
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.permissions.cache.PermissionCache
+import net.corda.libs.permissions.cache.PermissionManagementCache
 import net.corda.libs.permissions.manager.PermissionEntityManager
 import net.corda.libs.permissions.manager.impl.SmartConfigUtil.getEndpointTimeout
 import net.corda.libs.permissions.manager.impl.converter.convertToResponseDto
@@ -18,7 +18,7 @@ import net.corda.messaging.api.publisher.RPCSender
 class PermissionEntityManagerImpl(
     config: SmartConfig,
     private val rpcSender: RPCSender<PermissionManagementRequest, PermissionManagementResponse>,
-    private val permissionCache: PermissionCache
+    private val permissionManagementCache: PermissionManagementCache,
 ) : PermissionEntityManager {
 
     private val writerTimeout = config.getEndpointTimeout()
@@ -42,7 +42,7 @@ class PermissionEntityManagerImpl(
     }
 
     override fun getPermission(permissionRequestDto: GetPermissionRequestDto): PermissionResponseDto? {
-        val cachedPermission: Permission = permissionCache.getPermission(permissionRequestDto.permissionId) ?: return null
+        val cachedPermission: Permission = permissionManagementCache.getPermission(permissionRequestDto.permissionId) ?: return null
         return cachedPermission.convertToResponseDto()
     }
 }

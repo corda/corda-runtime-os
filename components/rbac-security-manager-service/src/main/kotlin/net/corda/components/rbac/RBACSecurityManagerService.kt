@@ -13,7 +13,8 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.permissions.service.PermissionServiceComponent
+import net.corda.permissions.management.PermissionManagementService
+import net.corda.permissions.validation.PermissionValidationService
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
@@ -24,8 +25,10 @@ import org.osgi.service.component.annotations.Reference
 class RBACSecurityManagerService @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = PermissionServiceComponent::class)
-    private val permissionService: PermissionServiceComponent
+    @Reference(service = PermissionManagementService::class)
+    private val permissionManagementService: PermissionManagementService,
+    @Reference(service = PermissionValidationService::class)
+    private val permissionValidationService: PermissionValidationService
 ) : Lifecycle {
 
     private companion object {
@@ -66,7 +69,8 @@ class RBACSecurityManagerService @Activate constructor(
                 registration?.close()
                 registration = coordinator.followStatusChangesByName(
                     setOf(
-                        LifecycleCoordinatorName.forComponent<PermissionServiceComponent>()
+                        LifecycleCoordinatorName.forComponent<PermissionValidationService>(),
+                        LifecycleCoordinatorName.forComponent<PermissionManagementService>(),
                     )
                 )
             }
@@ -74,7 +78,10 @@ class RBACSecurityManagerService @Activate constructor(
                 log.info("Received registration status update for PermissionServiceComponent: ${event.status}.")
                 when (event.status) {
                     LifecycleStatus.UP -> {
-                        _securityManager = RBACSecurityManager(permissionService.permissionValidator)
+                        _securityManager = RBACSecurityManager(
+                            permissionValidationService.permissionValidator,
+                            permissionManagementService.basicAuthenticationService
+                        )
                         coordinator.updateStatus(LifecycleStatus.UP)
                     }
                     LifecycleStatus.DOWN -> {

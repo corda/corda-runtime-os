@@ -1,7 +1,8 @@
 package net.corda.libs.permissions.storage.reader.impl
 
+import net.corda.libs.permissions.cache.PermissionManagementCache
 import net.corda.data.permissions.summary.UserPermissionSummary as AvroUserPermissionSummary
-import net.corda.libs.permissions.cache.PermissionCache
+import net.corda.libs.permissions.cache.PermissionValidationCache
 import net.corda.libs.permissions.storage.common.converter.toAvroGroup
 import net.corda.libs.permissions.storage.common.converter.toAvroPermission
 import net.corda.libs.permissions.storage.common.converter.toAvroRole
@@ -32,7 +33,8 @@ import net.corda.data.permissions.User as AvroUser
 
 @Suppress("TooManyFunctions")
 class PermissionStorageReaderImpl(
-    private val permissionCache: PermissionCache,
+    private val permissionValidationCache: PermissionValidationCache,
+    private val permissionManagementCache: PermissionManagementCache,
     private val permissionRepository: PermissionRepository,
     private val publisher: Publisher,
     private val permissionSummaryReconciler: PermissionSummaryReconciler,
@@ -91,7 +93,7 @@ class PermissionStorageReaderImpl(
 
         val permissionsToReconcile: Map<UserLogin, AvroUserPermissionSummary?> = permissionSummaryReconciler.getSummariesForReconciliation(
             permissionSummariesFromDb,
-            permissionCache.permissionSummaries
+            permissionValidationCache.permissionSummaries
         )
 
         if (permissionsToReconcile.isNotEmpty()) {
@@ -117,7 +119,7 @@ class PermissionStorageReaderImpl(
         val updated = users.map { user ->
             Record(RPC_PERM_USER_TOPIC, key = user.loginName, value = user.toAvroUser())
         }
-        val removed: List<Record<String, AvroUser>> = permissionCache.users
+        val removed: List<Record<String, AvroUser>> = permissionManagementCache.users
             .filterKeys { loginName -> loginName !in userNames }
             .map { (loginName, _) -> Record(RPC_PERM_USER_TOPIC, key = loginName, value = null) }
 
@@ -129,7 +131,7 @@ class PermissionStorageReaderImpl(
         val updated = groups.map { group ->
             Record(RPC_PERM_GROUP_TOPIC, key = group.id, value = group.toAvroGroup())
         }
-        val removed: List<Record<String, AvroGroup>> = permissionCache.groups
+        val removed: List<Record<String, AvroGroup>> = permissionManagementCache.groups
             .filterKeys { id -> id !in groupIds }
             .map { (id, _) -> Record(RPC_PERM_GROUP_TOPIC, key = id, value = null) }
 
@@ -141,7 +143,7 @@ class PermissionStorageReaderImpl(
         val updated = roles.map { role ->
             Record(RPC_PERM_ROLE_TOPIC, key = role.id, value = role.toAvroRole())
         }
-        val removed: List<Record<String, AvroRole>> = permissionCache.roles
+        val removed: List<Record<String, AvroRole>> = permissionManagementCache.roles
             .filterKeys { id -> id !in roleIds }
             .map { (id, _) -> Record(RPC_PERM_ROLE_TOPIC, key = id, value = null) }
 
@@ -153,7 +155,7 @@ class PermissionStorageReaderImpl(
         val updated = permissions.map { perm ->
             Record(RPC_PERM_ENTITY_TOPIC, key = perm.id, value = perm.toAvroPermission())
         }
-        val removed: List<Record<String, AvroPermission>> = permissionCache.permissions
+        val removed: List<Record<String, AvroPermission>> = permissionManagementCache.permissions
             .filterKeys { id -> id !in permissionIds }
             .map { (id, _) -> Record(RPC_PERM_ENTITY_TOPIC, key = id, value = null) }
 

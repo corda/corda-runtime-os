@@ -14,7 +14,7 @@ import net.corda.data.permissions.RoleAssociation
 import net.corda.data.permissions.User
 import net.corda.data.permissions.summary.PermissionSummary
 import net.corda.data.permissions.summary.UserPermissionSummary
-import net.corda.libs.permissions.cache.PermissionCache
+import net.corda.libs.permissions.cache.PermissionValidationCache
 import net.corda.permissions.password.PasswordHash
 import net.corda.permissions.password.PasswordService
 import org.junit.jupiter.api.BeforeAll
@@ -28,9 +28,9 @@ import org.mockito.kotlin.whenever
 class PermissionValidatorImplTest {
 
     companion object {
-        private val permissionCache: PermissionCache = mock()
+        private val permissionValidationCache: PermissionValidationCache = mock()
         private val passwordService: PasswordService = mock()
-        private val permissionValidator = PermissionValidatorImpl(permissionCache, passwordService)
+        private val permissionValidator = PermissionValidatorImpl(permissionValidationCache, passwordService)
 
         private const val virtualNode = "f39d810f-6ee6-4742-ab7c-d1fe274ab85e"
         private const val permissionString = "flow/start/com.myapp.MyFlow"
@@ -122,21 +122,21 @@ class PermissionValidatorImplTest {
         @BeforeAll
         @JvmStatic
         fun setUp() {
-            whenever(permissionCache.getUser(user.loginName)).thenReturn(user)
-            whenever(permissionCache.getUser(userWithPermDenied.loginName)).thenReturn(userWithPermDenied)
-            whenever(permissionCache.getUser(disabledUser.loginName)).thenReturn(disabledUser)
+            whenever(permissionValidationCache.getUser(user.loginName)).thenReturn(user)
+            whenever(permissionValidationCache.getUser(userWithPermDenied.loginName)).thenReturn(userWithPermDenied)
+            whenever(permissionValidationCache.getUser(disabledUser.loginName)).thenReturn(disabledUser)
 
-            whenever(permissionCache.getRole(role.id)).thenReturn(role)
-            whenever(permissionCache.getRole(roleWithPermDenied.id)).thenReturn(roleWithPermDenied)
+            whenever(permissionValidationCache.getRole(role.id)).thenReturn(role)
+            whenever(permissionValidationCache.getRole(roleWithPermDenied.id)).thenReturn(roleWithPermDenied)
 
-            whenever(permissionCache.getPermission(permission.id)).thenReturn(permission)
-            whenever(permissionCache.getPermission(permissionDenied.id)).thenReturn(permissionDenied)
+            whenever(permissionValidationCache.getPermission(permission.id)).thenReturn(permission)
+            whenever(permissionValidationCache.getPermission(permissionDenied.id)).thenReturn(permissionDenied)
         }
     }
 
     @Test
     fun `authenticate user will return false when user cannot be found in cache`() {
-        whenever(permissionCache.getUser("userLoginName1")).thenReturn(null)
+        whenever(permissionValidationCache.getUser("userLoginName1")).thenReturn(null)
 
         val result = permissionValidator.authenticateUser("userLoginName1", "password".toCharArray())
 
@@ -149,7 +149,7 @@ class PermissionValidatorImplTest {
             saltValue = null
             hashedPassword = "pass"
         }
-        whenever(permissionCache.getUser("userLoginName1")).thenReturn(saltlessUser)
+        whenever(permissionValidationCache.getUser("userLoginName1")).thenReturn(saltlessUser)
 
         val result = permissionValidator.authenticateUser("userLoginName1", "password".toCharArray())
 
@@ -162,7 +162,7 @@ class PermissionValidatorImplTest {
             saltValue = "abcsalt"
             hashedPassword = null
         }
-        whenever(permissionCache.getUser("userLoginName1")).thenReturn(saltlessUser)
+        whenever(permissionValidationCache.getUser("userLoginName1")).thenReturn(saltlessUser)
 
         val result = permissionValidator.authenticateUser("userLoginName1", "password".toCharArray())
 
@@ -179,14 +179,14 @@ class PermissionValidatorImplTest {
             hashedPassword = "hashedpass"
         }
 
-        whenever(permissionCache.getUser("userLoginName2")).thenReturn(user)
+        whenever(permissionValidationCache.getUser("userLoginName2")).thenReturn(user)
         whenever(passwordService.verifies(requestPasswordCapture.capture(), storedPasswordHashCapture.capture())).thenReturn(false)
 
         val result = permissionValidator.authenticateUser("userLoginName2", "password".toCharArray())
 
         assertFalse(result)
 
-        verify(permissionCache, times(1)).getUser("userLoginName2")
+        verify(permissionValidationCache, times(1)).getUser("userLoginName2")
 
         assertEquals(1, storedPasswordHashCapture.allValues.size)
         assertEquals(1, requestPasswordCapture.allValues.size)
@@ -207,14 +207,14 @@ class PermissionValidatorImplTest {
             hashedPassword = "hashedpass"
         }
 
-        whenever(permissionCache.getUser("userLoginName1")).thenReturn(user)
+        whenever(permissionValidationCache.getUser("userLoginName1")).thenReturn(user)
         whenever(passwordService.verifies(requestPasswordCapture.capture(), storedPasswordHashCapture.capture())).thenReturn(true)
 
         val result = permissionValidator.authenticateUser("userLoginName1", "password".toCharArray())
 
         assertTrue(result)
 
-        verify(permissionCache, times(1)).getUser("userLoginName1")
+        verify(permissionValidationCache, times(1)).getUser("userLoginName1")
 
         assertEquals(1, storedPasswordHashCapture.allValues.size)
         assertEquals(1, requestPasswordCapture.allValues.size)
@@ -235,7 +235,7 @@ class PermissionValidatorImplTest {
                 PermissionType.ALLOW)),
             Instant.now()
         )
-        whenever(permissionCache.getPermissionSummary(user.loginName)).thenReturn(userPermissionSummary)
+        whenever(permissionValidationCache.getPermissionSummary(user.loginName)).thenReturn(userPermissionSummary)
 
         assertTrue(permissionValidator.authorizeUser(user.loginName, permissionUrlRequest))
     }
@@ -256,7 +256,7 @@ class PermissionValidatorImplTest {
                 PermissionType.DENY)),
             Instant.now()
         )
-        whenever(permissionCache.getPermissionSummary(userWithPermDenied.loginName)).thenReturn(userPermissionSummary)
+        whenever(permissionValidationCache.getPermissionSummary(userWithPermDenied.loginName)).thenReturn(userPermissionSummary)
 
         assertFalse(permissionValidator.authorizeUser(userWithPermDenied.loginName, permissionUrlRequest))
     }

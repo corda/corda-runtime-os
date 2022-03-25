@@ -7,7 +7,7 @@ import net.corda.data.permissions.management.role.AddPermissionToRoleRequest
 import net.corda.data.permissions.management.role.CreateRoleRequest
 import net.corda.data.permissions.management.role.RemovePermissionFromRoleRequest
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.permissions.cache.PermissionCache
+import net.corda.libs.permissions.cache.PermissionManagementCache
 import net.corda.libs.permissions.manager.PermissionRoleManager
 import net.corda.libs.permissions.manager.impl.SmartConfigUtil.getEndpointTimeout
 import net.corda.libs.permissions.manager.impl.converter.convertToResponseDto
@@ -15,10 +15,12 @@ import net.corda.libs.permissions.manager.request.CreateRoleRequestDto
 import net.corda.libs.permissions.manager.request.GetRoleRequestDto
 import net.corda.libs.permissions.manager.response.RoleResponseDto
 import net.corda.messaging.api.publisher.RPCSender
+
+
 class PermissionRoleManagerImpl(
     config: SmartConfig,
     private val rpcSender: RPCSender<PermissionManagementRequest, PermissionManagementResponse>,
-    private val permissionCache: PermissionCache
+    private val permissionManagementCache: PermissionManagementCache,
 ) : PermissionRoleManager {
 
     private val writerTimeout = config.getEndpointTimeout()
@@ -41,7 +43,7 @@ class PermissionRoleManagerImpl(
     }
 
     override fun getRole(roleRequestDto: GetRoleRequestDto): RoleResponseDto? {
-        val cachedRole: Role = permissionCache.getRole(roleRequestDto.roleId) ?: return null
+        val cachedRole: Role = permissionManagementCache.getRole(roleRequestDto.roleId) ?: return null
         return cachedRole.convertToResponseDto()
     }
 

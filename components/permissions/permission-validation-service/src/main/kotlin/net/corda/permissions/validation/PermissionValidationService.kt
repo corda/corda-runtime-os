@@ -1,0 +1,109 @@
+package net.corda.permissions.validation
+
+import net.corda.libs.permission.PermissionValidator
+import net.corda.libs.permission.factory.PermissionValidatorFactory
+import net.corda.libs.permissions.cache.PermissionValidationCache
+import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
+import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
+import net.corda.lifecycle.createCoordinator
+import net.corda.permissions.validation.cache.PermissionValidationCacheService
+import net.corda.v5.base.util.contextLogger
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
+
+@Component(service = [PermissionValidationService::class])
+class PermissionValidationService @Activate constructor(
+    @Reference(service = LifecycleCoordinatorFactory::class)
+    private val coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = PermissionValidatorFactory::class)
+    private val permissionValidatorFactory: PermissionValidatorFactory,
+    @Reference(service = PermissionValidationCacheService::class)
+    private val permissionValidationCacheService: PermissionValidationCacheService
+) : Lifecycle {
+
+    private companion object {
+        val log = contextLogger()
+    }
+
+    private val coordinator = coordinatorFactory.createCoordinator<PermissionValidationService> { event, _ -> eventHandler(event) }
+
+    private var registration: RegistrationHandle? = null
+
+    /**
+     * Validator for performing permission validation utilizing the RBAC permission system.
+     */
+    val permissionValidator: PermissionValidator
+        get() {
+            checkNotNull(_permissionValidator) {
+                "Permission Validator is null. Getter should be called only after service is UP."
+            }
+            return _permissionValidator!!
+        }
+
+    /**
+     * Instance of the cache used in this service.
+     */
+    val permissionValidationCache: PermissionValidationCache
+        get() {
+            checkNotNull(permissionValidationCacheService.permissionValidationCache) {
+                "Permission Validation cache is null. Getter should be called only after service is UP."
+            }
+            return permissionValidationCacheService.permissionValidationCache!!
+        }
+
+    private fun eventHandler(event: LifecycleEvent) {
+        when (event) {
+            is StartEvent -> {
+                log.info("Received start event, following PermissionCacheService for status updates.")
+                registration?.close()
+                registration = coordinator.followStatusChangesByName(
+                    setOf(
+                        LifecycleCoordinatorName.forComponent<PermissionValidationCacheService>()
+                    )
+                )
+            }
+            is RegistrationStatusChangeEvent -> {
+                log.info("Registration status change received: ${event.status.name}.")
+                if (event.status == LifecycleStatus.UP) {
+                    startValidationComponent()
+                    coordinator.updateStatus(LifecycleStatus.UP)
+                } else {
+                    coordinator.stop()
+                }
+            }
+            is StopEvent -> {
+                log.info("Stop event received, stopping dependencies.")
+                _permissionValidator?.stop()
+                _permissionValidator = null
+                registration?.close()
+                registration = null
+            }
+        }
+    }
+
+    private fun startValidationComponent() {
+        _permissionValidator = permissionValidatorFactory.create(permissionValidationCache)
+            .also { it.start() }
+    }
+
+    private var _permissionValidator: PermissionValidator? = null
+
+    override val isRunning: Boolean
+        get() = coordinator.isRunning
+
+    override fun start() {
+        coordinator.start()
+    }
+
+    override fun stop() {
+        coordinator.stop()
+    }
+}
