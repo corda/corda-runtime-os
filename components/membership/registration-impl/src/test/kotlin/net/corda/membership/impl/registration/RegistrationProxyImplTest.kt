@@ -10,13 +10,13 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.GroupPolicy
+import net.corda.membership.exceptions.RegistrationProtocolSelectionException
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.GroupPolicyExtension
 import net.corda.membership.impl.GroupPolicyImpl
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
 import net.corda.membership.registration.MembershipRequestRegistrationResult
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.HoldingIdentity
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -120,7 +120,7 @@ class RegistrationProxyImplTest {
         startComponentAndDependencies()
         val identity = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(String::class.java.name), identity)
-        assertThrows<CordaRuntimeException> {
+        assertThrows<RegistrationProtocolSelectionException> {
             registrationProxy.register(identity)
         }
     }
