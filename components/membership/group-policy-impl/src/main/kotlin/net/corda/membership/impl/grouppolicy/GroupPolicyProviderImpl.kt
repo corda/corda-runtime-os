@@ -184,13 +184,13 @@ class GroupPolicyProviderImpl @Activate constructor(
                     try {
                         groupPolicies[it] = parseGroupPolicy(it, virtualNodeInfo = snapshot[it])
                     } catch (e: Exception) {
-                        logger.info(
+                        logger.warn(
                             "Failure to parse group policy after change in virtual node info. " +
                                     "Check the format of the group policy in use for virtual node with ID [${it.id}]. " +
                                     "Caught exception: ", e
                         )
                         groupPolicies.remove(it)
-                        logger.info("Removed cached group policy due to problem when parsing update so it will be " +
+                        logger.warn("Removed cached group policy due to problem when parsing update so it will be " +
                                 "repopulated on next read.")
                     }
                 }
