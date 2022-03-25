@@ -24,7 +24,7 @@ class OutboundSessionPoolTest {
 
     @Test
     fun `can add a pending sessions to the session pool`() {
-        val pool = OutboundSessionPool({1.0}, {0.0F})
+        val pool = OutboundSessionPool({1}, {0})
         val sessionCounterparties = mock<SessionManager.SessionCounterparties>()
 
         val authenticationProtocols = mutableListOf<AuthenticationProtocolInitiator>()
@@ -41,7 +41,7 @@ class OutboundSessionPoolTest {
 
     @Test
     fun `can get a pending session from the session pool by sessionId`() {
-        val pool = OutboundSessionPool({1.0}, {0.0F})
+        val pool = OutboundSessionPool({1}, {0})
         val sessionCounterparties = mock<SessionManager.SessionCounterparties>()
 
         val authenticationProtocols = mutableListOf<AuthenticationProtocolInitiator>()
@@ -61,7 +61,7 @@ class OutboundSessionPoolTest {
 
     @Test
     fun `can add a sessions to the session pool`() {
-        val pool = OutboundSessionPool({1.0}, {0.0F})
+        val pool = OutboundSessionPool({1}, {0})
         val sessionCounterparties = mock<SessionManager.SessionCounterparties>()
 
         val authenticationProtocols = mutableListOf<AuthenticationProtocolInitiator>()
@@ -87,7 +87,7 @@ class OutboundSessionPoolTest {
 
     @Test
     fun `can get a session from the session pool by sessionId`() {
-        val pool = OutboundSessionPool({1.0}, {0.0F})
+        val pool = OutboundSessionPool({1}, {0})
         val sessionCounterparties = mock<SessionManager.SessionCounterparties>()
 
         val authenticationProtocols = mutableListOf<AuthenticationProtocolInitiator>()
@@ -112,14 +112,8 @@ class OutboundSessionPoolTest {
 
     @Test
     fun `getNextSession load balances if all sessions are added`() {
-        var invocations = 0
-        fun fakeRand(): Float {
-            val rand = invocations.toFloat() / POOL_SIZE + 1.0F / (2 * POOL_SIZE)
-            invocations++
-            return rand
-        }
-
-        val pool = OutboundSessionPool({1.0}, ::fakeRand)
+        var invocations = 0L
+        val pool = OutboundSessionPool({1}, {4 * invocations++})
         val sessionCounterparties = mock<SessionManager.SessionCounterparties>()
 
         val authenticationProtocols = mutableListOf<AuthenticationProtocolInitiator>()
@@ -149,15 +143,17 @@ class OutboundSessionPoolTest {
 
     @Test
     fun `getNextSession load balances if not all sessions are added yet`() {
-        var invocations = 0
-        val negotiatedSessions = 3
-        fun fakeRand(): Float {
-            val rand = invocations.toFloat() / negotiatedSessions + 1.0F / (2 * negotiatedSessions)
-            invocations++
-            return rand
+        var invocations = 0L
+        fun fakeRand(until: Long): Long {
+            return if (invocations >= until) {
+                invocations = 0
+                0
+            } else {
+                invocations++
+            }
         }
 
-        val pool = OutboundSessionPool({1.0}, ::fakeRand)
+        val pool = OutboundSessionPool({1L}, ::fakeRand)
         val sessionCounterparties = mock<SessionManager.SessionCounterparties>()
 
         val authenticationProtocols = mutableListOf<AuthenticationProtocolInitiator>()
@@ -179,24 +175,25 @@ class OutboundSessionPoolTest {
         }
 
         val gotSessions = mutableListOf<Session>()
-        for (i in 0 until negotiatedSessions) {
+        for (i in 0 until (POOL_SIZE - 1) * POOL_SIZE) {
             gotSessions.add((pool.getNextSession(sessionCounterparties) as OutboundSessionPool.SessionPoolStatus.SessionActive).session)
         }
-        assertThat(gotSessions).containsExactlyInAnyOrderElementsOf(mockSessions)
+        assertThat(gotSessions).containsOnlyElementsOf(mockSessions)
     }
 
     @Test
     fun `timed out sessions are removed from the pool`() {
-        var invocations = 0
-        val numberOfSessionsWithTimeout = POOL_SIZE - 1
-        fun fakeRand(): Float {
-            if (invocations == numberOfSessionsWithTimeout) invocations = 0
-            val rand = invocations.toFloat() / numberOfSessionsWithTimeout + 1.0F / (2 * numberOfSessionsWithTimeout)
-            invocations++
-            return rand
+        var invocations = 0L
+        fun fakeRand(until: Long): Long {
+            return if (invocations >= until) {
+                invocations = 0
+                0
+            } else {
+                invocations++
+            }
         }
 
-        val pool = OutboundSessionPool({1.0}, ::fakeRand)
+        val pool = OutboundSessionPool({1L}, ::fakeRand)
         val sessionCounterparties = mock<SessionManager.SessionCounterparties>()
 
         val authenticationProtocols = mutableListOf<AuthenticationProtocolInitiator>()
@@ -224,7 +221,7 @@ class OutboundSessionPoolTest {
         pool.replaceSession(timedOutSessionId, newPendingSession)
 
         val gotSessions = mutableListOf<Session>()
-        for (i in 0 until POOL_SIZE) {
+        for (i in 0 until (POOL_SIZE - 1) * POOL_SIZE) {
             gotSessions.add((pool.getNextSession(sessionCounterparties) as OutboundSessionPool.SessionPoolStatus.SessionActive).session)
         }
         assertThat(gotSessions).containsOnlyElementsOf(mockSessions)
@@ -232,14 +229,17 @@ class OutboundSessionPoolTest {
 
     @Test
     fun `a new session can be added to the pool after timeout`() {
-        var invocations = 0
-        fun fakeRand(): Float {
-            val rand = invocations.toFloat() / POOL_SIZE + 1.0F / (2 * POOL_SIZE)
-            invocations++
-            return rand
+        var invocations = 0L
+        fun fakeRand(until: Long): Long {
+            return if (invocations >= until) {
+                invocations = 0
+                0
+            } else {
+                invocations++
+            }
         }
 
-        val pool = OutboundSessionPool({1.0}, ::fakeRand)
+        val pool = OutboundSessionPool({1L}, ::fakeRand)
         val sessionCounterparties = mock<SessionManager.SessionCounterparties>()
 
         val authenticationProtocols = mutableListOf<AuthenticationProtocolInitiator>()
@@ -272,9 +272,61 @@ class OutboundSessionPoolTest {
         mockSessions.add(mockSession)
 
         val gotSessions = mutableListOf<Session>()
-        for (i in 0 until POOL_SIZE) {
+        for (i in 0 until (POOL_SIZE - 1) * POOL_SIZE) {
             gotSessions.add((pool.getNextSession(sessionCounterparties) as OutboundSessionPool.SessionPoolStatus.SessionActive).session)
         }
-        assertThat(gotSessions).containsExactlyInAnyOrderElementsOf(mockSessions)
+        assertThat(gotSessions).containsOnlyElementsOf(mockSessions)
+    }
+
+    @Test
+    fun `sessions are selected with the correct weight`() {
+        var invocations = 0L
+        fun fakeRand(until: Long): Long {
+            return if (invocations >= until) {
+                invocations = 0
+                0
+            } else {
+                invocations++
+            }
+        }
+
+        fun getWeightForSession(id: String): Long {
+            //Session 0 has weight 0, Session 1 has weight 1 etc.
+            return id.substringAfter("session").toLong()
+        }
+
+        val pool = OutboundSessionPool(::getWeightForSession, ::fakeRand)
+        val sessionCounterparties = mock<SessionManager.SessionCounterparties>()
+
+        val authenticationProtocols = mutableListOf<AuthenticationProtocolInitiator>()
+        for (i in 0 until POOL_SIZE) {
+            val mockAuthenticationProtocol = mock<AuthenticationProtocolInitiator> {
+                on { sessionId } doReturn "session$i"
+            }
+            authenticationProtocols.add(mockAuthenticationProtocol)
+        }
+        pool.addPendingSessions(sessionCounterparties, authenticationProtocols)
+
+        val mockSessions = mutableListOf<Session>()
+        for (i in 0 until POOL_SIZE) {
+            val mockSession = mock<Session> {
+                on { sessionId } doReturn "session$i"
+            }
+            mockSessions.add(mockSession)
+            pool.updateAfterSessionEstablished(mockSession)
+        }
+
+        val gotSessions = mutableListOf<Session>()
+        for (i in 0 until (POOL_SIZE - 1) * POOL_SIZE * (POOL_SIZE - 1) / 2 ) {
+            gotSessions.add((pool.getNextSession(sessionCounterparties) as OutboundSessionPool.SessionPoolStatus.SessionActive).session)
+        }
+
+        gotSessions.map { println(it.sessionId) }
+
+        assertThat(gotSessions.filter { it.sessionId == "session0" }).hasSize(10)
+        assertThat(gotSessions.filter { it.sessionId == "session1" }).hasSize(9)
+        assertThat(gotSessions.filter { it.sessionId == "session2" }).hasSize(8)
+        assertThat(gotSessions.filter { it.sessionId == "session3" }).hasSize(7)
+        assertThat(gotSessions.filter { it.sessionId == "session4" }).hasSize(6)
     }
 }

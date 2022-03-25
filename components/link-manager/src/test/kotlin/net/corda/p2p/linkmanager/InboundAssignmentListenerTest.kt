@@ -94,7 +94,7 @@ class InboundAssignmentListenerTest {
     }
 
     @Test
-    fun `the callback is called on when partitions are unassigned`() {
+    fun `the callback is called when partitions are unassigned`() {
         val callbackArguments = mutableListOf<Set<Int>>()
         val listener = InboundAssignmentListener(lifecycleCoordinatorFactory)
         assertEquals(0, listener.getCurrentlyAssignedPartitions(TOPIC_1).size)

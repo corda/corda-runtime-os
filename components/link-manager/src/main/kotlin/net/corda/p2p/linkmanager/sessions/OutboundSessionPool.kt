@@ -11,16 +11,15 @@ import kotlin.random.Random
  * complete.
  * [calculateWeightForSession] - Used to calculate a weight per session. Sessions with a small weight
  * are favoured over sessions with a larger weight.
+ * [genRandomNumber] - Generates a random Long in the interval 0 (inclusive) to until (exclusive).
  */
 class OutboundSessionPool(
-    private val calculateWeightForSession: (sessionId: String) -> Double?,
-    private val genRandomNumber: () -> Float = { Random.nextFloat() }
+    private val calculateWeightForSession: (sessionId: String) -> Long?,
+    private val genRandomNumber: (until: Long) -> Long = { until -> Random.nextLong(until) }
 ) {
 
     companion object {
         val logger = contextLogger()
-        //Sessions with a weight smaller than this are treated as having a weight of 0. This is done to prevent numerical issues.
-        const val WEIGHT_CUT_OFF = 1E-6F
     }
 
     private val outboundSessions = ConcurrentHashMap<SessionManager.SessionCounterparties, ConcurrentHashMap<String, SessionType>>()
@@ -54,9 +53,9 @@ class OutboundSessionPool(
         }.associateBy { it.session.sessionId }
         if (activeSessions.isEmpty()) return SessionPoolStatus.SessionPending
 
-        var totalWeight = 0.0
-        var weights = activeSessions.mapNotNull {
-            val weight = calculateWeightForSession(it.key) ?: 0.0
+        var totalWeight = 0L
+        val weights = activeSessions.mapNotNull {
+            val weight = calculateWeightForSession(it.key) ?: 0L
             totalWeight += weight
             it.value to weight
         }
@@ -65,22 +64,20 @@ class OutboundSessionPool(
             return SessionPoolStatus.SessionActive(weights[0].first.session)
         }
 
-        //To avoid numerical floating point problems dividing by a small number. Weight everything equally if totalWeight is small.
-        if (totalWeight < WEIGHT_CUT_OFF) {
-            totalWeight = 1.0
-            weights = weights.map {
-                it.first to 1.0 / weights.size
-            }
-        }
-
-        var totalProb = 0.0
-        val randomNumber = genRandomNumber()
+        /**
+         * Select a session randomly with probability in proportion to totalWeight - weight.
+         * For every session this sums to (weights.size - 1) * totalWeight.
+         * We use a uniformly distributed random Long in the interval from 0 (inclusive) and (weights.size - 1) * totalWeight - 1
+         * (inclusive). To select a session.
+         */
+        val randomNumber = genRandomNumber((weights.size - 1) * totalWeight)
+        var totalProb = 0L
         val selectedSession = weights.find {
-            totalProb += (1.0 - it.second / totalWeight) / (weights.size - 1.0)
-            randomNumber <= totalProb
+            totalProb += totalWeight - it.second
+            randomNumber < totalProb
         }?.first
 
-        selectedSession?.let { return SessionPoolStatus.SessionActive(it.session) } ?: return SessionPoolStatus.SessionPending
+        selectedSession!!.let { return SessionPoolStatus.SessionActive(it.session) }
     }
 
     /**

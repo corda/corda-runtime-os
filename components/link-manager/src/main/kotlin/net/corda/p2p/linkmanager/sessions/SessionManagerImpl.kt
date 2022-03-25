@@ -269,7 +269,8 @@ open class SessionManagerImpl(
 
     private fun createResources(@Suppress("UNUSED_PARAMETER") resourcesHolder: ResourcesHolder): CompletableFuture<Unit> {
         inboundAssignmentListener.registerCallbackForTopic(Schemas.P2P.LINK_IN_TOPIC) { partitions ->
-            val records = outboundSessionPool.getAllSessionIds().map { sessionId ->
+            val sessionIds = outboundSessionPool.getAllSessionIds() + pendingInboundSessions.keys() + activeInboundSessions.keys()
+            val records = sessionIds.map { sessionId ->
                 Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(partitions.toList()))
             }
             publisher.publish(records)
@@ -744,9 +745,8 @@ open class SessionManagerImpl(
          * Calculates a weight for a Session.
          * Sessions for which an acknowledgement was recently received have a small weight.
          */
-        fun calculateWeightForSession(sessionId: String): Double? {
-            val timeSinceLastAck = trackedSessions[sessionId]?.lastAckTimestamp?.let { timeStamp() - it }
-            return timeSinceLastAck?.toDouble()
+        fun calculateWeightForSession(sessionId: String): Long? {
+            return trackedSessions[sessionId]?.lastAckTimestamp?.let { timeStamp() - it }
         }
 
         /**

@@ -21,7 +21,7 @@ class InboundAssignmentListener(coordinatorFactory: LifecycleCoordinatorFactory)
     private val lock = ReentrantReadWriteLock()
     private val topicToPartition = mutableMapOf<String, MutableSet<Int>>()
     private var firstAssignment = true
-    private val topicToCallback = mutableMapOf<String, (partitions: Set<Int>) -> Unit>()
+    private val topicToCallback = mutableMapOf<String, MutableList<(partitions: Set<Int>) -> Unit>>()
 
     private val future: CompletableFuture<Unit> = CompletableFuture()
 
@@ -30,7 +30,7 @@ class InboundAssignmentListener(coordinatorFactory: LifecycleCoordinatorFactory)
             for ((topic, partition) in topicPartitions) {
                 topicToPartition[topic]?.remove(partition)
             }
-            callCallBacks(topicPartitions.map { it.first }.toSet())
+            callCallbacks(topicPartitions.map { it.first }.toSet())
         }
     }
 
@@ -40,7 +40,7 @@ class InboundAssignmentListener(coordinatorFactory: LifecycleCoordinatorFactory)
                 val partitionSet = topicToPartition.computeIfAbsent(topic) { mutableSetOf() }
                 partitionSet.add(partition)
             }
-            callCallBacks(topicPartitions.map { it.first }.toSet())
+            callCallbacks(topicPartitions.map { it.first }.toSet())
             if (firstAssignment) {
                 firstAssignment = false
                 future.complete(Unit)
@@ -56,20 +56,20 @@ class InboundAssignmentListener(coordinatorFactory: LifecycleCoordinatorFactory)
 
     fun registerCallbackForTopic(topic: String, callback: (partitions: Set<Int>) -> Unit) {
         lock.write {
-            topicToCallback[topic] = callback
+            topicToCallback.compute(topic) { _, callbacks ->
+                callbacks?.apply { add(callback) } ?: mutableListOf(callback)
+            }
             if (future.isDone) {
-                callCallBacks(setOf(topic))
+                callCallbacks(setOf(topic))
             }
         }
     }
 
-    private fun callCallBacks(topics: Set<String>) {
+    private fun callCallbacks(topics: Set<String>) {
         topics.forEach { topic ->
-            val callback = topicToCallback[topic]
+            val callbacks = topicToCallback[topic]
             val partitions = topicToPartition[topic]
-            if (callback != null && partitions != null) {
-                callback(partitions)
-            }
+            partitions?.let { callbacks?.forEach { callback -> callback(partitions) } }
         }
     }
 
