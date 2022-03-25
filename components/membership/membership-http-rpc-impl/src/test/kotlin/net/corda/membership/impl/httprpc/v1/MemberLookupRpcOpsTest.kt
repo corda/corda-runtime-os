@@ -1,6 +1,7 @@
 package net.corda.membership.impl.httprpc.v1
 
 import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.httprpc.exception.ServiceUnavailableException
 import net.corda.layeredpropertymap.create
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.libs.packaging.CpiIdentifier
@@ -169,6 +170,8 @@ class MemberLookupRpcOpsTest {
 
     @Test
     fun `lookup returns a list of members and their contexts`() {
+        memberLookupRpcOps.start()
+        memberLookupRpcOps.activate("")
         val result = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING)
         assertEquals(2, result.members.size)
         assertEquals(
@@ -182,11 +185,23 @@ class MemberLookupRpcOpsTest {
             ),
             result
         )
+        memberLookupRpcOps.deactivate("")
+        memberLookupRpcOps.stop()
     }
 
     @Test
     fun `lookup should fail when non-existent holding identity is used`() {
+        memberLookupRpcOps.start()
+        memberLookupRpcOps.activate("")
         val ex = assertFailsWith<ResourceNotFoundException> { memberLookupRpcOps.lookup("failingTest") }
         assertTrue(ex.message.contains("holding identity"))
+        memberLookupRpcOps.deactivate("")
+        memberLookupRpcOps.stop()
+    }
+
+    @Test
+    fun `exception should be thrown when servic eis not running`() {
+        val ex = assertFailsWith<ServiceUnavailableException> { memberLookupRpcOps.lookup("failingTest") }
+        assertTrue(ex.message.contains("MemberLookupRpcOpsImpl"))
     }
 }

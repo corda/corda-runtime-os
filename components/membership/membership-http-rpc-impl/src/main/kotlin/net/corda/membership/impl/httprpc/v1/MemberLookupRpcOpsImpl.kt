@@ -2,9 +2,11 @@ package net.corda.membership.impl.httprpc.v1
 
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.httprpc.exception.ServiceUnavailableException
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.httprpc.v1.MemberLookupRpcOps
 import net.corda.membership.httprpc.v1.types.response.RpcMemberInfo
@@ -30,13 +32,23 @@ class MemberLookupRpcOpsImpl @Activate constructor(
         private val logger: Logger = contextLogger()
     }
 
+    private interface InnerMemberLookupRpcOps {
+        fun lookup(holdingIdentityId: String): RpcMemberInfoList
+    }
+
     override val protocolVersion = 1
+
+    private val className = this::class.java.simpleName
+
+    private var impl: InnerMemberLookupRpcOps = InactiveImpl(className)
 
     private val coordinatorName = LifecycleCoordinatorName.forComponent<MemberLookupRpcOps>(
         protocolVersion.toString()
     )
 
     private val lifecycleHandler = RpcOpsLifecycleHandler(
+        ::activate,
+        ::deactivate,
         setOf(
             LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
             LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>()
@@ -46,8 +58,6 @@ class MemberLookupRpcOpsImpl @Activate constructor(
     private val coordinator = coordinatorFactory.createCoordinator(coordinatorName, lifecycleHandler)
 
     override val targetInterface: Class<MemberLookupRpcOps> = MemberLookupRpcOps::class.java
-
-    private val className = this::class.java.simpleName
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
@@ -62,19 +72,49 @@ class MemberLookupRpcOpsImpl @Activate constructor(
         coordinator.stop()
     }
 
-    override fun lookup(holdingIdentityId: String): RpcMemberInfoList {
-        val holdingIdentity = virtualNodeInfoReadService.getById(holdingIdentityId)?.holdingIdentity
-            ?: throw ResourceNotFoundException("Could not find holding identity associated with member.")
+    override fun lookup(holdingIdentityId: String) = impl.lookup(holdingIdentityId)
 
-        val reader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
+    fun activate(reason: String) {
+        impl = ActiveImpl(virtualNodeInfoReadService, membershipGroupReaderProvider)
+        updateStatus(LifecycleStatus.UP, reason)
+    }
 
-        return RpcMemberInfoList(
-            reader.lookup().map {
-                RpcMemberInfo(
-                    it.memberProvidedContext.entries.associate { it.key to it.value },
-                    it.mgmProvidedContext.entries.associate { it.key to it.value },
-                )
-            }
-        )
+    fun deactivate(reason: String) {
+        updateStatus(LifecycleStatus.DOWN, reason)
+        impl = InactiveImpl(className)
+    }
+
+    private fun updateStatus(status: LifecycleStatus, reason: String) {
+        if(coordinator.status != status) {
+            coordinator.updateStatus(status, reason)
+        }
+    }
+
+    private class InactiveImpl(
+        val className: String
+    ) : InnerMemberLookupRpcOps {
+        override fun lookup(holdingIdentityId: String) =
+            throw ServiceUnavailableException("$className is not running. Operation cannot be fulfilled.")
+    }
+
+    private class ActiveImpl(
+        val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+        val membershipGroupReaderProvider: MembershipGroupReaderProvider
+    ) : InnerMemberLookupRpcOps {
+        override fun lookup(holdingIdentityId: String): RpcMemberInfoList {
+            val holdingIdentity = virtualNodeInfoReadService.getById(holdingIdentityId)?.holdingIdentity
+                ?: throw ResourceNotFoundException("Could not find holding identity associated with member.")
+
+            val reader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
+
+            return RpcMemberInfoList(
+                reader.lookup().map {
+                    RpcMemberInfo(
+                        it.memberProvidedContext.entries.associate { it.key to it.value },
+                        it.mgmProvidedContext.entries.associate { it.key to it.value },
+                    )
+                }
+            )
+        }
     }
 }

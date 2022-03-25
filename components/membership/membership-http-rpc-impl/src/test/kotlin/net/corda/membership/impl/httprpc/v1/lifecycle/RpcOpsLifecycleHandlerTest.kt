@@ -16,7 +16,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 
-class RegistrationRpcOpsLifecycleHandlerTest {
+class RpcOpsLifecycleHandlerTest {
     private val componentHandle: RegistrationHandle = mock()
 
     private val coordinator: LifecycleCoordinator = mock {
@@ -25,7 +25,11 @@ class RegistrationRpcOpsLifecycleHandlerTest {
 
     private val activate: (String) -> Unit = mock()
     private val deactivate: (String) -> Unit = mock()
-    private val registrationRpcOpsLifecycleHandler = RegistrationRpcOpsLifecycleHandler(activate, deactivate)
+    private val registrationRpcOpsLifecycleHandler = RpcOpsLifecycleHandler(
+        activate,
+        deactivate,
+        setOf(LifecycleCoordinatorName.forComponent<MemberOpsClient>())
+    )
 
     private val registrationHandle: RegistrationHandle = mock()
 
