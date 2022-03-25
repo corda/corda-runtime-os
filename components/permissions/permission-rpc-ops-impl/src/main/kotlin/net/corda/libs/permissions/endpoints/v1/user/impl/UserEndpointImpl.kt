@@ -94,6 +94,7 @@ class UserEndpointImpl @Activate constructor(
 
         return UserPermissionSummaryResponseType(
             result.loginName,
+            result.enabled,
             result.permissions.map { it.convertToEndpointType() },
             result.lastUpdateTimestamp
         )

@@ -101,6 +101,7 @@ class PermissionUserManagerImpl(
 
         return UserPermissionSummaryResponseDto(
             cachedPermissionSummary.loginName,
+            cachedPermissionSummary.enabled,
             cachedPermissionSummary.permissions.map { it.convertToResponseDto() },
             cachedPermissionSummary.lastUpdateTimestamp
         )
