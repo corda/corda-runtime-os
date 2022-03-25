@@ -156,7 +156,6 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
             ConfigFactory.parseMap(
                 mapOf(
                     CLIENT_ID_PATH to clientId,
-                    INSTANCE_ID_PATH to instanceId,
                     GROUP_PATH to "<undefined>",
                     TRANSACTIONAL_ID_PATH to transactionalId
                 )
