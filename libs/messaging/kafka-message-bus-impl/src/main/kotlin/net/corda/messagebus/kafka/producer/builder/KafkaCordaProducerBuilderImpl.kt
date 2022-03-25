@@ -16,7 +16,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.util.Properties
+import java.util.*
 
 /**
  * Builder for a Kafka Producer.
@@ -42,7 +42,7 @@ class KafkaCordaProducerBuilderImpl @Activate constructor(
             val producer = createKafkaProducer(kafkaProperties)
             CordaKafkaProducerImpl(resolvedConfig, producer)
         } catch (ex: KafkaException) {
-            val message = "SubscriptionSubscriptionProducerBuilderImpl failed to producer with clientId ${producerConfig.clientId}."
+            val message = "SubscriptionProducerBuilderImpl failed to producer with clientId ${producerConfig.clientId}."
             log.error(message, ex)
             throw CordaMessageAPIFatalException(message, ex)
         }
