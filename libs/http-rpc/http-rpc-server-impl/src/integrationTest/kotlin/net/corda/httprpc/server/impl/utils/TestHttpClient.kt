@@ -32,6 +32,7 @@ class TestHttpClientUnirestImpl(override val baseAddress: String, private val en
             HttpVerb.GET -> Unirest.get(baseAddress + webRequest.path).basicAuth(userName, password)
             HttpVerb.POST -> Unirest.post(baseAddress + webRequest.path).basicAuth(userName, password)
             HttpVerb.PUT -> Unirest.put(baseAddress + webRequest.path).basicAuth(userName, password)
+            HttpVerb.DELETE -> Unirest.delete(baseAddress + webRequest.path).basicAuth(userName, password)
         }.addOriginHeader()
 
         if (webRequest.body != null && request is HttpRequestWithBody) request = request.body(webRequest.body)
@@ -68,6 +69,7 @@ class TestHttpClientUnirestImpl(override val baseAddress: String, private val en
             HttpVerb.GET -> Unirest.get(path)
             HttpVerb.POST -> Unirest.post(path)
             HttpVerb.PUT -> Unirest.put(path)
+            HttpVerb.DELETE -> Unirest.delete(path)
         }.addOriginHeader()
 
         request.encodeAuth()

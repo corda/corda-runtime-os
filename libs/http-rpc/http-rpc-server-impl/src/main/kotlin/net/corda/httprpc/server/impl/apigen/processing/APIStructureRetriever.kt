@@ -20,6 +20,7 @@ import net.corda.v5.base.stream.returnsDurableCursorBuilder
 import net.corda.v5.base.stream.isFiniteDurableStreamsMethod
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.RpcOps
+import net.corda.httprpc.annotations.HttpRpcDELETE
 import net.corda.httprpc.annotations.HttpRpcPUT
 import net.corda.httprpc.annotations.isRpcEndpointAnnotation
 import net.corda.httprpc.tools.annotations.extensions.name
@@ -182,6 +183,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCO
                 is HttpRpcGET -> this.toGETEndpoint(annotation)
                 is HttpRpcPOST -> this.toPOSTEndpoint(annotation)
                 is HttpRpcPUT -> this.toPUTEndpoint(annotation)
+                is HttpRpcDELETE -> this.toDELETEEndpoint(annotation)
                 else -> throw IllegalArgumentException("Unknown endpoint type for: ${this.name}")
             }.also { log.trace { "Method \"${this.name}\" to endpoint completed." } }
         } catch (e: Exception) {
@@ -207,6 +209,23 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCO
             ),
             this.getInvocationMethod()
         ).also { log.trace { """"Method "$name" to GET endpoint completed.""" } }
+    }
+
+    private fun Method.toDELETEEndpoint(annotation: HttpRpcDELETE): Endpoint {
+        log.trace { """Method "$name" to DELETE endpoint.""" }
+        return Endpoint(
+            EndpointMethod.DELETE,
+            annotation.title(this),
+            annotation.description,
+            annotation.path(),
+            retrieveParameters(),
+            ResponseBody(
+                annotation.responseDescription,
+                this.toClassAndParameterizedTypes().first,
+                this.toClassAndParameterizedTypes().second
+            ),
+            this.getInvocationMethod()
+        ).also { log.trace { """"Method "$name" to DELETE endpoint completed.""" } }
     }
 
     private fun Method.toPOSTEndpoint(annotation: HttpRpcPOST): Endpoint {

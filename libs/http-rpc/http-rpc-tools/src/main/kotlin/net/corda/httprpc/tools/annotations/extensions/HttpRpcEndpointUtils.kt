@@ -1,5 +1,6 @@
 package net.corda.httprpc.tools.annotations.extensions
 
+import net.corda.httprpc.annotations.HttpRpcDELETE
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPUT
@@ -20,3 +21,6 @@ fun HttpRpcGET.path(annotated: Method): String? {
         this.path.takeIf { it.isNotBlank() }?.toLowerCase()
     }
 }
+
+fun HttpRpcDELETE.title(annotated: Method): String = this.title.takeIf { it.isNotBlank() } ?: annotated.name
+fun HttpRpcDELETE.path(): String? = this.path.takeIf { it.isNotBlank() }?.toLowerCase()

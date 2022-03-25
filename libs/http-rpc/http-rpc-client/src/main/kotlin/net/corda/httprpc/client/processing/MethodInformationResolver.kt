@@ -1,5 +1,6 @@
 package net.corda.httprpc.client.processing
 
+import net.corda.httprpc.annotations.HttpRpcDELETE
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPUT
@@ -14,6 +15,7 @@ internal val Method.endpointHttpVerb: HttpVerb
             it is HttpRpcGET -> HttpVerb.GET
             it is HttpRpcPOST -> HttpVerb.POST
             it is HttpRpcPUT -> HttpVerb.PUT
+            it is HttpRpcDELETE -> HttpVerb.DELETE
             isStaticallyExposedGet() -> HttpVerb.GET
             else -> throw IllegalArgumentException("Unknown endpoint type")
         }

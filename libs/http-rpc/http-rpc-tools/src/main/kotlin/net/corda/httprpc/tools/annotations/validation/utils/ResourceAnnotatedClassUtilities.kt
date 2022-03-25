@@ -1,6 +1,7 @@
 package net.corda.httprpc.tools.annotations.validation.utils
 
 import net.corda.httprpc.RpcOps
+import net.corda.httprpc.annotations.HttpRpcDELETE
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPUT
@@ -30,6 +31,8 @@ internal fun Method.endpointPath(type: EndpointType): String? =
             ?: HttpRpcPOST::class.createInstance().path()
         EndpointType.PUT -> (this.annotations.singleOrNull { it is HttpRpcPUT } as? HttpRpcPUT)?.path()
             ?: HttpRpcPUT::class.createInstance().path()
+        EndpointType.DELETE -> (this.annotations.singleOrNull { it is HttpRpcDELETE } as? HttpRpcDELETE)?.path()
+            ?: HttpRpcDELETE::class.createInstance().path()
     }
 
 internal val Method.endpointType: EndpointType
@@ -38,6 +41,7 @@ internal val Method.endpointType: EndpointType
             is HttpRpcGET -> EndpointType.GET
             is HttpRpcPOST -> EndpointType.POST
             is HttpRpcPUT -> EndpointType.PUT
+            is HttpRpcDELETE -> EndpointType.DELETE
             else -> throw IllegalArgumentException("Unknown endpoint type for: '$name'")
         }
     } ?: this.staticExposedEndpointType
@@ -47,5 +51,5 @@ private val Method.staticExposedEndpointType: EndpointType
     else throw IllegalArgumentException("Unknown statically exposed endpoint type for: '$name'")
 
 internal enum class EndpointType {
-    GET, POST, PUT
+    GET, POST, PUT, DELETE
 }
