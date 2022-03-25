@@ -18,16 +18,20 @@ class Gateway(
                     "p2p-gateway",
                     listOf(Port.Gateway),
                 )
-                LbType.NGINX -> NginxLoadBalancer(
-                    gateways.map { it.app },
-                    true,
-                )
-                LbType.HEADLESS -> HeadlessLoadBalancer(
+                LbType.NGINX -> if (details.nginxCount <= 1) {
+                    NginxLoadBalancer(
+                        gateways.map { it.app },
+                        true,
+                    )
+                } else {
+                    HeadlessNginxLoadBalancer(
+                        details.nginxCount,
+                        gateways.map { it.app },
+                    )
+                }
+
+                LbType.HEADLESS -> HeadlessService(
                     "p2p-gateway"
-                )
-                LbType.NGINX_HEADLESS -> HeadlessNginxLoadBalancer(
-                    details.nginxCount,
-                    gateways.map { it.app },
                 )
             }
             return gateways + balancer
@@ -40,7 +44,7 @@ class Gateway(
     override val otherPorts = when (details.lbType) {
         // In K8S load balancer the load balancer service will listen to the Gateway port, so no need to create a service.
         LbType.K8S -> emptyList()
-        LbType.NGINX, LbType.NGINX_HEADLESS -> listOf(
+        LbType.NGINX -> listOf(
             Port.Gateway
         )
         // In HEADLESS load balancer the headless service will act as the load balancer, no need to create an extra service per gateway.

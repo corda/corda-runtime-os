@@ -178,12 +178,15 @@ class Deploy : Runnable {
 
     @Option(
         names = ["--nginx-pods-count"],
-        description = ["Number of Nginx load balancer pods in the deployment (only valid on NGINX_HEADLESS service)"]
+        description = ["Number of Nginx load balancer pods in the deployment (If more than one is deployed, the serice will be headless)"]
     )
-    private var nginxCount: Int = 2
+    private var nginxCount: Int = 1
 
     override fun run() {
-        if ((!lbType.canHaveCustomDnsName) && (hostName != "load-balancer.$namespaceName")) {
+        if (
+            ((lbType == LbType.HEADLESS) || (lbType == LbType.NGINX && nginxCount > 1)) &&
+            (hostName != "load-balancer.$namespaceName")
+        ) {
             println("For headless LB we will use the host name: load-balancer.$namespaceName")
             hostName = "load-balancer.$namespaceName"
         }

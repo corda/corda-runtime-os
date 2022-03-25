@@ -7,7 +7,7 @@ class HeadlessNginxLoadBalancer(
     private val pods = (1..nginxCount).map {
         NginxLoadBalancer(servers, false, it)
     }
-    private val service = HeadlessLoadBalancer("nginx-load-balancer")
+    private val service = HeadlessService("nginx-load-balancer")
 
     override fun yamls(namespaceName: String) = pods.flatMap {
         it.yamls(namespaceName)

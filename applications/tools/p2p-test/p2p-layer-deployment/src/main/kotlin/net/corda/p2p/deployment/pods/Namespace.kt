@@ -4,11 +4,10 @@ import net.corda.p2p.deployment.DockerSecrets
 import net.corda.p2p.deployment.commands.MyUserName
 import java.io.File
 
-enum class LbType(val canHaveCustomDnsName: Boolean) {
-    HEADLESS(false),
-    K8S(true),
-    NGINX(true),
-    NGINX_HEADLESS(false),
+enum class LbType {
+    HEADLESS,
+    K8S,
+    NGINX,
     ;
 }
 data class NamespaceIdentifier(

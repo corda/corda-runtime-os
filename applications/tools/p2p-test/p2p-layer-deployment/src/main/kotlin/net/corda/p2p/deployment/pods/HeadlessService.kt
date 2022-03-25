@@ -1,6 +1,6 @@
 package net.corda.p2p.deployment.pods
 
-class HeadlessLoadBalancer(
+class HeadlessService(
     private val podSelectorType: String,
 
 ) : Yamlable {
