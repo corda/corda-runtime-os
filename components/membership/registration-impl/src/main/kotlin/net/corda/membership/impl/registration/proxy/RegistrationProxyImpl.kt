@@ -1,16 +1,20 @@
 package net.corda.membership.impl.registration.proxy
 
+import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.exceptions.BadGroupPolicyException
 import net.corda.membership.exceptions.RegistrationProtocolSelectionException
 import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.membership.impl.registration.proxy.lifecycle.RegistrationProxyLifecycleHandler
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.membership.registration.proxy.RegistrationProxy
-import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
@@ -33,6 +37,9 @@ class RegistrationProxyImpl @Activate constructor(
     private val registrationServices: List<MemberRegistrationService>
 ) : RegistrationProxy {
 
+    /**
+     * Private interface used for implementation swapping in response to lifecycle events.
+     */
     private interface InnerRegistrationProxy {
         fun register(member: HoldingIdentity): MembershipRequestRegistrationResult
     }
@@ -46,23 +53,59 @@ class RegistrationProxyImpl @Activate constructor(
 
         const val SERVICE_NOT_FOUND_ERROR =
             "Could not load registration service: \"%s\". Service not found."
+
+        const val UP_REASON_READY = "All dependencies for RegistrationProxy are up so component is ready."
+        const val DOWN_REASON_STOPPED = "RegistrationProxy was stopped."
+        const val DOWN_REASON_NOT_READY = "Dependencies of RegistrationProxy are down."
     }
 
-    private val coordinator = lifecycleCoordinatorFactory.createCoordinator<RegistrationProxy>(
-        RegistrationProxyLifecycleHandler(registrationServices, ::activate, ::deactivate)
-    )
+    private var dependencyStatusChangeHandle: AutoCloseable? = null
+    private val dependencies = setOf(LifecycleCoordinatorName.forComponent<GroupPolicyProvider>()) +
+            registrationServices.map { it.lifecycleCoordinatorName }
+
+    private val coordinator = lifecycleCoordinatorFactory.createCoordinator<RegistrationProxy>(::handleEvent)
 
     private var impl: InnerRegistrationProxy = InactiveImpl()
 
-    @VisibleForTesting
-    fun activate(message: String) {
+    /**
+     * Handle lifecycle events.
+     */
+    private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+        when (event) {
+            is StartEvent -> {
+                logger.info(
+                    registrationServices
+                        .joinToString(
+                            prefix = "Loaded registration services: [",
+                            postfix = "]",
+                            transform = { it.javaClass.name }
+                        )
+                )
+                registrationServices.forEach { it.start() }
+                dependencyStatusChangeHandle?.close()
+                dependencyStatusChangeHandle = coordinator.followStatusChangesByName(dependencies)
+            }
+            is StopEvent -> {
+                deactivate(DOWN_REASON_STOPPED)
+                dependencyStatusChangeHandle?.close()
+            }
+            is RegistrationStatusChangeEvent -> {
+                when (event.status) {
+                    LifecycleStatus.UP -> activate(UP_REASON_READY)
+                    else -> deactivate(DOWN_REASON_NOT_READY)
+                }
+
+            }
+        }
+    }
+
+    private fun activate(message: String) {
         logger.debug(message)
         impl = ActiveImpl(groupPolicyProvider, registrationServices)
         coordinator.updateStatus(LifecycleStatus.UP, message)
     }
 
-    @VisibleForTesting
-    fun deactivate(message: String) {
+    private fun deactivate(message: String) {
         logger.debug(message)
         coordinator.updateStatus(LifecycleStatus.DOWN, message)
         impl = InactiveImpl()
