@@ -70,6 +70,7 @@ def certificateProvider = provider {
 
 tasks.named('test', Test) {
     inputs.files(configurations.flowsCPK, configurations.contractCPK, configurations.workflowCPK)
+    .withPropertyName("CPK_CONFIG").withPathSensitivity(PathSensitivity.RELATIVE)
 
     doFirst {
         systemProperties([
