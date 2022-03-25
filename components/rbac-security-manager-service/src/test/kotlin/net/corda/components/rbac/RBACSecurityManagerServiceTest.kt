@@ -3,6 +3,7 @@ package net.corda.components.rbac
 import java.lang.IllegalArgumentException
 import net.corda.httprpc.security.read.rbac.RBACSecurityManager
 import net.corda.libs.permission.PermissionValidator
+import net.corda.libs.permissions.manager.BasicAuthenticationService
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -11,7 +12,8 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.permissions.service.PermissionServiceComponent
+import net.corda.permissions.management.PermissionManagementService
+import net.corda.permissions.validation.PermissionValidationService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -26,13 +28,15 @@ import org.mockito.kotlin.whenever
 
 class RBACSecurityManagerServiceTest {
 
-    private val permissionServiceComponent = mock<PermissionServiceComponent>()
+    private val permissionManagementService = mock<PermissionManagementService>()
+    private val permissionValidationService = mock<PermissionValidationService>()
     private val permissionServiceRegistration = mock<RegistrationHandle>()
     private val coordinatorFactory = mock<LifecycleCoordinatorFactory>()
     private val coordinator = mock<LifecycleCoordinator>()
     private val permissionValidator = mock<PermissionValidator>()
+    private val basicAuthenticationService = mock<BasicAuthenticationService>()
 
-    private val service = RBACSecurityManagerService(coordinatorFactory, permissionServiceComponent)
+    private val service = RBACSecurityManagerService(coordinatorFactory, permissionManagementService, permissionValidationService)
 
     @BeforeEach
     fun setUp() {
@@ -40,12 +44,14 @@ class RBACSecurityManagerServiceTest {
         whenever(
             coordinator.followStatusChangesByName(
                 setOf(
-                    LifecycleCoordinatorName.forComponent<PermissionServiceComponent>()
+                    LifecycleCoordinatorName.forComponent<PermissionValidationService>(),
+                    LifecycleCoordinatorName.forComponent<PermissionManagementService>()
                 )
             )
         ).thenReturn(permissionServiceRegistration)
 
-        whenever(permissionServiceComponent.permissionValidator).thenReturn(permissionValidator)
+        whenever(permissionValidationService.permissionValidator).thenReturn(permissionValidator)
+        whenever(permissionManagementService.basicAuthenticationService).thenReturn(basicAuthenticationService)
         whenever(coordinator.isRunning).thenReturn(true)
     }
 

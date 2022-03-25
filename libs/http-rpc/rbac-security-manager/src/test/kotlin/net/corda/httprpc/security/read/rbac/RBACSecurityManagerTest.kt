@@ -3,6 +3,7 @@ package net.corda.httprpc.security.read.rbac
 import javax.security.auth.login.FailedLoginException
 import net.corda.httprpc.security.read.Password
 import net.corda.libs.permission.PermissionValidator
+import net.corda.libs.permissions.manager.BasicAuthenticationService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -14,13 +15,14 @@ import org.mockito.kotlin.whenever
 class RBACSecurityManagerTest {
 
     private val validator = mock<PermissionValidator>()
-    private val manager = RBACSecurityManager(validator)
+    private val basicAuthenticationService = mock<BasicAuthenticationService>()
+    private val manager = RBACSecurityManager(validator, basicAuthenticationService)
 
     @Test
     fun `unauthenticated user throws FailedLoginException`() {
         val passwordCapture = argumentCaptor<CharArray>()
 
-        whenever(validator.authenticateUser(eq("principal1"), passwordCapture.capture())).thenReturn(false)
+        whenever(basicAuthenticationService.authenticateUser(eq("principal1"), passwordCapture.capture())).thenReturn(false)
 
         val e = assertThrows<FailedLoginException> {
             manager.authenticate("principal1", Password("pass1"))
@@ -33,7 +35,7 @@ class RBACSecurityManagerTest {
     fun `authenticate user utilizes permission validator to authenticate and then builds subject`() {
         val passwordCapture = argumentCaptor<CharArray>()
 
-        whenever(validator.authenticateUser(eq("principal1"), passwordCapture.capture())).thenReturn(true)
+        whenever(basicAuthenticationService.authenticateUser(eq("principal1"), passwordCapture.capture())).thenReturn(true)
 
         val subject = manager.authenticate("principal1", Password("pass1"))
 

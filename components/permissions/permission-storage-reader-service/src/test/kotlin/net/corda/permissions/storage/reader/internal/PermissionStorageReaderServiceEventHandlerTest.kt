@@ -45,11 +45,11 @@ class PermissionStorageReaderServiceEventHandlerTest {
     }
     private val permissionValidationCache = mock<PermissionValidationCache>()
     private val permissionValidationCacheService = mock<PermissionValidationCacheService>().apply {
-        whenever(permissionValidationCache).thenReturn(this@PermissionStorageReaderServiceEventHandlerTest.permissionValidationCache)
+        whenever(permissionValidationCache).thenReturn(permissionValidationCache)
     }
     private val permissionManagementCache = mock<PermissionManagementCache>()
     private val permissionManagementCacheService = mock<PermissionManagementCacheService>().apply {
-        whenever(permissionManagementCache).thenReturn(this@PermissionStorageReaderServiceEventHandlerTest.permissionManagementCache)
+        whenever(permissionManagementCache).thenReturn(permissionManagementCache)
     }
     private val permissionStorageReader = mock<PermissionStorageReader>()
     private val permissionStorageReaderFactory = mock<PermissionStorageReaderFactory>().apply {
@@ -87,7 +87,7 @@ class PermissionStorageReaderServiceEventHandlerTest {
         mapOf(BOOT_CONFIG to config, MESSAGING_CONFIG to configFactory.create(ConfigFactory.empty()))
 
     @Test
-    fun `processing an UP event from the permission cache when the service is started starts the storage reader`() {
+    fun `processing an UP event when the service is started starts the storage reader`() {
         assertNull(handler.permissionStorageReader)
 
         handler.processEvent(StartEvent(), coordinator)
@@ -99,7 +99,7 @@ class PermissionStorageReaderServiceEventHandlerTest {
     }
 
     @Test
-    fun `processing an UP event from the permission cache when the service is started updates the service's status to UP`() {
+    fun `processing an UP event when the service is started updates the service's status to UP`() {
         handler.processEvent(StartEvent(), coordinator)
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
         handler.processEvent(ConfigChangedEvent(bootstrapConfig.keys, bootstrapConfig), coordinator)
@@ -107,7 +107,7 @@ class PermissionStorageReaderServiceEventHandlerTest {
     }
 
     @Test
-    fun `processing a DOWN event from the permission cache when the service is started stops the storage reader`() {
+    fun `processing a DOWN event when the service is started stops the storage reader`() {
         handler.processEvent(StartEvent(), coordinator)
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
         handler.onConfigurationUpdated(bootstrapConfig.toMessagingConfig())
@@ -121,7 +121,7 @@ class PermissionStorageReaderServiceEventHandlerTest {
     }
 
     @Test
-    fun `processing a DOWN event from the permission cache when the service is started updates the service's status to DOWN`() {
+    fun `processing a DOWN event when the service is started updates the service's status to DOWN`() {
         handler.processEvent(StartEvent(), coordinator)
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.DOWN), coordinator)
@@ -141,7 +141,6 @@ class PermissionStorageReaderServiceEventHandlerTest {
         assertNull(handler.permissionStorageReader)
         assertNull(handler.publisher)
 
-        verify(handler.dependentComponents).stopAll()
         verify(registrationHandle).close()
         verify(permissionStorageReader).stop()
         verify(publisher).close()

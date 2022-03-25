@@ -10,7 +10,6 @@ import net.corda.libs.permissions.manager.request.GetRoleRequestDto
 import net.corda.libs.permissions.manager.response.RoleResponseDto
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.permissions.service.PermissionServiceComponent
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -22,6 +21,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import net.corda.httprpc.ResponseCode
+import net.corda.permissions.management.PermissionManagementService
 
 internal class RoleEndpointImplTest {
 
@@ -35,7 +35,7 @@ internal class RoleEndpointImplTest {
         whenever(it.createCoordinator(any(), any())).thenReturn(lifecycleCoordinator)
     }
     private val permissionManager = mock<PermissionManager>()
-    private val permissionService = mock<PermissionServiceComponent>().also {
+    private val permissionService = mock<PermissionManagementService>().also {
         whenever(it.permissionManager).thenReturn(permissionManager)
     }
 
