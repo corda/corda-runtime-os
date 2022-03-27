@@ -10,6 +10,6 @@ cordaPipeline(
     publishHelmChart: true,
     e2eTestName: 'corda-runtime-os-e2e-tests',
     runE2eTests: false,
-    cleanBuild: true
+    cleanBuild: true,
     gradleAdditionalArgs: ' --build-cache'
     )
