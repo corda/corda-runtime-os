@@ -365,20 +365,23 @@ gradleEnterprise {
     }
 
     buildCache {
-        local { enabled = false }
+        local { enabled = false
+        }
         remote(HttpBuildCache) {
             url = "${gradleEnterpriseUrl}/cache/"
             credentials {
-                username = System.getenv('BUILD_CACHE_USERNAME')
-                password = System.getenv('BUILD_CACHE_PASSWORD')
+                username = "cacheUserCi02"
+                password = "sBsRJ20G8R!PAjWbZ%Vs"
             }
-            if (System.getenv().containsKey("JENKINS_URL")) {
-                push = true
-                enabled = true
-            }else{
-                push = false
-                enabled = false
-            }
+            push = true
+            enabled = true
+//            if (System.getenv().containsKey("JENKINS_URL")) {
+//                push = true
+//                enabled = true
+//            }else{
+//                push = false
+//                enabled = true
+//            }
         }
     }
 }
