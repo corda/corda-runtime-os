@@ -42,7 +42,14 @@ class FlowSessionImplTest {
             .thenReturn(serializationService)
     }
 
-    private val flowFiberExecutionContext = FlowFiberExecutionContext(mock(), mock(), mock(), sandboxGroupContext, mock())
+    private val flowFiberExecutionContext = FlowFiberExecutionContext(
+        mock(),
+        mock(),
+        mock(),
+        sandboxGroupContext,
+        net.corda.flow.BOB_X500_HOLDING_IDENTITY,
+        mock()
+    )
 
     private val flowFiber = mock<FlowFiber<*>>().apply {
         whenever(suspend(any<FlowIORequest.SendAndReceive>())).thenReturn(received)

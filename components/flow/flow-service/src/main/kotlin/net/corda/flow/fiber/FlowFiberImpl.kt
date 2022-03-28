@@ -5,7 +5,6 @@ import co.paralleluniverse.fibers.FiberScheduler
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStackItem
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.FlowId
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
@@ -13,12 +12,13 @@ import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.Logger
 import org.slf4j.MDC
 import java.nio.ByteBuffer
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 
 @Suppress("TooManyFunctions", "ComplexMethod", "LongParameterList")
 class FlowFiberImpl<R>(
-    override val flowId: FlowId,
+    override val flowId: UUID,
     override val flowKey: FlowKey,
     override val flowLogic: Flow<R>,
     scheduler: FiberScheduler
