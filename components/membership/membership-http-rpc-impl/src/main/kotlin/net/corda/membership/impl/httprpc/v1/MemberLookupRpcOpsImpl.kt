@@ -33,6 +33,7 @@ class MemberLookupRpcOpsImpl @Activate constructor(
     }
 
     private interface InnerMemberLookupRpcOps {
+        @Suppress("LongParameterList")
         fun lookup(
             holdingIdentityId: String,
             commonName: String?,
@@ -123,6 +124,7 @@ class MemberLookupRpcOpsImpl @Activate constructor(
         val virtualNodeInfoReadService: VirtualNodeInfoReadService,
         val membershipGroupReaderProvider: MembershipGroupReaderProvider
     ) : InnerMemberLookupRpcOps {
+        @Suppress("ComplexMethod")
         override fun lookup(
             holdingIdentityId: String,
             commonName: String?,
