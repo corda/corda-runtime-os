@@ -16,7 +16,7 @@ import java.util.concurrent.Callable
 
 @Command(
     name = "add-group",
-    description = ["Add a group to the network map"],
+    description = ["Create a membership group"],
     mixinStandardHelpOptions = true,
     showDefaultValues = true,
 )

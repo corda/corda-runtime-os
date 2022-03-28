@@ -16,7 +16,7 @@ import java.util.concurrent.Callable
 
 @Command(
     name = "add-member",
-    description = ["Add a member to the network map"],
+    description = ["Add a group member"],
     mixinStandardHelpOptions = true,
     showDefaultValues = true,
 )

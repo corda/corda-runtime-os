@@ -7,9 +7,9 @@ This is a tool that can be used to setup a P2P deployment.
 
 ## Running the tool
 
-### Publishing network map group
-To publish a network map group:
-1. Make sure you have a valid trust store PEM files.
+### Creating a membership group
+To create a membership group:
+1. Make sure you have a valid PEM file containing the TLS trust roots of the group.
 2. Prepare a configuration file with the group data. For example:
 ```json
 {
@@ -31,9 +31,9 @@ java -jar applications/tools/p2p-test/p2p-setup/build/bin/corda-p2p-setup-5.0.0.
   add-group <path_to_member_json_file>
 ```
 
-### Publishing network map member
-To publish a network map member:
-1. Make sure you have a valid public key PEM file.
+### Publishing a group member
+To publish a group member:
+1. Make sure you have a valid PEM file containing the public key of the member.
 2. Prepare a configuration file with the member data. For example:
 ```json
 {
@@ -41,7 +41,7 @@ To publish a network map member:
   "groupId": "group-1",
   "data": {
        "publicKeyFile": "<path_to_the_public_key_pem_file>",
-       "address": "http://alice.com"
+       "address": "http://alice.com:8080"
   }
 }
 ```
@@ -65,9 +65,9 @@ openssl rsa -in private.rsa.key -pubout > public.rsa.pem
 ```
 
 
-### Publishing locally hosted map entry
-To publish a locally hosted map entry:
-1. Make sure you have a valid TLS certificates file (in PEM format).
+### Publishing an entry for a locally hosted identity
+To publish an entry for a locally hosted identity:
+1. Make sure you have a valid PEM file containing the TLS certificate chain.
 2. Prepare a configuration file with the identity data. For example:
 ```json
 {
@@ -90,7 +90,8 @@ java -jar applications/tools/p2p-test/p2p-setup/build/bin/corda-p2p-setup-5.0.0.
   add-identity <path_to_identity_json_file>
 ```
 
-### Add cryptography keys.
+### Add cryptographic keys.
+This command can be used to add to the cluster the cryptographic keys for TLS and session initiation.
 To publish key-pair:
 1. Make sure you have the private key file (in PEM format).
 2. Prepare a configuration file with the identity data. For example:
@@ -103,7 +104,7 @@ To publish key-pair:
 ```
 Where:
 * `publish_alias` is a unique name to publish the keys under. If omitted, a random UUID will be used.
-* `keysFile` is the path to the file with the private key in PEM format.
+* `keysFile` is the path to the file with the keys in PEM format.
 * `tenantId` A non-unique ID for the tenant
 * `keys` is the content of the private key in PEM format (use either that or `keysFile`).
 
@@ -133,16 +134,16 @@ java -jar applications/tools/p2p-test/p2p-setup/build/bin/corda-p2p-setup-5.0.0.
 
 Use `config-link-manager --help` to view other configuration option.
 
-### Removing network map group
-To remove a published network map group run the command:
+### Removing membership group
+To remove a created membership group run the command:
 ```bash
 java -jar applications/tools/p2p-test/p2p-setup/build/bin/corda-p2p-setup-5.0.0.0-SNAPSHOT.jar \
   -k <kafka-host:kafka-port> \
   remove-group <group-id>
 ```
 
-### Removing locally hosted map entry
-To remove a published network map member run the command:
+### Removing a locally hosted identity
+To remove a locally hosted identity run the command:
 ```bash
 java -jar applications/tools/p2p-test/p2p-setup/build/bin/corda-p2p-setup-5.0.0.0-SNAPSHOT.jar \
   -k <kafka-host:kafka-port> \
@@ -154,7 +155,7 @@ If the `-k <kafka-servers>` command line argument is missing the environment var
 
 ### Populating a custom topic
 
-Each sub command has a `--topic` option to overwrite the default topic
+Each sub command has a `--topic` option to overwrite the default topic where data will be published for each type of data, unless specified otherwise.
 
 ### Running multiple sub commands
 One can add multiple sub commands in one run, for example:

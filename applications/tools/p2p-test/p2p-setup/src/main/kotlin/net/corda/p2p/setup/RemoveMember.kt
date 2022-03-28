@@ -9,7 +9,7 @@ import java.util.concurrent.Callable
 @Command(
     name = "remove-member",
     aliases = ["rm-member"],
-    description = ["Remove a member from the network map"],
+    description = ["Remove a member from a group"],
     mixinStandardHelpOptions = true,
     showDefaultValues = true,
 )
