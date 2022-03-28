@@ -8,11 +8,11 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.membership.client.MemberOpsClient
 
-class RegistrationRpcOpsLifecycleHandler(
+class RpcOpsLifecycleHandler(
     val activate: (String) -> Unit,
     val deactivate: (String) -> Unit,
+    private val dependencies: Set<LifecycleCoordinatorName>
 ) : LifecycleEventHandler {
     // for checking the components' health
     private var componentHandle: AutoCloseable? = null
@@ -21,11 +21,7 @@ class RegistrationRpcOpsLifecycleHandler(
         when(event) {
             is StartEvent -> {
                 componentHandle?.close()
-                componentHandle = coordinator.followStatusChangesByName(
-                    setOf(
-                        LifecycleCoordinatorName.forComponent<MemberOpsClient>()
-                    )
-                )
+                componentHandle = coordinator.followStatusChangesByName(dependencies)
             }
             is StopEvent -> {
                 componentHandle?.close()
