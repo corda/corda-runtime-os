@@ -84,9 +84,25 @@ class MemberLookupRpcOpsTest {
 
     private val layeredPropertyMapFactory = LayeredPropertyMapMocks.createFactory(converters)
 
-    private val memberInfoList = listOf(
-        createMemberInfo("O=Alice,L=London,C=GB"),
-        createMemberInfo("O=Bob,L=London,C=GB")
+    private val alice = createMemberInfo("CN=Alice,O=Alice,OU=Unit1,L=London,ST=State1,C=GB")
+    private val bob = createMemberInfo("CN=Bob,O=Bob,OU=Unit2,L=Dublin,ST=State2,C=IE")
+    private val memberInfoList = listOf(alice, bob)
+
+    private val aliceRpcResult = RpcMemberInfoList(
+        listOf(
+            RpcMemberInfo(
+                alice.memberProvidedContext.entries.associate { it.key to it.value },
+                alice.mgmProvidedContext.entries.associate { it.key to it.value },
+            )
+        )
+    )
+    private val bobRpcResult = RpcMemberInfoList(
+        listOf(
+            RpcMemberInfo(
+                bob.memberProvidedContext.entries.associate { it.key to it.value },
+                bob.mgmProvidedContext.entries.associate { it.key to it.value },
+            )
+        )
     )
 
     @Suppress("SpreadOperator")
@@ -169,7 +185,7 @@ class MemberLookupRpcOpsTest {
     }
 
     @Test
-    fun `lookup returns a list of members and their contexts`() {
+    fun `unfiltered lookup returns a list of all active members and their contexts`() {
         memberLookupRpcOps.start()
         memberLookupRpcOps.activate("")
         val result = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING)
@@ -190,6 +206,106 @@ class MemberLookupRpcOpsTest {
     }
 
     @Test
+    fun `lookup filtered by common name (CN) is case-insensitive and returns a list of members and their contexts`() {
+        memberLookupRpcOps.start()
+        memberLookupRpcOps.activate("")
+        val result1 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, commonName = "bob")
+        assertEquals(1, result1.members.size)
+        assertEquals(bobRpcResult, result1)
+        val result2 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, commonName = "BOB")
+        assertEquals(1, result2.members.size)
+        assertEquals(bobRpcResult, result2)
+        memberLookupRpcOps.deactivate("")
+        memberLookupRpcOps.stop()
+    }
+
+    @Test
+    fun `lookup filtered by organisation (O) is case-insensitive and returns a list of members and their contexts`() {
+        memberLookupRpcOps.start()
+        memberLookupRpcOps.activate("")
+        val result1 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, organisation = "ALICE")
+        assertEquals(1, result1.members.size)
+        assertEquals(aliceRpcResult, result1)
+        val result2 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, organisation = "alice")
+        assertEquals(1, result2.members.size)
+        assertEquals(aliceRpcResult, result2)
+        memberLookupRpcOps.deactivate("")
+        memberLookupRpcOps.stop()
+    }
+
+    @Test
+    fun `lookup filtered by organisation unit (OU) is case-insensitive and returns a list of members and their contexts`() {
+        memberLookupRpcOps.start()
+        memberLookupRpcOps.activate("")
+        val result1 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, organisationUnit = "unit2")
+        assertEquals(1, result1.members.size)
+        assertEquals(bobRpcResult, result1)
+        val result2 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, organisationUnit = "UNIT2")
+        assertEquals(1, result2.members.size)
+        assertEquals(bobRpcResult, result2)
+        memberLookupRpcOps.deactivate("")
+        memberLookupRpcOps.stop()
+    }
+
+    @Test
+    fun `lookup filtered by locality (L) is case-insensitive and returns a list of members and their contexts`() {
+        memberLookupRpcOps.start()
+        memberLookupRpcOps.activate("")
+        val result1 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, locality = "london")
+        assertEquals(1, result1.members.size)
+        assertEquals(aliceRpcResult, result1)
+        val result2 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, locality = "LONDON")
+        assertEquals(1, result2.members.size)
+        assertEquals(aliceRpcResult, result2)
+        memberLookupRpcOps.deactivate("")
+        memberLookupRpcOps.stop()
+    }
+
+    @Test
+    fun `lookup filtered by state (ST) is case-insensitive and returns a list of members and their contexts`() {
+        memberLookupRpcOps.start()
+        memberLookupRpcOps.activate("")
+        val result1 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, state = "state2")
+        assertEquals(1, result1.members.size)
+        assertEquals(bobRpcResult, result1)
+        val result2 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, state = "state2")
+        assertEquals(1, result2.members.size)
+        assertEquals(bobRpcResult, result2)
+        memberLookupRpcOps.deactivate("")
+        memberLookupRpcOps.stop()
+    }
+
+    @Test
+    fun `lookup filtered by country (C) is case-insensitive and returns a list of members and their contexts`() {
+        memberLookupRpcOps.start()
+        memberLookupRpcOps.activate("")
+        val result1 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, country = "gb")
+        assertEquals(1, result1.members.size)
+        assertEquals(aliceRpcResult, result1)
+        val result2 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, country = "GB")
+        assertEquals(1, result2.members.size)
+        assertEquals(aliceRpcResult, result2)
+        memberLookupRpcOps.deactivate("")
+        memberLookupRpcOps.stop()
+    }
+
+    @Test
+    fun `lookup filtered by all attributes is case-insensitive and returns a list of members and their contexts`() {
+        memberLookupRpcOps.start()
+        memberLookupRpcOps.activate("")
+        val result1 =
+            memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, "bob", "bob", "unit2", "dublin", "state2", "ie")
+        assertEquals(1, result1.members.size)
+        assertEquals(bobRpcResult, result1)
+        val result2 =
+            memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, "BOB", "BOB", "UNIT2", "DUBLIN", "STATE2", "IE")
+        assertEquals(1, result2.members.size)
+        assertEquals(bobRpcResult, result2)
+        memberLookupRpcOps.deactivate("")
+        memberLookupRpcOps.stop()
+    }
+
+    @Test
     fun `lookup should fail when non-existent holding identity is used`() {
         memberLookupRpcOps.start()
         memberLookupRpcOps.activate("")
@@ -200,7 +316,7 @@ class MemberLookupRpcOpsTest {
     }
 
     @Test
-    fun `exception should be thrown when servic eis not running`() {
+    fun `exception should be thrown when service is not running`() {
         val ex = assertFailsWith<ServiceUnavailableException> { memberLookupRpcOps.lookup("failingTest") }
         assertTrue(ex.message.contains("MemberLookupRpcOpsImpl"))
     }
