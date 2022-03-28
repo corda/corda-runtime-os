@@ -269,11 +269,11 @@ open class SessionManagerImpl(
 
     private fun createResources(@Suppress("UNUSED_PARAMETER") resourcesHolder: ResourcesHolder): CompletableFuture<Unit> {
         inboundAssignmentListener.registerCallbackForTopic(Schemas.P2P.LINK_IN_TOPIC) { partitions ->
-            val sessionIds = outboundSessionPool.getAllSessionIds() + pendingInboundSessions.keys() + activeInboundSessions.keys()
+            val sessionIds = outboundSessionPool.getAllSessionIds() + pendingInboundSessions.keys + activeInboundSessions.keys
             val records = sessionIds.map { sessionId ->
                 Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(partitions.toList()))
             }
-            publisher.publish(records)
+            if (records.isNotEmpty()) publisher.publish(records)
         }
         return CompletableFuture.completedFuture(Unit)
     }
