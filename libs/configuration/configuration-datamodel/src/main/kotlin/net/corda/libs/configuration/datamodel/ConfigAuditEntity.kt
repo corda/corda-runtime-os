@@ -1,7 +1,6 @@
 package net.corda.libs.configuration.datamodel
 
-import net.corda.db.schema.DbSchema.CONFIG
-import net.corda.db.schema.DbSchema.CONFIG_AUDIT_DB_TABLE
+import net.corda.db.schema.DbSchema
 import net.corda.db.schema.DbSchema.CONFIG_AUDIT_ID_SEQUENCE
 import net.corda.db.schema.DbSchema.CONFIG_AUDIT_ID_SEQUENCE_ALLOC_SIZE
 import net.corda.libs.configuration.datamodel.internal.CONFIG_AUDIT_GENERATOR
@@ -25,7 +24,7 @@ import javax.persistence.Table
  * @param updateActor The ID of the user that last updated this section of the configuration.
  */
 @Entity
-@Table(name = CONFIG_AUDIT_DB_TABLE, schema = CONFIG)
+@Table(name = DbSchema.CONFIG_AUDIT_TABLE, schema = DbSchema.CONFIG)
 data class ConfigAuditEntity(
     @Id
     @SequenceGenerator(
@@ -36,6 +35,7 @@ data class ConfigAuditEntity(
     @GeneratedValue(strategy = SEQUENCE, generator = CONFIG_AUDIT_GENERATOR)
     @Column(name = "change_number", nullable = false)
     val changeNumber: Int,
+
     @Column(name = "section", nullable = false)
     val section: String,
     @Column(name = "config", nullable = false)

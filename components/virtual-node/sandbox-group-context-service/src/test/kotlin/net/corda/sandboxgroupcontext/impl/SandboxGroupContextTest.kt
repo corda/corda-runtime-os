@@ -34,12 +34,12 @@ class Cat(override val name: String, private val noise: String) : Animal {
 
 class SandboxGroupContextTest {
     private val holdingIdentity = HoldingIdentity("foo", "bar")
-    private val cpk: CpkMetadata = CpkMetadata.fromLegacyCpk(Helpers.mockTrivialCpk("MAIN_BUNDLE", "example", "1.0.0"))
+    private val cpkMetadata: CpkMetadata = CpkMetadata.fromLegacyCpk(Helpers.mockTrivialCpk("MAIN_BUNDLE", "example", "1.0.0"))
 
-    private val cpks = setOf(cpk)
+    private val cpksMetadata = setOf(cpkMetadata)
 
     private val virtualNodeContext = VirtualNodeContext(
-        holdingIdentity, cpks.map { it.id }.toSet(), SandboxGroupType.FLOW, SingletonSerializeAsToken::class.java, null
+        holdingIdentity, cpksMetadata.map { it.cpkId }.toSet(), SandboxGroupType.FLOW, SingletonSerializeAsToken::class.java, null
     )
     private lateinit var sandboxGroupContext: SandboxGroupContextImpl
 

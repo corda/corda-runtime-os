@@ -2,28 +2,132 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+# -- override chart fullname
 fullnameOverride: ""
-imageTag: "unstable"
 
+# -- override chart name
+nameOverride: ""
+
+# worker image defaults
+image:
+  # -- worker image registry
+  registry: "corda-os-docker.software.r3.com"
+  # -- worker image tag, defaults to Chart appVersion
+  tag: ""
+
+# -- image pull secrets
+imagePullSecrets: []
+
+# -- the image policy
+imagePullPolicy: Always
+
+# Database configuration
 db:
+  # Cluster database configuration
   cluster:
-    url: postgresql://prereqs-postgresql:5432/cordacluster
+    # -- the cluster database host (required)
+    host: ""
+    # -- the cluster database port
+    port: 5432
+    # -- the cluster database user
     user: user
-    secret: 4LNuCvt+NhGIBwL7gRRhvAZh3k6JRN9NHv0aG3pi1xM=
+    # -- the name of the cluster database
+    database: cordacluster
+    # -- the cluster database password (ignored if existingSecret is set, otherwise required)
+    password: ""
+    # -- the name of an existing secret containing the cluster database password with a key of 'password'
+    existingSecret: ""
 
-debug:
-  suspend: "n"
-  server: "y"
-
+# Kafka configuration
 kafka:
-  url: prereqs-kafka:9092
+  # -- comma-separated list of Kafka bootstrap servers (required)
+  bootstrapServers: ""
+  # -- Kafka topic partitions
+  partitions: 3
+  # -- prefix to use for Kafka topic names (to support the use of a single Kafka cluster by multiple Corda clusters)
+  topicPrefix: ""
 
+# worker configuration
 workers:
+
+  # crypto worker configuration
   crypto:
-    replicas: 1
+    # crypto worker image configuration
+    image:
+      # -- crypto worker image registry, defaults to image.registry
+      registry: ""
+      # -- crypto worker image repository
+      repository: "corda-os-crypto-worker"
+      # -- crypto worker image tag, defaults to image.tag
+      tag: ""
+    # -- crypto worker replica count
+    replicaCount: 1
+    # crypto worker debug configuration
+    debug:
+      # -- run crypto worker with debug enabled
+      enabled: false
+      # -- if debug is enabled, suspend the crypto worker until the debugger is attached
+      suspend: false
+
+  # DB worker configuration
   db:
-    replicas: 1
+    # DB worker image configuration
+    image:
+      # -- DB worker image registry, defaults to image.registry
+      registry: ""
+      # -- DB worker image repository
+      repository: "corda-os-db-worker"
+      # -- DB worker image tag, defaults to image.tag
+      tag: ""
+    # -- DB worker replica count
+    replicaCount: 1
+    # DB worker debug configuration
+    debug:
+      # -- run DB worker with debug enabled
+      enabled: false
+      # -- if debug is enabled, suspend the DB worker until the debugger is attached
+      suspend: false
+    # -- DB worker salt, defaults to a value randomly-generated on install
+
+    salt: ""
+    # -- DB worker passphrase, defaults to a value randomly-generated on install
+
+    passphrase: ""
+
+  # flow worker configuration
   flow:
-    replicas: 1
+    # flow worker image configuration
+    image:
+      # -- flow worker image registry, defaults to image.registry
+      registry: ""
+      # -- flow worker image repository
+      repository: "corda-os-flow-worker"
+      # -- flow worker image tag, defaults to image.tag
+      tag: ""
+    # -- flow worker replica count
+    replicaCount: 1
+    # flow worker debug configuration
+    debug:
+      # -- run flow worker with debug enabled
+      enabled: false
+      # -- if debug is enabled, suspend the flow worker until the debugger is attached
+      suspend: false
+
+  # RPC worker configuration
   rpc:
-    replicas: 1
+    # RPC worker image configuration
+    image:
+      # -- RPC worker image registry, defaults to image.registry
+      registry: ""
+      # -- RPC worker image repository
+      repository: "corda-os-rpc-worker"
+      # -- RPC worker image tag, defaults to image.tag
+      tag: ""
+    # -- RPC worker replica count
+    replicaCount: 1
+    # RPC worker debug configuration
+    debug:
+      # -- run RPC worker with debug enabled
+      enabled: false
+      # -- if debug is enabled, suspend the RPC worker until the debugger is attached
+      suspend: false

@@ -1,7 +1,5 @@
 package net.corda.db.core
 
-import javax.sql.DataSource
-
 class PostgresDataSourceFactory(
     private val datasourceFactory: DataSourceFactory = HikariDataSourceFactory()
 ) {
@@ -11,7 +9,7 @@ class PostgresDataSourceFactory(
         password: String,
         isAutoCommit: Boolean = false,
         maximumPoolSize: Int = 10
-    ): DataSource {
+    ): CloseableDataSource {
         return datasourceFactory.create(
             "org.postgresql.Driver",
             jdbcUrl,

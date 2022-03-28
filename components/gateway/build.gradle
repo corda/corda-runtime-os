@@ -40,6 +40,7 @@ dependencies {
     // For async logging
     integrationTestRuntimeOnly "com.lmax:disruptor:$disruptorVersion"
 
+    integrationTestImplementation project(':libs:crypto:certificate-generation')
     integrationTestImplementation project(":libs:messaging:inmemory-messaging-impl")
     integrationTestImplementation project(":libs:lifecycle:lifecycle-impl")
     integrationTestImplementation project(":libs:lifecycle:registry")
@@ -47,6 +48,7 @@ dependencies {
     integrationTestImplementation project(":libs:configuration:configuration-core")
     integrationTestImplementation project(":libs:configuration:configuration-publish")
     integrationTestImplementation project(":libs:configuration:configuration-publish-impl")
+    integrationTestImplementation 'net.corda:corda-cipher-suite'
 }
 
 sourceSets {

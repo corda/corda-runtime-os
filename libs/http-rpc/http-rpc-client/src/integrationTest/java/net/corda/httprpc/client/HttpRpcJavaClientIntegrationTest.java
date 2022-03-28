@@ -11,6 +11,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Path;
 import java.util.List;
 
 import static net.corda.httprpc.test.utls.TestUtilsKt.findFreePort;
@@ -30,11 +31,13 @@ public class HttpRpcJavaClientIntegrationTest extends HttpRpcIntegrationTestBase
             HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE
         );
         HttpRpcIntegrationTestBase.Companion.setServer(
-            new HttpRpcServerImpl(
-                List.of(
-                    new TestHealthCheckAPIImpl(), new CustomSerializationAPIImpl()
-                ), HttpRpcIntegrationTestBase.Companion.getSecurityManager(), httpRpcSettings, true
-            )
+                new HttpRpcServerImpl(
+                        List.of(new TestHealthCheckAPIImpl(), new CustomSerializationAPIImpl()),
+                        HttpRpcIntegrationTestBase.Companion.getSecurityManager(),
+                        httpRpcSettings,
+                        Path.of(System.getProperty("java.io.tmpdir")),
+                        true
+                )
         );
         HttpRpcIntegrationTestBase.Companion.getServer().start();
     }

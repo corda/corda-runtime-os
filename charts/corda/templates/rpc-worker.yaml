@@ -1,76 +1,69 @@
+{{- $_ := set . "worker" "rpc" }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "corda.fullname" . }}-rpc
-  labels: &id004
-    app: {{ include "corda.fullname" . }}-rpc-node
-    type: rpc-worker
+  name: {{ include "corda.workerName" . }}
+  labels:
+    {{- include "corda.workerLabels" . | nindent 4 }}
 spec:
   type: ClusterIP
-  selector: *id004
+  selector:
+    {{- include "corda.workerSelectorLabels" . | nindent 4 }}
   ports:
-  - name: node-rpc
+  - name: http
     port: 443
-    targetPort: 8888
+    targetPort: http
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "corda.fullname" . }}-rpc
+  name: {{ include "corda.workerName" . }}
   labels:
-    app: {{ include "corda.fullname" . }}-rpc-node
-    family: e2e
-    type: rpc-worker
+    {{- include "corda.workerLabels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.workers.rpc.replicas }}
+  replicas: {{ .Values.workers.rpc.replicaCount }}
   selector:
     matchLabels:
-      app: {{ include "corda.fullname" . }}-rpc-node
-      family: e2e
-      type: rpc-worker
+      {{- include "corda.workerSelectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        app: {{ include "corda.fullname" . }}-rpc-node
-        family: e2e
-        type: rpc-worker
+        {{- include "corda.workerSelectorLabels" . | nindent 8 }}
     spec:
       securityContext:
         runAsUser: 1000
         runAsGroup: 1000
         fsGroup: 1000
-      imagePullSecrets:
-      - name: docker-registry-cred
+      {{- include "corda.imagePullSecrets" . | nindent 6 }}
       containers:
-      - name: {{ include "corda.fullname" . }}-rpc
-        image: corda-os-docker.software.r3.com/corda-os-rpc-worker:{{ .Values.imageTag }}
-        imagePullPolicy: Always
+      - name: {{ include "corda.workerName" . }}
+        image: {{ include "corda.workerImage" . }}
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
         securityContext:
           allowPrivilegeEscalation: false
         env:
-        - name: JAVA_TOOL_OPTIONS
-          value: -agentlib:jdwp=transport=dt_socket,server={{ .Values.debug.server }},suspend={{ .Values.debug.suspend }},address=*:5005
+        {{- include "corda.workerJavaToolOptions" . | nindent 10 }}
         args:
-        - -mkafka.common.bootstrap.servers={{ .Values.kafka.url }}
+        {{- include "corda.workerKafkaArgs" . | nindent 10 }}
         ports:
-        - name: node-rpc
-          containerPort: 8888
-        - name: worker-debug
-          containerPort: 5005
-        - name: worker-health
-          containerPort: 7000
+          - name: http
+            containerPort: 8888
+        {{- if .Values.workers.rpc.debug.enabled }}
+          - name: debug
+            containerPort: 5005
+        {{- end }}
+          - name: health
+            containerPort: 7000
         livenessProbe:
           httpGet:
             path: /isHealthy
-            port: 7000
-            scheme: HTTP
+            port: health
           periodSeconds: 10
           failureThreshold: 1
         startupProbe:
           httpGet:
             path: /isHealthy
-            port: 7000
-            scheme: HTTP
+            port: health
           periodSeconds: 10
           failureThreshold: 5
       nodeSelector:

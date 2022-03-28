@@ -8,6 +8,7 @@ import net.corda.p2p.deployment.pods.Namespace
 import net.corda.p2p.deployment.pods.NamespaceIdentifier
 import net.corda.p2p.deployment.pods.P2PDeploymentDetails
 import net.corda.p2p.deployment.pods.ResourceRequest
+import net.corda.p2p.test.KeyAlgorithm
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 
@@ -38,7 +39,7 @@ class Deploy : Runnable {
 
     @Option(
         names = ["-H", "--host"],
-        description = ["The host name"]
+        description = ["The host name. This will be ignored for headless load balancers"]
     )
     var hostName: String? = null
 
@@ -95,7 +96,19 @@ class Deploy : Runnable {
         names = ["-t", "--tag"],
         description = ["The docker name of the tag to pull"]
     )
-    private var tag = "5.0.0.0-beta-1646903521823"
+    private var tag = "5.0.0.0-beta-1647507653066"
+
+    @Option(
+        names = ["-a", "--key-algorithm"],
+        description = ["The keys algorithm"]
+    )
+    private var algo = KeyAlgorithm.RSA
+
+    @Option(
+        names = ["--trust-store"],
+        description = ["The trust store type (\${COMPLETION-CANDIDATES})"]
+    )
+    private var trustStoreType: TrustStoreType = TrustStoreType.TINY_CERT
 
     @Option(
         names = ["--lm-conf", "--link-manager-config"],
@@ -161,9 +174,23 @@ class Deploy : Runnable {
         names = ["--load-balancer-type"],
         description = ["The load balancer type (\${COMPLETION-CANDIDATES})"]
     )
-    private var lbType: LbType = LbType.NGINX
+    private var lbType: LbType = LbType.HEADLESS
+
+    @Option(
+        names = ["--nginx-pods-count"],
+        description = ["Number of Nginx load balancer pods in the deployment (If more than one is deployed, the service will be headless)"]
+    )
+    private var nginxCount: Int = 1
 
     override fun run() {
+        if (hostName != "load-balancer.$namespaceName") {
+            if ((lbType == LbType.HEADLESS) || (lbType == LbType.NGINX && nginxCount > 1)) {
+
+                println("For headless LB we will use the host name: load-balancer.$namespaceName")
+                hostName = "load-balancer.$namespaceName"
+            }
+        }
+
         val namespace = Namespace(
             NamespaceIdentifier(
                 namespaceName,
@@ -181,6 +208,7 @@ class Deploy : Runnable {
                     p2pCpu,
                 ),
                 lbType,
+                nginxCount,
             ),
             InfrastructureDetails(
                 kafkaBrokerCount,
@@ -221,12 +249,18 @@ class Deploy : Runnable {
         }
     }
 
+    enum class TrustStoreType {
+        TINY_CERT, LOCAL
+    }
+
     private fun configureNamespace() {
         UpdateIps().run()
         val config = ConfigureAll()
         config.namespaceName = namespaceName
         config.linkManagerExtraArguments = linkManagerExtraArguments
         config.gatewayArguments = gatewayArguments
+        config.algo = algo
+        config.trustStoreType = trustStoreType
         config.run()
     }
 }

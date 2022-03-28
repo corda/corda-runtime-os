@@ -19,9 +19,9 @@ class StartFlow(private val context: TaskContext) : Task {
         context.publish(
             getStartRPCEventRecord(
                 clientId = UUID.randomUUID().toString(),
-                flowName = "net.corda.linearstatesample.flows.MessagingFlow",
+                flowName = "net.corda.flowworker.development.flows.MessagingFlow",
                 x500Name = context.startArgs.x500NName,
-                groupId = "helloworld",
+                groupId = "flow-worker-dev",
                 jsonArgs = "{ \"who\":\"${context.startArgs.x500NName}\"}"
             )
         )

@@ -245,10 +245,10 @@ class MemberInfoTest {
     }
 
     @Test
-    fun `retrieving value from cache fails when casting is impossible`() {
+    fun `parsing value fails when casting is impossible`() {
         val keys = memberInfo?.identityKeys
         assertEquals(identityKeys, keys)
-        assertFailsWith<ClassCastException> { memberInfo?.memberProvidedContext?.parseList<EndpointInfo>(IDENTITY_KEYS) }
+        assertFailsWith<ValueNotFoundException> { memberInfo?.memberProvidedContext?.parseList<EndpointInfo>(IDENTITY_KEYS) }
     }
 
     @Test

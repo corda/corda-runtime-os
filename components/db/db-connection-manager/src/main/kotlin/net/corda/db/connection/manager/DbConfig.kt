@@ -4,6 +4,7 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
+import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DataSourceFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -31,7 +32,7 @@ val dbFallbackConfig: Config = ConfigFactory.empty()
  *
  * @throws DBConfigurationException If required configuration attributes are missing.
  */
-fun DataSourceFactory.createFromConfig(config: SmartConfig): DataSource {
+fun DataSourceFactory.createFromConfig(config: SmartConfig): CloseableDataSource {
     val configWithFallback = config.withFallback(dbFallbackConfig)
 
     DbConfigLogger.log.debug("Given configuration: ${config.toSafeConfig().root().render(ConfigRenderOptions.concise())}")

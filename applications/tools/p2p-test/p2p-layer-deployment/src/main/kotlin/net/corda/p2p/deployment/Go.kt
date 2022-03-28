@@ -2,7 +2,6 @@ package net.corda.p2p.deployment
 
 import net.corda.p2p.deployment.commands.Bash
 import net.corda.p2p.deployment.commands.ConfigureAll
-import net.corda.p2p.deployment.commands.CreateStores
 import net.corda.p2p.deployment.commands.Deploy
 import net.corda.p2p.deployment.commands.Destroy
 import net.corda.p2p.deployment.commands.Log
@@ -20,7 +19,6 @@ import kotlin.system.exitProcess
         Simulator::class,
         Bash::class,
         Log::class,
-        CreateStores::class,
         ConfigureAll::class,
         UpdateIps::class,
         Status::class,

@@ -3,6 +3,8 @@ package net.corda.membership.impl.registration.provider
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.exceptions.BadGroupPolicyException
+import net.corda.membership.exceptions.RegistrationProtocolSelectionException
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.registration.provider.lifecycle.RegistrationProviderLifecycleHandler
 import net.corda.membership.registration.MemberRegistrationService
@@ -63,19 +65,26 @@ class RegistrationProviderImpl @Activate constructor(
     override fun get(holdingIdentity: HoldingIdentity): MemberRegistrationService {
         serviceIsAvailable()
         return getRegistrationService(
-            groupPolicyProvider.getGroupPolicy(holdingIdentity).registrationProtocol
+            try {
+                groupPolicyProvider.getGroupPolicy(holdingIdentity).registrationProtocol
+            } catch(e: BadGroupPolicyException) {
+                val err = "Failed to select correct registration protocol due to problems retrieving the group policy."
+                logger.error(err, e)
+                throw RegistrationProtocolSelectionException(err, e)
+            }
         )
     }
 
     private fun getRegistrationService(protocol: String): MemberRegistrationService {
         logger.debug(String.format(LOADING_SERVICE_LOG, protocol))
         val service = registrationServices.find { it.javaClass.name == protocol }
-        registrationServiceIsFound(protocol, service)
-        return service!!
+        if (service == null) {
+            val err = String.format(SERVICE_NOT_FOUND_ERROR, protocol)
+            logger.error(err)
+            throw RegistrationProtocolSelectionException(err)
+        }
+        return service
     }
-
-    private fun registrationServiceIsFound(expected: String, registrationService: MemberRegistrationService?) =
-        logAndThrowError(String.format(SERVICE_NOT_FOUND_ERROR, expected)) { registrationService == null }
 
     private fun serviceIsAvailable() {
         serviceIsRunning()

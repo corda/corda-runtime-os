@@ -82,6 +82,7 @@ class HttpClientTest {
         whenever(mock.group(nettyGroup)).doReturn(mock)
         whenever(mock.option(eq(ChannelOption.CONNECT_TIMEOUT_MILLIS), any())).doReturn(mock)
         whenever(mock.channel(NioSocketChannel::class.java)).doReturn(mock)
+        whenever(mock.resolver(any<RandomSelectionAddressResolver>())).doReturn(mock)
         whenever(mock.handler(bootstrapHandler.capture())).doReturn(mock)
         whenever(mock.connect(any<String>(), any())).doReturn(connectFuture)
     }

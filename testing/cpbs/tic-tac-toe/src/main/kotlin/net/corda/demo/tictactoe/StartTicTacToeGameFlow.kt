@@ -3,7 +3,7 @@ package net.corda.demo.tictactoe
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.StartableByRPC
-import net.corda.v5.application.flows.flowservices.FlowIdentity
+import net.corda.v5.application.flows.flowservices.FlowEngine
 import net.corda.v5.application.injection.CordaInject
 import net.corda.v5.application.services.json.JsonMarshallingService
 import net.corda.v5.application.services.json.parseJson
@@ -22,7 +22,7 @@ class StartTicTacToeGameFlow(private val jsonArg: String) : Flow<String> {
     lateinit var jsonMarshallingService: JsonMarshallingService
 
     @CordaInject
-    lateinit var flowIdentity: FlowIdentity
+    lateinit var flowEngine: FlowEngine
 
     @Suspendable
     override fun call(): String {
@@ -34,7 +34,7 @@ class StartTicTacToeGameFlow(private val jsonArg: String) : Flow<String> {
             val startingColumn = checkNotNull(startGame.startingColumnPlayed) { "No starting column specified" }
             val startingRow = checkNotNull(startGame.startingRowPlayed) { "No starting row specified" }
             val player2 = checkNotNull(startGame.opponentX500Name) { "No opponent specified" }
-            val player1 = flowIdentity.ourIdentity.name.toString()
+            val player1 = flowEngine.virtualNodeName.toString()
 
             val board = Array(3) { IntArray(3) { 0 } }
             board[startingColumn][startingRow] = 1

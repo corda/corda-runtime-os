@@ -4,11 +4,10 @@ import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.FlowExternalOperation
-import net.corda.v5.application.flows.FlowId
 import net.corda.v5.application.flows.flowservices.FlowEngine
 import net.corda.v5.application.injection.CordaFlowInjectable
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -16,6 +15,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.time.Duration
+import java.util.*
 
 @Component(service = [FlowEngine::class, SingletonSerializeAsToken::class], scope = PROTOTYPE)
 class FlowEngineImpl @Activate constructor(
@@ -27,26 +27,11 @@ class FlowEngineImpl @Activate constructor(
         val log = contextLogger()
     }
 
-    override val flowId: FlowId
+    override val flowId: UUID
         get() = flowFiberService.getExecutingFiber().flowId
 
-    override val isKilled: Boolean
-        get() = false
-
-    @Suspendable
-    override fun <R : Any> await(operation: FlowExternalOperation<R>): R {
-        TODO("Not yet implemented")
-    }
-
-    @Suspendable
-    override fun checkFlowIsNotKilled() {
-        TODO("Not yet implemented")
-    }
-
-    @Suspendable
-    override fun checkFlowIsNotKilled(lazyMessage: () -> Any) {
-        TODO("Not yet implemented")
-    }
+    override val virtualNodeName: MemberX500Name
+        get() = flowFiberService.getExecutingFiber().getExecutionContext().memberX500Name
 
     @Suspendable
     override fun sleep(duration: Duration) {

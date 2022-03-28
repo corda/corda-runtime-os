@@ -1,15 +1,10 @@
 package net.corda.flow.application.services
 
 import net.corda.data.flow.FlowStackItem
-import net.corda.data.identity.HoldingIdentity
-import net.corda.flow.fiber.FlowFiber
-import net.corda.flow.fiber.FlowFiberExecutionContext
-import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.fiber.FlowStackService
-import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.v5.application.flows.Flow
-import org.assertj.core.api.Assertions
+import net.corda.v5.base.types.MemberX500Name
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -21,36 +16,32 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 class FlowEngineImplTest {
-
-    private val flowFiberService = mock<FlowFiberService>()
-    private val flowStackService = mock<FlowStackService>()
-    private val sandboxDependencyInjector = mock<SandboxDependencyInjector>()
-    private val flowFiberExecutionContext = FlowFiberExecutionContext(
-        sandboxDependencyInjector,
-        flowStackService,
-        mock(),
-        mock(),
-        HoldingIdentity()
-    )
-
+    private val flowFiberService = MockFlowFiberService()
+    private val flowStackService = flowFiberService.flowFiberExecutionContext.flowStackService
+    private val sandboxDependencyInjector = flowFiberService.flowFiberExecutionContext.sandboxDependencyInjector
+    private val flowFiber = flowFiberService.flowFiber
     private val flowStackItem = FlowStackItem()
     private val subFlow = mock<Flow<String>>()
-    private val flowFiber = mock<FlowFiber<*>>()
     private val result = "result"
 
     @BeforeEach
     fun setup() {
-        whenever(flowFiberService.getExecutingFiber()).thenReturn(flowFiber)
-        whenever(flowFiber.getExecutionContext()).thenReturn(flowFiberExecutionContext)
         whenever(subFlow.call()).thenReturn(result)
         whenever(flowStackService.pop()).thenReturn(flowStackItem)
+    }
+
+    @Test
+    fun `get virtual node name returns holders x500 name`(){
+        val flowEngine = FlowEngineImpl(flowFiberService)
+        val expected = MemberX500Name.parse("CN=Bob, O=Bob Corp, L=LDN, C=GB")
+        assertThat(flowEngine.virtualNodeName).isEqualTo(expected)
     }
 
     @Test
     fun `sub flow completes successfully`() {
         val flowEngine = FlowEngineImpl(flowFiberService)
 
-        Assertions.assertThat(flowEngine.subFlow(subFlow)).isEqualTo(result)
+        assertThat(flowEngine.subFlow(subFlow)).isEqualTo(result)
 
         // verify unordered calls
         verify(sandboxDependencyInjector).injectServices(subFlow)
@@ -66,7 +57,7 @@ class FlowEngineImplTest {
             argumentCaptor<FlowIORequest.SubFlowFinished>().apply {
                 verify(flowFiber).suspend(capture())
 
-                Assertions.assertThat(firstValue.result).isEqualTo(flowStackItem)
+                assertThat(firstValue.result).isEqualTo(flowStackItem)
             }
         }
     }
@@ -80,7 +71,7 @@ class FlowEngineImplTest {
 
         val thrownError = assertThrows<Exception> { flowEngine.subFlow(subFlow) }
 
-        Assertions.assertThat(thrownError).isEqualTo(error)
+        assertThat(thrownError).isEqualTo(error)
 
         // verify unordered calls
         verify(sandboxDependencyInjector).injectServices(subFlow)
@@ -96,8 +87,8 @@ class FlowEngineImplTest {
             argumentCaptor<FlowIORequest.SubFlowFailed>().apply {
                 verify(flowFiber).suspend(capture())
 
-                Assertions.assertThat(firstValue.exception).isEqualTo(error)
-                Assertions.assertThat(firstValue.result).isEqualTo(flowStackItem)
+                assertThat(firstValue.exception).isEqualTo(error)
+                assertThat(firstValue.result).isEqualTo(flowStackItem)
             }
         }
     }

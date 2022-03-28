@@ -12,30 +12,30 @@ import java.time.Instant
  */
 interface FlowIORequest<out R> {
     /**
-     * Send messages to sessions.
+     * Send payloads to sessions.
      *
-     * @property sessionToMessage a map from session to message-to-be-sent.
+     * @property sessionToPayload a map from session to message-to-be-sent.
      */
-    data class Send(val sessionToMessage: Map<String, Any>) : FlowIORequest<Unit> {
-        override fun toString() = "Send(sessionToMessage=${sessionToMessage.mapValues { it.value }})"
+    data class Send(val sessionToPayload: Map<String, ByteArray>) : FlowIORequest<Unit> {
+        override fun toString() = "Send(sessionToMessage=${sessionToPayload.mapValues { it.value }})"
     }
 
     /**
      * Receive messages from sessions.
      *
-     * @property sessions the sessions to receive messages from.
-     * @return a map from session to received message.
+     * @property sessions the sessions to receive payloads from.
+     * @return a map from session to received payload.
      */
-    data class Receive(val sessions: Set<String>) : FlowIORequest<Map<String, Any>>
+    data class Receive(val sessions: Set<String>) : FlowIORequest<Map<String, ByteArray>>
 
     /**
-     * Send and receive messages from the specified sessions.
+     * Send and receive payloads from the specified sessions.
      *
-     * @property sessionToMessage a map from session to message-to-be-sent. The keys also specify which sessions to receive from.
+     * @property sessionToPayload a map from session to payload-to-be-sent. The keys also specify which sessions to receive from.
      * @return a map from session to received message.
      */
-    data class SendAndReceive(val sessionToMessage: Map<String, Any>) : FlowIORequest<Map<String, Any>> {
-        override fun toString() = "SendAndReceive(${sessionToMessage.mapValues { (key, value) -> "$key=$value" }})"
+    data class SendAndReceive(val sessionToPayload: Map<String, ByteArray>) : FlowIORequest<Map<String, ByteArray>> {
+        override fun toString() = "SendAndReceive(${sessionToPayload.mapValues { (key, value) -> "$key=$value" }})"
     }
 
     data class InitiateFlow(val x500Name: MemberX500Name, val sessionId: String) : FlowIORequest<Unit>

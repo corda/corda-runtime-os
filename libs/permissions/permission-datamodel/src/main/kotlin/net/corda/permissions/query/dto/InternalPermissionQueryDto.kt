@@ -13,3 +13,11 @@ data class InternalPermissionQueryDto(
     val permissionString: String,
     val permissionType: PermissionType
 )
+
+/**
+ * Internal permission query data transfer object holding the login name and if user is enabled.
+ */
+data class InternalUserEnabledQueryDto(
+    val loginName: String,
+    val enabled: Boolean
+)

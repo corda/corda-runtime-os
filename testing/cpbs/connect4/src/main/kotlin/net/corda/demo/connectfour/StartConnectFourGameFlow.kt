@@ -3,7 +3,7 @@ package net.corda.demo.connectfour
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.StartableByRPC
-import net.corda.v5.application.flows.flowservices.FlowIdentity
+import net.corda.v5.application.flows.flowservices.FlowEngine
 import net.corda.v5.application.injection.CordaInject
 import net.corda.v5.application.services.json.JsonMarshallingService
 import net.corda.v5.application.services.json.parseJson
@@ -22,7 +22,7 @@ class StartConnectFourGameFlow(private val jsonArg: String) : Flow<String> {
     lateinit var jsonMarshallingService: JsonMarshallingService
 
     @CordaInject
-    lateinit var flowIdentity: FlowIdentity
+    lateinit var flowEngine: FlowEngine
 
     @Suspendable
     override fun call(): String {
@@ -33,7 +33,7 @@ class StartConnectFourGameFlow(private val jsonArg: String) : Flow<String> {
 
             val startingSlot = checkNotNull(startGame.startingSlotPlayed) { "No starting slot specified" }
             val player2 = checkNotNull(startGame.opponentX500Name) { "No opponent specified" }
-            val player1 = flowIdentity.ourIdentity.name.toString()
+            val player1 = flowEngine.virtualNodeName.toString()
 
             val board = Array(7) { IntArray(6) { 0 } }
             board[startingSlot][0] = 1

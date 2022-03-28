@@ -3,13 +3,15 @@ package net.corda.httprpc.server.impl
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.impl.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.server.impl.utils.WebRequest
+import net.corda.httprpc.server.impl.utils.multipartDir
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.apache.http.HttpStatus
 import org.junit.jupiter.api.AfterAll
-import kotlin.test.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import java.nio.file.Path
+import kotlin.test.assertEquals
 
 class HttpRpcServerCaseSensitiveLoginTest: HttpRpcServerTestBase() {
     companion object {
@@ -28,6 +30,7 @@ class HttpRpcServerCaseSensitiveLoginTest: HttpRpcServerTestBase() {
                 listOf(TestHealthCheckAPIImpl()),
                 securityManager,
                 httpRpcSettings,
+                multipartDir,
                 true
             ).apply { start() }
             client =

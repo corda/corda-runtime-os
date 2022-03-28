@@ -3,7 +3,7 @@ package net.corda.membership.httprpc.v1
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
-import net.corda.httprpc.annotations.HttpRpcQueryParameter
+import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
@@ -26,8 +26,7 @@ interface MemberRegistrationRpcOps : RpcOps {
      * @return [RegistrationRequestProgress] to indicate the status of the request at time of submission.
      */
     @HttpRpcPOST(
-        description = "Start registration process for a virtual node.",
-        path = "register"
+        description = "Start registration process for a virtual node."
     )
     fun startRegistration(
         @HttpRpcRequestBodyParameter(
@@ -45,11 +44,11 @@ interface MemberRegistrationRpcOps : RpcOps {
      *  local member data.
      */
     @HttpRpcGET(
-        description = "Checks the status of the registration request.",
-        path = "checkRegistrationProgress"
+        path = "{holdingIdentityId}",
+        description = "Checks the status of the registration request."
     )
     fun checkRegistrationProgress(
-        @HttpRpcQueryParameter(description = "ID of the holding identity to be checked.")
+        @HttpRpcPathParameter(description = "ID of the holding identity to be checked.")
         holdingIdentityId: String
     ): RegistrationRequestProgress
 }

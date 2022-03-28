@@ -12,7 +12,7 @@ import net.corda.flow.pipeline.impl.FlowGlobalPostProcessorImpl
 import net.corda.flow.pipeline.factory.impl.FlowEventPipelineFactoryImpl
 import net.corda.flow.pipeline.handlers.events.SessionEventHandler
 import net.corda.flow.pipeline.handlers.events.StartFlowEventHandler
-import net.corda.flow.pipeline.handlers.events.WakeUpEventHandler
+import net.corda.flow.pipeline.handlers.events.WakeupEventHandler
 import net.corda.flow.pipeline.handlers.requests.FlowFailedRequestHandler
 import net.corda.flow.pipeline.handlers.requests.FlowFinishedRequestHandler
 import net.corda.flow.pipeline.handlers.requests.ForceCheckpointRequestHandler
@@ -26,8 +26,8 @@ import net.corda.flow.pipeline.handlers.requests.sessions.ReceiveRequestHandler
 import net.corda.flow.pipeline.handlers.requests.sessions.SendAndReceiveRequestHandler
 import net.corda.flow.pipeline.handlers.requests.sessions.SendRequestHandler
 import net.corda.flow.pipeline.handlers.requests.sessions.WaitForSessionConfirmationsRequestHandler
-import net.corda.flow.pipeline.handlers.waiting.StartRPCFlowWaitingForHandler
-import net.corda.flow.pipeline.handlers.waiting.WakeUpWaitingForHandler
+import net.corda.flow.pipeline.handlers.waiting.StartFlowWaitingForHandler
+import net.corda.flow.pipeline.handlers.waiting.WakeupWaitingForHandler
 import net.corda.flow.pipeline.handlers.waiting.sessions.SessionConfirmationWaitingForHandler
 import net.corda.flow.pipeline.handlers.waiting.sessions.SessionDataWaitingForHandler
 import net.corda.flow.pipeline.handlers.waiting.sessions.SessionInitWaitingForHandler
@@ -156,14 +156,14 @@ private val flowSandboxService = mock<FlowSandboxService>().apply {
 private val flowEventHandlers = listOf(
     SessionEventHandler(flowSandboxService, sessionManager),
     StartFlowEventHandler(),
-    WakeUpEventHandler(),
+    WakeupEventHandler(),
 )
 
 private val flowWaitingForHandlers = listOf(
-    StartRPCFlowWaitingForHandler(),
-    WakeUpWaitingForHandler(),
+    StartFlowWaitingForHandler(),
+    WakeupWaitingForHandler(),
     SessionConfirmationWaitingForHandler(sessionManager),
-    SessionDataWaitingForHandler(flowSandboxService, sessionManager),
+    SessionDataWaitingForHandler(sessionManager),
     SessionInitWaitingForHandler(sessionManager)
 )
 
@@ -176,8 +176,8 @@ private val flowRequestHandlers = listOf(
     GetFlowInfoRequestHandler(),
     InitiateFlowRequestHandler(sessionManager),
     ReceiveRequestHandler(),
-    SendAndReceiveRequestHandler(flowSandboxService, sessionManager),
-    SendRequestHandler(flowSandboxService, sessionManager),
+    SendAndReceiveRequestHandler(sessionManager),
+    SendRequestHandler(sessionManager),
     SleepRequestHandler(),
     SubFlowFailedRequestHandler(),
     SubFlowFinishedRequestHandler(),

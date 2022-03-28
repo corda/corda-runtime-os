@@ -168,19 +168,19 @@ class MemberOpsClientTest {
     @Test
     fun `should fail when rpc sender is not ready`() {
         memberOpsClient.start()
-        val ex = assertFailsWith<CordaRuntimeException> {
+        val ex = assertFailsWith<IllegalStateException> {
             memberOpsClient.checkRegistrationProgress(request.holdingIdentityId)
         }
-        assertTrue { ex.message!!.contains("RPC sender") }
+        assertTrue { ex.message!!.contains("incorrect state") }
         memberOpsClient.stop()
     }
 
     @Test
     fun `should fail when service is not running`() {
-        val ex = assertFailsWith<CordaRuntimeException> {
+        val ex = assertFailsWith<IllegalStateException> {
             memberOpsClient.checkRegistrationProgress(request.holdingIdentityId)
         }
-        assertTrue { ex.message!!.contains("MemberOpsClientImpl is not running.") }
+        assertTrue { ex.message!!.contains("incorrect state") }
     }
 
     @Test

@@ -242,7 +242,7 @@ class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
             key,
             RPCResponse(
                 key,
-                Instant.now().toEpochMilli(),
+                Instant.now(),
                 status,
                 ByteBuffer.wrap(payload)
             )

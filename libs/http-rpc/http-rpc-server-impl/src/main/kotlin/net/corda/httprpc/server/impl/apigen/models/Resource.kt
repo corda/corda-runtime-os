@@ -1,6 +1,6 @@
 package net.corda.httprpc.server.impl.apigen.models
 
-data class Resource(
+internal data class Resource(
     /**
      * The name of the resource, used for the API spec.
      */
