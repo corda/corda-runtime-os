@@ -15,14 +15,14 @@ To create a membership group:
 {
   "groupId": "group-1",
   "data": {
-    "networkType": "CORDA_4",
+    "networkType": "CORDA_5",
     "protocolModes": ["AUTHENTICATION_ONLY", "AUTHENTICATED_ENCRYPTION"],
-    "trustStoreCertificatesFiles": ["<path_to_trust_certificate_files>"]
+    "trustRootCertificatesFiles": ["<path_to_trust_certificate_files>"]
   }
 }
 ```
-The `trustStoreCertificatesFiles` should contain paths to the trust store certificate in PEM format. 
-One can also use `trustStoreCertificates` with the content of the certificates (in PEM format). 
+The `trustRootCertificatesFiles` should contain paths to the trust store certificate in PEM format. 
+One can also use `trustRootCertificates` with the content of the certificates (in PEM format). 
 
 5. Run the command:
 ```bash
@@ -75,13 +75,15 @@ To publish an entry for a locally hosted identity:
   "groupId": "group-1",
   "data": {
     "tlsTenantId": "cluster",
-    "identityTenantId": "alice",
+    "sessionKeyTenantId": "alice",
     "tlsCertificatesFiles": ["<path_to_tls_certificate_files>"]
   }
 }
 ```
-The `tlsCertificatesFiles` should contain paths to the TLS certificates in PEM format.
-One can also use `tlsCertificates` with the content of the certificates (in PEM format).
+* The `tlsCertificatesFiles` should contain paths to the TLS certificates in PEM format.  
+* One can also use `tlsCertificates` with the content of the certificates (in PEM format).
+* The `tlsTenantId` is the tenant ID under which the TLS key is stored.
+* The `sessionKeyTenantId` is the tenant ID under which the session initiation key is stored.
 
 4. Run the command:
 ```bash
@@ -212,7 +214,7 @@ The file should look like:
       "data": {
         "networkType": "CORDA_5",
         "protocolModes": ["AUTHENTICATION_ONLY", "AUTHENTICATED_ENCRYPTION"],
-        "trustStoreCertificatesFiles": ["<path_to_trust_certificate_files>"]
+        "trustRootCertificatesFiles": ["<path_to_trust_certificate_files>"]
       }
     }
   ],
@@ -232,7 +234,7 @@ The file should look like:
       "groupId": "group-2",
       "data": {
         "tlsTenantId": "cluster",
-        "identityTenantId": "alice",
+        "sessionKeyTenantId": "alice",
         "tlsCertificatesFiles": ["<path_to_tls_certificate_files>"]
       }
     }

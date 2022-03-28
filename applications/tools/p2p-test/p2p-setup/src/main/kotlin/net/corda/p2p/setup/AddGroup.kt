@@ -26,15 +26,15 @@ class AddGroup : Callable<Collection<Record<String, GroupPolicyEntry>>> {
             val groupId = this.getString("groupId")
             val dataConfig = this.getConfig("data")
             val networkType = dataConfig.getEnum(NetworkType::class.java, "networkType")
-            val trustStoreCertificates = try {
-                dataConfig.getList("trustStoreCertificatesFiles")
+            val trustRootCertificates = try {
+                dataConfig.getList("trustRootCertificatesFiles")
                     .unwrapped()
                     .filterIsInstance<String>()
                     .map {
                         File(it)
                     }.map { it.readText() }
             } catch (e: Missing) {
-                dataConfig.getStringList("trustStoreCertificates")
+                dataConfig.getStringList("trustRootCertificates")
             }
 
             val protocolMode = dataConfig.getEnumList(ProtocolMode::class.java, "protocolModes")
@@ -42,7 +42,7 @@ class AddGroup : Callable<Collection<Record<String, GroupPolicyEntry>>> {
                 groupId,
                 networkType,
                 protocolMode,
-                trustStoreCertificates,
+                trustRootCertificates,
             )
             return Record(topic, entry.groupId, entry)
         }

@@ -50,7 +50,7 @@ class Apply : Callable<Collection<Record<String, *>>> {
             listOf(
                 data
                     .getConfig("gatewayConfig")
-                    .toConfigurationRecord("p2p", "record")
+                    .toConfigurationRecord("p2p", "gateway")
             )
         } catch (_: Missing) {
             emptyList()
@@ -81,27 +81,34 @@ class Apply : Callable<Collection<Record<String, *>>> {
             emptyList()
         }
 
-        return gatewayConfiguration + linkManagerConfiguration + recordsFromConfigurations(
+        val groupsToAdd = recordsFromConfigurations(
             data,
             "groupsToAdd",
         ) {
             it.toGroupRecord()
-        } + recordsFromConfigurations(
+        }
+
+        val identitiesToAdd = recordsFromConfigurations(
             data,
             "identitiesToAdd",
         ) {
             it.toIdentityRecord()
-        } + recordsFromConfigurations(
+        }
+
+        val membersToAdd = recordsFromConfigurations(
             data,
             "membersToAdd",
         ) {
             it.toMemberRecord()
-        } + recordsFromConfigurations(
+        }
+
+        val keysToAdd = recordsFromConfigurations(
             data,
             "keysToAdd",
         ) {
             it.toKeysRecord()
-        } + recordsFromConfigurations(
+        }
+        val membersToRemove = recordsFromConfigurations(
             data,
             "membersToRemove"
         ) {
@@ -112,7 +119,8 @@ class Apply : Callable<Collection<Record<String, *>>> {
                 "$x500Name-$groupId",
                 null
             )
-        } + recordsFromConfigurations(
+        }
+        val identitiesToRemove = recordsFromConfigurations(
             data,
             "identitiesToRemove"
         ) {
@@ -123,7 +131,17 @@ class Apply : Callable<Collection<Record<String, *>>> {
                 "$x500Name-$groupId",
                 null
             )
-        } + groupsToRemove
+        }
+
+        return gatewayConfiguration +
+            linkManagerConfiguration +
+            groupsToAdd +
+            groupsToRemove +
+            identitiesToAdd +
+            identitiesToRemove +
+            membersToAdd +
+            membersToRemove +
+            keysToAdd
     }
 
     override fun call(): Collection<Record<String, *>> {

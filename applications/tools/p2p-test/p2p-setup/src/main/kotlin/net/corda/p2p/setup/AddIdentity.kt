@@ -26,7 +26,7 @@ class AddIdentity : Callable<Collection<Record<String, HostedIdentityEntry>>> {
             val groupId = this.getString("groupId")
             val dataConfig = this.getConfig("data")
             val tlsTenantId = dataConfig.getString("tlsTenantId")
-            val identityTenantId = dataConfig.getString("identityTenantId")
+            val sessionKeyTenantId = dataConfig.getString("sessionKeyTenantId")
             val tlsCertificates = try {
                 dataConfig.getStringList("tlsCertificatesFiles").map {
                     File(it)
@@ -42,7 +42,7 @@ class AddIdentity : Callable<Collection<Record<String, HostedIdentityEntry>>> {
                 HostedIdentityEntry(
                     HoldingIdentity(x500Name, groupId),
                     tlsTenantId,
-                    identityTenantId,
+                    sessionKeyTenantId,
                     tlsCertificates
                 )
             )

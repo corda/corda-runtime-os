@@ -244,7 +244,7 @@ class P2PLayerEndToEndTest {
         val tlsTenantId by lazy {
             GROUP_ID
         }
-        val identityTenantId by lazy {
+        val sessionKeyTenantId by lazy {
             x500Name
         }
         val linkManagerConfig by lazy {
@@ -374,7 +374,7 @@ class P2PLayerEndToEndTest {
                             CRYPTO_KEYS_TOPIC,
                             "key-1",
                             TenantKeys(
-                                identityTenantId,
+                                sessionKeyTenantId,
                                 KeyPairEntry(
                                     identitiesKeyAlgorithm,
                                     ByteBuffer.wrap(keyPair.public.encoded),

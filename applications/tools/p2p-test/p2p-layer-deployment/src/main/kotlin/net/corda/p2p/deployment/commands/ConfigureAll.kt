@@ -187,7 +187,7 @@ class ConfigureAll : Runnable {
                     "address" to "http://$host:${Port.Gateway.port}",
                     "networkType" to "CORDA_5",
                     "protocolModes" to listOf("AUTHENTICATED_ENCRYPTION"),
-                    "trustStoreCertificates" to listOf(trustStoreFile.absolutePath),
+                    "trustRootCertificates" to listOf(trustStoreFile.absolutePath),
                 )
             )
 
@@ -215,7 +215,7 @@ class ConfigureAll : Runnable {
             "data" to mapOf(
                 "networkType" to "CORDA_5",
                 "protocolModes" to listOf("AUTHENTICATED_ENCRYPTION"),
-                "trustStoreCertificates" to listOf(trustStoreFile.readText()),
+                "trustRootCertificates" to listOf(trustStoreFile.readText()),
             )
         )
         jsonWriter.writeValue(configurationFile, entriesToAdd)
@@ -236,7 +236,7 @@ class ConfigureAll : Runnable {
                 "groupId" to groupId,
                 "data" to mapOf(
                     "tlsTenantId" to tenantId,
-                    "identityTenantId" to tenantId,
+                    "sessionKeyTenantId" to tenantId,
                     "tlsCertificates" to listOf(tlsCertificates(host).readText()),
                 )
             )
