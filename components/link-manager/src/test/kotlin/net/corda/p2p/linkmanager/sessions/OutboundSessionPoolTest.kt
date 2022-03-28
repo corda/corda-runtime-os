@@ -152,6 +152,47 @@ class OutboundSessionPoolTest {
     }
 
     @Test
+    fun `getNextSession load balances if all sessions are added and have weight 0`() {
+        var invocations = 0L
+        fun fakeRand(until: Long): Long {
+            return if (invocations >= until) {
+                invocations = 0
+                0
+            } else {
+                invocations++
+            }
+        }
+        val pool = OutboundSessionPool({0}, ::fakeRand)
+        val sessionCounterparties = mock<SessionManager.SessionCounterparties>()
+
+        val authenticationProtocols = mutableListOf<AuthenticationProtocolInitiator>()
+        for (i in 0 until POOL_SIZE) {
+            val mockAuthenticationProtocol = mock<AuthenticationProtocolInitiator> {
+                on { sessionId } doReturn "session$i"
+            }
+            authenticationProtocols.add(mockAuthenticationProtocol)
+        }
+        pool.addPendingSessions(sessionCounterparties, authenticationProtocols)
+
+        val mockSessions = mutableListOf<Session>()
+        for (i in 0 until POOL_SIZE) {
+            val mockSession = mock<Session> {
+                on { sessionId } doReturn "session$i"
+            }
+            mockSessions.add(mockSession)
+            pool.updateAfterSessionEstablished(mockSession)
+        }
+
+        val gotSessions = mutableListOf<Session>()
+        // If all sessions have weight 1 then the total weight is POOL_SIZE. The sum of (total weight - weight) for each session is
+        // (POOL_SIZE - 1) * total weight. Which is (POOL_SIZE - 1) * POOL_SIZE.
+        for (i in 0 until (POOL_SIZE - 1) * POOL_SIZE) {
+            gotSessions.add((pool.getNextSession(sessionCounterparties) as OutboundSessionPool.SessionPoolStatus.SessionActive).session)
+        }
+        assertThat(gotSessions).containsOnlyElementsOf(mockSessions)
+    }
+
+    @Test
     fun `getNextSession load balances if not all sessions are added yet`() {
         var invocations = 0L
         fun fakeRand(until: Long): Long {

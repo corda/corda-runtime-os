@@ -58,17 +58,26 @@ class OutboundSessionPool(
             val weight = calculateWeightForSession(it.key) ?: 0L
             totalWeight += weight
             it.value to weight
-        }
+        }.toMutableList()
 
         if (weights.size == 1) {
             return SessionPoolStatus.SessionActive(weights[0].first.session)
+        }
+
+        //If all sessions have weight 0 set the weight to 1. So the random selection can work correctly.
+        if (totalWeight == 0L) {
+            weights.replaceAll { (sessionId, _) ->
+                val weight = 1L
+                totalWeight += weight
+                sessionId to weight
+            }
         }
 
         /**
          * Select a session randomly with probability in proportion to totalWeight - weight.
          * For every session this sums to (weights.size - 1) * totalWeight.
          * We use a uniformly distributed random Long in the interval from 0 (inclusive) and (weights.size - 1) * totalWeight - 1
-         * (inclusive). To select a session.
+         * (inclusive) to select a session.
          */
         val randomNumber = genRandomNumber((weights.size - 1) * totalWeight)
         var totalProb = 0L
