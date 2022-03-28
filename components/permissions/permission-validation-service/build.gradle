@@ -19,6 +19,4 @@ dependencies {
     api project(':libs:permissions:permission-validation')
 
     implementation project(":osgi-framework-api")
-
-    runtimeOnly project(':libs:permissions:permission-validation-impl')
 }

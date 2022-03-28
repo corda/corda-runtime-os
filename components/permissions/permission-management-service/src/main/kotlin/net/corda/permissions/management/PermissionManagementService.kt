@@ -17,8 +17,17 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 /**
- * This component encapsulates all the necessary dependencies required for permission management including the permission validation
- * service. This is required because
+ * Service for managing permissions in the RBAC permission system.
+ *
+ * The service exposes the following APIs:
+ * - PermissionManager - API for managing permissions including CRUD operations.
+ * - PermissionValidator - API for validating a request against the permissions in the RBAC system for the requesting user.
+ * - BasicAuthenticationService - API for performing basic authentication using the RBAC system.
+ *
+ * To use the Permission Management Service, dependency inject the service using OSGI and start the service. The service will start all
+ * necessary permission related dependencies and the above APIs can be used to interact with the system.
+ *
+ * Note - permission management should be restricted to HTTP gateway only.
  */
 @Component(service = [PermissionManagementService::class])
 class PermissionManagementService @Activate constructor(

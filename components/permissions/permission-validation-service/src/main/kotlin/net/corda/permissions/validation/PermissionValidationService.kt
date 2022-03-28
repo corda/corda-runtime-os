@@ -19,6 +19,16 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
+/**
+ * Service for performing permission validation using the RBAC permission system.
+ *
+ * The service exposes the following APIs:
+ * - PermissionValidator - API for validating a request against the permissions in the RBAC system for the requesting user.
+ * - PermissionValidationCache - API for interacting with the cache. For internal use by the permission management service.
+ *
+ * To use the Permission Validator to authorize a user, dependency inject this service using OSGI and start the service. The service will
+ * start all necessary permission related dependencies and the above APIs can be used to interact with the system.
+ */
 @Component(service = [PermissionValidationService::class])
 class PermissionValidationService @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
@@ -38,7 +48,7 @@ class PermissionValidationService @Activate constructor(
     private var registration: RegistrationHandle? = null
 
     /**
-     * Validator for performing permission validation utilizing the RBAC permission system.
+     * Permission validator for performing user authorization against the given permission using the RBAC permission system.
      */
     val permissionValidator: PermissionValidator
         get() {
