@@ -17,12 +17,15 @@ To create a membership group:
   "data": {
     "networkType": "CORDA_5",
     "protocolModes": ["AUTHENTICATION_ONLY", "AUTHENTICATED_ENCRYPTION"],
-    "trustRootCertificatesFiles": ["<path_to_trust_certificate_files>"]
+    "trustRootCertificates":["-----BEGIN CERTIFICATE-----\nMIIDrjCCAhagAwIBAgIBAj...4w==\n-----END CERTIFICATE-----\n"]
   }
 }
 ```
-The `trustRootCertificatesFiles` should contain paths to the trust store certificate in PEM format. 
-One can also use `trustRootCertificates` with the content of the certificates (in PEM format). 
+Where:
+* `networkType` is either `CORDA_5`, `CORDA_4`.
+* `protocolModes` are either: `AUTHENTICATED_ENCRYPTION` or `AUTHENTICATION_ONLY`.
+* `trustRootCertificates` is the content of the root certificates (in PEM format).
+* One can use `trustRootCertificatesFiles` with the paths to the trust store certificate in PEM format.
 
 5. Run the command:
 ```bash
@@ -40,13 +43,15 @@ To publish a group member:
   "x500name": "O=Alice, L=London, C=GB",
   "groupId": "group-1",
   "data": {
-       "publicKeyFile": "<path_to_the_public_key_pem_file>",
+       "publicKey": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w...xwIDAQAB\n-----END PUBLIC KEY-----",
        "address": "http://alice.com:8080"
   }
 }
 ```
-The `publicKeyFile` should contain path to the public key in PEM format.
-One can also use `publicKey` with the content of the key (in PEM format).
+Where:
+* `publicKey` is the public key in PEM format
+* `address` is the HTTP address of the member (In the format: `http://<host>:<port>/`)
+* `publicKeyFile` can be an alternative to `publicKey` with path to the public key in PEM format.
 
 5. Run the command:
 ```bash
@@ -76,13 +81,13 @@ To publish an entry for a locally hosted identity:
   "data": {
     "tlsTenantId": "cluster",
     "sessionKeyTenantId": "alice",
-    "tlsCertificatesFiles": ["<path_to_tls_certificate_files>"]
+    "tlsCertificates":["-----BEGIN CERTIFICATE-----\nMIIDwDCCAiigAwI...tkIEaQ==\n-----END CERTIFICATE-----\n"]
   }
 }
 ```
-* The `tlsCertificatesFiles` should contain paths to the TLS certificates in PEM format.  
-* One can also use `tlsCertificates` with the content of the certificates (in PEM format).
 * The `tlsTenantId` is the tenant ID under which the TLS key is stored.
+* The `tlsCertificates` should contain the content of the certificates (in PEM format).
+* The `tlsCertificatesFiles` can be used as an alternative to `tlsCertificates` with a path to a valid certificate file (in PEM format).
 * The `sessionKeyTenantId` is the tenant ID under which the session initiation key is stored.
 
 4. Run the command:
@@ -99,16 +104,16 @@ To publish key-pair:
 2. Prepare a configuration file with the identity data. For example:
 ```json
 {
-  "keysFile": "<path_to_the_private_key_file>",
+  "keys": "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEAsqXqc40Lq...+4zJ2Erl\n-----END RSA PRIVATE KEY-----\n",
   "tenantId": "tenant-alice-1",
   "publishAlias": "alice-identity-key"
 }
 ```
 Where:
 * `publish_alias` is a unique name to publish the keys under. If omitted, a random UUID will be used.
+* `keys` is the content of the private key in PEM format (use either that or `keysFile`).
 * `keysFile` is the path to the file with the keys in PEM format.
 * `tenantId` A non-unique ID for the tenant
-* `keys` is the content of the private key in PEM format (use either that or `keysFile`).
 
 5. Run the command:
 ```bash
@@ -214,7 +219,7 @@ The file should look like:
       "data": {
         "networkType": "CORDA_5",
         "protocolModes": ["AUTHENTICATION_ONLY", "AUTHENTICATED_ENCRYPTION"],
-        "trustRootCertificatesFiles": ["<path_to_trust_certificate_files>"]
+        "trustRootCertificates":["-----BEGIN CERTIFICATE-----\nMIIDrjCCAhagAwIBAgIBAj...4w==\n-----END CERTIFICATE-----\n"]
       }
     }
   ],
@@ -224,7 +229,7 @@ The file should look like:
       "groupId": "group-1",
       "data": {
         "publicKeyFile": "<path_to_the_public_key_pem_file>",
-        "address": "http://alice.com"
+        "address": "http://alice.com:8080"
       }
     }
   ],
@@ -235,13 +240,13 @@ The file should look like:
       "data": {
         "tlsTenantId": "cluster",
         "sessionKeyTenantId": "alice",
-        "tlsCertificatesFiles": ["<path_to_tls_certificate_files>"]
+        "tlsCertificates": ["-----BEGIN CERTIFICATE-----\nMIIDwDCCAiigAwI...tkIEaQ==\n-----END CERTIFICATE-----\n"]
       }
     }
   ],
   "keysToAdd": [
     {
-      "keysFile": "<path_to_the_private_key_file>",
+      "keys": "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEAsqXqc40Lq...+4zJ2Erl\n-----END RSA PRIVATE KEY-----\n",
       "tenantId": "tenant-alice-1",
       "publishAlias": "alice-identity-key"
     }
