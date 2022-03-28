@@ -22,7 +22,6 @@ interface CpiUploadRPCOps : RpcOps {
      * Please note that this method will not close [cpiContent] input stream, the caller must close it.
      */
     @HttpRpcPOST(
-        path = "/",
         title = "Upload a CPI",
         description = "Uploads a CPI",
         responseDescription = "The request Id calculated for a CPI upload request"
@@ -49,9 +48,7 @@ interface CpiUploadRPCOps : RpcOps {
      *
      * @throws `HttpApiException` If the request returns an exceptional response.
      */
-    // TODO use proper/consistent resource naming (e.g. this should be mapped under /cpis)
     @HttpRpcGET(
-        path = "list",
         title = "List all CPIs uploaded to the cluster",
         description = "List all CPIs uploaded to the cluster.",
         responseDescription = "List details of the all CPIs uploaded to the cluster."
