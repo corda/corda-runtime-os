@@ -13,12 +13,9 @@ import org.bouncycastle.asn1.sec.SECObjectIdentifiers
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.bouncycastle.asn1.x9.X9ObjectIdentifiers
-import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Timeout
-import org.junit.jupiter.api.io.TempDir
-import java.nio.file.Files
-import java.nio.file.Path
+import java.io.ByteArrayOutputStream
 import java.security.KeyStore
 import java.security.PublicKey
 import kotlin.test.assertEquals
@@ -27,32 +24,35 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class CompositeKeyTests {
-    private lateinit var alicePublicKey: PublicKey
-    private lateinit var bobPublicKey: PublicKey
-    private lateinit var charliePublicKey: PublicKey
-    private lateinit var aliceSignature: DigitalSignature.WithKey
-    private lateinit var bobSignature: DigitalSignature.WithKey
-    private lateinit var charlieSignature: DigitalSignature.WithKey
+    companion object {
+        private lateinit var publicKeyRSA: PublicKey
+        private lateinit var alicePublicKey: PublicKey
+        private lateinit var bobPublicKey: PublicKey
+        private lateinit var charliePublicKey: PublicKey
+        private lateinit var aliceSignature: DigitalSignature.WithKey
+        private lateinit var bobSignature: DigitalSignature.WithKey
+        private lateinit var charlieSignature: DigitalSignature.WithKey
 
-    @BeforeEach
-    fun setupEach() {
-        alicePublicKey = generateKeyPair(ECDSA_SECP256K1_SPEC).public
-        bobPublicKey = generateKeyPair(ECDSA_SECP256R1_SPEC).public
-        charliePublicKey = generateKeyPair(EDDSA_ED25519_SPEC).public
-        aliceSignature = DigitalSignature.WithKey(alicePublicKey, ByteArray(5) { 255.toByte() })
-        bobSignature = DigitalSignature.WithKey(bobPublicKey, ByteArray(5) { 255.toByte() })
-        charlieSignature = DigitalSignature.WithKey(charliePublicKey, ByteArray(5) { 255.toByte() })
+        @BeforeAll
+        @JvmStatic
+        fun setupEach() {
+            publicKeyRSA = generateKeyPair(RSA_SPEC).public
+            alicePublicKey = generateKeyPair(ECDSA_SECP256K1_SPEC).public
+            bobPublicKey = generateKeyPair(ECDSA_SECP256R1_SPEC).public
+            charliePublicKey = generateKeyPair(EDDSA_ED25519_SPEC).public
+            aliceSignature = DigitalSignature.WithKey(alicePublicKey, ByteArray(5) { 255.toByte() })
+            bobSignature = DigitalSignature.WithKey(bobPublicKey, ByteArray(5) { 255.toByte() })
+            charlieSignature = DigitalSignature.WithKey(charliePublicKey, ByteArray(5) { 255.toByte() })
+        }
     }
 
     @Test
-    @Timeout(10)
     fun `(Alice) fulfilled by Alice signature`() {
         assertTrue { alicePublicKey.isFulfilledBy(aliceSignature.by) }
         assertFalse { alicePublicKey.isFulfilledBy(charlieSignature.by) }
     }
 
     @Test
-    @Timeout(10)
     fun `(Alice or Bob) fulfilled by either signature`() {
         val aliceOrBob = CompositeKey.Builder().addKeys(alicePublicKey, bobPublicKey).build(threshold = 1)
         assertTrue { aliceOrBob.isFulfilledBy(aliceSignature.by) }
@@ -62,7 +62,6 @@ class CompositeKeyTests {
     }
 
     @Test
-    @Timeout(10)
     fun `(Alice and Bob) fulfilled by Alice, Bob signatures`() {
         val aliceAndBob = CompositeKey.Builder().addKeys(alicePublicKey, bobPublicKey).build()
         val signatures = listOf(aliceSignature, bobSignature)
@@ -70,7 +69,6 @@ class CompositeKeyTests {
     }
 
     @Test
-    @Timeout(10)
     fun `(Alice and Bob) requires both signatures to fulfil`() {
         val aliceAndBob = CompositeKey.Builder().addKeys(alicePublicKey, bobPublicKey).build()
         assertFalse { aliceAndBob.isFulfilledBy(listOf(aliceSignature).byKeys()) }
@@ -79,7 +77,6 @@ class CompositeKeyTests {
     }
 
     @Test
-    @Timeout(10)
     fun `((Alice and Bob) or Charlie) signature verifies`() {
         val aliceAndBob = CompositeKey.Builder().addKeys(alicePublicKey, bobPublicKey).build()
         val aliceAndBobOrCharlie = CompositeKey.Builder().addKeys(aliceAndBob, charliePublicKey).build(threshold = 1)
@@ -90,7 +87,6 @@ class CompositeKeyTests {
     }
 
     @Test
-    @Timeout(10)
     fun `der encoded tree decodes correctly`() {
         val aliceAndBob = CompositeKey.Builder().addKeys(alicePublicKey, bobPublicKey).build()
         val aliceAndBobOrCharlie = CompositeKey.Builder().addKeys(aliceAndBob, charliePublicKey).build(threshold = 1)
@@ -100,7 +96,6 @@ class CompositeKeyTests {
     }
 
     @Test
-    @Timeout(10)
     fun `der encoded tree decodes correctly with weighting`() {
         val aliceAndBob = CompositeKey.Builder()
             .addKey(alicePublicKey, 2)
@@ -116,7 +111,6 @@ class CompositeKeyTests {
     }
 
     @Test
-    @Timeout(10)
     fun `tree canonical form`() {
         assertEquals(CompositeKey.Builder().addKeys(alicePublicKey).build(), alicePublicKey)
         val node1 = CompositeKey.Builder().addKeys(alicePublicKey, bobPublicKey).build(1) // threshold = 1
@@ -144,7 +138,6 @@ class CompositeKeyTests {
     }
 
     @Test
-    @Timeout(10)
     fun `composite key constraints`() {
         // Zero weight.
         assertFailsWith(IllegalArgumentException::class) {
@@ -187,7 +180,6 @@ class CompositeKeyTests {
     }
 
     @Test
-    @Timeout(10)
     fun `composite key validation`() {
         val key1 = CompositeKey.Builder().addKeys(alicePublicKey, bobPublicKey).build() as CompositeKey
         val key2 = CompositeKey.Builder().addKeys(alicePublicKey, key1).build() as CompositeKey
@@ -208,7 +200,6 @@ class CompositeKeyTests {
     }
 
     @Test
-    @Timeout(10)
     fun `composite key validation with graph cycle detection`() {
         val key1 = CompositeKey.Builder().addKeys(alicePublicKey, bobPublicKey).build() as CompositeKey
         val key2 = CompositeKey.Builder().addKeys(alicePublicKey, key1).build() as CompositeKey
@@ -267,12 +258,10 @@ class CompositeKeyTests {
     }
 
     @Test
-    @Timeout(10)
     fun `CompositeKey from multiple signature schemes and signature verification`() {
-        val publicKeyRSA = generateKeyPair(RSA_SPEC).public
-        val publicKeyK1 = generateKeyPair(ECDSA_SECP256K1_SPEC).public
-        val publicKeyR1 = generateKeyPair(ECDSA_SECP256R1_SPEC).public
-        val publicKeyEd1 = generateKeyPair(EDDSA_ED25519_SPEC).public
+        val publicKeyK1 = alicePublicKey
+        val publicKeyR1 = bobPublicKey
+        val publicKeyEd1 = charliePublicKey
         val publicKeyEd2 = generateKeyPair(EDDSA_ED25519_SPEC).public
 
         val rsaSignature = DigitalSignature.WithKey(publicKeyRSA, ByteArray(5) { 255.toByte() })
@@ -293,12 +282,11 @@ class CompositeKeyTests {
     }
 
     @Test
-    @Timeout(10)
     fun `CompositeKey deterministic children sorting`() {
-        val pub1 = generateKeyPair(ECDSA_SECP256R1_SPEC).public
-        val pub2 = generateKeyPair(ECDSA_SECP256K1_SPEC).public
-        val pub3 = generateKeyPair(RSA_SPEC).public
-        val pub4 = generateKeyPair(EDDSA_ED25519_SPEC).public
+        val pub1 = bobPublicKey
+        val pub2 = alicePublicKey
+        val pub3 = publicKeyRSA
+        val pub4 = charliePublicKey
         val pub5 = generateKeyPair(ECDSA_SECP256R1_SPEC).public
         val pub6 = generateKeyPair(ECDSA_SECP256R1_SPEC).public
         val pub7 = generateKeyPair(ECDSA_SECP256K1_SPEC).public
@@ -312,12 +300,10 @@ class CompositeKeyTests {
     }
 
     @Test
-    @Timeout(10)
-    fun `Test save to keystore`(@TempDir tempDir: Path) {
-        val publicKeyRSA = generateKeyPair(RSA_SPEC).public
-        val publicKeyK1 = generateKeyPair(ECDSA_SECP256K1_SPEC).public
-        val publicKeyR1 = generateKeyPair(ECDSA_SECP256R1_SPEC).public
-        val publicKeyEd1 = generateKeyPair(EDDSA_ED25519_SPEC).public
+    fun `Test save to keystore`() {
+        val publicKeyK1 = alicePublicKey
+        val publicKeyR1 = bobPublicKey
+        val publicKeyEd1 = charliePublicKey
         val publicKeyEd2 = generateKeyPair(EDDSA_ED25519_SPEC).public
 
         val rsaSignature = DigitalSignature.WithKey(publicKeyRSA, ByteArray(5) { 255.toByte() })
@@ -337,12 +323,11 @@ class CompositeKeyTests {
 
         val keyAlias = "my-key"
         val pwdArray = "password".toCharArray()
-        val jksFile = Files.createFile(tempDir.resolve("keystore.jks")).toFile()
 
         val keyStoreSave = KeyStore.getInstance("JKS")
         keyStoreSave.load(null, pwdArray)
         val caKeyPair = generateKeyPair(ECDSA_SECP256K1_SPEC)
-        jksFile.outputStream().use {
+        val jksFile = ByteArrayOutputStream().use {
             keyStoreSave.setCertificateEntry(
                 keyAlias, createDevCertificate(
                     issuer = X500Name("CN=ISSUER, O=o, L=L, ST=il, C=c"),
@@ -355,6 +340,8 @@ class CompositeKeyTests {
                 )
             )
             keyStoreSave.store(it, pwdArray)
+            it.flush()
+            it.toByteArray()
         }
 
         val keyStoreRead = KeyStore.getInstance("JKS")
