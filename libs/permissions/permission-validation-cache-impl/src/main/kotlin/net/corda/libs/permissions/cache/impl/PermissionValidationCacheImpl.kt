@@ -31,7 +31,7 @@ internal class PermissionValidationCacheImpl(
 
     private fun validateCacheIsRunning() {
         if (!isRunning) {
-            throw PermissionCacheException("Permission cache is not running.")
+            throw PermissionCacheException("Permission validation cache is not running.")
         }
     }
 

@@ -59,7 +59,7 @@ class PermissionValidationService @Activate constructor(
     private fun eventHandler(event: LifecycleEvent) {
         when (event) {
             is StartEvent -> {
-                log.info("Received start event, following PermissionCacheService for status updates.")
+                log.info("Received start event, following validation cache service for status updates.")
                 registration?.close()
                 registration = coordinator.followStatusChangesByName(
                     setOf(

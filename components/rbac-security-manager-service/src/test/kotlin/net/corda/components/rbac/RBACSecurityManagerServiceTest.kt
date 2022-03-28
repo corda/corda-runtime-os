@@ -13,7 +13,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.permissions.management.PermissionManagementService
-import net.corda.permissions.validation.PermissionValidationService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -43,7 +42,6 @@ class RBACSecurityManagerServiceTest {
         whenever(
             coordinator.followStatusChangesByName(
                 setOf(
-                    LifecycleCoordinatorName.forComponent<PermissionValidationService>(),
                     LifecycleCoordinatorName.forComponent<PermissionManagementService>()
                 )
             )
