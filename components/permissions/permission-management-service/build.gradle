@@ -23,6 +23,7 @@ dependencies {
     api project(':libs:permissions:permission-validation')
     implementation project(':libs:permissions:permission-management-cache')
     implementation project(':components:permissions:permission-management-cache-service')
+    implementation project(':components:permissions:permission-validation-cache-service')
     implementation project(':components:permissions:permission-validation-service')
 
     implementation project(":libs:lifecycle:lifecycle")

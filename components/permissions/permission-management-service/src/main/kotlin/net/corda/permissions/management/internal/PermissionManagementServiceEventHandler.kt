@@ -24,6 +24,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.permissions.management.cache.PermissionManagementCacheService
 import net.corda.permissions.validation.PermissionValidationService
+import net.corda.permissions.validation.cache.PermissionValidationCacheService
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_MGMT_REQ_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
@@ -34,6 +35,7 @@ import net.corda.v5.base.util.contextLogger
 internal class PermissionManagementServiceEventHandler(
     private val publisherFactory: PublisherFactory,
     private val permissionManagementCacheService: PermissionManagementCacheService,
+    private val permissionValidationCacheService: PermissionValidationCacheService,
     private val permissionValidationService: PermissionValidationService,
     private val permissionManagerFactory: PermissionManagerFactory,
     private val configurationReadService: ConfigurationReadService
@@ -65,6 +67,7 @@ internal class PermissionManagementServiceEventHandler(
                 registrationHandle = coordinator.followStatusChangesByName(
                     setOf(
                         LifecycleCoordinatorName.forComponent<PermissionManagementCacheService>(),
+                        LifecycleCoordinatorName.forComponent<PermissionValidationCacheService>(),
                         LifecycleCoordinatorName.forComponent<PermissionValidationService>(),
                         LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
                     )
@@ -129,7 +132,7 @@ internal class PermissionManagementServiceEventHandler(
         checkNotNull(permissionManagementCache) {
             "Configuration received for permission manager but permission management cache was null."
         }
-        val permissionValidationCache = permissionValidationService.permissionValidationCache
+        val permissionValidationCache = permissionValidationCacheService.permissionValidationCache
         checkNotNull(permissionValidationCache) {
             "Configuration received for permission manager but permission validation cache was null."
         }

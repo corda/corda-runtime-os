@@ -22,9 +22,7 @@ import org.osgi.service.component.annotations.Reference
 /**
  * Service for performing permission validation using the RBAC permission system.
  *
- * The service exposes the following APIs:
- * - PermissionValidator - API for validating a request against the permissions in the RBAC system for the requesting user.
- * - PermissionValidationCache - API for interacting with the cache. For internal use by the permission management service.
+ * The service exposes the PermissionValidator API for authorizing a request using the RBAC system for the requesting user.
  *
  * To use the Permission Validator to authorize a user, dependency inject this service using OSGI and start the service. The service will
  * start all necessary permission related dependencies and the above APIs can be used to interact with the system.
@@ -58,17 +56,6 @@ class PermissionValidationService @Activate constructor(
             return _permissionValidator!!
         }
 
-    /**
-     * Instance of the cache used in this service.
-     */
-    val permissionValidationCache: PermissionValidationCache
-        get() {
-            checkNotNull(permissionValidationCacheService.permissionValidationCache) {
-                "Permission Validation cache is null. Getter should be called only after service is UP."
-            }
-            return permissionValidationCacheService.permissionValidationCache!!
-        }
-
     private fun eventHandler(event: LifecycleEvent) {
         when (event) {
             is StartEvent -> {
@@ -100,7 +87,10 @@ class PermissionValidationService @Activate constructor(
     }
 
     private fun startValidationComponent() {
-        _permissionValidator = permissionValidatorFactory.create(permissionValidationCache)
+        checkNotNull(permissionValidationCacheService.permissionValidationCache) {
+            "Permission Validation Service received status UP but permission validation cache was null."
+        }
+        _permissionValidator = permissionValidatorFactory.create(permissionValidationCacheService.permissionValidationCache!!)
             .also { it.start() }
     }
 

@@ -12,6 +12,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.permissions.management.cache.PermissionManagementCacheService
 import net.corda.permissions.management.internal.PermissionManagementServiceEventHandler
 import net.corda.permissions.validation.PermissionValidationService
+import net.corda.permissions.validation.cache.PermissionValidationCacheService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -37,6 +38,8 @@ class PermissionManagementService @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = PermissionManagementCacheService::class)
     private val permissionManagementCacheService: PermissionManagementCacheService,
+    @Reference(service = PermissionValidationCacheService::class)
+    private val permissionValidationCacheService: PermissionValidationCacheService,
     @Reference(service = PermissionValidationService::class)
     private val permissionValidationService: PermissionValidationService,
     @Reference(service = PermissionManagerFactory::class)
@@ -48,6 +51,7 @@ class PermissionManagementService @Activate constructor(
     private val handler = PermissionManagementServiceEventHandler(
         publisherFactory,
         permissionManagementCacheService,
+        permissionValidationCacheService,
         permissionValidationService,
         permissionManagerFactory,
         configurationReadService

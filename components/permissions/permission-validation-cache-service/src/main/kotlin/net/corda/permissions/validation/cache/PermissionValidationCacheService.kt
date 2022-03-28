@@ -53,10 +53,14 @@ class PermissionValidationCacheService @Activate constructor(
         const val CONSUMER_GROUP = "PERMISSION_SERVICE"
     }
 
+    /**
+     * Instance of the cache used in this service.
+     */
     val permissionValidationCache: PermissionValidationCache?
         get() {
-            return _permissionValidationCache
+            return _permissionValidationCache!!
         }
+
     private var _permissionValidationCache: PermissionValidationCache? = null
 
     private var permissionSummarySubscription: CompactedSubscription<String, UserPermissionSummary>? = null
