@@ -75,12 +75,12 @@
       },
       "members": [
         {
-          "name": "C=GB, L=London, O=Alice", // party name
-          "keyAlias": "alice-alias", // current party identity key
-          "rotatedKeyAlias-1": "alice-historic-alias-1", // Used to force old keys no longer in use (i.e. rotated key)
-          "memberStatus": "ACTIVE", // Member status usually set by the MGM
-          "endpointUrl-1": "https://alice.corda5.r3.com:10000", // Endpoint url & protocol. Iterable.
-          "endpointProtocol-1": 1 //(uses incrementing postfix for repeating elements)
+          "name": "C=GB, L=London, O=Alice",
+          "keyAlias": "alice-alias",
+          "rotatedKeyAlias-1": "alice-historic-alias-1",
+          "memberStatus": "ACTIVE",
+          "endpointUrl-1": "https://alice.corda5.r3.com:10000",
+          "endpointProtocol-1": 1
         },
         {
           "name": "C=GB, L=London, O=Bob",

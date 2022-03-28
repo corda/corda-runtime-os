@@ -5,28 +5,28 @@ import io.javalin.core.util.Header.ACCESS_CONTROL_ALLOW_CREDENTIALS
 import io.javalin.core.util.Header.ACCESS_CONTROL_ALLOW_ORIGIN
 import io.javalin.core.util.Header.CACHE_CONTROL
 import io.javalin.core.util.Header.WWW_AUTHENTICATE
-import net.corda.v5.application.flows.BadRpcStartFlowRequestException
-import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.httprpc.server.apigen.test.TestJavaPrimitivesRPCopsImpl
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.toExample
 import net.corda.httprpc.server.impl.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.server.impl.utils.WebRequest
-import net.corda.httprpc.test.CustomNonSerializableString
-import net.corda.httprpc.test.CustomSerializationAPIImpl
-import net.corda.httprpc.test.CustomUnsafeString
-import net.corda.httprpc.test.TestEntityRpcOpsImpl
-import net.corda.httprpc.test.TestHealthCheckAPIImpl
+import net.corda.httprpc.server.impl.utils.multipartDir
+import net.corda.httprpc.test.*
+import net.corda.httprpc.tools.HttpVerb.DELETE
 import net.corda.httprpc.tools.HttpVerb.GET
 import net.corda.httprpc.tools.HttpVerb.POST
+import net.corda.httprpc.tools.HttpVerb.PUT
+import net.corda.v5.application.flows.BadRpcStartFlowRequestException
+import net.corda.v5.base.util.NetworkHostAndPort
 import org.apache.http.HttpStatus
-import org.junit.jupiter.api.BeforeAll
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import java.nio.file.Path
 import java.time.Instant
 import java.time.ZonedDateTime
-import org.assertj.core.api.Assertions.assertThat
 import kotlin.test.assertEquals
 
 
@@ -51,6 +51,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
                 ),
                 securityManager,
                 httpRpcSettings,
+                multipartDir,
                 true
             ).apply { start() }
             client = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
@@ -426,5 +427,45 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
 
         assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
         assertEquals("\"Retrieved using query: MyQuery\"", createEntityResponse.body)
+    }
+
+    @Test
+    fun `Call update on test entity`() {
+        val createEntityResponse = client.call(
+            PUT,
+            WebRequest<Any>(
+                "testentity",
+                """{ "updateParams" : { "id": "myId", "name": "TestName", "amount" : 20 } }"""
+            ),
+            userName,
+            password
+        )
+
+        assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
+        assertEquals(
+            "\"Updated using params: UpdateParams(id=myId, name=TestName, amount=20)\"",
+            createEntityResponse.body
+        )
+    }
+
+    @Test
+    fun `Call delete using path on test entity`() {
+        val createEntityResponse = client.call(DELETE, WebRequest<Any>("testentity/myId"), userName, password)
+
+        assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
+        assertEquals("\"Deleted using id: myId\"", createEntityResponse.body)
+    }
+
+    @Test
+    fun `Call delete using query on test entity`() {
+        val createEntityResponse = client.call(
+            DELETE,
+            WebRequest<Any>("testentity", queryParameters = mapOf("query" to "MyQuery")),
+            userName,
+            password
+        )
+
+        assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
+        assertEquals("\"Deleted using query: MyQuery\"", createEntityResponse.body)
     }
 }

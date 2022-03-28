@@ -18,7 +18,9 @@ class MembershipGroupReaderImpl(
     override val owningMember: MemberX500Name = MemberX500Name.parse(holdingIdentity.x500Name)
 
     private val memberList: List<MemberInfo>
-        get() = membershipGroupReadCache.memberListCache.get(holdingIdentity)!!
+        get() = membershipGroupReadCache.memberListCache.get(holdingIdentity)
+            ?: throw IllegalStateException(
+                "Failed to find member list for ID='${holdingIdentity.id}, Group ID='${holdingIdentity.groupId}'")
 
     override val groupParameters: GroupParameters
         get() = TODO("Not yet implemented")

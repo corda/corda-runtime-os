@@ -1,7 +1,7 @@
 package net.corda.libs.configuration.endpoints.v1
 
 import net.corda.httprpc.RpcOps
-import net.corda.httprpc.annotations.HttpRpcPOST
+import net.corda.httprpc.annotations.HttpRpcPUT
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.libs.configuration.endpoints.v1.types.HTTPUpdateConfigRequest
@@ -21,8 +21,7 @@ interface ConfigRPCOps : RpcOps {
      * @throws `ConfigRPCOpsServiceException` If the updated configuration could not be published.
      * @throws `HttpApiException` If the request returns an exceptional response.
      */
-    @HttpRpcPOST(
-        path = "update",
+    @HttpRpcPUT(
         title = "Update cluster configuration",
         description = "Updates a section of the cluster configuration.",
         responseDescription = "The updated cluster configuration for the specified section."

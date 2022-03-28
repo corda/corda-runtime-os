@@ -15,7 +15,6 @@ import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.libs.cpi.datamodel.CpiEntities
-import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.CpkDataEntity
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
@@ -370,12 +369,12 @@ internal class DatabaseChunkPersistenceTest {
     @Test
     fun `database chunk persistence can lookup persisted cpi by checksum`() {
         val checksum = SecureHash.create("DUMMY:deadbeefdeadabcdef1234")
-        assertThat(persistence.containsCpkByChecksum(checksum)).isFalse
+        assertThat(persistence.cpkExists(checksum)).isFalse
 
         val cpks = listOf(mockCpk(checksum, "1.cpk"))
         val cpi = mockCpi(cpks)
         persistence.persistMetadataAndCpks(cpi, "someFileName.cpi", checksum, UUID.randomUUID().toString(), "abcdef")
-        assertThat(persistence.containsCpkByChecksum(checksum)).isTrue
+        assertThat(persistence.cpkExists(checksum)).isTrue
     }
 
     @Test

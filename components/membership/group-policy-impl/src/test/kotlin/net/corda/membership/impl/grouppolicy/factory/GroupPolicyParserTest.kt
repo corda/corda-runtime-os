@@ -1,6 +1,6 @@
 package net.corda.membership.impl.grouppolicy.factory
 
-import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.membership.exceptions.BadGroupPolicyException
 import net.corda.v5.base.util.uncheckedCast
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -53,17 +53,17 @@ class GroupPolicyParserTest {
 
     @Test
     fun `Empty string as group policy throws corda runtime exception`() {
-        assertThrows<CordaRuntimeException> { groupPolicyParser.parse(EMPTY_STRING) }
+        assertThrows<BadGroupPolicyException> { groupPolicyParser.parse(EMPTY_STRING) }
     }
 
     @Test
     fun `Whitespace string as group policy throws corda runtime exception`() {
-        assertThrows<CordaRuntimeException> { groupPolicyParser.parse(WHITESPACE_STRING) }
+        assertThrows<BadGroupPolicyException> { groupPolicyParser.parse(WHITESPACE_STRING) }
     }
 
     @Test
     fun `Invalid format group policy throws corda runtime exception`() {
-        assertThrows<CordaRuntimeException> { groupPolicyParser.parse(INVALID_FORMAT_GROUP_POLICY) }
+        assertThrows<BadGroupPolicyException> { groupPolicyParser.parse(INVALID_FORMAT_GROUP_POLICY) }
     }
 
     @Test

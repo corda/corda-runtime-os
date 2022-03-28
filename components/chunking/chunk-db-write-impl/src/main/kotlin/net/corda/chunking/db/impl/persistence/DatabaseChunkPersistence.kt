@@ -147,15 +147,15 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
      *
      * @return true if checksum exists in database
      */
-    override fun containsCpkByChecksum(checksum: SecureHash): Boolean {
+    override fun cpkExists(cpkChecksum: SecureHash): Boolean {
         val entity = entityManagerFactory.createEntityManager().transaction {
-            it.find(CpkDataEntity::class.java, checksum.toString())
+            it.find(CpkDataEntity::class.java, cpkChecksum.toString())
         }
 
         return entity != null
     }
 
-    override fun containsCpi(cpiName: String, cpiVersion: String, signerSummaryHash: String): Boolean =
+    override fun cpiExists(cpiName: String, cpiVersion: String, signerSummaryHash: String): Boolean =
         getCpiEntity(cpiName, cpiVersion, signerSummaryHash) != null
 
     override fun persistMetadataAndCpks(
@@ -207,8 +207,6 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         requestId: RequestId,
         groupId: String
     ): CpiMetadataEntity {
-//         val groupId = ValidationFunctions.getGroupId(cpi)
-
         val cpiMetadata = cpi.metadata
 
         return CpiMetadataEntity(

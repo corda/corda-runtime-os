@@ -3,7 +3,6 @@ package net.corda.chunking.db.impl.validation
 import net.corda.chunking.ChunkReaderFactory
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
-import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.packaging.CPI
 import net.corda.packaging.PackagingException
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -11,16 +10,12 @@ import net.corda.v5.crypto.SecureHash
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.Paths
 import javax.persistence.PersistenceException
 
-class ValidationFunctions(private val publisher: StatusPublisher) {
-    private val tmpDir = Paths.get(System.getProperty("java.io.tmpdir"), "unpacking")
-        .apply { Files.createDirectories(this) }
-
-    private val cpiExpansionDir = Paths.get(System.getProperty("java.io.tmpdir"), "expanded")
-        .apply { Files.createDirectories(this) }
-
+class ValidationFunctions(
+    private val cpiCacheDir: Path,
+    private val cpiPartsDir: Path
+) {
     /**
      * Assembles the CPI from chunks in the database, and returns the temporary path
      * that we've stored the recreated binary, plus any filename associated with it.
@@ -35,7 +30,7 @@ class ValidationFunctions(private val publisher: StatusPublisher) {
         var checksum: SecureHash? = null
 
         // Set up chunk reader.  If onComplete is never called, we've failed.
-        val reader = ChunkReaderFactory.create(tmpDir).apply {
+        val reader = ChunkReaderFactory.create(cpiCacheDir).apply {
             onComplete { originalFileName: String, tempPathOfBinary: Path, fileChecksum: SecureHash ->
                 fileName = originalFileName
                 tempPath = tempPathOfBinary
@@ -57,7 +52,7 @@ class ValidationFunctions(private val publisher: StatusPublisher) {
     fun checkCpi(cpiFile: FileInfo): CPI {
         val cpi: CPI =
             try {
-                Files.newInputStream(cpiFile.path).use { CPI.from(it, cpiExpansionDir) }
+                Files.newInputStream(cpiFile.path).use { CPI.from(it, cpiPartsDir) }
             } catch (ex: Exception) {
                 when (ex) {
                     is PackagingException -> {
@@ -90,7 +85,7 @@ class ValidationFunctions(private val publisher: StatusPublisher) {
         try {
             val groupId = getGroupId(cpi)
 
-            if (!chunkPersistence.containsCpi(
+            if (!chunkPersistence.cpiExists(
                     cpi.metadata.id.name,
                     cpi.metadata.id.version,
                     cpi.metadata.id.signerSummaryHash?.toString() ?: ""

@@ -16,13 +16,13 @@ import java.nio.ByteBuffer
 
 class StartFlowEventHandlerTest {
 
-    private val startFlow = StartFlow(FlowStartContext(),"start args")
+    private val startFlow = StartFlow(FlowStartContext(), "start args")
     private val flowKey = FlowKey("flow id", HoldingIdentity("x500 name", "group id"))
     private val flowEvent = FlowEvent(flowKey, startFlow)
     private val handler = StartFlowEventHandler()
 
     @Test
-    fun `preProcess creates a new checkpoint if one doesn't exist already`() {
+    fun `Creates a new checkpoint if one doesn't exist already`() {
         val inputContext = FlowEventContext(checkpoint = null, flowEvent, startFlow, emptyList())
         val outputContext = handler.preProcess(inputContext)
         assertNotNull(outputContext.checkpoint)
@@ -32,7 +32,7 @@ class StartFlowEventHandlerTest {
     }
 
     @Test
-    fun `preProcess throws if a checkpoint already exists`() {
+    fun `Throws if a checkpoint already exists`() {
         val inputContext = FlowEventContext(Checkpoint(), flowEvent, startFlow, emptyList())
         assertThrows<FlowProcessingException> {
             handler.preProcess(inputContext)

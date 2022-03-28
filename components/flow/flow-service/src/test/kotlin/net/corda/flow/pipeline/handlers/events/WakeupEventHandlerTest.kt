@@ -19,16 +19,16 @@ class WakeupEventHandlerTest {
 
     private val flowEvent = FlowEvent(flowKey, wakeupPayload)
 
-    private val handler = WakeUpEventHandler()
+    private val handler = WakeupEventHandler()
 
     @Test
-    fun `preProcess does not modify the context`() {
+    fun `Does not modify the context`() {
         val inputContext = FlowEventContext(Checkpoint(), flowEvent, wakeupPayload, emptyList())
         assertEquals(inputContext, handler.preProcess(inputContext))
     }
 
     @Test
-    fun `preProcess throws if a checkpoint does not exist`() {
+    fun `Throws if a checkpoint does not exist`() {
         val inputContext = FlowEventContext(checkpoint = null, flowEvent, wakeupPayload, emptyList())
         assertThrows<FlowProcessingException> {
             handler.preProcess(inputContext)

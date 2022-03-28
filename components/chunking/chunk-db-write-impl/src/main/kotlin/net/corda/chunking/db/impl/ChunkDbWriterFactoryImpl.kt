@@ -17,6 +17,8 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
+import net.corda.utilities.PathProvider
+import net.corda.utilities.TempPathProvider
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -24,15 +26,26 @@ import javax.persistence.EntityManagerFactory
 
 @Suppress("UNUSED")
 @Component(service = [ChunkDbWriterFactory::class])
-class ChunkDbWriterFactoryImpl @Activate constructor(
-    @Reference(service = SubscriptionFactory::class)
+class ChunkDbWriterFactoryImpl(
     private val subscriptionFactory: SubscriptionFactory,
-    @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory
+    private val publisherFactory: PublisherFactory,
+    private val tempPathProvider: PathProvider
 ) : ChunkDbWriterFactory {
+
+    @Activate
+    constructor(
+        @Reference(service = SubscriptionFactory::class)
+        subscriptionFactory: SubscriptionFactory,
+        @Reference(service = PublisherFactory::class)
+        publisherFactory: PublisherFactory
+    ) : this(subscriptionFactory, publisherFactory, TempPathProvider())
+
     companion object {
         internal const val GROUP_NAME = "cpi.chunk.writer"
         internal const val CLIENT_NAME = "chunk-writer"
+
+        const val CPI_CACHE_DIR = "cpi-cache"
+        const val CPI_PARTS_DIR = "cpi-parts"
     }
 
     override fun create(
@@ -76,7 +89,10 @@ class ChunkDbWriterFactoryImpl @Activate constructor(
         val persistence = DatabaseChunkPersistence(entityManagerFactory)
         val publisher = createPublisher(config)
         val statusPublisher = StatusPublisher(statusTopic, publisher)
-        val validator = CpiValidatorImpl(statusPublisher, persistence, cpiInfoWriteService)
+        val cpiCacheDir = tempPathProvider.getOrCreate(config, CPI_CACHE_DIR)
+        val cpiPartsDir = tempPathProvider.getOrCreate(config, CPI_PARTS_DIR)
+        val validator =
+            CpiValidatorImpl(statusPublisher, persistence, cpiInfoWriteService, cpiCacheDir, cpiPartsDir)
         val processor = ChunkWriteToDbProcessor(statusPublisher, persistence, validator)
 
         val instanceId = if (config.hasPath("instanceId")) config.getInt("instanceId") else 1

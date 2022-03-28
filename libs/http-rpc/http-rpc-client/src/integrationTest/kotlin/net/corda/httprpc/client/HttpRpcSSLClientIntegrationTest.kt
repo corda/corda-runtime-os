@@ -45,6 +45,7 @@ internal class HttpRpcSSLClientIntegrationTest : HttpRpcIntegrationTestBase() {
                 listOf(TestHealthCheckAPIImpl(), CustomSerializationAPIImpl()),
                 securityManager,
                 httpRpcSettings,
+                multipartDir,
                 true
             ).apply { start() }
         }
