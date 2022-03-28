@@ -22,6 +22,18 @@ interface MemberLookupRpcOps : RpcOps {
     )
     fun lookup(
         @HttpRpcQueryParameter(description = "ID of the holding identity to be checked.")
-        holdingIdentityId: String
+        holdingIdentityId: String,
+        @HttpRpcQueryParameter(name="cn", description = "CN attribute of the X.500 name to filter members by", required = false)
+        commonName: String? = null,
+        @HttpRpcQueryParameter(name="o", description = "O attribute of the X.500 name to filter members by", required = false)
+        organisation: String? = null,
+        @HttpRpcQueryParameter(name="ou", description = "OU attribute of the X.500 name to filter members by", required = false)
+        organisationUnit: String? = null,
+        @HttpRpcQueryParameter(name="l", description = "L attribute of the X.500 name to filter members by", required = false)
+        locality: String? = null,
+        @HttpRpcQueryParameter(name="st", description = "ST attribute of the X.500 name to filter members by", required = false)
+        state: String? = null,
+        @HttpRpcQueryParameter(name="c", description = "C attribute of the X.500 name to filter members by", required = false)
+        country: String? = null
     ): RpcMemberInfoList
 }
