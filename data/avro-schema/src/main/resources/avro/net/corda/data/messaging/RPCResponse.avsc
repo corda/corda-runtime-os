@@ -11,8 +11,10 @@
     },
     {
       "name": "sendTime",
-      "type": "long",
-      "logicalType": "timestamp-millis",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
       "doc": "Time ([Instant]) in milliseconds of the response"
     },
     {
