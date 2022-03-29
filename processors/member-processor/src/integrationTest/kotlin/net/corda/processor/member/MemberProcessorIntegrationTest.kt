@@ -5,7 +5,7 @@ import net.corda.membership.exceptions.BadGroupPolicyException
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
-import net.corda.membership.registration.provider.RegistrationProvider
+import net.corda.membership.registration.RegistrationProxy
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -18,8 +18,8 @@ import net.corda.processor.member.MemberProcessorTestUtils.Companion.bootConf
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.charlieX500Name
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.getGroupPolicy
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.getGroupPolicyFails
-import net.corda.processor.member.MemberProcessorTestUtils.Companion.getRegistrationService
-import net.corda.processor.member.MemberProcessorTestUtils.Companion.getRegistrationServiceFails
+import net.corda.processor.member.MemberProcessorTestUtils.Companion.getRegistrationResult
+import net.corda.processor.member.MemberProcessorTestUtils.Companion.getRegistrationResultFails
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.groupId
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.isStarted
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookUpFromPublicKey
@@ -60,7 +60,7 @@ class MemberProcessorIntegrationTest {
     lateinit var groupPolicyProvider: GroupPolicyProvider
 
     @InjectService(timeout = 5000L)
-    lateinit var registrationProvider: RegistrationProvider
+    lateinit var registrationProxy: RegistrationProxy
 
     @InjectService(timeout = 5000L)
     lateinit var virtualNodeInfoReader: VirtualNodeInfoReadService
@@ -113,12 +113,12 @@ class MemberProcessorIntegrationTest {
         for (test in groupPolicyProviderTests) {
             runTest(test)
         }
-        logger.info("Running ${RegistrationProvider::class.simpleName} tests.")
-        for (test in registrationProviderTests) {
+        logger.info("Running ${RegistrationProxy::class.simpleName} tests.")
+        for (test in registrationProxyTests) {
             runTest(test)
         }
         logger.info("Finished test run.")
-        logger.info("Ran ${groupPolicyProviderTests.size + registrationProviderTests.size} tests successfully.")
+        logger.info("Ran ${groupPolicyProviderTests.size + registrationProxyTests.size} tests successfully.")
     }
 
     /**
@@ -223,18 +223,16 @@ class MemberProcessorIntegrationTest {
     /**
      * Registration provider tests.
      */
-    val registrationProviderTests = listOf(
+    val registrationProxyTests = listOf(
         ::`Register and view static member list`,
-        ::`Registration provider fails to get registration service if it is down`,
-        ::`Registration service fails to register if it is down`,
+        ::`Registration proxy fails to register if registration service is down`
     )
 
     /**
      * Test assumes the group policy file is configured to use the static member registration.
      */
     fun `Register and view static member list`() {
-        val registrationService = getRegistrationService(registrationProvider)
-        val result = registrationService.register(aliceHoldingIdentity)
+        val result = getRegistrationResult(registrationProxy)
         assertEquals(MembershipRequestRegistrationOutcome.SUBMITTED, result.outcome)
 
         val groupReader = eventually {
@@ -258,35 +256,16 @@ class MemberProcessorIntegrationTest {
 
     }
 
-    fun `Registration provider fails to get registration service if it is down`() {
+    fun `Registration proxy fails to register if registration service is down`() {
         // bringing down the group policy provider brings down the static registration service
         groupPolicyProvider.stopAndWait()
 
-        getRegistrationServiceFails(registrationProvider)
+        getRegistrationResultFails(registrationProxy)
 
         // bring back up
         groupPolicyProvider.startAndWait()
 
         // Wait for it to pass again before moving to next test
-        getRegistrationService(registrationProvider)
-    }
-
-    fun `Registration service fails to register if it is down`() {
-        val registrationService = getRegistrationService(registrationProvider)
-
-        // bringing down the group policy provider brings down the static registration service
-        groupPolicyProvider.stopAndWait()
-
-        val registrationOutcome = registrationService
-            .register(aliceHoldingIdentity)
-            .outcome
-
-        assertEquals(MembershipRequestRegistrationOutcome.NOT_SUBMITTED, registrationOutcome)
-
-        // bring back up
-        groupPolicyProvider.startAndWait()
-
-        // Wait for it to pass again before moving to next test
-        getRegistrationService(registrationProvider)
+        getRegistrationResult(registrationProxy)
     }
 }
