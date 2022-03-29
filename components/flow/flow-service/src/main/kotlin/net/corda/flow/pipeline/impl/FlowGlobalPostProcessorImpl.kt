@@ -1,16 +1,12 @@
 package net.corda.flow.pipeline.impl
 
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
 import net.corda.flow.pipeline.handlers.addOrReplaceSession
-import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
-import net.corda.schema.configuration.FlowConfig
 import net.corda.session.manager.SessionManager
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -23,14 +19,6 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
     private val sessionManager: SessionManager
 ) : FlowGlobalPostProcessor {
 
-    private companion object {
-        private val testConfig = ConfigFactory.empty()
-            .withValue(FlowConfig.SESSION_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(500000L))
-            .withValue(FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(500000L))
-        private val configFactory = SmartConfigFactory.create(testConfig)
-        private val testSmartConfig = configFactory.create(testConfig)
-    }
-
     override fun postProcess(context: FlowEventContext<Any>): FlowEventContext<Any> {
 
         val now = Instant.now()
@@ -38,7 +26,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
         context.checkpoint?.let { checkpoint ->
 
             val records = checkpoint.sessions
-                .map { sessionState -> sessionManager.getMessagesToSend(sessionState, now, testSmartConfig) }
+                .map { sessionState -> sessionManager.getMessagesToSend(sessionState, now, context.config) }
                 .onEach { (updatedSessionState, _) -> checkpoint.addOrReplaceSession(updatedSessionState) }
                 .flatMap { (_, messages) -> messages }
                 .map { message -> message.toRecord() }

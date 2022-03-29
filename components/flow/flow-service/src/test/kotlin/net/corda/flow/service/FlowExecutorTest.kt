@@ -16,6 +16,9 @@ import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -35,16 +38,20 @@ class FlowExecutorTest {
     }
 
     private val coordinatorFactory: LifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
-    private val config: SmartConfig = SmartConfigFactory.create(ConfigFactory.empty()).create(
-        ConfigFactory.empty().withValue(
-            INSTANCE_ID, ConfigValueFactory
-                .fromAnyRef(1)
-        ).withValue(GROUP_NAME_KEY, ConfigValueFactory.fromAnyRef("Group1"))
+    private val config: Map<String, SmartConfig> = mapOf(
+        MESSAGING_CONFIG to SmartConfigFactory.create(ConfigFactory.empty()).create(
+            ConfigFactory.empty().withValue(
+                INSTANCE_ID, ConfigValueFactory
+                    .fromAnyRef(1)
+            ).withValue(GROUP_NAME_KEY, ConfigValueFactory.fromAnyRef("Group1"))
+        ),
+        BOOT_CONFIG to SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty()),
+        FLOW_CONFIG to SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
     )
     private val subscriptionFactory: SubscriptionFactory = mock()
     private val flowEventProcessor: FlowEventProcessor = mock()
     private val flowEventProcessorFactory = mock<FlowEventProcessorFactory>().apply {
-        whenever(create()).thenReturn(flowEventProcessor)
+        whenever(create(any())).thenReturn(flowEventProcessor)
     }
 
     @Test

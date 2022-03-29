@@ -4,6 +4,7 @@ import net.corda.flow.pipeline.FlowEventProcessor
 import net.corda.flow.pipeline.impl.FlowEventProcessorImpl
 import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
+import net.corda.libs.configuration.SmartConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -15,8 +16,8 @@ class FlowEventProcessorFactoryImpl @Activate constructor(
     private val flowEventPipelineFactory: FlowEventPipelineFactory
 ) : FlowEventProcessorFactory {
 
-    override fun create(): FlowEventProcessor {
-        return FlowEventProcessorImpl(flowEventPipelineFactory)
+    override fun create(config: SmartConfig): FlowEventProcessor {
+        return FlowEventProcessorImpl(flowEventPipelineFactory, config)
     }
 }
 
