@@ -12,6 +12,12 @@ import net.corda.libs.permissions.management.cache.PermissionManagementCache
  */
 interface PermissionManagementCacheFactory {
 
+    /**
+     * @param userData reference to the map used to hold user data
+     * @param groupData reference to the map used to hold group data
+     * @param roleData reference to the map used to hold role data
+     * @param permissionData reference to the map used to hold permission data
+     */
     fun createPermissionManagementCache(
         userData: ConcurrentHashMap<String, User>,
         groupData: ConcurrentHashMap<String, Group>,

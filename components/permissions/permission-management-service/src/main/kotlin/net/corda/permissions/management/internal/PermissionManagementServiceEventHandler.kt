@@ -32,6 +32,7 @@ import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 
+@Suppress("LongParameterList")
 internal class PermissionManagementServiceEventHandler(
     private val publisherFactory: PublisherFactory,
     private val permissionManagementCacheService: PermissionManagementCacheService,
@@ -139,8 +140,9 @@ internal class PermissionManagementServiceEventHandler(
 
         permissionManager?.stop()
         log.info("Creating and starting permission manager.")
-        permissionManager = permissionManagerFactory.createPermissionManager(config, rpcSender!!, permissionManagementCache, permissionValidationCache)
-            .also { it.start() }
+        permissionManager =
+            permissionManagerFactory.createPermissionManager(config, rpcSender!!, permissionManagementCache, permissionValidationCache)
+                .also { it.start() }
 
         basicAuthenticationService?.stop()
         log.info("Creating and starting basic authentication service using permission system.")

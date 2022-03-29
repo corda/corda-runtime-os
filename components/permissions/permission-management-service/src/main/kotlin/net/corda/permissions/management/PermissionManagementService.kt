@@ -30,6 +30,7 @@ import org.osgi.service.component.annotations.Reference
  *
  * Note - permission management should be restricted to HTTP gateway only.
  */
+@Suppress("LongParameterList")
 @Component(service = [PermissionManagementService::class])
 class PermissionManagementService @Activate constructor(
     @Reference(service = PublisherFactory::class)
