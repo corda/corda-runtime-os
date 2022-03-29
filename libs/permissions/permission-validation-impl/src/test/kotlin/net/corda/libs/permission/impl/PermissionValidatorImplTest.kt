@@ -6,7 +6,7 @@ import kotlin.test.assertTrue
 import net.corda.data.permissions.PermissionType
 import net.corda.data.permissions.summary.PermissionSummary
 import net.corda.data.permissions.summary.UserPermissionSummary
-import net.corda.libs.permissions.cache.PermissionValidationCache
+import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever

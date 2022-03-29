@@ -13,6 +13,7 @@ import net.corda.data.permissions.User
 import net.corda.data.permissions.summary.PermissionSummary
 import net.corda.data.permissions.summary.UserPermissionSummary
 import net.corda.libs.permissions.cache.exception.PermissionCacheException
+import net.corda.libs.permissions.management.cache.impl.PermissionManagementCacheImpl
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue

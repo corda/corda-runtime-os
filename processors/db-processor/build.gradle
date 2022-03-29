@@ -41,6 +41,7 @@ dependencies {
     runtimeOnly project(':components:chunking:chunk-read-service-impl')
     runtimeOnly project(':components:chunking:chunk-db-write-impl')
     runtimeOnly project(':components:configuration:configuration-write-service-impl')
+    runtimeOnly project(':components:configuration:configuration-read-service-impl')
     runtimeOnly project(':components:virtual-node:virtual-node-write-service-impl')
     runtimeOnly project(':components:virtual-node:cpi-info-write-service-impl')
     runtimeOnly project(':components:db:db-connection-manager-impl')

@@ -5,8 +5,8 @@ import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.permissions.cache.PermissionManagementCache
-import net.corda.libs.permissions.cache.PermissionValidationCache
+import net.corda.libs.permissions.management.cache.PermissionManagementCache
+import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.libs.permissions.manager.BasicAuthenticationService
 
 /**

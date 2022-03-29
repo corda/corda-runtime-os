@@ -3,7 +3,7 @@ package net.corda.libs.permissions.storage.reader.impl
 import net.corda.data.permissions.ChangeDetails
 import net.corda.data.permissions.PermissionAssociation
 import net.corda.data.permissions.RoleAssociation
-import net.corda.libs.permissions.cache.PermissionValidationCache
+import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.libs.permissions.storage.reader.repository.PermissionRepository
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -28,7 +28,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
-import net.corda.libs.permissions.cache.PermissionManagementCache
+import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.data.permissions.summary.PermissionSummary as AvroPermissionSummary
 import net.corda.libs.permissions.storage.reader.summary.InternalUserPermissionSummary
 import net.corda.data.permissions.summary.UserPermissionSummary as AvroUserPermissionSummary

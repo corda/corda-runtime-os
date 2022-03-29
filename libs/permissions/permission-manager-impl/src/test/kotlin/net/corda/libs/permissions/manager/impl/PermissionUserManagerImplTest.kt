@@ -36,8 +36,8 @@ import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import net.corda.data.permissions.management.user.AddRoleToUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
-import net.corda.libs.permissions.cache.PermissionManagementCache
-import net.corda.libs.permissions.cache.PermissionValidationCache
+import net.corda.libs.permissions.management.cache.PermissionManagementCache
+import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
 import net.corda.schema.configuration.ConfigKeys

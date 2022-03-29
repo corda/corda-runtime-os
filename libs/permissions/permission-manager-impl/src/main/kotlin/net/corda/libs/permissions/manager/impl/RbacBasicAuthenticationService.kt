@@ -1,6 +1,6 @@
 package net.corda.libs.permissions.manager.impl
 
-import net.corda.libs.permissions.cache.PermissionManagementCache
+import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.libs.permissions.manager.BasicAuthenticationService
 import net.corda.permissions.password.PasswordHash
 import net.corda.permissions.password.PasswordService

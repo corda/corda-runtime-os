@@ -2,7 +2,6 @@ package net.corda.permissions.validation
 
 import net.corda.libs.permission.PermissionValidator
 import net.corda.libs.permission.factory.PermissionValidatorFactory
-import net.corda.libs.permissions.cache.PermissionValidationCache
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName

@@ -7,8 +7,8 @@ import net.corda.data.permissions.management.user.AddRoleToUserRequest
 import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.permissions.cache.PermissionManagementCache
-import net.corda.libs.permissions.cache.PermissionValidationCache
+import net.corda.libs.permissions.management.cache.PermissionManagementCache
+import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.libs.permissions.manager.PermissionUserManager
 import net.corda.libs.permissions.manager.impl.SmartConfigUtil.getEndpointTimeout
 import net.corda.libs.permissions.manager.impl.converter.convertToResponseDto

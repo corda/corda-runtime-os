@@ -15,8 +15,8 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.permissions.cache.PermissionManagementCache
-import net.corda.libs.permissions.cache.PermissionValidationCache
+import net.corda.libs.permissions.management.cache.PermissionManagementCache
+import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.libs.permissions.manager.BasicAuthenticationService
 import net.corda.libs.permissions.manager.impl.RbacBasicAuthenticationService
 import net.corda.libs.permissions.manager.impl.PermissionEntityManagerImpl

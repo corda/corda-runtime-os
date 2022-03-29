@@ -5,9 +5,9 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.permissions.summary.UserPermissionSummary
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.permissions.cache.PermissionValidationCache
-import net.corda.libs.permissions.cache.factory.PermissionValidationCacheFactory
-import net.corda.libs.permissions.cache.factory.PermissionValidationCacheTopicProcessorFactory
+import net.corda.libs.permissions.validation.cache.PermissionValidationCache
+import net.corda.libs.permissions.validation.cache.factory.PermissionValidationCacheFactory
+import net.corda.libs.permissions.validation.cache.factory.PermissionValidationCacheTopicProcessorFactory
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName

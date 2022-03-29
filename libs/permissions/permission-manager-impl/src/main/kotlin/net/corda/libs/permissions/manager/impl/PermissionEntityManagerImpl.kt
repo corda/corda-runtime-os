@@ -5,7 +5,7 @@ import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.data.permissions.management.permission.CreatePermissionRequest
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.permissions.cache.PermissionManagementCache
+import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.libs.permissions.manager.PermissionEntityManager
 import net.corda.libs.permissions.manager.impl.SmartConfigUtil.getEndpointTimeout
 import net.corda.libs.permissions.manager.impl.converter.convertToResponseDto

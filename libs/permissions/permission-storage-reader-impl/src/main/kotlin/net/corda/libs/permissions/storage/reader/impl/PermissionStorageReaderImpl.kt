@@ -1,8 +1,8 @@
 package net.corda.libs.permissions.storage.reader.impl
 
-import net.corda.libs.permissions.cache.PermissionManagementCache
+import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.data.permissions.summary.UserPermissionSummary as AvroUserPermissionSummary
-import net.corda.libs.permissions.cache.PermissionValidationCache
+import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.libs.permissions.storage.common.converter.toAvroGroup
 import net.corda.libs.permissions.storage.common.converter.toAvroPermission
 import net.corda.libs.permissions.storage.common.converter.toAvroRole

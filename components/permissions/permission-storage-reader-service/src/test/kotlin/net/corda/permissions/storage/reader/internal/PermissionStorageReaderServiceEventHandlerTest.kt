@@ -5,7 +5,7 @@ import com.typesafe.config.ConfigValueFactory
 import java.time.Duration
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.permissions.cache.PermissionValidationCache
+import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
 import net.corda.libs.permissions.storage.reader.factory.PermissionStorageReaderFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -33,7 +33,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import javax.persistence.EntityManagerFactory
-import net.corda.libs.permissions.cache.PermissionManagementCache
+import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.permissions.management.cache.PermissionManagementCacheService
 import org.mockito.kotlin.eq
 
