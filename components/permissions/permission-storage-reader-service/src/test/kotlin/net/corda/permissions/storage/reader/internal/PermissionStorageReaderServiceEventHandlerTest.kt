@@ -33,7 +33,9 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import javax.persistence.EntityManagerFactory
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.permissions.management.cache.PermissionManagementCache
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.permissions.management.cache.PermissionManagementCacheService
 import org.mockito.kotlin.eq
 
@@ -43,13 +45,13 @@ class PermissionStorageReaderServiceEventHandlerTest {
     private val entityManagerFactoryFactory = mock<() -> EntityManagerFactory> {
         on { this.invoke() }.doReturn(entityManagerFactory)
     }
-    private val permissionValidationCache = mock<PermissionValidationCache>()
+    private val pvCache = mock<PermissionValidationCache>()
     private val permissionValidationCacheService = mock<PermissionValidationCacheService>().apply {
-        whenever(permissionValidationCache).thenReturn(permissionValidationCache)
+        whenever(permissionValidationCache).thenReturn(pvCache)
     }
-    private val permissionManagementCache = mock<PermissionManagementCache>()
+    private val pmCache = mock<PermissionManagementCache>()
     private val permissionManagementCacheService = mock<PermissionManagementCacheService>().apply {
-        whenever(permissionManagementCache).thenReturn(permissionManagementCache)
+        whenever(permissionManagementCache).thenReturn(pmCache)
     }
     private val permissionStorageReader = mock<PermissionStorageReader>()
     private val permissionStorageReaderFactory = mock<PermissionStorageReaderFactory>().apply {
@@ -62,7 +64,13 @@ class PermissionStorageReaderServiceEventHandlerTest {
     }
     private val registrationHandle = mock<RegistrationHandle>()
     private val coordinator = mock<LifecycleCoordinator>().apply {
-        whenever(followStatusChangesByName(any())).thenReturn(registrationHandle)
+        whenever(followStatusChangesByName(
+            setOf(
+                LifecycleCoordinatorName.forComponent<PermissionManagementCacheService>(),
+                LifecycleCoordinatorName.forComponent<PermissionValidationCacheService>(),
+                LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+            )
+        )).thenReturn(registrationHandle)
     }
 
     private val handler = PermissionStorageReaderServiceEventHandler(
@@ -155,7 +163,7 @@ class PermissionStorageReaderServiceEventHandlerTest {
     @Test
     fun `processing an onConfigurationUpdated event creates publisher and permission storage reader`() {
         whenever(publisherFactory.createPublisher(any(), any())).thenReturn(publisher)
-        whenever(permissionStorageReaderFactory.create(eq(permissionValidationCache), eq(permissionManagementCache), eq(publisher), any()))
+        whenever(permissionStorageReaderFactory.create(eq(pvCache), eq(pmCache), eq(publisher), any()))
             .thenReturn(permissionStorageReader)
 
         handler.processEvent(
