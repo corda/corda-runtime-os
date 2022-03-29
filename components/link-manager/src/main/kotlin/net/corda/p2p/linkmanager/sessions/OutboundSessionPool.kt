@@ -64,13 +64,10 @@ class OutboundSessionPool(
             return SessionPoolStatus.SessionActive(weights[0].first.session)
         }
 
-        //If all sessions have weight 0 set the weight to 1. So the random selection can work correctly.
+        //If all sessions have weight 0 select a random session (as the algorithm bellow doesn't work).
         if (totalWeight == 0L) {
-            weights.replaceAll { (sessionId, _) ->
-                val weight = 1L
-                totalWeight += weight
-                sessionId to weight
-            }
+            val randomNumber = genRandomNumber(weights.size.toLong()).toInt()
+            return SessionPoolStatus.SessionActive(weights[randomNumber].first.session)
         }
 
         /**
