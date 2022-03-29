@@ -4,18 +4,38 @@ package net.corda.messaging.constants
  * Types of subscription possible in the messaging library
  */
 enum class SubscriptionType {
-    //Compacted subscription
+    /**
+     * Compacted subscription
+     */
     COMPACTED,
-    //Durable subscription
+
+    /**
+     * Durable subscription
+     */
     DURABLE,
-    //Event log subscription
+
+    /**
+     * Event log subscription
+     */
     EVENT_LOG,
-    // Pub-Sub subscription
+
+    /**
+     * Publisher-Subscriber subscription
+     */
     PUB_SUB,
-    //Subscription responsible for sending RPC requests
+
+    /**
+     * Subscription responsible for sending RPC requests
+     */
     RPC_SENDER,
-    //Subscription responsible for receiving RPC responses
+
+    /**
+     * Subscription responsible for receiving RPC responses
+     */
     RPC_RESPONDER,
-    //State and event subscription
+
+    /**
+     * State and event subscription
+     */
     STATE_AND_EVENT;
 }
