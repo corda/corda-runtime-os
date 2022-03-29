@@ -111,7 +111,7 @@ pipeline {
                     procno=$! #remember process number started in background
                     trap "kill -9 ${procno}" EXIT
 
-                    ./gradlew cleanE2eTest :applications:workers:release:rpc-worker:e2eTest
+                    ./gradlew cleanE2eTest :applications:workers:release:rpc-worker:e2eTest --parallel
                 '''
             }
             post {
