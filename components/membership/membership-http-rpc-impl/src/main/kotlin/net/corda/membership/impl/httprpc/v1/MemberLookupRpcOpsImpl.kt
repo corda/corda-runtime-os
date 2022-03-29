@@ -44,6 +44,7 @@ class MemberLookupRpcOpsImpl @Activate constructor(
             country: String?
         ): RpcMemberInfoList
     }
+
     override val protocolVersion = 1
 
     private val className = this::class.java.simpleName
@@ -101,7 +102,7 @@ class MemberLookupRpcOpsImpl @Activate constructor(
     }
 
     private fun updateStatus(status: LifecycleStatus, reason: String) {
-        if(coordinator.status != status) {
+        if (coordinator.status != status) {
             coordinator.updateStatus(status, reason)
         }
     }
@@ -138,25 +139,23 @@ class MemberLookupRpcOpsImpl @Activate constructor(
                 ?: throw ResourceNotFoundException("Could not find holding identity associated with member.")
 
             val reader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
-            val filteredMembers = reader.lookup()
-                .filter { member ->
-                    val memberName = member.name
-                    commonName?.let { memberName.commonName.equals(it, true) } ?: true &&
-                    organisation?.let { memberName.organisation.equals(it, true) } ?: true &&
-                    organisationUnit?.let { memberName.organisationUnit.equals(it, true) } ?: true &&
-                    locality?.let { memberName.locality.equals(it, true) } ?: true &&
-                    state?.let { memberName.state.equals(it, true) } ?: true &&
-                    country?.let { memberName.country.equals(it, true) } ?: true
-                }
+            val filteredMembers = reader.lookup().filter { member ->
+                val memberName = member.name
+                commonName?.let { memberName.commonName.equals(it, true) } ?: true &&
+                organisation?.let { memberName.organisation.equals(it, true) } ?: true &&
+                organisationUnit?.let { memberName.organisationUnit.equals(it, true) } ?: true &&
+                locality?.let { memberName.locality.equals(it, true) } ?: true &&
+                state?.let { memberName.state.equals(it, true) } ?: true &&
+                country?.let { memberName.country.equals(it, true) } ?: true
+            }
 
             return RpcMemberInfoList(
-                filteredMembers
-                    .map {
-                        RpcMemberInfo(
-                            it.memberProvidedContext.entries.associate { it.key to it.value },
-                            it.mgmProvidedContext.entries.associate { it.key to it.value },
-                        )
-                    }
+                filteredMembers.map {
+                    RpcMemberInfo(
+                        it.memberProvidedContext.entries.associate { it.key to it.value },
+                        it.mgmProvidedContext.entries.associate { it.key to it.value }
+                    )
+                }
             )
         }
     }

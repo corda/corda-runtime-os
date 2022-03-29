@@ -79,7 +79,7 @@ class MemberLookupRpcOpsTest {
 
     private val converters = listOf(
         EndpointInfoConverter(),
-        PublicKeyConverter(keyEncodingService),
+        PublicKeyConverter(keyEncodingService)
     )
 
     private val layeredPropertyMapFactory = LayeredPropertyMapMocks.createFactory(converters)
@@ -92,7 +92,7 @@ class MemberLookupRpcOpsTest {
         listOf(
             RpcMemberInfo(
                 alice.memberProvidedContext.entries.associate { it.key to it.value },
-                alice.mgmProvidedContext.entries.associate { it.key to it.value },
+                alice.mgmProvidedContext.entries.associate { it.key to it.value }
             )
         )
     )
@@ -100,7 +100,7 @@ class MemberLookupRpcOpsTest {
         listOf(
             RpcMemberInfo(
                 bob.memberProvidedContext.entries.associate { it.key to it.value },
-                bob.mgmProvidedContext.entries.associate { it.key to it.value },
+                bob.mgmProvidedContext.entries.associate { it.key to it.value }
             )
         )
     )
@@ -122,7 +122,7 @@ class MemberLookupRpcOpsTest {
         mgmProvidedContext = layeredPropertyMapFactory.create<MGMContextImpl>(
             sortedMapOf(
                 MemberInfoExtension.STATUS to MEMBER_STATUS_ACTIVE,
-                MemberInfoExtension.MODIFIED_TIME to Instant.now().toString(),
+                MemberInfoExtension.MODIFIED_TIME to Instant.now().toString()
             )
         )
     )
@@ -195,7 +195,7 @@ class MemberLookupRpcOpsTest {
                 memberInfoList.map {
                     RpcMemberInfo(
                         it.memberProvidedContext.entries.associate { it.key to it.value },
-                        it.mgmProvidedContext.entries.associate { it.key to it.value },
+                        it.mgmProvidedContext.entries.associate { it.key to it.value }
                     )
                 }
             ),

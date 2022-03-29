@@ -15,6 +15,14 @@ interface MemberLookupRpcOps : RpcOps {
     /**
      * GET endpoint which returns the list of active members in the membership group.
      *
+     * @param holdingIdentityId ID of the holding identity to be checked.
+     * @param commonName Optional. Common Name (CN) attribute of the X.500 name to filter members by.
+     * @param organisation Optional. Organisation (O) attribute of the X.500 name to filter members by.
+     * @param organisationUnit Optional. Organisation Unit (OU) attribute of the X.500 name to filter members by.
+     * @param locality Optional. Locality (L) attribute of the X.500 name to filter members by.
+     * @param state Optional. State (ST) attribute of the X.500 name to filter members by.
+     * @param country Optional. Country (C) attribute of the X.500 name to filter members by.
+     *
      * @return The known information of ACTIVE members.
      */
     @HttpRpcGET(
