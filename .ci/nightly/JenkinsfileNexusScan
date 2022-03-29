@@ -1,0 +1,5 @@
+@Library('corda-shared-build-pipeline-steps@5.0') _
+
+cordaNexusScanPipeline(
+    nexusAppId: 'net.corda-cli-host-5.0'
+)
