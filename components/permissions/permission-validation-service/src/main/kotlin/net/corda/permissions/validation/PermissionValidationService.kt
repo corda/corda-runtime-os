@@ -65,6 +65,7 @@ class PermissionValidationService @Activate constructor(
                         LifecycleCoordinatorName.forComponent<PermissionValidationCacheService>()
                     )
                 )
+                permissionValidationCacheService.start()
             }
             is RegistrationStatusChangeEvent -> {
                 log.info("Registration status change received: ${event.status.name}.")
@@ -77,6 +78,7 @@ class PermissionValidationService @Activate constructor(
             }
             is StopEvent -> {
                 log.info("Stop event received, stopping dependencies.")
+                permissionValidationCacheService.stop()
                 _permissionValidator?.stop()
                 _permissionValidator = null
                 registration?.close()

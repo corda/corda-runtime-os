@@ -73,7 +73,7 @@ class PermissionValidationCacheService @Activate constructor(
     private fun eventHandler(event: LifecycleEvent) {
         when (event) {
             is StartEvent -> {
-                log.info("Received start event, waiting for UP event from ConfigurationReadService.")
+                log.info("Received start event, following configuration read service for status updates.")
                 configRegistration?.close()
                 configRegistration =
                     coordinator.followStatusChangesByName(
@@ -99,7 +99,7 @@ class PermissionValidationCacheService @Activate constructor(
             }
             // Let's set the component as UP when it has received all the snapshots it needs
             is PermissionSummaryTopicSnapshotReceived -> {
-                log.info("Permission topic snapshot received.")
+                log.info("Permission summary topic snapshot received.")
                 permissionSummarySnapshotReceived = true
                 setStatusUp()
             }
