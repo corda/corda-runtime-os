@@ -25,6 +25,7 @@ pipeline {
         CORDA_USE_CACHE = "corda-remotes"
         KUBECONFIG = credentials("e2e-tests-credentials")
         CORDA_CLI_USER_HOME = "/tmp/corda-cli-home"
+        CORDA_GRADLE_SCAN_KEY = credentials('gradle-build-scans-key')
         GRADLE_USER_HOME = "/host_tmp/gradle"
         CORDA_REVISION = "${env.GIT_COMMIT}"
         NAMESPACE = "run-${UUID.randomUUID().toString()}"
@@ -130,6 +131,7 @@ pipeline {
     }
     post {
         always {
+            findBuildScans()
             splunkLogGenerator()
             script{
                 writeFile file: "e2eTestDataForSplunk.log", text: "${env.BUILD_URL}\n${NAMESPACE}"
