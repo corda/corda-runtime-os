@@ -1,5 +1,6 @@
 package net.corda.flow.mapper.impl.executor
 
+import net.corda.data.CordaAvroSerializer
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
@@ -14,17 +15,19 @@ import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.test.flow.util.buildSessionEvent
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
 import java.time.Instant
 
 class SessionEventExecutorTest {
 
     private val sessionId = "sessionId"
+    private val sessionEventSerializer = mock<CordaAvroSerializer<SessionEvent>>()
 
     @Test
     fun `Session event executor test outbound data message and non null state`() {
         val payload = buildSessionEvent(MessageDirection.OUTBOUND, sessionId, 1, SessionData())
 
-        val result = SessionEventExecutor(sessionId,  payload, FlowMapperState(), Instant.now()).execute()
+        val result = SessionEventExecutor(sessionId, payload, FlowMapperState(), Instant.now(), sessionEventSerializer).execute()
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents
 
@@ -46,7 +49,8 @@ class SessionEventExecutorTest {
             sessionId, payload, FlowMapperState(
                 flowKey, null, FlowMapperStateType.OPEN
             ),
-            Instant.now()
+            Instant.now(),
+            sessionEventSerializer
         ).execute()
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents
@@ -63,7 +67,7 @@ class SessionEventExecutorTest {
     @Test
     fun `Session event with null state`() {
         val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionData())
-        val result = SessionEventExecutor(sessionId,  payload, null, Instant.now()).execute()
+        val result = SessionEventExecutor(sessionId, payload, null, Instant.now(), sessionEventSerializer).execute()
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents
 

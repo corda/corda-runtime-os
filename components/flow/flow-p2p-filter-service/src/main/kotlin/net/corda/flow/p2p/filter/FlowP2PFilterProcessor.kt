@@ -10,6 +10,8 @@ import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
+import net.corda.session.manager.Constants.Companion.FLOW_SESSION_SUBSYSTEM
+import net.corda.session.manager.Constants.Companion.INITIATED_SESSION_ID_SUFFIX
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import java.nio.ByteBuffer
@@ -24,8 +26,6 @@ class FlowP2PFilterProcessor(cordaAvroSerializationFactory: CordaAvroSerializati
 
     companion object {
         private val logger = contextLogger()
-        private const val FLOW_SESSION_SUBSYSTEM = "flowSession"
-        const val INITIATED_SESSION_ID_SUFFIX = "-INITIATED"
     }
     private val cordaAvroDeserializer: CordaAvroDeserializer<FlowMapperEvent> = cordaAvroSerializationFactory.createAvroDeserializer({},
         FlowMapperEvent::class.java)

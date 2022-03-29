@@ -8,9 +8,8 @@ import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
-import net.corda.data.identity.HoldingIdentity
-import net.corda.test.flow.util.buildSessionEvent
 import net.corda.session.manager.integration.SessionMessageType
+import net.corda.test.flow.util.buildSessionEvent
 import java.nio.ByteBuffer
 import java.time.Instant
 
@@ -31,8 +30,6 @@ fun generateInit(instant: Instant, messageDirection: MessageDirection = MessageD
         .setFlowKey(null)
         .setFlowName("someflow")
         .setPayload(ByteBuffer.wrap("some bytes".toByteArray()))
-        .setInitiatingIdentity(HoldingIdentity("Alice","group1" ))
-        .setInitiatedIdentity(HoldingIdentity("Bob","group1" ))
         .build()
     return generateSessionEvent(sessionInit, instant, messageDirection)
 }

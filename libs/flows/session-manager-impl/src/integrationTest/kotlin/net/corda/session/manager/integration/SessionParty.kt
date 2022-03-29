@@ -2,6 +2,7 @@ package net.corda.session.manager.integration
 
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.state.session.SessionState
+import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.session.manager.impl.SessionManagerImpl
 import net.corda.session.manager.integration.helper.generateMessage
@@ -18,6 +19,7 @@ class SessionParty (
 ) : SessionInteractions, BusInteractions by inboundMessages {
 
     private val sessionManager = SessionManagerImpl()
+    private val testIdentity = HoldingIdentity()
 
     override fun processNewOutgoingMessage(messageType: SessionMessageType, sendMessages: Boolean, instant: Instant) {
         val sessionEvent = generateMessage(messageType, instant)
@@ -29,7 +31,7 @@ class SessionParty (
     }
 
     override fun sendMessages(instant: Instant) {
-        val (updatedState, outputMessages) = sessionManager.getMessagesToSend(sessionState!!, instant, testConfig)
+        val (updatedState, outputMessages) = sessionManager.getMessagesToSend(sessionState!!, instant, testConfig, testIdentity)
         sessionState = updatedState
         outboundMessages.addMessages(outputMessages)
     }

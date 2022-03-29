@@ -101,9 +101,7 @@ class FlowMapperIntegrationTest {
         val flowKey = FlowKey("flowId", HoldingIdentity("x500-1", "group"))
         val inputKey = "sessionId"
         val sessionInit = SessionInit(
-            "flowName", "cpiId", flowKey,
-            HoldingIdentity("x500-2", "group"),
-            HoldingIdentity("x500-1", "group"), null
+            "flowName", "cpiId", flowKey, null
         )
 
         val sessionEvent = buildSessionEvent(MessageDirection.OUTBOUND, inputKey, 1, sessionInit)
@@ -129,8 +127,6 @@ class FlowMapperIntegrationTest {
             "flowName",
             "cpiId",
             null,
-            HoldingIdentity("x500-2", "group"),
-            HoldingIdentity("x500-1", "group"),
             null
         )
         val sessionEvent = buildSessionEvent(MessageDirection.INBOUND, inputKey, 1, sessionInit)

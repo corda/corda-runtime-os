@@ -58,14 +58,15 @@ class FlowGlobalPostProcessorImplTest {
             sequenceNum = 1
         }
 
-        whenever(sessionManager.getMessagesToSend(eq(sessionState), any(), any()))
+        whenever(sessionManager.getMessagesToSend(eq(sessionState), any(), any(), any()))
             .thenReturn(sessionState to listOf(sessionEvent))
-        whenever(sessionManager.getMessagesToSend(eq(anotherSessionState), any(), any()))
+        whenever(sessionManager.getMessagesToSend(eq(anotherSessionState), any(), any(), any()))
             .thenReturn(anotherSessionState to listOf(anotherSessionEvent))
 
         val inputContext: FlowEventContext<Any> = FlowEventContext(
             checkpoint = Checkpoint().apply {
                 sessions = listOf(sessionState, anotherSessionState)
+                flowKey = FlowKey("", HoldingIdentity())
             },
             inputEvent = FlowEvent(FLOW_KEY, Unit),
             inputEventPayload = Unit,
@@ -111,11 +112,12 @@ class FlowGlobalPostProcessorImplTest {
         }
         val checkpointCopy = Checkpoint().apply {
             sessions = checkpoint.sessions
+            flowKey = FlowKey("",HoldingIdentity())
         }
 
-        whenever(sessionManager.getMessagesToSend(eq(sessionState), any(), any()))
+        whenever(sessionManager.getMessagesToSend(eq(sessionState), any(), any(), any()))
             .thenReturn(updatedSessionState to listOf(sessionEvent))
-        whenever(sessionManager.getMessagesToSend(eq(anotherSessionState), any(), any()))
+        whenever(sessionManager.getMessagesToSend(eq(anotherSessionState), any(), any(), any()))
             .thenReturn(updatedAnotherSessionState to listOf(anotherSessionEvent))
 
         val inputContext: FlowEventContext<Any> = FlowEventContext(

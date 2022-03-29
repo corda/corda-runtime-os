@@ -38,7 +38,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
         context.checkpoint?.let { checkpoint ->
 
             val records = checkpoint.sessions
-                .map { sessionState -> sessionManager.getMessagesToSend(sessionState, now, testSmartConfig) }
+                .map { sessionState -> sessionManager.getMessagesToSend(sessionState, now, testSmartConfig, checkpoint.flowKey.identity) }
                 .onEach { (updatedSessionState, _) -> checkpoint.addOrReplaceSession(updatedSessionState) }
                 .flatMap { (_, messages) -> messages }
                 .map { message -> message.toRecord() }

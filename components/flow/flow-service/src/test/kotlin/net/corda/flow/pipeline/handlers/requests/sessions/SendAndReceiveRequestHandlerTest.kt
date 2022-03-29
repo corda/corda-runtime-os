@@ -79,7 +79,6 @@ class SendAndReceiveRequestHandlerTest {
             .setLastReceivedMessageTime(Instant.now())
             .setLastSentMessageTime(Instant.now())
             .setCounterpartyIdentity(HoldingIdentity("Alice", "group1"))
-            .setIsInitiator(true)
             .setSendAck(true)
             .setReceivedEventsState(SessionProcessState(0, emptyList()))
             .setSendEventsState(SessionProcessState(0, emptyList()))

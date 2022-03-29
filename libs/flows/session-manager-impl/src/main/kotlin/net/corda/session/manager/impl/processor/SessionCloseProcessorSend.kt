@@ -60,7 +60,7 @@ class SessionCloseProcessorSend(
     private fun handleNullSession(sessionId: String): SessionState {
         val errorMessage = "Tried to send SessionClose with flow key $key and sessionId $sessionId  with null state"
         logger.error(errorMessage)
-        return generateErrorSessionStateFromSessionEvent(sessionId, errorMessage, "SessionCLose-StateNull", instant)
+        return generateErrorSessionStateFromSessionEvent(errorMessage, sessionEvent, "SessionCLose-StateNull", instant)
     }
 
     private fun handleDuplicateCloseSent(
@@ -92,7 +92,7 @@ class SessionCloseProcessorSend(
         return sessionState.apply {
             status = SessionStateType.ERROR
             sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.plus(
-                generateErrorEvent(sessionState, errorMessage, "SessionClose-InvalidStatus", instant)
+                generateErrorEvent(sessionState, sessionEvent, errorMessage, "SessionClose-InvalidStatus", instant)
             )
         }
     }
@@ -131,6 +131,6 @@ class SessionCloseProcessorSend(
     ): SessionState {
         logger.error(errorMessage)
         sessionState.status = SessionStateType.ERROR
-        return generateErrorSessionStateFromSessionEvent(sessionState.sessionId, errorMessage, errorType, instant)
+        return generateErrorSessionStateFromSessionEvent(errorMessage, sessionEvent, errorType, instant)
     }
 }

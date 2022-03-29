@@ -25,7 +25,6 @@ fun buildSessionState(
         .setLastReceivedMessageTime(sessionStartTime)
         .setLastSentMessageTime(sessionStartTime)
         .setCounterpartyIdentity(HoldingIdentity("Alice", "group1"))
-        .setIsInitiator(true)
         .setSendAck(sendAck)
         .setReceivedEventsState(SessionProcessState(lastReceivedSeqNum, receivedEvents))
         .setSendEventsState(SessionProcessState(lastSentSeqNum, eventsToSend))
@@ -42,11 +41,15 @@ fun buildSessionEvent(
     receivedSequenceNum: Int = 0,
     outOfOrderSeqNums: List<Int> = emptyList(),
     timestamp: Instant = Instant.now(),
+    initiatingIdentity: HoldingIdentity = HoldingIdentity("alice", "group1"),
+    initiatedIdentity: HoldingIdentity = HoldingIdentity("bob", "group1"),
 ): SessionEvent {
     return SessionEvent.newBuilder()
         .setSessionId(sessionId)
         .setMessageDirection(messageDirection)
         .setSequenceNum(sequenceNum)
+        .setInitiatingIdentity(initiatingIdentity)
+        .setInitiatedIdentity(initiatedIdentity)
         .setPayload(payload)
         .setTimestamp(timestamp)
         .setReceivedSequenceNum(receivedSequenceNum)
