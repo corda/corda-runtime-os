@@ -64,7 +64,8 @@ class SessionEventHandler @Activate constructor(
                         "Flow [${context.checkpoint.flowKey.flowId}] already has a checkpoint while processing session init event"
                     )
                 }
-                val checkpoint = createInitiatedFlowCheckpoint(context, updatedSessionState, sessionInit, nextSessionEvent.initiatingIdentity)
+                val checkpoint =
+                    createInitiatedFlowCheckpoint(context, updatedSessionState, sessionInit, nextSessionEvent.initiatingIdentity)
                 checkpoint.sessions.add(updatedSessionState)
                 return context.copy(checkpoint = checkpoint)
             }

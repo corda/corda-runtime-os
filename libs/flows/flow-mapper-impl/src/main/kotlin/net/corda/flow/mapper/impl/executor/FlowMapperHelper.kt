@@ -49,7 +49,7 @@ fun getSessionEventOutputTopic(messageDirection: MessageDirection): String {
  * @param sessionEvent Session event to extract identities from
  * @return Source and destination identities for a SessionEvent message.
  */
-private fun getSourceAndDestinationIdentity(sessionEvent: SessionEvent) : Pair<HoldingIdentity, HoldingIdentity> {
+private fun getSourceAndDestinationIdentity(sessionEvent: SessionEvent): Pair<HoldingIdentity, HoldingIdentity> {
     return if (sessionEvent.sessionId.contains(INITIATED_SESSION_ID_SUFFIX)) {
         Pair(sessionEvent.initiatedIdentity, sessionEvent.initiatingIdentity)
     } else {
@@ -63,10 +63,11 @@ private fun getSourceAndDestinationIdentity(sessionEvent: SessionEvent) : Pair<H
  * @param sessionEventSerializer Serializer for session events
  * @return AppMessage to send to the P2P.out topic with the serialized session event as payload
  */
-fun generateAppMessage(sessionEvent: SessionEvent, sessionEventSerializer: CordaAvroSerializer<SessionEvent>) : AppMessage {
+fun generateAppMessage(sessionEvent: SessionEvent, sessionEventSerializer: CordaAvroSerializer<SessionEvent>): AppMessage {
     val (sourceIdentity, destinationIdentity) = getSourceAndDestinationIdentity(sessionEvent)
     //TODO set p2pTTL value from flow config - CORE-4574
-    val header = AuthenticatedMessageHeader(sourceIdentity, destinationIdentity, Long.MAX_VALUE, sessionEvent.sessionId, "", FLOW_SESSION_SUBSYSTEM)
+    val header =
+        AuthenticatedMessageHeader(sourceIdentity, destinationIdentity, Long.MAX_VALUE, sessionEvent.sessionId, "", FLOW_SESSION_SUBSYSTEM)
     return AppMessage(AuthenticatedMessage(header, ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))))
 }
 
