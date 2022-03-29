@@ -8,7 +8,7 @@ import picocli.CommandLine
 class MembersListTest {
 
     companion object {
-        private const val DUMMY_VNODE_ID = "10"
+        private const val DUMMY_HOLDING_IDENTITY_ID = "10"
     }
 
     @Test
@@ -17,9 +17,15 @@ class MembersListTest {
         app.service = MockHttpService()
         val url = "https://test.r3.com"
         tapSystemErrAndOutNormalized {
-            CommandLine(app).execute("--user=test", "--password=test", "-t=$url", "members-list", "-v=$DUMMY_VNODE_ID")
+            CommandLine(app).execute(
+                "--user=test",
+                "--password=test",
+                "-t=$url",
+                "members-list",
+                "-h=$DUMMY_HOLDING_IDENTITY_ID"
+            )
         }.apply {
-            assertTrue(contains("$url/members?vnode-id=$DUMMY_VNODE_ID"))
+            assertTrue(contains("$url/members?holdingIdentityId=$DUMMY_HOLDING_IDENTITY_ID"))
         }
     }
 }

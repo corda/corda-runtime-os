@@ -40,13 +40,13 @@ class NetworkPluginWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
         )
         fun getMembersList(
             @CommandLine.Option(
-                names = ["-v", "--vnode-id"],
+                names = ["-h", "--holding-identity-id"],
                 arity = "1",
-                description = ["Virtual node ID"]
-            ) virtualNodeId: String?
+                description = ["ID of the holding identity to be checked."]
+            ) holdingIdentityId: String?
         ) {
-            require(virtualNodeId != null)
-            service.get("/members?vnode-id=$virtualNodeId")
+            require(holdingIdentityId != null)
+            service.get("/members?holdingIdentityId=$holdingIdentityId")
         }
     }
 }
