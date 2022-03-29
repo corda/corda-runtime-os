@@ -10,11 +10,10 @@ import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
 import net.corda.data.membership.rpc.response.RegistrationResponse
 import net.corda.data.membership.rpc.response.RegistrationStatus
 import net.corda.libs.packaging.CpiIdentifier
-import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
 import net.corda.membership.registration.MembershipRequestRegistrationResult
-import net.corda.membership.registration.provider.RegistrationProvider
+import net.corda.membership.registration.RegistrationProxy
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -40,7 +39,7 @@ class MemberOpsServiceProcessorTest {
 
     companion object {
         private lateinit var processor: MemberOpsServiceProcessor
-        private lateinit var registrationProvider: RegistrationProvider
+        private lateinit var registrationProxy: RegistrationProxy
         private lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
 
         private val holdingIdentity = HoldingIdentity("test", "0")
@@ -49,13 +48,10 @@ class MemberOpsServiceProcessorTest {
         @JvmStatic
         @BeforeAll
         fun setup() {
-            registrationProvider = mock {
-                val service: MemberRegistrationService = mock {
-                    on { register(holdingIdentity) } doReturn (MembershipRequestRegistrationResult(
-                        MembershipRequestRegistrationOutcome.SUBMITTED
-                    ))
-                }
-                on { get(holdingIdentity) } doReturn (service)
+            registrationProxy = mock {
+                on { register(holdingIdentity) } doReturn (MembershipRequestRegistrationResult(
+                    MembershipRequestRegistrationOutcome.SUBMITTED
+                ))
             }
             virtualNodeInfoReadService = mock {
                 on { getById(HOLDING_IDENTITY_STRING) } doReturn VirtualNodeInfo(
@@ -64,7 +60,7 @@ class MemberOpsServiceProcessorTest {
                     null, UUID.randomUUID(), null, UUID.randomUUID()
                 )
             }
-            processor = MemberOpsServiceProcessor(registrationProvider, virtualNodeInfoReadService)
+            processor = MemberOpsServiceProcessor(registrationProxy, virtualNodeInfoReadService)
         }
     }
 

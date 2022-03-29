@@ -54,7 +54,7 @@ class InitiateFlowRequestHandler @Activate constructor(
             .setSequenceNum(null)
             .setInitiatingIdentity(flowKey.identity)
             // TODO Need member lookup service to get the holding identity of the peer
-            .setInitiatedIdentity(HoldingIdentity(request.x500Name.toString(), "helloworld"))
+            .setInitiatedIdentity(HoldingIdentity(request.x500Name.toString(), "flow-worker-dev"))
             .setReceivedSequenceNum(0)
             .setOutOfOrderSequenceNums(listOf(0))
             .setPayload(payload)
