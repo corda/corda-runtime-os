@@ -10,12 +10,16 @@ import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
+import net.corda.p2p.app.AppMessage
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.test.flow.util.buildSessionEvent
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 import java.time.Instant
 
 class SessionEventExecutorTest {
@@ -25,7 +29,9 @@ class SessionEventExecutorTest {
 
     @Test
     fun `Session event executor test outbound data message and non null state`() {
-        val payload = buildSessionEvent(MessageDirection.OUTBOUND, sessionId, 1, SessionData())
+        val bytes = "bytes".toByteArray()
+        whenever(sessionEventSerializer.serialize(any())).thenReturn(bytes)
+        val payload = buildSessionEvent(MessageDirection.OUTBOUND, sessionId, 1, SessionData(ByteBuffer.wrap(bytes)))
 
         val result = SessionEventExecutor(sessionId, payload, FlowMapperState(), Instant.now(), sessionEventSerializer).execute()
         val state = result.flowMapperState
@@ -37,7 +43,7 @@ class SessionEventExecutorTest {
         assertThat(outboundEvent.topic).isEqualTo(P2P_OUT_TOPIC)
         assertThat(outboundEvent.key).isEqualTo(sessionId)
         assertThat(payload.sessionId).isEqualTo(sessionId)
-        assertThat(outboundEvent.value!!::class).isEqualTo(FlowMapperEvent::class)
+        assertThat(outboundEvent.value!!::class).isEqualTo(AppMessage::class)
     }
 
     @Test
