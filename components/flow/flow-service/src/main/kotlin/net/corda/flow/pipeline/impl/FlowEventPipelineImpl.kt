@@ -136,7 +136,7 @@ data class FlowEventPipelineImpl(
                 copy(output = flowResult.output)
             }
             is FlowIORequest.FlowFailed -> {
-                TODO("Flow Failure Path TBD")
+                copy(output = null)
             }
             else -> throw FlowProcessingException("Invalid ${FlowIORequest::class.java.simpleName} returned from flow fiber")
         }

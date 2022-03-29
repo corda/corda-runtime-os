@@ -56,9 +56,16 @@ class TestFlow(private val jsonArg: String) : Flow<String> {
                     }
             }
 
+            /**
+             * For now this is removed to allow others to test while the issue preventing this
+             * from working is investigated
+            val subFlow = TestGetNodeNameSubFlow()
+            val myIdentity = flowEngine.subFlow(subFlow)
+            */
+
             val response = TestFlowOutput(
                 inputs.inputValue?:"No input value",
-                flowEngine.subFlow(TestGetNodeNameSubFlow()).toString(),
+                "dummy",
                 foundMemberInfo
             )
 
