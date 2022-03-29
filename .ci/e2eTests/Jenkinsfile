@@ -132,6 +132,9 @@ pipeline {
         always {
             splunkLogGenerator()
             script{
+                writeFile file: "e2eTestDataForSplunk.log", text: "${env.BUILD_URL}\n${NAMESPACE}"
+                archiveArtifacts artifacts: "e2eTestDataForSplunk.log", fingerprint: true
+
                 def splunkK8URL = "https://r3ll3.splunkcloud.com/en-US/app/r3_kubernetes_app/overview?form.period.earliest=-4h%40m&form.period.latest=now&form.span=5m&form.cluster=eks-e2e&form.namespace=${NAMESPACE}&form.pod=*"
                 echo "Splunk K8 Url: $splunkK8URL"
             }
