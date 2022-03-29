@@ -65,7 +65,7 @@ private fun getSourceAndDestinationIdentity(sessionEvent: SessionEvent) : Pair<H
  */
 fun generateAppMessage(sessionEvent: SessionEvent, sessionEventSerializer: CordaAvroSerializer<SessionEvent>) : AppMessage {
     val (sourceIdentity, destinationIdentity) = getSourceAndDestinationIdentity(sessionEvent)
-    //TODO - set a reasonable ttl and traceID
+    //TODO set p2pTTL value from flow config - CORE-4574
     val header = AuthenticatedMessageHeader(sourceIdentity, destinationIdentity, Long.MAX_VALUE, sessionEvent.sessionId, "", FLOW_SESSION_SUBSYSTEM)
     return AppMessage(AuthenticatedMessage(header, ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))))
 }
