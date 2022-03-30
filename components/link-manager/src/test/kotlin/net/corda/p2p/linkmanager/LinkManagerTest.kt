@@ -454,7 +454,8 @@ class LinkManagerTest {
     @Test
     fun `OutboundMessageProcessor produces only a LinkManagerSent maker (per flowMessage) if SessionAlreadyPending`() {
         val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
-        Mockito.`when`(mockSessionManager.processOutboundMessage(any())).thenReturn(SessionManager.SessionState.SessionAlreadyPending)
+        Mockito.`when`(mockSessionManager.processOutboundMessage(any(), any()))
+            .thenReturn(SessionManager.SessionState.SessionAlreadyPending)
 
         val processor = LinkManager.OutboundMessageProcessor(
             mockSessionManager,
@@ -496,7 +497,7 @@ class LinkManagerTest {
                 ANOTHER_SESSION_ID to secondSessionInitMessage
             )
         )
-        Mockito.`when`(mockSessionManager.processOutboundMessage(any())).thenReturn(state)
+        Mockito.`when`(mockSessionManager.processOutboundMessage(any(), any())).thenReturn(state)
 
         val inboundSubscribedTopics = listOf(1, 5, 9)
 
@@ -533,7 +534,7 @@ class LinkManagerTest {
         val mockSessionManager = Mockito.mock(SessionManager::class.java)
 
         val state = SessionManager.SessionState.SessionEstablished(createSessionPair().initiatorSession)
-        Mockito.`when`(mockSessionManager.processOutboundMessage(any())).thenReturn(state)
+        Mockito.`when`(mockSessionManager.processOutboundMessage(any(), any())).thenReturn(state)
 
         val processor = LinkManager.OutboundMessageProcessor(
             mockSessionManager,
@@ -599,7 +600,8 @@ class LinkManagerTest {
     @Test
     fun `OutboundMessageProcessor produces only a LinkManagerSentMarker if CannotEstablishSession`() {
         val mockSessionManager = Mockito.mock(SessionManager::class.java)
-        Mockito.`when`(mockSessionManager.processOutboundMessage(any())).thenReturn(SessionManager.SessionState.CannotEstablishSession)
+        Mockito.`when`(mockSessionManager.processOutboundMessage(any(), any()))
+            .thenReturn(SessionManager.SessionState.CannotEstablishSession)
 
         val processor = LinkManager.OutboundMessageProcessor(
             mockSessionManager,
@@ -624,7 +626,7 @@ class LinkManagerTest {
         val mockSessionManager = Mockito.mock(SessionManager::class.java)
 
         val state = SessionManager.SessionState.SessionEstablished(createSessionPair().initiatorSession)
-        Mockito.`when`(mockSessionManager.processOutboundMessage(any())).thenReturn(state)
+        Mockito.`when`(mockSessionManager.processOutboundMessage(any(), any())).thenReturn(state)
         val mockMembers = mock<LinkManagerMembershipGroupReader> {
             on { getMemberInfo(FIRST_SOURCE.toHoldingIdentity()) } doReturn FIRST_DEST_MEMBER_INFO
             on { getMemberInfo(FIRST_DEST.toHoldingIdentity()) } doReturn null
@@ -1105,7 +1107,7 @@ class LinkManagerTest {
     fun `OutboundMessageProcessor warns if no partitions are assigned and only produces LinkManagerSentMarker`() {
         val mockSessionManager = Mockito.mock(SessionManager::class.java)
         val sessionInitMessage = LinkOutMessage()
-        Mockito.`when`(mockSessionManager.processOutboundMessage(any())).thenReturn(
+        Mockito.`when`(mockSessionManager.processOutboundMessage(any(), any())).thenReturn(
             SessionManager.SessionState.NewSessionsNeeded(listOf(SESSION_ID to sessionInitMessage))
         )
 

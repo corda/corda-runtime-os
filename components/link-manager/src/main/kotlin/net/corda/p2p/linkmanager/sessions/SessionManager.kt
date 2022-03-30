@@ -8,7 +8,7 @@ import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManagerInternalTypes
 
 interface SessionManager: LifecycleWithDominoTile {
-    fun processOutboundMessage(message: AuthenticatedMessageAndKey): SessionState
+    fun processOutboundMessage(message: AuthenticatedMessageAndKey, queueMessageIfNoActiveSession: Boolean): SessionState
     fun getSessionById(uuid: String): SessionDirection
     fun processSessionMessage(message: LinkInMessage): LinkOutMessage?
     fun inboundSessionEstablished(sessionId: String)

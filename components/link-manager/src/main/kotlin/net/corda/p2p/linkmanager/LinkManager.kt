@@ -310,7 +310,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             return if (isHostedLocally) {
                 mutableListOf(Record(P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)))
             } else {
-                when (val state = sessionManager.processOutboundMessage(messageAndKey)) {
+                when (val state = sessionManager.processOutboundMessage(messageAndKey, queueMessageIfNoActiveSession = !isReplay)) {
                     is SessionState.NewSessionsNeeded -> {
                         logger.trace { "No existing session with ${messageAndKey.message.header.destination.toHoldingIdentity()}. " +
                                 "Initiating a new one.." }
