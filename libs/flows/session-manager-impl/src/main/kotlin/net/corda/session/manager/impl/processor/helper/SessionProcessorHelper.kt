@@ -7,6 +7,7 @@ import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
+import net.corda.data.identity.HoldingIdentity
 import java.time.Instant
 
 /**
@@ -18,8 +19,31 @@ import java.time.Instant
  * @param instant timestamp for SessionEvent
  * @return SessionEvent with SessionError payload.
  */
-fun generateErrorEvent(sessionState: SessionState, sessionEvent: SessionEvent?, errorMessage: String, errorType: String, instant: Instant)
-: SessionEvent {
+fun generateErrorEvent(sessionState: SessionState, sessionEvent: SessionEvent, errorMessage: String, errorType: String, instant: Instant)
+        : SessionEvent {
+    return generateErrorEvent(
+        sessionState,
+        sessionEvent.initiatingIdentity,
+        sessionEvent.initiatedIdentity,
+        errorMessage,
+        errorType,
+        instant
+    )
+}
+
+/**
+ * Generate an error SessionEvent.
+ * @param sessionState Session state to build error for
+ * @param initiatingIdentity initiating identity
+ * @param initiatedIdentity initiated identity
+ * @param errorType Error type
+ * @param instant timestamp for SessionEvent
+ * @return SessionEvent with SessionError payload.
+ */
+fun generateErrorEvent(
+    sessionState: SessionState, initiatingIdentity: HoldingIdentity, initiatedIdentity: HoldingIdentity,
+    errorMessage: String, errorType: String, instant: Instant
+): SessionEvent {
     val sessionId = sessionState.sessionId
     val errorEnvelope = ExceptionEnvelope(errorType, errorMessage)
     val sessionError = SessionError(errorEnvelope)
@@ -27,13 +51,14 @@ fun generateErrorEvent(sessionState: SessionState, sessionEvent: SessionEvent?, 
         .setMessageDirection(MessageDirection.OUTBOUND)
         .setTimestamp(instant)
         .setSequenceNum(null)
-        .setInitiatingIdentity(sessionEvent?.initiatingIdentity)
-        .setInitiatedIdentity(sessionEvent?.initiatedIdentity)
+        .setInitiatingIdentity(initiatingIdentity)
+        .setInitiatedIdentity(initiatedIdentity)
         .setSessionId(sessionId)
         .setReceivedSequenceNum(0)
         .setOutOfOrderSequenceNums(emptyList())
         .setPayload(sessionError)
-        .build()}
+        .build()
+}
 
 /**
  * Generate a new SessionState with a status of ERROR and an Error SessionEvent queued to send.
@@ -67,8 +92,8 @@ fun generateErrorSessionStateFromSessionEvent(errorMessage: String, sessionEvent
  * Update and return the received events session state. Set the last processed sequence number to the last
  * contiguous event in the sequence of [undeliveredMessages].
  */
-fun recalcReceivedProcessState(receivedEventsState: SessionProcessState) : SessionProcessState {
-    var nextSeqNum = receivedEventsState.lastProcessedSequenceNum+1
+fun recalcReceivedProcessState(receivedEventsState: SessionProcessState): SessionProcessState {
+    var nextSeqNum = receivedEventsState.lastProcessedSequenceNum + 1
     val undeliveredMessages = receivedEventsState.undeliveredMessages
 
     val sortedEvents = undeliveredMessages.distinctBy { it.sequenceNum }.sortedBy { it.sequenceNum }

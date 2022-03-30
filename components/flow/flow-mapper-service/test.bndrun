@@ -2,6 +2,7 @@
 -runfw: org.apache.felix.framework;
 -runee: JavaSE-11
 -runtrace: true
+#-runjdb: 5005
 
 -runsystempackages: \
     javax.xml.stream;version=1.0.0,\
@@ -24,6 +25,8 @@
     bnd.identity;id='net.corda.configuration-read-service-impl',\
     bnd.identity;id='${project.archivesBaseName}-tests',\
     bnd.identity;id='net.corda.inmemory-messaging-impl',\
+    bnd.identity;id='net.corda.schema-registry-impl',\
+    bnd.identity;id='net.corda.db-message-bus-impl',\
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='slf4j.simple',\
     bnd.identity;id='junit-platform-launcher',\

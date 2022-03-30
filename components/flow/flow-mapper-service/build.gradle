@@ -34,6 +34,9 @@ dependencies {
     integrationTestRuntimeOnly project(":components:configuration:configuration-read-service-impl")
     integrationTestRuntimeOnly project(":libs:flows:flow-mapper-impl")
     integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")
+    //to get serializzation factory impl
+    integrationTestRuntimeOnly project(":libs:messaging:db-message-bus-impl")
+    integrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
 
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
     integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"

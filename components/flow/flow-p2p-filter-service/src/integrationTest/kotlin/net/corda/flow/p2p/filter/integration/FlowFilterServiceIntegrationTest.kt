@@ -4,10 +4,10 @@ import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.config.Configuration
+import net.corda.data.flow.FlowKey
+import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.mapper.ExecuteCleanup
-import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.p2p.filter.FlowP2PFilterService
@@ -73,7 +73,6 @@ class FlowFilterServiceIntegrationTest {
             setup = true
             val publisher = publisherFactory.createPublisher(PublisherConfig(clientId))
             setupConfig(publisher)
-
         }
     }
 
@@ -84,29 +83,29 @@ class FlowFilterServiceIntegrationTest {
         val testId = "test1"
         val publisher = publisherFactory.createPublisher(PublisherConfig(testId))
 
-        val flowMapperSerializer = cordaAvroSerializationFactory.createAvroSerializer<FlowMapperEvent> {  }
+        val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> {  }
+        val flowEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<FlowEvent> {  }
 
         val identity = HoldingIdentity(testId, testId)
         val flowHeader = AuthenticatedMessageHeader(identity, identity, 1, "", "", "flowSession")
-        val flowEvent = FlowMapperEvent(
-            SessionEvent(
+        val sessionEvent = SessionEvent(
                 MessageDirection.OUTBOUND, Instant.now(), testId, 1, identity, identity, 0, listOf(),
                 SessionInit(
                     testId, testId, null,  ByteBuffer.wrap("".toByteArray())
                 )
             )
-        )
-        val flowRecord = Record(
-            P2P_IN_TOPIC, testId, AppMessage(AuthenticatedMessage(flowHeader, ByteBuffer.wrap(flowMapperSerializer.serialize(flowEvent))))
+
+        val sessionRecord = Record(
+            P2P_IN_TOPIC, testId, AppMessage(AuthenticatedMessage(flowHeader, ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))))
         )
 
         val invalidHeader = AuthenticatedMessageHeader(identity, identity, 1, "", "", "other")
-        val invalidEvent = FlowMapperEvent(ExecuteCleanup())
+        val invalidEvent = FlowEvent(FlowKey("", HoldingIdentity("", "")), sessionEvent)
         val invalidRecord = Record(
-            P2P_IN_TOPIC, testId, AppMessage(AuthenticatedMessage(invalidHeader, ByteBuffer.wrap(flowMapperSerializer.serialize(invalidEvent))))
+            P2P_IN_TOPIC, testId, AppMessage(AuthenticatedMessage(invalidHeader, ByteBuffer.wrap(flowEventSerializer.serialize(invalidEvent))))
         )
 
-        publisher.publish(listOf(flowRecord, flowRecord, invalidRecord))
+        publisher.publish(listOf(sessionRecord, sessionRecord, invalidRecord))
 
         //validate mapper receives 2 inits
         val mapperLatch = CountDownLatch(2)

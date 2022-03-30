@@ -119,7 +119,8 @@ class SessionManagerImpl : SessionManager {
             listOf(
                 generateErrorEvent(
                     sessionState,
-                    null,
+                    initiatingIdentity,
+                    initiatedIdentity,
                     "Session has timed out. No messages received since $lastReceivedMessageTime",
                     "SessionTimeout-Heartbeat",
                     instant
