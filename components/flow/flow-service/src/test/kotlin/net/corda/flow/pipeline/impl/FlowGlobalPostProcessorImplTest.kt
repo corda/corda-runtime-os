@@ -1,11 +1,13 @@
 package net.corda.flow.pipeline.impl
 
+import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
+import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.messaging.api.records.Record
@@ -20,6 +22,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import java.util.*
 
 class FlowGlobalPostProcessorImplTest {
 
@@ -28,6 +31,7 @@ class FlowGlobalPostProcessorImplTest {
         const val ANOTHER_SESSION_ID = "another session id"
         const val DATA = "data"
         const val MORE_DATA = "more data"
+        val FLOW_KEY = FlowKey(UUID.randomUUID().toString(), HoldingIdentity("Alice", "group1"))
     }
 
     private val sessionManager = mock<SessionManager>()
@@ -61,7 +65,7 @@ class FlowGlobalPostProcessorImplTest {
         val inputContext: FlowEventContext<Any> = buildFlowEventContext(
             checkpoint = Checkpoint().apply {
                 sessions = listOf(sessionState, anotherSessionState)
-                flowKey = FlowKey("", HoldingIdentity())
+                flowKey = FLOW_KEY
             },
             inputEventPayload = Unit
         )
@@ -105,7 +109,7 @@ class FlowGlobalPostProcessorImplTest {
         }
         val checkpointCopy = Checkpoint().apply {
             sessions = checkpoint.sessions
-            flowKey = FlowKey("",HoldingIdentity())
+            flowKey = FLOW_KEY
         }
 
         whenever(sessionManager.getMessagesToSend(eq(sessionState), any(), any(), any()))
