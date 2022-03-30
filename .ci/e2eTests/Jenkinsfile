@@ -112,7 +112,7 @@ pipeline {
                     procno=$! #remember process number started in background
                     trap "kill -9 ${procno}" EXIT
 
-                    ./gradlew cleanE2eTest e2eTest
+                    ./gradlew cleanE2eTest e2eTest ${GRADLE_PERFORMANCE_TUNING}
                 '''
             }
             post {
