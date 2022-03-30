@@ -19,8 +19,6 @@ import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
-import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.write
 
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
@@ -57,8 +55,6 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
     private val pausedPartitions = mutableSetOf<CordaTopicPartition>()
     private val partitionListeners = mutableMapOf<String, CordaConsumerRebalanceListener?>()
     private val lastReadOffset = mutableMapOf<CordaTopicPartition, Long>()
-
-    private val lock: ReentrantReadWriteLock = ReentrantReadWriteLock()
 
     override fun subscribe(topics: Collection<String>, listener: CordaConsumerRebalanceListener?) {
         checkNotAssigned()
@@ -255,14 +251,13 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
     internal fun getNextTopicPartition(): CordaTopicPartition? {
         updateTopicPartitions()
 
+        @Synchronized
         fun nextPartition(): CordaTopicPartition {
-            lock.write {
-                return if (!currentTopicPartition.hasNext()) {
-                    currentTopicPartition = topicPartitions.iterator()
-                    currentTopicPartition.next()
-                } else {
-                    currentTopicPartition.next()
-                }
+            return if (!currentTopicPartition.hasNext()) {
+                currentTopicPartition = topicPartitions.iterator()
+                currentTopicPartition.next()
+            } else {
+                currentTopicPartition.next()
             }
         }
 
