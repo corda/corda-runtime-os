@@ -1,0 +1,18 @@
+plugins {
+    id 'corda.common-library'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+}
+
+description 'Common module for sharing dependencies between cache implementations.'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda:corda-base'
+    implementation project(":libs:messaging:messaging")
+
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "net.corda:corda-avro-schema"
+}

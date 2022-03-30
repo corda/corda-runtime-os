@@ -16,7 +16,7 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.permissions.service.PermissionServiceComponent
+import net.corda.permissions.management.PermissionManagementService
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -27,7 +27,7 @@ import org.mockito.kotlin.whenever
 
 internal class HttpRpcGatewayEventHandlerTest {
 
-    private val permissionServiceComponent = mock<PermissionServiceComponent>()
+    private val permissionManagementService = mock<PermissionManagementService>()
 
     private val registration = mock<RegistrationHandle>()
     private val coordinator = mock<LifecycleCoordinator>()
@@ -45,7 +45,7 @@ internal class HttpRpcGatewayEventHandlerTest {
     private val rpcOps: List<PluggableRPCOps<out RpcOps>> = listOf(endpoint)
 
     private val handler = HttpRpcGatewayEventHandler(
-        permissionServiceComponent,
+        permissionManagementService,
         configurationReadService,
         httpRpcServerFactory,
         rbacSecurityManagerService,
@@ -57,7 +57,7 @@ internal class HttpRpcGatewayEventHandlerTest {
     fun setUp() {
         whenever(coordinator.followStatusChangesByName(
             setOf(
-                LifecycleCoordinatorName.forComponent<PermissionServiceComponent>(),
+                LifecycleCoordinatorName.forComponent<PermissionManagementService>(),
                 LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
                 LifecycleCoordinatorName.forComponent<RBACSecurityManagerService>(),
             )
@@ -70,13 +70,13 @@ internal class HttpRpcGatewayEventHandlerTest {
 
         verify(coordinator).followStatusChangesByName(
             setOf(
-                LifecycleCoordinatorName.forComponent<PermissionServiceComponent>(),
+                LifecycleCoordinatorName.forComponent<PermissionManagementService>(),
                 LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
                 LifecycleCoordinatorName.forComponent<RBACSecurityManagerService>(),
             )
         )
 
-        verify(permissionServiceComponent).start()
+        verify(permissionManagementService).start()
         verify(rbacSecurityManagerService).start()
     }
 
@@ -121,7 +121,7 @@ internal class HttpRpcGatewayEventHandlerTest {
 
         verify(registration).close()
         verify(sub).close()
-        verify(permissionServiceComponent).stop()
+        verify(permissionManagementService).stop()
         verify(rbacSecurityManagerService).stop()
         verify(server).close()
         verify(sslCertReadService).stop()

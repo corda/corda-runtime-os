@@ -18,7 +18,7 @@ import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
-import net.corda.permissions.service.PermissionServiceComponent
+import net.corda.permissions.management.PermissionManagementService
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -31,8 +31,8 @@ import org.osgi.service.component.annotations.Reference
 class UserEndpointImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = PermissionServiceComponent::class)
-    private val permissionServiceComponent: PermissionServiceComponent
+    @Reference(service = PermissionManagementService::class)
+    private val permissionManagementService: PermissionManagementService,
 ) : UserEndpoint, PluggableRPCOps<UserEndpoint>, Lifecycle {
 
     private companion object {
@@ -50,7 +50,7 @@ class UserEndpointImpl @Activate constructor(
     override fun createUser(createUserType: CreateUserType): UserResponseType {
         val principal = getRpcThreadLocalContext()
 
-        val createUserResult = withPermissionManager(permissionServiceComponent.permissionManager, logger) {
+        val createUserResult = withPermissionManager(permissionManagementService.permissionManager, logger) {
             createUser(createUserType.convertToDto(principal))
         }
 
@@ -60,7 +60,7 @@ class UserEndpointImpl @Activate constructor(
     override fun getUser(loginName: String): UserResponseType {
         val principal = getRpcThreadLocalContext()
 
-        val userResponseDto = withPermissionManager(permissionServiceComponent.permissionManager, logger) {
+        val userResponseDto = withPermissionManager(permissionManagementService.permissionManager, logger) {
             getUser(GetUserRequestDto(principal, loginName.toLowerCase()))
         }
 
@@ -70,7 +70,7 @@ class UserEndpointImpl @Activate constructor(
     override fun addRole(loginName: String, roleId: String): UserResponseType {
         val principal = getRpcThreadLocalContext()
 
-        val result = withPermissionManager(permissionServiceComponent.permissionManager, logger) {
+        val result = withPermissionManager(permissionManagementService.permissionManager, logger) {
             addRoleToUser(AddRoleToUserRequestDto(principal, loginName.toLowerCase(), roleId))
         }
         return result!!.convertToEndpointType()
@@ -79,7 +79,7 @@ class UserEndpointImpl @Activate constructor(
     override fun removeRole(loginName: String, roleId: String): UserResponseType {
         val principal = getRpcThreadLocalContext()
 
-        val result = withPermissionManager(permissionServiceComponent.permissionManager, logger) {
+        val result = withPermissionManager(permissionManagementService.permissionManager, logger) {
             removeRoleFromUser(RemoveRoleFromUserRequestDto(principal, loginName.toLowerCase(), roleId))
         }
         return result!!.convertToEndpointType()
@@ -88,7 +88,7 @@ class UserEndpointImpl @Activate constructor(
     override fun getPermissionSummary(loginName: String): UserPermissionSummaryResponseType {
         val principal = getRpcThreadLocalContext()
 
-        val result = withPermissionManager(permissionServiceComponent.permissionManager, logger) {
+        val result = withPermissionManager(permissionManagementService.permissionManager, logger) {
             getPermissionSummary(GetPermissionSummaryRequestDto(principal, loginName.toLowerCase()))
         } ?: throw ResourceNotFoundException("User", loginName)
 

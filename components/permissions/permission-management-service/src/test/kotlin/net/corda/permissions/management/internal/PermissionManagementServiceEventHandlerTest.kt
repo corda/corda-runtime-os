@@ -4,7 +4,8 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.permissions.cache.PermissionCache
+import net.corda.libs.permissions.management.cache.PermissionManagementCache
+import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.factory.PermissionManagerFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -17,7 +18,9 @@ import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
-import net.corda.permissions.cache.PermissionCacheService
+import net.corda.permissions.management.cache.PermissionManagementCacheService
+import net.corda.permissions.validation.PermissionValidationService
+import net.corda.permissions.validation.cache.PermissionValidationCacheService
 import net.corda.schema.configuration.ConfigKeys
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
@@ -30,8 +33,11 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 internal class PermissionManagementServiceEventHandlerTest {
-    private val permissionCache = mock<PermissionCache>()
-    private val permissionCacheService = mock<PermissionCacheService>()
+    private val permissionManagementCache = mock<PermissionManagementCache>()
+    private val permissionValidationCache = mock<PermissionValidationCache>()
+    private val permissionManagementCacheService = mock<PermissionManagementCacheService>()
+    private val permissionValidationCacheService = mock<PermissionValidationCacheService>()
+    private val permissionValidationService = mock<PermissionValidationService>()
 
     private val config = mock<SmartConfig>()
     private val rpcSender = mock<RPCSender<PermissionManagementRequest, PermissionManagementResponse>>()
@@ -47,42 +53,56 @@ internal class PermissionManagementServiceEventHandlerTest {
 
     private val handler = PermissionManagementServiceEventHandler(
         publisherFactory,
-        permissionCacheService,
+        permissionManagementCacheService,
+        permissionValidationCacheService,
+        permissionValidationService,
         permissionManagerFactory,
         configurationReadService
     )
 
     @BeforeEach
     fun setUp() {
-        whenever(permissionCacheService.permissionCache)
-            .thenReturn(permissionCache)
+        whenever(permissionManagementCacheService.permissionManagementCache)
+            .thenReturn(permissionManagementCache)
+
+        whenever(permissionValidationCacheService.permissionValidationCache)
+            .thenReturn(permissionValidationCache)
 
         whenever(publisherFactory.createRPCSender(any<RPCConfig<PermissionManagementRequest, PermissionManagementResponse>>(), any()))
             .thenReturn(rpcSender)
 
-        whenever(permissionManagerFactory.create(config, rpcSender, permissionCache))
+        whenever(permissionManagerFactory.createPermissionManager(config, rpcSender, permissionManagementCache, permissionValidationCache))
             .thenReturn(permissionManager)
 
-        whenever(coordinator.followStatusChangesByName(
-            setOf(
-                LifecycleCoordinatorName.forComponent<PermissionCacheService>(),
-                LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+        whenever(
+            coordinator.followStatusChangesByName(
+                setOf(
+                    LifecycleCoordinatorName.forComponent<PermissionManagementCacheService>(),
+                    LifecycleCoordinatorName.forComponent<PermissionValidationCacheService>(),
+                    LifecycleCoordinatorName.forComponent<PermissionValidationService>(),
+                    LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+                )
             )
-        )).thenReturn(registrationHandle)
+        ).thenReturn(registrationHandle)
     }
 
     @Test
-    fun `processing a start event follows permission cache and config read service for status updates`() {
+    fun `processing a start event follows dependencies`() {
         assertNull(handler.registrationHandle)
 
         handler.processEvent(StartEvent(), coordinator)
 
         verify(coordinator).followStatusChangesByName(
             setOf(
-                LifecycleCoordinatorName.forComponent<PermissionCacheService>(),
+                LifecycleCoordinatorName.forComponent<PermissionManagementCacheService>(),
+                LifecycleCoordinatorName.forComponent<PermissionValidationCacheService>(),
+                LifecycleCoordinatorName.forComponent<PermissionValidationService>(),
                 LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
             )
         )
+
+        verify(permissionValidationService).start()
+        verify(permissionManagementCacheService).start()
         assertNotNull(handler.registrationHandle)
     }
 
@@ -92,11 +112,13 @@ internal class PermissionManagementServiceEventHandlerTest {
 
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
 
-        verify(configurationReadService).registerComponentForUpdates(coordinator, setOf(
-            ConfigKeys.BOOT_CONFIG,
-            ConfigKeys.MESSAGING_CONFIG,
-            ConfigKeys.RPC_CONFIG
-        ))
+        verify(configurationReadService).registerComponentForUpdates(
+            coordinator, setOf(
+                ConfigKeys.BOOT_CONFIG,
+                ConfigKeys.MESSAGING_CONFIG,
+                ConfigKeys.RPC_CONFIG
+            )
+        )
     }
 
     @Test

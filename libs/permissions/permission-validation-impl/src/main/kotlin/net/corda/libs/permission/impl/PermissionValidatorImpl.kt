@@ -3,15 +3,12 @@ package net.corda.libs.permission.impl
 import net.corda.data.permissions.summary.UserPermissionSummary
 import net.corda.data.permissions.PermissionType as AvroPermissionType
 import net.corda.libs.permission.PermissionValidator
-import net.corda.libs.permissions.cache.PermissionCache
-import net.corda.permissions.password.PasswordHash
-import net.corda.permissions.password.PasswordService
+import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 
 class PermissionValidatorImpl(
-    private val permissionCache: PermissionCache,
-    private val passwordService: PasswordService
+    private val permissionValidationCache: PermissionValidationCache
 ) : PermissionValidator {
 
     companion object {
@@ -31,24 +28,9 @@ class PermissionValidatorImpl(
         running = false
     }
 
-    override fun authenticateUser(loginName: String, password: CharArray): Boolean {
-        logger.debug { "Checking authentication for user $loginName." }
-        val user = permissionCache.getUser(loginName) ?: return false
-
-        if (user.saltValue == null || user.hashedPassword == null) {
-            return false
-        }
-
-        if (!passwordService.verifies(String(password), PasswordHash(user.saltValue, user.hashedPassword))) {
-            return false
-        }
-
-        return true
-    }
-
     override fun authorizeUser(loginName: String, permission: String): Boolean {
         logger.debug { "Checking permissions for $permission for user $loginName" }
-        val permissionSummary = permissionCache.getPermissionSummary(loginName)
+        val permissionSummary = permissionValidationCache.getPermissionSummary(loginName)
 
         if (permissionSummary == null) {
             logger.debug { "No permission found for user $loginName." }

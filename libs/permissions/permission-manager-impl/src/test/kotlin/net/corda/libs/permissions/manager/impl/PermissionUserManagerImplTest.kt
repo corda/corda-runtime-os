@@ -11,7 +11,6 @@ import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
-import net.corda.libs.permissions.cache.PermissionCache
 import net.corda.libs.permissions.manager.exception.UnexpectedPermissionResponseException
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
@@ -37,6 +36,8 @@ import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import net.corda.data.permissions.management.user.AddRoleToUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
+import net.corda.libs.permissions.management.cache.PermissionManagementCache
+import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
 import net.corda.schema.configuration.ConfigKeys
@@ -45,7 +46,8 @@ import org.junit.jupiter.api.assertThrows
 class PermissionUserManagerImplTest {
 
     private val rpcSender = mock<RPCSender<PermissionManagementRequest, PermissionManagementResponse>>()
-    private val permissionCache = mock<PermissionCache>()
+    private val permissionManagementCache = mock<PermissionManagementCache>()
+    private val permissionValidationCache = mock<PermissionValidationCache>()
     private val passwordService = mock<PasswordService>()
 
     private val fullName = "first last"
@@ -75,7 +77,8 @@ class PermissionUserManagerImplTest {
     private val permissionManagementResponseWithoutPassword = PermissionManagementResponse(avroUserWithoutPassword)
     private val config = mock<SmartConfig>()
 
-    private val manager = PermissionUserManagerImpl(config, rpcSender, permissionCache, passwordService)
+    private val manager =
+        PermissionUserManagerImpl(config, rpcSender, permissionManagementCache, permissionValidationCache, passwordService)
 
     @Test
     fun `create a user sends rpc request and converts result`() {
@@ -168,7 +171,7 @@ class PermissionUserManagerImplTest {
 
     @Test
     fun `get a user uses the cache and converts avro user to dto`() {
-        whenever(permissionCache.getUser("loginname123")).thenReturn(avroUser)
+        whenever(permissionManagementCache.getUser("loginname123")).thenReturn(avroUser)
 
         val result = manager.getUser(getUserRequestDto)
 
@@ -188,7 +191,7 @@ class PermissionUserManagerImplTest {
 
     @Test
     fun `get a user returns null when user doesn't exist in cache`() {
-        whenever(permissionCache.getUser("invalid-user-login-name")).thenReturn(null)
+        whenever(permissionManagementCache.getUser("invalid-user-login-name")).thenReturn(null)
 
         val result = manager.getUser(getUserRequestDto)
 
@@ -206,7 +209,7 @@ class PermissionUserManagerImplTest {
         whenever(passwordService.saltAndHash(eq("mypassword"))).thenReturn(PasswordHash("randomSalt", "hashedPass"))
         whenever(future.getOrThrow(Duration.ofMillis(12345L))).thenReturn(permissionManagementResponse)
 
-        val manager = PermissionUserManagerImpl(config, rpcSender, permissionCache, passwordService)
+        val manager = PermissionUserManagerImpl(config, rpcSender, permissionManagementCache, permissionValidationCache, passwordService)
 
         val result = manager.createUser(createUserRequestDto)
 
