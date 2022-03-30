@@ -82,6 +82,8 @@ class PermissionStorageReaderServiceEventHandler(
                 LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
             )
         )
+        permissionValidationCacheService.start()
+        permissionManagementCacheService.start()
     }
 
     private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator) {
@@ -127,6 +129,8 @@ class PermissionStorageReaderServiceEventHandler(
 
     private fun onStopEvent(coordinator: LifecycleCoordinator) {
         log.info("Stop Event received")
+        permissionValidationCacheService.stop()
+        permissionManagementCacheService.stop()
         publisher?.close()
         publisher = null
         permissionStorageReader?.stop()

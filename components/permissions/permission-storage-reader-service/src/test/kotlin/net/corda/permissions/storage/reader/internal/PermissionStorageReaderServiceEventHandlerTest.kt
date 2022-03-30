@@ -95,6 +95,16 @@ class PermissionStorageReaderServiceEventHandlerTest {
         mapOf(BOOT_CONFIG to config, MESSAGING_CONFIG to configFactory.create(ConfigFactory.empty()))
 
     @Test
+    fun `processing a START event follows and starts dependencies`() {
+
+        handler.processEvent(StartEvent(), coordinator)
+
+        assertNotNull(handler.registrationHandle)
+        verify(permissionManagementCacheService).start()
+        verify(permissionValidationCacheService).start()
+    }
+
+    @Test
     fun `processing an UP event when the service is started starts the storage reader`() {
         assertNull(handler.permissionStorageReader)
 
@@ -149,6 +159,8 @@ class PermissionStorageReaderServiceEventHandlerTest {
         assertNull(handler.permissionStorageReader)
         assertNull(handler.publisher)
 
+        verify(permissionManagementCacheService).stop()
+        verify(permissionValidationCacheService).stop()
         verify(registrationHandle).close()
         verify(permissionStorageReader).stop()
         verify(publisher).close()
