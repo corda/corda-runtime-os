@@ -1,7 +1,6 @@
 package net.corda.flow.pipeline.handlers.events
 
 import net.corda.data.flow.FlowKey
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionAck
@@ -14,10 +13,10 @@ import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
-import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowProcessingException
 import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
+import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.session.manager.SessionManager
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -77,12 +76,7 @@ class SessionEventHandlerTest {
             .thenReturn(mapOf(Pair(CPI_ID, INITIATING_FLOW_NAME) to INITIATED_FLOW_NAME))
         whenever(sessionManager.getNextReceivedEvent(any())).thenReturn(sessionEvent)
 
-        val inputContext = FlowEventContext(
-            checkpoint = null,
-            inputEvent = FlowEvent(FLOW_KEY, createSessionInit()),
-            inputEventPayload = sessionEvent,
-            outputRecords = emptyList()
-        )
+        val inputContext = buildFlowEventContext(checkpoint = null, inputEventPayload = sessionEvent)
         val outputContext = sessionEventHandler.preProcess(inputContext)
         assertNotNull(outputContext.checkpoint)
         assertEquals(INITIATED_FLOW_NAME, outputContext.checkpoint?.flowStartContext?.flowClassName)
@@ -99,12 +93,7 @@ class SessionEventHandlerTest {
             fiber = ByteBuffer.wrap(byteArrayOf(1, 1, 1, 1))
             sessions = emptyList()
         }
-        val inputContext = FlowEventContext(
-            checkpoint = checkpoint,
-            inputEvent = FlowEvent(FLOW_KEY, createSessionInit()),
-            inputEventPayload = sessionEvent,
-            outputRecords = emptyList()
-        )
+        val inputContext = buildFlowEventContext(checkpoint = checkpoint, inputEventPayload = sessionEvent)
         val outputContext = sessionEventHandler.preProcess(inputContext)
         assertEquals(1, outputContext.checkpoint?.sessions?.size)
         assertEquals(0, outputContext.outputRecords.size)
@@ -124,12 +113,7 @@ class SessionEventHandlerTest {
             sessions = emptyList()
         }
 
-        val inputContext = FlowEventContext(
-            checkpoint = checkpoint,
-            inputEvent = FlowEvent(FLOW_KEY, createSessionInit()),
-            inputEventPayload = sessionEvent,
-            outputRecords = emptyList()
-        )
+        val inputContext = buildFlowEventContext(checkpoint = checkpoint, inputEventPayload = sessionEvent)
         assertThrows<FlowProcessingException> { sessionEventHandler.preProcess(inputContext) }
     }
 
@@ -141,12 +125,7 @@ class SessionEventHandlerTest {
             .thenReturn(emptyMap<String, String>())
         whenever(sessionManager.getNextReceivedEvent(any())).thenReturn(sessionEvent)
 
-        val inputContext = FlowEventContext(
-            checkpoint = null,
-            inputEvent = FlowEvent(FLOW_KEY, createSessionInit()),
-            inputEventPayload = sessionEvent,
-            outputRecords = emptyList()
-        )
+        val inputContext = buildFlowEventContext(checkpoint = null, inputEventPayload = sessionEvent)
         assertThrows<FlowProcessingException> { sessionEventHandler.preProcess(inputContext) }
     }
 
@@ -154,19 +133,14 @@ class SessionEventHandlerTest {
     fun `Receiving a session data payload does not create a checkpoint`() {
         whenever(sessionManager.getNextReceivedEvent(any())).thenReturn(null)
 
-        val sessionEvent = createSessionInit()
+        val sessionEvent = createSessionEvent(SessionData())
         val checkpoint = Checkpoint().apply {
             fiber = ByteBuffer.wrap(byteArrayOf(1, 1, 1, 1))
             sessions = listOf(SessionState().apply {
                 sessionId = SESSION_ID
             })
         }
-        val inputContext = FlowEventContext(
-            checkpoint = checkpoint,
-            inputEvent = FlowEvent(FLOW_KEY, createSessionEvent(SessionData())),
-            inputEventPayload = sessionEvent,
-            outputRecords = emptyList()
-        )
+        val inputContext = buildFlowEventContext(checkpoint = checkpoint, inputEventPayload = sessionEvent)
         val outputContext = sessionEventHandler.preProcess(inputContext)
         assertEquals(1, outputContext.checkpoint?.sessions?.size)
         assertEquals(0, outputContext.outputRecords.size)
@@ -176,19 +150,14 @@ class SessionEventHandlerTest {
     fun `Receiving a session ack payload does not create a checkpoint`() {
         whenever(sessionManager.getNextReceivedEvent(any())).thenReturn(null)
 
-        val sessionEvent = createSessionInit()
+        val sessionEvent = createSessionEvent(SessionAck())
         val checkpoint = Checkpoint().apply {
             fiber = ByteBuffer.wrap(byteArrayOf(1, 1, 1, 1))
             sessions = listOf(SessionState().apply {
                 sessionId = SESSION_ID
             })
         }
-        val inputContext = FlowEventContext(
-            checkpoint = checkpoint,
-            inputEvent = FlowEvent(FLOW_KEY, createSessionEvent(SessionAck())),
-            inputEventPayload = sessionEvent,
-            outputRecords = emptyList()
-        )
+        val inputContext = buildFlowEventContext(checkpoint = checkpoint, inputEventPayload = sessionEvent)
         val outputContext = sessionEventHandler.preProcess(inputContext)
         assertEquals(1, outputContext.checkpoint?.sessions?.size)
         assertEquals(0, outputContext.outputRecords.size)
@@ -198,19 +167,14 @@ class SessionEventHandlerTest {
     fun `Receiving a session close payload does not create a checkpoint`() {
         whenever(sessionManager.getNextReceivedEvent(any())).thenReturn(null)
 
-        val sessionEvent = createSessionInit()
+        val sessionEvent = createSessionEvent(SessionClose())
         val checkpoint = Checkpoint().apply {
             fiber = ByteBuffer.wrap(byteArrayOf(1, 1, 1, 1))
             sessions = listOf(SessionState().apply {
                 sessionId = SESSION_ID
             })
         }
-        val inputContext = FlowEventContext(
-            checkpoint = checkpoint,
-            inputEvent = FlowEvent(FLOW_KEY, createSessionEvent(SessionClose())),
-            inputEventPayload = sessionEvent,
-            outputRecords = emptyList()
-        )
+        val inputContext = buildFlowEventContext(checkpoint = checkpoint, inputEventPayload = sessionEvent)
         val outputContext = sessionEventHandler.preProcess(inputContext)
         assertEquals(1, outputContext.checkpoint?.sessions?.size)
         assertEquals(0, outputContext.outputRecords.size)
@@ -220,19 +184,14 @@ class SessionEventHandlerTest {
     fun `Receiving a session error payload does not create a checkpoint`() {
         whenever(sessionManager.getNextReceivedEvent(any())).thenReturn(null)
 
-        val sessionEvent = createSessionInit()
+        val sessionEvent = createSessionEvent(SessionError())
         val checkpoint = Checkpoint().apply {
             fiber = ByteBuffer.wrap(byteArrayOf(1, 1, 1, 1))
             sessions = listOf(SessionState().apply {
                 sessionId = SESSION_ID
             })
         }
-        val inputContext = FlowEventContext(
-            checkpoint = checkpoint,
-            inputEvent = FlowEvent(FLOW_KEY, createSessionEvent(SessionError())),
-            inputEventPayload = sessionEvent,
-            outputRecords = emptyList()
-        )
+        val inputContext = buildFlowEventContext(checkpoint = checkpoint, inputEventPayload = sessionEvent)
         val outputContext = sessionEventHandler.preProcess(inputContext)
         assertEquals(1, outputContext.checkpoint?.sessions?.size)
         assertEquals(0, outputContext.outputRecords.size)
@@ -242,7 +201,7 @@ class SessionEventHandlerTest {
     fun `Processing updates the flow's checkpoint's session state`() {
         whenever(sessionManager.getNextReceivedEvent(any())).thenReturn(null)
 
-        val sessionEvent = createSessionInit()
+        val sessionEvent = createSessionEvent(SessionData())
         val inputSessionState = SessionState.newBuilder(sessionState)
             .setSessionId(SESSION_ID)
             .setLastReceivedMessageTime(sessionState.lastReceivedMessageTime.minusMillis(1000))
@@ -251,12 +210,7 @@ class SessionEventHandlerTest {
             fiber = ByteBuffer.wrap(byteArrayOf(1, 1, 1, 1))
             sessions = listOf(inputSessionState)
         }
-        val inputContext = FlowEventContext(
-            checkpoint = checkpoint,
-            inputEvent = FlowEvent(FLOW_KEY, createSessionEvent(SessionData())),
-            inputEventPayload = sessionEvent,
-            outputRecords = emptyList()
-        )
+        val inputContext = buildFlowEventContext(checkpoint = checkpoint, inputEventPayload = sessionEvent)
         val outputContext = sessionEventHandler.preProcess(inputContext)
         assertEquals(sessionState, outputContext.checkpoint?.sessions?.single())
         assertNotEquals(sessionState, inputSessionState)

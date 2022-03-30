@@ -1,7 +1,6 @@
 package net.corda.flow.pipeline.handlers.waiting.sessions
 
 import net.corda.data.flow.FlowKey
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
@@ -9,8 +8,8 @@ import net.corda.data.flow.state.Checkpoint
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FlowContinuation
-import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowProcessingException
+import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.session.manager.SessionManager
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -59,14 +58,12 @@ class SessionDataWaitingForHandlerTest {
             sequenceNum = 1
         })
 
-        val inputContext = FlowEventContext(
+        val inputContext = buildFlowEventContext(
             checkpoint = Checkpoint().apply {
                 flowKey = FLOW_KEY
                 sessions = listOf(sessionState, anotherSessionState)
             },
-            inputEvent = FlowEvent(FLOW_KEY, Unit),
-            inputEventPayload = Unit,
-            outputRecords = emptyList()
+            inputEventPayload = Unit
         )
 
         val continuation = sessionDataWaitingForHandler.runOrContinue(
@@ -97,14 +94,12 @@ class SessionDataWaitingForHandlerTest {
             sequenceNum = 1
         })
 
-        val inputContext = FlowEventContext(
+        val inputContext = buildFlowEventContext(
             checkpoint = Checkpoint().apply {
                 flowKey = FLOW_KEY
                 sessions = listOf(sessionState, anotherSessionState)
             },
-            inputEvent = FlowEvent(FLOW_KEY, Unit),
-            inputEventPayload = Unit,
-            outputRecords = emptyList()
+            inputEventPayload = Unit
         )
 
         sessionDataWaitingForHandler.runOrContinue(
@@ -130,14 +125,12 @@ class SessionDataWaitingForHandlerTest {
             sequenceNum = 1
         })
 
-        val inputContext = FlowEventContext(
+        val inputContext = buildFlowEventContext(
             checkpoint = Checkpoint().apply {
                 flowKey = FLOW_KEY
                 sessions = listOf(sessionState, anotherSessionState)
             },
-            inputEvent = FlowEvent(FLOW_KEY, Unit),
-            inputEventPayload = Unit,
-            outputRecords = emptyList()
+            inputEventPayload = Unit
         )
 
         val continuation = sessionDataWaitingForHandler.runOrContinue(
@@ -168,14 +161,12 @@ class SessionDataWaitingForHandlerTest {
             sequenceNum = 1
         })
 
-        val inputContext = FlowEventContext(
+        val inputContext = buildFlowEventContext(
             checkpoint = Checkpoint().apply {
                 flowKey = FLOW_KEY
                 sessions = listOf(sessionState, anotherSessionState)
             },
-            inputEvent = FlowEvent(FLOW_KEY, Unit),
-            inputEventPayload = Unit,
-            outputRecords = emptyList()
+            inputEventPayload = Unit
         )
 
         assertThrows<FlowProcessingException> {
@@ -188,12 +179,7 @@ class SessionDataWaitingForHandlerTest {
 
     @Test
     fun `Throws an exception if there is no checkpoint`() {
-        val inputContext = FlowEventContext(
-            checkpoint = null,
-            inputEvent = FlowEvent(FLOW_KEY, Unit),
-            inputEventPayload = Unit,
-            outputRecords = emptyList()
-        )
+        val inputContext = buildFlowEventContext(checkpoint = null, inputEventPayload = Unit)
 
         assertThrows<FlowProcessingException> {
             sessionDataWaitingForHandler.runOrContinue(inputContext, net.corda.data.flow.state.waiting.SessionData())

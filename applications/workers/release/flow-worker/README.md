@@ -50,7 +50,7 @@ or the wait for logs to stop moving in the console window used to run the docker
 
 Before we can run a flow we need to upload the CPB and create a virtual node, this involves calling the HTTP APIs, the
 instructions below are for using curl.
-1) upload the CPB (assuming you're running the command from the same directory as the CBP file.)
+1) upload the CPI (CPB file created in previous steps, assuming you're running the command from the same directory as the CBP file.)
 ```shell
 curl --insecure -u admin:admin  -s -F upload=@./flow-worker-dev-5.0.0.0-SNAPSHOT-package.cpb https://localhost:8888/api/v1/cpi/
 ```
@@ -58,13 +58,24 @@ curl --insecure -u admin:admin  -s -F upload=@./flow-worker-dev-5.0.0.0-SNAPSHOT
 This should yield a result similar to this:
 ```json
 {
-    "id": "4fd1d5b4-1e95-4e8b-9208-920d26f61f49",
-    "cpiFileChecksum": "F30413C5C7E2"
+    "id": "4fd1d5b4-1e95-4e8b-9208-920d26f61f49"
 }
 ```
-2) Create a virtual node using the checksum returned from the step above
+2) Get the status of the file upload and the cpi file checksum value
 ```shell
-curl --insecure -u admin:admin -d '{ "request": { "cpiFileChecksum": "F30413C5C7E2", "x500Name": "CN=Testing, OU=Application, O=R3, L=London, C=GB"  } }' https://localhost:8888/api/v1/virtualnode/create
+curl --insecure -u admin:admin  https://localhost:8888/api/v1/cpi/status/[ID]
+```
+where ID is the UUID output from step 1
+This should yield are result similar to this
+```json
+{
+   "status":"OK",
+   "checksum":"A893413A9921"
+}
+```
+3) Create a virtual node using the checksum returned from the step above
+```shell
+curl --insecure -u admin:admin -d '{ "request": { "cpiFileChecksum": "A893413A9921", "x500Name": "CN=Testing, OU=Application, O=R3, L=London, C=GB"  } }' https://localhost:8888/api/v1/virtualnode
 ```
 
 This should yield a result similar to this:
@@ -72,7 +83,7 @@ This should yield a result similar to this:
 {
   "x500Name": "CN=Testing, OU=Application, O=R3, L=London, C=GB",
   "cpiId": {
-    "cpiName": "helloworld",
+    "cpiName": "flow-worker-dev",
     "cpiVersion": "5.0.0.0-SNAPSHOT",
     "signerSummaryHash": null
   },
@@ -104,7 +115,7 @@ or it can be run/debugged direct from intelliJ:
 
 1) Start the flow:
 ```shell
-curl --insecure -u admin:admin -d '{ "requestBody": "{\"inputValue\":\"hello\", \"throwException\": false }" }' https://localhost:8888/api/v1/flow/start/[HOLDING_ID_HASH]/request1/net.corda.flowworker.development.flows.TestFlow
+curl --insecure -u admin:admin -d '{ "requestBody": "{\"inputValue\":\"hello\", \"memberInfoLookup\":\"CN=Bob, O=Bob Corp, L=LDN, C=GB\", \"throwException\": false }" }' https://localhost:8888/api/v1/flow/start/[HOLDING_ID_HASH]/request1/net.corda.flowworker.development.flows.TestFlow
 ```
 The holding ID is taken from the output of the 'create virtual node' step
 

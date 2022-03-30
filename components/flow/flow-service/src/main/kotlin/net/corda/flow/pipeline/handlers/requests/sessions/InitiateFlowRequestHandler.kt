@@ -44,7 +44,7 @@ class InitiateFlowRequestHandler @Activate constructor(
             .setFlowKey(checkpoint.flowKey)
             .setCpiId(checkpoint.flowStartContext.cpiId)
             // TODO Need member lookup service to get the holding identity of the peer
-            .setInitiatedIdentity(HoldingIdentity(request.x500Name.toString(), "helloworld"))
+            .setInitiatedIdentity(HoldingIdentity(request.x500Name.toString(), "flow-worker-dev"))
             .setInitiatingIdentity(checkpoint.flowKey.identity)
             .setPayload(ByteBuffer.wrap(byteArrayOf()))
             .build()

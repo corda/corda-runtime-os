@@ -48,7 +48,7 @@ import javax.crypto.AEADBadTagException
  *
  * This class is not thread-safe, which means clients that want to use it from different threads need to perform external synchronisation.
  */
-class AuthenticationProtocolInitiator(private val sessionId: String,
+class AuthenticationProtocolInitiator(val sessionId: String,
                                       private val supportedModes: Set<ProtocolMode>,
                                       private val ourMaxMessageSize: Int,
                                       private val ourPublicKey: PublicKey,

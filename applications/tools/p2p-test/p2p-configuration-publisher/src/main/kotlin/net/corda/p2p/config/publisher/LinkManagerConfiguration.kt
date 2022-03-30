@@ -52,6 +52,12 @@ class LinkManagerConfiguration : ConfigProducer() {
     )
     var sessionTimeoutMilliSecs = 10_000L
 
+    @Option(
+        names = ["--sessionsPerPeer"],
+        description = ["The number of sessions between two peers"]
+    )
+    var sessionsPerPeer = 4L
+
     override val configuration by lazy {
         ConfigFactory.empty()
             .withValue(
@@ -77,6 +83,10 @@ class LinkManagerConfiguration : ConfigProducer() {
             .withValue(
                 LinkManagerConfiguration.SESSION_TIMEOUT_KEY,
                 ConfigValueFactory.fromAnyRef(sessionTimeoutMilliSecs)
+            )
+            .withValue(
+                LinkManagerConfiguration.SESSIONS_PER_PEER_KEY,
+                ConfigValueFactory.fromAnyRef(sessionsPerPeer)
             )
     }
 

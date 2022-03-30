@@ -13,6 +13,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowProcessingException
+import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.session.manager.SessionManager
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
@@ -59,12 +60,7 @@ class SendRequestHandlerTest {
 
     @Test
     fun `Returns an updated WaitingFor of SessionData`() {
-        val inputContext: FlowEventContext<Any> = FlowEventContext(
-            checkpoint = Checkpoint(),
-            inputEvent = FlowEvent(FLOW_KEY, Unit),
-            inputEventPayload = Unit,
-            outputRecords = emptyList()
-        )
+        val inputContext: FlowEventContext<Any> = buildFlowEventContext(checkpoint = Checkpoint(), inputEventPayload = Unit)
         val result = sendRequestHandler.getUpdatedWaitingFor(
             inputContext,
             FlowIORequest.Send(mapOf(SESSION_ID to PAYLOAD, ANOTHER_SESSION_ID to PAYLOAD))
@@ -99,12 +95,7 @@ class SendRequestHandlerTest {
             sessions = checkpoint.sessions
         }
 
-        val inputContext: FlowEventContext<Any> = FlowEventContext(
-            checkpoint = checkpointCopy,
-            inputEvent = FlowEvent(FLOW_KEY, Unit),
-            inputEventPayload = Unit,
-            outputRecords = emptyList()
-        )
+        val inputContext: FlowEventContext<Any> = buildFlowEventContext(checkpoint = checkpointCopy, inputEventPayload = Unit)
 
         val outputContext = sendRequestHandler.postProcess(
             inputContext,
@@ -145,12 +136,7 @@ class SendRequestHandlerTest {
             sessions = listOf(sessionState, anotherSessionState)
         }
 
-        val inputContext: FlowEventContext<Any> = FlowEventContext(
-            checkpoint = checkpoint,
-            inputEvent = FlowEvent(FLOW_KEY, Unit),
-            inputEventPayload = Unit,
-            outputRecords = emptyList()
-        )
+        val inputContext: FlowEventContext<Any> = buildFlowEventContext(checkpoint = checkpoint, inputEventPayload = Unit)
 
         val outputContext = sendRequestHandler.postProcess(
             inputContext,
@@ -163,12 +149,7 @@ class SendRequestHandlerTest {
 
     @Test
     fun `Throws an exception if there is no checkpoint`() {
-        val inputContext: FlowEventContext<Any> = FlowEventContext(
-            checkpoint = null,
-            inputEvent = FlowEvent(FLOW_KEY, Unit),
-            inputEventPayload = Unit,
-            outputRecords = emptyList()
-        )
+        val inputContext = buildFlowEventContext<Any>(checkpoint = null, inputEventPayload = Unit)
         assertThrows<FlowProcessingException> {
             sendRequestHandler.postProcess(inputContext, FlowIORequest.Send(mapOf(SESSION_ID to PAYLOAD, ANOTHER_SESSION_ID to PAYLOAD)))
         }
