@@ -112,7 +112,7 @@ pipeline {
                     nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-crypto-worker 7001:7000 >> forward.txt 2>&1 &
                     nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-db-worker 7002:7000 >> forward.txt 2>&1 &
                     nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-flow-worker 7003:7000 >> forward.txt 2>&1 &
-                    nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-rpc-worker 7004:7000 >> forward.txt 2>&1
+                    nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-rpc-worker 7004:7000 >> forward.txt 2>&1 &
                     procno=$! #remember process number started in background
                     trap "kill -9 ${procno}" EXIT
 
