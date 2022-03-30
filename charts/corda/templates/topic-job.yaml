@@ -18,6 +18,7 @@ spec:
           imagePullPolicy: Always
           command:
             - /bin/sh
+            - -e
             - -c
           args:
             - |
@@ -57,6 +58,6 @@ spec:
               kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --topic {{ .Values.kafka.topicPrefix }}crypto.key.info
               echo -e 'Successfully created the following topics:'
               kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --list
-      restartPolicy: OnFailure
-  backoffLimit: 10
+      restartPolicy: Never
+  backoffLimit: 0
 
