@@ -20,4 +20,13 @@ class Args {
 
     @CommandLine.Option(names = ["--x500Name"], description = ["Optional x500 name of the holder associated with a CPI"])
     var x500NName: String = "CN=Bob, O=Bob Corp, L=LDN, C=GB"
+
+    @CommandLine.Option(names = ["--bootstrapServer"], description = ["Optional kafka bootstrap server address"])
+    var bootstrapServer: String = "localhost:9092"
+
+    @CommandLine.Option(names = ["--instanceId"], description = ["Optional kafka instanceId"])
+    var instanceId: String = "1"
+
+    @CommandLine.Option(names = ["--topicPrefix"], description = ["Optional kafka topic prefix"])
+    var topicPrefix: String = ""
 }

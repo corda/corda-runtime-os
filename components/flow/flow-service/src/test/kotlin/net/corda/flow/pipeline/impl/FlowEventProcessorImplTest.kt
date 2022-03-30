@@ -5,10 +5,6 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.identity.HoldingIdentity
-import net.corda.flow.pipeline.FlowEventContext
-import net.corda.flow.pipeline.FlowEventPipeline
-import net.corda.flow.pipeline.FlowHospitalException
-import net.corda.flow.pipeline.FlowProcessingException
 import net.corda.flow.pipeline.FlowEventPipeline
 import net.corda.flow.pipeline.FlowHospitalException
 import net.corda.flow.pipeline.FlowProcessingException

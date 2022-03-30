@@ -3,7 +3,6 @@ package net.corda.flow.pipeline.handlers.requests.sessions
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStackItem
 import net.corda.data.flow.FlowStartContext
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.Checkpoint
@@ -67,11 +66,7 @@ class InitiateFlowRequestHandlerTest {
 
     @Test
     fun `Returns an updated WaitingFor of SessionConfirmation (Initiate)`() {
-        val inputContext: FlowEventContext<Any> = buildFlowEventContext(
-            checkpoint = Checkpoint(),
-            inputEventPayload = Unit,
-            inputEvent = FlowEvent(FLOW_KEY, Unit)
-        )
+        val inputContext: FlowEventContext<Any> = buildFlowEventContext(checkpoint = Checkpoint(), inputEventPayload = Unit)
 
         val result = closeSessionsRequestHandler.getUpdatedWaitingFor(
             inputContext,
@@ -104,11 +99,7 @@ class InitiateFlowRequestHandlerTest {
             sessions = emptyList()
         }
 
-        val inputContext: FlowEventContext<Any> = buildFlowEventContext(
-            checkpoint = checkpoint,
-            inputEventPayload = Unit,
-            inputEvent = FlowEvent(FLOW_KEY, Unit)
-        )
+        val inputContext: FlowEventContext<Any> = buildFlowEventContext(checkpoint = checkpoint, inputEventPayload = Unit)
 
         val outputContext = closeSessionsRequestHandler.postProcess(
             inputContext,
@@ -121,10 +112,7 @@ class InitiateFlowRequestHandlerTest {
 
     @Test
     fun `Throws an exception if the flow has no checkpoint`() {
-        val inputContext: FlowEventContext<Any> = buildFlowEventContext(
-            checkpoint = null,
-            inputEvent = FlowEvent(FLOW_KEY, Unit),
-            inputEventPayload = Unit)
+        val inputContext: FlowEventContext<Any> = buildFlowEventContext(checkpoint = null, inputEventPayload = Unit)
         assertThrows<FlowProcessingException> {
             closeSessionsRequestHandler.postProcess(
                 inputContext,

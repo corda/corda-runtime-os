@@ -8,7 +8,6 @@ import net.corda.data.flow.state.Checkpoint
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent

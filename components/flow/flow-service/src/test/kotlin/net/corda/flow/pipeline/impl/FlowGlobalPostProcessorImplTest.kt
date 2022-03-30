@@ -1,7 +1,5 @@
 package net.corda.flow.pipeline.impl
 
-import net.corda.data.flow.FlowKey
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.session.SessionData
@@ -10,8 +8,6 @@ import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.test.utils.buildFlowEventContext
-import net.corda.data.identity.HoldingIdentity
-import net.corda.flow.pipeline.FlowEventContext
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.session.manager.SessionManager
@@ -28,13 +24,10 @@ import java.nio.ByteBuffer
 class FlowGlobalPostProcessorImplTest {
 
     private companion object {
-        const val FLOW_ID = "flow id"
         const val SESSION_ID = "session id"
         const val ANOTHER_SESSION_ID = "another session id"
         const val DATA = "data"
         const val MORE_DATA = "more data"
-        val HOLDING_IDENTITY = HoldingIdentity("x500 name", "group id")
-        val FLOW_KEY = FlowKey(FLOW_ID, HOLDING_IDENTITY)
     }
 
     private val sessionManager = mock<SessionManager>()
@@ -69,7 +62,6 @@ class FlowGlobalPostProcessorImplTest {
             checkpoint = Checkpoint().apply {
                 sessions = listOf(sessionState, anotherSessionState)
             },
-            inputEvent = FlowEvent(FLOW_KEY, Unit),
             inputEventPayload = Unit
         )
 
@@ -119,11 +111,7 @@ class FlowGlobalPostProcessorImplTest {
         whenever(sessionManager.getMessagesToSend(eq(anotherSessionState), any(), any()))
             .thenReturn(updatedAnotherSessionState to listOf(anotherSessionEvent))
 
-        val inputContext = buildFlowEventContext<Any>(
-            checkpoint = checkpointCopy,
-            inputEventPayload = Unit,
-            inputEvent = FlowEvent(FLOW_KEY, Unit)
-        )
+        val inputContext = buildFlowEventContext<Any>(checkpoint = checkpointCopy, inputEventPayload = Unit)
 
         val outputContext = flowGlobalPostProcessor.postProcess(inputContext)
 
@@ -134,7 +122,6 @@ class FlowGlobalPostProcessorImplTest {
     fun `Does nothing when there is no checkpoint`() {
         val inputContext = buildFlowEventContext<Any>(
             checkpoint = null,
-            inputEvent = FlowEvent(FLOW_KEY, Unit),
             inputEventPayload = Unit,
             outputRecords = emptyList()
         )
