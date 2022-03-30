@@ -212,7 +212,6 @@ class SessionManagerImplTest {
         assertThat(secondUpdatedState.status).isEqualTo(SessionStateType.ERROR)
         val messageToSend = secondMessagesToSend.first()
         assertThat(messageToSend.payload::class.java).isEqualTo(SessionError::class.java)
-        assertThat(messageToSend.payload::class.java).isEqualTo(SessionError::class.java)
     }
 
     @Test
