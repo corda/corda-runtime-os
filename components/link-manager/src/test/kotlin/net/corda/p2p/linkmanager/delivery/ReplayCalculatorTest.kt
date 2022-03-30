@@ -17,21 +17,12 @@ class ReplayCalculatorTest {
     }
 
     @Test
-    fun `ReplayCalculator calculates intervals correctly`() {
-        val calculator = ReplayCalculator(false, CONFIG)
-        val firstInterval = calculator.calculateReplayInterval()
-        assertEquals(Duration.ofSeconds(1), firstInterval)
-        val secondInterval = calculator.calculateReplayInterval(firstInterval)
-        assertEquals(Duration.ofSeconds(2), secondInterval)
-        val thirdInterval = calculator.calculateReplayInterval(secondInterval)
-        assertEquals(Duration.ofSeconds(4), thirdInterval)
-        val fourthInterval = calculator.calculateReplayInterval(thirdInterval)
-        assertEquals(Duration.ofSeconds(7), fourthInterval)
-    }
-
-    @Test
     fun `ReplayCalculator always replays messages if no limit`() {
-        val calculator = ReplayCalculator(false, CONFIG)
+        val calculator = object: ReplayCalculator(false, CONFIG) {
+            override fun calculateReplayInterval(lastDelay: Duration): Duration {
+                return Duration.ZERO
+            }
+        }
         assertTrue(calculator.shouldReplayMessage(0))
         assertTrue(calculator.shouldReplayMessage(CONFIG.maxReplayingMessages))
         assertTrue(calculator.shouldReplayMessage(CONFIG.maxReplayingMessages + 1))
@@ -40,7 +31,11 @@ class ReplayCalculatorTest {
 
     @Test
     fun `ReplayCalculator only replays messages smaller than the limit`() {
-        val calculator = ReplayCalculator(true, CONFIG)
+        val calculator =  object: ReplayCalculator(true, CONFIG) {
+            override fun calculateReplayInterval(lastDelay: Duration): Duration {
+                return Duration.ZERO
+            }
+        }
         assertTrue(calculator.shouldReplayMessage(0))
         assertTrue(calculator.shouldReplayMessage(CONFIG.maxReplayingMessages - 1))
         assertFalse(calculator.shouldReplayMessage(CONFIG.maxReplayingMessages))

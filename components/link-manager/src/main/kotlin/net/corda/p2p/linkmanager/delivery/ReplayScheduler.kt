@@ -115,9 +115,10 @@ internal class ReplayScheduler<M>(
                 )
                 return configUpdateResult
             }
-            val newReplayCalculator = ReplayCalculator(limitTotalReplays, newConfiguration)
-            replayCalculator.set(newReplayCalculator)
-            val extraMessages = oldConfiguration?.maxReplayingMessages?.let { newReplayCalculator.extraMessagesToReplay(it) } ?: 0
+            //CORE-4572 will optionally re-enable exponential backoff.
+            val newConstantReplayCalculator = ConstantReplayCalculator(limitTotalReplays, newConfiguration)
+            replayCalculator.set(newConstantReplayCalculator)
+            val extraMessages = oldConfiguration?.maxReplayingMessages?.let { newConstantReplayCalculator.extraMessagesToReplay(it) } ?: 0
             queuedMessagesPerSessionCounterparties.forEach { (sessionCounterparties, queuedMessages) ->
                 for (i in 0 until extraMessages) {
                     queuedMessages.poll()?.let {

@@ -10,6 +10,11 @@ class SessionManagerWarnings {
                 " The message was discarded.")
         }
 
+        internal fun Logger.alreadySessionWarning(messageName: String, sessionId: String) {
+            this.warn("Received $messageName with sessionId $sessionId but there is already an established session with" +
+                   " this id. The message was discarded.")
+        }
+
         internal fun Logger.ourIdNotInMembersMapWarning(messageName: String, sessionId: String, ourId: HoldingIdentity) {
             this.warn("Received $messageName with sessionId $sessionId but cannot find public key for our identity" +
                 " $ourId. The message was discarded.")
