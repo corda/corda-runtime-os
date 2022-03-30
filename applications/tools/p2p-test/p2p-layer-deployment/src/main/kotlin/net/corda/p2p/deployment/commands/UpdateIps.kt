@@ -81,41 +81,46 @@ class UpdateIps : Runnable {
 
     override fun run() {
         val namespaces = namespaces()
-        namespaces.forEach { namespaceToPatch ->
-            val ipMap = namespaces.map { namespaceToGetIp ->
-                mapOf(
-                    "ip" to namespaceToGetIp.loadBalancerIp,
-                    "hostnames" to listOf(namespaceToGetIp.host)
-                )
+        namespaces
+            .filter { namespaceToPatch ->
+                // we don't need to patch for clusters that use a headless service as IPs will resolved via regular DNS resolution
+                namespaceToPatch.host != "load-balancer.${namespaceToPatch.name}"
             }
-            val conf = mapOf(
-                "spec" to
+            .forEach { namespaceToPatch ->
+                val ipMap = namespaces.map { namespaceToGetIp ->
                     mapOf(
-                        "template" to
-                            mapOf(
-                                "spec" to
-                                    mapOf(
-                                        "hostAliases" to ipMap
-                                    )
-                            )
+                        "ip" to namespaceToGetIp.loadBalancerIp,
+                        "hostnames" to listOf(namespaceToGetIp.host)
                     )
-            )
-            namespaceToPatch.gateways.forEach { gatewayName ->
-                println("Setting IP map of $gatewayName in ${namespaceToPatch.name}")
-                val patched = ProcessRunner.follow(
-                    "kubectl",
-                    "patch",
-                    "deployment",
-                    gatewayName,
-                    "-n",
-                    namespaceToPatch.name,
-                    "--patch",
-                    yamlWriter.writeValueAsString(conf)
+                }
+                val conf = mapOf(
+                    "spec" to
+                        mapOf(
+                            "template" to
+                                mapOf(
+                                    "spec" to
+                                        mapOf(
+                                            "hostAliases" to ipMap
+                                        )
+                                )
+                        )
                 )
-                if (!patched) {
-                    throw DeploymentException("Could not patch gateway $gatewayName in ${namespaceToPatch.name}")
+                namespaceToPatch.gateways.forEach { gatewayName ->
+                    println("Setting IP map of $gatewayName in ${namespaceToPatch.name}")
+                    val patched = ProcessRunner.follow(
+                        "kubectl",
+                        "patch",
+                        "deployment",
+                        gatewayName,
+                        "-n",
+                        namespaceToPatch.name,
+                        "--patch",
+                        yamlWriter.writeValueAsString(conf)
+                    )
+                    if (!patched) {
+                        throw DeploymentException("Could not patch gateway $gatewayName in ${namespaceToPatch.name}")
+                    }
                 }
             }
-        }
     }
 }

@@ -24,6 +24,9 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.packaging.CPK
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.utilities.PathProvider
+import net.corda.utilities.TempPathProvider
+import net.corda.utilities.WorkspacePathProvider
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -31,22 +34,38 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.nio.file.Files
-import java.nio.file.Paths
 import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [CpkReadService::class])
-class CpkReadServiceImpl @Activate constructor(
-    @Reference(service = LifecycleCoordinatorFactory::class)
+class CpkReadServiceImpl (
     coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = ConfigurationReadService::class)
     private val configReadService: ConfigurationReadService,
-    @Reference(service = SubscriptionFactory::class)
-    private val subscriptionFactory: SubscriptionFactory
+    private val subscriptionFactory: SubscriptionFactory,
+    private val workspacePathProvider: PathProvider,
+    private val tempPathProvider: PathProvider
 ) : CpkReadService, LifecycleEventHandler {
+
+    @Activate
+    constructor(
+        @Reference(service = LifecycleCoordinatorFactory::class)
+        coordinatorFactory: LifecycleCoordinatorFactory,
+        @Reference(service = ConfigurationReadService::class)
+        configReadService: ConfigurationReadService,
+        @Reference(service = SubscriptionFactory::class)
+        subscriptionFactory: SubscriptionFactory
+    ): this(
+        coordinatorFactory,
+        configReadService,
+        subscriptionFactory,
+        WorkspacePathProvider(),
+        TempPathProvider()
+    )
+
     companion object {
         val logger: Logger = contextLogger()
 
+        const val CPK_CACHE_DIR = "cpk-cache"
+        const val CPK_PARTS_DIR = "cpk-parts"
         const val CPK_READ_GROUP = "cpk.reader"
     }
 
@@ -92,7 +111,7 @@ class CpkReadServiceImpl @Activate constructor(
         } else {
             logger.warn(
                 "Received a ${RegistrationStatusChangeEvent::class.java.simpleName} with status ${event.status}." +
-                        " Component ${this::class.java.simpleName} is not started"
+                        " Component ${this::class.java.simpleName} is not started."
             )
             closeResources()
         }
@@ -100,8 +119,7 @@ class CpkReadServiceImpl @Activate constructor(
 
     private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         logger.info("Configuring CPK Read Service")
-        val config = event.config.toMessagingConfig()
-        createCpkChunksKafkaReader(config)
+        createCpkChunksKafkaReader(event.config.toMessagingConfig())
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 
@@ -120,16 +138,21 @@ class CpkReadServiceImpl @Activate constructor(
         cpksById[cpkId]
 
     private fun createCpkChunksKafkaReader(config: SmartConfig) {
-        // TODO the below cpks disk caches locations should be made configurable as per https://r3-cev.atlassian.net/browse/CORE-4130
-        val cpksAssembleCacheDir = Paths.get(System.getProperty("java.io.tmpdir"), "cpks-assemble")
-        val cpksCacheDir = Paths.get(System.getProperty("java.io.tmpdir"), "cpks")
-        val cpkChunksFileManager =
-            CpkChunksFileManagerImpl(cpksAssembleCacheDir.apply { Files.createDirectories(this) })
+        val (cpkCacheDir, cpkPartsDir) = try {
+            workspacePathProvider.getOrCreate(config, CPK_CACHE_DIR) to
+                    tempPathProvider.getOrCreate(config, CPK_PARTS_DIR)
+        } catch (e: Exception) {
+            logger.error("Error while trying to create directories. Component shuts down.", e)
+            closeResources()
+            return
+        }
+
+        val cpkChunksFileManager = CpkChunksFileManagerImpl(cpkCacheDir)
         cpkChunksKafkaReaderSubscription?.close()
         cpkChunksKafkaReaderSubscription =
             subscriptionFactory.createCompactedSubscription(
                 SubscriptionConfig(CPK_READ_GROUP, Schemas.VirtualNode.CPK_FILE_TOPIC),
-                CpkChunksKafkaReader(cpksCacheDir, cpkChunksFileManager, this::onCpkAssembled),
+                CpkChunksKafkaReader(cpkPartsDir, cpkChunksFileManager, this::onCpkAssembled),
                 config
             ).also { it.start() }
     }

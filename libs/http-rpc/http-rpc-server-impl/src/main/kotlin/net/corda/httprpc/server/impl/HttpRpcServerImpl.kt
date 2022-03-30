@@ -19,6 +19,7 @@ import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.RpcOps
+import java.nio.file.Path
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.write
 
@@ -27,8 +28,8 @@ class HttpRpcServerImpl(
     rpcOpsImpls: List<PluggableRPCOps<out RpcOps>>,
     rpcSecurityManager: RPCSecurityManager,
     httpRpcSettings: HttpRpcSettings,
+    multiPartDir: Path,
     devMode: Boolean
-
 ) : HttpRpcServer {
     private companion object {
         private val log = contextLogger()
@@ -52,7 +53,8 @@ class HttpRpcServerImpl(
         ),
         SecurityManagerRPCImpl(createAuthenticationProviders(httpRpcObjectConfigProvider, rpcSecurityManager)),
         httpRpcObjectConfigProvider,
-        OpenApiInfoProvider(resources, httpRpcObjectConfigProvider)
+        OpenApiInfoProvider(resources, httpRpcObjectConfigProvider),
+        multiPartDir
     )
 
 

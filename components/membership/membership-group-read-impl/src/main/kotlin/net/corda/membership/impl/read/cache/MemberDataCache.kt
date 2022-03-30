@@ -1,5 +1,6 @@
 package net.corda.membership.impl.read.cache
 
+import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import java.util.concurrent.ConcurrentHashMap
 
@@ -27,10 +28,19 @@ interface MemberDataCache<T> {
     fun put(holdingIdentity: HoldingIdentity, data: T)
 
     /**
+     * Clears all cached data.
+     */
+    fun clear()
+
+    /**
      * Basic member data in-memory cache implementation.
      * Data is stored as a map from group ID to map of member name to [T].
      */
     class Impl<T> : MemberDataCache<T> {
+
+        companion object {
+            val logger = contextLogger()
+        }
 
         private val cache = ConcurrentHashMap<String, T>()
 
@@ -38,6 +48,11 @@ interface MemberDataCache<T> {
 
         override fun put(holdingIdentity: HoldingIdentity, data: T) {
             cache[holdingIdentity.id] = data
+        }
+
+        override fun clear() {
+            logger.info("Clearing member data cache.")
+            cache.clear()
         }
     }
 }

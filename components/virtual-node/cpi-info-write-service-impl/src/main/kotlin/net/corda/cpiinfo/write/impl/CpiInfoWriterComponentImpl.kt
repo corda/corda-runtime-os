@@ -56,11 +56,11 @@ class CpiInfoWriterComponentImpl @Activate constructor(
     private var publisher: Publisher? = null
 
     override fun put(cpiMetadata: CpiMetadata) {
-        publish(listOf(Record(CPI_INFO_TOPIC, cpiMetadata.id.toAvro(), cpiMetadata.toAvro())))
+        publish(listOf(Record(CPI_INFO_TOPIC, cpiMetadata.cpiId.toAvro(), cpiMetadata.toAvro())))
     }
 
     override fun remove(cpiMetadata: CpiMetadata) {
-        publish(listOf(Record(CPI_INFO_TOPIC, cpiMetadata.id.toAvro(), null)))
+        publish(listOf(Record(CPI_INFO_TOPIC, cpiMetadata.cpiId.toAvro(), null)))
     }
 
     /** Synchronous publish */

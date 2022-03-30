@@ -1,13 +1,13 @@
 package net.corda.orm
 
-import javax.sql.DataSource
+import net.corda.db.core.CloseableDataSource
 
 /**
  * Entity manager configuration
  *
  */
 interface EntityManagerConfiguration {
-    val dataSource: DataSource
+    val dataSource: CloseableDataSource
     val showSql: Boolean
         get() = false
     val formatSql: Boolean

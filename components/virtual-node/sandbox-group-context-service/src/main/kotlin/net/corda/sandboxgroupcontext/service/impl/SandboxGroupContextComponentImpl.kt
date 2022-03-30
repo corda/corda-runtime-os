@@ -60,6 +60,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
                 "net.corda.crypto",
                 "net.corda.kotlin-stdlib-jdk7.osgi-bundle",
                 "net.corda.kotlin-stdlib-jdk8.osgi-bundle",
+                "net.corda.membership",
                 "net.corda.persistence",
                 "net.corda.serialization",
                 "org.apache.aries.spifly.dynamic.bundle",

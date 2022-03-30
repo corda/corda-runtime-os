@@ -46,7 +46,7 @@ interface FlowEventPipeline {
     fun requestPostProcessing(): FlowEventPipeline
 
     /**
-     * Performs flow event and request independent post-processing on the pipeline.
+     * Performs post-processing that should always execute.
      *
      * @return The updated pipeline instance.
      */

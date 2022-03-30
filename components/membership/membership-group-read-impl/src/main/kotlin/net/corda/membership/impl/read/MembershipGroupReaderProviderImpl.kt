@@ -2,6 +2,7 @@ package net.corda.membership.impl.read
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
@@ -13,8 +14,9 @@ import net.corda.membership.impl.read.reader.MembershipGroupReaderFactory
 import net.corda.membership.impl.read.subscription.MembershipGroupReadSubscriptions
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -37,49 +39,59 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     configurationReadService: ConfigurationReadService,
     @Reference(service = SubscriptionFactory::class)
-    subscriptionFactory: SubscriptionFactory,
+    val subscriptionFactory: SubscriptionFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = LayeredPropertyMapFactory::class)
-    layeredPropertyMapFactory: LayeredPropertyMapFactory
+    val layeredPropertyMapFactory: LayeredPropertyMapFactory
 ) : MembershipGroupReaderProvider {
 
     companion object {
+        val logger = contextLogger()
+
         const val ILLEGAL_ACCESS = "Tried to read group data before starting the component " +
                 "or while the component is down."
     }
 
-    // Group data cache instance shared across services.
-    private val membershipGroupReadCache = MembershipGroupReadCache.Impl()
-
-    // Factory responsible for creating group readers or taking existing instances from the cache.
-    private val membershipGroupReaderFactory =
-        MembershipGroupReaderFactory.Impl(membershipGroupReadCache)
-
-    // Membership group topic subscriptions
-    private val membershipGroupReadSubscriptions = MembershipGroupReadSubscriptions.Impl(
-        subscriptionFactory,
-        membershipGroupReadCache,
-        layeredPropertyMapFactory
-    )
-
     // Handler for lifecycle events.
     private val lifecycleHandler = MembershipGroupReadLifecycleHandler.Impl(
         configurationReadService,
-        membershipGroupReadSubscriptions,
-        membershipGroupReadCache
+        ::activate,
+        ::deactivate
     )
 
     // Component lifecycle coordinator
     private val coordinator =
         coordinatorFactory.createCoordinator<MembershipGroupReaderProvider>(lifecycleHandler)
 
+    private var impl: InnerMembershipGroupReaderProvider = InactiveImpl()
+
+    private fun activate(configs: Map<String, SmartConfig>, reason: String) {
+        swapImpl(ActiveImpl(subscriptionFactory, layeredPropertyMapFactory, configs))
+        updateStatus(LifecycleStatus.UP, reason)
+    }
+
+    private fun deactivate(reason: String) {
+        updateStatus(LifecycleStatus.DOWN, reason)
+        swapImpl(InactiveImpl())
+    }
+
+    private fun swapImpl(newImpl: InnerMembershipGroupReaderProvider) {
+        val current = impl
+        impl = newImpl
+        current.close()
+    }
+
+    private fun updateStatus(status: LifecycleStatus, reason: String) {
+        if(coordinator.status != status) {
+            coordinator.updateStatus(status, reason)
+        }
+    }
+
+
     // Component is running when it's coordinator has started.
     override val isRunning
         get() = coordinator.isRunning
-
-    private val isUp
-        get() = coordinator.status == LifecycleStatus.UP
 
     /**
      * Start the coordinator, which will then receive the lifecycle event [StartEvent].
@@ -94,11 +106,57 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
     /**
      * Get the [MembershipGroupReader] instance for the given holding identity.
      */
-    override fun getGroupReader(
-        holdingIdentity: HoldingIdentity
-    ) = if (isRunning && isUp) {
-        membershipGroupReaderFactory.getGroupReader(holdingIdentity)
-    } else {
-        throw CordaRuntimeException(ILLEGAL_ACCESS)
+    override fun getGroupReader(holdingIdentity: HoldingIdentity) = impl.getGroupReader(holdingIdentity)
+
+    /**
+     * Private interface to allow implementation switching internally for thread safety.
+     */
+    private interface InnerMembershipGroupReaderProvider : AutoCloseable {
+        fun getGroupReader(holdingIdentity: HoldingIdentity): MembershipGroupReader
+    }
+
+    private class ActiveImpl(
+        subscriptionFactory: SubscriptionFactory,
+        layeredPropertyMapFactory: LayeredPropertyMapFactory,
+        configs: Map<String, SmartConfig>
+    ) : InnerMembershipGroupReaderProvider {
+        // Group data cache instance shared across services.
+        private val membershipGroupReadCache = MembershipGroupReadCache.Impl()
+
+        // Factory responsible for creating group readers or taking existing instances from the cache.
+        private val membershipGroupReaderFactory =
+            MembershipGroupReaderFactory.Impl(membershipGroupReadCache)
+
+        // Membership group topic subscriptions
+        private val membershipGroupReadSubscriptions = MembershipGroupReadSubscriptions.Impl(
+            subscriptionFactory,
+            membershipGroupReadCache,
+            layeredPropertyMapFactory
+        ).also {
+            it.start(configs.toMessagingConfig())
+        }
+
+        /**
+         * Get the [MembershipGroupReader] instance for the given holding identity.
+         */
+        override fun getGroupReader(
+            holdingIdentity: HoldingIdentity
+        ) = membershipGroupReaderFactory.getGroupReader(holdingIdentity)
+
+        override fun close() {
+            membershipGroupReadSubscriptions.stop()
+            membershipGroupReadCache.clear()
+        }
+    }
+
+    private class InactiveImpl : InnerMembershipGroupReaderProvider {
+        override fun getGroupReader(
+            holdingIdentity: HoldingIdentity
+        ): MembershipGroupReader {
+            logger.error("Service is in incorrect state for accessing group readers.")
+            throw IllegalStateException(ILLEGAL_ACCESS)
+        }
+
+        override fun close() = Unit
     }
 }

@@ -5,12 +5,14 @@ import net.corda.httprpc.RpcOps
 import net.corda.httprpc.security.read.RPCSecurityManager
 import net.corda.httprpc.server.HttpRpcServer
 import net.corda.httprpc.server.config.models.HttpRpcSettings
+import java.nio.file.Path
 
 interface HttpRpcServerFactory {
 
     fun createHttpRpcServer(
         rpcOpsImpls: List<PluggableRPCOps<out RpcOps>>,
         rpcSecurityManager: RPCSecurityManager,
-        httpRpcSettings: HttpRpcSettings
+        httpRpcSettings: HttpRpcSettings,
+        multiPartDir: Path
     ): HttpRpcServer
 }

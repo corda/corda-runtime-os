@@ -55,7 +55,7 @@ class RPCSubscriptionImplTest {
             "0",
             RPCRequest(
                 "0",
-                Instant.now().toEpochMilli(),
+                Instant.now(),
                 "$TOPIC_PREFIX${config.topic}.resp",
                 0,
                 dummyRequest.toByteBuffer()
