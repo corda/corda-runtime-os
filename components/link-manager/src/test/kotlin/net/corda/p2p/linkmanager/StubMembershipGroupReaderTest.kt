@@ -9,15 +9,11 @@ import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.linkmanager.LinkManagerInternalTypes.toHoldingIdentity
-import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.MemberInfoEntry
-import net.corda.p2p.test.stub.crypto.processor.KeyDeserialiser
 import net.corda.schema.TestSchema
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
-import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mockConstruction
@@ -27,8 +23,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.nio.ByteBuffer
-import java.security.MessageDigest
 import java.security.PublicKey
 import java.util.concurrent.CompletableFuture
 
@@ -53,17 +47,15 @@ class StubMembershipGroupReaderTest {
             "Alice",
             "GROUP-1"
         ),
-        ByteBuffer.wrap("alice".toByteArray()),
-        KeyAlgorithm.ECDSA,
-        "alice.com"
+        "alice.pem",
+        "alice.com",
     )
     private val bob = MemberInfoEntry(
         HoldingIdentity(
             "Bob",
             "GROUP-2"
         ),
-        ByteBuffer.wrap("bob".toByteArray()),
-        KeyAlgorithm.RSA,
+        "bob.pem",
         "bob.net"
     )
     private val carol = MemberInfoEntry(
@@ -71,32 +63,33 @@ class StubMembershipGroupReaderTest {
             "Carol",
             "GROUP-3"
         ),
-        ByteBuffer.wrap("carol".toByteArray()),
-        KeyAlgorithm.RSA,
+        "carol.pem",
         "carol.org"
     )
-    private val aliceHash by lazy {
-        val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, BouncyCastleProvider())
-        messageDigest.update(alice.publicKey)
-        messageDigest.digest()
+    private val aliceHash = byteArrayOf(1)
+    private val bobHash = byteArrayOf(20, 21)
+    private val carolHash = byteArrayOf(30, 32)
+    private val alicePublicKey = mock<PublicKey> {
+        on { algorithm } doReturn "EC"
+        on { encoded } doReturn alice.publicKey.toByteArray()
     }
-    private val bobHash by lazy {
-        val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, BouncyCastleProvider())
-        messageDigest.update(bob.publicKey)
-        messageDigest.digest()
+    private val bobPublicKey = mock<PublicKey> {
+        on { algorithm } doReturn "RSA"
+        on { encoded } doReturn bob.publicKey.toByteArray()
     }
-    private val carolHash by lazy {
-        val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, BouncyCastleProvider())
-        messageDigest.update(carol.publicKey)
-        messageDigest.digest()
+    private val carolPublicKey = mock<PublicKey> {
+        on { algorithm } doReturn "RSA"
+        on { encoded } doReturn carol.publicKey.toByteArray()
     }
-    private val alicePublicKey = mock<PublicKey>()
-    private val bobPublicKey = mock<PublicKey>()
-    private val carolPublicKey = mock<PublicKey>()
-    private val keyDeserialiser = mockConstruction(KeyDeserialiser::class.java) { mock, _ ->
-        whenever(mock.toPublicKey("bob".toByteArray(), KeyAlgorithm.RSA)).doReturn(bobPublicKey)
-        whenever(mock.toPublicKey("alice".toByteArray(), KeyAlgorithm.ECDSA)).doReturn(alicePublicKey)
-        whenever(mock.toPublicKey("carol".toByteArray(), KeyAlgorithm.RSA)).doReturn(carolPublicKey)
+    private val keyReader = mockConstruction(PublicKeyReader::class.java) { mock, _ ->
+        whenever(mock.loadPublicKey(bob.publicKey)).doReturn(bobPublicKey)
+        whenever(mock.loadPublicKey(alice.publicKey)).doReturn(alicePublicKey)
+        whenever(mock.loadPublicKey(carol.publicKey)).doReturn(carolPublicKey)
+    }
+    private val keyHasher = mockConstruction(KeyHasher::class.java) { mock, _ ->
+        whenever(mock.hash(alicePublicKey)).doReturn(aliceHash)
+        whenever(mock.hash(bobPublicKey)).doReturn(bobHash)
+        whenever(mock.hash(carolPublicKey)).doReturn(byteArrayOf(30, 32))
     }
 
     private val members = StubMembershipGroupReader(
@@ -107,7 +100,8 @@ class StubMembershipGroupReaderTest {
     fun cleanUp() {
         subscriptionDominoTile.close()
         dominoTile.close()
-        keyDeserialiser.close()
+        keyReader.close()
+        keyHasher.close()
     }
 
     @Test

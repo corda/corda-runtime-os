@@ -37,6 +37,8 @@ import net.corda.p2p.linkmanager.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.LinkManagerInternalTypes.toHoldingIdentity
 import net.corda.p2p.linkmanager.LinkManagerInternalTypes.toLMNetworkType
 import net.corda.p2p.linkmanager.LinkManagerMembershipGroupReader
+import net.corda.p2p.linkmanager.PublicKeyReader.Companion.getSignatureSpec
+import net.corda.p2p.linkmanager.PublicKeyReader.Companion.toKeyAlgorithm
 import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
 import net.corda.p2p.linkmanager.messaging.MessageConverter
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.createLinkOutMessage
@@ -45,7 +47,6 @@ import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.alreadySessionWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.couldNotFindGroupInfo
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.noSessionWarning
-import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.noTenantId
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourHashNotInMembersMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourIdNotInMembersMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerHashNotInMembersMapWarning
@@ -318,7 +319,7 @@ open class SessionManagerImpl(
             return emptyList()
         }
 
-        val ourMemberInfo = members.getMemberInfo(counterparties.ourId)
+        val ourMemberInfo = linkManagerHostingMap.getInfo(counterparties.ourId)
         if (ourMemberInfo == null) {
             logger.warn(
                 "Attempted to start session negotiation with peer ${counterparties.counterpartyId} but our identity " +
@@ -422,7 +423,7 @@ open class SessionManagerImpl(
         session.receiveResponderHello(message)
         session.generateHandshakeSecrets()
 
-        val ourMemberInfo = members.getMemberInfo(sessionInfo.ourId)
+        val ourMemberInfo = linkManagerHostingMap.getInfo(sessionInfo.ourId)
         if (ourMemberInfo == null) {
             logger.ourIdNotInMembersMapWarning(message::class.java.simpleName, message.header.sessionId, sessionInfo.ourId)
             return null
@@ -434,17 +435,13 @@ open class SessionManagerImpl(
             return null
         }
 
-        val tenantId = linkManagerHostingMap.getTenantId(ourMemberInfo.holdingIdentity)
-        if(tenantId == null) {
-            logger.noTenantId(message::class.java.simpleName, message.header.sessionId, ourMemberInfo.holdingIdentity)
-            return null
-        }
+        val tenantId = ourMemberInfo.sessionKeyTenantId
 
         val signWithOurGroupId = { data: ByteArray ->
             cryptoProcessor.sign(
                 tenantId,
                 ourMemberInfo.publicKey,
-                ourMemberInfo.getSignatureSpec(),
+                ourMemberInfo.publicKey.toKeyAlgorithm().getSignatureSpec(),
                 data
             )
         }
@@ -482,7 +479,7 @@ open class SessionManagerImpl(
             return null
         }
         heartbeatManager.sessionMessageSent(
-            SessionCounterparties(ourMemberInfo.holdingIdentity, responderMemberInfo.holdingIdentity),
+            SessionCounterparties(ourMemberInfo.holdingIdentity.toHoldingIdentity(), responderMemberInfo.holdingIdentity),
             message.header.sessionId,
         )
 
@@ -517,7 +514,7 @@ open class SessionManagerImpl(
         }
 
         try {
-            session.validatePeerHandshakeMessage(message, memberInfo.publicKey, memberInfo.getSignatureSpec())
+            session.validatePeerHandshakeMessage(message, memberInfo.publicKey, memberInfo.publicKeyAlgorithm.getSignatureSpec())
         } catch (exception: InvalidHandshakeResponderKeyHash) {
             logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
             return null
@@ -597,7 +594,7 @@ open class SessionManagerImpl(
 
         session.generateHandshakeSecrets()
         val ourIdentityData = try {
-            session.validatePeerHandshakeMessage(message, peer.publicKey, peer.getSignatureSpec())
+            session.validatePeerHandshakeMessage(message, peer.publicKey, peer.publicKeyAlgorithm.getSignatureSpec())
         } catch (exception: WrongPublicKeyHashException) {
             logger.error("The message was discarded. ${exception.message}")
             return null
@@ -610,7 +607,7 @@ open class SessionManagerImpl(
             return null
         }
         //Find the correct Holding Identity to use (using the public key hash).
-        val ourMemberInfo = members.getMemberInfo(ourIdentityData.responderPublicKeyHash, ourIdentityData.groupId)
+        val ourMemberInfo = linkManagerHostingMap.getInfo(ourIdentityData.responderPublicKeyHash, ourIdentityData.groupId)
         if (ourMemberInfo == null) {
             logger.ourHashNotInMembersMapWarning(
                 message::class.java.simpleName,
@@ -626,11 +623,7 @@ open class SessionManagerImpl(
             return null
         }
 
-        val tenantId = linkManagerHostingMap.getTenantId(ourMemberInfo.holdingIdentity)
-        if(tenantId == null) {
-            logger.noTenantId(message::class.java.simpleName, message.header.sessionId, ourMemberInfo.holdingIdentity)
-            return null
-        }
+        val tenantId = ourMemberInfo.sessionKeyTenantId
 
         val response = try {
             val ourPublicKey = ourMemberInfo.publicKey
@@ -638,7 +631,7 @@ open class SessionManagerImpl(
                 cryptoProcessor.sign(
                     tenantId,
                     ourMemberInfo.publicKey,
-                    ourMemberInfo.getSignatureSpec(),
+                    ourMemberInfo.publicKey.toKeyAlgorithm().getSignatureSpec(),
                     data
                 )
             }
@@ -652,7 +645,7 @@ open class SessionManagerImpl(
         }
 
         activeInboundSessions[message.header.sessionId] = Pair(
-            SessionCounterparties(ourMemberInfo.holdingIdentity, peer.holdingIdentity),
+            SessionCounterparties(ourMemberInfo.holdingIdentity.toHoldingIdentity(), peer.holdingIdentity),
             session.getSession()
         )
         logger.info("Inbound session ${message.header.sessionId} established " +
