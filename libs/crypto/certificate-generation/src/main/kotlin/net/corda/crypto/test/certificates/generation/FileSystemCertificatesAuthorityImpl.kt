@@ -13,7 +13,7 @@ internal class FileSystemCertificatesAuthorityImpl(
     defaultPrivateKeyAndCertificate: PrivateKeyWithCertificate?,
     private val home: File,
     firstSerialNumber: Long,
-) : LocalCertificatesAuthorityImpl(
+) : LocalCertificatesAuthority(
     signatureSchemeTemplate, validDuration, defaultPrivateKeyAndCertificate, firstSerialNumber
 ),
     FileSystemCertificatesAuthority {

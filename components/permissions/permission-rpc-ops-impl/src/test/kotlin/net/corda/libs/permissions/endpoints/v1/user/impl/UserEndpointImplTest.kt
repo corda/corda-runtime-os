@@ -11,7 +11,6 @@ import net.corda.libs.permissions.manager.request.GetUserRequestDto
 import net.corda.libs.permissions.manager.response.UserResponseDto
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.permissions.service.PermissionServiceComponent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
@@ -29,7 +28,7 @@ import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
 import net.corda.libs.permissions.manager.response.RoleAssociationResponseDto
 import org.junit.jupiter.api.Assertions.assertTrue
 import java.util.*
-
+import net.corda.permissions.management.PermissionManagementService
 
 internal class UserEndpointImplTest {
 
@@ -64,7 +63,7 @@ internal class UserEndpointImplTest {
         whenever(it.createCoordinator(any(), any())).thenReturn(lifecycleCoordinator)
     }
     private val permissionManager = mock<PermissionManager>()
-    private val permissionService = mock<PermissionServiceComponent>().also {
+    private val permissionService = mock<PermissionManagementService>().also {
         whenever(it.permissionManager).thenReturn(permissionManager)
     }
 

@@ -23,9 +23,7 @@ application {
 }
 
 def binaryProjects = [
-        'p2p-test:network-map-creator',
-        'p2p-test:p2p-configuration-publisher',
-        'p2p-test:cryptoservice-key-creator',
+        'p2p-test:p2p-setup',
         'kafka-setup'
 ]
 

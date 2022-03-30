@@ -120,6 +120,7 @@ class LinkManagerTest {
         private const val MESSAGE_ID = "MessageId"
         private val PAYLOAD = ByteBuffer.wrap("PAYLOAD".toByteArray())
         private const val SESSION_ID = "SessionId"
+        private const val ANOTHER_SESSION_ID = "AnotherSessionId"
 
         lateinit var loggingInterceptor: LoggingInterceptor
 
@@ -485,11 +486,16 @@ class LinkManagerTest {
     }
 
     @Test
-    fun `OutboundMessageProcess produces a session init message, a LinkManagerSent maker and a list of partitions if NewSessionNeeded`() {
+    fun `OutboundMessageProcess produces session init messages, a LinkManagerSent maker and lists of partitions if NewSessionsNeeded`() {
         val mockSessionManager = Mockito.mock(SessionManager::class.java)
 
-        val sessionInitMessage = LinkOutMessage()
-        val state = SessionManager.SessionState.NewSessionNeeded(SESSION_ID, sessionInitMessage)
+        val firstSessionInitMessage = mock<LinkOutMessage>()
+        val secondSessionInitMessage = mock<LinkOutMessage>()
+        val state = SessionManager.SessionState.NewSessionsNeeded(
+            listOf(SESSION_ID to firstSessionInitMessage,
+                ANOTHER_SESSION_ID to secondSessionInitMessage
+            )
+        )
         Mockito.`when`(mockSessionManager.processOutboundMessage(any())).thenReturn(state)
 
         val inboundSubscribedTopics = listOf(1, 5, 9)
@@ -504,16 +510,17 @@ class LinkManagerTest {
         val messages = listOf(EventLogRecord(TOPIC, KEY, AppMessage(authenticatedMessage(FIRST_SOURCE, FIRST_DEST, "0", MESSAGE_ID)), 0, 0))
         val records = processor.onNext(messages)
 
-        assertThat(records).hasSize(3 * messages.size)
+        assertThat(records).hasSize(2 * state.messages.size + messages.size)
 
-        assertThat(records).filteredOn { it.topic == LINK_OUT_TOPIC }.hasSize(messages.size)
+        assertThat(records).filteredOn { it.topic == LINK_OUT_TOPIC }.hasSize(state.messages.size)
             .extracting<LinkOutMessage> { it.value as LinkOutMessage }
-            .allSatisfy { assertThat(it).isSameAs(sessionInitMessage) }
+            .containsExactlyInAnyOrderElementsOf(listOf(firstSessionInitMessage, secondSessionInitMessage))
 
-        assertThat(records).filteredOn { it.topic == SESSION_OUT_PARTITIONS }.hasSize(messages.size)
-            .allSatisfy { assertThat(it.key).isSameAs(SESSION_ID) }
+        assertThat(records).filteredOn { it.topic == SESSION_OUT_PARTITIONS }.hasSize(state.messages.size)
             .extracting<SessionPartitions> { it.value as SessionPartitions }
             .allSatisfy { assertThat(it.partitions.toIntArray()).isEqualTo(inboundSubscribedTopics.toIntArray()) }
+        assertThat(records).filteredOn { it.topic == SESSION_OUT_PARTITIONS }.hasSize(state.messages.size)
+            .extracting<String> { it.key as String }.containsExactlyInAnyOrder(SESSION_ID, ANOTHER_SESSION_ID)
 
         assertThat(records).filteredOn { it.topic == P2P_OUT_MARKERS }.hasSize(messages.size)
             .allSatisfy { assertThat(it.key).isEqualTo(MESSAGE_ID) }
@@ -1099,7 +1106,7 @@ class LinkManagerTest {
         val mockSessionManager = Mockito.mock(SessionManager::class.java)
         val sessionInitMessage = LinkOutMessage()
         Mockito.`when`(mockSessionManager.processOutboundMessage(any())).thenReturn(
-            SessionManager.SessionState.NewSessionNeeded(SESSION_ID, sessionInitMessage)
+            SessionManager.SessionState.NewSessionsNeeded(listOf(SESSION_ID to sessionInitMessage))
         )
 
         val processor = LinkManager.OutboundMessageProcessor(
@@ -1128,7 +1135,7 @@ class LinkManagerTest {
 
         loggingInterceptor.assertSingleWarning(
             "No partitions from topic $LINK_IN_TOPIC are currently assigned to the inbound message processor." +
-                    " Session $SESSION_ID will not be initiated."
+                    " Sessions: [$SESSION_ID] will not be initiated."
         )
     }
 

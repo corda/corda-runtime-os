@@ -25,12 +25,14 @@ pipeline {
         CORDA_USE_CACHE = "corda-remotes"
         KUBECONFIG = credentials("e2e-tests-credentials")
         CORDA_CLI_USER_HOME = "/tmp/corda-cli-home"
+        CORDA_GRADLE_SCAN_KEY = credentials('gradle-build-scans-key')
         GRADLE_USER_HOME = "/host_tmp/gradle"
         CORDA_REVISION = "${env.GIT_COMMIT}"
         NAMESPACE = "run-${UUID.randomUUID().toString()}"
         CLUSTER_NAME = "eks-e2e.e2e.awsdev.r3.com"
         HELM_CONFIG_HOME = "/tmp/helm"
         HELM_REPOSITORY_CACHE = "/host_tmp/helm/repository"
+        GRADLE_PERFORMANCE_TUNING = "--parallel -Dscan.tag.E2E -Dscan.tag.${env.NAMESPACE}"
     }
 
     options {
@@ -110,7 +112,7 @@ pipeline {
                     procno=$! #remember process number started in background
                     trap "kill -9 ${procno}" EXIT
 
-                    ./gradlew cleanE2eTest :applications:workers:release:rpc-worker:e2eTest
+                    ./gradlew cleanE2eTest e2eTest ${GRADLE_PERFORMANCE_TUNING}
                 '''
             }
             post {
@@ -130,6 +132,7 @@ pipeline {
     }
     post {
         always {
+            findBuildScans()
             splunkLogGenerator()
             script{
                 writeFile file: "e2eTestDataForSplunk.log", text: "${env.BUILD_URL}\n${NAMESPACE}"

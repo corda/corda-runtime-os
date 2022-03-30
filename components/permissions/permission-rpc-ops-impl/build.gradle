@@ -22,7 +22,7 @@ dependencies {
     implementation project(":libs:http-rpc:http-rpc-common")
     implementation project(":libs:http-rpc:http-rpc")
 
-    implementation project(':components:permissions:permission-service')
+    implementation project(':components:permissions:permission-management-service')
 
     implementation project(":libs:lifecycle:lifecycle")
 
