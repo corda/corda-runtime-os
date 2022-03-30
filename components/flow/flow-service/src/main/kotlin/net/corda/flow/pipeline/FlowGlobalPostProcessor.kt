@@ -1,16 +1,18 @@
 package net.corda.flow.pipeline
 
-import net.corda.data.flow.event.FlowEvent
 import net.corda.flow.fiber.FlowContinuation
 
+/**
+ * [FlowGlobalPostProcessor] performs post-processing that should always execute as part of the [FlowEventPipeline].
+ *
+ * This post-processing is executed as the last step in the pipeline and occurs after a flow has suspended.
+ *
+ * This step will still execute even if [FlowEventPipeline.runOrContinue] returned [FlowContinuation.Continue].
+ */
 interface FlowGlobalPostProcessor {
 
     /**
-     * Performs post-processing when receiving a [FlowEvent].
-     *
-     * Post-processing is executed as the last step and occurs after a flow has suspended.
-     *
-     * This step will still execute even if [runOrContinue] returned [FlowContinuation.Continue].
+     * Performs post-processing.
      *
      * @param context The [FlowEventContext] that should be modified within this processing step.
      *

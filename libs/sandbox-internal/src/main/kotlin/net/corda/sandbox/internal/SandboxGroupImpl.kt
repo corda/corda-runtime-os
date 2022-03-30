@@ -75,10 +75,10 @@ internal class SandboxGroupImpl(
 
             ClassType.CpkSandboxClass -> {
                 val sandbox = when (classTag) {
-                    is StaticTag -> cpkSandboxes.find { sandbox -> sandbox.cpkMetadata.hash == classTag.cpkFileHash }
+                    is StaticTag -> cpkSandboxes.find { sandbox -> sandbox.cpkMetadata.fileChecksum == classTag.cpkFileHash }
                     is EvolvableTag -> {
                         val sandbox = cpkSandboxes.find {
-                            it.cpkMetadata.id.signerSummaryHash == classTag.cpkSignerSummaryHash
+                            it.cpkMetadata.cpkId.signerSummaryHash == classTag.cpkSignerSummaryHash
                                     && it.mainBundle.symbolicName == classTag.mainBundleName
                         }
                         sandbox?.let {

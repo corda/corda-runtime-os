@@ -20,6 +20,7 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
     implementation project(":components:configuration:configuration-read-service")
+    implementation project(":components:membership:membership-group-read")
     implementation project(":components:virtual-node:virtual-node-info-read-service")
     implementation project(":components:virtual-node:cpi-info-read-service")
     implementation project(":components:virtual-node:cpk-read-service")
@@ -60,6 +61,9 @@ dependencies {
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:registry")
     testImplementation project(":libs:flows:session-manager-impl")
+    testImplementation project(":testing:flow-utilities")
+
+    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 
     cpks project(path: ':testing:cpbs:sandbox-cpk-inject', configuration: 'cordaCPB')
 
@@ -69,6 +73,7 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:messaging:inmemory-messaging-impl')
     integrationTestRuntimeOnly project(':libs:serialization:serialization-checkpoint-api')
     integrationTestRuntimeOnly project(':libs:serialization:serialization-kryo')
+    integrationTestRuntimeOnly project(":components:membership:membership-group-read-impl")
     integrationTestRuntimeOnly project(":components:virtual-node:cpk-read-service-impl")
 
 

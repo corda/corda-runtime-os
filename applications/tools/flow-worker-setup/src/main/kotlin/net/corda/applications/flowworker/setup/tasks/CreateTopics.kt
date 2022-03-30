@@ -17,6 +17,7 @@ import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_MGMT_RESP_TOPIC
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_ROLE_TOPIC
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_USER_TOPIC
 import net.corda.schema.Schemas.VirtualNode.Companion.CPI_INFO_TOPIC
+import net.corda.schema.Schemas.VirtualNode.Companion.CPK_FILE_TOPIC
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
 import org.apache.kafka.clients.admin.NewTopic
 
@@ -41,6 +42,7 @@ class CreateTopics(private val context: TaskContext) : Task {
 
             createTopic(CPI_INFO_TOPIC, 3, 3, compactOption),
             createTopic(VIRTUAL_NODE_INFO_TOPIC, 3, 3, compactOption),
+            createTopic(CPK_FILE_TOPIC, 3, 3, compactOption),
 
             createTopic(RPC_PERM_MGMT_REQ_TOPIC, 1, 1),
             createTopic(RPC_PERM_MGMT_RESP_TOPIC, 1, 1),

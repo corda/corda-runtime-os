@@ -21,11 +21,14 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.whenever
+import java.nio.file.Path
 import java.nio.file.Paths
 
 class HttpRpcServerTest {
 
     private val portAllocator = 8080 // doesn't matter, server won't start anyway
+
+    private val multiPartDir = Path.of(System.getProperty("java.io.tmpdir"))
 
     @Test
     fun `start server with ssl option but without ssl password specified throws illegal argument exception`() {
@@ -46,7 +49,8 @@ class HttpRpcServerTest {
                     ),
                     SecurityManagerRPCImpl(emptySet()),
                     configProvider,
-                    OpenApiInfoProvider(APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure, configProvider)
+                    OpenApiInfoProvider(APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure, configProvider),
+                    multiPartDir
                 )
             },
             SSL_PASSWORD_MISSING
@@ -72,7 +76,8 @@ class HttpRpcServerTest {
                     ),
                     SecurityManagerRPCImpl(emptySet()),
                     configProvider,
-                    OpenApiInfoProvider(APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure, configProvider)
+                    OpenApiInfoProvider(APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure, configProvider),
+                    multiPartDir
                 )
             },
             INSECURE_SERVER_DEV_MODE_WARNING
@@ -119,7 +124,8 @@ class HttpRpcServerTest {
                 ),
                 SecurityManagerRPCImpl(emptySet()),
                 configProvider,
-                OpenApiInfoProvider(APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure, configProvider)
+                OpenApiInfoProvider(APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure, configProvider),
+                multiPartDir
             )
         }.isInstanceOf(IllegalArgumentException::class.java)
             .hasMessage(

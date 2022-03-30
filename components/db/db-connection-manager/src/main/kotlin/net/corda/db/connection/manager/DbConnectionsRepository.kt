@@ -1,5 +1,6 @@
 package net.corda.db.connection.manager
 
+import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.SmartConfig
 import java.util.*
@@ -43,26 +44,26 @@ interface DbConnectionsRepository {
             updateActor: String): UUID
 
     /**
-     * Get DB connection for given [name].
+     * Creates [CloseableDataSource] for given [name].
      *
      * @param name
      * @param privilege
      * @return The [DataSource] or null if the connection cannot be found.
      * @throws [DBConfigurationException] if the cluster DB cannot be connected to.
      */
-    fun get(name: String, privilege: DbPrivilege): DataSource?
+    fun create(name: String, privilege: DbPrivilege): CloseableDataSource?
 
     /**
-     * Get DB connection for given configuration.
+     * Creates [CloseableDataSource] for given configuration.
      *
      * @param config DB config
      */
-    fun get(config: SmartConfig): DataSource
+    fun create(config: SmartConfig): CloseableDataSource
 
     /**
      * Get cluster DB [DataSource]
      *
      * @return The cluster DB [DataSource]
      */
-    fun getClusterDataSource(): DataSource
+    fun getClusterDataSource(): CloseableDataSource
 }

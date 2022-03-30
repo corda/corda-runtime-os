@@ -55,7 +55,12 @@ abstract class Pod : Yamlable {
             "replicas" to 1,
             "selector" to mapOf("matchLabels" to mapOf("app" to app)),
             "template" to mapOf(
-                "metadata" to mapOf("labels" to mapOf("app" to app) + labels),
+                "metadata" to mapOf(
+                    "labels" to mapOf("app" to app) + labels,
+                    "annotations" to mapOf(
+                        "cluster-autoscaler.kubernetes.io/safe-to-evict" to "false"
+                    )
+                ),
                 "spec" to mapOf(
                     "imagePullSecrets" to listOf(
                         mapOf("name" to DockerSecrets.name)

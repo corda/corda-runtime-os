@@ -2,6 +2,7 @@ package net.corda.db.connection.manager.impl
 
 import net.corda.db.connection.manager.DbConnectionsRepository
 import net.corda.db.connection.manager.createFromConfig
+import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DataSourceFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -9,7 +10,6 @@ import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import javax.persistence.EntityManagerFactory
-import javax.sql.DataSource
 
 /**
  * Factory for creating [DbConnectionsRepository] instances
@@ -17,7 +17,7 @@ import javax.sql.DataSource
 class DbConnectionRepositoryFactory {
 
     fun create(
-        clusterDataSource: DataSource,
+        clusterDataSource: CloseableDataSource,
         config: SmartConfig,
         dataSourceFactory: DataSourceFactory,
         entityManagerFactoryFactory: EntityManagerFactoryFactory
@@ -34,7 +34,7 @@ class DbConnectionRepositoryFactory {
     }
 
     fun create(
-        clusterDataSource: DataSource,
+        clusterDataSource: CloseableDataSource,
         dataSourceFactory: DataSourceFactory,
         entityManagerFactory: EntityManagerFactory,
         configFactory: SmartConfigFactory

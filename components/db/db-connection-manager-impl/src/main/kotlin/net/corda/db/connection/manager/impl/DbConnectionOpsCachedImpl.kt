@@ -20,16 +20,21 @@ class DbConnectionOpsCachedImpl(
     // TODO - replace with caffeine cache
     private val cache = ConcurrentHashMap<Pair<String,DbPrivilege>, EntityManagerFactory>()
 
+    private fun removeFromCache(name: String, privilege: DbPrivilege) {
+        val entityManagerFactory = cache.remove(Pair(name,privilege))
+        entityManagerFactory?.close()
+    }
+
     override fun putConnection(name: String, privilege: DbPrivilege, config: SmartConfig,
                                description: String?, updateActor: String): UUID {
         return delegate.putConnection(name, privilege, config, description, updateActor)
-            .apply { cache.remove(Pair(name,privilege)) }
+            .apply { removeFromCache(name, privilege) }
     }
 
     override fun putConnection(entityManager: EntityManager, name: String, privilege: DbPrivilege, config: SmartConfig,
                                description: String?, updateActor: String): UUID {
         return delegate.putConnection(entityManager, name, privilege, config, description, updateActor)
-            .apply { cache.remove(Pair(name,privilege)) }
+            .apply { removeFromCache(name, privilege) }
     }
 
     override fun getOrCreateEntityManagerFactory(db: CordaDb, privilege: DbPrivilege): EntityManagerFactory {

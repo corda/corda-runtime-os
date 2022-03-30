@@ -1,7 +1,7 @@
 package net.corda.libs.cpiupload.impl
 
-import net.corda.chunking.RequestId
 import net.corda.data.chunking.UploadStatus
+import net.corda.data.chunking.UploadStatusKey
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.cpiupload.CpiUploadManager
 import net.corda.libs.cpiupload.CpiUploadManagerFactory
@@ -38,7 +38,7 @@ class CpiUploadManagerFactoryImpl : CpiUploadManagerFactory {
         config: SmartConfig,
         subscriptionFactory: SubscriptionFactory,
         statusTopic: String
-    ): CompactedSubscription<RequestId, UploadStatus> {
+    ): CompactedSubscription<UploadStatusKey, UploadStatus> {
         return subscriptionFactory.createCompactedSubscription(
             SubscriptionConfig(CPI_UPLOAD_GROUP, statusTopic),
             ackProcessor,

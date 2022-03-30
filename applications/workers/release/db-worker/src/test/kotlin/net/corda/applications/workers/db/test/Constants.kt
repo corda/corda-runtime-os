@@ -22,6 +22,8 @@ internal const val CUSTOM_KEY_ONE = "customKeyOne"
 internal const val CUSTOM_VAL_ONE = "customValOne"
 internal const val CUSTOM_KEY_TWO = "customKeyTwo"
 internal const val CUSTOM_VAL_TWO = "customValTwo"
+internal const val WORKSPACE_DIR = "dir.workspace"
+internal const val TEMP_DIR = "dir.tmp"
 
 internal const val DEFAULT_TOPIC_PREFIX = ""
 internal const val MSG_CONFIG_PATH = "messaging"

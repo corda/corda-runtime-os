@@ -13,6 +13,7 @@ import net.corda.v5.base.util.NetworkHostAndPort
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.nio.file.Path
 import kotlin.test.assertEquals
 
 class HttpRpcClientAadIntegrationTest : HttpRpcIntegrationTestBase() {
@@ -28,7 +29,13 @@ class HttpRpcClientAadIntegrationTest : HttpRpcIntegrationTestBase() {
             SsoSettings(AzureAdSettings(AzureAdMock.clientId, null, AzureAdMock.tenantId, trustedIssuers = listOf(AzureAdMock.issuer))),
             HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE
         )
-        server = HttpRpcServerImpl(listOf(TestHealthCheckAPIImpl()), securityManager, httpRpcSettings, true).apply { start() }
+        server = HttpRpcServerImpl(
+            listOf(TestHealthCheckAPIImpl()),
+            securityManager,
+            httpRpcSettings,
+            multipartDir,
+            true
+        ).apply { start() }
     }
 
     @AfterEach

@@ -13,6 +13,11 @@ data class UserPermissionSummaryResponseType(
     val loginName: String,
 
     /**
+     * Whether the user is enabled.
+     */
+    val enabled: Boolean,
+
+    /**
      * The permissions the user has.
      */
     val permissions: List<PermissionSummaryResponseType>,

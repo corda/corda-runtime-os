@@ -79,7 +79,7 @@ class SandboxInjectableTest {
                     SingletonSerializeAsToken::class.java.name, CORDA_SANDBOX_FILTER
                 ) as? Array<ServiceReference<out SingletonSerializeAsToken>>
                     ?: fail("No sandbox services found")
-                assertThat(references).hasSize(3)
+                assertThat(references).hasSize(4)
 
                 assertAllCordaSingletons(references)
 
@@ -94,9 +94,8 @@ class SandboxInjectableTest {
                         assertThat(SingletonSerializeAsToken::class.java).isAssignableFrom(serviceClass)
                     }
 
-                val digestService = serviceClasses - setOf(serviceOneClass, serviceTwoClass)
-                assertThat(digestService).hasSize(1)
-                assertThat(DigestService::class.java).isAssignableFrom(digestService.single())
+
+                assertThat(serviceClasses.any{ DigestService::class.java.isAssignableFrom(it)}).isTrue
             }
         } finally {
             sandboxFactory.unloadVirtualNode(vnodeInfo)

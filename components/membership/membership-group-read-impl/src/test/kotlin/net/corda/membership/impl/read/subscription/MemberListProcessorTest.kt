@@ -75,7 +75,7 @@ class MemberListProcessorTest {
         private lateinit var memberListProcessor: MemberListProcessor
         private lateinit var memberListFromTopic: Map<String, PersistentMemberInfo>
 
-        private val membershipGroupReadCache = MembershipGroupReadCache.Impl()
+        private lateinit var membershipGroupReadCache: MembershipGroupReadCache
 
         @Suppress("SpreadOperator")
         private fun createTestMemberInfo(x500Name: String, status: String): MemberInfo = MemberInfoImpl(
@@ -151,6 +151,7 @@ class MemberListProcessorTest {
         @BeforeAll
         fun setUp() {
             layeredPropertyMapFactory = LayeredPropertyMapMocks.createFactory(converters)
+            membershipGroupReadCache = MembershipGroupReadCache.Impl()
             memberListProcessor = MemberListProcessor(membershipGroupReadCache, layeredPropertyMapFactory)
             whenever(keyEncodingService.decodePublicKey(knownKeyAsString)).thenReturn(knownKey)
             whenever(keyEncodingService.encodeAsString(knownKey)).thenReturn(knownKeyAsString)
@@ -176,17 +177,14 @@ class MemberListProcessorTest {
 
     @Test
     fun `Member list cache is successfully populated from member list topic on initial snapshot`() {
-        membershipGroupReadCache.start()
         memberListProcessor.onSnapshot(memberListFromTopic)
         assertEquals(listOf(alice, bob, charlie), membershipGroupReadCache.memberListCache.get(aliceIdentity))
         assertEquals(listOf(bob), membershipGroupReadCache.memberListCache.get(bobIdentity))
         assertEquals(listOf(charlie), membershipGroupReadCache.memberListCache.get(charlieIdentity))
-        membershipGroupReadCache.stop()
     }
 
     @Test
     fun `Member list cache is successfully updated with new record`() {
-        membershipGroupReadCache.start()
         memberListProcessor.onSnapshot(memberListFromTopic)
         val newMember = createTestMemberInfo("O=NewMember,L=London,C=GB", MEMBER_STATUS_ACTIVE)
         val newMemberIdentity = HoldingIdentity(newMember.name.toString(), newMember.groupId)
@@ -194,12 +192,10 @@ class MemberListProcessorTest {
         val newRecord = Record("dummy-topic", topicData.key, topicData.value)
         memberListProcessor.onNext(newRecord, null, memberListFromTopic)
         assertEquals(listOf(newMember), membershipGroupReadCache.memberListCache.get(newMemberIdentity))
-        membershipGroupReadCache.stop()
     }
 
     @Test
     fun `Member list cache is successfully updated with changed record`() {
-        membershipGroupReadCache.start()
         memberListProcessor.onSnapshot(memberListFromTopic)
         val updatedAlice = createTestMemberInfo("O=Alice,L=London,C=GB", MEMBER_STATUS_ACTIVE)
         val topicData = convertToTestTopicData(listOf(updatedAlice), true).entries.first()
@@ -218,6 +214,5 @@ class MemberListProcessorTest {
             listOf(bob, charlie, updatedAlice),
             membershipGroupReadCache.memberListCache.get(aliceIdentity)
         )
-        membershipGroupReadCache.stop()
     }
 }

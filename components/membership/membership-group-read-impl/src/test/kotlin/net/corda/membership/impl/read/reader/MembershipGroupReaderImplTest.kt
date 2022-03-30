@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -104,5 +105,11 @@ class MembershipGroupReaderImplTest {
     fun `lookup returns active members only`() {
         mockMemberList(listOf(suspendedMemberInfo, activeMemberInfo))
         assertEquals(listOf(activeMemberInfo), membershipGroupReaderImpl.lookup())
+    }
+
+    @Test
+    fun `lookup throws illegal state exception if no cached member list available`() {
+        val error = assertThrows<IllegalStateException> { membershipGroupReaderImpl.lookup() }
+        assertEquals("Failed to find member list for ID='${aliceIdGroup1.id}, Group ID='${aliceIdGroup1.groupId}'",error.message)
     }
 }

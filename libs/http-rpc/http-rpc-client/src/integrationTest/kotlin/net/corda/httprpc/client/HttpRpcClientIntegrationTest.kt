@@ -58,7 +58,11 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
                     NumberSequencesRPCOpsImpl(),
                     CalendarRPCOpsImpl(),
                     TestEntityRpcOpsImpl()
-                ), securityManager, httpRpcSettings, true
+                ),
+                securityManager,
+                httpRpcSettings,
+                multipartDir,
+                true
             ).apply { start() }
         }
 
@@ -347,6 +351,13 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
                     it.assertThat(getUsingPath("MyId")).isEqualTo("\"Retrieved using id: MyId\"")
 
                     it.assertThat(getUsingQuery("MyQuery")).isEqualTo("\"Retrieved using query: MyQuery\"")
+
+                    it.assertThat(update(TestEntityRpcOps.UpdateParams("myId", "TestName", 20)))
+                        .isEqualTo("\"Updated using params: UpdateParams(id=myId, name=TestName, amount=20)\"")
+
+                    it.assertThat(deleteUsingPath("MyId")).isEqualTo("\"Deleted using id: MyId\"")
+
+                    it.assertThat(deleteUsingQuery("MyQuery")).isEqualTo("\"Deleted using query: MyQuery\"")
                 }
             }
         }
