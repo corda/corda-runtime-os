@@ -1,7 +1,7 @@
 package net.corda.libs.configuration
 
 import com.typesafe.config.ConfigFactory
-import net.corda.crypto.core.Encryptor
+import net.corda.crypto.core.aes.AesKey
 import net.corda.libs.configuration.secret.EncryptionSecretsService
 import net.corda.libs.configuration.secret.MaskedSecretsLookupService
 import net.corda.libs.configuration.secret.SecretsConfigurationException
@@ -19,7 +19,7 @@ class SmartConfigFactoryTest {
         SmartConfigFactory.SECRET_PASSPHRASE_KEY to "pass"
     )
 
-    private val encryptor = Encryptor.derive("pass", "salt")
+    private val encryptor = AesKey.derive("pass", "salt").encryptor
     private val secretValue = encryptor.encrypt("hello world".toByteArray()).toBase64()
 
     private val configWithSecret = """

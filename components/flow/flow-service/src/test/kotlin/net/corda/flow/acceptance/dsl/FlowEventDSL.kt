@@ -1,5 +1,7 @@
 package net.corda.flow.acceptance.dsl
 
+import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.StartFlow
@@ -7,12 +9,10 @@ import net.corda.data.flow.state.Checkpoint
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.acceptance.getBasicFlowStartContext
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.pipeline.impl.FlowEventProcessorImpl
-import net.corda.flow.pipeline.impl.FlowGlobalPostProcessorImpl
 import net.corda.flow.pipeline.factory.impl.FlowEventPipelineFactoryImpl
 import net.corda.flow.pipeline.handlers.events.SessionEventHandler
 import net.corda.flow.pipeline.handlers.events.StartFlowEventHandler
-import net.corda.flow.pipeline.handlers.events.WakeUpEventHandler
+import net.corda.flow.pipeline.handlers.events.WakeupEventHandler
 import net.corda.flow.pipeline.handlers.requests.FlowFailedRequestHandler
 import net.corda.flow.pipeline.handlers.requests.FlowFinishedRequestHandler
 import net.corda.flow.pipeline.handlers.requests.ForceCheckpointRequestHandler
@@ -26,16 +26,20 @@ import net.corda.flow.pipeline.handlers.requests.sessions.ReceiveRequestHandler
 import net.corda.flow.pipeline.handlers.requests.sessions.SendAndReceiveRequestHandler
 import net.corda.flow.pipeline.handlers.requests.sessions.SendRequestHandler
 import net.corda.flow.pipeline.handlers.requests.sessions.WaitForSessionConfirmationsRequestHandler
-import net.corda.flow.pipeline.handlers.waiting.StartRPCFlowWaitingForHandler
-import net.corda.flow.pipeline.handlers.waiting.WakeUpWaitingForHandler
+import net.corda.flow.pipeline.handlers.waiting.StartFlowWaitingForHandler
+import net.corda.flow.pipeline.handlers.waiting.WakeupWaitingForHandler
 import net.corda.flow.pipeline.handlers.waiting.sessions.SessionConfirmationWaitingForHandler
 import net.corda.flow.pipeline.handlers.waiting.sessions.SessionDataWaitingForHandler
 import net.corda.flow.pipeline.handlers.waiting.sessions.SessionInitWaitingForHandler
+import net.corda.flow.pipeline.impl.FlowEventProcessorImpl
+import net.corda.flow.pipeline.impl.FlowGlobalPostProcessorImpl
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.schema.Schemas
+import net.corda.schema.configuration.FlowConfig
 import net.corda.session.manager.impl.SessionManagerImpl
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
@@ -57,7 +61,8 @@ class FlowEventDSL {
                 flowEventHandlers,
                 flowWaitingForHandlers,
                 flowRequestHandlers
-            )
+            ),
+            testSmartConfig
         )
 
     private val inputFlowEvents = mutableListOf<Any>()
@@ -156,14 +161,14 @@ private val flowSandboxService = mock<FlowSandboxService>().apply {
 private val flowEventHandlers = listOf(
     SessionEventHandler(flowSandboxService, sessionManager),
     StartFlowEventHandler(),
-    WakeUpEventHandler(),
+    WakeupEventHandler(),
 )
 
 private val flowWaitingForHandlers = listOf(
-    StartRPCFlowWaitingForHandler(),
-    WakeUpWaitingForHandler(),
+    StartFlowWaitingForHandler(),
+    WakeupWaitingForHandler(),
     SessionConfirmationWaitingForHandler(sessionManager),
-    SessionDataWaitingForHandler(flowSandboxService, sessionManager),
+    SessionDataWaitingForHandler(sessionManager),
     SessionInitWaitingForHandler(sessionManager)
 )
 
@@ -176,10 +181,16 @@ private val flowRequestHandlers = listOf(
     GetFlowInfoRequestHandler(),
     InitiateFlowRequestHandler(sessionManager),
     ReceiveRequestHandler(),
-    SendAndReceiveRequestHandler(flowSandboxService, sessionManager),
-    SendRequestHandler(flowSandboxService, sessionManager),
+    SendAndReceiveRequestHandler(sessionManager),
+    SendRequestHandler(sessionManager),
     SleepRequestHandler(),
     SubFlowFailedRequestHandler(),
     SubFlowFinishedRequestHandler(),
     WaitForSessionConfirmationsRequestHandler()
 )
+
+private val testConfig = ConfigFactory.empty()
+    .withValue(FlowConfig.SESSION_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(500000L))
+    .withValue(FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(500000L))
+private val configFactory = SmartConfigFactory.create(testConfig)
+private val testSmartConfig = configFactory.create(testConfig)

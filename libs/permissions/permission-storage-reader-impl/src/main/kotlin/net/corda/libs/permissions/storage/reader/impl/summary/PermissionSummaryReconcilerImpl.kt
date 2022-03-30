@@ -68,6 +68,9 @@ class PermissionSummaryReconcilerImpl : PermissionSummaryReconciler {
         if (permissionsDb.size != permissionsCache.size)
             return permissionSummaryDb.toAvroUserPermissionSummary()
 
+        if (permissionSummaryDb.enabled != summaryCache.enabled)
+            return permissionSummaryDb.toAvroUserPermissionSummary()
+
         // we want ordering of permissions to be preserved
         for (i in permissionsDb.indices) {
 
@@ -102,6 +105,7 @@ class PermissionSummaryReconcilerImpl : PermissionSummaryReconciler {
 
     private fun InternalUserPermissionSummary.toAvroUserPermissionSummary() = AvroUserPermissionSummary(
         loginName,
+        enabled,
         permissions.map { it.toAvroPermissionSummary() },
         lastUpdateTimestamp
     )

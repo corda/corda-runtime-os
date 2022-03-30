@@ -47,14 +47,14 @@ dependencies {
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
     testRuntimeOnly 'org.osgi:osgi.core'
 
-    cpbs project(path: ':libs:serialization:serialization-amqp:serializable-cpk-four', configuration: 'cordaCPB')
+    cpbs project(path: ':libs:serialization:serialization-amqp:cpk-four', configuration: 'cordaCPB')
 
-    cpbs project(path: ':libs:serialization:serialization-amqp:serializable-cpk-using-lib', configuration: 'cordaCPB')
+    cpbs project(path: ':libs:serialization:serialization-amqp:cpk-using-lib', configuration: 'cordaCPB')
 
-    cpbs project(path: ':libs:serialization:serialization-amqp:serializable-cpk-evolution-different-original', configuration: 'cordaCPB')
-    cpbs project(path: ':libs:serialization:serialization-amqp:serializable-cpk-evolution-different-replacement', configuration: 'cordaCPB')
-    cpbs project(path: ':libs:serialization:serialization-amqp:serializable-cpk-evolution-newer', configuration: 'cordaCPB')
-    cpbs project(path: ':libs:serialization:serialization-amqp:serializable-cpk-evolution-older', configuration: 'cordaCPB')
+    cpbs project(path: ':libs:serialization:serialization-amqp:cpk-swap-original', configuration: 'cordaCPB')
+    cpbs project(path: ':libs:serialization:serialization-amqp:cpk-swap-replacement', configuration: 'cordaCPB')
+    cpbs project(path: ':libs:serialization:serialization-amqp:cpk-evolution-newer', configuration: 'cordaCPB')
+    cpbs project(path: ':libs:serialization:serialization-amqp:cpk-evolution-older', configuration: 'cordaCPB')
 
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation "net.corda:corda-application"

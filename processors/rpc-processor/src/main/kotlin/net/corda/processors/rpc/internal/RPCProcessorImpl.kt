@@ -17,6 +17,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.client.MemberOpsClient
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -26,6 +27,7 @@ import net.corda.schema.configuration.ConfigKeys.BOOTSTRAP_SERVERS
 import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.rpcops.VirtualNodeRPCOpsService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -54,7 +56,11 @@ class RPCProcessorImpl @Activate constructor(
     @Reference(service = CpiInfoReadService::class)
     private val cpiInfoReadService: CpiInfoReadService,
     @Reference(service = MemberOpsClient::class)
-    private val memberOpsClient: MemberOpsClient
+    private val memberOpsClient: MemberOpsClient,
+    @Reference(service = MembershipGroupReaderProvider::class)
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService
 ) : RPCProcessor {
 
     private companion object {
@@ -70,7 +76,9 @@ class RPCProcessorImpl @Activate constructor(
         ::virtualNodeRPCOpsService,
         ::cpiUploadRPCOpsService,
         ::cpiInfoReadService,
-        ::memberOpsClient
+        ::memberOpsClient,
+        ::membershipGroupReaderProvider,
+        ::virtualNodeInfoReadService
     )
 
     override fun start(bootConfig: SmartConfig) {

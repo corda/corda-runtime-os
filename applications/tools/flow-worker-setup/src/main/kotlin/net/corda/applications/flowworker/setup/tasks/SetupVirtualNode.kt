@@ -4,7 +4,10 @@ package net.corda.applications.flowworker.setup.tasks
 
 import net.corda.applications.flowworker.setup.Task
 import net.corda.applications.flowworker.setup.TaskContext
-import net.corda.data.config.Configuration
+import net.corda.chunking.ChunkWriterFactory
+import net.corda.chunking.ChunkWriterFactory.SUGGESTED_CHUNK_SIZE
+import net.corda.chunking.toAvro
+import net.corda.data.chunking.CpkChunkId
 import net.corda.libs.packaging.CpiIdentifier
 import net.corda.messaging.api.records.Record
 import net.corda.packaging.CPI
@@ -38,20 +41,6 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
         val repositoryFolder =
             context.startArgs.cpiDir ?: throw IllegalStateException("CPI Directory (--cpiDir) has not been set")
 
-        val dockerCpiDir = context.startArgs.cpiDockerDir
-
-        /**
-         * To support the temporary local package cache used by the sandbox API,
-         * we need to publish the cpi dir as a config entry
-         */
-        val configCpiPath = (dockerCpiDir ?: context.startArgs.cpiDir).toString().replace("\\", "/")
-        val cpiConfigRecord = Record(
-            Schemas.Config.CONFIG_TOPIC,
-            "corda.cpi",
-            Configuration("{ \"cacheDir\": \"${configCpiPath}\"}", "5.0")
-        )
-
-
         val cpiList = scanCPIs(repositoryFolder, getTempDir("flow-worker-setup-cpi"))
 
         val x500Identities = listOf("CN=Bob, O=Bob Corp, L=LDN, C=GB","CN=Alice, O=Alice Corp, L=LDN, C=GB")
@@ -70,13 +59,24 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
             log.info("Create vNode for '${hid.x500Name}'-'${hid.groupId}'  with short ID '${hid.id}'")
         }
 
+        cpiList.flatMap { it.cpks }.map { cpk ->
+            val cpkChecksum = cpk.metadata.hash
+            val chunkWriter = ChunkWriterFactory.create(SUGGESTED_CHUNK_SIZE)
+            chunkWriter.onChunk { chunk ->
+                val cpkChunkId = CpkChunkId(cpkChecksum.toAvro(), chunk.partNumber)
+                context.publish(Record(Schemas.VirtualNode.CPK_FILE_TOPIC, cpkChunkId, chunk))
+            }
+            chunkWriter.write(cpk.path!!.toString(), Files.readAllBytes(cpk.path!!).inputStream())
+        }
+
+
         val vNodeCpiRecords = virtualNodes.flatMap {
             listOf(
                 Record(VIRTUAL_NODE_INFO_TOPIC, it.second.holdingIdentity.toAvro(), it.second.toAvro()),
                 Record(CPI_INFO_TOPIC, it.first.metadata.id.toAvro(), it.first.metadata.toAvro()))
         }
 
-        context.publish(vNodeCpiRecords + cpiConfigRecord)
+        context.publish(vNodeCpiRecords)
     }
 
     private fun scanCPIs(packageRepository: Path, cacheDir: Path): List<CPI> {

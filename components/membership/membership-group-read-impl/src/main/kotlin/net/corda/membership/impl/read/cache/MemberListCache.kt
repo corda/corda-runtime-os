@@ -1,5 +1,6 @@
 package net.corda.membership.impl.read.cache
 
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import java.util.ArrayList
@@ -23,6 +24,10 @@ interface MemberListCache : MemberDataListCache<MemberInfo> {
      */
     class Impl : MemberListCache {
 
+        companion object {
+            val logger = contextLogger()
+        }
+
         private val cache = ConcurrentHashMap<String, ReplaceableList<MemberInfo>>()
 
         override fun get(holdingIdentity: HoldingIdentity): List<MemberInfo> = cache[holdingIdentity.id] ?: emptyList()
@@ -34,6 +39,11 @@ interface MemberListCache : MemberDataListCache<MemberInfo> {
                         old.name == new.name
                     }
             }
+        }
+
+        override fun clear() {
+            logger.info("Clearing member list cache.")
+            cache.clear()
         }
 
         /**

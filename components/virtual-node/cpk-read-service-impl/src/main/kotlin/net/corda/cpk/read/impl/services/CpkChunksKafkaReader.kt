@@ -18,7 +18,7 @@ import java.util.SortedSet
 
 // TODO should be enough for now to keep it simple and not replace/ delete CPK chunks?
 class CpkChunksKafkaReader(
-    private val tempCpkCacheDir: Path,
+    private val cpkPartsDir: Path,
     private val cpkChunksFileManager: CpkChunksFileManager,
     private val onCpkAssembled: (CpkIdentifier, CPK) -> Unit
 ) : CompactedProcessor<CpkChunkId, Chunk> {
@@ -83,7 +83,7 @@ class CpkChunksKafkaReader(
         val cpkPath = cpkChunksFileManager.assembleCpk(cpkChecksum, chunks)
         cpkPath?.let {
             val cpk = Files.newInputStream(it).use { inStream ->
-                CPK.from(inStream, tempCpkCacheDir)
+                CPK.from(inStream, cpkPartsDir)
             }
             onCpkAssembled(CpkIdentifier.fromLegacy(cpk.metadata.id), cpk)
         } ?: logger.warn("CPK assemble has failed for: $cpkChecksum")

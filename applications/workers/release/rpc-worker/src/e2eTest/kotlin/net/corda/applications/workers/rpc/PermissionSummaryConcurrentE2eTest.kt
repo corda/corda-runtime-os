@@ -48,7 +48,7 @@ class PermissionSummaryConcurrentE2eTest {
             assertEquals(0, this.permissions.size, "Permission summary should be empty before the role is assigned")
         }
 
-        val permissionsCount = 100
+        val permissionsCount = 50
         val client = testToolkit.httpClientFor(PermissionEndpoint::class.java, "admin", "admin")
         val proxy = client.start().proxy
         val permissionIdsAllow = (1..permissionsCount).map {

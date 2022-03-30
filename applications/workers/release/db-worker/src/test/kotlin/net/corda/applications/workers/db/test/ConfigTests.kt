@@ -18,7 +18,8 @@ import org.osgi.framework.Bundle
 class ConfigTests {
 
     @Test
-    fun `instance ID, topic prefix, messaging params, database params and additional params are passed through to the processor`() {
+    @Suppress("MaxLineLength")
+    fun `instance ID, topic prefix, workspace dir, temp dir, messaging params, database params and additional params are passed through to the processor`() {
         val processor = DummyProcessor()
         val dbWorker = DBWorker(processor, DummyShutdown(), DummyHealthMonitor())
         val args = arrayOf(
@@ -34,6 +35,8 @@ class ConfigTests {
         val expectedKeys = setOf(
             KEY_INSTANCE_ID,
             KEY_TOPIC_PREFIX,
+            WORKSPACE_DIR,
+            TEMP_DIR,
             "$CUSTOM_CONFIG_PATH.$CUSTOM_KEY_ONE",
             "$MSG_CONFIG_PATH.$MSG_KEY_ONE",
             "${ConfigKeys.DB_CONFIG}.$DB_KEY_ONE"
@@ -60,20 +63,20 @@ class ConfigTests {
         val config = processor.config!!
 
         // Instance ID and topic prefix are always present, with default values if none are provided.
-        val expectedKeys = setOf(KEY_INSTANCE_ID, KEY_TOPIC_PREFIX)
+        val expectedKeys = setOf(KEY_INSTANCE_ID, KEY_TOPIC_PREFIX, WORKSPACE_DIR, TEMP_DIR)
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
         assertEquals(expectedKeys, actualKeys)
     }
 
     @Test
-    fun `defaults are provided for instance ID and topic prefix`() {
+    fun `defaults are provided for instance Id, topic prefix, workspace dir and temp dir`() {
         val processor = DummyProcessor()
         val dbWorker = DBWorker(processor, DummyShutdown(), DummyHealthMonitor())
         val args = arrayOf<String>()
         dbWorker.startup(args)
         val config = processor.config!!
 
-        val expectedKeys = setOf(KEY_INSTANCE_ID, KEY_TOPIC_PREFIX)
+        val expectedKeys = setOf(KEY_INSTANCE_ID, KEY_TOPIC_PREFIX, WORKSPACE_DIR, TEMP_DIR)
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
         assertEquals(expectedKeys, actualKeys)
 

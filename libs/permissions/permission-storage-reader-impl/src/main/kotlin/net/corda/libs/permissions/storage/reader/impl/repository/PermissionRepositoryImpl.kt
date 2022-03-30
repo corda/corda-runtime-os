@@ -12,6 +12,7 @@ import net.corda.libs.permissions.storage.reader.repository.UserLogin
 import net.corda.libs.permissions.storage.reader.summary.InternalUserPermissionSummary
 import net.corda.orm.utils.transaction
 import net.corda.permissions.query.dto.InternalPermissionQueryDto
+import net.corda.permissions.query.dto.InternalUserEnabledQueryDto
 
 class PermissionRepositoryImpl(private val entityManagerFactory: EntityManagerFactory) : PermissionRepository {
 
@@ -46,11 +47,11 @@ class PermissionRepositoryImpl(private val entityManagerFactory: EntityManagerFa
     override fun findAllPermissionSummaries(): Map<UserLogin, InternalUserPermissionSummary> {
         entityManagerFactory.transaction { entityManager ->
             val timeOfPermissionSummary = Instant.now()
-            val userLogins = findAllUserLogins(entityManager)
+            val userLoginsWithEnabledFlag = findAllUserLoginsAndEnabledFlags(entityManager)
             val userPermissionsFromRoles = findPermissionsForUsersFromRoleAssignment(entityManager)
 
             return aggregatePermissionSummariesForUsers(
-                userLogins,
+                userLoginsWithEnabledFlag,
                 userPermissionsFromRoles,
                 timeOfPermissionSummary
             )
@@ -74,22 +75,23 @@ class PermissionRepositoryImpl(private val entityManagerFactory: EntityManagerFa
     }
 
     private fun aggregatePermissionSummariesForUsers(
-        userLogins: List<UserLogin>,
+        userLogins: List<InternalUserEnabledQueryDto>,
         userPermissionsFromRoles: Map<UserLogin, List<InternalPermissionQueryDto>>,
         timeOfPermissionSummary: Instant,
     ): Map<String, InternalUserPermissionSummary> {
 
-        return userLogins.associateWith { loginName ->
+        return userLogins.associateBy({ it.loginName }) {
 
             // rolePermissionsQuery features inner joins so a user without roles won't be present in this map
-            val permissionsInheritedFromRoles = userPermissionsFromRoles[loginName] ?: emptyList()
+            val permissionsInheritedFromRoles = userPermissionsFromRoles[it.loginName] ?: emptyList()
 
-            InternalUserPermissionSummary(loginName, permissionsInheritedFromRoles, timeOfPermissionSummary)
+            InternalUserPermissionSummary(it.loginName, it.enabled, permissionsInheritedFromRoles, timeOfPermissionSummary)
         }
     }
 
-    private fun findAllUserLogins(em: EntityManager): List<UserLogin> {
-        return em.createQuery("SELECT u.loginName FROM User u", String::class.java)
+    private fun findAllUserLoginsAndEnabledFlags(em: EntityManager): List<InternalUserEnabledQueryDto> {
+        val query = "SELECT NEW net.corda.permissions.query.dto.InternalUserEnabledQueryDto(u.loginName, u.enabled) FROM User u"
+        return em.createQuery(query, InternalUserEnabledQueryDto::class.java)
             .resultList
     }
 

@@ -2,6 +2,7 @@ package net.corda.httprpc.tools.annotations.validation
 
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcPOST
+import net.corda.httprpc.annotations.HttpRpcPUT
 import net.corda.httprpc.tools.annotations.validation.utils.getParameterName
 import net.corda.httprpc.tools.annotations.validation.utils.isBodyParameter
 import net.corda.v5.base.stream.returnsDurableCursorBuilder
@@ -20,7 +21,7 @@ class DurableStreamsContextParameterValidator(private val clazz: Class<out RpcOp
 
     override fun validate(): HttpRpcValidationResult =
         clazz.methods.fold(HttpRpcValidationResult()) { total, method ->
-            total + if (method.annotations.any { it is HttpRpcPOST }) {
+            total + if (method.annotations.any { it is HttpRpcPOST || it is HttpRpcPUT }) {
                 validateBodyParameterOnPOST(method)
             } else HttpRpcValidationResult()
         }

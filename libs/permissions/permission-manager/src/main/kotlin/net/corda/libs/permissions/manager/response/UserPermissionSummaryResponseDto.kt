@@ -7,6 +7,7 @@ import java.time.Instant
  */
 data class UserPermissionSummaryResponseDto(
     val loginName: String,
+    val enabled: Boolean,
     val permissions: List<PermissionSummaryResponseDto>,
     val lastUpdateTimestamp: Instant
 )

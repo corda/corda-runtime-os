@@ -9,6 +9,7 @@ import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.handlers.addOrReplaceSession
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.requests.requireCheckpoint
 import net.corda.session.manager.SessionManager
@@ -35,14 +36,15 @@ class InitiateFlowRequestHandler @Activate constructor(
 
         val now = Instant.now()
 
+        // throw an error if the session already exists (shouldn't really get here for real, but for this class, it's not valid)
+
         val payload = SessionInit.newBuilder()
-            // TODO Need to check whether the flow is an initiating flow on not
-            // then use this to determine whether to use the current subflow or top level flow
+            // Throw an error if a non initiating flow is trying to create this session
             .setFlowName(checkpoint.flowStackItems.first().flowName)
             .setFlowKey(checkpoint.flowKey)
             .setCpiId(checkpoint.flowStartContext.cpiId)
             // TODO Need member lookup service to get the holding identity of the peer
-            .setInitiatedIdentity(HoldingIdentity(request.x500Name.toString(), "helloworld"))
+            .setInitiatedIdentity(HoldingIdentity(request.x500Name.toString(), "flow-worker-dev"))
             .setInitiatingIdentity(checkpoint.flowKey.identity)
             .setPayload(ByteBuffer.wrap(byteArrayOf()))
             .build()
@@ -52,6 +54,8 @@ class InitiateFlowRequestHandler @Activate constructor(
             .setMessageDirection(MessageDirection.OUTBOUND)
             .setTimestamp(now)
             .setSequenceNum(null)
+            .setReceivedSequenceNum(0)
+            .setOutOfOrderSequenceNums(listOf(0))
             .setPayload(payload)
             .build()
 
@@ -62,7 +66,7 @@ class InitiateFlowRequestHandler @Activate constructor(
             instant = now
         )
 
-        checkpoint.sessions.add(sessionState)
+        checkpoint.addOrReplaceSession(sessionState)
 
         return context
     }

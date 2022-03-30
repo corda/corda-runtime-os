@@ -1,7 +1,5 @@
 package net.corda.httprpc.server.impl.utils
 
-import net.corda.httprpc.server.apigen.test.TestJavaPrimitivesRPCopsImpl
-import net.corda.httprpc.server.apigen.test.TestJavaPrimitivesRpcOps
 import net.corda.httprpc.server.impl.apigen.models.Endpoint
 import net.corda.httprpc.server.impl.apigen.models.EndpointMethod
 import net.corda.httprpc.server.impl.apigen.models.EndpointParameter
@@ -14,7 +12,7 @@ import net.corda.httprpc.test.TestHealthCheckAPI
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import kotlin.reflect.jvm.javaMethod
 
-fun getHealthCheckApiTestResource(): Resource {
+internal fun getHealthCheckApiTestResource(): Resource {
 
   val endpointVoid = Endpoint(
     method = EndpointMethod.GET,
@@ -223,105 +221,5 @@ fun getHealthCheckApiTestResource(): Resource {
       endpointBodyPlayground,
       endpointTimeCall
     )
-  )
-}
-
-fun getTestJavaPrimitivesRPCopsTestResource(): Resource {
-
-  val endPointNegateInt = Endpoint(
-    method = EndpointMethod.POST,
-    title = "Negate Integer",
-    description = "Negate an Integer",
-    path = "negateInteger",
-    parameters = listOf(
-      EndpointParameter(
-        id = "number",
-        description = "Int",
-        name = "number",
-        required = false,
-        classType = Integer::class.java,
-        type = ParameterType.BODY,
-        default = null
-      )
-    ),
-    responseBody = ResponseBody(description = "", type = Integer::class.java),
-    invocationMethod = InvocationMethod(
-      method = TestJavaPrimitivesRpcOps::negateInt.javaMethod!!,
-      instance = TestJavaPrimitivesRPCopsImpl()
-    )
-  )
-
-  val endPointNegateLong = Endpoint(
-    method = EndpointMethod.GET,
-    title = "Negate Long",
-    description = "Negate a Long value",
-    path = "negate_long",
-    parameters = listOf(
-      EndpointParameter(
-        id = "number",
-        description = "",
-        name = "number",
-        required = true,
-        classType = java.lang.Long::class.java,
-        type = ParameterType.QUERY,
-        default = null
-      )
-    ),
-    responseBody = ResponseBody(description = "", type = java.lang.Long::class.java),
-    invocationMethod = InvocationMethod(
-      method = TestJavaPrimitivesRpcOps::negateLong.javaMethod!!,
-      instance = TestJavaPrimitivesRPCopsImpl()
-    )
-  )
-
-  val endPointNegateBoolean = Endpoint(
-    method = EndpointMethod.GET,
-    title = "Negate Boolean",
-    description = "Negate a Boolean value",
-    path = "negate_boolean",
-    parameters = listOf(
-      EndpointParameter(
-        id = "bool",
-        description = "",
-        name = "bool",
-        required = true,
-        classType = java.lang.Boolean::class.java,
-        type = ParameterType.QUERY,
-        default = null
-      )
-    ),
-    responseBody = ResponseBody(description = "", type = java.lang.Boolean::class.java),
-    invocationMethod = InvocationMethod(
-      method = TestJavaPrimitivesRpcOps::negateBoolean.javaMethod!!,
-      instance = TestJavaPrimitivesRPCopsImpl()
-    )
-  )
-
-  val endPointReverse = Endpoint(
-    method = EndpointMethod.GET,
-    title = "Reverse Text",
-    description = "Reverse a text",
-    path = "reverse/{text}",
-    parameters = listOf(
-      EndpointParameter(
-        id = "text",
-        description = "The text to reverse",
-        name = "text",
-        required = true,
-        classType = java.lang.String::class.java,
-        type = ParameterType.PATH,
-        default = null
-      )
-    ),
-    responseBody = ResponseBody(description = "", type = java.lang.String::class.java),
-    invocationMethod = InvocationMethod(
-      method = TestJavaPrimitivesRpcOps::reverse.javaMethod!!,
-      instance = TestJavaPrimitivesRPCopsImpl()
-    )
-  )
-
-  return Resource(
-    "API", "Java Test", "java",
-    setOf(endPointNegateInt, endPointNegateLong, endPointNegateBoolean, endPointReverse)
   )
 }
