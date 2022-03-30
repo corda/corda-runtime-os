@@ -102,7 +102,7 @@ class StubLinkManagerHostingMap(
             holdingIdentity = entry.holdingIdentity,
             tlsCertificates = entry.tlsCertificates,
             tlsTenantId = entry.tlsTenantId,
-            identityTenantId = entry.identityTenantId
+            sessionKeyTenantId = entry.identityTenantId
         )
         listeners.forEach {
             it.identityAdded(info)

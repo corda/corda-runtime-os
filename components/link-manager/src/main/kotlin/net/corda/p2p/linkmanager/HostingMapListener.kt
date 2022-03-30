@@ -7,7 +7,7 @@ interface HostingMapListener {
         val holdingIdentity: HoldingIdentity,
         val tlsCertificates: List<PemCertificates>,
         val tlsTenantId: String,
-        val identityTenantId: String,
+        val sessionKeyTenantId: String,
     )
     fun identityAdded(identityInfo: IdentityInfo)
 }

@@ -1,6 +1,5 @@
 package net.corda.p2p.deployment.commands
 
-import net.corda.crypto.test.certificates.generation.CertificateAuthority.Companion.PASSWORD
 import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
 import net.corda.crypto.test.certificates.generation.FileSystemCertificatesAuthority
 import net.corda.crypto.test.certificates.generation.toPem
@@ -11,7 +10,7 @@ import java.io.File
 internal class CreateStores(
     val trustStoreFile: File,
     val tlsCertificates: File,
-    val sslStoreFile: File,
+    val sslPrivateKeyFile: File,
     val trustStoreLocation: File?,
 ) {
     companion object {
@@ -39,9 +38,7 @@ internal class CreateStores(
         }
         trustStoreFile.writeText(certificatesAuthority.caCertificate.toPem())
         val keyStore = certificatesAuthority.generateKeyAndCertificate(hosts)
-        sslStoreFile.outputStream().use {
-            keyStore.toKeyStore().store(it, PASSWORD.toCharArray())
-        }
+        sslPrivateKeyFile.writeText(keyStore.privateKey.toPem())
         tlsCertificates.writeText(keyStore.certificatePem())
 
         if (certificatesAuthority is AutoCloseable) {
