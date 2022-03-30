@@ -40,8 +40,8 @@ class LimitedUserAuthorizationE2eTest {
 
             // explicit ALLOW on all user operations should get overridden by explicit DENY on addRole and remove.*
             allowUserOperationsPermId = adminTestHelper.createPermission(PermissionType.ALLOW, ".*user")
-            val denyAddOperationsPermId = adminTestHelper.createPermission(PermissionType.DENY, ".*(addPermission|addRole|remove.*)")
-            val allowReadOperationsPermId = adminTestHelper.createPermission(PermissionType.ALLOW, ".*get.*")
+            val denyAddOperationsPermId = adminTestHelper.createPermission(PermissionType.DENY, "PUT:.*(addPermission|addRole|remove.*)")
+            val allowReadOperationsPermId = adminTestHelper.createPermission(PermissionType.ALLOW, "GET:.*")
 
             creatorRoleId = adminTestHelper.createRole(creatorRoleName)
             val readerRoleId = adminTestHelper.createRole(readerRoleName)

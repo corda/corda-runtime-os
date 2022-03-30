@@ -1,5 +1,6 @@
 package net.corda.orm.impl
 
+import net.corda.db.core.CloseableDataSource
 import net.corda.orm.DdlManage
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
@@ -26,6 +27,20 @@ class EntityManagerFactoryFactoryImpl(
 ) : EntityManagerFactoryFactory {
     companion object {
         private val log = contextLogger()
+    }
+
+    /**
+     * [EntityManagerFactory] wrapper that closes [CloseableDataSource] when wrapped [EntityManagerFactory] is closed
+     */
+    private class EntityManagerFactoryWrapper(
+        private val delegate: EntityManagerFactory,
+        private val dataSource: CloseableDataSource
+    ): EntityManagerFactory by delegate {
+
+        override fun close() {
+            delegate.close()
+            dataSource.close()
+        }
     }
 
     /**
@@ -76,7 +91,8 @@ class EntityManagerFactoryFactoryImpl(
             configuration.dataSource
         )
 
-        return entityManagerFactoryBuilderFactory(persistenceUnitInfo).build()
+        val entityManagerFactory = entityManagerFactoryBuilderFactory(persistenceUnitInfo).build()
+        return EntityManagerFactoryWrapper(entityManagerFactory, configuration.dataSource)
     }
 }
 

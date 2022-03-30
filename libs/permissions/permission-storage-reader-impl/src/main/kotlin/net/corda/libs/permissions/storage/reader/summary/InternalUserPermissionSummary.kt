@@ -9,6 +9,7 @@ import net.corda.permissions.query.dto.InternalPermissionQueryDto
  */
 data class InternalUserPermissionSummary(
     val loginName: String,
+    val enabled: Boolean,
     val permissions: List<InternalPermissionQueryDto>,
     val lastUpdateTimestamp: Instant
 )

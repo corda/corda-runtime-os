@@ -4,6 +4,7 @@ import net.corda.db.connection.manager.DBConfigurationException
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.DbConnectionOps
 import net.corda.db.connection.manager.createFromConfig
+import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DataSourceFactory
 import net.corda.db.core.HikariDataSourceFactory
 import net.corda.db.schema.CordaDb
@@ -134,7 +135,7 @@ class DbConnectionManagerImpl (
      * @param name Name for lookup in [JpaEntitiesRegistry] to get entity classes
      * @param dataSource DataSource
      */
-    private fun createManagerFactory(name: String, dataSource: DataSource): EntityManagerFactory {
+    private fun createManagerFactory(name: String, dataSource: CloseableDataSource): EntityManagerFactory {
         return entityManagerFactoryFactory.create(
             name,
             entitiesRegistry.get(name)?.classes?.toList() ?:

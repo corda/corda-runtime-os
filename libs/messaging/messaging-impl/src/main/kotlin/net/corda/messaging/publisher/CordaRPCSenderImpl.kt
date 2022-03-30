@@ -34,7 +34,7 @@ import net.corda.v5.base.util.debug
 import org.slf4j.Logger
 import java.nio.ByteBuffer
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
@@ -200,7 +200,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                     ResponseStatus.OK -> {
                         val responseBytes = rpcResponse.payload
                         val response = deserializer.deserialize(responseBytes.array())
-                        log.info("Response for request $correlationKey was received at ${Date(rpcResponse.sendTime)}")
+                        log.info("Response for request $correlationKey was received at ${rpcResponse.sendTime}")
 
                         future.complete(response)
                     }
@@ -221,9 +221,9 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                 futureTracker.removeFuture(correlationKey, partition)
             } else {
                 log.info(
-                    "Response for request $correlationKey was received at ${Date(rpcResponse.sendTime)}. " +
-                            "There is no future assigned for $correlationKey meaning that this request was either orphaned during " +
-                            "a repartition event or the client dropped their future. The response status for it was $responseStatus"
+                    "Response for request $correlationKey was received at ${rpcResponse.sendTime}. " +
+                    "There is no future assigned for $correlationKey meaning that this request was either orphaned during " +
+                    "a repartition event or the client dropped their future. The response status for it was $responseStatus"
                 )
             }
         }
@@ -257,7 +257,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             val partition = partitions[0].partition
             val request = RPCRequest(
                 correlationId,
-                Instant.now().toEpochMilli(),
+                Instant.now(),
                 getRPCResponseTopic(config.topic),
                 partition,
                 ByteBuffer.wrap(reqBytes)

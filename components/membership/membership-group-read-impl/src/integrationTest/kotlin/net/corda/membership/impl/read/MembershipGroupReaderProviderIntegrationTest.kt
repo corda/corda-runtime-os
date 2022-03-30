@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -33,7 +32,6 @@ import org.osgi.test.junit5.service.ServiceExtension
 import kotlin.reflect.KFunction
 
 @ExtendWith(ServiceExtension::class)
-@Disabled
 class MembershipGroupReaderProviderIntegrationTest {
 
     companion object {
@@ -184,16 +182,20 @@ class MembershipGroupReaderProviderIntegrationTest {
     private fun Lifecycle.stopAndWait() {
         logger.info("Stopping component ${this::class.java.simpleName}.")
         stop()
-        eventually { isStopped() }
+        isStopped()
     }
 
     private fun Lifecycle.isStopped() {
-        assertFalse(isRunning)
+        eventually { assertFalse(isRunning) }
     }
 
     private fun MembershipGroupReaderProvider.getAliceGroupReader(): MembershipGroupReader {
         logger.info("Getting group reader for test.")
-        return getGroupReader(aliceHoldingIdentity).also {
+        return eventually {
+            assertDoesNotThrow {
+                getGroupReader(aliceHoldingIdentity)
+            }
+        }.also {
             assertEquals(groupId, it.groupId)
             assertEquals(aliceMemberName, it.owningMember)
         }
@@ -201,7 +203,9 @@ class MembershipGroupReaderProviderIntegrationTest {
 
     private fun MembershipGroupReaderProvider.failGetAliceGroupReader() {
         logger.info("Running test expecting exception to be thrown.")
-        assertThrows<CordaRuntimeException> { getGroupReader(aliceHoldingIdentity) }
+        eventually {
+            assertThrows<IllegalStateException> { getGroupReader(aliceHoldingIdentity) }
+        }
     }
 
     private fun Publisher.publishMessagingConf() =

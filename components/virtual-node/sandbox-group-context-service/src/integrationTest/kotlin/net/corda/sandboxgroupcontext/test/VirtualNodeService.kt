@@ -50,7 +50,7 @@ class VirtualNodeService @Activate constructor(
             ?: fail("CPI ${virtualNodeInfo.cpiIdentifier} not found")
         val vNodeContext = VirtualNodeContext(
             virtualNodeInfo.holdingIdentity,
-            cpi.cpks.mapTo(LinkedHashSet(), CpkMetadata::id),
+            cpi.cpksMetadata.mapTo(LinkedHashSet(), CpkMetadata::cpkId),
             SandboxGroupType.FLOW,
             SingletonSerializeAsToken::class.java,
             null

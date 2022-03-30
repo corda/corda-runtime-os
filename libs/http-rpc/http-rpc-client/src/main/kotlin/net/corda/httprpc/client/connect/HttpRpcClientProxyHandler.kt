@@ -1,8 +1,10 @@
 package net.corda.httprpc.client.connect
 
 import net.corda.httprpc.RpcOps
+import net.corda.httprpc.annotations.HttpRpcDELETE
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
+import net.corda.httprpc.annotations.HttpRpcPUT
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.httprpc.annotations.RPCSinceVersion
 import net.corda.httprpc.annotations.isRpcEndpointAnnotation
@@ -110,6 +112,8 @@ internal class HttpRpcClientProxyHandler<I : RpcOps>(
                 when (it) {
                     is HttpRpcGET -> it.path(this)
                     is HttpRpcPOST -> it.path()
+                    is HttpRpcPUT -> it.path()
+                    is HttpRpcDELETE -> it.path()
                     else -> if (isStaticallyExposedGet()) {
                         this.name
                     } else {

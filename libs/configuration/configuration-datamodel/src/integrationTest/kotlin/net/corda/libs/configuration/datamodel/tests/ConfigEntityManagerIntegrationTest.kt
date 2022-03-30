@@ -6,10 +6,11 @@ import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
+import net.corda.libs.configuration.datamodel.DbConnectionAudit
+import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.libs.configuration.datamodel.ConfigAuditEntity
 import net.corda.libs.configuration.datamodel.ConfigEntity
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
-import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.libs.configuration.datamodel.findDbConnectionByNameAndPrivilege
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
@@ -105,6 +106,7 @@ class ConfigEntityManagerIntegrationTest {
 hello=world
             """.trimIndent()
         )
+        val dbConnectionAudit = DbConnectionAudit(dbConnection)
 
         entityManagerFactory.createEntityManager().transaction { em ->
             em.persist(dbConnection)
@@ -113,6 +115,25 @@ hello=world
         assertEquals(
             dbConnection,
             entityManagerFactory.createEntityManager().findDbConnectionByNameAndPrivilege("batman", DbPrivilege.DDL)
+        )
+
+        entityManagerFactory.createEntityManager().transaction { em ->
+            em.persist(dbConnectionAudit)
+        }
+
+        var results = entityManagerFactory.createEntityManager().transaction {
+            val table = DbConnectionAudit::class.simpleName
+            val query = "SELECT c FROM $table c WHERE c.name=:name AND c.privilege=:privilege"
+
+            it.createQuery(query, DbConnectionAudit::class.java)
+                .setParameter("name", "batman")
+                .setParameter("privilege", DbPrivilege.DDL)
+                .resultList
+        }
+
+        assertEquals(
+            dbConnectionAudit,
+            results?.first()
         )
     }
 }

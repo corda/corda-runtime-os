@@ -7,13 +7,10 @@ import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.handlers.addOrReplaceSession
-import net.corda.flow.pipeline.handlers.getSerializationService
 import net.corda.flow.pipeline.handlers.getSession
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.requests.requireCheckpoint
-import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.session.manager.SessionManager
-import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -22,8 +19,6 @@ import java.time.Instant
 
 @Component(service = [FlowRequestHandler::class])
 class SendAndReceiveRequestHandler @Activate constructor(
-    @Reference(service = FlowSandboxService::class)
-    private val flowSandboxService: FlowSandboxService,
     @Reference(service = SessionManager::class)
     private val sessionManager: SessionManager
 ) : FlowRequestHandler<FlowIORequest.SendAndReceive> {
@@ -31,18 +26,15 @@ class SendAndReceiveRequestHandler @Activate constructor(
     override val type = FlowIORequest.SendAndReceive::class.java
 
     override fun getUpdatedWaitingFor(context: FlowEventContext<Any>, request: FlowIORequest.SendAndReceive): WaitingFor {
-        return WaitingFor(net.corda.data.flow.state.waiting.SessionData(request.sessionToMessage.keys.toList()))
+        return WaitingFor(net.corda.data.flow.state.waiting.SessionData(request.sessionToPayload.keys.toList()))
     }
 
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.SendAndReceive): FlowEventContext<Any> {
         val checkpoint = requireCheckpoint(context)
 
-        val serializationService = flowSandboxService.getSerializationService(checkpoint.flowKey.identity.toCorda())
-        val serializedMessages = request.sessionToMessage.mapValues { (_, message) -> serializationService.serialize(message) }
-
         val now = Instant.now()
 
-        for ((sessionId, serializedMessage) in serializedMessages) {
+        for ((sessionId, payload) in request.sessionToPayload) {
 
             val updatedSessionState = sessionManager.processMessageToSend(
                 key = checkpoint.flowKey.flowId,
@@ -52,7 +44,9 @@ class SendAndReceiveRequestHandler @Activate constructor(
                     .setMessageDirection(MessageDirection.OUTBOUND)
                     .setTimestamp(now)
                     .setSequenceNum(null)
-                    .setPayload(SessionData(ByteBuffer.wrap(serializedMessage.bytes)))
+                    .setReceivedSequenceNum(0)
+                    .setOutOfOrderSequenceNums(listOf(0))
+                    .setPayload(SessionData(ByteBuffer.wrap(payload)))
                     .build(),
                 instant = now
             )

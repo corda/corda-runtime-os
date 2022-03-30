@@ -295,12 +295,14 @@ class PermissionStorageReaderImplTest {
 
         val avroSummaryEmptyPermissions = AvroUserPermissionSummary(
             user.loginName,
+            true,
             emptyList(),
             Instant.now()
         )
 
         val avroSummaryWithPermission = AvroUserPermissionSummary(
             user.loginName,
+            true,
             listOf(AvroPermissionSummary("permId", null, null, "str", AvroPermissionType.ALLOW)),
             Instant.now()
         )
@@ -324,7 +326,7 @@ class PermissionStorageReaderImplTest {
         whenever(permissionRepository.findAllRoles()).thenReturn(listOf(role))
         whenever(permissionRepository.findAllPermissions()).thenReturn(listOf(permission))
 
-        val summariesDb = mapOf(user.loginName to InternalUserPermissionSummary(user.loginName, emptyList(), Instant.now()))
+        val summariesDb = mapOf(user.loginName to InternalUserPermissionSummary(user.loginName, true, emptyList(), Instant.now()))
         val summariesCached = mapOf(user.loginName to avroSummaryEmptyPermissions)
         whenever(permissionRepository.findAllPermissionSummaries()).thenReturn(summariesDb)
         whenever(permissionCache.permissionSummaries).thenReturn(summariesCached)
@@ -516,7 +518,7 @@ class PermissionStorageReaderImplTest {
 
     @Test
     fun `reconcilePermissionSummaries does not publish empty list when no users need reconciled`() {
-        val summariesDb = mapOf(user.loginName to InternalUserPermissionSummary(user.loginName, emptyList(), Instant.now()))
+        val summariesDb = mapOf(user.loginName to InternalUserPermissionSummary(user.loginName, true, emptyList(), Instant.now()))
         val summariesCached = mapOf(user.loginName to avroSummaryEmptyPermissions)
         whenever(permissionRepository.findAllPermissionSummaries()).thenReturn(summariesDb)
         whenever(permissionCache.permissionSummaries).thenReturn(summariesCached)
@@ -530,11 +532,11 @@ class PermissionStorageReaderImplTest {
     @Test
     fun `reconcilePermissionSummaries publishes records for users requiring reconciliation`() {
         val summariesDb = mapOf(
-            "login1" to InternalUserPermissionSummary("login1", emptyList(), Instant.now()),
-            "login2" to InternalUserPermissionSummary("login2", emptyList(), Instant.now()),
+            "login1" to InternalUserPermissionSummary("login1", true, emptyList(), Instant.now()),
+            "login2" to InternalUserPermissionSummary("login2", true, emptyList(), Instant.now()),
         )
         val summariesCached = mapOf(
-            "login3" to AvroUserPermissionSummary("login3", listOf(AvroPermissionSummary()), Instant.now())
+            "login3" to AvroUserPermissionSummary("login3", true, listOf(AvroPermissionSummary()), Instant.now())
         )
         val reconcileSummaryLogin1 = AvroUserPermissionSummary()
         val reconcileSummaryLogin2 = AvroUserPermissionSummary()

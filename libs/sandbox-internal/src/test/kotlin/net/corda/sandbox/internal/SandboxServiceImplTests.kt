@@ -109,7 +109,7 @@ class SandboxServiceImplTests {
 
         val sandboxesRetrievedFromSandboxGroup =
             cpks.map { cpk -> sandboxGroup.cpkSandboxes.find { sandbox ->
-                sandbox.cpkMetadata.hash == cpk.metadata.hash
+                sandbox.cpkMetadata.fileChecksum == cpk.metadata.hash
             } }
         assertEquals(sandboxes.toSet(), sandboxesRetrievedFromSandboxGroup.toSet())
     }

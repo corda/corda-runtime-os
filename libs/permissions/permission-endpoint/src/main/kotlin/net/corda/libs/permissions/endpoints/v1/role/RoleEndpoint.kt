@@ -3,7 +3,8 @@ package net.corda.libs.permissions.endpoints.v1.role
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
-import net.corda.httprpc.annotations.HttpRpcQueryParameter
+import net.corda.httprpc.annotations.HttpRpcPUT
+import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
@@ -22,7 +23,7 @@ interface RoleEndpoint : RpcOps {
     /**
      * Create a role in the RBAC permission system.
      */
-    @HttpRpcPOST(path = "createRole", description = "Create a Role")
+    @HttpRpcPOST(description = "Create a Role")
     fun createRole(
         @HttpRpcRequestBodyParameter(description = "Details of the role to be created")
         createRoleType: CreateRoleType
@@ -31,16 +32,16 @@ interface RoleEndpoint : RpcOps {
     /**
      * Get a role by its identifier in the RBAC permission system.
      */
-    @HttpRpcGET(path = "getRole", description = "Get a Role by its ID")
+    @HttpRpcGET(path = "{id}", description = "Get a Role by its ID")
     fun getRole(
-        @HttpRpcQueryParameter(description = "ID of the role to be returned.")
+        @HttpRpcPathParameter(description = "ID of the role to be returned.")
         id: String
     ): RoleResponseType
 
     /**
      * Associates a role with a permission
      */
-    @HttpRpcPOST(path = "addPermission", description = "Add a permission to a role")
+    @HttpRpcPUT(path = "addPermission", description = "Add a permission to a role")
     fun addPermission(
         @HttpRpcRequestBodyParameter(description = "Identifier for an existing role")
         roleId: String,
@@ -51,7 +52,7 @@ interface RoleEndpoint : RpcOps {
     /**
      * Removes Association between a role and a permission
      */
-    @HttpRpcPOST(path = "removePermission", description = "Removes a permission from a role")
+    @HttpRpcPUT(path = "removePermission", description = "Removes a permission from a role")
     fun removePermission(
         @HttpRpcRequestBodyParameter(description = "Identifier for an existing role")
         roleId: String,

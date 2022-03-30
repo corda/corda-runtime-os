@@ -3,6 +3,8 @@ package net.corda.example.vnode
 
 import co.paralleluniverse.fibers.instrument.Retransform
 import com.sun.management.HotSpotDiagnosticMXBean
+import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
@@ -11,10 +13,12 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messaging.api.records.Record
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
+import net.corda.schema.configuration.FlowConfig
 import net.corda.securitymanager.SecurityManagerService
 import net.corda.v5.base.util.loggerFor
 import net.corda.virtualnode.HoldingIdentity
@@ -77,6 +81,12 @@ class CordaVNode @Activate constructor(
 
         private const val TIMEOUT_MILLIS = 1000L
         private const val WAIT_MILLIS = 100L
+
+        private val config = ConfigFactory.empty()
+            .withValue(FlowConfig.SESSION_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(500000L))
+            .withValue(FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(500000L))
+        private val configFactory = SmartConfigFactory.create(config)
+        private val smartConfig = configFactory.create(config)
     }
 
     private val logger = loggerFor<CordaVNode>()
@@ -144,13 +154,13 @@ class CordaVNode @Activate constructor(
             // Checkpoint: We have created a sandbox for this CPI.
             val sandboxContext = vnode.getOrCreateSandbox(holdingIdentity)
             try {
-                logger.info("Created sandbox: {}", sandboxContext.sandboxGroup.metadata.values.map {it.id})
+                logger.info("Created sandbox: {}", sandboxContext.sandboxGroup.metadata.values.map {it.cpkId})
                 dumpHeap("created")
 
                 val rpcStartFlow = createRPCStartFlow(clientId, vnodeInfo.toAvro())
                 val flowKey = FlowKey(generateRandomId(), holdingIdentity.toAvro())
                 val record = Record(FLOW_EVENT_TOPIC, flowKey, FlowEvent(flowKey, rpcStartFlow))
-                flowEventProcessorFactory.create().apply {
+                flowEventProcessorFactory.create(smartConfig).apply {
                     val result = onNext(null, record)
                     result.responseEvents.singleOrNull { evt ->
                         evt.topic == FLOW_EVENT_TOPIC

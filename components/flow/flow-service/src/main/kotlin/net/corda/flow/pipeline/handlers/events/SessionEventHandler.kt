@@ -50,12 +50,19 @@ class SessionEventHandler @Activate constructor(
         val updatedSessionState = sessionManager.processMessageReceived(
             sessionEvent.sessionId,
             context.checkpoint?.getSession(sessionEvent.sessionId),
-            sessionEvent, now
+            sessionEvent,
+            now
         )
 
-        when (val sessionInit = sessionEvent.payload) {
+        // Null is returned if duplicate [SessionInit]s are received
+        when (val sessionInit = sessionManager.getNextReceivedEvent(updatedSessionState)?.payload) {
             is SessionInit -> {
-                val checkpoint = createInitiatedFlowCheckpoint(context, sessionEvent.sessionId, sessionInit)
+                if (context.checkpoint != null) {
+                    throw FlowProcessingException(
+                        "Flow [${context.checkpoint.flowKey.flowId}] already has a checkpoint while processing session init event"
+                    )
+                }
+                val checkpoint = createInitiatedFlowCheckpoint(context, updatedSessionState.sessionId, sessionInit)
                 checkpoint.sessions.add(updatedSessionState)
                 return context.copy(checkpoint = checkpoint)
             }
@@ -72,34 +79,30 @@ class SessionEventHandler @Activate constructor(
             "No initiated flow found for initiating flow: ${sessionInit.flowName} in cpi: ${sessionInit.cpiId}"
         )
 
-        return if (context.checkpoint != null) {
-            context.checkpoint
-        } else {
-            val state = StateMachineState.newBuilder()
-                .setSuspendCount(0)
-                .setIsKilled(false)
-                .setWaitingFor(WaitingFor(WaitingForSessionInit(sessionId)))
-                .setSuspendedOn(null)
-                .build()
-            val startContext = FlowStartContext.newBuilder()
-                .setStatusKey(FlowStatusKey(context.inputEvent.flowKey.flowId, context.inputEvent.flowKey.identity))
-                .setInitiatorType(FlowInitiatorType.P2P)
-                .setRequestId(sessionId)
-                .setIdentity(context.inputEvent.flowKey.identity)
-                .setCpiId(sessionInit.cpiId)
-                .setInitiatedBy(sessionInit.initiatingIdentity)
-                .setFlowClassName(initiatedFlow)
-                .setCreatedTimestamp(Instant.now())
-                .build()
-            Checkpoint.newBuilder()
-                .setFlowKey(sessionInit.flowKey)
-                .setFiber(ByteBuffer.wrap(byteArrayOf()))
-                .setFlowStartContext(startContext)
-                .setFlowState(state)
-                .setSessions(mutableListOf())
-                .setFlowStackItems(mutableListOf())
-                .build()
-        }
+        val state = StateMachineState.newBuilder()
+            .setSuspendCount(0)
+            .setIsKilled(false)
+            .setWaitingFor(WaitingFor(WaitingForSessionInit(sessionId)))
+            .setSuspendedOn(null)
+            .build()
+        val startContext = FlowStartContext.newBuilder()
+            .setStatusKey(FlowStatusKey(context.inputEvent.flowKey.flowId, context.inputEvent.flowKey.identity))
+            .setInitiatorType(FlowInitiatorType.P2P)
+            .setRequestId(sessionId)
+            .setIdentity(context.inputEvent.flowKey.identity)
+            .setCpiId(sessionInit.cpiId)
+            .setInitiatedBy(sessionInit.initiatingIdentity)
+            .setFlowClassName(initiatedFlow)
+            .setCreatedTimestamp(Instant.now())
+            .build()
+        return Checkpoint.newBuilder()
+            .setFlowKey(sessionInit.flowKey)
+            .setFiber(ByteBuffer.wrap(byteArrayOf()))
+            .setFlowStartContext(startContext)
+            .setFlowState(state)
+            .setSessions(mutableListOf())
+            .setFlowStackItems(mutableListOf())
+            .build()
     }
 
     private fun getInitiatingToInitiatedFlowsFromSandbox(holdingIdentity: HoldingIdentity): Map<Pair<String, String>, String> {

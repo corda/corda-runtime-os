@@ -169,6 +169,7 @@ services:
     command:
       - --messagingParams
       - kafka.common.bootstrap.servers=kafka:9092
+      - --workspace-dir=/tmp/corda
     healthcheck:
       test: [ "CMD-SHELL", "curl --fail http://localhost:7000/isHealthy || exit 1" ]
       interval: 5s

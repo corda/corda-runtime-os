@@ -1,5 +1,6 @@
 package net.corda.orm.impl
 
+import net.corda.db.core.CloseableDataSource
 import net.corda.orm.DdlManage
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.TransactionIsolationLevel
@@ -13,7 +14,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import java.net.URLClassLoader
 import javax.persistence.spi.PersistenceUnitInfo
-import javax.sql.DataSource
 
 class EntityManagerFactoryFactoryImplTest {
     data class TestEntity(val name: String)
@@ -22,7 +22,7 @@ class EntityManagerFactoryFactoryImplTest {
     private val builder = mock<EntityManagerFactoryBuilder> {
         on { build() } doReturn(mock())
     }
-    private val datasource = mock<DataSource>()
+    private val datasource = mock<CloseableDataSource>()
     private val config = mock<EntityManagerConfiguration> {
         on { dataSource } doReturn datasource
         on { showSql } doReturn true

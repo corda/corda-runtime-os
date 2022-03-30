@@ -6,11 +6,13 @@ import net.corda.db.connection.manager.impl.BootstrapConfigProvided
 import net.corda.db.connection.manager.impl.DbConnectionManagerImpl
 import net.corda.db.connection.manager.impl.DbConnectionRepositoryFactory
 import net.corda.db.connection.manager.impl.LateInitDbConnectionOps
+import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DataSourceFactory
 import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigObject
+import net.corda.libs.configuration.datamodel.DbConnectionAudit
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -24,22 +26,21 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.ArgumentCaptor
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argThat
 import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-
+import org.mockito.kotlin.times
+import org.mockito.kotlin.firstValue
+import org.mockito.kotlin.secondValue
 import java.sql.Connection
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
-
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.Query
-import javax.sql.DataSource
 
 class DbConnectionManagerImplTest {
     private val lifecycleCoordinator = mock<LifecycleCoordinator>()
@@ -66,10 +67,10 @@ class DbConnectionManagerImplTest {
     }
     private val clusterConnection = mock<Connection>()
     private val otherConnection = mock<Connection>()
-    private val clusterDataSource = mock<DataSource>() {
+    private val clusterDataSource = mock<CloseableDataSource>() {
         on { connection }.doReturn(clusterConnection)
     }
-    private val otherDataSource = mock<DataSource>() {
+    private val otherDataSource = mock<CloseableDataSource>() {
         on { connection }.doReturn(otherConnection)
     }
     private val config = ConfigFactory.parseString("config=123")
@@ -277,18 +278,27 @@ class DbConnectionManagerImplTest {
         assertThat(paramNameCaptor.allValues).contains("name","privilege")
         assertThat(paramValueCaptor.allValues.map { it.toString() }).contains("test-connection","DML")
 
-        verify(entityManager).persist(argThat { it ->
-            assertThat(it).isInstanceOf(DbConnectionConfig::class.java)
-            val dbc = it as DbConnectionConfig
-            SoftAssertions.assertSoftly {
+        val entityCaptor = ArgumentCaptor.forClass(Object::class.java)
+
+        verify(entityManager, times(2)).persist(entityCaptor.capture())
+        assertThat(entityCaptor.firstValue).isInstanceOf(DbConnectionConfig::class.java)
+        assertThat(entityCaptor.secondValue).isInstanceOf(DbConnectionAudit::class.java)
+        val dbc = entityCaptor.firstValue as DbConnectionConfig
+        SoftAssertions.assertSoftly {
                 it.assertThat(dbc.name).isEqualTo("test-connection")
                 it.assertThat(dbc.privilege).isEqualTo(DbPrivilege.DML)
                 it.assertThat(dbc.config).isEqualTo("config=123")
                 it.assertThat(dbc.description).isEqualTo("super connection")
                 it.assertThat(dbc.updateActor).isEqualTo("me")
-            }
-            true
-        })
+        }
+        val dba = entityCaptor.secondValue as DbConnectionAudit
+        SoftAssertions.assertSoftly {
+            it.assertThat(dba.name).isEqualTo("test-connection")
+            it.assertThat(dba.privilege).isEqualTo(DbPrivilege.DML)
+            it.assertThat(dba.config).isEqualTo("config=123")
+            it.assertThat(dba.description).isEqualTo("super connection")
+            it.assertThat(dba.updateActor).isEqualTo("me")
+        }
     }
 
     @Test

@@ -1,6 +1,7 @@
 package net.corda.libs.configuration.secret
 
 import net.corda.crypto.core.Encryptor
+import net.corda.crypto.core.aes.AesKey
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -14,7 +15,7 @@ import org.mockito.kotlin.verify
 
 class SecretEncryptionUtilTest {
     // encryptor unfortunately doesn't have an interface, so creating a real one, but only once.
-    private val encryptor = Encryptor.derive("p", "s")
+    private val encryptor = AesKey.derive("p", "s").encryptor
     private val encryptorFactoryMock = mock<(p: String, s: String) -> Encryptor>() {
         on { invoke(any(), any()) } doReturn (encryptor)
     }

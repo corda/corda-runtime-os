@@ -1,21 +1,17 @@
 package net.corda.libs.cpiupload.impl
 
 import net.corda.data.ExceptionEnvelope
-import net.corda.data.chunking.UploadFileStatus
 import net.corda.data.chunking.UploadStatus
-import net.corda.libs.cpiupload.CpiUploadStatus
+import net.corda.data.chunking.UploadStatusKey
 import net.corda.messaging.api.records.Record
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import java.util.UUID
 
 internal class UploadStatusProcessorTest {
 
     private lateinit var processor: UploadStatusProcessor
-    private val emptyExceptionEnvelope = ExceptionEnvelope()
     private val topic = "don't care"
 
     @BeforeEach
@@ -23,151 +19,104 @@ internal class UploadStatusProcessorTest {
         processor = UploadStatusProcessor()
     }
 
-    @Test
-    fun onSnapshot() {
-        val expectedId = UUID.randomUUID().toString()
-        val unexpectedId = UUID.randomUUID().toString()
-        val currentData = mapOf(
-            expectedId to UploadStatus(expectedId, UploadFileStatus.UPLOAD_IN_PROGRESS, emptyExceptionEnvelope)
-        )
-        processor.onSnapshot(currentData)
+    private fun incrementingChunkKey() = IncrementingChunkKey()
+    private fun isComplete(key: IncrementingChunkKey) = processor.status(key.requestId)?.complete ?: false
+    private fun exceptionEnvelope(key: IncrementingChunkKey) = processor.status(key.requestId)!!.exception
 
-        assertThat(processor.status(expectedId)).isEqualTo(CpiUploadStatus.IN_PROGRESS)
-        assertThat(processor.status(unexpectedId)).isEqualTo(CpiUploadStatus.NO_SUCH_REQUEST_ID)
+    /** Creates a new key with a request id, and [next()] returns the next key and partnumber, starting at 0 */
+    class IncrementingChunkKey {
+        val requestId = UUID.randomUUID().toString()
+        private var sequenceNumber = 0
+        fun next(): UploadStatusKey {
+            val key = UploadStatusKey(requestId, sequenceNumber)
+            ++sequenceNumber
+            return key
+        }
     }
 
     @Test
-    fun `onNext with in order chunks`() {
-        val expectedId = UUID.randomUUID().toString()
-        val currentData = mapOf(
-            expectedId to UploadStatus(expectedId, UploadFileStatus.UPLOAD_IN_PROGRESS, emptyExceptionEnvelope)
-        )
-        processor.onSnapshot(currentData)
+    fun `processor returns incomplete status for in progress request in snapshot`() {
+        val chunkAckKey = incrementingChunkKey()
+        UploadStatus(false, "", null, null)
+        processor.onSnapshot(mapOf(chunkAckKey.next() to UploadStatus(false, "", null, null)))
 
-        assertThat(processor.status(expectedId)).isEqualTo(CpiUploadStatus.IN_PROGRESS)
-
-        val statusOfLastChunk = UploadStatus(expectedId, UploadFileStatus.OK, emptyExceptionEnvelope)
-        // Not quite sure about the current data, but we don't use it...
-        processor.onNext(Record(topic, expectedId, statusOfLastChunk), statusOfLastChunk, emptyMap())
-
-        assertThat(processor.status(expectedId)).isEqualTo(CpiUploadStatus.OK)
+        assertThat(isComplete(chunkAckKey)).isEqualTo(false)
     }
 
     @Test
-    fun `onNext with empty snapshot`() {
-        val expectedId = UUID.randomUUID().toString()
-        processor.onSnapshot(emptyMap())
+    fun `processor returns null for unknown request not in snapshot`() {
+        val chunkAckKey = incrementingChunkKey()
+        val unexpectedChunkKey = incrementingChunkKey()
 
-        val firstChunk = UploadStatus(expectedId, UploadFileStatus.UPLOAD_IN_PROGRESS, emptyExceptionEnvelope)
-        processor.onNext(Record(topic, expectedId, firstChunk), firstChunk, emptyMap())
-        assertThat(CpiUploadStatus.IN_PROGRESS).isEqualTo(processor.status(expectedId))
+        processor.onSnapshot(mapOf(chunkAckKey.next() to UploadStatus(false, "", null, null)))
 
-        val statusOfLastChunk = UploadStatus(expectedId, UploadFileStatus.OK, emptyExceptionEnvelope)
-        processor.onNext(Record(topic, expectedId, statusOfLastChunk), statusOfLastChunk, emptyMap())
-        assertThat(CpiUploadStatus.OK).isEqualTo(processor.status(expectedId))
+        assertThat(isComplete(unexpectedChunkKey)).isEqualTo(false)
+        assertThat(processor.status(unexpectedChunkKey.requestId)).isNull()
     }
 
     @Test
-    fun `onNext with out of order chunks`() {
-        val expectedId = UUID.randomUUID().toString()
-        val currentData = mapOf(
-            expectedId to UploadStatus(expectedId, UploadFileStatus.UPLOAD_IN_PROGRESS, emptyExceptionEnvelope)
-        )
-        processor.onSnapshot(currentData)
-        assertThat(CpiUploadStatus.IN_PROGRESS).isEqualTo(processor.status(expectedId))
+    fun `processor returns status OK on next chunk received in order`() {
+        val chunkAckKey = incrementingChunkKey()
+        processor.onSnapshot(mapOf(chunkAckKey.next() to UploadStatus(false, "", null, null)))
+
+        val nextChunkReceived = UploadStatus(true, "", null, null)
+        processor.onNext(Record(topic, chunkAckKey.next(), nextChunkReceived), nextChunkReceived, emptyMap())
+
+        assertThat(isComplete(chunkAckKey)).isEqualTo(true)
+    }
+
+    @Test
+    fun `processor returns failed status and exception in failed chunk received`() {
+        val chunkAckKey = incrementingChunkKey()
+        processor.onSnapshot(mapOf(chunkAckKey.next() to UploadStatus(false, "", null, null)))
 
         // Still in progress with missing chunk
-        val statusOfLastChunk = UploadStatus(expectedId, UploadFileStatus.UPLOAD_IN_PROGRESS, emptyExceptionEnvelope)
-        processor.onNext(Record(topic, expectedId, statusOfLastChunk), statusOfLastChunk, emptyMap())
-        assertThat(CpiUploadStatus.IN_PROGRESS).isEqualTo(processor.status(expectedId))
+        val statusOfLastChunk = UploadStatus(false, "", null, null)
+        processor.onNext(Record(topic, chunkAckKey.next(), statusOfLastChunk), statusOfLastChunk, emptyMap())
 
-        val statusOfNextChunk = UploadStatus(expectedId, UploadFileStatus.OK, emptyExceptionEnvelope)
-        processor.onNext(Record(topic, expectedId, statusOfNextChunk), statusOfNextChunk, emptyMap())
-        assertThat(CpiUploadStatus.OK).isEqualTo(processor.status(expectedId))
+        val statusOfNextChunk = UploadStatus(false, "", null, ExceptionEnvelope("SomeException", "some message"))
+        processor.onNext(Record(topic, chunkAckKey.next(), statusOfNextChunk), statusOfNextChunk, emptyMap())
+
+        assertThat(isComplete(chunkAckKey)).isEqualTo(false)
+        assertThat(exceptionEnvelope(chunkAckKey)).isNotNull
     }
 
     @Test
-    fun `status with exception in last uploaded chunk`() {
-        val expectedId = UUID.randomUUID().toString()
-        val currentData = mapOf(
-            expectedId to UploadStatus(expectedId, UploadFileStatus.UPLOAD_IN_PROGRESS, emptyExceptionEnvelope)
-        )
-        processor.onSnapshot(currentData)
-        assertThat(CpiUploadStatus.IN_PROGRESS).isEqualTo(processor.status(expectedId))
-
-        // Still in progress with missing chunk
-        val statusOfLastChunk = UploadStatus(expectedId, UploadFileStatus.UPLOAD_IN_PROGRESS, emptyExceptionEnvelope)
-        processor.onNext(Record(topic, expectedId, statusOfLastChunk), statusOfLastChunk, emptyMap())
-        assertThat(CpiUploadStatus.IN_PROGRESS).isEqualTo(processor.status(expectedId))
-
-        val statusOfNextChunk = UploadStatus(
-            expectedId,
-            UploadFileStatus.FILE_INVALID,
-            ExceptionEnvelope("SomeException", "some message")
-        )
-        processor.onNext(Record(topic, expectedId, statusOfNextChunk), statusOfNextChunk, emptyMap())
-        assertThat(CpiUploadStatus.FILE_INVALID).isEqualTo(processor.status(expectedId))
-    }
-
-    @Test
-    fun `remove chunks`() {
+    fun `processor removes chunks received if necessary`() {
         // Not sure that we'll ever get this situation, but tests the code anyway.
 
-        val expectedId = UUID.randomUUID().toString()
-        val firstChunk = UploadStatus(expectedId, UploadFileStatus.UPLOAD_IN_PROGRESS, emptyExceptionEnvelope)
+        val chunkAckKey = incrementingChunkKey()
         processor.onSnapshot(emptyMap())
 
-        processor.onNext(Record(topic, expectedId, firstChunk), firstChunk, emptyMap())
-        assertThat(processor.status(expectedId)).isEqualTo(CpiUploadStatus.IN_PROGRESS)
+        val firstChunk = UploadStatus(false, "", null, null)
+        processor.onNext(Record(topic, chunkAckKey.next(), firstChunk), firstChunk, emptyMap())
 
-        val statusOfLastChunk = UploadStatus(expectedId, UploadFileStatus.UPLOAD_IN_PROGRESS, emptyExceptionEnvelope)
-        processor.onNext(Record(topic, expectedId, statusOfLastChunk), statusOfLastChunk, emptyMap())
+        val nextChunkReceived = UploadStatus(false, "", null, null)
+        processor.onNext(Record(topic, chunkAckKey.next(), nextChunkReceived), nextChunkReceived, emptyMap())
 
-        assertThat(processor.status(expectedId)).isEqualTo(CpiUploadStatus.IN_PROGRESS)
+        assertThat(isComplete(chunkAckKey)).isEqualTo(false)
 
-        processor.onNext(Record(topic, expectedId, null), statusOfLastChunk, emptyMap())
-        assertThat(processor.status(expectedId)).isEqualTo(CpiUploadStatus.NO_SUCH_REQUEST_ID)
+        processor.onNext(Record(topic, chunkAckKey.next(), null), nextChunkReceived, emptyMap())
 
-        processor.onNext(Record(topic, expectedId, null), firstChunk, emptyMap())
-        assertThat(processor.status(expectedId)).isEqualTo(CpiUploadStatus.NO_SUCH_REQUEST_ID)
+        assertThat(processor.status(chunkAckKey.requestId)).isNull()
     }
 
     @Test
-    fun `two different requestIds`() {
-        val id1 = UUID.randomUUID().toString()
-        val id2 = UUID.randomUUID().toString()
+    fun `processor handles two different requests`() {
+        val chunkKeyA = incrementingChunkKey()
+        val chunkKeyB = incrementingChunkKey()
         processor.onSnapshot(emptyMap())
 
-        val firstChunk2 = UploadStatus(id2, UploadFileStatus.UPLOAD_IN_PROGRESS, emptyExceptionEnvelope)
-        processor.onNext(Record(topic, id2, firstChunk2), firstChunk2, emptyMap())
-        assertThat(CpiUploadStatus.IN_PROGRESS).isEqualTo(processor.status(id2))
+        processor.onNext(Record(topic, chunkKeyA.next(), UploadStatus(false, "", null, null)), null, emptyMap())
+        processor.onNext(Record(topic, chunkKeyB.next(), UploadStatus(false, "", null, null)), null, emptyMap())
 
-        val firstChunk1 = UploadStatus(id1, UploadFileStatus.UPLOAD_IN_PROGRESS, emptyExceptionEnvelope)
-        processor.onNext(Record(topic, id1, firstChunk1), firstChunk1, emptyMap())
-        assertThat(CpiUploadStatus.IN_PROGRESS).isEqualTo(processor.status(id1))
+        assertThat(isComplete(chunkKeyA)).isEqualTo(false)
+        assertThat(isComplete(chunkKeyB)).isEqualTo(false)
 
-        val statusOfLastChunk2 = UploadStatus(id2, UploadFileStatus.OK, emptyExceptionEnvelope)
-        processor.onNext(Record(topic, id2, statusOfLastChunk2), statusOfLastChunk2, emptyMap())
-        assertThat(CpiUploadStatus.OK).isEqualTo(processor.status(id2))
+        processor.onNext(Record(topic, chunkKeyA.next(), UploadStatus(true, "", null, null)), null, emptyMap())
+        processor.onNext(Record(topic, chunkKeyB.next(), UploadStatus(true, "", null, null)), null, emptyMap())
 
-        val statusOfLastChunk1 = UploadStatus(id1, UploadFileStatus.OK, emptyExceptionEnvelope)
-        processor.onNext(Record(topic, id1, statusOfLastChunk1), statusOfLastChunk1, emptyMap())
-        assertThat(CpiUploadStatus.OK).isEqualTo(processor.status(id1))
-    }
-
-    @Test
-    fun `cannot overwrite status of a failed chunk`() {
-        val expectedId = UUID.randomUUID().toString()
-        processor.onSnapshot(emptyMap())
-
-        val statusOfFirstChunk =
-            UploadStatus(expectedId, UploadFileStatus.FILE_INVALID, ExceptionEnvelope("SomeException", "some message"))
-        processor.onNext(Record(topic, expectedId, statusOfFirstChunk), statusOfFirstChunk, emptyMap())
-        assertThat(CpiUploadStatus.FILE_INVALID).isEqualTo(processor.status(expectedId))
-
-        val statusOfLastChunk = UploadStatus(expectedId, UploadFileStatus.UPLOAD_IN_PROGRESS, emptyExceptionEnvelope)
-        assertThrows<CordaRuntimeException> {
-            processor.onNext(Record(topic, expectedId, statusOfLastChunk), statusOfFirstChunk, emptyMap())
-        }
+        assertThat(isComplete(chunkKeyA)).isEqualTo(true)
+        assertThat(isComplete(chunkKeyB)).isEqualTo(true)
     }
 }

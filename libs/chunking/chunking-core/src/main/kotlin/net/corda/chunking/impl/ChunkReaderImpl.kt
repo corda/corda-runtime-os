@@ -14,7 +14,7 @@ import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 
 /**
- * Receives binary chunks and reassembles full binary and executes completed
+ * Receives binary chunks and reassembles full binary under [destDir] and executes completed
  * callback when binary is assembled.
  */
 internal class ChunkReaderImpl(private val destDir: Path) : ChunkReader {

@@ -161,19 +161,6 @@ allprojects {
                     includeGroup 'antlr'
                 }
             }
-
-            // temporarily for the Liquibase patch
-            // TODO: REMOVE when patched merged https://r3-cev.atlassian.net/browse/CORE-2723
-            exclusiveContent {
-                forRepository {
-                    maven {
-                        url "$artifactoryContextUrl/corda-dependencies-dev"
-                    }
-                }
-                filter {
-                    includeGroup 'org.liquibase'
-                }
-            }
         }
     }
 
@@ -302,6 +289,17 @@ subprojects {
             downloadSources = true
         }
     }
+    
+    // we do this to allow for Gradle task caching. OSGI attribute Bnd-LastModified breaks gradle caching as it is a timestamp
+    // below block tells Gradle to ignore specifically the Bnd-LastModified attribute of the manifest when checking if
+    // a task is up-to-date, this has no impact on publishing or production of jar
+    normalization {
+        runtimeClasspath {
+            metaInf {
+                ignoreAttribute("Bnd-LastModified")
+            }
+        }
+    }   
 
     detekt {
         baseline = file("$projectDir/detekt-baseline.xml")

@@ -15,7 +15,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
@@ -84,10 +83,9 @@ class FlowService @Activate constructor(
             }
             is ConfigChangedEvent -> {
                 executor?.stop()
-                val messagingConfig = event.config.toMessagingConfig()
                 val newExecutor = FlowExecutor(
                     coordinatorFactory,
-                    messagingConfig,
+                    event.config,
                     subscriptionFactory,
                     flowEventProcessorFactory
                 )

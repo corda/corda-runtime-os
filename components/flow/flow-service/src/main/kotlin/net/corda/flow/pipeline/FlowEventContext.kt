@@ -2,6 +2,7 @@ package net.corda.flow.pipeline
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.Checkpoint
+import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 
 /**
@@ -14,6 +15,7 @@ import net.corda.messaging.api.records.Record
  * @param checkpoint The [Checkpoint] of a flow that should be modified by the pipeline.
  * @param inputEvent The received [FlowEvent].
  * @param inputEventPayload The received [FlowEvent.payload].
+ * @param config The current flow config used by the pipeline when processing the current input event.
  * @param outputRecords The [Record]s that should be sent back to the message bus when the pipeline completes.
  * @param T The type of [FlowEvent.payload].
  */
@@ -21,6 +23,7 @@ data class FlowEventContext<T>(
     val checkpoint: Checkpoint?,
     val inputEvent: FlowEvent,
     val inputEventPayload: T,
+    val config: SmartConfig,
     val outputRecords: List<Record<*, *>>,
 )
 
