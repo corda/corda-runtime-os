@@ -163,6 +163,7 @@ class RPCSubscriptionIntegrationTest {
         )
         val rpcSender = publisherFactory.createRPCSender(rpcConfig, TEST_CONFIG)
         val timestamp = Instant.ofEpochMilli(0L)
+
         val rpcSub = subscriptionFactory.createRPCSubscription(
             rpcConfig, TEST_CONFIG, TestRPCAvroResponderProcessor(timestamp)
         )
