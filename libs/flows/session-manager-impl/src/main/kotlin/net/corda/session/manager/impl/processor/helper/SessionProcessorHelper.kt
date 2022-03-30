@@ -19,8 +19,13 @@ import java.time.Instant
  * @param instant timestamp for SessionEvent
  * @return SessionEvent with SessionError payload.
  */
-fun generateErrorEvent(sessionState: SessionState, sessionEvent: SessionEvent, errorMessage: String, errorType: String, instant: Instant)
-        : SessionEvent {
+fun generateErrorEvent(
+    sessionState: SessionState,
+    sessionEvent: SessionEvent,
+    errorMessage: String,
+    errorType: String,
+    instant: Instant
+): SessionEvent {
     return generateErrorEvent(
         sessionState,
         sessionEvent.initiatingIdentity,
@@ -40,9 +45,14 @@ fun generateErrorEvent(sessionState: SessionState, sessionEvent: SessionEvent, e
  * @param instant timestamp for SessionEvent
  * @return SessionEvent with SessionError payload.
  */
+@Suppress("LongParameterList")
 fun generateErrorEvent(
-    sessionState: SessionState, initiatingIdentity: HoldingIdentity, initiatedIdentity: HoldingIdentity,
-    errorMessage: String, errorType: String, instant: Instant
+    sessionState: SessionState,
+    initiatingIdentity: HoldingIdentity,
+    initiatedIdentity: HoldingIdentity,
+    errorMessage: String,
+    errorType: String,
+    instant: Instant
 ): SessionEvent {
     val sessionId = sessionState.sessionId
     val errorEnvelope = ExceptionEnvelope(errorType, errorMessage)
