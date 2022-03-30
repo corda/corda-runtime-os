@@ -14,8 +14,8 @@
       "type": "string"
     },
     {
-      "doc": "The tenant ID under which the identity key is stored",
-      "name": "identityTenantId",
+      "doc": "The tenant ID under which the session initiation key is stored",
+      "name": "sessionKeyTenantId",
       "type": "string"
     },
     {
