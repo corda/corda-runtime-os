@@ -16,6 +16,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowProcessingException
+import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.session.manager.SessionManager
 import net.corda.v5.base.types.MemberX500Name
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -66,12 +67,12 @@ class InitiateFlowRequestHandlerTest {
 
     @Test
     fun `Returns an updated WaitingFor of SessionConfirmation (Initiate)`() {
-        val inputContext: FlowEventContext<Any> = FlowEventContext(
+        val inputContext: FlowEventContext<Any> = buildFlowEventContext(
             checkpoint = Checkpoint(),
-            inputEvent = FlowEvent(FLOW_KEY, Unit),
             inputEventPayload = Unit,
-            outputRecords = emptyList()
+            inputEvent = FlowEvent(FLOW_KEY, Unit)
         )
+
         val result = closeSessionsRequestHandler.getUpdatedWaitingFor(
             inputContext,
             FlowIORequest.InitiateFlow(X500_NAME, SESSION_ID)
@@ -102,12 +103,13 @@ class InitiateFlowRequestHandlerTest {
             fiber = ByteBuffer.wrap(byteArrayOf(1, 1, 1, 1))
             sessions = emptyList()
         }
-        val inputContext: FlowEventContext<Any> = FlowEventContext(
+
+        val inputContext: FlowEventContext<Any> = buildFlowEventContext(
             checkpoint = checkpoint,
-            inputEvent = FlowEvent(FLOW_KEY, Unit),
             inputEventPayload = Unit,
-            outputRecords = emptyList()
+            inputEvent = FlowEvent(FLOW_KEY, Unit)
         )
+
         val outputContext = closeSessionsRequestHandler.postProcess(
             inputContext,
             FlowIORequest.InitiateFlow(X500_NAME, SESSION_ID)
@@ -119,13 +121,10 @@ class InitiateFlowRequestHandlerTest {
 
     @Test
     fun `Throws an exception if the flow has no checkpoint`() {
-        val inputContext: FlowEventContext<Any> = FlowEventContext(
+        val inputContext: FlowEventContext<Any> = buildFlowEventContext(
             checkpoint = null,
             inputEvent = FlowEvent(FLOW_KEY, Unit),
-            inputEventPayload = Unit,
-            outputRecords = emptyList()
-        )
-
+            inputEventPayload = Unit)
         assertThrows<FlowProcessingException> {
             closeSessionsRequestHandler.postProcess(
                 inputContext,

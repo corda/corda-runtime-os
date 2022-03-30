@@ -8,6 +8,8 @@ import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
+import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.messaging.api.records.Record
@@ -63,13 +65,12 @@ class FlowGlobalPostProcessorImplTest {
         whenever(sessionManager.getMessagesToSend(eq(anotherSessionState), any(), any()))
             .thenReturn(anotherSessionState to listOf(anotherSessionEvent))
 
-        val inputContext: FlowEventContext<Any> = FlowEventContext(
+        val inputContext: FlowEventContext<Any> = buildFlowEventContext(
             checkpoint = Checkpoint().apply {
                 sessions = listOf(sessionState, anotherSessionState)
             },
             inputEvent = FlowEvent(FLOW_KEY, Unit),
-            inputEventPayload = Unit,
-            outputRecords = emptyList()
+            inputEventPayload = Unit
         )
 
         val outputContext = flowGlobalPostProcessor.postProcess(inputContext)
@@ -118,11 +119,10 @@ class FlowGlobalPostProcessorImplTest {
         whenever(sessionManager.getMessagesToSend(eq(anotherSessionState), any(), any()))
             .thenReturn(updatedAnotherSessionState to listOf(anotherSessionEvent))
 
-        val inputContext: FlowEventContext<Any> = FlowEventContext(
+        val inputContext = buildFlowEventContext<Any>(
             checkpoint = checkpointCopy,
-            inputEvent = FlowEvent(FLOW_KEY, Unit),
             inputEventPayload = Unit,
-            outputRecords = emptyList()
+            inputEvent = FlowEvent(FLOW_KEY, Unit)
         )
 
         val outputContext = flowGlobalPostProcessor.postProcess(inputContext)
@@ -132,7 +132,7 @@ class FlowGlobalPostProcessorImplTest {
 
     @Test
     fun `Does nothing when there is no checkpoint`() {
-        val inputContext: FlowEventContext<Any> = FlowEventContext(
+        val inputContext = buildFlowEventContext<Any>(
             checkpoint = null,
             inputEvent = FlowEvent(FLOW_KEY, Unit),
             inputEventPayload = Unit,

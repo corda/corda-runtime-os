@@ -1,19 +1,18 @@
 package net.corda.flow.pipeline.impl
 
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.flow.state.StateMachineState
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.data.flow.state.waiting.Wakeup
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
 import net.corda.flow.pipeline.FlowProcessingException
 import net.corda.flow.pipeline.handlers.events.FlowEventHandler
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.flow.pipeline.runner.FlowRunner
+import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import org.assertj.core.api.Assertions.assertThat
@@ -43,8 +42,8 @@ class FlowEventPipelineImplTest {
         fiber = ByteBuffer.wrap(byteArrayOf(0, 0, 0, 0))
     }
 
-    private val inputContext = FlowEventContext<Any>(checkpoint, FlowEvent(), "Original", emptyList())
-    private val outputContext = FlowEventContext<Any>(checkpoint, FlowEvent(), "Updated", emptyList())
+    private val inputContext = buildFlowEventContext<Any>(checkpoint, "Original")
+    private val outputContext = buildFlowEventContext<Any>(checkpoint, "Updated")
 
     private val flowEventHandler = mock<FlowEventHandler<Any>>().apply {
         whenever(preProcess(inputContext)).thenReturn(outputContext)
