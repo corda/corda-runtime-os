@@ -101,11 +101,8 @@ pipeline {
         }
         stage('Forward port and run tests') {
             steps {
-
                 //for details see
                 // https://github.com/corda/corda-runtime-os/blob/release/ent/5.0/applications/http-rpc-gateway/src/e2e-test/README.md
-
-
                 sh '''
                     # Forward RPC worker port
                     nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-rpc-worker 8888 > forward.txt 2>&1 &
@@ -115,25 +112,13 @@ pipeline {
                     ./gradlew cleanE2eTest e2eTest ${GRADLE_PERFORMANCE_TUNING}
                 '''
             }
-            post {
-                always {
-                    junit allowEmptyResults: true, testResults: '**/test-results/e2eTest/TEST-*.xml'
-                }
-                unsuccessful {
-                    sh '''
-                        kubectl logs -lapp.kubernetes.io/instance=corda -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
-                        kubectl describe all -n ${NAMESPACE} > describe.txt
-                    '''
-                    archiveArtifacts artifacts: 'forward.txt, logs.txt, describe.txt', allowEmptyArchive: true
-                    sh 'rm -f forward.txt logs.txt describe.txt'
-                }
-            }
         }
     }
     post {
         always {
             findBuildScans()
             splunkLogGenerator()
+            junit allowEmptyResults: true, testResults: '**/test-results/e2eTest/TEST-*.xml'
             script{
                 writeFile file: "e2eTestDataForSplunk.log", text: "${env.BUILD_URL}\n${NAMESPACE}"
                 archiveArtifacts artifacts: "e2eTestDataForSplunk.log", fingerprint: true
@@ -146,5 +131,13 @@ pipeline {
             // Only delete namespace if we're successful (though it'll get pruned in 3 hours anyway)
             sh 'kubectl delete ns "${NAMESPACE}"'
         }
+        unsuccessful {
+        sh '''
+            kubectl logs -lapp.kubernetes.io/instance=corda -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
+            kubectl describe all -n ${NAMESPACE} > describe.txt
+        '''
+        archiveArtifacts artifacts: 'forward.txt, logs.txt, describe.txt', allowEmptyArchive: true
+        sh 'rm -f forward.txt logs.txt describe.txt'
+    }
     }
 }
