@@ -32,6 +32,7 @@ pipeline {
         CLUSTER_NAME = "eks-e2e.e2e.awsdev.r3.com"
         HELM_CONFIG_HOME = "/tmp/helm"
         HELM_REPOSITORY_CACHE = "/host_tmp/helm/repository"
+        GRADLE_PERFORMANCE_TUNING = "--parallel -Dscan.tag.E2E -Dscan.tag.${env.NAMESPACE}"
     }
 
     options {
@@ -111,7 +112,7 @@ pipeline {
                     procno=$! #remember process number started in background
                     trap "kill -9 ${procno}" EXIT
 
-                    ./gradlew cleanE2eTest e2eTest --parallel
+                    ./gradlew cleanE2eTest e2eTest
                 '''
             }
             post {
