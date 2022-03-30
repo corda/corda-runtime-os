@@ -25,7 +25,7 @@ Where:
 * `networkType` is either `CORDA_5`, `CORDA_4`.
 * `protocolModes` are either: `AUTHENTICATED_ENCRYPTION` or `AUTHENTICATION_ONLY`.
 * `trustRootCertificates` is the content of the root certificates (in PEM format).
-* One can use `trustRootCertificatesFiles` with the paths to the trust store certificate in PEM format.
+* Instead, one can use `trustRootCertificatesFiles` with the paths to the trust store certificate in PEM format.
 
 5. Run the command:
 ```bash
