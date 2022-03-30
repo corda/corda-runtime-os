@@ -53,8 +53,13 @@ tasks.register('smokeTest', Test) {
     testClassesDirs = project.sourceSets["smokeTest"].output.classesDirs
     classpath = project.sourceSets["smokeTest"].runtimeClasspath
 
-    // TODO: set url/ports as properties
-//    systemProperty "postgresHost", project.getProperty("postgresHost")
-
-    shouldRunAfter tasks.named('test')
+    systemProperty "rpcHost", project.getProperties().getOrDefault("rpcHost","https://localhost:8888/")
+    systemProperty "cryptoWorkerHealthHttp",
+            project.getProperties().getOrDefault("cryptoWorkerHealthHttp","http://localhost:7001/")
+    systemProperty "dbWorkerHealthHttp",
+            project.getProperties().getOrDefault("dbWorkerHealthHttp","http://localhost:7002/")
+    systemProperty "flowWorkerHealthHttp",
+            project.getProperties().getOrDefault("flowWorkerHealthHttp","http://localhost:7003/")
+    systemProperty "rpcWorkerHealthHttp",
+            project.getProperties().getOrDefault("rpcWorkerHealthHttp","http://localhost:7004/")
 }
