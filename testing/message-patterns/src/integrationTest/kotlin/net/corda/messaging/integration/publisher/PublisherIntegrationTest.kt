@@ -124,7 +124,7 @@ class PublisherIntegrationTest {
     }
 
     @Test
-    @Timeout(value = 30, unit = TimeUnit.DAYS)
+    @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `publisher can publish records to partitions transactionally successfully`() {
         topicUtils.createTopics(publisherDurableTopic1Config)
         publisherConfig = PublisherConfig(CLIENT_ID, 1)

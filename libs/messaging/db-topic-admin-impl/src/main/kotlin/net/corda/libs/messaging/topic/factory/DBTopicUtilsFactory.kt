@@ -13,6 +13,9 @@ import net.corda.messagebus.db.datamodel.CommittedPositionEntry
 import net.corda.messagebus.db.datamodel.TopicEntry
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionRecordEntry
+import net.corda.messagebus.db.persistence.JDBC_URL
+import net.corda.messagebus.db.persistence.PASS
+import net.corda.messagebus.db.persistence.USER
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import org.osgi.service.component.annotations.Activate
@@ -33,12 +36,12 @@ class DBTopicUtilsFactory @Activate constructor(
 
     override fun createTopicUtils(props: Properties): TopicUtils {
         val config = ConfigFactory.parseProperties(props)
-        val jdbcUrl = config.getStringOrNull("jdbc.url")
+        val jdbcUrl = config.getStringOrNull(JDBC_URL)
         val dbSource = if (jdbcUrl == null) {
             InMemoryDataSourceFactory().create(DB_MESSAGE_BUS)
         } else {
-            val username = config.getString("user")
-            val pass = config.getString("pass")
+            val username = config.getString(USER)
+            val pass = config.getString(PASS)
             PostgresDataSourceFactory().create(
                 jdbcUrl,
                 username,

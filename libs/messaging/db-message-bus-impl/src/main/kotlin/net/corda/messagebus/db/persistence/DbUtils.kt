@@ -9,6 +9,9 @@ import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import javax.persistence.EntityManagerFactory
 
+const val JDBC_URL = "jdbc.url"
+const val USER = "user"
+const val PASS = "pass"
 
 fun EntityManagerFactoryFactory.create(
     dbConfig: Config,
@@ -16,13 +19,13 @@ fun EntityManagerFactoryFactory.create(
     entities: List<Class<out Any>>,
 ): EntityManagerFactory {
 
-    val jdbcUrl = dbConfig.getStringOrNull("jdbc.url")
+    val jdbcUrl = dbConfig.getStringOrNull(JDBC_URL)
 
     val dbSource = if (jdbcUrl == null) {
         InMemoryDataSourceFactory().create(DB_MESSAGE_BUS)
     } else {
-        val username = dbConfig.getString("user")
-        val pass = dbConfig.getString("pass")
+        val username = dbConfig.getString(USER)
+        val pass = dbConfig.getString(PASS)
         PostgresDataSourceFactory().create(
             jdbcUrl,
             username,

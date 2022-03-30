@@ -204,7 +204,12 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
 
     internal fun getConsumerGroup(): String = groupId
 
+    /**
+     * Query the [ConsumerGroup] to get the latest set of topic partitions.  New or
+     * removed topic partitions should be signaled to any listener appropriately.
+     */
     private fun updateTopicPartitions() {
+        // Only valid for SUBSCRIBED consumers
         if (subscriptionType == SubscriptionType.ASSIGNED) {
             return
         }
