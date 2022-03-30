@@ -350,6 +350,8 @@ if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
     }
 }
 
+includeBuild('../corda-internal-gradle-plugins')
+
 gradleEnterprise {
     server = gradleEnterpriseUrl
     allowUntrustedServer = false
